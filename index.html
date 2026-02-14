@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#1A6B37" />
+  <meta name="description" content="Tolvink — Gestión integral de fletes de granos" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Tolvink" />
+  <link rel="apple-touch-icon" href="/icons/icon-192.svg" />
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%231A6B37'/><text x='50' y='65' font-size='40' text-anchor='middle' fill='white' font-family='sans-serif' font-weight='bold'>T</text></svg>" />
+  <title>Tolvink — Gestión de Fletes</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #F7F8F7; color: #18251C;
+      -webkit-font-smoothing: antialiased;
+      overscroll-behavior: none;
+    }
+    body { padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
+    #splash {
+      position: fixed; inset: 0; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; background: #F7F8F7; z-index: 9999;
+      transition: opacity 0.3s;
+    }
+    #splash .logo { font-size: 36px; font-weight: 800; color: #1A6B37; letter-spacing: -1.5px; }
+    #splash .sub { font-size: 11px; color: #4A6352; letter-spacing: 2.5px; text-transform: uppercase; margin-top: 6px; }
+    #splash .spin {
+      width: 24px; height: 24px; border: 3px solid #E4F3EA; border-top-color: #1A6B37;
+      border-radius: 50%; margin-top: 24px; animation: sp 0.8s linear infinite;
+    }
+    @keyframes sp { to { transform: rotate(360deg); } }
+    .loaded #splash { opacity: 0; pointer-events: none; }
+  </style>
+</head>
+<body>
+  <div id="splash">
+    <div class="logo">tolvink</div>
+    <div class="sub">gestión de fletes</div>
+    <div class="spin"></div>
+  </div>
+  <div id="root"></div>
+  <script type="module" src="/src/main.jsx"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+          .then(r => { console.log('[SW] OK:', r.scope); setInterval(() => r.update(), 3600000); })
+          .catch(e => console.error('[SW] Fail:', e));
+      });
+    }
+    let _deferredPrompt;
+    window.addEventListener('beforeinstallprompt', e => {
+      e.preventDefault(); _deferredPrompt = e;
+      window.dispatchEvent(new CustomEvent('pwa-install-available'));
+    });
+    window.installPWA = async () => {
+      if (!_deferredPrompt) return false;
+      _deferredPrompt.prompt();
+      const { outcome } = await _deferredPrompt.userChoice;
+      _deferredPrompt = null;
+      return outcome === 'accepted';
+    };
+    setTimeout(() => document.body.classList.add('loaded'), 600);
+  </script>
+</body>
+</html>
