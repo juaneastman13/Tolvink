@@ -2614,7 +2614,6 @@ function ChatsScreen({ user, openConvId, onConvOpened }) {
   const [showNew, setShowNew] = useState(false);
   const [newCompId, setNewCompId] = useState("");
   const [newErr, setNewErr] = useState(null);
-  const [expandedGroups, setExpandedGroups] = useState({});
   const [searchQ, setSearchQ] = useState("");
   const msgEndRef = useRef(null);
 
@@ -2690,45 +2689,6 @@ function ChatsScreen({ user, openConvId, onConvOpened }) {
     return new Date(m.createdAt).toLocaleDateString("es",{day:"2-digit",month:"short"});
   };
 
-  const toggleGroup = (key) => setExpandedGroups(prev=>({...prev,[key]:!prev[key]}));
-
-  // Group conversations
-  const grouped = useMemo(()=>{
-    const freightConvs = convs.filter(c=>c.freight);
-    const directConvs = convs.filter(c=>!c.freight);
-
-    // Group freight convs by interlocutor (other company)
-    const byCompany = {};
-    freightConvs.forEach(c=>{
-      const others = (c.participants||[]).filter(p=>p.companyId!==user.companyId);
-      const companyKey = others.map(o=>o.company?.name||o.companyId).sort().join(", ") || "Desconocido";
-      if(!byCompany[companyKey]) byCompany[companyKey]=[];
-      byCompany[companyKey].push(c);
-    });
-
-    // Sort each group's convs by status priority then by last message
-    const statusOrder = {in_progress:0,loaded:1,accepted:2,assigned:3,pending_assignment:4,finished:5,canceled:6};
-    Object.values(byCompany).forEach(arr=>{
-      arr.sort((a,b)=>{
-        const sa = statusOrder[a.freight?.status]??99;
-        const sb = statusOrder[b.freight?.status]??99;
-        if(sa!==sb) return sa-sb;
-        const ta = a.messages?.[0]?.createdAt||"";
-        const tb = b.messages?.[0]?.createdAt||"";
-        return tb.localeCompare(ta);
-      });
-    });
-
-    // Sort companies by most recent activity
-    const companyKeys = Object.keys(byCompany).sort((a,b)=>{
-      const la = byCompany[a][0]?.messages?.[0]?.createdAt||"";
-      const lb = byCompany[b][0]?.messages?.[0]?.createdAt||"";
-      return lb.localeCompare(la);
-    });
-
-    return { companyKeys, byCompany, directConvs };
-  },[convs,user.companyId]);
-
   const stLabel = (s) => {
     const m = {pending_assignment:"Pendiente",assigned:"Asignado",accepted:"Aceptado",in_progress:"En viaje",loaded:"Cargado",finished:"Finalizado",canceled:"Cancelado"};
     return m[s]||s;
@@ -2738,6 +2698,29 @@ function ChatsScreen({ user, openConvId, onConvOpened }) {
     return m[s]||C.t3;
   };
 
+  const getConvTitle = (conv) => {
+    if (conv.freight?.code) return `Flete ${conv.freight.code}`;
+    return "Mensaje directo";
+  };
+
+  const getConvSubtitle = (conv) => {
+    if (conv.freight) {
+      const otherP = (conv.participants || []).find(p => p.companyId !== user.companyId);
+      return otherP?.company?.name || "";
+    }
+    const otherP = (conv.participants || []).find(p => p.companyId !== user.companyId);
+    return otherP?.company?.name || "Conversación";
+  };
+
+  // Unified sorted list — all convs together, sorted by last message
+  const sortedConvs = useMemo(() => {
+    return [...convs].sort((a, b) => {
+      const ta = a.messages?.[0]?.createdAt || "";
+      const tb = b.messages?.[0]?.createdAt || "";
+      return tb.localeCompare(ta);
+    });
+  }, [convs]);
+
   // Chat detail view
   if (activeConv) {
     return (
@@ -2745,8 +2728,8 @@ function ChatsScreen({ user, openConvId, onConvOpened }) {
         <div style={{ padding: "12px 18px", borderBottom: `1px solid ${C.b1}`, background: C.w, display: "flex", alignItems: "center", gap: 10 }}>
           <button onClick={() => setActiveConv(null)} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", padding: 0 }}>{Ic.chev(C.pri, 20)}</button>
           <div>
-            <div style={{ fontSize: 14, fontWeight: 700 }}>{getConvName(activeConv)}</div>
-            <div style={{ fontSize: 10, color: C.t3 }}>{messages.length} mensaje{messages.length !== 1 ? "s" : ""}</div>
+            <div style={{ fontSize: 14, fontWeight: 700, color: C.sec }}>{getConvTitle(activeConv)}</div>
+            <div style={{ fontSize: 10, color: C.t3 }}>{getConvSubtitle(activeConv)} · {messages.length} mensaje{messages.length !== 1 ? "s" : ""}</div>
           </div>
         </div>
 
@@ -2780,7 +2763,7 @@ function ChatsScreen({ user, openConvId, onConvOpened }) {
     );
   }
 
-  // Conversation list — grouped
+  // Unified conversation list
   return (
     <div style={{ flex: 1, overflow: "auto", padding: 18 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
@@ -2806,69 +2789,30 @@ function ChatsScreen({ user, openConvId, onConvOpened }) {
       )}
 
       {loading ? <div style={{ textAlign: "center", padding: 40, color: C.t3, fontSize: 13 }}>Cargando...</div> :
-        convs.length === 0 ? <div style={{ textAlign: "center", padding: 40, color: C.t3, fontSize: 13 }}>Sin conversaciones aún.{!showNew && <><br/><button onClick={()=>setShowNew(true)} style={{background:"none",border:"none",color:C.acc,fontWeight:600,cursor:"pointer",fontFamily:"inherit",fontSize:13,marginTop:8}}>Iniciar una nueva</button></>}</div> :
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            {/* Freight conversations grouped by company */}
-            {grouped.companyKeys.map(companyName=>{
-              const convsList = grouped.byCompany[companyName];
-              const isOpen = expandedGroups[companyName] !== false; // default open
-              const activeCount = convsList.filter(c=>!["finished","canceled"].includes(c.freight?.status)).length;
+        sortedConvs.length === 0 ? <div style={{ textAlign: "center", padding: 40, color: C.t3, fontSize: 13 }}>Sin conversaciones aún.{!showNew && <><br/><button onClick={()=>setShowNew(true)} style={{background:"none",border:"none",color:C.acc,fontWeight:600,cursor:"pointer",fontFamily:"inherit",fontSize:13,marginTop:8}}>Iniciar una nueva</button></>}</div> :
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {sortedConvs.map(c => {
+              const isFreight = !!c.freight;
+              const title = getConvTitle(c);
+              const subtitle = getConvSubtitle(c);
+              const statusCol = isFreight ? stColor(c.freight?.status) : C.acc;
               return (
-                <div key={companyName} style={{ background:C.w, border:`1px solid ${C.b1}`, borderRadius:12, overflow:"hidden", boxShadow:C.sh }}>
-                  {/* Company header — collapsible */}
-                  <button onClick={()=>toggleGroup(companyName)} style={{ width:"100%", padding:"12px 14px", background:C.secPale, border:"none", cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:10, textAlign:"left" }}>
-                    <div style={{ width:36, height:36, borderRadius:18, background:C.sec, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
-                      {Ic.user(C.w,16)}
+                <button key={c.id} onClick={() => openConv(c)} style={{ background: C.w, border: `1px solid ${C.b1}`, borderLeft: `3px solid ${statusCol}`, borderRadius: 12, padding: 14, cursor: "pointer", fontFamily: "inherit", textAlign: "left", display: "flex", alignItems: "center", gap: 12, boxShadow: C.sh, width: "100%" }}>
+                  <div style={{ width: 38, height: 38, borderRadius: 19, background: isFreight ? C.secPale : C.accPale, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    {isFreight ? Ic.truck(C.sec, 16) : Ic.msg(C.acc, 16)}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: C.sec }}>{title}</span>
+                      {isFreight && <span style={{ fontSize: 9, fontWeight: 600, color: statusCol, textTransform: "uppercase" }}>{stLabel(c.freight?.status)}</span>}
                     </div>
-                    <div style={{ flex:1, minWidth:0 }}>
-                      <div style={{ fontSize:13, fontWeight:700, color:C.t1 }}>{companyName}</div>
-                      <div style={{ fontSize:10.5, color:C.t2 }}>{convsList.length} flete{convsList.length!==1?"s":""}{activeCount>0?` · ${activeCount} activo${activeCount!==1?"s":""}`:""}</div>
-                    </div>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={C.t2} strokeWidth="2.5" style={{transform:isOpen?"rotate(180deg)":"rotate(0deg)",transition:"transform 0.2s"}}><polyline points="6 9 12 15 18 9"/></svg>
-                  </button>
-
-                  {/* Freight conversations inside this company */}
-                  {isOpen && (
-                    <div style={{ display:"flex", flexDirection:"column" }}>
-                      {convsList.map((c,i)=>(
-                        <button key={c.id} onClick={()=>openConv(c)} style={{ padding:"10px 14px", border:"none", borderTop:i>0?`1px solid ${C.b2}`:"none", background:C.w, cursor:"pointer", fontFamily:"inherit", textAlign:"left", display:"flex", alignItems:"center", gap:10, width:"100%" }}>
-                          <div style={{ width:8, height:8, borderRadius:4, background:stColor(c.freight?.status), flexShrink:0 }}/>
-                          <div style={{ flex:1, minWidth:0 }}>
-                            <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-                              <span style={{ fontSize:12, fontWeight:700, color:C.t1, fontFamily:MONO }}>{c.freight?.code}</span>
-                              <span style={{ fontSize:9.5, fontWeight:600, color:stColor(c.freight?.status), textTransform:"uppercase" }}>{stLabel(c.freight?.status)}</span>
-                            </div>
-                            <div style={{ fontSize:11, color:C.t3, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis", marginTop:2 }}>{getLastMsg(c)}</div>
-                          </div>
-                          <span style={{ fontSize:9.5, color:C.t3, flexShrink:0 }}>{getLastMsgTime(c)}</span>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                    {subtitle && <div style={{ fontSize: 11, color: C.t2, marginTop: 1 }}>{subtitle}</div>}
+                    <div style={{ fontSize: 11, color: C.t3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", marginTop: 2 }}>{getLastMsg(c)}</div>
+                  </div>
+                  <span style={{ fontSize: 9.5, color: C.t3, flexShrink: 0 }}>{getLastMsgTime(c)}</span>
+                </button>
               );
             })}
-
-            {/* Direct conversations */}
-            {grouped.directConvs.length > 0 && (
-              <div>
-                <div style={{ fontSize:10.5, fontWeight:700, color:C.t2, textTransform:"uppercase", letterSpacing:0.5, marginBottom:8, marginTop:4 }}>Conversaciones directas</div>
-                <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
-                  {grouped.directConvs.map(c => (
-                    <button key={c.id} onClick={() => openConv(c)} style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: 12, padding: 14, cursor: "pointer", fontFamily: "inherit", textAlign: "left", display: "flex", alignItems: "center", gap: 12, boxShadow: C.sh, width: "100%" }}>
-                      <div style={{ width: 40, height: 40, borderRadius: 20, background: C.accPale, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                        {Ic.msg(C.acc, 18)}
-                      </div>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 13, fontWeight: 700, color: C.t1 }}>{getConvName(c)}</div>
-                        <div style={{ fontSize: 11, color: C.t3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{getLastMsg(c)}</div>
-                      </div>
-                      <span style={{ fontSize:9.5, color:C.t3, flexShrink:0 }}>{getLastMsgTime(c)}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
       }
     </div>
