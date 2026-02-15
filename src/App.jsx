@@ -12,7 +12,7 @@ import {
   apiGetFields, apiCreateField, apiUpdateField, apiCreateLot, apiUpdateLot, apiGetFieldLots,
   apiGrantAccess, apiRevokeAccess, apiListAccessProducers, apiListAccessPlants,
   apiStartConversation, apiListConversations, apiGetMessages, apiSendMessage,
-  uploadPhoto, apiAddDocument,
+  uploadPhoto, apiAddDocument, uploadChatFile,
   getToken, getSavedUser, setAuthFailHandler, clearAuth,
 } from "./api";
 
@@ -166,6 +166,7 @@ const Ic = {
   expand:(c=C.t2,s=18)=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>,
   collapse:(c=C.t2,s=18)=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></svg>,
   edit:(c=C.t2,s=18)=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>,
+  clip:(c=C.t3,s=18)=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>,
 };
 
 // ======================== STATE MACHINE ==============================
@@ -2217,7 +2218,7 @@ function NewScreen({ user, lots, plants, fields, trucks, onBack, onCreate, dupli
           <textarea value={form.notes} onChange={e=>u({notes:e.target.value})} placeholder="Indicaciones, horarios especiales..." rows={3} style={{ width:"100%", padding:"12px 14px", borderRadius:10, border:`1.5px solid ${C.b1}`, background:C.w, color:C.t1, fontSize:13, fontFamily:"inherit", outline:"none", resize:"none", boxSizing:"border-box" }}/>
         </div>
 
-        {/* Photo attachments */}
+        {/* Photo/file attachments */}
         <div>
           <label style={{ fontSize:10.5, fontWeight:600, color:C.t2, marginBottom:8, display:"flex", alignItems:"center", gap:4, textTransform:"uppercase", letterSpacing:0.6 }}>{Ic.cam(C.acc,14)} Adjuntar fotos (opcional)</label>
           {photos.length > 0 && (
@@ -2230,10 +2231,20 @@ function NewScreen({ user, lots, plants, fields, trucks, onBack, onCreate, dupli
               ))}
             </div>
           )}
-          <label style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"10px 16px", borderRadius:10, border:`1.5px dashed ${C.b1}`, background:C.bg, cursor:"pointer", fontSize:12, fontWeight:600, color:C.t2 }}>
-            {Ic.plus(C.t2,14)} Agregar foto
-            <input type="file" accept="image/*" capture="environment" onChange={addPhoto} style={{ display:"none" }}/>
-          </label>
+          <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
+            <label style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"10px 14px", borderRadius:10, border:`1.5px dashed ${C.b1}`, background:C.bg, cursor:"pointer", fontSize:11, fontWeight:600, color:C.t2 }}>
+              {Ic.cam(C.t2,14)} Cámara
+              <input type="file" accept="image/*" capture="environment" onChange={addPhoto} style={{ display:"none" }}/>
+            </label>
+            <label style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"10px 14px", borderRadius:10, border:`1.5px dashed ${C.b1}`, background:C.bg, cursor:"pointer", fontSize:11, fontWeight:600, color:C.t2 }}>
+              {Ic.img(C.t2,14)} Galería
+              <input type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={e=>{Array.from(e.target.files||[]).forEach(f=>{if(f.type.startsWith('image/')&&f.size<=10*1024*1024)setPhotos(prev=>[...prev,{file:f,preview:URL.createObjectURL(f)}])});e.target.value="";}} style={{ display:"none" }}/>
+            </label>
+            <label style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"10px 14px", borderRadius:10, border:`1.5px dashed ${C.b1}`, background:C.bg, cursor:"pointer", fontSize:11, fontWeight:600, color:C.t2 }}>
+              {Ic.doc(C.t2,14)} Archivos
+              <input type="file" accept="image/*,.pdf,.doc,.docx" multiple onChange={e=>{Array.from(e.target.files||[]).forEach(f=>{if(f.size<=10*1024*1024)setPhotos(prev=>[...prev,{file:f,preview:f.type.startsWith('image/')?URL.createObjectURL(f):null,name:f.name}])});e.target.value="";}} style={{ display:"none" }}/>
+            </label>
+          </div>
         </div>
 
         <Btn full icon={Ic.chk(C.w,16)} disabled={submitting} onClick={submit}>{submitting?"Enviando...":"Solicitar Flete"}</Btn>
@@ -2718,6 +2729,43 @@ function ChatsScreen({ user, openConvId, onConvOpened }) {
     } catch {} finally { setSending(false); }
   };
 
+  const [uploading, setUploading] = useState(false);
+  const chatFileRef = useRef(null);
+  const [chatTab, setChatTab] = useState("chat"); // chat | files
+
+  const handleFileUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file || !activeConv) return;
+    if (file.size > 15 * 1024 * 1024) { alert("Máximo 15MB"); return; }
+    e.target.value = "";
+    setUploading(true);
+    try {
+      const url = await uploadChatFile(file, activeConv.id);
+      const isImg = file.type.startsWith("image/");
+      const tag = `[FILE:${url}|${isImg ? "image" : "document"}|${file.name}]`;
+      const m = await apiSendMessage(activeConv.id, tag);
+      setMessages(prev => [...prev, m]);
+    } catch (err) { console.error("Upload failed:", err); }
+    finally { setUploading(false); }
+  };
+
+  // Parse file messages
+  const parseFileMsg = (text) => {
+    const match = text?.match(/^\[FILE:(.*?)\|(.*?)\|(.*?)\]$/);
+    if (!match) return null;
+    return { url: match[1], type: match[2], name: match[3] };
+  };
+
+  // Collect all files from messages
+  const chatFiles = useMemo(() => {
+    return messages.filter(m => parseFileMsg(m.text)).map(m => ({
+      ...parseFileMsg(m.text),
+      sender: m.sender?.name || "Desconocido",
+      date: m.createdAt,
+      id: m.id,
+    }));
+  }, [messages]);
+
   const handleStartConv = async () => {
     if (!newCompId.trim()) { setNewErr("Ingresá el ID de la empresa"); return; }
     setNewErr(null);
@@ -2741,6 +2789,8 @@ function ChatsScreen({ user, openConvId, onConvOpened }) {
   const getLastMsg = (conv) => {
     const m = conv.messages?.[0];
     if (!m) return "Sin mensajes";
+    const fileMatch = m.text?.match(/^\[FILE:.*?\|(.*?)\|(.*?)\]$/);
+    if (fileMatch) return `${m.sender?.name?.split(" ")[0] || ""}: 📎 ${fileMatch[2]}`;
     return `${m.sender?.name?.split(" ")[0] || ""}: ${m.text?.slice(0, 40)}${m.text?.length > 40 ? "..." : ""}`;
   };
 
@@ -2857,39 +2907,103 @@ function ChatsScreen({ user, openConvId, onConvOpened }) {
     return (
       <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
         <div style={{ padding: "12px 18px", borderBottom: `1px solid ${C.b1}`, background: C.w, display: "flex", alignItems: "center", gap: 10 }}>
-          <button onClick={() => setActiveConv(null)} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", padding: 0 }}>{Ic.chev(C.pri, 20)}</button>
-          <div>
+          <button onClick={() => { setActiveConv(null); setChatTab("chat"); }} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", padding: 0 }}>{Ic.chev(C.pri, 20)}</button>
+          <div style={{ flex: 1 }}>
             <div style={{ fontSize: 14, fontWeight: 700, color: C.t1 }}>{activeConv.freight?.code ? `Flete ${activeConv.freight.code}` : "Mensaje directo"}</div>
             <div style={{ fontSize: 10, color: C.t3 }}>{getConvName(activeConv)} · {messages.length} mensaje{messages.length !== 1 ? "s" : ""}</div>
           </div>
+          {/* Chat / Files tabs */}
+          <div style={{ display: "flex", gap: 4 }}>
+            <button onClick={() => setChatTab("chat")} style={{ padding: "5px 10px", borderRadius: 8, border: "none", background: chatTab === "chat" ? C.priPale : "none", color: chatTab === "chat" ? C.pri : C.t3, fontSize: 10, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>Chat</button>
+            <button onClick={() => setChatTab("files")} style={{ padding: "5px 10px", borderRadius: 8, border: "none", background: chatTab === "files" ? C.priPale : "none", color: chatTab === "files" ? C.pri : C.t3, fontSize: 10, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", position: "relative" }}>
+              Archivos
+              {chatFiles.length > 0 && <span style={{ position: "absolute", top: -2, right: -2, minWidth: 14, height: 14, borderRadius: 7, background: C.acc, color: "#fff", fontSize: 8, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 3px" }}>{chatFiles.length}</span>}
+            </button>
+          </div>
         </div>
 
-        <div style={{ flex: 1, overflow: "auto", padding: 18, display: "flex", flexDirection: "column", gap: 6 }}>
-          {messages.length === 0 && <div style={{ textAlign: "center", padding: 40, color: C.t3, fontSize: 13 }}>Sin mensajes aún. Escribí el primero.</div>}
-          {messages.map(m => {
-            const mine = m.senderId === user.id || m.sender?.id === user.id;
-            return (
-              <div key={m.id} style={{ alignSelf: mine ? "flex-end" : "flex-start", maxWidth: "80%" }}>
-                {!mine && <div style={{ fontSize: 9.5, color: C.t3, marginBottom: 2, marginLeft: 4 }}>{m.sender?.name?.split(" ")[0]}</div>}
-                <div style={{ padding: "10px 14px", borderRadius: 14, borderBottomRightRadius: mine ? 4 : 14, borderBottomLeftRadius: mine ? 14 : 4, background: mine ? C.pri : C.w, color: mine ? C.w : C.t1, fontSize: 13, border: mine ? "none" : `1px solid ${C.b1}`, boxShadow: C.sh }}>
-                  {m.text}
-                </div>
-                <div style={{ fontSize: 9, color: C.t3, marginTop: 2, textAlign: mine ? "right" : "left", marginRight: mine ? 4 : 0, marginLeft: mine ? 0 : 4 }}>
-                  {new Date(m.createdAt).toLocaleTimeString("es", { hour: "2-digit", minute: "2-digit" })}
-                </div>
+        {chatTab === "chat" ? (
+          <>
+            <div style={{ flex: 1, overflow: "auto", padding: 18, display: "flex", flexDirection: "column", gap: 6 }}>
+              {messages.length === 0 && <div style={{ textAlign: "center", padding: 40, color: C.t3, fontSize: 13 }}>Sin mensajes aún. Escribí el primero.</div>}
+              {messages.map(m => {
+                const mine = m.senderId === user.id || m.sender?.id === user.id;
+                const fileData = parseFileMsg(m.text);
+                return (
+                  <div key={m.id} style={{ alignSelf: mine ? "flex-end" : "flex-start", maxWidth: "80%" }}>
+                    {!mine && <div style={{ fontSize: 9.5, color: C.t3, marginBottom: 2, marginLeft: 4 }}>{m.sender?.name?.split(" ")[0]}</div>}
+                    <div style={{ padding: fileData ? "6px" : "10px 14px", borderRadius: 14, borderBottomRightRadius: mine ? 4 : 14, borderBottomLeftRadius: mine ? 14 : 4, background: mine ? C.pri : C.w, color: mine ? C.w : C.t1, fontSize: 13, border: mine ? "none" : `1px solid ${C.b1}`, boxShadow: C.sh, overflow: "hidden" }}>
+                      {fileData ? (
+                        fileData.type === "image" ? (
+                          <a href={fileData.url} target="_blank" rel="noopener noreferrer">
+                            <img src={fileData.url} alt={fileData.name} style={{ maxWidth: 220, maxHeight: 200, borderRadius: 10, display: "block" }} />
+                          </a>
+                        ) : (
+                          <a href={fileData.url} target="_blank" rel="noopener noreferrer" style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", textDecoration: "none", color: mine ? "#fff" : C.t1 }}>
+                            {Ic.doc(mine ? "#fff" : C.pri, 20)}
+                            <div>
+                              <div style={{ fontSize: 12, fontWeight: 600, wordBreak: "break-all" }}>{fileData.name}</div>
+                              <div style={{ fontSize: 10, opacity: 0.7 }}>Abrir archivo</div>
+                            </div>
+                          </a>
+                        )
+                      ) : m.text}
+                    </div>
+                    <div style={{ fontSize: 9, color: C.t3, marginTop: 2, textAlign: mine ? "right" : "left", marginRight: mine ? 4 : 0, marginLeft: mine ? 0 : 4 }}>
+                      {new Date(m.createdAt).toLocaleTimeString("es", { hour: "2-digit", minute: "2-digit" })}
+                    </div>
+                  </div>
+                );
+              })}
+              <div ref={msgEndRef} />
+            </div>
+
+            {/* Upload progress */}
+            {uploading && (
+              <div style={{ padding: "8px 18px", background: C.accPale, borderTop: `1px solid ${C.acc}20`, display: "flex", alignItems: "center", gap: 8 }}>
+                <div style={{ width: 16, height: 16, border: `2px solid ${C.acc}`, borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+                <span style={{ fontSize: 11, color: C.acc, fontWeight: 600 }}>Subiendo archivo...</span>
+                <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
               </div>
-            );
-          })}
-          <div ref={msgEndRef} />
-        </div>
+            )}
 
-        <div style={{ padding: "10px 18px", borderTop: `1px solid ${C.b1}`, background: C.w, display: "flex", gap: 8 }}>
-          <input value={msgText} onChange={e => setMsgText(e.target.value)} onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-            placeholder="Escribí un mensaje..." style={{ flex: 1, padding: "10px 14px", borderRadius: 20, border: `1.5px solid ${C.b1}`, background: C.bg, color: C.t1, fontSize: 13, fontFamily: "inherit", outline: "none" }} />
-          <button onClick={handleSend} disabled={sending || !msgText.trim()} style={{ width: 40, height: 40, borderRadius: 20, background: msgText.trim() ? C.pri : C.b1, border: "none", cursor: msgText.trim() ? "pointer" : "default", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            {Ic.send(C.w, 16)}
-          </button>
-        </div>
+            <div style={{ padding: "10px 18px", borderTop: `1px solid ${C.b1}`, background: C.w, display: "flex", gap: 8, alignItems: "center" }}>
+              <input ref={chatFileRef} type="file" accept="image/*,.pdf,.doc,.docx,.xlsx,.xls,.txt" onChange={handleFileUpload} style={{ display: "none" }} />
+              <button onClick={() => chatFileRef.current?.click()} disabled={uploading} style={{ width: 40, height: 40, borderRadius: 20, background: C.bg, border: `1px solid ${C.b1}`, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                {Ic.clip(C.t2, 18)}
+              </button>
+              <input value={msgText} onChange={e => setMsgText(e.target.value)} onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
+                placeholder="Escribí un mensaje..." style={{ flex: 1, padding: "10px 14px", borderRadius: 20, border: `1.5px solid ${C.b1}`, background: C.bg, color: C.t1, fontSize: 13, fontFamily: "inherit", outline: "none" }} />
+              <button onClick={handleSend} disabled={sending || !msgText.trim()} style={{ width: 40, height: 40, borderRadius: 20, background: msgText.trim() ? C.pri : C.b1, border: "none", cursor: msgText.trim() ? "pointer" : "default", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                {Ic.send(C.w, 16)}
+              </button>
+            </div>
+          </>
+        ) : (
+          /* Files tab */
+          <div style={{ flex: 1, overflow: "auto", padding: 18 }}>
+            {chatFiles.length === 0 ? (
+              <div style={{ textAlign: "center", padding: 40, color: C.t3, fontSize: 13 }}>Sin archivos compartidos</div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {chatFiles.map(f => (
+                  <a key={f.id} href={f.url} target="_blank" rel="noopener noreferrer" style={{ display: "flex", alignItems: "center", gap: 12, padding: 12, background: C.w, border: `1px solid ${C.b1}`, borderRadius: 10, textDecoration: "none", boxShadow: C.sh }}>
+                    {f.type === "image" ? (
+                      <img src={f.url} alt="" style={{ width: 48, height: 48, borderRadius: 8, objectFit: "cover", flexShrink: 0 }} />
+                    ) : (
+                      <div style={{ width: 48, height: 48, borderRadius: 8, background: C.priPale, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{Ic.doc(C.pri, 22)}</div>
+                    )}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: C.t1, wordBreak: "break-all" }}>{f.name}</div>
+                      <div style={{ fontSize: 10, color: C.t3, marginTop: 2 }}>{f.sender} · {new Date(f.date).toLocaleDateString("es", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}</div>
+                    </div>
+                    {Ic.down(C.pri, 16)}
+                  </a>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     );
   }

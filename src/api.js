@@ -116,3 +116,27 @@ export async function uploadPhoto(file, freightId, step) {
 
   return `${SUPABASE_URL}/storage/v1/object/public/${STORAGE_BUCKET}/${path}`;
 }
+
+// Chat file upload — to Supabase Storage under chat-files folder
+export async function uploadChatFile(file, conversationId) {
+  const ext = file.name?.split('.').pop() || 'bin';
+  const safeName = file.name?.replace(/[^a-zA-Z0-9._-]/g, '_') || `file.${ext}`;
+  const path = `chat/${conversationId}/${Date.now()}_${safeName}`;
+  const url = `${SUPABASE_URL}/storage/v1/object/${STORAGE_BUCKET}/${path}`;
+
+  const headers = { 'Content-Type': file.type || 'application/octet-stream' };
+  if (SUPABASE_ANON_KEY) {
+    headers['apikey'] = SUPABASE_ANON_KEY;
+    headers['Authorization'] = `Bearer ${SUPABASE_ANON_KEY}`;
+  }
+
+  const res = await fetch(url, { method: 'POST', headers, body: file });
+
+  if (!res.ok) {
+    let errMsg = 'Error al subir archivo';
+    try { const d = await res.json(); errMsg = d.message || d.error || errMsg; } catch {}
+    throw new Error(errMsg);
+  }
+
+  return `${SUPABASE_URL}/storage/v1/object/public/${STORAGE_BUCKET}/${path}`;
+}
