@@ -1,5 +1,5 @@
 // =====================================================================
-// TOLVINK — API Client
+// TOLVINK — API Client v3
 // =====================================================================
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://tolvink-api-production.up.railway.app/api';
@@ -29,9 +29,12 @@ export default async function api(path, opts={}) {
   return data;
 }
 
+// Auth
 export async function apiLogin(email,password) { const d=await api('/auth/login',{body:{email,password}}); setToken(d.access_token); saveUser(d.user); return d; }
 export async function apiRegister(b) { const d=await api('/auth/register',{body:b}); setToken(d.access_token); saveUser(d.user); return d; }
 export function apiLogout() { clearAuth(); }
+
+// Freights
 export async function apiListFreights(q={}) { const p=new URLSearchParams(); if(q.status)p.set('status',q.status); if(q.page)p.set('page',String(q.page)); if(q.limit)p.set('limit',String(q.limit)); const qs=p.toString(); return api(`/freights${qs?`?${qs}`:''}`); }
 export async function apiGetFreight(id) { return api(`/freights/${id}`); }
 export async function apiCreateFreight(b) { return api('/freights',{body:b}); }
@@ -40,9 +43,33 @@ export async function apiRespondFreight(id,b) { return api(`/freights/${id}/resp
 export async function apiStartFreight(id) { return api(`/freights/${id}/start`,{body:{}}); }
 export async function apiFinishFreight(id) { return api(`/freights/${id}/finish`,{body:{}}); }
 export async function apiCancelFreight(id,reason) { return api(`/freights/${id}/cancel`,{body:{reason}}); }
+export async function apiConfirmLoaded(id) { return api(`/freights/${id}/confirm-loaded`,{body:{}}); }
+export async function apiConfirmFinished(id) { return api(`/freights/${id}/confirm-finished`,{body:{}}); }
+
+// Catalog
 export async function apiGetPlants() { return api('/catalog/plants'); }
 export async function apiGetLots() { return api('/catalog/lots'); }
 export async function apiGetTransportCompanies() { return api('/catalog/transport-companies'); }
+
+// Trucks
 export async function apiGetTrucks() { return api('/trucks'); }
-export async function apiConfirmLoaded(id) { return api(`/freights/${id}/confirm-loaded`,{body:{}}); }
-export async function apiConfirmFinished(id) { return api(`/freights/${id}/confirm-finished`,{body:{}}); }
+export async function apiCreateTruck(b) { return api('/trucks',{body:b}); }
+export async function apiDeactivateTruck(id) { return api(`/trucks/${id}/deactivate`,{body:{},method:'PATCH'}); }
+
+// Fields & Lots
+export async function apiGetFields() { return api('/fields'); }
+export async function apiCreateField(b) { return api('/fields',{body:b}); }
+export async function apiGetFieldLots(fieldId) { return api(`/fields/${fieldId}/lots`); }
+export async function apiCreateLot(fieldId,b) { return api(`/fields/${fieldId}/lots`,{body:b}); }
+
+// Plant-Producer Access
+export async function apiGrantAccess(b) { return api('/plant-access/grant',{body:b}); }
+export async function apiRevokeAccess(prodId) { return api(`/plant-access/revoke/${prodId}`,{body:{},method:'PATCH'}); }
+export async function apiListAccessProducers() { return api('/plant-access/producers'); }
+export async function apiListAccessPlants() { return api('/plant-access/plants'); }
+
+// Conversations
+export async function apiStartConversation(b) { return api('/conversations/start',{body:b}); }
+export async function apiListConversations() { return api('/conversations'); }
+export async function apiGetMessages(convId) { return api(`/conversations/${convId}/messages`); }
+export async function apiSendMessage(convId,text) { return api(`/conversations/${convId}/messages`,{body:{text}}); }

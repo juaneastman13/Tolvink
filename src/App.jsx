@@ -5,6 +5,10 @@ import {
   apiStartFreight, apiFinishFreight, apiCancelFreight,
   apiConfirmLoaded, apiConfirmFinished,
   apiGetPlants, apiGetLots, apiGetTransportCompanies, apiGetTrucks,
+  apiCreateTruck, apiDeactivateTruck,
+  apiGetFields, apiCreateField, apiCreateLot,
+  apiGrantAccess, apiRevokeAccess, apiListAccessProducers, apiListAccessPlants,
+  apiStartConversation, apiListConversations, apiGetMessages, apiSendMessage,
   getToken, getSavedUser, setAuthFailHandler, clearAuth,
 } from "./api";
 
@@ -903,9 +907,15 @@ function NewScreen({ user, lots, plants, onBack, onCreate }) {
 
 // ======================== PROFILE =====================================
 
-function ProfileScreen({ user, perms, onLogout }) {
+function ProfileScreen({ user, perms, onLogout, onNav }) {
   const tc = ({plant:C.pri,transporter:C.info,producer:C.acc})[user.userType]||C.pri;
   const pl = []; if(perms.canRequest)pl.push("Solicitar fletes"); if(perms.canApprove)pl.push("Aprobar fletes"); if(perms.canAssignDriver)pl.push("Asignar choferes"); if(perms.canCancel)pl.push("Cancelar fletes"); if(perms.canReject)pl.push("Rechazar viajes");
+
+  const mgmtItems = [];
+  if(user.userType==="transporter") mgmtItems.push({k:"trucks",l:"Mis Camiones",ic:Ic.truck(C.acc,18),c:C.acc});
+  if(user.userType==="producer") mgmtItems.push({k:"fields",l:"Mis Campos y Lotes",ic:Ic.pin(C.pri,18),c:C.pri});
+  if(user.userType==="plant") mgmtItems.push({k:"access",l:"Productores Habilitados",ic:Ic.user(C.pri,18),c:C.pri});
+
   return (
     <div style={{flex:1,overflow:"auto",padding:18}}>
       <div style={{fontSize:20,fontWeight:800,marginBottom:22,letterSpacing:-0.3}}>Mi Perfil</div>
@@ -918,12 +928,398 @@ function ProfileScreen({ user, perms, onLogout }) {
           <Bd color={C.t2} bg={C.bgInput}>{user.role==="admin"?"Gerente":"Operario"}</Bd>
         </div>
         <div style={{fontSize:12,color:C.t2,marginTop:6}}>{user.entity}</div>
+        {user.companyId && <div style={{fontSize:9.5,color:C.t3,marginTop:4,fontFamily:MONO}}>ID: {user.companyId}</div>}
       </div>
+
+      {mgmtItems.length>0 && (
+        <div style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius:12,padding:4,marginBottom:12,boxShadow:C.sh}}>
+          {mgmtItems.map((m,i)=>(
+            <button key={m.k} onClick={()=>onNav(m.k)} style={{width:"100%",display:"flex",alignItems:"center",gap:12,padding:"14px 14px",background:"none",border:"none",borderTop:i>0?`1px solid ${C.b2}`:"none",cursor:"pointer",fontFamily:"inherit",textAlign:"left"}}>
+              <div style={{width:36,height:36,borderRadius:10,background:`${m.c}12`,display:"flex",alignItems:"center",justifyContent:"center"}}>{m.ic}</div>
+              <span style={{fontSize:14,fontWeight:600,color:C.t1}}>{m.l}</span>
+              <span style={{marginLeft:"auto",display:"flex"}}>{Ic.chev(C.t3,16)}</span>
+            </button>
+          ))}
+        </div>
+      )}
+
       <div style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius:12,padding:16,marginBottom:12,boxShadow:C.sh}}>
         <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:10}}>{Ic.shield(C.pri,16)}<span style={{fontSize:10.5,fontWeight:700,color:C.t2,textTransform:"uppercase",letterSpacing:0.5}}>Permisos</span></div>
         {pl.length>0?pl.map((p,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 0"}}>{Ic.chk(C.pri,14)}<span style={{fontSize:13}}>{p}</span></div>):<div style={{fontSize:12,color:C.t3}}>Rol operativo</div>}
       </div>
       <Btn full v="err" onClick={onLogout} icon={Ic.out(C.err,16)}>Cerrar sesión</Btn>
+    </div>
+  );
+}
+
+// ======================== TRUCKS MANAGEMENT (Transportista) ===========
+
+function TrucksScreen({ onBack }) {
+  const [trucks, setTrucks] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [plate, setPlate] = useState("");
+  const [model, setModel] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [msg, setMsg] = useState(null);
+
+  const load = useCallback(async () => {
+    try { const t = await apiGetTrucks(); setTrucks(t||[]); } catch {} finally { setLoading(false); }
+  }, []);
+  useEffect(() => { load(); }, [load]);
+
+  const handleCreate = async () => {
+    if (!plate.trim()) { setMsg({ t: "Patente obligatoria", k: "err" }); return; }
+    setSaving(true);
+    try {
+      await apiCreateTruck({ plate: plate.trim().toUpperCase(), model: model.trim() || undefined });
+      setPlate(""); setModel(""); setShowForm(false); setMsg({ t: "Camión registrado", k: "ok" });
+      load();
+    } catch (e) { setMsg({ t: e.message, k: "err" }); }
+    finally { setSaving(false); }
+  };
+
+  const handleDeactivate = async (id) => {
+    try { await apiDeactivateTruck(id); setMsg({ t: "Camión eliminado", k: "ok" }); load(); }
+    catch (e) { setMsg({ t: e.message, k: "err" }); }
+  };
+
+  return (
+    <div style={{ flex: 1, overflow: "auto", padding: 18 }}>
+      <button onClick={onBack} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 600, color: C.pri, marginBottom: 14, padding: 0, display: "flex", alignItems: "center", gap: 4 }}>{Ic.chev(C.pri, 18)} Mi Perfil</button>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
+        <div style={{ fontSize: 20, fontWeight: 800, letterSpacing: -0.3 }}>Mis Camiones</div>
+        <Btn sm onClick={() => setShowForm(!showForm)} icon={showForm ? Ic.cross(C.w, 14) : Ic.plus(C.w, 14)}>{showForm ? "Cerrar" : "Agregar"}</Btn>
+      </div>
+
+      {msg && <div style={{ padding: "10px 14px", borderRadius: 10, marginBottom: 12, fontSize: 12, fontWeight: 600, background: msg.k === "ok" ? C.okPale : C.errPale, color: msg.k === "ok" ? C.ok : C.err }}>{msg.t}</div>}
+
+      {showForm && (
+        <div style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: 12, padding: 16, marginBottom: 16, boxShadow: C.sh }}>
+          <Field label="Patente" value={plate} onChange={setPlate} placeholder="Ej: AB-123-CD" />
+          <div style={{ height: 10 }} />
+          <Field label="Modelo (opcional)" value={model} onChange={setModel} placeholder="Ej: Scania R500" />
+          <div style={{ height: 12 }} />
+          <Btn full v="acc" disabled={saving} onClick={handleCreate}>{saving ? "Guardando..." : "Registrar camión"}</Btn>
+        </div>
+      )}
+
+      {loading ? <div style={{ textAlign: "center", padding: 40, color: C.t3, fontSize: 13 }}>Cargando...</div> :
+        trucks.length === 0 ? <div style={{ textAlign: "center", padding: 40, color: C.t3, fontSize: 13 }}>No tenés camiones registrados.</div> :
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {trucks.map(t => (
+              <div key={t.id} style={{ background: C.w, border: `1px solid ${C.b1}`, borderLeft: `3px solid ${C.acc}`, borderRadius: 12, padding: 14, boxShadow: C.sh, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  {Ic.truck(C.acc, 20)}
+                  <div>
+                    <div style={{ fontSize: 14, fontWeight: 700 }}>{t.plate}</div>
+                    {t.model && <div style={{ fontSize: 11, color: C.t3 }}>{t.model}</div>}
+                    {t.assignedUser && <div style={{ fontSize: 10, color: C.t2 }}>Chofer: {t.assignedUser.name}</div>}
+                  </div>
+                </div>
+                <button onClick={() => handleDeactivate(t.id)} style={{ background: "none", border: "none", cursor: "pointer", padding: 6 }}>{Ic.ban(C.err, 18)}</button>
+              </div>
+            ))}
+          </div>
+      }
+    </div>
+  );
+}
+
+// ======================== FIELDS MANAGEMENT (Productor) ===============
+
+function FieldsScreen({ onBack }) {
+  const [fields, setFields] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showFieldForm, setShowFieldForm] = useState(false);
+  const [fieldName, setFieldName] = useState("");
+  const [fieldAddr, setFieldAddr] = useState("");
+  const [showLotForm, setShowLotForm] = useState(null);
+  const [lotName, setLotName] = useState("");
+  const [lotHa, setLotHa] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [msg, setMsg] = useState(null);
+
+  const load = useCallback(async () => {
+    try { const f = await apiGetFields(); setFields(f || []); } catch {} finally { setLoading(false); }
+  }, []);
+  useEffect(() => { load(); }, [load]);
+
+  const handleCreateField = async () => {
+    if (!fieldName.trim()) { setMsg({ t: "Nombre obligatorio", k: "err" }); return; }
+    setSaving(true);
+    try {
+      await apiCreateField({ name: fieldName.trim(), address: fieldAddr.trim() || undefined });
+      setFieldName(""); setFieldAddr(""); setShowFieldForm(false); setMsg({ t: "Campo creado", k: "ok" }); load();
+    } catch (e) { setMsg({ t: e.message, k: "err" }); } finally { setSaving(false); }
+  };
+
+  const handleCreateLot = async (fieldId) => {
+    if (!lotName.trim()) { setMsg({ t: "Nombre del lote obligatorio", k: "err" }); return; }
+    setSaving(true);
+    try {
+      await apiCreateLot(fieldId, { name: lotName.trim(), hectares: lotHa ? parseFloat(lotHa) : undefined });
+      setLotName(""); setLotHa(""); setShowLotForm(null); setMsg({ t: "Lote creado", k: "ok" }); load();
+    } catch (e) { setMsg({ t: e.message, k: "err" }); } finally { setSaving(false); }
+  };
+
+  return (
+    <div style={{ flex: 1, overflow: "auto", padding: 18 }}>
+      <button onClick={onBack} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 600, color: C.pri, marginBottom: 14, padding: 0, display: "flex", alignItems: "center", gap: 4 }}>{Ic.chev(C.pri, 18)} Mi Perfil</button>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
+        <div style={{ fontSize: 20, fontWeight: 800, letterSpacing: -0.3 }}>Mis Campos</div>
+        <Btn sm onClick={() => setShowFieldForm(!showFieldForm)} icon={showFieldForm ? Ic.cross(C.w, 14) : Ic.plus(C.w, 14)}>{showFieldForm ? "Cerrar" : "Agregar"}</Btn>
+      </div>
+
+      {msg && <div style={{ padding: "10px 14px", borderRadius: 10, marginBottom: 12, fontSize: 12, fontWeight: 600, background: msg.k === "ok" ? C.okPale : C.errPale, color: msg.k === "ok" ? C.ok : C.err }}>{msg.t}</div>}
+
+      {showFieldForm && (
+        <div style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: 12, padding: 16, marginBottom: 16, boxShadow: C.sh }}>
+          <Field label="Nombre del campo" value={fieldName} onChange={setFieldName} placeholder="Ej: Campo San Juan" />
+          <div style={{ height: 10 }} />
+          <Field label="Dirección (opcional)" value={fieldAddr} onChange={setFieldAddr} placeholder="Ej: Ruta 5 km 120" />
+          <div style={{ height: 12 }} />
+          <Btn full v="acc" disabled={saving} onClick={handleCreateField}>{saving ? "Guardando..." : "Crear campo"}</Btn>
+        </div>
+      )}
+
+      {loading ? <div style={{ textAlign: "center", padding: 40, color: C.t3, fontSize: 13 }}>Cargando...</div> :
+        fields.length === 0 ? <div style={{ textAlign: "center", padding: 40, color: C.t3, fontSize: 13 }}>No tenés campos registrados.</div> :
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            {fields.map(f => (
+              <div key={f.id} style={{ background: C.w, border: `1px solid ${C.b1}`, borderLeft: `3px solid ${C.pri}`, borderRadius: 12, padding: 14, boxShadow: C.sh }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    {Ic.pin(C.pri, 18)}
+                    <div>
+                      <div style={{ fontSize: 14, fontWeight: 700 }}>{f.name}</div>
+                      {f.address && <div style={{ fontSize: 11, color: C.t3 }}>{f.address}</div>}
+                    </div>
+                  </div>
+                  <Bd color={C.pri} small>{(f.lots || []).length} lote{(f.lots || []).length !== 1 ? "s" : ""}</Bd>
+                </div>
+
+                {(f.lots || []).map(l => (
+                  <div key={l.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 0 6px 28px", borderTop: `1px solid ${C.b2}` }}>
+                    {Ic.grain(C.ok, 14)}
+                    <span style={{ fontSize: 12, fontWeight: 500 }}>{l.name}</span>
+                    {l.hectares && <span style={{ fontSize: 10, color: C.t3 }}>{l.hectares} ha</span>}
+                  </div>
+                ))}
+
+                {showLotForm === f.id ? (
+                  <div style={{ marginTop: 8, padding: "10px 0 0 28px", borderTop: `1px solid ${C.b2}` }}>
+                    <Field label="Nombre del lote" value={lotName} onChange={setLotName} placeholder="Ej: Lote 1A" />
+                    <div style={{ height: 8 }} />
+                    <Field label="Hectáreas (opcional)" value={lotHa} onChange={setLotHa} placeholder="Ej: 150" />
+                    <div style={{ display: "flex", gap: 6, marginTop: 10 }}>
+                      <Btn sm v="ghost" onClick={() => { setShowLotForm(null); setLotName(""); setLotHa(""); }}>Cancelar</Btn>
+                      <Btn sm v="acc" disabled={saving} onClick={() => handleCreateLot(f.id)}>{saving ? "..." : "Crear lote"}</Btn>
+                    </div>
+                  </div>
+                ) : (
+                  <button onClick={() => setShowLotForm(f.id)} style={{ marginTop: 6, marginLeft: 28, background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", fontSize: 11, fontWeight: 600, color: C.acc, padding: 0, display: "flex", alignItems: "center", gap: 4 }}>{Ic.plus(C.acc, 12)} Agregar lote</button>
+                )}
+              </div>
+            ))}
+          </div>
+      }
+    </div>
+  );
+}
+
+// ======================== ACCESS MANAGEMENT (Planta) ==================
+
+function AccessScreen({ onBack }) {
+  const [producers, setProducers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showGrant, setShowGrant] = useState(false);
+  const [prodId, setProdId] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [msg, setMsg] = useState(null);
+  const [allCompanies, setAllCompanies] = useState([]);
+
+  const load = useCallback(async () => {
+    try {
+      const p = await apiListAccessProducers();
+      setProducers(p || []);
+    } catch {} finally { setLoading(false); }
+  }, []);
+  useEffect(() => { load(); }, [load]);
+
+  const handleGrant = async () => {
+    if (!prodId.trim()) { setMsg({ t: "Ingresá el ID del productor", k: "err" }); return; }
+    setSaving(true);
+    try {
+      await apiGrantAccess({ producerCompanyId: prodId.trim() });
+      setProdId(""); setShowGrant(false); setMsg({ t: "Productor habilitado", k: "ok" }); load();
+    } catch (e) { setMsg({ t: e.message, k: "err" }); } finally { setSaving(false); }
+  };
+
+  const handleRevoke = async (companyId) => {
+    try { await apiRevokeAccess(companyId); setMsg({ t: "Acceso revocado", k: "ok" }); load(); }
+    catch (e) { setMsg({ t: e.message, k: "err" }); }
+  };
+
+  return (
+    <div style={{ flex: 1, overflow: "auto", padding: 18 }}>
+      <button onClick={onBack} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 600, color: C.pri, marginBottom: 14, padding: 0, display: "flex", alignItems: "center", gap: 4 }}>{Ic.chev(C.pri, 18)} Mi Perfil</button>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
+        <div style={{ fontSize: 20, fontWeight: 800, letterSpacing: -0.3 }}>Productores</div>
+        <Btn sm onClick={() => setShowGrant(!showGrant)} icon={showGrant ? Ic.cross(C.w, 14) : Ic.plus(C.w, 14)}>{showGrant ? "Cerrar" : "Habilitar"}</Btn>
+      </div>
+
+      {msg && <div style={{ padding: "10px 14px", borderRadius: 10, marginBottom: 12, fontSize: 12, fontWeight: 600, background: msg.k === "ok" ? C.okPale : C.errPale, color: msg.k === "ok" ? C.ok : C.err }}>{msg.t}</div>}
+
+      {showGrant && (
+        <div style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: 12, padding: 16, marginBottom: 16, boxShadow: C.sh }}>
+          <Field label="ID de empresa productora" value={prodId} onChange={setProdId} placeholder="UUID del productor" />
+          <div style={{ fontSize: 10, color: C.t3, marginTop: 4, marginBottom: 10 }}>Pedile el ID al productor desde su perfil</div>
+          <Btn full v="acc" disabled={saving} onClick={handleGrant}>{saving ? "Guardando..." : "Habilitar productor"}</Btn>
+        </div>
+      )}
+
+      {loading ? <div style={{ textAlign: "center", padding: 40, color: C.t3, fontSize: 13 }}>Cargando...</div> :
+        producers.length === 0 ? <div style={{ textAlign: "center", padding: 40, color: C.t3, fontSize: 13 }}>Ningún productor habilitado aún.</div> :
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {producers.map(p => (
+              <div key={p.id} style={{ background: C.w, border: `1px solid ${C.b1}`, borderLeft: `3px solid ${p.active ? C.ok : C.muted}`, borderRadius: 12, padding: 14, boxShadow: C.sh, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  {Ic.user(p.active ? C.ok : C.muted, 20)}
+                  <div>
+                    <div style={{ fontSize: 14, fontWeight: 700 }}>{p.producerCompany?.name || "Productor"}</div>
+                    <div style={{ fontSize: 10, color: C.t3 }}>{p.producerCompany?.email || ""}</div>
+                  </div>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <Bd color={p.active ? C.ok : C.muted} small>{p.active ? "Activo" : "Revocado"}</Bd>
+                  {p.active && <button onClick={() => handleRevoke(p.producerCompany?.id || p.producerCompanyId)} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }}>{Ic.ban(C.err, 16)}</button>}
+                </div>
+              </div>
+            ))}
+          </div>
+      }
+    </div>
+  );
+}
+
+// ======================== CHATS SCREEN ================================
+
+function ChatsScreen({ user }) {
+  const [convs, setConvs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [activeConv, setActiveConv] = useState(null);
+  const [messages, setMessages] = useState([]);
+  const [msgText, setMsgText] = useState("");
+  const [sending, setSending] = useState(false);
+  const msgEndRef = useRef(null);
+
+  const loadConvs = useCallback(async () => {
+    try { const c = await apiListConversations(); setConvs(c || []); } catch {} finally { setLoading(false); }
+  }, []);
+  useEffect(() => { loadConvs(); }, [loadConvs]);
+
+  const openConv = async (conv) => {
+    setActiveConv(conv);
+    try { const m = await apiGetMessages(conv.id); setMessages(m || []); } catch {}
+  };
+
+  useEffect(() => { if (msgEndRef.current) msgEndRef.current.scrollIntoView({ behavior: "smooth" }); }, [messages]);
+
+  // Poll for new messages
+  useEffect(() => {
+    if (!activeConv) return;
+    const iv = setInterval(async () => {
+      try { const m = await apiGetMessages(activeConv.id); setMessages(m || []); } catch {}
+    }, 5000);
+    return () => clearInterval(iv);
+  }, [activeConv]);
+
+  const handleSend = async () => {
+    if (!msgText.trim() || !activeConv) return;
+    setSending(true);
+    try {
+      const m = await apiSendMessage(activeConv.id, msgText.trim());
+      setMessages(prev => [...prev, m]);
+      setMsgText("");
+    } catch {} finally { setSending(false); }
+  };
+
+  const getConvName = (conv) => {
+    if (conv.freight) return `Flete ${conv.freight.code}`;
+    const otherP = (conv.participants || []).find(p => p.companyId !== user.companyId);
+    return otherP?.companyId?.slice(0, 8) || "Conversación";
+  };
+
+  const getLastMsg = (conv) => {
+    const m = conv.messages?.[0];
+    if (!m) return "Sin mensajes";
+    return `${m.sender?.name?.split(" ")[0] || ""}: ${m.text?.slice(0, 40)}${m.text?.length > 40 ? "..." : ""}`;
+  };
+
+  // Chat detail view
+  if (activeConv) {
+    return (
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+        <div style={{ padding: "12px 18px", borderBottom: `1px solid ${C.b1}`, background: C.w, display: "flex", alignItems: "center", gap: 10 }}>
+          <button onClick={() => setActiveConv(null)} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", padding: 0 }}>{Ic.chev(C.pri, 20)}</button>
+          <div>
+            <div style={{ fontSize: 14, fontWeight: 700 }}>{getConvName(activeConv)}</div>
+            <div style={{ fontSize: 10, color: C.t3 }}>{messages.length} mensaje{messages.length !== 1 ? "s" : ""}</div>
+          </div>
+        </div>
+
+        <div style={{ flex: 1, overflow: "auto", padding: 18, display: "flex", flexDirection: "column", gap: 6 }}>
+          {messages.length === 0 && <div style={{ textAlign: "center", padding: 40, color: C.t3, fontSize: 13 }}>Sin mensajes aún. Escribí el primero.</div>}
+          {messages.map(m => {
+            const mine = m.senderId === user.id || m.sender?.id === user.id;
+            return (
+              <div key={m.id} style={{ alignSelf: mine ? "flex-end" : "flex-start", maxWidth: "80%" }}>
+                {!mine && <div style={{ fontSize: 9.5, color: C.t3, marginBottom: 2, marginLeft: 4 }}>{m.sender?.name?.split(" ")[0]}</div>}
+                <div style={{ padding: "10px 14px", borderRadius: 14, borderBottomRightRadius: mine ? 4 : 14, borderBottomLeftRadius: mine ? 14 : 4, background: mine ? C.pri : C.w, color: mine ? C.w : C.t1, fontSize: 13, border: mine ? "none" : `1px solid ${C.b1}`, boxShadow: C.sh }}>
+                  {m.text}
+                </div>
+                <div style={{ fontSize: 9, color: C.t3, marginTop: 2, textAlign: mine ? "right" : "left", marginRight: mine ? 4 : 0, marginLeft: mine ? 0 : 4 }}>
+                  {new Date(m.createdAt).toLocaleTimeString("es", { hour: "2-digit", minute: "2-digit" })}
+                </div>
+              </div>
+            );
+          })}
+          <div ref={msgEndRef} />
+        </div>
+
+        <div style={{ padding: "10px 18px", borderTop: `1px solid ${C.b1}`, background: C.w, display: "flex", gap: 8 }}>
+          <input value={msgText} onChange={e => setMsgText(e.target.value)} onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
+            placeholder="Escribí un mensaje..." style={{ flex: 1, padding: "10px 14px", borderRadius: 20, border: `1.5px solid ${C.b1}`, background: C.bg, color: C.t1, fontSize: 13, fontFamily: "inherit", outline: "none" }} />
+          <button onClick={handleSend} disabled={sending || !msgText.trim()} style={{ width: 40, height: 40, borderRadius: 20, background: msgText.trim() ? C.pri : C.b1, border: "none", cursor: msgText.trim() ? "pointer" : "default", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            {Ic.send(C.w, 16)}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Conversation list view
+  return (
+    <div style={{ flex: 1, overflow: "auto", padding: 18 }}>
+      <div style={{ fontSize: 20, fontWeight: 800, marginBottom: 18, letterSpacing: -0.3 }}>Mensajes</div>
+
+      {loading ? <div style={{ textAlign: "center", padding: 40, color: C.t3, fontSize: 13 }}>Cargando...</div> :
+        convs.length === 0 ? <div style={{ textAlign: "center", padding: 40, color: C.t3, fontSize: 13 }}>Sin conversaciones aún.</div> :
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {convs.map(c => (
+              <button key={c.id} onClick={() => openConv(c)} style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: 12, padding: 14, cursor: "pointer", fontFamily: "inherit", textAlign: "left", display: "flex", alignItems: "center", gap: 12, boxShadow: C.sh, width: "100%" }}>
+                <div style={{ width: 40, height: 40, borderRadius: 20, background: c.freight ? C.priPale : C.accPale, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  {c.freight ? Ic.truck(C.pri, 18) : Ic.msg(C.acc, 18)}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: C.t1 }}>{getConvName(c)}</div>
+                  <div style={{ fontSize: 11, color: C.t3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{getLastMsg(c)}</div>
+                </div>
+              </button>
+            ))}
+          </div>
+      }
     </div>
   );
 }
@@ -1059,9 +1455,13 @@ export default function Tolvink() {
       {screen==="list" && <ListScreen freights={fh.freights} onNav={nav}/>}
       {screen==="detail" && <DetailScreen user={auth.user} freight={curFreight} perms={perms} onBack={()=>setScreen("list")} onAction={handleAction}/>}
       {screen==="new" && <NewScreen user={auth.user} lots={catalog.lots} plants={catalog.plants} onBack={()=>setScreen("home")} onCreate={handleCreate} submitting={submitting}/>}
-      {screen==="profile" && <ProfileScreen user={auth.user} perms={perms} onLogout={auth.logout}/>}
+      {screen==="profile" && <ProfileScreen user={auth.user} perms={perms} onLogout={auth.logout} onNav={nav}/>}
+      {screen==="trucks" && <TrucksScreen onBack={()=>setScreen("profile")}/>}
+      {screen==="fields" && <FieldsScreen onBack={()=>setScreen("profile")}/>}
+      {screen==="access" && <AccessScreen onBack={()=>setScreen("profile")}/>}
+      {screen==="chats" && <ChatsScreen user={auth.user}/>}
 
-      <Nav active={screen==="detail"?"list":screen} onChange={nav}/>
+      <Nav active={["detail"].includes(screen)?"list":["trucks","fields","access"].includes(screen)?"profile":screen} onChange={nav}/>
 
       {modal?.type==="assign" && <AssignModal freight={modal.freight} transporters={catalog.transporters} onClose={()=>setModal(null)} onConfirm={t=>handleAssign(modal.freight.id,t)}/>}
       {modal?.type==="truck_select" && <TruckSelectModal freight={modal.freight} trucks={catalog.trucks} onClose={()=>setModal(null)} onConfirm={t=>handleAcceptWithTruck(modal.freight.id,t)}/>}
