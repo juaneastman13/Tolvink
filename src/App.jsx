@@ -1004,18 +1004,19 @@ function LocationPicker({ label, value, onChange }) {
   useEffect(() => {
     if (!showMap || !mapRef.current) return;
     let cancelled = false;
-    (async () => {
+
+    const initMap = async (startCenter, startZoom) => {
       const maps = await loadGMaps();
       if (cancelled) return;
-      const center = value?.lat && value?.lng ? { lat: value.lat, lng: value.lng } : { lat: -34.6, lng: -58.4 };
       const map = new maps.Map(mapRef.current, {
-        zoom: value?.lat ? 13 : 6, center,
+        zoom: startZoom, center: startCenter,
         disableDefaultUI: true, zoomControl: true, mapTypeControl: false,
         streetViewControl: false, fullscreenControl: false,
+        gestureHandling: "greedy",
       });
       mapObjRef.current = map;
 
-      const marker = new maps.Marker({ position: center, map, draggable: true });
+      const marker = new maps.Marker({ position: startCenter, map, draggable: true });
       markerRef.current = marker;
 
       marker.addListener("dragend", () => {
@@ -1058,7 +1059,41 @@ function LocationPicker({ label, value, onChange }) {
           }
         });
       }
-    })();
+    };
+
+    // If we already have a value, use it
+    if (value?.lat && value?.lng) {
+      initMap({ lat: value.lat, lng: value.lng }, 13);
+    } else {
+      // Try to get current location
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            if (cancelled) return;
+            const lat = pos.coords.latitude;
+            const lng = pos.coords.longitude;
+            initMap({ lat, lng }, 14);
+            // Auto-set the location and reverse geocode
+            const maps = window.google?.maps;
+            if (maps) {
+              new maps.Geocoder().geocode({ location: { lat, lng } }, (results, status) => {
+                const a = status === "OK" && results[0] ? results[0].formatted_address : "";
+                setAddr(a);
+                onChange({ lat, lng, address: a });
+              });
+            }
+          },
+          () => {
+            // Geolocation denied/failed — fallback to Uruguay center
+            if (!cancelled) initMap({ lat: -34.6, lng: -56.2 }, 6);
+          },
+          { enableHighAccuracy: true, timeout: 5000 }
+        );
+      } else {
+        initMap({ lat: -34.6, lng: -56.2 }, 6);
+      }
+    }
+
     return () => { cancelled = true; };
   }, [showMap]);
 
@@ -1124,6 +1159,7 @@ function FreightMap({ freightId, originLat, originLng, destLat, destLng, originN
           mapTypeControl: false,
           streetViewControl: false,
           fullscreenControl: true,
+          gestureHandling: "greedy",
           styles: [
             { featureType: "poi", stylers: [{ visibility: "off" }] },
             { featureType: "transit", stylers: [{ visibility: "off" }] },
