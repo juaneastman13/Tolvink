@@ -436,6 +436,36 @@ function Toast({ msg, type="ok", onClose }) {
   return <div style={{ position:"fixed", top:"max(20px, env(safe-area-inset-top))", left:"50%", transform:"translateX(-50%)", zIndex:200, background:cfg.bg, color:C.w, padding:"11px 22px", borderRadius:12, fontSize:13, fontWeight:600, boxShadow:C.shLg, display:"flex", alignItems:"center", gap:8, animation:"fadeIn 0.3s ease", maxWidth:"calc(100vw - 40px)" }}>{cfg.ic} {msg}</div>;
 }
 
+// ======================== ATTACH MENU (action sheet) ==================
+
+function AttachMenu({ open, onClose, onCamera, onGallery, onFiles }) {
+  if (!open) return null;
+  return (
+    <>
+      <div onClick={onClose} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.35)", zIndex:150, animation:"fadeIn 0.15s ease" }} />
+      <div style={{ position:"fixed", bottom:0, left:0, right:0, zIndex:151, background:C.w, borderRadius:"18px 18px 0 0", padding:"8px 16px max(16px, env(safe-area-inset-bottom))", boxShadow:"0 -4px 24px rgba(0,0,0,0.12)", animation:"sheetUp 0.2s ease" }}>
+        <style>{`@keyframes sheetUp{from{transform:translateY(100%)}to{transform:translateY(0)}}@keyframes fadeIn{from{opacity:0}to{opacity:1}}`}</style>
+        <div style={{ width:36, height:4, borderRadius:2, background:C.b1, margin:"0 auto 12px" }} />
+        <div style={{ fontSize:13, fontWeight:700, color:C.t1, marginBottom:12, textAlign:"center" }}>Adjuntar</div>
+        {[
+          { icon:Ic.cam(C.acc,22), label:"Tomar foto", sub:"Usar cámara del dispositivo", action:onCamera },
+          { icon:Ic.img(C.pri,22), label:"Galería", sub:"Seleccionar de imágenes", action:onGallery },
+          { icon:Ic.doc(C.info,22), label:"Archivo", sub:"PDF, DOC, imágenes y más", action:onFiles },
+        ].map((opt,i) => (
+          <button key={i} onClick={()=>{opt.action();onClose();}} style={{ display:"flex", alignItems:"center", gap:14, width:"100%", padding:"14px 12px", border:"none", borderRadius:12, background:"none", cursor:"pointer", fontFamily:"inherit", WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
+            <div style={{ width:44, height:44, borderRadius:12, background:C.bg, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{opt.icon}</div>
+            <div style={{ textAlign:"left" }}>
+              <div style={{ fontSize:14, fontWeight:600, color:C.t1 }}>{opt.label}</div>
+              <div style={{ fontSize:11, color:C.t3, marginTop:1 }}>{opt.sub}</div>
+            </div>
+          </button>
+        ))}
+        <button onClick={onClose} style={{ width:"100%", padding:"13px 0", marginTop:4, border:"none", borderRadius:12, background:C.bg, fontSize:14, fontWeight:600, color:C.t2, cursor:"pointer", fontFamily:"inherit" }}>Cancelar</button>
+      </div>
+    </>
+  );
+}
+
 // ======================== BOTTOM NAV =================================
 
 function Nav({ active, onChange, unread=0, pendingCount=0, canRequest=false, onNew }) {
@@ -1788,8 +1818,12 @@ function DocsGallery({ documents }) {
 // ======================== FREIGHT FILE UPLOAD (multi-source) ===========
 
 function FreightFileUpload({ freightId, step, onUploaded }) {
-  const [files, setFiles] = useState([]); // { file, preview, name, uploading, done, error }
+  const [files, setFiles] = useState([]);
   const [uploadingAll, setUploadingAll] = useState(false);
+  const [showAttach, setShowAttach] = useState(false);
+  const camRef = useRef(null);
+  const galRef = useRef(null);
+  const docRef = useRef(null);
 
   const addFiles = (fileList, fromCamera = false) => {
     const newFiles = Array.from(fileList).filter(f => f.size <= 15 * 1024 * 1024).map(f => ({
@@ -1853,21 +1887,19 @@ function FreightFileUpload({ freightId, step, onUploaded }) {
         </div>
       )}
 
-      {/* Source buttons */}
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: pending.length > 0 ? 10 : 0 }}>
-        <label style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "9px 12px", borderRadius: 10, border: `1.5px dashed ${C.b1}`, background: C.bg, cursor: "pointer", fontSize: 11, fontWeight: 600, color: C.t2 }}>
-          {Ic.cam(C.t2, 14)} Cámara
-          <input type="file" accept="image/*" capture="environment" onChange={e => { if (e.target.files?.length) addFiles(e.target.files, true); e.target.value = ""; }} style={{ display: "none" }} />
-        </label>
-        <label style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "9px 12px", borderRadius: 10, border: `1.5px dashed ${C.b1}`, background: C.bg, cursor: "pointer", fontSize: 11, fontWeight: 600, color: C.t2 }}>
-          {Ic.img(C.t2, 14)} Galería
-          <input type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={e => { if (e.target.files?.length) addFiles(e.target.files); e.target.value = ""; }} style={{ display: "none" }} />
-        </label>
-        <label style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "9px 12px", borderRadius: 10, border: `1.5px dashed ${C.b1}`, background: C.bg, cursor: "pointer", fontSize: 11, fontWeight: 600, color: C.t2 }}>
-          {Ic.doc(C.t2, 14)} Archivos
-          <input type="file" accept="image/*,.pdf,.doc,.docx,.xlsx" multiple onChange={e => { if (e.target.files?.length) addFiles(e.target.files); e.target.value = ""; }} style={{ display: "none" }} />
-        </label>
+      {/* Hidden file inputs */}
+      <input ref={camRef} type="file" accept="image/*" capture="environment" onChange={e => { if (e.target.files?.length) addFiles(e.target.files, true); e.target.value = ""; }} style={{ display: "none" }} />
+      <input ref={galRef} type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={e => { if (e.target.files?.length) addFiles(e.target.files); e.target.value = ""; }} style={{ display: "none" }} />
+      <input ref={docRef} type="file" accept="image/*,.pdf,.doc,.docx,.xlsx" multiple onChange={e => { if (e.target.files?.length) addFiles(e.target.files); e.target.value = ""; }} style={{ display: "none" }} />
+
+      {/* Single attach button */}
+      <div style={{ marginBottom: pending.length > 0 ? 10 : 0 }}>
+        <button onClick={() => setShowAttach(true)} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "10px 16px", borderRadius: 10, border: `1.5px dashed ${C.b1}`, background: C.bg, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 600, color: C.t2 }}>
+          {Ic.clip(C.t2, 16)} Adjuntar archivo
+        </button>
       </div>
+
+      <AttachMenu open={showAttach} onClose={() => setShowAttach(false)} onCamera={() => camRef.current?.click()} onGallery={() => galRef.current?.click()} onFiles={() => docRef.current?.click()} />
 
       {/* Upload button */}
       {pending.length > 0 && (
@@ -2148,7 +2180,11 @@ function NewScreen({ user, lots, plants, fields, trucks, onBack, onCreate, dupli
   const [submitting, setSubmitting] = useState(false);
   const [fieldLots, setFieldLots] = useState([]);
   const [loadingLots, setLoadingLots] = useState(false);
-  const [photos, setPhotos] = useState([]); // {file, preview, uploading}
+  const [photos, setPhotos] = useState([]);
+  const [showAttach, setShowAttach] = useState(false);
+  const nfCamRef = useRef(null);
+  const nfGalRef = useRef(null);
+  const nfDocRef = useRef(null);
   const u = f => setForm(p=>({...p,...f}));
 
   // Load lots when field changes
@@ -2330,31 +2366,25 @@ function NewScreen({ user, lots, plants, fields, trucks, onBack, onCreate, dupli
 
         {/* Photo/file attachments */}
         <div>
-          <label style={{ fontSize:10.5, fontWeight:600, color:C.t2, marginBottom:8, display:"flex", alignItems:"center", gap:4, textTransform:"uppercase", letterSpacing:0.6 }}>{Ic.cam(C.acc,14)} Adjuntar fotos (opcional)</label>
+          <label style={{ fontSize:10.5, fontWeight:600, color:C.t2, marginBottom:8, display:"flex", alignItems:"center", gap:4, textTransform:"uppercase", letterSpacing:0.6 }}>{Ic.clip(C.acc,14)} Adjuntar archivos (opcional)</label>
           {photos.length > 0 && (
             <div style={{ display:"flex", gap:8, flexWrap:"wrap", marginBottom:8 }}>
               {photos.map((p,i)=>(
                 <div key={i} style={{ position:"relative", width:72, height:72, borderRadius:10, overflow:"hidden", border:`1px solid ${C.b1}` }}>
-                  <img src={p.preview} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }}/>
+                  {p.preview ? <img src={p.preview} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }}/> : <div style={{ width:"100%", height:"100%", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", background:C.bg, padding:4 }}>{Ic.doc(C.pri,18)}<span style={{fontSize:7,color:C.t3,textAlign:"center",marginTop:2,wordBreak:"break-all"}}>{(p.name||"").slice(-12)}</span></div>}
                   <button onClick={()=>removePhoto(i)} style={{ position:"absolute", top:2, right:2, width:20, height:20, borderRadius:10, background:C.err, border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>{Ic.cross(C.w,12)}</button>
                 </div>
               ))}
             </div>
           )}
-          <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
-            <label style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"10px 14px", borderRadius:10, border:`1.5px dashed ${C.b1}`, background:C.bg, cursor:"pointer", fontSize:11, fontWeight:600, color:C.t2 }}>
-              {Ic.cam(C.t2,14)} Cámara
-              <input type="file" accept="image/*" capture="environment" onChange={addPhoto} style={{ display:"none" }}/>
-            </label>
-            <label style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"10px 14px", borderRadius:10, border:`1.5px dashed ${C.b1}`, background:C.bg, cursor:"pointer", fontSize:11, fontWeight:600, color:C.t2 }}>
-              {Ic.img(C.t2,14)} Galería
-              <input type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={e=>{Array.from(e.target.files||[]).forEach(f=>{if(f.type.startsWith('image/')&&f.size<=10*1024*1024)setPhotos(prev=>[...prev,{file:f,preview:URL.createObjectURL(f)}])});e.target.value="";}} style={{ display:"none" }}/>
-            </label>
-            <label style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"10px 14px", borderRadius:10, border:`1.5px dashed ${C.b1}`, background:C.bg, cursor:"pointer", fontSize:11, fontWeight:600, color:C.t2 }}>
-              {Ic.doc(C.t2,14)} Archivos
-              <input type="file" accept="image/*,.pdf,.doc,.docx" multiple onChange={e=>{Array.from(e.target.files||[]).forEach(f=>{if(f.size<=10*1024*1024)setPhotos(prev=>[...prev,{file:f,preview:f.type.startsWith('image/')?URL.createObjectURL(f):null,name:f.name}])});e.target.value="";}} style={{ display:"none" }}/>
-            </label>
-          </div>
+          {/* Hidden inputs */}
+          <input ref={nfCamRef} type="file" accept="image/*" capture="environment" onChange={addPhoto} style={{ display:"none" }}/>
+          <input ref={nfGalRef} type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={e=>{Array.from(e.target.files||[]).forEach(f=>{if(f.type.startsWith('image/')&&f.size<=10*1024*1024)setPhotos(prev=>[...prev,{file:f,preview:URL.createObjectURL(f)}])});e.target.value="";}} style={{ display:"none" }}/>
+          <input ref={nfDocRef} type="file" accept="image/*,.pdf,.doc,.docx" multiple onChange={e=>{Array.from(e.target.files||[]).forEach(f=>{if(f.size<=10*1024*1024)setPhotos(prev=>[...prev,{file:f,preview:f.type.startsWith('image/')?URL.createObjectURL(f):null,name:f.name}])});e.target.value="";}} style={{ display:"none" }}/>
+          <button onClick={()=>setShowAttach(true)} style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"10px 16px", borderRadius:10, border:`1.5px dashed ${C.b1}`, background:C.bg, cursor:"pointer", fontFamily:"inherit", fontSize:12, fontWeight:600, color:C.t2 }}>
+            {Ic.clip(C.t2,16)} Adjuntar archivo
+          </button>
+          <AttachMenu open={showAttach} onClose={()=>setShowAttach(false)} onCamera={()=>nfCamRef.current?.click()} onGallery={()=>nfGalRef.current?.click()} onFiles={()=>nfDocRef.current?.click()} />
         </div>
 
         <Btn full icon={Ic.chk(C.w,16)} disabled={submitting} onClick={submit}>{submitting?"Enviando...":"Solicitar Flete"}</Btn>
@@ -2841,7 +2871,10 @@ function ChatsScreen({ user, openConvId, onConvOpened }) {
 
   const [uploading, setUploading] = useState(false);
   const chatFileRef = useRef(null);
-  const [chatTab, setChatTab] = useState("chat"); // chat | files
+  const chatCamRef = useRef(null);
+  const chatGalRef = useRef(null);
+  const [chatTab, setChatTab] = useState("chat");
+  const [showChatAttach, setShowChatAttach] = useState(false);
 
   const handleFileUpload = async (e) => {
     const file = e.target.files?.[0];
@@ -3078,10 +3111,13 @@ function ChatsScreen({ user, openConvId, onConvOpened }) {
             )}
 
             <div style={{ padding: "10px 18px", borderTop: `1px solid ${C.b1}`, background: C.w, display: "flex", gap: 8, alignItems: "center" }}>
+              <input ref={chatCamRef} type="file" accept="image/*" capture="environment" onChange={handleFileUpload} style={{ display: "none" }} />
+              <input ref={chatGalRef} type="file" accept="image/jpeg,image/png,image/webp" onChange={handleFileUpload} style={{ display: "none" }} />
               <input ref={chatFileRef} type="file" accept="image/*,.pdf,.doc,.docx,.xlsx,.xls,.txt" onChange={handleFileUpload} style={{ display: "none" }} />
-              <button onClick={() => chatFileRef.current?.click()} disabled={uploading} style={{ width: 40, height: 40, borderRadius: 20, background: C.bg, border: `1px solid ${C.b1}`, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              <button onClick={() => setShowChatAttach(true)} disabled={uploading} style={{ width: 40, height: 40, borderRadius: 20, background: C.bg, border: `1px solid ${C.b1}`, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                 {Ic.clip(C.t2, 18)}
               </button>
+              <AttachMenu open={showChatAttach} onClose={() => setShowChatAttach(false)} onCamera={() => chatCamRef.current?.click()} onGallery={() => chatGalRef.current?.click()} onFiles={() => chatFileRef.current?.click()} />
               <input value={msgText} onChange={e => setMsgText(e.target.value)} onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
                 placeholder="Escribí un mensaje..." style={{ flex: 1, padding: "10px 14px", borderRadius: 20, border: `1.5px solid ${C.b1}`, background: C.bg, color: C.t1, fontSize: 13, fontFamily: "inherit", outline: "none" }} />
               <button onClick={handleSend} disabled={sending || !msgText.trim()} style={{ width: 40, height: 40, borderRadius: 20, background: msgText.trim() ? C.pri : C.b1, border: "none", cursor: msgText.trim() ? "pointer" : "default", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
