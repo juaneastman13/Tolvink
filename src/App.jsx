@@ -3,6 +3,7 @@ import {
   apiLogin, apiRegister, apiLogout, apiListFreights, apiGetFreight,
   apiCreateFreight, apiAssignFreight, apiRespondFreight,
   apiStartFreight, apiFinishFreight, apiCancelFreight,
+  apiGetPlants, apiGetLots, apiGetTransportCompanies,
   getToken, getSavedUser, setAuthFailHandler, clearAuth,
 } from "./api";
 
@@ -170,23 +171,29 @@ function getActions(status, userType, role) {
 
 const GRANOS = ["Soja","Maíz","Trigo","Girasol","Sorgo","Cebada"];
 
-// ======================== ENTITIES ===================================
+// ======================== CATALOG HOOK (Real API) ====================
+function useCatalog(user) {
+  const [plants, setPlants] = useState([]);
+  const [lots, setLots] = useState([]);
+  const [transporters, setTransporters] = useState([]);
+  const [loading, setLoading] = useState(false);
 
-const PLANTS = [
-  { id:"pl1", name:"SOFOVAL",       lat:-34.35, lng:-56.51 },
-  { id:"pl2", name:"FADISOL",       lat:-34.33, lng:-56.52 },
-  { id:"pl3", name:"CRADECO",       lat:-34.36, lng:-56.50 },
-  { id:"pl4", name:"AGROTERRA",     lat:-34.34, lng:-56.49 },
-  { id:"pl5", name:"MGAP PALMIRA",  lat:-34.38, lng:-57.22 },
-  { id:"pl6", name:"MONTEVIDEO",    lat:-34.88, lng:-56.17 },
-];
+  useEffect(()=>{
+    if(!user) return;
+    setLoading(true);
+    Promise.all([
+      apiGetPlants().catch(()=>[]),
+      apiGetLots().catch(()=>[]),
+      apiGetTransportCompanies().catch(()=>[]),
+    ]).then(([p,l,t])=>{
+      setPlants(p||[]);
+      setLots(l||[]);
+      setTransporters(t||[]);
+    }).finally(()=>setLoading(false));
+  },[user]);
 
-const LOTS = [
-  { id:"lo1", name:"Lote Norte — 42ha", producerId:"e3", lat:-33.89, lng:-60.57 },
-  { id:"lo2", name:"Lote Sur — 28ha",   producerId:"e3", lat:-33.92, lng:-60.55 },
-  { id:"lo3", name:"Lote Este — 35ha",  producerId:"e3", lat:-33.88, lng:-60.52 },
-  { id:"lo4", name:"Lote Cañada — 50ha",producerId:"e5", lat:-33.04, lng:-61.17 },
-];
+  return { plants, lots, transporters, loading };
+}
 
 
 
@@ -718,18 +725,16 @@ function DetailScreen({ user, freight, perms, onBack, onAction }) {
 
 // ======================== NEW FREIGHT ================================
 
-function NewScreen({ user, onBack, onCreate }) {
+function NewScreen({ user, lots, plants, onBack, onCreate }) {
   const [form, setForm] = useState({ grain:"", tons:"", lotId:"", plantId:"", loadDate:"", loadTime:"", notes:"" });
   const [errs, setErrs] = useState({});
   const [touched, setTouched] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const u = f => setForm(p=>({...p,...f}));
 
-  const userLots = LOTS.filter(l=>l.producerId===user.entityId);
-  const lotOpts = userLots.map(l=>({ value:l.id, label:l.name, sub:`${l.lat}, ${l.lng}` }));
-  const plantOpts = PLANTS.map(p=>({ value:p.id, label:p.name }));
-  const selectedLot = LOTS.find(l=>l.id===form.lotId);
-  const selectedPlant = PLANTS.find(p=>p.id===form.plantId);
+  const lotOpts = (lots||[]).map(l=>({ value:l.id, label:l.name, sub:l.lat?`${l.lat}, ${l.lng}`:'' }));
+  const plantOpts = (plants||[]).map(p=>({ value:p.id, label:p.name }));
+  const selectedLot = (lots||[]).find(l=>l.id===form.lotId);
 
   const submit = () => {
     setTouched(true);
@@ -825,9 +830,9 @@ function ProfileScreen({ user, perms, onLogout }) {
 
 // ======================== MODALS =====================================
 
-function AssignModal({ freight, onClose, onConfirm }) {
+function AssignModal({ freight, transporters, onClose, onConfirm }) {
   const [t,setT] = useState("");
-  const ts = ["Transportes del Sur","Logística Norte","Fletes Pampeanos"];
+  const ts = transporters||[];
   return (
     <div style={{position:"fixed",inset:0,background:C.bgOverlay,display:"flex",alignItems:"flex-end",justifyContent:"center",zIndex:100,padding:16}}>
       <div style={{background:C.w,borderRadius:18,padding:22,width:"100%",maxWidth:400,boxShadow:C.shLg}}>
@@ -835,7 +840,8 @@ function AssignModal({ freight, onClose, onConfirm }) {
         <div style={{fontSize:12,color:C.t2,marginBottom:18}}>{freight.grain} · {freight.tons}tn · {freight.originName}</div>
         <label style={{fontSize:10.5,fontWeight:600,color:C.t2,marginBottom:8,display:"block",textTransform:"uppercase",letterSpacing:0.6}}>Transportista</label>
         <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:18}}>
-          {ts.map(x=><button key={x} onClick={()=>setT(x)} style={{padding:"13px 14px",borderRadius:10,textAlign:"left",fontFamily:"inherit",border:`1.5px solid ${t===x?C.pri:C.b1}`,background:t===x?C.priPale:C.w,color:t===x?C.pri:C.t2,fontSize:13.5,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",gap:8}}>{Ic.truck(t===x?C.pri:C.t3,16)} {x}</button>)}
+          {ts.length===0 && <div style={{fontSize:12,color:C.t3,padding:10}}>No hay transportistas disponibles</div>}
+          {ts.map(x=><button key={x.id} onClick={()=>setT(x.id)} style={{padding:"13px 14px",borderRadius:10,textAlign:"left",fontFamily:"inherit",border:`1.5px solid ${t===x.id?C.pri:C.b1}`,background:t===x.id?C.priPale:C.w,color:t===x.id?C.pri:C.t2,fontSize:13.5,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",gap:8}}>{Ic.truck(t===x.id?C.pri:C.t3,16)} {x.name}</button>)}
         </div>
         <div style={{display:"flex",gap:8}}><Btn full v="ghost" onClick={onClose}>Cancelar</Btn><Btn full disabled={!t} onClick={()=>onConfirm(t)}>Asignar</Btn></div>
       </div>
@@ -862,6 +868,7 @@ function ReasonModal({ title, freight, btnLabel, btnType="err", onClose, onConfi
 export default function Tolvink() {
   const auth = useAuth();
   const fh = useFreights(auth.user);
+  const catalog = useCatalog(auth.user);
   const [screen, setScreen] = useState("home");
   const [selFreight, setSelFreight] = useState(null);
   const [modal, setModal] = useState(null);
@@ -883,9 +890,9 @@ export default function Tolvink() {
     if(action==="finish") (async()=>{ const r=await fh.finish(fId); if(r.ok) show("Viaje finalizado"); else show(r.error,"err"); })();
   };
 
-  const handleAssign = async (fId, transporterName)=>{
-    const r = await fh.assign(fId, transporterName);
-    if(r.ok){ setModal(null); show("Asignado a "+transporterName); } else show(r.error,"err");
+  const handleAssign = async (fId, transportCompanyId)=>{
+    const r = await fh.assign(fId, transportCompanyId);
+    if(r.ok){ setModal(null); show("Transportista asignado"); } else show(r.error,"err");
   };
 
   const handleReasonAction = async (fId,reason,action)=>{
@@ -919,12 +926,12 @@ export default function Tolvink() {
       {screen==="home" && <HomeScreen user={auth.user} freights={fh.freights} perms={perms} onNav={nav}/>}
       {screen==="list" && <ListScreen freights={fh.freights} onNav={nav}/>}
       {screen==="detail" && <DetailScreen user={auth.user} freight={curFreight} perms={perms} onBack={()=>setScreen("list")} onAction={handleAction}/>}
-      {screen==="new" && <NewScreen user={auth.user} onBack={()=>setScreen("home")} onCreate={handleCreate} submitting={submitting}/>}
+      {screen==="new" && <NewScreen user={auth.user} lots={catalog.lots} plants={catalog.plants} onBack={()=>setScreen("home")} onCreate={handleCreate} submitting={submitting}/>}
       {screen==="profile" && <ProfileScreen user={auth.user} perms={perms} onLogout={auth.logout}/>}
 
       <Nav active={screen==="detail"?"list":screen} onChange={nav}/>
 
-      {modal?.type==="assign" && <AssignModal freight={modal.freight} onClose={()=>setModal(null)} onConfirm={t=>handleAssign(modal.freight.id,t)}/>}
+      {modal?.type==="assign" && <AssignModal freight={modal.freight} transporters={catalog.transporters} onClose={()=>setModal(null)} onConfirm={t=>handleAssign(modal.freight.id,t)}/>}
       {modal?.type==="reason" && <ReasonModal title={modal.title} freight={modal.freight} btnLabel={modal.btnLabel} onClose={()=>setModal(null)} onConfirm={r=>handleReasonAction(modal.freight.id,r,modal.action)}/>}
       {toast && <Toast msg={toast.msg} type={toast.type} onClose={()=>setToast(null)}/>}
     </div>

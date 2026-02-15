@@ -40,3 +40,6 @@ export async function apiRespondFreight(id,b) { return api(`/freights/${id}/resp
 export async function apiStartFreight(id) { return api(`/freights/${id}/start`,{body:{}}); }
 export async function apiFinishFreight(id) { return api(`/freights/${id}/finish`,{body:{}}); }
 export async function apiCancelFreight(id,reason) { return api(`/freights/${id}/cancel`,{body:{reason}}); }
+export async function apiGetPlants() { return api('/catalog/plants'); }
+export async function apiGetLots() { return api('/catalog/lots'); }
+export async function apiGetTransportCompanies() { return api('/catalog/transport-companies'); }
