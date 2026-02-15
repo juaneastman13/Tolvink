@@ -73,9 +73,12 @@ export async function apiListAccessPlants() { return api('/plant-access/plants')
 
 // Conversations
 export async function apiStartConversation(b) { return api('/conversations/start',{body:b}); }
-export async function apiListConversations() { return api('/conversations'); }
+export async function apiListConversations(search) { const q=search?`?search=${encodeURIComponent(search)}`:''; return api(`/conversations${q}`); }
 export async function apiGetMessages(convId) { return api(`/conversations/${convId}/messages`); }
 export async function apiSendMessage(convId,text) { return api(`/conversations/${convId}/messages`,{body:{text}}); }
+
+// Documents — register in DB after uploading to storage
+export async function apiAddDocument(freightId, body) { return api(`/freights/${freightId}/documents`,{body}); }
 
 // Photo Upload — direct to Supabase Storage (public bucket)
 export async function uploadPhoto(file, freightId, step) {

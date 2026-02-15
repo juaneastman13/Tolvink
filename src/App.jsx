@@ -9,7 +9,7 @@ import {
   apiGetFields, apiCreateField, apiCreateLot,
   apiGrantAccess, apiRevokeAccess, apiListAccessProducers, apiListAccessPlants,
   apiStartConversation, apiListConversations, apiGetMessages, apiSendMessage,
-  uploadPhoto,
+  uploadPhoto, apiAddDocument,
   getToken, getSavedUser, setAuthFailHandler, clearAuth,
 } from "./api";
 
@@ -702,6 +702,7 @@ function PhotoUpload({ freightId, step, label, onUploaded }) {
   const [uploading, setUploading] = useState(false);
   const [preview, setPreview] = useState(null);
   const [error, setError] = useState(null);
+  const [done, setDone] = useState(false);
   const inputRef = useRef(null);
 
   const handleFile = async (e) => {
@@ -715,6 +716,9 @@ function PhotoUpload({ freightId, step, label, onUploaded }) {
     setError(null);
     try {
       const url = await uploadPhoto(file, freightId, step);
+      // Register in DB so all participants can see it
+      await apiAddDocument(freightId, { name: file.name, url, type: 'photo', step });
+      setDone(true);
       if (onUploaded) onUploaded({ url, name: file.name, step });
     } catch (err) {
       setError(err.message || 'Error al subir');
@@ -731,7 +735,7 @@ function PhotoUpload({ freightId, step, label, onUploaded }) {
         <div style={{ position: "relative", borderRadius: 10, overflow: "hidden", border: `1px solid ${C.b1}` }}>
           <img src={preview} alt="foto" style={{ width: "100%", height: 120, objectFit: "cover", display: "block" }} />
           {uploading && <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center", color: C.w, fontSize: 12, fontWeight: 600 }}>Subiendo...</div>}
-          {!uploading && <div style={{ position: "absolute", top: 6, right: 6, background: C.ok, borderRadius: 12, padding: "2px 8px", fontSize: 10, color: C.w, fontWeight: 600 }}>Subida</div>}
+          {done && <div style={{ position: "absolute", top: 6, right: 6, background: C.ok, borderRadius: 12, padding: "2px 8px", fontSize: 10, color: C.w, fontWeight: 600 }}>Guardada</div>}
         </div>
       ) : (
         <button onClick={() => inputRef.current?.click()} disabled={uploading}
@@ -769,7 +773,7 @@ function DocsGallery({ documents }) {
 
 // ======================== FREIGHT DETAIL ==============================
 
-function DetailScreen({ user, freight, perms, onBack, onAction, onChat }) {
+function DetailScreen({ user, freight, perms, onBack, onAction, onChat, onRefresh }) {
   if(!freight) return null;
   const st = stCfg(freight.status);
   const actions = getActions(freight.status, user.userType, user.role);
@@ -919,6 +923,7 @@ function DetailScreen({ user, freight, perms, onBack, onAction, onChat }) {
           <PhotoUpload freightId={freight.id}
             step={freight.status==="pending_assignment"?"request":freight.status==="in_progress"||freight.status==="loaded"?"load_confirmation":"assignment"}
             label={freight.status==="in_progress"?"Foto de carga":freight.status==="loaded"?"Foto de entrega":"Adjuntar documento"}
+            onUploaded={()=>{ if(onRefresh) onRefresh(freight.id); }}
           />
         </div>
       )}
@@ -1623,7 +1628,7 @@ export default function Tolvink() {
 
       {screen==="home" && <HomeScreen user={auth.user} freights={fh.freights} perms={perms} onNav={nav}/>}
       {screen==="list" && <ListScreen freights={fh.freights} onNav={nav}/>}
-      {screen==="detail" && <DetailScreen user={auth.user} freight={curFreight} perms={perms} onBack={()=>setScreen("list")} onAction={handleAction} onChat={(convId)=>{if(convId){setChatConvId(convId);setScreen("chats");}}}/>}
+      {screen==="detail" && <DetailScreen user={auth.user} freight={curFreight} perms={perms} onBack={()=>setScreen("list")} onAction={handleAction} onChat={(convId)=>{if(convId){setChatConvId(convId);setScreen("chats");}}} onRefresh={(id)=>fh.refresh(id)}/>}
       {screen==="new" && <NewScreen user={auth.user} lots={catalog.lots} plants={catalog.plants} fields={catalog.fields} onBack={()=>setScreen("home")} onCreate={handleCreate} submitting={submitting}/>}
       {screen==="profile" && <ProfileScreen user={auth.user} perms={perms} onLogout={auth.logout} onNav={nav}/>}
       {screen==="trucks" && <TrucksScreen onBack={()=>setScreen("profile")}/>}
