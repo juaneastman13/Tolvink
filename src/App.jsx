@@ -4,6 +4,7 @@ import {
   apiCreateFreight, apiAssignFreight, apiRespondFreight,
   apiStartFreight, apiFinishFreight, apiCancelFreight,
   apiConfirmLoaded, apiConfirmFinished, apiAuthorizeFreight,
+  apiSendTracking, apiGetLastPosition,
   apiGetPlants, apiGetLots, apiGetTransportCompanies, apiGetTrucks,
   apiCreateTruck, apiDeactivateTruck,
   apiGetFields, apiCreateField, apiCreateLot, apiGetFieldLots,
@@ -308,8 +309,10 @@ function mapFreight(f) {
     unit:f.items?.[0]?.unit||"toneladas", amount:f.items?.[0]?.amount||0,
     productTypeOther:f.items?.[0]?.productTypeOther||"",
     originLotId:f.originLotId, originName:f.originName||"", originCompanyId:f.originCompanyId||"",
+    originLat:f.originLat?parseFloat(f.originLat):null, originLng:f.originLng?parseFloat(f.originLng):null,
     fieldName:f.field?.name||"", isOwnFleet,
     destPlantId:f.destPlantId, destName:f.destName||"",
+    destLat:f.destLat?parseFloat(f.destLat):null, destLng:f.destLng?parseFloat(f.destLng):null,
     loadDate:f.loadDate?.split("T")[0]||"", loadTime:f.loadTime||"",
     scheduledAt:f.scheduledAt||null,
     requestedBy:f.requestedById, requestedByName:f.requestedBy?.name||"",
@@ -699,6 +702,307 @@ function ListScreen({ freights, onNav }) {
 
 // ======================== PHOTO UPLOAD ================================
 
+// ======================== GOOGLE MAPS ================================
+
+const GMAPS_KEY = "AIzaSyCeRfFUaBJgB7650sTKq_-RujC9jLJtWWw";
+
+function loadGMaps() {
+  return new Promise((resolve, reject) => {
+    if (window.google?.maps) { resolve(window.google.maps); return; }
+    if (document.querySelector('script[src*="maps.googleapis.com"]')) {
+      const check = setInterval(() => { if (window.google?.maps) { clearInterval(check); resolve(window.google.maps); } }, 100);
+      return;
+    }
+    const s = document.createElement("script");
+    s.src = `https://maps.googleapis.com/maps/api/js?key=${GMAPS_KEY}&libraries=geometry,places`;
+    s.async = true; s.defer = true;
+    s.onload = () => resolve(window.google.maps);
+    s.onerror = reject;
+    document.head.appendChild(s);
+  });
+}
+
+// Location Picker: Autocomplete + Map Pin
+function LocationPicker({ label, value, onChange }) {
+  // value = { lat, lng, address }
+  const inputRef = useRef(null);
+  const mapRef = useRef(null);
+  const markerRef = useRef(null);
+  const mapObjRef = useRef(null);
+  const [showMap, setShowMap] = useState(false);
+  const [addr, setAddr] = useState(value?.address || "");
+
+  useEffect(() => {
+    if (!showMap || !mapRef.current) return;
+    let cancelled = false;
+    (async () => {
+      const maps = await loadGMaps();
+      if (cancelled) return;
+      const center = value?.lat && value?.lng ? { lat: value.lat, lng: value.lng } : { lat: -34.6, lng: -58.4 };
+      const map = new maps.Map(mapRef.current, {
+        zoom: value?.lat ? 13 : 6, center,
+        disableDefaultUI: true, zoomControl: true, mapTypeControl: false,
+        streetViewControl: false, fullscreenControl: false,
+      });
+      mapObjRef.current = map;
+
+      const marker = new maps.Marker({ position: center, map, draggable: true });
+      markerRef.current = marker;
+
+      marker.addListener("dragend", () => {
+        const pos = marker.getPosition();
+        const geocoder = new maps.Geocoder();
+        geocoder.geocode({ location: { lat: pos.lat(), lng: pos.lng() } }, (results, status) => {
+          const a = status === "OK" && results[0] ? results[0].formatted_address : "";
+          setAddr(a);
+          onChange({ lat: pos.lat(), lng: pos.lng(), address: a });
+        });
+      });
+
+      map.addListener("click", (e) => {
+        marker.setPosition(e.latLng);
+        const geocoder = new maps.Geocoder();
+        geocoder.geocode({ location: { lat: e.latLng.lat(), lng: e.latLng.lng() } }, (results, status) => {
+          const a = status === "OK" && results[0] ? results[0].formatted_address : "";
+          setAddr(a);
+          onChange({ lat: e.latLng.lat(), lng: e.latLng.lng(), address: a });
+        });
+      });
+
+      // Autocomplete
+      if (inputRef.current) {
+        const autocomplete = new maps.places.Autocomplete(inputRef.current, {
+          componentRestrictions: { country: ["ar", "uy", "br", "py"] },
+          fields: ["geometry", "formatted_address", "name"],
+        });
+        autocomplete.addListener("place_changed", () => {
+          const place = autocomplete.getPlace();
+          if (place.geometry?.location) {
+            const lat = place.geometry.location.lat();
+            const lng = place.geometry.location.lng();
+            const a = place.formatted_address || place.name || "";
+            map.setCenter({ lat, lng });
+            map.setZoom(14);
+            marker.setPosition({ lat, lng });
+            setAddr(a);
+            onChange({ lat, lng, address: a });
+          }
+        });
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [showMap]);
+
+  return (
+    <div style={{ marginBottom: 6 }}>
+      <div style={{ fontSize: 11, fontWeight: 600, color: C.t2, marginBottom: 4 }}>{label || "Ubicación"}</div>
+      <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+        <input ref={inputRef} value={addr} onChange={e => setAddr(e.target.value)}
+          placeholder="Buscar dirección o tocar en el mapa..."
+          style={{ flex: 1, padding: "10px 12px", borderRadius: 8, border: `1.5px solid ${C.b1}`, fontSize: 12.5, fontFamily: "inherit", outline: "none", color: C.t1, background: C.w, boxSizing: "border-box" }}
+          onFocus={() => setShowMap(true)} />
+        <button onClick={() => setShowMap(!showMap)} style={{ padding: "9px 12px", borderRadius: 8, border: `1.5px solid ${value?.lat ? C.ok : C.b1}`, background: value?.lat ? C.okPale : C.w, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 4, fontSize: 11, fontWeight: 600, color: value?.lat ? C.ok : C.t3 }}>
+          {Ic.pin(value?.lat ? C.ok : C.t3, 14)} {value?.lat ? "✓" : "Mapa"}
+        </button>
+      </div>
+      {showMap && (
+        <div style={{ marginTop: 6, borderRadius: 10, overflow: "hidden", border: `1px solid ${C.b1}` }}>
+          <div ref={mapRef} style={{ width: "100%", height: 180 }} />
+          {value?.lat && <div style={{ fontSize: 10, color: C.t3, padding: "4px 8px", background: C.bg }}>{value.lat.toFixed(5)}, {value.lng.toFixed(5)}</div>}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function FreightMap({ freightId, originLat, originLng, destLat, destLng, originName, destName, status, isDriver }) {
+  const mapRef = useRef(null);
+  const mapInstance = useRef(null);
+  const truckMarker = useRef(null);
+  const [routeInfo, setRouteInfo] = useState(null);
+  const [truckPos, setTruckPos] = useState(null);
+  const [tracking, setTracking] = useState(false);
+  const [error, setError] = useState(null);
+
+  const hasCoords = originLat && originLng && destLat && destLng;
+  const isLive = status === "in_progress";
+
+  useEffect(() => {
+    if (!hasCoords || !mapRef.current) return;
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const maps = await loadGMaps();
+        if (cancelled) return;
+
+        const origin = { lat: originLat, lng: originLng };
+        const dest = { lat: destLat, lng: destLng };
+
+        const map = new maps.Map(mapRef.current, {
+          zoom: 7,
+          center: { lat: (originLat + destLat) / 2, lng: (originLng + destLng) / 2 },
+          disableDefaultUI: true,
+          zoomControl: true,
+          mapTypeControl: false,
+          streetViewControl: false,
+          fullscreenControl: true,
+          styles: [
+            { featureType: "poi", stylers: [{ visibility: "off" }] },
+            { featureType: "transit", stylers: [{ visibility: "off" }] },
+          ],
+        });
+        mapInstance.current = map;
+
+        // Origin marker (green)
+        new maps.Marker({
+          position: origin, map,
+          title: originName || "Origen",
+          icon: { path: maps.SymbolPath.CIRCLE, scale: 10, fillColor: "#1A6B37", fillOpacity: 1, strokeColor: "#fff", strokeWeight: 2 },
+        });
+
+        // Destination marker (blue)
+        new maps.Marker({
+          position: dest, map,
+          title: destName || "Destino",
+          icon: { path: maps.SymbolPath.CIRCLE, scale: 10, fillColor: "#003882", fillOpacity: 1, strokeColor: "#fff", strokeWeight: 2 },
+        });
+
+        // Route
+        const directionsService = new maps.DirectionsService();
+        const directionsRenderer = new maps.DirectionsRenderer({
+          map,
+          suppressMarkers: true,
+          polylineOptions: {
+            strokeColor: isLive ? "#FF6A00" : "#1A6B37",
+            strokeWeight: 4,
+            strokeOpacity: 0.8,
+          },
+        });
+
+        directionsService.route({
+          origin, destination: dest,
+          travelMode: maps.TravelMode.DRIVING,
+        }, (result, s) => {
+          if (cancelled) return;
+          if (s === "OK") {
+            directionsRenderer.setDirections(result);
+            const leg = result.routes[0]?.legs[0];
+            if (leg) setRouteInfo({ distance: leg.distance.text, duration: leg.duration.text });
+          }
+        });
+
+      } catch (e) {
+        if (!cancelled) setError("No se pudo cargar el mapa");
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, [hasCoords, originLat, originLng, destLat, destLng, status]);
+
+  // Live tracking — poll last position
+  useEffect(() => {
+    if (!isLive || !freightId || !mapInstance.current) return;
+    let cancelled = false;
+
+    const poll = async () => {
+      try {
+        const pos = await apiGetLastPosition(freightId);
+        if (cancelled || !pos) return;
+        const lat = parseFloat(pos.lat);
+        const lng = parseFloat(pos.lng);
+        setTruckPos({ lat, lng, speed: pos.speed, updatedAt: pos.createdAt });
+
+        const maps = window.google.maps;
+        if (!truckMarker.current) {
+          truckMarker.current = new maps.Marker({
+            position: { lat, lng },
+            map: mapInstance.current,
+            title: "Camión",
+            icon: { url: "data:image/svg+xml," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="#FF6A00" stroke="#fff" stroke-width="1.5"><rect x="1" y="3" width="15" height="13" rx="2"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>'), scaledSize: new maps.Size(36, 36), anchor: new maps.Point(18, 18) },
+            zIndex: 999,
+          });
+        } else {
+          truckMarker.current.setPosition({ lat, lng });
+        }
+      } catch {}
+    };
+
+    poll();
+    const iv = setInterval(poll, 10000);
+    return () => { cancelled = true; clearInterval(iv); };
+  }, [isLive, freightId, mapInstance.current]);
+
+  // Driver sends position
+  useEffect(() => {
+    if (!isDriver || !isLive || !freightId) return;
+    let watchId = null;
+
+    if (navigator.geolocation) {
+      setTracking(true);
+      watchId = navigator.geolocation.watchPosition(
+        async (pos) => {
+          try {
+            await apiSendTracking(freightId, {
+              lat: pos.coords.latitude,
+              lng: pos.coords.longitude,
+              speed: pos.coords.speed || 0,
+              heading: pos.coords.heading || 0,
+            });
+          } catch {}
+        },
+        () => {},
+        { enableHighAccuracy: true, maximumAge: 15000, timeout: 30000 }
+      );
+    }
+
+    return () => {
+      if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+      setTracking(false);
+    };
+  }, [isDriver, isLive, freightId]);
+
+  if (!hasCoords) return null;
+
+  return (
+    <div style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: 12, overflow: "hidden", marginBottom: 12, boxShadow: C.sh }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "10px 14px" }}>
+        {Ic.pin(C.pri, 14)}
+        <span style={{ fontSize: 10.5, fontWeight: 700, color: C.t2, textTransform: "uppercase", letterSpacing: 0.5 }}>Recorrido</span>
+        {routeInfo && (
+          <span style={{ marginLeft: "auto", fontSize: 11, color: C.t1, fontWeight: 600 }}>
+            {routeInfo.distance} · {routeInfo.duration}
+          </span>
+        )}
+      </div>
+      {error ? (
+        <div style={{ padding: 20, textAlign: "center", fontSize: 12, color: C.t3 }}>{error}</div>
+      ) : (
+        <div ref={mapRef} style={{ width: "100%", height: 220 }} />
+      )}
+      <div style={{ padding: "8px 14px", display: "flex", gap: 12, fontSize: 10.5, flexWrap: "wrap", alignItems: "center" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+          <span style={{ width: 8, height: 8, borderRadius: 4, background: "#1A6B37" }} />
+          <span style={{ color: C.t2 }}>{originName}</span>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+          <span style={{ width: 8, height: 8, borderRadius: 4, background: "#003882" }} />
+          <span style={{ color: C.t2 }}>{destName}</span>
+        </div>
+        {isLive && truckPos && (
+          <div style={{ display: "flex", alignItems: "center", gap: 4, marginLeft: "auto" }}>
+            <span style={{ width: 8, height: 8, borderRadius: 4, background: "#FF6A00", animation: "ti 1s infinite" }} />
+            <span style={{ color: C.acc, fontWeight: 600, fontSize: 10 }}>En vivo{truckPos.speed>0?` · ${Math.round(parseFloat(truckPos.speed))} km/h`:""}</span>
+          </div>
+        )}
+        {isLive && tracking && (
+          <div style={{ fontSize: 9, color: C.ok, fontWeight: 600 }}>📡 Enviando ubicación</div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function PhotoUpload({ freightId, step, label, onUploaded }) {
   const [uploading, setUploading] = useState(false);
   const [preview, setPreview] = useState(null);
@@ -817,6 +1121,9 @@ function DetailScreen({ user, freight, perms, onBack, onAction, onChat, onRefres
           </div>
         </div>;
       })()}
+
+      {/* Map */}
+      <FreightMap freightId={freight.id} originLat={freight.originLat} originLng={freight.originLng} destLat={freight.destLat} destLng={freight.destLng} originName={freight.originName} destName={freight.destName} status={freight.status} isDriver={user.userType==="transporter"||(user.userType==="producer"&&freight.isOwnFleet)}/>
 
       {/* Cross-confirmations panel */}
       {(freight.status==="loaded" || freight.status==="in_progress") && (
@@ -1243,9 +1550,11 @@ function FieldsScreen({ onBack }) {
   const [showFieldForm, setShowFieldForm] = useState(false);
   const [fieldName, setFieldName] = useState("");
   const [fieldAddr, setFieldAddr] = useState("");
+  const [fieldLoc, setFieldLoc] = useState(null);
   const [showLotForm, setShowLotForm] = useState(null);
   const [lotName, setLotName] = useState("");
   const [lotHa, setLotHa] = useState("");
+  const [lotLoc, setLotLoc] = useState(null);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState(null);
 
@@ -1258,8 +1567,13 @@ function FieldsScreen({ onBack }) {
     if (!fieldName.trim()) { setMsg({ t: "Nombre obligatorio", k: "err" }); return; }
     setSaving(true);
     try {
-      await apiCreateField({ name: fieldName.trim(), address: fieldAddr.trim() || undefined });
-      setFieldName(""); setFieldAddr(""); setShowFieldForm(false); setMsg({ t: "Campo creado", k: "ok" }); load();
+      await apiCreateField({
+        name: fieldName.trim(),
+        address: fieldLoc?.address || fieldAddr.trim() || undefined,
+        lat: fieldLoc?.lat || undefined,
+        lng: fieldLoc?.lng || undefined,
+      });
+      setFieldName(""); setFieldAddr(""); setFieldLoc(null); setShowFieldForm(false); setMsg({ t: "Campo creado", k: "ok" }); load();
     } catch (e) { setMsg({ t: e.message, k: "err" }); } finally { setSaving(false); }
   };
 
@@ -1267,8 +1581,13 @@ function FieldsScreen({ onBack }) {
     if (!lotName.trim()) { setMsg({ t: "Nombre del lote obligatorio", k: "err" }); return; }
     setSaving(true);
     try {
-      await apiCreateLot(fieldId, { name: lotName.trim(), hectares: lotHa ? parseFloat(lotHa) : undefined });
-      setLotName(""); setLotHa(""); setShowLotForm(null); setMsg({ t: "Lote creado", k: "ok" }); load();
+      await apiCreateLot(fieldId, {
+        name: lotName.trim(),
+        hectares: lotHa ? parseFloat(lotHa) : undefined,
+        lat: lotLoc?.lat || undefined,
+        lng: lotLoc?.lng || undefined,
+      });
+      setLotName(""); setLotHa(""); setLotLoc(null); setShowLotForm(null); setMsg({ t: "Lote creado", k: "ok" }); load();
     } catch (e) { setMsg({ t: e.message, k: "err" }); } finally { setSaving(false); }
   };
 
@@ -1286,7 +1605,7 @@ function FieldsScreen({ onBack }) {
         <div style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: 12, padding: 16, marginBottom: 16, boxShadow: C.sh }}>
           <Field label="Nombre del campo" value={fieldName} onChange={setFieldName} placeholder="Ej: Campo San Juan" />
           <div style={{ height: 10 }} />
-          <Field label="Dirección (opcional)" value={fieldAddr} onChange={setFieldAddr} placeholder="Ej: Ruta 5 km 120" />
+          <LocationPicker label="Ubicación del campo" value={fieldLoc} onChange={setFieldLoc} />
           <div style={{ height: 12 }} />
           <Btn full v="acc" disabled={saving} onClick={handleCreateField}>{saving ? "Guardando..." : "Crear campo"}</Btn>
         </div>
@@ -1303,6 +1622,7 @@ function FieldsScreen({ onBack }) {
                     <div>
                       <div style={{ fontSize: 14, fontWeight: 700 }}>{f.name}</div>
                       {f.address && <div style={{ fontSize: 11, color: C.t3 }}>{f.address}</div>}
+                      {f.lat && <div style={{ fontSize: 9.5, color: C.ok, fontWeight: 600 }}>📍 Ubicación cargada</div>}
                     </div>
                   </div>
                   <Bd color={C.pri} small>{(f.lots || []).length} lote{(f.lots || []).length !== 1 ? "s" : ""}</Bd>
@@ -1313,6 +1633,7 @@ function FieldsScreen({ onBack }) {
                     {Ic.grain(C.ok, 14)}
                     <span style={{ fontSize: 12, fontWeight: 500 }}>{l.name}</span>
                     {l.hectares && <span style={{ fontSize: 10, color: C.t3 }}>{l.hectares} ha</span>}
+                    {l.lat && <span style={{ fontSize: 9, color: C.ok }}>📍</span>}
                   </div>
                 ))}
 
@@ -1321,8 +1642,10 @@ function FieldsScreen({ onBack }) {
                     <Field label="Nombre del lote" value={lotName} onChange={setLotName} placeholder="Ej: Lote 1A" />
                     <div style={{ height: 8 }} />
                     <Field label="Hectáreas (opcional)" value={lotHa} onChange={setLotHa} placeholder="Ej: 150" />
+                    <div style={{ height: 8 }} />
+                    <LocationPicker label="Ubicación del lote" value={lotLoc} onChange={setLotLoc} />
                     <div style={{ display: "flex", gap: 6, marginTop: 10 }}>
-                      <Btn sm v="ghost" onClick={() => { setShowLotForm(null); setLotName(""); setLotHa(""); }}>Cancelar</Btn>
+                      <Btn sm v="ghost" onClick={() => { setShowLotForm(null); setLotName(""); setLotHa(""); setLotLoc(null); }}>Cancelar</Btn>
                       <Btn sm v="acc" disabled={saving} onClick={() => handleCreateLot(f.id)}>{saving ? "..." : "Crear lote"}</Btn>
                     </div>
                   </div>

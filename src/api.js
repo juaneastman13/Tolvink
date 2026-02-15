@@ -50,6 +50,11 @@ export async function apiConfirmLoaded(id) { return api(`/freights/${id}/confirm
 export async function apiConfirmFinished(id) { return api(`/freights/${id}/confirm-finished`,{body:{}}); }
 export async function apiAuthorizeFreight(id) { return api(`/freights/${id}/authorize`,{body:{}}); }
 
+// Tracking
+export async function apiSendTracking(id, data) { return api(`/freights/${id}/tracking`,{body:data}); }
+export async function apiGetTracking(id) { return api(`/freights/${id}/tracking`); }
+export async function apiGetLastPosition(id) { return api(`/freights/${id}/tracking/last`); }
+
 // Catalog
 export async function apiGetPlants() { return api('/catalog/plants'); }
 export async function apiGetLots() { return api('/catalog/lots'); }
