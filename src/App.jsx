@@ -1312,9 +1312,11 @@ function ChatsScreen({ user, openConvId, onConvOpened }) {
     try { const c = await apiListConversations(); setConvs(c || []); return c||[]; } catch { return []; } finally { setLoading(false); }
   }, []);
   useEffect(() => { loadConvs().then(cs => {
-    if(openConvId && cs.length>0) {
+    if(openConvId) {
       const found = cs.find(c=>c.id===openConvId);
-      if(found) { openConv(found); if(onConvOpened) onConvOpened(); }
+      if(found) { openConv(found); }
+      else { openConv({id:openConvId}); }
+      if(onConvOpened) onConvOpened();
     }
   }); }, [loadConvs, openConvId]);
 
@@ -1355,9 +1357,11 @@ function ChatsScreen({ user, openConvId, onConvOpened }) {
   };
 
   const getConvName = (conv) => {
+    if (!conv) return "Chat";
     if (conv.freight) return `Flete ${conv.freight.code}`;
     const otherP = (conv.participants || []).find(p => p.companyId !== user.companyId);
-    return otherP?.companyId?.slice(0, 8) || "Conversación";
+    if (otherP?.company?.name) return otherP.company.name;
+    return otherP?.companyId?.slice(0, 8) || "Chat del flete";
   };
 
   const getLastMsg = (conv) => {
