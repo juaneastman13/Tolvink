@@ -9,6 +9,7 @@ import {
   apiGetFields, apiCreateField, apiCreateLot,
   apiGrantAccess, apiRevokeAccess, apiListAccessProducers, apiListAccessPlants,
   apiStartConversation, apiListConversations, apiGetMessages, apiSendMessage,
+  uploadPhoto,
   getToken, getSavedUser, setAuthFailHandler, clearAuth,
 } from "./api";
 
@@ -143,6 +144,8 @@ const Ic = {
   redo:(c=C.info,s=18)=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>,
   down:(c=C.t3,s=16)=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>,
   filter:(c=C.t2,s=16)=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>,
+  cam:(c=C.t2,s=18)=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>,
+  img:(c=C.t2,s=18)=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>,
 };
 
 // ======================== STATE MACHINE ==============================
@@ -299,6 +302,7 @@ function mapFreight(f) {
     transporterFinishedConfirmedAt: f.transporterFinishedConfirmedAt||null,
     plantFinishedConfirmedAt: f.plantFinishedConfirmedAt||null,
     loadedAt: f.loadedAt||null,
+    documents: f.documents||[],
   };
 }
 
@@ -682,6 +686,77 @@ function ListScreen({ freights, onNav }) {
   );
 }
 
+// ======================== PHOTO UPLOAD ================================
+
+function PhotoUpload({ freightId, step, label, onUploaded }) {
+  const [uploading, setUploading] = useState(false);
+  const [preview, setPreview] = useState(null);
+  const [error, setError] = useState(null);
+  const inputRef = useRef(null);
+
+  const handleFile = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) { setError('Solo imágenes'); return; }
+    if (file.size > 10 * 1024 * 1024) { setError('Máximo 10MB'); return; }
+
+    setPreview(URL.createObjectURL(file));
+    setUploading(true);
+    setError(null);
+    try {
+      const url = await uploadPhoto(file, freightId, step);
+      if (onUploaded) onUploaded({ url, name: file.name, step });
+    } catch (err) {
+      setError(err.message || 'Error al subir');
+      setPreview(null);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  return (
+    <div style={{ marginBottom: 10 }}>
+      <input ref={inputRef} type="file" accept="image/*" capture="environment" onChange={handleFile} style={{ display: "none" }} />
+      {preview ? (
+        <div style={{ position: "relative", borderRadius: 10, overflow: "hidden", border: `1px solid ${C.b1}` }}>
+          <img src={preview} alt="foto" style={{ width: "100%", height: 120, objectFit: "cover", display: "block" }} />
+          {uploading && <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center", color: C.w, fontSize: 12, fontWeight: 600 }}>Subiendo...</div>}
+          {!uploading && <div style={{ position: "absolute", top: 6, right: 6, background: C.ok, borderRadius: 12, padding: "2px 8px", fontSize: 10, color: C.w, fontWeight: 600 }}>Subida</div>}
+        </div>
+      ) : (
+        <button onClick={() => inputRef.current?.click()} disabled={uploading}
+          style={{ width: "100%", padding: "16px 14px", borderRadius: 10, border: `1.5px dashed ${C.b1}`, background: C.bg, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+          {Ic.cam(C.acc, 20)}
+          <span style={{ fontSize: 12, fontWeight: 600, color: C.t2 }}>{label || "Adjuntar foto"}</span>
+        </button>
+      )}
+      {error && <div style={{ fontSize: 11, color: C.err, marginTop: 4 }}>{error}</div>}
+    </div>
+  );
+}
+
+// ======================== DOCUMENTS GALLERY ============================
+
+function DocsGallery({ documents }) {
+  if (!documents || documents.length === 0) return null;
+  const stepLabels = { request: "Solicitud", assignment: "Asignación", load_confirmation: "Carga", delivery_confirmation: "Entrega", cancellation: "Cancelación" };
+  return (
+    <div style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: 12, padding: 14, marginBottom: 12, boxShadow: C.sh }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>{Ic.img(C.pri, 16)}<span style={{ fontSize: 10.5, fontWeight: 700, color: C.t2, textTransform: "uppercase", letterSpacing: 0.5 }}>Documentos ({documents.length})</span></div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6 }}>
+        {documents.map(d => (
+          <a key={d.id} href={d.url} target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none" }}>
+            <div style={{ borderRadius: 8, overflow: "hidden", border: `1px solid ${C.b2}`, background: C.bg }}>
+              <img src={d.url} alt={d.name} style={{ width: "100%", height: 70, objectFit: "cover", display: "block" }} onError={e => { e.target.style.display = "none"; }} />
+              <div style={{ padding: "4px 6px", fontSize: 9, color: C.t3, fontWeight: 500 }}>{stepLabels[d.step] || d.type || "Doc"}</div>
+            </div>
+          </a>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ======================== FREIGHT DETAIL ==============================
 
 function DetailScreen({ user, freight, perms, onBack, onAction }) {
@@ -818,6 +893,20 @@ function DetailScreen({ user, freight, perms, onBack, onAction }) {
         {filteredActions.includes("reject") && <Btn full v="err" icon={Ic.ban(C.w,16)} onClick={()=>onAction(freight.id,"reject")}>Rechazar asignación</Btn>}
         {filteredActions.includes("cancel") && <Btn full v="err" icon={Ic.cross(C.err,16)} onClick={()=>onAction(freight.id,"cancel")}>Cancelar flete</Btn>}
       </div>
+
+      {/* Documents gallery */}
+      <DocsGallery documents={freight.documents}/>
+
+      {/* Photo upload — contextual by status */}
+      {freight.status !== "finished" && freight.status !== "canceled" && (
+        <div style={{ background:C.w, border:`1px solid ${C.b1}`, borderRadius:12, padding:14, marginBottom:12, boxShadow:C.sh }}>
+          <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:10 }}>{Ic.cam(C.acc,16)}<span style={{ fontSize:10.5, fontWeight:700, color:C.t2, textTransform:"uppercase", letterSpacing:0.5 }}>Adjuntar foto</span></div>
+          <PhotoUpload freightId={freight.id}
+            step={freight.status==="pending_assignment"?"request":freight.status==="in_progress"||freight.status==="loaded"?"load_confirmation":"assignment"}
+            label={freight.status==="in_progress"?"Foto de carga":freight.status==="loaded"?"Foto de entrega":"Adjuntar documento"}
+          />
+        </div>
+      )}
 
       <div style={{ background:C.bgCardAlt, borderRadius:10, padding:12, display:"flex", alignItems:"center", gap:10, border:`1px solid ${C.b2}` }}>
         {Ic.wa("#25D366",20)}<div><div style={{ fontSize:11, fontWeight:600, color:"#25D366" }}>WhatsApp activo</div><div style={{ fontSize:10, color:C.t2 }}>Notificaciones automáticas a involucrados</div></div>
@@ -1212,6 +1301,9 @@ function ChatsScreen({ user }) {
   const [messages, setMessages] = useState([]);
   const [msgText, setMsgText] = useState("");
   const [sending, setSending] = useState(false);
+  const [showNew, setShowNew] = useState(false);
+  const [newCompId, setNewCompId] = useState("");
+  const [newErr, setNewErr] = useState(null);
   const msgEndRef = useRef(null);
 
   const loadConvs = useCallback(async () => {
@@ -1226,7 +1318,6 @@ function ChatsScreen({ user }) {
 
   useEffect(() => { if (msgEndRef.current) msgEndRef.current.scrollIntoView({ behavior: "smooth" }); }, [messages]);
 
-  // Poll for new messages
   useEffect(() => {
     if (!activeConv) return;
     const iv = setInterval(async () => {
@@ -1243,6 +1334,17 @@ function ChatsScreen({ user }) {
       setMessages(prev => [...prev, m]);
       setMsgText("");
     } catch {} finally { setSending(false); }
+  };
+
+  const handleStartConv = async () => {
+    if (!newCompId.trim()) { setNewErr("Ingresá el ID de la empresa"); return; }
+    setNewErr(null);
+    try {
+      const conv = await apiStartConversation({ targetCompanyId: newCompId.trim() });
+      setShowNew(false); setNewCompId("");
+      loadConvs();
+      openConv(conv);
+    } catch (e) { setNewErr(e.message); }
   };
 
   const getConvName = (conv) => {
@@ -1302,10 +1404,22 @@ function ChatsScreen({ user }) {
   // Conversation list view
   return (
     <div style={{ flex: 1, overflow: "auto", padding: 18 }}>
-      <div style={{ fontSize: 20, fontWeight: 800, marginBottom: 18, letterSpacing: -0.3 }}>Mensajes</div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+        <div style={{ fontSize: 20, fontWeight: 800, letterSpacing: -0.3 }}>Mensajes</div>
+        <Btn sm onClick={() => setShowNew(!showNew)} icon={showNew ? Ic.cross(C.w, 14) : Ic.plus(C.w, 14)}>{showNew ? "Cerrar" : "Nuevo"}</Btn>
+      </div>
+
+      {showNew && (
+        <div style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: 12, padding: 16, marginBottom: 14, boxShadow: C.sh }}>
+          <Field label="ID de empresa" value={newCompId} onChange={setNewCompId} placeholder="UUID de la empresa" />
+          <div style={{ fontSize: 10, color: C.t3, marginTop: 4, marginBottom: 10 }}>Copiá el ID desde el perfil de la otra empresa</div>
+          {newErr && <div style={{ fontSize: 11, color: C.err, marginBottom: 8 }}>{newErr}</div>}
+          <Btn full v="acc" onClick={handleStartConv}>Iniciar conversación</Btn>
+        </div>
+      )}
 
       {loading ? <div style={{ textAlign: "center", padding: 40, color: C.t3, fontSize: 13 }}>Cargando...</div> :
-        convs.length === 0 ? <div style={{ textAlign: "center", padding: 40, color: C.t3, fontSize: 13 }}>Sin conversaciones aún.</div> :
+        convs.length === 0 ? <div style={{ textAlign: "center", padding: 40, color: C.t3, fontSize: 13 }}>Sin conversaciones aún.{!showNew && <><br/><button onClick={()=>setShowNew(true)} style={{background:"none",border:"none",color:C.acc,fontWeight:600,cursor:"pointer",fontFamily:"inherit",fontSize:13,marginTop:8}}>Iniciar una nueva</button></>}</div> :
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             {convs.map(c => (
               <button key={c.id} onClick={() => openConv(c)} style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: 12, padding: 14, cursor: "pointer", fontFamily: "inherit", textAlign: "left", display: "flex", alignItems: "center", gap: 12, boxShadow: C.sh, width: "100%" }}>

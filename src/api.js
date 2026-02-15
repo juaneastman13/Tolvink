@@ -1,8 +1,10 @@
 // =====================================================================
-// TOLVINK — API Client v3
+// TOLVINK — API Client v4
 // =====================================================================
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://tolvink-api-production.up.railway.app/api';
+const SUPABASE_URL = 'https://mlmecljidioymujsazrs.supabase.co';
+const STORAGE_BUCKET = 'freight-docs';
 
 let _token = localStorage.getItem('tolvink_token');
 let _onAuthFail = null;
@@ -73,3 +75,27 @@ export async function apiStartConversation(b) { return api('/conversations/start
 export async function apiListConversations() { return api('/conversations'); }
 export async function apiGetMessages(convId) { return api(`/conversations/${convId}/messages`); }
 export async function apiSendMessage(convId,text) { return api(`/conversations/${convId}/messages`,{body:{text}}); }
+
+// Photo Upload — direct to Supabase Storage
+export async function uploadPhoto(file, freightId, step) {
+  const ext = file.name.split('.').pop() || 'jpg';
+  const path = `${freightId}/${step}/${Date.now()}.${ext}`;
+  const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${STORAGE_BUCKET}/${path}`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${_token}`,
+      'Content-Type': file.type || 'image/jpeg',
+    },
+    body: file,
+  });
+  if (!res.ok) {
+    // Try with anon key approach (public bucket)
+    const res2 = await fetch(`${SUPABASE_URL}/storage/v1/object/${STORAGE_BUCKET}/${path}`, {
+      method: 'POST',
+      headers: { 'Content-Type': file.type || 'image/jpeg' },
+      body: file,
+    });
+    if (!res2.ok) throw new Error('Error al subir foto');
+  }
+  return `${SUPABASE_URL}/storage/v1/object/public/${STORAGE_BUCKET}/${path}`;
+}
