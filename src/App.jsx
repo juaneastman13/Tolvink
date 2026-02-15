@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo, Component } from "react";
 import {
   apiLogin, apiRegister, apiLogout, apiListFreights, apiGetFreight,
   apiCreateFreight, apiAssignFreight, apiRespondFreight,
@@ -1149,6 +1149,23 @@ function loadGMaps() {
   });
 }
 
+// Error Boundary to prevent white screens
+class SafeZone extends Component {
+  constructor(props) { super(props); this.state = { hasError: false, error: null }; }
+  static getDerivedStateFromError(error) { return { hasError: true, error }; }
+  componentDidCatch(error, info) { console.error("SafeZone caught:", error, info); }
+  render() {
+    if (this.state.hasError) {
+      return <div style={{ padding: 12, background: "#FEE2E2", borderRadius: 8, fontSize: 12, color: "#DC2626" }}>
+        <div style={{ fontWeight: 700, marginBottom: 4 }}>Error en este componente</div>
+        <div>{this.state.error?.message || "Error desconocido"}</div>
+        <button onClick={() => this.setState({ hasError: false, error: null })} style={{ marginTop: 8, padding: "4px 12px", borderRadius: 6, border: "1px solid #DC2626", background: "white", color: "#DC2626", fontSize: 11, fontWeight: 600, cursor: "pointer" }}>Reintentar</button>
+      </div>;
+    }
+    return this.props.children;
+  }
+}
+
 // Location Picker: Autocomplete + Map Pin
 function LocationPicker({ label, value, onChange }) {
   // value = { lat, lng, address }
@@ -1158,70 +1175,78 @@ function LocationPicker({ label, value, onChange }) {
   const mapObjRef = useRef(null);
   const [showMap, setShowMap] = useState(false);
   const [addr, setAddr] = useState(value?.address || "");
+  const [mapFull, setMapFull] = useState(false);
+  const fullSearchRef = useRef(null);
+  const [initError, setInitError] = useState(false);
 
   useEffect(() => {
     if (!showMap || !mapRef.current) return;
     let cancelled = false;
 
     const initMap = async (startCenter, startZoom) => {
-      const maps = await loadGMaps();
-      if (cancelled) return;
-      const map = new maps.Map(mapRef.current, {
-        zoom: startZoom, center: startCenter,
-        disableDefaultUI: true, zoomControl: true, mapTypeControl: false,
-        streetViewControl: false, fullscreenControl: false,
-        gestureHandling: "greedy",
-      });
-      mapObjRef.current = map;
-
-      const marker = new maps.Marker({ position: startCenter, map, draggable: true });
-      markerRef.current = marker;
-
-      marker.addListener("dragend", () => {
-        const pos = marker.getPosition();
-        const geocoder = new maps.Geocoder();
-        geocoder.geocode({ location: { lat: pos.lat(), lng: pos.lng() } }, (results, status) => {
-          const a = status === "OK" && results[0] ? results[0].formatted_address : "";
-          setAddr(a);
-          onChange({ lat: pos.lat(), lng: pos.lng(), address: a });
+      try {
+        const maps = await loadGMaps();
+        if (cancelled || !mapRef.current) return;
+        const map = new maps.Map(mapRef.current, {
+          zoom: startZoom, center: startCenter,
+          disableDefaultUI: true, zoomControl: !mapFull, mapTypeControl: false,
+          streetViewControl: false, fullscreenControl: false,
+          gestureHandling: "greedy",
         });
-      });
+        mapObjRef.current = map;
 
-      map.addListener("click", (e) => {
-        marker.setPosition(e.latLng);
-        const geocoder = new maps.Geocoder();
-        geocoder.geocode({ location: { lat: e.latLng.lat(), lng: e.latLng.lng() } }, (results, status) => {
-          const a = status === "OK" && results[0] ? results[0].formatted_address : "";
-          setAddr(a);
-          onChange({ lat: e.latLng.lat(), lng: e.latLng.lng(), address: a });
-        });
-      });
+        const marker = new maps.Marker({ position: startCenter, map, draggable: true });
+        markerRef.current = marker;
 
-      // Autocomplete
-      if (inputRef.current) {
-        const autocomplete = new maps.places.Autocomplete(inputRef.current, {
-          componentRestrictions: { country: ["ar", "uy", "br", "py"] },
-          fields: ["geometry", "formatted_address", "name"],
-        });
-        autocomplete.addListener("place_changed", () => {
-          const place = autocomplete.getPlace();
-          if (place.geometry?.location) {
-            const lat = place.geometry.location.lat();
-            const lng = place.geometry.location.lng();
-            const a = place.formatted_address || place.name || "";
-            map.setCenter({ lat, lng });
-            map.setZoom(14);
-            marker.setPosition({ lat, lng });
+        marker.addListener("dragend", () => {
+          const pos = marker.getPosition();
+          const geocoder = new maps.Geocoder();
+          geocoder.geocode({ location: { lat: pos.lat(), lng: pos.lng() } }, (results, status) => {
+            const a = status === "OK" && results[0] ? results[0].formatted_address : "";
             setAddr(a);
-            onChange({ lat, lng, address: a });
-          }
+            onChange({ lat: pos.lat(), lng: pos.lng(), address: a });
+          });
         });
+
+        map.addListener("click", (e) => {
+          marker.setPosition(e.latLng);
+          const geocoder = new maps.Geocoder();
+          geocoder.geocode({ location: { lat: e.latLng.lat(), lng: e.latLng.lng() } }, (results, status) => {
+            const a = status === "OK" && results[0] ? results[0].formatted_address : "";
+            setAddr(a);
+            onChange({ lat: e.latLng.lat(), lng: e.latLng.lng(), address: a });
+          });
+        });
+
+        // Autocomplete
+        if (inputRef.current) {
+          const autocomplete = new maps.places.Autocomplete(inputRef.current, {
+            componentRestrictions: { country: ["ar", "uy", "br", "py"] },
+            fields: ["geometry", "formatted_address", "name"],
+          });
+          autocomplete.addListener("place_changed", () => {
+            const place = autocomplete.getPlace();
+            if (place.geometry?.location) {
+              const lat = place.geometry.location.lat();
+              const lng = place.geometry.location.lng();
+              const a = place.formatted_address || place.name || "";
+              map.setCenter({ lat, lng });
+              map.setZoom(14);
+              marker.setPosition({ lat, lng });
+              setAddr(a);
+              onChange({ lat, lng, address: a });
+            }
+          });
+        }
+      } catch (err) {
+        console.error("LocationPicker initMap error:", err);
+        setInitError(true);
       }
     };
 
     // If we already have a value, use it
     if (value?.lat && value?.lng) {
-      initMap({ lat: value.lat, lng: value.lng }, 13);
+      initMap({ lat: Number(value.lat), lng: Number(value.lng) }, 13);
     } else {
       // Try to get current location
       if (navigator.geolocation) {
@@ -1254,9 +1279,6 @@ function LocationPicker({ label, value, onChange }) {
 
     return () => { cancelled = true; };
   }, [showMap, mapFull]);
-
-  const [mapFull, setMapFull] = useState(false);
-  const fullSearchRef = useRef(null);
 
   const toggleFull = (e) => {
     if (e) { e.preventDefault(); e.stopPropagation(); }
@@ -1306,6 +1328,7 @@ function LocationPicker({ label, value, onChange }) {
   return (
     <div style={{ marginBottom: 6 }}>
       <div style={{ fontSize: 11, fontWeight: 600, color: C.t2, marginBottom: 4 }}>{label || "Ubicación"}</div>
+      {initError && <div style={{ fontSize: 11, color: C.err, marginBottom: 4 }}>Error al cargar el mapa. Intentá recargar la página.</div>}
       <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
         <input ref={inputRef} value={addr} onChange={e => setAddr(e.target.value)}
           placeholder="Buscar dirección o tocar en el mapa..."
@@ -2341,7 +2364,7 @@ function FieldsScreen({ onBack }) {
         <div style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: 12, padding: 16, marginBottom: 16, boxShadow: C.sh }}>
           <Field label="Nombre del campo" value={fieldName} onChange={setFieldName} placeholder="Ej: Campo San Juan" />
           <div style={{ height: 10 }} />
-          <LocationPicker label="Ubicación del campo" value={fieldLoc} onChange={setFieldLoc} />
+          <SafeZone><LocationPicker label="Ubicación del campo" value={fieldLoc} onChange={setFieldLoc} /></SafeZone>
           <div style={{ height: 12 }} />
           <Btn full v="acc" disabled={saving} onClick={handleCreateField}>{saving ? "Guardando..." : "Crear campo"}</Btn>
         </div>
@@ -2371,7 +2394,7 @@ function FieldsScreen({ onBack }) {
                 {editField === f.id && (
                   <div style={{ background: C.priPale, borderRadius: 10, padding: 12, marginBottom: 8 }}>
                     <div style={{ fontSize: 11, fontWeight: 700, color: C.pri, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>Editar campo</div>
-                    <LocationPicker label="Ubicación" value={editFieldLoc} onChange={setEditFieldLoc} />
+                    <SafeZone><LocationPicker label="Ubicación" value={editFieldLoc} onChange={setEditFieldLoc} /></SafeZone>
                     <div style={{ display: "flex", gap: 6, marginTop: 10 }}>
                       <Btn sm v="ghost" onClick={() => setEditField(null)}>Cancelar</Btn>
                       <Btn sm disabled={saving} onClick={() => handleUpdateField(f.id)}>{saving ? "..." : "Guardar"}</Btn>
@@ -2396,7 +2419,7 @@ function FieldsScreen({ onBack }) {
                         <div style={{ fontSize: 11, fontWeight: 700, color: C.acc, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>Editar lote</div>
                         <Field label="Hectáreas" value={editLotHa} onChange={setEditLotHa} placeholder="Ej: 150" />
                         <div style={{ height: 8 }} />
-                        <LocationPicker label="Ubicación del lote" value={editLotLoc} onChange={setEditLotLoc} />
+                        <SafeZone><LocationPicker label="Ubicación del lote" value={editLotLoc} onChange={setEditLotLoc} /></SafeZone>
                         <div style={{ display: "flex", gap: 6, marginTop: 10 }}>
                           <Btn sm v="ghost" onClick={() => setEditLot(null)}>Cancelar</Btn>
                           <Btn sm v="acc" disabled={saving} onClick={handleUpdateLot}>{saving ? "..." : "Guardar"}</Btn>
@@ -2412,7 +2435,7 @@ function FieldsScreen({ onBack }) {
                     <div style={{ height: 8 }} />
                     <Field label="Hectáreas (opcional)" value={lotHa} onChange={setLotHa} placeholder="Ej: 150" />
                     <div style={{ height: 8 }} />
-                    <LocationPicker label="Ubicación del lote" value={lotLoc} onChange={setLotLoc} />
+                    <SafeZone><LocationPicker label="Ubicación del lote" value={lotLoc} onChange={setLotLoc} /></SafeZone>
                     <div style={{ display: "flex", gap: 6, marginTop: 10 }}>
                       <Btn sm v="ghost" onClick={() => { setShowLotForm(null); setLotName(""); setLotHa(""); setLotLoc(null); }}>Cancelar</Btn>
                       <Btn sm v="acc" disabled={saving} onClick={() => handleCreateLot(f.id)}>{saving ? "..." : "Crear lote"}</Btn>
