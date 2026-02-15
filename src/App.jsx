@@ -285,7 +285,7 @@ function useFreights(user) {
     catch(e) { setError(e.message); return null; }
   },[]);
   const create = useCallback(async (form)=>{
-    try { const c=await apiCreateFreight({ originLotId:form.lotId, fieldId:form.fieldId||undefined, destPlantId:form.plantId, loadDate:form.loadDate, loadTime:form.loadTime, items:[{grain:form.grain,tons:parseFloat(form.tons),unit:form.unit||"toneladas",amount:form.amount?parseFloat(form.amount):0,productTypeOther:form.productTypeOther||undefined}], notes:form.notes||"", truckId:form.truckId||undefined });
+    try { const c=await apiCreateFreight({ originLotId:form.lotId, fieldId:form.fieldId||undefined, destPlantId:form.plantId, loadDate:form.loadDate, loadTime:form.loadTime, items:[{grain:form.grain,tons:parseFloat(form.tons),unit:form.unit||"toneladas",amount:form.amount?parseFloat(form.amount):0,productTypeOther:form.productTypeOther||undefined}], notes:form.notes||"", truckId:form.truckId||undefined, overrideOriginLat:form.overrideOriginLat, overrideOriginLng:form.overrideOriginLng, overrideDestLat:form.overrideDestLat, overrideDestLng:form.overrideDestLng });
       const m=mapFreight(c); setFreights(p=>[m,...p]); return {ok:true, freightId:c.id}; } catch(e) { return {ok:false,error:e.message}; }
   },[]);
   const assign = useCallback(async (fId,compId)=>{ try { await apiAssignFreight(fId,{transportCompanyId:compId}); await refresh(fId); return {ok:true}; } catch(e) { return {ok:false,error:e.message}; } },[refresh]);
@@ -1287,8 +1287,19 @@ function NewScreen({ user, lots, plants, fields, trucks, onBack, onCreate }) {
   const lotOpts = fieldLots.map(l=>({ value:l.id, label:l.name, sub:l.hectares?`${l.hectares} ha`:'' }));
   const plantOpts = (plants||[]).map(p=>({ value:p.id, label:p.name }));
   const selectedLot = fieldLots.find(l=>l.id===form.lotId);
+  const selectedPlant = (plants||[]).find(p=>p.id===form.plantId);
   const truckOpts = (trucks||[]).map(t=>({ value:t.id, label:`${t.plate}${t.model?` · ${t.model}`:""}` }));
   const showTruckSelect = user.userType==="producer" && truckOpts.length > 0;
+
+  // Coords for map preview
+  const originCoords = selectedLot?.lat ? { lat: parseFloat(selectedLot.lat), lng: parseFloat(selectedLot.lng) } : null;
+  const destCoords = selectedPlant?.lat ? { lat: parseFloat(selectedPlant.lat), lng: parseFloat(selectedPlant.lng) } : null;
+  const [editingOrigin, setEditingOrigin] = useState(false);
+  const [editingDest, setEditingDest] = useState(false);
+  const [overrideOrigin, setOverrideOrigin] = useState(null);
+  const [overrideDest, setOverrideDest] = useState(null);
+  const finalOrigin = overrideOrigin || originCoords;
+  const finalDest = overrideDest || destCoords;
 
   const submit = () => {
     setTouched(true);
@@ -1297,7 +1308,12 @@ function NewScreen({ user, lots, plants, fields, trucks, onBack, onCreate }) {
     if(form.fieldId && !form.lotId) { e.lotId="Seleccioná un lote del campo"; }
     setErrs(e);
     if(!ok || Object.keys(e).filter(k=>e[k]).length>0) return;
-    onCreate({...form, amount:form.amount?parseFloat(form.amount):0, photos: photos.map(p=>p.preview) });
+    onCreate({...form, amount:form.amount?parseFloat(form.amount):0, photos: photos.map(p=>p.preview),
+      overrideOriginLat: overrideOrigin?.lat || undefined,
+      overrideOriginLng: overrideOrigin?.lng || undefined,
+      overrideDestLat: overrideDest?.lat || undefined,
+      overrideDestLng: overrideDest?.lng || undefined,
+    });
   };
 
   const addPhoto = (e) => {
@@ -1367,6 +1383,49 @@ function NewScreen({ user, lots, plants, fields, trucks, onBack, onCreate }) {
           <Select label="Destino (planta)" icon={Ic.plant(C.t2,14)} value={form.plantId} onChange={v=>u({plantId:v})} options={plantOpts} placeholder="Seleccionar planta..."/>
           {touched&&<FieldError error={errs.plantId}/>}
         </div>
+
+        {/* Route preview map */}
+        {(finalOrigin || finalDest) && (
+          <div style={{ background:C.w, border:`1px solid ${C.b1}`, borderRadius:12, overflow:"hidden", boxShadow:C.sh }}>
+            <div style={{ display:"flex", alignItems:"center", gap:6, padding:"10px 14px" }}>
+              {Ic.pin(C.pri,14)}
+              <span style={{ fontSize:10.5, fontWeight:700, color:C.t2, textTransform:"uppercase", letterSpacing:0.5 }}>Vista previa del recorrido</span>
+            </div>
+
+            {finalOrigin && finalDest ? (
+              <FreightMap freightId={null} originLat={finalOrigin.lat} originLng={finalOrigin.lng} destLat={finalDest.lat} destLng={finalDest.lng} originName={fieldLots.find(l=>l.id===form.lotId)?.name||"Origen"} destName={(plants||[]).find(p=>p.id===form.plantId)?.name||"Destino"} status="preview" isDriver={false}/>
+            ) : (
+              <div style={{ padding:"20px 14px", textAlign:"center", fontSize:12, color:C.t3 }}>
+                Seleccioná {!finalOrigin?"origen (lote)":""}{!finalOrigin&&!finalDest?" y ":""}{!finalDest?"destino (planta)":""} para ver la ruta
+              </div>
+            )}
+
+            {/* Edit location buttons */}
+            <div style={{ padding:"6px 14px 10px", display:"flex", gap:8 }}>
+              {finalOrigin && (
+                <button onClick={()=>setEditingOrigin(!editingOrigin)} style={{ flex:1, padding:"7px 10px", borderRadius:8, border:`1px solid ${editingOrigin?C.pri:C.b1}`, background:editingOrigin?C.priPale:C.w, cursor:"pointer", fontFamily:"inherit", fontSize:10.5, fontWeight:600, color:editingOrigin?C.pri:C.t2, display:"flex", alignItems:"center", justifyContent:"center", gap:4 }}>
+                  {Ic.pin("#1A6B37",12)} {editingOrigin?"Editando origen":"Editar origen"}
+                </button>
+              )}
+              {finalDest && (
+                <button onClick={()=>setEditingDest(!editingDest)} style={{ flex:1, padding:"7px 10px", borderRadius:8, border:`1px solid ${editingDest?C.sec:C.b1}`, background:editingDest?C.secPale:C.w, cursor:"pointer", fontFamily:"inherit", fontSize:10.5, fontWeight:600, color:editingDest?C.sec:C.t2, display:"flex", alignItems:"center", justifyContent:"center", gap:4 }}>
+                  {Ic.pin("#003882",12)} {editingDest?"Editando destino":"Editar destino"}
+                </button>
+              )}
+            </div>
+
+            {editingOrigin && (
+              <div style={{ padding:"0 14px 12px" }}>
+                <LocationPicker label="Corregir ubicación de origen" value={overrideOrigin||originCoords} onChange={loc=>setOverrideOrigin({lat:loc.lat,lng:loc.lng})}/>
+              </div>
+            )}
+            {editingDest && (
+              <div style={{ padding:"0 14px 12px" }}>
+                <LocationPicker label="Corregir ubicación de destino" value={overrideDest||destCoords} onChange={loc=>setOverrideDest({lat:loc.lat,lng:loc.lng})}/>
+              </div>
+            )}
+          </div>
+        )}
 
         <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
           <div>
