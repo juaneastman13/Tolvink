@@ -460,9 +460,9 @@ function Nav({ active, onChange, unread=0, pendingCount=0, canRequest=false, onN
             <span style={{ fontSize:8, fontWeight:700, color:centerColor, marginTop:1, transition:"color 0.5s ease" }}>{hasPending?"Pendientes":"Al día"}</span>
             {/* Solicitar — below status, same column */}
             {canRequest && (
-              <div onClick={e=>{e.stopPropagation();onNew();}} style={{ display:"flex", alignItems:"center", gap:5, marginTop:3, padding:"6px 14px", borderRadius:20, background:C.acc, cursor:"pointer", boxShadow:`0 2px 8px ${C.acc}40` }}>
-                <span style={{ display:"inline-flex", animation:"truckDrive 1.5s ease-in-out infinite" }}>{Ic.truck("#fff",15)}</span>
-                <span style={{ fontSize:10.5, fontWeight:700, color:"#fff", whiteSpace:"nowrap" }}>Nuevo flete</span>
+              <div onClick={e=>{e.stopPropagation();onNew();}} style={{ display:"flex", alignItems:"center", gap:6, marginTop:3, padding:"8px 18px", borderRadius:24, background:C.acc, cursor:"pointer", boxShadow:`0 2px 8px ${C.acc}40` }}>
+                <span style={{ display:"inline-flex", animation:"truckDrive 1.5s ease-in-out infinite" }}>{Ic.truck("#fff",18)}</span>
+                <span style={{ fontSize:12.5, fontWeight:700, color:"#fff", whiteSpace:"nowrap" }}>Solicitar flete</span>
               </div>
             )}
           </> : <>
