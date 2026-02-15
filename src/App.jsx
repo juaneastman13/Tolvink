@@ -192,7 +192,7 @@ function useCatalog(user) {
   const [trucks, setTrucks] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  useEffect(()=>{
+  const load = useCallback(()=>{
     if(!user) return;
     setLoading(true);
     Promise.all([
@@ -210,7 +210,11 @@ function useCatalog(user) {
     }).finally(()=>setLoading(false));
   },[user]);
 
-  return { plants, lots, fields, transporters, trucks, loading };
+  useEffect(()=>{ load(); },[load]);
+
+  const refresh = useCallback(()=>{ load(); },[load]);
+
+  return { plants, lots, fields, transporters, trucks, loading, refresh };
 }
 
 
@@ -375,25 +379,13 @@ function Field({ label, icon, value, onChange, placeholder, type="text", childre
 }
 
 function Select({ label, icon, value, onChange, options, placeholder="Seleccionar..." }) {
-  const [open, setOpen] = useState(false);
-  const selected = options.find(o=>o.value===value);
   return (
-    <div style={{ position:"relative" }}>
+    <div>
       {label && <label style={{ fontSize:10.5, fontWeight:600, color:C.t2, marginBottom:6, display:"flex", alignItems:"center", gap:4, textTransform:"uppercase", letterSpacing:0.6 }}>{icon} {label}</label>}
-      <button onClick={()=>setOpen(!open)} style={{ width:"100%", padding:"12px 14px", borderRadius:10, border:`1.5px solid ${open?C.bFocus:C.b1}`, background:C.w, color:selected?C.t1:C.t3, fontSize:14, fontFamily:"inherit", textAlign:"left", cursor:"pointer", display:"flex", justifyContent:"space-between", alignItems:"center", boxSizing:"border-box" }}>
-        <span>{selected?.label || placeholder}</span>
-        {Ic.down(C.t3,16)}
-      </button>
-      {open && (
-        <div style={{ position:"absolute", top:"100%", left:0, right:0, marginTop:4, background:C.w, border:`1.5px solid ${C.b1}`, borderRadius:10, boxShadow:C.shMd, zIndex:50, maxHeight:200, overflow:"auto" }}>
-          {options.map(o=>(
-            <button key={o.value} onClick={()=>{onChange(o.value);setOpen(false);}} style={{ width:"100%", padding:"11px 14px", border:"none", borderBottom:`1px solid ${C.b2}`, background:value===o.value?C.priPale:C.w, color:value===o.value?C.pri:C.t1, fontSize:13, fontFamily:"inherit", textAlign:"left", cursor:"pointer", fontWeight:value===o.value?600:400 }}>
-              {o.label}
-              {o.sub && <div style={{ fontSize:10.5, color:C.t3, marginTop:2 }}>{o.sub}</div>}
-            </button>
-          ))}
-        </div>
-      )}
+      <select value={value||""} onChange={e=>onChange(e.target.value)} style={{ width:"100%", padding:"12px 14px", borderRadius:10, border:`1.5px solid ${C.b1}`, background:C.w, color:value?C.t1:C.t3, fontSize:14, fontFamily:"inherit", cursor:"pointer", boxSizing:"border-box", appearance:"auto" }}>
+        <option value="" disabled>{placeholder}</option>
+        {options.map(o=><option key={o.value} value={o.value}>{o.label}{o.sub?` — ${o.sub}`:""}</option>)}
+      </select>
     </div>
   );
 }
@@ -415,7 +407,7 @@ function Nav({ active, onChange, unread=0 }) {
     { k:"profile",ic:a=>Ic.user(a?C.pri:C.t3,22),   l:"Perfil" },
   ];
   return (
-    <div style={{ display:"flex", borderTop:`1px solid ${C.b1}`, background:C.nav, padding:"4px 0 8px" }}>
+    <div style={{ display:"flex", borderTop:`1px solid ${C.b1}`, background:C.nav, padding:"4px 0 8px", flexShrink:0 }}>
       {items.map(it=>(
         <button key={it.k} onClick={()=>onChange(it.k)} style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:2, border:"none", background:"none", cursor:"pointer", fontFamily:"inherit", position:"relative", padding:it.sp?0:"6px 0" }}>
           {it.sp ? <div style={{ width:48, height:48, borderRadius:24, background:C.pri, display:"flex", alignItems:"center", justifyContent:"center", marginTop:-20, boxShadow:`0 4px 16px ${C.pri}30` }}>{it.ic(false)}</div> : <>
@@ -1635,24 +1627,29 @@ export default function Tolvink() {
   const curFreight = fh.freights.find(f=>f.id===selFreight);
 
   return (
-    <div style={{minHeight:"100vh",background:C.bg,color:C.t1,fontFamily:FONT,display:"flex",flexDirection:"column",maxWidth:900,margin:"0 auto",position:"relative",overflow:"hidden"}}>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&family=JetBrains+Mono:wght@400;500&display=swap');*{box-sizing:border-box;margin:0;padding:0}body{background:${C.bg}}input::placeholder,textarea::placeholder{color:${C.t3}}::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:${C.b1};border-radius:4px}@keyframes ti{from{opacity:0;transform:translate(-50%,-12px)}to{opacity:1;transform:translate(-50%,0)}}@media(min-width:640px){.tv-grid{display:grid!important;grid-template-columns:1fr 1fr!important;gap:12px!important}.tv-grid3{display:grid!important;grid-template-columns:1fr 1fr 1fr!important;gap:12px!important}.tv-pad{padding:24px 32px!important}.tv-detail-grid{display:grid!important;grid-template-columns:1fr 1fr!important;gap:16px!important}}`}</style>
-      <div style={{padding:"10px 18px",display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:`1px solid ${C.b2}`,background:C.w}}>
+    <div style={{height:"100vh",background:C.bg,color:C.t1,fontFamily:FONT,display:"flex",flexDirection:"column",maxWidth:900,margin:"0 auto",position:"relative",overflow:"hidden"}}>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&family=JetBrains+Mono:wght@400;500&display=swap');*{box-sizing:border-box;margin:0;padding:0}body{background:${C.bg};overflow:hidden}input::placeholder,textarea::placeholder{color:${C.t3}}::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:${C.b1};border-radius:4px}@keyframes ti{from{opacity:0;transform:translate(-50%,-12px)}to{opacity:1;transform:translate(-50%,0)}}@media(min-width:640px){.tv-grid{display:grid!important;grid-template-columns:1fr 1fr!important;gap:12px!important}.tv-grid3{display:grid!important;grid-template-columns:1fr 1fr 1fr!important;gap:12px!important}.tv-pad{padding:24px 32px!important}.tv-detail-grid{display:grid!important;grid-template-columns:1fr 1fr!important;gap:16px!important}}`}</style>
+      {/* Fixed header */}
+      <div style={{padding:"10px 18px",display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:`1px solid ${C.b2}`,background:C.w,flexShrink:0,zIndex:10}}>
         <span style={{fontSize:11,fontWeight:500,color:C.t3}}>{new Date().toLocaleTimeString("es",{hour:"2-digit",minute:"2-digit"})}</span>
         <span style={{fontSize:14,fontWeight:800,color:C.pri,letterSpacing:-0.5}}>tolvink</span>
         {Ic.bell(C.t3,16)}
       </div>
 
+      {/* Scrollable content area */}
+      <div style={{flex:1,overflow:"auto",display:"flex",flexDirection:"column"}}>
       {screen==="home" && <HomeScreen user={auth.user} freights={fh.freights} perms={perms} onNav={nav}/>}
       {screen==="list" && <ListScreen freights={fh.freights} onNav={nav}/>}
       {screen==="detail" && <DetailScreen user={auth.user} freight={curFreight} perms={perms} onBack={()=>setScreen("list")} onAction={handleAction} onChat={(convId)=>{if(convId){setChatConvId(convId);setScreen("chats");}}} onRefresh={(id)=>fh.refresh(id)}/>}
       {screen==="new" && <NewScreen user={auth.user} lots={catalog.lots} plants={catalog.plants} fields={catalog.fields} trucks={catalog.trucks} onBack={()=>setScreen("home")} onCreate={handleCreate} submitting={submitting}/>}
       {screen==="profile" && <ProfileScreen user={auth.user} perms={perms} onLogout={auth.logout} onNav={nav}/>}
-      {screen==="trucks" && <TrucksScreen onBack={()=>setScreen("profile")}/>}
-      {screen==="fields" && <FieldsScreen onBack={()=>setScreen("profile")}/>}
+      {screen==="trucks" && <TrucksScreen onBack={()=>{catalog.refresh();setScreen("profile");}}/>}
+      {screen==="fields" && <FieldsScreen onBack={()=>{catalog.refresh();setScreen("profile");}}/>}
       {screen==="access" && <AccessScreen onBack={()=>setScreen("profile")}/>}
       {screen==="chats" && <ChatsScreen user={auth.user} openConvId={chatConvId} onConvOpened={()=>setChatConvId(null)}/>}
+      </div>
 
+      {/* Fixed bottom nav */}
       <Nav active={["detail"].includes(screen)?"list":["trucks","fields","access"].includes(screen)?"profile":screen} onChange={nav}/>
 
       {modal?.type==="assign" && <AssignModal freight={modal.freight} transporters={catalog.transporters} onClose={()=>setModal(null)} onConfirm={t=>handleAssign(modal.freight.id,t)}/>}
