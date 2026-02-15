@@ -725,7 +725,7 @@ function HomeScreen({ user, freights, perms, onNav }) {
   const nextView = () => setViewMode(v => v==="cards"?"table":v==="table"?"map":"cards");
 
   return (
-    <div style={{ flex:1, overflow:"auto", padding:18 }}>
+    <div style={{ flex:1, overflow:"auto", padding:18, paddingBottom:perms.canRequest?80:18 }}>
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:24 }}>
         <div><div style={{ fontSize:13, color:C.t2 }}>Hola,</div><div style={{ fontSize:22, fontWeight:800, letterSpacing:-0.3, color:C.t1 }}>{user.name.split(" ")[0]}</div></div>
         <div style={{ textAlign:"right" }}><Bd color={tc}>{typeLabel}</Bd><div style={{ fontSize:10, color:C.t3, marginTop:4 }}>{user.role==="admin"?"Gerente":"Operario"} · {user.entity}</div></div>
@@ -741,7 +741,7 @@ function HomeScreen({ user, freights, perms, onNav }) {
         })}
       </div>
 
-      {perms.canRequest && <Btn full v="acc" onClick={()=>onNav("new")} icon={Ic.plus(C.w,16)} style={{marginBottom:16}}>Solicitar nuevo flete</Btn>}
+      {/* Solicitar button moved to FAB */}
 
       {perms.canApprove && stats.avail>0 && activeFilter==="all" && (
         <div onClick={()=>toggleFilter("requested")} style={{ background:C.accPale, border:`1px solid ${C.acc}22`, borderLeft:`3px solid ${C.acc}`, borderRadius:12, padding:14, marginBottom:18, cursor:"pointer", display:"flex", alignItems:"center", gap:12 }}>
@@ -831,11 +831,19 @@ function HomeScreen({ user, freights, perms, onNav }) {
           })}
         </div>
       )}
+      {/* FAB — Solicitar nuevo flete */}
+      {perms.canRequest && (
+        <>
+          <style>{`@keyframes truckDrive{0%,100%{transform:translateX(0)}50%{transform:translateX(3px)}}@keyframes fabPulse{0%,100%{box-shadow:0 4px 16px rgba(255,106,0,0.35)}50%{box-shadow:0 6px 24px rgba(255,106,0,0.55)}}`}</style>
+          <button onClick={()=>onNav("new")} style={{ position:"fixed", bottom:"calc(70px + env(safe-area-inset-bottom, 0px))", right:16, zIndex:90, display:"flex", alignItems:"center", gap:8, padding:"14px 20px", borderRadius:50, background:C.acc, border:"none", cursor:"pointer", fontFamily:"inherit", fontSize:13, fontWeight:700, color:"#fff", animation:"fabPulse 2.5s ease-in-out infinite", WebkitTapHighlightColor:"transparent" }}>
+            <span style={{ display:"inline-flex", animation:"truckDrive 1.5s ease-in-out infinite" }}>{Ic.truck("#fff",18)}</span>
+            Solicitar flete
+          </button>
+        </>
+      )}
     </div>
   );
 }
-
-// Home map view — shows all active freights on a map
 function HomeMapView({ freights, onNav }) {
   const mapRef = useRef(null);
   const [mapReady, setMapReady] = useState(false);
