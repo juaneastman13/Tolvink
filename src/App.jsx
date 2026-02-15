@@ -175,9 +175,9 @@ function stCfg(s) { return STATUS[s] || STATUS.pending_assignment; }
 function getActions(status, userType, role, isOwnFleet) {
   const map = {
     pending_assignment: { producer:["cancel"], plant:["assign","cancel"], transporter:[] },
-    assigned:           { producer:["cancel"], plant: isOwnFleet ? ["authorize","cancel"] : ["cancel"], transporter:["accept","reject"] },
-    accepted:           { producer:["cancel"], plant:["cancel"],          transporter:["start","cancel"] },
-    in_progress:        { producer:[],         plant:[],                  transporter:["confirm_loaded"] },
+    assigned:           { producer: isOwnFleet ? ["cancel"] : ["cancel"], plant: isOwnFleet ? ["authorize","cancel"] : ["cancel"], transporter:["accept","reject"] },
+    accepted:           { producer: isOwnFleet ? ["start","cancel"] : ["cancel"], plant:["cancel"], transporter: isOwnFleet ? [] : ["start","cancel"] },
+    in_progress:        { producer: isOwnFleet ? ["confirm_loaded"] : [], plant:[], transporter: isOwnFleet ? [] : ["confirm_loaded"] },
     loaded:             { producer:["confirm_loaded"], plant:["confirm_finished"], transporter:["confirm_finished"] },
     finished:           { producer:[], plant:[], transporter:[] },
     canceled:           { producer:[], plant:[], transporter:[] },
@@ -903,16 +903,23 @@ function DetailScreen({ user, freight, perms, onBack, onAction, onChat, onRefres
         </div>
       )}
 
-      {/* Own fleet banner */}
-      {freight.isOwnFleet && freight.status==="assigned" && (
-        <div style={{ background:C.accPale, border:`1.5px solid ${C.acc}30`, borderRadius:12, padding:14, marginBottom:12, display:"flex", alignItems:"center", gap:10 }}>
-          {Ic.truck(C.acc,20)}
+      {/* Own fleet banners */}
+      {freight.isOwnFleet && (()=>{
+        const banners = {
+          assigned: { icon:Ic.truck(C.acc,20), bg:C.accPale, border:C.acc, title:"Flota propia — esperando autorización", desc: user.userType==="plant" ? "El productor asignó su propio camión. Autorizá el viaje para continuar." : "Tu camión fue asignado. La planta debe autorizar el viaje." },
+          accepted: { icon:Ic.chk(C.ok,20), bg:C.okPale, border:C.ok, title:"Viaje autorizado por la planta", desc: user.userType==="producer" ? "Ya podés iniciar el viaje con tu camión." : "El productor puede iniciar el viaje con su flota propia." },
+          in_progress: { icon:Ic.truck(C.pri,20), bg:C.priPale, border:C.pri, title:"En viaje — flota propia", desc:"El productor viaja con su propio camión." },
+        };
+        const b = banners[freight.status];
+        if(!b) return null;
+        return <div style={{ background:b.bg, border:`1.5px solid ${b.border}30`, borderRadius:12, padding:14, marginBottom:12, display:"flex", alignItems:"center", gap:10 }}>
+          {b.icon}
           <div>
-            <div style={{ fontSize:12, fontWeight:700, color:C.acc }}>Flota propia del productor</div>
-            <div style={{ fontSize:11, color:C.t2 }}>El productor asignó su propio camión. Solo se requiere autorización.</div>
+            <div style={{ fontSize:12, fontWeight:700, color:b.border }}>{b.title}</div>
+            <div style={{ fontSize:11, color:C.t2 }}>{b.desc}</div>
           </div>
-        </div>
-      )}
+        </div>;
+      })()}
 
       {/* Actions */}
       <div style={{ display:"flex", flexDirection:"column", gap:8, marginBottom:14 }}>
@@ -1682,32 +1689,217 @@ function ChatsScreen({ user, openConvId, onConvOpened }) {
 
 function ReportsScreen({ onBack, freights }) {
   const [expanded, setExpanded] = useState({});
+  const [generating, setGenerating] = useState(null);
   const toggle = (k) => setExpanded(p=>({...p,[k]:!p[k]}));
 
-  // Group freights that have documents
-  const freightsWithDocs = (freights||[]).filter(f=>f.documents?.length>0);
+  const allFreights = freights||[];
 
   // Group by status
   const groups = useMemo(()=>{
-    const active = freightsWithDocs.filter(f=>!["finished","canceled"].includes(f.status));
-    const finished = freightsWithDocs.filter(f=>f.status==="finished");
-    const canceled = freightsWithDocs.filter(f=>f.status==="canceled");
+    const active = allFreights.filter(f=>!["finished","canceled"].includes(f.status));
+    const finished = allFreights.filter(f=>f.status==="finished");
+    const canceled = allFreights.filter(f=>f.status==="canceled");
     return [
       {key:"active", label:"Fletes activos", items:active, color:C.acc},
       {key:"finished", label:"Finalizados", items:finished, color:C.ok},
       {key:"canceled", label:"Cancelados", items:canceled, color:C.muted},
     ].filter(g=>g.items.length>0);
-  },[freightsWithDocs]);
+  },[allFreights]);
 
-  const totalDocs = freightsWithDocs.reduce((sum,f)=>sum+(f.documents?.length||0),0);
+  const totalDocs = allFreights.reduce((sum,f)=>sum+(f.documents?.length||0),0);
+
+  // PDF generation for a single freight
+  const generatePDF = async (f) => {
+    setGenerating(f.id);
+    try {
+      // Load jsPDF from CDN
+      if(!window.jspdf) {
+        await new Promise((resolve, reject) => {
+          const s = document.createElement("script");
+          s.src = "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
+          s.onload = resolve; s.onerror = reject;
+          document.head.appendChild(s);
+        });
+      }
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      const st = stCfg(f.status);
+      let y = 20;
+      const lm = 20; // left margin
+      const pw = 170; // page width usable
+
+      // Header
+      doc.setFontSize(22); doc.setFont("helvetica","bold");
+      doc.setTextColor(26,107,55);
+      doc.text("tolvink", lm, y); y+=4;
+      doc.setFontSize(9); doc.setFont("helvetica","normal");
+      doc.setTextColor(120,120,120);
+      doc.text("Informe de flete", lm+42, y); y+=12;
+
+      // Freight code + status
+      doc.setFontSize(16); doc.setFont("helvetica","bold");
+      doc.setTextColor(30,30,30);
+      doc.text(`${f.code}`, lm, y);
+      doc.setFontSize(10); doc.setFont("helvetica","normal");
+      doc.text(`Estado: ${st.label}`, lm+50, y); y+=10;
+
+      // Divider
+      doc.setDrawColor(200,200,200); doc.line(lm, y, lm+pw, y); y+=8;
+
+      // Info table
+      doc.setFontSize(11); doc.setFont("helvetica","bold");
+      doc.setTextColor(30,30,30);
+      doc.text("Información del flete", lm, y); y+=8;
+
+      const info = [
+        ["Producto", `${f.grain==="Otros"?f.productTypeOther||"Otros":f.grain} · ${f.tons} ${f.unit||"tn"}`],
+        f.amount>0 && ["Importe", `$${Number(f.amount).toLocaleString()}`],
+        ["Origen", f.originName],
+        f.fieldName && ["Campo", f.fieldName],
+        ["Destino", f.destName],
+        ["Fecha carga", f.loadDate],
+        f.loadTime && ["Hora carga", f.loadTime],
+        ["Solicitado por", f.requestedByName],
+        f.transporterName && ["Transportista", f.transporterName],
+        f.truckPlate && ["Camión", `${f.truckPlate}${f.truckModel?` · ${f.truckModel}`:""}`],
+        f.driverName && ["Chofer", f.driverName],
+        f.isOwnFleet && ["Tipo", "Flota propia del productor"],
+        ["Creado", new Date(f.createdAt).toLocaleDateString("es",{day:"2-digit",month:"short",year:"numeric"})],
+      ].filter(Boolean);
+
+      doc.setFontSize(10); doc.setFont("helvetica","normal");
+      info.forEach(([label, val])=>{
+        doc.setTextColor(100,100,100);
+        doc.text(label, lm, y);
+        doc.setTextColor(30,30,30);
+        doc.setFont("helvetica","bold");
+        doc.text(val||"—", lm+50, y);
+        doc.setFont("helvetica","normal");
+        y+=7;
+        if(y>270) { doc.addPage(); y=20; }
+      });
+
+      y+=5;
+
+      // Documents section
+      const docs = f.documents||[];
+      if(docs.length>0) {
+        doc.setDrawColor(200,200,200); doc.line(lm, y, lm+pw, y); y+=8;
+        doc.setFontSize(11); doc.setFont("helvetica","bold");
+        doc.setTextColor(30,30,30);
+        doc.text(`Documentos adjuntos (${docs.length})`, lm, y); y+=8;
+
+        doc.setFontSize(9); doc.setFont("helvetica","normal");
+        docs.forEach((d,i)=>{
+          const stepLabel = d.step==="request"?"Solicitud":d.step==="load_confirmation"?"Carga":d.step==="assignment"?"Asignación":"Otro";
+          const dateStr = d.createdAt?new Date(d.createdAt).toLocaleDateString("es",{day:"2-digit",month:"short"}):"";
+          doc.setTextColor(30,30,30);
+          doc.text(`${i+1}. ${d.name||"Documento"}`, lm, y);
+          doc.setTextColor(100,100,100);
+          doc.text(`${stepLabel} · ${dateStr}`, lm+80, y);
+          y+=6;
+          if(d.url) {
+            doc.setTextColor(0,56,130);
+            doc.textWithLink(d.url.length>60?d.url.slice(0,60)+"...":d.url, lm+4, y, {url:d.url});
+            y+=6;
+          }
+          if(y>270) { doc.addPage(); y=20; }
+        });
+      }
+
+      // Footer
+      y+=10;
+      doc.setDrawColor(200,200,200); doc.line(lm, y, lm+pw, y); y+=6;
+      doc.setFontSize(8); doc.setFont("helvetica","normal"); doc.setTextColor(150,150,150);
+      doc.text(`Generado por tolvink · ${new Date().toLocaleString("es")}`, lm, y);
+
+      doc.save(`${f.code}-informe.pdf`);
+    } catch(e) { console.error("PDF error",e); }
+    setGenerating(null);
+  };
+
+  // Generate summary PDF of all freights
+  const generateSummaryPDF = async () => {
+    setGenerating("summary");
+    try {
+      if(!window.jspdf) {
+        await new Promise((resolve, reject) => {
+          const s = document.createElement("script");
+          s.src = "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
+          s.onload = resolve; s.onerror = reject;
+          document.head.appendChild(s);
+        });
+      }
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      let y = 20;
+      const lm = 20;
+      const pw = 170;
+
+      // Header
+      doc.setFontSize(22); doc.setFont("helvetica","bold");
+      doc.setTextColor(26,107,55);
+      doc.text("tolvink", lm, y); y+=4;
+      doc.setFontSize(9); doc.setFont("helvetica","normal");
+      doc.setTextColor(120,120,120);
+      doc.text("Resumen de fletes", lm+42, y); y+=12;
+
+      doc.setFontSize(11); doc.setFont("helvetica","bold");
+      doc.setTextColor(30,30,30);
+      doc.text(`Total: ${allFreights.length} fletes · ${totalDocs} documentos`, lm, y); y+=10;
+      doc.setDrawColor(200,200,200); doc.line(lm, y, lm+pw, y); y+=8;
+
+      // Table header
+      doc.setFontSize(9); doc.setFont("helvetica","bold");
+      doc.setTextColor(80,80,80);
+      doc.text("Código", lm, y);
+      doc.text("Producto", lm+28, y);
+      doc.text("Origen", lm+65, y);
+      doc.text("Destino", lm+105, y);
+      doc.text("Estado", lm+145, y);
+      y+=3;
+      doc.setDrawColor(220,220,220); doc.line(lm, y, lm+pw, y); y+=5;
+
+      doc.setFont("helvetica","normal");
+      allFreights.forEach(f=>{
+        const st2 = stCfg(f.status);
+        doc.setTextColor(30,30,30);
+        doc.setFont("helvetica","bold");
+        doc.text(f.code||"—", lm, y);
+        doc.setFont("helvetica","normal");
+        doc.text(`${(f.grain||"").slice(0,10)} ${f.tons}${f.unit==="toneladas"?"tn":f.unit||""}`, lm+28, y);
+        doc.text((f.originName||"").slice(0,20), lm+65, y);
+        doc.text((f.destName||"").slice(0,20), lm+105, y);
+        doc.setTextColor(100,100,100);
+        doc.text(st2.label, lm+145, y);
+        y+=6;
+        if(y>270) { doc.addPage(); y=20; }
+      });
+
+      y+=8;
+      doc.setDrawColor(200,200,200); doc.line(lm, y, lm+pw, y); y+=6;
+      doc.setFontSize(8); doc.setFont("helvetica","normal"); doc.setTextColor(150,150,150);
+      doc.text(`Generado por tolvink · ${new Date().toLocaleString("es")}`, lm, y);
+
+      doc.save(`tolvink-resumen-${new Date().toISOString().slice(0,10)}.pdf`);
+    } catch(e) { console.error("PDF error",e); }
+    setGenerating(null);
+  };
 
   return (
     <div style={{ flex:1, overflow:"auto", padding:18 }}>
       <button onClick={onBack} style={{ background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", fontSize:13, fontWeight:600, color:C.pri, marginBottom:14, padding:0, display:"flex", alignItems:"center", gap:4 }}>{Ic.chev(C.pri,18)} Mi Perfil</button>
-      <div style={{ fontSize:20, fontWeight:800, letterSpacing:-0.3, marginBottom:4 }}>Informes y Documentos</div>
-      <div style={{ fontSize:12, color:C.t2, marginBottom:18 }}>{totalDocs} documento{totalDocs!==1?"s":""} en {freightsWithDocs.length} flete{freightsWithDocs.length!==1?"s":""}</div>
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:4 }}>
+        <div style={{ fontSize:20, fontWeight:800, letterSpacing:-0.3 }}>Informes y Documentos</div>
+      </div>
+      <div style={{ fontSize:12, color:C.t2, marginBottom:14 }}>{allFreights.length} flete{allFreights.length!==1?"s":""} · {totalDocs} documento{totalDocs!==1?"s":""}</div>
 
-      {freightsWithDocs.length===0 && <div style={{ textAlign:"center", padding:40, color:C.t3, fontSize:13 }}>No hay documentos adjuntos en tus fletes.</div>}
+      {/* Export summary button */}
+      <Btn full v="ghost" icon={Ic.doc(C.pri,16)} onClick={generateSummaryPDF} disabled={generating==="summary"} style={{marginBottom:16}}>
+        {generating==="summary"?"Generando...":"Descargar resumen general (PDF)"}
+      </Btn>
+
+      {allFreights.length===0 && <div style={{ textAlign:"center", padding:40, color:C.t3, fontSize:13 }}>No hay fletes registrados.</div>}
 
       {groups.map(group=>(
         <div key={group.key} style={{ marginBottom:16 }}>
@@ -1717,7 +1909,7 @@ function ReportsScreen({ onBack, freights }) {
           </div>
 
           {group.items.map(f=>{
-            const isOpen = expanded[f.id]!==false;
+            const isOpen = expanded[f.id];
             const docs = f.documents||[];
             return (
               <div key={f.id} style={{ background:C.w, border:`1px solid ${C.b1}`, borderRadius:12, overflow:"hidden", marginBottom:8, boxShadow:C.sh }}>
@@ -1728,14 +1920,20 @@ function ReportsScreen({ onBack, freights }) {
                       <span style={{ fontSize:12, fontWeight:700, fontFamily:MONO }}>{f.code}</span>
                       <span style={{ fontSize:10, color:C.t3 }}>{f.grain} · {f.tons} {f.unit||"tn"}</span>
                     </div>
-                    <div style={{ fontSize:11, color:C.t2, marginTop:2 }}>{docs.length} documento{docs.length!==1?"s":""} · {f.destName}</div>
+                    <div style={{ fontSize:11, color:C.t2, marginTop:2 }}>{docs.length} doc{docs.length!==1?"s":""} · {f.originName} → {f.destName}</div>
                   </div>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.t3} strokeWidth="2.5" style={{transform:isOpen?"rotate(180deg)":"rotate(0deg)",transition:"transform 0.2s"}}><polyline points="6 9 12 15 18 9"/></svg>
                 </button>
 
                 {isOpen && (
                   <div style={{ borderTop:`1px solid ${C.b2}`, padding:"8px 14px" }}>
-                    {docs.map((d,i)=>(
+                    {/* PDF button for this freight */}
+                    <button onClick={()=>generatePDF(f)} disabled={generating===f.id}
+                      style={{ width:"100%", padding:"10px 12px", borderRadius:8, border:`1.5px solid ${C.sec}30`, background:C.secPale, cursor:"pointer", fontFamily:"inherit", fontSize:11, fontWeight:600, color:C.sec, display:"flex", alignItems:"center", justifyContent:"center", gap:6, marginBottom:8 }}>
+                      {Ic.doc(C.sec,14)} {generating===f.id?"Generando...":"Descargar informe PDF"}
+                    </button>
+
+                    {docs.length>0 ? docs.map((d,i)=>(
                       <div key={d.id||i} style={{ display:"flex", alignItems:"center", gap:10, padding:"8px 0", borderBottom:i<docs.length-1?`1px solid ${C.b2}`:"none" }}>
                         {d.type==="photo" ? (
                           <a href={d.url} target="_blank" rel="noopener noreferrer" style={{ width:48, height:48, borderRadius:8, overflow:"hidden", flexShrink:0, border:`1px solid ${C.b1}` }}>
@@ -1754,7 +1952,7 @@ function ReportsScreen({ onBack, freights }) {
                           {Ic.eye(C.sec,16)}
                         </a>
                       </div>
-                    ))}
+                    )) : <div style={{ fontSize:11, color:C.t3, padding:"8px 0" }}>Sin documentos adjuntos</div>}
                   </div>
                 )}
               </div>
