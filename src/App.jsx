@@ -2748,7 +2748,7 @@ function ChatsScreen({ user, openConvId, onConvOpened }) {
         <div style={{ padding: "12px 18px", borderBottom: `1px solid ${C.b1}`, background: C.w, display: "flex", alignItems: "center", gap: 10 }}>
           <button onClick={() => setActiveConv(null)} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", padding: 0 }}>{Ic.chev(C.pri, 20)}</button>
           <div>
-            <div style={{ fontSize: 14, fontWeight: 700, color: C.sec }}>{activeConv.freight?.code ? `Flete ${activeConv.freight.code}` : "Mensaje directo"}</div>
+            <div style={{ fontSize: 14, fontWeight: 700, color: C.t1 }}>{activeConv.freight?.code ? `Flete ${activeConv.freight.code}` : "Mensaje directo"}</div>
             <div style={{ fontSize: 10, color: C.t3 }}>{getConvName(activeConv)} · {messages.length} mensaje{messages.length !== 1 ? "s" : ""}</div>
           </div>
         </div>
@@ -2827,7 +2827,7 @@ function ChatsScreen({ user, openConvId, onConvOpened }) {
                       {Ic.user(C.pri, 16)}
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 13, fontWeight: 700, color: C.sec }}>{companyName}</div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: C.t1 }}>{companyName}</div>
                       <div style={{ fontSize: 10.5, color: C.t3 }}>{countParts.join(" · ")}</div>
                     </div>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={C.t3} strokeWidth="2.5" style={{ transform: isOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }}><polyline points="6 9 12 15 18 9"/></svg>
@@ -2845,7 +2845,7 @@ function ChatsScreen({ user, openConvId, onConvOpened }) {
                             <div style={{ width: 8, height: 8, borderRadius: 4, background: statusCol, flexShrink: 0 }} />
                             <div style={{ flex: 1, minWidth: 0 }}>
                               <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                                <span style={{ fontSize: 12, fontWeight: 700, color: C.sec }}>{title}</span>
+                                <span style={{ fontSize: 12, fontWeight: 700, color: C.t1 }}>{title}</span>
                                 {isFreight && <span style={{ fontSize: 9, fontWeight: 600, color: statusCol, textTransform: "uppercase" }}>{stLabel(c.freight?.status)}</span>}
                               </div>
                               <div style={{ fontSize: 11, color: C.t3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", marginTop: 2 }}>{getLastMsg(c)}</div>
