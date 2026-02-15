@@ -1095,23 +1095,23 @@ function LocationPicker({ label, value, onChange }) {
     }
 
     return () => { cancelled = true; };
-  }, [showMap]);
+  }, [showMap, mapFull]);
 
   const [mapFull, setMapFull] = useState(false);
   const fullSearchRef = useRef(null);
 
-  const toggleFull = () => {
+  const toggleFull = (e) => {
+    if (e) { e.preventDefault(); e.stopPropagation(); }
     setMapFull(f => {
       const next = !f;
       setTimeout(() => {
         if (mapObjRef.current && window.google?.maps) {
           window.google.maps.event.trigger(mapObjRef.current, "resize");
-          // Re-center on current value
           if (value?.lat && value?.lng) {
             mapObjRef.current.setCenter({ lat: value.lat, lng: value.lng });
           }
         }
-      }, 100);
+      }, 150);
       return next;
     });
   };
@@ -1138,6 +1138,13 @@ function LocationPicker({ label, value, onChange }) {
     });
   }, [mapFull]);
 
+  // Hide Google Maps default zoom control in fullscreen to avoid overlap
+  useEffect(() => {
+    if (mapObjRef.current) {
+      mapObjRef.current.setOptions({ zoomControl: !mapFull });
+    }
+  }, [mapFull]);
+
   return (
     <div style={{ marginBottom: 6 }}>
       <div style={{ fontSize: 11, fontWeight: 600, color: C.t2, marginBottom: 4 }}>{label || "Ubicación"}</div>
@@ -1151,35 +1158,39 @@ function LocationPicker({ label, value, onChange }) {
         </button>
       </div>
 
-      {/* Fullscreen overlay header */}
+      {/* FULLSCREEN PORTAL — completely separate overlay */}
       {mapFull && (
-        <div style={{ position:"fixed", top:0, left:0, right:0, zIndex:201, display:"flex", alignItems:"center", gap:8, padding:"14px 16px", paddingTop:"calc(14px + env(safe-area-inset-top))", background:C.w, borderBottom:`1px solid ${C.b1}`, boxShadow:"0 2px 8px rgba(0,0,0,0.1)" }}>
-          <button onClick={toggleFull} style={{ width:44, height:44, borderRadius:10, background:"none", border:`1.5px solid ${C.b1}`, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
-            {Ic.chev(C.t1,22)}
-          </button>
-          <input ref={fullSearchRef} value={addr} onChange={e => setAddr(e.target.value)} placeholder="Buscar dirección..."
-            style={{ flex:1, padding:"12px 14px", borderRadius:10, border:`1.5px solid ${C.b1}`, fontSize:16, fontFamily:"inherit", outline:"none", color:C.t1, background:C.bg }} />
-          <button onClick={toggleFull} style={{ padding:"12px 20px", borderRadius:10, background:C.pri, color:C.w, border:"none", cursor:"pointer", fontFamily:"inherit", fontSize:15, fontWeight:700, flexShrink:0, minHeight:44 }}>Listo</button>
-        </div>
-      )}
-
-      {/* Fullscreen overlay footer */}
-      {mapFull && value?.lat && (
-        <div style={{ position:"fixed", bottom:0, left:0, right:0, zIndex:201, fontSize:11, color:C.t3, padding:"8px 16px", paddingBottom:"max(8px, env(safe-area-inset-bottom))", background:C.w, borderTop:`1px solid ${C.b1}`, textAlign:"center" }}>
-          {value.lat.toFixed(5)}, {value.lng.toFixed(5)}
-        </div>
-      )}
-
-      {/* Single map container — switches between inline and fullscreen via CSS */}
-      {showMap && (
-        <div style={mapFull ? { position:"fixed", top:0, left:0, right:0, bottom:0, zIndex:200, paddingTop:72, paddingBottom: value?.lat ? 36 : 0 } : { marginTop: 6, borderRadius: 10, overflow: "hidden", border: `1px solid ${C.b1}`, position:"relative" }}>
-          <div ref={mapRef} style={mapFull ? { width:"100%", height:"100%" } : { width: "100%", height: 180 }} />
-          {!mapFull && (
-            <button onClick={toggleFull} style={{ position:"absolute", top:8, right:8, zIndex:5, padding:"6px 8px", borderRadius:6, background:"rgba(255,255,255,0.9)", border:`1px solid ${C.b1}`, cursor:"pointer", display:"flex", alignItems:"center", boxShadow:"0 1px 4px rgba(0,0,0,0.15)" }}>
-              {Ic.expand(C.t1,16)}
+        <div style={{ position:"fixed", inset:0, zIndex:9999, background:"#000", display:"flex", flexDirection:"column" }}>
+          {/* Header bar */}
+          <div style={{ display:"flex", alignItems:"center", gap:8, padding:"10px 12px", paddingTop:"calc(10px + env(safe-area-inset-top))", background:C.w, flexShrink:0, zIndex:2 }}>
+            <button onPointerDown={toggleFull} style={{ width:44, height:44, borderRadius:10, background:C.bg, border:`1.5px solid ${C.b1}`, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, touchAction:"manipulation" }}>
+              {Ic.chev(C.t1,22)}
             </button>
+            <input ref={fullSearchRef} value={addr} onChange={e => setAddr(e.target.value)} placeholder="Buscar dirección..."
+              style={{ flex:1, padding:"12px 14px", borderRadius:10, border:`1.5px solid ${C.b1}`, fontSize:16, fontFamily:"inherit", outline:"none", color:C.t1, background:C.bg }} />
+            <button onPointerDown={toggleFull} style={{ padding:"12px 20px", borderRadius:10, background:C.pri, color:C.w, border:"none", cursor:"pointer", fontFamily:"inherit", fontSize:15, fontWeight:700, flexShrink:0, minHeight:44, touchAction:"manipulation" }}>Listo</button>
+          </div>
+          {/* Map takes remaining space */}
+          <div style={{ flex:1, position:"relative" }}>
+            <div ref={mapRef} style={{ position:"absolute", inset:0 }} />
+          </div>
+          {/* Footer coords */}
+          {value?.lat && (
+            <div style={{ fontSize:11, color:C.t3, padding:"8px 16px", paddingBottom:"calc(8px + env(safe-area-inset-bottom))", background:C.w, textAlign:"center", flexShrink:0, zIndex:2 }}>
+              {value.lat.toFixed(5)}, {value.lng.toFixed(5)}
+            </div>
           )}
-          {!mapFull && value?.lat && <div style={{ fontSize: 10, color: C.t3, padding: "4px 8px", background: C.bg }}>{value.lat.toFixed(5)}, {value.lng.toFixed(5)}</div>}
+        </div>
+      )}
+
+      {/* Inline map (non-fullscreen) */}
+      {showMap && !mapFull && (
+        <div style={{ marginTop: 6, borderRadius: 10, overflow: "hidden", border: `1px solid ${C.b1}`, position:"relative" }}>
+          <div ref={mapRef} style={{ width: "100%", height: 180 }} />
+          <button onClick={toggleFull} style={{ position:"absolute", top:8, right:8, zIndex:5, padding:"6px 8px", borderRadius:6, background:"rgba(255,255,255,0.9)", border:`1px solid ${C.b1}`, cursor:"pointer", display:"flex", alignItems:"center", boxShadow:"0 1px 4px rgba(0,0,0,0.15)" }}>
+            {Ic.expand(C.t1,16)}
+          </button>
+          {value?.lat && <div style={{ fontSize: 10, color: C.t3, padding: "4px 8px", background: C.bg }}>{value.lat.toFixed(5)}, {value.lng.toFixed(5)}</div>}
         </div>
       )}
     </div>
