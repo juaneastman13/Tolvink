@@ -174,17 +174,31 @@ const Ic = {
 
 // Backend states: draft, pending_assignment, assigned, accepted, in_progress, loaded, finished, canceled
 // Color system: pending=naranja, active states=verde progresivo, terminal=verde oscuro/rojo
-const STATUS = {
-  draft:              { label:"Borrador",            color:C.muted,   bg:C.mutedPale, border:C.muted   },
-  pending_assignment: { label:"Solicitado",          color:C.acc,     bg:C.accPale,   border:C.acc     },
-  assigned:           { label:"Asignado a flota",    color:C.sec,     bg:C.secPale,   border:C.sec     },
-  accepted:           { label:"Confirmado camión",   color:C.sec,     bg:C.secPale,   border:C.sec     },
-  in_progress:        { label:"En curso",            color:"#258B3E", bg:"#D0EBD7",   border:"#258B3E" },
-  loaded:             { label:"Cargando",            color:"#1B7D33", bg:"#C4E6CC",   border:"#1B7D33" },
-  finished:           { label:"Finalizado",          color:C.pri,     bg:C.priPale,   border:C.pri     },
-  canceled:           { label:"Cancelado",           color:C.err,     bg:C.errPale,   border:C.err     },
+// Light mode uses original hardcoded colors; dark mode uses C (dynamic)
+const STATUS_LIGHT = {
+  draft:              { label:"Borrador",            color:"#71717A",   bg:"#F4F4F5",   border:"#71717A"   },
+  pending_assignment: { label:"Solicitado",          color:"#FF6A00",   bg:"#FFF3E8",   border:"#FF6A00"   },
+  assigned:           { label:"Asignado a flota",    color:"#003882",   bg:"#E8F0FE",   border:"#003882"   },
+  accepted:           { label:"Confirmado camión",   color:"#003882",   bg:"#E8F0FE",   border:"#003882"   },
+  in_progress:        { label:"En curso",            color:"#258B3E",   bg:"#D0EBD7",   border:"#258B3E"   },
+  loaded:             { label:"Cargando",            color:"#1B7D33",   bg:"#C4E6CC",   border:"#1B7D33"   },
+  finished:           { label:"Finalizado",          color:"#1A6B37",   bg:"#E4F3EA",   border:"#1A6B37"   },
+  canceled:           { label:"Cancelado",           color:"#DC2626",   bg:"#FEE2E2",   border:"#DC2626"   },
 };
-function stCfg(s) { return STATUS[s] || STATUS.pending_assignment; }
+const STATUS_DARK = {
+  draft:              { label:"Borrador",            color:"#9CA3AF",   bg:"#27302C",   border:"#9CA3AF"   },
+  pending_assignment: { label:"Solicitado",          color:"#FF8533",   bg:"#33241A",   border:"#FF8533"   },
+  assigned:           { label:"Asignado a flota",    color:"#4D9AFF",   bg:"#1A2840",   border:"#4D9AFF"   },
+  accepted:           { label:"Confirmado camión",   color:"#4D9AFF",   bg:"#1A2840",   border:"#4D9AFF"   },
+  in_progress:        { label:"En curso",            color:"#4ADE80",   bg:"#1A3328",   border:"#4ADE80"   },
+  loaded:             { label:"Cargando",            color:"#34D399",   bg:"#1A332D",   border:"#34D399"   },
+  finished:           { label:"Finalizado",          color:"#2EBF5E",   bg:"#1A3328",   border:"#2EBF5E"   },
+  canceled:           { label:"Cancelado",           color:"#EF4444",   bg:"#331A1A",   border:"#EF4444"   },
+};
+function stCfg(s) { 
+  const map = _theme === "dark" ? STATUS_DARK : STATUS_LIGHT;
+  return map[s] || map.pending_assignment; 
+}
 
 function getActions(status, userType, role, isOwnFleet) {
   const map = {
@@ -2186,9 +2200,9 @@ function ProfileScreen({ user, perms, onLogout, onNav, theme, toggleTheme }) {
   return (
     <div style={{flex:1,overflow:"auto",padding:18}}>
       <div style={{fontSize:20,fontWeight:800,marginBottom:22,letterSpacing:-0.3}}>Mi Perfil</div>
-      <div style={{textAlign:"center",marginBottom:24}}>
-        <Av letters={user.av} size={60} color={tc}/>
-        <div style={{fontSize:18,fontWeight:700,marginTop:10}}>{user.name}</div>
+      <div style={{display:"flex",flexDirection:"column",alignItems:"center",marginBottom:24}}>
+        <Av letters={user.av} size={72} color={tc}/>
+        <div style={{fontSize:18,fontWeight:700,marginTop:12,color:C.t1}}>{user.name}</div>
         <div style={{fontSize:12,color:C.t2,marginTop:3}}>{user.email}</div>
         <div style={{display:"flex",gap:6,justifyContent:"center",marginTop:8}}>
           <Bd color={tc}>{({plant:"Planta",transporter:"Transportista",producer:"Productor"})[user.userType]}</Bd>
@@ -2807,10 +2821,10 @@ function ChatsScreen({ user, openConvId, onConvOpened }) {
                       {Ic.user(C.w,16)}
                     </div>
                     <div style={{ flex:1, minWidth:0 }}>
-                      <div style={{ fontSize:13, fontWeight:700, color:C.sec }}>{companyName}</div>
+                      <div style={{ fontSize:13, fontWeight:700, color:C.t1 }}>{companyName}</div>
                       <div style={{ fontSize:10.5, color:C.t2 }}>{convsList.length} flete{convsList.length!==1?"s":""}{activeCount>0?` · ${activeCount} activo${activeCount!==1?"s":""}`:""}</div>
                     </div>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={C.sec} strokeWidth="2.5" style={{transform:isOpen?"rotate(180deg)":"rotate(0deg)",transition:"transform 0.2s"}}><polyline points="6 9 12 15 18 9"/></svg>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={C.t2} strokeWidth="2.5" style={{transform:isOpen?"rotate(180deg)":"rotate(0deg)",transition:"transform 0.2s"}}><polyline points="6 9 12 15 18 9"/></svg>
                   </button>
 
                   {/* Freight conversations inside this company */}
