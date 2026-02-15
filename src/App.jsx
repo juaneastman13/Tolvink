@@ -387,14 +387,14 @@ function Bd({ children, color=C.pri, bg, small }) {
 
 function Btn({ children, onClick, v="pri", full, sm, icon, disabled, style={} }) {
   const vs = {
-    pri:  { bg:C.pri, c:C.w },
+    pri:  { bg:C.pri, c:C.w, hbg:C.priLt },
     sec:  { bg:C.w,   c:C.pri, bd:C.b1 },
     err:  { bg:C.errPale, c:C.err },
     ghost:{ bg:"transparent", c:C.t2 },
-    acc:  { bg:C.acc, c:C.w },
+    acc:  { bg:C.acc, c:C.w, hbg:C.accLt },
   };
   const vv = vs[v] || vs.pri;
-  return <button disabled={disabled} onClick={onClick} style={{ display:"inline-flex", alignItems:"center", justifyContent:"center", gap:7, padding:sm?"8px 14px":"13px 22px", borderRadius:10, fontSize:sm?12:13.5, fontWeight:600, fontFamily:"inherit", background:disabled?"#E8ECE9":vv.bg, color:disabled?C.t3:vv.c, border:vv.bd?`1px solid ${vv.bd}`:"none", cursor:disabled?"not-allowed":"pointer", width:full?"100%":"auto", transition:"all 0.15s", minHeight:sm?36:44, WebkitTapHighlightColor:"transparent", touchAction:"manipulation", ...style }}>{icon&&<span style={{display:"flex",alignItems:"center"}}>{icon}</span>}{children}</button>;
+  return <button disabled={disabled} onClick={onClick} style={{ display:"inline-flex", alignItems:"center", justifyContent:"center", gap:7, padding:sm?"8px 14px":"13px 22px", borderRadius:10, fontSize:sm?12:13.5, fontWeight:600, fontFamily:"inherit", background:disabled?"#E8ECE9":vv.bg, color:disabled?C.t3:vv.c, border:vv.bd?`1px solid ${vv.bd}`:"none", cursor:disabled?"not-allowed":"pointer", width:full?"100%":"auto", transition:"all 0.2s ease", minHeight:sm?36:44, WebkitTapHighlightColor:"transparent", touchAction:"manipulation", ...style }} onMouseEnter={e=>{if(!disabled&&vv.hbg)e.currentTarget.style.background=vv.hbg}} onMouseLeave={e=>{if(!disabled)e.currentTarget.style.background=disabled?"#E8ECE9":vv.bg}}>{icon&&<span style={{display:"flex",alignItems:"center"}}>{icon}</span>}{children}</button>;
 }
 
 function Tabs({ items, active, onChange }) {
@@ -774,12 +774,12 @@ function HomeScreen({ user, freights, perms, onNav }) {
       </div>
 
       {/* Sticky header — stats + view toggle */}
-      <div style={{ position:"sticky", top:0, zIndex:10, background:C.bg, padding:"8px 18px 0 18px" }}>
-        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8, marginBottom:8 }}>
+      <div className="tv-header-bar" style={{ position:"sticky", top:0, zIndex:10, background:C.bg, padding:"8px 18px 0 18px" }}>
+        <div className="tv-stats" style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8, marginBottom:8 }}>
           {statCards.map(s=>{
             const sel = activeFilter===s.k;
-            return <div key={s.k} onClick={()=>toggleFilter(s.k)} style={{ background:sel?s.c:s.bg, borderRadius:10, padding:"10px 8px", textAlign:"center", cursor:"pointer", transition:"all 0.15s", border:sel?`2px solid ${s.c}`:`2px solid transparent`, transform:sel?"scale(1.03)":"scale(1)" }}>
-              <div style={{ fontSize:24, fontWeight:800, color:sel?C.w:s.c }}>{s.v}</div>
+            return <div key={s.k} onClick={()=>toggleFilter(s.k)} style={{ background:sel?s.c:s.bg, borderRadius:10, padding:"10px 8px", textAlign:"center", cursor:"pointer", transition:"all 0.2s ease", border:sel?`2px solid ${s.c}`:`2px solid transparent`, transform:sel?"scale(1.03)":"scale(1)" }}>
+              <div className="tv-stat-num" style={{ fontSize:24, fontWeight:800, color:sel?C.w:s.c }}>{s.v}</div>
               <div style={{ fontSize:9.5, color:sel?C.w:s.c, fontWeight:sel?700:500, marginTop:1, opacity:sel?1:0.8 }}>{s.l}</div>
             </div>;
           })}
@@ -827,7 +827,7 @@ function HomeScreen({ user, freights, perms, onNav }) {
       {/* TABLE VIEW */}
       {viewMode==="table" && (
         <div style={{ overflowX:"auto", borderRadius:10, border:`1px solid ${C.b1}`, background:C.w }}>
-          <table style={{ width:"100%", borderCollapse:"collapse", fontSize:11 }}>
+          <table className="tv-table" style={{ width:"100%", borderCollapse:"collapse", fontSize:11 }}>
             <thead>
               <tr style={{ background:C.bg }}>
                 {[["Código","code"],["Origen","origin"],["Destino","dest"],["Producto","product"],["Camión","truck"],["Carga","date"],["Cant.","qty"]].map(([h,k])=>(
@@ -840,7 +840,7 @@ function HomeScreen({ user, freights, perms, onNav }) {
               {sort.sortData(displayFreights, HOME_GETTERS).map(f=>{
                 const st = stCfg(f.status);
                 return (
-                  <tr key={f.id} onClick={()=>onNav("detail",f.id)} style={{ cursor:"pointer", borderBottom:`1px solid ${C.b2}` }}>
+                  <tr key={f.id} className="tv-row" onClick={()=>onNav("detail",f.id)} style={{ cursor:"pointer", borderBottom:`1px solid ${C.b2}` }}>
                     <td style={{ padding:"7px 6px", fontFamily:MONO, fontWeight:600, color:C.t1, whiteSpace:"nowrap" }}>{f.code}</td>
                     <td style={{ padding:"7px 6px", color:C.t2, maxWidth:120, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{(f.originName||"").split("—")[0].trim()}</td>
                     <td style={{ padding:"7px 6px", color:C.t2, maxWidth:100, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{f.destName}</td>
@@ -860,10 +860,10 @@ function HomeScreen({ user, freights, perms, onNav }) {
       {viewMode==="cards" && (
         <div style={{ display:"flex", flexDirection:"column", gap:10 }} className="tv-grid">
           {displayFreights.length===0 && <div style={{ textAlign:"center", padding:40, color:C.t3, fontSize:13, gridColumn:"1/-1" }}>Sin fletes en esta categoría</div>}
-          {displayFreights.map(f=>{
+          {displayFreights.map((f,idx)=>{
             const st = stCfg(f.status);
             return (
-              <div key={f.id} onClick={()=>onNav("detail",f.id)} style={{ background:C.w, border:`1px solid ${C.b1}`, borderLeft:`3px solid ${st.border}`, borderRadius:12, padding:14, cursor:"pointer", boxShadow:C.sh }}>
+              <div key={f.id} className="tv-card" onClick={()=>onNav("detail",f.id)} style={{ background:C.w, border:`1px solid ${C.b1}`, borderLeft:`3px solid ${st.border}`, borderRadius:12, padding:14, cursor:"pointer", boxShadow:C.sh, animation:`cardIn 0.3s ease ${idx*0.04}s both` }}>
                 <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
                   <span style={{ fontSize:11, fontWeight:700, color:C.t3, fontFamily:MONO }}>{f.code}</span>
                   <Bd color={st.color} bg={st.bg} small>{st.label}</Bd>
@@ -1126,7 +1126,7 @@ function ListScreen({ freights, onNav, onRefresh }) {
       {/* TABLE VIEW */}
       {viewMode==="table" && (
         <div style={{ overflowX:"auto", borderRadius:10, border:`1px solid ${C.b1}`, background:C.w }}>
-          <table style={{ width:"100%", borderCollapse:"collapse", fontSize:11 }}>
+          <table className="tv-table" style={{ width:"100%", borderCollapse:"collapse", fontSize:11 }}>
             <thead>
               <tr style={{ background:C.bg }}>
                 {[["Código","code"],["Estado","status"],["Origen","origin"],["Destino","dest"],["Producto","product"],["Camión","truck"],["Carga","date"],["Cant.","qty"]].map(([h,k])=>(
@@ -1139,7 +1139,7 @@ function ListScreen({ freights, onNav, onRefresh }) {
               {sort.sortData(filtered, LIST_GETTERS).map(f=>{
                 const st = stCfg(f.status);
                 return (
-                  <tr key={f.id} onClick={()=>onNav("detail",f.id)} style={{ cursor:"pointer", borderBottom:`1px solid ${C.b2}` }}>
+                  <tr key={f.id} className="tv-row" onClick={()=>onNav("detail",f.id)} style={{ cursor:"pointer", borderBottom:`1px solid ${C.b2}` }}>
                     <td style={{ padding:"7px 6px", fontFamily:MONO, fontWeight:600, color:C.t1, whiteSpace:"nowrap" }}>{f.code}</td>
                     <td style={{ padding:"7px 6px" }}><Bd color={st.color} bg={st.bg} small>{st.label}</Bd></td>
                     <td style={{ padding:"7px 6px", color:C.t2, maxWidth:120, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{(f.originName||"").split("—")[0].trim()}</td>
@@ -1160,10 +1160,10 @@ function ListScreen({ freights, onNav, onRefresh }) {
       {viewMode==="cards" && (
       <div style={{ display:"flex", flexDirection:"column", gap:10 }} className="tv-grid">
         {filtered.length===0 && <div style={{ textAlign:"center", padding:40, color:C.t3, fontSize:13, gridColumn:"1/-1" }}>Sin fletes en esta categoría</div>}
-        {filtered.map(f=>{
+        {filtered.map((f,idx)=>{
           const st = stCfg(f.status);
           return (
-          <div key={f.id} onClick={()=>onNav("detail",f.id)} style={{ background:C.w, border:`1px solid ${C.b1}`, borderLeft:`3px solid ${st.border}`, borderRadius:12, padding:14, cursor:"pointer", boxShadow:C.sh }}>
+          <div key={f.id} className="tv-card" onClick={()=>onNav("detail",f.id)} style={{ background:C.w, border:`1px solid ${C.b1}`, borderLeft:`3px solid ${st.border}`, borderRadius:12, padding:14, cursor:"pointer", boxShadow:C.sh, animation:`cardIn 0.3s ease ${idx*0.04}s both` }}>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
               <span style={{ fontSize:11, fontWeight:700, color:C.t3, fontFamily:MONO }}>{f.code}</span>
               <Bd color={st.color} bg={st.bg} small>{st.label}</Bd>
@@ -1950,7 +1950,7 @@ function DetailScreen({ user, freight, perms, onBack, onAction, actionLoading, o
   });
 
   return (
-    <div style={{ flex:1, overflow:"auto", padding:18 }}>
+    <div style={{ flex:1, overflow:"auto", padding:18, animation:"slideUp 0.25s ease" }}>
       <button onClick={onBack} style={{ background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", fontSize:13, fontWeight:600, color:C.pri, marginBottom:14, padding:0, display:"flex", alignItems:"center", gap:4 }}>{Ic.chev(C.pri,18)} Volver</button>
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:18 }}>
         <div>
@@ -2241,7 +2241,7 @@ function NewScreen({ user, lots, plants, fields, trucks, onBack, onCreate, dupli
   };
 
   return (
-    <div style={{ flex:1, overflow:"auto", padding:18 }}>
+    <div style={{ flex:1, overflow:"auto", padding:18, animation:"slideUp 0.25s ease" }}>
       <button onClick={onBack} style={{ background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", fontSize:13, fontWeight:600, color:C.pri, marginBottom:14, padding:0, display:"flex", alignItems:"center", gap:4 }}>{Ic.chev(C.pri,18)} Volver</button>
       <div style={{ fontSize:20, fontWeight:800, marginBottom:4, letterSpacing:-0.3 }}>Solicitar Flete</div>
       <div style={{ fontSize:12, color:C.t2, marginBottom:22 }}>Solicitando como: <span style={{fontWeight:600,color:C.t1}}>{user.name}</span></div>
@@ -2409,7 +2409,7 @@ function ProfileScreen({ user, perms, onLogout, onNav, theme, toggleTheme }) {
 
   return (
     <div style={{flex:1,overflow:"auto",padding:18}}>
-      <div style={{display:"flex",flexDirection:"column",alignItems:"center",marginBottom:24,marginTop:8}}>
+      <div style={{display:"flex",flexDirection:"column",alignItems:"center",marginBottom:24,marginTop:8,animation:"slideUp 0.3s ease"}}>
         <Av letters={user.av} size={72} color={tc}/>
         <div style={{fontSize:18,fontWeight:700,marginTop:12,color:C.t1}}>{user.name}</div>
         <div style={{fontSize:12,color:C.t2,marginTop:3}}>{user.email}</div>
@@ -2422,9 +2422,9 @@ function ProfileScreen({ user, perms, onLogout, onNav, theme, toggleTheme }) {
       </div>
 
       {mgmtItems.length>0 && (
-        <div style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius:12,padding:4,marginBottom:12,boxShadow:C.sh}}>
+        <div style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius:12,padding:4,marginBottom:12,boxShadow:C.sh,animation:"cardIn 0.3s ease 0.05s both"}}>
           {mgmtItems.map((m,i)=>(
-            <button key={m.k} onClick={()=>onNav(m.k)} style={{width:"100%",display:"flex",alignItems:"center",gap:12,padding:"14px 14px",background:"none",border:"none",borderTop:i>0?`1px solid ${C.b2}`:"none",cursor:"pointer",fontFamily:"inherit",textAlign:"left"}}>
+            <button key={m.k} onClick={()=>onNav(m.k)} style={{width:"100%",display:"flex",alignItems:"center",gap:12,padding:"14px 14px",background:"none",border:"none",borderTop:i>0?`1px solid ${C.b2}`:"none",cursor:"pointer",fontFamily:"inherit",textAlign:"left",transition:"background 0.15s"}} onMouseEnter={e=>e.currentTarget.style.background=C.priGhost} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
               <div style={{width:36,height:36,borderRadius:10,background:`${m.c}12`,display:"flex",alignItems:"center",justifyContent:"center"}}>{m.ic}</div>
               <span style={{fontSize:14,fontWeight:600,color:C.t1}}>{m.l}</span>
               <span style={{marginLeft:"auto",display:"flex"}}>{Ic.chev(C.t3,16)}</span>
@@ -3048,7 +3048,7 @@ function ChatsScreen({ user, openConvId, onConvOpened }) {
   // Chat detail view
   if (activeConv) {
     return (
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", animation: "fadeIn 0.2s ease" }}>
         <div style={{ padding: "12px 18px", borderBottom: `1px solid ${C.b1}`, background: C.w, display: "flex", alignItems: "center", gap: 10 }}>
           <button onClick={() => { setActiveConv(null); setChatTab("chat"); }} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", padding: 0 }}>{Ic.chev(C.pri, 20)}</button>
           <div style={{ flex: 1 }}>
@@ -3241,7 +3241,7 @@ function ChatsScreen({ user, openConvId, onConvOpened }) {
                         const title = isFreight ? `Flete ${c.freight.code}` : "Mensaje directo";
                         const statusCol = isFreight ? stColor(c.freight?.status) : C.acc;
                         return (
-                          <button key={c.id} onClick={() => openConv(c)} style={{ padding: "10px 14px", border: "none", borderTop: i > 0 ? `1px solid ${C.b2}` : "none", background: C.w, cursor: "pointer", fontFamily: "inherit", textAlign: "left", display: "flex", alignItems: "center", gap: 10, width: "100%" }}>
+                          <button key={c.id} onClick={() => openConv(c)} style={{ padding: "10px 14px", border: "none", borderTop: i > 0 ? `1px solid ${C.b2}` : "none", background: C.w, cursor: "pointer", fontFamily: "inherit", textAlign: "left", display: "flex", alignItems: "center", gap: 10, width: "100%", transition: "background 0.15s" }} onMouseEnter={e=>e.currentTarget.style.background=C.priGhost} onMouseLeave={e=>e.currentTarget.style.background=C.w}>
                             <div style={{ width: 8, height: 8, borderRadius: 4, background: statusCol, flexShrink: 0 }} />
                             <div style={{ flex: 1, minWidth: 0 }}>
                               <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -3990,12 +3990,12 @@ export default function Tolvink() {
   const curFreight = fh.freights.find(f=>f.id===selFreight);
 
   return (
-    <div style={{height:"100dvh",background:C.bg,color:C.t1,fontFamily:FONT,display:"flex",flexDirection:"column",maxWidth:900,margin:"0 auto",position:"relative",overflow:"hidden"}}>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&family=JetBrains+Mono:wght@400;500&display=swap');*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}html,body{height:100%;margin:0}body{background:${C.bg};overflow:hidden;overscroll-behavior:none}input,textarea,select,button{font-size:16px}input::placeholder,textarea::placeholder{color:${C.t3}}::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:${C.b1};border-radius:4px}@keyframes ti{0%,100%{opacity:1}50%{opacity:.4}}@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}@media(min-width:640px){.tv-grid{display:grid!important;grid-template-columns:1fr 1fr!important;gap:12px!important}.tv-grid3{display:grid!important;grid-template-columns:1fr 1fr 1fr!important;gap:12px!important}.tv-pad{padding:24px 32px!important}.tv-detail-grid{display:grid!important;grid-template-columns:1fr 1fr!important;gap:16px!important}}`}</style>
+    <div className="tv-shell" style={{height:"100dvh",background:C.bg,color:C.t1,fontFamily:FONT,display:"flex",flexDirection:"column",maxWidth:1100,margin:"0 auto",position:"relative",overflow:"hidden"}}>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&family=JetBrains+Mono:wght@400;500&display=swap');*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}html,body{height:100%;margin:0}body{background:${C.bg};overflow:hidden;overscroll-behavior:none}input,textarea,select,button{font-size:16px}input::placeholder,textarea::placeholder{color:${C.t3}}::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:${C.b1};border-radius:4px}@keyframes ti{0%,100%{opacity:1}50%{opacity:.4}}@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}@keyframes cardIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}@keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}.tv-card{transition:transform 0.15s ease,box-shadow 0.15s ease}.tv-row{transition:background 0.1s ease}@media(hover:hover){.tv-card:hover{transform:translateY(-2px);box-shadow:${C.shMd}!important}.tv-row:hover{background:${C.priGhost}!important}}@media(min-width:640px){.tv-grid{display:grid!important;grid-template-columns:1fr 1fr!important;gap:12px!important}.tv-grid3{display:grid!important;grid-template-columns:1fr 1fr 1fr!important;gap:12px!important}.tv-pad{padding:24px 32px!important}.tv-detail-grid{display:grid!important;grid-template-columns:1fr 1fr!important;gap:16px!important}.tv-table th,.tv-table td{padding:10px 12px!important;font-size:12px!important}.tv-stats{gap:12px!important}.tv-stats>div{padding:14px 12px!important;border-radius:12px!important}.tv-stats .tv-stat-num{font-size:28px!important}.tv-header-bar{padding:10px 32px 0 32px!important}}@media(min-width:900px){.tv-grid{grid-template-columns:1fr 1fr 1fr!important}.tv-shell{max-width:1100px!important}}`}</style>
       {/* Fixed header */}
-      <div style={{paddingTop:"max(14px, env(safe-area-inset-top))",paddingBottom:14,paddingLeft:18,paddingRight:18,display:"flex",alignItems:"center",borderBottom:`1px solid ${C.b2}`,background:C.w,flexShrink:0,zIndex:10}}>
-        <span style={{fontSize:28,fontWeight:800,color:C.pri,letterSpacing:-0.8}}>tolvink</span>
-        <span style={{width:8,height:8,borderRadius:4,background:C.acc,display:"inline-block",marginLeft:3,marginTop:-14}}></span>
+      <div style={{paddingTop:"max(12px, env(safe-area-inset-top))",paddingBottom:12,paddingLeft:18,paddingRight:18,display:"flex",alignItems:"center",borderBottom:`1px solid ${C.b2}`,background:C.w,flexShrink:0,zIndex:10}}>
+        <span style={{fontSize:26,fontWeight:800,color:C.pri,letterSpacing:-0.8}}>tolvink</span>
+        <span style={{width:7,height:7,borderRadius:4,background:C.acc,display:"inline-block",marginLeft:3,marginTop:-12}}></span>
       </div>
 
       {/* Scrollable content area */}
