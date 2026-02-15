@@ -153,6 +153,7 @@ const Ic = {
   cam:(c=C.t2,s=18)=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>,
   img:(c=C.t2,s=18)=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>,
   doc:(c=C.t2,s=18)=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>,
+  seedling:(c="#1A6B37",s=22)=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22V10"/><path d="M6 13c0-3.5 2.7-6 6-6 3.3 0 6 2.5 6 6"/><path d="M12 10c0-4-2.5-7-6-8 0 3.5 2 7 6 8z"/><path d="M12 10c0-4 2.5-7 6-8 0 3.5-2 7-6 8z"/></svg>,
 };
 
 // ======================== STATE MACHINE ==============================
@@ -410,10 +411,12 @@ function Toast({ msg, type="ok", onClose }) {
 // ======================== BOTTOM NAV =================================
 
 function Nav({ active, onChange, unread=0, pendingCount=0 }) {
+  const hasPending = pendingCount > 0;
+  const centerColor = hasPending ? C.acc : C.ok;
   const items = [
     { k:"home",   ic:a=>Ic.home(a?C.pri:C.t3,22),  l:"Inicio" },
     { k:"list",   ic:a=>Ic.truck(a?C.pri:C.t3,22),  l:"Fletes" },
-    { k:"pending",ic:()=>Ic.warn(C.w,22),             l:"Pendientes", sp:true, bd:pendingCount },
+    { k:"pending",sp:true, bd:pendingCount },
     { k:"chats",  ic:a=>Ic.msg(a?C.pri:C.t3,22),    l:"Chat", bd:unread },
     { k:"profile",ic:a=>Ic.user(a?C.pri:C.t3,22),   l:"Perfil" },
   ];
@@ -421,10 +424,13 @@ function Nav({ active, onChange, unread=0, pendingCount=0 }) {
     <div style={{ display:"flex", borderTop:`1px solid ${C.b1}`, background:C.nav, padding:"4px 0 8px", flexShrink:0 }}>
       {items.map(it=>(
         <button key={it.k} onClick={()=>onChange(it.k)} style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:2, border:"none", background:"none", cursor:"pointer", fontFamily:"inherit", position:"relative", padding:it.sp?0:"6px 0" }}>
-          {it.sp ? <div style={{ width:48, height:48, borderRadius:24, background:C.acc, display:"flex", alignItems:"center", justifyContent:"center", marginTop:-20, boxShadow:`0 4px 16px ${C.acc}30`, position:"relative" }}>
-            {it.ic(false)}
-            {it.bd>0 && <div style={{ position:"absolute", top:-4, right:-4, minWidth:18, height:18, borderRadius:9, background:C.err, color:C.w, fontSize:9, fontWeight:700, padding:"0 5px", display:"flex", alignItems:"center", justifyContent:"center", border:"2px solid "+C.nav }}>{it.bd}</div>}
-          </div> : <>
+          {it.sp ? <>
+            <div style={{ width:52, height:52, borderRadius:26, background:centerColor, display:"flex", alignItems:"center", justifyContent:"center", marginTop:-22, boxShadow:`0 4px 18px ${centerColor}40`, position:"relative", transition:"background 0.5s ease, box-shadow 0.5s ease" }}>
+              {hasPending ? Ic.warn(C.w,24) : Ic.seedling(C.w,24)}
+              {it.bd>0 && <div style={{ position:"absolute", top:-5, right:-5, minWidth:19, height:19, borderRadius:10, background:C.err, color:C.w, fontSize:9, fontWeight:700, padding:"0 5px", display:"flex", alignItems:"center", justifyContent:"center", border:`2.5px solid ${C.nav}` }}>{it.bd}</div>}
+            </div>
+            <span style={{ fontSize:8.5, fontWeight:700, color:centerColor, marginTop:1, transition:"color 0.5s ease" }}>{hasPending?"Pendientes":"Al día"}</span>
+          </> : <>
             <span style={{display:"flex"}}>{it.ic(active===it.k)}</span>
             <span style={{ fontSize:9.5, fontWeight:active===it.k?700:500, color:active===it.k?C.pri:C.t3 }}>{it.l}</span>
             {it.bd>0 && <div style={{ position:"absolute", top:2, right:"20%", minWidth:15, height:15, borderRadius:8, background:C.err, color:C.w, fontSize:8.5, fontWeight:700, padding:"0 4px", display:"flex", alignItems:"center", justifyContent:"center" }}>{it.bd}</div>}
@@ -2758,9 +2764,9 @@ export default function Tolvink() {
     <div style={{height:"100vh",background:C.bg,color:C.t1,fontFamily:FONT,display:"flex",flexDirection:"column",maxWidth:900,margin:"0 auto",position:"relative",overflow:"hidden"}}>
       <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&family=JetBrains+Mono:wght@400;500&display=swap');*{box-sizing:border-box;margin:0;padding:0}body{background:${C.bg};overflow:hidden}input::placeholder,textarea::placeholder{color:${C.t3}}::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:${C.b1};border-radius:4px}@keyframes ti{from{opacity:0;transform:translate(-50%,-12px)}to{opacity:1;transform:translate(-50%,0)}}@media(min-width:640px){.tv-grid{display:grid!important;grid-template-columns:1fr 1fr!important;gap:12px!important}.tv-grid3{display:grid!important;grid-template-columns:1fr 1fr 1fr!important;gap:12px!important}.tv-pad{padding:24px 32px!important}.tv-detail-grid{display:grid!important;grid-template-columns:1fr 1fr!important;gap:16px!important}}`}</style>
       {/* Fixed header */}
-      <div style={{padding:"14px 18px",display:"flex",alignItems:"center",borderBottom:`1px solid ${C.b2}`,background:C.w,flexShrink:0,zIndex:10}}>
-        <span style={{fontSize:26,fontWeight:800,color:C.pri,letterSpacing:-0.7}}>tolvink</span>
-        <span style={{width:8,height:8,borderRadius:4,background:C.acc,display:"inline-block",marginLeft:3,marginTop:-12}}></span>
+      <div style={{padding:"16px 18px",display:"flex",alignItems:"center",borderBottom:`1px solid ${C.b2}`,background:C.w,flexShrink:0,zIndex:10}}>
+        <span style={{fontSize:32,fontWeight:800,color:C.pri,letterSpacing:-1}}>tolvink</span>
+        <span style={{width:9,height:9,borderRadius:5,background:C.acc,display:"inline-block",marginLeft:3,marginTop:-16}}></span>
       </div>
 
       {/* Scrollable content area */}
