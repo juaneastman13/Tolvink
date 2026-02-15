@@ -409,11 +409,11 @@ function Toast({ msg, type="ok", onClose }) {
 
 // ======================== BOTTOM NAV =================================
 
-function Nav({ active, onChange, unread=0 }) {
+function Nav({ active, onChange, unread=0, pendingCount=0 }) {
   const items = [
     { k:"home",   ic:a=>Ic.home(a?C.pri:C.t3,22),  l:"Inicio" },
     { k:"list",   ic:a=>Ic.truck(a?C.pri:C.t3,22),  l:"Fletes" },
-    { k:"new",    ic:()=>Ic.plus(C.w,22),             l:"Nuevo", sp:true },
+    { k:"pending",ic:()=>Ic.warn(C.w,22),             l:"Pendientes", sp:true, bd:pendingCount },
     { k:"chats",  ic:a=>Ic.msg(a?C.pri:C.t3,22),    l:"Chat", bd:unread },
     { k:"profile",ic:a=>Ic.user(a?C.pri:C.t3,22),   l:"Perfil" },
   ];
@@ -421,7 +421,10 @@ function Nav({ active, onChange, unread=0 }) {
     <div style={{ display:"flex", borderTop:`1px solid ${C.b1}`, background:C.nav, padding:"4px 0 8px", flexShrink:0 }}>
       {items.map(it=>(
         <button key={it.k} onClick={()=>onChange(it.k)} style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:2, border:"none", background:"none", cursor:"pointer", fontFamily:"inherit", position:"relative", padding:it.sp?0:"6px 0" }}>
-          {it.sp ? <div style={{ width:48, height:48, borderRadius:24, background:C.pri, display:"flex", alignItems:"center", justifyContent:"center", marginTop:-20, boxShadow:`0 4px 16px ${C.pri}30` }}>{it.ic(false)}</div> : <>
+          {it.sp ? <div style={{ width:48, height:48, borderRadius:24, background:C.acc, display:"flex", alignItems:"center", justifyContent:"center", marginTop:-20, boxShadow:`0 4px 16px ${C.acc}30`, position:"relative" }}>
+            {it.ic(false)}
+            {it.bd>0 && <div style={{ position:"absolute", top:-4, right:-4, minWidth:18, height:18, borderRadius:9, background:C.err, color:C.w, fontSize:9, fontWeight:700, padding:"0 5px", display:"flex", alignItems:"center", justifyContent:"center", border:"2px solid "+C.nav }}>{it.bd}</div>}
+          </div> : <>
             <span style={{display:"flex"}}>{it.ic(active===it.k)}</span>
             <span style={{ fontSize:9.5, fontWeight:active===it.k?700:500, color:active===it.k?C.pri:C.t3 }}>{it.l}</span>
             {it.bd>0 && <div style={{ position:"absolute", top:2, right:"20%", minWidth:15, height:15, borderRadius:8, background:C.err, color:C.w, fontSize:8.5, fontWeight:700, padding:"0 4px", display:"flex", alignItems:"center", justifyContent:"center" }}>{it.bd}</div>}
@@ -696,6 +699,95 @@ function ListScreen({ freights, onNav }) {
           );
         })}
       </div>
+    </div>
+  );
+}
+
+// ======================== PENDING ACTIONS =============================
+
+function getPendingActions(freight, userType) {
+  const s = freight.status;
+  const own = freight.isOwnFleet;
+  if (userType === "plant") {
+    if (s === "pending_assignment") return { action: "Asignar transporte", color: C.acc, icon: "assign" };
+    if (s === "assigned" && own) return { action: "Autorizar viaje", color: C.sec, icon: "authorize" };
+    if (s === "loaded" && !freight.plantFinishedConfirmedAt) return { action: "Confirmar entrega", color: C.pri, icon: "confirm" };
+    return null;
+  }
+  if (userType === "transporter") {
+    if (s === "assigned" && !own) return { action: "Aceptar o rechazar", color: C.sec, icon: "respond" };
+    if (s === "accepted") return { action: "Iniciar viaje", color: C.pri, icon: "start" };
+    if (s === "in_progress" && !freight.transporterLoadedConfirmedAt) return { action: "Confirmar carga", color: C.acc, icon: "confirm" };
+    if (s === "loaded" && !freight.transporterFinishedConfirmedAt) return { action: "Confirmar entrega", color: C.pri, icon: "confirm" };
+    return null;
+  }
+  if (userType === "producer") {
+    if (s === "accepted" && own) return { action: "Iniciar viaje", color: C.pri, icon: "start" };
+    if (s === "in_progress" && own && !freight.transporterLoadedConfirmedAt) return { action: "Confirmar carga", color: C.acc, icon: "confirm" };
+    if (s === "loaded" && !freight.producerLoadedConfirmedAt) return { action: "Confirmar carga", color: C.acc, icon: "confirm" };
+    return null;
+  }
+  return null;
+}
+
+function PendingScreen({ user, freights, onNav, onNewFreight }) {
+  const pending = useMemo(() => {
+    return freights.map(f => {
+      const pa = getPendingActions(f, user.userType);
+      return pa ? { ...f, pendingAction: pa } : null;
+    }).filter(Boolean);
+  }, [freights, user.userType]);
+
+  // Group by urgency: urgent first (loaded, in_progress), then assigned, then pending_assignment
+  const urgencyOrder = { loaded: 0, in_progress: 1, accepted: 2, assigned: 3, pending_assignment: 4 };
+  const sorted = [...pending].sort((a, b) => (urgencyOrder[a.status] ?? 9) - (urgencyOrder[b.status] ?? 9));
+
+  return (
+    <div style={{ flex: 1, overflow: "auto", padding: 18 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+        <div style={{ fontSize: 20, fontWeight: 800, letterSpacing: -0.3 }}>Pendientes</div>
+        <Btn sm v="acc" icon={Ic.plus(C.w, 14)} onClick={onNewFreight}>Nuevo flete</Btn>
+      </div>
+      <div style={{ fontSize: 12, color: C.t2, marginBottom: 18 }}>
+        {pending.length > 0 ? `${pending.length} flete${pending.length !== 1 ? "s" : ""} esperando tu acción` : "No tenés acciones pendientes"}
+      </div>
+
+      {sorted.length === 0 ? (
+        <div style={{ textAlign: "center", padding: 48 }}>
+          <div style={{ fontSize: 48, marginBottom: 12 }}>✓</div>
+          <div style={{ fontSize: 15, fontWeight: 700, color: C.pri, marginBottom: 6 }}>Todo al día</div>
+          <div style={{ fontSize: 12, color: C.t3 }}>No hay fletes que requieran tu atención</div>
+        </div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {sorted.map(f => {
+            const st = stCfg(f.status);
+            const pa = f.pendingAction;
+            return (
+              <button key={f.id} onClick={() => onNav("detail", f.id)} style={{ width: "100%", background: C.w, border: `1px solid ${C.b1}`, borderLeft: `4px solid ${pa.color}`, borderRadius: 12, padding: 14, cursor: "pointer", fontFamily: "inherit", textAlign: "left", boxShadow: C.sh }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span style={{ fontSize: 11, fontWeight: 700, fontFamily: MONO, color: C.t2 }}>{f.code}</span>
+                    <Bd color={st.color} bg={st.bg} small>{st.label}</Bd>
+                  </div>
+                  {f.isOwnFleet && <span style={{ fontSize: 9, color: C.acc, fontWeight: 600 }}>Flota propia</span>}
+                </div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: C.t1, marginBottom: 4 }}>
+                  {f.grain === "Otros" ? f.productTypeOther || "Otros" : f.grain} · {f.tons} {f.unit || "tn"}
+                </div>
+                <div style={{ fontSize: 11, color: C.t2, marginBottom: 8 }}>
+                  {f.originName} → {f.destName}
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 10px", background: `${pa.color}10`, borderRadius: 8, border: `1px solid ${pa.color}20` }}>
+                  <span style={{ width: 8, height: 8, borderRadius: 4, background: pa.color, animation: "ti 1.5s infinite" }} />
+                  <span style={{ fontSize: 12, fontWeight: 700, color: pa.color }}>{pa.action}</span>
+                  <span style={{ marginLeft: "auto", display: "flex" }}>{Ic.chev(pa.color, 16)}</span>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
@@ -2098,10 +2190,15 @@ function ReportsScreen({ onBack, freights }) {
   const [showColPicker, setShowColPicker] = useState(false);
   const [selectedCols, setSelectedCols] = useState(()=>REPORT_COLUMNS.filter(c=>c.default).map(c=>c.key));
   const [filterStatus, setFilterStatus] = useState("all");
+  const [searchQ, setSearchQ] = useState("");
   const toggle = (k) => setExpanded(p=>({...p,[k]:!p[k]}));
   const toggleCol = (key) => setSelectedCols(prev=>prev.includes(key)?prev.filter(k=>k!==key):[...prev,key]);
 
-  const allFreights = freights||[];
+  const allFreights = (freights||[]).filter(f=>{
+    if(!searchQ) return true;
+    const q = searchQ.toLowerCase();
+    return (f.code||"").toLowerCase().includes(q) || (f.originName||"").toLowerCase().includes(q) || (f.destName||"").toLowerCase().includes(q) || (f.grain||"").toLowerCase().includes(q) || (f.transporterName||"").toLowerCase().includes(q) || (f.requestedByName||"").toLowerCase().includes(q);
+  });
   const filteredForExport = filterStatus==="all" ? allFreights : allFreights.filter(f=> filterStatus==="active" ? !["finished","canceled"].includes(f.status) : f.status===filterStatus);
 
   // Group by status
@@ -2375,7 +2472,15 @@ function ReportsScreen({ onBack, freights }) {
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:4 }}>
         <div style={{ fontSize:20, fontWeight:800, letterSpacing:-0.3 }}>Informes y Documentos</div>
       </div>
-      <div style={{ fontSize:12, color:C.t2, marginBottom:14 }}>{allFreights.length} flete{allFreights.length!==1?"s":""} · {totalDocs} documento{totalDocs!==1?"s":""}</div>
+      <div style={{ fontSize:12, color:C.t2, marginBottom:12 }}>{allFreights.length} flete{allFreights.length!==1?"s":""} · {totalDocs} documento{totalDocs!==1?"s":""}</div>
+
+      {/* Search bar */}
+      <div style={{ position:"relative", marginBottom:12 }}>
+        <div style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",display:"flex"}}>{Ic.srch(C.t3,16)}</div>
+        <input value={searchQ} onChange={e=>setSearchQ(e.target.value)} placeholder="Buscar por código, origen, destino, producto..."
+          style={{width:"100%",padding:"10px 14px 10px 36px",borderRadius:10,border:`1.5px solid ${C.b1}`,background:C.w,color:C.t1,fontSize:12.5,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}/>
+        {searchQ && <button onClick={()=>setSearchQ("")} style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",display:"flex"}}>{Ic.cross(C.t3,16)}</button>}
+      </div>
 
       {/* Status filter pills */}
       <div style={{ display:"flex", gap:6, marginBottom:12, flexWrap:"wrap" }}>
@@ -2564,6 +2669,12 @@ export default function Tolvink() {
   const [chatConvId, setChatConvId] = useState(null);
   const [unreadChats, setUnreadChats] = useState(0);
 
+  // Calculate pending actions count
+  const pendingCount = useMemo(() => {
+    if (!auth.user || !fh.freights) return 0;
+    return fh.freights.filter(f => getPendingActions(f, auth.user.userType) !== null).length;
+  }, [fh.freights, auth.user]);
+
   // Poll for unread chats (simple: count convs with recent messages)
   useEffect(()=>{
     if(!auth.user) return;
@@ -2647,15 +2758,16 @@ export default function Tolvink() {
     <div style={{height:"100vh",background:C.bg,color:C.t1,fontFamily:FONT,display:"flex",flexDirection:"column",maxWidth:900,margin:"0 auto",position:"relative",overflow:"hidden"}}>
       <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&family=JetBrains+Mono:wght@400;500&display=swap');*{box-sizing:border-box;margin:0;padding:0}body{background:${C.bg};overflow:hidden}input::placeholder,textarea::placeholder{color:${C.t3}}::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:${C.b1};border-radius:4px}@keyframes ti{from{opacity:0;transform:translate(-50%,-12px)}to{opacity:1;transform:translate(-50%,0)}}@media(min-width:640px){.tv-grid{display:grid!important;grid-template-columns:1fr 1fr!important;gap:12px!important}.tv-grid3{display:grid!important;grid-template-columns:1fr 1fr 1fr!important;gap:12px!important}.tv-pad{padding:24px 32px!important}.tv-detail-grid{display:grid!important;grid-template-columns:1fr 1fr!important;gap:16px!important}}`}</style>
       {/* Fixed header */}
-      <div style={{padding:"12px 18px",display:"flex",alignItems:"center",borderBottom:`1px solid ${C.b2}`,background:C.w,flexShrink:0,zIndex:10}}>
-        <span style={{fontSize:20,fontWeight:800,color:C.pri,letterSpacing:-0.5}}>tolvink</span>
-        <span style={{width:7,height:7,borderRadius:4,background:C.acc,display:"inline-block",marginLeft:3,marginTop:-8}}></span>
+      <div style={{padding:"14px 18px",display:"flex",alignItems:"center",borderBottom:`1px solid ${C.b2}`,background:C.w,flexShrink:0,zIndex:10}}>
+        <span style={{fontSize:26,fontWeight:800,color:C.pri,letterSpacing:-0.7}}>tolvink</span>
+        <span style={{width:8,height:8,borderRadius:4,background:C.acc,display:"inline-block",marginLeft:3,marginTop:-12}}></span>
       </div>
 
       {/* Scrollable content area */}
       <div style={{flex:1,overflow:"auto",display:"flex",flexDirection:"column"}}>
       {screen==="home" && <HomeScreen user={auth.user} freights={fh.freights} perms={perms} onNav={nav}/>}
       {screen==="list" && <ListScreen freights={fh.freights} onNav={nav}/>}
+      {screen==="pending" && <PendingScreen user={auth.user} freights={fh.freights} onNav={nav} onNewFreight={()=>nav("new")}/>}
       {screen==="detail" && <DetailScreen user={auth.user} freight={curFreight} perms={perms} onBack={()=>setScreen("list")} onAction={handleAction} onChat={(convId)=>{if(convId){setChatConvId(convId);setScreen("chats");}}} onRefresh={(id)=>fh.refresh(id)}/>}
       {screen==="new" && <NewScreen user={auth.user} lots={catalog.lots} plants={catalog.plants} fields={catalog.fields} trucks={catalog.trucks} onBack={()=>setScreen("home")} onCreate={handleCreate} submitting={submitting}/>}
       {screen==="profile" && <ProfileScreen user={auth.user} perms={perms} onLogout={auth.logout} onNav={nav}/>}
@@ -2667,7 +2779,7 @@ export default function Tolvink() {
       </div>
 
       {/* Fixed bottom nav */}
-      <Nav active={["detail"].includes(screen)?"list":["trucks","fields","access","reports"].includes(screen)?"profile":screen} onChange={nav} unread={unreadChats}/>
+      <Nav active={["detail"].includes(screen)?"list":["trucks","fields","access","reports"].includes(screen)?"profile":screen} onChange={nav} unread={unreadChats} pendingCount={pendingCount}/>
 
       {modal?.type==="assign" && <AssignModal freight={modal.freight} transporters={catalog.transporters} onClose={()=>setModal(null)} onConfirm={t=>handleAssign(modal.freight.id,t)}/>}
       {modal?.type==="truck_select" && <TruckSelectModal freight={modal.freight} trucks={catalog.trucks} onClose={()=>setModal(null)} onConfirm={t=>handleAcceptWithTruck(modal.freight.id,t)}/>}
