@@ -449,27 +449,27 @@ function Nav({ active, onChange, unread=0, pendingCount=0, canRequest=false, onN
     { k:"profile",ic:a=>Ic.user(a?C.pri:C.t3,22),   l:"Perfil" },
   ];
   return (
-    <div style={{ display:"flex", borderTop:`1px solid ${C.b1}`, background:C.nav, paddingTop:4, paddingBottom:"max(8px, env(safe-area-inset-bottom))", flexShrink:0 }}>
+    <div style={{ display:"flex", borderTop:`1px solid ${C.b1}`, background:C.nav, paddingTop:2, paddingBottom:"max(4px, env(safe-area-inset-bottom))", flexShrink:0 }}>
       <style>{`@keyframes truckDrive{0%,100%{transform:translateX(0)}50%{transform:translateX(3px)}}`}</style>
       {items.map(it=>(
-        <button key={it.k} onClick={()=>onChange(it.k)} style={{ flex:it.sp&&canRequest?1.6:1, display:"flex", flexDirection:"column", alignItems:"center", gap:2, border:"none", background:"none", cursor:"pointer", fontFamily:"inherit", position:"relative", padding:it.sp?"0":"8px 0", minHeight:48, WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
+        <button key={it.k} onClick={()=>onChange(it.k)} style={{ flex:it.sp&&canRequest?1.6:1, display:"flex", flexDirection:"column", alignItems:"center", gap:1, border:"none", background:"none", cursor:"pointer", fontFamily:"inherit", position:"relative", padding:it.sp?"0":"5px 0", minHeight:42, WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
           {it.sp ? <>
-            <div onClick={e=>{e.stopPropagation();onChange("pending")}} style={{ width:44, height:44, borderRadius:22, background:centerColor, display:"flex", alignItems:"center", justifyContent:"center", marginTop:-18, boxShadow:`0 3px 14px ${centerColor}40`, position:"relative", transition:"background 0.5s ease, box-shadow 0.5s ease" }}>
-              {hasPending ? Ic.bell(C.w,20) : Ic.chk(C.w,20)}
-              {it.bd>0 && <div style={{ position:"absolute", top:-4, right:-4, minWidth:17, height:17, borderRadius:9, background:C.err, color:C.w, fontSize:8.5, fontWeight:700, padding:"0 4px", display:"flex", alignItems:"center", justifyContent:"center", border:`2px solid ${C.nav}` }}>{it.bd}</div>}
+            <div onClick={e=>{e.stopPropagation();onChange("pending")}} style={{ width:40, height:40, borderRadius:20, background:centerColor, display:"flex", alignItems:"center", justifyContent:"center", marginTop:-16, boxShadow:`0 3px 12px ${centerColor}40`, position:"relative", transition:"background 0.5s ease, box-shadow 0.5s ease" }}>
+              {hasPending ? Ic.bell(C.w,18) : Ic.chk(C.w,18)}
+              {it.bd>0 && <div style={{ position:"absolute", top:-4, right:-4, minWidth:16, height:16, borderRadius:8, background:C.err, color:C.w, fontSize:8, fontWeight:700, padding:"0 4px", display:"flex", alignItems:"center", justifyContent:"center", border:`2px solid ${C.nav}` }}>{it.bd}</div>}
             </div>
-            <span style={{ fontSize:8, fontWeight:700, color:centerColor, marginTop:1, transition:"color 0.5s ease" }}>{hasPending?"Pendientes":"Al día"}</span>
+            <span style={{ fontSize:7.5, fontWeight:700, color:centerColor, marginTop:1, transition:"color 0.5s ease" }}>{hasPending?"Pendientes":"Al día"}</span>
             {/* Solicitar — below status, same column */}
             {canRequest && (
-              <div onClick={e=>{e.stopPropagation();onNew();}} style={{ display:"flex", alignItems:"center", gap:6, marginTop:3, padding:"8px 18px", borderRadius:24, background:C.acc, cursor:"pointer", boxShadow:`0 2px 8px ${C.acc}40` }}>
-                <span style={{ display:"inline-flex", animation:"truckDrive 1.5s ease-in-out infinite" }}>{Ic.truck("#fff",18)}</span>
-                <span style={{ fontSize:12.5, fontWeight:700, color:"#fff", whiteSpace:"nowrap" }}>Solicitar flete</span>
+              <div onClick={e=>{e.stopPropagation();onNew();}} style={{ display:"flex", alignItems:"center", gap:5, marginTop:2, padding:"6px 14px", borderRadius:20, background:C.acc, cursor:"pointer", boxShadow:`0 2px 8px ${C.acc}40` }}>
+                <span style={{ display:"inline-flex", animation:"truckDrive 1.5s ease-in-out infinite" }}>{Ic.truck("#fff",15)}</span>
+                <span style={{ fontSize:11, fontWeight:700, color:"#fff", whiteSpace:"nowrap" }}>Solicitar flete</span>
               </div>
             )}
           </> : <>
             <span style={{display:"flex"}}>{it.ic(active===it.k)}</span>
-            <span style={{ fontSize:9.5, fontWeight:active===it.k?700:500, color:active===it.k?C.pri:C.t3 }}>{it.l}</span>
-            {it.bd>0 && <div style={{ position:"absolute", top:2, right:"20%", minWidth:15, height:15, borderRadius:8, background:C.err, color:C.w, fontSize:8.5, fontWeight:700, padding:"0 4px", display:"flex", alignItems:"center", justifyContent:"center" }}>{it.bd}</div>}
+            <span style={{ fontSize:9, fontWeight:active===it.k?700:500, color:active===it.k?C.pri:C.t3 }}>{it.l}</span>
+            {it.bd>0 && <div style={{ position:"absolute", top:1, right:"20%", minWidth:14, height:14, borderRadius:7, background:C.err, color:C.w, fontSize:8, fontWeight:700, padding:"0 3px", display:"flex", alignItems:"center", justifyContent:"center" }}>{it.bd}</div>}
           </>}
         </button>
       ))}
@@ -735,25 +735,28 @@ function HomeScreen({ user, freights, perms, onNav }) {
 
   return (
     <div style={{ flex:1, overflow:"auto" }}>
-      {/* Sticky header block */}
-      <div style={{ position:"sticky", top:0, zIndex:10, background:C.bg, padding:"18px 18px 0 18px" }}>
-        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
+      {/* Greeting — scrolls normally */}
+      <div style={{ padding:"18px 18px 10px 18px" }}>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
           <div><div style={{ fontSize:13, color:C.t2 }}>Hola,</div><div style={{ fontSize:22, fontWeight:800, letterSpacing:-0.3, color:C.t1 }}>{user.name.split(" ")[0]}</div></div>
           <div style={{ textAlign:"right" }}><Bd color={tc}>{typeLabel}</Bd><div style={{ fontSize:10, color:C.t3, marginTop:4 }}>{user.role==="admin"?"Gerente":"Operario"} · {user.entity}</div></div>
         </div>
+      </div>
 
-        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:10, marginBottom:12 }}>
+      {/* Sticky header — stats + view toggle */}
+      <div style={{ position:"sticky", top:0, zIndex:10, background:C.bg, padding:"8px 18px 0 18px" }}>
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8, marginBottom:8 }}>
           {statCards.map(s=>{
             const sel = activeFilter===s.k;
-            return <div key={s.k} onClick={()=>toggleFilter(s.k)} style={{ background:sel?s.c:s.bg, borderRadius:12, padding:"14px 10px", textAlign:"center", cursor:"pointer", transition:"all 0.15s", border:sel?`2px solid ${s.c}`:`2px solid transparent`, transform:sel?"scale(1.03)":"scale(1)" }}>
-              <div style={{ fontSize:26, fontWeight:800, color:sel?C.w:s.c }}>{s.v}</div>
-              <div style={{ fontSize:10, color:sel?C.w:s.c, fontWeight:sel?700:500, marginTop:2, opacity:sel?1:0.8 }}>{s.l}</div>
+            return <div key={s.k} onClick={()=>toggleFilter(s.k)} style={{ background:sel?s.c:s.bg, borderRadius:10, padding:"10px 8px", textAlign:"center", cursor:"pointer", transition:"all 0.15s", border:sel?`2px solid ${s.c}`:`2px solid transparent`, transform:sel?"scale(1.03)":"scale(1)" }}>
+              <div style={{ fontSize:24, fontWeight:800, color:sel?C.w:s.c }}>{s.v}</div>
+              <div style={{ fontSize:9.5, color:sel?C.w:s.c, fontWeight:sel?700:500, marginTop:1, opacity:sel?1:0.8 }}>{s.l}</div>
             </div>;
           })}
         </div>
 
         {/* View toggle */}
-        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
           {activeFilter!=="all" ? (
             <div style={{ display:"flex", alignItems:"center", gap:8 }}>
               <div style={{fontSize:14,fontWeight:700,color:C.t1}}>{statCards.find(s=>s.k===activeFilter)?.l||"Fletes"} <span style={{fontSize:12,fontWeight:500,color:C.t3}}>({displayFreights.length})</span></div>
