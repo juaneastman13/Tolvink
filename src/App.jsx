@@ -623,6 +623,49 @@ function AuthScreen({ onLogin, onSignup, loading, error, clearError, onBackToLan
   );
 }
 
+// ======================== TABLE SORT HOOK =============================
+function useTableSort() {
+  // sortCol: column key, sortDir: "asc"|"desc"|null, cycle: asc→desc→null
+  const [sortCol, setSortCol] = useState(null);
+  const [sortDir, setSortDir] = useState(null);
+  const toggle = (col) => {
+    if (sortCol !== col) { setSortCol(col); setSortDir("asc"); }
+    else if (sortDir === "asc") setSortDir("desc");
+    else { setSortCol(null); setSortDir(null); }
+  };
+  const sortData = useCallback((data, getters) => {
+    if (!sortCol || !sortDir || !getters[sortCol]) return data;
+    const getter = getters[sortCol];
+    return [...data].sort((a, b) => {
+      let va = getter(a), vb = getter(b);
+      // Detect type
+      if (va == null) va = "";
+      if (vb == null) vb = "";
+      // Numbers
+      const na = parseFloat(va), nb = parseFloat(vb);
+      if (!isNaN(na) && !isNaN(nb)) return sortDir === "asc" ? na - nb : nb - na;
+      // Dates (YYYY-MM-DD or DD/MM/YYYY)
+      const da = new Date(va), db = new Date(vb);
+      if (!isNaN(da) && !isNaN(db) && String(va).length > 4) return sortDir === "asc" ? da - db : db - da;
+      // Strings
+      const sa = String(va).toLowerCase(), sb = String(vb).toLowerCase();
+      const cmp = sa.localeCompare(sb, "es");
+      return sortDir === "asc" ? cmp : -cmp;
+    });
+  }, [sortCol, sortDir]);
+  return { sortCol, sortDir, toggle, sortData };
+}
+
+function SortTh({ label, colKey, sortCol, sortDir, onSort }) {
+  const active = sortCol === colKey;
+  const arrow = active ? (sortDir === "asc" ? " ↑" : " ↓") : "";
+  return (
+    <th onClick={() => onSort(colKey)} style={{ padding:"8px 6px", textAlign:"left", fontWeight:700, color: active ? C.pri : C.t2, fontSize:10, whiteSpace:"nowrap", borderBottom:`1px solid ${C.b1}`, cursor:"pointer", userSelect:"none" }}>
+      {label}{arrow && <span style={{ color: C.pri, fontWeight: 800 }}>{arrow}</span>}
+    </th>
+  );
+}
+
 // ======================== HOME SCREEN ================================
 
 // CSV Export helper
@@ -643,6 +686,8 @@ function exportCSV(freights, filename) {
 function HomeScreen({ user, freights, perms, onNav }) {
   const [activeFilter, setActiveFilter] = useState("all");
   const [viewMode, setViewMode] = useState("cards"); // cards | table | map
+  const sort = useTableSort();
+  const HOME_GETTERS = { code:f=>f.code, origin:f=>(f.originName||"").split("—")[0].trim(), dest:f=>f.destName, product:f=>f.grain, truck:f=>f.truckPlate||"", date:f=>f.loadDate, qty:f=>f.tons };
 
   const FILTER_MAP = {
     requested: ["draft","pending_assignment"],
@@ -733,14 +778,14 @@ function HomeScreen({ user, freights, perms, onNav }) {
           <table style={{ width:"100%", borderCollapse:"collapse", fontSize:11 }}>
             <thead>
               <tr style={{ background:C.bg }}>
-                {["Código","Origen","Destino","Producto","Camión","Carga","Cant."].map(h=>(
-                  <th key={h} style={{ padding:"8px 6px", textAlign:"left", fontWeight:700, color:C.t2, fontSize:10, whiteSpace:"nowrap", borderBottom:`1px solid ${C.b1}` }}>{h}</th>
+                {[["Código","code"],["Origen","origin"],["Destino","dest"],["Producto","product"],["Camión","truck"],["Carga","date"],["Cant.","qty"]].map(([h,k])=>(
+                  <SortTh key={k} label={h} colKey={k} sortCol={sort.sortCol} sortDir={sort.sortDir} onSort={sort.toggle}/>
                 ))}
               </tr>
             </thead>
             <tbody>
               {displayFreights.length===0 && <tr><td colSpan={7} style={{ padding:24, textAlign:"center", color:C.t3 }}>Sin fletes</td></tr>}
-              {displayFreights.map(f=>{
+              {sort.sortData(displayFreights, HOME_GETTERS).map(f=>{
                 const st = stCfg(f.status);
                 return (
                   <tr key={f.id} onClick={()=>onNav("detail",f.id)} style={{ cursor:"pointer", borderBottom:`1px solid ${C.b2}` }}>
@@ -918,6 +963,8 @@ function ListScreen({ freights, onNav, onRefresh }) {
   const [dateTo, setDateTo] = useState("");
   const [datePreset, setDatePreset] = useState("");
   const [viewMode, setViewMode] = useState("cards"); // cards | table
+  const sort = useTableSort();
+  const LIST_GETTERS = { code:f=>f.code, status:f=>stCfg(f.status).label, origin:f=>(f.originName||"").split("—")[0].trim(), dest:f=>f.destName, product:f=>f.grain, truck:f=>f.truckPlate||"", date:f=>f.loadDate, qty:f=>f.tons };
 
   const plantOptions = useMemo(()=>[...new Set(freights.map(f=>f.destName).filter(Boolean))].sort(),[freights]);
 
@@ -1026,14 +1073,14 @@ function ListScreen({ freights, onNav, onRefresh }) {
           <table style={{ width:"100%", borderCollapse:"collapse", fontSize:11 }}>
             <thead>
               <tr style={{ background:C.bg }}>
-                {["Código","Estado","Origen","Destino","Producto","Camión","Carga","Cant."].map(h=>(
-                  <th key={h} style={{ padding:"8px 6px", textAlign:"left", fontWeight:700, color:C.t2, fontSize:10, whiteSpace:"nowrap", borderBottom:`1px solid ${C.b1}` }}>{h}</th>
+                {[["Código","code"],["Estado","status"],["Origen","origin"],["Destino","dest"],["Producto","product"],["Camión","truck"],["Carga","date"],["Cant.","qty"]].map(([h,k])=>(
+                  <SortTh key={k} label={h} colKey={k} sortCol={sort.sortCol} sortDir={sort.sortDir} onSort={sort.toggle}/>
                 ))}
               </tr>
             </thead>
             <tbody>
               {filtered.length===0 && <tr><td colSpan={8} style={{ padding:24, textAlign:"center", color:C.t3 }}>Sin fletes</td></tr>}
-              {filtered.map(f=>{
+              {sort.sortData(filtered, LIST_GETTERS).map(f=>{
                 const st = stCfg(f.status);
                 return (
                   <tr key={f.id} onClick={()=>onNav("detail",f.id)} style={{ cursor:"pointer", borderBottom:`1px solid ${C.b2}` }}>
