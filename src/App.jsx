@@ -9,7 +9,7 @@ import {
   apiUpdateFreight,
   apiGetPlants, apiGetLots, apiGetTransportCompanies, apiGetTrucks,
   apiCreateTruck, apiDeactivateTruck,
-  apiGetFields, apiCreateField, apiCreateLot, apiGetFieldLots,
+  apiGetFields, apiCreateField, apiUpdateField, apiCreateLot, apiUpdateLot, apiGetFieldLots,
   apiGrantAccess, apiRevokeAccess, apiListAccessProducers, apiListAccessPlants,
   apiStartConversation, apiListConversations, apiGetMessages, apiSendMessage,
   uploadPhoto, apiAddDocument,
@@ -602,6 +602,7 @@ function AuthScreen({ onLogin, onSignup, loading, error, clearError, onBackToLan
 
 function HomeScreen({ user, freights, perms, onNav }) {
   const [activeFilter, setActiveFilter] = useState("all");
+  const [viewMode, setViewMode] = useState("cards"); // cards | table | map
 
   const FILTER_MAP = {
     requested: ["draft","pending_assignment"],
@@ -621,6 +622,9 @@ function HomeScreen({ user, freights, perms, onNav }) {
     return freights.filter(f=>FILTER_MAP[activeFilter]?.includes(f.status));
   },[freights,activeFilter]);
 
+  // Active (non-finished) freights for map
+  const activeFreights = useMemo(()=> freights.filter(f=>!["canceled","draft","finished"].includes(f.status)),[freights]);
+
   const tc = ({plant:C.pri,transporter:C.info,producer:C.acc})[user.userType]||C.pri;
   const typeLabel = ({plant:"Planta de Acopio",transporter:"Transportista",producer:"Productor"})[user.userType];
 
@@ -631,6 +635,9 @@ function HomeScreen({ user, freights, perms, onNav }) {
     {k:"active",l:"En curso",v:stats.active,c:"#258B3E",bg:"#D0EBD7"},
     {k:"done",l:"Finalizados",v:stats.done,c:C.pri,bg:C.priPale},
   ];
+
+  const viewLabels = {cards:"Tarjetas",table:"Tabla",map:"Mapa"};
+  const nextView = () => setViewMode(v => v==="cards"?"table":v==="table"?"map":"cards");
 
   return (
     <div style={{ flex:1, overflow:"auto", padding:18 }}>
@@ -657,36 +664,143 @@ function HomeScreen({ user, freights, perms, onNav }) {
         </div>
       )}
 
-      {activeFilter!=="all" && <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
-        <div style={{fontSize:14,fontWeight:700,color:C.t1}}>{statCards.find(s=>s.k===activeFilter)?.l||"Fletes"} <span style={{fontSize:12,fontWeight:500,color:C.t3}}>({displayFreights.length})</span></div>
-        <button onClick={()=>setActiveFilter("all")} style={{background:"none",border:"none",fontSize:11,fontWeight:600,color:C.acc,cursor:"pointer",fontFamily:"inherit",padding:0}}>Ver todos</button>
-      </div>}
+      {/* View toggle */}
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
+        {activeFilter!=="all" ? (
+          <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+            <div style={{fontSize:14,fontWeight:700,color:C.t1}}>{statCards.find(s=>s.k===activeFilter)?.l||"Fletes"} <span style={{fontSize:12,fontWeight:500,color:C.t3}}>({displayFreights.length})</span></div>
+            <button onClick={()=>setActiveFilter("all")} style={{background:"none",border:"none",fontSize:11,fontWeight:600,color:C.acc,cursor:"pointer",fontFamily:"inherit",padding:0}}>Ver todos</button>
+          </div>
+        ) : (
+          <div style={{ fontSize:14, fontWeight:700, color:C.t1 }}>En movimiento</div>
+        )}
+        <button onClick={nextView} style={{ display:"flex", alignItems:"center", gap:4, background:C.priPale, border:`1px solid ${C.pri}20`, borderRadius:8, padding:"5px 10px", cursor:"pointer", fontFamily:"inherit", fontSize:10.5, fontWeight:600, color:C.pri }}>
+          {viewMode==="map"?Ic.pin(C.pri,13):viewMode==="table"?Ic.doc(C.pri,13):Ic.home(C.pri,13)} {viewLabels[viewMode]}
+        </button>
+      </div>
 
-      {activeFilter==="all" && displayFreights.length>0 && <div style={{ fontSize:14, fontWeight:700, marginBottom:10, color:C.t1 }}>En movimiento</div>}
+      {/* MAP VIEW */}
+      {viewMode==="map" && <HomeMapView freights={activeFreights} onNav={onNav} />}
 
-      <div style={{ display:"flex", flexDirection:"column", gap:10 }} className="tv-grid">
-        {displayFreights.length===0 && <div style={{ textAlign:"center", padding:40, color:C.t3, fontSize:13, gridColumn:"1/-1" }}>Sin fletes en esta categoría</div>}
-        {displayFreights.map(f=>{
-          const st = stCfg(f.status);
-          return (
-            <div key={f.id} onClick={()=>onNav("detail",f.id)} style={{ background:C.w, border:`1px solid ${C.b1}`, borderLeft:`3px solid ${st.border}`, borderRadius:12, padding:14, cursor:"pointer", boxShadow:C.sh }}>
-              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
-                <span style={{ fontSize:11, fontWeight:700, color:C.t3, fontFamily:MONO }}>{f.code}</span>
-                <Bd color={st.color} bg={st.bg} small>{st.label}</Bd>
+      {/* TABLE VIEW */}
+      {viewMode==="table" && (
+        <div style={{ overflowX:"auto", borderRadius:10, border:`1px solid ${C.b1}`, background:C.w }}>
+          <table style={{ width:"100%", borderCollapse:"collapse", fontSize:11 }}>
+            <thead>
+              <tr style={{ background:C.bg }}>
+                {["Código","Origen","Destino","Producto","Camión","Carga","Cant."].map(h=>(
+                  <th key={h} style={{ padding:"8px 6px", textAlign:"left", fontWeight:700, color:C.t2, fontSize:10, whiteSpace:"nowrap", borderBottom:`1px solid ${C.b1}` }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {displayFreights.length===0 && <tr><td colSpan={7} style={{ padding:24, textAlign:"center", color:C.t3 }}>Sin fletes</td></tr>}
+              {displayFreights.map(f=>{
+                const st = stCfg(f.status);
+                return (
+                  <tr key={f.id} onClick={()=>onNav("detail",f.id)} style={{ cursor:"pointer", borderBottom:`1px solid ${C.b2}` }}>
+                    <td style={{ padding:"7px 6px", fontFamily:MONO, fontWeight:600, color:C.t1, whiteSpace:"nowrap" }}>{f.code}</td>
+                    <td style={{ padding:"7px 6px", color:C.t2, maxWidth:120, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{(f.originName||"").split("—")[0].trim()}</td>
+                    <td style={{ padding:"7px 6px", color:C.t2, maxWidth:100, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{f.destName}</td>
+                    <td style={{ padding:"7px 6px", fontWeight:600, color:C.t1, whiteSpace:"nowrap" }}>{f.grain}</td>
+                    <td style={{ padding:"7px 6px", color:C.t3, whiteSpace:"nowrap" }}>{f.truckPlate||"-"}</td>
+                    <td style={{ padding:"7px 6px", color:C.t3, whiteSpace:"nowrap" }}>{f.loadDate}</td>
+                    <td style={{ padding:"7px 6px", fontWeight:600, color:C.t1, whiteSpace:"nowrap" }}>{f.tons} tn</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* CARDS VIEW */}
+      {viewMode==="cards" && (
+        <div style={{ display:"flex", flexDirection:"column", gap:10 }} className="tv-grid">
+          {displayFreights.length===0 && <div style={{ textAlign:"center", padding:40, color:C.t3, fontSize:13, gridColumn:"1/-1" }}>Sin fletes en esta categoría</div>}
+          {displayFreights.map(f=>{
+            const st = stCfg(f.status);
+            return (
+              <div key={f.id} onClick={()=>onNav("detail",f.id)} style={{ background:C.w, border:`1px solid ${C.b1}`, borderLeft:`3px solid ${st.border}`, borderRadius:12, padding:14, cursor:"pointer", boxShadow:C.sh }}>
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
+                  <span style={{ fontSize:11, fontWeight:700, color:C.t3, fontFamily:MONO }}>{f.code}</span>
+                  <Bd color={st.color} bg={st.bg} small>{st.label}</Bd>
+                </div>
+                <div style={{ fontSize:14, fontWeight:700, color:C.t1 }}>{f.grain} · {f.tons} tn</div>
+                <div style={{ display:"flex", alignItems:"center", gap:4, marginTop:6, fontSize:11.5, color:C.t2 }}>
+                  {Ic.pin(C.t3,13)} <span>{(f.originName||"").split("—")[0].trim()}</span>
+                  <span style={{color:C.t3,margin:"0 2px"}}>&rarr;</span>
+                  {Ic.plant(C.t3,13)} <span>{f.destName}</span>
+                </div>
+                <div style={{ display:"flex", alignItems:"center", gap:6, fontSize:10.5, color:C.t3, marginTop:6 }}>
+                  {Ic.cal(C.t3,12)} {f.loadDate} {f.loadTime}
+                  {f.transporterName && <><span style={{color:C.b1}}>|</span>{Ic.truck(C.t3,12)} {f.transporterName}</>}
+                </div>
               </div>
-              <div style={{ fontSize:14, fontWeight:700, color:C.t1 }}>{f.grain} · {f.tons} tn</div>
-              <div style={{ display:"flex", alignItems:"center", gap:4, marginTop:6, fontSize:11.5, color:C.t2 }}>
-                {Ic.pin(C.t3,13)} <span>{(f.originName||"").split("—")[0].trim()}</span>
-                <span style={{color:C.t3,margin:"0 2px"}}>&rarr;</span>
-                {Ic.plant(C.t3,13)} <span>{f.destName}</span>
-              </div>
-              <div style={{ display:"flex", alignItems:"center", gap:6, fontSize:10.5, color:C.t3, marginTop:6 }}>
-                {Ic.cal(C.t3,12)} {f.loadDate} {f.loadTime}
-                {f.transporterName && <><span style={{color:C.b1}}>|</span>{Ic.truck(C.t3,12)} {f.transporterName}</>}
-              </div>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Home map view — shows all active freights on a map
+function HomeMapView({ freights, onNav }) {
+  const mapRef = useRef(null);
+  const [mapReady, setMapReady] = useState(false);
+
+  useEffect(() => {
+    if (!mapRef.current) return;
+    let cancelled = false;
+    (async () => {
+      const maps = await loadGMaps();
+      if (cancelled) return;
+      const bounds = new maps.LatLngBounds();
+      let hasPoints = false;
+      const center = { lat: -34.6, lng: -56.2 };
+
+      const map = new maps.Map(mapRef.current, {
+        zoom: 6, center, disableDefaultUI: true, zoomControl: true,
+        gestureHandling: "greedy", mapTypeControl: false, streetViewControl: false, fullscreenControl: false,
+      });
+
+      freights.forEach(f => {
+        const oLat = parseFloat(f.originLat); const oLng = parseFloat(f.originLng);
+        const dLat = parseFloat(f.destLat); const dLng = parseFloat(f.destLng);
+        const st = stCfg(f.status);
+
+        if (oLat && oLng) {
+          bounds.extend({ lat: oLat, lng: oLng });
+          hasPoints = true;
+          const m = new maps.Marker({ position: { lat: oLat, lng: oLng }, map, title: `${f.code} — Origen`, icon: { path: maps.SymbolPath.CIRCLE, scale: 7, fillColor: st.color, fillOpacity: 0.9, strokeColor: "#fff", strokeWeight: 2 } });
+          m.addListener("click", () => onNav("detail", f.id));
+        }
+        if (dLat && dLng) {
+          bounds.extend({ lat: dLat, lng: dLng });
+          hasPoints = true;
+          const m = new maps.Marker({ position: { lat: dLat, lng: dLng }, map, title: `${f.code} — Destino`, icon: { path: maps.SymbolPath.BACKWARD_CLOSED_ARROW, scale: 5, fillColor: st.color, fillOpacity: 0.9, strokeColor: "#fff", strokeWeight: 2 } });
+          m.addListener("click", () => onNav("detail", f.id));
+        }
+        // Draw line between origin and dest
+        if (oLat && oLng && dLat && dLng) {
+          new maps.Polyline({ path: [{ lat: oLat, lng: oLng }, { lat: dLat, lng: dLng }], map, strokeColor: st.color, strokeOpacity: 0.5, strokeWeight: 2 });
+        }
+      });
+
+      if (hasPoints) map.fitBounds(bounds, 40);
+      setMapReady(true);
+    })();
+    return () => { cancelled = true; };
+  }, [freights]);
+
+  return (
+    <div style={{ borderRadius: 12, overflow: "hidden", border: `1px solid ${C.b1}`, boxShadow: C.sh }}>
+      <div ref={mapRef} style={{ width: "100%", height: 350 }} />
+      {!mapReady && <div style={{ textAlign: "center", padding: 20, fontSize: 12, color: C.t3 }}>Cargando mapa...</div>}
+      <div style={{ padding: "8px 12px", background: C.w, fontSize: 10, color: C.t3, display: "flex", gap: 12 }}>
+        <span>● Origen</span> <span>▼ Destino</span> <span>— Ruta</span>
+        <span style={{ marginLeft: "auto" }}>{freights.length} fletes activos</span>
       </div>
     </div>
   );
@@ -758,6 +872,7 @@ function ListScreen({ freights, onNav, onRefresh }) {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [datePreset, setDatePreset] = useState("");
+  const [viewMode, setViewMode] = useState("cards"); // cards | table
 
   const plantOptions = useMemo(()=>[...new Set(freights.map(f=>f.destName).filter(Boolean))].sort(),[freights]);
 
@@ -848,7 +963,48 @@ function ListScreen({ freights, onNav, onRefresh }) {
       )}
 
       <Tabs items={[{k:"all",l:"Todos"},{k:"available",l:"Solicitados"},{k:"active",l:"Activos"},{k:"done",l:"Finalizados"},{k:"closed",l:"Cerrados"}]} active={tab} onChange={setTab}/>
-      <div style={{fontSize:11,color:C.t3,marginTop:8,marginBottom:6}}>{filtered.length} resultado{filtered.length!==1?"s":""}</div>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:8,marginBottom:6}}>
+        <div style={{fontSize:11,color:C.t3}}>{filtered.length} resultado{filtered.length!==1?"s":""}</div>
+        <button onClick={()=>setViewMode(v=>v==="cards"?"table":"cards")} style={{ display:"flex", alignItems:"center", gap:4, background:C.priPale, border:`1px solid ${C.pri}20`, borderRadius:8, padding:"4px 8px", cursor:"pointer", fontFamily:"inherit", fontSize:10, fontWeight:600, color:C.pri }}>
+          {viewMode==="table"?Ic.home(C.pri,12):Ic.doc(C.pri,12)} {viewMode==="cards"?"Tabla":"Tarjetas"}
+        </button>
+      </div>
+
+      {/* TABLE VIEW */}
+      {viewMode==="table" && (
+        <div style={{ overflowX:"auto", borderRadius:10, border:`1px solid ${C.b1}`, background:C.w }}>
+          <table style={{ width:"100%", borderCollapse:"collapse", fontSize:11 }}>
+            <thead>
+              <tr style={{ background:C.bg }}>
+                {["Código","Estado","Origen","Destino","Producto","Camión","Carga","Cant."].map(h=>(
+                  <th key={h} style={{ padding:"8px 6px", textAlign:"left", fontWeight:700, color:C.t2, fontSize:10, whiteSpace:"nowrap", borderBottom:`1px solid ${C.b1}` }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.length===0 && <tr><td colSpan={8} style={{ padding:24, textAlign:"center", color:C.t3 }}>Sin fletes</td></tr>}
+              {filtered.map(f=>{
+                const st = stCfg(f.status);
+                return (
+                  <tr key={f.id} onClick={()=>onNav("detail",f.id)} style={{ cursor:"pointer", borderBottom:`1px solid ${C.b2}` }}>
+                    <td style={{ padding:"7px 6px", fontFamily:MONO, fontWeight:600, color:C.t1, whiteSpace:"nowrap" }}>{f.code}</td>
+                    <td style={{ padding:"7px 6px" }}><Bd color={st.color} bg={st.bg} small>{st.label}</Bd></td>
+                    <td style={{ padding:"7px 6px", color:C.t2, maxWidth:120, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{(f.originName||"").split("—")[0].trim()}</td>
+                    <td style={{ padding:"7px 6px", color:C.t2, maxWidth:100, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{f.destName}</td>
+                    <td style={{ padding:"7px 6px", fontWeight:600, color:C.t1, whiteSpace:"nowrap" }}>{f.grain}</td>
+                    <td style={{ padding:"7px 6px", color:C.t3, whiteSpace:"nowrap" }}>{f.truckPlate||"-"}</td>
+                    <td style={{ padding:"7px 6px", color:C.t3, whiteSpace:"nowrap" }}>{f.loadDate}</td>
+                    <td style={{ padding:"7px 6px", fontWeight:600, color:C.t1, whiteSpace:"nowrap" }}>{f.tons} tn</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* CARDS VIEW */}
+      {viewMode==="cards" && (
       <div style={{ display:"flex", flexDirection:"column", gap:10 }} className="tv-grid">
         {filtered.length===0 && <div style={{ textAlign:"center", padding:40, color:C.t3, fontSize:13, gridColumn:"1/-1" }}>Sin fletes en esta categoría</div>}
         {filtered.map(f=>{
@@ -876,6 +1032,7 @@ function ListScreen({ freights, onNav, onRefresh }) {
           );
         })}
       </div>
+      )}
     </div>
   );
 }
@@ -2080,6 +2237,13 @@ function FieldsScreen({ onBack }) {
   const [lotLoc, setLotLoc] = useState(null);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState(null);
+  // Edit states
+  const [editField, setEditField] = useState(null); // field id being edited
+  const [editFieldAddr, setEditFieldAddr] = useState("");
+  const [editFieldLoc, setEditFieldLoc] = useState(null);
+  const [editLot, setEditLot] = useState(null); // {fieldId, lotId}
+  const [editLotHa, setEditLotHa] = useState("");
+  const [editLotLoc, setEditLotLoc] = useState(null);
 
   const load = useCallback(async () => {
     try { const f = await apiGetFields(); setFields(f || []); } catch {} finally { setLoading(false); }
@@ -2111,6 +2275,43 @@ function FieldsScreen({ onBack }) {
         lng: lotLoc?.lng || undefined,
       });
       setLotName(""); setLotHa(""); setLotLoc(null); setShowLotForm(null); setMsg({ t: "Lote creado", k: "ok" }); load();
+    } catch (e) { setMsg({ t: e.message, k: "err" }); } finally { setSaving(false); }
+  };
+
+  const startEditField = (f) => {
+    setEditField(f.id);
+    setEditFieldAddr(f.address || "");
+    setEditFieldLoc(f.lat ? { lat: parseFloat(f.lat), lng: parseFloat(f.lng), address: f.address || "" } : null);
+  };
+
+  const handleUpdateField = async (fieldId) => {
+    setSaving(true);
+    try {
+      await apiUpdateField(fieldId, {
+        address: editFieldLoc?.address || editFieldAddr.trim() || undefined,
+        lat: editFieldLoc?.lat || undefined,
+        lng: editFieldLoc?.lng || undefined,
+      });
+      setEditField(null); setMsg({ t: "Campo actualizado", k: "ok" }); load();
+    } catch (e) { setMsg({ t: e.message, k: "err" }); } finally { setSaving(false); }
+  };
+
+  const startEditLot = (fieldId, l) => {
+    setEditLot({ fieldId, lotId: l.id });
+    setEditLotHa(l.hectares ? String(l.hectares) : "");
+    setEditLotLoc(l.lat ? { lat: parseFloat(l.lat), lng: parseFloat(l.lng) } : null);
+  };
+
+  const handleUpdateLot = async () => {
+    if (!editLot) return;
+    setSaving(true);
+    try {
+      await apiUpdateLot(editLot.fieldId, editLot.lotId, {
+        hectares: editLotHa ? parseFloat(editLotHa) : undefined,
+        lat: editLotLoc?.lat || undefined,
+        lng: editLotLoc?.lng || undefined,
+      });
+      setEditLot(null); setMsg({ t: "Lote actualizado", k: "ok" }); load();
     } catch (e) { setMsg({ t: e.message, k: "err" }); } finally { setSaving(false); }
   };
 
@@ -2148,15 +2349,48 @@ function FieldsScreen({ onBack }) {
                       {f.lat && <div style={{ fontSize: 9.5, color: C.ok, fontWeight: 600 }}>📍 Ubicación cargada</div>}
                     </div>
                   </div>
-                  <Bd color={C.pri} small>{(f.lots || []).length} lote{(f.lots || []).length !== 1 ? "s" : ""}</Bd>
+                  <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                    <button onClick={() => editField === f.id ? setEditField(null) : startEditField(f)} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }}>{Ic.doc(editField === f.id ? C.pri : C.t3, 16)}</button>
+                    <Bd color={C.pri} small>{(f.lots || []).length} lote{(f.lots || []).length !== 1 ? "s" : ""}</Bd>
+                  </div>
                 </div>
 
+                {/* Edit field form */}
+                {editField === f.id && (
+                  <div style={{ background: C.priPale, borderRadius: 10, padding: 12, marginBottom: 8 }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: C.pri, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>Editar campo</div>
+                    <LocationPicker label="Ubicación" value={editFieldLoc} onChange={setEditFieldLoc} />
+                    <div style={{ display: "flex", gap: 6, marginTop: 10 }}>
+                      <Btn sm v="ghost" onClick={() => setEditField(null)}>Cancelar</Btn>
+                      <Btn sm disabled={saving} onClick={() => handleUpdateField(f.id)}>{saving ? "..." : "Guardar"}</Btn>
+                    </div>
+                  </div>
+                )}
+
                 {(f.lots || []).map(l => (
-                  <div key={l.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 0 6px 28px", borderTop: `1px solid ${C.b2}` }}>
-                    {Ic.grain(C.ok, 14)}
-                    <span style={{ fontSize: 12, fontWeight: 500 }}>{l.name}</span>
-                    {l.hectares && <span style={{ fontSize: 10, color: C.t3 }}>{l.hectares} ha</span>}
-                    {l.lat && <span style={{ fontSize: 9, color: C.ok }}>📍</span>}
+                  <div key={l.id}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 0 6px 28px", borderTop: `1px solid ${C.b2}` }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        {Ic.grain(C.ok, 14)}
+                        <span style={{ fontSize: 12, fontWeight: 500 }}>{l.name}</span>
+                        {l.hectares && <span style={{ fontSize: 10, color: C.t3 }}>{l.hectares} ha</span>}
+                        {l.lat && <span style={{ fontSize: 9, color: C.ok }}>📍</span>}
+                      </div>
+                      <button onClick={() => editLot?.lotId === l.id ? setEditLot(null) : startEditLot(f.id, l)} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }}>{Ic.doc(editLot?.lotId === l.id ? C.pri : C.t3, 14)}</button>
+                    </div>
+                    {/* Edit lot form */}
+                    {editLot?.lotId === l.id && (
+                      <div style={{ background: C.accPale, borderRadius: 10, padding: 12, marginLeft: 28, marginBottom: 6 }}>
+                        <div style={{ fontSize: 11, fontWeight: 700, color: C.acc, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>Editar lote</div>
+                        <Field label="Hectáreas" value={editLotHa} onChange={setEditLotHa} placeholder="Ej: 150" />
+                        <div style={{ height: 8 }} />
+                        <LocationPicker label="Ubicación del lote" value={editLotLoc} onChange={setEditLotLoc} />
+                        <div style={{ display: "flex", gap: 6, marginTop: 10 }}>
+                          <Btn sm v="ghost" onClick={() => setEditLot(null)}>Cancelar</Btn>
+                          <Btn sm v="acc" disabled={saving} onClick={handleUpdateLot}>{saving ? "..." : "Guardar"}</Btn>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))}
 

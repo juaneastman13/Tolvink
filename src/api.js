@@ -74,8 +74,10 @@ export async function apiDeactivateTruck(id) { return api(`/trucks/${id}/deactiv
 // Fields & Lots
 export async function apiGetFields() { return api('/fields'); }
 export async function apiCreateField(b) { return api('/fields',{body:b}); }
+export async function apiUpdateField(id, b) { return api(`/fields/${id}`,{method:'PATCH',body:b}); }
 export async function apiGetFieldLots(fieldId) { return api(`/fields/${fieldId}/lots`); }
 export async function apiCreateLot(fieldId,b) { return api(`/fields/${fieldId}/lots`,{body:b}); }
+export async function apiUpdateLot(fieldId, lotId, b) { return api(`/fields/${fieldId}/lots/${lotId}`,{method:'PATCH',body:b}); }
 
 // Plant-Producer Access
 export async function apiGrantAccess(b) { return api('/plant-access/grant',{body:b}); }
