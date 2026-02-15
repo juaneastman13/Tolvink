@@ -303,6 +303,7 @@ function mapFreight(f) {
     plantFinishedConfirmedAt: f.plantFinishedConfirmedAt||null,
     loadedAt: f.loadedAt||null,
     documents: f.documents||[],
+    conversationId: f.conversation?.id||null,
   };
 }
 
@@ -759,7 +760,7 @@ function DocsGallery({ documents }) {
 
 // ======================== FREIGHT DETAIL ==============================
 
-function DetailScreen({ user, freight, perms, onBack, onAction }) {
+function DetailScreen({ user, freight, perms, onBack, onAction, onChat }) {
   if(!freight) return null;
   const st = stCfg(freight.status);
   const actions = getActions(freight.status, user.userType, user.role);
@@ -908,9 +909,10 @@ function DetailScreen({ user, freight, perms, onBack, onAction }) {
         </div>
       )}
 
-      <div style={{ background:C.bgCardAlt, borderRadius:10, padding:12, display:"flex", alignItems:"center", gap:10, border:`1px solid ${C.b2}` }}>
-        {Ic.wa("#25D366",20)}<div><div style={{ fontSize:11, fontWeight:600, color:"#25D366" }}>WhatsApp activo</div><div style={{ fontSize:10, color:C.t2 }}>Notificaciones automáticas a involucrados</div></div>
-      </div>
+      <button onClick={()=>onChat(freight.conversationId)} disabled={!freight.conversationId}
+        style={{ width:"100%", background:C.priPale, borderRadius:10, padding:12, display:"flex", alignItems:"center", gap:10, border:`1.5px solid ${C.pri}30`, cursor:freight.conversationId?"pointer":"default", fontFamily:"inherit" }}>
+        {Ic.msg(C.pri,20)}<div style={{textAlign:"left"}}><div style={{ fontSize:12, fontWeight:700, color:C.pri }}>Chat del flete</div><div style={{ fontSize:10, color:C.t2 }}>Conversá con las partes involucradas</div></div>
+      </button>
     </div>
   );
 }
@@ -1294,7 +1296,7 @@ function AccessScreen({ onBack }) {
 
 // ======================== CHATS SCREEN ================================
 
-function ChatsScreen({ user }) {
+function ChatsScreen({ user, openConvId, onConvOpened }) {
   const [convs, setConvs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeConv, setActiveConv] = useState(null);
@@ -1307,9 +1309,14 @@ function ChatsScreen({ user }) {
   const msgEndRef = useRef(null);
 
   const loadConvs = useCallback(async () => {
-    try { const c = await apiListConversations(); setConvs(c || []); } catch {} finally { setLoading(false); }
+    try { const c = await apiListConversations(); setConvs(c || []); return c||[]; } catch { return []; } finally { setLoading(false); }
   }, []);
-  useEffect(() => { loadConvs(); }, [loadConvs]);
+  useEffect(() => { loadConvs().then(cs => {
+    if(openConvId && cs.length>0) {
+      const found = cs.find(c=>c.id===openConvId);
+      if(found) { openConv(found); if(onConvOpened) onConvOpened(); }
+    }
+  }); }, [loadConvs, openConvId]);
 
   const openConv = async (conv) => {
     setActiveConv(conv);
@@ -1510,6 +1517,7 @@ export default function Tolvink() {
   const [modal, setModal] = useState(null);
   const [toast, setToast] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+  const [chatConvId, setChatConvId] = useState(null);
 
   const perms = useMemo(()=>permsFor(auth.user),[auth.user]);
   const show = (msg,type="ok")=>setToast({msg,type});
@@ -1567,13 +1575,13 @@ export default function Tolvink() {
 
       {screen==="home" && <HomeScreen user={auth.user} freights={fh.freights} perms={perms} onNav={nav}/>}
       {screen==="list" && <ListScreen freights={fh.freights} onNav={nav}/>}
-      {screen==="detail" && <DetailScreen user={auth.user} freight={curFreight} perms={perms} onBack={()=>setScreen("list")} onAction={handleAction}/>}
+      {screen==="detail" && <DetailScreen user={auth.user} freight={curFreight} perms={perms} onBack={()=>setScreen("list")} onAction={handleAction} onChat={(convId)=>{if(convId){setChatConvId(convId);setScreen("chats");}}}/>}
       {screen==="new" && <NewScreen user={auth.user} lots={catalog.lots} plants={catalog.plants} onBack={()=>setScreen("home")} onCreate={handleCreate} submitting={submitting}/>}
       {screen==="profile" && <ProfileScreen user={auth.user} perms={perms} onLogout={auth.logout} onNav={nav}/>}
       {screen==="trucks" && <TrucksScreen onBack={()=>setScreen("profile")}/>}
       {screen==="fields" && <FieldsScreen onBack={()=>setScreen("profile")}/>}
       {screen==="access" && <AccessScreen onBack={()=>setScreen("profile")}/>}
-      {screen==="chats" && <ChatsScreen user={auth.user}/>}
+      {screen==="chats" && <ChatsScreen user={auth.user} openConvId={chatConvId} onConvOpened={()=>setChatConvId(null)}/>}
 
       <Nav active={["detail"].includes(screen)?"list":["trucks","fields","access"].includes(screen)?"profile":screen} onChange={nav}/>
 
