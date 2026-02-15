@@ -4,7 +4,7 @@ import {
   apiCreateFreight, apiAssignFreight, apiRespondFreight,
   apiStartFreight, apiFinishFreight, apiCancelFreight,
   apiConfirmLoaded, apiConfirmFinished,
-  apiGetPlants, apiGetLots, apiGetTransportCompanies,
+  apiGetPlants, apiGetLots, apiGetTransportCompanies, apiGetTrucks,
   getToken, getSavedUser, setAuthFailHandler, clearAuth,
 } from "./api";
 
@@ -180,6 +180,7 @@ function useCatalog(user) {
   const [plants, setPlants] = useState([]);
   const [lots, setLots] = useState([]);
   const [transporters, setTransporters] = useState([]);
+  const [trucks, setTrucks] = useState([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(()=>{
@@ -189,14 +190,16 @@ function useCatalog(user) {
       apiGetPlants().catch(()=>[]),
       apiGetLots().catch(()=>[]),
       apiGetTransportCompanies().catch(()=>[]),
-    ]).then(([p,l,t])=>{
+      user.userType==="transporter" ? apiGetTrucks().catch(()=>[]) : Promise.resolve([]),
+    ]).then(([p,l,t,tr])=>{
       setPlants(p||[]);
       setLots(l||[]);
       setTransporters(t||[]);
+      setTrucks(tr||[]);
     }).finally(()=>setLoading(false));
   },[user]);
 
-  return { plants, lots, transporters, loading };
+  return { plants, lots, transporters, trucks, loading };
 }
 
 
@@ -263,7 +266,7 @@ function useFreights(user) {
       const m=mapFreight(c); setFreights(p=>[m,...p]); return {ok:true}; } catch(e) { return {ok:false,error:e.message}; }
   },[]);
   const assign = useCallback(async (fId,compId)=>{ try { await apiAssignFreight(fId,{transportCompanyId:compId}); await refresh(fId); return {ok:true}; } catch(e) { return {ok:false,error:e.message}; } },[refresh]);
-  const respond = useCallback(async (fId,action,reason)=>{ try { await apiRespondFreight(fId,{action,reason}); await refresh(fId); return {ok:true}; } catch(e) { return {ok:false,error:e.message}; } },[refresh]);
+  const respond = useCallback(async (fId,action,reason,truckId)=>{ try { await apiRespondFreight(fId,{action,reason,truckId}); await refresh(fId); return {ok:true}; } catch(e) { return {ok:false,error:e.message}; } },[refresh]);
   const start = useCallback(async (fId)=>{ try { await apiStartFreight(fId); await refresh(fId); return {ok:true}; } catch(e) { return {ok:false,error:e.message}; } },[refresh]);
   const finish = useCallback(async (fId)=>{ try { await apiFinishFreight(fId); await refresh(fId); return {ok:true}; } catch(e) { return {ok:false,error:e.message}; } },[refresh]);
   const cancel = useCallback(async (fId,reason)=>{ try { await apiCancelFreight(fId,reason); await refresh(fId); return {ok:true}; } catch(e) { return {ok:false,error:e.message}; } },[refresh]);
@@ -946,6 +949,32 @@ function AssignModal({ freight, transporters, onClose, onConfirm }) {
   );
 }
 
+function TruckSelectModal({ freight, trucks, onClose, onConfirm }) {
+  const [sel,setSel] = useState("");
+  const ts = (trucks||[]).filter(t=>t.active!==false);
+  return (
+    <div style={{position:"fixed",inset:0,background:C.bgOverlay,display:"flex",alignItems:"flex-end",justifyContent:"center",zIndex:100,padding:16}}>
+      <div style={{background:C.w,borderRadius:18,padding:22,width:"100%",maxWidth:400,boxShadow:C.shLg}}>
+        <div style={{fontSize:17,fontWeight:700,marginBottom:4}}>Aceptar flete · {freight.code}</div>
+        <div style={{fontSize:12,color:C.t2,marginBottom:18}}>{freight.grain} · {freight.tons}tn → {freight.destName}</div>
+        <label style={{fontSize:10.5,fontWeight:600,color:C.t2,marginBottom:8,display:"block",textTransform:"uppercase",letterSpacing:0.6}}>Seleccioná un camión</label>
+        <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:18,maxHeight:220,overflowY:"auto"}}>
+          {ts.length===0 && <div style={{fontSize:12,color:C.t3,padding:10,textAlign:"center"}}>No tenés camiones registrados.<br/><span style={{color:C.acc,fontWeight:600}}>Registrá uno desde tu perfil.</span></div>}
+          {ts.map(t=><button key={t.id} onClick={()=>setSel(t.id)} style={{padding:"13px 14px",borderRadius:10,textAlign:"left",fontFamily:"inherit",border:`1.5px solid ${sel===t.id?C.acc:C.b1}`,background:sel===t.id?C.accPale:C.w,color:sel===t.id?C.acc:C.t2,fontSize:13.5,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",gap:10}}>
+            {Ic.truck(sel===t.id?C.acc:C.t3,18)}
+            <div>
+              <div style={{fontSize:13,fontWeight:700,color:sel===t.id?C.acc:C.t1}}>{t.plate}</div>
+              {t.model && <div style={{fontSize:10.5,fontWeight:400,color:C.t3,marginTop:1}}>{t.model}</div>}
+              {t.assignedUser && <div style={{fontSize:10,color:C.t3,marginTop:1}}>Chofer: {t.assignedUser.name}</div>}
+            </div>
+          </button>)}
+        </div>
+        <div style={{display:"flex",gap:8}}><Btn full v="ghost" onClick={onClose}>Cancelar</Btn><Btn full v="acc" disabled={!sel} onClick={()=>onConfirm(sel)}>Aceptar flete</Btn></div>
+      </div>
+    </div>
+  );
+}
+
 function ReasonModal({ title, freight, btnLabel, btnType="err", onClose, onConfirm }) {
   const [reason,setReason] = useState("");
   return (
@@ -982,10 +1011,15 @@ export default function Tolvink() {
     if(action==="assign") setModal({type:"assign",freight:f});
     if(action==="cancel") setModal({type:"reason",freight:f,title:"Cancelar flete",btnLabel:"Cancelar flete",action:"cancel"});
     if(action==="reject") setModal({type:"reason",freight:f,title:"Rechazar asignación",btnLabel:"Rechazar",action:"reject"});
-    if(action==="accept") (async()=>{ const r=await fh.respond(fId,"accepted"); if(r.ok) show("Flete aceptado"); else show(r.error,"err"); })();
+    if(action==="accept") setModal({type:"truck_select",freight:f});
     if(action==="start") (async()=>{ const r=await fh.start(fId); if(r.ok) show("Viaje iniciado"); else show(r.error,"err"); })();
     if(action==="confirm_loaded") (async()=>{ const r=await fh.confirmLoaded(fId); if(r.ok) show("Carga confirmada"); else show(r.error,"err"); })();
     if(action==="confirm_finished") (async()=>{ const r=await fh.confirmFinished(fId); if(r.ok) show("Entrega confirmada"); else show(r.error,"err"); })();
+  };
+
+  const handleAcceptWithTruck = async (fId, truckId)=>{
+    const r = await fh.respond(fId, "accepted", undefined, truckId);
+    if(r.ok){ setModal(null); show("Flete aceptado"); } else show(r.error,"err");
   };
 
   const handleAssign = async (fId, transportCompanyId)=>{
@@ -1030,6 +1064,7 @@ export default function Tolvink() {
       <Nav active={screen==="detail"?"list":screen} onChange={nav}/>
 
       {modal?.type==="assign" && <AssignModal freight={modal.freight} transporters={catalog.transporters} onClose={()=>setModal(null)} onConfirm={t=>handleAssign(modal.freight.id,t)}/>}
+      {modal?.type==="truck_select" && <TruckSelectModal freight={modal.freight} trucks={catalog.trucks} onClose={()=>setModal(null)} onConfirm={t=>handleAcceptWithTruck(modal.freight.id,t)}/>}
       {modal?.type==="reason" && <ReasonModal title={modal.title} freight={modal.freight} btnLabel={modal.btnLabel} onClose={()=>setModal(null)} onConfirm={r=>handleReasonAction(modal.freight.id,r,modal.action)}/>}
       {toast && <Toast msg={toast.msg} type={toast.type} onClose={()=>setToast(null)}/>}
     </div>
