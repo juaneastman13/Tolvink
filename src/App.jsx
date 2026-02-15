@@ -767,10 +767,14 @@ function HomeScreen({ user, freights, perms, onNav }) {
         ) : (
           <div style={{ fontSize:14, fontWeight:700, color:C.t1 }}>Fletes <span style={{fontSize:12,fontWeight:500,color:C.t3}}>({displayFreights.length})</span></div>
         )}
-        <div style={{ display:"flex", gap:6 }}>
-          {viewMode==="table" && <button onClick={()=>exportCSV(displayFreights,`tolvink-inicio-${new Date().toISOString().slice(0,10)}.csv`)} style={{ display:"flex", alignItems:"center", gap:4, background:C.accPale, border:`1px solid ${C.acc}20`, borderRadius:8, padding:"5px 10px", cursor:"pointer", fontFamily:"inherit", fontSize:10.5, fontWeight:600, color:C.acc }}>
-            {Ic.down(C.acc,12)} CSV
-          </button>}
+        <div style={{ display:"flex", gap:6, alignItems:"center" }}>
+          {viewMode==="table" && <>
+            <span style={{ fontSize:10, color:C.t3, whiteSpace:"nowrap" }}>Descargar información</span>
+            <button onClick={()=>exportCSV(displayFreights,`tolvink-inicio-${new Date().toISOString().slice(0,10)}.csv`)} style={{ display:"flex", alignItems:"center", gap:4, background:C.accPale, border:`1px solid ${C.acc}20`, borderRadius:8, padding:"5px 10px", cursor:"pointer", fontFamily:"inherit", fontSize:10.5, fontWeight:600, color:C.acc }}>
+              {Ic.down(C.acc,12)} CSV
+            </button>
+          </>}
+          <span style={{ fontSize:10, color:C.t3, whiteSpace:"nowrap" }}>Cambiar visualización</span>
           <button onClick={nextView} style={{ display:"flex", alignItems:"center", gap:4, background:C.priPale, border:`1px solid ${C.pri}20`, borderRadius:8, padding:"5px 10px", cursor:"pointer", fontFamily:"inherit", fontSize:10.5, fontWeight:600, color:C.pri }}>
             {viewMode==="map"?Ic.pin(C.pri,13):viewMode==="table"?Ic.doc(C.pri,13):Ic.home(C.pri,13)} {viewLabels[viewMode]}
           </button>
@@ -1064,10 +1068,14 @@ function ListScreen({ freights, onNav, onRefresh }) {
       <Tabs items={[{k:"all",l:"Todos"},{k:"available",l:"Solicitados"},{k:"active",l:"Activos"},{k:"done",l:"Finalizados"},{k:"closed",l:"Cerrados"}]} active={tab} onChange={setTab}/>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:8,marginBottom:6}}>
         <div style={{fontSize:11,color:C.t3}}>{filtered.length} resultado{filtered.length!==1?"s":""}</div>
-        <div style={{ display:"flex", gap:6 }}>
-          {viewMode==="table" && <button onClick={()=>exportCSV(filtered,`tolvink-fletes-${new Date().toISOString().slice(0,10)}.csv`)} style={{ display:"flex", alignItems:"center", gap:4, background:C.accPale, border:`1px solid ${C.acc}20`, borderRadius:8, padding:"4px 8px", cursor:"pointer", fontFamily:"inherit", fontSize:10, fontWeight:600, color:C.acc }}>
-            {Ic.down(C.acc,12)} CSV
-          </button>}
+        <div style={{ display:"flex", gap:6, alignItems:"center" }}>
+          {viewMode==="table" && <>
+            <span style={{ fontSize:10, color:C.t3, whiteSpace:"nowrap" }}>Descargar información</span>
+            <button onClick={()=>exportCSV(filtered,`tolvink-fletes-${new Date().toISOString().slice(0,10)}.csv`)} style={{ display:"flex", alignItems:"center", gap:4, background:C.accPale, border:`1px solid ${C.acc}20`, borderRadius:8, padding:"4px 8px", cursor:"pointer", fontFamily:"inherit", fontSize:10, fontWeight:600, color:C.acc }}>
+              {Ic.down(C.acc,12)} CSV
+            </button>
+          </>}
+          <span style={{ fontSize:10, color:C.t3, whiteSpace:"nowrap" }}>Cambiar visualización</span>
           <button onClick={()=>setViewMode(v=>v==="cards"?"table":"cards")} style={{ display:"flex", alignItems:"center", gap:4, background:C.priPale, border:`1px solid ${C.pri}20`, borderRadius:8, padding:"4px 8px", cursor:"pointer", fontFamily:"inherit", fontSize:10, fontWeight:600, color:C.pri }}>
             {viewMode==="table"?Ic.home(C.pri,12):Ic.doc(C.pri,12)} {viewMode==="cards"?"Tabla":"Tarjetas"}
           </button>
@@ -1107,30 +1115,27 @@ function ListScreen({ freights, onNav, onRefresh }) {
         </div>
       )}
 
-      {/* CARDS VIEW */}
+      {/* CARDS VIEW — same as Home */}
       {viewMode==="cards" && (
       <div style={{ display:"flex", flexDirection:"column", gap:10 }} className="tv-grid">
         {filtered.length===0 && <div style={{ textAlign:"center", padding:40, color:C.t3, fontSize:13, gridColumn:"1/-1" }}>Sin fletes en esta categoría</div>}
         {filtered.map(f=>{
           const st = stCfg(f.status);
           return (
-          <div key={f.id} style={{ background:C.w, border:`1px solid ${C.b1}`, borderLeft:`3px solid ${st.border}`, borderRadius:12, padding:14, boxShadow:C.sh }}>
-            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:8 }}>
-              <div>
-                <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-                  <span style={{ fontSize:11, fontWeight:700, color:C.t3, fontFamily:MONO }}>{f.code}</span>
-                  
-                </div>
-                <div style={{ fontSize:15, fontWeight:700, marginTop:4, color:C.t1 }}>{f.requestedByName || f.grain}</div>
-              </div>
-              {(()=>{return <Bd color={st.color} bg={st.bg}>{st.label}</Bd>})()}
+          <div key={f.id} onClick={()=>onNav("detail",f.id)} style={{ background:C.w, border:`1px solid ${C.b1}`, borderLeft:`3px solid ${st.border}`, borderRadius:12, padding:14, cursor:"pointer", boxShadow:C.sh }}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
+              <span style={{ fontSize:11, fontWeight:700, color:C.t3, fontFamily:MONO }}>{f.code}</span>
+              <Bd color={st.color} bg={st.bg} small>{st.label}</Bd>
             </div>
-            <div style={{ display:"flex", alignItems:"center", gap:4, fontSize:11.5, color:C.t2 }}>{Ic.plant(C.t3,13)} {f.destName} <span style={{color:C.b1}}>|</span> {f.grain} · {f.tons}tn</div>
-            <div style={{ display:"flex", alignItems:"center", gap:6, fontSize:10.5, color:C.t3, marginTop:6 }}>{Ic.cal(C.t3,11)} {f.loadDate} {f.loadTime}</div>
-            {f.transporterName && <div style={{ display:"flex", alignItems:"center", gap:4, fontSize:10.5, color:C.t3, marginTop:4 }}>{Ic.truck(C.t3,12)} {f.transporterName}</div>}
-            <div style={{ display:"flex", gap:8, marginTop:10 }}>
-              <Btn sm v="sec" onClick={()=>onNav("detail",f.id)} icon={Ic.eye(C.pri,14)}>Detalle</Btn>
-              
+            <div style={{ fontSize:14, fontWeight:700, color:C.t1 }}>{f.grain} · {f.tons} tn</div>
+            <div style={{ display:"flex", alignItems:"center", gap:4, marginTop:6, fontSize:11.5, color:C.t2 }}>
+              {Ic.pin(C.t3,13)} <span>{(f.originName||"").split("—")[0].trim()}</span>
+              <span style={{color:C.t3,margin:"0 2px"}}>&rarr;</span>
+              {Ic.plant(C.t3,13)} <span>{f.destName}</span>
+            </div>
+            <div style={{ display:"flex", alignItems:"center", gap:6, fontSize:10.5, color:C.t3, marginTop:6 }}>
+              {Ic.cal(C.t3,12)} {f.loadDate} {f.loadTime}
+              {f.transporterName && <><span style={{color:C.b1}}>|</span>{Ic.truck(C.t3,12)} {f.transporterName}</>}
             </div>
           </div>
           );
