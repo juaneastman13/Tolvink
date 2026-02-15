@@ -199,7 +199,7 @@ function useCatalog(user) {
       apiGetPlants().catch(()=>[]),
       apiGetLots().catch(()=>[]),
       apiGetTransportCompanies().catch(()=>[]),
-      user.userType==="transporter" ? apiGetTrucks().catch(()=>[]) : Promise.resolve([]),
+      (user.userType==="transporter"||user.userType==="producer") ? apiGetTrucks().catch(()=>[]) : Promise.resolve([]),
       user.userType==="producer" ? apiGetFields().catch(()=>[]) : Promise.resolve([]),
     ]).then(([p,l,t,tr,f])=>{
       setPlants(p||[]);
@@ -254,6 +254,7 @@ function mapUser(u) {
   if(!u) return null;
   const co = u.company;
   return { id:u.id, email:u.email, name:u.name, role:u.role, userType:co?.type||"producer", entity:co?.name||"", entityId:co?.id||"", companyId:co?.id||"",
+    hasInternalFleet: co?.hasInternalFleet||false,
     av: u.name.split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase() };
 }
 
@@ -273,7 +274,7 @@ function useFreights(user) {
     catch(e) { setError(e.message); return null; }
   },[]);
   const create = useCallback(async (form)=>{
-    try { const c=await apiCreateFreight({ originLotId:form.lotId, fieldId:form.fieldId||undefined, destPlantId:form.plantId, loadDate:form.loadDate, loadTime:form.loadTime, items:[{grain:form.grain,tons:parseFloat(form.tons),unit:form.unit||"toneladas",amount:form.amount?parseFloat(form.amount):0,productTypeOther:form.productTypeOther||undefined}], notes:form.notes||"" });
+    try { const c=await apiCreateFreight({ originLotId:form.lotId, fieldId:form.fieldId||undefined, destPlantId:form.plantId, loadDate:form.loadDate, loadTime:form.loadTime, items:[{grain:form.grain,tons:parseFloat(form.tons),unit:form.unit||"toneladas",amount:form.amount?parseFloat(form.amount):0,productTypeOther:form.productTypeOther||undefined}], notes:form.notes||"", truckId:form.truckId||undefined });
       const m=mapFreight(c); setFreights(p=>[m,...p]); return {ok:true}; } catch(e) { return {ok:false,error:e.message}; }
   },[]);
   const assign = useCallback(async (fId,compId)=>{ try { await apiAssignFreight(fId,{transportCompanyId:compId}); await refresh(fId); return {ok:true}; } catch(e) { return {ok:false,error:e.message}; } },[refresh]);
@@ -577,8 +578,8 @@ function HomeScreen({ user, freights, perms, onNav }) {
 
       {activeFilter==="all" && displayFreights.length>0 && <div style={{ fontSize:14, fontWeight:700, marginBottom:10, color:C.t1 }}>En movimiento</div>}
 
-      <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
-        {displayFreights.length===0 && <div style={{ textAlign:"center", padding:40, color:C.t3, fontSize:13 }}>Sin fletes en esta categoría</div>}
+      <div style={{ display:"flex", flexDirection:"column", gap:10 }} className="tv-grid">
+        {displayFreights.length===0 && <div style={{ textAlign:"center", padding:40, color:C.t3, fontSize:13, gridColumn:"1/-1" }}>Sin fletes en esta categoría</div>}
         {displayFreights.map(f=>{
           const st = stCfg(f.status);
           return (
@@ -665,8 +666,8 @@ function ListScreen({ freights, onNav }) {
 
       <Tabs items={[{k:"all",l:"Todos"},{k:"available",l:"Solicitados"},{k:"active",l:"Activos"},{k:"done",l:"Finalizados"},{k:"closed",l:"Cerrados"}]} active={tab} onChange={setTab}/>
       <div style={{fontSize:11,color:C.t3,marginTop:8,marginBottom:6}}>{filtered.length} resultado{filtered.length!==1?"s":""}</div>
-      <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
-        {filtered.length===0 && <div style={{ textAlign:"center", padding:40, color:C.t3, fontSize:13 }}>Sin fletes en esta categoría</div>}
+      <div style={{ display:"flex", flexDirection:"column", gap:10 }} className="tv-grid">
+        {filtered.length===0 && <div style={{ textAlign:"center", padding:40, color:C.t3, fontSize:13, gridColumn:"1/-1" }}>Sin fletes en esta categoría</div>}
         {filtered.map(f=>{
           const st = stCfg(f.status);
           return (
@@ -939,26 +940,29 @@ function DetailScreen({ user, freight, perms, onBack, onAction, onChat, onRefres
 
 // ======================== NEW FREIGHT ================================
 
-function NewScreen({ user, lots, plants, fields, onBack, onCreate }) {
-  const [form, setForm] = useState({ grain:"", tons:"", lotId:"", plantId:"", fieldId:"", loadDate:"", loadTime:"", notes:"", unit:"toneladas", amount:"", productTypeOther:"" });
+function NewScreen({ user, lots, plants, fields, trucks, onBack, onCreate }) {
+  const [form, setForm] = useState({ grain:"", tons:"", lotId:"", plantId:"", fieldId:"", loadDate:"", loadTime:"", notes:"", unit:"toneladas", amount:"", productTypeOther:"", truckId:"" });
   const [errs, setErrs] = useState({});
   const [touched, setTouched] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const u = f => setForm(p=>({...p,...f}));
 
   // Filter lots by selected field
-  const filteredLots = form.fieldId ? (lots||[]).filter(l=>l.fieldId===form.fieldId) : (lots||[]);
+  const filteredLots = form.fieldId ? (lots||[]).filter(l=>l.fieldId===form.fieldId) : [];
   const fieldOpts = (fields||[]).map(f=>({ value:f.id, label:f.name, sub:f.address||"" }));
   const lotOpts = filteredLots.map(l=>({ value:l.id, label:l.name, sub:l.hectares?`${l.hectares} ha`:'' }));
   const plantOpts = (plants||[]).map(p=>({ value:p.id, label:p.name }));
   const selectedLot = (lots||[]).find(l=>l.id===form.lotId);
+  const truckOpts = (trucks||[]).map(t=>({ value:t.id, label:`${t.plate}${t.model?` · ${t.model}`:""}` }));
+  const showTruckSelect = user.userType==="producer" && truckOpts.length > 0;
 
   const submit = () => {
     setTouched(true);
     const {ok,errs:e} = validate(form, SCHEMAS.freight);
     if(form.grain==="Otros" && !form.productTypeOther.trim()) { e.productTypeOther="Descripción obligatoria"; }
+    if(form.fieldId && !form.lotId) { e.lotId="Seleccioná un lote del campo"; }
     setErrs(e);
-    if(!ok || Object.keys(e).length>0) return;
+    if(!ok || Object.keys(e).filter(k=>e[k]).length>0) return;
     onCreate({...form, amount:form.amount?parseFloat(form.amount):0});
   };
 
@@ -1002,14 +1006,12 @@ function NewScreen({ user, lots, plants, fields, onBack, onCreate }) {
           <Field label="Importe (opcional)" value={form.amount} onChange={v=>u({amount:v})} placeholder="Ej: 150000"/>
         </div>
 
-        {fieldOpts.length > 0 && (
-          <div>
-            <Select label="Campo" icon={Ic.pin(C.ok,14)} value={form.fieldId} onChange={v=>{u({fieldId:v,lotId:""});}} options={fieldOpts} placeholder="Seleccionar campo..."/>
-          </div>
-        )}
+        <div>
+          <Select label="Campo" icon={Ic.pin(C.ok,14)} value={form.fieldId} onChange={v=>{u({fieldId:v,lotId:""});}} options={fieldOpts} placeholder="Seleccionar campo..."/>
+        </div>
 
         <div>
-          <Select label="Origen (lote)" icon={Ic.pin(C.pri,14)} value={form.lotId} onChange={v=>u({lotId:v})} options={lotOpts} placeholder="Seleccionar lote..."/>
+          <Select label="Origen (lote)" icon={Ic.pin(C.pri,14)} value={form.lotId} onChange={v=>u({lotId:v})} options={lotOpts} placeholder={form.fieldId?"Seleccionar lote...":"Primero seleccioná un campo"}/>
           {touched&&<FieldError error={errs.lotId}/>}
           {selectedLot && selectedLot.lat && <div style={{ display:"flex", alignItems:"center", gap:6, padding:"6px 10px", background:C.priPale, borderRadius:8, marginTop:6 }}>{Ic.chk(C.pri,14)}<span style={{fontSize:10.5,color:C.pri,fontWeight:500}}>{selectedLot.lat}, {selectedLot.lng}</span></div>}
         </div>
@@ -1032,6 +1034,14 @@ function NewScreen({ user, lots, plants, fields, onBack, onCreate }) {
           </div>
         </div>
 
+        {showTruckSelect && (
+          <div style={{ background:C.accPale, border:`1.5px solid ${C.acc}30`, borderRadius:12, padding:14 }}>
+            <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:10 }}>{Ic.truck(C.acc,16)}<span style={{ fontSize:10.5, fontWeight:700, color:C.acc, textTransform:"uppercase", letterSpacing:0.5 }}>Flota propia (opcional)</span></div>
+            <Select value={form.truckId} onChange={v=>u({truckId:v})} options={truckOpts} placeholder="Sin camión propio — la planta asigna"/>
+            {form.truckId && <button onClick={()=>u({truckId:""})} style={{ marginTop:6, background:"none", border:"none", cursor:"pointer", fontSize:11, color:C.err, fontWeight:600, fontFamily:"inherit" }}>Quitar camión propio</button>}
+          </div>
+        )}
+
         <div>
           <label style={{ fontSize:10.5, fontWeight:600, color:C.t2, marginBottom:6, display:"block", textTransform:"uppercase", letterSpacing:0.6 }}>Notas</label>
           <textarea value={form.notes} onChange={e=>u({notes:e.target.value})} placeholder="Indicaciones, horarios especiales..." rows={3} style={{ width:"100%", padding:"12px 14px", borderRadius:10, border:`1.5px solid ${C.b1}`, background:C.w, color:C.t1, fontSize:13, fontFamily:"inherit", outline:"none", resize:"none", boxSizing:"border-box" }}/>
@@ -1051,7 +1061,7 @@ function ProfileScreen({ user, perms, onLogout, onNav }) {
   const pl = []; if(perms.canRequest)pl.push("Solicitar fletes"); if(perms.canApprove)pl.push("Aprobar fletes"); if(perms.canAssignDriver)pl.push("Asignar choferes"); if(perms.canCancel)pl.push("Cancelar fletes"); if(perms.canReject)pl.push("Rechazar viajes");
 
   const mgmtItems = [];
-  if(user.userType==="transporter") mgmtItems.push({k:"trucks",l:"Mis Camiones",ic:Ic.truck(C.acc,18),c:C.acc});
+  if(user.userType==="transporter"||user.userType==="producer") mgmtItems.push({k:"trucks",l:"Mis Camiones",ic:Ic.truck(C.acc,18),c:C.acc});
   if(user.userType==="producer") mgmtItems.push({k:"fields",l:"Mis Campos y Lotes",ic:Ic.pin(C.pri,18),c:C.pri});
   if(user.userType==="plant") mgmtItems.push({k:"access",l:"Productores Habilitados",ic:Ic.user(C.pri,18),c:C.pri});
 
@@ -1618,8 +1628,8 @@ export default function Tolvink() {
   const curFreight = fh.freights.find(f=>f.id===selFreight);
 
   return (
-    <div style={{minHeight:"100vh",background:C.bg,color:C.t1,fontFamily:FONT,display:"flex",flexDirection:"column",maxWidth:430,margin:"0 auto",position:"relative",overflow:"hidden"}}>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&family=JetBrains+Mono:wght@400;500&display=swap');*{box-sizing:border-box;margin:0;padding:0}body{background:${C.bg}}input::placeholder,textarea::placeholder{color:${C.t3}}::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:${C.b1};border-radius:4px}@keyframes ti{from{opacity:0;transform:translate(-50%,-12px)}to{opacity:1;transform:translate(-50%,0)}}`}</style>
+    <div style={{minHeight:"100vh",background:C.bg,color:C.t1,fontFamily:FONT,display:"flex",flexDirection:"column",maxWidth:900,margin:"0 auto",position:"relative",overflow:"hidden"}}>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&family=JetBrains+Mono:wght@400;500&display=swap');*{box-sizing:border-box;margin:0;padding:0}body{background:${C.bg}}input::placeholder,textarea::placeholder{color:${C.t3}}::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:${C.b1};border-radius:4px}@keyframes ti{from{opacity:0;transform:translate(-50%,-12px)}to{opacity:1;transform:translate(-50%,0)}}@media(min-width:640px){.tv-grid{display:grid!important;grid-template-columns:1fr 1fr!important;gap:12px!important}.tv-grid3{display:grid!important;grid-template-columns:1fr 1fr 1fr!important;gap:12px!important}.tv-pad{padding:24px 32px!important}.tv-detail-grid{display:grid!important;grid-template-columns:1fr 1fr!important;gap:16px!important}}`}</style>
       <div style={{padding:"10px 18px",display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:`1px solid ${C.b2}`,background:C.w}}>
         <span style={{fontSize:11,fontWeight:500,color:C.t3}}>{new Date().toLocaleTimeString("es",{hour:"2-digit",minute:"2-digit"})}</span>
         <span style={{fontSize:14,fontWeight:800,color:C.pri,letterSpacing:-0.5}}>tolvink</span>
@@ -1629,7 +1639,7 @@ export default function Tolvink() {
       {screen==="home" && <HomeScreen user={auth.user} freights={fh.freights} perms={perms} onNav={nav}/>}
       {screen==="list" && <ListScreen freights={fh.freights} onNav={nav}/>}
       {screen==="detail" && <DetailScreen user={auth.user} freight={curFreight} perms={perms} onBack={()=>setScreen("list")} onAction={handleAction} onChat={(convId)=>{if(convId){setChatConvId(convId);setScreen("chats");}}} onRefresh={(id)=>fh.refresh(id)}/>}
-      {screen==="new" && <NewScreen user={auth.user} lots={catalog.lots} plants={catalog.plants} fields={catalog.fields} onBack={()=>setScreen("home")} onCreate={handleCreate} submitting={submitting}/>}
+      {screen==="new" && <NewScreen user={auth.user} lots={catalog.lots} plants={catalog.plants} fields={catalog.fields} trucks={catalog.trucks} onBack={()=>setScreen("home")} onCreate={handleCreate} submitting={submitting}/>}
       {screen==="profile" && <ProfileScreen user={auth.user} perms={perms} onLogout={auth.logout} onNav={nav}/>}
       {screen==="trucks" && <TrucksScreen onBack={()=>setScreen("profile")}/>}
       {screen==="fields" && <FieldsScreen onBack={()=>setScreen("profile")}/>}
