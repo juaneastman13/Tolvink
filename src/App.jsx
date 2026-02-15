@@ -146,15 +146,16 @@ const Ic = {
 // This separation allows: 1 Freight → many Trips (reasignaciones)
 
 // Backend states: draft, pending_assignment, assigned, accepted, in_progress, loaded, finished, canceled
+// Color system: pending=naranja, active states=verde progresivo, terminal=verde oscuro/rojo
 const STATUS = {
-  draft:              { label:"Borrador",            color:C.muted, bg:C.mutedPale },
-  pending_assignment: { label:"Solicitado",          color:C.ok,    bg:C.okPale    },
-  assigned:           { label:"Asignado a flota",    color:C.info,  bg:C.infoPale  },
-  accepted:           { label:"Confirmado camión",   color:"#7C3AED", bg:"#F3EEFF" },
-  in_progress:        { label:"En curso",            color:C.acc,   bg:C.accPale   },
-  loaded:             { label:"Cargando",            color:C.acc,   bg:C.accPale   },
-  finished:           { label:"Finalizado",          color:C.ok,    bg:C.okPale    },
-  canceled:           { label:"Cancelado",           color:C.err,   bg:C.errPale   },
+  draft:              { label:"Borrador",            color:C.muted,   bg:C.mutedPale, border:C.muted   },
+  pending_assignment: { label:"Solicitado",          color:C.acc,     bg:C.accPale,   border:C.acc     },
+  assigned:           { label:"Asignado a flota",    color:"#34A853", bg:"#E8F5E9",   border:"#34A853" },
+  accepted:           { label:"Confirmado camión",   color:"#2E9448", bg:"#DCF0E2",   border:"#2E9448" },
+  in_progress:        { label:"En curso",            color:"#258B3E", bg:"#D0EBD7",   border:"#258B3E" },
+  loaded:             { label:"Cargando",            color:"#1B7D33", bg:"#C4E6CC",   border:"#1B7D33" },
+  finished:           { label:"Finalizado",          color:C.pri,     bg:C.priPale,   border:C.pri     },
+  canceled:           { label:"Cancelado",           color:C.err,     bg:C.errPale,   border:C.err     },
 };
 function stCfg(s) { return STATUS[s] || STATUS.pending_assignment; }
 
@@ -492,17 +493,36 @@ function AuthScreen({ onLogin, onSignup, loading, error, clearError }) {
 // ======================== HOME SCREEN ================================
 
 function HomeScreen({ user, freights, perms, onNav }) {
+  const [activeFilter, setActiveFilter] = useState("all");
+
+  const FILTER_MAP = {
+    requested: ["draft","pending_assignment"],
+    active: ["assigned","accepted","in_progress","loaded"],
+    done: ["finished"],
+  };
+
   const stats = useMemo(()=>{
-    const avail = freights.filter(f=>f.status==="pending_assignment").length;
-    const active = freights.filter(f=>["assigned","accepted","in_progress","loaded"].includes(f.status)).length;
+    const avail = freights.filter(f=>FILTER_MAP.requested.includes(f.status)).length;
+    const active = freights.filter(f=>FILTER_MAP.active.includes(f.status)).length;
     const done = freights.filter(f=>f.status==="finished").length;
     return {avail,active,done};
   },[freights]);
 
-  const activeFreights = useMemo(()=>freights.filter(f=>["assigned","accepted","in_progress","loaded"].includes(f.status)),[freights]);
+  const displayFreights = useMemo(()=>{
+    if(activeFilter==="all") return freights.filter(f=>!["canceled","draft"].includes(f.status));
+    return freights.filter(f=>FILTER_MAP[activeFilter]?.includes(f.status));
+  },[freights,activeFilter]);
 
   const tc = ({plant:C.pri,transporter:C.info,producer:C.acc})[user.userType]||C.pri;
   const typeLabel = ({plant:"Planta de Acopio",transporter:"Transportista",producer:"Productor"})[user.userType];
+
+  const toggleFilter = (f) => setActiveFilter(prev=>prev===f?"all":f);
+
+  const statCards = [
+    {k:"requested",l:"Solicitados",v:stats.avail,c:C.acc,bg:C.accPale},
+    {k:"active",l:"En curso",v:stats.active,c:"#258B3E",bg:"#D0EBD7"},
+    {k:"done",l:"Finalizados",v:stats.done,c:C.pri,bg:C.priPale},
+  ];
 
   return (
     <div style={{ flex:1, overflow:"auto", padding:18 }}>
@@ -512,45 +532,54 @@ function HomeScreen({ user, freights, perms, onNav }) {
       </div>
 
       <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:10, marginBottom:20 }}>
-        {[{l:"Solicitados",v:stats.avail,c:C.pri,bg:C.priPale},{l:"En curso",v:stats.active,c:C.acc,bg:C.accPale},{l:"Finalizados",v:stats.done,c:C.ok,bg:C.okPale}].map((s,i)=>(
-          <div key={i} style={{ background:s.bg, borderRadius:12, padding:"14px 10px", textAlign:"center" }}><div style={{ fontSize:26, fontWeight:800, color:s.c }}>{s.v}</div><div style={{ fontSize:10, color:s.c, fontWeight:500, marginTop:2, opacity:0.8 }}>{s.l}</div></div>
-        ))}
+        {statCards.map(s=>{
+          const sel = activeFilter===s.k;
+          return <div key={s.k} onClick={()=>toggleFilter(s.k)} style={{ background:sel?s.c:s.bg, borderRadius:12, padding:"14px 10px", textAlign:"center", cursor:"pointer", transition:"all 0.15s", border:sel?`2px solid ${s.c}`:`2px solid transparent`, transform:sel?"scale(1.03)":"scale(1)" }}>
+            <div style={{ fontSize:26, fontWeight:800, color:sel?C.w:s.c }}>{s.v}</div>
+            <div style={{ fontSize:10, color:sel?C.w:s.c, fontWeight:sel?700:500, marginTop:2, opacity:sel?1:0.8 }}>{s.l}</div>
+          </div>;
+        })}
       </div>
 
       {perms.canRequest && <Btn full v="acc" onClick={()=>onNav("new")} icon={Ic.plus(C.w,16)} style={{marginBottom:16}}>Solicitar nuevo flete</Btn>}
 
-      {perms.canApprove && stats.avail>0 && (
-        <div onClick={()=>onNav("list")} style={{ background:C.accPale, border:`1px solid ${C.acc}22`, borderRadius:12, padding:14, marginBottom:18, cursor:"pointer", display:"flex", alignItems:"center", gap:12 }}>
+      {perms.canApprove && stats.avail>0 && activeFilter==="all" && (
+        <div onClick={()=>toggleFilter("requested")} style={{ background:C.accPale, border:`1px solid ${C.acc}22`, borderLeft:`3px solid ${C.acc}`, borderRadius:12, padding:14, marginBottom:18, cursor:"pointer", display:"flex", alignItems:"center", gap:12 }}>
           {Ic.warn(C.acc,24)}<div><div style={{ fontSize:13, fontWeight:700, color:C.acc }}>{stats.avail} flete{stats.avail>1?"s":""} solicitado{stats.avail>1?"s":""}</div><div style={{ fontSize:11.5, color:C.t2 }}>Esperando asignación de transporte</div></div>
         </div>
       )}
 
-      {activeFreights.length>0 && <>
-        <div style={{ fontSize:14, fontWeight:700, marginBottom:10, color:C.t1 }}>En movimiento</div>
-        <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
-          {activeFreights.map(f=>{
-            const st = stCfg(f.status);
-            return (
-              <div key={f.id} onClick={()=>onNav("detail",f.id)} style={{ background:C.w, border:`1px solid ${C.b1}`, borderLeft:`3px solid ${C.acc}`, borderRadius:12, padding:14, cursor:"pointer", boxShadow:C.sh }}>
-                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
-                  <span style={{ fontSize:11, fontWeight:700, color:C.t3, fontFamily:MONO }}>{f.code}</span>
-                  <Bd color={st.color} bg={st.bg} small>{st.label}</Bd>
-                </div>
-                <div style={{ fontSize:14, fontWeight:700, color:C.t1 }}>{f.grain} · {f.tons} tn</div>
-                <div style={{ display:"flex", alignItems:"center", gap:4, marginTop:6, fontSize:11.5, color:C.t2 }}>
-                  {Ic.pin(C.t3,13)} <span>{(f.originName||"").split("—")[0].trim()}</span>
-                  <span style={{color:C.t3,margin:"0 2px"}}>&rarr;</span>
-                  {Ic.plant(C.t3,13)} <span>{f.destName}</span>
-                </div>
-                <div style={{ display:"flex", alignItems:"center", gap:6, fontSize:10.5, color:C.t3, marginTop:6 }}>
-                  {Ic.cal(C.t3,12)} {f.loadDate} {f.loadTime}
-                  {f.transporterName && <><span style={{color:C.b1}}>|</span>{Ic.truck(C.t3,12)} {f.transporterName}</>}
-                </div>
+      {activeFilter!=="all" && <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+        <div style={{fontSize:14,fontWeight:700,color:C.t1}}>{statCards.find(s=>s.k===activeFilter)?.l||"Fletes"} <span style={{fontSize:12,fontWeight:500,color:C.t3}}>({displayFreights.length})</span></div>
+        <button onClick={()=>setActiveFilter("all")} style={{background:"none",border:"none",fontSize:11,fontWeight:600,color:C.acc,cursor:"pointer",fontFamily:"inherit",padding:0}}>Ver todos</button>
+      </div>}
+
+      {activeFilter==="all" && displayFreights.length>0 && <div style={{ fontSize:14, fontWeight:700, marginBottom:10, color:C.t1 }}>En movimiento</div>}
+
+      <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+        {displayFreights.length===0 && <div style={{ textAlign:"center", padding:40, color:C.t3, fontSize:13 }}>Sin fletes en esta categoría</div>}
+        {displayFreights.map(f=>{
+          const st = stCfg(f.status);
+          return (
+            <div key={f.id} onClick={()=>onNav("detail",f.id)} style={{ background:C.w, border:`1px solid ${C.b1}`, borderLeft:`3px solid ${st.border}`, borderRadius:12, padding:14, cursor:"pointer", boxShadow:C.sh }}>
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
+                <span style={{ fontSize:11, fontWeight:700, color:C.t3, fontFamily:MONO }}>{f.code}</span>
+                <Bd color={st.color} bg={st.bg} small>{st.label}</Bd>
               </div>
-            );
-          })}
-        </div>
-      </>}
+              <div style={{ fontSize:14, fontWeight:700, color:C.t1 }}>{f.grain} · {f.tons} tn</div>
+              <div style={{ display:"flex", alignItems:"center", gap:4, marginTop:6, fontSize:11.5, color:C.t2 }}>
+                {Ic.pin(C.t3,13)} <span>{(f.originName||"").split("—")[0].trim()}</span>
+                <span style={{color:C.t3,margin:"0 2px"}}>&rarr;</span>
+                {Ic.plant(C.t3,13)} <span>{f.destName}</span>
+              </div>
+              <div style={{ display:"flex", alignItems:"center", gap:6, fontSize:10.5, color:C.t3, marginTop:6 }}>
+                {Ic.cal(C.t3,12)} {f.loadDate} {f.loadTime}
+                {f.transporterName && <><span style={{color:C.b1}}>|</span>{Ic.truck(C.t3,12)} {f.transporterName}</>}
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -618,9 +647,9 @@ function ListScreen({ freights, onNav }) {
       <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
         {filtered.length===0 && <div style={{ textAlign:"center", padding:40, color:C.t3, fontSize:13 }}>Sin fletes en esta categoría</div>}
         {filtered.map(f=>{
-          const isActive = ["assigned","accepted","in_progress","loaded"].includes(f.status);
+          const st = stCfg(f.status);
           return (
-          <div key={f.id} style={{ background:C.w, border:`1px solid ${C.b1}`, borderLeft:isActive?`3px solid ${C.acc}`:`1px solid ${C.b1}`, borderRadius:12, padding:14, boxShadow:C.sh }}>
+          <div key={f.id} style={{ background:C.w, border:`1px solid ${C.b1}`, borderLeft:`3px solid ${st.border}`, borderRadius:12, padding:14, boxShadow:C.sh }}>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:8 }}>
               <div>
                 <div style={{ display:"flex", alignItems:"center", gap:6 }}>
@@ -629,7 +658,7 @@ function ListScreen({ freights, onNav }) {
                 </div>
                 <div style={{ fontSize:15, fontWeight:700, marginTop:4, color:C.t1 }}>{f.requestedByName || f.grain}</div>
               </div>
-              {(()=>{const st=stCfg(f.status);return <Bd color={st.color} bg={st.bg}>{st.label}</Bd>})()}
+              {(()=>{return <Bd color={st.color} bg={st.bg}>{st.label}</Bd>})()}
             </div>
             <div style={{ display:"flex", alignItems:"center", gap:4, fontSize:11.5, color:C.t2 }}>{Ic.plant(C.t3,13)} {f.destName} <span style={{color:C.b1}}>|</span> {f.grain} · {f.tons}tn</div>
             <div style={{ display:"flex", alignItems:"center", gap:6, fontSize:10.5, color:C.t3, marginTop:6 }}>{Ic.cal(C.t3,11)} {f.loadDate} {f.loadTime}</div>
@@ -683,9 +712,9 @@ function DetailScreen({ user, freight, perms, onBack, onAction }) {
             {steps.map((s,i)=>{
               const done = i < curIdx; const active = i === curIdx; const c = stCfg(s);
               return <div key={s} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4,minWidth:0}}>
-                <div style={{width:"100%",height:active?5:4,borderRadius:3,background:done?C.pri:active?C.acc:C.b1,transition:"all 0.2s"}}/>
-                {active && <div style={{width:6,height:6,borderRadius:3,background:C.acc,marginTop:-2}}/>}
-                <span style={{fontSize:7.5,fontWeight:active?700:500,color:active?C.acc:done?C.t2:C.t3,textAlign:"center",lineHeight:1.2,wordBreak:"break-word",maxWidth:"100%"}}>{c.label}</span>
+                <div style={{width:"100%",height:active?5:4,borderRadius:3,background:done?C.pri:active?c.border:C.b1,transition:"all 0.2s"}}/>
+                {active && <div style={{width:6,height:6,borderRadius:3,background:c.border,marginTop:-2}}/>}
+                <span style={{fontSize:7.5,fontWeight:active?700:500,color:active?c.color:done?C.t2:C.t3,textAlign:"center",lineHeight:1.2,wordBreak:"break-word",maxWidth:"100%"}}>{c.label}</span>
               </div>;
             })}
           </div>
