@@ -765,7 +765,7 @@ function HomeScreen({ user, freights, perms, onNav }) {
             <button onClick={()=>setActiveFilter("all")} style={{background:"none",border:"none",fontSize:11,fontWeight:600,color:C.acc,cursor:"pointer",fontFamily:"inherit",padding:0}}>Ver todos</button>
           </div>
         ) : (
-          <div style={{ fontSize:14, fontWeight:700, color:C.t1 }}>En movimiento</div>
+          <div style={{ fontSize:14, fontWeight:700, color:C.t1 }}>Fletes <span style={{fontSize:12,fontWeight:500,color:C.t3}}>({displayFreights.length})</span></div>
         )}
         <div style={{ display:"flex", gap:6 }}>
           {viewMode==="table" && <button onClick={()=>exportCSV(displayFreights,`tolvink-inicio-${new Date().toISOString().slice(0,10)}.csv`)} style={{ display:"flex", alignItems:"center", gap:4, background:C.accPale, border:`1px solid ${C.acc}20`, borderRadius:8, padding:"5px 10px", cursor:"pointer", fontFamily:"inherit", fontSize:10.5, fontWeight:600, color:C.acc }}>
@@ -2253,8 +2253,7 @@ function ProfileScreen({ user, perms, onLogout, onNav, theme, toggleTheme }) {
 
   return (
     <div style={{flex:1,overflow:"auto",padding:18}}>
-      <div style={{fontSize:20,fontWeight:800,marginBottom:22,letterSpacing:-0.3}}>Mi Perfil</div>
-      <div style={{display:"flex",flexDirection:"column",alignItems:"center",marginBottom:24}}>
+      <div style={{display:"flex",flexDirection:"column",alignItems:"center",marginBottom:24,marginTop:8}}>
         <Av letters={user.av} size={72} color={tc}/>
         <div style={{fontSize:18,fontWeight:700,marginTop:12,color:C.t1}}>{user.name}</div>
         <div style={{fontSize:12,color:C.t2,marginTop:3}}>{user.email}</div>
