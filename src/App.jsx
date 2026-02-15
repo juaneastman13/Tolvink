@@ -1583,9 +1583,8 @@ function DetailScreen({ user, freight, perms, onBack, onAction, actionLoading, o
         {filteredActions.includes("cancel") && <Btn full v="err" icon={Ic.cross(C.err,16)} disabled={actionLoading} onClick={()=>onAction(freight.id,"cancel")}>Cancelar flete</Btn>}
       </div>
 
-      {/* Secondary actions — duplicate + edit */}
+      {/* Secondary actions — edit */}
       <div style={{ display:"flex", gap:8, marginBottom:14 }}>
-        {perms.canRequest && <Btn full sm v="sec" icon={Ic.plus(C.pri,14)} onClick={()=>onDuplicate(freight)}>Duplicar flete</Btn>}
         {freight.status==="pending_assignment" && perms.canRequest && <Btn full sm v="sec" icon={Ic.doc(C.pri,14)} onClick={()=>onEdit(freight)}>Editar</Btn>}
       </div>
 
