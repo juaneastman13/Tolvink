@@ -455,71 +455,62 @@ function LandingScreen({ onLogin, onSignup, loading, error, clearError }) {
 
   return (
     <div style={{ minHeight:"100dvh", background:C.bg, fontFamily:FONT, display:"flex", flexDirection:"column", overflow:"auto", WebkitOverflowScrolling:"touch" }}>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&display=swap');*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}body{background:${C.bg};overscroll-behavior:none;margin:0}@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}@keyframes dotPulse{0%,100%{opacity:0.3;transform:scale(0.8)}50%{opacity:1;transform:scale(1.2)}}`}</style>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&display=swap');*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}body{background:${C.bg};overscroll-behavior:none;margin:0}@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}@keyframes dotPulse{0%,100%{opacity:0.3;transform:scale(0.8)}50%{opacity:1;transform:scale(1.2)}}@keyframes splashIn{0%{opacity:0;transform:scale(0.85)}100%{opacity:1;transform:scale(1)}}`}</style>
 
-      {/* Nav */}
-      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"16px 24px", paddingTop:"max(16px, env(safe-area-inset-top))" }}>
-        <div style={{ display:"flex", alignItems:"center" }}>
-          <span style={{ fontSize:28, fontWeight:800, color:C.pri, letterSpacing:-0.8 }}>tolvink</span>
-          <span style={{ width:8, height:8, borderRadius:4, background:C.acc, marginLeft:3, marginTop:-14, display:"inline-block" }} />
+      {/* Main content — centered */}
+      <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"40px 24px", textAlign:"center", paddingTop:"max(40px, env(safe-area-inset-top))" }}>
+
+        {/* Big logo */}
+        <div style={{ animation:"splashIn 0.8s ease-out", marginBottom:32 }}>
+          <div style={{ display:"inline-flex", alignItems:"flex-start" }}>
+            <span style={{ fontSize:84, fontWeight:800, color:C.pri, letterSpacing:-4, lineHeight:1 }}>tolvink</span>
+            <span style={{ width:16, height:16, borderRadius:8, background:C.acc, marginLeft:5, marginTop:4, display:"inline-block", animation:"dotPulse 1.5s ease-in-out infinite" }} />
+          </div>
         </div>
-        <button onClick={()=>setShowAuth(true)} style={{ padding:"10px 24px", borderRadius:10, background:C.pri, color:C.w, fontSize:14, fontWeight:700, border:"none", cursor:"pointer", fontFamily:"inherit" }}>
-          Ingresar
-        </button>
-      </div>
 
-      {/* Hero */}
-      <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"40px 24px 20px", textAlign:"center" }}>
-        <div style={{ animation:"fadeUp 0.8s ease-out" }}>
-          <div style={{ fontSize:13, fontWeight:700, color:C.acc, textTransform:"uppercase", letterSpacing:2, marginBottom:16 }}>
+        {/* Tagline */}
+        <div style={{ animation:"fadeUp 0.8s ease-out", marginBottom:40 }}>
+          <div style={{ fontSize:13, fontWeight:700, color:C.acc, textTransform:"uppercase", letterSpacing:2, marginBottom:12 }}>
             Logística agrícola simplificada
           </div>
-          <h1 style={{ fontSize:38, fontWeight:800, color:C.t1, lineHeight:1.1, letterSpacing:-1.5, marginBottom:16, maxWidth:500 }}>
+          <h1 style={{ fontSize:28, fontWeight:800, color:C.t1, lineHeight:1.2, letterSpacing:-1, maxWidth:420, margin:"0 auto" }}>
             Gestioná tus fletes de campo a planta
           </h1>
-          <p style={{ fontSize:16, color:C.t2, lineHeight:1.6, maxWidth:420, margin:"0 auto 32px" }}>
-            Coordiná productores, transportistas y plantas en una sola plataforma. 
-            Seguimiento en tiempo real, confirmaciones cruzadas y control total de tu operación.
-          </p>
         </div>
 
-        <div style={{ display:"flex", gap:12, flexWrap:"wrap", justifyContent:"center", animation:"fadeUp 1s ease-out" }}>
-          <button onClick={()=>setShowAuth(true)} style={{ padding:"14px 32px", borderRadius:12, background:C.pri, color:C.w, fontSize:16, fontWeight:700, border:"none", cursor:"pointer", fontFamily:"inherit", boxShadow:`0 4px 20px ${C.pri}30` }}>
-            Empezar ahora
-          </button>
-          <a href="https://wa.me/59898247552?text=Hola%2C%20quiero%20información%20sobre%20Tolvink" target="_blank" rel="noopener noreferrer" style={{ padding:"14px 32px", borderRadius:12, background:C.w, color:"#25D366", fontSize:16, fontWeight:700, border:"2px solid #25D366", cursor:"pointer", fontFamily:"inherit", textDecoration:"none", display:"inline-flex", alignItems:"center", gap:8 }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-            WhatsApp
-          </a>
-        </div>
-
-        {/* Features mini */}
-        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(140px, 1fr))", gap:16, maxWidth:500, width:"100%", marginTop:48, animation:"fadeUp 1.2s ease-out" }}>
+        {/* 4 Features */}
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(2, 1fr)", gap:12, maxWidth:360, width:"100%", marginBottom:40, animation:"fadeUp 1s ease-out" }}>
           {[
-            { icon: Ic.truck(C.pri,28), title:"Fletes", desc:"Solicitá y gestioná" },
-            { icon: Ic.pin(C.acc,28), title:"Tracking", desc:"GPS en tiempo real" },
-            { icon: Ic.chk(C.ok,28), title:"Confirmaciones", desc:"Cruzadas y seguras" },
-            { icon: Ic.msg(C.sec,28), title:"Chat", desc:"Comunicación directa" },
+            { icon: Ic.truck(C.pri,26), title:"Fletes", desc:"Solicitá y gestioná" },
+            { icon: Ic.pin(C.acc,26), title:"Tracking", desc:"GPS en tiempo real" },
+            { icon: Ic.chk(C.ok,26), title:"Confirmaciones", desc:"Cruzadas y seguras" },
+            { icon: Ic.nav(C.sec,26), title:"Rutas", desc:"Optimización inteligente" },
           ].map((f,i) => (
-            <div key={i} style={{ background:C.w, borderRadius:14, padding:20, textAlign:"center", boxShadow:C.sh, border:`1px solid ${C.b1}` }}>
-              <div style={{ marginBottom:8, display:"flex", justifyContent:"center" }}>{f.icon}</div>
-              <div style={{ fontSize:13, fontWeight:700, color:C.t1, marginBottom:4 }}>{f.title}</div>
-              <div style={{ fontSize:11, color:C.t3 }}>{f.desc}</div>
+            <div key={i} style={{ background:C.w, borderRadius:14, padding:18, textAlign:"center", boxShadow:C.sh, border:`1px solid ${C.b1}` }}>
+              <div style={{ marginBottom:6, display:"flex", justifyContent:"center" }}>{f.icon}</div>
+              <div style={{ fontSize:12.5, fontWeight:700, color:C.t1, marginBottom:2 }}>{f.title}</div>
+              <div style={{ fontSize:10.5, color:C.t3 }}>{f.desc}</div>
             </div>
           ))}
         </div>
+
+        {/* Ingresar button */}
+        <div style={{ animation:"fadeUp 1.2s ease-out", display:"flex", flexDirection:"column", alignItems:"center", gap:16 }}>
+          <button onClick={()=>setShowAuth(true)} style={{ padding:"16px 48px", borderRadius:14, background:C.pri, color:C.w, fontSize:17, fontWeight:700, border:"none", cursor:"pointer", fontFamily:"inherit", boxShadow:`0 4px 20px ${C.pri}30`, minWidth:220 }}>
+            Ingresar
+          </button>
+
+          {/* Small WhatsApp */}
+          <a href="https://wa.me/59898247552?text=Hola%2C%20quiero%20información%20sobre%20Tolvink" target="_blank" rel="noopener noreferrer" style={{ display:"inline-flex", alignItems:"center", gap:6, fontSize:12, color:"#25D366", fontWeight:600, textDecoration:"none", opacity:0.8 }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+            +598 98 247 552
+          </a>
+        </div>
       </div>
 
-      {/* Footer */}
-      <div style={{ textAlign:"center", padding:"24px", paddingBottom:"max(24px, env(safe-area-inset-bottom))", borderTop:`1px solid ${C.b1}` }}>
-        <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:4, marginBottom:8 }}>
-          <span style={{ fontSize:18, fontWeight:800, color:C.pri, letterSpacing:-0.5 }}>tolvink</span>
-          <span style={{ width:5, height:5, borderRadius:3, background:C.acc, marginTop:-8 }} />
-        </div>
-        <div style={{ fontSize:11, color:C.t3 }}>Logística agrícola inteligente · Uruguay</div>
-        <a href="https://wa.me/59898247552" target="_blank" rel="noopener noreferrer" style={{ fontSize:11, color:"#25D366", fontWeight:600, textDecoration:"none", display:"inline-block", marginTop:6 }}>
-          +598 98 247 552
-        </a>
+      {/* Minimal footer */}
+      <div style={{ textAlign:"center", padding:"16px 24px", paddingBottom:"max(16px, env(safe-area-inset-bottom))", fontSize:10, color:C.t3 }}>
+        Logística agrícola inteligente · Uruguay
       </div>
     </div>
   );
