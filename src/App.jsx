@@ -1520,6 +1520,65 @@ function DetailScreen({ user, freight, perms, onBack, onAction, actionLoading, o
         </div>;
       })()}
 
+      {/* Timeline */}
+      {(()=>{
+        const steps = [];
+        const fmt = (d)=>{ if(!d) return ""; try { const dt=new Date(d); return dt.toLocaleDateString("es-AR",{day:"2-digit",month:"short"})+" "+dt.toLocaleTimeString("es-AR",{hour:"2-digit",minute:"2-digit",hour12:false}); } catch(e){ return ""; }};
+        // 1. Solicitado
+        steps.push({ label:"Solicitado", detail:freight.requestedByName, time:fmt(freight.createdAt), done:true, color:C.pri });
+        // 2. Asignado
+        const activeAssign = freight.assignments?.find(a=>a.status==="active"||a.status==="accepted");
+        const assignDone = ["assigned","accepted","in_progress","loaded","finished"].includes(freight.status);
+        steps.push({ label:"Asignado", detail:activeAssign?.transporterName||"", time:activeAssign?fmt(activeAssign.createdAt):"", done:assignDone, color:C.sec });
+        // 3. Aceptado
+        const acceptDone = ["accepted","in_progress","loaded","finished"].includes(freight.status);
+        steps.push({ label:freight.isOwnFleet?"Autorizado":"Aceptado", detail:freight.isOwnFleet?"Flota propia":freight.transporterName, time:"", done:acceptDone, color:C.info });
+        // 4. En viaje
+        const inProgressDone = ["in_progress","loaded","finished"].includes(freight.status);
+        steps.push({ label:"En viaje", detail:"", time:"", done:inProgressDone, color:C.acc });
+        // 5. Carga confirmada
+        const loadedDone = ["loaded","finished"].includes(freight.status);
+        const loadConfs = [freight.transporterLoadedConfirmedAt?"Transportista":"", freight.producerLoadedConfirmedAt?"Productor":""].filter(Boolean).join(" · ");
+        steps.push({ label:"Carga confirmada", detail:loadConfs, time:freight.loadedAt?fmt(freight.loadedAt):"", done:loadedDone, color:C.acc });
+        // 6. Entrega confirmada
+        const finishDone = freight.status==="finished";
+        const finConfs = [freight.transporterFinishedConfirmedAt?"Transportista":"", freight.plantFinishedConfirmedAt?"Planta":""].filter(Boolean).join(" · ");
+        steps.push({ label:"Entrega confirmada", detail:finConfs, time:"", done:finishDone, color:C.pri });
+        // Canceled
+        if(freight.status==="canceled") steps.push({ label:"Cancelado", detail:freight.cancelReason||"", time:"", done:true, color:C.err });
+
+        // Find current step (first not done)
+        const currentIdx = steps.findIndex(s=>!s.done);
+
+        return (
+          <div style={{ background:C.w, border:`1px solid ${C.b1}`, borderRadius:12, padding:16, marginBottom:12, boxShadow:C.sh }}>
+            <div style={{ fontSize:10.5, fontWeight:700, color:C.t2, textTransform:"uppercase", letterSpacing:0.5, marginBottom:14, display:"flex", alignItems:"center", gap:6 }}>
+              {Ic.cal(C.t2,14)} Progreso
+            </div>
+            <div style={{ position:"relative", paddingLeft:20 }}>
+              {/* Vertical line */}
+              <div style={{ position:"absolute", left:7, top:4, bottom:4, width:2, background:C.b1, borderRadius:1 }} />
+              {steps.map((s,i)=>{
+                const isCurrent = i===currentIdx;
+                return (
+                  <div key={i} style={{ position:"relative", paddingBottom:i<steps.length-1?18:0, display:"flex", alignItems:"flex-start", gap:12 }}>
+                    {/* Dot */}
+                    <div style={{ position:"absolute", left:-17, top:2, width:14, height:14, borderRadius:7, background:s.done?s.color:isCurrent?C.w:C.b1, border:s.done?"none":isCurrent?`3px solid ${s.color}`:`2px solid ${C.b1}`, display:"flex", alignItems:"center", justifyContent:"center", zIndex:2, boxShadow:isCurrent?`0 0 0 3px ${s.color}20`:"none" }}>
+                      {s.done && <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
+                    </div>
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <div style={{ fontSize:12.5, fontWeight:s.done||isCurrent?700:500, color:s.done?C.t1:isCurrent?s.color:C.t3 }}>{s.label}</div>
+                      {s.detail && <div style={{ fontSize:10.5, color:C.t3, marginTop:1 }}>{s.detail}</div>}
+                      {s.time && <div style={{ fontSize:10, color:C.t3, marginTop:2 }}>{s.time}</div>}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })()}
+
       {/* Actions */}
       <div style={{ display:"flex", flexDirection:"column", gap:8, marginBottom:14 }}>
         {filteredActions.includes("authorize") && <Btn full icon={Ic.chk(C.w,16)} disabled={actionLoading} onClick={()=>onAction(freight.id,"authorize")}>{actionLoading?"Procesando...":"Autorizar viaje"}</Btn>}
