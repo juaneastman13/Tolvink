@@ -2615,6 +2615,9 @@ function ChatsScreen({ user, openConvId, onConvOpened }) {
   const [newCompId, setNewCompId] = useState("");
   const [newErr, setNewErr] = useState(null);
   const [searchQ, setSearchQ] = useState("");
+  const [filterPlant, setFilterPlant] = useState("");
+  const [filterTransporter, setFilterTransporter] = useState("");
+  const [filterProducer, setFilterProducer] = useState("");
   const msgEndRef = useRef(null);
 
   const loadConvs = useCallback(async () => {
@@ -2701,10 +2704,60 @@ function ChatsScreen({ user, openConvId, onConvOpened }) {
   const [expandedGroups, setExpandedGroups] = useState({});
   const toggleGroup = (key) => setExpandedGroups(prev=>({...prev,[key]:!prev[key]}));
 
+  // Extract unique companies by type for filter dropdowns
+  const filterOptions = useMemo(() => {
+    const plants = new Map();
+    const transporters = new Map();
+    const producers = new Map();
+    convs.forEach(c => {
+      (c.participants || []).forEach(p => {
+        const co = p.company;
+        if (!co?.name || !co?.id) return;
+        const t = co.type;
+        if (t === "plant") plants.set(co.id, co.name);
+        else if (t === "transporter") transporters.set(co.id, co.name);
+        else if (t === "producer") producers.set(co.id, co.name);
+      });
+      // Also check freight origin/dest companies
+      if (c.freight) {
+        const oc = c.freight.originCompany;
+        const dc = c.freight.destCompany;
+        if (oc?.id && oc?.name) {
+          if (oc.type === "producer") producers.set(oc.id, oc.name);
+          if (oc.type === "plant") plants.set(oc.id, oc.name);
+        }
+        if (dc?.id && dc?.name) {
+          if (dc.type === "plant") plants.set(dc.id, dc.name);
+          if (dc.type === "producer") producers.set(dc.id, dc.name);
+        }
+      }
+    });
+    const toArr = (m) => [...m.entries()].map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name));
+    return { plants: toArr(plants), transporters: toArr(transporters), producers: toArr(producers) };
+  }, [convs]);
+
+  // Filter conversations
+  const filteredConvs = useMemo(() => {
+    if (!filterPlant && !filterTransporter && !filterProducer) return convs;
+    return convs.filter(c => {
+      const participantIds = (c.participants || []).map(p => p.companyId);
+      const freightCompanyIds = [];
+      if (c.freight) {
+        if (c.freight.originCompanyId) freightCompanyIds.push(c.freight.originCompanyId);
+        if (c.freight.destCompanyId) freightCompanyIds.push(c.freight.destCompanyId);
+      }
+      const allIds = [...participantIds, ...freightCompanyIds];
+      if (filterPlant && !allIds.includes(filterPlant)) return false;
+      if (filterTransporter && !allIds.includes(filterTransporter)) return false;
+      if (filterProducer && !allIds.includes(filterProducer)) return false;
+      return true;
+    });
+  }, [convs, filterPlant, filterTransporter, filterProducer]);
+
   // Group ALL conversations by company (freight + direct together)
   const grouped = useMemo(() => {
     const byCompany = {};
-    convs.forEach(c => {
+    filteredConvs.forEach(c => {
       const others = (c.participants || []).filter(p => p.companyId !== user.companyId);
       const companyKey = others.map(o => o.company?.name || "").filter(Boolean).sort().join(", ") || "Otros";
       if (!byCompany[companyKey]) byCompany[companyKey] = [];
@@ -2739,7 +2792,7 @@ function ChatsScreen({ user, openConvId, onConvOpened }) {
     });
 
     return { companyKeys, byCompany };
-  }, [convs, user.companyId]);
+  }, [filteredConvs, user.companyId]);
 
   // Chat detail view
   if (activeConv) {
@@ -2792,12 +2845,41 @@ function ChatsScreen({ user, openConvId, onConvOpened }) {
       </div>
 
       {/* Search bar */}
-      <div style={{ position:"relative", marginBottom:10 }}>
+      <div style={{ position:"relative", marginBottom:8 }}>
         <div style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",display:"flex"}}>{Ic.srch(C.t3,16)}</div>
         <input value={searchQ} onChange={e=>{setSearchQ(e.target.value);}} placeholder="Buscar conversación..."
           style={{width:"100%",padding:"10px 14px 10px 36px",borderRadius:10,border:`1.5px solid ${C.b1}`,background:C.w,color:C.t1,fontSize:13,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}/>
         {searchQ && <button onClick={()=>setSearchQ("")} style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",display:"flex"}}>{Ic.cross(C.t3,16)}</button>}
       </div>
+
+      {/* Filters */}
+      {(filterOptions.plants.length > 0 || filterOptions.transporters.length > 0 || filterOptions.producers.length > 0) && (
+        <div style={{ display:"flex", gap:6, marginBottom:10, flexWrap:"wrap" }}>
+          {filterOptions.plants.length > 0 && (
+            <select value={filterPlant} onChange={e=>setFilterPlant(e.target.value)} style={{ flex:1, minWidth:100, padding:"8px 10px", borderRadius:8, border:`1.5px solid ${filterPlant?C.pri:C.b1}`, background:filterPlant?C.priPale:C.w, color:filterPlant?C.pri:C.t2, fontSize:11.5, fontWeight:600, fontFamily:"inherit", outline:"none", cursor:"pointer", appearance:"auto" }}>
+              <option value="">Planta</option>
+              {filterOptions.plants.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
+          )}
+          {filterOptions.transporters.length > 0 && (
+            <select value={filterTransporter} onChange={e=>setFilterTransporter(e.target.value)} style={{ flex:1, minWidth:100, padding:"8px 10px", borderRadius:8, border:`1.5px solid ${filterTransporter?C.sec:C.b1}`, background:filterTransporter?C.secPale:C.w, color:filterTransporter?C.sec:C.t2, fontSize:11.5, fontWeight:600, fontFamily:"inherit", outline:"none", cursor:"pointer", appearance:"auto" }}>
+              <option value="">Transportista</option>
+              {filterOptions.transporters.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
+          )}
+          {filterOptions.producers.length > 0 && (
+            <select value={filterProducer} onChange={e=>setFilterProducer(e.target.value)} style={{ flex:1, minWidth:100, padding:"8px 10px", borderRadius:8, border:`1.5px solid ${filterProducer?C.acc:C.b1}`, background:filterProducer?C.accPale:C.w, color:filterProducer?C.acc:C.t2, fontSize:11.5, fontWeight:600, fontFamily:"inherit", outline:"none", cursor:"pointer", appearance:"auto" }}>
+              <option value="">Productor</option>
+              {filterOptions.producers.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
+          )}
+          {(filterPlant||filterTransporter||filterProducer) && (
+            <button onClick={()=>{setFilterPlant("");setFilterTransporter("");setFilterProducer("");}} style={{ padding:"8px 10px", borderRadius:8, border:`1.5px solid ${C.err}30`, background:C.errPale, color:C.err, fontSize:11, fontWeight:600, fontFamily:"inherit", cursor:"pointer", whiteSpace:"nowrap" }}>
+              Limpiar
+            </button>
+          )}
+        </div>
+      )}
 
       {showNew && (
         <div style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: 12, padding: 16, marginBottom: 14, boxShadow: C.sh }}>
