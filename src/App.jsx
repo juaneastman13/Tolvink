@@ -1191,7 +1191,7 @@ function DocsGallery({ documents }) {
 
 // ======================== FREIGHT DETAIL ==============================
 
-function DetailScreen({ user, freight, perms, onBack, onAction, onChat, onRefresh }) {
+function DetailScreen({ user, freight, perms, onBack, onAction, actionLoading, onChat, onRefresh }) {
   if(!freight) return null;
   const st = stCfg(freight.status);
   const actions = getActions(freight.status, user.userType, user.role, freight.isOwnFleet);
@@ -1343,14 +1343,14 @@ function DetailScreen({ user, freight, perms, onBack, onAction, onChat, onRefres
 
       {/* Actions */}
       <div style={{ display:"flex", flexDirection:"column", gap:8, marginBottom:14 }}>
-        {filteredActions.includes("authorize") && <Btn full icon={Ic.chk(C.w,16)} onClick={()=>onAction(freight.id,"authorize")}>Autorizar viaje</Btn>}
-        {filteredActions.includes("assign") && <Btn full v="acc" icon={Ic.chk(C.w,16)} onClick={()=>onAction(freight.id,"assign")}>Asignar transportista</Btn>}
-        {filteredActions.includes("accept") && <Btn full icon={Ic.chk(C.w,16)} onClick={()=>onAction(freight.id,"accept")}>Aceptar flete</Btn>}
-        {filteredActions.includes("start") && <Btn full icon={Ic.truck(C.w,16)} onClick={()=>onAction(freight.id,"start")}>Iniciar viaje</Btn>}
-        {filteredActions.includes("confirm_loaded") && <Btn full v="acc" icon={Ic.chk(C.w,16)} onClick={()=>onAction(freight.id,"confirm_loaded")}>Confirmar carga</Btn>}
-        {filteredActions.includes("confirm_finished") && <Btn full v="acc" icon={Ic.chk(C.w,16)} onClick={()=>onAction(freight.id,"confirm_finished")}>Confirmar entrega</Btn>}
-        {filteredActions.includes("reject") && <Btn full v="err" icon={Ic.ban(C.w,16)} onClick={()=>onAction(freight.id,"reject")}>Rechazar asignación</Btn>}
-        {filteredActions.includes("cancel") && <Btn full v="err" icon={Ic.cross(C.err,16)} onClick={()=>onAction(freight.id,"cancel")}>Cancelar flete</Btn>}
+        {filteredActions.includes("authorize") && <Btn full icon={Ic.chk(C.w,16)} disabled={actionLoading} onClick={()=>onAction(freight.id,"authorize")}>{actionLoading?"Procesando...":"Autorizar viaje"}</Btn>}
+        {filteredActions.includes("assign") && <Btn full v="acc" icon={Ic.chk(C.w,16)} disabled={actionLoading} onClick={()=>onAction(freight.id,"assign")}>Asignar transportista</Btn>}
+        {filteredActions.includes("accept") && <Btn full icon={Ic.chk(C.w,16)} disabled={actionLoading} onClick={()=>onAction(freight.id,"accept")}>Aceptar flete</Btn>}
+        {filteredActions.includes("start") && <Btn full icon={Ic.truck(C.w,16)} disabled={actionLoading} onClick={()=>onAction(freight.id,"start")}>{actionLoading?"Procesando...":"Iniciar viaje"}</Btn>}
+        {filteredActions.includes("confirm_loaded") && <Btn full v="acc" icon={Ic.chk(C.w,16)} disabled={actionLoading} onClick={()=>onAction(freight.id,"confirm_loaded")}>{actionLoading?"Procesando...":"Confirmar carga"}</Btn>}
+        {filteredActions.includes("confirm_finished") && <Btn full v="acc" icon={Ic.chk(C.w,16)} disabled={actionLoading} onClick={()=>onAction(freight.id,"confirm_finished")}>{actionLoading?"Procesando...":"Confirmar entrega"}</Btn>}
+        {filteredActions.includes("reject") && <Btn full v="err" icon={Ic.ban(C.w,16)} disabled={actionLoading} onClick={()=>onAction(freight.id,"reject")}>Rechazar asignación</Btn>}
+        {filteredActions.includes("cancel") && <Btn full v="err" icon={Ic.cross(C.err,16)} disabled={actionLoading} onClick={()=>onAction(freight.id,"cancel")}>Cancelar flete</Btn>}
       </div>
 
       {/* Documents gallery */}
@@ -2619,7 +2619,9 @@ function ReportsScreen({ onBack, freights }) {
 
 function AssignModal({ freight, transporters, onClose, onConfirm }) {
   const [t,setT] = useState("");
+  const [loading,setLoading] = useState(false);
   const ts = transporters||[];
+  const doConfirm = async ()=>{ if(loading||!t) return; setLoading(true); await onConfirm(t); setLoading(false); };
   return (
     <div style={{position:"fixed",inset:0,background:C.bgOverlay,display:"flex",alignItems:"flex-end",justifyContent:"center",zIndex:100,padding:"16px 16px max(16px, env(safe-area-inset-bottom))"}}>
       <div style={{background:C.w,borderRadius:18,padding:22,width:"100%",maxWidth:400,boxShadow:C.shLg}}>
@@ -2630,7 +2632,7 @@ function AssignModal({ freight, transporters, onClose, onConfirm }) {
           {ts.length===0 && <div style={{fontSize:12,color:C.t3,padding:10}}>No hay transportistas disponibles</div>}
           {ts.map(x=><button key={x.id} onClick={()=>setT(x.id)} style={{padding:"13px 14px",borderRadius:10,textAlign:"left",fontFamily:"inherit",border:`1.5px solid ${t===x.id?C.pri:C.b1}`,background:t===x.id?C.priPale:C.w,color:t===x.id?C.pri:C.t2,fontSize:13.5,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",gap:8}}>{Ic.truck(t===x.id?C.pri:C.t3,16)} {x.name}</button>)}
         </div>
-        <div style={{display:"flex",gap:8}}><Btn full v="ghost" onClick={onClose}>Cancelar</Btn><Btn full disabled={!t} onClick={()=>onConfirm(t)}>Asignar</Btn></div>
+        <div style={{display:"flex",gap:8}}><Btn full v="ghost" onClick={onClose} disabled={loading}>Cancelar</Btn><Btn full disabled={!t||loading} onClick={doConfirm}>{loading?"Asignando...":"Asignar"}</Btn></div>
       </div>
     </div>
   );
@@ -2638,7 +2640,9 @@ function AssignModal({ freight, transporters, onClose, onConfirm }) {
 
 function TruckSelectModal({ freight, trucks, onClose, onConfirm }) {
   const [sel,setSel] = useState("");
+  const [loading,setLoading] = useState(false);
   const ts = (trucks||[]).filter(t=>t.active!==false);
+  const doConfirm = async ()=>{ if(loading||!sel) return; setLoading(true); await onConfirm(sel); setLoading(false); };
   return (
     <div style={{position:"fixed",inset:0,background:C.bgOverlay,display:"flex",alignItems:"flex-end",justifyContent:"center",zIndex:100,padding:"16px 16px max(16px, env(safe-area-inset-bottom))"}}>
       <div style={{background:C.w,borderRadius:18,padding:22,width:"100%",maxWidth:400,boxShadow:C.shLg}}>
@@ -2656,7 +2660,7 @@ function TruckSelectModal({ freight, trucks, onClose, onConfirm }) {
             </div>
           </button>)}
         </div>
-        <div style={{display:"flex",gap:8}}><Btn full v="ghost" onClick={onClose}>Cancelar</Btn><Btn full v="acc" disabled={!sel} onClick={()=>onConfirm(sel)}>Aceptar flete</Btn></div>
+        <div style={{display:"flex",gap:8}}><Btn full v="ghost" onClick={onClose} disabled={loading}>Cancelar</Btn><Btn full v="acc" disabled={!sel||loading} onClick={doConfirm}>{loading?"Aceptando...":"Aceptar flete"}</Btn></div>
       </div>
     </div>
   );
@@ -2664,6 +2668,8 @@ function TruckSelectModal({ freight, trucks, onClose, onConfirm }) {
 
 function ReasonModal({ title, freight, btnLabel, btnType="err", onClose, onConfirm }) {
   const [reason,setReason] = useState("");
+  const [loading,setLoading] = useState(false);
+  const doConfirm = async ()=>{ if(loading||!reason) return; setLoading(true); await onConfirm(reason); setLoading(false); };
   return (
     <div style={{position:"fixed",inset:0,background:C.bgOverlay,display:"flex",alignItems:"flex-end",justifyContent:"center",zIndex:100,padding:"16px 16px max(16px, env(safe-area-inset-bottom))"}}>
       <div style={{background:C.w,borderRadius:18,padding:22,width:"100%",maxWidth:400,boxShadow:C.shLg}}>
@@ -2671,7 +2677,7 @@ function ReasonModal({ title, freight, btnLabel, btnType="err", onClose, onConfi
         <div style={{fontSize:12,color:C.t2,marginBottom:18}}>{freight.grain} · {freight.tons}tn</div>
         <label style={{fontSize:10.5,fontWeight:600,color:C.t2,marginBottom:6,display:"block",textTransform:"uppercase",letterSpacing:0.6}}>Motivo</label>
         <textarea value={reason} onChange={e=>setReason(e.target.value)} placeholder="Describí el motivo..." rows={3} style={{width:"100%",padding:"12px 14px",borderRadius:10,border:`1.5px solid ${C.b1}`,background:C.w,color:C.t1,fontSize:13,fontFamily:"inherit",outline:"none",resize:"none",boxSizing:"border-box",marginBottom:16}}/>
-        <div style={{display:"flex",gap:8}}><Btn full v="ghost" onClick={onClose}>Volver</Btn><Btn full v={btnType} disabled={!reason} onClick={()=>onConfirm(reason)}>{btnLabel}</Btn></div>
+        <div style={{display:"flex",gap:8}}><Btn full v="ghost" onClick={onClose} disabled={loading}>Volver</Btn><Btn full v={btnType} disabled={!reason||loading} onClick={doConfirm}>{loading?"Procesando...":btnLabel}</Btn></div>
       </div>
     </div>
   );
@@ -2722,34 +2728,37 @@ export default function Tolvink() {
   const show = (msg,type="ok")=>setToast({msg,type});
   const nav = (s,fId)=>{ if(fId){ setSelFreight(fId); if(s==="detail") fh.refresh(fId); } if(s==="new"&&!perms.canRequest){show("Sin permisos para solicitar","err");return;} setScreen(s); };
 
+  const [actionLoading, setActionLoading] = useState(false);
+
   const handleAction = (fId,action)=>{
+    if(actionLoading) return;
     const f = fh.freights.find(x=>x.id===fId);
     if(!f) return;
-    if(action==="assign") setModal({type:"assign",freight:f});
-    if(action==="cancel") setModal({type:"reason",freight:f,title:"Cancelar flete",btnLabel:"Cancelar flete",action:"cancel"});
-    if(action==="reject") setModal({type:"reason",freight:f,title:"Rechazar asignación",btnLabel:"Rechazar",action:"reject"});
-    if(action==="accept") setModal({type:"truck_select",freight:f});
-    if(action==="start") (async()=>{ const r=await fh.start(fId); if(r.ok) show("Viaje iniciado"); else show(r.error,"err"); })();
-    if(action==="authorize") (async()=>{ const r=await fh.authorize(fId); if(r.ok) show("Viaje autorizado"); else show(r.error,"err"); })();
-    if(action==="confirm_loaded") (async()=>{ const r=await fh.confirmLoaded(fId); if(r.ok) show("Carga confirmada"); else show(r.error,"err"); })();
-    if(action==="confirm_finished") (async()=>{ const r=await fh.confirmFinished(fId); if(r.ok) show("Entrega confirmada"); else show(r.error,"err"); })();
+    if(action==="assign") { setModal({type:"assign",freight:f}); }
+    else if(action==="cancel") { setModal({type:"reason",freight:f,title:"Cancelar flete",btnLabel:"Cancelar flete",action:"cancel"}); }
+    else if(action==="reject") { setModal({type:"reason",freight:f,title:"Rechazar asignación",btnLabel:"Rechazar",action:"reject"}); }
+    else if(action==="accept") { setModal({type:"truck_select",freight:f}); }
+    else if(action==="start") { setActionLoading(true); (async()=>{ const r=await fh.start(fId); setActionLoading(false); if(r.ok) show("Viaje iniciado"); else show(r.error,"err"); })(); }
+    else if(action==="authorize") { setActionLoading(true); (async()=>{ const r=await fh.authorize(fId); setActionLoading(false); if(r.ok) show("Viaje autorizado"); else show(r.error,"err"); })(); }
+    else if(action==="confirm_loaded") { setActionLoading(true); (async()=>{ const r=await fh.confirmLoaded(fId); setActionLoading(false); if(r.ok) show("Carga confirmada"); else show(r.error,"err"); })(); }
+    else if(action==="confirm_finished") { setActionLoading(true); (async()=>{ const r=await fh.confirmFinished(fId); setActionLoading(false); if(r.ok) show("Entrega confirmada"); else show(r.error,"err"); })(); }
   };
 
   const handleAcceptWithTruck = async (fId, truckId)=>{
     const r = await fh.respond(fId, "accepted", undefined, truckId);
-    if(r.ok){ setModal(null); show("Flete aceptado"); } else show(r.error,"err");
+    if(r.ok){ setModal(null); show("Flete aceptado"); } else { setModal(null); show(r.error,"err"); }
   };
 
   const handleAssign = async (fId, transportCompanyId)=>{
     const r = await fh.assign(fId, transportCompanyId);
-    if(r.ok){ setModal(null); show("Transportista asignado"); } else show(r.error,"err");
+    if(r.ok){ setModal(null); show("Transportista asignado"); } else { setModal(null); show(r.error,"err"); }
   };
 
   const handleReasonAction = async (fId,reason,action)=>{
     let r;
     if(action==="cancel") r = await fh.cancel(fId,reason);
     else if(action==="reject") r = await fh.respond(fId,"rejected",reason);
-    if(r?.ok){ setModal(null); show(action==="cancel"?"Flete cancelado":"Asignación rechazada","info"); } else show(r?.error||"Error","err");
+    if(r?.ok){ setModal(null); show(action==="cancel"?"Flete cancelado":"Asignación rechazada","info"); } else { setModal(null); show(r?.error||"Error","err"); }
   };
 
   const handleCreate = async (form)=>{
@@ -2795,7 +2804,7 @@ export default function Tolvink() {
       {screen==="home" && <HomeScreen user={auth.user} freights={fh.freights} perms={perms} onNav={nav}/>}
       {screen==="list" && <ListScreen freights={fh.freights} onNav={nav}/>}
       {screen==="pending" && <PendingScreen user={auth.user} freights={fh.freights} onNav={nav} onNewFreight={()=>nav("new")}/>}
-      {screen==="detail" && <DetailScreen user={auth.user} freight={curFreight} perms={perms} onBack={()=>setScreen("list")} onAction={handleAction} onChat={(convId)=>{if(convId){setChatConvId(convId);setScreen("chats");}}} onRefresh={(id)=>fh.refresh(id)}/>}
+      {screen==="detail" && <DetailScreen user={auth.user} freight={curFreight} perms={perms} onBack={()=>setScreen("list")} onAction={handleAction} actionLoading={actionLoading} onChat={(convId)=>{if(convId){setChatConvId(convId);setScreen("chats");}}} onRefresh={(id)=>fh.refresh(id)}/>}
       {screen==="new" && <NewScreen user={auth.user} lots={catalog.lots} plants={catalog.plants} fields={catalog.fields} trucks={catalog.trucks} onBack={()=>setScreen("home")} onCreate={handleCreate} submitting={submitting}/>}
       {screen==="profile" && <ProfileScreen user={auth.user} perms={perms} onLogout={auth.logout} onNav={nav}/>}
       {screen==="trucks" && <TrucksScreen onBack={()=>{catalog.refresh();setScreen("profile");}}/>}
