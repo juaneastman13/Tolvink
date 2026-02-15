@@ -154,6 +154,8 @@ const Ic = {
   img:(c=C.t2,s=18)=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>,
   doc:(c=C.t2,s=18)=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>,
   seedling:(c="#1A6B37",s=22)=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22V10"/><path d="M6 13c0-3.5 2.7-6 6-6 3.3 0 6 2.5 6 6"/><path d="M12 10c0-4-2.5-7-6-8 0 3.5 2 7 6 8z"/><path d="M12 10c0-4 2.5-7 6-8 0 3.5-2 7-6 8z"/></svg>,
+  expand:(c=C.t2,s=18)=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>,
+  collapse:(c=C.t2,s=18)=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></svg>,
 };
 
 // ======================== STATE MACHINE ==============================
@@ -426,7 +428,7 @@ function Nav({ active, onChange, unread=0, pendingCount=0 }) {
         <button key={it.k} onClick={()=>onChange(it.k)} style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:2, border:"none", background:"none", cursor:"pointer", fontFamily:"inherit", position:"relative", padding:it.sp?"0":"8px 0", minHeight:48, WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
           {it.sp ? <>
             <div style={{ width:52, height:52, borderRadius:26, background:centerColor, display:"flex", alignItems:"center", justifyContent:"center", marginTop:-22, boxShadow:`0 4px 18px ${centerColor}40`, position:"relative", transition:"background 0.5s ease, box-shadow 0.5s ease" }}>
-              {hasPending ? Ic.warn(C.w,24) : Ic.seedling(C.w,24)}
+              {hasPending ? Ic.bell(C.w,24) : Ic.chk(C.w,24)}
               {it.bd>0 && <div style={{ position:"absolute", top:-5, right:-5, minWidth:19, height:19, borderRadius:10, background:C.err, color:C.w, fontSize:9, fontWeight:700, padding:"0 5px", display:"flex", alignItems:"center", justifyContent:"center", border:`2.5px solid ${C.nav}` }}>{it.bd}</div>}
             </div>
             <span style={{ fontSize:8.5, fontWeight:700, color:centerColor, marginTop:1, transition:"color 0.5s ease" }}>{hasPending?"Pendientes":"Al día"}</span>
@@ -921,9 +923,17 @@ function FreightMap({ freightId, originLat, originLng, destLat, destLng, originN
   const [truckPos, setTruckPos] = useState(null);
   const [tracking, setTracking] = useState(false);
   const [error, setError] = useState(null);
+  const [fullscreen, setFullscreen] = useState(false);
 
   const hasCoords = originLat && originLng && destLat && destLng;
   const isLive = status === "in_progress";
+
+  // Resize map on fullscreen toggle
+  useEffect(() => {
+    if (mapInstance.current) {
+      setTimeout(() => window.google?.maps?.event?.trigger(mapInstance.current, "resize"), 100);
+    }
+  }, [fullscreen]);
 
   useEffect(() => {
     if (!hasCoords || !mapRef.current) return;
@@ -1062,23 +1072,26 @@ function FreightMap({ freightId, originLat, originLng, destLat, destLng, originN
 
   if (!hasCoords) return null;
 
-  return (
-    <div style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: 12, overflow: "hidden", marginBottom: 12, boxShadow: C.sh }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "10px 14px" }}>
+  const mapContainer = (
+    <div style={fullscreen ? { position:"fixed", inset:0, zIndex:150, background:C.w, display:"flex", flexDirection:"column" } : { background: C.w, border: `1px solid ${C.b1}`, borderRadius: 12, overflow: "hidden", marginBottom: 12, boxShadow: C.sh }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 6, padding: fullscreen?"14px 18px":"10px 14px", paddingTop: fullscreen?"max(14px, env(safe-area-inset-top))":10, flexShrink:0 }}>
         {Ic.pin(C.pri, 14)}
         <span style={{ fontSize: 10.5, fontWeight: 700, color: C.t2, textTransform: "uppercase", letterSpacing: 0.5 }}>Recorrido</span>
         {routeInfo && (
-          <span style={{ marginLeft: "auto", fontSize: 11, color: C.t1, fontWeight: 600 }}>
+          <span style={{ fontSize: 11, color: C.t1, fontWeight: 600 }}>
             {routeInfo.distance} · {routeInfo.duration}
           </span>
         )}
+        <button onClick={()=>setFullscreen(!fullscreen)} style={{ marginLeft:"auto", padding:6, borderRadius:8, border:`1px solid ${C.b1}`, background:C.w, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
+          {fullscreen ? Ic.collapse(C.t1,16) : Ic.expand(C.t1,16)}
+        </button>
       </div>
       {error ? (
         <div style={{ padding: 20, textAlign: "center", fontSize: 12, color: C.t3 }}>{error}</div>
       ) : (
-        <div ref={mapRef} style={{ width: "100%", height: 220 }} />
+        <div ref={mapRef} style={{ width: "100%", flex: fullscreen?1:"none", height: fullscreen?"auto":220 }} />
       )}
-      <div style={{ padding: "8px 14px", display: "flex", gap: 12, fontSize: 10.5, flexWrap: "wrap", alignItems: "center" }}>
+      <div style={{ padding: fullscreen?"10px 18px":"8px 14px", paddingBottom: fullscreen?"max(10px, env(safe-area-inset-bottom))":8, display: "flex", gap: 12, fontSize: 10.5, flexWrap: "wrap", alignItems: "center", flexShrink:0 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
           <span style={{ width: 8, height: 8, borderRadius: 4, background: "#1A6B37" }} />
           <span style={{ color: C.t2 }}>{originName}</span>
@@ -1089,7 +1102,7 @@ function FreightMap({ freightId, originLat, originLng, destLat, destLng, originN
         </div>
         {isLive && truckPos && (
           <div style={{ display: "flex", alignItems: "center", gap: 4, marginLeft: "auto" }}>
-            <span style={{ width: 8, height: 8, borderRadius: 4, background: "#FF6A00", animation: "ti 1s infinite" }} />
+            <span style={{ width: 8, height: 8, borderRadius: 4, background: "#FF6A00", animation: "ti 1.5s infinite" }} />
             <span style={{ color: C.acc, fontWeight: 600, fontSize: 10 }}>En vivo{truckPos.speed>0?` · ${Math.round(parseFloat(truckPos.speed))} km/h`:""}</span>
           </div>
         )}
@@ -1099,6 +1112,8 @@ function FreightMap({ freightId, originLat, originLng, destLat, destLng, originN
       </div>
     </div>
   );
+
+  return mapContainer;
 }
 
 function PhotoUpload({ freightId, step, label, onUploaded }) {
@@ -2755,7 +2770,13 @@ export default function Tolvink() {
     if(r.ok){ setScreen("list"); show("Flete solicitado"); } else show(r.error,"err");
   };
 
-  if(auth.loading) return <div style={{minHeight:"100dvh",background:C.bg,fontFamily:FONT,display:"flex",alignItems:"center",justifyContent:"center"}}><div style={{textAlign:"center"}}><div style={{fontSize:28,fontWeight:800,color:C.pri,marginBottom:12,letterSpacing:-0.8}}>tolvink</div><div style={{fontSize:12,color:C.t3}}>Cargando...</div></div></div>;
+  if(auth.loading) return <div style={{minHeight:"100dvh",background:C.bg,fontFamily:FONT,display:"flex",alignItems:"center",justifyContent:"center"}}>
+    <style>{`@keyframes splashIn{0%{opacity:0;transform:scale(0.7)}50%{opacity:1;transform:scale(1.05)}100%{opacity:1;transform:scale(1)}}@keyframes dotPulse{0%,100%{opacity:0.3;transform:scale(0.8)}50%{opacity:1;transform:scale(1.2)}}`}</style>
+    <div style={{textAlign:"center",animation:"splashIn 0.8s ease-out forwards"}}>
+      <span style={{fontSize:72,fontWeight:800,color:C.pri,letterSpacing:-3,display:"inline-block"}}>tolvink</span>
+      <span style={{width:14,height:14,borderRadius:7,background:C.acc,display:"inline-block",marginLeft:4,marginTop:-30,verticalAlign:"top",animation:"dotPulse 1.5s ease-in-out infinite"}}></span>
+    </div>
+  </div>;
 
   if(!auth.user) return <AuthScreen onLogin={auth.login} onSignup={auth.signup} loading={auth.loading} error={auth.error} clearError={auth.clearError}/>;
   const curFreight = fh.freights.find(f=>f.id===selFreight);
