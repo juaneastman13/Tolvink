@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
-  <rect width="64" height="64" rx="14" fill="#1A6B37"/>
-  <text x="8" y="46" font-family="system-ui,-apple-system,sans-serif" font-weight="800" font-size="36" fill="white" letter-spacing="-2">tv</text>
-  <circle cx="52" cy="14" r="6" fill="#FF6A00"/>
+  <rect width="64" height="64" rx="14" fill="#FFFFFF"/>
+  <text x="16" y="54" font-family="system-ui,-apple-system,sans-serif" font-weight="800" font-size="52" fill="#1A6B37">t</text>
+  <circle cx="48" cy="12" r="6.5" fill="#FF6A00"/>
 </svg>

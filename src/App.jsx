@@ -559,11 +559,14 @@ function AuthScreen({ onLogin, onSignup, loading, error, clearError, onBackToLan
 
   return (
     <div style={{ minHeight:"100dvh", background:C.bg, fontFamily:FONT, display:"flex", flexDirection:"column", justifyContent:"center", padding:28, maxWidth:430, margin:"0 auto" }}>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&family=JetBrains+Mono:wght@400;500&display=swap');*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}body{background:${C.bg};margin:0}input::placeholder,textarea::placeholder{color:${C.t3}}`}</style>
-      <div style={{ textAlign:"center", marginBottom:mode==="login"?36:24 }}>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&family=JetBrains+Mono:wght@400;500&display=swap');*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}body{background:${C.bg};margin:0}input::placeholder,textarea::placeholder{color:${C.t3}}@keyframes dotPulse{0%,100%{opacity:0.3;transform:scale(0.8)}50%{opacity:1;transform:scale(1.2)}}@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}`}</style>
+      <div style={{ textAlign:"center", marginBottom:mode==="login"?32:20 }}>
         {onBackToLanding && <button onClick={onBackToLanding} style={{ background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", fontSize:13, fontWeight:600, color:C.pri, marginBottom:14, padding:0, display:"flex", alignItems:"center", gap:4, margin:"0 auto 14px" }}>{Ic.chev(C.pri,18)} Volver</button>}
-        <div style={{ fontSize:36, fontWeight:800, color:C.pri, letterSpacing:-1.5, lineHeight:1, marginBottom:4 }}>tolvink</div>
-        <div style={{ fontSize:11, color:C.t2, letterSpacing:2.5, textTransform:"uppercase", fontWeight:500, marginTop:6 }}>gestión de fletes</div>
+        <div style={{ display:"inline-flex", alignItems:"flex-start", animation:"fadeUp 0.6s ease-out" }}>
+          <span style={{ fontSize:48, fontWeight:800, color:C.pri, letterSpacing:-2.5, lineHeight:1 }}>tolvink</span>
+          <span style={{ width:10, height:10, borderRadius:5, background:C.acc, marginLeft:3, marginTop:2, display:"inline-block", animation:"dotPulse 1.5s ease-in-out infinite" }} />
+        </div>
+        <div style={{ fontSize:12, color:C.t2, marginTop:10, fontWeight:500, animation:"fadeUp 0.8s ease-out" }}>Logística agrícola simplificada</div>
       </div>
       <div style={{ background:C.w, borderRadius:16, padding:22, boxShadow:C.shMd, border:`1px solid ${C.b2}` }}>
         <div style={{ fontSize:17, fontWeight:700, marginBottom:3, color:C.t1 }}>{mode==="login"?"Iniciar sesión":"Crear cuenta"}</div>
