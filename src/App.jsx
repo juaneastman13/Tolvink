@@ -451,18 +451,18 @@ function Nav({ active, onChange, unread=0, pendingCount=0, canRequest=false, onN
     <div style={{ display:"flex", borderTop:`1px solid ${C.b1}`, background:C.nav, paddingTop:4, paddingBottom:"max(8px, env(safe-area-inset-bottom))", flexShrink:0 }}>
       <style>{`@keyframes truckDrive{0%,100%{transform:translateX(0)}50%{transform:translateX(3px)}}`}</style>
       {items.map(it=>(
-        <button key={it.k} onClick={()=>it.k==="pending"?onChange(it.k):onChange(it.k)} style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:2, border:"none", background:"none", cursor:"pointer", fontFamily:"inherit", position:"relative", padding:it.sp?"0":"8px 0", minHeight:48, WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
+        <button key={it.k} onClick={()=>onChange(it.k)} style={{ flex:it.sp&&canRequest?1.6:1, display:"flex", flexDirection:"column", alignItems:"center", gap:2, border:"none", background:"none", cursor:"pointer", fontFamily:"inherit", position:"relative", padding:it.sp?"0":"8px 0", minHeight:48, WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
           {it.sp ? <>
-            <div onClick={e=>{e.stopPropagation();onChange("pending")}} style={{ width:52, height:52, borderRadius:26, background:centerColor, display:"flex", alignItems:"center", justifyContent:"center", marginTop:-22, boxShadow:`0 4px 18px ${centerColor}40`, position:"relative", transition:"background 0.5s ease, box-shadow 0.5s ease" }}>
-              {hasPending ? Ic.bell(C.w,24) : Ic.chk(C.w,24)}
-              {it.bd>0 && <div style={{ position:"absolute", top:-5, right:-5, minWidth:19, height:19, borderRadius:10, background:C.err, color:C.w, fontSize:9, fontWeight:700, padding:"0 5px", display:"flex", alignItems:"center", justifyContent:"center", border:`2.5px solid ${C.nav}` }}>{it.bd}</div>}
+            <div onClick={e=>{e.stopPropagation();onChange("pending")}} style={{ width:44, height:44, borderRadius:22, background:centerColor, display:"flex", alignItems:"center", justifyContent:"center", marginTop:-18, boxShadow:`0 3px 14px ${centerColor}40`, position:"relative", transition:"background 0.5s ease, box-shadow 0.5s ease" }}>
+              {hasPending ? Ic.bell(C.w,20) : Ic.chk(C.w,20)}
+              {it.bd>0 && <div style={{ position:"absolute", top:-4, right:-4, minWidth:17, height:17, borderRadius:9, background:C.err, color:C.w, fontSize:8.5, fontWeight:700, padding:"0 4px", display:"flex", alignItems:"center", justifyContent:"center", border:`2px solid ${C.nav}` }}>{it.bd}</div>}
             </div>
-            <span style={{ fontSize:8.5, fontWeight:700, color:centerColor, marginTop:1, transition:"color 0.5s ease" }}>{hasPending?"Pendientes":"Al día"}</span>
+            <span style={{ fontSize:8, fontWeight:700, color:centerColor, marginTop:1, transition:"color 0.5s ease" }}>{hasPending?"Pendientes":"Al día"}</span>
             {/* Solicitar — below status, same column */}
             {canRequest && (
-              <div onClick={e=>{e.stopPropagation();onNew();}} style={{ display:"flex", alignItems:"center", gap:4, marginTop:4, padding:"4px 10px", borderRadius:20, background:C.acc, cursor:"pointer" }}>
-                <span style={{ display:"inline-flex", animation:"truckDrive 1.5s ease-in-out infinite" }}>{Ic.truck("#fff",12)}</span>
-                <span style={{ fontSize:8, fontWeight:700, color:"#fff", whiteSpace:"nowrap" }}>Nuevo flete</span>
+              <div onClick={e=>{e.stopPropagation();onNew();}} style={{ display:"flex", alignItems:"center", gap:5, marginTop:3, padding:"6px 14px", borderRadius:20, background:C.acc, cursor:"pointer", boxShadow:`0 2px 8px ${C.acc}40` }}>
+                <span style={{ display:"inline-flex", animation:"truckDrive 1.5s ease-in-out infinite" }}>{Ic.truck("#fff",15)}</span>
+                <span style={{ fontSize:10.5, fontWeight:700, color:"#fff", whiteSpace:"nowrap" }}>Nuevo flete</span>
               </div>
             )}
           </> : <>
