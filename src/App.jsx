@@ -180,12 +180,14 @@ function getActions(status, userType, role) {
   return map[status]?.[userType] || [];
 }
 
-const GRANOS = ["Soja","Maíz","Trigo","Girasol","Sorgo","Cebada"];
+const GRANOS = ["Soja","Maíz","Trigo","Girasol","Sorgo","Cebada","Otros"];
+const UNITS = [{v:"toneladas",l:"Toneladas"},{v:"cantidad",l:"Cantidad"},{v:"metros",l:"Metros"},{v:"m3",l:"M³"}];
 
 // ======================== CATALOG HOOK (Real API) ====================
 function useCatalog(user) {
   const [plants, setPlants] = useState([]);
   const [lots, setLots] = useState([]);
+  const [fields, setFields] = useState([]);
   const [transporters, setTransporters] = useState([]);
   const [trucks, setTrucks] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -198,15 +200,17 @@ function useCatalog(user) {
       apiGetLots().catch(()=>[]),
       apiGetTransportCompanies().catch(()=>[]),
       user.userType==="transporter" ? apiGetTrucks().catch(()=>[]) : Promise.resolve([]),
-    ]).then(([p,l,t,tr])=>{
+      user.userType==="producer" ? apiGetFields().catch(()=>[]) : Promise.resolve([]),
+    ]).then(([p,l,t,tr,f])=>{
       setPlants(p||[]);
       setLots(l||[]);
       setTransporters(t||[]);
       setTrucks(tr||[]);
+      setFields(f||[]);
     }).finally(()=>setLoading(false));
   },[user]);
 
-  return { plants, lots, transporters, trucks, loading };
+  return { plants, lots, fields, transporters, trucks, loading };
 }
 
 
@@ -269,7 +273,7 @@ function useFreights(user) {
     catch(e) { setError(e.message); return null; }
   },[]);
   const create = useCallback(async (form)=>{
-    try { const c=await apiCreateFreight({ originLotId:form.lotId, destPlantId:form.plantId, loadDate:form.loadDate, loadTime:form.loadTime, items:[{grain:form.grain,tons:parseFloat(form.tons)}], notes:form.notes||"" });
+    try { const c=await apiCreateFreight({ originLotId:form.lotId, fieldId:form.fieldId||undefined, destPlantId:form.plantId, loadDate:form.loadDate, loadTime:form.loadTime, items:[{grain:form.grain,tons:parseFloat(form.tons),unit:form.unit||"toneladas",amount:form.amount?parseFloat(form.amount):0,productTypeOther:form.productTypeOther||undefined}], notes:form.notes||"" });
       const m=mapFreight(c); setFreights(p=>[m,...p]); return {ok:true}; } catch(e) { return {ok:false,error:e.message}; }
   },[]);
   const assign = useCallback(async (fId,compId)=>{ try { await apiAssignFreight(fId,{transportCompanyId:compId}); await refresh(fId); return {ok:true}; } catch(e) { return {ok:false,error:e.message}; } },[refresh]);
@@ -288,12 +292,17 @@ function mapFreight(f) {
   return {
     id:f.id, code:f.code, status:f.status,
     grain:f.items?.[0]?.grain||"", tons:f.items?.[0]?.tons||0,
+    unit:f.items?.[0]?.unit||"toneladas", amount:f.items?.[0]?.amount||0,
+    productTypeOther:f.items?.[0]?.productTypeOther||"",
     originLotId:f.originLotId, originName:f.originName||"",
+    fieldName:f.field?.name||"",
     destPlantId:f.destPlantId, destName:f.destName||"",
     loadDate:f.loadDate?.split("T")[0]||"", loadTime:f.loadTime||"",
+    scheduledAt:f.scheduledAt||null,
     requestedBy:f.requestedById, requestedByName:f.requestedBy?.name||"",
     transporterId:a?.transportCompanyId||null, transporterName:a?.transportCompany?.name||"",
-    driverName:a?.driver?.name||null,
+    driverName:a?.driver?.name||null, driverPhone:a?.driver?.phone||null,
+    truckPlate:a?.truck?.plate||a?.plate||null, truckModel:a?.truck?.model||null,
     assignments:(f.assignments||[]).map(x=>({ id:x.id, status:x.status, transporterName:x.transportCompany?.name||"", reason:x.reason||null, createdAt:x.createdAt })),
     notes:f.notes||"", cancelReason:f.cancelReason||"", createdAt:f.createdAt,
     // Cross-confirmation timestamps
@@ -780,7 +789,7 @@ function DetailScreen({ user, freight, perms, onBack, onAction, onChat }) {
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:18 }}>
         <div>
           <div style={{ fontSize:11, color:C.t3, fontWeight:600, fontFamily:MONO }}>{freight.code}</div>
-          <div style={{ fontSize:22, fontWeight:800, marginTop:2, letterSpacing:-0.3 }}>{freight.grain} · {freight.tons} tn</div>
+          <div style={{ fontSize:22, fontWeight:800, marginTop:2, letterSpacing:-0.3 }}>{freight.grain==="Otros"?freight.productTypeOther||"Otros":freight.grain} · {freight.tons} {freight.unit||"tn"}</div>
         </div>
         <Bd color={st.color} bg={st.bg}>{st.label}</Bd>
       </div>
@@ -853,18 +862,23 @@ function DetailScreen({ user, freight, perms, onBack, onAction, onChat }) {
         <div style={{ fontSize:10.5, fontWeight:700, marginBottom:12, color:C.t2, textTransform:"uppercase", letterSpacing:0.5 }}>Información del flete</div>
         {[
           [Ic.pin(C.pri,15),"Origen",freight.originName],
+          freight.fieldName&&[Ic.pin(C.ok,15),"Campo",freight.fieldName],
           [Ic.plant(C.t2,15),"Destino",freight.destName],
           [Ic.cal(C.t2,15),"Fecha carga",freight.loadDate],
           [Ic.clk(C.t2,15),"Hora carga",freight.loadTime],
           [Ic.user(C.t2,15),"Solicitado por",freight.requestedByName],
-          [Ic.grain(C.t2,15),"Grano",`${freight.grain} · ${freight.tons}tn`],
+          [Ic.grain(C.t2,15),"Producto",`${freight.grain==="Otros"?freight.productTypeOther||"Otros":freight.grain} · ${freight.tons} ${freight.unit||"tn"}`],
+          freight.amount>0&&[Ic.grain(C.t2,15),"Importe",`$${Number(freight.amount).toLocaleString()}`],
           freight.transporterName&&[Ic.truck(C.t2,15),"Transportista",freight.transporterName],
+          freight.truckPlate&&[Ic.truck(C.acc,15),"Camión",`${freight.truckPlate}${freight.truckModel?` · ${freight.truckModel}`:""}`],
           freight.driverName&&[Ic.user(C.pri,15),"Chofer",freight.driverName],
+          freight.driverPhone&&[Ic.msg(C.info,15),"Teléfono",freight.driverPhone],
         ].filter(Boolean).map(([ic,label,val],i,arr)=>(
           <div key={i} style={{ display:"flex", alignItems:"center", gap:10, padding:"9px 0", borderBottom:i<arr.length-1?`1px solid ${C.b2}`:"none" }}>
             <span style={{display:"flex",flexShrink:0}}>{ic}</span>
             <span style={{ fontSize:11.5, color:C.t2, minWidth:85 }}>{label}</span>
-            <span style={{ fontSize:12, fontWeight:600, color:C.t1, marginLeft:"auto", textAlign:"right" }}>{val}</span>
+            {label==="Teléfono"?<a href={`tel:${val}`} style={{ fontSize:12, fontWeight:600, color:C.info, marginLeft:"auto", textDecoration:"none" }}>{val}</a>:
+            <span style={{ fontSize:12, fontWeight:600, color:C.t1, marginLeft:"auto", textAlign:"right" }}>{val}</span>}
           </div>
         ))}
       </div>
@@ -920,23 +934,27 @@ function DetailScreen({ user, freight, perms, onBack, onAction, onChat }) {
 
 // ======================== NEW FREIGHT ================================
 
-function NewScreen({ user, lots, plants, onBack, onCreate }) {
-  const [form, setForm] = useState({ grain:"", tons:"", lotId:"", plantId:"", loadDate:"", loadTime:"", notes:"" });
+function NewScreen({ user, lots, plants, fields, onBack, onCreate }) {
+  const [form, setForm] = useState({ grain:"", tons:"", lotId:"", plantId:"", fieldId:"", loadDate:"", loadTime:"", notes:"", unit:"toneladas", amount:"", productTypeOther:"" });
   const [errs, setErrs] = useState({});
   const [touched, setTouched] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const u = f => setForm(p=>({...p,...f}));
 
-  const lotOpts = (lots||[]).map(l=>({ value:l.id, label:l.name, sub:l.lat?`${l.lat}, ${l.lng}`:'' }));
+  // Filter lots by selected field
+  const filteredLots = form.fieldId ? (lots||[]).filter(l=>l.fieldId===form.fieldId) : (lots||[]);
+  const fieldOpts = (fields||[]).map(f=>({ value:f.id, label:f.name, sub:f.address||"" }));
+  const lotOpts = filteredLots.map(l=>({ value:l.id, label:l.name, sub:l.hectares?`${l.hectares} ha`:'' }));
   const plantOpts = (plants||[]).map(p=>({ value:p.id, label:p.name }));
   const selectedLot = (lots||[]).find(l=>l.id===form.lotId);
 
   const submit = () => {
     setTouched(true);
     const {ok,errs:e} = validate(form, SCHEMAS.freight);
+    if(form.grain==="Otros" && !form.productTypeOther.trim()) { e.productTypeOther="Descripción obligatoria"; }
     setErrs(e);
-    if(!ok) return;
-    onCreate(form);
+    if(!ok || Object.keys(e).length>0) return;
+    onCreate({...form, amount:form.amount?parseFloat(form.amount):0});
   };
 
   return (
@@ -947,23 +965,48 @@ function NewScreen({ user, lots, plants, onBack, onCreate }) {
 
       <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
         <div>
-          <Field label="Tipo de grano" icon={Ic.grain(C.pri,14)}>
+          <Field label="Tipo de producto" icon={Ic.grain(C.pri,14)}>
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:6 }}>
-              {GRANOS.map(g=><button key={g} onClick={()=>u({grain:g})} style={{ padding:"10px 8px", borderRadius:8, border:`1.5px solid ${form.grain===g?C.pri:C.b1}`, background:form.grain===g?C.priPale:C.w, color:form.grain===g?C.pri:C.t2, cursor:"pointer", fontSize:12, fontWeight:600, fontFamily:"inherit" }}>{g}</button>)}
+              {GRANOS.map(g=><button key={g} onClick={()=>{u({grain:g}); if(g!=="Otros")u({productTypeOther:""});}} style={{ padding:"10px 8px", borderRadius:8, border:`1.5px solid ${form.grain===g?C.pri:C.b1}`, background:form.grain===g?C.priPale:C.w, color:form.grain===g?C.pri:C.t2, cursor:"pointer", fontSize:12, fontWeight:600, fontFamily:"inherit" }}>{g}</button>)}
             </div>
           </Field>
           {touched&&<FieldError error={errs.grain}/>}
         </div>
 
-        <div>
-          <Field label="Toneladas" icon={Ic.grain(C.t2,14)} value={form.tons} onChange={v=>u({tons:v})} placeholder="Ej: 30"/>
-          {touched&&<FieldError error={errs.tons}/>}
+        {form.grain==="Otros" && (
+          <div>
+            <Field label="Descripción de producto" value={form.productTypeOther} onChange={v=>u({productTypeOther:v})} placeholder="Ej: Arena, Cemento, etc."/>
+            {touched&&<FieldError error={errs.productTypeOther}/>}
+          </div>
+        )}
+
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
+          <div>
+            <Field label="Cantidad" icon={Ic.grain(C.t2,14)} value={form.tons} onChange={v=>u({tons:v})} placeholder="Ej: 30"/>
+            {touched&&<FieldError error={errs.tons}/>}
+          </div>
+          <div>
+            <label style={{ fontSize:10.5, fontWeight:600, color:C.t2, marginBottom:6, display:"flex", alignItems:"center", gap:4, textTransform:"uppercase", letterSpacing:0.6 }}>Unidad</label>
+            <div style={{ display:"flex", gap:4 }}>
+              {UNITS.map(uu=><button key={uu.v} onClick={()=>u({unit:uu.v})} style={{ flex:1, padding:"10px 4px", borderRadius:8, border:`1.5px solid ${form.unit===uu.v?C.pri:C.b1}`, background:form.unit===uu.v?C.priPale:C.w, color:form.unit===uu.v?C.pri:C.t2, cursor:"pointer", fontSize:10, fontWeight:600, fontFamily:"inherit" }}>{uu.l}</button>)}
+            </div>
+          </div>
         </div>
+
+        <div>
+          <Field label="Importe (opcional)" value={form.amount} onChange={v=>u({amount:v})} placeholder="Ej: 150000"/>
+        </div>
+
+        {fieldOpts.length > 0 && (
+          <div>
+            <Select label="Campo" icon={Ic.pin(C.ok,14)} value={form.fieldId} onChange={v=>{u({fieldId:v,lotId:""});}} options={fieldOpts} placeholder="Seleccionar campo..."/>
+          </div>
+        )}
 
         <div>
           <Select label="Origen (lote)" icon={Ic.pin(C.pri,14)} value={form.lotId} onChange={v=>u({lotId:v})} options={lotOpts} placeholder="Seleccionar lote..."/>
           {touched&&<FieldError error={errs.lotId}/>}
-          {selectedLot && <div style={{ display:"flex", alignItems:"center", gap:6, padding:"6px 10px", background:C.priPale, borderRadius:8, marginTop:6 }}>{Ic.chk(C.pri,14)}<span style={{fontSize:10.5,color:C.pri,fontWeight:500}}>{selectedLot.lat}, {selectedLot.lng}</span></div>}
+          {selectedLot && selectedLot.lat && <div style={{ display:"flex", alignItems:"center", gap:6, padding:"6px 10px", background:C.priPale, borderRadius:8, marginTop:6 }}>{Ic.chk(C.pri,14)}<span style={{fontSize:10.5,color:C.pri,fontWeight:500}}>{selectedLot.lat}, {selectedLot.lng}</span></div>}
         </div>
 
         <div>
@@ -1358,6 +1401,7 @@ function ChatsScreen({ user, openConvId, onConvOpened }) {
 
   const getConvName = (conv) => {
     if (!conv) return "Chat";
+    if (conv.displayName) return conv.displayName;
     if (conv.freight) return `Flete ${conv.freight.code}`;
     const otherP = (conv.participants || []).find(p => p.companyId !== user.companyId);
     if (otherP?.company?.name) return otherP.company.name;
@@ -1580,7 +1624,7 @@ export default function Tolvink() {
       {screen==="home" && <HomeScreen user={auth.user} freights={fh.freights} perms={perms} onNav={nav}/>}
       {screen==="list" && <ListScreen freights={fh.freights} onNav={nav}/>}
       {screen==="detail" && <DetailScreen user={auth.user} freight={curFreight} perms={perms} onBack={()=>setScreen("list")} onAction={handleAction} onChat={(convId)=>{if(convId){setChatConvId(convId);setScreen("chats");}}}/>}
-      {screen==="new" && <NewScreen user={auth.user} lots={catalog.lots} plants={catalog.plants} onBack={()=>setScreen("home")} onCreate={handleCreate} submitting={submitting}/>}
+      {screen==="new" && <NewScreen user={auth.user} lots={catalog.lots} plants={catalog.plants} fields={catalog.fields} onBack={()=>setScreen("home")} onCreate={handleCreate} submitting={submitting}/>}
       {screen==="profile" && <ProfileScreen user={auth.user} perms={perms} onLogout={auth.logout} onNav={nav}/>}
       {screen==="trucks" && <TrucksScreen onBack={()=>setScreen("profile")}/>}
       {screen==="fields" && <FieldsScreen onBack={()=>setScreen("profile")}/>}
