@@ -1687,12 +1687,40 @@ function ChatsScreen({ user, openConvId, onConvOpened }) {
 
 // ======================== REPORTS =====================================
 
+const REPORT_COLUMNS = [
+  { key:"code", label:"Código", default:true, get:f=>f.code },
+  { key:"status", label:"Estado", default:true, get:f=>stCfg(f.status).label },
+  { key:"grain", label:"Producto", default:true, get:f=>f.grain==="Otros"?f.productTypeOther||"Otros":f.grain },
+  { key:"tons", label:"Cantidad", default:true, get:f=>`${f.tons} ${f.unit||"tn"}` },
+  { key:"amount", label:"Importe", default:false, get:f=>f.amount>0?`$${Number(f.amount).toLocaleString()}`:"" },
+  { key:"originName", label:"Origen", default:true, get:f=>f.originName },
+  { key:"fieldName", label:"Campo", default:false, get:f=>f.fieldName||"" },
+  { key:"destName", label:"Destino", default:true, get:f=>f.destName },
+  { key:"loadDate", label:"Fecha carga", default:true, get:f=>f.loadDate },
+  { key:"loadTime", label:"Hora carga", default:false, get:f=>f.loadTime||"" },
+  { key:"requestedByName", label:"Solicitado por", default:false, get:f=>f.requestedByName },
+  { key:"transporterName", label:"Transportista", default:true, get:f=>f.transporterName||"" },
+  { key:"truckPlate", label:"Matrícula", default:false, get:f=>f.truckPlate||"" },
+  { key:"truckModel", label:"Modelo camión", default:false, get:f=>f.truckModel||"" },
+  { key:"driverName", label:"Chofer", default:false, get:f=>f.driverName||"" },
+  { key:"driverPhone", label:"Tel. chofer", default:false, get:f=>f.driverPhone||"" },
+  { key:"isOwnFleet", label:"Flota propia", default:false, get:f=>f.isOwnFleet?"Sí":"No" },
+  { key:"notes", label:"Notas", default:false, get:f=>f.notes||"" },
+  { key:"docsCount", label:"Documentos", default:false, get:f=>(f.documents?.length||0).toString() },
+  { key:"createdAt", label:"Creado", default:false, get:f=>f.createdAt?new Date(f.createdAt).toLocaleDateString("es",{day:"2-digit",month:"short",year:"numeric"}):"" },
+];
+
 function ReportsScreen({ onBack, freights }) {
   const [expanded, setExpanded] = useState({});
   const [generating, setGenerating] = useState(null);
+  const [showColPicker, setShowColPicker] = useState(false);
+  const [selectedCols, setSelectedCols] = useState(()=>REPORT_COLUMNS.filter(c=>c.default).map(c=>c.key));
+  const [filterStatus, setFilterStatus] = useState("all");
   const toggle = (k) => setExpanded(p=>({...p,[k]:!p[k]}));
+  const toggleCol = (key) => setSelectedCols(prev=>prev.includes(key)?prev.filter(k=>k!==key):[...prev,key]);
 
   const allFreights = freights||[];
+  const filteredForExport = filterStatus==="all" ? allFreights : allFreights.filter(f=> filterStatus==="active" ? !["finished","canceled"].includes(f.status) : f.status===filterStatus);
 
   // Group by status
   const groups = useMemo(()=>{
@@ -1707,6 +1735,79 @@ function ReportsScreen({ onBack, freights }) {
   },[allFreights]);
 
   const totalDocs = allFreights.reduce((sum,f)=>sum+(f.documents?.length||0),0);
+
+  // Load SheetJS
+  const loadXLSX = async () => {
+    if(window.XLSX) return window.XLSX;
+    await new Promise((resolve, reject) => {
+      const s = document.createElement("script");
+      s.src = "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";
+      s.onload = resolve; s.onerror = reject;
+      document.head.appendChild(s);
+    });
+    return window.XLSX;
+  };
+
+  // Excel — summary with selected columns
+  const generateExcel = async () => {
+    setGenerating("excel");
+    try {
+      const XLSX = await loadXLSX();
+      const cols = REPORT_COLUMNS.filter(c=>selectedCols.includes(c.key));
+      const headers = cols.map(c=>c.label);
+      const rows = filteredForExport.map(f=>cols.map(c=>c.get(f)));
+      const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+      ws['!cols'] = cols.map(c=>({ wch: Math.max(c.label.length+2, 14) }));
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Fletes");
+      // Docs sheet
+      const allDocs = [];
+      filteredForExport.forEach(f=>(f.documents||[]).forEach(d=>{
+        allDocs.push({ "Flete":f.code, "Documento":d.name||"Documento", "Tipo":d.type||"otro", "Etapa":d.step==="request"?"Solicitud":d.step==="load_confirmation"?"Carga":d.step==="assignment"?"Asignación":"Otro", "Fecha":d.createdAt?new Date(d.createdAt).toLocaleDateString("es",{day:"2-digit",month:"short",year:"numeric"}):"", "URL":d.url||"" });
+      }));
+      if(allDocs.length>0) {
+        const wsD = XLSX.utils.json_to_sheet(allDocs);
+        wsD['!cols'] = [{wch:12},{wch:25},{wch:10},{wch:12},{wch:12},{wch:50}];
+        XLSX.utils.book_append_sheet(wb, wsD, "Documentos");
+      }
+      const label = filterStatus==="all"?"todos":filterStatus==="active"?"activos":filterStatus;
+      XLSX.writeFile(wb, `tolvink-fletes-${label}-${new Date().toISOString().slice(0,10)}.xlsx`);
+    } catch(e) { console.error("Excel error",e); }
+    setGenerating(null);
+  };
+
+  // Excel — single freight
+  const generateFreightExcel = async (f) => {
+    setGenerating(f.id+"x");
+    try {
+      const XLSX = await loadXLSX();
+      const info = [
+        ["Código", f.code], ["Estado", stCfg(f.status).label],
+        ["Producto", f.grain==="Otros"?f.productTypeOther||"Otros":f.grain],
+        ["Cantidad", `${f.tons} ${f.unit||"tn"}`],
+        f.amount>0&&["Importe", `$${Number(f.amount).toLocaleString()}`],
+        ["Origen", f.originName], f.fieldName&&["Campo", f.fieldName],
+        ["Destino", f.destName], ["Fecha carga", f.loadDate],
+        f.loadTime&&["Hora", f.loadTime], ["Solicitado por", f.requestedByName],
+        f.transporterName&&["Transportista", f.transporterName],
+        f.truckPlate&&["Matrícula", f.truckPlate], f.truckModel&&["Modelo", f.truckModel],
+        f.driverName&&["Chofer", f.driverName], f.driverPhone&&["Teléfono", f.driverPhone],
+        f.isOwnFleet&&["Flota propia", "Sí"], f.notes&&["Notas", f.notes],
+        ["Creado", f.createdAt?new Date(f.createdAt).toLocaleDateString("es",{day:"2-digit",month:"short",year:"numeric"}):""],
+      ].filter(Boolean);
+      const ws = XLSX.utils.aoa_to_sheet([["Campo","Valor"], ...info]);
+      ws['!cols'] = [{wch:18},{wch:40}];
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Informe");
+      const docs = f.documents||[];
+      if(docs.length>0) {
+        const wsD = XLSX.utils.json_to_sheet(docs.map(d=>({ "Documento":d.name||"Documento", "Tipo":d.type||"otro", "Etapa":d.step==="request"?"Solicitud":d.step==="load_confirmation"?"Carga":"Otro", "Fecha":d.createdAt?new Date(d.createdAt).toLocaleDateString("es",{day:"2-digit",month:"short",year:"numeric"}):"", "URL":d.url||"" })));
+        XLSX.utils.book_append_sheet(wb, wsD, "Documentos");
+      }
+      XLSX.writeFile(wb, `${f.code}-informe.xlsx`);
+    } catch(e) { console.error("Excel error",e); }
+    setGenerating(null);
+  };
 
   // PDF generation for a single freight
   const generatePDF = async (f) => {
@@ -1894,10 +1995,46 @@ function ReportsScreen({ onBack, freights }) {
       </div>
       <div style={{ fontSize:12, color:C.t2, marginBottom:14 }}>{allFreights.length} flete{allFreights.length!==1?"s":""} · {totalDocs} documento{totalDocs!==1?"s":""}</div>
 
-      {/* Export summary button */}
-      <Btn full v="ghost" icon={Ic.doc(C.pri,16)} onClick={generateSummaryPDF} disabled={generating==="summary"} style={{marginBottom:16}}>
-        {generating==="summary"?"Generando...":"Descargar resumen general (PDF)"}
-      </Btn>
+      {/* Status filter pills */}
+      <div style={{ display:"flex", gap:6, marginBottom:12, flexWrap:"wrap" }}>
+        {[{k:"all",l:"Todos"},{k:"active",l:"Activos"},{k:"finished",l:"Finalizados"},{k:"canceled",l:"Cancelados"}].map(opt=>(
+          <button key={opt.k} onClick={()=>setFilterStatus(opt.k)} style={{ padding:"6px 14px", borderRadius:20, border:`1.5px solid ${filterStatus===opt.k?C.pri:C.b1}`, background:filterStatus===opt.k?C.priPale:C.w, color:filterStatus===opt.k?C.pri:C.t2, fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>{opt.l}</button>
+        ))}
+      </div>
+
+      {/* Column selector */}
+      <button onClick={()=>setShowColPicker(!showColPicker)} style={{ background:C.w, border:`1px solid ${C.b1}`, borderRadius:10, padding:"10px 14px", cursor:"pointer", fontFamily:"inherit", fontSize:11, fontWeight:600, color:C.sec, display:"flex", alignItems:"center", gap:6, marginBottom:showColPicker?0:10, width:"100%" }}>
+        {Ic.doc(C.sec,14)} Columnas del Excel ({selectedCols.length}/{REPORT_COLUMNS.length})
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={C.sec} strokeWidth="2.5" style={{marginLeft:"auto",transform:showColPicker?"rotate(180deg)":"rotate(0deg)",transition:"transform 0.2s"}}><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+
+      {showColPicker && (
+        <div style={{ background:C.w, border:`1px solid ${C.b1}`, borderTop:"none", borderRadius:"0 0 12px 12px", padding:12, marginBottom:10, boxShadow:C.sh }}>
+          <div style={{ display:"flex", gap:6, marginBottom:10 }}>
+            <button onClick={()=>setSelectedCols(REPORT_COLUMNS.map(c=>c.key))} style={{fontSize:10,fontWeight:600,color:C.pri,background:"none",border:"none",cursor:"pointer",fontFamily:"inherit"}}>Todas</button>
+            <span style={{color:C.t3}}>·</span>
+            <button onClick={()=>setSelectedCols(REPORT_COLUMNS.filter(c=>c.default).map(c=>c.key))} style={{fontSize:10,fontWeight:600,color:C.t2,background:"none",border:"none",cursor:"pointer",fontFamily:"inherit"}}>Predeterminadas</button>
+            <span style={{color:C.t3}}>·</span>
+            <button onClick={()=>setSelectedCols([])} style={{fontSize:10,fontWeight:600,color:C.err,background:"none",border:"none",cursor:"pointer",fontFamily:"inherit"}}>Ninguna</button>
+          </div>
+          <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
+            {REPORT_COLUMNS.map(col=>{
+              const sel = selectedCols.includes(col.key);
+              return <button key={col.key} onClick={()=>toggleCol(col.key)} style={{ padding:"5px 10px", borderRadius:8, border:`1.5px solid ${sel?C.sec:C.b1}`, background:sel?C.secPale:C.w, color:sel?C.sec:C.t2, fontSize:10.5, fontWeight:sel?600:500, cursor:"pointer", fontFamily:"inherit" }}>{sel?"✓ ":""}{col.label}</button>;
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Export buttons — Excel + PDF */}
+      <div style={{ display:"flex", gap:8, marginBottom:16 }}>
+        <button onClick={generateExcel} disabled={generating==="excel"||selectedCols.length===0} style={{ flex:1, padding:"12px 10px", borderRadius:10, border:`1.5px solid ${C.sec}`, background:C.secPale, cursor:selectedCols.length===0?"default":"pointer", fontFamily:"inherit", fontSize:12, fontWeight:700, color:C.sec, display:"flex", alignItems:"center", justifyContent:"center", gap:6, opacity:selectedCols.length===0?0.5:1 }}>
+          {Ic.doc(C.sec,15)} {generating==="excel"?"Generando...":"Excel"}
+        </button>
+        <button onClick={generateSummaryPDF} disabled={generating==="summary"} style={{ flex:1, padding:"12px 10px", borderRadius:10, border:`1.5px solid ${C.pri}`, background:C.priPale, cursor:"pointer", fontFamily:"inherit", fontSize:12, fontWeight:700, color:C.pri, display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
+          {Ic.doc(C.pri,15)} {generating==="summary"?"Generando...":"PDF"}
+        </button>
+      </div>
 
       {allFreights.length===0 && <div style={{ textAlign:"center", padding:40, color:C.t3, fontSize:13 }}>No hay fletes registrados.</div>}
 
@@ -1927,11 +2064,17 @@ function ReportsScreen({ onBack, freights }) {
 
                 {isOpen && (
                   <div style={{ borderTop:`1px solid ${C.b2}`, padding:"8px 14px" }}>
-                    {/* PDF button for this freight */}
-                    <button onClick={()=>generatePDF(f)} disabled={generating===f.id}
-                      style={{ width:"100%", padding:"10px 12px", borderRadius:8, border:`1.5px solid ${C.sec}30`, background:C.secPale, cursor:"pointer", fontFamily:"inherit", fontSize:11, fontWeight:600, color:C.sec, display:"flex", alignItems:"center", justifyContent:"center", gap:6, marginBottom:8 }}>
-                      {Ic.doc(C.sec,14)} {generating===f.id?"Generando...":"Descargar informe PDF"}
-                    </button>
+                    {/* Export buttons */}
+                    <div style={{ display:"flex", gap:6, marginBottom:8 }}>
+                      <button onClick={()=>generateFreightExcel(f)} disabled={generating===f.id+"x"}
+                        style={{ flex:1, padding:"9px 10px", borderRadius:8, border:`1.5px solid ${C.sec}30`, background:C.secPale, cursor:"pointer", fontFamily:"inherit", fontSize:11, fontWeight:600, color:C.sec, display:"flex", alignItems:"center", justifyContent:"center", gap:5 }}>
+                        {Ic.doc(C.sec,13)} {generating===f.id+"x"?"...":"Excel"}
+                      </button>
+                      <button onClick={()=>generatePDF(f)} disabled={generating===f.id}
+                        style={{ flex:1, padding:"9px 10px", borderRadius:8, border:`1.5px solid ${C.pri}30`, background:C.priPale, cursor:"pointer", fontFamily:"inherit", fontSize:11, fontWeight:600, color:C.pri, display:"flex", alignItems:"center", justifyContent:"center", gap:5 }}>
+                        {Ic.doc(C.pri,13)} {generating===f.id?"...":"PDF"}
+                      </button>
+                    </div>
 
                     {docs.length>0 ? docs.map((d,i)=>(
                       <div key={d.id||i} style={{ display:"flex", alignItems:"center", gap:10, padding:"8px 0", borderBottom:i<docs.length-1?`1px solid ${C.b2}`:"none" }}>
