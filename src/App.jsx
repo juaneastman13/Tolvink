@@ -5,6 +5,7 @@ import {
   apiStartFreight, apiFinishFreight, apiCancelFreight,
   apiConfirmLoaded, apiConfirmFinished, apiAuthorizeFreight,
   apiSendTracking, apiGetLastPosition,
+  apiUpdateFreight,
   apiGetPlants, apiGetLots, apiGetTransportCompanies, apiGetTrucks,
   apiCreateTruck, apiDeactivateTruck,
   apiGetFields, apiCreateField, apiCreateLot, apiGetFieldLots,
@@ -299,7 +300,8 @@ function useFreights(user) {
   const confirmLoaded = useCallback(async (fId)=>{ try { await apiConfirmLoaded(fId); await refresh(fId); return {ok:true}; } catch(e) { return {ok:false,error:e.message}; } },[refresh]);
   const confirmFinished = useCallback(async (fId)=>{ try { await apiConfirmFinished(fId); await refresh(fId); return {ok:true}; } catch(e) { return {ok:false,error:e.message}; } },[refresh]);
   const authorize = useCallback(async (fId)=>{ try { await apiAuthorizeFreight(fId); await refresh(fId); return {ok:true}; } catch(e) { return {ok:false,error:e.message}; } },[refresh]);
-  return { freights, loading, error, fetchAll, refresh, create, assign, respond, start, finish, cancel, confirmLoaded, confirmFinished, authorize };
+  const update = useCallback(async (fId, data)=>{ try { await apiUpdateFreight(fId, data); await refresh(fId); return {ok:true}; } catch(e) { return {ok:false,error:e.message}; } },[refresh]);
+  return { freights, loading, error, fetchAll, refresh, create, assign, respond, start, finish, cancel, confirmLoaded, confirmFinished, authorize, update };
 }
 
 function mapFreight(f) {
@@ -443,9 +445,88 @@ function Nav({ active, onChange, unread=0, pendingCount=0 }) {
   );
 }
 
+// ======================== LANDING PAGE ================================
+
+function LandingScreen({ onLogin, onSignup, loading, error, clearError }) {
+  const [showAuth, setShowAuth] = useState(false);
+
+  if (showAuth) return <AuthScreen onLogin={onLogin} onSignup={onSignup} loading={loading} error={error} clearError={clearError} onBackToLanding={()=>setShowAuth(false)} />;
+
+  return (
+    <div style={{ minHeight:"100dvh", background:C.bg, fontFamily:FONT, display:"flex", flexDirection:"column", overflow:"auto" }}>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&display=swap');*{box-sizing:border-box;margin:0;padding:0}body{background:${C.bg};overscroll-behavior:none}@keyframes heroFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}@keyframes dotPulse{0%,100%{opacity:0.3;transform:scale(0.8)}50%{opacity:1;transform:scale(1.2)}}`}</style>
+
+      {/* Nav */}
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"16px 24px", paddingTop:"max(16px, env(safe-area-inset-top))" }}>
+        <div style={{ display:"flex", alignItems:"center" }}>
+          <span style={{ fontSize:28, fontWeight:800, color:C.pri, letterSpacing:-0.8 }}>tolvink</span>
+          <span style={{ width:8, height:8, borderRadius:4, background:C.acc, marginLeft:3, marginTop:-14, display:"inline-block" }} />
+        </div>
+        <button onClick={()=>setShowAuth(true)} style={{ padding:"10px 24px", borderRadius:10, background:C.pri, color:C.w, fontSize:14, fontWeight:700, border:"none", cursor:"pointer", fontFamily:"inherit" }}>
+          Ingresar
+        </button>
+      </div>
+
+      {/* Hero */}
+      <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"40px 24px 20px", textAlign:"center" }}>
+        <div style={{ animation:"fadeUp 0.8s ease-out" }}>
+          <div style={{ fontSize:13, fontWeight:700, color:C.acc, textTransform:"uppercase", letterSpacing:2, marginBottom:16 }}>
+            Logística agrícola simplificada
+          </div>
+          <h1 style={{ fontSize:38, fontWeight:800, color:C.t1, lineHeight:1.1, letterSpacing:-1.5, marginBottom:16, maxWidth:500 }}>
+            Gestioná tus fletes de campo a planta
+          </h1>
+          <p style={{ fontSize:16, color:C.t2, lineHeight:1.6, maxWidth:420, margin:"0 auto 32px" }}>
+            Coordiná productores, transportistas y plantas en una sola plataforma. 
+            Seguimiento en tiempo real, confirmaciones cruzadas y control total de tu operación.
+          </p>
+        </div>
+
+        <div style={{ display:"flex", gap:12, flexWrap:"wrap", justifyContent:"center", animation:"fadeUp 1s ease-out" }}>
+          <button onClick={()=>setShowAuth(true)} style={{ padding:"14px 32px", borderRadius:12, background:C.pri, color:C.w, fontSize:16, fontWeight:700, border:"none", cursor:"pointer", fontFamily:"inherit", boxShadow:`0 4px 20px ${C.pri}30` }}>
+            Empezar ahora
+          </button>
+          <a href="https://wa.me/59898247552?text=Hola%2C%20quiero%20información%20sobre%20Tolvink" target="_blank" rel="noopener noreferrer" style={{ padding:"14px 32px", borderRadius:12, background:C.w, color:"#25D366", fontSize:16, fontWeight:700, border:"2px solid #25D366", cursor:"pointer", fontFamily:"inherit", textDecoration:"none", display:"inline-flex", alignItems:"center", gap:8 }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+            WhatsApp
+          </a>
+        </div>
+
+        {/* Features mini */}
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(140px, 1fr))", gap:16, maxWidth:500, width:"100%", marginTop:48, animation:"fadeUp 1.2s ease-out" }}>
+          {[
+            { icon: Ic.truck(C.pri,28), title:"Fletes", desc:"Solicitá y gestioná" },
+            { icon: Ic.pin(C.acc,28), title:"Tracking", desc:"GPS en tiempo real" },
+            { icon: Ic.chk(C.ok,28), title:"Confirmaciones", desc:"Cruzadas y seguras" },
+            { icon: Ic.msg(C.sec,28), title:"Chat", desc:"Comunicación directa" },
+          ].map((f,i) => (
+            <div key={i} style={{ background:C.w, borderRadius:14, padding:20, textAlign:"center", boxShadow:C.sh, border:`1px solid ${C.b1}` }}>
+              <div style={{ marginBottom:8, display:"flex", justifyContent:"center" }}>{f.icon}</div>
+              <div style={{ fontSize:13, fontWeight:700, color:C.t1, marginBottom:4 }}>{f.title}</div>
+              <div style={{ fontSize:11, color:C.t3 }}>{f.desc}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Footer */}
+      <div style={{ textAlign:"center", padding:"24px", paddingBottom:"max(24px, env(safe-area-inset-bottom))", borderTop:`1px solid ${C.b1}` }}>
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:4, marginBottom:8 }}>
+          <span style={{ fontSize:18, fontWeight:800, color:C.pri, letterSpacing:-0.5 }}>tolvink</span>
+          <span style={{ width:5, height:5, borderRadius:3, background:C.acc, marginTop:-8 }} />
+        </div>
+        <div style={{ fontSize:11, color:C.t3 }}>Logística agrícola inteligente · Uruguay</div>
+        <a href="https://wa.me/59898247552" target="_blank" rel="noopener noreferrer" style={{ fontSize:11, color:"#25D366", fontWeight:600, textDecoration:"none", display:"inline-block", marginTop:6 }}>
+          +598 98 247 552
+        </a>
+      </div>
+    </div>
+  );
+}
+
 // ======================== AUTH SCREEN =================================
 
-function AuthScreen({ onLogin, onSignup, loading, error, clearError }) {
+function AuthScreen({ onLogin, onSignup, loading, error, clearError, onBackToLanding }) {
   const [mode, setMode] = useState("login");
   const [email, setEmail] = useState("");
   const [pw, setPw] = useState("");
@@ -482,6 +563,7 @@ function AuthScreen({ onLogin, onSignup, loading, error, clearError }) {
     <div style={{ minHeight:"100vh", background:C.bg, fontFamily:FONT, display:"flex", flexDirection:"column", justifyContent:"center", padding:28, maxWidth:430, margin:"0 auto" }}>
       <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&family=JetBrains+Mono:wght@400;500&display=swap');*{box-sizing:border-box;margin:0;padding:0}body{background:${C.bg}}input::placeholder,textarea::placeholder{color:${C.t3}}@keyframes ti{from{opacity:0;transform:translate(-50%,-12px)}to{opacity:1;transform:translate(-50%,0)}}`}</style>
       <div style={{ textAlign:"center", marginBottom:mode==="login"?36:24 }}>
+        {onBackToLanding && <button onClick={onBackToLanding} style={{ background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", fontSize:13, fontWeight:600, color:C.pri, marginBottom:14, padding:0, display:"flex", alignItems:"center", gap:4, margin:"0 auto 14px" }}>{Ic.chev(C.pri,18)} Volver</button>}
         <div style={{ fontSize:36, fontWeight:800, color:C.pri, letterSpacing:-1.5, lineHeight:1, marginBottom:4 }}>tolvink</div>
         <div style={{ fontSize:11, color:C.t2, letterSpacing:2.5, textTransform:"uppercase", fontWeight:500, marginTop:6 }}>gestión de fletes</div>
       </div>
@@ -620,15 +702,86 @@ function HomeScreen({ user, freights, perms, onNav }) {
   );
 }
 
+// ======================== PULL TO REFRESH =============================
+
+function usePullToRefresh(onRefresh) {
+  const containerRef = useRef(null);
+  const [pulling, setPulling] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const startY = useRef(0);
+  const pullDist = useRef(0);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    const onTouchStart = (e) => {
+      if (el.scrollTop <= 0) startY.current = e.touches[0].clientY;
+      else startY.current = 0;
+    };
+    const onTouchMove = (e) => {
+      if (!startY.current || refreshing) return;
+      const diff = e.touches[0].clientY - startY.current;
+      if (diff > 10 && el.scrollTop <= 0) {
+        pullDist.current = Math.min(diff, 100);
+        setPulling(pullDist.current > 50);
+      }
+    };
+    const onTouchEnd = async () => {
+      if (pulling && !refreshing) {
+        setRefreshing(true);
+        setPulling(false);
+        try { await onRefresh(); } catch {}
+        setRefreshing(false);
+      }
+      startY.current = 0;
+      pullDist.current = 0;
+      setPulling(false);
+    };
+
+    el.addEventListener("touchstart", onTouchStart, { passive: true });
+    el.addEventListener("touchmove", onTouchMove, { passive: true });
+    el.addEventListener("touchend", onTouchEnd);
+    return () => {
+      el.removeEventListener("touchstart", onTouchStart);
+      el.removeEventListener("touchmove", onTouchMove);
+      el.removeEventListener("touchend", onTouchEnd);
+    };
+  }, [onRefresh, pulling, refreshing]);
+
+  const indicator = (refreshing || pulling) ? (
+    <div style={{ textAlign: "center", padding: "8px 0", fontSize: 11, fontWeight: 600, color: refreshing ? C.pri : C.t3 }}>
+      {refreshing ? "Actualizando..." : "Soltar para actualizar"}
+    </div>
+  ) : null;
+
+  return { containerRef, indicator, refreshing };
+}
+
 // ======================== FREIGHT LIST ================================
 
-function ListScreen({ freights, onNav }) {
+function ListScreen({ freights, onNav, onRefresh }) {
   const [tab, setTab] = useState("all");
   const [showFilters, setShowFilters] = useState(false);
   const [searchQ, setSearchQ] = useState("");
   const [fPlant, setFPlant] = useState("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [datePreset, setDatePreset] = useState("");
 
   const plantOptions = useMemo(()=>[...new Set(freights.map(f=>f.destName).filter(Boolean))].sort(),[freights]);
+
+  // Date preset handler
+  const applyDatePreset = (preset) => {
+    setDatePreset(preset);
+    const today = new Date();
+    const fmt = d => d.toISOString().slice(0,10);
+    if(preset==="today") { setDateFrom(fmt(today)); setDateTo(fmt(today)); }
+    else if(preset==="week") { const w=new Date(today); w.setDate(w.getDate()-7); setDateFrom(fmt(w)); setDateTo(fmt(today)); }
+    else if(preset==="month") { const m=new Date(today); m.setMonth(m.getMonth()-1); setDateFrom(fmt(m)); setDateTo(fmt(today)); }
+    else if(preset==="quarter") { const q=new Date(today); q.setMonth(q.getMonth()-3); setDateFrom(fmt(q)); setDateTo(fmt(today)); }
+    else { setDateFrom(""); setDateTo(""); }
+  };
 
   const filtered = useMemo(()=>{
     return freights.filter(f=>{
@@ -636,16 +789,20 @@ function ListScreen({ freights, onNav }) {
       if(tab==="active" && !["assigned","accepted","in_progress","loaded"].includes(f.status)) return false;
       if(tab==="done" && f.status!=="finished") return false;
       if(tab==="closed" && f.status!=="canceled") return false;
-      if(searchQ && !textMatch(f.requestedByName,searchQ) && !textMatch(f.code,searchQ) && !textMatch(f.grain,searchQ)) return false;
+      if(searchQ && !textMatch(f.requestedByName,searchQ) && !textMatch(f.code,searchQ) && !textMatch(f.grain,searchQ) && !textMatch(f.originName,searchQ) && !textMatch(f.destName,searchQ) && !textMatch(f.transporterName,searchQ)) return false;
       if(fPlant && f.destName!==fPlant) return false;
+      if(dateFrom && f.loadDate < dateFrom) return false;
+      if(dateTo && f.loadDate > dateTo) return false;
       return true;
     });
-  },[freights,tab,searchQ,fPlant]);
+  },[freights,tab,searchQ,fPlant,dateFrom,dateTo]);
 
-  const activeFilters = [fPlant,searchQ].filter(Boolean).length;
+  const activeFilters = [fPlant,searchQ,dateFrom,dateTo].filter(Boolean).length;
+  const { containerRef, indicator } = usePullToRefresh(onRefresh);
 
   return (
-    <div style={{ flex:1, overflow:"auto", padding:18 }}>
+    <div ref={containerRef} style={{ flex:1, overflow:"auto", padding:18, WebkitOverflowScrolling:"touch" }}>
+      {indicator}
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
         <div style={{ fontSize:20, fontWeight:800, letterSpacing:-0.3 }}>Fletes</div>
         <button onClick={()=>setShowFilters(!showFilters)} style={{display:"flex",alignItems:"center",gap:4,background:activeFilters>0?C.priPale:"none",border:activeFilters>0?`1px solid ${C.pri}30`:"1px solid transparent",borderRadius:8,padding:"6px 10px",cursor:"pointer",fontFamily:"inherit",fontSize:11,fontWeight:600,color:activeFilters>0?C.pri:C.t2}}>
@@ -672,9 +829,31 @@ function ListScreen({ freights, onNav }) {
                 {plantOptions.map(p=><option key={p} value={p}>{p}</option>)}
               </select>
             </div>
-
           </div>
-          {activeFilters>0 && <button onClick={()=>{setFPlant("");setSearchQ("");}} style={{fontSize:11,color:C.pri,fontWeight:600,background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",padding:0}}>Limpiar filtros</button>}
+
+          {/* Date presets */}
+          <label style={{fontSize:10,fontWeight:600,color:C.t2,textTransform:"uppercase",letterSpacing:0.5,marginBottom:6,display:"block"}}>Fecha de carga</label>
+          <div style={{display:"flex",gap:5,marginBottom:8,flexWrap:"wrap"}}>
+            {[{k:"",l:"Todas"},{k:"today",l:"Hoy"},{k:"week",l:"Última semana"},{k:"month",l:"Último mes"},{k:"quarter",l:"3 meses"},{k:"custom",l:"Personalizado"}].map(p=>(
+              <button key={p.k} onClick={()=>{ if(p.k==="custom"){setDatePreset("custom");}else applyDatePreset(p.k);}} style={{padding:"5px 10px",borderRadius:6,border:`1px solid ${datePreset===p.k?C.pri:C.b1}`,background:datePreset===p.k?C.priPale:C.w,color:datePreset===p.k?C.pri:C.t2,fontSize:10.5,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>{p.l}</button>
+            ))}
+          </div>
+
+          {/* Custom date range */}
+          {datePreset==="custom" && (
+            <div style={{display:"flex",gap:8,marginBottom:8}}>
+              <div style={{flex:1}}>
+                <label style={{fontSize:9,fontWeight:600,color:C.t3,display:"block",marginBottom:3}}>Desde</label>
+                <input type="date" value={dateFrom} onChange={e=>setDateFrom(e.target.value)} style={{width:"100%",padding:"7px 8px",borderRadius:8,border:`1.5px solid ${C.b1}`,background:C.w,color:C.t1,fontSize:12,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}/>
+              </div>
+              <div style={{flex:1}}>
+                <label style={{fontSize:9,fontWeight:600,color:C.t3,display:"block",marginBottom:3}}>Hasta</label>
+                <input type="date" value={dateTo} onChange={e=>setDateTo(e.target.value)} style={{width:"100%",padding:"7px 8px",borderRadius:8,border:`1.5px solid ${C.b1}`,background:C.w,color:C.t1,fontSize:12,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}/>
+              </div>
+            </div>
+          )}
+
+          {activeFilters>0 && <button onClick={()=>{setFPlant("");setSearchQ("");setDateFrom("");setDateTo("");setDatePreset("");}} style={{fontSize:11,color:C.pri,fontWeight:600,background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",padding:0}}>Limpiar filtros</button>}
         </div>
       )}
 
@@ -1191,7 +1370,7 @@ function DocsGallery({ documents }) {
 
 // ======================== FREIGHT DETAIL ==============================
 
-function DetailScreen({ user, freight, perms, onBack, onAction, actionLoading, onChat, onRefresh }) {
+function DetailScreen({ user, freight, perms, onBack, onAction, actionLoading, onChat, onRefresh, onDuplicate, onEdit }) {
   if(!freight) return null;
   const st = stCfg(freight.status);
   const actions = getActions(freight.status, user.userType, user.role, freight.isOwnFleet);
@@ -1353,6 +1532,12 @@ function DetailScreen({ user, freight, perms, onBack, onAction, actionLoading, o
         {filteredActions.includes("cancel") && <Btn full v="err" icon={Ic.cross(C.err,16)} disabled={actionLoading} onClick={()=>onAction(freight.id,"cancel")}>Cancelar flete</Btn>}
       </div>
 
+      {/* Secondary actions — duplicate + edit */}
+      <div style={{ display:"flex", gap:8, marginBottom:14 }}>
+        {perms.canRequest && <Btn full sm v="sec" icon={Ic.plus(C.pri,14)} onClick={()=>onDuplicate(freight)}>Duplicar flete</Btn>}
+        {freight.status==="pending_assignment" && perms.canRequest && <Btn full sm v="sec" icon={Ic.doc(C.pri,14)} onClick={()=>onEdit(freight)}>Editar</Btn>}
+      </div>
+
       {/* Documents gallery */}
       <DocsGallery documents={freight.documents}/>
 
@@ -1379,8 +1564,21 @@ function DetailScreen({ user, freight, perms, onBack, onAction, actionLoading, o
 
 // ======================== NEW FREIGHT ================================
 
-function NewScreen({ user, lots, plants, fields, trucks, onBack, onCreate }) {
-  const [form, setForm] = useState({ grain:"", tons:"", lotId:"", plantId:"", fieldId:"", loadDate:"", loadTime:"", notes:"", unit:"toneladas", amount:"", productTypeOther:"", truckId:"" });
+function NewScreen({ user, lots, plants, fields, trucks, onBack, onCreate, duplicateFrom }) {
+  const dup = duplicateFrom;
+  const [form, setForm] = useState({
+    grain: dup?.grain || "",
+    tons: dup?.tons?.toString() || "",
+    lotId: dup?.originLotId || "",
+    plantId: dup?.destPlantId || "",
+    fieldId: dup?.fieldId || "",
+    loadDate: "", loadTime: "",
+    notes: dup?.notes || "",
+    unit: dup?.unit || "toneladas",
+    amount: dup?.amount?.toString() || "",
+    productTypeOther: dup?.productTypeOther || "",
+    truckId: ""
+  });
   const [errs, setErrs] = useState({});
   const [touched, setTouched] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -2205,6 +2403,56 @@ const REPORT_COLUMNS = [
   { key:"createdAt", label:"Creado", default:false, get:f=>f.createdAt?new Date(f.createdAt).toLocaleDateString("es",{day:"2-digit",month:"short",year:"numeric"}):"" },
 ];
 
+// ======================== EDIT FREIGHT ================================
+
+function EditScreen({ freight, fields, plants, onBack, onSave }) {
+  const [form, setForm] = useState({
+    loadDate: freight.loadDate || "",
+    loadTime: freight.loadTime || "",
+    notes: freight.notes || "",
+  });
+  const [saving, setSaving] = useState(false);
+  const u = f => setForm(p=>({...p,...f}));
+
+  const save = async () => {
+    setSaving(true);
+    await onSave(freight.id, form);
+    setSaving(false);
+  };
+
+  return (
+    <div style={{ flex:1, overflow:"auto", padding:18 }}>
+      <button onClick={onBack} style={{ background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", fontSize:13, fontWeight:600, color:C.pri, marginBottom:14, padding:0, display:"flex", alignItems:"center", gap:4 }}>{Ic.chev(C.pri,18)} Volver</button>
+      <div style={{ fontSize:20, fontWeight:800, marginBottom:4, letterSpacing:-0.3 }}>Editar Flete</div>
+      <div style={{ fontSize:12, color:C.t2, marginBottom:22 }}>{freight.code} · {freight.grain} · {freight.tons} {freight.unit||"tn"}</div>
+
+      <div style={{ background:C.w, border:`1px solid ${C.b1}`, borderRadius:12, padding:16, boxShadow:C.sh }}>
+        <div style={{ display:"flex", gap:12, marginBottom:12 }}>
+          <div style={{flex:1}}>
+            <label style={{fontSize:10.5,fontWeight:600,color:C.t2,marginBottom:6,display:"flex",alignItems:"center",gap:4,textTransform:"uppercase",letterSpacing:0.6}}>{Ic.cal(C.pri,14)} Fecha</label>
+            <input type="date" value={form.loadDate} onChange={e=>u({loadDate:e.target.value})} style={{width:"100%",padding:"12px 14px",borderRadius:10,border:`1.5px solid ${C.b1}`,background:C.w,color:C.t1,fontSize:16,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}/>
+          </div>
+          <div style={{flex:1}}>
+            <label style={{fontSize:10.5,fontWeight:600,color:C.t2,marginBottom:6,display:"flex",alignItems:"center",gap:4,textTransform:"uppercase",letterSpacing:0.6}}>{Ic.clk(C.pri,14)} Hora</label>
+            <input type="time" value={form.loadTime} onChange={e=>u({loadTime:e.target.value})} style={{width:"100%",padding:"12px 14px",borderRadius:10,border:`1.5px solid ${C.b1}`,background:C.w,color:C.t1,fontSize:16,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}/>
+          </div>
+        </div>
+
+        <div style={{marginBottom:16}}>
+          <label style={{fontSize:10.5,fontWeight:600,color:C.t2,marginBottom:6,display:"block",textTransform:"uppercase",letterSpacing:0.6}}>Notas</label>
+          <textarea value={form.notes} onChange={e=>u({notes:e.target.value})} placeholder="Indicaciones..." rows={3} style={{width:"100%",padding:"12px 14px",borderRadius:10,border:`1.5px solid ${C.b1}`,background:C.w,color:C.t1,fontSize:16,fontFamily:"inherit",outline:"none",resize:"none",boxSizing:"border-box"}}/>
+        </div>
+
+        <Btn full disabled={saving} onClick={save}>{saving?"Guardando...":"Guardar cambios"}</Btn>
+      </div>
+
+      <div style={{ marginTop:16, padding:12, background:C.bgInput, borderRadius:10, fontSize:11, color:C.t3 }}>
+        Solo se puede editar fecha, hora y notas. Para cambiar origen, destino o producto, cancelá y creá un flete nuevo.
+      </div>
+    </div>
+  );
+}
+
 function ReportsScreen({ onBack, freights }) {
   const [expanded, setExpanded] = useState({});
   const [generating, setGenerating] = useState(null);
@@ -2694,6 +2942,8 @@ export default function Tolvink() {
   const [toast, setToast] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [chatConvId, setChatConvId] = useState(null);
+  const [duplicateData, setDuplicateData] = useState(null);
+  const [editData, setEditData] = useState(null);
   const [unreadChats, setUnreadChats] = useState(0);
 
   // Calculate pending actions count
@@ -2787,7 +3037,7 @@ export default function Tolvink() {
     </div>
   </div>;
 
-  if(!auth.user) return <AuthScreen onLogin={auth.login} onSignup={auth.signup} loading={auth.loading} error={auth.error} clearError={auth.clearError}/>;
+  if(!auth.user) return <LandingScreen onLogin={auth.login} onSignup={auth.signup} loading={auth.loading} error={auth.error} clearError={auth.clearError}/>;
   const curFreight = fh.freights.find(f=>f.id===selFreight);
 
   return (
@@ -2802,10 +3052,11 @@ export default function Tolvink() {
       {/* Scrollable content area */}
       <div style={{flex:1,overflow:"auto",display:"flex",flexDirection:"column",WebkitOverflowScrolling:"touch",overscrollBehavior:"contain"}}>
       {screen==="home" && <HomeScreen user={auth.user} freights={fh.freights} perms={perms} onNav={nav}/>}
-      {screen==="list" && <ListScreen freights={fh.freights} onNav={nav}/>}
+      {screen==="list" && <ListScreen freights={fh.freights} onNav={nav} onRefresh={fh.fetchAll}/>}
       {screen==="pending" && <PendingScreen user={auth.user} freights={fh.freights} onNav={nav} onNewFreight={()=>nav("new")}/>}
-      {screen==="detail" && <DetailScreen user={auth.user} freight={curFreight} perms={perms} onBack={()=>setScreen("list")} onAction={handleAction} actionLoading={actionLoading} onChat={(convId)=>{if(convId){setChatConvId(convId);setScreen("chats");}}} onRefresh={(id)=>fh.refresh(id)}/>}
-      {screen==="new" && <NewScreen user={auth.user} lots={catalog.lots} plants={catalog.plants} fields={catalog.fields} trucks={catalog.trucks} onBack={()=>setScreen("home")} onCreate={handleCreate} submitting={submitting}/>}
+      {screen==="detail" && <DetailScreen user={auth.user} freight={curFreight} perms={perms} onBack={()=>setScreen("list")} onAction={handleAction} actionLoading={actionLoading} onChat={(convId)=>{if(convId){setChatConvId(convId);setScreen("chats");}}} onRefresh={(id)=>fh.refresh(id)} onDuplicate={(f)=>{setDuplicateData(f);setScreen("new");}} onEdit={(f)=>{setEditData(f);setScreen("edit");}}/>}
+      {screen==="new" && <NewScreen user={auth.user} lots={catalog.lots} plants={catalog.plants} fields={catalog.fields} trucks={catalog.trucks} onBack={()=>{setDuplicateData(null);setScreen("home");}} onCreate={handleCreate} submitting={submitting} duplicateFrom={duplicateData}/>}
+      {screen==="edit" && editData && <EditScreen freight={editData} fields={catalog.fields} plants={catalog.plants} onBack={()=>{setEditData(null);setScreen("detail");}} onSave={async(id,data)=>{const r=await fh.update(id,data);if(r.ok){setEditData(null);setScreen("detail");show("Flete actualizado");}else show(r.error,"err");}}/>}
       {screen==="profile" && <ProfileScreen user={auth.user} perms={perms} onLogout={auth.logout} onNav={nav}/>}
       {screen==="trucks" && <TrucksScreen onBack={()=>{catalog.refresh();setScreen("profile");}}/>}
       {screen==="fields" && <FieldsScreen onBack={()=>{catalog.refresh();setScreen("profile");}}/>}
