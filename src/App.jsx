@@ -279,7 +279,7 @@ function useFreights(user) {
   },[]);
   const create = useCallback(async (form)=>{
     try { const c=await apiCreateFreight({ originLotId:form.lotId, fieldId:form.fieldId||undefined, destPlantId:form.plantId, loadDate:form.loadDate, loadTime:form.loadTime, items:[{grain:form.grain,tons:parseFloat(form.tons),unit:form.unit||"toneladas",amount:form.amount?parseFloat(form.amount):0,productTypeOther:form.productTypeOther||undefined}], notes:form.notes||"", truckId:form.truckId||undefined });
-      const m=mapFreight(c); setFreights(p=>[m,...p]); return {ok:true}; } catch(e) { return {ok:false,error:e.message}; }
+      const m=mapFreight(c); setFreights(p=>[m,...p]); return {ok:true, freightId:c.id}; } catch(e) { return {ok:false,error:e.message}; }
   },[]);
   const assign = useCallback(async (fId,compId)=>{ try { await apiAssignFreight(fId,{transportCompanyId:compId}); await refresh(fId); return {ok:true}; } catch(e) { return {ok:false,error:e.message}; } },[refresh]);
   const respond = useCallback(async (fId,action,reason,truckId)=>{ try { await apiRespondFreight(fId,{action,reason,truckId}); await refresh(fId); return {ok:true}; } catch(e) { return {ok:false,error:e.message}; } },[refresh]);
@@ -939,6 +939,7 @@ function NewScreen({ user, lots, plants, fields, trucks, onBack, onCreate }) {
   const [submitting, setSubmitting] = useState(false);
   const [fieldLots, setFieldLots] = useState([]);
   const [loadingLots, setLoadingLots] = useState(false);
+  const [photos, setPhotos] = useState([]); // {file, preview, uploading}
   const u = f => setForm(p=>({...p,...f}));
 
   // Load lots when field changes
@@ -962,7 +963,20 @@ function NewScreen({ user, lots, plants, fields, trucks, onBack, onCreate }) {
     if(form.fieldId && !form.lotId) { e.lotId="Seleccioná un lote del campo"; }
     setErrs(e);
     if(!ok || Object.keys(e).filter(k=>e[k]).length>0) return;
-    onCreate({...form, amount:form.amount?parseFloat(form.amount):0});
+    onCreate({...form, amount:form.amount?parseFloat(form.amount):0, photos: photos.map(p=>p.preview) });
+  };
+
+  const addPhoto = (e) => {
+    const file = e.target.files?.[0];
+    if(!file) return;
+    if(!file.type.startsWith('image/')) return;
+    if(file.size > 10*1024*1024) return;
+    setPhotos(prev=>[...prev, { file, preview: URL.createObjectURL(file) }]);
+    e.target.value="";
+  };
+
+  const removePhoto = (idx) => {
+    setPhotos(prev=>prev.filter((_,i)=>i!==idx));
   };
 
   return (
@@ -1044,6 +1058,25 @@ function NewScreen({ user, lots, plants, fields, trucks, onBack, onCreate }) {
         <div>
           <label style={{ fontSize:10.5, fontWeight:600, color:C.t2, marginBottom:6, display:"block", textTransform:"uppercase", letterSpacing:0.6 }}>Notas</label>
           <textarea value={form.notes} onChange={e=>u({notes:e.target.value})} placeholder="Indicaciones, horarios especiales..." rows={3} style={{ width:"100%", padding:"12px 14px", borderRadius:10, border:`1.5px solid ${C.b1}`, background:C.w, color:C.t1, fontSize:13, fontFamily:"inherit", outline:"none", resize:"none", boxSizing:"border-box" }}/>
+        </div>
+
+        {/* Photo attachments */}
+        <div>
+          <label style={{ fontSize:10.5, fontWeight:600, color:C.t2, marginBottom:8, display:"flex", alignItems:"center", gap:4, textTransform:"uppercase", letterSpacing:0.6 }}>{Ic.cam(C.acc,14)} Adjuntar fotos (opcional)</label>
+          {photos.length > 0 && (
+            <div style={{ display:"flex", gap:8, flexWrap:"wrap", marginBottom:8 }}>
+              {photos.map((p,i)=>(
+                <div key={i} style={{ position:"relative", width:72, height:72, borderRadius:10, overflow:"hidden", border:`1px solid ${C.b1}` }}>
+                  <img src={p.preview} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }}/>
+                  <button onClick={()=>removePhoto(i)} style={{ position:"absolute", top:2, right:2, width:20, height:20, borderRadius:10, background:C.err, border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>{Ic.cross(C.w,12)}</button>
+                </div>
+              ))}
+            </div>
+          )}
+          <label style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"10px 16px", borderRadius:10, border:`1.5px dashed ${C.b1}`, background:C.bg, cursor:"pointer", fontSize:12, fontWeight:600, color:C.t2 }}>
+            {Ic.plus(C.t2,14)} Agregar foto
+            <input type="file" accept="image/*" capture="environment" onChange={addPhoto} style={{ display:"none" }}/>
+          </label>
         </div>
 
         <Btn full icon={Ic.chk(C.w,16)} disabled={submitting} onClick={submit}>{submitting?"Enviando...":"Solicitar Flete"}</Btn>
@@ -1363,6 +1396,7 @@ function ChatsScreen({ user, openConvId, onConvOpened }) {
   const [showNew, setShowNew] = useState(false);
   const [newCompId, setNewCompId] = useState("");
   const [newErr, setNewErr] = useState(null);
+  const [expandedGroups, setExpandedGroups] = useState({});
   const msgEndRef = useRef(null);
 
   const loadConvs = useCallback(async () => {
@@ -1428,6 +1462,60 @@ function ChatsScreen({ user, openConvId, onConvOpened }) {
     return `${m.sender?.name?.split(" ")[0] || ""}: ${m.text?.slice(0, 40)}${m.text?.length > 40 ? "..." : ""}`;
   };
 
+  const getLastMsgTime = (conv) => {
+    const m = conv.messages?.[0];
+    if (!m?.createdAt) return "";
+    return new Date(m.createdAt).toLocaleDateString("es",{day:"2-digit",month:"short"});
+  };
+
+  const toggleGroup = (key) => setExpandedGroups(prev=>({...prev,[key]:!prev[key]}));
+
+  // Group conversations
+  const grouped = useMemo(()=>{
+    const freightConvs = convs.filter(c=>c.freight);
+    const directConvs = convs.filter(c=>!c.freight);
+
+    // Group freight convs by interlocutor (other company)
+    const byCompany = {};
+    freightConvs.forEach(c=>{
+      const others = (c.participants||[]).filter(p=>p.companyId!==user.companyId);
+      const companyKey = others.map(o=>o.company?.name||o.companyId).sort().join(", ") || "Desconocido";
+      if(!byCompany[companyKey]) byCompany[companyKey]=[];
+      byCompany[companyKey].push(c);
+    });
+
+    // Sort each group's convs by status priority then by last message
+    const statusOrder = {in_progress:0,loaded:1,accepted:2,assigned:3,pending_assignment:4,finished:5,canceled:6};
+    Object.values(byCompany).forEach(arr=>{
+      arr.sort((a,b)=>{
+        const sa = statusOrder[a.freight?.status]??99;
+        const sb = statusOrder[b.freight?.status]??99;
+        if(sa!==sb) return sa-sb;
+        const ta = a.messages?.[0]?.createdAt||"";
+        const tb = b.messages?.[0]?.createdAt||"";
+        return tb.localeCompare(ta);
+      });
+    });
+
+    // Sort companies by most recent activity
+    const companyKeys = Object.keys(byCompany).sort((a,b)=>{
+      const la = byCompany[a][0]?.messages?.[0]?.createdAt||"";
+      const lb = byCompany[b][0]?.messages?.[0]?.createdAt||"";
+      return lb.localeCompare(la);
+    });
+
+    return { companyKeys, byCompany, directConvs };
+  },[convs,user.companyId]);
+
+  const stLabel = (s) => {
+    const m = {pending_assignment:"Pendiente",assigned:"Asignado",accepted:"Aceptado",in_progress:"En viaje",loaded:"Cargado",finished:"Finalizado",canceled:"Cancelado"};
+    return m[s]||s;
+  };
+  const stColor = (s) => {
+    const m = {pending_assignment:C.warn,assigned:C.info,accepted:C.info,in_progress:C.acc,loaded:C.pri,finished:C.ok,canceled:C.muted};
+    return m[s]||C.t3;
+  };
+
   // Chat detail view
   if (activeConv) {
     return (
@@ -1470,7 +1558,7 @@ function ChatsScreen({ user, openConvId, onConvOpened }) {
     );
   }
 
-  // Conversation list view
+  // Conversation list — grouped
   return (
     <div style={{ flex: 1, overflow: "auto", padding: 18 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
@@ -1489,18 +1577,68 @@ function ChatsScreen({ user, openConvId, onConvOpened }) {
 
       {loading ? <div style={{ textAlign: "center", padding: 40, color: C.t3, fontSize: 13 }}>Cargando...</div> :
         convs.length === 0 ? <div style={{ textAlign: "center", padding: 40, color: C.t3, fontSize: 13 }}>Sin conversaciones aún.{!showNew && <><br/><button onClick={()=>setShowNew(true)} style={{background:"none",border:"none",color:C.acc,fontWeight:600,cursor:"pointer",fontFamily:"inherit",fontSize:13,marginTop:8}}>Iniciar una nueva</button></>}</div> :
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            {convs.map(c => (
-              <button key={c.id} onClick={() => openConv(c)} style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: 12, padding: 14, cursor: "pointer", fontFamily: "inherit", textAlign: "left", display: "flex", alignItems: "center", gap: 12, boxShadow: C.sh, width: "100%" }}>
-                <div style={{ width: 40, height: 40, borderRadius: 20, background: c.freight ? C.priPale : C.accPale, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  {c.freight ? Ic.truck(C.pri, 18) : Ic.msg(C.acc, 18)}
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            {/* Freight conversations grouped by company */}
+            {grouped.companyKeys.map(companyName=>{
+              const convsList = grouped.byCompany[companyName];
+              const isOpen = expandedGroups[companyName] !== false; // default open
+              const activeCount = convsList.filter(c=>!["finished","canceled"].includes(c.freight?.status)).length;
+              return (
+                <div key={companyName} style={{ background:C.w, border:`1px solid ${C.b1}`, borderRadius:12, overflow:"hidden", boxShadow:C.sh }}>
+                  {/* Company header — collapsible */}
+                  <button onClick={()=>toggleGroup(companyName)} style={{ width:"100%", padding:"12px 14px", background:C.priPale, border:"none", cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:10, textAlign:"left" }}>
+                    <div style={{ width:36, height:36, borderRadius:18, background:C.pri, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                      {Ic.user(C.w,16)}
+                    </div>
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <div style={{ fontSize:13, fontWeight:700, color:C.pri }}>{companyName}</div>
+                      <div style={{ fontSize:10.5, color:C.t2 }}>{convsList.length} flete{convsList.length!==1?"s":""}{activeCount>0?` · ${activeCount} activo${activeCount!==1?"s":""}`:""}</div>
+                    </div>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={C.pri} strokeWidth="2.5" style={{transform:isOpen?"rotate(180deg)":"rotate(0deg)",transition:"transform 0.2s"}}><polyline points="6 9 12 15 18 9"/></svg>
+                  </button>
+
+                  {/* Freight conversations inside this company */}
+                  {isOpen && (
+                    <div style={{ display:"flex", flexDirection:"column" }}>
+                      {convsList.map((c,i)=>(
+                        <button key={c.id} onClick={()=>openConv(c)} style={{ padding:"10px 14px", border:"none", borderTop:i>0?`1px solid ${C.b2}`:"none", background:C.w, cursor:"pointer", fontFamily:"inherit", textAlign:"left", display:"flex", alignItems:"center", gap:10, width:"100%" }}>
+                          <div style={{ width:8, height:8, borderRadius:4, background:stColor(c.freight?.status), flexShrink:0 }}/>
+                          <div style={{ flex:1, minWidth:0 }}>
+                            <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                              <span style={{ fontSize:12, fontWeight:700, color:C.t1, fontFamily:MONO }}>{c.freight?.code}</span>
+                              <span style={{ fontSize:9.5, fontWeight:600, color:stColor(c.freight?.status), textTransform:"uppercase" }}>{stLabel(c.freight?.status)}</span>
+                            </div>
+                            <div style={{ fontSize:11, color:C.t3, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis", marginTop:2 }}>{getLastMsg(c)}</div>
+                          </div>
+                          <span style={{ fontSize:9.5, color:C.t3, flexShrink:0 }}>{getLastMsgTime(c)}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: C.t1 }}>{getConvName(c)}</div>
-                  <div style={{ fontSize: 11, color: C.t3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{getLastMsg(c)}</div>
+              );
+            })}
+
+            {/* Direct conversations */}
+            {grouped.directConvs.length > 0 && (
+              <div>
+                <div style={{ fontSize:10.5, fontWeight:700, color:C.t2, textTransform:"uppercase", letterSpacing:0.5, marginBottom:8, marginTop:4 }}>Conversaciones directas</div>
+                <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+                  {grouped.directConvs.map(c => (
+                    <button key={c.id} onClick={() => openConv(c)} style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: 12, padding: 14, cursor: "pointer", fontFamily: "inherit", textAlign: "left", display: "flex", alignItems: "center", gap: 12, boxShadow: C.sh, width: "100%" }}>
+                      <div style={{ width: 40, height: 40, borderRadius: 20, background: C.accPale, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        {Ic.msg(C.acc, 18)}
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: C.t1 }}>{getConvName(c)}</div>
+                        <div style={{ fontSize: 11, color: C.t3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{getLastMsg(c)}</div>
+                      </div>
+                      <span style={{ fontSize:9.5, color:C.t3, flexShrink:0 }}>{getLastMsgTime(c)}</span>
+                    </button>
+                  ))}
                 </div>
-              </button>
-            ))}
+              </div>
+            )}
           </div>
       }
     </div>
@@ -1617,6 +1755,17 @@ export default function Tolvink() {
   const handleCreate = async (form)=>{
     setSubmitting(true);
     const r = await fh.create(form);
+    if(r.ok && r.freightId && form.photos?.length > 0) {
+      // Upload photos to storage and register as documents
+      for(const photoUrl of form.photos) {
+        try {
+          const blob = await fetch(photoUrl).then(r=>r.blob());
+          const file = new File([blob], `foto-${Date.now()}.jpg`, {type:'image/jpeg'});
+          const url = await uploadPhoto(file, r.freightId, 'request');
+          await apiAddDocument(r.freightId, { name: file.name, url, type:'photo', step:'request' });
+        } catch(e) { console.error('Photo upload failed:', e); }
+      }
+    }
     setSubmitting(false);
     if(r.ok){ setScreen("list"); show("Flete solicitado"); } else show(r.error,"err");
   };
