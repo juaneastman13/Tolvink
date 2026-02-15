@@ -1097,6 +1097,20 @@ function LocationPicker({ label, value, onChange }) {
     return () => { cancelled = true; };
   }, [showMap]);
 
+  const [mapFull, setMapFull] = useState(false);
+
+  const toggleFull = () => {
+    setMapFull(f => {
+      const next = !f;
+      setTimeout(() => {
+        if (mapObjRef.current && window.google?.maps) {
+          window.google.maps.event.trigger(mapObjRef.current, "resize");
+        }
+      }, 50);
+      return next;
+    });
+  };
+
   return (
     <div style={{ marginBottom: 6 }}>
       <div style={{ fontSize: 11, fontWeight: 600, color: C.t2, marginBottom: 4 }}>{label || "Ubicación"}</div>
@@ -1110,10 +1124,28 @@ function LocationPicker({ label, value, onChange }) {
         </button>
       </div>
       {showMap && (
-        <div style={{ marginTop: 6, borderRadius: 10, overflow: "hidden", border: `1px solid ${C.b1}` }}>
-          <div ref={mapRef} style={{ width: "100%", height: 180 }} />
-          {value?.lat && <div style={{ fontSize: 10, color: C.t3, padding: "4px 8px", background: C.bg }}>{value.lat.toFixed(5)}, {value.lng.toFixed(5)}</div>}
-        </div>
+        mapFull ? (
+          <div style={{ position:"fixed", inset:0, zIndex:200, background:C.bg, display:"flex", flexDirection:"column" }}>
+            <div style={{ display:"flex", alignItems:"center", gap:8, padding:"12px 16px", paddingTop:"max(12px, env(safe-area-inset-top))", background:C.w, borderBottom:`1px solid ${C.b1}`, flexShrink:0 }}>
+              <button onClick={toggleFull} style={{ padding:8, borderRadius:8, background:"none", border:`1.5px solid ${C.b1}`, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                {Ic.chev(C.t1,20)}
+              </button>
+              <input ref={inputRef} value={addr} onChange={e => setAddr(e.target.value)} placeholder="Buscar dirección..."
+                style={{ flex:1, padding:"10px 12px", borderRadius:8, border:`1.5px solid ${C.b1}`, fontSize:14, fontFamily:"inherit", outline:"none", color:C.t1, background:C.bg }} />
+              <button onClick={toggleFull} style={{ padding:"8px 16px", borderRadius:8, background:C.pri, color:C.w, border:"none", cursor:"pointer", fontFamily:"inherit", fontSize:13, fontWeight:700, flexShrink:0 }}>Listo</button>
+            </div>
+            <div ref={mapRef} style={{ flex:1 }} />
+            {value?.lat && <div style={{ fontSize:11, color:C.t3, padding:"8px 16px", paddingBottom:"max(8px, env(safe-area-inset-bottom))", background:C.w, borderTop:`1px solid ${C.b1}`, textAlign:"center" }}>{value.lat.toFixed(5)}, {value.lng.toFixed(5)}</div>}
+          </div>
+        ) : (
+          <div style={{ marginTop: 6, borderRadius: 10, overflow: "hidden", border: `1px solid ${C.b1}`, position:"relative" }}>
+            <div ref={mapRef} style={{ width: "100%", height: 180 }} />
+            <button onClick={toggleFull} style={{ position:"absolute", top:8, right:8, zIndex:5, padding:"6px 8px", borderRadius:6, background:"rgba(255,255,255,0.9)", border:`1px solid ${C.b1}`, cursor:"pointer", display:"flex", alignItems:"center", boxShadow:"0 1px 4px rgba(0,0,0,0.15)" }}>
+              {Ic.expand(C.t1,16)}
+            </button>
+            {value?.lat && <div style={{ fontSize: 10, color: C.t3, padding: "4px 8px", background: C.bg }}>{value.lat.toFixed(5)}, {value.lng.toFixed(5)}</div>}
+          </div>
+        )
       )}
     </div>
   );
