@@ -734,53 +734,59 @@ function HomeScreen({ user, freights, perms, onNav }) {
   const nextView = () => setViewMode(v => v==="cards"?"table":v==="table"?"map":"cards");
 
   return (
-    <div style={{ flex:1, overflow:"auto", padding:18 }}>
-      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:24 }}>
-        <div><div style={{ fontSize:13, color:C.t2 }}>Hola,</div><div style={{ fontSize:22, fontWeight:800, letterSpacing:-0.3, color:C.t1 }}>{user.name.split(" ")[0]}</div></div>
-        <div style={{ textAlign:"right" }}><Bd color={tc}>{typeLabel}</Bd><div style={{ fontSize:10, color:C.t3, marginTop:4 }}>{user.role==="admin"?"Gerente":"Operario"} · {user.entity}</div></div>
+    <div style={{ flex:1, overflow:"auto" }}>
+      {/* Sticky header block */}
+      <div style={{ position:"sticky", top:0, zIndex:10, background:C.bg, padding:"18px 18px 0 18px" }}>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
+          <div><div style={{ fontSize:13, color:C.t2 }}>Hola,</div><div style={{ fontSize:22, fontWeight:800, letterSpacing:-0.3, color:C.t1 }}>{user.name.split(" ")[0]}</div></div>
+          <div style={{ textAlign:"right" }}><Bd color={tc}>{typeLabel}</Bd><div style={{ fontSize:10, color:C.t3, marginTop:4 }}>{user.role==="admin"?"Gerente":"Operario"} · {user.entity}</div></div>
+        </div>
+
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:10, marginBottom:12 }}>
+          {statCards.map(s=>{
+            const sel = activeFilter===s.k;
+            return <div key={s.k} onClick={()=>toggleFilter(s.k)} style={{ background:sel?s.c:s.bg, borderRadius:12, padding:"14px 10px", textAlign:"center", cursor:"pointer", transition:"all 0.15s", border:sel?`2px solid ${s.c}`:`2px solid transparent`, transform:sel?"scale(1.03)":"scale(1)" }}>
+              <div style={{ fontSize:26, fontWeight:800, color:sel?C.w:s.c }}>{s.v}</div>
+              <div style={{ fontSize:10, color:sel?C.w:s.c, fontWeight:sel?700:500, marginTop:2, opacity:sel?1:0.8 }}>{s.l}</div>
+            </div>;
+          })}
+        </div>
+
+        {/* View toggle */}
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
+          {activeFilter!=="all" ? (
+            <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+              <div style={{fontSize:14,fontWeight:700,color:C.t1}}>{statCards.find(s=>s.k===activeFilter)?.l||"Fletes"} <span style={{fontSize:12,fontWeight:500,color:C.t3}}>({displayFreights.length})</span></div>
+              <button onClick={()=>setActiveFilter("all")} style={{background:"none",border:"none",fontSize:11,fontWeight:600,color:C.acc,cursor:"pointer",fontFamily:"inherit",padding:0}}>Ver todos</button>
+            </div>
+          ) : (
+            <div style={{ fontSize:14, fontWeight:700, color:C.t1 }}>Fletes <span style={{fontSize:12,fontWeight:500,color:C.t3}}>({displayFreights.length})</span></div>
+          )}
+          <div style={{ display:"flex", gap:6, alignItems:"center" }}>
+            {viewMode==="table" && <>
+              <span style={{ fontSize:10, color:C.t3, whiteSpace:"nowrap" }}>Descargar información</span>
+              <button onClick={()=>exportCSV(displayFreights,`tolvink-inicio-${new Date().toISOString().slice(0,10)}.csv`)} style={{ display:"flex", alignItems:"center", gap:4, background:C.accPale, border:`1px solid ${C.acc}20`, borderRadius:8, padding:"5px 10px", cursor:"pointer", fontFamily:"inherit", fontSize:10.5, fontWeight:600, color:C.acc }}>
+                {Ic.down(C.acc,12)} CSV
+              </button>
+            </>}
+            <span style={{ fontSize:10, color:C.t3, whiteSpace:"nowrap" }}>Cambiar visualización</span>
+            <button onClick={nextView} style={{ display:"flex", alignItems:"center", gap:4, background:C.priPale, border:`1px solid ${C.pri}20`, borderRadius:8, padding:"5px 10px", cursor:"pointer", fontFamily:"inherit", fontSize:10.5, fontWeight:600, color:C.pri }}>
+              {viewMode==="map"?Ic.pin(C.pri,13):viewMode==="table"?Ic.doc(C.pri,13):Ic.home(C.pri,13)} {viewLabels[viewMode]}
+            </button>
+          </div>
+        </div>
+        {/* Bottom border */}
+        <div style={{ height:1, background:C.b2, marginLeft:-18, marginRight:-18 }}/>
       </div>
 
-      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:10, marginBottom:20 }}>
-        {statCards.map(s=>{
-          const sel = activeFilter===s.k;
-          return <div key={s.k} onClick={()=>toggleFilter(s.k)} style={{ background:sel?s.c:s.bg, borderRadius:12, padding:"14px 10px", textAlign:"center", cursor:"pointer", transition:"all 0.15s", border:sel?`2px solid ${s.c}`:`2px solid transparent`, transform:sel?"scale(1.03)":"scale(1)" }}>
-            <div style={{ fontSize:26, fontWeight:800, color:sel?C.w:s.c }}>{s.v}</div>
-            <div style={{ fontSize:10, color:sel?C.w:s.c, fontWeight:sel?700:500, marginTop:2, opacity:sel?1:0.8 }}>{s.l}</div>
-          </div>;
-        })}
-      </div>
-
-      {/* Solicitar button moved to FAB */}
+      {/* Scrollable content */}
+      <div style={{ padding:"12px 18px 18px 18px" }}>
 
       {perms.canApprove && stats.avail>0 && activeFilter==="all" && (
         <div onClick={()=>toggleFilter("requested")} style={{ background:C.accPale, border:`1px solid ${C.acc}22`, borderLeft:`3px solid ${C.acc}`, borderRadius:12, padding:14, marginBottom:18, cursor:"pointer", display:"flex", alignItems:"center", gap:12 }}>
           {Ic.warn(C.acc,24)}<div><div style={{ fontSize:13, fontWeight:700, color:C.acc }}>{stats.avail} flete{stats.avail>1?"s":""} solicitado{stats.avail>1?"s":""}</div><div style={{ fontSize:11.5, color:C.t2 }}>Esperando asignación de transporte</div></div>
         </div>
       )}
-
-      {/* View toggle */}
-      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
-        {activeFilter!=="all" ? (
-          <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-            <div style={{fontSize:14,fontWeight:700,color:C.t1}}>{statCards.find(s=>s.k===activeFilter)?.l||"Fletes"} <span style={{fontSize:12,fontWeight:500,color:C.t3}}>({displayFreights.length})</span></div>
-            <button onClick={()=>setActiveFilter("all")} style={{background:"none",border:"none",fontSize:11,fontWeight:600,color:C.acc,cursor:"pointer",fontFamily:"inherit",padding:0}}>Ver todos</button>
-          </div>
-        ) : (
-          <div style={{ fontSize:14, fontWeight:700, color:C.t1 }}>Fletes <span style={{fontSize:12,fontWeight:500,color:C.t3}}>({displayFreights.length})</span></div>
-        )}
-        <div style={{ display:"flex", gap:6, alignItems:"center" }}>
-          {viewMode==="table" && <>
-            <span style={{ fontSize:10, color:C.t3, whiteSpace:"nowrap" }}>Descargar información</span>
-            <button onClick={()=>exportCSV(displayFreights,`tolvink-inicio-${new Date().toISOString().slice(0,10)}.csv`)} style={{ display:"flex", alignItems:"center", gap:4, background:C.accPale, border:`1px solid ${C.acc}20`, borderRadius:8, padding:"5px 10px", cursor:"pointer", fontFamily:"inherit", fontSize:10.5, fontWeight:600, color:C.acc }}>
-              {Ic.down(C.acc,12)} CSV
-            </button>
-          </>}
-          <span style={{ fontSize:10, color:C.t3, whiteSpace:"nowrap" }}>Cambiar visualización</span>
-          <button onClick={nextView} style={{ display:"flex", alignItems:"center", gap:4, background:C.priPale, border:`1px solid ${C.pri}20`, borderRadius:8, padding:"5px 10px", cursor:"pointer", fontFamily:"inherit", fontSize:10.5, fontWeight:600, color:C.pri }}>
-            {viewMode==="map"?Ic.pin(C.pri,13):viewMode==="table"?Ic.doc(C.pri,13):Ic.home(C.pri,13)} {viewLabels[viewMode]}
-          </button>
-        </div>
-      </div>
 
       {/* MAP VIEW */}
       {viewMode==="map" && <HomeMapView freights={activeFreights} onNav={onNav} />}
@@ -845,6 +851,7 @@ function HomeScreen({ user, freights, perms, onNav }) {
         </div>
       )}
       {/* Solicitar button is in Nav bar */}
+      </div>{/* end scrollable content */}
     </div>
   );
 }
@@ -1747,17 +1754,124 @@ function DocsGallery({ documents }) {
   const stepLabels = { request: "Solicitud", assignment: "Asignación", load_confirmation: "Carga", delivery_confirmation: "Entrega", cancellation: "Cancelación" };
   return (
     <div style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: 12, padding: 14, marginBottom: 12, boxShadow: C.sh }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>{Ic.img(C.pri, 16)}<span style={{ fontSize: 10.5, fontWeight: 700, color: C.t2, textTransform: "uppercase", letterSpacing: 0.5 }}>Documentos ({documents.length})</span></div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6 }}>
-        {documents.map(d => (
-          <a key={d.id} href={d.url} target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none" }}>
-            <div style={{ borderRadius: 8, overflow: "hidden", border: `1px solid ${C.b2}`, background: C.bg }}>
-              <img src={d.url} alt={d.name} style={{ width: "100%", height: 70, objectFit: "cover", display: "block" }} onError={e => { e.target.style.display = "none"; }} />
-              <div style={{ padding: "4px 6px", fontSize: 9, color: C.t3, fontWeight: 500 }}>{stepLabels[d.step] || d.type || "Doc"}</div>
-            </div>
-          </a>
-        ))}
+      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>{Ic.img(C.pri, 16)}<span style={{ fontSize: 10.5, fontWeight: 700, color: C.t2, textTransform: "uppercase", letterSpacing: 0.5 }}>Archivos del flete ({documents.length})</span></div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        {documents.map(d => {
+          const isImg = d.type === "photo" || d.url?.match(/\.(jpg|jpeg|png|webp|gif)$/i);
+          return (
+            <a key={d.id} href={d.url} target="_blank" rel="noopener noreferrer" style={{ display: "flex", alignItems: "center", gap: 10, padding: 8, background: C.bg, border: `1px solid ${C.b2}`, borderRadius: 8, textDecoration: "none" }}>
+              {isImg ? (
+                <img src={d.url} alt={d.name} style={{ width: 48, height: 48, borderRadius: 6, objectFit: "cover", flexShrink: 0 }} onError={e => { e.target.style.display = "none"; }} />
+              ) : (
+                <div style={{ width: 48, height: 48, borderRadius: 6, background: C.priPale, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{Ic.doc(C.pri, 20)}</div>
+              )}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 11, fontWeight: 600, color: C.t1, wordBreak: "break-all" }}>{d.name || "Archivo"}</div>
+                <div style={{ fontSize: 9.5, color: C.t3, marginTop: 2 }}>
+                  {stepLabels[d.step] || d.type || "Doc"}
+                  {d.createdAt && ` · ${new Date(d.createdAt).toLocaleDateString("es", { day: "2-digit", month: "short" })}`}
+                  {d.uploadedBy?.name && ` · ${d.uploadedBy.name.split(" ")[0]}`}
+                </div>
+              </div>
+              {Ic.down(C.pri, 14)}
+            </a>
+          );
+        })}
       </div>
+    </div>
+  );
+}
+
+// ======================== FREIGHT FILE UPLOAD (multi-source) ===========
+
+function FreightFileUpload({ freightId, step, onUploaded }) {
+  const [files, setFiles] = useState([]); // { file, preview, name, uploading, done, error }
+  const [uploadingAll, setUploadingAll] = useState(false);
+
+  const addFiles = (fileList, fromCamera = false) => {
+    const newFiles = Array.from(fileList).filter(f => f.size <= 15 * 1024 * 1024).map(f => ({
+      file: f,
+      preview: f.type.startsWith("image/") ? URL.createObjectURL(f) : null,
+      name: f.name,
+      uploading: false,
+      done: false,
+      error: null,
+    }));
+    setFiles(prev => [...prev, ...newFiles]);
+  };
+
+  const removeFile = (idx) => setFiles(prev => prev.filter((_, i) => i !== idx));
+
+  const uploadAll = async () => {
+    setUploadingAll(true);
+    for (let i = 0; i < files.length; i++) {
+      if (files[i].done) continue;
+      setFiles(prev => prev.map((f, j) => j === i ? { ...f, uploading: true, error: null } : f));
+      try {
+        const url = await uploadPhoto(files[i].file, freightId, step);
+        await apiAddDocument(freightId, { name: files[i].name, url, type: files[i].file.type.startsWith("image/") ? "photo" : "document", step });
+        setFiles(prev => prev.map((f, j) => j === i ? { ...f, uploading: false, done: true } : f));
+      } catch (err) {
+        setFiles(prev => prev.map((f, j) => j === i ? { ...f, uploading: false, error: err.message || "Error" } : f));
+      }
+    }
+    setUploadingAll(false);
+    if (onUploaded) onUploaded();
+  };
+
+  const pending = files.filter(f => !f.done);
+
+  return (
+    <div style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: 12, padding: 14, marginBottom: 12, boxShadow: C.sh }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
+        {Ic.clip(C.acc, 16)}
+        <span style={{ fontSize: 10.5, fontWeight: 700, color: C.t2, textTransform: "uppercase", letterSpacing: 0.5 }}>Adjuntar archivos</span>
+      </div>
+
+      {/* Preview staged files */}
+      {files.length > 0 && (
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
+          {files.map((f, i) => (
+            <div key={i} style={{ position: "relative", width: 72, height: 72, borderRadius: 10, overflow: "hidden", border: `1px solid ${f.done ? C.ok : f.error ? C.err : C.b1}` }}>
+              {f.preview ? (
+                <img src={f.preview} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              ) : (
+                <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: C.bg, padding: 4 }}>
+                  {Ic.doc(C.pri, 20)}
+                  <span style={{ fontSize: 7, color: C.t3, textAlign: "center", marginTop: 2, wordBreak: "break-all", lineHeight: 1.1 }}>{f.name?.slice(-12)}</span>
+                </div>
+              )}
+              {f.uploading && <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.45)", display: "flex", alignItems: "center", justifyContent: "center" }}><div style={{ width: 18, height: 18, border: "2px solid #fff", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} /><style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style></div>}
+              {f.done && <div style={{ position: "absolute", top: 3, right: 3, width: 18, height: 18, borderRadius: 9, background: C.ok, display: "flex", alignItems: "center", justifyContent: "center" }}>{Ic.chk("#fff", 12)}</div>}
+              {!f.done && !f.uploading && <button onClick={() => removeFile(i)} style={{ position: "absolute", top: 2, right: 2, width: 18, height: 18, borderRadius: 9, background: C.err, border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>{Ic.cross("#fff", 10)}</button>}
+              {f.error && <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: C.err, color: "#fff", fontSize: 7, textAlign: "center", padding: 2 }}>Error</div>}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Source buttons */}
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: pending.length > 0 ? 10 : 0 }}>
+        <label style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "9px 12px", borderRadius: 10, border: `1.5px dashed ${C.b1}`, background: C.bg, cursor: "pointer", fontSize: 11, fontWeight: 600, color: C.t2 }}>
+          {Ic.cam(C.t2, 14)} Cámara
+          <input type="file" accept="image/*" capture="environment" onChange={e => { if (e.target.files?.length) addFiles(e.target.files, true); e.target.value = ""; }} style={{ display: "none" }} />
+        </label>
+        <label style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "9px 12px", borderRadius: 10, border: `1.5px dashed ${C.b1}`, background: C.bg, cursor: "pointer", fontSize: 11, fontWeight: 600, color: C.t2 }}>
+          {Ic.img(C.t2, 14)} Galería
+          <input type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={e => { if (e.target.files?.length) addFiles(e.target.files); e.target.value = ""; }} style={{ display: "none" }} />
+        </label>
+        <label style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "9px 12px", borderRadius: 10, border: `1.5px dashed ${C.b1}`, background: C.bg, cursor: "pointer", fontSize: 11, fontWeight: 600, color: C.t2 }}>
+          {Ic.doc(C.t2, 14)} Archivos
+          <input type="file" accept="image/*,.pdf,.doc,.docx,.xlsx" multiple onChange={e => { if (e.target.files?.length) addFiles(e.target.files); e.target.value = ""; }} style={{ display: "none" }} />
+        </label>
+      </div>
+
+      {/* Upload button */}
+      {pending.length > 0 && (
+        <Btn full v="acc" icon={uploadingAll ? null : Ic.chk(C.w, 14)} disabled={uploadingAll} onClick={uploadAll}>
+          {uploadingAll ? "Subiendo..." : `Subir ${pending.length} archivo${pending.length > 1 ? "s" : ""}`}
+        </Btn>
+      )}
     </div>
   );
 }
@@ -1995,16 +2109,9 @@ function DetailScreen({ user, freight, perms, onBack, onAction, actionLoading, o
       {/* Documents gallery */}
       <DocsGallery documents={freight.documents}/>
 
-      {/* Photo upload — contextual by status */}
+      {/* File upload — multi-source, any status except finished/canceled */}
       {freight.status !== "finished" && freight.status !== "canceled" && (
-        <div style={{ background:C.w, border:`1px solid ${C.b1}`, borderRadius:12, padding:14, marginBottom:12, boxShadow:C.sh }}>
-          <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:10 }}>{Ic.cam(C.acc,16)}<span style={{ fontSize:10.5, fontWeight:700, color:C.t2, textTransform:"uppercase", letterSpacing:0.5 }}>Adjuntar foto</span></div>
-          <PhotoUpload freightId={freight.id}
-            step={freight.status==="pending_assignment"?"request":freight.status==="in_progress"||freight.status==="loaded"?"load_confirmation":"assignment"}
-            label={freight.status==="in_progress"?"Foto de carga":freight.status==="loaded"?"Foto de entrega":"Adjuntar documento"}
-            onUploaded={()=>{ if(onRefresh) onRefresh(freight.id); }}
-          />
-        </div>
+        <FreightFileUpload freightId={freight.id} step={freight.status==="pending_assignment"?"request":freight.status==="in_progress"||freight.status==="loaded"?"load_confirmation":"assignment"} onUploaded={()=>{ if(onRefresh) onRefresh(freight.id); }} />
       )}
 
       <button onClick={()=>onChat(freight.conversationId)} disabled={!freight.conversationId}
