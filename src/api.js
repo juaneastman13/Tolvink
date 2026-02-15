@@ -1,9 +1,10 @@
 // =====================================================================
-// TOLVINK — API Client v4
+// TOLVINK — API Client v5
 // =====================================================================
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://tolvink-api-production.up.railway.app/api';
 const SUPABASE_URL = 'https://mlmecljidioymujsazrs.supabase.co';
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1sbWVjbGppZGlveW11anNhenJzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzExMTE2MTYsImV4cCI6MjA4NjY4NzYxNn0.0y0jNN9CcbzfDNOQZqDnjAR8as14dUZ4yQvnJeaYnNM';
 const STORAGE_BUCKET = 'freight-docs';
 
 let _token = localStorage.getItem('tolvink_token');
@@ -76,26 +77,25 @@ export async function apiListConversations() { return api('/conversations'); }
 export async function apiGetMessages(convId) { return api(`/conversations/${convId}/messages`); }
 export async function apiSendMessage(convId,text) { return api(`/conversations/${convId}/messages`,{body:{text}}); }
 
-// Photo Upload — direct to Supabase Storage
+// Photo Upload — direct to Supabase Storage (public bucket)
 export async function uploadPhoto(file, freightId, step) {
-  const ext = file.name.split('.').pop() || 'jpg';
+  const ext = file.name?.split('.').pop() || 'jpg';
   const path = `${freightId}/${step}/${Date.now()}.${ext}`;
-  const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${STORAGE_BUCKET}/${path}`, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${_token}`,
-      'Content-Type': file.type || 'image/jpeg',
-    },
-    body: file,
-  });
-  if (!res.ok) {
-    // Try with anon key approach (public bucket)
-    const res2 = await fetch(`${SUPABASE_URL}/storage/v1/object/${STORAGE_BUCKET}/${path}`, {
-      method: 'POST',
-      headers: { 'Content-Type': file.type || 'image/jpeg' },
-      body: file,
-    });
-    if (!res2.ok) throw new Error('Error al subir foto');
+  const url = `${SUPABASE_URL}/storage/v1/object/${STORAGE_BUCKET}/${path}`;
+
+  const headers = { 'Content-Type': file.type || 'image/jpeg' };
+  if (SUPABASE_ANON_KEY) {
+    headers['apikey'] = SUPABASE_ANON_KEY;
+    headers['Authorization'] = `Bearer ${SUPABASE_ANON_KEY}`;
   }
+
+  const res = await fetch(url, { method: 'POST', headers, body: file });
+
+  if (!res.ok) {
+    let errMsg = 'Error al subir foto';
+    try { const d = await res.json(); errMsg = d.message || d.error || errMsg; } catch {}
+    throw new Error(errMsg);
+  }
+
   return `${SUPABASE_URL}/storage/v1/object/public/${STORAGE_BUCKET}/${path}`;
 }

@@ -279,7 +279,7 @@ function useFreights(user) {
   const cancel = useCallback(async (fId,reason)=>{ try { await apiCancelFreight(fId,reason); await refresh(fId); return {ok:true}; } catch(e) { return {ok:false,error:e.message}; } },[refresh]);
   const confirmLoaded = useCallback(async (fId)=>{ try { await apiConfirmLoaded(fId); await refresh(fId); return {ok:true}; } catch(e) { return {ok:false,error:e.message}; } },[refresh]);
   const confirmFinished = useCallback(async (fId)=>{ try { await apiConfirmFinished(fId); await refresh(fId); return {ok:true}; } catch(e) { return {ok:false,error:e.message}; } },[refresh]);
-  return { freights, loading, error, fetchAll, create, assign, respond, start, finish, cancel, confirmLoaded, confirmFinished };
+  return { freights, loading, error, fetchAll, refresh, create, assign, respond, start, finish, cancel, confirmLoaded, confirmFinished };
 }
 
 function mapFreight(f) {
@@ -1521,7 +1521,7 @@ export default function Tolvink() {
 
   const perms = useMemo(()=>permsFor(auth.user),[auth.user]);
   const show = (msg,type="ok")=>setToast({msg,type});
-  const nav = (s,fId)=>{ if(fId) setSelFreight(fId); if(s==="new"&&!perms.canRequest){show("Sin permisos para solicitar","err");return;} setScreen(s); };
+  const nav = (s,fId)=>{ if(fId){ setSelFreight(fId); if(s==="detail") fh.refresh(fId); } if(s==="new"&&!perms.canRequest){show("Sin permisos para solicitar","err");return;} setScreen(s); };
 
   const handleAction = (fId,action)=>{
     const f = fh.freights.find(x=>x.id===fId);
