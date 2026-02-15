@@ -70,10 +70,10 @@ const C = {
   priPale:"#E4F3EA",
   priGhost:"rgba(26,107,55,0.06)",
 
-  // Accent — naranja
-  acc:"#E07A12",
-  accLt:"#F08C24",
-  accPale:"#FFF1DE",
+  // Accent — naranja vibrante
+  acc:"#FF6A00",
+  accLt:"#FF8124",
+  accPale:"#FFF3E8",
 
   // Semantic
   ok:"#1A6B37",
@@ -147,14 +147,14 @@ const Ic = {
 
 // Backend states: draft, pending_assignment, assigned, accepted, in_progress, loaded, finished, canceled
 const STATUS = {
-  draft:              { label:"Borrador",     color:C.muted, bg:C.mutedPale },
-  pending_assignment: { label:"Disponible",   color:C.ok,    bg:C.okPale    },
-  assigned:           { label:"Asignado",     color:C.info,  bg:C.infoPale  },
-  accepted:           { label:"Aceptado",     color:"#7C3AED", bg:"#F3EEFF" },
-  in_progress:        { label:"En curso",     color:C.acc,   bg:C.accPale   },
-  loaded:             { label:"Cargado",      color:"#B45309",bg:"#FEF3C7"  },
-  finished:           { label:"Finalizado",   color:C.ok,    bg:C.okPale    },
-  canceled:           { label:"Cancelado",    color:C.err,   bg:C.errPale   },
+  draft:              { label:"Borrador",            color:C.muted, bg:C.mutedPale },
+  pending_assignment: { label:"Solicitado",          color:C.ok,    bg:C.okPale    },
+  assigned:           { label:"Asignado a flota",    color:C.info,  bg:C.infoPale  },
+  accepted:           { label:"Confirmado camión",   color:"#7C3AED", bg:"#F3EEFF" },
+  in_progress:        { label:"En curso",            color:C.acc,   bg:C.accPale   },
+  loaded:             { label:"Cargando",            color:C.acc,   bg:C.accPale   },
+  finished:           { label:"Finalizado",          color:C.ok,    bg:C.okPale    },
+  canceled:           { label:"Cancelado",           color:C.err,   bg:C.errPale   },
 };
 function stCfg(s) { return STATUS[s] || STATUS.pending_assignment; }
 
@@ -512,16 +512,16 @@ function HomeScreen({ user, freights, perms, onNav }) {
       </div>
 
       <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:10, marginBottom:20 }}>
-        {[{l:"Disponibles",v:stats.avail,c:C.pri,bg:C.priPale},{l:"En curso",v:stats.active,c:C.acc,bg:C.accPale},{l:"Finalizados",v:stats.done,c:C.ok,bg:C.okPale}].map((s,i)=>(
+        {[{l:"Solicitados",v:stats.avail,c:C.pri,bg:C.priPale},{l:"En curso",v:stats.active,c:C.acc,bg:C.accPale},{l:"Finalizados",v:stats.done,c:C.ok,bg:C.okPale}].map((s,i)=>(
           <div key={i} style={{ background:s.bg, borderRadius:12, padding:"14px 10px", textAlign:"center" }}><div style={{ fontSize:26, fontWeight:800, color:s.c }}>{s.v}</div><div style={{ fontSize:10, color:s.c, fontWeight:500, marginTop:2, opacity:0.8 }}>{s.l}</div></div>
         ))}
       </div>
 
-      {perms.canRequest && <Btn full onClick={()=>onNav("new")} icon={Ic.plus(C.w,16)} style={{marginBottom:16}}>Solicitar nuevo flete</Btn>}
+      {perms.canRequest && <Btn full v="acc" onClick={()=>onNav("new")} icon={Ic.plus(C.w,16)} style={{marginBottom:16}}>Solicitar nuevo flete</Btn>}
 
       {perms.canApprove && stats.avail>0 && (
         <div onClick={()=>onNav("list")} style={{ background:C.accPale, border:`1px solid ${C.acc}22`, borderRadius:12, padding:14, marginBottom:18, cursor:"pointer", display:"flex", alignItems:"center", gap:12 }}>
-          {Ic.warn(C.acc,24)}<div><div style={{ fontSize:13, fontWeight:700, color:C.acc }}>{stats.avail} flete{stats.avail>1?"s":""} disponible{stats.avail>1?"s":""}</div><div style={{ fontSize:11.5, color:C.t2 }}>Esperando asignación de transporte</div></div>
+          {Ic.warn(C.acc,24)}<div><div style={{ fontSize:13, fontWeight:700, color:C.acc }}>{stats.avail} flete{stats.avail>1?"s":""} solicitado{stats.avail>1?"s":""}</div><div style={{ fontSize:11.5, color:C.t2 }}>Esperando asignación de transporte</div></div>
         </div>
       )}
 
@@ -531,7 +531,7 @@ function HomeScreen({ user, freights, perms, onNav }) {
           {activeFreights.map(f=>{
             const st = stCfg(f.status);
             return (
-              <div key={f.id} onClick={()=>onNav("detail",f.id)} style={{ background:C.w, border:`1px solid ${C.b1}`, borderRadius:12, padding:14, cursor:"pointer", boxShadow:C.sh }}>
+              <div key={f.id} onClick={()=>onNav("detail",f.id)} style={{ background:C.w, border:`1px solid ${C.b1}`, borderLeft:`3px solid ${C.acc}`, borderRadius:12, padding:14, cursor:"pointer", boxShadow:C.sh }}>
                 <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
                   <span style={{ fontSize:11, fontWeight:700, color:C.t3, fontFamily:MONO }}>{f.code}</span>
                   <Bd color={st.color} bg={st.bg} small>{st.label}</Bd>
@@ -613,12 +613,14 @@ function ListScreen({ freights, onNav }) {
         </div>
       )}
 
-      <Tabs items={[{k:"all",l:"Todos"},{k:"available",l:"Disponibles"},{k:"active",l:"Activos"},{k:"done",l:"Finalizados"},{k:"closed",l:"Cerrados"}]} active={tab} onChange={setTab}/>
+      <Tabs items={[{k:"all",l:"Todos"},{k:"available",l:"Solicitados"},{k:"active",l:"Activos"},{k:"done",l:"Finalizados"},{k:"closed",l:"Cerrados"}]} active={tab} onChange={setTab}/>
       <div style={{fontSize:11,color:C.t3,marginTop:8,marginBottom:6}}>{filtered.length} resultado{filtered.length!==1?"s":""}</div>
       <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
         {filtered.length===0 && <div style={{ textAlign:"center", padding:40, color:C.t3, fontSize:13 }}>Sin fletes en esta categoría</div>}
-        {filtered.map(f=>(
-          <div key={f.id} style={{ background:C.w, border:`1px solid ${C.b1}`, borderRadius:12, padding:14, boxShadow:C.sh }}>
+        {filtered.map(f=>{
+          const isActive = ["assigned","accepted","in_progress","loaded"].includes(f.status);
+          return (
+          <div key={f.id} style={{ background:C.w, border:`1px solid ${C.b1}`, borderLeft:isActive?`3px solid ${C.acc}`:`1px solid ${C.b1}`, borderRadius:12, padding:14, boxShadow:C.sh }}>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:8 }}>
               <div>
                 <div style={{ display:"flex", alignItems:"center", gap:6 }}>
@@ -637,7 +639,8 @@ function ListScreen({ freights, onNav }) {
               
             </div>
           </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
@@ -676,12 +679,13 @@ function DetailScreen({ user, freight, perms, onBack, onAction }) {
         const curIdx = steps.indexOf(freight.status);
         return <div style={{ background:C.w, border:`1px solid ${C.b1}`, borderRadius:12, padding:16, marginBottom:12, boxShadow:C.sh }}>
           <div style={{ fontSize:10.5, fontWeight:700, marginBottom:12, color:C.t2, textTransform:"uppercase", letterSpacing:0.5 }}>Progreso</div>
-          <div style={{display:"flex",gap:4,alignItems:"center"}}>
+          <div style={{display:"flex",gap:3,alignItems:"flex-start"}}>
             {steps.map((s,i)=>{
               const done = i < curIdx; const active = i === curIdx; const c = stCfg(s);
-              return <div key={s} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
-                <div style={{width:"100%",height:4,borderRadius:2,background:done?C.pri:active?C.acc:C.b1}}/>
-                <span style={{fontSize:8,fontWeight:active?700:500,color:active?c.color:done?C.t2:C.t3,textAlign:"center"}}>{c.label}</span>
+              return <div key={s} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4,minWidth:0}}>
+                <div style={{width:"100%",height:active?5:4,borderRadius:3,background:done?C.pri:active?C.acc:C.b1,transition:"all 0.2s"}}/>
+                {active && <div style={{width:6,height:6,borderRadius:3,background:C.acc,marginTop:-2}}/>}
+                <span style={{fontSize:7.5,fontWeight:active?700:500,color:active?C.acc:done?C.t2:C.t3,textAlign:"center",lineHeight:1.2,wordBreak:"break-word",maxWidth:"100%"}}>{c.label}</span>
               </div>;
             })}
           </div>
@@ -690,7 +694,7 @@ function DetailScreen({ user, freight, perms, onBack, onAction }) {
 
       {/* Cross-confirmations panel */}
       {(freight.status==="loaded" || freight.status==="in_progress") && (
-        <div style={{ background:C.w, border:`1px solid ${C.acc}30`, borderRadius:12, padding:16, marginBottom:12, boxShadow:C.sh }}>
+        <div style={{ background:C.w, border:`1px solid ${C.acc}30`, borderLeft:`3px solid ${C.acc}`, borderRadius:12, padding:16, marginBottom:12, boxShadow:C.sh }}>
           <div style={{ fontSize:10.5, fontWeight:700, marginBottom:12, color:C.acc, textTransform:"uppercase", letterSpacing:0.5 }}>Confirmaciones</div>
           <div style={{display:"flex",gap:16}}>
             <div style={{flex:1}}>
