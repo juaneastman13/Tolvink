@@ -246,7 +246,7 @@ function useAuth() {
 function mapUser(u) {
   if(!u) return null;
   const co = u.company;
-  return { id:u.id, email:u.email, name:u.name, role:u.role, userType:co?.type||"producer", entity:co?.name||"", entityId:co?.id||"",
+  return { id:u.id, email:u.email, name:u.name, role:u.role, userType:co?.type||"producer", entity:co?.name||"", entityId:co?.id||"", companyId:co?.id||"",
     av: u.name.split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase() };
 }
 
