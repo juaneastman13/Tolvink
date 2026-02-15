@@ -5,6 +5,7 @@ import {
   apiStartFreight, apiFinishFreight, apiCancelFreight,
   apiConfirmLoaded, apiConfirmFinished, apiAuthorizeFreight,
   apiSendTracking, apiGetLastPosition,
+  apiGetAuditLog,
   apiUpdateFreight,
   apiGetPlants, apiGetLots, apiGetTransportCompanies, apiGetTrucks,
   apiCreateTruck, apiDeactivateTruck,
@@ -1372,6 +1373,28 @@ function DocsGallery({ documents }) {
 
 function DetailScreen({ user, freight, perms, onBack, onAction, actionLoading, onChat, onRefresh, onDuplicate, onEdit }) {
   if(!freight) return null;
+  const [auditLog, setAuditLog] = useState(null);
+  const [showAudit, setShowAudit] = useState(false);
+  const auditRef = useRef(null);
+
+  const loadAudit = async () => {
+    if (auditLog) { setShowAudit(!showAudit); return; }
+    try {
+      const logs = await apiGetAuditLog(freight.id);
+      setAuditLog(logs);
+      setShowAudit(true);
+    } catch(e) { console.error("Audit load failed:", e); }
+  };
+
+  // Close audit on outside click
+  useEffect(() => {
+    if (!showAudit) return;
+    const handler = (e) => { if (auditRef.current && !auditRef.current.contains(e.target)) setShowAudit(false); };
+    document.addEventListener("mousedown", handler);
+    document.addEventListener("touchstart", handler);
+    return () => { document.removeEventListener("mousedown", handler); document.removeEventListener("touchstart", handler); };
+  }, [showAudit]);
+
   const st = stCfg(freight.status);
   const actions = getActions(freight.status, user.userType, user.role, freight.isOwnFleet);
 
@@ -1395,12 +1418,14 @@ function DetailScreen({ user, freight, perms, onBack, onAction, actionLoading, o
         <Bd color={st.color} bg={st.bg}>{st.label}</Bd>
       </div>
 
-      {/* Progress */}
+      {/* Progress — click to see audit history */}
       {freight.status !== "canceled" && (()=>{
         const steps = ["pending_assignment","assigned","accepted","in_progress","loaded","finished"];
         const curIdx = steps.indexOf(freight.status);
-        return <div style={{ background:C.w, border:`1px solid ${C.b1}`, borderRadius:12, padding:16, marginBottom:12, boxShadow:C.sh }}>
-          <div style={{ fontSize:10.5, fontWeight:700, marginBottom:12, color:C.t2, textTransform:"uppercase", letterSpacing:0.5 }}>Progreso</div>
+        return <div ref={auditRef} style={{ background:C.w, border:`1px solid ${C.b1}`, borderRadius:12, padding:16, marginBottom:12, boxShadow:C.sh, position:"relative" }}>
+          <div onClick={loadAudit} style={{ fontSize:10.5, fontWeight:700, marginBottom:12, color:C.t2, textTransform:"uppercase", letterSpacing:0.5, cursor:"pointer", display:"flex", alignItems:"center", gap:6 }}>
+            Progreso <span style={{ fontSize:9, fontWeight:500, color:C.t3, textTransform:"none", letterSpacing:0 }}>{showAudit?"▲ ocultar historial":"▼ ver historial"}</span>
+          </div>
           <div style={{display:"flex",gap:3,alignItems:"flex-start"}}>
             {steps.map((s,i)=>{
               const done = i < curIdx; const active = i === curIdx; const c = stCfg(s);
@@ -1411,6 +1436,32 @@ function DetailScreen({ user, freight, perms, onBack, onAction, actionLoading, o
               </div>;
             })}
           </div>
+          {/* Audit popover */}
+          {showAudit && auditLog && (
+            <div style={{ marginTop:14, borderTop:`1px solid ${C.b1}`, paddingTop:14 }}>
+              <div style={{ fontSize:10, fontWeight:700, color:C.t2, textTransform:"uppercase", letterSpacing:0.5, marginBottom:10 }}>Historial de cambios</div>
+              <div style={{ position:"relative", paddingLeft:18 }}>
+                <div style={{ position:"absolute", left:5, top:4, bottom:4, width:2, background:C.b1, borderRadius:1 }} />
+                {auditLog.map((log, i) => {
+                  const fmtD = (d) => { try { const dt=new Date(d); return dt.toLocaleDateString("es-AR",{day:"2-digit",month:"short"})+" "+dt.toLocaleTimeString("es-AR",{hour:"2-digit",minute:"2-digit",hour12:false}); } catch(e){ return ""; } };
+                  const actionLabels = { created:"Solicitado", assigned:"Asignado", accepted:"Aceptado", rejected:"Rechazado", started:"Viaje iniciado", confirm_loaded:"Carga confirmada", confirm_finished:"Entrega confirmada", finished:"Finalizado", canceled:"Cancelado", authorized:"Autorizado", updated:"Editado" };
+                  const label = actionLabels[log.action] || log.action;
+                  const actionColors = { created:C.pri, assigned:C.sec, accepted:C.info, rejected:C.err, started:C.acc, confirm_loaded:C.acc, confirm_finished:C.pri, finished:C.ok, canceled:C.err, authorized:C.info, updated:C.t2 };
+                  const col = actionColors[log.action] || C.t2;
+                  return (
+                    <div key={log.id} style={{ position:"relative", paddingBottom:i<auditLog.length-1?14:0 }}>
+                      <div style={{ position:"absolute", left:-16, top:2, width:10, height:10, borderRadius:5, background:col, zIndex:2 }} />
+                      <div style={{ fontSize:12, fontWeight:700, color:col }}>{label}</div>
+                      <div style={{ fontSize:10.5, color:C.t2, marginTop:1 }}>{log.user?.name || "Sistema"} {log.user?.company?.name ? `· ${log.user.company.name}` : ""}</div>
+                      {log.reason && <div style={{ fontSize:10, color:C.t3, fontStyle:"italic", marginTop:2 }}>"{log.reason}"</div>}
+                      <div style={{ fontSize:9.5, color:C.t3, marginTop:2 }}>{fmtD(log.createdAt)}</div>
+                    </div>
+                  );
+                })}
+                {auditLog.length === 0 && <div style={{ fontSize:11, color:C.t3 }}>Sin registros</div>}
+              </div>
+            </div>
+          )}
         </div>;
       })()}
 
@@ -1518,65 +1569,6 @@ function DetailScreen({ user, freight, perms, onBack, onAction, actionLoading, o
             <div style={{ fontSize:11, color:C.t2 }}>{b.desc}</div>
           </div>
         </div>;
-      })()}
-
-      {/* Timeline */}
-      {(()=>{
-        const steps = [];
-        const fmt = (d)=>{ if(!d) return ""; try { const dt=new Date(d); return dt.toLocaleDateString("es-AR",{day:"2-digit",month:"short"})+" "+dt.toLocaleTimeString("es-AR",{hour:"2-digit",minute:"2-digit",hour12:false}); } catch(e){ return ""; }};
-        // 1. Solicitado
-        steps.push({ label:"Solicitado", detail:freight.requestedByName, time:fmt(freight.createdAt), done:true, color:C.pri });
-        // 2. Asignado
-        const activeAssign = freight.assignments?.find(a=>a.status==="active"||a.status==="accepted");
-        const assignDone = ["assigned","accepted","in_progress","loaded","finished"].includes(freight.status);
-        steps.push({ label:"Asignado", detail:activeAssign?.transporterName||"", time:activeAssign?fmt(activeAssign.createdAt):"", done:assignDone, color:C.sec });
-        // 3. Aceptado
-        const acceptDone = ["accepted","in_progress","loaded","finished"].includes(freight.status);
-        steps.push({ label:freight.isOwnFleet?"Autorizado":"Aceptado", detail:freight.isOwnFleet?"Flota propia":freight.transporterName, time:"", done:acceptDone, color:C.info });
-        // 4. En viaje
-        const inProgressDone = ["in_progress","loaded","finished"].includes(freight.status);
-        steps.push({ label:"En viaje", detail:"", time:"", done:inProgressDone, color:C.acc });
-        // 5. Carga confirmada
-        const loadedDone = ["loaded","finished"].includes(freight.status);
-        const loadConfs = [freight.transporterLoadedConfirmedAt?"Transportista":"", freight.producerLoadedConfirmedAt?"Productor":""].filter(Boolean).join(" · ");
-        steps.push({ label:"Carga confirmada", detail:loadConfs, time:freight.loadedAt?fmt(freight.loadedAt):"", done:loadedDone, color:C.acc });
-        // 6. Entrega confirmada
-        const finishDone = freight.status==="finished";
-        const finConfs = [freight.transporterFinishedConfirmedAt?"Transportista":"", freight.plantFinishedConfirmedAt?"Planta":""].filter(Boolean).join(" · ");
-        steps.push({ label:"Entrega confirmada", detail:finConfs, time:"", done:finishDone, color:C.pri });
-        // Canceled
-        if(freight.status==="canceled") steps.push({ label:"Cancelado", detail:freight.cancelReason||"", time:"", done:true, color:C.err });
-
-        // Find current step (first not done)
-        const currentIdx = steps.findIndex(s=>!s.done);
-
-        return (
-          <div style={{ background:C.w, border:`1px solid ${C.b1}`, borderRadius:12, padding:16, marginBottom:12, boxShadow:C.sh }}>
-            <div style={{ fontSize:10.5, fontWeight:700, color:C.t2, textTransform:"uppercase", letterSpacing:0.5, marginBottom:14, display:"flex", alignItems:"center", gap:6 }}>
-              {Ic.cal(C.t2,14)} Progreso
-            </div>
-            <div style={{ position:"relative", paddingLeft:20 }}>
-              {/* Vertical line */}
-              <div style={{ position:"absolute", left:7, top:4, bottom:4, width:2, background:C.b1, borderRadius:1 }} />
-              {steps.map((s,i)=>{
-                const isCurrent = i===currentIdx;
-                return (
-                  <div key={i} style={{ position:"relative", paddingBottom:i<steps.length-1?18:0, display:"flex", alignItems:"flex-start", gap:12 }}>
-                    {/* Dot */}
-                    <div style={{ position:"absolute", left:-17, top:2, width:14, height:14, borderRadius:7, background:s.done?s.color:isCurrent?C.w:C.b1, border:s.done?"none":isCurrent?`3px solid ${s.color}`:`2px solid ${C.b1}`, display:"flex", alignItems:"center", justifyContent:"center", zIndex:2, boxShadow:isCurrent?`0 0 0 3px ${s.color}20`:"none" }}>
-                      {s.done && <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
-                    </div>
-                    <div style={{ flex:1, minWidth:0 }}>
-                      <div style={{ fontSize:12.5, fontWeight:s.done||isCurrent?700:500, color:s.done?C.t1:isCurrent?s.color:C.t3 }}>{s.label}</div>
-                      {s.detail && <div style={{ fontSize:10.5, color:C.t3, marginTop:1 }}>{s.detail}</div>}
-                      {s.time && <div style={{ fontSize:10, color:C.t3, marginTop:2 }}>{s.time}</div>}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        );
       })()}
 
       {/* Actions */}
@@ -2577,6 +2569,25 @@ function ReportsScreen({ onBack, freights }) {
         wsD['!cols'] = [{wch:12},{wch:25},{wch:10},{wch:12},{wch:12},{wch:50}];
         XLSX.utils.book_append_sheet(wb, wsD, "Documentos");
       }
+      // Audit sheet — fetch all audit logs
+      try {
+        const auditRows = [];
+        const fmtDt = d => { try { const dt=new Date(d); return dt.toLocaleDateString("es-AR",{day:"2-digit",month:"short",year:"numeric"})+" "+dt.toLocaleTimeString("es-AR",{hour:"2-digit",minute:"2-digit",hour12:false}); } catch(e){ return ""; }};
+        const actionLabels = { created:"Solicitado", assigned:"Asignado", accepted:"Aceptado", rejected:"Rechazado", started:"Viaje iniciado", confirm_loaded:"Carga confirmada", confirm_finished:"Entrega confirmada", finished:"Finalizado", canceled:"Cancelado", authorized:"Autorizado", updated:"Editado" };
+        for (const f of filteredForExport) {
+          try {
+            const logs = await apiGetAuditLog(f.id);
+            (logs||[]).forEach(l => {
+              auditRows.push({ "Flete":f.code, "Acción":actionLabels[l.action]||l.action, "Usuario":l.user?.name||"", "Empresa":l.user?.company?.name||"", "Motivo":l.reason||"", "Fecha":fmtDt(l.createdAt) });
+            });
+          } catch(e) { /* skip */ }
+        }
+        if(auditRows.length>0) {
+          const wsA = XLSX.utils.json_to_sheet(auditRows);
+          wsA['!cols'] = [{wch:12},{wch:20},{wch:20},{wch:20},{wch:30},{wch:18}];
+          XLSX.utils.book_append_sheet(wb, wsA, "Historial");
+        }
+      } catch(e) { /* skip audit */ }
       const label = filterStatus==="all"?"todos":filterStatus==="active"?"activos":filterStatus;
       XLSX.writeFile(wb, `tolvink-fletes-${label}-${new Date().toISOString().slice(0,10)}.xlsx`);
     } catch(e) { console.error("Excel error",e); }
@@ -2611,6 +2622,17 @@ function ReportsScreen({ onBack, freights }) {
         const wsD = XLSX.utils.json_to_sheet(docs.map(d=>({ "Documento":d.name||"Documento", "Tipo":d.type||"otro", "Etapa":d.step==="request"?"Solicitud":d.step==="load_confirmation"?"Carga":"Otro", "Fecha":d.createdAt?new Date(d.createdAt).toLocaleDateString("es",{day:"2-digit",month:"short",year:"numeric"}):"", "URL":d.url||"" })));
         XLSX.utils.book_append_sheet(wb, wsD, "Documentos");
       }
+      // Audit sheet
+      try {
+        const logs = await apiGetAuditLog(f.id);
+        const fmtDt = d => { try { const dt=new Date(d); return dt.toLocaleDateString("es-AR",{day:"2-digit",month:"short",year:"numeric"})+" "+dt.toLocaleTimeString("es-AR",{hour:"2-digit",minute:"2-digit",hour12:false}); } catch(e){ return ""; }};
+        const actionLabels = { created:"Solicitado", assigned:"Asignado", accepted:"Aceptado", rejected:"Rechazado", started:"Viaje iniciado", confirm_loaded:"Carga confirmada", confirm_finished:"Entrega confirmada", finished:"Finalizado", canceled:"Cancelado", authorized:"Autorizado", updated:"Editado" };
+        if(logs && logs.length>0) {
+          const wsA = XLSX.utils.json_to_sheet(logs.map(l=>({ "Acción":actionLabels[l.action]||l.action, "Usuario":l.user?.name||"", "Empresa":l.user?.company?.name||"", "Motivo":l.reason||"", "Fecha":fmtDt(l.createdAt) })));
+          wsA['!cols'] = [{wch:20},{wch:20},{wch:20},{wch:30},{wch:18}];
+          XLSX.utils.book_append_sheet(wb, wsA, "Historial");
+        }
+      } catch(e) { /* skip */ }
       XLSX.writeFile(wb, `${f.code}-informe.xlsx`);
     } catch(e) { console.error("Excel error",e); }
     setGenerating(null);
@@ -2714,6 +2736,34 @@ function ReportsScreen({ onBack, freights }) {
           if(y>270) { doc.addPage(); y=20; }
         });
       }
+
+      // Audit history section
+      try {
+        const logs = await apiGetAuditLog(f.id);
+        const actionLabels = { created:"Solicitado", assigned:"Asignado", accepted:"Aceptado", rejected:"Rechazado", started:"Viaje iniciado", confirm_loaded:"Carga confirmada", confirm_finished:"Entrega confirmada", finished:"Finalizado", canceled:"Cancelado", authorized:"Autorizado", updated:"Editado" };
+        if(logs && logs.length>0) {
+          y+=5;
+          if(y>250) { doc.addPage(); y=20; }
+          doc.setDrawColor(200,200,200); doc.line(lm, y, lm+pw, y); y+=8;
+          doc.setFontSize(11); doc.setFont("helvetica","bold");
+          doc.setTextColor(30,30,30);
+          doc.text(`Historial de cambios (${logs.length})`, lm, y); y+=8;
+
+          doc.setFontSize(9); doc.setFont("helvetica","normal");
+          logs.forEach((l,i)=>{
+            const fmtDt = d => { try { const dt=new Date(d); return dt.toLocaleDateString("es-AR",{day:"2-digit",month:"short"})+" "+dt.toLocaleTimeString("es-AR",{hour:"2-digit",minute:"2-digit",hour12:false}); } catch(e){ return ""; }};
+            doc.setTextColor(30,30,30); doc.setFont("helvetica","bold");
+            doc.text(`${actionLabels[l.action]||l.action}`, lm, y);
+            doc.setFont("helvetica","normal"); doc.setTextColor(100,100,100);
+            doc.text(`${l.user?.name||""} ${l.user?.company?.name?`· ${l.user.company.name}`:""}`, lm+45, y);
+            doc.setTextColor(150,150,150);
+            doc.text(fmtDt(l.createdAt), lm+130, y);
+            y+=5;
+            if(l.reason) { doc.setTextColor(120,120,120); doc.text(`  Motivo: ${l.reason}`, lm, y); y+=5; }
+            if(y>270) { doc.addPage(); y=20; }
+          });
+        }
+      } catch(e) { /* skip audit */ }
 
       // Footer
       y+=10;

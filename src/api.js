@@ -55,6 +55,9 @@ export async function apiSendTracking(id, data) { return api(`/freights/${id}/tr
 export async function apiGetTracking(id) { return api(`/freights/${id}/tracking`); }
 export async function apiGetLastPosition(id) { return api(`/freights/${id}/tracking/last`); }
 
+// Update freight (pending only)
+export async function apiUpdateFreight(id, data) { return api(`/freights/${id}`,{method:"PATCH",body:data}); }
+
 // Catalog
 export async function apiGetPlants() { return api('/catalog/plants'); }
 export async function apiGetLots() { return api('/catalog/lots'); }
