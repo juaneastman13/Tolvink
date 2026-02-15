@@ -1,4 +1,10 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import {
+  apiLogin, apiRegister, apiLogout, apiListFreights, apiGetFreight,
+  apiCreateFreight, apiAssignFreight, apiRespondFreight,
+  apiStartFreight, apiFinishFreight, apiCancelFreight,
+  getToken, getSavedUser, setAuthFailHandler, clearAuth,
+} from "./api";
 
 // =====================================================================
 // TOLVINK v4.1 — PWA Production Build
@@ -137,53 +143,29 @@ const Ic = {
 // Freight has 2 states. Trip has its own lifecycle.
 // This separation allows: 1 Freight → many Trips (reasignaciones)
 
-const FREIGHT_STATUS = {
-  available: { label:"Disponible", color:C.ok,    bg:C.okPale   },
-  cancelled: { label:"Cancelado",  color:C.muted, bg:C.mutedPale },
+// Backend states: draft, pending_assignment, assigned, accepted, in_progress, finished, canceled
+const STATUS = {
+  draft:              { label:"Borrador",     color:C.muted, bg:C.mutedPale },
+  pending_assignment: { label:"Disponible",   color:C.ok,    bg:C.okPale    },
+  assigned:           { label:"Asignado",     color:C.info,  bg:C.infoPale  },
+  accepted:           { label:"Aceptado",     color:"#7C3AED", bg:"#F3EEFF" },
+  in_progress:        { label:"En curso",     color:C.acc,   bg:C.accPale   },
+  finished:           { label:"Finalizado",   color:C.ok,    bg:C.okPale    },
+  canceled:           { label:"Cancelado",    color:C.err,   bg:C.errPale   },
 };
+function stCfg(s) { return STATUS[s] || STATUS.pending_assignment; }
 
-const TRIP_STATUS = {
-  assigned:   { label:"Asignado",    color:C.info, bg:C.infoPale },
-  rejected:   { label:"Rechazado",   color:C.err,  bg:C.errPale  },
-  en_route:   { label:"En camino",   color:C.acc,  bg:C.accPale  },
-  loading:    { label:"En carga",    color:C.warn, bg:C.warnPale },
-  in_transit: { label:"En viaje",    color:C.pri,  bg:C.priPale  },
-  completed:  { label:"Finalizado",  color:C.ok,   bg:C.okPale   },
-  cancelled:  { label:"Cancelado",   color:C.muted,bg:C.mutedPale },
-};
-
-// Allowed transitions
-const FREIGHT_TRANS = { available:["cancelled"], cancelled:[] };
-const TRIP_TRANS = {
-  assigned:  ["en_route","rejected","cancelled"],
-  rejected:  [],
-  en_route:  ["loading","cancelled"],
-  loading:   ["in_transit","cancelled"],
-  in_transit:["completed"],
-  completed: [],
-  cancelled: [],
-};
-
-const canTransitFreight = (from,to) => FREIGHT_TRANS[from]?.includes(to)||false;
-const canTransitTrip    = (from,to) => TRIP_TRANS[from]?.includes(to)||false;
-
-// Derived display status for a freight (considers latest trip)
-function getDisplayStatus(freight, trips) {
-  if (freight.status === "cancelled") return FREIGHT_STATUS.cancelled;
-  const fTrips = trips.filter(t => t.freightId === freight.id);
-  if (fTrips.length === 0) return FREIGHT_STATUS.available;
-  const latest = fTrips[fTrips.length - 1];
-  if (latest.status === "rejected") return FREIGHT_STATUS.available; // back to pool
-  return TRIP_STATUS[latest.status] || FREIGHT_STATUS.available;
-}
-
-function getDisplayStatusKey(freight, trips) {
-  if (freight.status === "cancelled") return "cancelled";
-  const fTrips = trips.filter(t => t.freightId === freight.id);
-  if (fTrips.length === 0) return "available";
-  const latest = fTrips[fTrips.length - 1];
-  if (latest.status === "rejected") return "available";
-  return latest.status;
+function getActions(status, userType, role) {
+  const map = {
+    pending_assignment: { producer:["cancel"], plant:["assign","cancel"], transporter:[] },
+    assigned:           { producer:["cancel"], plant:["cancel"],          transporter:["accept","reject"] },
+    accepted:           { producer:["cancel"], plant:["cancel"],          transporter:["start","cancel"] },
+    in_progress:        { producer:[],         plant:["finish"],          transporter:["finish"] },
+    finished:           { producer:[], plant:[], transporter:[] },
+    canceled:           { producer:[], plant:[], transporter:[] },
+    draft:              { producer:[], plant:[], transporter:[] },
+  };
+  return map[status]?.[userType] || [];
 }
 
 const GRANOS = ["Soja","Maíz","Trigo","Girasol","Sorgo","Cebada"];
@@ -206,81 +188,92 @@ const LOTS = [
   { id:"lo4", name:"Lote Cañada — 50ha",producerId:"e5", lat:-33.04, lng:-61.17 },
 ];
 
-// ======================== MOCK USERS =================================
 
-const USERS_DB = [
-  { id:"u1", email:"carolina@planta.com",  pw:"1234", name:"Carolina Méndez", role:"admin",      userType:"planta",       entity:"SOFOVAL",             entityId:"pl1", av:"CM" },
-  { id:"u2", email:"maria@planta.com",     pw:"1234", name:"María López",     role:"operator",   userType:"planta",       entity:"SOFOVAL",             entityId:"pl1", av:"ML" },
-  { id:"u3", email:"ricardo@transp.com",   pw:"1234", name:"Ricardo Vega",    role:"admin",      userType:"transporter",  entity:"Transportes del Sur", entityId:"e2",  av:"RV" },
-  { id:"u4", email:"miguel@transp.com",    pw:"1234", name:"Miguel Torres",   role:"operator",   userType:"transporter",  entity:"Transportes del Sur", entityId:"e2",  av:"MT" },
-  { id:"u5", email:"juan@campo.com",       pw:"1234", name:"Juan Pérez",      role:"admin",      userType:"producer",     entity:"Est. Las Acacias",    entityId:"e3",  av:"JP" },
-  { id:"u6", email:"pedro@campo.com",      pw:"1234", name:"Pedro Sánchez",   role:"operator",   userType:"producer",     entity:"Est. Las Acacias",    entityId:"e3",  av:"PS" },
-];
 
-// ======================== MOCK FREIGHTS & TRIPS ======================
 
-const INIT_FREIGHTS = [
-  { id:"fr1", code:"FLT-0041", grain:"Soja",    tons:30, originLotId:"lo1", originName:"Lote Norte — 42ha", originLat:-33.89, originLng:-60.57, destPlantId:"pl1", destName:"SOFOVAL", destLat:-34.35, destLng:-56.51, loadDate:"2026-02-15", loadTime:"08:00", producerId:"e3", producerName:"Juan Pérez", requestedBy:"u5", status:"available", notes:"", createdAt:"2026-02-13T10:00:00Z" },
-  { id:"fr2", code:"FLT-0042", grain:"Maíz",    tons:28, originLotId:"lo2", originName:"Lote Sur — 28ha",  originLat:-33.92, originLng:-60.55, destPlantId:"pl2", destName:"FADISOL", destLat:-34.33, destLng:-56.52, loadDate:"2026-02-16", loadTime:"07:30", producerId:"e3", producerName:"María López", requestedBy:"u2", status:"available", notes:"Acceso por ruta 8", createdAt:"2026-02-14T08:00:00Z" },
-  { id:"fr3", code:"FLT-0043", grain:"Trigo",   tons:32, originLotId:"lo3", originName:"Lote Este — 35ha", originLat:-33.88, originLng:-60.52, destPlantId:"pl3", destName:"CRADECO", destLat:-34.36, destLng:-56.50, loadDate:"2026-02-15", loadTime:"09:00", producerId:"e3", producerName:"Carlos Ruiz", requestedBy:"u5", status:"available", notes:"", createdAt:"2026-02-12T14:00:00Z" },
-  { id:"fr4", code:"FLT-0044", grain:"Soja",    tons:25, originLotId:"lo1", originName:"Lote Norte — 42ha", originLat:-33.89, originLng:-60.57, destPlantId:"pl1", destName:"SOFOVAL", destLat:-34.35, destLng:-56.51, loadDate:"2026-02-14", loadTime:"10:00", producerId:"e3", producerName:"Ana García", requestedBy:"u2", status:"available", notes:"", createdAt:"2026-02-11T09:00:00Z" },
-  { id:"fr5", code:"FLT-0045", grain:"Girasol", tons:22, originLotId:"lo4", originName:"Lote Cañada — 50ha",originLat:-33.04, originLng:-61.17, destPlantId:"pl4", destName:"AGROTERRA", destLat:-34.34, destLng:-56.49, loadDate:"2026-02-12", loadTime:"06:30", producerId:"e5", producerName:"Pedro Sánchez", requestedBy:"u6", status:"available", notes:"", createdAt:"2026-02-10T11:00:00Z" },
-  { id:"fr6", code:"FLT-0046", grain:"Maíz",    tons:35, originLotId:"lo4", originName:"Lote Cañada — 50ha",originLat:-33.04, originLng:-61.17, destPlantId:"pl5", destName:"MGAP PALMIRA", destLat:-34.38, destLng:-57.22, loadDate:"2026-02-14", loadTime:"11:00", producerId:"e5", producerName:"Juan Pérez", requestedBy:"u5", status:"available", notes:"", createdAt:"2026-02-13T07:00:00Z" },
-  { id:"fr7", code:"FLT-0047", grain:"Sorgo",   tons:27, originLotId:"lo2", originName:"Lote Sur — 28ha",  originLat:-33.92, originLng:-60.55, destPlantId:"pl6", destName:"MONTEVIDEO", destLat:-34.88, destLng:-56.17, loadDate:"2026-02-14", loadTime:"07:00", producerId:"e3", producerName:"Carolina Méndez", requestedBy:"u1", status:"available", notes:"Balanza en destino", createdAt:"2026-02-13T15:00:00Z" },
-  { id:"fr8", code:"FLT-0048", grain:"Trigo",   tons:30, originLotId:"lo1", originName:"Lote Norte — 42ha", originLat:-33.89, originLng:-60.57, destPlantId:"pl1", destName:"SOFOVAL", destLat:-34.35, destLng:-56.51, loadDate:"2026-02-13", loadTime:"08:00", producerId:"e3", producerName:"Juan Pérez", requestedBy:"u5", status:"cancelled", notes:"Lluvia impide acceso", createdAt:"2026-02-11T10:00:00Z" },
-];
-
-const INIT_TRIPS = [
-  { id:"tr1", freightId:"fr1", transporterId:"e2", transporterName:"Transportes del Sur", driverId:"u4", driverName:"Miguel Torres", plate:"AB 123 CD", status:"in_transit", assignedBy:"u1", createdAt:"2026-02-14T06:00:00Z" },
-  { id:"tr2", freightId:"fr3", transporterId:"e2", transporterName:"Logística Norte", driverId:null, driverName:null, plate:null, status:"assigned", assignedBy:"u1", createdAt:"2026-02-14T10:00:00Z" },
-  { id:"tr3", freightId:"fr4", transporterId:"e2", transporterName:"Transportes del Sur", driverId:"u4", driverName:"Roberto Díaz", plate:"EF 456 GH", status:"assigned", assignedBy:"u1", createdAt:"2026-02-13T11:00:00Z" },
-  { id:"tr4", freightId:"fr5", transporterId:"e2", transporterName:"Fletes Pampeanos", driverId:"u4", driverName:"Luis Méndez", plate:"IJ 789 KL", status:"completed", assignedBy:"u1", createdAt:"2026-02-12T07:00:00Z" },
-  { id:"tr5", freightId:"fr6", transporterId:"e2", transporterName:"Logística Norte", driverId:"u4", driverName:"Diego Romero", plate:"MN 012 OP", status:"loading", assignedBy:"u1", createdAt:"2026-02-14T08:00:00Z" },
-  { id:"tr6", freightId:"fr7", transporterId:"e2", transporterName:"Transportes del Sur", driverId:"u4", driverName:"Hernán Blanco", plate:"QR 345 ST", status:"en_route", assignedBy:"u1", createdAt:"2026-02-14T06:30:00Z" },
-  // Rejected trip for fr3 (history)
-  { id:"tr0", freightId:"fr3", transporterId:"e2", transporterName:"Fletes Pampeanos", driverId:null, driverName:null, plate:null, status:"rejected", rejectReason:"Sin disponibilidad de camiones", assignedBy:"u1", createdAt:"2026-02-13T09:00:00Z" },
-];
-
-const INIT_CONVERSATIONS = {
-  fr1: { id:"cv1", freightId:"fr1", messages:[
-    { id:"m1", senderId:"u5", sender:"Juan Pérez", role:"Productor", text:"Buenos días, ¿a qué hora llega el camión?", ts:"2026-02-14T08:15:00Z", time:"08:15" },
-    { id:"m2", senderId:"u1", sender:"Carolina Méndez", role:"Planta", text:"Miguel Torres salió hace 20 min. Estiman 10:30.", ts:"2026-02-14T08:22:00Z", time:"08:22" },
-    { id:"m3", senderId:"u4", sender:"Miguel Torres", role:"Chofer", text:"Confirmo, ETA 10:20. Vengo por ruta 9.", ts:"2026-02-14T08:30:00Z", time:"08:30" },
-    { id:"m4", senderId:"u5", sender:"Juan Pérez", role:"Productor", text:"Perfecto, la carga está lista.", ts:"2026-02-14T08:32:00Z", time:"08:32" },
-  ]},
-  fr3: { id:"cv2", freightId:"fr3", messages:[
-    { id:"m5", senderId:"u1", sender:"Carolina Méndez", role:"Planta", text:"Ricardo, te asigné FLT-0043. Trigo 32tn desde Junín.", ts:"2026-02-14T10:00:00Z", time:"10:00" },
-  ]},
-};
-
-// ======================== AUTH HOOK ===================================
-
+// ======================== AUTH HOOK (Real API) ========================
 function useAuth() {
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const login = useCallback((email, pw) => {
-    setLoading(true); setError(null);
-    setTimeout(() => {
-      const found = USERS_DB.find(u => u.email === email && u.pw === pw);
-      if (found) { setUser(found); } else { setError("Email o contraseña incorrectos"); }
-      setLoading(false);
-    }, 600);
-  }, []);
+  useEffect(()=>{
+    const token = getToken(); const saved = getSavedUser();
+    if(token && saved) setUser(mapUser(saved));
+    setLoading(false);
+    setAuthFailHandler(()=>{ setUser(null); setError("Tu sesión expiró."); });
+  },[]);
 
-  const signup = useCallback((data) => {
+  const login = useCallback(async (email,pw) => {
     setLoading(true); setError(null);
-    setTimeout(() => {
-      const nu = { id:`u${Date.now()}`, email:data.email, pw:data.pw, name:data.name, role:data.role, userType:data.userType, entity:data.entity, entityId:`e${Date.now()}`, av:data.name.split(" ").map(w=>w[0]).join("").slice(0,2) };
-      USERS_DB.push(nu);
-      setUser(nu);
-      setLoading(false);
-    }, 600);
-  }, []);
+    try { const d = await apiLogin(email,pw); setUser(mapUser(d.user)); }
+    catch(e) { setError(e.message||"Error al iniciar sesión"); }
+    finally { setLoading(false); }
+  },[]);
 
-  const logout = useCallback(() => setUser(null), []);
+  const signup = useCallback(async (form) => {
+    setLoading(true); setError(null);
+    try {
+      const typeMap = {planta:"plant",transporter:"transporter",producer:"producer"};
+      const d = await apiRegister({ name:form.name, email:form.email, password:form.pw, companyType:typeMap[form.userType]||form.userType, companyName:form.entity, role:form.role });
+      setUser(mapUser(d.user));
+    } catch(e) { setError(e.message||"Error al crear cuenta"); }
+    finally { setLoading(false); }
+  },[]);
+
+  const logout = useCallback(()=>{ apiLogout(); setUser(null); },[]);
   return { user, loading, error, login, signup, logout, clearError:()=>setError(null) };
+}
+
+function mapUser(u) {
+  if(!u) return null;
+  const co = u.company;
+  return { id:u.id, email:u.email, name:u.name, role:u.role, userType:co?.type||"producer", entity:co?.name||"", entityId:co?.id||"",
+    av: u.name.split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase() };
+}
+
+// ======================== FREIGHTS HOOK (Real API) ====================
+function useFreights(user) {
+  const [freights, setFreights] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const fetchAll = useCallback(async ()=>{
+    if(!user) return; setLoading(true);
+    try { const r = await apiListFreights({limit:100}); setFreights((r.data||[]).map(mapFreight)); }
+    catch(e) { setError(e.message); } finally { setLoading(false); }
+  },[user]);
+  useEffect(()=>{ fetchAll(); },[fetchAll]);
+  const refresh = useCallback(async (id)=>{
+    try { const u=await apiGetFreight(id); const m=mapFreight(u); setFreights(p=>p.map(f=>f.id===id?m:f)); return m; }
+    catch(e) { setError(e.message); return null; }
+  },[]);
+  const create = useCallback(async (form)=>{
+    try { const c=await apiCreateFreight({ originLotId:form.lotId, destPlantId:form.plantId, loadDate:form.loadDate, loadTime:form.loadTime, items:[{grain:form.grain,tons:parseFloat(form.tons)}], notes:form.notes||"" });
+      const m=mapFreight(c); setFreights(p=>[m,...p]); return {ok:true}; } catch(e) { return {ok:false,error:e.message}; }
+  },[]);
+  const assign = useCallback(async (fId,compId)=>{ try { await apiAssignFreight(fId,{transportCompanyId:compId}); await refresh(fId); return {ok:true}; } catch(e) { return {ok:false,error:e.message}; } },[refresh]);
+  const respond = useCallback(async (fId,action,reason)=>{ try { await apiRespondFreight(fId,{action,reason}); await refresh(fId); return {ok:true}; } catch(e) { return {ok:false,error:e.message}; } },[refresh]);
+  const start = useCallback(async (fId)=>{ try { await apiStartFreight(fId); await refresh(fId); return {ok:true}; } catch(e) { return {ok:false,error:e.message}; } },[refresh]);
+  const finish = useCallback(async (fId)=>{ try { await apiFinishFreight(fId); await refresh(fId); return {ok:true}; } catch(e) { return {ok:false,error:e.message}; } },[refresh]);
+  const cancel = useCallback(async (fId,reason)=>{ try { await apiCancelFreight(fId,reason); await refresh(fId); return {ok:true}; } catch(e) { return {ok:false,error:e.message}; } },[refresh]);
+  return { freights, loading, error, fetchAll, create, assign, respond, start, finish, cancel };
+}
+
+function mapFreight(f) {
+  if(!f) return null;
+  const a = f.assignments?.find(x=>x.status==="active"||x.status==="accepted");
+  return {
+    id:f.id, code:f.code, status:f.status,
+    grain:f.items?.[0]?.grain||"", tons:f.items?.[0]?.tons||0,
+    originLotId:f.originLotId, originName:f.originName||"",
+    destPlantId:f.destPlantId, destName:f.destName||"",
+    loadDate:f.loadDate?.split("T")[0]||"", loadTime:f.loadTime||"",
+    requestedBy:f.requestedById, requestedByName:f.requestedBy?.name||"",
+    transporterId:a?.transportCompanyId||null, transporterName:a?.transportCompany?.name||"",
+    driverName:a?.driver?.name||null,
+    assignments:(f.assignments||[]).map(x=>({ id:x.id, status:x.status, transporterName:x.transportCompany?.name||"", reason:x.reason||null, createdAt:x.createdAt })),
+    notes:f.notes||"", cancelReason:f.cancelReason||"", createdAt:f.createdAt,
+  };
 }
 
 // ======================== PERMISSIONS ================================
@@ -289,8 +282,8 @@ function permsFor(user) {
   if (!user) return {};
   const { role, userType } = user;
   return {
-    canRequest:      ["planta","producer"].includes(userType),
-    canApprove:      userType === "planta" && role === "admin",
+    canRequest:      ["plant","producer"].includes(userType),
+    canApprove:      userType === "plant" && role === "admin",
     canAssignDriver: userType === "transporter" && role === "admin",
     canCancel:       role === "admin",
     canReject:       userType === "transporter" && role === "admin",
@@ -481,24 +474,18 @@ function AuthScreen({ onLogin, onSignup, loading, error, clearError }) {
 
 // ======================== HOME SCREEN ================================
 
-function HomeScreen({ user, freights, trips, perms, onNav }) {
+function HomeScreen({ user, freights, perms, onNav }) {
   const stats = useMemo(()=>{
-    const avail = freights.filter(f=>f.status==="available" && !trips.some(t=>t.freightId===f.id && !["rejected","cancelled"].includes(t.status))).length;
-    const active = trips.filter(t=>["assigned","en_route","loading","in_transit"].includes(t.status)).length;
-    const done = trips.filter(t=>t.status==="completed").length;
+    const avail = freights.filter(f=>f.status==="pending_assignment").length;
+    const active = freights.filter(f=>["assigned","accepted","in_progress"].includes(f.status)).length;
+    const done = freights.filter(f=>f.status==="finished").length;
     return {avail,active,done};
-  },[freights,trips]);
+  },[freights]);
 
-  const activeTripFreights = useMemo(()=>{
-    return trips.filter(t=>["en_route","loading","in_transit"].includes(t.status)).map(t=>({trip:t, freight:freights.find(f=>f.id===t.freightId)})).filter(x=>x.freight);
-  },[freights,trips]);
+  const activeFreights = useMemo(()=>freights.filter(f=>["assigned","accepted","in_progress"].includes(f.status)),[freights]);
 
-  const pendingCount = useMemo(()=>{
-    return freights.filter(f=>f.status==="available" && !trips.some(t=>t.freightId===f.id && !["rejected","cancelled"].includes(t.status))).length;
-  },[freights,trips]);
-
-  const tc = ({planta:C.pri,transporter:C.info,producer:C.acc})[user.userType]||C.pri;
-  const typeLabel = ({planta:"Planta de Acopio",transporter:"Transportista",producer:"Productor"})[user.userType];
+  const tc = ({plant:C.pri,transporter:C.info,producer:C.acc})[user.userType]||C.pri;
+  const typeLabel = ({plant:"Planta de Acopio",transporter:"Transportista",producer:"Productor"})[user.userType];
 
   return (
     <div style={{ flex:1, overflow:"auto", padding:18 }}>
@@ -515,32 +502,32 @@ function HomeScreen({ user, freights, trips, perms, onNav }) {
 
       {perms.canRequest && <Btn full onClick={()=>onNav("new")} icon={Ic.plus(C.w,16)} style={{marginBottom:16}}>Solicitar nuevo flete</Btn>}
 
-      {perms.canApprove && pendingCount>0 && (
+      {perms.canApprove && stats.avail>0 && (
         <div onClick={()=>onNav("list")} style={{ background:C.accPale, border:`1px solid ${C.acc}22`, borderRadius:12, padding:14, marginBottom:18, cursor:"pointer", display:"flex", alignItems:"center", gap:12 }}>
-          {Ic.warn(C.acc,24)}<div><div style={{ fontSize:13, fontWeight:700, color:C.acc }}>{pendingCount} flete{pendingCount>1?"s":""} disponible{pendingCount>1?"s":""}</div><div style={{ fontSize:11.5, color:C.t2 }}>Esperando asignación de transporte</div></div>
+          {Ic.warn(C.acc,24)}<div><div style={{ fontSize:13, fontWeight:700, color:C.acc }}>{stats.avail} flete{stats.avail>1?"s":""} disponible{stats.avail>1?"s":""}</div><div style={{ fontSize:11.5, color:C.t2 }}>Esperando asignación de transporte</div></div>
         </div>
       )}
 
-      {activeTripFreights.length>0 && <>
+      {activeFreights.length>0 && <>
         <div style={{ fontSize:14, fontWeight:700, marginBottom:10, color:C.t1 }}>En movimiento</div>
         <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
-          {activeTripFreights.map(({trip:t,freight:f})=>{
-            const st = TRIP_STATUS[t.status];
+          {activeFreights.map(f=>{
+            const st = stCfg(f.status);
             return (
-              <div key={t.id} onClick={()=>onNav("detail",f.id)} style={{ background:C.w, border:`1px solid ${C.b1}`, borderRadius:12, padding:14, cursor:"pointer", boxShadow:C.sh }}>
+              <div key={f.id} onClick={()=>onNav("detail",f.id)} style={{ background:C.w, border:`1px solid ${C.b1}`, borderRadius:12, padding:14, cursor:"pointer", boxShadow:C.sh }}>
                 <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
                   <span style={{ fontSize:11, fontWeight:700, color:C.t3, fontFamily:MONO }}>{f.code}</span>
                   <Bd color={st.color} bg={st.bg} small>{st.label}</Bd>
                 </div>
                 <div style={{ fontSize:14, fontWeight:700, color:C.t1 }}>{f.grain} · {f.tons} tn</div>
                 <div style={{ display:"flex", alignItems:"center", gap:4, marginTop:6, fontSize:11.5, color:C.t2 }}>
-                  {Ic.pin(C.t3,13)} <span>{f.originName.split("—")[0].trim()}</span>
+                  {Ic.pin(C.t3,13)} <span>{(f.originName||"").split("—")[0].trim()}</span>
                   <span style={{color:C.t3,margin:"0 2px"}}>&rarr;</span>
                   {Ic.plant(C.t3,13)} <span>{f.destName}</span>
                 </div>
                 <div style={{ display:"flex", alignItems:"center", gap:6, fontSize:10.5, color:C.t3, marginTop:6 }}>
                   {Ic.cal(C.t3,12)} {f.loadDate} {f.loadTime}
-                  {t.driverName && <><span style={{color:C.b1}}>|</span>{Ic.truck(C.t3,12)} {t.driverName}</>}
+                  {f.transporterName && <><span style={{color:C.b1}}>|</span>{Ic.truck(C.t3,12)} {f.transporterName}</>}
                 </div>
               </div>
             );
@@ -553,43 +540,27 @@ function HomeScreen({ user, freights, trips, perms, onNav }) {
 
 // ======================== FREIGHT LIST ================================
 
-function ListScreen({ freights, trips, onNav }) {
+function ListScreen({ freights, onNav }) {
   const [tab, setTab] = useState("all");
   const [showFilters, setShowFilters] = useState(false);
   const [searchQ, setSearchQ] = useState("");
   const [fPlant, setFPlant] = useState("");
-  const [fTransp, setFTransp] = useState("");
 
-  const enriched = useMemo(()=>freights.map(f=>{
-    const fTrips = trips.filter(t=>t.freightId===f.id);
-    const latestTrip = fTrips.filter(t=>t.status!=="rejected").slice(-1)[0];
-    const statusKey = getDisplayStatusKey(f,trips);
-    const statusCfg = getDisplayStatus(f,trips);
-    return {...f, latestTrip, statusKey, statusCfg, tripCount:fTrips.length};
-  }),[freights,trips]);
-
-  // Extract unique values for filter dropdowns
-  const plantOptions = useMemo(()=>[...new Set(freights.map(f=>f.destName))].sort(),[freights]);
-  const transpOptions = useMemo(()=>[...new Set(trips.filter(t=>t.transporterName).map(t=>t.transporterName))].sort(),[trips]);
+  const plantOptions = useMemo(()=>[...new Set(freights.map(f=>f.destName).filter(Boolean))].sort(),[freights]);
 
   const filtered = useMemo(()=>{
-    return enriched.filter(f=>{
-      // Tab filter
-      if(tab==="available" && f.statusKey!=="available") return false;
-      if(tab==="active" && !["assigned","en_route","loading","in_transit"].includes(f.statusKey)) return false;
-      if(tab==="done" && f.statusKey!=="completed") return false;
-      if(tab==="closed" && f.statusKey!=="cancelled") return false;
-      // Text search (producer name, code, grain)
-      if(searchQ && !textMatch(f.producerName,searchQ) && !textMatch(f.code,searchQ) && !textMatch(f.grain,searchQ)) return false;
-      // Plant filter
+    return freights.filter(f=>{
+      if(tab==="available" && f.status!=="pending_assignment") return false;
+      if(tab==="active" && !["assigned","accepted","in_progress"].includes(f.status)) return false;
+      if(tab==="done" && f.status!=="finished") return false;
+      if(tab==="closed" && f.status!=="canceled") return false;
+      if(searchQ && !textMatch(f.requestedByName,searchQ) && !textMatch(f.code,searchQ) && !textMatch(f.grain,searchQ)) return false;
       if(fPlant && f.destName!==fPlant) return false;
-      // Transporter filter
-      if(fTransp && f.latestTrip?.transporterName!==fTransp) return false;
       return true;
     });
-  },[enriched,tab,searchQ,fPlant,fTransp]);
+  },[freights,tab,searchQ,fPlant]);
 
-  const activeFilters = [fPlant,fTransp,searchQ].filter(Boolean).length;
+  const activeFilters = [fPlant,searchQ].filter(Boolean).length;
 
   return (
     <div style={{ flex:1, overflow:"auto", padding:18 }}>
@@ -619,15 +590,9 @@ function ListScreen({ freights, trips, onNav }) {
                 {plantOptions.map(p=><option key={p} value={p}>{p}</option>)}
               </select>
             </div>
-            <div style={{flex:1}}>
-              <label style={{fontSize:10,fontWeight:600,color:C.t2,textTransform:"uppercase",letterSpacing:0.5,marginBottom:4,display:"block"}}>Transportista</label>
-              <select value={fTransp} onChange={e=>setFTransp(e.target.value)} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:`1.5px solid ${C.b1}`,background:C.w,color:C.t1,fontSize:12,fontFamily:"inherit",outline:"none"}}>
-                <option value="">Todos</option>
-                {transpOptions.map(t=><option key={t} value={t}>{t}</option>)}
-              </select>
-            </div>
+
           </div>
-          {activeFilters>0 && <button onClick={()=>{setFPlant("");setFTransp("");setSearchQ("");}} style={{fontSize:11,color:C.pri,fontWeight:600,background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",padding:0}}>Limpiar filtros</button>}
+          {activeFilters>0 && <button onClick={()=>{setFPlant("");setSearchQ("");}} style={{fontSize:11,color:C.pri,fontWeight:600,background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",padding:0}}>Limpiar filtros</button>}
         </div>
       )}
 
@@ -641,18 +606,18 @@ function ListScreen({ freights, trips, onNav }) {
               <div>
                 <div style={{ display:"flex", alignItems:"center", gap:6 }}>
                   <span style={{ fontSize:11, fontWeight:700, color:C.t3, fontFamily:MONO }}>{f.code}</span>
-                  {f.tripCount>1 && <Bd color={C.info} bg={C.infoPale} small>{f.tripCount} viajes</Bd>}
+                  
                 </div>
-                <div style={{ fontSize:15, fontWeight:700, marginTop:4, color:C.t1 }}>{f.producerName}</div>
+                <div style={{ fontSize:15, fontWeight:700, marginTop:4, color:C.t1 }}>{f.requestedByName || f.grain}</div>
               </div>
-              <Bd color={f.statusCfg.color} bg={f.statusCfg.bg}>{f.statusCfg.label}</Bd>
+              {(()=>{const st=stCfg(f.status);return <Bd color={st.color} bg={st.bg}>{st.label}</Bd>})()}
             </div>
             <div style={{ display:"flex", alignItems:"center", gap:4, fontSize:11.5, color:C.t2 }}>{Ic.plant(C.t3,13)} {f.destName} <span style={{color:C.b1}}>|</span> {f.grain} · {f.tons}tn</div>
             <div style={{ display:"flex", alignItems:"center", gap:6, fontSize:10.5, color:C.t3, marginTop:6 }}>{Ic.cal(C.t3,11)} {f.loadDate} {f.loadTime}</div>
-            {f.latestTrip?.driverName && <div style={{ display:"flex", alignItems:"center", gap:4, fontSize:10.5, color:C.t3, marginTop:4 }}>{Ic.truck(C.t3,12)} {f.latestTrip.transporterName} · {f.latestTrip.driverName}</div>}
+            {f.transporterName && <div style={{ display:"flex", alignItems:"center", gap:4, fontSize:10.5, color:C.t3, marginTop:4 }}>{Ic.truck(C.t3,12)} {f.transporterName}</div>}
             <div style={{ display:"flex", gap:8, marginTop:10 }}>
               <Btn sm v="sec" onClick={()=>onNav("detail",f.id)} icon={Ic.eye(C.pri,14)}>Detalle</Btn>
-              {!["cancelled","completed"].includes(f.statusKey) && <Btn sm v="ghost" onClick={()=>onNav("fChat",f.id)} icon={Ic.msg(C.t2,14)}>Chat</Btn>}
+              
             </div>
           </div>
         ))}
@@ -663,14 +628,10 @@ function ListScreen({ freights, trips, onNav }) {
 
 // ======================== FREIGHT DETAIL ==============================
 
-function DetailScreen({ user, freight, trips, perms, onBack, onAction }) {
+function DetailScreen({ user, freight, perms, onBack, onAction }) {
   if(!freight) return null;
-  const fTrips = trips.filter(t=>t.freightId===freight.id);
-  const latestTrip = fTrips.filter(t=>t.status!=="rejected").slice(-1)[0];
-  const statusCfg = getDisplayStatus(freight,trips);
-  const statusKey = getDisplayStatusKey(freight,trips);
-  const isAvailable = statusKey==="available";
-  const showMap = ["en_route","loading","in_transit"].includes(statusKey);
+  const st = stCfg(freight.status);
+  const actions = getActions(freight.status, user.userType, user.role);
 
   return (
     <div style={{ flex:1, overflow:"auto", padding:18 }}>
@@ -680,32 +641,26 @@ function DetailScreen({ user, freight, trips, perms, onBack, onAction }) {
           <div style={{ fontSize:11, color:C.t3, fontWeight:600, fontFamily:MONO }}>{freight.code}</div>
           <div style={{ fontSize:22, fontWeight:800, marginTop:2, letterSpacing:-0.3 }}>{freight.grain} · {freight.tons} tn</div>
         </div>
-        <Bd color={statusCfg.color} bg={statusCfg.bg}>{statusCfg.label}</Bd>
+        <Bd color={st.color} bg={st.bg}>{st.label}</Bd>
       </div>
 
-      {/* Trip progress */}
-      {latestTrip && latestTrip.status!=="rejected" && (
-        <div style={{ background:C.w, border:`1px solid ${C.b1}`, borderRadius:12, padding:16, marginBottom:12, boxShadow:C.sh }}>
-          <div style={{ fontSize:10.5, fontWeight:700, marginBottom:12, color:C.t2, textTransform:"uppercase", letterSpacing:0.5 }}>Viaje actual</div>
-          {(() => {
-            const tripSteps = ["assigned","en_route","loading","in_transit","completed"];
-            const curIdx = tripSteps.indexOf(latestTrip.status);
-            return <div style={{display:"flex",gap:4,alignItems:"center"}}>
-              {tripSteps.map((s,i)=>{
-                const done = i < curIdx; const active = i === curIdx;
-                const cfg = TRIP_STATUS[s];
-                return <div key={s} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
-                  <div style={{width:"100%",height:4,borderRadius:2,background:done||active?cfg.color:`${C.b1}`}}/>
-                  <span style={{fontSize:8.5,fontWeight:active?700:500,color:active?cfg.color:done?C.t2:C.t3,textAlign:"center"}}>{cfg.label}</span>
-                </div>;
-              })}
-            </div>;
-          })()}
-        </div>
-      )}
-
-      {/* Map */}
-      {showMap && latestTrip && <LiveMap trip={latestTrip} freight={freight} />}
+      {/* Progress */}
+      {freight.status !== "canceled" && (()=>{
+        const steps = ["pending_assignment","assigned","accepted","in_progress","finished"];
+        const curIdx = steps.indexOf(freight.status);
+        return <div style={{ background:C.w, border:`1px solid ${C.b1}`, borderRadius:12, padding:16, marginBottom:12, boxShadow:C.sh }}>
+          <div style={{ fontSize:10.5, fontWeight:700, marginBottom:12, color:C.t2, textTransform:"uppercase", letterSpacing:0.5 }}>Progreso</div>
+          <div style={{display:"flex",gap:4,alignItems:"center"}}>
+            {steps.map((s,i)=>{
+              const done = i < curIdx; const active = i === curIdx; const c = stCfg(s);
+              return <div key={s} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
+                <div style={{width:"100%",height:4,borderRadius:2,background:done||active?c.color:C.b1}}/>
+                <span style={{fontSize:8,fontWeight:active?700:500,color:active?c.color:done?C.t2:C.t3,textAlign:"center"}}>{c.label}</span>
+              </div>;
+            })}
+          </div>
+        </div>;
+      })()}
 
       {/* Info */}
       <div style={{ background:C.w, border:`1px solid ${C.b1}`, borderRadius:12, padding:16, marginBottom:12, boxShadow:C.sh }}>
@@ -715,10 +670,10 @@ function DetailScreen({ user, freight, trips, perms, onBack, onAction }) {
           [Ic.plant(C.t2,15),"Destino",freight.destName],
           [Ic.cal(C.t2,15),"Fecha carga",freight.loadDate],
           [Ic.clk(C.t2,15),"Hora carga",freight.loadTime],
-          [Ic.user(C.t2,15),"Productor",freight.producerName],
+          [Ic.user(C.t2,15),"Solicitado por",freight.requestedByName],
           [Ic.grain(C.t2,15),"Grano",`${freight.grain} · ${freight.tons}tn`],
-          latestTrip&&[Ic.truck(C.t2,15),"Transportista",latestTrip.transporterName],
-          latestTrip?.driverName&&[Ic.user(C.pri,15),"Chofer",`${latestTrip.driverName} · ${latestTrip.plate}`],
+          freight.transporterName&&[Ic.truck(C.t2,15),"Transportista",freight.transporterName],
+          freight.driverName&&[Ic.user(C.pri,15),"Chofer",freight.driverName],
         ].filter(Boolean).map(([ic,label,val],i,arr)=>(
           <div key={i} style={{ display:"flex", alignItems:"center", gap:10, padding:"9px 0", borderBottom:i<arr.length-1?`1px solid ${C.b2}`:"none" }}>
             <span style={{display:"flex",flexShrink:0}}>{ic}</span>
@@ -728,27 +683,29 @@ function DetailScreen({ user, freight, trips, perms, onBack, onAction }) {
         ))}
       </div>
 
-      {/* Trip history */}
-      {fTrips.length > 1 && (
+      {/* Assignment history */}
+      {freight.assignments?.length > 0 && (
         <div style={{ background:C.w, border:`1px solid ${C.b1}`, borderRadius:12, padding:16, marginBottom:12, boxShadow:C.sh }}>
-          <div style={{ fontSize:10.5, fontWeight:700, marginBottom:10, color:C.t2, textTransform:"uppercase", letterSpacing:0.5 }}>Historial de viajes ({fTrips.length})</div>
-          {fTrips.map((t,i)=>(
-            <div key={t.id} style={{ display:"flex", alignItems:"center", gap:8, padding:"8px 0", borderBottom:i<fTrips.length-1?`1px solid ${C.b2}`:"none" }}>
-              <Bd color={TRIP_STATUS[t.status].color} bg={TRIP_STATUS[t.status].bg} small>{TRIP_STATUS[t.status].label}</Bd>
-              <span style={{fontSize:11,color:C.t2}}>{t.transporterName}</span>
-              {t.rejectReason && <span style={{fontSize:10,color:C.err,fontStyle:"italic",marginLeft:"auto"}}>"{t.rejectReason}"</span>}
-            </div>
-          ))}
+          <div style={{ fontSize:10.5, fontWeight:700, marginBottom:10, color:C.t2, textTransform:"uppercase", letterSpacing:0.5 }}>Historial de asignaciones</div>
+          {freight.assignments.map((a,i)=>{
+            const ac = {active:{l:"Pendiente",c:C.info,bg:C.infoPale},accepted:{l:"Aceptada",c:C.ok,bg:C.okPale},rejected:{l:"Rechazada",c:C.err,bg:C.errPale},canceled:{l:"Cancelada",c:C.muted,bg:C.mutedPale}}[a.status]||{l:a.status,c:C.muted,bg:C.mutedPale};
+            return <div key={a.id} style={{ display:"flex", alignItems:"center", gap:8, padding:"8px 0", borderBottom:i<freight.assignments.length-1?`1px solid ${C.b2}`:"none" }}>
+              <Bd color={ac.c} bg={ac.bg} small>{ac.l}</Bd>
+              <span style={{fontSize:11,color:C.t2}}>{a.transporterName}</span>
+              {a.reason && <span style={{fontSize:10,color:C.err,fontStyle:"italic",marginLeft:"auto"}}>"{a.reason}"</span>}
+            </div>;
+          })}
         </div>
       )}
 
       {/* Actions */}
       <div style={{ display:"flex", flexDirection:"column", gap:8, marginBottom:14 }}>
-        {perms.canApprove && isAvailable && <Btn full v="acc" icon={Ic.chk(C.w,16)} onClick={()=>onAction(freight.id,"approve")}>Asignar transportista</Btn>}
-        {perms.canAssignDriver && latestTrip?.status==="assigned" && !latestTrip.driverId && <Btn full icon={Ic.user(C.w,16)} onClick={()=>onAction(freight.id,"assignDriver")}>Asignar chofer</Btn>}
-        {perms.canReject && latestTrip && ["assigned"].includes(latestTrip.status) && <Btn full v="err" icon={Ic.ban(C.w,16)} onClick={()=>onAction(freight.id,"reject")}>Rechazar viaje</Btn>}
-        {perms.canCancel && freight.status==="available" && statusKey!=="completed" && statusKey!=="cancelled" && <Btn full v="err" icon={Ic.cross(C.err,16)} onClick={()=>onAction(freight.id,"cancel")}>Cancelar flete</Btn>}
-        {statusKey!=="cancelled" && statusKey!=="completed" && <Btn full v="sec" icon={Ic.msg(C.pri,16)} onClick={()=>onAction(freight.id,"chat")}>Chat del flete</Btn>}
+        {actions.includes("assign") && <Btn full v="acc" icon={Ic.chk(C.w,16)} onClick={()=>onAction(freight.id,"assign")}>Asignar transportista</Btn>}
+        {actions.includes("accept") && <Btn full icon={Ic.chk(C.w,16)} onClick={()=>onAction(freight.id,"accept")}>Aceptar flete</Btn>}
+        {actions.includes("start") && <Btn full icon={Ic.truck(C.w,16)} onClick={()=>onAction(freight.id,"start")}>Iniciar viaje</Btn>}
+        {actions.includes("finish") && <Btn full icon={Ic.chk(C.w,16)} onClick={()=>onAction(freight.id,"finish")}>Finalizar viaje</Btn>}
+        {actions.includes("reject") && <Btn full v="err" icon={Ic.ban(C.w,16)} onClick={()=>onAction(freight.id,"reject")}>Rechazar asignación</Btn>}
+        {actions.includes("cancel") && <Btn full v="err" icon={Ic.cross(C.err,16)} onClick={()=>onAction(freight.id,"cancel")}>Cancelar flete</Btn>}
       </div>
 
       <div style={{ background:C.bgCardAlt, borderRadius:10, padding:12, display:"flex", alignItems:"center", gap:10, border:`1px solid ${C.b2}` }}>
@@ -758,27 +715,6 @@ function DetailScreen({ user, freight, trips, perms, onBack, onAction }) {
   );
 }
 
-function LiveMap({ trip, freight }) {
-  const [pos,setPos] = useState({x:40,y:55});
-  useEffect(()=>{const iv=setInterval(()=>setPos(p=>({x:p.x+(Math.random()-0.4)*2,y:p.y+(Math.random()-0.6)*1.5})),3000);return()=>clearInterval(iv);},[]);
-  const st = TRIP_STATUS[trip.status];
-  return (
-    <div style={{ borderRadius:12, overflow:"hidden", border:`1px solid ${C.b1}`, background:C.w, marginBottom:12 }}>
-      <div style={{ padding:"10px 14px", borderBottom:`1px solid ${C.b2}`, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-        <div style={{display:"flex",alignItems:"center",gap:6}}>{Ic.nav(C.info,16)}<span style={{fontSize:12,fontWeight:700}}>Ubicación en tiempo real</span></div>
-        <Bd color={st.color} bg={st.bg} small>{st.label}</Bd>
-      </div>
-      <div style={{ height:170, position:"relative", background:`linear-gradient(155deg,#EBF4EC 0%,#D8ECDB 35%,#C2DEC8 100%)` }}>
-        <svg width="100%" height="100%" style={{position:"absolute",inset:0,opacity:0.1}}>{[...Array(7)].map((_,i)=><line key={i} x1="0" y1={i*25} x2="100%" y2={i*25} stroke={C.pri} strokeWidth="0.5"/>)}</svg>
-        <svg width="100%" height="100%" style={{position:"absolute",inset:0}}><path d={`M15,85 Q60,70 ${pos.x}%,${pos.y}% T95,20`} stroke={C.pri} strokeWidth="2.5" fill="none" strokeDasharray="6,4" opacity="0.4"/></svg>
-        <div style={{position:"absolute",bottom:"10%",left:"5%",display:"flex",alignItems:"center",gap:4}}>{Ic.pin("#059669",20)}<span style={{fontSize:9,fontWeight:600,background:"rgba(255,255,255,0.9)",padding:"2px 6px",borderRadius:4}}>Origen</span></div>
-        <div style={{position:"absolute",top:"8%",right:"3%",display:"flex",alignItems:"center",gap:4}}>{Ic.plant(C.pri,20)}<span style={{fontSize:9,fontWeight:600,background:"rgba(255,255,255,0.9)",padding:"2px 6px",borderRadius:4}}>Planta</span></div>
-        <div style={{position:"absolute",left:`${pos.x}%`,top:`${pos.y}%`,transform:"translate(-50%,-50%)",transition:"all 2.5s ease-in-out"}}><div style={{width:34,height:34,borderRadius:17,background:C.w,display:"flex",alignItems:"center",justifyContent:"center",boxShadow:`0 2px 12px ${C.pri}40`,border:`2px solid ${C.pri}`}}>{Ic.truck(C.pri,16)}</div></div>
-      </div>
-      <div style={{padding:"9px 14px",background:C.bgCardAlt,display:"flex",alignItems:"center",gap:4,fontSize:11,color:C.t2}}>{Ic.truck(C.t2,14)} <span style={{fontWeight:600,color:C.t1}}>{trip.driverName||"Sin asignar"}</span> {trip.plate&&<>· {trip.plate}</>}</div>
-    </div>
-  );
-}
 
 // ======================== NEW FREIGHT ================================
 
@@ -800,12 +736,7 @@ function NewScreen({ user, onBack, onCreate }) {
     const {ok,errs:e} = validate(form, SCHEMAS.freight);
     setErrs(e);
     if(!ok) return;
-    setSubmitting(true);
-    // Simulate network delay
-    setTimeout(()=>{
-      onCreate({...form,lot:selectedLot,plant:selectedPlant});
-      setSubmitting(false);
-    },400);
+    onCreate(form);
   };
 
   return (
@@ -864,125 +795,11 @@ function NewScreen({ user, onBack, onCreate }) {
   );
 }
 
-// ======================== CHAT =======================================
-
-function ChatsScreen({ freights, trips, convos, onOpen }) {
-  const [filterStatus, setFilterStatus] = useState("all");
-  const [searchQ, setSearchQ] = useState("");
-  const [fPlant, setFPlant] = useState("");
-
-  const active = freights.filter(f=>f.status!=="cancelled");
-  const plantOptions = useMemo(()=>[...new Set(active.map(f=>f.destName))].sort(),[active]);
-
-  const filtered = useMemo(()=>{
-    return active.filter(f=>{
-      const sk = getDisplayStatusKey(f,trips);
-      if(filterStatus==="active" && !["assigned","en_route","loading","in_transit"].includes(sk)) return false;
-      if(filterStatus==="available" && sk!=="available") return false;
-      if(filterStatus==="done" && sk!=="completed") return false;
-      if(searchQ && !textMatch(f.producerName,searchQ) && !textMatch(f.code,searchQ) && !textMatch(f.destName,searchQ)) return false;
-      if(fPlant && f.destName!==fPlant) return false;
-      return true;
-    });
-  },[active,trips,filterStatus,searchQ,fPlant]);
-
-  return (
-    <div style={{ flex:1, overflow:"auto", padding:18 }}>
-      <div style={{ fontSize:20, fontWeight:800, letterSpacing:-0.3, marginBottom:14 }}>Conversaciones</div>
-
-      {/* Search */}
-      <div style={{ position:"relative", marginBottom:10 }}>
-        <div style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",display:"flex"}}>{Ic.srch(C.t3,16)}</div>
-        <input value={searchQ} onChange={e=>setSearchQ(e.target.value)} placeholder="Buscar por productor, planta, código..."
-          style={{width:"100%",padding:"10px 14px 10px 36px",borderRadius:10,border:`1.5px solid ${C.b1}`,background:C.w,color:C.t1,fontSize:13,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}/>
-        {searchQ && <button onClick={()=>setSearchQ("")} style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",display:"flex"}}>{Ic.cross(C.t3,16)}</button>}
-      </div>
-
-      {/* Plant filter */}
-      <div style={{marginBottom:10}}>
-        <select value={fPlant} onChange={e=>setFPlant(e.target.value)} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:`1.5px solid ${C.b1}`,background:C.w,color:fPlant?C.t1:C.t3,fontSize:12,fontFamily:"inherit",outline:"none"}}>
-          <option value="">Todas las plantas</option>
-          {plantOptions.map(p=><option key={p} value={p}>{p}</option>)}
-        </select>
-      </div>
-
-      <Tabs items={[{k:"all",l:"Todos"},{k:"active",l:"En curso"},{k:"available",l:"Disponibles"},{k:"done",l:"Finalizados"}]} active={filterStatus} onChange={setFilterStatus}/>
-      <div style={{fontSize:11,color:C.t3,marginTop:8,marginBottom:6}}>{filtered.length} conversaci{filtered.length!==1?"ones":"ón"}</div>
-      <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
-        {filtered.length===0 && <div style={{textAlign:"center",padding:40,color:C.t3,fontSize:13}}>Sin conversaciones</div>}
-        {filtered.map(f=>{
-          const msgs = convos[f.id]?.messages||[];
-          const last = msgs[msgs.length-1];
-          const st = getDisplayStatus(f,trips);
-          return (
-            <div key={f.id} onClick={()=>onOpen(f.id)} style={{ background:C.w, border:`1px solid ${C.b1}`, borderRadius:12, padding:14, cursor:"pointer", boxShadow:C.sh }}>
-              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:4 }}>
-                <div style={{display:"flex",alignItems:"center",gap:6}}><span style={{fontSize:12,fontWeight:700}}>{f.code}</span><Bd color={st.color} bg={st.bg} small>{st.label}</Bd></div>
-                <span style={{fontSize:10,color:C.t3}}>{last?.time||""}</span>
-              </div>
-              <div style={{fontSize:11.5,color:C.t2}}>{f.producerName} → {f.destName} · {f.grain} {f.tons}tn</div>
-              {last ? <div style={{fontSize:11,color:C.t3,marginTop:6,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}><span style={{fontWeight:600,color:C.t2}}>{last.sender}:</span> {last.text}</div> : <div style={{fontSize:11,color:C.t3,marginTop:6,fontStyle:"italic"}}>Sin mensajes</div>}
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-function ChatView({ user, freight, convo, onSend, onBack }) {
-  const [msg, setMsg] = useState("");
-  const endRef = useRef(null);
-  const msgs = convo?.messages || [];
-
-  useEffect(()=>{endRef.current?.scrollIntoView({behavior:"smooth"});},[msgs.length]);
-
-  const send = () => { if(!msg.trim()) return; onSend(freight.id,msg); setMsg(""); };
-
-  // Group by date
-  let lastDate = "";
-
-  return (
-    <div style={{flex:1,display:"flex",flexDirection:"column"}}>
-      <div style={{padding:"12px 18px",borderBottom:`1px solid ${C.b1}`,background:C.w,display:"flex",alignItems:"center",gap:10}}>
-        <button onClick={onBack} style={{background:"none",border:"none",cursor:"pointer",display:"flex",padding:0}}>{Ic.chev(C.pri,20)}</button>
-        <div style={{flex:1}}><div style={{fontSize:14,fontWeight:700}}>{freight.code}</div><div style={{fontSize:11,color:C.t2}}>{freight.grain} {freight.tons}tn · {freight.originName.split("—")[0].trim()} → {freight.destName}</div></div>
-      </div>
-      <div style={{flex:1,overflow:"auto",padding:16,display:"flex",flexDirection:"column",gap:6,background:C.bgCardAlt}}>
-        {msgs.length===0 && <div style={{textAlign:"center",padding:30,color:C.t3,fontSize:13}}>Sin mensajes. Iniciá la conversación.</div>}
-        {msgs.map(m=>{
-          const isMe = m.senderId===user.id;
-          const msgDate = m.ts ? m.ts.split("T")[0] : "";
-          let showDateSep = false;
-          if(msgDate && msgDate !== lastDate){ showDateSep = true; lastDate = msgDate; }
-          return (
-            <div key={m.id}>
-              {showDateSep && <div style={{textAlign:"center",padding:"8px 0",fontSize:10,color:C.t3,fontWeight:600}}>{msgDate}</div>}
-              <div style={{display:"flex",flexDirection:isMe?"row-reverse":"row",gap:8,alignItems:"flex-end"}}>
-                {!isMe && <Av letters={m.sender?.split(" ").map(w=>w[0]).join("").slice(0,2)||"?"} size={26} color={C.t3}/>}
-                <div style={{maxWidth:"75%",background:isMe?C.priPale:C.w,border:`1px solid ${isMe?`${C.pri}18`:C.b1}`,borderRadius:12,borderBottomRightRadius:isMe?3:12,borderBottomLeftRadius:isMe?12:3,padding:"9px 13px",boxShadow:"0 1px 2px rgba(0,0,0,0.03)"}}>
-                  {!isMe && <div style={{fontSize:10,fontWeight:700,color:C.pri,marginBottom:2}}>{m.sender} <span style={{color:C.t3,fontWeight:500}}>· {m.role}</span></div>}
-                  <div style={{fontSize:13,color:C.t1,lineHeight:1.4}}>{m.text}</div>
-                  <div style={{fontSize:9,color:C.t3,marginTop:3,textAlign:isMe?"right":"left"}}>{m.time}</div>
-                </div>
-              </div>
-            </div>
-          );
-        })}
-        <div ref={endRef}/>
-      </div>
-      <div style={{padding:"10px 16px",borderTop:`1px solid ${C.b1}`,background:C.w,display:"flex",gap:8,alignItems:"center"}}>
-        <input value={msg} onChange={e=>setMsg(e.target.value)} onKeyDown={e=>e.key==="Enter"&&send()} placeholder="Escribí un mensaje..." style={{flex:1,padding:"10px 16px",borderRadius:20,border:`1.5px solid ${C.b1}`,background:C.bgInput,color:C.t1,fontSize:13,fontFamily:"inherit",outline:"none"}}/>
-        <button onClick={send} style={{width:38,height:38,borderRadius:19,background:C.pri,border:"none",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,boxShadow:`0 2px 8px ${C.pri}30`}}>{Ic.send(C.w,16)}</button>
-      </div>
-    </div>
-  );
-}
 
 // ======================== PROFILE =====================================
 
 function ProfileScreen({ user, perms, onLogout }) {
-  const tc = ({planta:C.pri,transporter:C.info,producer:C.acc})[user.userType]||C.pri;
+  const tc = ({plant:C.pri,transporter:C.info,producer:C.acc})[user.userType]||C.pri;
   const pl = []; if(perms.canRequest)pl.push("Solicitar fletes"); if(perms.canApprove)pl.push("Aprobar fletes"); if(perms.canAssignDriver)pl.push("Asignar choferes"); if(perms.canCancel)pl.push("Cancelar fletes"); if(perms.canReject)pl.push("Rechazar viajes");
   return (
     <div style={{flex:1,overflow:"auto",padding:18}}>
@@ -992,7 +809,7 @@ function ProfileScreen({ user, perms, onLogout }) {
         <div style={{fontSize:18,fontWeight:700,marginTop:10}}>{user.name}</div>
         <div style={{fontSize:12,color:C.t2,marginTop:3}}>{user.email}</div>
         <div style={{display:"flex",gap:6,justifyContent:"center",marginTop:8}}>
-          <Bd color={tc}>{({planta:"Planta",transporter:"Transportista",producer:"Productor"})[user.userType]}</Bd>
+          <Bd color={tc}>{({plant:"Planta",transporter:"Transportista",producer:"Productor"})[user.userType]}</Bd>
           <Bd color={C.t2} bg={C.bgInput}>{user.role==="admin"?"Gerente":"Operario"}</Bd>
         </div>
         <div style={{fontSize:12,color:C.t2,marginTop:6}}>{user.entity}</div>
@@ -1008,7 +825,7 @@ function ProfileScreen({ user, perms, onLogout }) {
 
 // ======================== MODALS =====================================
 
-function ApproveModal({ freight, onClose, onConfirm }) {
+function AssignModal({ freight, onClose, onConfirm }) {
   const [t,setT] = useState("");
   const ts = ["Transportes del Sur","Logística Norte","Fletes Pampeanos"];
   return (
@@ -1042,103 +859,73 @@ function ReasonModal({ title, freight, btnLabel, btnType="err", onClose, onConfi
 }
 
 // ======================== MAIN APP ====================================
-
 export default function Tolvink() {
   const auth = useAuth();
+  const fh = useFreights(auth.user);
   const [screen, setScreen] = useState("home");
   const [selFreight, setSelFreight] = useState(null);
-  const [freights, setFreights] = useState(INIT_FREIGHTS);
-  const [trips, setTrips] = useState(INIT_TRIPS);
-  const [convos, setConvos] = useState(INIT_CONVERSATIONS);
   const [modal, setModal] = useState(null);
   const [toast, setToast] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
 
   const perms = useMemo(()=>permsFor(auth.user),[auth.user]);
-  const unread = useMemo(()=>Object.keys(convos).length,[convos]);
   const show = (msg,type="ok")=>setToast({msg,type});
-
   const nav = (s,fId)=>{ if(fId) setSelFreight(fId); if(s==="new"&&!perms.canRequest){show("Sin permisos para solicitar","err");return;} setScreen(s); };
 
   const handleAction = (fId,action)=>{
-    const f = freights.find(x=>x.id===fId);
-    if(action==="approve") setModal({type:"approve",freight:f});
+    const f = fh.freights.find(x=>x.id===fId);
+    if(!f) return;
+    if(action==="assign") setModal({type:"assign",freight:f});
     if(action==="cancel") setModal({type:"reason",freight:f,title:"Cancelar flete",btnLabel:"Cancelar flete",action:"cancel"});
-    if(action==="reject") setModal({type:"reason",freight:f,title:"Rechazar viaje",btnLabel:"Rechazar",action:"reject"});
-    if(action==="assignDriver"){
-      const t = trips.filter(x=>x.freightId===fId&&x.status!=="rejected").slice(-1)[0];
-      if(t && canTransitTrip(t.status,"en_route")){
-        setTrips(trips.map(x=>x.id===t.id?{...x,driverId:"u4",driverName:"Roberto Díaz",plate:"EF 456 GH"}:x));
-        show("Chofer asignado");
-      }
-    }
-    if(action==="chat"){ setSelFreight(fId); setScreen("fChat"); }
+    if(action==="reject") setModal({type:"reason",freight:f,title:"Rechazar asignación",btnLabel:"Rechazar",action:"reject"});
+    if(action==="accept") (async()=>{ const r=await fh.respond(fId,"accepted"); if(r.ok) show("Flete aceptado"); else show(r.error,"err"); })();
+    if(action==="start") (async()=>{ const r=await fh.start(fId); if(r.ok) show("Viaje iniciado"); else show(r.error,"err"); })();
+    if(action==="finish") (async()=>{ const r=await fh.finish(fId); if(r.ok) show("Viaje finalizado"); else show(r.error,"err"); })();
   };
 
-  const handleApprove = (fId,transporter)=>{
-    const newTrip = { id:`tr${Date.now()}`, freightId:fId, transporterId:"e2", transporterName:transporter, driverId:null, driverName:null, plate:null, status:"assigned", assignedBy:auth.user.id, createdAt:new Date().toISOString() };
-    setTrips([...trips, newTrip]);
-    setModal(null); show(`Asignado a ${transporter}`);
+  const handleAssign = async (fId, transporterName)=>{
+    const r = await fh.assign(fId, transporterName);
+    if(r.ok){ setModal(null); show("Asignado a "+transporterName); } else show(r.error,"err");
   };
 
-  const handleCancel = (fId,reason)=>{
-    if(canTransitFreight("available","cancelled")){
-      setFreights(freights.map(f=>f.id===fId?{...f,status:"cancelled",cancelReason:reason}:f));
-      // Cancel active trips
-      setTrips(trips.map(t=>t.freightId===fId&&!["completed","cancelled","rejected"].includes(t.status)?{...t,status:"cancelled"}:t));
-      setModal(null); show("Flete cancelado","err");
-    }
+  const handleReasonAction = async (fId,reason,action)=>{
+    let r;
+    if(action==="cancel") r = await fh.cancel(fId,reason);
+    else if(action==="reject") r = await fh.respond(fId,"rejected",reason);
+    if(r?.ok){ setModal(null); show(action==="cancel"?"Flete cancelado":"Asignación rechazada","info"); } else show(r?.error||"Error","err");
   };
 
-  const handleReject = (fId,reason)=>{
-    const t = trips.filter(x=>x.freightId===fId&&x.status!=="rejected"&&x.status!=="cancelled").slice(-1)[0];
-    if(t && canTransitTrip(t.status,"rejected")){
-      setTrips(trips.map(x=>x.id===t.id?{...x,status:"rejected",rejectReason:reason}:x));
-      setModal(null); show("Viaje rechazado — flete vuelve a disponible","info");
-    }
+  const handleCreate = async (form)=>{
+    setSubmitting(true);
+    const r = await fh.create(form);
+    setSubmitting(false);
+    if(r.ok){ setScreen("list"); show("Flete solicitado"); } else show(r.error,"err");
   };
 
-  const handleCreate = (form)=>{
-    const nf = {
-      id:`fr${Date.now()}`, code:`FLT-${String(Math.floor(Math.random()*9000)+1000)}`,
-      grain:form.grain, tons:parseInt(form.tons), originLotId:form.lotId,
-      originName:form.lot.name, originLat:form.lot.lat, originLng:form.lot.lng,
-      destPlantId:form.plantId, destName:form.plant.name, destLat:form.plant.lat, destLng:form.plant.lng,
-      loadDate:form.loadDate, loadTime:form.loadTime, producerId:auth.user.entityId,
-      producerName:auth.user.name, requestedBy:auth.user.id, status:"available",
-      notes:form.notes, createdAt:new Date().toISOString(),
-    };
-    setFreights([nf,...freights]); setScreen("list"); show("Flete solicitado");
-  };
-
-  const handleSendMsg = (fId,text)=>{
-    const nm = { id:`m${Date.now()}`, senderId:auth.user.id, sender:auth.user.name, role:({planta:"Planta",transporter:"Chofer",producer:"Productor"})[auth.user.userType], text, ts:new Date().toISOString(), time:new Date().toLocaleTimeString("es",{hour:"2-digit",minute:"2-digit"}) };
-    setConvos(p=>({...p,[fId]:{...(p[fId]||{id:`cv${Date.now()}`,freightId:fId,messages:[]}),messages:[...(p[fId]?.messages||[]),nm]}}));
-  };
+  if(auth.loading) return <div style={{minHeight:"100vh",background:C.bg,fontFamily:FONT,display:"flex",alignItems:"center",justifyContent:"center"}}><div style={{textAlign:"center"}}><div style={{display:"inline-flex",alignItems:"center",gap:5,marginBottom:12}}>{Ic.grain(C.pri,20)}<span style={{fontSize:16,fontWeight:800,color:C.pri}}>tolvink</span></div><div style={{fontSize:12,color:C.t3}}>Cargando...</div></div></div>;
 
   if(!auth.user) return <AuthScreen onLogin={auth.login} onSignup={auth.signup} loading={auth.loading} error={auth.error} clearError={auth.clearError}/>;
-  const curFreight = freights.find(f=>f.id===selFreight);
+  const curFreight = fh.freights.find(f=>f.id===selFreight);
 
   return (
     <div style={{minHeight:"100vh",background:C.bg,color:C.t1,fontFamily:FONT,display:"flex",flexDirection:"column",maxWidth:430,margin:"0 auto",position:"relative",overflow:"hidden"}}>
       <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&family=JetBrains+Mono:wght@400;500&display=swap');*{box-sizing:border-box;margin:0;padding:0}body{background:${C.bg}}input::placeholder,textarea::placeholder{color:${C.t3}}::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:${C.b1};border-radius:4px}@keyframes ti{from{opacity:0;transform:translate(-50%,-12px)}to{opacity:1;transform:translate(-50%,0)}}`}</style>
       <div style={{padding:"10px 18px",display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:`1px solid ${C.b2}`,background:C.w}}>
-        <span style={{fontSize:11,fontWeight:500,color:C.t3}}>14:26</span>
+        <span style={{fontSize:11,fontWeight:500,color:C.t3}}>{new Date().toLocaleTimeString("es",{hour:"2-digit",minute:"2-digit"})}</span>
         <div style={{display:"flex",alignItems:"center",gap:5}}>{Ic.grain(C.pri,15)}<span style={{fontSize:13,fontWeight:800,color:C.pri,letterSpacing:-0.5}}>tolvink</span></div>
         {Ic.bell(C.t3,16)}
       </div>
 
-      {screen==="home" && <HomeScreen user={auth.user} freights={freights} trips={trips} perms={perms} onNav={nav}/>}
-      {screen==="list" && <ListScreen freights={freights} trips={trips} onNav={nav}/>}
-      {screen==="detail" && <DetailScreen user={auth.user} freight={curFreight} trips={trips} perms={perms} onBack={()=>setScreen("list")} onAction={handleAction}/>}
-      {screen==="new" && <NewScreen user={auth.user} onBack={()=>setScreen("home")} onCreate={handleCreate}/>}
-      {screen==="chats" && <ChatsScreen freights={freights} trips={trips} convos={convos} onOpen={id=>{setSelFreight(id);setScreen("fChat");}}/>}
-      {screen==="fChat" && curFreight && <ChatView user={auth.user} freight={curFreight} convo={convos[curFreight.id]} onSend={handleSendMsg} onBack={()=>setScreen("chats")}/>}
+      {screen==="home" && <HomeScreen user={auth.user} freights={fh.freights} perms={perms} onNav={nav}/>}
+      {screen==="list" && <ListScreen freights={fh.freights} onNav={nav}/>}
+      {screen==="detail" && <DetailScreen user={auth.user} freight={curFreight} perms={perms} onBack={()=>setScreen("list")} onAction={handleAction}/>}
+      {screen==="new" && <NewScreen user={auth.user} onBack={()=>setScreen("home")} onCreate={handleCreate} submitting={submitting}/>}
       {screen==="profile" && <ProfileScreen user={auth.user} perms={perms} onLogout={auth.logout}/>}
 
-      <Nav active={["detail","fChat"].includes(screen)?screen==="fChat"?"chats":"list":screen} onChange={nav} unread={unread}/>
+      <Nav active={screen==="detail"?"list":screen} onChange={nav}/>
 
-      {modal?.type==="approve" && <ApproveModal freight={modal.freight} onClose={()=>setModal(null)} onConfirm={t=>handleApprove(modal.freight.id,t)}/>}
-      {modal?.type==="reason" && <ReasonModal title={modal.title} freight={modal.freight} btnLabel={modal.btnLabel} onClose={()=>setModal(null)} onConfirm={r=>modal.action==="cancel"?handleCancel(modal.freight.id,r):handleReject(modal.freight.id,r)}/>}
+      {modal?.type==="assign" && <AssignModal freight={modal.freight} onClose={()=>setModal(null)} onConfirm={t=>handleAssign(modal.freight.id,t)}/>}
+      {modal?.type==="reason" && <ReasonModal title={modal.title} freight={modal.freight} btnLabel={modal.btnLabel} onClose={()=>setModal(null)} onConfirm={r=>handleReasonAction(modal.freight.id,r,modal.action)}/>}
       {toast && <Toast msg={toast.msg} type={toast.type} onClose={()=>setToast(null)}/>}
     </div>
   );
