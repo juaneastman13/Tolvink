@@ -64,58 +64,65 @@ function FieldError({ error }) {
 }
 
 // ======================== DESIGN TOKENS ==============================
-const C = {
+const LIGHT = {
   bg:"#F7F8F7",
   bgCard:"#FFFFFF",
   bgCardAlt:"#F1F4F2",
   bgInput:"#EDEFED",
   bgOverlay:"rgba(10,20,14,0.6)",
   nav:"#FFFFFF",
-
-  // Primary — verde oscuro (original)
-  pri:"#1A6B37",
-  priLt:"#228B46",
-  priPale:"#E4F3EA",
-  priGhost:"rgba(26,107,55,0.06)",
-
-  // Accent — naranja vibrante (original)
-  acc:"#FF6A00",
-  accLt:"#FF8124",
-  accPale:"#FFF3E8",
-
-  // Secondary — azul Itaú
-  sec:"#003882",
-  secLt:"#1A5CAD",
-  secPale:"#E8F0FE",
-
-  // Semantic
-  ok:"#1A6B37",
-  okPale:"#E4F3EA",
-  info:"#003882",
-  infoPale:"#E8F0FE",
-  warn:"#CA8A04",
-  warnPale:"#FEF9C3",
-  err:"#DC2626",
-  errPale:"#FEE2E2",
-  muted:"#71717A",
-  mutedPale:"#F4F4F5",
-
-  // Text
-  t1:"#18251C",
-  t2:"#4A6352",
-  t3:"#8A9C90",
-  tOn:"#FFFFFF",
-
-  // Borders
-  b1:"#DEE4E0",
-  b2:"#ECF0ED",
-  bFocus:"#1A6B37",
-
+  pri:"#1A6B37", priLt:"#228B46", priPale:"#E4F3EA", priGhost:"rgba(26,107,55,0.06)",
+  acc:"#FF6A00", accLt:"#FF8124", accPale:"#FFF3E8",
+  sec:"#003882", secLt:"#1A5CAD", secPale:"#E8F0FE",
+  ok:"#1A6B37", okPale:"#E4F3EA",
+  info:"#003882", infoPale:"#E8F0FE",
+  warn:"#CA8A04", warnPale:"#FEF9C3",
+  err:"#DC2626", errPale:"#FEE2E2",
+  muted:"#71717A", mutedPale:"#F4F4F5",
+  t1:"#18251C", t2:"#4A6352", t3:"#8A9C90", tOn:"#FFFFFF",
+  b1:"#DEE4E0", b2:"#ECF0ED", bFocus:"#1A6B37",
   w:"#FFFFFF",
   sh:"0 1px 3px rgba(0,0,0,0.05),0 1px 2px rgba(0,0,0,0.03)",
   shMd:"0 4px 14px rgba(0,0,0,0.06)",
   shLg:"0 12px 32px rgba(0,0,0,0.10)",
 };
+
+const DARK = {
+  bg:"#0F1512",
+  bgCard:"#1A2420",
+  bgCardAlt:"#212E28",
+  bgInput:"#253530",
+  bgOverlay:"rgba(0,0,0,0.75)",
+  nav:"#1A2420",
+  pri:"#2EBF5E", priLt:"#38D96E", priPale:"#1A3328", priGhost:"rgba(46,191,94,0.08)",
+  acc:"#FF8533", accLt:"#FF9F5C", accPale:"#33241A",
+  sec:"#4D9AFF", secLt:"#6AADFF", secPale:"#1A2840",
+  ok:"#2EBF5E", okPale:"#1A3328",
+  info:"#4D9AFF", infoPale:"#1A2840",
+  warn:"#FACC15", warnPale:"#33291A",
+  err:"#EF4444", errPale:"#331A1A",
+  muted:"#9CA3AF", mutedPale:"#27302C",
+  t1:"#E8F0EC", t2:"#A0B5A8", t3:"#6B8273", tOn:"#FFFFFF",
+  b1:"#2A3832", b2:"#1F2D26", bFocus:"#2EBF5E",
+  w:"#1A2420",
+  sh:"0 1px 3px rgba(0,0,0,0.2),0 1px 2px rgba(0,0,0,0.15)",
+  shMd:"0 4px 14px rgba(0,0,0,0.25)",
+  shLg:"0 12px 32px rgba(0,0,0,0.35)",
+};
+
+// Global theme state — persisted in localStorage
+let _theme = "light";
+try { _theme = localStorage.getItem("tv-theme") || "light"; } catch {}
+let _listeners = [];
+function getTheme() { return _theme; }
+function setTheme(t) { _theme = t; try { localStorage.setItem("tv-theme", t); } catch {} _listeners.forEach(fn => fn(t)); }
+function useTheme() {
+  const [t, setT] = useState(getTheme);
+  useEffect(() => { const fn = (v) => setT(v); _listeners.push(fn); return () => { _listeners = _listeners.filter(f => f !== fn); }; }, []);
+  return [t, setTheme];
+}
+
+let C = _theme === "dark" ? { ...DARK } : { ...LIGHT };
 
 const FONT = `'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif`;
 const MONO = `'JetBrains Mono','IBM Plex Mono','SF Mono',monospace`;
@@ -601,6 +608,21 @@ function AuthScreen({ onLogin, onSignup, loading, error, clearError, onBackToLan
 
 // ======================== HOME SCREEN ================================
 
+// CSV Export helper
+function exportCSV(freights, filename) {
+  const headers = ["Código","Estado","Origen","Destino","Producto","Camión","Fecha Carga","Hora","Cantidad","Unidad","Transportista","Notas"];
+  const rows = freights.map(f => {
+    const st = stCfg(f.status);
+    return [f.code, st.label, (f.originName||"").split("—")[0].trim(), f.destName, f.grain, f.truckPlate||"", f.loadDate, f.loadTime, f.tons, f.unit||"tn", f.transporterName||"", (f.notes||"").replace(/[\n\r]+/g," ")];
+  });
+  const escape = v => { const s = String(v||""); return s.includes(",") || s.includes('"') || s.includes("\n") ? `"${s.replace(/"/g,'""')}"` : s; };
+  const csv = [headers.join(","), ...rows.map(r => r.map(escape).join(","))].join("\n");
+  const blob = new Blob(["\uFEFF"+csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a"); a.href = url; a.download = filename || "tolvink-fletes.csv"; a.click();
+  URL.revokeObjectURL(url);
+}
+
 function HomeScreen({ user, freights, perms, onNav }) {
   const [activeFilter, setActiveFilter] = useState("all");
   const [viewMode, setViewMode] = useState("cards"); // cards | table | map
@@ -675,9 +697,14 @@ function HomeScreen({ user, freights, perms, onNav }) {
         ) : (
           <div style={{ fontSize:14, fontWeight:700, color:C.t1 }}>En movimiento</div>
         )}
-        <button onClick={nextView} style={{ display:"flex", alignItems:"center", gap:4, background:C.priPale, border:`1px solid ${C.pri}20`, borderRadius:8, padding:"5px 10px", cursor:"pointer", fontFamily:"inherit", fontSize:10.5, fontWeight:600, color:C.pri }}>
-          {viewMode==="map"?Ic.pin(C.pri,13):viewMode==="table"?Ic.doc(C.pri,13):Ic.home(C.pri,13)} {viewLabels[viewMode]}
-        </button>
+        <div style={{ display:"flex", gap:6 }}>
+          {viewMode==="table" && <button onClick={()=>exportCSV(displayFreights,`tolvink-inicio-${new Date().toISOString().slice(0,10)}.csv`)} style={{ display:"flex", alignItems:"center", gap:4, background:C.accPale, border:`1px solid ${C.acc}20`, borderRadius:8, padding:"5px 10px", cursor:"pointer", fontFamily:"inherit", fontSize:10.5, fontWeight:600, color:C.acc }}>
+            {Ic.down(C.acc,12)} CSV
+          </button>}
+          <button onClick={nextView} style={{ display:"flex", alignItems:"center", gap:4, background:C.priPale, border:`1px solid ${C.pri}20`, borderRadius:8, padding:"5px 10px", cursor:"pointer", fontFamily:"inherit", fontSize:10.5, fontWeight:600, color:C.pri }}>
+            {viewMode==="map"?Ic.pin(C.pri,13):viewMode==="table"?Ic.doc(C.pri,13):Ic.home(C.pri,13)} {viewLabels[viewMode]}
+          </button>
+        </div>
       </div>
 
       {/* MAP VIEW */}
@@ -966,9 +993,14 @@ function ListScreen({ freights, onNav, onRefresh }) {
       <Tabs items={[{k:"all",l:"Todos"},{k:"available",l:"Solicitados"},{k:"active",l:"Activos"},{k:"done",l:"Finalizados"},{k:"closed",l:"Cerrados"}]} active={tab} onChange={setTab}/>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:8,marginBottom:6}}>
         <div style={{fontSize:11,color:C.t3}}>{filtered.length} resultado{filtered.length!==1?"s":""}</div>
-        <button onClick={()=>setViewMode(v=>v==="cards"?"table":"cards")} style={{ display:"flex", alignItems:"center", gap:4, background:C.priPale, border:`1px solid ${C.pri}20`, borderRadius:8, padding:"4px 8px", cursor:"pointer", fontFamily:"inherit", fontSize:10, fontWeight:600, color:C.pri }}>
-          {viewMode==="table"?Ic.home(C.pri,12):Ic.doc(C.pri,12)} {viewMode==="cards"?"Tabla":"Tarjetas"}
-        </button>
+        <div style={{ display:"flex", gap:6 }}>
+          {viewMode==="table" && <button onClick={()=>exportCSV(filtered,`tolvink-fletes-${new Date().toISOString().slice(0,10)}.csv`)} style={{ display:"flex", alignItems:"center", gap:4, background:C.accPale, border:`1px solid ${C.acc}20`, borderRadius:8, padding:"4px 8px", cursor:"pointer", fontFamily:"inherit", fontSize:10, fontWeight:600, color:C.acc }}>
+            {Ic.down(C.acc,12)} CSV
+          </button>}
+          <button onClick={()=>setViewMode(v=>v==="cards"?"table":"cards")} style={{ display:"flex", alignItems:"center", gap:4, background:C.priPale, border:`1px solid ${C.pri}20`, borderRadius:8, padding:"4px 8px", cursor:"pointer", fontFamily:"inherit", fontSize:10, fontWeight:600, color:C.pri }}>
+            {viewMode==="table"?Ic.home(C.pri,12):Ic.doc(C.pri,12)} {viewMode==="cards"?"Tabla":"Tarjetas"}
+          </button>
+        </div>
       </div>
 
       {/* TABLE VIEW */}
@@ -1822,6 +1854,17 @@ function DetailScreen({ user, freight, perms, onBack, onAction, actionLoading, o
         ))}
       </div>
 
+      {/* Notes / Observaciones */}
+      {freight.notes && (
+        <div style={{ background:C.warnPale, border:`1px solid ${C.warn}30`, borderLeft:`3px solid ${C.warn}`, borderRadius:12, padding:14, marginBottom:12 }}>
+          <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:6 }}>
+            {Ic.doc(C.warn, 14)}
+            <span style={{ fontSize:10.5, fontWeight:700, color:C.warn, textTransform:"uppercase", letterSpacing:0.5 }}>Observaciones</span>
+          </div>
+          <div style={{ fontSize:12.5, color:C.t1, lineHeight:1.5, whiteSpace:"pre-wrap" }}>{freight.notes}</div>
+        </div>
+      )}
+
       {/* Assignment history */}
       {freight.assignments?.length > 0 && (
         <div style={{ background:C.w, border:`1px solid ${C.b1}`, borderRadius:12, padding:16, marginBottom:12, boxShadow:C.sh }}>
@@ -2126,9 +2169,10 @@ function NewScreen({ user, lots, plants, fields, trucks, onBack, onCreate, dupli
 
 // ======================== PROFILE =====================================
 
-function ProfileScreen({ user, perms, onLogout, onNav }) {
+function ProfileScreen({ user, perms, onLogout, onNav, theme, toggleTheme }) {
   const tc = ({plant:C.pri,transporter:C.info,producer:C.acc})[user.userType]||C.pri;
   const pl = []; if(perms.canRequest)pl.push("Solicitar fletes"); if(perms.canApprove)pl.push("Aprobar fletes"); if(perms.canAssignDriver)pl.push("Asignar choferes"); if(perms.canCancel)pl.push("Cancelar fletes"); if(perms.canReject)pl.push("Rechazar viajes");
+  const isDark = theme === "dark";
 
   const mgmtItems = [];
   if(user.userType==="transporter"||user.userType==="producer") mgmtItems.push({k:"trucks",l:"Mis Camiones",ic:Ic.truck(C.acc,18),c:C.acc});
@@ -2167,6 +2211,20 @@ function ProfileScreen({ user, perms, onLogout, onNav }) {
         <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:10}}>{Ic.shield(C.pri,16)}<span style={{fontSize:10.5,fontWeight:700,color:C.t2,textTransform:"uppercase",letterSpacing:0.5}}>Permisos</span></div>
         {pl.length>0?pl.map((p,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 0"}}>{Ic.chk(C.pri,14)}<span style={{fontSize:13}}>{p}</span></div>):<div style={{fontSize:12,color:C.t3}}>Rol operativo</div>}
       </div>
+      {/* Dark Mode Toggle */}
+      <div style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius:12,padding:16,marginBottom:12,boxShadow:C.sh,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+        <div style={{display:"flex",alignItems:"center",gap:10}}>
+          <span style={{fontSize:18}}>{isDark?"🌙":"☀️"}</span>
+          <div>
+            <div style={{fontSize:13,fontWeight:600,color:C.t1}}>Modo {isDark?"oscuro":"claro"}</div>
+            <div style={{fontSize:10.5,color:C.t3}}>Cambiar apariencia</div>
+          </div>
+        </div>
+        <button onClick={()=>toggleTheme(isDark?"light":"dark")} style={{width:48,height:28,borderRadius:14,background:isDark?C.pri:C.b1,border:"none",cursor:"pointer",position:"relative",transition:"background 0.2s"}}>
+          <div style={{width:22,height:22,borderRadius:11,background:C.w,position:"absolute",top:3,left:isDark?23:3,transition:"left 0.2s",boxShadow:"0 1px 3px rgba(0,0,0,0.2)"}}/>
+        </button>
+      </div>
+
       <Btn full v="err" onClick={onLogout} icon={Ic.out(C.err,16)}>Cerrar sesión</Btn>
     </div>
   );
@@ -3413,6 +3471,10 @@ function ReasonModal({ title, freight, btnLabel, btnType="err", onClose, onConfi
 
 // ======================== MAIN APP ====================================
 export default function Tolvink() {
+  const [theme, toggleTheme] = useTheme();
+  // Update global C object when theme changes
+  C = theme === "dark" ? { ...DARK } : { ...LIGHT };
+
   const auth = useAuth();
   const fh = useFreights(auth.user);
   const catalog = useCatalog(auth.user);
@@ -3537,7 +3599,7 @@ export default function Tolvink() {
       {screen==="detail" && <DetailScreen user={auth.user} freight={curFreight} perms={perms} onBack={()=>setScreen("list")} onAction={handleAction} actionLoading={actionLoading} onChat={(convId)=>{if(convId){setChatConvId(convId);setScreen("chats");}}} onRefresh={(id)=>fh.refresh(id)} onDuplicate={(f)=>{setDuplicateData(f);setScreen("new");}} onEdit={(f)=>{setEditData(f);setScreen("edit");}}/>}
       {screen==="new" && <NewScreen user={auth.user} lots={catalog.lots} plants={catalog.plants} fields={catalog.fields} trucks={catalog.trucks} onBack={()=>{setDuplicateData(null);setScreen("home");}} onCreate={handleCreate} submitting={submitting} duplicateFrom={duplicateData}/>}
       {screen==="edit" && editData && <EditScreen freight={editData} fields={catalog.fields} plants={catalog.plants} onBack={()=>{setEditData(null);setScreen("detail");}} onSave={async(id,data)=>{const r=await fh.update(id,data);if(r.ok){setEditData(null);setScreen("detail");show("Flete actualizado");}else show(r.error,"err");}}/>}
-      {screen==="profile" && <ProfileScreen user={auth.user} perms={perms} onLogout={auth.logout} onNav={nav}/>}
+      {screen==="profile" && <ProfileScreen user={auth.user} perms={perms} onLogout={auth.logout} onNav={nav} theme={theme} toggleTheme={toggleTheme}/>}
       {screen==="trucks" && <TrucksScreen onBack={()=>{catalog.refresh();setScreen("profile");}}/>}
       {screen==="fields" && <FieldsScreen onBack={()=>{catalog.refresh();setScreen("profile");}}/>}
       {screen==="access" && <AccessScreen onBack={()=>setScreen("profile")}/>}
