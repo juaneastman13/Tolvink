@@ -761,7 +761,7 @@ function NewScreen({ user, lots, plants, onBack, onCreate }) {
         </div>
 
         <div>
-          <Field label="Toneladas" icon={Ic.weight(C.t2,14)} value={form.tons} onChange={v=>u({tons:v})} placeholder="Ej: 30" type="number"/>
+          <Field label="Toneladas" icon={Ic.grain(C.t2,14)} value={form.tons} onChange={v=>u({tons:v})} placeholder="Ej: 30"/>
           {touched&&<FieldError error={errs.tons}/>}
         </div>
 
