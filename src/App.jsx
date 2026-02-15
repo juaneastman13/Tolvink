@@ -1630,10 +1630,9 @@ export default function Tolvink() {
     <div style={{height:"100vh",background:C.bg,color:C.t1,fontFamily:FONT,display:"flex",flexDirection:"column",maxWidth:900,margin:"0 auto",position:"relative",overflow:"hidden"}}>
       <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&family=JetBrains+Mono:wght@400;500&display=swap');*{box-sizing:border-box;margin:0;padding:0}body{background:${C.bg};overflow:hidden}input::placeholder,textarea::placeholder{color:${C.t3}}::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:${C.b1};border-radius:4px}@keyframes ti{from{opacity:0;transform:translate(-50%,-12px)}to{opacity:1;transform:translate(-50%,0)}}@media(min-width:640px){.tv-grid{display:grid!important;grid-template-columns:1fr 1fr!important;gap:12px!important}.tv-grid3{display:grid!important;grid-template-columns:1fr 1fr 1fr!important;gap:12px!important}.tv-pad{padding:24px 32px!important}.tv-detail-grid{display:grid!important;grid-template-columns:1fr 1fr!important;gap:16px!important}}`}</style>
       {/* Fixed header */}
-      <div style={{padding:"10px 18px",display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:`1px solid ${C.b2}`,background:C.w,flexShrink:0,zIndex:10}}>
-        <span style={{fontSize:11,fontWeight:500,color:C.t3}}>{new Date().toLocaleTimeString("es",{hour:"2-digit",minute:"2-digit"})}</span>
-        <span style={{fontSize:14,fontWeight:800,color:C.pri,letterSpacing:-0.5}}>tolvink</span>
-        {Ic.bell(C.t3,16)}
+      <div style={{padding:"12px 18px",display:"flex",alignItems:"center",borderBottom:`1px solid ${C.b2}`,background:C.w,flexShrink:0,zIndex:10}}>
+        <span style={{fontSize:20,fontWeight:800,color:C.pri,letterSpacing:-0.5}}>tolvink</span>
+        <span style={{width:7,height:7,borderRadius:4,background:C.acc,display:"inline-block",marginLeft:3,marginTop:-8}}></span>
       </div>
 
       {/* Scrollable content area */}
