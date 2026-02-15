@@ -3,6 +3,7 @@ import {
   apiLogin, apiRegister, apiLogout, apiListFreights, apiGetFreight,
   apiCreateFreight, apiAssignFreight, apiRespondFreight,
   apiStartFreight, apiFinishFreight, apiCancelFreight,
+  apiConfirmLoaded, apiConfirmFinished,
   apiGetPlants, apiGetLots, apiGetTransportCompanies,
   getToken, getSavedUser, setAuthFailHandler, clearAuth,
 } from "./api";
@@ -144,13 +145,14 @@ const Ic = {
 // Freight has 2 states. Trip has its own lifecycle.
 // This separation allows: 1 Freight → many Trips (reasignaciones)
 
-// Backend states: draft, pending_assignment, assigned, accepted, in_progress, finished, canceled
+// Backend states: draft, pending_assignment, assigned, accepted, in_progress, loaded, finished, canceled
 const STATUS = {
   draft:              { label:"Borrador",     color:C.muted, bg:C.mutedPale },
   pending_assignment: { label:"Disponible",   color:C.ok,    bg:C.okPale    },
   assigned:           { label:"Asignado",     color:C.info,  bg:C.infoPale  },
   accepted:           { label:"Aceptado",     color:"#7C3AED", bg:"#F3EEFF" },
   in_progress:        { label:"En curso",     color:C.acc,   bg:C.accPale   },
+  loaded:             { label:"Cargado",      color:"#B45309",bg:"#FEF3C7"  },
   finished:           { label:"Finalizado",   color:C.ok,    bg:C.okPale    },
   canceled:           { label:"Cancelado",    color:C.err,   bg:C.errPale   },
 };
@@ -161,7 +163,8 @@ function getActions(status, userType, role) {
     pending_assignment: { producer:["cancel"], plant:["assign","cancel"], transporter:[] },
     assigned:           { producer:["cancel"], plant:["cancel"],          transporter:["accept","reject"] },
     accepted:           { producer:["cancel"], plant:["cancel"],          transporter:["start","cancel"] },
-    in_progress:        { producer:[],         plant:["finish"],          transporter:["finish"] },
+    in_progress:        { producer:[],         plant:[],                  transporter:["confirm_loaded"] },
+    loaded:             { producer:["confirm_loaded"], plant:["confirm_finished"], transporter:["confirm_finished"] },
     finished:           { producer:[], plant:[], transporter:[] },
     canceled:           { producer:[], plant:[], transporter:[] },
     draft:              { producer:[], plant:[], transporter:[] },
@@ -263,7 +266,9 @@ function useFreights(user) {
   const start = useCallback(async (fId)=>{ try { await apiStartFreight(fId); await refresh(fId); return {ok:true}; } catch(e) { return {ok:false,error:e.message}; } },[refresh]);
   const finish = useCallback(async (fId)=>{ try { await apiFinishFreight(fId); await refresh(fId); return {ok:true}; } catch(e) { return {ok:false,error:e.message}; } },[refresh]);
   const cancel = useCallback(async (fId,reason)=>{ try { await apiCancelFreight(fId,reason); await refresh(fId); return {ok:true}; } catch(e) { return {ok:false,error:e.message}; } },[refresh]);
-  return { freights, loading, error, fetchAll, create, assign, respond, start, finish, cancel };
+  const confirmLoaded = useCallback(async (fId)=>{ try { await apiConfirmLoaded(fId); await refresh(fId); return {ok:true}; } catch(e) { return {ok:false,error:e.message}; } },[refresh]);
+  const confirmFinished = useCallback(async (fId)=>{ try { await apiConfirmFinished(fId); await refresh(fId); return {ok:true}; } catch(e) { return {ok:false,error:e.message}; } },[refresh]);
+  return { freights, loading, error, fetchAll, create, assign, respond, start, finish, cancel, confirmLoaded, confirmFinished };
 }
 
 function mapFreight(f) {
@@ -280,6 +285,12 @@ function mapFreight(f) {
     driverName:a?.driver?.name||null,
     assignments:(f.assignments||[]).map(x=>({ id:x.id, status:x.status, transporterName:x.transportCompany?.name||"", reason:x.reason||null, createdAt:x.createdAt })),
     notes:f.notes||"", cancelReason:f.cancelReason||"", createdAt:f.createdAt,
+    // Cross-confirmation timestamps
+    transporterLoadedConfirmedAt: f.transporterLoadedConfirmedAt||null,
+    producerLoadedConfirmedAt: f.producerLoadedConfirmedAt||null,
+    transporterFinishedConfirmedAt: f.transporterFinishedConfirmedAt||null,
+    plantFinishedConfirmedAt: f.plantFinishedConfirmedAt||null,
+    loadedAt: f.loadedAt||null,
   };
 }
 
@@ -434,8 +445,7 @@ function AuthScreen({ onLogin, onSignup, loading, error, clearError }) {
     <div style={{ minHeight:"100vh", background:C.bg, fontFamily:FONT, display:"flex", flexDirection:"column", justifyContent:"center", padding:28, maxWidth:430, margin:"0 auto" }}>
       <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&family=JetBrains+Mono:wght@400;500&display=swap');*{box-sizing:border-box;margin:0;padding:0}body{background:${C.bg}}input::placeholder,textarea::placeholder{color:${C.t3}}@keyframes ti{from{opacity:0;transform:translate(-50%,-12px)}to{opacity:1;transform:translate(-50%,0)}}`}</style>
       <div style={{ textAlign:"center", marginBottom:mode==="login"?36:24 }}>
-        <div style={{ display:"inline-flex", alignItems:"center", justifyContent:"center", width:52, height:52, borderRadius:14, background:C.priPale, marginBottom:12 }}>{Ic.grain(C.pri,26)}</div>
-        <div style={{ fontSize:32, fontWeight:800, color:C.pri, letterSpacing:-1.5, lineHeight:1 }}>tolvink</div>
+        <div style={{ fontSize:36, fontWeight:800, color:C.pri, letterSpacing:-1.5, lineHeight:1, marginBottom:4 }}>tolvink</div>
         <div style={{ fontSize:11, color:C.t2, letterSpacing:2.5, textTransform:"uppercase", fontWeight:500, marginTop:6 }}>gestión de fletes</div>
       </div>
       <div style={{ background:C.w, borderRadius:16, padding:22, boxShadow:C.shMd, border:`1px solid ${C.b2}` }}>
@@ -484,12 +494,12 @@ function AuthScreen({ onLogin, onSignup, loading, error, clearError }) {
 function HomeScreen({ user, freights, perms, onNav }) {
   const stats = useMemo(()=>{
     const avail = freights.filter(f=>f.status==="pending_assignment").length;
-    const active = freights.filter(f=>["assigned","accepted","in_progress"].includes(f.status)).length;
+    const active = freights.filter(f=>["assigned","accepted","in_progress","loaded"].includes(f.status)).length;
     const done = freights.filter(f=>f.status==="finished").length;
     return {avail,active,done};
   },[freights]);
 
-  const activeFreights = useMemo(()=>freights.filter(f=>["assigned","accepted","in_progress"].includes(f.status)),[freights]);
+  const activeFreights = useMemo(()=>freights.filter(f=>["assigned","accepted","in_progress","loaded"].includes(f.status)),[freights]);
 
   const tc = ({plant:C.pri,transporter:C.info,producer:C.acc})[user.userType]||C.pri;
   const typeLabel = ({plant:"Planta de Acopio",transporter:"Transportista",producer:"Productor"})[user.userType];
@@ -558,7 +568,7 @@ function ListScreen({ freights, onNav }) {
   const filtered = useMemo(()=>{
     return freights.filter(f=>{
       if(tab==="available" && f.status!=="pending_assignment") return false;
-      if(tab==="active" && !["assigned","accepted","in_progress"].includes(f.status)) return false;
+      if(tab==="active" && !["assigned","accepted","in_progress","loaded"].includes(f.status)) return false;
       if(tab==="done" && f.status!=="finished") return false;
       if(tab==="closed" && f.status!=="canceled") return false;
       if(searchQ && !textMatch(f.requestedByName,searchQ) && !textMatch(f.code,searchQ) && !textMatch(f.grain,searchQ)) return false;
@@ -640,6 +650,15 @@ function DetailScreen({ user, freight, perms, onBack, onAction }) {
   const st = stCfg(freight.status);
   const actions = getActions(freight.status, user.userType, user.role);
 
+  // Filter actions based on confirmation state
+  const filteredActions = actions.filter(a=>{
+    if(a==="confirm_loaded" && user.userType==="transporter" && freight.transporterLoadedConfirmedAt) return false;
+    if(a==="confirm_loaded" && user.userType==="producer" && freight.producerLoadedConfirmedAt) return false;
+    if(a==="confirm_finished" && user.userType==="transporter" && freight.transporterFinishedConfirmedAt) return false;
+    if(a==="confirm_finished" && user.userType==="plant" && freight.plantFinishedConfirmedAt) return false;
+    return true;
+  });
+
   return (
     <div style={{ flex:1, overflow:"auto", padding:18 }}>
       <button onClick={onBack} style={{ background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", fontSize:13, fontWeight:600, color:C.pri, marginBottom:14, padding:0, display:"flex", alignItems:"center", gap:4 }}>{Ic.chev(C.pri,18)} Volver</button>
@@ -653,7 +672,7 @@ function DetailScreen({ user, freight, perms, onBack, onAction }) {
 
       {/* Progress */}
       {freight.status !== "canceled" && (()=>{
-        const steps = ["pending_assignment","assigned","accepted","in_progress","finished"];
+        const steps = ["pending_assignment","assigned","accepted","in_progress","loaded","finished"];
         const curIdx = steps.indexOf(freight.status);
         return <div style={{ background:C.w, border:`1px solid ${C.b1}`, borderRadius:12, padding:16, marginBottom:12, boxShadow:C.sh }}>
           <div style={{ fontSize:10.5, fontWeight:700, marginBottom:12, color:C.t2, textTransform:"uppercase", letterSpacing:0.5 }}>Progreso</div>
@@ -661,13 +680,57 @@ function DetailScreen({ user, freight, perms, onBack, onAction }) {
             {steps.map((s,i)=>{
               const done = i < curIdx; const active = i === curIdx; const c = stCfg(s);
               return <div key={s} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
-                <div style={{width:"100%",height:4,borderRadius:2,background:done||active?c.color:C.b1}}/>
+                <div style={{width:"100%",height:4,borderRadius:2,background:done?C.pri:active?C.acc:C.b1}}/>
                 <span style={{fontSize:8,fontWeight:active?700:500,color:active?c.color:done?C.t2:C.t3,textAlign:"center"}}>{c.label}</span>
               </div>;
             })}
           </div>
         </div>;
       })()}
+
+      {/* Cross-confirmations panel */}
+      {(freight.status==="loaded" || freight.status==="in_progress") && (
+        <div style={{ background:C.w, border:`1px solid ${C.acc}30`, borderRadius:12, padding:16, marginBottom:12, boxShadow:C.sh }}>
+          <div style={{ fontSize:10.5, fontWeight:700, marginBottom:12, color:C.acc, textTransform:"uppercase", letterSpacing:0.5 }}>Confirmaciones</div>
+          <div style={{display:"flex",gap:16}}>
+            <div style={{flex:1}}>
+              <div style={{fontSize:10,fontWeight:700,color:C.t2,marginBottom:8,textTransform:"uppercase",letterSpacing:0.4}}>Carga</div>
+              <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                <div style={{display:"flex",alignItems:"center",gap:6,fontSize:11.5}}>
+                  <span style={{width:18,height:18,borderRadius:9,display:"inline-flex",alignItems:"center",justifyContent:"center",background:freight.transporterLoadedConfirmedAt?C.okPale:C.accPale,flexShrink:0}}>
+                    {freight.transporterLoadedConfirmedAt ? Ic.chk(C.ok,12) : <span style={{fontSize:10,color:C.acc}}>⏳</span>}
+                  </span>
+                  <span style={{color:freight.transporterLoadedConfirmedAt?C.ok:C.t2,fontWeight:freight.transporterLoadedConfirmedAt?600:400}}>Transportista</span>
+                </div>
+                <div style={{display:"flex",alignItems:"center",gap:6,fontSize:11.5}}>
+                  <span style={{width:18,height:18,borderRadius:9,display:"inline-flex",alignItems:"center",justifyContent:"center",background:freight.producerLoadedConfirmedAt?C.okPale:C.accPale,flexShrink:0}}>
+                    {freight.producerLoadedConfirmedAt ? Ic.chk(C.ok,12) : <span style={{fontSize:10,color:C.acc}}>⏳</span>}
+                  </span>
+                  <span style={{color:freight.producerLoadedConfirmedAt?C.ok:C.t2,fontWeight:freight.producerLoadedConfirmedAt?600:400}}>Productor</span>
+                </div>
+              </div>
+            </div>
+            <div style={{width:1,background:C.b1}}/>
+            <div style={{flex:1}}>
+              <div style={{fontSize:10,fontWeight:700,color:C.t2,marginBottom:8,textTransform:"uppercase",letterSpacing:0.4}}>Entrega</div>
+              <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                <div style={{display:"flex",alignItems:"center",gap:6,fontSize:11.5}}>
+                  <span style={{width:18,height:18,borderRadius:9,display:"inline-flex",alignItems:"center",justifyContent:"center",background:freight.transporterFinishedConfirmedAt?C.okPale:C.accPale,flexShrink:0}}>
+                    {freight.transporterFinishedConfirmedAt ? Ic.chk(C.ok,12) : <span style={{fontSize:10,color:C.acc}}>⏳</span>}
+                  </span>
+                  <span style={{color:freight.transporterFinishedConfirmedAt?C.ok:C.t2,fontWeight:freight.transporterFinishedConfirmedAt?600:400}}>Transportista</span>
+                </div>
+                <div style={{display:"flex",alignItems:"center",gap:6,fontSize:11.5}}>
+                  <span style={{width:18,height:18,borderRadius:9,display:"inline-flex",alignItems:"center",justifyContent:"center",background:freight.plantFinishedConfirmedAt?C.okPale:C.accPale,flexShrink:0}}>
+                    {freight.plantFinishedConfirmedAt ? Ic.chk(C.ok,12) : <span style={{fontSize:10,color:C.acc}}>⏳</span>}
+                  </span>
+                  <span style={{color:freight.plantFinishedConfirmedAt?C.ok:C.t2,fontWeight:freight.plantFinishedConfirmedAt?600:400}}>Planta</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Info */}
       <div style={{ background:C.w, border:`1px solid ${C.b1}`, borderRadius:12, padding:16, marginBottom:12, boxShadow:C.sh }}>
@@ -707,12 +770,13 @@ function DetailScreen({ user, freight, perms, onBack, onAction }) {
 
       {/* Actions */}
       <div style={{ display:"flex", flexDirection:"column", gap:8, marginBottom:14 }}>
-        {actions.includes("assign") && <Btn full v="acc" icon={Ic.chk(C.w,16)} onClick={()=>onAction(freight.id,"assign")}>Asignar transportista</Btn>}
-        {actions.includes("accept") && <Btn full icon={Ic.chk(C.w,16)} onClick={()=>onAction(freight.id,"accept")}>Aceptar flete</Btn>}
-        {actions.includes("start") && <Btn full icon={Ic.truck(C.w,16)} onClick={()=>onAction(freight.id,"start")}>Iniciar viaje</Btn>}
-        {actions.includes("finish") && <Btn full icon={Ic.chk(C.w,16)} onClick={()=>onAction(freight.id,"finish")}>Finalizar viaje</Btn>}
-        {actions.includes("reject") && <Btn full v="err" icon={Ic.ban(C.w,16)} onClick={()=>onAction(freight.id,"reject")}>Rechazar asignación</Btn>}
-        {actions.includes("cancel") && <Btn full v="err" icon={Ic.cross(C.err,16)} onClick={()=>onAction(freight.id,"cancel")}>Cancelar flete</Btn>}
+        {filteredActions.includes("assign") && <Btn full v="acc" icon={Ic.chk(C.w,16)} onClick={()=>onAction(freight.id,"assign")}>Asignar transportista</Btn>}
+        {filteredActions.includes("accept") && <Btn full icon={Ic.chk(C.w,16)} onClick={()=>onAction(freight.id,"accept")}>Aceptar flete</Btn>}
+        {filteredActions.includes("start") && <Btn full icon={Ic.truck(C.w,16)} onClick={()=>onAction(freight.id,"start")}>Iniciar viaje</Btn>}
+        {filteredActions.includes("confirm_loaded") && <Btn full v="acc" icon={Ic.chk(C.w,16)} onClick={()=>onAction(freight.id,"confirm_loaded")}>Confirmar carga</Btn>}
+        {filteredActions.includes("confirm_finished") && <Btn full v="acc" icon={Ic.chk(C.w,16)} onClick={()=>onAction(freight.id,"confirm_finished")}>Confirmar entrega</Btn>}
+        {filteredActions.includes("reject") && <Btn full v="err" icon={Ic.ban(C.w,16)} onClick={()=>onAction(freight.id,"reject")}>Rechazar asignación</Btn>}
+        {filteredActions.includes("cancel") && <Btn full v="err" icon={Ic.cross(C.err,16)} onClick={()=>onAction(freight.id,"cancel")}>Cancelar flete</Btn>}
       </div>
 
       <div style={{ background:C.bgCardAlt, borderRadius:10, padding:12, display:"flex", alignItems:"center", gap:10, border:`1px solid ${C.b2}` }}>
@@ -887,7 +951,8 @@ export default function Tolvink() {
     if(action==="reject") setModal({type:"reason",freight:f,title:"Rechazar asignación",btnLabel:"Rechazar",action:"reject"});
     if(action==="accept") (async()=>{ const r=await fh.respond(fId,"accepted"); if(r.ok) show("Flete aceptado"); else show(r.error,"err"); })();
     if(action==="start") (async()=>{ const r=await fh.start(fId); if(r.ok) show("Viaje iniciado"); else show(r.error,"err"); })();
-    if(action==="finish") (async()=>{ const r=await fh.finish(fId); if(r.ok) show("Viaje finalizado"); else show(r.error,"err"); })();
+    if(action==="confirm_loaded") (async()=>{ const r=await fh.confirmLoaded(fId); if(r.ok) show("Carga confirmada"); else show(r.error,"err"); })();
+    if(action==="confirm_finished") (async()=>{ const r=await fh.confirmFinished(fId); if(r.ok) show("Entrega confirmada"); else show(r.error,"err"); })();
   };
 
   const handleAssign = async (fId, transportCompanyId)=>{
@@ -909,7 +974,7 @@ export default function Tolvink() {
     if(r.ok){ setScreen("list"); show("Flete solicitado"); } else show(r.error,"err");
   };
 
-  if(auth.loading) return <div style={{minHeight:"100vh",background:C.bg,fontFamily:FONT,display:"flex",alignItems:"center",justifyContent:"center"}}><div style={{textAlign:"center"}}><div style={{display:"inline-flex",alignItems:"center",gap:5,marginBottom:12}}>{Ic.grain(C.pri,20)}<span style={{fontSize:16,fontWeight:800,color:C.pri}}>tolvink</span></div><div style={{fontSize:12,color:C.t3}}>Cargando...</div></div></div>;
+  if(auth.loading) return <div style={{minHeight:"100vh",background:C.bg,fontFamily:FONT,display:"flex",alignItems:"center",justifyContent:"center"}}><div style={{textAlign:"center"}}><div style={{fontSize:20,fontWeight:800,color:C.pri,marginBottom:12,letterSpacing:-0.5}}>tolvink</div><div style={{fontSize:12,color:C.t3}}>Cargando...</div></div></div>;
 
   if(!auth.user) return <AuthScreen onLogin={auth.login} onSignup={auth.signup} loading={auth.loading} error={auth.error} clearError={auth.clearError}/>;
   const curFreight = fh.freights.find(f=>f.id===selFreight);
@@ -919,7 +984,7 @@ export default function Tolvink() {
       <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&family=JetBrains+Mono:wght@400;500&display=swap');*{box-sizing:border-box;margin:0;padding:0}body{background:${C.bg}}input::placeholder,textarea::placeholder{color:${C.t3}}::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:${C.b1};border-radius:4px}@keyframes ti{from{opacity:0;transform:translate(-50%,-12px)}to{opacity:1;transform:translate(-50%,0)}}`}</style>
       <div style={{padding:"10px 18px",display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:`1px solid ${C.b2}`,background:C.w}}>
         <span style={{fontSize:11,fontWeight:500,color:C.t3}}>{new Date().toLocaleTimeString("es",{hour:"2-digit",minute:"2-digit"})}</span>
-        <div style={{display:"flex",alignItems:"center",gap:5}}>{Ic.grain(C.pri,15)}<span style={{fontSize:13,fontWeight:800,color:C.pri,letterSpacing:-0.5}}>tolvink</span></div>
+        <span style={{fontSize:14,fontWeight:800,color:C.pri,letterSpacing:-0.5}}>tolvink</span>
         {Ic.bell(C.t3,16)}
       </div>
 
