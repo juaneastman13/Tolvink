@@ -3,7 +3,7 @@ import {
   apiLogin, apiRegister, apiLogout, apiListFreights, apiGetFreight,
   apiCreateFreight, apiAssignFreight, apiRespondFreight,
   apiStartFreight, apiFinishFreight, apiCancelFreight,
-  apiConfirmLoaded, apiConfirmFinished,
+  apiConfirmLoaded, apiConfirmFinished, apiAuthorizeFreight,
   apiGetPlants, apiGetLots, apiGetTransportCompanies, apiGetTrucks,
   apiCreateTruck, apiDeactivateTruck,
   apiGetFields, apiCreateField, apiCreateLot, apiGetFieldLots,
@@ -151,6 +151,7 @@ const Ic = {
   filter:(c=C.t2,s=16)=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>,
   cam:(c=C.t2,s=18)=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>,
   img:(c=C.t2,s=18)=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>,
+  doc:(c=C.t2,s=18)=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>,
 };
 
 // ======================== STATE MACHINE ==============================
@@ -171,10 +172,10 @@ const STATUS = {
 };
 function stCfg(s) { return STATUS[s] || STATUS.pending_assignment; }
 
-function getActions(status, userType, role) {
+function getActions(status, userType, role, isOwnFleet) {
   const map = {
     pending_assignment: { producer:["cancel"], plant:["assign","cancel"], transporter:[] },
-    assigned:           { producer:["cancel"], plant:["cancel"],          transporter:["accept","reject"] },
+    assigned:           { producer:["cancel"], plant: isOwnFleet ? ["authorize","cancel"] : ["cancel"], transporter:["accept","reject"] },
     accepted:           { producer:["cancel"], plant:["cancel"],          transporter:["start","cancel"] },
     in_progress:        { producer:[],         plant:[],                  transporter:["confirm_loaded"] },
     loaded:             { producer:["confirm_loaded"], plant:["confirm_finished"], transporter:["confirm_finished"] },
@@ -293,19 +294,21 @@ function useFreights(user) {
   const cancel = useCallback(async (fId,reason)=>{ try { await apiCancelFreight(fId,reason); await refresh(fId); return {ok:true}; } catch(e) { return {ok:false,error:e.message}; } },[refresh]);
   const confirmLoaded = useCallback(async (fId)=>{ try { await apiConfirmLoaded(fId); await refresh(fId); return {ok:true}; } catch(e) { return {ok:false,error:e.message}; } },[refresh]);
   const confirmFinished = useCallback(async (fId)=>{ try { await apiConfirmFinished(fId); await refresh(fId); return {ok:true}; } catch(e) { return {ok:false,error:e.message}; } },[refresh]);
-  return { freights, loading, error, fetchAll, refresh, create, assign, respond, start, finish, cancel, confirmLoaded, confirmFinished };
+  const authorize = useCallback(async (fId)=>{ try { await apiAuthorizeFreight(fId); await refresh(fId); return {ok:true}; } catch(e) { return {ok:false,error:e.message}; } },[refresh]);
+  return { freights, loading, error, fetchAll, refresh, create, assign, respond, start, finish, cancel, confirmLoaded, confirmFinished, authorize };
 }
 
 function mapFreight(f) {
   if(!f) return null;
   const a = f.assignments?.find(x=>x.status==="active"||x.status==="accepted");
+  const isOwnFleet = !!(a && a.transportCompanyId === f.originCompanyId);
   return {
     id:f.id, code:f.code, status:f.status,
     grain:f.items?.[0]?.grain||"", tons:f.items?.[0]?.tons||0,
     unit:f.items?.[0]?.unit||"toneladas", amount:f.items?.[0]?.amount||0,
     productTypeOther:f.items?.[0]?.productTypeOther||"",
-    originLotId:f.originLotId, originName:f.originName||"",
-    fieldName:f.field?.name||"",
+    originLotId:f.originLotId, originName:f.originName||"", originCompanyId:f.originCompanyId||"",
+    fieldName:f.field?.name||"", isOwnFleet,
     destPlantId:f.destPlantId, destName:f.destName||"",
     loadDate:f.loadDate?.split("T")[0]||"", loadTime:f.loadTime||"",
     scheduledAt:f.scheduledAt||null,
@@ -774,7 +777,7 @@ function DocsGallery({ documents }) {
 function DetailScreen({ user, freight, perms, onBack, onAction, onChat, onRefresh }) {
   if(!freight) return null;
   const st = stCfg(freight.status);
-  const actions = getActions(freight.status, user.userType, user.role);
+  const actions = getActions(freight.status, user.userType, user.role, freight.isOwnFleet);
 
   // Filter actions based on confirmation state
   const filteredActions = actions.filter(a=>{
@@ -900,8 +903,20 @@ function DetailScreen({ user, freight, perms, onBack, onAction, onChat, onRefres
         </div>
       )}
 
+      {/* Own fleet banner */}
+      {freight.isOwnFleet && freight.status==="assigned" && (
+        <div style={{ background:C.accPale, border:`1.5px solid ${C.acc}30`, borderRadius:12, padding:14, marginBottom:12, display:"flex", alignItems:"center", gap:10 }}>
+          {Ic.truck(C.acc,20)}
+          <div>
+            <div style={{ fontSize:12, fontWeight:700, color:C.acc }}>Flota propia del productor</div>
+            <div style={{ fontSize:11, color:C.t2 }}>El productor asignó su propio camión. Solo se requiere autorización.</div>
+          </div>
+        </div>
+      )}
+
       {/* Actions */}
       <div style={{ display:"flex", flexDirection:"column", gap:8, marginBottom:14 }}>
+        {filteredActions.includes("authorize") && <Btn full icon={Ic.chk(C.w,16)} onClick={()=>onAction(freight.id,"authorize")}>Autorizar viaje</Btn>}
         {filteredActions.includes("assign") && <Btn full v="acc" icon={Ic.chk(C.w,16)} onClick={()=>onAction(freight.id,"assign")}>Asignar transportista</Btn>}
         {filteredActions.includes("accept") && <Btn full icon={Ic.chk(C.w,16)} onClick={()=>onAction(freight.id,"accept")}>Aceptar flete</Btn>}
         {filteredActions.includes("start") && <Btn full icon={Ic.truck(C.w,16)} onClick={()=>onAction(freight.id,"start")}>Iniciar viaje</Btn>}
@@ -1101,6 +1116,7 @@ function ProfileScreen({ user, perms, onLogout, onNav }) {
   if(user.userType==="transporter"||user.userType==="producer") mgmtItems.push({k:"trucks",l:"Mis Camiones",ic:Ic.truck(C.acc,18),c:C.acc});
   if(user.userType==="producer") mgmtItems.push({k:"fields",l:"Mis Campos y Lotes",ic:Ic.pin(C.pri,18),c:C.pri});
   if(user.userType==="plant") mgmtItems.push({k:"access",l:"Productores Habilitados",ic:Ic.user(C.pri,18),c:C.pri});
+  mgmtItems.push({k:"reports",l:"Informes y Documentos",ic:Ic.doc(C.sec,18),c:C.sec});
 
   return (
     <div style={{flex:1,overflow:"auto",padding:18}}>
@@ -1402,11 +1418,12 @@ function ChatsScreen({ user, openConvId, onConvOpened }) {
   const [newCompId, setNewCompId] = useState("");
   const [newErr, setNewErr] = useState(null);
   const [expandedGroups, setExpandedGroups] = useState({});
+  const [searchQ, setSearchQ] = useState("");
   const msgEndRef = useRef(null);
 
   const loadConvs = useCallback(async () => {
-    try { const c = await apiListConversations(); setConvs(c || []); return c||[]; } catch { return []; } finally { setLoading(false); }
-  }, []);
+    try { const c = await apiListConversations(searchQ||undefined); setConvs(c || []); return c||[]; } catch { return []; } finally { setLoading(false); }
+  }, [searchQ]);
   useEffect(() => { loadConvs().then(cs => {
     if(openConvId) {
       const found = cs.find(c=>c.id===openConvId);
@@ -1415,6 +1432,9 @@ function ChatsScreen({ user, openConvId, onConvOpened }) {
       if(onConvOpened) onConvOpened();
     }
   }); }, [loadConvs, openConvId]);
+
+  // Reload when search changes (debounced)
+  useEffect(()=>{ const t=setTimeout(()=>loadConvs(),300); return ()=>clearTimeout(t); },[searchQ]);
 
   const openConv = async (conv) => {
     setActiveConv(conv);
@@ -1571,6 +1591,14 @@ function ChatsScreen({ user, openConvId, onConvOpened }) {
         <Btn sm onClick={() => setShowNew(!showNew)} icon={showNew ? Ic.cross(C.w, 14) : Ic.plus(C.w, 14)}>{showNew ? "Cerrar" : "Nuevo"}</Btn>
       </div>
 
+      {/* Search bar */}
+      <div style={{ position:"relative", marginBottom:10 }}>
+        <div style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",display:"flex"}}>{Ic.srch(C.t3,16)}</div>
+        <input value={searchQ} onChange={e=>{setSearchQ(e.target.value);}} placeholder="Buscar conversación..."
+          style={{width:"100%",padding:"10px 14px 10px 36px",borderRadius:10,border:`1.5px solid ${C.b1}`,background:C.w,color:C.t1,fontSize:13,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}/>
+        {searchQ && <button onClick={()=>setSearchQ("")} style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",display:"flex"}}>{Ic.cross(C.t3,16)}</button>}
+      </div>
+
       {showNew && (
         <div style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: 12, padding: 16, marginBottom: 14, boxShadow: C.sh }}>
           <Field label="ID de empresa" value={newCompId} onChange={setNewCompId} placeholder="UUID de la empresa" />
@@ -1650,6 +1678,94 @@ function ChatsScreen({ user, openConvId, onConvOpened }) {
   );
 }
 
+// ======================== REPORTS =====================================
+
+function ReportsScreen({ onBack, freights }) {
+  const [expanded, setExpanded] = useState({});
+  const toggle = (k) => setExpanded(p=>({...p,[k]:!p[k]}));
+
+  // Group freights that have documents
+  const freightsWithDocs = (freights||[]).filter(f=>f.documents?.length>0);
+
+  // Group by status
+  const groups = useMemo(()=>{
+    const active = freightsWithDocs.filter(f=>!["finished","canceled"].includes(f.status));
+    const finished = freightsWithDocs.filter(f=>f.status==="finished");
+    const canceled = freightsWithDocs.filter(f=>f.status==="canceled");
+    return [
+      {key:"active", label:"Fletes activos", items:active, color:C.acc},
+      {key:"finished", label:"Finalizados", items:finished, color:C.ok},
+      {key:"canceled", label:"Cancelados", items:canceled, color:C.muted},
+    ].filter(g=>g.items.length>0);
+  },[freightsWithDocs]);
+
+  const totalDocs = freightsWithDocs.reduce((sum,f)=>sum+(f.documents?.length||0),0);
+
+  return (
+    <div style={{ flex:1, overflow:"auto", padding:18 }}>
+      <button onClick={onBack} style={{ background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", fontSize:13, fontWeight:600, color:C.pri, marginBottom:14, padding:0, display:"flex", alignItems:"center", gap:4 }}>{Ic.chev(C.pri,18)} Mi Perfil</button>
+      <div style={{ fontSize:20, fontWeight:800, letterSpacing:-0.3, marginBottom:4 }}>Informes y Documentos</div>
+      <div style={{ fontSize:12, color:C.t2, marginBottom:18 }}>{totalDocs} documento{totalDocs!==1?"s":""} en {freightsWithDocs.length} flete{freightsWithDocs.length!==1?"s":""}</div>
+
+      {freightsWithDocs.length===0 && <div style={{ textAlign:"center", padding:40, color:C.t3, fontSize:13 }}>No hay documentos adjuntos en tus fletes.</div>}
+
+      {groups.map(group=>(
+        <div key={group.key} style={{ marginBottom:16 }}>
+          <div style={{ fontSize:10.5, fontWeight:700, color:C.t2, textTransform:"uppercase", letterSpacing:0.5, marginBottom:8, display:"flex", alignItems:"center", gap:6 }}>
+            <span style={{width:8,height:8,borderRadius:4,background:group.color}}/>
+            {group.label} ({group.items.length})
+          </div>
+
+          {group.items.map(f=>{
+            const isOpen = expanded[f.id]!==false;
+            const docs = f.documents||[];
+            return (
+              <div key={f.id} style={{ background:C.w, border:`1px solid ${C.b1}`, borderRadius:12, overflow:"hidden", marginBottom:8, boxShadow:C.sh }}>
+                <button onClick={()=>toggle(f.id)} style={{ width:"100%", padding:"12px 14px", background:C.w, border:"none", cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:10, textAlign:"left" }}>
+                  {Ic.doc(group.color,18)}
+                  <div style={{ flex:1 }}>
+                    <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                      <span style={{ fontSize:12, fontWeight:700, fontFamily:MONO }}>{f.code}</span>
+                      <span style={{ fontSize:10, color:C.t3 }}>{f.grain} · {f.tons} {f.unit||"tn"}</span>
+                    </div>
+                    <div style={{ fontSize:11, color:C.t2, marginTop:2 }}>{docs.length} documento{docs.length!==1?"s":""} · {f.destName}</div>
+                  </div>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.t3} strokeWidth="2.5" style={{transform:isOpen?"rotate(180deg)":"rotate(0deg)",transition:"transform 0.2s"}}><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+
+                {isOpen && (
+                  <div style={{ borderTop:`1px solid ${C.b2}`, padding:"8px 14px" }}>
+                    {docs.map((d,i)=>(
+                      <div key={d.id||i} style={{ display:"flex", alignItems:"center", gap:10, padding:"8px 0", borderBottom:i<docs.length-1?`1px solid ${C.b2}`:"none" }}>
+                        {d.type==="photo" ? (
+                          <a href={d.url} target="_blank" rel="noopener noreferrer" style={{ width:48, height:48, borderRadius:8, overflow:"hidden", flexShrink:0, border:`1px solid ${C.b1}` }}>
+                            <img src={d.url} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }}/>
+                          </a>
+                        ) : (
+                          <div style={{ width:48, height:48, borderRadius:8, background:C.secPale, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                            {Ic.doc(C.sec,20)}
+                          </div>
+                        )}
+                        <div style={{ flex:1, minWidth:0 }}>
+                          <div style={{ fontSize:12, fontWeight:600, color:C.t1, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{d.name||"Documento"}</div>
+                          <div style={{ fontSize:10, color:C.t3 }}>{d.step==="request"?"Solicitud":d.step==="load_confirmation"?"Carga":d.step==="assignment"?"Asignación":"Otro"} · {d.createdAt?new Date(d.createdAt).toLocaleDateString("es",{day:"2-digit",month:"short"}):""}</div>
+                        </div>
+                        <a href={d.url} target="_blank" rel="noopener noreferrer" style={{ display:"flex", padding:6, borderRadius:8, background:C.secPale, textDecoration:"none" }}>
+                          {Ic.eye(C.sec,16)}
+                        </a>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // ======================== MODALS =====================================
 
 function AssignModal({ freight, transporters, onClose, onConfirm }) {
@@ -1723,6 +1839,29 @@ export default function Tolvink() {
   const [toast, setToast] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [chatConvId, setChatConvId] = useState(null);
+  const [unreadChats, setUnreadChats] = useState(0);
+
+  // Poll for unread chats (simple: count convs with recent messages)
+  useEffect(()=>{
+    if(!auth.user) return;
+    const checkUnread = async ()=>{
+      try {
+        const convs = await apiListConversations();
+        const recent = (convs||[]).filter(c=>{
+          const m = c.messages?.[0];
+          if(!m) return false;
+          const senderId = m.sender?.id || m.senderId;
+          if(senderId === auth.user.id) return false;
+          const age = Date.now() - new Date(m.createdAt).getTime();
+          return age < 300000; // 5 min
+        });
+        setUnreadChats(recent.length);
+      } catch {}
+    };
+    checkUnread();
+    const iv = setInterval(checkUnread, 30000);
+    return ()=>clearInterval(iv);
+  },[auth.user]);
 
   const perms = useMemo(()=>permsFor(auth.user),[auth.user]);
   const show = (msg,type="ok")=>setToast({msg,type});
@@ -1736,6 +1875,7 @@ export default function Tolvink() {
     if(action==="reject") setModal({type:"reason",freight:f,title:"Rechazar asignación",btnLabel:"Rechazar",action:"reject"});
     if(action==="accept") setModal({type:"truck_select",freight:f});
     if(action==="start") (async()=>{ const r=await fh.start(fId); if(r.ok) show("Viaje iniciado"); else show(r.error,"err"); })();
+    if(action==="authorize") (async()=>{ const r=await fh.authorize(fId); if(r.ok) show("Viaje autorizado"); else show(r.error,"err"); })();
     if(action==="confirm_loaded") (async()=>{ const r=await fh.confirmLoaded(fId); if(r.ok) show("Carga confirmada"); else show(r.error,"err"); })();
     if(action==="confirm_finished") (async()=>{ const r=await fh.confirmFinished(fId); if(r.ok) show("Entrega confirmada"); else show(r.error,"err"); })();
   };
@@ -1799,11 +1939,12 @@ export default function Tolvink() {
       {screen==="trucks" && <TrucksScreen onBack={()=>{catalog.refresh();setScreen("profile");}}/>}
       {screen==="fields" && <FieldsScreen onBack={()=>{catalog.refresh();setScreen("profile");}}/>}
       {screen==="access" && <AccessScreen onBack={()=>setScreen("profile")}/>}
+      {screen==="reports" && <ReportsScreen onBack={()=>setScreen("profile")} freights={fh.freights}/>}
       {screen==="chats" && <ChatsScreen user={auth.user} openConvId={chatConvId} onConvOpened={()=>setChatConvId(null)}/>}
       </div>
 
       {/* Fixed bottom nav */}
-      <Nav active={["detail"].includes(screen)?"list":["trucks","fields","access"].includes(screen)?"profile":screen} onChange={nav}/>
+      <Nav active={["detail"].includes(screen)?"list":["trucks","fields","access","reports"].includes(screen)?"profile":screen} onChange={nav} unread={unreadChats}/>
 
       {modal?.type==="assign" && <AssignModal freight={modal.freight} transporters={catalog.transporters} onClose={()=>setModal(null)} onConfirm={t=>handleAssign(modal.freight.id,t)}/>}
       {modal?.type==="truck_select" && <TruckSelectModal freight={modal.freight} trucks={catalog.trucks} onClose={()=>setModal(null)} onConfirm={t=>handleAcceptWithTruck(modal.freight.id,t)}/>}

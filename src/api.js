@@ -48,6 +48,7 @@ export async function apiFinishFreight(id) { return api(`/freights/${id}/finish`
 export async function apiCancelFreight(id,reason) { return api(`/freights/${id}/cancel`,{body:{reason}}); }
 export async function apiConfirmLoaded(id) { return api(`/freights/${id}/confirm-loaded`,{body:{}}); }
 export async function apiConfirmFinished(id) { return api(`/freights/${id}/confirm-finished`,{body:{}}); }
+export async function apiAuthorizeFreight(id) { return api(`/freights/${id}/authorize`,{body:{}}); }
 
 // Catalog
 export async function apiGetPlants() { return api('/catalog/plants'); }
