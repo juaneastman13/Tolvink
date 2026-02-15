@@ -158,6 +158,7 @@ const Ic = {
   seedling:(c="#1A6B37",s=22)=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22V10"/><path d="M6 13c0-3.5 2.7-6 6-6 3.3 0 6 2.5 6 6"/><path d="M12 10c0-4-2.5-7-6-8 0 3.5 2 7 6 8z"/><path d="M12 10c0-4 2.5-7 6-8 0 3.5-2 7-6 8z"/></svg>,
   expand:(c=C.t2,s=18)=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>,
   collapse:(c=C.t2,s=18)=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></svg>,
+  edit:(c=C.t2,s=18)=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>,
 };
 
 // ======================== STATE MACHINE ==============================
@@ -2281,7 +2282,9 @@ function FieldsScreen({ onBack }) {
   const startEditField = (f) => {
     setEditField(f.id);
     setEditFieldAddr(f.address || "");
-    setEditFieldLoc(f.lat ? { lat: parseFloat(f.lat), lng: parseFloat(f.lng), address: f.address || "" } : null);
+    const lat = f.lat != null ? Number(f.lat) : null;
+    const lng = f.lng != null ? Number(f.lng) : null;
+    setEditFieldLoc(lat && lng ? { lat, lng, address: f.address || "" } : null);
   };
 
   const handleUpdateField = async (fieldId) => {
@@ -2297,9 +2300,18 @@ function FieldsScreen({ onBack }) {
   };
 
   const startEditLot = (fieldId, l) => {
-    setEditLot({ fieldId, lotId: l.id });
-    setEditLotHa(l.hectares ? String(l.hectares) : "");
-    setEditLotLoc(l.lat ? { lat: parseFloat(l.lat), lng: parseFloat(l.lng) } : null);
+    try {
+      setEditLot({ fieldId, lotId: l.id });
+      setEditLotHa(l.hectares != null ? String(Number(l.hectares)) : "");
+      const lat = l.lat != null ? Number(l.lat) : null;
+      const lng = l.lng != null ? Number(l.lng) : null;
+      setEditLotLoc(lat && lng ? { lat, lng } : null);
+    } catch (e) {
+      console.error("startEditLot error", e);
+      setEditLot({ fieldId, lotId: l.id });
+      setEditLotHa("");
+      setEditLotLoc(null);
+    }
   };
 
   const handleUpdateLot = async () => {
@@ -2350,7 +2362,7 @@ function FieldsScreen({ onBack }) {
                     </div>
                   </div>
                   <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                    <button onClick={() => editField === f.id ? setEditField(null) : startEditField(f)} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }}>{Ic.doc(editField === f.id ? C.pri : C.t3, 16)}</button>
+                    <button onClick={() => editField === f.id ? setEditField(null) : startEditField(f)} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }}>{Ic.edit(editField === f.id ? C.pri : C.t3, 16)}</button>
                     <Bd color={C.pri} small>{(f.lots || []).length} lote{(f.lots || []).length !== 1 ? "s" : ""}</Bd>
                   </div>
                 </div>
@@ -2376,7 +2388,7 @@ function FieldsScreen({ onBack }) {
                         {l.hectares && <span style={{ fontSize: 10, color: C.t3 }}>{l.hectares} ha</span>}
                         {l.lat && <span style={{ fontSize: 9, color: C.ok }}>📍</span>}
                       </div>
-                      <button onClick={() => editLot?.lotId === l.id ? setEditLot(null) : startEditLot(f.id, l)} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }}>{Ic.doc(editLot?.lotId === l.id ? C.pri : C.t3, 14)}</button>
+                      <button onClick={() => editLot?.lotId === l.id ? setEditLot(null) : startEditLot(f.id, l)} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }}>{Ic.edit(editLot?.lotId === l.id ? C.pri : C.t3, 14)}</button>
                     </div>
                     {/* Edit lot form */}
                     {editLot?.lotId === l.id && (
