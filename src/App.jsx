@@ -62,23 +62,28 @@ function FieldError({ error }) {
 
 // ======================== DESIGN TOKENS ==============================
 const C = {
-  bg:"#F7F8F7",
+  bg:"#F8F7F5",
   bgCard:"#FFFFFF",
-  bgCardAlt:"#F1F4F2",
-  bgInput:"#EDEFED",
-  bgOverlay:"rgba(10,20,14,0.6)",
+  bgCardAlt:"#F5F3F0",
+  bgInput:"#EFEDEA",
+  bgOverlay:"rgba(20,10,10,0.6)",
   nav:"#FFFFFF",
 
-  // Primary — verde oscuro
-  pri:"#1A6B37",
-  priLt:"#228B46",
-  priPale:"#E4F3EA",
-  priGhost:"rgba(26,107,55,0.06)",
+  // Primary — rojo Dekalb
+  pri:"#C41E3A",
+  priLt:"#D42A47",
+  priPale:"#FCE8EC",
+  priGhost:"rgba(196,30,58,0.06)",
 
-  // Accent — naranja vibrante
-  acc:"#FF6A00",
-  accLt:"#FF8124",
-  accPale:"#FFF3E8",
+  // Accent — amarillo dorado
+  acc:"#E5BC00",
+  accLt:"#FFD100",
+  accPale:"#FFF9E0",
+  accDk:"#8B7200",
+
+  // Secondary — verde
+  sec:"#1A6B37",
+  secPale:"#E4F3EA",
 
   // Semantic
   ok:"#1A6B37",
@@ -93,15 +98,15 @@ const C = {
   mutedPale:"#F4F4F5",
 
   // Text
-  t1:"#18251C",
-  t2:"#4A6352",
-  t3:"#8A9C90",
+  t1:"#1C1917",
+  t2:"#57534E",
+  t3:"#A8A29E",
   tOn:"#FFFFFF",
 
   // Borders
-  b1:"#DEE4E0",
-  b2:"#ECF0ED",
-  bFocus:"#1A6B37",
+  b1:"#E7E5E4",
+  b2:"#F5F5F4",
+  bFocus:"#C41E3A",
 
   w:"#FFFFFF",
   sh:"0 1px 3px rgba(0,0,0,0.05),0 1px 2px rgba(0,0,0,0.03)",
@@ -156,12 +161,12 @@ const Ic = {
 // Color system: pending=naranja, active states=verde progresivo, terminal=verde oscuro/rojo
 const STATUS = {
   draft:              { label:"Borrador",            color:C.muted,   bg:C.mutedPale, border:C.muted   },
-  pending_assignment: { label:"Solicitado",          color:C.acc,     bg:C.accPale,   border:C.acc     },
-  assigned:           { label:"Asignado a flota",    color:"#34A853", bg:"#E8F5E9",   border:"#34A853" },
-  accepted:           { label:"Confirmado camión",   color:"#2E9448", bg:"#DCF0E2",   border:"#2E9448" },
-  in_progress:        { label:"En curso",            color:"#258B3E", bg:"#D0EBD7",   border:"#258B3E" },
-  loaded:             { label:"Cargando",            color:"#1B7D33", bg:"#C4E6CC",   border:"#1B7D33" },
-  finished:           { label:"Finalizado",          color:C.pri,     bg:C.priPale,   border:C.pri     },
+  pending_assignment: { label:"Solicitado",          color:C.warn,    bg:C.warnPale,  border:C.warn    },
+  assigned:           { label:"Asignado a flota",    color:"#2563EB", bg:"#EFF4FF",   border:"#2563EB" },
+  accepted:           { label:"Confirmado camión",   color:"#2563EB", bg:"#EFF4FF",   border:"#2563EB" },
+  in_progress:        { label:"En curso",            color:"#E5BC00", bg:"#FFF9E0",   border:"#E5BC00" },
+  loaded:             { label:"Cargando",            color:"#1A6B37", bg:"#E4F3EA",   border:"#1A6B37" },
+  finished:           { label:"Finalizado",          color:"#1A6B37", bg:"#E4F3EA",   border:"#1A6B37" },
   canceled:           { label:"Cancelado",           color:C.err,     bg:C.errPale,   border:C.err     },
 };
 function stCfg(s) { return STATUS[s] || STATUS.pending_assignment; }
@@ -351,7 +356,7 @@ function Btn({ children, onClick, v="pri", full, sm, icon, disabled, style={} })
     sec:  { bg:C.w,   c:C.pri, bd:C.b1 },
     err:  { bg:C.errPale, c:C.err },
     ghost:{ bg:"transparent", c:C.t2 },
-    acc:  { bg:C.acc, c:C.w },
+    acc:  { bg:C.acc, c:"#1C1917" },
   };
   const vv = vs[v] || vs.pri;
   return <button disabled={disabled} onClick={onClick} style={{ display:"inline-flex", alignItems:"center", justifyContent:"center", gap:7, padding:sm?"8px 14px":"12px 22px", borderRadius:10, fontSize:sm?12:13.5, fontWeight:600, fontFamily:"inherit", background:disabled?"#E8ECE9":vv.bg, color:disabled?C.t3:vv.c, border:vv.bd?`1px solid ${vv.bd}`:"none", cursor:disabled?"not-allowed":"pointer", width:full?"100%":"auto", transition:"all 0.15s", ...style }}>{icon&&<span style={{display:"flex",alignItems:"center"}}>{icon}</span>}{children}</button>;
@@ -446,7 +451,7 @@ function AuthScreen({ onLogin, onSignup, loading, error, clearError }) {
     if(mode==="login") onLogin(email,pw);
     else onSignup({name,email,pw,userType:uType,role:uRole,entity});
   };
-  const tc = {planta:C.pri,transporter:C.info,producer:C.acc};
+  const tc = {planta:C.pri,transporter:C.info,producer:C.sec};
 
   // PWA install prompt
   const [canInstall, setCanInstall] = useState(false);
@@ -527,7 +532,7 @@ function HomeScreen({ user, freights, perms, onNav }) {
     return freights.filter(f=>FILTER_MAP[activeFilter]?.includes(f.status));
   },[freights,activeFilter]);
 
-  const tc = ({plant:C.pri,transporter:C.info,producer:C.acc})[user.userType]||C.pri;
+  const tc = ({plant:C.pri,transporter:C.info,producer:C.sec})[user.userType]||C.pri;
   const typeLabel = ({plant:"Planta de Acopio",transporter:"Transportista",producer:"Productor"})[user.userType];
 
   const toggleFilter = (f) => setActiveFilter(prev=>prev===f?"all":f);
@@ -558,7 +563,7 @@ function HomeScreen({ user, freights, perms, onNav }) {
       {perms.canRequest && <Btn full v="acc" onClick={()=>onNav("new")} icon={Ic.plus(C.w,16)} style={{marginBottom:16}}>Solicitar nuevo flete</Btn>}
 
       {perms.canApprove && stats.avail>0 && activeFilter==="all" && (
-        <div onClick={()=>toggleFilter("requested")} style={{ background:C.accPale, border:`1px solid ${C.acc}22`, borderLeft:`3px solid ${C.acc}`, borderRadius:12, padding:14, marginBottom:18, cursor:"pointer", display:"flex", alignItems:"center", gap:12 }}>
+        <div onClick={()=>toggleFilter("requested")} style={{ background:C.accPale, border:`1px solid ${C.acc}22`, borderLeft:`3px solid ${C.sec}`, borderRadius:12, padding:14, marginBottom:18, cursor:"pointer", display:"flex", alignItems:"center", gap:12 }}>
           {Ic.warn(C.acc,24)}<div><div style={{ fontSize:13, fontWeight:700, color:C.acc }}>{stats.avail} flete{stats.avail>1?"s":""} solicitado{stats.avail>1?"s":""}</div><div style={{ fontSize:11.5, color:C.t2 }}>Esperando asignación de transporte</div></div>
         </div>
       )}
@@ -812,7 +817,7 @@ function DetailScreen({ user, freight, perms, onBack, onAction, onChat, onRefres
 
       {/* Cross-confirmations panel */}
       {(freight.status==="loaded" || freight.status==="in_progress") && (
-        <div style={{ background:C.w, border:`1px solid ${C.acc}30`, borderLeft:`3px solid ${C.acc}`, borderRadius:12, padding:16, marginBottom:12, boxShadow:C.sh }}>
+        <div style={{ background:C.w, border:`1px solid ${C.acc}30`, borderLeft:`3px solid ${C.sec}`, borderRadius:12, padding:16, marginBottom:12, boxShadow:C.sh }}>
           <div style={{ fontSize:10.5, fontWeight:700, marginBottom:12, color:C.acc, textTransform:"uppercase", letterSpacing:0.5 }}>Confirmaciones</div>
           <div style={{display:"flex",gap:16}}>
             <div style={{flex:1}}>
@@ -867,7 +872,7 @@ function DetailScreen({ user, freight, perms, onBack, onAction, onChat, onRefres
           [Ic.grain(C.t2,15),"Producto",`${freight.grain==="Otros"?freight.productTypeOther||"Otros":freight.grain} · ${freight.tons} ${freight.unit||"tn"}`],
           freight.amount>0&&[Ic.grain(C.t2,15),"Importe",`$${Number(freight.amount).toLocaleString()}`],
           freight.transporterName&&[Ic.truck(C.t2,15),"Transportista",freight.transporterName],
-          freight.truckPlate&&[Ic.truck(C.acc,15),"Camión",`${freight.truckPlate}${freight.truckModel?` · ${freight.truckModel}`:""}`],
+          freight.truckPlate&&[Ic.truck(C.sec,15),"Camión",`${freight.truckPlate}${freight.truckModel?` · ${freight.truckModel}`:""}`],
           freight.driverName&&[Ic.user(C.pri,15),"Chofer",freight.driverName],
           freight.driverPhone&&[Ic.msg(C.info,15),"Teléfono",freight.driverPhone],
         ].filter(Boolean).map(([ic,label,val],i,arr)=>(
@@ -1048,8 +1053,8 @@ function NewScreen({ user, lots, plants, fields, trucks, onBack, onCreate }) {
         </div>
 
         {showTruckSelect && (
-          <div style={{ background:C.accPale, border:`1.5px solid ${C.acc}30`, borderRadius:12, padding:14 }}>
-            <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:10 }}>{Ic.truck(C.acc,16)}<span style={{ fontSize:10.5, fontWeight:700, color:C.acc, textTransform:"uppercase", letterSpacing:0.5 }}>Flota propia (opcional)</span></div>
+          <div style={{ background:C.secPale, border:`1.5px solid ${C.sec}30`, borderRadius:12, padding:14 }}>
+            <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:10 }}>{Ic.truck(C.sec,16)}<span style={{ fontSize:10.5, fontWeight:700, color:C.sec, textTransform:"uppercase", letterSpacing:0.5 }}>Flota propia (opcional)</span></div>
             <Select value={form.truckId} onChange={v=>u({truckId:v})} options={truckOpts} placeholder="Sin camión propio — la planta asigna"/>
             {form.truckId && <button onClick={()=>u({truckId:""})} style={{ marginTop:6, background:"none", border:"none", cursor:"pointer", fontSize:11, color:C.err, fontWeight:600, fontFamily:"inherit" }}>Quitar camión propio</button>}
           </div>
@@ -1089,11 +1094,11 @@ function NewScreen({ user, lots, plants, fields, trucks, onBack, onCreate }) {
 // ======================== PROFILE =====================================
 
 function ProfileScreen({ user, perms, onLogout, onNav }) {
-  const tc = ({plant:C.pri,transporter:C.info,producer:C.acc})[user.userType]||C.pri;
+  const tc = ({plant:C.pri,transporter:C.info,producer:C.sec})[user.userType]||C.pri;
   const pl = []; if(perms.canRequest)pl.push("Solicitar fletes"); if(perms.canApprove)pl.push("Aprobar fletes"); if(perms.canAssignDriver)pl.push("Asignar choferes"); if(perms.canCancel)pl.push("Cancelar fletes"); if(perms.canReject)pl.push("Rechazar viajes");
 
   const mgmtItems = [];
-  if(user.userType==="transporter"||user.userType==="producer") mgmtItems.push({k:"trucks",l:"Mis Camiones",ic:Ic.truck(C.acc,18),c:C.acc});
+  if(user.userType==="transporter"||user.userType==="producer") mgmtItems.push({k:"trucks",l:"Mis Camiones",ic:Ic.truck(C.sec,18),c:C.sec});
   if(user.userType==="producer") mgmtItems.push({k:"fields",l:"Mis Campos y Lotes",ic:Ic.pin(C.pri,18),c:C.pri});
   if(user.userType==="plant") mgmtItems.push({k:"access",l:"Productores Habilitados",ic:Ic.user(C.pri,18),c:C.pri});
 
@@ -1191,7 +1196,7 @@ function TrucksScreen({ onBack }) {
             {trucks.map(t => (
               <div key={t.id} style={{ background: C.w, border: `1px solid ${C.b1}`, borderLeft: `3px solid ${C.acc}`, borderRadius: 12, padding: 14, boxShadow: C.sh, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  {Ic.truck(C.acc, 20)}
+                  {Ic.truck(C.sec, 20)}
                   <div>
                     <div style={{ fontSize: 14, fontWeight: 700 }}>{t.plate}</div>
                     {t.model && <div style={{ fontSize: 11, color: C.t3 }}>{t.model}</div>}
