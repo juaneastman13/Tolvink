@@ -437,7 +437,7 @@ function Toast({ msg, type="ok", onClose }) {
 
 // ======================== BOTTOM NAV =================================
 
-function Nav({ active, onChange, unread=0, pendingCount=0 }) {
+function Nav({ active, onChange, unread=0, pendingCount=0, canRequest=false, onNew }) {
   const hasPending = pendingCount > 0;
   const centerColor = hasPending ? C.acc : C.ok;
   const items = [
@@ -448,22 +448,33 @@ function Nav({ active, onChange, unread=0, pendingCount=0 }) {
     { k:"profile",ic:a=>Ic.user(a?C.pri:C.t3,22),   l:"Perfil" },
   ];
   return (
-    <div style={{ display:"flex", borderTop:`1px solid ${C.b1}`, background:C.nav, paddingTop:4, paddingBottom:"max(8px, env(safe-area-inset-bottom))", flexShrink:0 }}>
-      {items.map(it=>(
-        <button key={it.k} onClick={()=>onChange(it.k)} style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:2, border:"none", background:"none", cursor:"pointer", fontFamily:"inherit", position:"relative", padding:it.sp?"0":"8px 0", minHeight:48, WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
-          {it.sp ? <>
-            <div style={{ width:52, height:52, borderRadius:26, background:centerColor, display:"flex", alignItems:"center", justifyContent:"center", marginTop:-22, boxShadow:`0 4px 18px ${centerColor}40`, position:"relative", transition:"background 0.5s ease, box-shadow 0.5s ease" }}>
-              {hasPending ? Ic.bell(C.w,24) : Ic.chk(C.w,24)}
-              {it.bd>0 && <div style={{ position:"absolute", top:-5, right:-5, minWidth:19, height:19, borderRadius:10, background:C.err, color:C.w, fontSize:9, fontWeight:700, padding:"0 5px", display:"flex", alignItems:"center", justifyContent:"center", border:`2.5px solid ${C.nav}` }}>{it.bd}</div>}
-            </div>
-            <span style={{ fontSize:8.5, fontWeight:700, color:centerColor, marginTop:1, transition:"color 0.5s ease" }}>{hasPending?"Pendientes":"Al día"}</span>
-          </> : <>
-            <span style={{display:"flex"}}>{it.ic(active===it.k)}</span>
-            <span style={{ fontSize:9.5, fontWeight:active===it.k?700:500, color:active===it.k?C.pri:C.t3 }}>{it.l}</span>
-            {it.bd>0 && <div style={{ position:"absolute", top:2, right:"20%", minWidth:15, height:15, borderRadius:8, background:C.err, color:C.w, fontSize:8.5, fontWeight:700, padding:"0 4px", display:"flex", alignItems:"center", justifyContent:"center" }}>{it.bd}</div>}
-          </>}
+    <div style={{ flexShrink:0, background:C.nav, borderTop:`1px solid ${C.b1}` }}>
+      <style>{`@keyframes truckDrive{0%,100%{transform:translateX(0)}50%{transform:translateX(3px)}}`}</style>
+      {/* Solicitar flete row — above nav icons */}
+      {canRequest && (
+        <button onClick={onNew} style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:8, width:"100%", padding:"10px 16px", background:C.acc, border:"none", borderBottom:`1px solid rgba(0,0,0,0.08)`, cursor:"pointer", fontFamily:"inherit", fontSize:12.5, fontWeight:700, color:"#fff", WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
+          <span style={{ display:"inline-flex", animation:"truckDrive 1.5s ease-in-out infinite" }}>{Ic.truck("#fff",17)}</span>
+          Solicitar nuevo flete
         </button>
-      ))}
+      )}
+      {/* Nav icons row */}
+      <div style={{ display:"flex", paddingTop:4, paddingBottom:"max(8px, env(safe-area-inset-bottom))" }}>
+        {items.map(it=>(
+          <button key={it.k} onClick={()=>onChange(it.k)} style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:2, border:"none", background:"none", cursor:"pointer", fontFamily:"inherit", position:"relative", padding:it.sp?"0":"8px 0", minHeight:48, WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
+            {it.sp ? <>
+              <div style={{ width:52, height:52, borderRadius:26, background:centerColor, display:"flex", alignItems:"center", justifyContent:"center", marginTop:-22, boxShadow:`0 4px 18px ${centerColor}40`, position:"relative", transition:"background 0.5s ease, box-shadow 0.5s ease" }}>
+                {hasPending ? Ic.bell(C.w,24) : Ic.chk(C.w,24)}
+                {it.bd>0 && <div style={{ position:"absolute", top:-5, right:-5, minWidth:19, height:19, borderRadius:10, background:C.err, color:C.w, fontSize:9, fontWeight:700, padding:"0 5px", display:"flex", alignItems:"center", justifyContent:"center", border:`2.5px solid ${C.nav}` }}>{it.bd}</div>}
+              </div>
+              <span style={{ fontSize:8.5, fontWeight:700, color:centerColor, marginTop:1, transition:"color 0.5s ease" }}>{hasPending?"Pendientes":"Al día"}</span>
+            </> : <>
+              <span style={{display:"flex"}}>{it.ic(active===it.k)}</span>
+              <span style={{ fontSize:9.5, fontWeight:active===it.k?700:500, color:active===it.k?C.pri:C.t3 }}>{it.l}</span>
+              {it.bd>0 && <div style={{ position:"absolute", top:2, right:"20%", minWidth:15, height:15, borderRadius:8, background:C.err, color:C.w, fontSize:8.5, fontWeight:700, padding:"0 4px", display:"flex", alignItems:"center", justifyContent:"center" }}>{it.bd}</div>}
+            </>}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }
@@ -725,7 +736,7 @@ function HomeScreen({ user, freights, perms, onNav }) {
   const nextView = () => setViewMode(v => v==="cards"?"table":v==="table"?"map":"cards");
 
   return (
-    <div style={{ flex:1, overflow:"auto", padding:18, paddingBottom:perms.canRequest?80:18 }}>
+    <div style={{ flex:1, overflow:"auto", padding:18 }}>
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:24 }}>
         <div><div style={{ fontSize:13, color:C.t2 }}>Hola,</div><div style={{ fontSize:22, fontWeight:800, letterSpacing:-0.3, color:C.t1 }}>{user.name.split(" ")[0]}</div></div>
         <div style={{ textAlign:"right" }}><Bd color={tc}>{typeLabel}</Bd><div style={{ fontSize:10, color:C.t3, marginTop:4 }}>{user.role==="admin"?"Gerente":"Operario"} · {user.entity}</div></div>
@@ -831,16 +842,7 @@ function HomeScreen({ user, freights, perms, onNav }) {
           })}
         </div>
       )}
-      {/* FAB — Solicitar nuevo flete */}
-      {perms.canRequest && (
-        <>
-          <style>{`@keyframes truckDrive{0%,100%{transform:translateX(0)}50%{transform:translateX(3px)}}@keyframes fabPulse{0%,100%{box-shadow:0 4px 16px rgba(255,106,0,0.35)}50%{box-shadow:0 6px 24px rgba(255,106,0,0.55)}}`}</style>
-          <button onClick={()=>onNav("new")} style={{ position:"fixed", bottom:"calc(70px + env(safe-area-inset-bottom, 0px))", right:16, zIndex:90, display:"flex", alignItems:"center", gap:8, padding:"14px 20px", borderRadius:50, background:C.acc, border:"none", cursor:"pointer", fontFamily:"inherit", fontSize:13, fontWeight:700, color:"#fff", animation:"fabPulse 2.5s ease-in-out infinite", WebkitTapHighlightColor:"transparent" }}>
-            <span style={{ display:"inline-flex", animation:"truckDrive 1.5s ease-in-out infinite" }}>{Ic.truck("#fff",18)}</span>
-            Solicitar flete
-          </button>
-        </>
-      )}
+      {/* Solicitar button is in Nav bar */}
     </div>
   );
 }
@@ -3752,7 +3754,7 @@ export default function Tolvink() {
       </div>
 
       {/* Fixed bottom nav */}
-      <Nav active={["detail"].includes(screen)?"list":["trucks","fields","access","reports"].includes(screen)?"profile":screen} onChange={nav} unread={unreadChats} pendingCount={pendingCount}/>
+      <Nav active={["detail"].includes(screen)?"list":["trucks","fields","access","reports"].includes(screen)?"profile":screen} onChange={nav} unread={unreadChats} pendingCount={pendingCount} canRequest={perms.canRequest} onNew={()=>nav("new")}/>
 
       {modal?.type==="assign" && <AssignModal freight={modal.freight} transporters={catalog.transporters} onClose={()=>setModal(null)} onConfirm={t=>handleAssign(modal.freight.id,t)}/>}
       {modal?.type==="truck_select" && <TruckSelectModal freight={modal.freight} trucks={catalog.trucks} onClose={()=>setModal(null)} onConfirm={t=>handleAcceptWithTruck(modal.freight.id,t)}/>}
