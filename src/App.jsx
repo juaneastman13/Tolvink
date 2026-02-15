@@ -6,7 +6,7 @@ import {
   apiConfirmLoaded, apiConfirmFinished,
   apiGetPlants, apiGetLots, apiGetTransportCompanies, apiGetTrucks,
   apiCreateTruck, apiDeactivateTruck,
-  apiGetFields, apiCreateField, apiCreateLot,
+  apiGetFields, apiCreateField, apiCreateLot, apiGetFieldLots,
   apiGrantAccess, apiRevokeAccess, apiListAccessProducers, apiListAccessPlants,
   apiStartConversation, apiListConversations, apiGetMessages, apiSendMessage,
   uploadPhoto, apiAddDocument,
@@ -945,14 +945,21 @@ function NewScreen({ user, lots, plants, fields, trucks, onBack, onCreate }) {
   const [errs, setErrs] = useState({});
   const [touched, setTouched] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [fieldLots, setFieldLots] = useState([]);
+  const [loadingLots, setLoadingLots] = useState(false);
   const u = f => setForm(p=>({...p,...f}));
 
-  // Filter lots by selected field
-  const filteredLots = form.fieldId ? (lots||[]).filter(l=>l.fieldId===form.fieldId) : [];
+  // Load lots when field changes
+  useEffect(()=>{
+    if(!form.fieldId){ setFieldLots([]); return; }
+    setLoadingLots(true);
+    apiGetFieldLots(form.fieldId).then(l=>setFieldLots(l||[])).catch(()=>setFieldLots([])).finally(()=>setLoadingLots(false));
+  },[form.fieldId]);
+
   const fieldOpts = (fields||[]).map(f=>({ value:f.id, label:f.name, sub:f.address||"" }));
-  const lotOpts = filteredLots.map(l=>({ value:l.id, label:l.name, sub:l.hectares?`${l.hectares} ha`:'' }));
+  const lotOpts = fieldLots.map(l=>({ value:l.id, label:l.name, sub:l.hectares?`${l.hectares} ha`:'' }));
   const plantOpts = (plants||[]).map(p=>({ value:p.id, label:p.name }));
-  const selectedLot = (lots||[]).find(l=>l.id===form.lotId);
+  const selectedLot = fieldLots.find(l=>l.id===form.lotId);
   const truckOpts = (trucks||[]).map(t=>({ value:t.id, label:`${t.plate}${t.model?` · ${t.model}`:""}` }));
   const showTruckSelect = user.userType==="producer" && truckOpts.length > 0;
 
@@ -1011,7 +1018,7 @@ function NewScreen({ user, lots, plants, fields, trucks, onBack, onCreate }) {
         </div>
 
         <div>
-          <Select label="Origen (lote)" icon={Ic.pin(C.pri,14)} value={form.lotId} onChange={v=>u({lotId:v})} options={lotOpts} placeholder={form.fieldId?"Seleccionar lote...":"Primero seleccioná un campo"}/>
+          <Select label="Origen (lote)" icon={Ic.pin(C.pri,14)} value={form.lotId} onChange={v=>u({lotId:v})} options={lotOpts} placeholder={loadingLots?"Cargando lotes...":form.fieldId?"Seleccionar lote...":"Primero seleccioná un campo"}/>
           {touched&&<FieldError error={errs.lotId}/>}
           {selectedLot && selectedLot.lat && <div style={{ display:"flex", alignItems:"center", gap:6, padding:"6px 10px", background:C.priPale, borderRadius:8, marginTop:6 }}>{Ic.chk(C.pri,14)}<span style={{fontSize:10.5,color:C.pri,fontWeight:500}}>{selectedLot.lat}, {selectedLot.lng}</span></div>}
         </div>
