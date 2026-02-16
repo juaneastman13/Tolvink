@@ -147,7 +147,7 @@ export async function apiGrantAccess(b) { return api('/plant-access/grant',{body
 export async function apiRevokeAccess(prodId) { return api(`/plant-access/revoke/${prodId}`,{body:{},method:'PATCH'}); }
 export async function apiListAccessProducers() { return api('/plant-access/producers'); }
 export async function apiListAccessPlants() { return api('/plant-access/plants'); }
-export async function apiSearchProducer(phone) { return api(`/plant-access/search-producer?phone=${encodeURIComponent(phone)}`); }
+export async function apiSearchProducer(q) { return api(`/plant-access/search-producer?q=${encodeURIComponent(q)}`); }
 export async function apiGetMyFacilities() { return api('/plant-access/my-facilities'); }
 
 // Catalog - Branches
