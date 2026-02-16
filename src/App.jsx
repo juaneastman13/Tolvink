@@ -801,9 +801,10 @@ function exportCSV(freights, filename) {
   URL.revokeObjectURL(url);
 }
 
-function HomeScreen({ user, freights, perms, onNav }) {
+function HomeScreen({ user, freights, perms, onNav, catalog }) {
   const [activeFilter, setActiveFilter] = useState("all");
   const [viewMode, setViewMode] = useState("cards"); // cards | table | map
+  const [activePanel, setActivePanel] = useState(null); // null | "map" | "pending" | "calendar" | "reports" | "fields" | "trucks"
   const sort = useTableSort();
   const HOME_GETTERS = { code:f=>f.code, status:f=>stCfg(f.status).label, producer:f=>f.requestedByName||"", origin:f=>(f.originName||"").split("—")[0].trim(), dest:f=>f.destName, product:f=>f.grain, qty:f=>f.tons, truck:f=>f.truckPlate||"", date:f=>f.loadDate };
 
@@ -842,6 +843,18 @@ function HomeScreen({ user, freights, perms, onNav }) {
   const viewLabels = {cards:"Tarjetas",table:"Tabla",map:"Mapa"};
   const nextView = () => setViewMode(v => v==="cards"?"table":v==="table"?"map":"cards");
 
+  const togglePanel = (key) => setActivePanel(prev=>prev===key?null:key);
+
+  // Quick access items
+  const quickItems = [
+    {k:"map",l:"Abrir mapa",ic:Ic.pin,c:C.pri,show:true},
+    {k:"pending",l:"Asignar fletes",ic:Ic.bell,c:C.acc,show:perms.canApprove&&stats.avail>0},
+    {k:"calendar",l:"Calendario",ic:Ic.cal,c:C.sec,show:true},
+    {k:"reports",l:"Informes y Documentos",ic:Ic.doc,c:"#7C3AED",show:true},
+    {k:"fields",l:"Campos y Lotes",ic:Ic.seedling,c:C.pri,show:user.userType==="producer"},
+    {k:"trucks",l:"Flota",ic:Ic.truck,c:C.acc,show:user.userType==="transporter"||user.userType==="producer"},
+  ].filter(b=>b.show);
+
   return (
     <div style={{ flex:1, overflow:"auto" }}>
       {/* Greeting — scrolls normally */}
@@ -849,25 +862,6 @@ function HomeScreen({ user, freights, perms, onNav }) {
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
           <div><div style={{ fontSize:13, color:C.t2 }}>Hola,</div><div style={{ fontSize:22, fontWeight:800, letterSpacing:-0.3, color:C.t1 }}>{user.name.split(" ")[0]}</div></div>
           <div style={{ textAlign:"right" }}><Bd color={tc}>{typeLabel}</Bd><div style={{ fontSize:10, color:C.t3, marginTop:4 }}>{user.role==="admin"?"Gerente":"Operario"} · {user.entity}</div></div>
-        </div>
-      </div>
-
-      {/* Quick access buttons */}
-      <div style={{ padding:"0 18px 8px 18px" }}>
-        <div style={{ display:"flex", gap:8, overflowX:"auto", paddingBottom:4, WebkitOverflowScrolling:"touch" }}>
-          {[
-            {k:"map",l:"Mapa",ic:Ic.pin,c:C.pri,show:true,action:()=>setViewMode("map")},
-            {k:"pending",l:"Asignar",ic:Ic.bell,c:C.acc,show:perms.canApprove&&stats.avail>0,action:()=>onNav("pending")},
-            {k:"calendar",l:"Calendario",ic:Ic.cal,c:C.sec,show:true,action:()=>onNav("calendar")},
-            {k:"reports",l:"Informes",ic:Ic.doc,c:"#7C3AED",show:true,action:()=>onNav("reports")},
-            {k:"fields",l:"Campos",ic:Ic.seedling,c:C.pri,show:user.userType==="producer",action:()=>onNav("fields")},
-            {k:"trucks",l:"Flota",ic:Ic.truck,c:C.acc,show:user.userType==="transporter"||user.userType==="producer",action:()=>onNav("trucks")},
-          ].filter(b=>b.show).map(b=>(
-            <button key={b.k} onClick={b.action} style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:4, padding:"10px 14px", borderRadius:10, background:C.w, border:`1px solid ${C.b1}`, cursor:"pointer", fontFamily:"inherit", minWidth:64, flexShrink:0, transition:"all 0.15s", boxShadow:C.sh }} onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-1px)";e.currentTarget.style.boxShadow=C.shMd}} onMouseLeave={e=>{e.currentTarget.style.transform="none";e.currentTarget.style.boxShadow=C.sh}}>
-              <div style={{ width:32, height:32, borderRadius:10, background:`${b.c}12`, display:"flex", alignItems:"center", justifyContent:"center" }}>{b.ic(b.c,16)}</div>
-              <span style={{ fontSize:9.5, fontWeight:600, color:C.t2, whiteSpace:"nowrap" }}>{b.l}</span>
-            </button>
-          ))}
         </div>
       </div>
 
@@ -913,11 +907,60 @@ function HomeScreen({ user, freights, perms, onNav }) {
       {/* Scrollable content */}
       <div style={{ padding:"12px 18px 18px 18px" }}>
 
-      {perms.canApprove && stats.avail>0 && activeFilter==="all" && (
-        <div onClick={()=>toggleFilter("requested")} style={{ background:C.accPale, border:`1px solid ${C.acc}22`, borderLeft:`3px solid ${C.acc}`, borderRadius:12, padding:14, marginBottom:18, cursor:"pointer", display:"flex", alignItems:"center", gap:12 }}>
+      {perms.canApprove && stats.avail>0 && activeFilter==="all" && !activePanel && (
+        <div onClick={()=>toggleFilter("requested")} style={{ background:C.accPale, border:`1px solid ${C.acc}22`, borderLeft:`3px solid ${C.acc}`, borderRadius:12, padding:14, marginBottom:14, cursor:"pointer", display:"flex", alignItems:"center", gap:12 }}>
           {Ic.warn(C.acc,24)}<div><div style={{ fontSize:13, fontWeight:700, color:C.acc }}>{stats.avail} flete{stats.avail>1?"s":""} solicitado{stats.avail>1?"s":""}</div><div style={{ fontSize:11.5, color:C.t2 }}>Esperando asignación de transporte</div></div>
         </div>
       )}
+
+      {/* Quick access — vertical list below stats */}
+      {!activePanel && (
+        <div style={{ display:"flex", flexDirection:"column", gap:6, marginBottom:16 }}>
+          <div style={{ fontSize:11, fontWeight:700, color:C.t3, textTransform:"uppercase", letterSpacing:0.5, marginBottom:2 }}>Accesos rápidos</div>
+          {quickItems.map(b=>(
+            <button key={b.k} onClick={()=>togglePanel(b.k)} style={{ display:"flex", alignItems:"center", gap:12, padding:"11px 14px", borderRadius:10, background:C.w, border:`1px solid ${C.b1}`, cursor:"pointer", fontFamily:"inherit", width:"100%", textAlign:"left", transition:"all 0.15s", boxShadow:C.sh }} onMouseEnter={e=>{e.currentTarget.style.background=C.priGhost;e.currentTarget.style.borderColor=`${b.c}40`}} onMouseLeave={e=>{e.currentTarget.style.background=C.w;e.currentTarget.style.borderColor=C.b1}}>
+              <div style={{ width:34, height:34, borderRadius:9, background:`${b.c}12`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{b.ic(b.c,17)}</div>
+              <span style={{ fontSize:13, fontWeight:600, color:C.t1 }}>{b.l}</span>
+              <span style={{ marginLeft:"auto", display:"flex", transform:"rotate(180deg)" }}>{Ic.chev(C.t3,16)}</span>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Active panel — inline content */}
+      {activePanel && (
+        <div style={{ marginBottom:16, animation:"fadeIn 0.2s ease" }}>
+          {/* Panel header with close */}
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:10 }}>
+            <button onClick={()=>setActivePanel(null)} style={{ display:"flex", alignItems:"center", gap:6, background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", padding:0 }}>
+              {Ic.chev(C.pri,18)}
+              <span style={{ fontSize:14, fontWeight:700, color:C.pri }}>Inicio</span>
+            </button>
+            <span style={{ fontSize:13, fontWeight:700, color:C.t1 }}>{quickItems.find(q=>q.k===activePanel)?.l||""}</span>
+          </div>
+
+          {/* Map panel */}
+          {activePanel==="map" && <HomeMapView freights={displayFreights} onNav={onNav} />}
+
+          {/* Pending panel */}
+          {activePanel==="pending" && <PendingScreen user={user} freights={freights} onNav={onNav} onNewFreight={()=>onNav("new")} embedded />}
+
+          {/* Calendar panel */}
+          {activePanel==="calendar" && <HomeCalendarPanel freights={freights} perms={perms} onNav={onNav} />}
+
+          {/* Reports panel */}
+          {activePanel==="reports" && <ReportsScreen onBack={()=>setActivePanel(null)} freights={freights} isDesktop={false} embedded />}
+
+          {/* Fields panel */}
+          {activePanel==="fields" && <FieldsScreen onBack={()=>setActivePanel(null)} embedded />}
+
+          {/* Trucks panel */}
+          {activePanel==="trucks" && <TrucksScreen onBack={()=>setActivePanel(null)} embedded />}
+        </div>
+      )}
+
+      {/* Freight views — only when no panel is active */}
+      {!activePanel && <>
 
       {/* MAP VIEW */}
       {viewMode==="map" && <HomeMapView freights={displayFreights} onNav={onNav} />}
@@ -1019,10 +1062,57 @@ function HomeScreen({ user, freights, perms, onNav }) {
       })()}
 
       {/* Solicitar button is in Nav bar */}
+      </>}
       </div>{/* end scrollable content */}
     </div>
   );
 }
+
+// Inline calendar panel for Home dashboard
+function HomeCalendarPanel({ freights, perms, onNav }) {
+  const [calMonth, setCalMonth] = useState(()=>{const d=new Date();return{y:d.getFullYear(),m:d.getMonth()}});
+  const [calSelDay, setCalSelDay] = useState(null);
+  const monNames=["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+  const filtered = useMemo(()=>freights.filter(f=>!["canceled","draft"].includes(f.status)),[freights]);
+  const days=useMemo(()=>{const arr=[];const first=new Date(calMonth.y,calMonth.m,1);const lastDay=new Date(calMonth.y,calMonth.m+1,0).getDate();const startDow=(first.getDay()+6)%7;for(let i=0;i<startDow;i++)arr.push(null);for(let d=1;d<=lastDay;d++)arr.push(d);return arr;},[calMonth]);
+  const byDay=useMemo(()=>{const map={};filtered.forEach(f=>{if(!f.loadDate)return;const dd=parseInt(f.loadDate.slice(8,10),10);const mm=parseInt(f.loadDate.slice(5,7),10)-1;const yy=parseInt(f.loadDate.slice(0,4),10);if(yy===calMonth.y&&mm===calMonth.m){if(!map[dd])map[dd]=[];map[dd].push(f);}});return map;},[filtered,calMonth]);
+  const selFreights=calSelDay?byDay[calSelDay]||[]:[];
+  const today=new Date();const isToday=(d)=>d===today.getDate()&&calMonth.m===today.getMonth()&&calMonth.y===today.getFullYear();
+
+  return <div>
+    <div style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius:12,padding:14,boxShadow:C.sh,marginBottom:10}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+        <button onClick={()=>{setCalMonth(p=>p.m===0?{y:p.y-1,m:11}:{y:p.y,m:p.m-1});setCalSelDay(null);}} style={{background:"none",border:"none",cursor:"pointer",padding:4,display:"flex"}}>{Ic.chev(C.pri,20)}</button>
+        <span style={{fontSize:15,fontWeight:700,color:C.t1}}>{monNames[calMonth.m]} {calMonth.y}</span>
+        <button onClick={()=>{setCalMonth(p=>p.m===11?{y:p.y+1,m:0}:{y:p.y,m:p.m+1});setCalSelDay(null);}} style={{background:"none",border:"none",cursor:"pointer",padding:4,display:"flex",transform:"rotate(180deg)"}}>{Ic.chev(C.pri,20)}</button>
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:2,textAlign:"center"}}>
+        {["Lu","Ma","Mi","Ju","Vi","Sá","Do"].map(d=><div key={d} style={{fontSize:9,fontWeight:700,color:C.t3,padding:4}}>{d}</div>)}
+        {days.map((d,i)=>{if(!d)return<div key={`e${i}`}/>;const cnt=byDay[d]?.length||0;const sel=calSelDay===d;const td=isToday(d);const statuses=byDay[d]?.map(f=>stCfg(f.status).color)||[];
+          return <div key={d} onClick={()=>setCalSelDay(sel?null:d)} style={{padding:"6px 2px",borderRadius:8,cursor:"pointer",background:sel?C.pri:td?C.priPale:"transparent",transition:"background 0.15s",minHeight:36}}>
+            <div style={{fontSize:12,fontWeight:sel||td?700:400,color:sel?C.w:td?C.pri:C.t1}}>{d}</div>
+            {cnt>0&&<div style={{display:"flex",gap:2,justifyContent:"center",marginTop:2}}>{statuses.slice(0,3).map((c,j)=><div key={j} style={{width:5,height:5,borderRadius:3,background:sel?"#fff":c}}/>)}{cnt>3&&<div style={{fontSize:7,color:sel?C.w:C.t3}}>+</div>}</div>}
+          </div>;})}
+      </div>
+    </div>
+    {calSelDay&&<div style={{animation:"fadeIn 0.15s ease"}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+        <span style={{fontSize:13,fontWeight:700,color:C.t1}}>{calSelDay} de {monNames[calMonth.m]} — {selFreights.length} flete{selFreights.length!==1?"s":""}</span>
+        {perms.canRequest&&<Btn sm v="acc" icon={Ic.plus(C.w,12)} onClick={()=>{const dd=String(calSelDay).padStart(2,"0");const mm=String(calMonth.m+1).padStart(2,"0");onNav("new_date",`${calMonth.y}-${mm}-${dd}`)}}>Nuevo</Btn>}
+      </div>
+      <div style={{display:"flex",flexDirection:"column",gap:8}}>
+        {selFreights.map(f=>{const st=stCfg(f.status);return <div key={f.id} className="tv-card" onClick={()=>onNav("detail",f.id)} style={{background:C.w,border:`1px solid ${C.b1}`,borderLeft:`3px solid ${st.border}`,borderRadius:10,padding:12,cursor:"pointer",boxShadow:C.sh}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}><span style={{fontSize:10,fontWeight:700,color:C.t3,fontFamily:MONO}}>{f.code}</span><Bd color={st.color} bg={st.bg} small>{st.label}</Bd></div>
+          <div style={{fontSize:13,fontWeight:700,color:C.t1}}>{f.grain} · {f.tons} tn</div>
+          <div style={{fontSize:10.5,color:C.t2,marginTop:3}}>{(f.originName||"").split("—")[0].trim()} → {f.destName}</div>
+          <div style={{fontSize:10,color:C.t3,marginTop:3}}>{f.loadTime||""}{f.transporterName?` · ${f.transporterName}`:""}</div>
+        </div>})}
+        {selFreights.length===0&&<div style={{textAlign:"center",padding:20,color:C.t3,fontSize:12}}>Sin fletes este día</div>}
+      </div>
+    </div>}
+  </div>;
+}
+
 function HomeMapView({ freights, onNav }) {
   const mapRef = useRef(null);
   const [mapReady, setMapReady] = useState(false);
@@ -1435,7 +1525,7 @@ function getPendingActions(freight, userType) {
   return null;
 }
 
-function PendingScreen({ user, freights, onNav, onNewFreight }) {
+function PendingScreen({ user, freights, onNav, onNewFreight, embedded }) {
   const pending = useMemo(() => {
     return freights.map(f => {
       const pa = getPendingActions(f, user.userType);
@@ -1448,7 +1538,7 @@ function PendingScreen({ user, freights, onNav, onNewFreight }) {
   const sorted = [...pending].sort((a, b) => (urgencyOrder[a.status] ?? 9) - (urgencyOrder[b.status] ?? 9));
 
   return (
-    <div style={{ flex: 1, overflow: "auto", padding: 18 }}>
+    <div style={{ flex: embedded?undefined:1, overflow: embedded?"visible":"auto", padding: embedded?0:18 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
         <div style={{ fontSize: 20, fontWeight: 800, letterSpacing: -0.3 }}>Pendientes</div>
         <Btn sm v="acc" icon={Ic.plus(C.w, 14)} onClick={onNewFreight}>Nuevo flete</Btn>
@@ -2680,7 +2770,7 @@ function ProfileScreen({ user, perms, onLogout, onNav, theme, toggleTheme }) {
 
 // ======================== TRUCKS MANAGEMENT (Transportista) ===========
 
-function TrucksScreen({ onBack }) {
+function TrucksScreen({ onBack, embedded }) {
   const [trucks, setTrucks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -2711,8 +2801,8 @@ function TrucksScreen({ onBack }) {
   };
 
   return (
-    <div style={{ flex: 1, overflow: "auto", padding: 18 }}>
-      <button onClick={onBack} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 600, color: C.pri, marginBottom: 14, padding: 0, display: "flex", alignItems: "center", gap: 4 }}>{Ic.chev(C.pri, 18)} Mi Perfil</button>
+    <div style={{ flex: embedded?undefined:1, overflow: embedded?"visible":"auto", padding: embedded?0:18 }}>
+      {!embedded && <button onClick={onBack} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 600, color: C.pri, marginBottom: 14, padding: 0, display: "flex", alignItems: "center", gap: 4 }}>{Ic.chev(C.pri, 18)} Mi Perfil</button>}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
         <div style={{ fontSize: 20, fontWeight: 800, letterSpacing: -0.3 }}>Mis Camiones</div>
         <Btn sm onClick={() => setShowForm(!showForm)} icon={showForm ? Ic.cross(C.w, 14) : Ic.plus(C.w, 14)}>{showForm ? "Cerrar" : "Agregar"}</Btn>
@@ -2754,7 +2844,7 @@ function TrucksScreen({ onBack }) {
 
 // ======================== FIELDS MANAGEMENT (Productor) ===============
 
-function FieldsScreen({ onBack }) {
+function FieldsScreen({ onBack, embedded }) {
   const [fields, setFields] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showFieldForm, setShowFieldForm] = useState(false);
@@ -2857,8 +2947,8 @@ function FieldsScreen({ onBack }) {
   };
 
   return (
-    <div style={{ flex: 1, overflow: "auto", padding: 18 }}>
-      <button onClick={onBack} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 600, color: C.pri, marginBottom: 14, padding: 0, display: "flex", alignItems: "center", gap: 4 }}>{Ic.chev(C.pri, 18)} Mi Perfil</button>
+    <div style={{ flex: embedded?undefined:1, overflow: embedded?"visible":"auto", padding: embedded?0:18 }}>
+      {!embedded && <button onClick={onBack} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 600, color: C.pri, marginBottom: 14, padding: 0, display: "flex", alignItems: "center", gap: 4 }}>{Ic.chev(C.pri, 18)} Mi Perfil</button>}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
         <div style={{ fontSize: 20, fontWeight: 800, letterSpacing: -0.3 }}>Mis Campos</div>
         <Btn sm onClick={() => setShowFieldForm(!showFieldForm)} icon={showFieldForm ? Ic.cross(C.w, 14) : Ic.plus(C.w, 14)}>{showFieldForm ? "Cerrar" : "Agregar"}</Btn>
@@ -3744,7 +3834,7 @@ function EditScreen({ freight, fields, plants, onBack, onSave }) {
   );
 }
 
-function ReportsScreen({ onBack, freights, isDesktop }) {
+function ReportsScreen({ onBack, freights, isDesktop, embedded }) {
   const [expanded, setExpanded] = useState({});
   const [generating, setGenerating] = useState(null);
   const [showColPicker, setShowColPicker] = useState(false);
@@ -4122,8 +4212,8 @@ function ReportsScreen({ onBack, freights, isDesktop }) {
   };
 
   return (
-    <div style={{ flex:1, overflow:"auto", padding:18 }}>
-      {!isDesktop && <button onClick={onBack} style={{ background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", fontSize:13, fontWeight:600, color:C.pri, marginBottom:14, padding:0, display:"flex", alignItems:"center", gap:4 }}>{Ic.chev(C.pri,18)} Mi Perfil</button>}
+    <div style={{ flex:embedded?undefined:1, overflow:embedded?"visible":"auto", padding:embedded?0:18 }}>
+      {!isDesktop && !embedded && <button onClick={onBack} style={{ background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", fontSize:13, fontWeight:600, color:C.pri, marginBottom:14, padding:0, display:"flex", alignItems:"center", gap:4 }}>{Ic.chev(C.pri,18)} Mi Perfil</button>}
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:4 }}>
         <div style={{ fontSize:20, fontWeight:800, letterSpacing:-0.3 }}>Informes y Documentos</div>
       </div>
@@ -4451,7 +4541,7 @@ export default function Tolvink() {
 
         {/* Scrollable content area */}
         <div style={{flex:1,overflow:(screen==="chats"||screen==="calendar")&&isDesktop?"hidden":"auto",display:"flex",flexDirection:"column",WebkitOverflowScrolling:"touch",overscrollBehavior:"contain"}}>
-        {screen==="home" && <HomeScreen user={auth.user} freights={fh.freights} perms={perms} onNav={nav}/>}
+        {screen==="home" && <HomeScreen user={auth.user} freights={fh.freights} perms={perms} onNav={nav} catalog={catalog}/>}
         {screen==="list" && <ListScreen freights={fh.freights} onNav={nav} onRefresh={fh.fetchAll}/>}
         {screen==="pending" && <PendingScreen user={auth.user} freights={fh.freights} onNav={nav} onNewFreight={()=>nav("new")}/>}
         {screen==="calendar" && <CalendarScreen freights={fh.freights} perms={perms} onNav={nav} isDesktop={isDesktop}/>}
