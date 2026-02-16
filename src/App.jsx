@@ -414,7 +414,7 @@ function useFreights(user, isAuthInitialized) {
   },[]);
   const create = useCallback(async (form)=>{
     try { const body = { originLotId:form.lotId, fieldId:form.fieldId||undefined, destPlantId:form.plantId||undefined, loadDate:form.loadDate, loadTime:form.loadTime, items:[{grain:form.grain,tons:parseFloat(form.tons),unit:form.unit||"toneladas",amount:form.amount?parseFloat(form.amount):0,productTypeOther:form.productTypeOther||undefined}], notes:form.notes||"", truckId:form.truckId||undefined, overrideOriginLat:form.overrideOriginLat, overrideOriginLng:form.overrideOriginLng, overrideDestLat:form.overrideDestLat, overrideDestLng:form.overrideDestLng };
-      if(form.customDestName) { body.customDestName=form.customDestName; body.customDestLat=form.customDestLat; body.customDestLng=form.customDestLng; delete body.destPlantId; }
+      if(form.customDestName) { body.customDestName=form.customDestName; body.customDestLat=form.customDestLat; body.customDestLng=form.customDestLng; if(!form.plantId) delete body.destPlantId; }
       const c=await apiCreateFreight(body);
       const m=mapFreight(c); setFreights(p=>[m,...p]); return {ok:true, freightId:c.id}; } catch(e) { return {ok:false,error:e.message}; }
   },[]);
