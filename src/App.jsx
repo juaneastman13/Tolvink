@@ -748,9 +748,6 @@ function Nav({ active, onChange, unread=0, pendingCount=0, canRequest=false, onN
 function LandingScreen({ onLogin, onSignup, loading, error, clearError }) {
   const isMob = !useIsDesktop(768);
   const [showAuth, setShowAuth] = useState(false);
-
-  if (showAuth) return <AuthScreen onLogin={onLogin} onSignup={onSignup} loading={loading} error={error} clearError={clearError} onBackToLanding={()=>setShowAuth(false)} />;
-
   const _routes = useMemo(()=>[
     { d:"M-30,520 C150,400 350,260 550,180 S800,60 1030,10", c:C.pri, lo:0.12, to:0.20, td:"26s", dd:"4s", wp:[[180,410],[420,240],[700,110],[900,45]] },
     { d:"M-30,80 C180,180 380,340 580,400 S830,500 1030,560", c:C.acc, lo:0.10, to:0.16, td:"32s", dd:"5s", wp:[[160,170],[400,320],[650,420],[880,520]], rev:true },
@@ -759,6 +756,8 @@ function LandingScreen({ onLogin, onSignup, loading, error, clearError }) {
     { d:"M-30,200 C80,150 200,90 340,50 S500,20 600,-20", c:C.acc, lo:0.09, to:0.15, td:"18s", dd:"3s", wp:[[70,160],[220,85],[420,35]] },
     { d:"M1030,480 C900,440 780,500 650,520 S480,560 350,590", c:C.sec, lo:0.07, to:0.13, td:"20s", dd:"4s", wp:[[920,450],[720,500],[530,540]] },
   ],[]);
+
+  if (showAuth) return <AuthScreen onLogin={onLogin} onSignup={onSignup} loading={loading} error={error} clearError={clearError} onBackToLanding={()=>setShowAuth(false)} />;
 
   return (
     <div style={{ minHeight:"100dvh", background:C.bg, fontFamily:FONT, display:"flex", flexDirection:"column", overflow:"hidden", WebkitOverflowScrolling:"touch", position:"relative" }}>
