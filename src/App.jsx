@@ -3331,8 +3331,8 @@ function AccessScreen({ onBack }) {
     } catch (e) { setMsg({ t: e.message, k: "err" }); } finally { setSaving(false); }
   };
 
-  const handleRevoke = async (userId) => {
-    try { await apiRevokeAccess(userId); setMsg({ t: "Acceso revocado", k: "ok" }); setConfirmRevoke(null); load(); }
+  const handleRevoke = async (accessId) => {
+    try { await apiRevokeAccess(accessId); setMsg({ t: "Acceso revocado", k: "ok" }); setConfirmRevoke(null); load(); }
     catch (e) { setMsg({ t: e.message, k: "err" }); }
   };
 
@@ -3433,7 +3433,7 @@ function AccessScreen({ onBack }) {
             <div style={{ fontSize:13, color:C.t2, marginBottom:16 }}>¿Revocar el acceso de <b>{confirmRevoke.producerUser?.name||confirmRevoke.producerCompany?.name}</b>? No podrá enviar fletes a tus plantas.</div>
             <div style={{ display:"flex", gap:8 }}>
               <button onClick={()=>setConfirmRevoke(null)} style={{ flex:1, padding:"10px 14px", borderRadius:8, border:`1px solid ${C.b1}`, background:C.w, cursor:"pointer", fontFamily:"inherit", fontSize:13, fontWeight:600, color:C.t2 }}>Cancelar</button>
-              <button onClick={()=>handleRevoke(confirmRevoke.producerUserId)} style={{ flex:1, padding:"10px 14px", borderRadius:8, border:"none", background:C.err, cursor:"pointer", fontFamily:"inherit", fontSize:13, fontWeight:600, color:C.w }}>Revocar</button>
+              <button onClick={()=>handleRevoke(confirmRevoke.id)} style={{ flex:1, padding:"10px 14px", borderRadius:8, border:"none", background:C.err, cursor:"pointer", fontFamily:"inherit", fontSize:13, fontWeight:600, color:C.w }}>Revocar</button>
             </div>
           </div>
         </div>
