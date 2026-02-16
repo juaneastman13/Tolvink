@@ -760,8 +760,10 @@ function HomeScreen({ user, freights, perms, onNav }) {
     {k:"done",l:"Finalizados",v:stats.done,c:C.pri,bg:C.priPale},
   ];
 
-  const viewLabels = {cards:"Tarjetas",table:"Tabla",map:"Mapa"};
-  const nextView = () => setViewMode(v => v==="cards"?"table":v==="table"?"map":"cards");
+  const viewLabels = {cards:"Tarjetas",table:"Tabla",map:"Mapa",calendar:"Calendario"};
+  const nextView = () => setViewMode(v => v==="cards"?"table":v==="table"?"map":v==="map"?"calendar":"cards");
+  const [calMonth, setCalMonth] = useState(()=>{const d=new Date();return{y:d.getFullYear(),m:d.getMonth()}});
+  const [calSelDay, setCalSelDay] = useState(null);
 
   return (
     <div style={{ flex:1, overflow:"auto" }}>
@@ -804,7 +806,7 @@ function HomeScreen({ user, freights, perms, onNav }) {
             </>}
             <span style={{ fontSize:10, color:C.t3, whiteSpace:"nowrap" }}>Cambiar visualización</span>
             <button onClick={nextView} style={{ display:"flex", alignItems:"center", gap:4, background:C.priPale, border:`1px solid ${C.pri}20`, borderRadius:8, padding:"5px 10px", cursor:"pointer", fontFamily:"inherit", fontSize:10.5, fontWeight:600, color:C.pri }}>
-              {viewMode==="map"?Ic.pin(C.pri,13):viewMode==="table"?Ic.doc(C.pri,13):Ic.home(C.pri,13)} {viewLabels[viewMode]}
+              {viewMode==="map"?Ic.pin(C.pri,13):viewMode==="table"?Ic.doc(C.pri,13):viewMode==="calendar"?Ic.cal(C.pri,13):Ic.home(C.pri,13)} {viewLabels[viewMode]}
             </button>
           </div>
         </div>
@@ -822,7 +824,7 @@ function HomeScreen({ user, freights, perms, onNav }) {
       )}
 
       {/* MAP VIEW */}
-      {viewMode==="map" && <HomeMapView freights={activeFreights} onNav={onNav} />}
+      {/* MAP VIEW moved below calendar */}
 
       {/* TABLE VIEW */}
       {viewMode==="table" && (
@@ -883,6 +885,73 @@ function HomeScreen({ user, freights, perms, onNav }) {
           })}
         </div>
       )}
+      {/* CALENDAR VIEW */}
+      {viewMode==="calendar" && (()=>{
+        const days=[];
+        const first=new Date(calMonth.y,calMonth.m,1);
+        const lastDay=new Date(calMonth.y,calMonth.m+1,0).getDate();
+        const startDow=(first.getDay()+6)%7;
+        for(let i=0;i<startDow;i++)days.push(null);
+        for(let d=1;d<=lastDay;d++)days.push(d);
+        const monNames=["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+        const byDay={};
+        displayFreights.forEach(f=>{
+          if(!f.loadDate)return;
+          const dd=parseInt(f.loadDate.slice(8,10),10);
+          const mm=parseInt(f.loadDate.slice(5,7),10)-1;
+          const yy=parseInt(f.loadDate.slice(0,4),10);
+          if(yy===calMonth.y&&mm===calMonth.m){
+            if(!byDay[dd])byDay[dd]=[];
+            byDay[dd].push(f);
+          }
+        });
+        const selFreights=calSelDay?byDay[calSelDay]||[]:[];
+        const today=new Date();const isToday=(d)=>d===today.getDate()&&calMonth.m===today.getMonth()&&calMonth.y===today.getFullYear();
+        return <div>
+          <div style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius:12,padding:14,boxShadow:C.sh,marginBottom:10}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+              <button onClick={()=>setCalMonth(p=>p.m===0?{y:p.y-1,m:11}:{y:p.y,m:p.m-1})} style={{background:"none",border:"none",cursor:"pointer",padding:4}}>{Ic.chev(C.pri,20)}</button>
+              <span style={{fontSize:15,fontWeight:700,color:C.t1}}>{monNames[calMonth.m]} {calMonth.y}</span>
+              <button onClick={()=>setCalMonth(p=>p.m===11?{y:p.y+1,m:0}:{y:p.y,m:p.m+1})} style={{background:"none",border:"none",cursor:"pointer",padding:4,transform:"rotate(180deg)"}}>{Ic.chev(C.pri,20)}</button>
+            </div>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:2,textAlign:"center"}}>
+              {["Lu","Ma","Mi","Ju","Vi","Sá","Do"].map(d=><div key={d} style={{fontSize:9,fontWeight:600,color:C.t3,padding:4}}>{d}</div>)}
+              {days.map((d,i)=>{
+                if(!d)return<div key={`e${i}`}/>;
+                const cnt=byDay[d]?.length||0;
+                const sel=calSelDay===d;
+                const td=isToday(d);
+                const statuses=byDay[d]?.map(f=>stCfg(f.status).color)||[];
+                return <div key={d} onClick={()=>setCalSelDay(sel?null:d)} style={{padding:"6px 2px",borderRadius:8,cursor:"pointer",background:sel?C.pri:td?C.priPale:"transparent",transition:"background 0.15s"}}>
+                  <div style={{fontSize:12,fontWeight:sel||td?700:400,color:sel?C.w:td?C.pri:C.t1}}>{d}</div>
+                  {cnt>0&&<div style={{display:"flex",gap:2,justifyContent:"center",marginTop:2}}>
+                    {statuses.slice(0,3).map((c,j)=><div key={j} style={{width:5,height:5,borderRadius:3,background:sel?"#fff":c}}/>)}
+                    {cnt>3&&<div style={{fontSize:7,color:sel?C.w:C.t3}}>+</div>}
+                  </div>}
+                </div>;
+              })}
+            </div>
+          </div>
+          {calSelDay&&<div>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+              <span style={{fontSize:13,fontWeight:700,color:C.t1}}>{calSelDay} {monNames[calMonth.m]} — {selFreights.length} flete{selFreights.length!==1?"s":""}</span>
+              {perms.canRequest&&<Btn sm v="acc" icon={Ic.plus(C.w,12)} onClick={()=>{const dd=String(calSelDay).padStart(2,"0");const mm=String(calMonth.m+1).padStart(2,"0");onNav("new_date",`${calMonth.y}-${mm}-${dd}`)}}>Nuevo</Btn>}
+            </div>
+            <div style={{display:"flex",flexDirection:"column",gap:8}}>
+              {selFreights.map(f=>{const st=stCfg(f.status);return <div key={f.id} className="tv-card" onClick={()=>onNav("detail",f.id)} style={{background:C.w,border:`1px solid ${C.b1}`,borderLeft:`3px solid ${st.border}`,borderRadius:10,padding:12,cursor:"pointer",boxShadow:C.sh}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}><span style={{fontSize:11,fontWeight:700,color:C.t3,fontFamily:MONO}}>{f.code}</span><Bd color={st.color} bg={st.bg} small>{st.label}</Bd></div>
+                <div style={{fontSize:13,fontWeight:700,color:C.t1,marginTop:4}}>{f.grain} · {f.tons} tn</div>
+                <div style={{fontSize:10.5,color:C.t2,marginTop:3}}>{(f.originName||"").split("—")[0].trim()} → {f.destName}</div>
+              </div>})}
+              {selFreights.length===0&&<div style={{textAlign:"center",padding:20,color:C.t3,fontSize:12}}>Sin fletes este día</div>}
+            </div>
+          </div>}
+        </div>;
+      })()}
+
+      {/* MAP — fullscreen button */}
+      {viewMode==="map" && <HomeMapView freights={displayFreights} onNav={onNav} />}
+
       {/* Solicitar button is in Nav bar */}
       </div>{/* end scrollable content */}
     </div>
@@ -891,6 +960,28 @@ function HomeScreen({ user, freights, perms, onNav }) {
 function HomeMapView({ freights, onNav }) {
   const mapRef = useRef(null);
   const [mapReady, setMapReady] = useState(false);
+  const [fullscreen, setFullscreen] = useState(false);
+  const [fStatus, setFStatus] = useState("");
+  const [fPlant, setFPlant] = useState("");
+  const [fTransp, setFTransp] = useState("");
+  const [fProd, setFProd] = useState("");
+  const [fDate, setFDate] = useState("");
+
+  const filteredMF = useMemo(()=>{
+    let ff=freights;
+    if(fStatus)ff=ff.filter(f=>f.status===fStatus);
+    if(fPlant)ff=ff.filter(f=>f.destName===fPlant);
+    if(fTransp)ff=ff.filter(f=>f.transporterName===fTransp);
+    if(fProd)ff=ff.filter(f=>f.requestedByName===fProd);
+    if(fDate)ff=ff.filter(f=>f.loadDate===fDate);
+    return ff;
+  },[freights,fStatus,fPlant,fTransp,fProd,fDate]);
+
+  const plantOpts = useMemo(()=>[...new Set(freights.map(f=>f.destName).filter(Boolean))].sort(),[freights]);
+  const transpOpts = useMemo(()=>[...new Set(freights.map(f=>f.transporterName).filter(Boolean))].sort(),[freights]);
+  const prodOpts = useMemo(()=>[...new Set(freights.map(f=>f.requestedByName).filter(Boolean))].sort(),[freights]);
+  const hasFilters = fStatus||fPlant||fTransp||fProd||fDate;
+  const clearAll = ()=>{setFStatus("");setFPlant("");setFTransp("");setFProd("");setFDate("");};
 
   useEffect(() => {
     if (!mapRef.current) return;
@@ -907,7 +998,7 @@ function HomeMapView({ freights, onNav }) {
         gestureHandling: "greedy", mapTypeControl: false, streetViewControl: false, fullscreenControl: false,
       });
 
-      freights.forEach(f => {
+      filteredMF.forEach(f => {
         const oLat = parseFloat(f.originLat); const oLng = parseFloat(f.originLng);
         const dLat = parseFloat(f.destLat); const dLng = parseFloat(f.destLng);
         const st = stCfg(f.status);
@@ -924,7 +1015,6 @@ function HomeMapView({ freights, onNav }) {
           const m = new maps.Marker({ position: { lat: dLat, lng: dLng }, map, title: `${f.code} — Destino`, icon: { path: maps.SymbolPath.BACKWARD_CLOSED_ARROW, scale: 5, fillColor: st.color, fillOpacity: 0.9, strokeColor: "#fff", strokeWeight: 2 } });
           m.addListener("click", () => onNav("detail", f.id));
         }
-        // Draw line between origin and dest
         if (oLat && oLng && dLat && dLng) {
           new maps.Polyline({ path: [{ lat: oLat, lng: oLng }, { lat: dLat, lng: dLng }], map, strokeColor: st.color, strokeOpacity: 0.5, strokeWeight: 2 });
         }
@@ -934,15 +1024,41 @@ function HomeMapView({ freights, onNav }) {
       setMapReady(true);
     })();
     return () => { cancelled = true; };
-  }, [freights]);
+  }, [filteredMF]);
+
+  const wrapStyle = fullscreen ? { position:"fixed", inset:0, zIndex:200, background:C.bg, display:"flex", flexDirection:"column" } : { borderRadius: 12, overflow: "hidden", border: `1px solid ${C.b1}`, boxShadow: C.sh };
 
   return (
-    <div style={{ borderRadius: 12, overflow: "hidden", border: `1px solid ${C.b1}`, boxShadow: C.sh }}>
-      <div ref={mapRef} style={{ width: "100%", height: 350 }} />
+    <div style={wrapStyle}>
+      {/* Filters bar */}
+      <div style={{ padding:fullscreen?"10px 16px":"6px 12px", background:C.w, display:"flex", gap:6, alignItems:"center", flexWrap:"wrap", borderBottom:`1px solid ${C.b2}` }}>
+        <select value={fStatus} onChange={e=>setFStatus(e.target.value)} style={{ padding:"5px 8px", borderRadius:6, border:`1px solid ${C.b1}`, fontSize:10, background:C.w, color:fStatus?C.t1:C.t3, fontFamily:"inherit" }}>
+          <option value="">Estado</option>
+          <option value="pending_assignment">Solicitado</option><option value="assigned">Asignado</option><option value="accepted">Aceptado</option><option value="in_progress">En viaje</option><option value="loaded">Cargado</option><option value="finished">Finalizado</option>
+        </select>
+        <select value={fPlant} onChange={e=>setFPlant(e.target.value)} style={{ padding:"5px 8px", borderRadius:6, border:`1px solid ${C.b1}`, fontSize:10, background:C.w, color:fPlant?C.t1:C.t3, fontFamily:"inherit" }}>
+          <option value="">Planta</option>
+          {plantOpts.map(p=><option key={p} value={p}>{p}</option>)}
+        </select>
+        {transpOpts.length>0&&<select value={fTransp} onChange={e=>setFTransp(e.target.value)} style={{ padding:"5px 8px", borderRadius:6, border:`1px solid ${C.b1}`, fontSize:10, background:C.w, color:fTransp?C.t1:C.t3, fontFamily:"inherit" }}>
+          <option value="">Transportista</option>
+          {transpOpts.map(t=><option key={t} value={t}>{t}</option>)}
+        </select>}
+        {prodOpts.length>0&&<select value={fProd} onChange={e=>setFProd(e.target.value)} style={{ padding:"5px 8px", borderRadius:6, border:`1px solid ${C.b1}`, fontSize:10, background:C.w, color:fProd?C.t1:C.t3, fontFamily:"inherit" }}>
+          <option value="">Productor</option>
+          {prodOpts.map(p=><option key={p} value={p}>{p}</option>)}
+        </select>}
+        <input type="date" value={fDate} onChange={e=>setFDate(e.target.value)} onClick={e=>e.target.showPicker?.()} style={{ padding:"5px 8px", borderRadius:6, border:`1px solid ${C.b1}`, fontSize:10, background:C.w, color:fDate?C.t1:C.t3, fontFamily:"inherit", cursor:"pointer" }}/>
+        {hasFilters&&<button onClick={clearAll} style={{ background:"none", border:"none", fontSize:10, color:C.err, fontWeight:600, cursor:"pointer", fontFamily:"inherit", padding:"2px 4px" }}>Limpiar</button>}
+        <span style={{ fontSize:10, color:C.t3, marginLeft:"auto" }}>{filteredMF.length} fletes</span>
+        <button onClick={()=>setFullscreen(!fullscreen)} style={{ background:C.priPale, border:`1px solid ${C.pri}20`, borderRadius:6, padding:"5px 10px", cursor:"pointer", display:"flex", alignItems:"center", gap:4, fontSize:10, fontWeight:600, color:C.pri, fontFamily:"inherit" }}>
+          {fullscreen?Ic.collapse(C.pri,12):Ic.expand(C.pri,12)} {fullscreen?"Cerrar":"Expandir"}
+        </button>
+      </div>
+      <div ref={mapRef} style={{ width: "100%", flex:fullscreen?1:undefined, height: fullscreen?undefined:350 }} />
       {!mapReady && <div style={{ textAlign: "center", padding: 20, fontSize: 12, color: C.t3 }}>Cargando mapa...</div>}
-      <div style={{ padding: "8px 12px", background: C.w, fontSize: 10, color: C.t3, display: "flex", gap: 12 }}>
+      <div style={{ padding: "6px 12px", background: C.w, fontSize: 10, color: C.t3, display: "flex", gap: 12 }}>
         <span>● Origen</span> <span>▼ Destino</span> <span>— Ruta</span>
-        <span style={{ marginLeft: "auto" }}>{freights.length} fletes activos</span>
       </div>
     </div>
   );
@@ -1014,7 +1130,9 @@ function ListScreen({ freights, onNav, onRefresh }) {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [datePreset, setDatePreset] = useState("");
-  const [viewMode, setViewMode] = useState("cards"); // cards | table
+  const [viewMode, setViewMode] = useState("cards"); // cards | table | calendar
+  const [calMonth2, setCalMonth2] = useState(()=>{const d=new Date();return{y:d.getFullYear(),m:d.getMonth()}});
+  const [calSelDay2, setCalSelDay2] = useState(null);
   const sort = useTableSort();
   const LIST_GETTERS = { code:f=>f.code, status:f=>stCfg(f.status).label, origin:f=>(f.originName||"").split("—")[0].trim(), dest:f=>f.destName, product:f=>f.grain, truck:f=>f.truckPlate||"", date:f=>f.loadDate, qty:f=>f.tons };
 
@@ -1093,11 +1211,11 @@ function ListScreen({ freights, onNav, onRefresh }) {
             <div style={{display:"flex",gap:8,marginBottom:8}}>
               <div style={{flex:1}}>
                 <label style={{fontSize:9,fontWeight:600,color:C.t3,display:"block",marginBottom:3}}>Desde</label>
-                <input type="date" value={dateFrom} onChange={e=>setDateFrom(e.target.value)} style={{width:"100%",padding:"7px 8px",borderRadius:8,border:`1.5px solid ${C.b1}`,background:C.w,color:C.t1,fontSize:12,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}/>
+                <input type="date" value={dateFrom} onChange={e=>setDateFrom(e.target.value)} onClick={e=>e.target.showPicker?.()} style={{width:"100%",padding:"7px 8px",borderRadius:8,border:`1.5px solid ${C.b1}`,background:C.w,color:C.t1,fontSize:12,fontFamily:"inherit",outline:"none",boxSizing:"border-box",cursor:"pointer"}}/>
               </div>
               <div style={{flex:1}}>
                 <label style={{fontSize:9,fontWeight:600,color:C.t3,display:"block",marginBottom:3}}>Hasta</label>
-                <input type="date" value={dateTo} onChange={e=>setDateTo(e.target.value)} style={{width:"100%",padding:"7px 8px",borderRadius:8,border:`1.5px solid ${C.b1}`,background:C.w,color:C.t1,fontSize:12,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}/>
+                <input type="date" value={dateTo} onChange={e=>setDateTo(e.target.value)} onClick={e=>e.target.showPicker?.()} style={{width:"100%",padding:"7px 8px",borderRadius:8,border:`1.5px solid ${C.b1}`,background:C.w,color:C.t1,fontSize:12,fontFamily:"inherit",outline:"none",boxSizing:"border-box",cursor:"pointer"}}/>
               </div>
             </div>
           )}
@@ -1117,8 +1235,8 @@ function ListScreen({ freights, onNav, onRefresh }) {
             </button>
           </>}
           <span style={{ fontSize:10, color:C.t3, whiteSpace:"nowrap" }}>Cambiar visualización</span>
-          <button onClick={()=>setViewMode(v=>v==="cards"?"table":"cards")} style={{ display:"flex", alignItems:"center", gap:4, background:C.priPale, border:`1px solid ${C.pri}20`, borderRadius:8, padding:"4px 8px", cursor:"pointer", fontFamily:"inherit", fontSize:10, fontWeight:600, color:C.pri }}>
-            {viewMode==="table"?Ic.home(C.pri,12):Ic.doc(C.pri,12)} {viewMode==="cards"?"Tabla":"Tarjetas"}
+          <button onClick={()=>setViewMode(v=>v==="cards"?"table":v==="table"?"calendar":"cards")} style={{ display:"flex", alignItems:"center", gap:4, background:C.priPale, border:`1px solid ${C.pri}20`, borderRadius:8, padding:"4px 8px", cursor:"pointer", fontFamily:"inherit", fontSize:10, fontWeight:600, color:C.pri }}>
+            {viewMode==="table"?Ic.doc(C.pri,12):viewMode==="calendar"?Ic.cal(C.pri,12):Ic.home(C.pri,12)} {viewMode==="cards"?"Tabla":viewMode==="table"?"Calendario":"Tarjetas"}
           </button>
         </div>
       </div>
@@ -1183,11 +1301,43 @@ function ListScreen({ freights, onNav, onRefresh }) {
         })}
       </div>
       )}
+
+      {/* CALENDAR VIEW */}
+      {viewMode==="calendar" && (()=>{
+        const days2=[];const first2=new Date(calMonth2.y,calMonth2.m,1);const lastDay2=new Date(calMonth2.y,calMonth2.m+1,0).getDate();const startDow2=(first2.getDay()+6)%7;
+        for(let i=0;i<startDow2;i++)days2.push(null);for(let d=1;d<=lastDay2;d++)days2.push(d);
+        const monNames2=["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+        const byDay2={};filtered.forEach(f=>{if(!f.loadDate)return;const dd=parseInt(f.loadDate.slice(8,10),10);const mm=parseInt(f.loadDate.slice(5,7),10)-1;const yy=parseInt(f.loadDate.slice(0,4),10);if(yy===calMonth2.y&&mm===calMonth2.m){if(!byDay2[dd])byDay2[dd]=[];byDay2[dd].push(f);}});
+        const selF2=calSelDay2?byDay2[calSelDay2]||[]:[];const today2=new Date();const isToday2=(d)=>d===today2.getDate()&&calMonth2.m===today2.getMonth()&&calMonth2.y===today2.getFullYear();
+        return <div>
+          <div style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius:12,padding:14,boxShadow:C.sh,marginBottom:10}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+              <button onClick={()=>setCalMonth2(p=>p.m===0?{y:p.y-1,m:11}:{y:p.y,m:p.m-1})} style={{background:"none",border:"none",cursor:"pointer",padding:4}}>{Ic.chev(C.pri,20)}</button>
+              <span style={{fontSize:15,fontWeight:700,color:C.t1}}>{monNames2[calMonth2.m]} {calMonth2.y}</span>
+              <button onClick={()=>setCalMonth2(p=>p.m===11?{y:p.y+1,m:0}:{y:p.y,m:p.m+1})} style={{background:"none",border:"none",cursor:"pointer",padding:4,transform:"rotate(180deg)"}}>{Ic.chev(C.pri,20)}</button>
+            </div>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:2,textAlign:"center"}}>
+              {["Lu","Ma","Mi","Ju","Vi","Sá","Do"].map(d=><div key={d} style={{fontSize:9,fontWeight:600,color:C.t3,padding:4}}>{d}</div>)}
+              {days2.map((d,i)=>{if(!d)return<div key={`e${i}`}/>;const cnt=byDay2[d]?.length||0;const sel=calSelDay2===d;const td=isToday2(d);const sts=byDay2[d]?.map(f=>stCfg(f.status).color)||[];
+                return <div key={d} onClick={()=>setCalSelDay2(sel?null:d)} style={{padding:"6px 2px",borderRadius:8,cursor:"pointer",background:sel?C.pri:td?C.priPale:"transparent",transition:"background 0.15s"}}>
+                  <div style={{fontSize:12,fontWeight:sel||td?700:400,color:sel?C.w:td?C.pri:C.t1}}>{d}</div>
+                  {cnt>0&&<div style={{display:"flex",gap:2,justifyContent:"center",marginTop:2}}>{sts.slice(0,3).map((c,j)=><div key={j} style={{width:5,height:5,borderRadius:3,background:sel?"#fff":c}}/>)}{cnt>3&&<div style={{fontSize:7,color:sel?C.w:C.t3}}>+</div>}</div>}
+                </div>;})}
+            </div>
+          </div>
+          {calSelDay2&&<div style={{display:"flex",flexDirection:"column",gap:8}}>
+            <div style={{fontSize:13,fontWeight:700,color:C.t1}}>{calSelDay2} {monNames2[calMonth2.m]} — {selF2.length} flete{selF2.length!==1?"s":""}</div>
+            {selF2.map(f=>{const st=stCfg(f.status);return <div key={f.id} className="tv-card" onClick={()=>onNav("detail",f.id)} style={{background:C.w,border:`1px solid ${C.b1}`,borderLeft:`3px solid ${st.border}`,borderRadius:10,padding:12,cursor:"pointer",boxShadow:C.sh}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}><span style={{fontSize:11,fontWeight:700,color:C.t3,fontFamily:MONO}}>{f.code}</span><Bd color={st.color} bg={st.bg} small>{st.label}</Bd></div>
+              <div style={{fontSize:13,fontWeight:700,color:C.t1,marginTop:4}}>{f.grain} · {f.tons} tn</div>
+            </div>})}
+            {selF2.length===0&&<div style={{textAlign:"center",padding:20,color:C.t3,fontSize:12}}>Sin fletes este día</div>}
+          </div>}
+        </div>;
+      })()}
     </div>
   );
 }
-
-// ======================== PENDING ACTIONS =============================
 
 function getPendingActions(freight, userType) {
   const s = freight.status;
@@ -2168,7 +2318,7 @@ function NewScreen({ user, lots, plants, fields, trucks, onBack, onCreate, dupli
     lotId: dup?.originLotId || "",
     plantId: dup?.destPlantId || "",
     fieldId: dup?.fieldId || "",
-    loadDate: "", loadTime: "",
+    loadDate: dup?.loadDate?.split("T")[0] || dup?.preDate || "", loadTime: dup?.loadTime || "",
     notes: dup?.notes || "",
     unit: dup?.unit || "toneladas",
     amount: dup?.amount?.toString() || "",
@@ -2341,12 +2491,12 @@ function NewScreen({ user, lots, plants, fields, trucks, onBack, onCreate, dupli
         <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
           <div>
             <label style={{ fontSize:10.5, fontWeight:600, color:C.t2, marginBottom:6, display:"flex", alignItems:"center", gap:4, textTransform:"uppercase", letterSpacing:0.6 }}>{Ic.cal(C.pri,14)} Fecha carga</label>
-            <input type="date" value={form.loadDate} onChange={e=>u({loadDate:e.target.value})} style={{ width:"100%", padding:"12px 14px", borderRadius:10, border:`1.5px solid ${touched&&errs.loadDate?C.err:C.b1}`, background:C.w, color:C.t1, fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }}/>
+            <input type="date" value={form.loadDate} onChange={e=>u({loadDate:e.target.value})} onClick={e=>e.target.showPicker?.()} style={{ width:"100%", padding:"12px 14px", borderRadius:10, border:`1.5px solid ${touched&&errs.loadDate?C.err:C.b1}`, background:C.w, color:C.t1, fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box", cursor:"pointer" }}/>
             {touched&&<FieldError error={errs.loadDate}/>}
           </div>
           <div>
             <label style={{ fontSize:10.5, fontWeight:600, color:C.t2, marginBottom:6, display:"flex", alignItems:"center", gap:4, textTransform:"uppercase", letterSpacing:0.6 }}>{Ic.clk(C.pri,14)} Hora carga</label>
-            <input type="time" value={form.loadTime} onChange={e=>u({loadTime:e.target.value})} style={{ width:"100%", padding:"12px 14px", borderRadius:10, border:`1.5px solid ${touched&&errs.loadTime?C.err:C.b1}`, background:C.w, color:C.t1, fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }}/>
+            <input type="time" value={form.loadTime} onChange={e=>u({loadTime:e.target.value})} onClick={e=>e.target.showPicker?.()} style={{ width:"100%", padding:"12px 14px", borderRadius:10, border:`1.5px solid ${touched&&errs.loadTime?C.err:C.b1}`, background:C.w, color:C.t1, fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box", cursor:"pointer" }}/>
             {touched&&<FieldError error={errs.loadTime}/>}
           </div>
         </div>
@@ -3317,11 +3467,11 @@ function EditScreen({ freight, fields, plants, onBack, onSave }) {
         <div style={{ display:"flex", gap:12, marginBottom:12 }}>
           <div style={{flex:1}}>
             <label style={{fontSize:10.5,fontWeight:600,color:C.t2,marginBottom:6,display:"flex",alignItems:"center",gap:4,textTransform:"uppercase",letterSpacing:0.6}}>{Ic.cal(C.pri,14)} Fecha</label>
-            <input type="date" value={form.loadDate} onChange={e=>u({loadDate:e.target.value})} style={{width:"100%",padding:"12px 14px",borderRadius:10,border:`1.5px solid ${C.b1}`,background:C.w,color:C.t1,fontSize:16,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}/>
+            <input type="date" value={form.loadDate} onChange={e=>u({loadDate:e.target.value})} onClick={e=>e.target.showPicker?.()} style={{width:"100%",padding:"12px 14px",borderRadius:10,border:`1.5px solid ${C.b1}`,background:C.w,color:C.t1,fontSize:16,fontFamily:"inherit",outline:"none",boxSizing:"border-box",cursor:"pointer"}}/>
           </div>
           <div style={{flex:1}}>
             <label style={{fontSize:10.5,fontWeight:600,color:C.t2,marginBottom:6,display:"flex",alignItems:"center",gap:4,textTransform:"uppercase",letterSpacing:0.6}}>{Ic.clk(C.pri,14)} Hora</label>
-            <input type="time" value={form.loadTime} onChange={e=>u({loadTime:e.target.value})} style={{width:"100%",padding:"12px 14px",borderRadius:10,border:`1.5px solid ${C.b1}`,background:C.w,color:C.t1,fontSize:16,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}/>
+            <input type="time" value={form.loadTime} onChange={e=>u({loadTime:e.target.value})} onClick={e=>e.target.showPicker?.()} style={{width:"100%",padding:"12px 14px",borderRadius:10,border:`1.5px solid ${C.b1}`,background:C.w,color:C.t1,fontSize:16,fontFamily:"inherit",outline:"none",boxSizing:"border-box",cursor:"pointer"}}/>
           </div>
         </div>
 
@@ -3478,7 +3628,6 @@ function ReportsScreen({ onBack, freights }) {
   const generatePDF = async (f) => {
     setGenerating(f.id);
     try {
-      // Load jsPDF from CDN
       if(!window.jspdf) {
         await new Promise((resolve, reject) => {
           const s = document.createElement("script");
@@ -3490,122 +3639,161 @@ function ReportsScreen({ onBack, freights }) {
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF();
       const st = stCfg(f.status);
-      let y = 20;
-      const lm = 20; // left margin
-      const pw = 170; // page width usable
+      const lm = 18; const rm = 192; const pw = rm - lm;
+      let y = 0;
 
-      // Header
-      doc.setFontSize(22); doc.setFont("helvetica","bold");
-      doc.setTextColor(26,107,55);
-      doc.text("tolvink", lm, y); y+=4;
-      doc.setFontSize(9); doc.setFont("helvetica","normal");
-      doc.setTextColor(120,120,120);
-      doc.text("Informe de flete", lm+42, y); y+=12;
+      const addFooter = (pg, total) => {
+        doc.setDrawColor(26,107,55); doc.setLineWidth(0.5);
+        doc.line(lm, 280, rm, 280);
+        doc.setFontSize(7); doc.setFont("helvetica","normal"); doc.setTextColor(140,140,140);
+        doc.text("tolvink — Plataforma de gestión logística de fletes", lm, 285);
+        doc.text(`Generado: ${new Date().toLocaleString("es-AR")}`, lm + 80, 285);
+        doc.text(`Pág. ${pg}/${total}`, rm - 15, 285);
+      };
+      const checkPage = (need) => { if(y+need>268) { doc.addPage(); y=20; return true; } return false; };
 
-      // Freight code + status
-      doc.setFontSize(16); doc.setFont("helvetica","bold");
-      doc.setTextColor(30,30,30);
-      doc.text(`${f.code}`, lm, y);
-      doc.setFontSize(10); doc.setFont("helvetica","normal");
-      doc.text(`Estado: ${st.label}`, lm+50, y); y+=10;
+      // ─── HEADER BAR ───
+      doc.setFillColor(26,107,55); doc.rect(0, 0, 210, 28, "F");
+      doc.setFontSize(20); doc.setFont("helvetica","bold"); doc.setTextColor(255,255,255);
+      doc.text("tolvink", lm, 16);
+      doc.setFontSize(9); doc.setFont("helvetica","normal"); doc.setTextColor(200,230,210);
+      doc.text("Informe de Flete", lm + 44, 16);
+      // Code badge right
+      doc.setFontSize(14); doc.setFont("helvetica","bold"); doc.setTextColor(255,255,255);
+      doc.text(f.code, rm - doc.getTextWidth(f.code), 16);
+      doc.setFontSize(8); doc.setFont("helvetica","normal"); doc.setTextColor(200,230,210);
+      const idStr = `ID: ${f.id?.slice(0,8)||"—"}`;
+      doc.text(idStr, rm - doc.getTextWidth(idStr), 23);
 
-      // Divider
-      doc.setDrawColor(200,200,200); doc.line(lm, y, lm+pw, y); y+=8;
+      y = 36;
 
-      // Info table
-      doc.setFontSize(11); doc.setFont("helvetica","bold");
-      doc.setTextColor(30,30,30);
-      doc.text("Información del flete", lm, y); y+=8;
+      // ─── STATUS + SUMMARY LINE ───
+      doc.setFillColor(245,247,245); doc.roundedRect(lm, y, pw, 18, 3, 3, "F");
+      doc.setFontSize(11); doc.setFont("helvetica","bold"); doc.setTextColor(30,30,30);
+      doc.text(`${f.grain==="Otros"?f.productTypeOther||"Otros":f.grain} · ${f.tons} ${f.unit||"tn"}`, lm + 6, y + 11);
+      const stLabel = `Estado: ${st.label}`;
+      doc.setFontSize(9); doc.setFont("helvetica","normal"); doc.setTextColor(80,80,80);
+      doc.text(stLabel, rm - 6 - doc.getTextWidth(stLabel), y + 11);
+      y += 26;
 
-      const info = [
-        ["Producto", `${f.grain==="Otros"?f.productTypeOther||"Otros":f.grain} · ${f.tons} ${f.unit||"tn"}`],
-        f.amount>0 && ["Importe", `$${Number(f.amount).toLocaleString()}`],
-        ["Origen", f.originName],
-        f.fieldName && ["Campo", f.fieldName],
-        ["Destino", f.destName],
-        ["Fecha carga", f.loadDate],
-        f.loadTime && ["Hora carga", f.loadTime],
-        ["Solicitado por", f.requestedByName],
-        f.transporterName && ["Transportista", f.transporterName],
-        f.truckPlate && ["Camión", `${f.truckPlate}${f.truckModel?` · ${f.truckModel}`:""}`],
-        f.driverName && ["Chofer", f.driverName],
-        f.isOwnFleet && ["Tipo", "Flota propia del productor"],
-        ["Creado", new Date(f.createdAt).toLocaleDateString("es",{day:"2-digit",month:"short",year:"numeric"})],
-      ].filter(Boolean);
+      // ─── INFO TABLE (two-column layout) ───
+      const sectionTitle = (title) => {
+        checkPage(18);
+        doc.setFontSize(10); doc.setFont("helvetica","bold"); doc.setTextColor(26,107,55);
+        doc.text(title, lm, y); y += 2;
+        doc.setDrawColor(26,107,55); doc.setLineWidth(0.3); doc.line(lm, y, rm, y); y += 7;
+      };
 
-      doc.setFontSize(10); doc.setFont("helvetica","normal");
-      info.forEach(([label, val])=>{
-        doc.setTextColor(100,100,100);
+      const infoRow = (label, val, highlight) => {
+        checkPage(9);
+        doc.setFontSize(9); doc.setFont("helvetica","normal"); doc.setTextColor(110,110,110);
         doc.text(label, lm, y);
-        doc.setTextColor(30,30,30);
-        doc.setFont("helvetica","bold");
-        doc.text(val||"—", lm+50, y);
-        doc.setFont("helvetica","normal");
-        y+=7;
-        if(y>270) { doc.addPage(); y=20; }
-      });
+        doc.setFont("helvetica", highlight?"bold":"normal"); doc.setTextColor(30,30,30);
+        const valStr = String(val||"—");
+        const maxW = pw - 58;
+        const lines = doc.splitTextToSize(valStr, maxW);
+        doc.text(lines, lm + 56, y);
+        y += 6 * lines.length;
+      };
 
-      y+=5;
+      sectionTitle("Datos del Flete");
+      infoRow("Código", f.code, true);
+      infoRow("Producto", `${f.grain==="Otros"?f.productTypeOther||"Otros":f.grain}`, true);
+      infoRow("Cantidad", `${f.tons} ${f.unit||"tn"}`, true);
+      if(f.amount>0) infoRow("Importe", `$${Number(f.amount).toLocaleString()}`);
+      infoRow("Estado", st.label);
+      y += 3;
 
-      // Documents section
+      sectionTitle("Logística");
+      infoRow("Origen", f.originName);
+      if(f.fieldName) infoRow("Campo", f.fieldName);
+      infoRow("Destino", f.destName);
+      infoRow("Fecha carga", f.loadDate || "—");
+      if(f.loadTime) infoRow("Hora carga", f.loadTime);
+      y += 3;
+
+      sectionTitle("Participantes");
+      infoRow("Solicitado por", f.requestedByName);
+      if(f.transporterName) infoRow("Transportista", f.transporterName);
+      if(f.truckPlate) infoRow("Camión", `${f.truckPlate}${f.truckModel?` · ${f.truckModel}`:""}`);
+      if(f.driverName) infoRow("Chofer", f.driverName);
+      if(f.driverPhone) infoRow("Teléfono", f.driverPhone);
+      if(f.isOwnFleet) infoRow("Tipo", "Flota propia del productor");
+      y += 3;
+
+      if(f.notes) {
+        sectionTitle("Observaciones");
+        doc.setFontSize(9); doc.setFont("helvetica","normal"); doc.setTextColor(50,50,50);
+        const noteLines = doc.splitTextToSize(f.notes, pw);
+        noteLines.forEach(l => { checkPage(6); doc.text(l, lm, y); y += 5; });
+        y += 3;
+      }
+
+      sectionTitle("Identificadores");
+      infoRow("ID interno", f.id || "—");
+      infoRow("Código", f.code);
+      infoRow("Creado", f.createdAt ? new Date(f.createdAt).toLocaleString("es-AR",{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"}) : "—");
+
+      // ─── QR-like code block ───
+      y += 5; checkPage(30);
+      doc.setFillColor(245,247,245); doc.roundedRect(lm, y, pw, 22, 2, 2, "F");
+      doc.setFontSize(8); doc.setFont("helvetica","normal"); doc.setTextColor(100,100,100);
+      doc.text("Verificación:", lm + 4, y + 9);
+      doc.setFont("courier","bold"); doc.setFontSize(9); doc.setTextColor(26,107,55);
+      const verCode = `${f.code}-${(f.id||"").slice(0,8).toUpperCase()}`;
+      doc.text(verCode, lm + 34, y + 9);
+      doc.setFont("helvetica","normal"); doc.setFontSize(7); doc.setTextColor(130,130,130);
+      doc.text(`Fecha generación: ${new Date().toISOString().slice(0,19).replace("T"," ")}`, lm + 4, y + 17);
+      y += 28;
+
+      // ─── DOCUMENTS ───
       const docs = f.documents||[];
       if(docs.length>0) {
-        doc.setDrawColor(200,200,200); doc.line(lm, y, lm+pw, y); y+=8;
-        doc.setFontSize(11); doc.setFont("helvetica","bold");
-        doc.setTextColor(30,30,30);
-        doc.text(`Documentos adjuntos (${docs.length})`, lm, y); y+=8;
-
-        doc.setFontSize(9); doc.setFont("helvetica","normal");
+        sectionTitle(`Documentos adjuntos (${docs.length})`);
+        doc.setFontSize(8.5); doc.setFont("helvetica","normal");
         docs.forEach((d,i)=>{
+          checkPage(12);
           const stepLabel = d.step==="request"?"Solicitud":d.step==="load_confirmation"?"Carga":d.step==="assignment"?"Asignación":"Otro";
           const dateStr = d.createdAt?new Date(d.createdAt).toLocaleDateString("es",{day:"2-digit",month:"short"}):"";
           doc.setTextColor(30,30,30);
           doc.text(`${i+1}. ${d.name||"Documento"}`, lm, y);
           doc.setTextColor(100,100,100);
-          doc.text(`${stepLabel} · ${dateStr}`, lm+80, y);
-          y+=6;
+          doc.text(`${stepLabel} · ${dateStr}`, lm+78, y);
+          y+=5;
           if(d.url) {
             doc.setTextColor(0,56,130);
-            doc.textWithLink(d.url.length>60?d.url.slice(0,60)+"...":d.url, lm+4, y, {url:d.url});
+            doc.textWithLink(d.url.length>55?d.url.slice(0,55)+"...":d.url, lm+4, y, {url:d.url});
             y+=6;
           }
-          if(y>270) { doc.addPage(); y=20; }
         });
+        y += 3;
       }
 
-      // Audit history section
+      // ─── AUDIT HISTORY ───
       try {
         const logs = await apiGetAuditLog(f.id);
         const actionLabels = { created:"Solicitado", assigned:"Asignado", accepted:"Aceptado", rejected:"Rechazado", started:"Viaje iniciado", confirm_loaded:"Carga confirmada", confirm_finished:"Entrega confirmada", finished:"Finalizado", canceled:"Cancelado", authorized:"Autorizado", updated:"Editado" };
         if(logs && logs.length>0) {
-          y+=5;
-          if(y>250) { doc.addPage(); y=20; }
-          doc.setDrawColor(200,200,200); doc.line(lm, y, lm+pw, y); y+=8;
-          doc.setFontSize(11); doc.setFont("helvetica","bold");
-          doc.setTextColor(30,30,30);
-          doc.text(`Historial de cambios (${logs.length})`, lm, y); y+=8;
-
-          doc.setFontSize(9); doc.setFont("helvetica","normal");
-          logs.forEach((l,i)=>{
+          sectionTitle(`Historial de cambios (${logs.length})`);
+          doc.setFontSize(8.5);
+          logs.forEach(l => {
+            checkPage(10);
             const fmtDt = d => { try { const dt=new Date(d); return dt.toLocaleDateString("es-AR",{day:"2-digit",month:"short"})+" "+dt.toLocaleTimeString("es-AR",{hour:"2-digit",minute:"2-digit",hour12:false}); } catch(e){ return ""; }};
-            doc.setTextColor(30,30,30); doc.setFont("helvetica","bold");
-            doc.text(`${actionLabels[l.action]||l.action}`, lm, y);
+            doc.setFont("helvetica","bold"); doc.setTextColor(30,30,30);
+            doc.text(actionLabels[l.action]||l.action, lm, y);
             doc.setFont("helvetica","normal"); doc.setTextColor(100,100,100);
-            doc.text(`${l.user?.name||""} ${l.user?.company?.name?`· ${l.user.company.name}`:""}`, lm+45, y);
+            doc.text(`${l.user?.name||""} ${l.user?.company?.name?`· ${l.user.company.name}`:""}`, lm+42, y);
             doc.setTextColor(150,150,150);
-            doc.text(fmtDt(l.createdAt), lm+130, y);
-            y+=5;
-            if(l.reason) { doc.setTextColor(120,120,120); doc.text(`  Motivo: ${l.reason}`, lm, y); y+=5; }
-            if(y>270) { doc.addPage(); y=20; }
+            doc.text(fmtDt(l.createdAt), rm - 35, y);
+            y += 5;
+            if(l.reason) { doc.setTextColor(120,120,120); doc.text(`  Motivo: ${l.reason}`, lm, y); y += 5; }
           });
         }
       } catch(e) { /* skip audit */ }
 
-      // Footer
-      y+=10;
-      doc.setDrawColor(200,200,200); doc.line(lm, y, lm+pw, y); y+=6;
-      doc.setFontSize(8); doc.setFont("helvetica","normal"); doc.setTextColor(150,150,150);
-      doc.text(`Generado por tolvink · ${new Date().toLocaleString("es")}`, lm, y);
+      // ─── ADD FOOTERS TO ALL PAGES ───
+      const totalPages = doc.internal.getNumberOfPages();
+      for(let p=1; p<=totalPages; p++) { doc.setPage(p); addFooter(p, totalPages); }
 
       doc.save(`${f.code}-informe.pdf`);
     } catch(e) { console.error("PDF error",e); }
@@ -3626,54 +3814,53 @@ function ReportsScreen({ onBack, freights }) {
       }
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF();
-      let y = 20;
-      const lm = 20;
-      const pw = 170;
+      let y = 0;
+      const lm = 18; const rm = 192; const pw = rm - lm;
 
-      // Header
-      doc.setFontSize(22); doc.setFont("helvetica","bold");
-      doc.setTextColor(26,107,55);
-      doc.text("tolvink", lm, y); y+=4;
-      doc.setFontSize(9); doc.setFont("helvetica","normal");
-      doc.setTextColor(120,120,120);
-      doc.text("Resumen de fletes", lm+42, y); y+=12;
+      // Header bar
+      doc.setFillColor(26,107,55); doc.rect(0, 0, 210, 28, "F");
+      doc.setFontSize(20); doc.setFont("helvetica","bold"); doc.setTextColor(255,255,255);
+      doc.text("tolvink", lm, 16);
+      doc.setFontSize(9); doc.setFont("helvetica","normal"); doc.setTextColor(200,230,210);
+      doc.text("Resumen de Fletes", lm + 44, 16);
+      doc.setFontSize(8); doc.setTextColor(200,230,210);
+      doc.text(new Date().toLocaleDateString("es-AR",{day:"2-digit",month:"long",year:"numeric"}), rm - 40, 16);
 
-      doc.setFontSize(11); doc.setFont("helvetica","bold");
-      doc.setTextColor(30,30,30);
-      doc.text(`Total: ${allFreights.length} fletes · ${totalDocs} documentos`, lm, y); y+=10;
-      doc.setDrawColor(200,200,200); doc.line(lm, y, lm+pw, y); y+=8;
+      y = 36;
+      doc.setFillColor(245,247,245); doc.roundedRect(lm, y, pw, 14, 2, 2, "F");
+      doc.setFontSize(10); doc.setFont("helvetica","bold"); doc.setTextColor(30,30,30);
+      doc.text(`${allFreights.length} fletes · ${totalDocs} documentos`, lm + 6, y + 9);
+      y += 22;
 
       // Table header
-      doc.setFontSize(9); doc.setFont("helvetica","bold");
-      doc.setTextColor(80,80,80);
-      doc.text("Código", lm, y);
-      doc.text("Producto", lm+28, y);
-      doc.text("Origen", lm+65, y);
-      doc.text("Destino", lm+105, y);
-      doc.text("Estado", lm+145, y);
-      y+=3;
-      doc.setDrawColor(220,220,220); doc.line(lm, y, lm+pw, y); y+=5;
+      doc.setFontSize(8.5); doc.setFont("helvetica","bold"); doc.setTextColor(26,107,55);
+      doc.text("Código", lm, y); doc.text("Producto", lm+26, y); doc.text("Origen", lm+62, y); doc.text("Destino", lm+104, y); doc.text("Estado", lm+144, y);
+      y+=2; doc.setDrawColor(26,107,55); doc.setLineWidth(0.3); doc.line(lm, y, rm, y); y+=5;
 
-      doc.setFont("helvetica","normal");
+      doc.setFont("helvetica","normal"); doc.setFontSize(8.5);
       allFreights.forEach(f=>{
         const st2 = stCfg(f.status);
-        doc.setTextColor(30,30,30);
-        doc.setFont("helvetica","bold");
+        doc.setTextColor(30,30,30); doc.setFont("helvetica","bold");
         doc.text(f.code||"—", lm, y);
         doc.setFont("helvetica","normal");
-        doc.text(`${(f.grain||"").slice(0,10)} ${f.tons}${f.unit==="toneladas"?"tn":f.unit||""}`, lm+28, y);
-        doc.text((f.originName||"").slice(0,20), lm+65, y);
-        doc.text((f.destName||"").slice(0,20), lm+105, y);
+        doc.text(`${(f.grain||"").slice(0,12)} ${f.tons}${f.unit==="toneladas"?"tn":f.unit||""}`, lm+26, y);
+        doc.text((f.originName||"").slice(0,22), lm+62, y);
+        doc.text((f.destName||"").slice(0,22), lm+104, y);
         doc.setTextColor(100,100,100);
-        doc.text(st2.label, lm+145, y);
+        doc.text(st2.label, lm+144, y);
         y+=6;
-        if(y>270) { doc.addPage(); y=20; }
+        if(y>268) { doc.addPage(); y=20; }
       });
 
-      y+=8;
-      doc.setDrawColor(200,200,200); doc.line(lm, y, lm+pw, y); y+=6;
-      doc.setFontSize(8); doc.setFont("helvetica","normal"); doc.setTextColor(150,150,150);
-      doc.text(`Generado por tolvink · ${new Date().toLocaleString("es")}`, lm, y);
+      // Footer on all pages
+      const totalPages = doc.internal.getNumberOfPages();
+      for(let p=1; p<=totalPages; p++) {
+        doc.setPage(p);
+        doc.setDrawColor(26,107,55); doc.setLineWidth(0.5); doc.line(lm, 280, rm, 280);
+        doc.setFontSize(7); doc.setFont("helvetica","normal"); doc.setTextColor(140,140,140);
+        doc.text("tolvink — Plataforma de gestión logística de fletes", lm, 285);
+        doc.text(`Pág. ${p}/${totalPages}`, rm - 15, 285);
+      }
 
       doc.save(`tolvink-resumen-${new Date().toISOString().slice(0,10)}.pdf`);
     } catch(e) { console.error("PDF error",e); }
@@ -3925,7 +4112,7 @@ export default function Tolvink() {
 
   const perms = useMemo(()=>permsFor(auth.user),[auth.user]);
   const show = (msg,type="ok")=>setToast({msg,type});
-  const nav = (s,fId)=>{ if(fId){ setSelFreight(fId); if(s==="detail") fh.refresh(fId); } if(s==="new"&&!perms.canRequest){show("Sin permisos para solicitar","err");return;} setScreen(s); };
+  const nav = (s,fId)=>{ if(s==="new_date"&&fId){if(!perms.canRequest){show("Sin permisos para solicitar","err");return;} setDuplicateData({preDate:fId});setScreen("new");return;} if(fId){ setSelFreight(fId); if(s==="detail") fh.refresh(fId); } if(s==="new"&&!perms.canRequest){show("Sin permisos para solicitar","err");return;} setScreen(s); };
 
   const [actionLoading, setActionLoading] = useState(false);
 
