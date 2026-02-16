@@ -621,8 +621,8 @@ function Sidebar({ active, onChange, unread=0, pendingCount=0, canRequest=false,
       {/* Logo */}
       <div style={{ padding:"20px 20px 16px", borderBottom:`1px solid ${C.b2}` }}>
         <div style={{ display:"inline-flex", alignItems:"flex-start" }}>
-          <span style={{ fontSize:28, fontWeight:800, color:C.pri, letterSpacing:-0.9, lineHeight:1 }}>tolvink</span>
-          <span style={{ width:7, height:7, borderRadius:4, background:C.acc, display:"inline-block", marginLeft:2, marginTop:1, animation:"dotPulse 1.5s ease-in-out infinite" }}></span>
+          <span style={{ fontSize:42, fontWeight:800, color:C.pri, letterSpacing:-1.8, lineHeight:1 }}>tolvink</span>
+          <span style={{ width:11, height:11, borderRadius:6, background:C.acc, display:"inline-block", marginLeft:3, marginTop:2, animation:"dotPulse 1.5s ease-in-out infinite" }}></span>
         </div>
       </div>
 
@@ -1209,7 +1209,8 @@ function HomeMapView({ freights, onNav }) {
   const [fPlant, setFPlant] = useState("");
   const [fTransp, setFTransp] = useState("");
   const [fProd, setFProd] = useState("");
-  const [fDate, setFDate] = useState("");
+  const [fDateFrom, setFDateFrom] = useState("");
+  const [fDateTo, setFDateTo] = useState("");
 
   const filteredMF = useMemo(()=>{
     let ff=freights;
@@ -1217,15 +1218,16 @@ function HomeMapView({ freights, onNav }) {
     if(fPlant)ff=ff.filter(f=>f.destName===fPlant);
     if(fTransp)ff=ff.filter(f=>f.transporterName===fTransp);
     if(fProd)ff=ff.filter(f=>f.requestedByName===fProd);
-    if(fDate)ff=ff.filter(f=>f.loadDate===fDate);
+    if(fDateFrom)ff=ff.filter(f=>f.loadDate>=fDateFrom);
+    if(fDateTo)ff=ff.filter(f=>f.loadDate<=fDateTo);
     return ff;
-  },[freights,fStatus,fPlant,fTransp,fProd,fDate]);
+  },[freights,fStatus,fPlant,fTransp,fProd,fDateFrom,fDateTo]);
 
   const plantOpts = useMemo(()=>[...new Set(freights.map(f=>f.destName).filter(Boolean))].sort(),[freights]);
   const transpOpts = useMemo(()=>[...new Set(freights.map(f=>f.transporterName).filter(Boolean))].sort(),[freights]);
   const prodOpts = useMemo(()=>[...new Set(freights.map(f=>f.requestedByName).filter(Boolean))].sort(),[freights]);
-  const hasFilters = fStatus||fPlant||fTransp||fProd||fDate;
-  const clearAll = ()=>{setFStatus("");setFPlant("");setFTransp("");setFProd("");setFDate("");};
+  const hasFilters = fStatus||fPlant||fTransp||fProd||fDateFrom||fDateTo;
+  const clearAll = ()=>{setFStatus("");setFPlant("");setFTransp("");setFProd("");setFDateFrom("");setFDateTo("");};
 
   useEffect(() => {
     if (!mapRef.current) return;
@@ -1292,7 +1294,8 @@ function HomeMapView({ freights, onNav }) {
           <option value="">Productor</option>
           {prodOpts.map(p=><option key={p} value={p}>{p}</option>)}
         </select>}
-        <input type="date" value={fDate} onChange={e=>setFDate(e.target.value)} onClick={e=>e.target.showPicker?.()} style={{ padding:"5px 8px", borderRadius:6, border:`1px solid ${C.b1}`, fontSize:10, background:C.w, color:fDate?C.t1:C.t3, fontFamily:"inherit", cursor:"pointer" }}/>
+        <input type="date" value={fDateFrom} onChange={e=>setFDateFrom(e.target.value)} onClick={e=>e.target.showPicker?.()} title="Desde" style={{ padding:"5px 8px", borderRadius:6, border:`1px solid ${C.b1}`, fontSize:10, background:C.w, color:fDateFrom?C.t1:C.t3, fontFamily:"inherit", cursor:"pointer" }}/>
+        <input type="date" value={fDateTo} onChange={e=>setFDateTo(e.target.value)} onClick={e=>e.target.showPicker?.()} title="Hasta" style={{ padding:"5px 8px", borderRadius:6, border:`1px solid ${C.b1}`, fontSize:10, background:C.w, color:fDateTo?C.t1:C.t3, fontFamily:"inherit", cursor:"pointer" }}/>
         {hasFilters&&<button onClick={clearAll} style={{ background:"none", border:"none", fontSize:10, color:C.err, fontWeight:600, cursor:"pointer", fontFamily:"inherit", padding:"2px 4px" }}>Limpiar</button>}
         <span style={{ fontSize:10, color:C.t3, marginLeft:"auto" }}>{filteredMF.length} fletes</span>
         <button onClick={()=>setFullscreen(!fullscreen)} style={{ background:C.priPale, border:`1px solid ${C.pri}20`, borderRadius:6, padding:"5px 10px", cursor:"pointer", display:"flex", alignItems:"center", gap:4, fontSize:10, fontWeight:600, color:C.pri, fontFamily:"inherit" }}>
@@ -1420,17 +1423,37 @@ function ListScreen({ freights, onNav, onRefresh }) {
       </div>
 
       {/* Search bar */}
-      <div style={{ position:"relative", marginBottom:10 }}>
+      <div style={{ position:"relative", marginBottom:8 }}>
         <div style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",display:"flex"}}>{Ic.srch(C.t3,16)}</div>
         <input value={searchQ} onChange={e=>setSearchQ(e.target.value)} placeholder="Buscar productor, código, grano..."
           style={{width:"100%",padding:"10px 14px 10px 36px",borderRadius:10,border:`1.5px solid ${C.b1}`,background:C.w,color:C.t1,fontSize:13,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}/>
         {searchQ && <button onClick={()=>setSearchQ("")} style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",display:"flex"}}>{Ic.cross(C.t3,16)}</button>}
       </div>
 
+      {/* Persistent date range filter */}
+      <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:8}}>
+        <div style={{flex:1,display:"flex",gap:6,alignItems:"center"}}>
+          <label style={{fontSize:10,fontWeight:600,color:C.t3,whiteSpace:"nowrap"}}>Desde</label>
+          <input type="date" value={dateFrom} onChange={e=>{setDateFrom(e.target.value);setDatePreset("custom");}} onClick={e=>e.target.showPicker?.()} style={{flex:1,padding:"7px 8px",borderRadius:8,border:`1.5px solid ${C.b1}`,background:C.w,color:dateFrom?C.t1:C.t3,fontSize:11,fontFamily:"inherit",outline:"none",boxSizing:"border-box",cursor:"pointer"}}/>
+        </div>
+        <div style={{flex:1,display:"flex",gap:6,alignItems:"center"}}>
+          <label style={{fontSize:10,fontWeight:600,color:C.t3,whiteSpace:"nowrap"}}>Hasta</label>
+          <input type="date" value={dateTo} onChange={e=>{setDateTo(e.target.value);setDatePreset("custom");}} onClick={e=>e.target.showPicker?.()} style={{flex:1,padding:"7px 8px",borderRadius:8,border:`1.5px solid ${C.b1}`,background:C.w,color:dateTo?C.t1:C.t3,fontSize:11,fontFamily:"inherit",outline:"none",boxSizing:"border-box",cursor:"pointer"}}/>
+        </div>
+        {(dateFrom||dateTo)&&<button onClick={()=>{setDateFrom("");setDateTo("");setDatePreset("");}} style={{background:"none",border:"none",cursor:"pointer",display:"flex",padding:2}}>{Ic.cross(C.t3,14)}</button>}
+      </div>
+
+      {/* Quick date presets */}
+      <div style={{display:"flex",gap:4,marginBottom:8,flexWrap:"wrap"}}>
+        {[{k:"",l:"Todas"},{k:"today",l:"Hoy"},{k:"week",l:"Semana"},{k:"month",l:"Mes"},{k:"quarter",l:"3 meses"}].map(p=>(
+          <button key={p.k} onClick={()=>applyDatePreset(p.k)} style={{padding:"4px 9px",borderRadius:6,border:`1px solid ${datePreset===p.k?C.pri:C.b1}`,background:datePreset===p.k?C.priPale:C.w,color:datePreset===p.k?C.pri:C.t2,fontSize:10,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>{p.l}</button>
+        ))}
+      </div>
+
       {/* Advanced filters panel */}
       {showFilters && (
         <div style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius:12,padding:14,marginBottom:10,boxShadow:C.sh}}>
-          <div style={{display:"flex",gap:8,marginBottom:10}}>
+          <div style={{display:"flex",gap:8}}>
             <div style={{flex:1}}>
               <label style={{fontSize:10,fontWeight:600,color:C.t2,textTransform:"uppercase",letterSpacing:0.5,marginBottom:4,display:"block"}}>Planta</label>
               <select value={fPlant} onChange={e=>setFPlant(e.target.value)} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:`1.5px solid ${C.b1}`,background:C.w,color:C.t1,fontSize:12,fontFamily:"inherit",outline:"none"}}>
@@ -1439,30 +1462,7 @@ function ListScreen({ freights, onNav, onRefresh }) {
               </select>
             </div>
           </div>
-
-          {/* Date presets */}
-          <label style={{fontSize:10,fontWeight:600,color:C.t2,textTransform:"uppercase",letterSpacing:0.5,marginBottom:6,display:"block"}}>Fecha de carga</label>
-          <div style={{display:"flex",gap:5,marginBottom:8,flexWrap:"wrap"}}>
-            {[{k:"",l:"Todas"},{k:"today",l:"Hoy"},{k:"week",l:"Última semana"},{k:"month",l:"Último mes"},{k:"quarter",l:"3 meses"},{k:"custom",l:"Personalizado"}].map(p=>(
-              <button key={p.k} onClick={()=>{ if(p.k==="custom"){setDatePreset("custom");}else applyDatePreset(p.k);}} style={{padding:"5px 10px",borderRadius:6,border:`1px solid ${datePreset===p.k?C.pri:C.b1}`,background:datePreset===p.k?C.priPale:C.w,color:datePreset===p.k?C.pri:C.t2,fontSize:10.5,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>{p.l}</button>
-            ))}
-          </div>
-
-          {/* Custom date range */}
-          {datePreset==="custom" && (
-            <div style={{display:"flex",gap:8,marginBottom:8}}>
-              <div style={{flex:1}}>
-                <label style={{fontSize:9,fontWeight:600,color:C.t3,display:"block",marginBottom:3}}>Desde</label>
-                <input type="date" value={dateFrom} onChange={e=>setDateFrom(e.target.value)} onClick={e=>e.target.showPicker?.()} style={{width:"100%",padding:"7px 8px",borderRadius:8,border:`1.5px solid ${C.b1}`,background:C.w,color:C.t1,fontSize:12,fontFamily:"inherit",outline:"none",boxSizing:"border-box",cursor:"pointer"}}/>
-              </div>
-              <div style={{flex:1}}>
-                <label style={{fontSize:9,fontWeight:600,color:C.t3,display:"block",marginBottom:3}}>Hasta</label>
-                <input type="date" value={dateTo} onChange={e=>setDateTo(e.target.value)} onClick={e=>e.target.showPicker?.()} style={{width:"100%",padding:"7px 8px",borderRadius:8,border:`1.5px solid ${C.b1}`,background:C.w,color:C.t1,fontSize:12,fontFamily:"inherit",outline:"none",boxSizing:"border-box",cursor:"pointer"}}/>
-              </div>
-            </div>
-          )}
-
-          {activeFilters>0 && <button onClick={()=>{setFPlant("");setSearchQ("");setDateFrom("");setDateTo("");setDatePreset("");}} style={{fontSize:11,color:C.pri,fontWeight:600,background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",padding:0}}>Limpiar filtros</button>}
+          {activeFilters>0 && <button onClick={()=>{setFPlant("");setSearchQ("");setDateFrom("");setDateTo("");setDatePreset("");}} style={{fontSize:11,color:C.pri,fontWeight:600,background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",padding:0,marginTop:8}}>Limpiar filtros</button>}
         </div>
       )}
 
@@ -3715,56 +3715,44 @@ function ChatsScreen({ user, openConvId, onConvOpened, isDesktop }) {
   // Group conversations: company → user (nested folders)
   const grouped = useMemo(() => {
     const byCompany = {};
+    const directConvs = [];
     const statusOrder = { in_progress: 0, loaded: 1, accepted: 2, assigned: 3, pending_assignment: 4, finished: 5, canceled: 6 };
-    const sortConvs = (arr) => arr.sort((a, b) => {
-      if (a.freight && !b.freight) return -1;
-      if (!a.freight && b.freight) return 1;
-      if (a.freight && b.freight) {
+
+    convs.forEach(c => {
+      const others = (c.participants || []).filter(p => p.userId !== user.id && p.companyId !== user.companyId);
+
+      if (c.freight) {
+        const companyName = others.map(o => o.company?.name || "").filter(Boolean).sort().join(", ") || "Otros";
+        const companyType = others[0]?.company?.type || "";
+        if (!byCompany[companyName]) byCompany[companyName] = { companyType, freightConvs: [] };
+        byCompany[companyName].freightConvs.push(c);
+      } else {
+        const otherUser = others.find(o => o.user?.name) || others[0];
+        const userName = otherUser?.user?.name || c.displayName || "Chat";
+        const companyName = otherUser?.company?.name || "";
+        directConvs.push({ ...c, _userName: userName, _companyName: companyName });
+      }
+    });
+
+    Object.values(byCompany).forEach(group => {
+      group.freightConvs.sort((a, b) => {
         const sa = statusOrder[a.freight?.status] ?? 99;
         const sb = statusOrder[b.freight?.status] ?? 99;
         if (sa !== sb) return sa - sb;
-      }
-      const ta = a.messages?.[0]?.createdAt || "";
-      const tb = b.messages?.[0]?.createdAt || "";
-      return tb.localeCompare(ta);
+        return (b.messages?.[0]?.createdAt||"").localeCompare(a.messages?.[0]?.createdAt||"");
+      });
     });
 
-    convs.forEach(c => {
-      // Find "other" participants (not mine)
-      const others = (c.participants || []).filter(p => p.userId !== user.id && p.companyId !== user.companyId);
-      const companyName = others.map(o => o.company?.name || "").filter(Boolean).sort().join(", ") || "Otros";
-      const companyType = others[0]?.company?.type || "";
+    directConvs.sort((a, b) => (b.messages?.[0]?.createdAt||"").localeCompare(a.messages?.[0]?.createdAt||""));
 
-      if (!byCompany[companyName]) byCompany[companyName] = { companyType, freightConvs: [], byUser: {} };
-
-      if (c.freight) {
-        // Freight conversations go under company level
-        byCompany[companyName].freightConvs.push(c);
-      } else {
-        // Direct messages go under the specific user
-        const otherUser = others.find(o => o.user?.name) || others[0];
-        const userName = otherUser?.user?.name || "Desconocido";
-        if (!byCompany[companyName].byUser[userName]) byCompany[companyName].byUser[userName] = [];
-        byCompany[companyName].byUser[userName].push(c);
-      }
-    });
-
-    // Sort conversations within each group
-    Object.values(byCompany).forEach(group => {
-      sortConvs(group.freightConvs);
-      Object.values(group.byUser).forEach(arr => sortConvs(arr));
-    });
-
-    // Sort companies by most recent activity
-    const getLatest = (group) => {
+    const getLatest = group => {
       let max = "";
-      group.freightConvs.forEach(c => { const t = c.messages?.[0]?.createdAt || ""; if (t > max) max = t; });
-      Object.values(group.byUser).forEach(arr => arr.forEach(c => { const t = c.messages?.[0]?.createdAt || ""; if (t > max) max = t; }));
+      group.freightConvs.forEach(c => { const t = c.messages?.[0]?.createdAt||""; if(t>max) max=t; });
       return max;
     };
     const companyKeys = Object.keys(byCompany).sort((a, b) => getLatest(byCompany[b]).localeCompare(getLatest(byCompany[a])));
 
-    return { companyKeys, byCompany };
+    return { companyKeys, byCompany, directConvs };
   }, [convs, user.companyId, user.id]);
 
   // Chat detail view
@@ -3925,27 +3913,40 @@ function ChatsScreen({ user, openConvId, onConvOpened, isDesktop }) {
 
       {loading ? <div style={{ textAlign: "center", padding: 40, color: C.t3, fontSize: 13 }}>Cargando...</div> :
         convs.length === 0 ? <div style={{ textAlign: "center", padding: 40, color: C.t3, fontSize: 13 }}>Sin conversaciones aún.{!showNew && <><br/><button onClick={()=>setShowNew(true)} style={{background:"none",border:"none",color:C.acc,fontWeight:600,cursor:"pointer",fontFamily:"inherit",fontSize:13,marginTop:8}}>Iniciar una nueva</button></>}</div> :
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {/* Direct conversations (flat, no nesting) */}
+            {grouped.directConvs.map(c => (
+              <button key={c.id} onClick={() => openConv(c)} style={{ width:"100%", padding:"12px 14px", border:`1px solid ${c.unread?C.acc+"40":C.b1}`, borderRadius:12, background:c.unread?C.accPale+"30":C.w, cursor:"pointer", fontFamily:"inherit", textAlign:"left", display:"flex", alignItems:"center", gap:12, transition:"all 0.15s", boxShadow:C.sh }} onMouseEnter={e=>e.currentTarget.style.background=C.priGhost} onMouseLeave={e=>e.currentTarget.style.background=c.unread?C.accPale+"30":C.w}>
+                <div style={{ width:36, height:36, borderRadius:18, background:c.unread?C.acc:C.accPale, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                  {Ic.user(c.unread?"#fff":C.acc, 16)}
+                </div>
+                <div style={{ flex:1, minWidth:0 }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                    <span style={{ fontSize:13, fontWeight:c.unread?800:700, color:C.t1 }}>{c._userName}</span>
+                  </div>
+                  {c._companyName && <div style={{ fontSize:10, color:C.t3, marginTop:1 }}>{c._companyName}</div>}
+                  <div style={{ fontSize:11, color:c.unread?C.t1:C.t3, fontWeight:c.unread?600:400, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis", marginTop:2 }}>{getLastMsg(c)}</div>
+                </div>
+                {c.unread && <div style={{ width:8, height:8, borderRadius:4, background:C.acc, flexShrink:0 }} />}
+                <span style={{ fontSize:9.5, color:C.t3, flexShrink:0 }}>{getLastMsgTime(c)}</span>
+              </button>
+            ))}
+
+            {/* Freight conversations grouped by company */}
             {grouped.companyKeys.map(companyName => {
               const group = grouped.byCompany[companyName];
               const isOpen = expandedGroups[companyName] !== false;
               const freightCount = group.freightConvs.length;
-              const userNames = Object.keys(group.byUser);
-              const directCount = userNames.reduce((sum, u) => sum + group.byUser[u].length, 0);
-              const unreadCount = group.freightConvs.filter(c=>c.unread).length + userNames.reduce((sum,u) => sum + group.byUser[u].filter(c=>c.unread).length, 0);
-              const countParts = [];
-              if (freightCount > 0) countParts.push(`${freightCount} flete${freightCount !== 1 ? "s" : ""}`);
-              if (directCount > 0) countParts.push(`${userNames.length} contacto${userNames.length !== 1 ? "s" : ""}`);
+              const unreadCount = group.freightConvs.filter(c=>c.unread).length;
               return (
                 <div key={companyName} style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: 12, overflow: "hidden", boxShadow: C.sh }}>
-                  {/* Company header */}
                   <button onClick={() => toggleGroup(companyName)} style={{ width: "100%", padding: "12px 14px", background: C.w, border: "none", borderBottom: isOpen ? `1px solid ${C.b2}` : "none", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 10, textAlign: "left" }}>
                     <div style={{ width: 36, height: 36, borderRadius: 18, background: C.priPale, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                      {Ic.user(C.pri, 16)}
+                      {Ic.truck(C.pri, 16)}
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: 13, fontWeight: 700, color: C.t1 }}>{companyName}</div>
-                      <div style={{ fontSize: 10.5, color: C.t3 }}>{countParts.join(" · ")}</div>
+                      <div style={{ fontSize: 10.5, color: C.t3 }}>{freightCount} flete{freightCount !== 1 ? "s" : ""}</div>
                     </div>
                     {unreadCount > 0 && <span style={{ minWidth: 18, height: 18, borderRadius: 9, background: C.acc, color: "#fff", fontSize: 10, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 4px", flexShrink: 0 }}>{unreadCount}</span>}
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={C.t3} strokeWidth="2.5" style={{ transform: isOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }}><polyline points="6 9 12 15 18 9"/></svg>
@@ -3953,8 +3954,7 @@ function ChatsScreen({ user, openConvId, onConvOpened, isDesktop }) {
 
                   {isOpen && (
                     <div style={{ display: "flex", flexDirection: "column" }}>
-                      {/* Freight conversations (company level) */}
-                      {group.freightConvs.map((c, i) => (
+                      {group.freightConvs.map(c => (
                         <button key={c.id} onClick={() => openConv(c)} style={{ padding: "10px 14px", border: "none", borderTop: `1px solid ${C.b2}`, background: c.unread ? C.accPale+"30" : C.w, cursor: "pointer", fontFamily: "inherit", textAlign: "left", display: "flex", alignItems: "center", gap: 10, width: "100%", transition: "background 0.15s" }} onMouseEnter={e=>e.currentTarget.style.background=C.priGhost} onMouseLeave={e=>e.currentTarget.style.background=c.unread?C.accPale+"30":C.w}>
                           <div style={{ width: 8, height: 8, borderRadius: 4, background: stColor(c.freight?.status), flexShrink: 0 }} />
                           <div style={{ flex: 1, minWidth: 0 }}>
@@ -3968,39 +3968,6 @@ function ChatsScreen({ user, openConvId, onConvOpened, isDesktop }) {
                           <span style={{ fontSize: 9.5, color: C.t3, flexShrink: 0 }}>{getLastMsgTime(c)}</span>
                         </button>
                       ))}
-
-                      {/* User sub-groups (direct messages) */}
-                      {userNames.map(userName => {
-                        const userConvs = group.byUser[userName];
-                        const userKey = `${companyName}::${userName}`;
-                        const userOpen = expandedGroups[userKey] !== false;
-                        const hasUnread = userConvs.some(c => c.unread);
-                        return (
-                          <div key={userName}>
-                            <button onClick={() => userConvs.length === 1 ? openConv(userConvs[0]) : toggleGroup(userKey)} style={{ width: "100%", padding: "10px 14px 10px 20px", border: "none", borderTop: `1px solid ${C.b2}`, background: hasUnread ? C.accPale+"30" : C.w, cursor: "pointer", fontFamily: "inherit", textAlign: "left", display: "flex", alignItems: "center", gap: 10, transition: "background 0.15s" }} onMouseEnter={e=>e.currentTarget.style.background=C.priGhost} onMouseLeave={e=>e.currentTarget.style.background=hasUnread?C.accPale+"30":C.w}>
-                              <div style={{ width: 28, height: 28, borderRadius: 14, background: hasUnread ? C.acc : C.accPale, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, position: "relative" }}>
-                                {Ic.user(hasUnread ? "#fff" : C.acc, 12)}
-                              </div>
-                              <div style={{ flex: 1, minWidth: 0 }}>
-                                <div style={{ fontSize: 12, fontWeight: hasUnread ? 800 : 700, color: C.t1 }}>{userName}</div>
-                                <div style={{ fontSize: 11, color: hasUnread ? C.t1 : C.t3, fontWeight: hasUnread ? 600 : 400, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", marginTop: 1 }}>{getLastMsg(userConvs[0])}</div>
-                              </div>
-                              {hasUnread && <div style={{ width: 8, height: 8, borderRadius: 4, background: C.acc, flexShrink: 0 }} />}
-                              <span style={{ fontSize: 9.5, color: C.t3, flexShrink: 0 }}>{getLastMsgTime(userConvs[0])}</span>
-                              {userConvs.length > 1 && <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.t3} strokeWidth="2.5" style={{ transform: userOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s", flexShrink: 0 }}><polyline points="6 9 12 15 18 9"/></svg>}
-                            </button>
-                            {userConvs.length > 1 && userOpen && userConvs.slice(1).map(c => (
-                              <button key={c.id} onClick={() => openConv(c)} style={{ width: "100%", padding: "8px 14px 8px 58px", border: "none", borderTop: `1px solid ${C.b2}`, background: C.w, cursor: "pointer", fontFamily: "inherit", textAlign: "left", display: "flex", alignItems: "center", gap: 8, transition: "background 0.15s" }} onMouseEnter={e=>e.currentTarget.style.background=C.priGhost} onMouseLeave={e=>e.currentTarget.style.background=C.w}>
-                                <div style={{ width: 6, height: 6, borderRadius: 3, background: C.acc, flexShrink: 0 }} />
-                                <div style={{ flex: 1, minWidth: 0 }}>
-                                  <div style={{ fontSize: 11, color: C.t3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{getLastMsg(c)}</div>
-                                </div>
-                                <span style={{ fontSize: 9, color: C.t3, flexShrink: 0 }}>{getLastMsgTime(c)}</span>
-                              </button>
-                            ))}
-                          </div>
-                        );
-                      })}
                     </div>
                   )}
                 </div>
@@ -4030,7 +3997,9 @@ function ChatsScreen({ user, openConvId, onConvOpened, isDesktop }) {
 function CalendarScreen({ freights, perms, onNav, isDesktop }) {
   const [calMonth, setCalMonth] = useState(()=>{const d=new Date();return{y:d.getFullYear(),m:d.getMonth()}});
   const [calSelDay, setCalSelDay] = useState(null);
+  const [calSelMonth, setCalSelMonth] = useState(null);
   const [fStatus, setFStatus] = useState("");
+  const [monthsToShow, setMonthsToShow] = useState(3);
 
   const filtered = useMemo(()=>{
     let ff = freights.filter(f=>!["canceled","draft"].includes(f.status));
@@ -4040,46 +4009,49 @@ function CalendarScreen({ freights, perms, onNav, isDesktop }) {
 
   const monNames=["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 
-  const days=useMemo(()=>{
+  const getMonthData = (y, m) => {
     const arr=[];
-    const first=new Date(calMonth.y,calMonth.m,1);
-    const lastDay=new Date(calMonth.y,calMonth.m+1,0).getDate();
+    const first=new Date(y,m,1);
+    const lastDay=new Date(y,m+1,0).getDate();
     const startDow=(first.getDay()+6)%7;
     for(let i=0;i<startDow;i++)arr.push(null);
     for(let d=1;d<=lastDay;d++)arr.push(d);
-    return arr;
-  },[calMonth]);
-
-  const byDay=useMemo(()=>{
     const map={};
     filtered.forEach(f=>{
       if(!f.loadDate)return;
       const dd=parseInt(f.loadDate.slice(8,10),10);
       const mm=parseInt(f.loadDate.slice(5,7),10)-1;
       const yy=parseInt(f.loadDate.slice(0,4),10);
-      if(yy===calMonth.y&&mm===calMonth.m){
-        if(!map[dd])map[dd]=[];
-        map[dd].push(f);
-      }
+      if(yy===y&&mm===m){ if(!map[dd])map[dd]=[]; map[dd].push(f); }
     });
-    return map;
-  },[filtered,calMonth]);
+    return { days: arr, byDay: map };
+  };
 
-  const selFreights=calSelDay?byDay[calSelDay]||[]:[];
+  const months = useMemo(()=>{
+    const result = [];
+    for(let i=0;i<monthsToShow;i++){
+      let y=calMonth.y, m=calMonth.m+i;
+      if(m>11){m-=12;y++;}
+      result.push({y,m,...getMonthData(y,m)});
+    }
+    return result;
+  },[calMonth,monthsToShow,filtered]);
+
+  const activeMonth = calSelMonth!==null ? months[calSelMonth] : months[0];
+  const selFreights = calSelDay && activeMonth ? (activeMonth.byDay[calSelDay]||[]) : [];
   const today=new Date();
-  const isToday=(d)=>d===today.getDate()&&calMonth.m===today.getMonth()&&calMonth.y===today.getFullYear();
-  const totalInMonth = Object.values(byDay).reduce((s,a)=>s+a.length,0);
+  const totalInMonth = months.reduce((s,mo)=>s+Object.values(mo.byDay).reduce((ss,a)=>ss+a.length,0),0);
 
   // --- Detail panel (shared between mobile inline and desktop side panel) ---
   const detailPanel = calSelDay ? (
     <div style={{animation:"fadeIn 0.2s ease",padding:isDesktop?"18px 16px":0,overflow:"auto",flex:isDesktop?1:undefined}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
         <div>
-          <div style={{fontSize:16,fontWeight:800,color:C.t1}}>{calSelDay} de {monNames[calMonth.m]}</div>
+          <div style={{fontSize:16,fontWeight:800,color:C.t1}}>{calSelDay} de {monNames[activeMonth?.m??calMonth.m]}</div>
           <div style={{fontSize:11,color:C.t2,marginTop:2}}>{selFreights.length} flete{selFreights.length!==1?"s":""}</div>
         </div>
         <div style={{display:"flex",gap:6,alignItems:"center"}}>
-          {perms.canRequest&&<Btn sm v="acc" icon={Ic.plus(C.w,12)} onClick={()=>{const dd=String(calSelDay).padStart(2,"0");const mm=String(calMonth.m+1).padStart(2,"0");onNav("new_date",`${calMonth.y}-${mm}-${dd}`)}}>Nuevo</Btn>}
+          {perms.canRequest&&<Btn sm v="acc" icon={Ic.plus(C.w,12)} onClick={()=>{const mo=activeMonth||calMonth;const dd=String(calSelDay).padStart(2,"0");const mm=String(mo.m+1).padStart(2,"0");onNav("new_date",`${mo.y}-${mm}-${dd}`)}}>Nuevo</Btn>}
           {isDesktop&&<button onClick={()=>setCalSelDay(null)} style={{background:"none",border:"none",cursor:"pointer",display:"flex",padding:4}}>{Ic.cross(C.t3,18)}</button>}
         </div>
       </div>
@@ -4124,11 +4096,10 @@ function CalendarScreen({ freights, perms, onNav, isDesktop }) {
   const calendarPanel = (
     <div style={{flex:isDesktop?undefined:1,overflow:"auto",padding:18,minWidth:isDesktop?420:undefined}}>
       {!isDesktop && <button onClick={()=>onNav("home")} style={{ background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", fontSize:13, fontWeight:600, color:C.pri, marginBottom:10, padding:0, display:"flex", alignItems:"center", gap:4 }}>{Ic.chev(C.pri,18)} Inicio</button>}
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
         <div style={{ fontSize:20, fontWeight:800, letterSpacing:-0.3 }}>Calendario</div>
         <div style={{fontSize:11,color:C.t2}}>{totalInMonth} flete{totalInMonth!==1?"s":""}</div>
       </div>
-      <div style={{ fontSize:12, color:C.t3, marginBottom:12 }}>{monNames[calMonth.m]} {calMonth.y}</div>
 
       {/* Status filter */}
       <div style={{ display:"flex", gap:5, marginBottom:14, flexWrap:"wrap" }}>
@@ -4137,30 +4108,44 @@ function CalendarScreen({ freights, perms, onNav, isDesktop }) {
         ))}
       </div>
 
-      {/* Calendar grid */}
-      <div style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius:12,padding:16,boxShadow:C.sh,marginBottom:isDesktop?0:14}}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
-          <button onClick={()=>{setCalMonth(p=>p.m===0?{y:p.y-1,m:11}:{y:p.y,m:p.m-1});setCalSelDay(null);}} style={{background:"none",border:"none",cursor:"pointer",padding:6,display:"flex"}}>{Ic.chev(C.pri,22)}</button>
-          <span style={{fontSize:17,fontWeight:700,color:C.t1}}>{monNames[calMonth.m]} {calMonth.y}</span>
-          <button onClick={()=>{setCalMonth(p=>p.m===11?{y:p.y+1,m:0}:{y:p.y,m:p.m+1});setCalSelDay(null);}} style={{background:"none",border:"none",cursor:"pointer",padding:6,display:"flex",transform:"rotate(180deg)"}}>{Ic.chev(C.pri,22)}</button>
+      {/* Navigation + months toggle */}
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+        <button onClick={()=>{setCalMonth(p=>p.m===0?{y:p.y-1,m:11}:{y:p.y,m:p.m-1});setCalSelDay(null);setCalSelMonth(null);}} style={{background:C.priPale,border:`1px solid ${C.pri}20`,borderRadius:8,cursor:"pointer",padding:"6px 10px",display:"flex",alignItems:"center",gap:4,fontSize:11,fontWeight:600,color:C.pri,fontFamily:"inherit"}}>{Ic.chev(C.pri,16)} Anterior</button>
+        <div style={{display:"flex",gap:4}}>
+          {[1,3,6].map(n=><button key={n} onClick={()=>setMonthsToShow(n)} style={{padding:"5px 10px",borderRadius:6,border:`1px solid ${monthsToShow===n?C.pri:C.b1}`,background:monthsToShow===n?C.priPale:C.w,color:monthsToShow===n?C.pri:C.t2,fontSize:10,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>{n} mes{n>1?"es":""}</button>)}
         </div>
-        <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:3,textAlign:"center"}}>
-          {["Lu","Ma","Mi","Ju","Vi","Sá","Do"].map(d=><div key={d} style={{fontSize:10,fontWeight:700,color:C.t3,padding:6}}>{d}</div>)}
-          {days.map((d,i)=>{
-            if(!d)return<div key={`e${i}`}/>;
-            const cnt=byDay[d]?.length||0;
-            const sel=calSelDay===d;
-            const td=isToday(d);
-            const statuses=byDay[d]?.map(f=>stCfg(f.status).color)||[];
-            return <div key={d} onClick={()=>setCalSelDay(sel?null:d)} style={{padding:"8px 4px",borderRadius:10,cursor:"pointer",background:sel?C.pri:td?C.priPale:"transparent",transition:"all 0.15s",minHeight:44}}>
-              <div style={{fontSize:14,fontWeight:sel||td?700:400,color:sel?C.w:td?C.pri:C.t1}}>{d}</div>
-              {cnt>0&&<div style={{display:"flex",gap:2,justifyContent:"center",marginTop:3,flexWrap:"wrap"}}>
-                {statuses.slice(0,4).map((c,j)=><div key={j} style={{width:6,height:6,borderRadius:3,background:sel?"#fff":c}}/>)}
-                {cnt>4&&<div style={{fontSize:8,color:sel?C.w:C.t3,lineHeight:1}}>+{cnt-4}</div>}
-              </div>}
-            </div>;
-          })}
-        </div>
+        <button onClick={()=>{setCalMonth(p=>p.m===11?{y:p.y+1,m:0}:{y:p.y,m:p.m+1});setCalSelDay(null);setCalSelMonth(null);}} style={{background:C.priPale,border:`1px solid ${C.pri}20`,borderRadius:8,cursor:"pointer",padding:"6px 10px",display:"flex",alignItems:"center",gap:4,fontSize:11,fontWeight:600,color:C.pri,fontFamily:"inherit"}}>Siguiente <span style={{display:"inline-flex",transform:"rotate(180deg)"}}>{Ic.chev(C.pri,16)}</span></button>
+      </div>
+
+      {/* Calendar grids */}
+      <div style={{display:"grid",gridTemplateColumns:monthsToShow===1?"1fr":isDesktop&&monthsToShow>=3?"1fr 1fr 1fr":monthsToShow>=3?"1fr":"1fr 1fr",gap:12,marginBottom:isDesktop?0:14}}>
+        {months.map((mo,mi)=>{
+          const isTodayMonth = mo.m===today.getMonth()&&mo.y===today.getFullYear();
+          const moCount = Object.values(mo.byDay).reduce((s,a)=>s+a.length,0);
+          return <div key={`${mo.y}-${mo.m}`} style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius:12,padding:monthsToShow===1?16:12,boxShadow:C.sh}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+              <span style={{fontSize:monthsToShow===1?17:14,fontWeight:700,color:isTodayMonth?C.pri:C.t1}}>{monNames[mo.m]} {mo.y}</span>
+              {moCount>0&&<span style={{fontSize:9,color:C.t3,fontWeight:600}}>{moCount}</span>}
+            </div>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:monthsToShow===1?3:2,textAlign:"center"}}>
+              {["Lu","Ma","Mi","Ju","Vi","Sá","Do"].map(d=><div key={d} style={{fontSize:monthsToShow===1?10:8,fontWeight:700,color:C.t3,padding:monthsToShow===1?6:3}}>{d}</div>)}
+              {mo.days.map((d,i)=>{
+                if(!d)return<div key={`e${i}`}/>;
+                const cnt=mo.byDay[d]?.length||0;
+                const sel=calSelDay===d&&calSelMonth===mi;
+                const td=d===today.getDate()&&isTodayMonth;
+                const statuses=mo.byDay[d]?.map(f=>stCfg(f.status).color)||[];
+                return <div key={d} onClick={()=>{setCalSelDay(sel?null:d);setCalSelMonth(sel?null:mi);}} style={{padding:monthsToShow===1?"8px 4px":"4px 2px",borderRadius:monthsToShow===1?10:6,cursor:"pointer",background:sel?C.pri:td?C.priPale:"transparent",transition:"all 0.15s",minHeight:monthsToShow===1?44:30}}>
+                  <div style={{fontSize:monthsToShow===1?14:11,fontWeight:sel||td?700:400,color:sel?C.w:td?C.pri:C.t1}}>{d}</div>
+                  {cnt>0&&<div style={{display:"flex",gap:1,justifyContent:"center",marginTop:2,flexWrap:"wrap"}}>
+                    {statuses.slice(0,monthsToShow===1?4:2).map((c,j)=><div key={j} style={{width:monthsToShow===1?6:4,height:monthsToShow===1?6:4,borderRadius:3,background:sel?"#fff":c}}/>)}
+                    {cnt>(monthsToShow===1?4:2)&&<div style={{fontSize:7,color:sel?C.w:C.t3,lineHeight:1}}>+{cnt-(monthsToShow===1?4:2)}</div>}
+                  </div>}
+                </div>;
+              })}
+            </div>
+          </div>;
+        })}
       </div>
 
       {/* Mobile: inline detail below calendar */}
@@ -4643,9 +4628,9 @@ function ReportsScreen({ onBack, freights, isDesktop, embedded }) {
   return (
     <div style={{ flex:embedded?undefined:1, overflow:embedded?"visible":"auto", padding:embedded?0:18 }}>
       {!isDesktop && !embedded && <button onClick={onBack} style={{ background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", fontSize:13, fontWeight:600, color:C.pri, marginBottom:14, padding:0, display:"flex", alignItems:"center", gap:4 }}>{Ic.chev(C.pri,18)} Mi Perfil</button>}
-      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:4 }}>
+      {!embedded && <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:4 }}>
         <div style={{ fontSize:20, fontWeight:800, letterSpacing:-0.3 }}>Informes y Documentos</div>
-      </div>
+      </div>}
       <div style={{ fontSize:12, color:C.t2, marginBottom:12 }}>{allFreights.length} flete{allFreights.length!==1?"s":""} · {totalDocs} documento{totalDocs!==1?"s":""}</div>
 
       {/* Search bar */}
