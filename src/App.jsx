@@ -4439,10 +4439,24 @@ function ReasonModal({ title, freight, btnLabel, btnType="err", onClose, onConfi
   );
 }
 
-// ======================== MAP PICKER (module-level, prevents focus loss) ==
-function AdminMapPicker({ lat, lng, onChange }) {
-  const [pin, setPin] = useState({ lat:lat||-34.9, lng:lng||-56.2 });
-  useEffect(() => { if(lat!==null&&lng!==null) setPin({lat,lng}); }, [lat,lng]);
+// ======================== ADMIN SHARED ================================
+const adminStyles = () => {
+  const sel = { width:"100%",padding:"9px 12px",borderRadius:8,border:`1px solid ${C.b1}`,fontSize:13,fontFamily:"inherit",background:C.bgInput,color:C.t1,boxSizing:"border-box",appearance:"none",WebkitAppearance:"none",backgroundImage:`url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`,backgroundRepeat:"no-repeat",backgroundPosition:"right 10px center",paddingRight:30,cursor:"pointer",transition:"border-color 0.15s" };
+  const inp = { width:"100%",padding:"9px 12px",borderRadius:8,border:`1px solid ${C.b1}`,fontSize:13,fontFamily:"inherit",background:C.bgInput,color:C.t1,boxSizing:"border-box",transition:"border-color 0.15s" };
+  const half = { ...inp, flex:1 };
+  const btnP = (color,dis) => ({ width:"100%",padding:"10px 0",borderRadius:8,background:color,color:"#fff",border:"none",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit",opacity:dis?0.6:1,transition:"opacity 0.15s" });
+  const lbl = { fontSize:11,fontWeight:600,color:C.t3,marginBottom:4 };
+  return { sel, inp, half, btnP, lbl };
+};
+const typeColors = { producer:"#F59E0B",plant:"#6366F1",transporter:"#3B82F6" };
+const typeLabels = { producer:"Productor",plant:"Planta",transporter:"Transportista" };
+const roleLabels = { platform_admin:"Admin Principal",admin:"Gerente",operator:"Operario" };
+
+// Map picker - module level, optional, styled to match app
+function AdminMapPicker({ lat, lng, onChange, label }) {
+  const [pin, setPin] = useState({ lat:lat||null, lng:lng||null });
+  const [expanded, setExpanded] = useState(!!(lat&&lng));
+  useEffect(() => { if(lat!==null&&lng!==null&&lat!==undefined&&lng!==undefined) { setPin({lat,lng}); setExpanded(true); } }, [lat,lng]);
   const handleClick = (e) => {
     const rect = e.currentTarget.getBoundingClientRect();
     const x = (e.clientX - rect.left) / rect.width;
@@ -4450,29 +4464,31 @@ function AdminMapPicker({ lat, lng, onChange }) {
     const rounded = { lat:Math.round((-30-(y*8))*1000)/1000, lng:Math.round((-58+(x*6))*1000)/1000 };
     setPin(rounded); onChange(rounded);
   };
+  const clear = (e) => { e.stopPropagation(); setPin({lat:null,lng:null}); onChange({lat:null,lng:null}); };
   return (
-    <div style={{marginBottom:8}}>
-      <div style={{fontSize:11,fontWeight:600,color:C.t3,marginBottom:4}}>Ubicación (clic para marcar):</div>
-      <div onClick={handleClick} style={{width:"100%",height:150,borderRadius:8,border:`1px solid ${C.b1}`,background:"linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 50%, #a5d6a7 100%)",cursor:"crosshair",position:"relative",overflow:"hidden"}}>
-        <div style={{position:"absolute",inset:0,opacity:0.1,background:"repeating-linear-gradient(0deg,transparent,transparent 30px,#000 30px,#000 31px),repeating-linear-gradient(90deg,transparent,transparent 30px,#000 30px,#000 31px)"}}/>
-        {(pin.lat&&pin.lng)&&<div style={{position:"absolute",left:`${((pin.lng+58)/6)*100}%`,top:`${((pin.lat+30)/-8)*100}%`,transform:"translate(-50%,-100%)",fontSize:24,filter:"drop-shadow(0 2px 2px rgba(0,0,0,0.3))"}}>📍</div>}
-      </div>
-      {(pin.lat&&pin.lng)&&<div style={{fontSize:10,color:C.t3,marginTop:2}}>Lat: {pin.lat}, Lng: {pin.lng}</div>}
+    <div style={{marginBottom:10}}>
+      <button type="button" onClick={()=>setExpanded(!expanded)} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",padding:0,marginBottom:expanded?6:0}}>
+        <span style={{fontSize:11,fontWeight:600,color:C.t3}}>{label||"Ubicación"} (opcional)</span>
+        <span style={{fontSize:10,color:C.pri,fontWeight:500}}>{expanded?"▾":"▸"}</span>
+        {pin.lat&&<span style={{fontSize:9,color:C.t3,marginLeft:4}}>📍 {pin.lat}, {pin.lng}</span>}
+      </button>
+      {expanded && (
+        <div style={{borderRadius:10,border:`1px solid ${C.b1}`,overflow:"hidden",boxShadow:`0 1px 3px ${C.b1}`}}>
+          <div onClick={handleClick} style={{width:"100%",height:140,background:`linear-gradient(145deg, ${C.bgInput} 0%, ${C.b1}40 100%)`,cursor:"crosshair",position:"relative"}}>
+            <div style={{position:"absolute",inset:0,opacity:0.06,background:"repeating-linear-gradient(0deg,transparent,transparent 28px,currentColor 28px,currentColor 29px),repeating-linear-gradient(90deg,transparent,transparent 28px,currentColor 29px,currentColor 29px)"}}/>
+            {(pin.lat&&pin.lng)?<div style={{position:"absolute",left:`${((pin.lng+58)/6)*100}%`,top:`${((pin.lat+30)/-8)*100}%`,transform:"translate(-50%,-100%)",fontSize:22,filter:"drop-shadow(0 2px 3px rgba(0,0,0,0.25))"}}>📍</div>:<div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center"}}><span style={{fontSize:11,color:C.t3,background:`${C.w}90`,padding:"4px 10px",borderRadius:6}}>Clic para marcar</span></div>}
+          </div>
+          {pin.lat&&(
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 10px",background:C.w,borderTop:`1px solid ${C.b1}`}}>
+              <span style={{fontSize:10,color:C.t2}}>Lat: {pin.lat} · Lng: {pin.lng}</span>
+              <button type="button" onClick={clear} style={{background:"none",border:"none",fontSize:10,color:C.err,cursor:"pointer",fontFamily:"inherit",padding:"2px 6px"}}>Quitar</button>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
-
-// Shared admin styles
-const adminStyles = () => {
-  const sel = { width:"100%",padding:"8px 10px",borderRadius:6,border:`1px solid ${C.b1}`,fontSize:13,fontFamily:"inherit",background:C.bgInput,color:C.t1,boxSizing:"border-box",appearance:"none",WebkitAppearance:"none",backgroundImage:`url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`,backgroundRepeat:"no-repeat",backgroundPosition:"right 8px center",paddingRight:28,cursor:"pointer" };
-  const inp = { width:"100%",padding:"8px 10px",borderRadius:6,border:`1px solid ${C.b1}`,fontSize:13,fontFamily:"inherit",background:C.bgInput,color:C.t1,boxSizing:"border-box" };
-  const half = { ...inp, flex:1 };
-  const btnP = (color,dis) => ({ width:"100%",padding:"10px 0",borderRadius:8,background:color,color:"#fff",border:"none",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit",opacity:dis?0.6:1 });
-  return { sel, inp, half, btnP };
-};
-const typeColors = { producer:"#F59E0B",plant:"#6366F1",transporter:"#3B82F6" };
-const typeLabels = { producer:"Productor",plant:"Planta",transporter:"Transportista" };
-const roleLabels = { platform_admin:"Admin Principal",admin:"Gerente",operator:"Operario" };
 
 // ======================== MY DATA SCREEN ==============================
 function MyDataScreen({ user, onBack }) {
@@ -4493,22 +4509,18 @@ function MyDataScreen({ user, onBack }) {
       <button onClick={onBack} style={{background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",fontSize:13,fontWeight:600,color:C.pri,marginBottom:14,padding:0,display:"flex",alignItems:"center",gap:4}}>{Ic.chev(C.pri,18)} Volver</button>
       <div style={{fontSize:18,fontWeight:800,color:C.t1,marginBottom:4}}>Mis datos</div>
       <div style={{fontSize:11,color:C.t3,marginBottom:14}}>Editá tu información personal</div>
-
       <div style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius:10,padding:14,boxShadow:C.sh}}>
-        <div style={{fontSize:11,fontWeight:600,color:C.t3,marginBottom:4}}>Nombre:</div>
+        <div style={s.lbl}>Nombre:</div>
         <input value={form.name} onChange={e=>setForm(p=>({...p,name:e.target.value}))} placeholder="Nombre completo" style={{...s.inp,marginBottom:10}} />
-        <div style={{fontSize:11,fontWeight:600,color:C.t3,marginBottom:4}}>Email:</div>
+        <div style={s.lbl}>Email:</div>
         <input value={form.email} onChange={e=>setForm(p=>({...p,email:e.target.value}))} placeholder="Email" type="email" style={{...s.inp,marginBottom:10}} />
-        <div style={{fontSize:11,fontWeight:600,color:C.t3,marginBottom:4}}>Teléfono:</div>
+        <div style={s.lbl}>Teléfono:</div>
         <input value={form.phone} onChange={e=>setForm(p=>({...p,phone:e.target.value}))} placeholder="Teléfono" style={{...s.inp,marginBottom:10}} />
-
-        {/* Info badges */}
         <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:10,paddingTop:8,borderTop:`1px solid ${C.b2}`}}>
           <Bd color={C.t2}>{roleLabels[user.role]||user.role}</Bd>
           {(user.userTypes||[]).map(t=><Bd key={t} color={typeColors[t]}>{typeLabels[t]}</Bd>)}
           {user.company&&<Bd color={typeColors[user.company?.type]||C.t2}>{user.company?.name||user.entity}</Bd>}
         </div>
-
         <button onClick={handleSave} disabled={saving} style={s.btnP(C.pri,saving)}>{saving?"Guardando...":"Guardar cambios"}</button>
       </div>
       {msg&&<div style={{padding:"8px 12px",borderRadius:8,background:msg.k==="ok"?C.okPale:`${C.err}15`,color:msg.k==="ok"?C.ok:C.err,fontSize:12,marginTop:10}}>{msg.t}</div>}
@@ -4535,10 +4547,10 @@ function AdminScreen({ user, onBack }) {
   const [statsFilter, setStatsFilter] = useState(null);
 
   // View states
-  const [view, setView] = useState("list"); // "list"|"companyForm"|"companyDetail"|"userForm"|"userEdit"
+  const [view, setView] = useState("list");
   const [companyForm, setCompanyForm] = useState({ name:"",type:"producer",phone:"",email:"",rut:"",hasInternalFleet:false,lat:null,lng:null });
   const [editCompanyId, setEditCompanyId] = useState(null);
-  const [userForm, setUserForm] = useState({ name:"",email:"",phone:"",password:"",userTypes:[],role:"operator",companyId:"" });
+  const [userForm, setUserForm] = useState({ name:"",email:"",phone:"",password:"",userTypes:[],role:"operator",companyByType:{} });
   const [editUserData, setEditUserData] = useState(null);
   const [branchForm, setBranchForm] = useState({ name:"",address:"",reference:"",lat:null,lng:null });
   const [editBranchId, setEditBranchId] = useState(null);
@@ -4560,7 +4572,6 @@ function AdminScreen({ user, onBack }) {
 
   useEffect(() => { load(); }, [load]);
 
-  // Search
   useEffect(() => {
     const t = setTimeout(async () => {
       try {
@@ -4582,7 +4593,6 @@ function AdminScreen({ user, onBack }) {
   // --- Company ---
   const openNewCompany = () => { setCompanyForm({name:"",type:"producer",phone:"",email:"",rut:"",hasInternalFleet:false,lat:null,lng:null}); setEditCompanyId(null); setView("companyForm"); };
   const openEditCompany = (c) => { setCompanyForm({name:c.name,type:c.type,phone:c.phone||"",email:c.email||"",rut:c.rut||"",hasInternalFleet:!!c.hasInternalFleet,lat:c.lat?Number(c.lat):null,lng:c.lng?Number(c.lng):null}); setEditCompanyId(c.id); setView("companyForm"); };
-
   const handleSaveCompany = async () => {
     if(!companyForm.name.trim()) return show("Nombre requerido","err");
     setSaving(true);
@@ -4597,7 +4607,6 @@ function AdminScreen({ user, onBack }) {
   const openCompanyDetail = async (c) => { setSelectedCompany(c); setBranches([]); setView("companyDetail"); try { const b=await apiAdminListBranches(c.id); setBranches(b||[]); } catch {} };
   const openNewBranch = () => { setBranchForm({name:"",address:"",reference:"",lat:null,lng:null}); setEditBranchId(null); setShowBranchForm(true); };
   const openEditBranch = (b) => { setBranchForm({name:b.name,address:b.address||"",reference:b.reference||"",lat:b.lat?Number(b.lat):null,lng:b.lng?Number(b.lng):null}); setEditBranchId(b.id); setShowBranchForm(true); };
-
   const handleSaveBranch = async () => {
     if(!branchForm.name.trim()) return show("Nombre requerido","err");
     setSaving(true);
@@ -4607,56 +4616,93 @@ function AdminScreen({ user, onBack }) {
       setShowBranchForm(false); const b=await apiAdminListBranches(selectedCompany.id); setBranches(b||[]); load();
     } catch(e) { show(e.message,"err"); } finally { setSaving(false); }
   };
-
   const handleDeleteBranch = async (id) => { try { await apiAdminDeleteBranch(id); show("Sucursal eliminada"); const b=await apiAdminListBranches(selectedCompany.id); setBranches(b||[]); load(); } catch(e) { show(e.message,"err"); } };
 
-  // --- Users ---
+  // --- Users with companyByType ---
   const toggleFormUserType = (t) => setUserForm(p=>({...p,userTypes:p.userTypes.includes(t)?p.userTypes.filter(x=>x!==t):[...p.userTypes,t]}));
   const toggleEditUserType = (t) => setEditUserData(p=>({...p,userTypes:(p.userTypes||[]).includes(t)?(p.userTypes||[]).filter(x=>x!==t):[...(p.userTypes||[]),t]}));
 
-  const openNewUser = () => { setUserForm({name:"",email:"",phone:"",password:"",userTypes:[],role:"operator",companyId:""}); setView("userForm"); };
-  const openEditUser = (u) => { setEditUserData({...u,userTypes:u.userTypes||[]}); setView("userEdit"); };
+  const openNewUser = () => { setUserForm({name:"",email:"",phone:"",password:"",userTypes:[],role:"operator",companyByType:{}}); setView("userForm"); };
+
+  const openEditUser = (u) => {
+    // Build companyByType from existing data
+    const cbt = u.companyByType && typeof u.companyByType === "object" ? {...u.companyByType} : {};
+    // Backwards compat: if user has companyId but no companyByType, infer from company type
+    if(u.companyId && u.company && Object.keys(cbt).length===0) {
+      cbt[u.company.type] = u.companyId;
+    }
+    setEditUserData({...u, userTypes:u.userTypes||[], companyByType:cbt});
+    setView("userEdit");
+  };
+
+  const setEditCompanyForType = (type, companyId) => {
+    setEditUserData(p => ({
+      ...p,
+      companyByType: { ...(p.companyByType||{}), [type]: companyId||null },
+      // Keep companyId as the first non-null company for backwards compat
+      companyId: companyId || Object.values({...(p.companyByType||{}), [type]:companyId}).find(v=>v) || null
+    }));
+  };
+
+  const setFormCompanyForType = (type, companyId) => {
+    setUserForm(p => ({
+      ...p,
+      companyByType: { ...(p.companyByType||{}), [type]: companyId||null }
+    }));
+  };
 
   const handleCreateUser = async () => {
     if(!userForm.name.trim()||!userForm.email.trim()||!userForm.password) return show("Nombre, email y contraseña obligatorios","err");
     if(userForm.userTypes.length===0) return show("Seleccioná al menos un tipo","err");
     setSaving(true);
-    try { await apiAdminCreateUser({...userForm,companyId:userForm.companyId||undefined}); show("Usuario creado"); setView("list"); load(); }
+    const cbt = userForm.companyByType||{};
+    const firstCompanyId = Object.values(cbt).find(v=>v) || undefined;
+    try { await apiAdminCreateUser({...userForm, companyId:firstCompanyId, companyByType:cbt}); show("Usuario creado"); setView("list"); load(); }
     catch(e) { show(e.message,"err"); } finally { setSaving(false); }
   };
 
   const handleSaveEditUser = async () => {
     setSaving(true);
+    const cbt = editUserData.companyByType||{};
+    const firstCompanyId = Object.values(cbt).find(v=>v) || null;
     try {
-      await apiAdminUpdateUser(editUserData.id, { name:editUserData.name, email:editUserData.email, phone:editUserData.phone, role:editUserData.role, userTypes:editUserData.userTypes, companyId:editUserData.companyId||null, active:editUserData.active });
+      await apiAdminUpdateUser(editUserData.id, { name:editUserData.name, email:editUserData.email, phone:editUserData.phone, role:editUserData.role, userTypes:editUserData.userTypes, companyId:firstCompanyId, companyByType:cbt, active:editUserData.active });
       show("Usuario actualizado"); setView("list"); load();
     } catch(e) { show(e.message,"err"); } finally { setSaving(false); }
   };
 
-  // Message bar
   const MsgBar = () => msg ? <div style={{padding:"8px 12px",borderRadius:8,background:msg.k==="ok"?C.okPale:`${C.err}15`,color:msg.k==="ok"?C.ok:C.err,fontSize:12,marginTop:10,marginBottom:10,display:"flex",justifyContent:"space-between"}}>{msg.t}<button onClick={()=>setMsg(null)} style={{background:"none",border:"none",cursor:"pointer",color:"inherit",fontFamily:"inherit"}}>✕</button></div> : null;
 
-  // === COMPANY FORM VIEW ===
+  // === COMPANY FORM ===
   if (view==="companyForm") {
     return (
       <div style={{flex:1,overflow:"auto",padding:18}}>
         <button onClick={()=>setView("list")} style={{background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",fontSize:13,fontWeight:600,color:C.pri,marginBottom:14,padding:0,display:"flex",alignItems:"center",gap:4}}>{Ic.chev(C.pri,18)} Volver</button>
         <div style={{fontSize:16,fontWeight:700,color:C.t1,marginBottom:12}}>{editCompanyId?"Editar empresa":"Nueva empresa"}</div>
         <div style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius:10,padding:14,boxShadow:C.sh}}>
-          <input value={companyForm.name} onChange={e=>setCompanyForm(p=>({...p,name:e.target.value}))} placeholder="Nombre" style={{...s.inp,marginBottom:8}} />
-          <div style={{display:"flex",gap:6,marginBottom:8}}>
-            {["producer","plant","transporter"].map(t=>(<button key={t} onClick={()=>setCompanyForm(p=>({...p,type:t}))} style={{flex:1,padding:"8px 0",borderRadius:6,border:`1px solid ${companyForm.type===t?typeColors[t]:C.b1}`,background:companyForm.type===t?`${typeColors[t]}15`:C.w,color:companyForm.type===t?typeColors[t]:C.t2,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>{typeLabels[t]}</button>))}
+          <div style={s.lbl}>Nombre:</div>
+          <input value={companyForm.name} onChange={e=>setCompanyForm(p=>({...p,name:e.target.value}))} placeholder="Nombre de la empresa" style={{...s.inp,marginBottom:10}} />
+          <div style={s.lbl}>Tipo:</div>
+          <div style={{display:"flex",gap:6,marginBottom:10}}>
+            {["producer","plant","transporter"].map(t=>(<button key={t} onClick={()=>setCompanyForm(p=>({...p,type:t}))} style={{flex:1,padding:"9px 0",borderRadius:8,border:`1.5px solid ${companyForm.type===t?typeColors[t]:C.b1}`,background:companyForm.type===t?`${typeColors[t]}12`:C.w,color:companyForm.type===t?typeColors[t]:C.t2,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit",transition:"all 0.15s"}}>{typeLabels[t]}</button>))}
           </div>
-          <div style={{display:"flex",gap:6,marginBottom:8}}>
-            <input value={companyForm.email} onChange={e=>setCompanyForm(p=>({...p,email:e.target.value}))} placeholder="Email" style={s.half} />
-            <input value={companyForm.phone} onChange={e=>setCompanyForm(p=>({...p,phone:e.target.value}))} placeholder="Teléfono" style={s.half} />
+          <div style={{display:"flex",gap:8,marginBottom:10}}>
+            <div style={{flex:1}}>
+              <div style={s.lbl}>Email:</div>
+              <input value={companyForm.email} onChange={e=>setCompanyForm(p=>({...p,email:e.target.value}))} placeholder="Email" style={s.inp} />
+            </div>
+            <div style={{flex:1}}>
+              <div style={s.lbl}>Teléfono:</div>
+              <input value={companyForm.phone} onChange={e=>setCompanyForm(p=>({...p,phone:e.target.value}))} placeholder="Teléfono" style={s.inp} />
+            </div>
           </div>
-          <input value={companyForm.rut} onChange={e=>setCompanyForm(p=>({...p,rut:e.target.value}))} placeholder="RUT" style={{...s.inp,marginBottom:8}} />
-          <label style={{display:"flex",alignItems:"center",gap:8,fontSize:12,color:C.t2,marginBottom:8,cursor:"pointer"}}>
-            <input type="checkbox" checked={companyForm.hasInternalFleet} onChange={e=>setCompanyForm(p=>({...p,hasInternalFleet:e.target.checked}))} /> Flota propia
+          <div style={s.lbl}>RUT:</div>
+          <input value={companyForm.rut} onChange={e=>setCompanyForm(p=>({...p,rut:e.target.value}))} placeholder="RUT" style={{...s.inp,marginBottom:10}} />
+          <label style={{display:"flex",alignItems:"center",gap:8,fontSize:12,color:C.t2,marginBottom:10,cursor:"pointer"}}>
+            <input type="checkbox" checked={companyForm.hasInternalFleet} onChange={e=>setCompanyForm(p=>({...p,hasInternalFleet:e.target.checked}))} style={{width:16,height:16}} /> Flota propia
           </label>
-          <AdminMapPicker lat={companyForm.lat} lng={companyForm.lng} onChange={({lat,lng})=>setCompanyForm(p=>({...p,lat,lng}))} />
-          <div style={{display:"flex",gap:6}}>
+          <AdminMapPicker label="Ubicación empresa" lat={companyForm.lat} lng={companyForm.lng} onChange={({lat,lng})=>setCompanyForm(p=>({...p,lat,lng}))} />
+          <div style={{display:"flex",gap:8,marginTop:4}}>
             <button onClick={()=>setView("list")} style={{flex:1,padding:"10px 0",borderRadius:8,border:`1px solid ${C.b1}`,background:C.w,color:C.t2,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>Cancelar</button>
             <button onClick={handleSaveCompany} disabled={saving} style={{...s.btnP(C.pri,saving),flex:2}}>{saving?"Guardando...":(editCompanyId?"Guardar cambios":"Crear empresa")}</button>
           </div>
@@ -4666,35 +4712,52 @@ function AdminScreen({ user, onBack }) {
     );
   }
 
-  // === USER EDIT VIEW ===
+  // === USER EDIT ===
   if (view==="userEdit" && editUserData) {
     return (
       <div style={{flex:1,overflow:"auto",padding:18}}>
         <button onClick={()=>setView("list")} style={{background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",fontSize:13,fontWeight:600,color:C.pri,marginBottom:14,padding:0,display:"flex",alignItems:"center",gap:4}}>{Ic.chev(C.pri,18)} Volver</button>
         <div style={{fontSize:16,fontWeight:700,color:C.t1,marginBottom:12}}>Editar usuario</div>
         <div style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius:10,padding:14,boxShadow:C.sh}}>
-          <input value={editUserData.name} onChange={e=>setEditUserData(p=>({...p,name:e.target.value}))} placeholder="Nombre" style={{...s.inp,marginBottom:8}} />
-          <div style={{display:"flex",gap:6,marginBottom:8}}>
-            <input value={editUserData.email} onChange={e=>setEditUserData(p=>({...p,email:e.target.value}))} placeholder="Email" style={s.half} />
-            <input value={editUserData.phone||""} onChange={e=>setEditUserData(p=>({...p,phone:e.target.value}))} placeholder="Teléfono" style={s.half} />
-          </div>
-          <div style={{fontSize:11,fontWeight:600,color:C.t3,marginBottom:4}}>Tipos de usuario:</div>
-          <div style={{display:"flex",gap:6,marginBottom:8}}>
-            {["producer","plant","transporter"].map(t=>{const sel=(editUserData.userTypes||[]).includes(t);return(<button key={t} onClick={()=>toggleEditUserType(t)} style={{flex:1,padding:"8px 0",borderRadius:6,border:`1px solid ${sel?typeColors[t]:C.b1}`,background:sel?`${typeColors[t]}15`:C.w,color:sel?typeColors[t]:C.t2,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>{sel?"✓ ":""}{typeLabels[t]}</button>);})}
-          </div>
-          <div style={{fontSize:11,fontWeight:600,color:C.t3,marginBottom:4}}>Empresa por tipo:</div>
-          {(editUserData.userTypes||[]).map(ut => (
-            <div key={ut} style={{marginBottom:6}}>
-              <div style={{fontSize:10,fontWeight:600,color:typeColors[ut],marginBottom:2}}>{typeLabels[ut]}:</div>
-              <select value={ut===((allCompanies.find(c=>c.id===editUserData.companyId))?.type)?editUserData.companyId:""} onChange={e=>setEditUserData(p=>({...p,companyId:e.target.value||null}))} style={s.sel}>
-                <option value="">Sin empresa</option>
-                {allCompanies.filter(c=>c.type===ut).map(c=><option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
-            </div>
-          ))}
-          <div style={{display:"flex",gap:6,marginBottom:8,marginTop:8}}>
+          <div style={s.lbl}>Nombre:</div>
+          <input value={editUserData.name} onChange={e=>setEditUserData(p=>({...p,name:e.target.value}))} placeholder="Nombre" style={{...s.inp,marginBottom:10}} />
+          <div style={{display:"flex",gap:8,marginBottom:10}}>
             <div style={{flex:1}}>
-              <div style={{fontSize:11,fontWeight:600,color:C.t3,marginBottom:4}}>Rol:</div>
+              <div style={s.lbl}>Email:</div>
+              <input value={editUserData.email} onChange={e=>setEditUserData(p=>({...p,email:e.target.value}))} placeholder="Email" style={s.inp} />
+            </div>
+            <div style={{flex:1}}>
+              <div style={s.lbl}>Teléfono:</div>
+              <input value={editUserData.phone||""} onChange={e=>setEditUserData(p=>({...p,phone:e.target.value}))} placeholder="Teléfono" style={s.inp} />
+            </div>
+          </div>
+          <div style={s.lbl}>Tipos de usuario:</div>
+          <div style={{display:"flex",gap:6,marginBottom:10}}>
+            {["producer","plant","transporter"].map(t=>{const sel=(editUserData.userTypes||[]).includes(t);return(<button key={t} onClick={()=>toggleEditUserType(t)} style={{flex:1,padding:"9px 0",borderRadius:8,border:`1.5px solid ${sel?typeColors[t]:C.b1}`,background:sel?`${typeColors[t]}12`:C.w,color:sel?typeColors[t]:C.t2,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit",transition:"all 0.15s"}}>{sel?"✓ ":""}{typeLabels[t]}</button>);})}
+          </div>
+
+          {/* Company per type - MULTI SELECT */}
+          {(editUserData.userTypes||[]).length>0 && (
+            <div style={{background:`${C.bgInput}`,border:`1px solid ${C.b1}`,borderRadius:8,padding:12,marginBottom:10}}>
+              <div style={{...s.lbl,marginBottom:8}}>Empresa por tipo:</div>
+              {(editUserData.userTypes||[]).map(ut => (
+                <div key={ut} style={{marginBottom:ut===(editUserData.userTypes||[]).slice(-1)[0]?0:8}}>
+                  <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:4}}>
+                    <div style={{width:8,height:8,borderRadius:4,background:typeColors[ut]}}/>
+                    <span style={{fontSize:11,fontWeight:600,color:typeColors[ut]}}>{typeLabels[ut]}</span>
+                  </div>
+                  <select value={(editUserData.companyByType||{})[ut]||""} onChange={e=>setEditCompanyForType(ut, e.target.value)} style={s.sel}>
+                    <option value="">Sin empresa</option>
+                    {allCompanies.filter(c=>c.type===ut).map(c=><option key={c.id} value={c.id}>{c.name}</option>)}
+                  </select>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div style={{display:"flex",gap:8,marginBottom:10}}>
+            <div style={{flex:1}}>
+              <div style={s.lbl}>Rol:</div>
               <select value={editUserData.role} onChange={e=>setEditUserData(p=>({...p,role:e.target.value}))} style={s.sel}>
                 <option value="operator">Operario</option>
                 <option value="admin">Gerente</option>
@@ -4702,14 +4765,14 @@ function AdminScreen({ user, onBack }) {
               </select>
             </div>
             <div style={{flex:1}}>
-              <div style={{fontSize:11,fontWeight:600,color:C.t3,marginBottom:4}}>Estado:</div>
+              <div style={s.lbl}>Estado:</div>
               <select value={editUserData.active?"active":"inactive"} onChange={e=>setEditUserData(p=>({...p,active:e.target.value==="active"}))} style={s.sel}>
                 <option value="active">Activo</option>
                 <option value="inactive">Inactivo</option>
               </select>
             </div>
           </div>
-          <div style={{display:"flex",gap:6,marginTop:8}}>
+          <div style={{display:"flex",gap:8,marginTop:4}}>
             <button onClick={()=>setView("list")} style={{flex:1,padding:"10px 0",borderRadius:8,border:`1px solid ${C.b1}`,background:C.w,color:C.t2,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>Cancelar</button>
             <button onClick={handleSaveEditUser} disabled={saving} style={{...s.btnP(C.acc,saving),flex:2}}>{saving?"Guardando...":"Guardar cambios"}</button>
           </div>
@@ -4719,37 +4782,58 @@ function AdminScreen({ user, onBack }) {
     );
   }
 
-  // === USER CREATE VIEW ===
+  // === USER CREATE ===
   if (view==="userForm") {
     return (
       <div style={{flex:1,overflow:"auto",padding:18}}>
         <button onClick={()=>setView("list")} style={{background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",fontSize:13,fontWeight:600,color:C.pri,marginBottom:14,padding:0,display:"flex",alignItems:"center",gap:4}}>{Ic.chev(C.pri,18)} Volver</button>
         <div style={{fontSize:16,fontWeight:700,color:C.t1,marginBottom:12}}>Nuevo usuario</div>
         <div style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius:10,padding:14,boxShadow:C.sh}}>
-          <input value={userForm.name} onChange={e=>setUserForm(p=>({...p,name:e.target.value}))} placeholder="Nombre completo" style={{...s.inp,marginBottom:8}} />
-          <div style={{display:"flex",gap:6,marginBottom:8}}>
-            <input value={userForm.email} onChange={e=>setUserForm(p=>({...p,email:e.target.value}))} placeholder="Email" type="email" style={s.half} />
-            <input value={userForm.phone} onChange={e=>setUserForm(p=>({...p,phone:e.target.value}))} placeholder="Teléfono" style={s.half} />
-          </div>
-          <input value={userForm.password} onChange={e=>setUserForm(p=>({...p,password:e.target.value}))} placeholder="Contraseña" type="password" style={{...s.inp,marginBottom:8}} />
-          <div style={{fontSize:11,fontWeight:600,color:C.t3,marginBottom:4}}>Tipos de usuario:</div>
-          <div style={{display:"flex",gap:6,marginBottom:8}}>
-            {["producer","plant","transporter"].map(t=>{const sel=userForm.userTypes.includes(t);return(<button key={t} onClick={()=>toggleFormUserType(t)} style={{flex:1,padding:"8px 0",borderRadius:6,border:`1px solid ${sel?typeColors[t]:C.b1}`,background:sel?`${typeColors[t]}15`:C.w,color:sel?typeColors[t]:C.t2,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>{sel?"✓ ":""}{typeLabels[t]}</button>);})}
-          </div>
-          <div style={{display:"flex",gap:6,marginBottom:8}}>
+          <div style={s.lbl}>Nombre:</div>
+          <input value={userForm.name} onChange={e=>setUserForm(p=>({...p,name:e.target.value}))} placeholder="Nombre completo" style={{...s.inp,marginBottom:10}} />
+          <div style={{display:"flex",gap:8,marginBottom:10}}>
             <div style={{flex:1}}>
-              <div style={{fontSize:11,fontWeight:600,color:C.t3,marginBottom:4}}>Rol:</div>
+              <div style={s.lbl}>Email:</div>
+              <input value={userForm.email} onChange={e=>setUserForm(p=>({...p,email:e.target.value}))} placeholder="Email" type="email" style={s.inp} />
+            </div>
+            <div style={{flex:1}}>
+              <div style={s.lbl}>Teléfono:</div>
+              <input value={userForm.phone} onChange={e=>setUserForm(p=>({...p,phone:e.target.value}))} placeholder="Teléfono" style={s.inp} />
+            </div>
+          </div>
+          <div style={s.lbl}>Contraseña:</div>
+          <input value={userForm.password} onChange={e=>setUserForm(p=>({...p,password:e.target.value}))} placeholder="Contraseña" type="password" style={{...s.inp,marginBottom:10}} />
+          <div style={s.lbl}>Tipos de usuario:</div>
+          <div style={{display:"flex",gap:6,marginBottom:10}}>
+            {["producer","plant","transporter"].map(t=>{const sel=userForm.userTypes.includes(t);return(<button key={t} onClick={()=>toggleFormUserType(t)} style={{flex:1,padding:"9px 0",borderRadius:8,border:`1.5px solid ${sel?typeColors[t]:C.b1}`,background:sel?`${typeColors[t]}12`:C.w,color:sel?typeColors[t]:C.t2,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit",transition:"all 0.15s"}}>{sel?"✓ ":""}{typeLabels[t]}</button>);})}
+          </div>
+
+          {/* Company per type for creation */}
+          {userForm.userTypes.length>0 && (
+            <div style={{background:`${C.bgInput}`,border:`1px solid ${C.b1}`,borderRadius:8,padding:12,marginBottom:10}}>
+              <div style={{...s.lbl,marginBottom:8}}>Empresa por tipo:</div>
+              {userForm.userTypes.map(ut => (
+                <div key={ut} style={{marginBottom:ut===userForm.userTypes.slice(-1)[0]?0:8}}>
+                  <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:4}}>
+                    <div style={{width:8,height:8,borderRadius:4,background:typeColors[ut]}}/>
+                    <span style={{fontSize:11,fontWeight:600,color:typeColors[ut]}}>{typeLabels[ut]}</span>
+                  </div>
+                  <select value={(userForm.companyByType||{})[ut]||""} onChange={e=>setFormCompanyForType(ut, e.target.value)} style={s.sel}>
+                    <option value="">Sin empresa</option>
+                    {allCompanies.filter(c=>c.type===ut).map(c=><option key={c.id} value={c.id}>{c.name}</option>)}
+                  </select>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div style={{display:"flex",gap:8,marginBottom:10}}>
+            <div style={{flex:1}}>
+              <div style={s.lbl}>Rol:</div>
               <select value={userForm.role} onChange={e=>setUserForm(p=>({...p,role:e.target.value}))} style={s.sel}>
                 <option value="operator">Operario</option>
                 <option value="admin">Gerente</option>
                 {isPlatform&&<option value="platform_admin">Admin Principal</option>}
-              </select>
-            </div>
-            <div style={{flex:1}}>
-              <div style={{fontSize:11,fontWeight:600,color:C.t3,marginBottom:4}}>Empresa:</div>
-              <select value={userForm.companyId} onChange={e=>setUserForm(p=>({...p,companyId:e.target.value}))} style={s.sel}>
-                <option value="">Sin empresa</option>
-                {allCompanies.map(c=><option key={c.id} value={c.id}>{c.name} ({typeLabels[c.type]})</option>)}
               </select>
             </div>
           </div>
@@ -4776,6 +4860,7 @@ function AdminScreen({ user, onBack }) {
               </div>
               {selectedCompany.email&&<div style={{fontSize:12,color:C.t2,marginTop:4}}>{selectedCompany.email}</div>}
               {selectedCompany.phone&&<div style={{fontSize:12,color:C.t3}}>{selectedCompany.phone}</div>}
+              {selectedCompany.lat&&<div style={{fontSize:10,color:C.t3,marginTop:2}}>📍 {Number(selectedCompany.lat).toFixed(3)}, {Number(selectedCompany.lng).toFixed(3)}</div>}
             </div>
             <button onClick={()=>openEditCompany(selectedCompany)} style={{padding:"6px 12px",borderRadius:6,border:`1px solid ${C.pri}40`,background:`${C.pri}08`,color:C.pri,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>Editar</button>
           </div>
@@ -4786,12 +4871,15 @@ function AdminScreen({ user, onBack }) {
         </div>
         {showBranchForm && (
           <div style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius:10,padding:14,marginBottom:10,boxShadow:C.sh}}>
-            <div style={{fontSize:12,fontWeight:600,color:C.t1,marginBottom:6}}>{editBranchId?"Editar sucursal":"Nueva sucursal"}</div>
-            <input value={branchForm.name} onChange={e=>setBranchForm(p=>({...p,name:e.target.value}))} placeholder="Nombre" style={{...s.inp,marginBottom:8}} />
-            <input value={branchForm.address} onChange={e=>setBranchForm(p=>({...p,address:e.target.value}))} placeholder="Dirección" style={{...s.inp,marginBottom:8}} />
-            <input value={branchForm.reference} onChange={e=>setBranchForm(p=>({...p,reference:e.target.value}))} placeholder="Referencia (opcional)" style={{...s.inp,marginBottom:8}} />
-            <AdminMapPicker lat={branchForm.lat} lng={branchForm.lng} onChange={({lat,lng})=>setBranchForm(p=>({...p,lat,lng}))} />
-            <div style={{display:"flex",gap:6}}>
+            <div style={{fontSize:12,fontWeight:600,color:C.t1,marginBottom:8}}>{editBranchId?"Editar sucursal":"Nueva sucursal"}</div>
+            <div style={s.lbl}>Nombre:</div>
+            <input value={branchForm.name} onChange={e=>setBranchForm(p=>({...p,name:e.target.value}))} placeholder="Nombre" style={{...s.inp,marginBottom:10}} />
+            <div style={s.lbl}>Dirección:</div>
+            <input value={branchForm.address} onChange={e=>setBranchForm(p=>({...p,address:e.target.value}))} placeholder="Dirección" style={{...s.inp,marginBottom:10}} />
+            <div style={s.lbl}>Referencia:</div>
+            <input value={branchForm.reference} onChange={e=>setBranchForm(p=>({...p,reference:e.target.value}))} placeholder="Referencia (opcional)" style={{...s.inp,marginBottom:10}} />
+            <AdminMapPicker label="Ubicación sucursal" lat={branchForm.lat} lng={branchForm.lng} onChange={({lat,lng})=>setBranchForm(p=>({...p,lat,lng}))} />
+            <div style={{display:"flex",gap:8}}>
               <button onClick={()=>setShowBranchForm(false)} style={{flex:1,padding:"10px 0",borderRadius:8,border:`1px solid ${C.b1}`,background:C.w,color:C.t2,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>Cancelar</button>
               <button onClick={handleSaveBranch} disabled={saving} style={{...s.btnP(C.pri,saving),flex:2}}>{saving?"Guardando...":(editBranchId?"Guardar":"Crear")}</button>
             </div>
@@ -4819,14 +4907,13 @@ function AdminScreen({ user, onBack }) {
     );
   }
 
-  // === MAIN LIST VIEW ===
+  // === MAIN LIST ===
   return (
     <div style={{flex:1,overflow:"auto",padding:18}}>
       <button onClick={onBack} style={{background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",fontSize:13,fontWeight:600,color:C.pri,marginBottom:14,padding:0,display:"flex",alignItems:"center",gap:4}}>{Ic.chev(C.pri,18)} Volver</button>
       <div style={{fontSize:18,fontWeight:800,color:C.t1,marginBottom:4}}>Administración</div>
       <div style={{fontSize:11,color:C.t3,marginBottom:14}}>{isPlatform?"Admin Principal — Control total":isManager?"Gerente — Tu empresa":"Sin permisos"}</div>
 
-      {/* Stats (platform_admin only) */}
       {stats&&isPlatform&&(
         <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:14}}>
           {[{k:"companies",l:"Empresas",v:stats.companies,c:C.pri},{k:"branches",l:"Sucursales",v:stats.branches,c:C.info||"#3B82F6"},{k:"users",l:"Usuarios",v:stats.users,c:C.acc}].map(st=>(
@@ -4838,7 +4925,6 @@ function AdminScreen({ user, onBack }) {
         </div>
       )}
 
-      {/* Tabs */}
       <div style={{display:"flex",gap:6,marginBottom:10}}>
         {["companies","users"].map(t=>(
           <button key={t} onClick={()=>{setTab(t);setSearch("");setStatsFilter(null);}} style={{flex:1,padding:"9px 0",borderRadius:8,border:`1px solid ${tab===t?C.pri:C.b1}`,background:tab===t?`${C.pri}12`:C.w,color:tab===t?C.pri:C.t2,fontWeight:600,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>
@@ -4851,7 +4937,6 @@ function AdminScreen({ user, onBack }) {
       <MsgBar/>
 
       {loading?<div style={{textAlign:"center",padding:40,color:C.t3}}>Cargando...</div>:(<>
-        {/* COMPANIES TAB */}
         {tab==="companies"&&(<>
           {isPlatform&&<button onClick={openNewCompany} style={{width:"100%",padding:"10px 14px",borderRadius:8,border:`1px dashed ${C.pri}`,background:`${C.pri}08`,color:C.pri,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"inherit",marginBottom:8}}>+ Nueva Empresa</button>}
           <div style={{display:"flex",flexDirection:"column",gap:8}}>
@@ -4875,11 +4960,13 @@ function AdminScreen({ user, onBack }) {
           </div>
         </>)}
 
-        {/* USERS TAB */}
         {tab==="users"&&(<>
           <button onClick={openNewUser} style={{width:"100%",padding:"10px 14px",borderRadius:8,border:`1px dashed ${C.acc}`,background:`${C.acc}08`,color:C.acc,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"inherit",marginBottom:8}}>+ Nuevo Usuario</button>
           <div style={{display:"flex",flexDirection:"column",gap:8}}>
-            {users.map(u=>(
+            {users.map(u=>{
+              const cbt = u.companyByType && typeof u.companyByType === "object" ? u.companyByType : {};
+              const assignedCompanies = Object.entries(cbt).filter(([_,v])=>v);
+              return (
               <div key={u.id} className="tv-card" style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius:10,padding:"12px 14px",boxShadow:C.sh,cursor:"pointer"}} onClick={()=>openEditUser(u)}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
                   <div>
@@ -4896,12 +4983,12 @@ function AdminScreen({ user, onBack }) {
                   {(u.userTypes||[]).map(t=><Bd key={t} color={typeColors[t]}>{typeLabels[t]}</Bd>)}
                   {(u.userTypes||[]).length===0&&<span style={{fontSize:10,color:C.t3}}>Sin tipo</span>}
                 </div>
-                <div style={{display:"flex",alignItems:"center",gap:6,marginTop:6,paddingTop:6,borderTop:`1px solid ${C.b2}`}}>
-                  {u.company?<Bd color={typeColors[u.company.type]}>{u.company.name}</Bd>:<span style={{fontSize:11,color:C.t3}}>Sin empresa</span>}
+                <div style={{display:"flex",alignItems:"center",gap:6,marginTop:6,paddingTop:6,borderTop:`1px solid ${C.b2}`,flexWrap:"wrap"}}>
+                  {assignedCompanies.length>0 ? assignedCompanies.map(([type,cId])=>{const comp=allCompanies.find(c=>c.id===cId); return comp?<Bd key={type} color={typeColors[type]}>{comp.name}</Bd>:null;}) : u.company ? <Bd color={typeColors[u.company.type]}>{u.company.name}</Bd> : <span style={{fontSize:11,color:C.t3}}>Sin empresa</span>}
                   <span style={{marginLeft:"auto",display:"flex"}}>{Ic.chev(C.t3,14)}</span>
                 </div>
               </div>
-            ))}
+            );})}
             {users.length===0&&<div style={{textAlign:"center",padding:24,color:C.t3,fontSize:13}}>No se encontraron usuarios</div>}
           </div>
         </>)}
