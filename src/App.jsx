@@ -529,6 +529,26 @@ function Select({ label, icon, value, onChange, options, placeholder="Selecciona
   );
 }
 
+// Collapsible form section — defined at module level for stable React identity
+function Sec({ label, complete, summary, children, isExpanded, onFocus, secRef }) {
+  return (
+    <div ref={secRef} style={{ transition:"all 0.3s ease" }} onFocus={onFocus}>
+      {complete && !isExpanded ? (
+        <button type="button" style={{ width:"100%", display:"flex", alignItems:"center", gap:8, padding:"10px 14px", borderRadius:10, border:`1px solid ${C.ok}30`, background:`${C.ok}08`, cursor:"pointer", fontFamily:"inherit", textAlign:"left" }} tabIndex={0}>
+          {Ic.chk(C.ok,16)}
+          <div style={{ flex:1 }}>
+            <div style={{ fontSize:10, fontWeight:700, color:C.t2, textTransform:"uppercase", letterSpacing:0.5 }}>{label}</div>
+            <div style={{ fontSize:12, fontWeight:600, color:C.t1, marginTop:1 }}>{summary}</div>
+          </div>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.t3} strokeWidth="2"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+      ) : (
+        <div>{children}</div>
+      )}
+    </div>
+  );
+}
+
 function Toast({ msg, type="ok", onClose }) {
   useEffect(()=>{ const t=setTimeout(onClose,3500); return()=>clearTimeout(t); },[onClose]);
   const cfg = { ok:{bg:C.pri,ic:Ic.chk(C.w,16)}, err:{bg:C.err,ic:Ic.warn(C.w,16)}, info:{bg:C.info,ic:Ic.bell(C.w,16)} }[type]||{bg:C.pri,ic:Ic.chk(C.w,16)};
@@ -2610,9 +2630,9 @@ function NewScreen({ user, lots, plants, fields, trucks, onBack, onCreate, dupli
   const nfDocRef = useRef(null);
   const u = f => setForm(p=>({...p,...f}));
 
-  // Section refs for collapsible sections (NO auto-scroll)
+  // Section refs for collapsible sections
   const secRefs = { product:useRef(null), quantity:useRef(null), origin:useRef(null), destination:useRef(null), schedule:useRef(null), extras:useRef(null), submit:useRef(null) };
-  const [expandedSecs, setExpandedSecs] = useState({});
+  const [activeSection, setActiveSection] = useState(null);
 
   // Section completeness
   const secComplete = useMemo(()=>({
@@ -2622,31 +2642,6 @@ function NewScreen({ user, lots, plants, fields, trucks, onBack, onCreate, dupli
     destination: destMode==="plant" ? !!form.plantId : !!customDest.name?.trim(),
     schedule: !!form.loadDate && /^\d{2}:\d{2}$/.test(form.loadTime),
   }),[form, destMode, customDest]);
-
-  // Collapsible section wrapper
-  const Sec = ({ id, label, complete, summary, children }) => {
-    const isExp = expandedSecs[id] !== undefined ? expandedSecs[id] : true;
-    const toggle = () => setExpandedSecs(p=>({...p,[id]:!isExp}));
-    return (
-      <div ref={secRefs[id]} style={{ transition:"all 0.3s ease" }}>
-        {complete && !isExp ? (
-          <button onClick={toggle} style={{ width:"100%", display:"flex", alignItems:"center", gap:8, padding:"10px 14px", borderRadius:10, border:`1px solid ${C.ok}30`, background:`${C.ok}08`, cursor:"pointer", fontFamily:"inherit", textAlign:"left" }}>
-            {Ic.chk(C.ok,16)}
-            <div style={{ flex:1 }}>
-              <div style={{ fontSize:10, fontWeight:700, color:C.t2, textTransform:"uppercase", letterSpacing:0.5 }}>{label}</div>
-              <div style={{ fontSize:12, fontWeight:600, color:C.t1, marginTop:1 }}>{summary}</div>
-            </div>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.t3} strokeWidth="2"><polyline points="6 9 12 15 18 9"/></svg>
-          </button>
-        ) : (
-          <div>
-            {complete && <button onClick={toggle} style={{ background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", fontSize:10, fontWeight:600, color:C.ok, padding:0, marginBottom:4, display:"flex", alignItems:"center", gap:4 }}>{Ic.chk(C.ok,12)} Completado — tocar para minimizar</button>}
-            {children}
-          </div>
-        )}
-      </div>
-    );
-  };
 
   // Load lots when field changes
   useEffect(()=>{
@@ -2731,7 +2726,7 @@ function NewScreen({ user, lots, plants, fields, trucks, onBack, onCreate, dupli
 
       <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
         {/* PRODUCT SECTION */}
-        <Sec id="product" label="Producto" complete={secComplete.product} summary={secSummary.product}>
+        <Sec label="Producto" complete={secComplete.product} summary={secSummary.product} isExpanded={activeSection==="product"||!secComplete.product} onFocus={()=>setActiveSection("product")} secRef={secRefs.product}>
           <div>
             <Field label="Tipo de producto" icon={Ic.grain(C.pri,14)}>
               <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:6 }}>
@@ -2749,7 +2744,7 @@ function NewScreen({ user, lots, plants, fields, trucks, onBack, onCreate, dupli
         </Sec>
 
         {/* QUANTITY SECTION */}
-        <Sec id="quantity" label="Cantidad" complete={secComplete.quantity} summary={secSummary.quantity}>
+        <Sec label="Cantidad" complete={secComplete.quantity} summary={secSummary.quantity} isExpanded={activeSection==="quantity"||!secComplete.quantity} onFocus={()=>setActiveSection("quantity")} secRef={secRefs.quantity}>
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
             <div>
               <Field label="Cantidad" icon={Ic.grain(C.t2,14)} value={form.tons} onChange={v=>u({tons:v})} placeholder="Ej: 30"/>
@@ -2768,7 +2763,7 @@ function NewScreen({ user, lots, plants, fields, trucks, onBack, onCreate, dupli
         </Sec>
 
         {/* ORIGIN SECTION */}
-        <Sec id="origin" label="Origen" complete={secComplete.origin} summary={secSummary.origin}>
+        <Sec label="Origen" complete={secComplete.origin} summary={secSummary.origin} isExpanded={activeSection==="origin"||!secComplete.origin} onFocus={()=>setActiveSection("origin")} secRef={secRefs.origin}>
           <div>
             <Select label="Campo" icon={Ic.pin(C.ok,14)} value={form.fieldId} onChange={v=>{u({fieldId:v,lotId:""});}} options={fieldOpts} placeholder="Seleccionar campo..."/>
           </div>
@@ -2780,7 +2775,7 @@ function NewScreen({ user, lots, plants, fields, trucks, onBack, onCreate, dupli
         </Sec>
 
         {/* DESTINATION SECTION */}
-        <Sec id="destination" label="Destino" complete={secComplete.destination} summary={secSummary.destination}>
+        <Sec label="Destino" complete={secComplete.destination} summary={secSummary.destination} isExpanded={activeSection==="destination"||!secComplete.destination} onFocus={()=>setActiveSection("destination")} secRef={secRefs.destination}>
           <label style={{ fontSize:10.5, fontWeight:600, color:C.t2, marginBottom:6, display:"flex", alignItems:"center", gap:4, textTransform:"uppercase", letterSpacing:0.6 }}>{Ic.plant(C.t2,14)} Destino</label>
           <div style={{ display:"flex", gap:6, marginBottom:10 }}>
             <button onClick={()=>{setDestMode("plant"); setCustomDest({name:"",lat:null,lng:null});}} style={{ flex:1, padding:"10px 8px", borderRadius:8, border:`1.5px solid ${destMode==="plant"?C.pri:C.b1}`, background:destMode==="plant"?C.priPale:C.w, color:destMode==="plant"?C.pri:C.t2, cursor:"pointer", fontSize:12, fontWeight:600, fontFamily:"inherit" }}>Planta</button>
@@ -2847,7 +2842,7 @@ function NewScreen({ user, lots, plants, fields, trucks, onBack, onCreate, dupli
         )}
 
         {/* SCHEDULE SECTION */}
-        <Sec id="schedule" label="Fecha y hora" complete={secComplete.schedule} summary={secSummary.schedule}>
+        <Sec label="Fecha y hora" complete={secComplete.schedule} summary={secSummary.schedule} isExpanded={activeSection==="schedule"||!secComplete.schedule} onFocus={()=>setActiveSection("schedule")} secRef={secRefs.schedule}>
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
             <div>
               <label style={{ fontSize:10.5, fontWeight:600, color:C.t2, marginBottom:6, display:"flex", alignItems:"center", gap:4, textTransform:"uppercase", letterSpacing:0.6 }}>{Ic.cal(C.pri,14)} Fecha carga</label>
