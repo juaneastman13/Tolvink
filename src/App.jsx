@@ -73,9 +73,9 @@ const LIGHT = {
   nav:"#FFFFFF",
   pri:"#1A6B37", priLt:"#228B46", priPale:"#E4F3EA", priGhost:"rgba(26,107,55,0.06)",
   acc:"#FF6A00", accLt:"#FF8124", accPale:"#FFF3E8",
-  sec:"#003882", secLt:"#1A5CAD", secPale:"#E8F0FE",
+  sec:"#0891B2", secLt:"#06B6D4", secPale:"#ECFEFF",
   ok:"#1A6B37", okPale:"#E4F3EA",
-  info:"#003882", infoPale:"#E8F0FE",
+  info:"#0891B2", infoPale:"#ECFEFF",
   warn:"#CA8A04", warnPale:"#FEF9C3",
   err:"#DC2626", errPale:"#FEE2E2",
   muted:"#71717A", mutedPale:"#F4F4F5",
@@ -96,9 +96,9 @@ const DARK = {
   nav:"#1A2420",
   pri:"#2EBF5E", priLt:"#38D96E", priPale:"#1A3328", priGhost:"rgba(46,191,94,0.08)",
   acc:"#FF8533", accLt:"#FF9F5C", accPale:"#33241A",
-  sec:"#4D9AFF", secLt:"#6AADFF", secPale:"#1A2840",
+  sec:"#22D3EE", secLt:"#67E8F9", secPale:"#164E63",
   ok:"#2EBF5E", okPale:"#1A3328",
-  info:"#4D9AFF", infoPale:"#1A2840",
+  info:"#22D3EE", infoPale:"#164E63",
   warn:"#FACC15", warnPale:"#33291A",
   err:"#EF4444", errPale:"#331A1A",
   muted:"#9CA3AF", mutedPale:"#27302C",
@@ -179,8 +179,8 @@ const Ic = {
 const STATUS_LIGHT = {
   draft:              { label:"Borrador",            color:"#71717A",   bg:"#F4F4F5",   border:"#71717A"   },
   pending_assignment: { label:"Solicitado",          color:"#FF6A00",   bg:"#FFF3E8",   border:"#FF6A00"   },
-  assigned:           { label:"Asignado a flota",    color:"#003882",   bg:"#E8F0FE",   border:"#003882"   },
-  accepted:           { label:"Confirmado camión",   color:"#003882",   bg:"#E8F0FE",   border:"#003882"   },
+  assigned:           { label:"Asignado a flota",    color:"#0891B2",   bg:"#ECFEFF",   border:"#0891B2"   },
+  accepted:           { label:"Confirmado camión",   color:"#0891B2",   bg:"#ECFEFF",   border:"#0891B2"   },
   in_progress:        { label:"En curso",            color:"#258B3E",   bg:"#D0EBD7",   border:"#258B3E"   },
   loaded:             { label:"Cargando",            color:"#1B7D33",   bg:"#C4E6CC",   border:"#1B7D33"   },
   finished:           { label:"Finalizado",          color:"#1A6B37",   bg:"#E4F3EA",   border:"#1A6B37"   },
@@ -189,8 +189,8 @@ const STATUS_LIGHT = {
 const STATUS_DARK = {
   draft:              { label:"Borrador",            color:"#9CA3AF",   bg:"#27302C",   border:"#9CA3AF"   },
   pending_assignment: { label:"Solicitado",          color:"#FF8533",   bg:"#33241A",   border:"#FF8533"   },
-  assigned:           { label:"Asignado a flota",    color:"#4D9AFF",   bg:"#1A2840",   border:"#4D9AFF"   },
-  accepted:           { label:"Confirmado camión",   color:"#4D9AFF",   bg:"#1A2840",   border:"#4D9AFF"   },
+  assigned:           { label:"Asignado a flota",    color:"#22D3EE",   bg:"#164E63",   border:"#22D3EE"   },
+  accepted:           { label:"Confirmado camión",   color:"#22D3EE",   bg:"#164E63",   border:"#22D3EE"   },
   in_progress:        { label:"En curso",            color:"#4ADE80",   bg:"#1A3328",   border:"#4ADE80"   },
   loaded:             { label:"Cargando",            color:"#34D399",   bg:"#1A332D",   border:"#34D399"   },
   finished:           { label:"Finalizado",          color:"#2EBF5E",   bg:"#1A3328",   border:"#2EBF5E"   },
@@ -787,10 +787,11 @@ function SortTh({ label, colKey, sortCol, sortDir, onSort }) {
 
 // CSV Export helper
 function exportCSV(freights, filename) {
-  const headers = ["Código","Estado","Origen","Destino","Producto","Camión","Fecha Carga","Hora","Cantidad","Unidad","Transportista","Notas"];
+  const headers = ["Código","Estado","Productor","Origen","Destino","Producto","Cantidad","Unidad","Camión","Fecha Carga","Hora","Transportista","Notas"];
   const rows = freights.map(f => {
     const st = stCfg(f.status);
-    return [f.code, st.label, (f.originName||"").split("—")[0].trim(), f.destName, f.grain, f.truckPlate||"", f.loadDate, f.loadTime, f.tons, f.unit||"tn", f.transporterName||"", (f.notes||"").replace(/[\n\r]+/g," ")];
+    const fmtDate = f.loadDate ? f.loadDate.slice(8,10)+"-"+f.loadDate.slice(5,7)+"-"+f.loadDate.slice(2,4) : "";
+    return [f.code, st.label, f.requestedByName||"", (f.originName||"").split("—")[0].trim(), f.destName, f.grain, f.tons, f.unit||"tn", f.truckPlate||"", fmtDate, f.loadTime, f.transporterName||"", (f.notes||"").replace(/[\n\r]+/g," ")];
   });
   const escape = v => { const s = String(v||""); return s.includes(",") || s.includes('"') || s.includes("\n") ? `"${s.replace(/"/g,'""')}"` : s; };
   const csv = [headers.join(","), ...rows.map(r => r.map(escape).join(","))].join("\n");
@@ -804,7 +805,7 @@ function HomeScreen({ user, freights, perms, onNav }) {
   const [activeFilter, setActiveFilter] = useState("all");
   const [viewMode, setViewMode] = useState("cards"); // cards | table | map
   const sort = useTableSort();
-  const HOME_GETTERS = { code:f=>f.code, origin:f=>(f.originName||"").split("—")[0].trim(), dest:f=>f.destName, product:f=>f.grain, truck:f=>f.truckPlate||"", date:f=>f.loadDate, qty:f=>f.tons };
+  const HOME_GETTERS = { code:f=>f.code, status:f=>stCfg(f.status).label, producer:f=>f.requestedByName||"", origin:f=>(f.originName||"").split("—")[0].trim(), dest:f=>f.destName, product:f=>f.grain, qty:f=>f.tons, truck:f=>f.truckPlate||"", date:f=>f.loadDate };
 
   const FILTER_MAP = {
     requested: ["draft","pending_assignment"],
@@ -848,6 +849,25 @@ function HomeScreen({ user, freights, perms, onNav }) {
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
           <div><div style={{ fontSize:13, color:C.t2 }}>Hola,</div><div style={{ fontSize:22, fontWeight:800, letterSpacing:-0.3, color:C.t1 }}>{user.name.split(" ")[0]}</div></div>
           <div style={{ textAlign:"right" }}><Bd color={tc}>{typeLabel}</Bd><div style={{ fontSize:10, color:C.t3, marginTop:4 }}>{user.role==="admin"?"Gerente":"Operario"} · {user.entity}</div></div>
+        </div>
+      </div>
+
+      {/* Quick access buttons */}
+      <div style={{ padding:"0 18px 8px 18px" }}>
+        <div style={{ display:"flex", gap:8, overflowX:"auto", paddingBottom:4, WebkitOverflowScrolling:"touch" }}>
+          {[
+            {k:"map",l:"Mapa",ic:Ic.pin,c:C.pri,show:true,action:()=>setViewMode("map")},
+            {k:"pending",l:"Asignar",ic:Ic.bell,c:C.acc,show:perms.canApprove&&stats.avail>0,action:()=>onNav("pending")},
+            {k:"calendar",l:"Calendario",ic:Ic.cal,c:C.sec,show:true,action:()=>onNav("calendar")},
+            {k:"reports",l:"Informes",ic:Ic.doc,c:"#7C3AED",show:true,action:()=>onNav("reports")},
+            {k:"fields",l:"Campos",ic:Ic.seedling,c:C.pri,show:user.userType==="producer",action:()=>onNav("fields")},
+            {k:"trucks",l:"Flota",ic:Ic.truck,c:C.acc,show:user.userType==="transporter"||user.userType==="producer",action:()=>onNav("trucks")},
+          ].filter(b=>b.show).map(b=>(
+            <button key={b.k} onClick={b.action} style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:4, padding:"10px 14px", borderRadius:10, background:C.w, border:`1px solid ${C.b1}`, cursor:"pointer", fontFamily:"inherit", minWidth:64, flexShrink:0, transition:"all 0.15s", boxShadow:C.sh }} onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-1px)";e.currentTarget.style.boxShadow=C.shMd}} onMouseLeave={e=>{e.currentTarget.style.transform="none";e.currentTarget.style.boxShadow=C.sh}}>
+              <div style={{ width:32, height:32, borderRadius:10, background:`${b.c}12`, display:"flex", alignItems:"center", justifyContent:"center" }}>{b.ic(b.c,16)}</div>
+              <span style={{ fontSize:9.5, fontWeight:600, color:C.t2, whiteSpace:"nowrap" }}>{b.l}</span>
+            </button>
+          ))}
         </div>
       </div>
 
@@ -906,24 +926,27 @@ function HomeScreen({ user, freights, perms, onNav }) {
           <table className="tv-table" style={{ width:"100%", borderCollapse:"collapse", fontSize:11 }}>
             <thead>
               <tr style={{ background:C.bg }}>
-                {[["Código","code"],["Origen","origin"],["Destino","dest"],["Producto","product"],["Camión","truck"],["Carga","date"],["Cant.","qty"]].map(([h,k])=>(
+                {[["Código","code"],["Estado","status"],["Productor","producer"],["Origen","origin"],["Destino","dest"],["Producto","product"],["Cant.","qty"],["Camión","truck"],["Fecha","date"]].map(([h,k])=>(
                   <SortTh key={k} label={h} colKey={k} sortCol={sort.sortCol} sortDir={sort.sortDir} onSort={sort.toggle}/>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {displayFreights.length===0 && <tr><td colSpan={7} style={{ padding:24, textAlign:"center", color:C.t3 }}>Sin fletes</td></tr>}
+              {displayFreights.length===0 && <tr><td colSpan={9} style={{ padding:24, textAlign:"center", color:C.t3 }}>Sin fletes</td></tr>}
               {sort.sortData(displayFreights, HOME_GETTERS).map(f=>{
                 const st = stCfg(f.status);
+                const fmtDate = f.loadDate ? f.loadDate.slice(8,10)+"-"+f.loadDate.slice(5,7)+"-"+f.loadDate.slice(2,4) : "";
                 return (
                   <tr key={f.id} className="tv-row" onClick={()=>onNav("detail",f.id)} style={{ cursor:"pointer", borderBottom:`1px solid ${C.b2}` }}>
                     <td style={{ padding:"7px 6px", fontFamily:MONO, fontWeight:600, color:C.t1, whiteSpace:"nowrap" }}>{f.code}</td>
-                    <td style={{ padding:"7px 6px", color:C.t2, maxWidth:120, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{(f.originName||"").split("—")[0].trim()}</td>
+                    <td style={{ padding:"7px 6px" }}><Bd color={st.color} bg={st.bg} small>{st.label}</Bd></td>
+                    <td style={{ padding:"7px 6px", color:C.t2, maxWidth:100, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{f.requestedByName||"-"}</td>
+                    <td style={{ padding:"7px 6px", color:C.t2, maxWidth:110, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{(f.originName||"").split("—")[0].trim()}</td>
                     <td style={{ padding:"7px 6px", color:C.t2, maxWidth:100, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{f.destName}</td>
                     <td style={{ padding:"7px 6px", fontWeight:600, color:C.t1, whiteSpace:"nowrap" }}>{f.grain}</td>
-                    <td style={{ padding:"7px 6px", color:C.t3, whiteSpace:"nowrap" }}>{f.truckPlate||"-"}</td>
-                    <td style={{ padding:"7px 6px", color:C.t3, whiteSpace:"nowrap" }}>{f.loadDate}</td>
                     <td style={{ padding:"7px 6px", fontWeight:600, color:C.t1, whiteSpace:"nowrap" }}>{f.tons} tn</td>
+                    <td style={{ padding:"7px 6px", color:C.t3, whiteSpace:"nowrap" }}>{f.truckPlate||"-"}</td>
+                    <td style={{ padding:"7px 6px", color:C.t3, whiteSpace:"nowrap" }}>{fmtDate}</td>
                   </tr>
                 );
               })}
@@ -1173,9 +1196,9 @@ function ListScreen({ freights, onNav, onRefresh }) {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [datePreset, setDatePreset] = useState("");
-  const [viewMode, setViewMode] = useState("cards"); // cards | table
+  const [viewMode, setViewMode] = useState("cards"); // cards | table | map
   const sort = useTableSort();
-  const LIST_GETTERS = { code:f=>f.code, status:f=>stCfg(f.status).label, origin:f=>(f.originName||"").split("—")[0].trim(), dest:f=>f.destName, product:f=>f.grain, truck:f=>f.truckPlate||"", date:f=>f.loadDate, qty:f=>f.tons };
+  const LIST_GETTERS = { code:f=>f.code, status:f=>stCfg(f.status).label, producer:f=>f.requestedByName||"", origin:f=>(f.originName||"").split("—")[0].trim(), dest:f=>f.destName, product:f=>f.grain, qty:f=>f.tons, truck:f=>f.truckPlate||"", date:f=>f.loadDate };
 
   const plantOptions = useMemo(()=>[...new Set(freights.map(f=>f.destName).filter(Boolean))].sort(),[freights]);
 
@@ -1276,8 +1299,8 @@ function ListScreen({ freights, onNav, onRefresh }) {
             </button>
           </>}
           <span style={{ fontSize:10, color:C.t3, whiteSpace:"nowrap" }}>Cambiar visualización</span>
-          <button onClick={()=>setViewMode(v=>v==="cards"?"table":"cards")} style={{ display:"flex", alignItems:"center", gap:4, background:C.priPale, border:`1px solid ${C.pri}20`, borderRadius:8, padding:"4px 8px", cursor:"pointer", fontFamily:"inherit", fontSize:10, fontWeight:600, color:C.pri }}>
-            {viewMode==="table"?Ic.home(C.pri,12):Ic.doc(C.pri,12)} {viewMode==="cards"?"Tabla":"Tarjetas"}
+          <button onClick={()=>setViewMode(v=>v==="cards"?"table":v==="table"?"map":"cards")} style={{ display:"flex", alignItems:"center", gap:4, background:C.priPale, border:`1px solid ${C.pri}20`, borderRadius:8, padding:"4px 8px", cursor:"pointer", fontFamily:"inherit", fontSize:10, fontWeight:600, color:C.pri }}>
+            {viewMode==="table"?Ic.doc(C.pri,12):viewMode==="map"?Ic.pin(C.pri,12):Ic.home(C.pri,12)} {viewMode==="cards"?"Tabla":viewMode==="table"?"Mapa":"Tarjetas"}
           </button>
         </div>
       </div>
@@ -1288,25 +1311,27 @@ function ListScreen({ freights, onNav, onRefresh }) {
           <table className="tv-table" style={{ width:"100%", borderCollapse:"collapse", fontSize:11 }}>
             <thead>
               <tr style={{ background:C.bg }}>
-                {[["Código","code"],["Estado","status"],["Origen","origin"],["Destino","dest"],["Producto","product"],["Camión","truck"],["Carga","date"],["Cant.","qty"]].map(([h,k])=>(
+                {[["Código","code"],["Estado","status"],["Productor","producer"],["Origen","origin"],["Destino","dest"],["Producto","product"],["Cant.","qty"],["Camión","truck"],["Fecha","date"]].map(([h,k])=>(
                   <SortTh key={k} label={h} colKey={k} sortCol={sort.sortCol} sortDir={sort.sortDir} onSort={sort.toggle}/>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {filtered.length===0 && <tr><td colSpan={8} style={{ padding:24, textAlign:"center", color:C.t3 }}>Sin fletes</td></tr>}
+              {filtered.length===0 && <tr><td colSpan={9} style={{ padding:24, textAlign:"center", color:C.t3 }}>Sin fletes</td></tr>}
               {sort.sortData(filtered, LIST_GETTERS).map(f=>{
                 const st = stCfg(f.status);
+                const fmtDate = f.loadDate ? f.loadDate.slice(8,10)+"-"+f.loadDate.slice(5,7)+"-"+f.loadDate.slice(2,4) : "";
                 return (
                   <tr key={f.id} className="tv-row" onClick={()=>onNav("detail",f.id)} style={{ cursor:"pointer", borderBottom:`1px solid ${C.b2}` }}>
                     <td style={{ padding:"7px 6px", fontFamily:MONO, fontWeight:600, color:C.t1, whiteSpace:"nowrap" }}>{f.code}</td>
                     <td style={{ padding:"7px 6px" }}><Bd color={st.color} bg={st.bg} small>{st.label}</Bd></td>
-                    <td style={{ padding:"7px 6px", color:C.t2, maxWidth:120, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{(f.originName||"").split("—")[0].trim()}</td>
+                    <td style={{ padding:"7px 6px", color:C.t2, maxWidth:100, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{f.requestedByName||"-"}</td>
+                    <td style={{ padding:"7px 6px", color:C.t2, maxWidth:110, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{(f.originName||"").split("—")[0].trim()}</td>
                     <td style={{ padding:"7px 6px", color:C.t2, maxWidth:100, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{f.destName}</td>
                     <td style={{ padding:"7px 6px", fontWeight:600, color:C.t1, whiteSpace:"nowrap" }}>{f.grain}</td>
-                    <td style={{ padding:"7px 6px", color:C.t3, whiteSpace:"nowrap" }}>{f.truckPlate||"-"}</td>
-                    <td style={{ padding:"7px 6px", color:C.t3, whiteSpace:"nowrap" }}>{f.loadDate}</td>
                     <td style={{ padding:"7px 6px", fontWeight:600, color:C.t1, whiteSpace:"nowrap" }}>{f.tons} tn</td>
+                    <td style={{ padding:"7px 6px", color:C.t3, whiteSpace:"nowrap" }}>{f.truckPlate||"-"}</td>
+                    <td style={{ padding:"7px 6px", color:C.t3, whiteSpace:"nowrap" }}>{fmtDate}</td>
                   </tr>
                 );
               })}
@@ -1315,8 +1340,8 @@ function ListScreen({ freights, onNav, onRefresh }) {
         </div>
       )}
 
-      {/* CARDS VIEW — same as Home */}
-      {viewMode==="cards" && (
+      {/* CARDS VIEW — filtered (single status) */}
+      {viewMode==="cards" && tab!=="all" && (
       <div style={{ display:"flex", flexDirection:"column", gap:10 }} className="tv-grid">
         {filtered.length===0 && <div style={{ textAlign:"center", padding:40, color:C.t3, fontSize:13, gridColumn:"1/-1" }}>Sin fletes en esta categoría</div>}
         {filtered.map((f,idx)=>{
@@ -1343,6 +1368,43 @@ function ListScreen({ freights, onNav, onRefresh }) {
       </div>
       )}
 
+      {/* KANBAN COLUMNS — when tab=all */}
+      {viewMode==="cards" && tab==="all" && (()=>{
+        const cols = [
+          { key:"available", label:"Solicitados", color:C.acc, bg:C.accPale, statuses:["pending_assignment"] },
+          { key:"active", label:"En curso", color:"#258B3E", bg:"#D0EBD7", statuses:["assigned","accepted","in_progress","loaded"] },
+          { key:"done", label:"Finalizados", color:C.pri, bg:C.priPale, statuses:["finished"] },
+        ];
+        return <div className="tv-kanban" style={{ display:"flex", flexDirection:"column", gap:16 }}>
+          {cols.map(col=>{
+            const items = filtered.filter(f=>col.statuses.includes(f.status));
+            return <div key={col.key} style={{ flex:1, minWidth:0, display:"flex", flexDirection:"column" }}>
+              <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8, padding:"8px 12px", background:col.bg, borderRadius:8, borderLeft:`3px solid ${col.color}`, flexShrink:0 }}>
+                <span style={{ fontSize:12, fontWeight:700, color:col.color }}>{col.label}</span>
+                <span style={{ fontSize:11, fontWeight:600, color:col.color, opacity:0.7 }}>({items.length})</span>
+              </div>
+              <div style={{ display:"flex", flexDirection:"column", gap:8, flex:1 }}>
+                {items.length===0 && <div style={{ textAlign:"center", padding:16, color:C.t3, fontSize:11, background:C.w, borderRadius:8, border:`1px dashed ${C.b1}` }}>Sin fletes</div>}
+                {items.map((f,idx)=>{
+                  const st = stCfg(f.status);
+                  return <div key={f.id} className="tv-card" onClick={()=>onNav("detail",f.id)} style={{ background:C.w, border:`1px solid ${C.b1}`, borderLeft:`3px solid ${st.border}`, borderRadius:10, padding:12, cursor:"pointer", boxShadow:C.sh, animation:`cardIn 0.3s ease ${idx*0.03}s both` }}>
+                    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:4 }}>
+                      <span style={{ fontSize:10, fontWeight:700, color:C.t3, fontFamily:MONO }}>{f.code}</span>
+                      <Bd color={st.color} bg={st.bg} small>{st.label}</Bd>
+                    </div>
+                    <div style={{ fontSize:13, fontWeight:700, color:C.t1 }}>{f.grain} · {f.tons} tn</div>
+                    <div style={{ fontSize:10.5, color:C.t2, marginTop:3 }}>{(f.originName||"").split("—")[0].trim()} → {f.destName}</div>
+                    <div style={{ fontSize:10, color:C.t3, marginTop:3 }}>{Ic.cal(C.t3,10)} {f.loadDate}{f.transporterName?` · ${f.transporterName}`:""}</div>
+                  </div>;
+                })}
+              </div>
+            </div>;
+          })}
+        </div>;
+      })()}
+
+      {/* MAP VIEW */}
+      {viewMode==="map" && <HomeMapView freights={filtered} onNav={onNav} />}
 
     </div>
   );
@@ -3542,6 +3604,7 @@ function CalendarScreen({ freights, perms, onNav, isDesktop }) {
   // --- Calendar grid panel ---
   const calendarPanel = (
     <div style={{flex:isDesktop?undefined:1,overflow:"auto",padding:18,minWidth:isDesktop?420:undefined}}>
+      {!isDesktop && <button onClick={()=>onNav("home")} style={{ background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", fontSize:13, fontWeight:600, color:C.pri, marginBottom:10, padding:0, display:"flex", alignItems:"center", gap:4 }}>{Ic.chev(C.pri,18)} Inicio</button>}
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
         <div style={{ fontSize:20, fontWeight:800, letterSpacing:-0.3 }}>Calendario</div>
         <div style={{fontSize:11,color:C.t2}}>{totalInMonth} flete{totalInMonth!==1?"s":""}</div>
