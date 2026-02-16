@@ -1,5 +1,5 @@
 // =====================================================================
-// TOLVINK — API Client v5
+// TOLVINK — API Client v6 (with Admin endpoints)
 // =====================================================================
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://tolvink-api-production.up.railway.app/api';
@@ -34,14 +34,12 @@ export default async function api(path, opts={}) {
 
 // Auth
 export async function apiLogin(identifier,password) {
-  // identifier can be email or phone — backend will detect
   const isPhone = /^09[1-9]\d{6}$/.test(identifier.replace(/[\s\-()]/g,''));
   const body = isPhone ? { phone:identifier.replace(/[\s\-()]/g,''), password } : { email:identifier, password };
   const d=await api('/auth/login',{body});
   setToken(d.access_token); saveUser(d.user); return d;
 }
 export async function apiRegister(b) {
-  // b = { name, email, phone, password, userTypes:["plant","producer",...] }
   const d=await api('/auth/register',{body:b});
   setToken(d.access_token); saveUser(d.user); return d;
 }
@@ -101,8 +99,18 @@ export async function apiListConversations(search) { const q=search?`?search=${e
 export async function apiGetMessages(convId) { return api(`/conversations/${convId}/messages`); }
 export async function apiSendMessage(convId,text) { return api(`/conversations/${convId}/messages`,{body:{text}}); }
 
-// Documents — register in DB after uploading to storage
+// Documents
 export async function apiAddDocument(freightId, body) { return api(`/freights/${freightId}/documents`,{body}); }
+
+// ======================== ADMIN ======================================
+export async function apiAdminStats() { return api('/admin/stats'); }
+export async function apiAdminListCompanies(search) { const q=search?`?search=${encodeURIComponent(search)}`:''; return api(`/admin/companies${q}`); }
+export async function apiAdminCreateCompany(b) { return api('/admin/companies',{body:b}); }
+export async function apiAdminUpdateCompany(id,b) { return api(`/admin/companies/${id}`,{method:'PATCH',body:b}); }
+export async function apiAdminListUsers(search) { const q=search?`?search=${encodeURIComponent(search)}`:''; return api(`/admin/users${q}`); }
+export async function apiAdminUpdateUser(id,b) { return api(`/admin/users/${id}`,{method:'PATCH',body:b}); }
+export async function apiAdminLinkUser(b) { return api('/admin/link-user',{body:b}); }
+export async function apiAdminUnlinkUser(id) { return api(`/admin/users/${id}/unlink`,{method:'PATCH',body:{}}); }
 
 // Photo Upload — direct to Supabase Storage (public bucket)
 export async function uploadPhoto(file, freightId, step) {
@@ -127,7 +135,7 @@ export async function uploadPhoto(file, freightId, step) {
   return `${SUPABASE_URL}/storage/v1/object/public/${STORAGE_BUCKET}/${path}`;
 }
 
-// Chat file upload — to Supabase Storage under chat-files folder
+// Chat file upload
 export async function uploadChatFile(file, conversationId) {
   const ext = file.name?.split('.').pop() || 'bin';
   const safeName = file.name?.replace(/[^a-zA-Z0-9._-]/g, '_') || `file.${ext}`;
