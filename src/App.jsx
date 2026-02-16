@@ -1426,9 +1426,28 @@ function PendingScreen({ user, freights, onNav, onNewFreight, embedded }) {
     }).filter(Boolean);
   }, [freights, user.userType]);
 
-  // Group by urgency: urgent first (loaded, in_progress), then assigned, then pending_assignment
-  const urgencyOrder = { loaded: 0, in_progress: 1, accepted: 2, assigned: 3, pending_assignment: 4 };
-  const sorted = [...pending].sort((a, b) => (urgencyOrder[a.status] ?? 9) - (urgencyOrder[b.status] ?? 9));
+  // Collapsed state per group (starts expanded)
+  const [collapsed, setCollapsed] = useState({});
+  const toggleGroup = (key) => setCollapsed(prev=>({...prev,[key]:!prev[key]}));
+
+  // Define status groups in priority order
+  const statusGroups = useMemo(()=>{
+    const groups = [
+      { key:"pending_assignment", label:"Pendientes de asignación", icon:Ic.warn, color:C.acc,   statuses:["pending_assignment"] },
+      { key:"assigned",           label:"Asignados — esperando respuesta", icon:Ic.truck, color:C.sec,   statuses:["assigned"] },
+      { key:"accepted",           label:"Confirmados — listos para iniciar", icon:Ic.chk, color:C.pri,   statuses:["accepted"] },
+      { key:"in_progress",        label:"En curso — confirmación de carga", icon:Ic.nav, color:"#258B3E", statuses:["in_progress"] },
+      { key:"loaded",             label:"Cargados — confirmar entrega", icon:Ic.plant, color:"#1B7D33", statuses:["loaded"] },
+    ];
+    return groups.map(g=>({
+      ...g,
+      items: pending.filter(f=>g.statuses.includes(f.status)).sort((a,b)=>{
+        // Sort by loadDate within group
+        if(a.loadDate && b.loadDate) return a.loadDate.localeCompare(b.loadDate);
+        return 0;
+      })
+    })).filter(g=>g.items.length>0);
+  },[pending]);
 
   return (
     <div style={{ flex: embedded?undefined:1, overflow: embedded?"visible":"auto", padding: embedded?0:18 }}>
@@ -1440,38 +1459,67 @@ function PendingScreen({ user, freights, onNav, onNewFreight, embedded }) {
         {pending.length > 0 ? `${pending.length} flete${pending.length !== 1 ? "s" : ""} esperando tu acción` : "No tenés acciones pendientes"}
       </div>
 
-      {sorted.length === 0 ? (
+      {statusGroups.length === 0 ? (
         <div style={{ textAlign: "center", padding: 48 }}>
           <div style={{ fontSize: 48, marginBottom: 12 }}>✓</div>
           <div style={{ fontSize: 15, fontWeight: 700, color: C.pri, marginBottom: 6 }}>Todo al día</div>
           <div style={{ fontSize: 12, color: C.t3 }}>No hay fletes que requieran tu atención</div>
         </div>
       ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          {sorted.map(f => {
-            const st = stCfg(f.status);
-            const pa = f.pendingAction;
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          {statusGroups.map((group, gi) => {
+            const isCollapsed = collapsed[group.key];
             return (
-              <button key={f.id} onClick={() => onNav("detail", f.id)} style={{ width: "100%", background: C.w, border: `1px solid ${C.b1}`, borderLeft: `4px solid ${pa.color}`, borderRadius: 12, padding: 14, cursor: "pointer", fontFamily: "inherit", textAlign: "left", boxShadow: C.sh }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ fontSize: 11, fontWeight: 700, fontFamily: MONO, color: C.t2 }}>{f.code}</span>
-                    <Bd color={st.color} bg={st.bg} small>{st.label}</Bd>
+              <div key={group.key} style={{ animation:`fadeIn 0.2s ease ${gi*0.05}s both` }}>
+                {/* Group header — clickable to collapse */}
+                <button onClick={()=>toggleGroup(group.key)} style={{ width:"100%", display:"flex", alignItems:"center", gap:10, padding:"10px 14px", background:`${group.color}0A`, borderRadius:10, border:`1px solid ${group.color}20`, borderLeft:`3px solid ${group.color}`, cursor:"pointer", fontFamily:"inherit", textAlign:"left", marginBottom:isCollapsed?0:10, transition:"margin 0.15s ease" }}>
+                  <div style={{ width:28, height:28, borderRadius:7, background:`${group.color}15`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                    {group.icon(group.color, 14)}
                   </div>
-                  {f.isOwnFleet && <span style={{ fontSize: 9, color: C.acc, fontWeight: 600 }}>Flota propia</span>}
-                </div>
-                <div style={{ fontSize: 14, fontWeight: 700, color: C.t1, marginBottom: 4 }}>
-                  {f.grain === "Otros" ? f.productTypeOther || "Otros" : f.grain} · {f.tons} {f.unit || "tn"}
-                </div>
-                <div style={{ fontSize: 11, color: C.t2, marginBottom: 8 }}>
-                  {f.originName} → {f.destName}
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 10px", background: `${pa.color}10`, borderRadius: 8, border: `1px solid ${pa.color}20` }}>
-                  <span style={{ width: 8, height: 8, borderRadius: 4, background: pa.color, animation: "ti 1.5s infinite" }} />
-                  <span style={{ fontSize: 12, fontWeight: 700, color: pa.color }}>{pa.action}</span>
-                  <span style={{ marginLeft: "auto", display: "flex" }}>{Ic.chev(pa.color, 16)}</span>
-                </div>
-              </button>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ fontSize:13, fontWeight:700, color:group.color }}>{group.label}</div>
+                  </div>
+                  <div style={{ display:"flex", alignItems:"center", gap:6, flexShrink:0 }}>
+                    <span style={{ fontSize:12, fontWeight:800, color:group.color, background:`${group.color}15`, padding:"2px 8px", borderRadius:6 }}>{group.items.length}</span>
+                    <span style={{ display:"flex", transform:isCollapsed?"rotate(90deg)":"rotate(270deg)", transition:"transform 0.15s ease" }}>{Ic.chev(group.color,16)}</span>
+                  </div>
+                </button>
+
+                {/* Group items */}
+                {!isCollapsed && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8, paddingLeft:4 }}>
+                    {group.items.map((f, idx) => {
+                      const st = stCfg(f.status);
+                      const pa = f.pendingAction;
+                      return (
+                        <button key={f.id} onClick={() => onNav("detail", f.id)} style={{ width: "100%", background: C.w, border: `1px solid ${C.b1}`, borderLeft: `4px solid ${pa.color}`, borderRadius: 12, padding: 14, cursor: "pointer", fontFamily: "inherit", textAlign: "left", boxShadow: C.sh, animation:`cardIn 0.2s ease ${idx*0.03}s both` }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                              <span style={{ fontSize: 11, fontWeight: 700, fontFamily: MONO, color: C.t2 }}>{f.code}</span>
+                              <Bd color={st.color} bg={st.bg} small>{st.label}</Bd>
+                            </div>
+                            {f.isOwnFleet && <span style={{ fontSize: 9, color: C.acc, fontWeight: 600 }}>Flota propia</span>}
+                          </div>
+                          <div style={{ fontSize: 14, fontWeight: 700, color: C.t1, marginBottom: 4 }}>
+                            {f.grain === "Otros" ? f.productTypeOther || "Otros" : f.grain} · {f.tons} {f.unit || "tn"}
+                          </div>
+                          <div style={{ fontSize: 11, color: C.t2, marginBottom: 4 }}>
+                            {f.originName} → {f.destName}
+                          </div>
+                          {f.loadDate && <div style={{ fontSize: 10, color: C.t3, marginBottom: 8 }}>
+                            {Ic.cal(C.t3,10)} {f.loadDate}{f.loadTime?` · ${f.loadTime}`:""}{f.transporterName?` · ${f.transporterName}`:""}
+                          </div>}
+                          <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 10px", background: `${pa.color}10`, borderRadius: 8, border: `1px solid ${pa.color}20` }}>
+                            <span style={{ width: 8, height: 8, borderRadius: 4, background: pa.color, animation: "ti 1.5s infinite" }} />
+                            <span style={{ fontSize: 12, fontWeight: 700, color: pa.color }}>{pa.action}</span>
+                            <span style={{ marginLeft: "auto", display: "flex" }}>{Ic.chev(pa.color, 16)}</span>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             );
           })}
         </div>
