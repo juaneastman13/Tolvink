@@ -787,9 +787,7 @@ function LandingScreen({ onLogin, onSignup, loading, error, clearError }) {
           </g>)}
           {/* Moving truck along route */}
           <g opacity={r.to}>
-            <animateMotion dur={r.td} repeatCount="indefinite" rotate="auto" keyPoints={r.rev?"1;0":"0;1"} keyTimes="0;1" calcMode="linear">
-              <mpath xlinkHref={`#lr${i}`}/>
-            </animateMotion>
+            <animateMotion path={r.d} dur={r.td} repeatCount="indefinite" rotate="auto" keyPoints={r.rev?"1;0":"0;1"} keyTimes="0;1" calcMode="linear"/>
             {/* Truck pictogram — cab + body + wheels */}
             <rect x="-14" y="-7" width="18" height="14" rx="2" fill={r.c}/>
             <polygon points="4,-5 10,-5 14,-1 14,7 4,7" fill={r.c}/>
@@ -799,7 +797,6 @@ function LandingScreen({ onLogin, onSignup, loading, error, clearError }) {
             <circle cx="10" cy="8" r="1.5" fill={C.bg}/>
             <rect x="5" y="-4" width="5" height="5" rx="1" fill={C.bg} opacity="0.6"/>
           </g>
-          <path id={`lr${i}`} d={r.d} fill="none" stroke="none"/>
         </g>)}
         </g>
       </svg>
@@ -842,7 +839,7 @@ function LandingScreen({ onLogin, onSignup, loading, error, clearError }) {
 
         {/* Ingresar button */}
         <div style={{ animation:"fadeUp 1.2s ease-out", display:"flex", flexDirection:"column", alignItems:"center", gap:20 }}>
-          <button onClick={()=>setShowAuth(true)} style={{ padding:"14px 42px", borderRadius:12, background:C.pri, color:C.w, fontSize:16, fontWeight:700, border:"none", cursor:"pointer", fontFamily:"inherit", boxShadow:`0 4px 20px ${C.pri}35`, minWidth:200, transition:"transform 0.15s, box-shadow 0.15s" }} onMouseEnter={e=>{e.target.style.transform="translateY(-2px)";e.target.style.boxShadow=`0 6px 24px ${C.pri}45`}} onMouseLeave={e=>{e.target.style.transform="translateY(0)";e.target.style.boxShadow=`0 4px 20px ${C.pri}35`}}>
+          <button onClick={()=>setShowAuth(true)} style={{ padding:"14px 42px", borderRadius:12, background:C.pri, color:C.w, fontSize:16, fontWeight:700, border:"none", cursor:"pointer", fontFamily:"inherit", boxShadow:`0 4px 20px ${C.pri}35`, minWidth:200, transition:"transform 0.15s, box-shadow 0.15s", position:"relative", zIndex:2 }} onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-2px)";e.currentTarget.style.boxShadow=`0 6px 24px ${C.pri}45`}} onMouseLeave={e=>{e.currentTarget.style.transform="translateY(0)";e.currentTarget.style.boxShadow=`0 4px 20px ${C.pri}35`}}>
             Ingresar
           </button>
 
