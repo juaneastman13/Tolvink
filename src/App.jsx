@@ -3547,6 +3547,7 @@ function ChatsScreen({ user, openConvId, onConvOpened, isDesktop }) {
   const [sending, setSending] = useState(false);
   const [showNew, setShowNew] = useState(false);
   const [newCompId, setNewCompId] = useState("");
+  const [newUserId, setNewUserId] = useState("");
   const [newErr, setNewErr] = useState(null);
   const [compSearchQ, setCompSearchQ] = useState("");
   const [compResults, setCompResults] = useState([]);
@@ -3652,6 +3653,7 @@ function ChatsScreen({ user, openConvId, onConvOpened, isDesktop }) {
 
   const handleSelectUser = (u) => {
     setNewCompId(u.company?.id || "");
+    setNewUserId(u.id);
     setCompSearchQ(u.name + (u.company?.name ? ` (${u.company.name})` : ""));
     setCompResults([]);
   };
@@ -3660,8 +3662,10 @@ function ChatsScreen({ user, openConvId, onConvOpened, isDesktop }) {
     if (!newCompId.trim()) { setNewErr("Buscá y seleccioná un usuario"); return; }
     setNewErr(null);
     try {
-      const conv = await apiStartConversation({ targetCompanyId: newCompId.trim() });
-      setShowNew(false); setNewCompId(""); setCompSearchQ(""); setCompResults([]);
+      const body = { targetCompanyId: newCompId.trim() };
+      if (newUserId) body.targetUserId = newUserId;
+      const conv = await apiStartConversation(body);
+      setShowNew(false); setNewCompId(""); setNewUserId(""); setCompSearchQ(""); setCompResults([]);
       loadConvs();
       openConv(conv);
     } catch (e) { setNewErr(e.message); }
@@ -3671,9 +3675,11 @@ function ChatsScreen({ user, openConvId, onConvOpened, isDesktop }) {
     if (!conv) return "Chat";
     if (conv.displayName) return conv.displayName;
     if (conv.freight) return `Flete ${conv.freight.code}`;
-    const otherP = (conv.participants || []).find(p => p.companyId !== user.companyId);
-    if (otherP?.company?.name) return otherP.company.name;
-    return otherP?.companyId?.slice(0, 8) || "Chat del flete";
+    const otherP = (conv.participants || []).find(p => p.userId !== user.id && p.companyId !== user.companyId);
+    const parts = [];
+    if (otherP?.company?.name) parts.push(otherP.company.name);
+    if (otherP?.user?.name) parts.push(otherP.user.name);
+    return parts.join(" · ") || otherP?.companyId?.slice(0, 8) || "Chat";
   };
 
   const getLastMsg = (conv) => {
@@ -3752,45 +3758,60 @@ function ChatsScreen({ user, openConvId, onConvOpened, isDesktop }) {
     });
   }, [convs, filterPlant, filterTransporter, filterProducer]);
 
-  // Group ALL conversations by company (freight + direct together)
+  // Group conversations: company → user (nested folders)
   const grouped = useMemo(() => {
     const byCompany = {};
-    filteredConvs.forEach(c => {
-      const others = (c.participants || []).filter(p => p.companyId !== user.companyId);
-      const companyKey = others.map(o => o.company?.name || "").filter(Boolean).sort().join(", ") || "Otros";
-      if (!byCompany[companyKey]) byCompany[companyKey] = [];
-      byCompany[companyKey].push(c);
+    const statusOrder = { in_progress: 0, loaded: 1, accepted: 2, assigned: 3, pending_assignment: 4, finished: 5, canceled: 6 };
+    const sortConvs = (arr) => arr.sort((a, b) => {
+      if (a.freight && !b.freight) return -1;
+      if (!a.freight && b.freight) return 1;
+      if (a.freight && b.freight) {
+        const sa = statusOrder[a.freight?.status] ?? 99;
+        const sb = statusOrder[b.freight?.status] ?? 99;
+        if (sa !== sb) return sa - sb;
+      }
+      const ta = a.messages?.[0]?.createdAt || "";
+      const tb = b.messages?.[0]?.createdAt || "";
+      return tb.localeCompare(ta);
     });
 
-    // Sort each group: active fletes first, then by last message
-    const statusOrder = { in_progress: 0, loaded: 1, accepted: 2, assigned: 3, pending_assignment: 4, finished: 5, canceled: 6 };
-    Object.values(byCompany).forEach(arr => {
-      arr.sort((a, b) => {
-        // Freight convs first, then direct
-        if (a.freight && !b.freight) return -1;
-        if (!a.freight && b.freight) return 1;
-        if (a.freight && b.freight) {
-          const sa = statusOrder[a.freight?.status] ?? 99;
-          const sb = statusOrder[b.freight?.status] ?? 99;
-          if (sa !== sb) return sa - sb;
-        }
-        const ta = a.messages?.[0]?.createdAt || "";
-        const tb = b.messages?.[0]?.createdAt || "";
-        return tb.localeCompare(ta);
-      });
+    filteredConvs.forEach(c => {
+      // Find "other" participants (not mine)
+      const others = (c.participants || []).filter(p => p.userId !== user.id && p.companyId !== user.companyId);
+      const companyName = others.map(o => o.company?.name || "").filter(Boolean).sort().join(", ") || "Otros";
+      const companyType = others[0]?.company?.type || "";
+
+      if (!byCompany[companyName]) byCompany[companyName] = { companyType, freightConvs: [], byUser: {} };
+
+      if (c.freight) {
+        // Freight conversations go under company level
+        byCompany[companyName].freightConvs.push(c);
+      } else {
+        // Direct messages go under the specific user
+        const otherUser = others.find(o => o.user?.name) || others[0];
+        const userName = otherUser?.user?.name || "Desconocido";
+        if (!byCompany[companyName].byUser[userName]) byCompany[companyName].byUser[userName] = [];
+        byCompany[companyName].byUser[userName].push(c);
+      }
+    });
+
+    // Sort conversations within each group
+    Object.values(byCompany).forEach(group => {
+      sortConvs(group.freightConvs);
+      Object.values(group.byUser).forEach(arr => sortConvs(arr));
     });
 
     // Sort companies by most recent activity
-    const companyKeys = Object.keys(byCompany).sort((a, b) => {
-      const getLatest = (arr) => arr.reduce((max, c) => {
-        const t = c.messages?.[0]?.createdAt || "";
-        return t > max ? t : max;
-      }, "");
-      return getLatest(byCompany[b]).localeCompare(getLatest(byCompany[a]));
-    });
+    const getLatest = (group) => {
+      let max = "";
+      group.freightConvs.forEach(c => { const t = c.messages?.[0]?.createdAt || ""; if (t > max) max = t; });
+      Object.values(group.byUser).forEach(arr => arr.forEach(c => { const t = c.messages?.[0]?.createdAt || ""; if (t > max) max = t; }));
+      return max;
+    };
+    const companyKeys = Object.keys(byCompany).sort((a, b) => getLatest(byCompany[b]).localeCompare(getLatest(byCompany[a])));
 
     return { companyKeys, byCompany };
-  }, [filteredConvs, user.companyId]);
+  }, [filteredConvs, user.companyId, user.id]);
 
   // Chat detail view
   const chatDetailPanel = activeConv ? (
@@ -3959,19 +3980,19 @@ function ChatsScreen({ user, openConvId, onConvOpened, isDesktop }) {
           {compResults.length > 0 && (
             <div style={{ marginTop:6, border:`1px solid ${C.b1}`, borderRadius:8, maxHeight:200, overflow:"auto" }}>
               {compResults.map(u=>(
-                <button key={u.id} onClick={()=>handleSelectUser(u)} style={{ width:"100%", display:"flex", alignItems:"center", gap:8, padding:"10px 12px", background:newCompId===u.company?.id?C.priPale:C.w, border:"none", borderBottom:`1px solid ${C.b2}`, cursor:"pointer", fontFamily:"inherit", textAlign:"left" }}>
+                <button key={u.id} onClick={()=>handleSelectUser(u)} style={{ width:"100%", display:"flex", alignItems:"center", gap:8, padding:"10px 12px", background:newUserId===u.id?C.priPale:C.w, border:"none", borderBottom:`1px solid ${C.b2}`, cursor:"pointer", fontFamily:"inherit", textAlign:"left" }}>
                   {Ic.user(C.pri,16)}
                   <div style={{ flex:1 }}>
                     <div style={{ fontSize:13, fontWeight:600, color:C.t1 }}>{u.name}</div>
                     <div style={{ fontSize:10, color:C.t3 }}>{u.company?.name || "Sin empresa"} · {({plant:"Planta",transporter:"Transportista",producer:"Productor"})[u.company?.type]||u.company?.type||""}</div>
                   </div>
-                  {newCompId===u.company?.id && Ic.chk(C.pri,14)}
+                  {newUserId===u.id && Ic.chk(C.pri,14)}
                 </button>
               ))}
             </div>
           )}
-          {compSearchQ.length>=2 && !compSearching && compResults.length===0 && !newCompId && <div style={{ fontSize:11, color:C.t3, marginTop:6 }}>Sin resultados</div>}
-          {newCompId && <div style={{ fontSize:11, color:C.ok, marginTop:6, fontWeight:600 }}>Usuario seleccionado: {compSearchQ}</div>}
+          {compSearchQ.length>=2 && !compSearching && compResults.length===0 && !newUserId && <div style={{ fontSize:11, color:C.t3, marginTop:6 }}>Sin resultados</div>}
+          {newUserId && <div style={{ fontSize:11, color:C.ok, marginTop:6, fontWeight:600 }}>Usuario seleccionado: {compSearchQ}</div>}
           {newErr && <div style={{ fontSize: 11, color: C.err, marginTop:6, marginBottom: 4 }}>{newErr}</div>}
           <div style={{ marginTop:10 }}><Btn full v="acc" disabled={!newCompId} onClick={handleStartConv}>Iniciar conversación</Btn></div>
         </div>
@@ -3981,16 +4002,17 @@ function ChatsScreen({ user, openConvId, onConvOpened, isDesktop }) {
         convs.length === 0 ? <div style={{ textAlign: "center", padding: 40, color: C.t3, fontSize: 13 }}>Sin conversaciones aún.{!showNew && <><br/><button onClick={()=>setShowNew(true)} style={{background:"none",border:"none",color:C.acc,fontWeight:600,cursor:"pointer",fontFamily:"inherit",fontSize:13,marginTop:8}}>Iniciar una nueva</button></>}</div> :
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             {grouped.companyKeys.map(companyName => {
-              const convsList = grouped.byCompany[companyName];
+              const group = grouped.byCompany[companyName];
               const isOpen = expandedGroups[companyName] !== false;
-              const freightCount = convsList.filter(c => c.freight).length;
-              const directCount = convsList.filter(c => !c.freight).length;
+              const freightCount = group.freightConvs.length;
+              const userNames = Object.keys(group.byUser);
+              const directCount = userNames.reduce((sum, u) => sum + group.byUser[u].length, 0);
               const countParts = [];
               if (freightCount > 0) countParts.push(`${freightCount} flete${freightCount !== 1 ? "s" : ""}`);
-              if (directCount > 0) countParts.push(`${directCount} directo${directCount !== 1 ? "s" : ""}`);
+              if (directCount > 0) countParts.push(`${userNames.length} contacto${userNames.length !== 1 ? "s" : ""}`);
               return (
                 <div key={companyName} style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: 12, overflow: "hidden", boxShadow: C.sh }}>
-                  {/* Company header — white with shadow */}
+                  {/* Company header */}
                   <button onClick={() => toggleGroup(companyName)} style={{ width: "100%", padding: "12px 14px", background: C.w, border: "none", borderBottom: isOpen ? `1px solid ${C.b2}` : "none", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 10, textAlign: "left" }}>
                     <div style={{ width: 36, height: 36, borderRadius: 18, background: C.priPale, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                       {Ic.user(C.pri, 16)}
@@ -4002,25 +4024,51 @@ function ChatsScreen({ user, openConvId, onConvOpened, isDesktop }) {
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={C.t3} strokeWidth="2.5" style={{ transform: isOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }}><polyline points="6 9 12 15 18 9"/></svg>
                   </button>
 
-                  {/* All conversations for this company */}
                   {isOpen && (
                     <div style={{ display: "flex", flexDirection: "column" }}>
-                      {convsList.map((c, i) => {
-                        const isFreight = !!c.freight;
-                        const title = isFreight ? `Flete ${c.freight.code}` : "Mensaje directo";
-                        const statusCol = isFreight ? stColor(c.freight?.status) : C.acc;
-                        return (
-                          <button key={c.id} onClick={() => openConv(c)} style={{ padding: "10px 14px", border: "none", borderTop: i > 0 ? `1px solid ${C.b2}` : "none", background: C.w, cursor: "pointer", fontFamily: "inherit", textAlign: "left", display: "flex", alignItems: "center", gap: 10, width: "100%", transition: "background 0.15s" }} onMouseEnter={e=>e.currentTarget.style.background=C.priGhost} onMouseLeave={e=>e.currentTarget.style.background=C.w}>
-                            <div style={{ width: 8, height: 8, borderRadius: 4, background: statusCol, flexShrink: 0 }} />
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                                <span style={{ fontSize: 12, fontWeight: 700, color: C.t1 }}>{title}</span>
-                                {isFreight && <span style={{ fontSize: 9, fontWeight: 600, color: statusCol, textTransform: "uppercase" }}>{stLabel(c.freight?.status)}</span>}
-                              </div>
-                              <div style={{ fontSize: 11, color: C.t3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", marginTop: 2 }}>{getLastMsg(c)}</div>
+                      {/* Freight conversations (company level) */}
+                      {group.freightConvs.map((c, i) => (
+                        <button key={c.id} onClick={() => openConv(c)} style={{ padding: "10px 14px", border: "none", borderTop: `1px solid ${C.b2}`, background: C.w, cursor: "pointer", fontFamily: "inherit", textAlign: "left", display: "flex", alignItems: "center", gap: 10, width: "100%", transition: "background 0.15s" }} onMouseEnter={e=>e.currentTarget.style.background=C.priGhost} onMouseLeave={e=>e.currentTarget.style.background=C.w}>
+                          <div style={{ width: 8, height: 8, borderRadius: 4, background: stColor(c.freight?.status), flexShrink: 0 }} />
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                              <span style={{ fontSize: 12, fontWeight: 700, color: C.t1 }}>Flete {c.freight.code}</span>
+                              <span style={{ fontSize: 9, fontWeight: 600, color: stColor(c.freight?.status), textTransform: "uppercase" }}>{stLabel(c.freight?.status)}</span>
                             </div>
-                            <span style={{ fontSize: 9.5, color: C.t3, flexShrink: 0 }}>{getLastMsgTime(c)}</span>
-                          </button>
+                            <div style={{ fontSize: 11, color: C.t3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", marginTop: 2 }}>{getLastMsg(c)}</div>
+                          </div>
+                          <span style={{ fontSize: 9.5, color: C.t3, flexShrink: 0 }}>{getLastMsgTime(c)}</span>
+                        </button>
+                      ))}
+
+                      {/* User sub-groups (direct messages) */}
+                      {userNames.map(userName => {
+                        const userConvs = group.byUser[userName];
+                        const userKey = `${companyName}::${userName}`;
+                        const userOpen = expandedGroups[userKey] !== false;
+                        return (
+                          <div key={userName}>
+                            <button onClick={() => userConvs.length === 1 ? openConv(userConvs[0]) : toggleGroup(userKey)} style={{ width: "100%", padding: "10px 14px 10px 20px", border: "none", borderTop: `1px solid ${C.b2}`, background: C.w, cursor: "pointer", fontFamily: "inherit", textAlign: "left", display: "flex", alignItems: "center", gap: 10, transition: "background 0.15s" }} onMouseEnter={e=>e.currentTarget.style.background=C.priGhost} onMouseLeave={e=>e.currentTarget.style.background=C.w}>
+                              <div style={{ width: 28, height: 28, borderRadius: 14, background: C.accPale, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                                {Ic.user(C.acc, 12)}
+                              </div>
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ fontSize: 12, fontWeight: 700, color: C.t1 }}>{userName}</div>
+                                <div style={{ fontSize: 11, color: C.t3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", marginTop: 1 }}>{getLastMsg(userConvs[0])}</div>
+                              </div>
+                              <span style={{ fontSize: 9.5, color: C.t3, flexShrink: 0 }}>{getLastMsgTime(userConvs[0])}</span>
+                              {userConvs.length > 1 && <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.t3} strokeWidth="2.5" style={{ transform: userOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s", flexShrink: 0 }}><polyline points="6 9 12 15 18 9"/></svg>}
+                            </button>
+                            {userConvs.length > 1 && userOpen && userConvs.slice(1).map(c => (
+                              <button key={c.id} onClick={() => openConv(c)} style={{ width: "100%", padding: "8px 14px 8px 58px", border: "none", borderTop: `1px solid ${C.b2}`, background: C.w, cursor: "pointer", fontFamily: "inherit", textAlign: "left", display: "flex", alignItems: "center", gap: 8, transition: "background 0.15s" }} onMouseEnter={e=>e.currentTarget.style.background=C.priGhost} onMouseLeave={e=>e.currentTarget.style.background=C.w}>
+                                <div style={{ width: 6, height: 6, borderRadius: 3, background: C.acc, flexShrink: 0 }} />
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                  <div style={{ fontSize: 11, color: C.t3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{getLastMsg(c)}</div>
+                                </div>
+                                <span style={{ fontSize: 9, color: C.t3, flexShrink: 0 }}>{getLastMsgTime(c)}</span>
+                              </button>
+                            ))}
+                          </div>
                         );
                       })}
                     </div>
