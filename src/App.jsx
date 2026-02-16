@@ -763,43 +763,8 @@ function LandingScreen({ onLogin, onSignup, loading, error, clearError }) {
     <div style={{ minHeight:"100dvh", background:C.bg, fontFamily:FONT, display:"flex", flexDirection:"column", overflow:"hidden", WebkitOverflowScrolling:"touch", position:"relative" }}>
       <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&display=swap');*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}html,body,#root{margin:0;padding:0;background:${C.bg};height:auto!important;overflow:visible!important;overflow-x:hidden!important}@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}@keyframes dotPulse{0%,100%{opacity:0.3;transform:scale(0.8)}50%{opacity:1;transform:scale(1.2)}}@keyframes splashIn{0%{opacity:0;transform:scale(0.85)}100%{opacity:1;transform:scale(1)}}@media(max-width:767px){.tv-ld-tag{font-size:11px!important;letter-spacing:1.8px!important}.tv-ld-h1{font-size:17px!important}.tv-ld-feat{gap:18px!important}.tv-ld-feat svg{width:18px!important;height:18px!important}.tv-ld-feat span{font-size:10px!important}}`}</style>
 
-      {/* Animated routes background — flowing dashes, static pins, moving trucks */}
-      <svg viewBox="0 0 1000 600" preserveAspectRatio="xMidYMid slice" style={{ position:"absolute", inset:0, width:"100%", height:"100%", pointerEvents:"none", zIndex:0 }}>
-        {/* Center fade mask — trucks become subtle behind text */}
-        <defs>
-          <radialGradient id="ctrFade" cx="50%" cy="48%" rx="30%" ry="28%">
-            <stop offset="0%" stopColor="white" stopOpacity="0.15"/>
-            <stop offset="70%" stopColor="white" stopOpacity="0.6"/>
-            <stop offset="100%" stopColor="white" stopOpacity="1"/>
-          </radialGradient>
-          <mask id="ctrMask"><rect width="1000" height="600" fill="url(#ctrFade)"/></mask>
-        </defs>
-        <g mask="url(#ctrMask)">
-        {_routes.map((r,i)=><g key={i}>
-          {/* Route line with flowing dashes */}
-          <path d={r.d} stroke={r.c} strokeWidth="2" fill="none" strokeDasharray="14,18" strokeLinecap="round" opacity={r.lo}>
-            <animate attributeName="stroke-dashoffset" from="0" to={r.rev?64:-64} dur={r.dd} repeatCount="indefinite"/>
-          </path>
-          {/* Static pin waypoints */}
-          {r.wp.map((w,j)=><g key={j} opacity={r.lo*1.6}>
-            <path d={`M${w[0]},${w[1]-10} c-4,0 -7,3 -7,7 c0,4 7,11 7,11 s7,-7 7,-11 c0,-4 -3,-7 -7,-7Z`} fill={r.c}/>
-            <circle cx={w[0]} cy={w[1]-5} r="2.5" fill={C.bg} opacity="0.9"/>
-          </g>)}
-          {/* Moving truck along route */}
-          <g opacity={r.to}>
-            <animateMotion path={r.d} dur={r.td} repeatCount="indefinite" rotate="auto" keyPoints={r.rev?"1;0":"0;1"} keyTimes="0;1" calcMode="linear"/>
-            {/* Truck pictogram — cab + body + wheels */}
-            <rect x="-14" y="-7" width="18" height="14" rx="2" fill={r.c}/>
-            <polygon points="4,-5 10,-5 14,-1 14,7 4,7" fill={r.c}/>
-            <circle cx="-7" cy="8" r="3" fill={r.c}/>
-            <circle cx="-7" cy="8" r="1.5" fill={C.bg}/>
-            <circle cx="10" cy="8" r="3" fill={r.c}/>
-            <circle cx="10" cy="8" r="1.5" fill={C.bg}/>
-            <rect x="5" y="-4" width="5" height="5" rx="1" fill={C.bg} opacity="0.6"/>
-          </g>
-        </g>)}
-        </g>
-      </svg>
+      {/* Animated routes background — raw HTML bypasses React SMIL animation issues */}
+      <div style={{position:"absolute",inset:0,pointerEvents:"none",zIndex:0}} dangerouslySetInnerHTML={{__html:`<svg viewBox="0 0 1000 600" preserveAspectRatio="xMidYMid slice" style="width:100%;height:100%"><defs><radialGradient id="ctrFade" cx="50%" cy="48%" rx="30%" ry="28%"><stop offset="0%" stop-color="white" stop-opacity="0.15"/><stop offset="70%" stop-color="white" stop-opacity="0.6"/><stop offset="100%" stop-color="white" stop-opacity="1"/></radialGradient><mask id="ctrMask"><rect width="1000" height="600" fill="url(#ctrFade)"/></mask></defs><g mask="url(#ctrMask)">${_routes.map(r=>`<g><path d="${r.d}" stroke="${r.c}" stroke-width="2" fill="none" stroke-dasharray="14,18" stroke-linecap="round" opacity="${r.lo}"><animate attributeName="stroke-dashoffset" from="0" to="${r.rev?64:-64}" dur="${r.dd}" repeatCount="indefinite"/></path>${r.wp.map(w=>`<g opacity="${(r.lo*1.6).toFixed(3)}"><path d="M${w[0]},${w[1]-10} c-4,0 -7,3 -7,7 c0,4 7,11 7,11 s7,-7 7,-11 c0,-4 -3,-7 -7,-7Z" fill="${r.c}"/><circle cx="${w[0]}" cy="${w[1]-5}" r="2.5" fill="${C.bg}" opacity="0.9"/></g>`).join("")}<g opacity="${r.to}"><animateMotion path="${r.d}" dur="${r.td}" repeatCount="indefinite" rotate="auto" keyPoints="${r.rev?"1;0":"0;1"}" keyTimes="0;1" calcMode="linear"/><rect x="-14" y="-7" width="18" height="14" rx="2" fill="${r.c}"/><polygon points="4,-5 10,-5 14,-1 14,7 4,7" fill="${r.c}"/><circle cx="-7" cy="8" r="3" fill="${r.c}"/><circle cx="-7" cy="8" r="1.5" fill="${C.bg}"/><circle cx="10" cy="8" r="3" fill="${r.c}"/><circle cx="10" cy="8" r="1.5" fill="${C.bg}"/><rect x="5" y="-4" width="5" height="5" rx="1" fill="${C.bg}" opacity="0.6"/></g></g>`).join("")}</g></svg>`}} />
 
       {/* Main content — centered */}
       <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"40px 24px", textAlign:"center", paddingTop:"max(40px, env(safe-area-inset-top))", position:"relative", zIndex:1 }}>
