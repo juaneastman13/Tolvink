@@ -566,8 +566,8 @@ function AttachMenu({ open, onClose, onCamera, onGallery, onFiles }) {
   if (!open) return null;
   return (
     <>
-      <div onClick={onClose} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.35)", zIndex:150, animation:"fadeIn 0.15s ease" }} />
-      <div style={{ position:"fixed", bottom:0, left:0, right:0, zIndex:151, background:C.w, borderRadius:"18px 18px 0 0", padding:"8px 16px max(16px, env(safe-area-inset-bottom))", boxShadow:"0 -4px 24px rgba(0,0,0,0.12)", animation:"sheetUp 0.2s ease" }}>
+      <div onClick={onClose} style={{ position:"fixed", inset:0, background:C.bgOverlay, zIndex:200, animation:"fadeIn 0.15s ease" }} />
+      <div style={{ position:"fixed", bottom:0, left:0, right:0, zIndex:201, background:C.w, borderRadius:"18px 18px 0 0", padding:"8px 16px max(16px, env(safe-area-inset-bottom))", boxShadow:"0 -4px 24px rgba(0,0,0,0.12)", animation:"sheetUp 0.2s ease" }}>
         <style>{`@keyframes sheetUp{from{transform:translateY(100%)}to{transform:translateY(0)}}@keyframes fadeIn{from{opacity:0}to{opacity:1}}`}</style>
         <div style={{ width:36, height:4, borderRadius:2, background:C.b1, margin:"0 auto 12px" }} />
         <div style={{ fontSize:13, fontWeight:700, color:C.t1, marginBottom:12, textAlign:"center" }}>Adjuntar</div>
@@ -617,9 +617,9 @@ function Sidebar({ active, onChange, unread=0, pendingCount=0, canRequest=false,
     { k:"profile", ic:a=>Ic.user(a?C.pri:C.t3,20),   l:"Perfil" },
   ];
   return (
-    <div style={{ width:200, minWidth:200, height:"100%", background:C.w, borderRight:`1px solid ${C.b2}`, display:"flex", flexDirection:"column", flexShrink:0, overflow:"hidden" }}>
+    <div style={{ width:220, minWidth:220, height:"100%", background:C.w, borderRight:`1px solid ${C.b2}`, display:"flex", flexDirection:"column", flexShrink:0, overflow:"hidden" }}>
       {/* Logo */}
-      <div style={{ padding:"20px 20px 16px", borderBottom:`1px solid ${C.b2}` }}>
+      <div style={{ padding:"24px 20px 20px", borderBottom:`1px solid ${C.b2}` }}>
         <div style={{ display:"inline-flex", alignItems:"flex-start" }}>
           <span style={{ fontSize:63, fontWeight:800, color:C.pri, letterSpacing:-2.8, lineHeight:1 }}>tolvink</span>
           <span style={{ width:15, height:15, borderRadius:8, background:C.acc, display:"inline-block", marginLeft:4, marginTop:3, animation:"dotPulse 1.5s ease-in-out infinite" }}></span>
@@ -628,7 +628,7 @@ function Sidebar({ active, onChange, unread=0, pendingCount=0, canRequest=false,
 
       {/* Status + Solicitar */}
       <div style={{ padding:"14px 14px 10px" }}>
-        <button onClick={()=>onChange("pending")} style={{ width:"100%", display:"flex", alignItems:"center", gap:10, padding:"10px 12px", borderRadius:10, border:"none", background:hasPending?`${C.acc}0D`:C.okPale, cursor:"pointer", fontFamily:"inherit", marginBottom:8, transition:"background 0.15s" }}>
+        <button onClick={()=>onChange("pending")} style={{ width:"100%", display:"flex", alignItems:"center", gap:10, padding:"10px 12px", borderRadius:12, border:"none", background:hasPending?`${C.acc}0D`:C.okPale, cursor:"pointer", fontFamily:"inherit", marginBottom:8, transition:"background 0.15s" }}>
           <div style={{ width:32, height:32, borderRadius:16, background:centerColor, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, position:"relative" }}>
             {hasPending ? Ic.bell(C.w,16) : Ic.chk(C.w,16)}
             {pendingCount>0 && <div style={{ position:"absolute", top:-3, right:-3, minWidth:15, height:15, borderRadius:8, background:C.err, color:C.w, fontSize:8, fontWeight:700, padding:"0 3px", display:"flex", alignItems:"center", justifyContent:"center", border:`2px solid ${C.w}` }}>{pendingCount}</div>}
@@ -639,7 +639,7 @@ function Sidebar({ active, onChange, unread=0, pendingCount=0, canRequest=false,
           </div>
         </button>
         {canRequest && (
-          <button onClick={onNew} style={{ width:"100%", display:"flex", alignItems:"center", justifyContent:"center", gap:8, padding:"10px 14px", borderRadius:10, background:C.acc, border:"none", cursor:"pointer", fontFamily:"inherit", boxShadow:`0 2px 8px ${C.acc}30`, transition:"transform 0.15s, box-shadow 0.15s" }} onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-1px)";e.currentTarget.style.boxShadow=`0 4px 12px ${C.acc}40`}} onMouseLeave={e=>{e.currentTarget.style.transform="none";e.currentTarget.style.boxShadow=`0 2px 8px ${C.acc}30`}}>
+          <button onClick={onNew} style={{ width:"100%", display:"flex", alignItems:"center", justifyContent:"center", gap:8, padding:"10px 14px", borderRadius:12, background:C.acc, border:"none", cursor:"pointer", fontFamily:"inherit", boxShadow:`0 2px 8px ${C.acc}30`, transition:"transform 0.15s, box-shadow 0.15s" }} onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-1px)";e.currentTarget.style.boxShadow=`0 4px 12px ${C.acc}40`}} onMouseLeave={e=>{e.currentTarget.style.transform="none";e.currentTarget.style.boxShadow=`0 2px 8px ${C.acc}30`}}>
             <style>{`@keyframes truckDrive{0%,100%{transform:translateX(0)}50%{transform:translateX(3px)}}`}</style>
             <span style={{ display:"inline-flex", animation:"truckDrive 1.5s ease-in-out infinite" }}>{Ic.truck("#fff",16)}</span>
             <span style={{ fontSize:12.5, fontWeight:700, color:"#fff" }}>Solicitar flete</span>
@@ -663,8 +663,8 @@ function Sidebar({ active, onChange, unread=0, pendingCount=0, canRequest=false,
       </div>
 
       {/* Bottom brand */}
-      <div style={{ padding:"12px 16px", borderTop:`1px solid ${C.b2}`, fontSize:9, color:C.t3, textAlign:"center" }}>
-        Gestión de Fletes
+      <div style={{ padding:"12px 16px", borderTop:`1px solid ${C.b2}`, fontSize:10, fontWeight:500, letterSpacing:0.3, color:C.t3, textAlign:"center" }}>
+        Gestión de Fletes · v4.1
       </div>
     </div>
   );
@@ -976,7 +976,7 @@ function SortTh({ label, colKey, sortCol, sortDir, onSort }) {
   const active = sortCol === colKey;
   const arrow = active ? (sortDir === "asc" ? " ↑" : " ↓") : "";
   return (
-    <th onClick={() => onSort(colKey)} style={{ padding:"8px 6px", textAlign:"left", fontWeight:700, color: active ? C.pri : C.t2, fontSize:10, whiteSpace:"nowrap", borderBottom:`1px solid ${C.b1}`, cursor:"pointer", userSelect:"none" }}>
+    <th onClick={() => onSort(colKey)} style={{ padding:"9px 10px", textAlign:"left", fontWeight:700, color: active ? C.pri : C.t2, fontSize:10, whiteSpace:"nowrap", borderBottom:`1px solid ${C.b1}`, cursor:"pointer", userSelect:"none", textTransform:"uppercase", letterSpacing:0.5 }}>
       {label}{arrow && <span style={{ color: C.pri, fontWeight: 800 }}>{arrow}</span>}
     </th>
   );
@@ -1053,7 +1053,7 @@ function HomeScreen({ user, freights, perms, onNav, catalog, isDesktop }) {
       {/* Stat cards */}
       <div style={{ display:"grid", gridTemplateColumns:isDesktop&&activePanel?"1fr":"1fr 1fr 1fr", gap:8, marginBottom:14 }}>
         {statCards.map(s=>(
-          <div key={s.k} onClick={()=>onNav("list")} style={{ background:s.bg, borderRadius:10, padding:isDesktop&&activePanel?"8px 10px":"10px 8px", textAlign:"center", cursor:"pointer", transition:"all 0.2s ease", border:"2px solid transparent" }}>
+          <div key={s.k} onClick={()=>onNav("list")} style={{ background:s.bg, borderRadius:12, padding:isDesktop&&activePanel?"8px 10px":"10px 8px", textAlign:"center", cursor:"pointer", transition:"all 0.2s ease", border:"2px solid transparent" }}>
             <div style={{ fontSize:isDesktop&&activePanel?18:24, fontWeight:800, color:s.c }}>{s.v}</div>
             <div style={{ fontSize:9.5, color:s.c, fontWeight:500, marginTop:1, opacity:0.8 }}>{s.l}</div>
           </div>
@@ -1062,7 +1062,7 @@ function HomeScreen({ user, freights, perms, onNav, catalog, isDesktop }) {
 
       {/* Pending alert */}
       {perms.canApprove && stats.avail>0 && (
-        <div onClick={()=>togglePanel("pending")} style={{ background:C.accPale, border:`1px solid ${C.acc}22`, borderLeft:`3px solid ${C.acc}`, borderRadius:10, padding:12, marginBottom:12, cursor:"pointer", display:"flex", alignItems:"center", gap:10 }}>
+        <div onClick={()=>togglePanel("pending")} style={{ background:C.accPale, border:`1px solid ${C.acc}22`, borderLeft:`3px solid ${C.acc}`, borderRadius:12, padding:12, marginBottom:12, cursor:"pointer", display:"flex", alignItems:"center", gap:10 }}>
           {Ic.warn(C.acc,20)}<div><div style={{ fontSize:12, fontWeight:700, color:C.acc }}>{stats.avail} pendiente{stats.avail>1?"s":""}</div><div style={{ fontSize:10.5, color:C.t2 }}>Esperando asignación</div></div>
         </div>
       )}
@@ -1073,7 +1073,7 @@ function HomeScreen({ user, freights, perms, onNav, catalog, isDesktop }) {
         {quickItems.map(b=>{
           const isActive = activePanel===b.k;
           return (
-            <button key={b.k} onClick={()=>togglePanel(b.k)} style={{ display:"flex", alignItems:"center", gap:10, padding:isDesktop&&activePanel?"9px 10px":"11px 14px", borderRadius:10, background:isActive?`${b.c}12`:C.w, border:`1px solid ${isActive?`${b.c}40`:C.b1}`, cursor:"pointer", fontFamily:"inherit", width:"100%", textAlign:"left", transition:"all 0.15s", boxShadow:isActive?"none":C.sh }} onMouseEnter={e=>{if(!isActive){e.currentTarget.style.background=C.priGhost;e.currentTarget.style.borderColor=`${b.c}40`}}} onMouseLeave={e=>{if(!isActive){e.currentTarget.style.background=C.w;e.currentTarget.style.borderColor=C.b1}}}>
+            <button key={b.k} onClick={()=>togglePanel(b.k)} style={{ display:"flex", alignItems:"center", gap:10, padding:isDesktop&&activePanel?"9px 10px":"11px 14px", borderRadius:12, background:isActive?`${b.c}12`:C.w, border:`1px solid ${isActive?`${b.c}40`:C.b1}`, cursor:"pointer", fontFamily:"inherit", width:"100%", textAlign:"left", transition:"all 0.15s", boxShadow:isActive?"none":C.sh }} onMouseEnter={e=>{if(!isActive){e.currentTarget.style.background=C.priGhost;e.currentTarget.style.borderColor=`${b.c}40`}}} onMouseLeave={e=>{if(!isActive){e.currentTarget.style.background=C.w;e.currentTarget.style.borderColor=C.b1}}}>
               <div style={{ width:isDesktop&&activePanel?28:34, height:isDesktop&&activePanel?28:34, borderRadius:8, background:isActive?`${b.c}22`:`${b.c}12`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{b.ic(b.c,isDesktop&&activePanel?14:17)}</div>
               <span style={{ fontSize:isDesktop&&activePanel?11.5:13, fontWeight:isActive?700:600, color:isActive?b.c:C.t1, flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{b.l}</span>
               {!isActive && <span style={{ display:"flex", transform:"rotate(180deg)", flexShrink:0 }}>{Ic.chev(C.t3,14)}</span>}
@@ -1294,8 +1294,8 @@ function HomeMapView({ freights, onNav }) {
           <option value="">Productor</option>
           {prodOpts.map(p=><option key={p} value={p}>{p}</option>)}
         </select>}
-        <div style={{display:"flex",alignItems:"center",gap:2}}><span style={{fontSize:9,color:C.t3,fontWeight:600}}>Desde</span><input type="date" value={fDateFrom} onChange={e=>setFDateFrom(e.target.value)} onClick={e=>e.target.showPicker?.()} style={{ padding:"5px 8px", borderRadius:6, border:`1px solid ${C.b1}`, fontSize:10, background:C.w, color:fDateFrom?C.t1:C.t3, fontFamily:"inherit", cursor:"pointer" }}/></div>
-        <div style={{display:"flex",alignItems:"center",gap:2}}><span style={{fontSize:9,color:C.t3,fontWeight:600}}>Hasta</span><input type="date" value={fDateTo} onChange={e=>setFDateTo(e.target.value)} onClick={e=>e.target.showPicker?.()} style={{ padding:"5px 8px", borderRadius:6, border:`1px solid ${C.b1}`, fontSize:10, background:C.w, color:fDateTo?C.t1:C.t3, fontFamily:"inherit", cursor:"pointer" }}/></div>
+        <div style={{display:"flex",alignItems:"center",gap:4}}><span style={{fontSize:10,color:C.t3,fontWeight:600}}>Desde</span><input type="date" value={fDateFrom} onChange={e=>setFDateFrom(e.target.value)} onClick={e=>e.target.showPicker?.()} style={{ padding:"6px 8px", borderRadius:6, border:`1px solid ${C.b1}`, fontSize:11, background:C.w, color:fDateFrom?C.t1:C.t3, fontFamily:"inherit", cursor:"pointer" }}/></div>
+        <div style={{display:"flex",alignItems:"center",gap:4}}><span style={{fontSize:10,color:C.t3,fontWeight:600}}>Hasta</span><input type="date" value={fDateTo} onChange={e=>setFDateTo(e.target.value)} onClick={e=>e.target.showPicker?.()} style={{ padding:"6px 8px", borderRadius:6, border:`1px solid ${C.b1}`, fontSize:11, background:C.w, color:fDateTo?C.t1:C.t3, fontFamily:"inherit", cursor:"pointer" }}/></div>
         {hasFilters&&<button onClick={clearAll} style={{ background:"none", border:"none", fontSize:10, color:C.err, fontWeight:600, cursor:"pointer", fontFamily:"inherit", padding:"2px 4px" }}>Limpiar</button>}
         <span style={{ fontSize:10, color:C.t3, marginLeft:"auto" }}>{filteredMF.length} fletes</span>
         <button onClick={()=>setFullscreen(!fullscreen)} style={{ background:C.priPale, border:`1px solid ${C.pri}20`, borderRadius:6, padding:"5px 10px", cursor:"pointer", display:"flex", alignItems:"center", gap:4, fontSize:10, fontWeight:600, color:C.pri, fontFamily:"inherit" }}>
@@ -1433,12 +1433,12 @@ function ListScreen({ freights, onNav, onRefresh }) {
       {/* Persistent date range filter */}
       <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:8}}>
         <div style={{flex:1,display:"flex",gap:6,alignItems:"center"}}>
-          <label style={{fontSize:10,fontWeight:600,color:C.t3,whiteSpace:"nowrap"}}>Desde</label>
-          <input type="date" value={dateFrom} onChange={e=>{setDateFrom(e.target.value);setDatePreset("custom");}} onClick={e=>e.target.showPicker?.()} style={{flex:1,padding:"7px 8px",borderRadius:8,border:`1.5px solid ${C.b1}`,background:C.w,color:dateFrom?C.t1:C.t3,fontSize:11,fontFamily:"inherit",outline:"none",boxSizing:"border-box",cursor:"pointer"}}/>
+          <label style={{fontSize:11,fontWeight:600,color:C.t3,whiteSpace:"nowrap"}}>Desde</label>
+          <input type="date" value={dateFrom} onChange={e=>{setDateFrom(e.target.value);setDatePreset("custom");}} onClick={e=>e.target.showPicker?.()} style={{flex:1,padding:"8px 10px",borderRadius:8,border:`1.5px solid ${C.b1}`,background:C.w,color:dateFrom?C.t1:C.t3,fontSize:12,fontFamily:"inherit",outline:"none",boxSizing:"border-box",cursor:"pointer"}}/>
         </div>
         <div style={{flex:1,display:"flex",gap:6,alignItems:"center"}}>
-          <label style={{fontSize:10,fontWeight:600,color:C.t3,whiteSpace:"nowrap"}}>Hasta</label>
-          <input type="date" value={dateTo} onChange={e=>{setDateTo(e.target.value);setDatePreset("custom");}} onClick={e=>e.target.showPicker?.()} style={{flex:1,padding:"7px 8px",borderRadius:8,border:`1.5px solid ${C.b1}`,background:C.w,color:dateTo?C.t1:C.t3,fontSize:11,fontFamily:"inherit",outline:"none",boxSizing:"border-box",cursor:"pointer"}}/>
+          <label style={{fontSize:11,fontWeight:600,color:C.t3,whiteSpace:"nowrap"}}>Hasta</label>
+          <input type="date" value={dateTo} onChange={e=>{setDateTo(e.target.value);setDatePreset("custom");}} onClick={e=>e.target.showPicker?.()} style={{flex:1,padding:"8px 10px",borderRadius:8,border:`1.5px solid ${C.b1}`,background:C.w,color:dateTo?C.t1:C.t3,fontSize:12,fontFamily:"inherit",outline:"none",boxSizing:"border-box",cursor:"pointer"}}/>
         </div>
         {(dateFrom||dateTo)&&<button onClick={()=>{setDateFrom("");setDateTo("");setDatePreset("");}} style={{background:"none",border:"none",cursor:"pointer",display:"flex",padding:2}}>{Ic.cross(C.t3,14)}</button>}
       </div>
@@ -1446,7 +1446,7 @@ function ListScreen({ freights, onNav, onRefresh }) {
       {/* Quick date presets */}
       <div style={{display:"flex",gap:4,marginBottom:8,flexWrap:"wrap"}}>
         {[{k:"",l:"Todas"},{k:"today",l:"Hoy"},{k:"week",l:"Semana"},{k:"month",l:"Mes"},{k:"quarter",l:"3 meses"}].map(p=>(
-          <button key={p.k} onClick={()=>applyDatePreset(p.k)} style={{padding:"4px 9px",borderRadius:6,border:`1px solid ${datePreset===p.k?C.pri:C.b1}`,background:datePreset===p.k?C.priPale:C.w,color:datePreset===p.k?C.pri:C.t2,fontSize:10,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>{p.l}</button>
+          <button key={p.k} onClick={()=>applyDatePreset(p.k)} style={{padding:"5px 10px",borderRadius:6,border:`1px solid ${datePreset===p.k?C.pri:C.b1}`,background:datePreset===p.k?C.priPale:C.w,color:datePreset===p.k?C.pri:C.t2,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>{p.l}</button>
         ))}
       </div>
 
@@ -1485,7 +1485,7 @@ function ListScreen({ freights, onNav, onRefresh }) {
 
       {/* TABLE VIEW */}
       {viewMode==="table" && (
-        <div style={{ overflowX:"auto", borderRadius:10, border:`1px solid ${C.b1}`, background:C.w }}>
+        <div style={{ overflowX:"auto", borderRadius:12, border:`1px solid ${C.b1}`, background:C.w }}>
           <table className="tv-table" style={{ width:"100%", borderCollapse:"collapse", fontSize:11 }}>
             <thead>
               <tr style={{ background:C.bg }}>
@@ -1495,21 +1495,21 @@ function ListScreen({ freights, onNav, onRefresh }) {
               </tr>
             </thead>
             <tbody>
-              {filtered.length===0 && <tr><td colSpan={9} style={{ padding:24, textAlign:"center", color:C.t3 }}>Sin fletes</td></tr>}
+              {filtered.length===0 && <tr><td colSpan={9} style={{ padding:32, textAlign:"center", color:C.t3, fontSize:13 }}>Sin fletes</td></tr>}
               {sort.sortData(filtered, LIST_GETTERS).map(f=>{
                 const st = stCfg(f.status);
                 const fmtDate = f.loadDate ? f.loadDate.slice(8,10)+"-"+f.loadDate.slice(5,7)+"-"+f.loadDate.slice(2,4) : "";
                 return (
                   <tr key={f.id} className="tv-row" onClick={()=>onNav("detail",f.id)} style={{ cursor:"pointer", borderBottom:`1px solid ${C.b2}` }}>
-                    <td style={{ padding:"7px 6px", fontFamily:MONO, fontWeight:600, color:C.t1, whiteSpace:"nowrap" }}>{f.code}</td>
-                    <td style={{ padding:"7px 6px" }}><Bd color={st.color} bg={st.bg} small>{st.label}</Bd></td>
-                    <td style={{ padding:"7px 6px", color:C.t2, maxWidth:100, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{f.requestedByName||"-"}</td>
-                    <td style={{ padding:"7px 6px", color:C.t2, maxWidth:110, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{(f.originName||"").split("—")[0].trim()}</td>
-                    <td style={{ padding:"7px 6px", color:C.t2, maxWidth:100, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{f.destName}</td>
-                    <td style={{ padding:"7px 6px", fontWeight:600, color:C.t1, whiteSpace:"nowrap" }}>{f.grain}</td>
-                    <td style={{ padding:"7px 6px", fontWeight:600, color:C.t1, whiteSpace:"nowrap" }}>{f.tons} tn</td>
-                    <td style={{ padding:"7px 6px", color:C.t3, whiteSpace:"nowrap" }}>{f.truckPlate||"-"}</td>
-                    <td style={{ padding:"7px 6px", color:C.t3, whiteSpace:"nowrap" }}>{fmtDate}</td>
+                    <td style={{ padding:"9px 10px", fontFamily:MONO, fontWeight:600, color:C.t1, whiteSpace:"nowrap" }}>{f.code}</td>
+                    <td style={{ padding:"9px 10px" }}><Bd color={st.color} bg={st.bg} small>{st.label}</Bd></td>
+                    <td style={{ padding:"9px 10px", color:C.t2, maxWidth:100, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{f.requestedByName||"-"}</td>
+                    <td style={{ padding:"9px 10px", color:C.t2, maxWidth:110, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{(f.originName||"").split("—")[0].trim()}</td>
+                    <td style={{ padding:"9px 10px", color:C.t2, maxWidth:100, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{f.destName}</td>
+                    <td style={{ padding:"9px 10px", fontWeight:600, color:C.t1, whiteSpace:"nowrap" }}>{f.grain}</td>
+                    <td style={{ padding:"9px 10px", fontWeight:600, color:C.t1, whiteSpace:"nowrap" }}>{f.tons} tn</td>
+                    <td style={{ padding:"9px 10px", color:C.t3, whiteSpace:"nowrap" }}>{f.truckPlate||"-"}</td>
+                    <td style={{ padding:"9px 10px", color:C.t3, whiteSpace:"nowrap" }}>{fmtDate}</td>
                   </tr>
                 );
               })}
@@ -1520,8 +1520,8 @@ function ListScreen({ freights, onNav, onRefresh }) {
 
       {/* CARDS VIEW — filtered (single status) */}
       {viewMode==="cards" && tab!=="all" && (
-      <div style={{ display:"flex", flexDirection:"column", gap:10 }} className="tv-grid">
-        {filtered.length===0 && <div style={{ textAlign:"center", padding:40, color:C.t3, fontSize:13, gridColumn:"1/-1" }}>Sin fletes en esta categoría</div>}
+      <div style={{ display:"flex", flexDirection:"column", gap:12 }} className="tv-grid">
+        {filtered.length===0 && <div style={{ textAlign:"center", padding:32, color:C.t3, fontSize:13, gridColumn:"1/-1" }}>Sin fletes en esta categoría</div>}
         {filtered.map((f,idx)=>{
           const st = stCfg(f.status);
           return (
@@ -1562,10 +1562,10 @@ function ListScreen({ freights, onNav, onRefresh }) {
                 <span style={{ fontSize:11, fontWeight:600, color:col.color, opacity:0.7 }}>({items.length})</span>
               </div>
               <div style={{ display:"flex", flexDirection:"column", gap:8, flex:1 }}>
-                {items.length===0 && <div style={{ textAlign:"center", padding:16, color:C.t3, fontSize:11, background:C.w, borderRadius:8, border:`1px dashed ${C.b1}` }}>Sin fletes</div>}
+                {items.length===0 && <div style={{ textAlign:"center", padding:32, color:C.t3, fontSize:13 }}>Sin fletes</div>}
                 {items.map((f,idx)=>{
                   const st = stCfg(f.status);
-                  return <div key={f.id} className="tv-card" onClick={()=>onNav("detail",f.id)} style={{ background:C.w, border:`1px solid ${C.b1}`, borderLeft:`3px solid ${st.border}`, borderRadius:10, padding:12, cursor:"pointer", boxShadow:C.sh, animation:`cardIn 0.3s ease ${idx*0.03}s both` }}>
+                  return <div key={f.id} className="tv-card" onClick={()=>onNav("detail",f.id)} style={{ background:C.w, border:`1px solid ${C.b1}`, borderLeft:`3px solid ${st.border}`, borderRadius:12, padding:12, cursor:"pointer", boxShadow:C.sh, animation:`cardIn 0.3s ease ${idx*0.03}s both` }}>
                     <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:4 }}>
                       <span style={{ fontSize:10, fontWeight:700, color:C.t3, fontFamily:MONO }}>{f.code}</span>
                       <Bd color={st.color} bg={st.bg} small>{st.label}</Bd>
@@ -1937,7 +1937,7 @@ function LocationPicker({ label, value, onChange }) {
 
       {/* FULLSCREEN PORTAL — completely separate overlay */}
       {mapFull && (
-        <div style={{ position:"fixed", inset:0, zIndex:9999, background:"#000", display:"flex", flexDirection:"column" }}>
+        <div style={{ position:"fixed", inset:0, zIndex:300, background:"#000", display:"flex", flexDirection:"column" }}>
           {/* Header bar */}
           <div style={{ display:"flex", alignItems:"center", gap:8, padding:"10px 12px", paddingTop:"calc(10px + env(safe-area-inset-top))", background:C.w, flexShrink:0, zIndex:2 }}>
             <button onPointerDown={toggleFull} style={{ width:44, height:44, borderRadius:10, background:C.bg, border:`1.5px solid ${C.b1}`, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, touchAction:"manipulation" }}>
@@ -3031,7 +3031,7 @@ function TrucksScreen({ onBack, embedded }) {
         <Btn sm onClick={() => setShowForm(!showForm)} icon={showForm ? Ic.cross(C.w, 14) : Ic.plus(C.w, 14)}>{showForm ? "Cerrar" : "Agregar"}</Btn>
       </div>
 
-      {msg && <div style={{ padding: "10px 14px", borderRadius: 10, marginBottom: 12, fontSize: 12, fontWeight: 600, background: msg.k === "ok" ? C.okPale : C.errPale, color: msg.k === "ok" ? C.ok : C.err }}>{msg.t}</div>}
+      {msg && <div style={{ padding: "10px 14px", borderRadius: 12, marginBottom: 12, fontSize: 12, fontWeight: 600, background: msg.k === "ok" ? C.okPale : C.errPale, color: msg.k === "ok" ? C.ok : C.err }}>{msg.t}</div>}
 
       {showForm && (
         <div style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: 12, padding: 16, marginBottom: 16, boxShadow: C.sh }}>
@@ -3043,9 +3043,9 @@ function TrucksScreen({ onBack, embedded }) {
         </div>
       )}
 
-      {loading ? <div style={{ textAlign: "center", padding: 40, color: C.t3, fontSize: 13 }}>Cargando...</div> :
-        trucks.length === 0 ? <div style={{ textAlign: "center", padding: 40, color: C.t3, fontSize: 13 }}>No tenés camiones registrados.</div> :
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      {loading ? <div style={{ textAlign: "center", padding: 32, color: C.t3, fontSize: 13 }}>Cargando...</div> :
+        trucks.length === 0 ? <div style={{ textAlign: "center", padding: 32, color: C.t3, fontSize: 13 }}>No tenés camiones registrados.</div> :
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {trucks.map(t => (
               <div key={t.id} style={{ background: C.w, border: `1px solid ${C.b1}`, borderLeft: `3px solid ${C.acc}`, borderRadius: 12, padding: 14, boxShadow: C.sh, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -3177,7 +3177,7 @@ function FieldsScreen({ onBack, embedded }) {
         <Btn sm onClick={() => setShowFieldForm(!showFieldForm)} icon={showFieldForm ? Ic.cross(C.w, 14) : Ic.plus(C.w, 14)}>{showFieldForm ? "Cerrar" : "Agregar"}</Btn>
       </div>
 
-      {msg && <div style={{ padding: "10px 14px", borderRadius: 10, marginBottom: 12, fontSize: 12, fontWeight: 600, background: msg.k === "ok" ? C.okPale : C.errPale, color: msg.k === "ok" ? C.ok : C.err }}>{msg.t}</div>}
+      {msg && <div style={{ padding: "10px 14px", borderRadius: 12, marginBottom: 12, fontSize: 12, fontWeight: 600, background: msg.k === "ok" ? C.okPale : C.errPale, color: msg.k === "ok" ? C.ok : C.err }}>{msg.t}</div>}
 
       {showFieldForm && (
         <div style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: 12, padding: 16, marginBottom: 16, boxShadow: C.sh }}>
@@ -3426,12 +3426,12 @@ function AccessScreen({ onBack }) {
         <Btn sm onClick={() => { setShowGrant(!showGrant); setEditingAccess(null); setSelectedProducer(null); setSearchResults([]); setSearchQ(""); setMsg(null); setSelectedPlantIds([]); }} icon={showGrant ? Ic.cross(C.w, 14) : Ic.plus(C.w, 14)}>{showGrant ? "Cerrar" : "Habilitar"}</Btn>
       </div>
 
-      {msg && <div style={{ padding: "10px 14px", borderRadius: 10, marginBottom: 12, fontSize: 12, fontWeight: 600, background: msg.k === "ok" ? C.okPale : C.errPale, color: msg.k === "ok" ? C.ok : C.err }}>{msg.t}</div>}
+      {msg && <div style={{ padding: "10px 14px", borderRadius: 12, marginBottom: 12, fontSize: 12, fontWeight: 600, background: msg.k === "ok" ? C.okPale : C.errPale, color: msg.k === "ok" ? C.ok : C.err }}>{msg.t}</div>}
 
       {/* Confirm revoke modal */}
       {confirmRevoke && (
-        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.4)", zIndex:999, display:"flex", alignItems:"center", justifyContent:"center", padding:24 }} onClick={()=>setConfirmRevoke(null)}>
-          <div onClick={e=>e.stopPropagation()} style={{ background:C.w, borderRadius:14, padding:24, maxWidth:340, width:"100%", boxShadow:"0 8px 32px rgba(0,0,0,0.2)" }}>
+        <div style={{ position:"fixed", inset:0, background:C.bgOverlay, zIndex:200, display:"flex", alignItems:"center", justifyContent:"center", padding:24 }} onClick={()=>setConfirmRevoke(null)}>
+          <div onClick={e=>e.stopPropagation()} style={{ background:C.w, borderRadius:18, padding:24, maxWidth:340, width:"100%", boxShadow:C.shLg }}>
             <div style={{ fontSize:16, fontWeight:700, marginBottom:8 }}>Revocar acceso</div>
             <div style={{ fontSize:13, color:C.t2, marginBottom:16 }}>¿Revocar el acceso de <b>{confirmRevoke.producerUser?.name||confirmRevoke.producerCompany?.name}</b>? No podrá enviar fletes a tus plantas.</div>
             <div style={{ display:"flex", gap:8 }}>
@@ -4688,7 +4688,7 @@ function ReportsScreen({ onBack, freights, isDesktop, embedded }) {
         </button>
       </div>
 
-      {allFreights.length===0 && <div style={{ textAlign:"center", padding:40, color:C.t3, fontSize:13 }}>No hay fletes registrados.</div>}
+      {allFreights.length===0 && <div style={{ textAlign:"center", padding:32, color:C.t3, fontSize:13 }}>No hay fletes registrados.</div>}
 
       {groups.map(group=>(
         <div key={group.key} style={{ marginBottom:16 }}>
@@ -4767,14 +4767,14 @@ function AssignModal({ freight, transporters, onClose, onConfirm }) {
   const ts = transporters||[];
   const doConfirm = async ()=>{ if(loading||!t) return; setLoading(true); await onConfirm(t); setLoading(false); };
   return (
-    <div style={{position:"fixed",inset:0,background:C.bgOverlay,display:"flex",alignItems:"center",justifyContent:"center",zIndex:100,padding:24}}>
+    <div style={{position:"fixed",inset:0,background:C.bgOverlay,display:"flex",alignItems:"center",justifyContent:"center",zIndex:200,padding:24}}>
       <div style={{background:C.w,borderRadius:18,padding:22,width:"100%",maxWidth:400,boxShadow:C.shLg}}>
         <div style={{fontSize:17,fontWeight:700,marginBottom:4}}>Asignar transporte · {freight.code}</div>
         <div style={{fontSize:12,color:C.t2,marginBottom:18}}>{freight.grain} · {freight.tons}tn · {freight.originName}</div>
         <label style={{fontSize:10.5,fontWeight:600,color:C.t2,marginBottom:8,display:"block",textTransform:"uppercase",letterSpacing:0.6}}>Transportista</label>
         <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:18}}>
           {ts.length===0 && <div style={{fontSize:12,color:C.t3,padding:10}}>No hay transportistas disponibles</div>}
-          {ts.map(x=><button key={x.id} onClick={()=>setT(x.id)} style={{padding:"13px 14px",borderRadius:10,textAlign:"left",fontFamily:"inherit",border:`1.5px solid ${t===x.id?C.pri:C.b1}`,background:t===x.id?C.priPale:C.w,color:t===x.id?C.pri:C.t2,fontSize:13.5,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",gap:8}}>{Ic.truck(t===x.id?C.pri:C.t3,16)} {x.name}</button>)}
+          {ts.map(x=><button key={x.id} onClick={()=>setT(x.id)} style={{padding:"13px 14px",borderRadius:12,textAlign:"left",fontFamily:"inherit",border:`1.5px solid ${t===x.id?C.pri:C.b1}`,background:t===x.id?C.priPale:C.w,color:t===x.id?C.pri:C.t2,fontSize:13.5,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",gap:8}}>{Ic.truck(t===x.id?C.pri:C.t3,16)} {x.name}</button>)}
         </div>
         <div style={{display:"flex",gap:8}}><Btn full v="ghost" onClick={onClose} disabled={loading}>Cancelar</Btn><Btn full disabled={!t||loading} onClick={doConfirm}>{loading?"Asignando...":"Asignar"}</Btn></div>
       </div>
@@ -4788,14 +4788,14 @@ function TruckSelectModal({ freight, trucks, onClose, onConfirm }) {
   const ts = (trucks||[]).filter(t=>t.active!==false);
   const doConfirm = async ()=>{ if(loading||!sel) return; setLoading(true); await onConfirm(sel); setLoading(false); };
   return (
-    <div style={{position:"fixed",inset:0,background:C.bgOverlay,display:"flex",alignItems:"center",justifyContent:"center",zIndex:100,padding:24}}>
+    <div style={{position:"fixed",inset:0,background:C.bgOverlay,display:"flex",alignItems:"center",justifyContent:"center",zIndex:200,padding:24}}>
       <div style={{background:C.w,borderRadius:18,padding:22,width:"100%",maxWidth:400,boxShadow:C.shLg}}>
         <div style={{fontSize:17,fontWeight:700,marginBottom:4}}>Aceptar flete · {freight.code}</div>
         <div style={{fontSize:12,color:C.t2,marginBottom:18}}>{freight.grain} · {freight.tons}tn → {freight.destName}</div>
         <label style={{fontSize:10.5,fontWeight:600,color:C.t2,marginBottom:8,display:"block",textTransform:"uppercase",letterSpacing:0.6}}>Seleccioná un camión</label>
         <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:18,maxHeight:220,overflowY:"auto"}}>
           {ts.length===0 && <div style={{fontSize:12,color:C.t3,padding:10,textAlign:"center"}}>No tenés camiones registrados.<br/><span style={{color:C.acc,fontWeight:600}}>Registrá uno desde tu perfil.</span></div>}
-          {ts.map(t=><button key={t.id} onClick={()=>setSel(t.id)} style={{padding:"13px 14px",borderRadius:10,textAlign:"left",fontFamily:"inherit",border:`1.5px solid ${sel===t.id?C.acc:C.b1}`,background:sel===t.id?C.accPale:C.w,color:sel===t.id?C.acc:C.t2,fontSize:13.5,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",gap:10}}>
+          {ts.map(t=><button key={t.id} onClick={()=>setSel(t.id)} style={{padding:"13px 14px",borderRadius:12,textAlign:"left",fontFamily:"inherit",border:`1.5px solid ${sel===t.id?C.acc:C.b1}`,background:sel===t.id?C.accPale:C.w,color:sel===t.id?C.acc:C.t2,fontSize:13.5,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",gap:10}}>
             {Ic.truck(sel===t.id?C.acc:C.t3,18)}
             <div>
               <div style={{fontSize:13,fontWeight:700,color:sel===t.id?C.acc:C.t1}}>{t.plate}</div>
@@ -4815,7 +4815,7 @@ function ReasonModal({ title, freight, btnLabel, btnType="err", onClose, onConfi
   const [loading,setLoading] = useState(false);
   const doConfirm = async ()=>{ if(loading||!reason) return; setLoading(true); await onConfirm(reason); setLoading(false); };
   return (
-    <div style={{position:"fixed",inset:0,background:C.bgOverlay,display:"flex",alignItems:"center",justifyContent:"center",zIndex:100,padding:24}}>
+    <div style={{position:"fixed",inset:0,background:C.bgOverlay,display:"flex",alignItems:"center",justifyContent:"center",zIndex:200,padding:24}}>
       <div style={{background:C.w,borderRadius:18,padding:22,width:"100%",maxWidth:400,boxShadow:C.shLg}}>
         <div style={{fontSize:17,fontWeight:700,marginBottom:4,color:btnType==="err"?C.err:C.t1}}>{title} · {freight.code}</div>
         <div style={{fontSize:12,color:C.t2,marginBottom:18}}>{freight.grain} · {freight.tons}tn</div>
@@ -5514,7 +5514,7 @@ function AdminScreen({ user, onBack }) {
                 </div>
               </div>
             ))}
-            {companies.length===0&&<div style={{textAlign:"center",padding:24,color:C.t3,fontSize:13}}>No se encontraron empresas</div>}
+            {companies.length===0&&<div style={{textAlign:"center",padding:32,color:C.t3,fontSize:13}}>No se encontraron empresas</div>}
           </div>
         </>)}
 
@@ -5551,7 +5551,7 @@ function AdminScreen({ user, onBack }) {
                 </div>
               </div>
             );})}
-            {users.length===0&&<div style={{textAlign:"center",padding:24,color:C.t3,fontSize:13}}>No se encontraron usuarios</div>}
+            {users.length===0&&<div style={{textAlign:"center",padding:32,color:C.t3,fontSize:13}}>No se encontraron usuarios</div>}
           </div>
         </>)}
       </>)}
