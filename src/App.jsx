@@ -503,17 +503,19 @@ function Tabs({ items, active, onChange }) {
   return <div style={{ display:"flex", gap:2, background:C.bgInput, borderRadius:10, padding:3 }}>{items.map(t=><button key={t.k} onClick={()=>onChange(t.k)} style={{ flex:1, padding:"8px 4px", borderRadius:8, border:"none", fontFamily:"inherit", fontSize:11, fontWeight:active===t.k?700:500, cursor:"pointer", background:active===t.k?C.w:"transparent", color:active===t.k?C.pri:C.t3, boxShadow:active===t.k?C.sh:"none", transition:"all 0.15s" }}>{t.l}</button>)}</div>;
 }
 
-function Field({ label, icon, value, onChange, placeholder, type="text", children }) {
+function Field({ label, icon, value, onChange, placeholder, type="text", children, hasError }) {
   const [showPw, setShowPw] = useState(false);
   const isPw = type === "password";
-  if (children) return <div>{label && <label style={{ fontSize:10.5, fontWeight:600, color:C.t2, marginBottom:6, display:"flex", alignItems:"center", gap:4, textTransform:"uppercase", letterSpacing:0.6 }}>{icon} {label}</label>}{children}</div>;
+  const borderColor = hasError ? C.err : C.b1;
+  const labelColor = hasError ? C.err : C.t2;
+  if (children) return <div>{label && <label style={{ fontSize:10.5, fontWeight:600, color:labelColor, marginBottom:6, display:"flex", alignItems:"center", gap:4, textTransform:"uppercase", letterSpacing:0.6 }}>{icon} {label}</label>}{children}</div>;
   return (
     <div>
-      {label && <label style={{ fontSize:10.5, fontWeight:600, color:C.t2, marginBottom:6, display:"flex", alignItems:"center", gap:4, textTransform:"uppercase", letterSpacing:0.6 }}>{icon} {label}</label>}
+      {label && <label style={{ fontSize:10.5, fontWeight:600, color:labelColor, marginBottom:6, display:"flex", alignItems:"center", gap:4, textTransform:"uppercase", letterSpacing:0.6 }}>{icon} {label}</label>}
       <div style={{ position:"relative" }}>
         <input value={value} onChange={e=>onChange(e.target.value)} placeholder={placeholder} type={isPw&&!showPw?"password":"text"}
-          style={{ width:"100%", padding:"12px 14px", paddingRight:isPw?42:14, borderRadius:10, border:`1.5px solid ${C.b1}`, background:C.w, color:C.t1, fontSize:16, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }}
-          onFocus={e=>{e.target.style.borderColor=C.bFocus;}} onBlur={e=>{e.target.style.borderColor=C.b1;}} />
+          style={{ width:"100%", padding:"12px 14px", paddingRight:isPw?42:14, borderRadius:10, border:`1.5px solid ${borderColor}`, background:hasError?C.errPale+"40":C.w, color:C.t1, fontSize:16, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }}
+          onFocus={e=>{e.target.style.borderColor=hasError?C.err:C.bFocus;}} onBlur={e=>{e.target.style.borderColor=borderColor;}} />
         {isPw && <button onClick={()=>setShowPw(!showPw)} style={{ position:"absolute", right:10, top:"50%", transform:"translateY(-50%)", background:"none", border:"none", cursor:"pointer", display:"flex", padding:4 }}>{showPw?Ic.eye(C.t3,18):Ic.eyeOff(C.t3,18)}</button>}
       </div>
     </div>
@@ -618,8 +620,8 @@ function Sidebar({ active, onChange, unread=0, pendingCount=0, canRequest=false,
     <div style={{ width:200, minWidth:200, height:"100%", background:C.w, borderRight:`1px solid ${C.b2}`, display:"flex", flexDirection:"column", flexShrink:0, overflow:"hidden" }}>
       {/* Logo */}
       <div style={{ padding:"20px 20px 16px", borderBottom:`1px solid ${C.b2}` }}>
-        <span style={{ fontSize:24, fontWeight:800, color:C.pri, letterSpacing:-0.8 }}>tolvink</span>
-        <span style={{ width:6, height:6, borderRadius:3, background:C.acc, display:"inline-block", marginLeft:2, marginTop:-10 }}></span>
+        <span style={{ fontSize:28, fontWeight:800, color:C.pri, letterSpacing:-0.9 }}>tolvink</span>
+        <span style={{ width:7, height:7, borderRadius:4, background:C.acc, display:"inline-block", marginLeft:2, marginTop:-12 }}></span>
       </div>
 
       {/* Status + Solicitar */}
@@ -724,8 +726,8 @@ function LandingScreen({ onLogin, onSignup, loading, error, clearError }) {
         {/* Big logo */}
         <div style={{ animation:"splashIn 0.8s ease-out", marginBottom:32 }}>
           <div style={{ display:"inline-flex", alignItems:"flex-start" }}>
-            <span style={{ fontSize:84, fontWeight:800, color:C.pri, letterSpacing:-4, lineHeight:1 }}>tolvink</span>
-            <span style={{ width:16, height:16, borderRadius:8, background:C.acc, marginLeft:5, marginTop:4, display:"inline-block", animation:"dotPulse 1.5s ease-in-out infinite" }} />
+            <span style={{ fontSize:97, fontWeight:800, color:C.pri, letterSpacing:-4.6, lineHeight:1 }}>tolvink</span>
+            <span style={{ width:18, height:18, borderRadius:9, background:C.acc, marginLeft:6, marginTop:5, display:"inline-block", animation:"dotPulse 1.5s ease-in-out infinite" }} />
           </div>
         </div>
 
@@ -756,7 +758,7 @@ function LandingScreen({ onLogin, onSignup, loading, error, clearError }) {
 
         {/* Ingresar button */}
         <div style={{ animation:"fadeUp 1.2s ease-out", display:"flex", flexDirection:"column", alignItems:"center", gap:20 }}>
-          <button onClick={()=>setShowAuth(true)} style={{ padding:"16px 48px", borderRadius:14, background:C.pri, color:C.w, fontSize:17, fontWeight:700, border:"none", cursor:"pointer", fontFamily:"inherit", boxShadow:`0 4px 20px ${C.pri}30`, minWidth:220 }}>
+          <button onClick={()=>setShowAuth(true)} style={{ padding:"12px 36px", borderRadius:12, background:C.pri, color:C.w, fontSize:15, fontWeight:700, border:"none", cursor:"pointer", fontFamily:"inherit", boxShadow:`0 4px 16px ${C.pri}30`, minWidth:180 }}>
             Ingresar
           </button>
 
@@ -815,7 +817,8 @@ function AuthScreen({ onLogin, onSignup, loading, error, clearError, onBackToLan
       }
       if(!pw||pw.length<4) { setErrs(prev=>({...prev,pw:"Mínimo 4 caracteres"})); return; }
       setErrs({});
-      onLogin(loginId.replace(/[\s\-()]/g,''),pw);
+      const cleanId = loginId.replace(/[\s\-()]/g,'');
+      onLogin(/^09/.test(cleanId) ? cleanId : cleanId.toLowerCase(), pw);
     } else {
       const vals = {name,email,phone:phone.replace(/[\s\-()]/g,''),pw,userTypes};
       const {ok,errs:e} = validate(vals, SCHEMAS.signup);
@@ -847,10 +850,9 @@ function AuthScreen({ onLogin, onSignup, loading, error, clearError, onBackToLan
           <div style={{ textAlign:"center", marginBottom:mode==="login"?32:20 }}>
             {onBackToLanding && <button onClick={onBackToLanding} style={{ background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", fontSize:13, fontWeight:600, color:C.pri, marginBottom:14, padding:0, display:"flex", alignItems:"center", gap:4, margin:"0 auto 14px" }}>{Ic.chev(C.pri,18)} Volver</button>}
             <div style={{ display:"inline-flex", alignItems:"flex-start", animation:"fadeUp 0.6s ease-out" }}>
-              <span style={{ fontSize:48, fontWeight:800, color:C.pri, letterSpacing:-2.5, lineHeight:1 }}>tolvink</span>
-              <span style={{ width:10, height:10, borderRadius:5, background:C.acc, marginLeft:3, marginTop:2, display:"inline-block", animation:"dotPulse 1.5s ease-in-out infinite" }} />
+              <span style={{ fontSize:55, fontWeight:800, color:C.pri, letterSpacing:-2.9, lineHeight:1 }}>tolvink</span>
+              <span style={{ width:12, height:12, borderRadius:6, background:C.acc, marginLeft:3, marginTop:2, display:"inline-block", animation:"dotPulse 1.5s ease-in-out infinite" }} />
             </div>
-            <div style={{ fontSize:12, color:C.t2, marginTop:10, fontWeight:500, animation:"fadeUp 0.8s ease-out" }}>Logística agrícola simplificada</div>
           </div>
           <div style={{ background:C.w, borderRadius:16, padding:22, boxShadow:C.shMd, border:`1px solid ${C.b2}` }}>
             <div style={{ fontSize:17, fontWeight:700, marginBottom:3, color:C.t1 }}>{mode==="login"?"Iniciar sesión":"Crear cuenta"}</div>
@@ -860,11 +862,11 @@ function AuthScreen({ onLogin, onSignup, loading, error, clearError, onBackToLan
               {/* === LOGIN MODE === */}
               {mode==="login" && <>
                 <div>
-                  <Field label="Email o teléfono" icon={Ic.mail(C.t2,14)} value={loginId} onChange={setLoginId} placeholder="tu@email.com o 09X XXX XXX"/>
+                  <Field label="Email o teléfono" icon={Ic.mail(errs.email||error?C.err:C.t2,14)} value={loginId} onChange={v=>{setLoginId(v);if(error)clearError();}} placeholder="tu@email.com o 09X XXX XXX" hasError={!!(errs.email||error)}/>
                   {touched&&<FieldError error={errs.email}/>}
                 </div>
                 <div>
-                  <Field label="Contraseña" icon={Ic.lock(C.t2,14)} value={pw} onChange={setPw} placeholder="••••••" type="password"/>
+                  <Field label="Contraseña" icon={Ic.lock(errs.pw||error?C.err:C.t2,14)} value={pw} onChange={v=>{setPw(v);if(error)clearError();}} placeholder="••••••" type="password" hasError={!!(errs.pw||error)}/>
                   {touched&&<FieldError error={errs.pw}/>}
                 </div>
               </>}
@@ -924,12 +926,6 @@ function AuthScreen({ onLogin, onSignup, loading, error, clearError, onBackToLan
             <button onClick={toggle} style={{ background:"none", border:"none", color:C.pri, fontWeight:700, fontSize:13, cursor:"pointer", fontFamily:"inherit" }}>{mode==="login"?"Registrate":"Iniciá sesión"}</button>
           </div>
           {canInstall && <button onClick={()=>window.installPWA?.()} style={{marginTop:14,width:"100%",padding:"12px",borderRadius:10,border:`1.5px solid ${C.pri}`,background:C.priPale,color:C.pri,fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>{Ic.plus(C.pri,16)} Instalar Tolvink en tu dispositivo</button>}
-          <div style={{ marginTop:14, padding:12, background:C.bgCardAlt, borderRadius:10, border:`1px solid ${C.b2}` }}>
-            <div style={{ fontSize:10, fontWeight:700, color:C.t2, marginBottom:4 }}>CUENTAS DEMO</div>
-            <div style={{ fontSize:10, color:C.t3, lineHeight:1.7, fontFamily:MONO }}>
-              carolina@planta.com · maria@planta.com{"\n"}ricardo@transp.com · miguel@transp.com{"\n"}juan@campo.com · pedro@campo.com{"\n"}<span style={{color:C.t2,fontWeight:600}}>pw: 1234</span>
-            </div>
-          </div>
         </div>
       </div>
     </>
@@ -5673,8 +5669,8 @@ export default function Tolvink() {
     return <div style={{minHeight:"100dvh",background:C.bg,fontFamily:"'DM Sans',system-ui,-apple-system,sans-serif",display:"flex",alignItems:"center",justifyContent:"center"}}>
       <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,800&display=swap');@keyframes splashIn{0%{opacity:0;transform:scale(0.7)}50%{opacity:1;transform:scale(1.05)}100%{opacity:1;transform:scale(1)}}@keyframes dotPulse{0%,100%{opacity:0.3;transform:scale(0.8)}50%{opacity:1;transform:scale(1.2)}}*{margin:0;padding:0;box-sizing:border-box}html,body,#root{background:${C.bg};margin:0;height:auto!important;overflow:visible!important}`}</style>
       <div style={{textAlign:"center",animation:"splashIn 0.8s ease-out forwards"}}>
-        <span style={{fontSize:72,fontWeight:800,color:C.pri,letterSpacing:-3,display:"inline-block"}}>tolvink</span>
-        <span style={{width:14,height:14,borderRadius:7,background:C.acc,display:"inline-block",marginLeft:4,marginTop:-30,verticalAlign:"top",animation:"dotPulse 1.5s ease-in-out infinite"}}></span>
+        <span style={{fontSize:83,fontWeight:800,color:C.pri,letterSpacing:-3.5,display:"inline-block"}}>tolvink</span>
+        <span style={{width:16,height:16,borderRadius:8,background:C.acc,display:"inline-block",marginLeft:5,marginTop:-34,verticalAlign:"top",animation:"dotPulse 1.5s ease-in-out infinite"}}></span>
       </div>
     </div>;
   }
@@ -5702,8 +5698,8 @@ export default function Tolvink() {
       <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden", minWidth:0 }}>
         {/* Mobile-only header */}
         <div className="tv-mobile-header" style={{paddingTop:"max(12px, env(safe-area-inset-top))",paddingBottom:12,paddingLeft:18,paddingRight:18,display:"flex",alignItems:"center",borderBottom:`1px solid ${C.b2}`,background:C.w,flexShrink:0,zIndex:10}}>
-          <span style={{fontSize:26,fontWeight:800,color:C.pri,letterSpacing:-0.8}}>tolvink</span>
-          <span style={{width:7,height:7,borderRadius:4,background:C.acc,display:"inline-block",marginLeft:3,marginTop:-12}}></span>
+          <span style={{fontSize:30,fontWeight:800,color:C.pri,letterSpacing:-0.9}}>tolvink</span>
+          <span style={{width:8,height:8,borderRadius:4,background:C.acc,display:"inline-block",marginLeft:3,marginTop:-14}}></span>
         </div>
 
         {/* Scrollable content area */}
