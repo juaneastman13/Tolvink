@@ -466,6 +466,82 @@ function AttachMenu({ open, onClose, onCamera, onGallery, onFiles }) {
   );
 }
 
+// ======================== MEDIA QUERY HOOK ============================
+
+function useIsDesktop(bp = 768) {
+  const [isDesktop, setIsDesktop] = useState(() => typeof window !== "undefined" && window.innerWidth >= bp);
+  useEffect(() => {
+    const mq = window.matchMedia(`(min-width: ${bp}px)`);
+    const handler = (e) => setIsDesktop(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, [bp]);
+  return isDesktop;
+}
+
+// ======================== DESKTOP SIDEBAR =============================
+
+function Sidebar({ active, onChange, unread=0, pendingCount=0, canRequest=false, onNew }) {
+  const hasPending = pendingCount > 0;
+  const centerColor = hasPending ? C.acc : C.ok;
+  const items = [
+    { k:"home",   ic:a=>Ic.home(a?C.pri:C.t3,20),  l:"Inicio" },
+    { k:"list",   ic:a=>Ic.truck(a?C.pri:C.t3,20),  l:"Fletes" },
+    { k:"chats",  ic:a=>Ic.msg(a?C.pri:C.t3,20),    l:"Chat", bd:unread },
+    { k:"profile",ic:a=>Ic.user(a?C.pri:C.t3,20),   l:"Perfil" },
+  ];
+  return (
+    <div style={{ width:200, minWidth:200, height:"100%", background:C.w, borderRight:`1px solid ${C.b2}`, display:"flex", flexDirection:"column", flexShrink:0, overflow:"hidden" }}>
+      {/* Logo */}
+      <div style={{ padding:"20px 20px 16px", borderBottom:`1px solid ${C.b2}` }}>
+        <span style={{ fontSize:24, fontWeight:800, color:C.pri, letterSpacing:-0.8 }}>tolvink</span>
+        <span style={{ width:6, height:6, borderRadius:3, background:C.acc, display:"inline-block", marginLeft:2, marginTop:-10 }}></span>
+      </div>
+
+      {/* Status + Solicitar */}
+      <div style={{ padding:"14px 14px 10px" }}>
+        <button onClick={()=>onChange("pending")} style={{ width:"100%", display:"flex", alignItems:"center", gap:10, padding:"10px 12px", borderRadius:10, border:"none", background:hasPending?`${C.acc}0D`:C.okPale, cursor:"pointer", fontFamily:"inherit", marginBottom:8, transition:"background 0.15s" }}>
+          <div style={{ width:32, height:32, borderRadius:16, background:centerColor, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, position:"relative" }}>
+            {hasPending ? Ic.bell(C.w,16) : Ic.chk(C.w,16)}
+            {pendingCount>0 && <div style={{ position:"absolute", top:-3, right:-3, minWidth:15, height:15, borderRadius:8, background:C.err, color:C.w, fontSize:8, fontWeight:700, padding:"0 3px", display:"flex", alignItems:"center", justifyContent:"center", border:`2px solid ${C.w}` }}>{pendingCount}</div>}
+          </div>
+          <div style={{ textAlign:"left" }}>
+            <div style={{ fontSize:12, fontWeight:700, color:centerColor }}>{hasPending?"Pendientes":"Al día"}</div>
+            <div style={{ fontSize:10, color:C.t3 }}>{pendingCount} acción{pendingCount!==1?"es":""}</div>
+          </div>
+        </button>
+        {canRequest && (
+          <button onClick={onNew} style={{ width:"100%", display:"flex", alignItems:"center", justifyContent:"center", gap:8, padding:"10px 14px", borderRadius:10, background:C.acc, border:"none", cursor:"pointer", fontFamily:"inherit", boxShadow:`0 2px 8px ${C.acc}30`, transition:"transform 0.15s, box-shadow 0.15s" }} onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-1px)";e.currentTarget.style.boxShadow=`0 4px 12px ${C.acc}40`}} onMouseLeave={e=>{e.currentTarget.style.transform="none";e.currentTarget.style.boxShadow=`0 2px 8px ${C.acc}30`}}>
+            <style>{`@keyframes truckDrive{0%,100%{transform:translateX(0)}50%{transform:translateX(3px)}}`}</style>
+            <span style={{ display:"inline-flex", animation:"truckDrive 1.5s ease-in-out infinite" }}>{Ic.truck("#fff",16)}</span>
+            <span style={{ fontSize:12.5, fontWeight:700, color:"#fff" }}>Solicitar flete</span>
+          </button>
+        )}
+      </div>
+
+      {/* Nav items */}
+      <div style={{ flex:1, padding:"4px 8px", display:"flex", flexDirection:"column", gap:2 }}>
+        {items.map(it => {
+          const isActive = active === it.k;
+          return (
+            <button key={it.k} onClick={()=>onChange(it.k)} style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 12px", borderRadius:8, border:"none", background:isActive?C.priPale:"transparent", cursor:"pointer", fontFamily:"inherit", position:"relative", transition:"background 0.15s", width:"100%" }} onMouseEnter={e=>{if(!isActive)e.currentTarget.style.background=C.priGhost}} onMouseLeave={e=>{if(!isActive)e.currentTarget.style.background="transparent"}}>
+              <span style={{display:"flex"}}>{it.ic(isActive)}</span>
+              <span style={{ fontSize:13, fontWeight:isActive?700:500, color:isActive?C.pri:C.t2 }}>{it.l}</span>
+              {it.bd>0 && <div style={{ marginLeft:"auto", minWidth:18, height:18, borderRadius:9, background:C.err, color:C.w, fontSize:9, fontWeight:700, padding:"0 5px", display:"flex", alignItems:"center", justifyContent:"center" }}>{it.bd}</div>}
+              {isActive && <div style={{ position:"absolute", left:0, top:"20%", bottom:"20%", width:3, borderRadius:2, background:C.pri }} />}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Bottom brand */}
+      <div style={{ padding:"12px 16px", borderTop:`1px solid ${C.b2}`, fontSize:9, color:C.t3, textAlign:"center" }}>
+        Gestión de Fletes
+      </div>
+    </div>
+  );
+}
+
 // ======================== BOTTOM NAV =================================
 
 function Nav({ active, onChange, unread=0, pendingCount=0, canRequest=false, onNew }) {
@@ -4081,6 +4157,7 @@ export default function Tolvink() {
   const [duplicateData, setDuplicateData] = useState(null);
   const [editData, setEditData] = useState(null);
   const [unreadChats, setUnreadChats] = useState(0);
+  const isDesktop = useIsDesktop(768);
 
   // Calculate pending actions count
   const pendingCount = useMemo(() => {
@@ -4175,34 +4252,46 @@ export default function Tolvink() {
 
   if(!auth.user) return <LandingScreen onLogin={auth.login} onSignup={auth.signup} loading={auth.loading} error={auth.error} clearError={auth.clearError}/>;
   const curFreight = fh.freights.find(f=>f.id===selFreight);
+  const navActive = ["detail"].includes(screen)?"list":["trucks","fields","access","reports"].includes(screen)?"profile":screen;
 
   return (
-    <div className="tv-shell" style={{height:"100dvh",background:C.bg,color:C.t1,fontFamily:FONT,display:"flex",flexDirection:"column",maxWidth:1100,margin:"0 auto",position:"relative",overflow:"hidden"}}>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&family=JetBrains+Mono:wght@400;500&display=swap');*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}html,body{height:100%;margin:0}body{background:${C.bg};overflow:hidden;overscroll-behavior:none}input,textarea,select,button{font-size:16px}input::placeholder,textarea::placeholder{color:${C.t3}}::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:${C.b1};border-radius:4px}@keyframes ti{0%,100%{opacity:1}50%{opacity:.4}}@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}@keyframes cardIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}@keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}.tv-card{transition:transform 0.15s ease,box-shadow 0.15s ease}.tv-row{transition:background 0.1s ease}@media(hover:hover){.tv-card:hover{transform:translateY(-2px);box-shadow:${C.shMd}!important}.tv-row:hover{background:${C.priGhost}!important}}@media(min-width:640px){.tv-grid{display:grid!important;grid-template-columns:1fr 1fr!important;gap:12px!important}.tv-grid3{display:grid!important;grid-template-columns:1fr 1fr 1fr!important;gap:12px!important}.tv-pad{padding:24px 32px!important}.tv-detail-grid{display:grid!important;grid-template-columns:1fr 1fr!important;gap:16px!important}.tv-table th,.tv-table td{padding:10px 12px!important;font-size:12px!important}.tv-stats{gap:12px!important}.tv-stats>div{padding:14px 12px!important;border-radius:12px!important}.tv-stats .tv-stat-num{font-size:28px!important}.tv-header-bar{padding:10px 32px 0 32px!important}}@media(min-width:900px){.tv-grid{grid-template-columns:1fr 1fr 1fr!important}.tv-shell{max-width:1100px!important}}`}</style>
-      {/* Fixed header */}
-      <div style={{paddingTop:"max(12px, env(safe-area-inset-top))",paddingBottom:12,paddingLeft:18,paddingRight:18,display:"flex",alignItems:"center",borderBottom:`1px solid ${C.b2}`,background:C.w,flexShrink:0,zIndex:10}}>
-        <span style={{fontSize:26,fontWeight:800,color:C.pri,letterSpacing:-0.8}}>tolvink</span>
-        <span style={{width:7,height:7,borderRadius:4,background:C.acc,display:"inline-block",marginLeft:3,marginTop:-12}}></span>
+    <div className="tv-shell" style={{height:"100dvh",background:C.bg,color:C.t1,fontFamily:FONT,display:"flex",flexDirection:isDesktop?"row":"column",maxWidth:isDesktop?1400:1100,margin:"0 auto",position:"relative",overflow:"hidden"}}>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&family=JetBrains+Mono:wght@400;500&display=swap');*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}html,body{height:100%;margin:0}body{background:${C.bg};overflow:hidden;overscroll-behavior:none}input,textarea,select,button{font-size:16px}input::placeholder,textarea::placeholder{color:${C.t3}}::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:${C.b1};border-radius:4px}@keyframes ti{0%,100%{opacity:1}50%{opacity:.4}}@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}@keyframes cardIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}@keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}.tv-card{transition:transform 0.15s ease,box-shadow 0.15s ease}.tv-row{transition:background 0.1s ease}@media(hover:hover){.tv-card:hover{transform:translateY(-2px);box-shadow:${C.shMd}!important}.tv-row:hover{background:${C.priGhost}!important}}@media(min-width:640px){.tv-grid{display:grid!important;grid-template-columns:1fr 1fr!important;gap:12px!important}.tv-grid3{display:grid!important;grid-template-columns:1fr 1fr 1fr!important;gap:12px!important}.tv-pad{padding:24px 32px!important}.tv-detail-grid{display:grid!important;grid-template-columns:1fr 1fr!important;gap:16px!important}.tv-table th,.tv-table td{padding:10px 12px!important;font-size:12px!important}.tv-stats{gap:12px!important}.tv-stats>div{padding:14px 12px!important;border-radius:12px!important}.tv-stats .tv-stat-num{font-size:28px!important}.tv-header-bar{padding:10px 32px 0 32px!important}}@media(min-width:768px){.tv-shell{max-width:1400px!important}.tv-mobile-header{display:none!important}.tv-mobile-nav{display:none!important}}@media(max-width:767px){.tv-sidebar{display:none!important}}@media(min-width:900px){.tv-grid{grid-template-columns:1fr 1fr 1fr!important}}@media(min-width:1100px){.tv-grid{grid-template-columns:repeat(4,1fr)!important}}`}</style>
+
+      {/* Desktop Sidebar */}
+      <div className="tv-sidebar">
+        <Sidebar active={navActive} onChange={nav} unread={unreadChats} pendingCount={pendingCount} canRequest={perms.canRequest} onNew={()=>nav("new")} />
       </div>
 
-      {/* Scrollable content area */}
-      <div style={{flex:1,overflow:"auto",display:"flex",flexDirection:"column",WebkitOverflowScrolling:"touch",overscrollBehavior:"contain"}}>
-      {screen==="home" && <HomeScreen user={auth.user} freights={fh.freights} perms={perms} onNav={nav}/>}
-      {screen==="list" && <ListScreen freights={fh.freights} onNav={nav} onRefresh={fh.fetchAll}/>}
-      {screen==="pending" && <PendingScreen user={auth.user} freights={fh.freights} onNav={nav} onNewFreight={()=>nav("new")}/>}
-      {screen==="detail" && <DetailScreen user={auth.user} freight={curFreight} perms={perms} onBack={()=>setScreen("list")} onAction={handleAction} actionLoading={actionLoading} onChat={(convId)=>{if(convId){setChatConvId(convId);setScreen("chats");}}} onRefresh={(id)=>fh.refresh(id)} onDuplicate={(f)=>{setDuplicateData(f);setScreen("new");}} onEdit={(f)=>{setEditData(f);setScreen("edit");}}/>}
-      {screen==="new" && <NewScreen user={auth.user} lots={catalog.lots} plants={catalog.plants} fields={catalog.fields} trucks={catalog.trucks} onBack={()=>{setDuplicateData(null);setScreen("home");}} onCreate={handleCreate} submitting={submitting} duplicateFrom={duplicateData}/>}
-      {screen==="edit" && editData && <EditScreen freight={editData} fields={catalog.fields} plants={catalog.plants} onBack={()=>{setEditData(null);setScreen("detail");}} onSave={async(id,data)=>{const r=await fh.update(id,data);if(r.ok){setEditData(null);setScreen("detail");show("Flete actualizado");}else show(r.error,"err");}}/>}
-      {screen==="profile" && <ProfileScreen user={auth.user} perms={perms} onLogout={auth.logout} onNav={nav} theme={theme} toggleTheme={toggleTheme}/>}
-      {screen==="trucks" && <TrucksScreen onBack={()=>{catalog.refresh();setScreen("profile");}}/>}
-      {screen==="fields" && <FieldsScreen onBack={()=>{catalog.refresh();setScreen("profile");}}/>}
-      {screen==="access" && <AccessScreen onBack={()=>setScreen("profile")}/>}
-      {screen==="reports" && <ReportsScreen onBack={()=>setScreen("profile")} freights={fh.freights}/>}
-      {screen==="chats" && <ChatsScreen user={auth.user} openConvId={chatConvId} onConvOpened={()=>setChatConvId(null)}/>}
-      </div>
+      {/* Main content column */}
+      <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden", minWidth:0 }}>
+        {/* Mobile-only header */}
+        <div className="tv-mobile-header" style={{paddingTop:"max(12px, env(safe-area-inset-top))",paddingBottom:12,paddingLeft:18,paddingRight:18,display:"flex",alignItems:"center",borderBottom:`1px solid ${C.b2}`,background:C.w,flexShrink:0,zIndex:10}}>
+          <span style={{fontSize:26,fontWeight:800,color:C.pri,letterSpacing:-0.8}}>tolvink</span>
+          <span style={{width:7,height:7,borderRadius:4,background:C.acc,display:"inline-block",marginLeft:3,marginTop:-12}}></span>
+        </div>
 
-      {/* Fixed bottom nav */}
-      <Nav active={["detail"].includes(screen)?"list":["trucks","fields","access","reports"].includes(screen)?"profile":screen} onChange={nav} unread={unreadChats} pendingCount={pendingCount} canRequest={perms.canRequest} onNew={()=>nav("new")}/>
+        {/* Scrollable content area */}
+        <div style={{flex:1,overflow:"auto",display:"flex",flexDirection:"column",WebkitOverflowScrolling:"touch",overscrollBehavior:"contain"}}>
+        {screen==="home" && <HomeScreen user={auth.user} freights={fh.freights} perms={perms} onNav={nav}/>}
+        {screen==="list" && <ListScreen freights={fh.freights} onNav={nav} onRefresh={fh.fetchAll}/>}
+        {screen==="pending" && <PendingScreen user={auth.user} freights={fh.freights} onNav={nav} onNewFreight={()=>nav("new")}/>}
+        {screen==="detail" && <DetailScreen user={auth.user} freight={curFreight} perms={perms} onBack={()=>setScreen("list")} onAction={handleAction} actionLoading={actionLoading} onChat={(convId)=>{if(convId){setChatConvId(convId);setScreen("chats");}}} onRefresh={(id)=>fh.refresh(id)} onDuplicate={(f)=>{setDuplicateData(f);setScreen("new");}} onEdit={(f)=>{setEditData(f);setScreen("edit");}}/>}
+        {screen==="new" && <NewScreen user={auth.user} lots={catalog.lots} plants={catalog.plants} fields={catalog.fields} trucks={catalog.trucks} onBack={()=>{setDuplicateData(null);setScreen("home");}} onCreate={handleCreate} submitting={submitting} duplicateFrom={duplicateData}/>}
+        {screen==="edit" && editData && <EditScreen freight={editData} fields={catalog.fields} plants={catalog.plants} onBack={()=>{setEditData(null);setScreen("detail");}} onSave={async(id,data)=>{const r=await fh.update(id,data);if(r.ok){setEditData(null);setScreen("detail");show("Flete actualizado");}else show(r.error,"err");}}/>}
+        {screen==="profile" && <ProfileScreen user={auth.user} perms={perms} onLogout={auth.logout} onNav={nav} theme={theme} toggleTheme={toggleTheme}/>}
+        {screen==="trucks" && <TrucksScreen onBack={()=>{catalog.refresh();setScreen("profile");}}/>}
+        {screen==="fields" && <FieldsScreen onBack={()=>{catalog.refresh();setScreen("profile");}}/>}
+        {screen==="access" && <AccessScreen onBack={()=>setScreen("profile")}/>}
+        {screen==="reports" && <ReportsScreen onBack={()=>setScreen("profile")} freights={fh.freights}/>}
+        {screen==="chats" && <ChatsScreen user={auth.user} openConvId={chatConvId} onConvOpened={()=>setChatConvId(null)}/>}
+        </div>
+
+        {/* Mobile-only bottom nav */}
+        <div className="tv-mobile-nav">
+          <Nav active={navActive} onChange={nav} unread={unreadChats} pendingCount={pendingCount} canRequest={perms.canRequest} onNew={()=>nav("new")}/>
+        </div>
+      </div>
 
       {modal?.type==="assign" && <AssignModal freight={modal.freight} transporters={catalog.transporters} onClose={()=>setModal(null)} onConfirm={t=>handleAssign(modal.freight.id,t)}/>}
       {modal?.type==="truck_select" && <TruckSelectModal freight={modal.freight} trucks={catalog.trucks} onClose={()=>setModal(null)} onConfirm={t=>handleAcceptWithTruck(modal.freight.id,t)}/>}
