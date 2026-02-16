@@ -750,43 +750,49 @@ function LandingScreen({ onLogin, onSignup, loading, error, clearError }) {
 
   if (showAuth) return <AuthScreen onLogin={onLogin} onSignup={onSignup} loading={loading} error={error} clearError={clearError} onBackToLanding={()=>setShowAuth(false)} />;
 
-  const _particles = useMemo(()=>[
-    {s:8,x:"10%",y:"14%",c:C.pri,o:0.18,a:"fl1",d:24,dl:0},
-    {s:6,x:"87%",y:"22%",c:C.acc,o:0.15,a:"fl2",d:30,dl:2},
-    {s:9,x:"74%",y:"76%",c:C.sec,o:0.16,a:"fl3",d:26,dl:5},
-    {s:5,x:"25%",y:"68%",c:C.acc,o:0.14,a:"fl4",d:22,dl:1},
-    {s:7,x:"52%",y:"8%",c:C.pri,o:0.14,a:"fl2",d:28,dl:7},
-    {s:6,x:"6%",y:"84%",c:C.sec,o:0.12,a:"fl1",d:32,dl:3},
-    {s:10,x:"92%",y:"65%",c:C.pri,o:0.13,a:"fl4",d:20,dl:9},
-    {s:5,x:"40%",y:"90%",c:C.acc,o:0.16,a:"fl3",d:25,dl:6},
-    {s:7,x:"62%",y:"42%",c:C.sec,o:0.10,a:"fl1",d:27,dl:11},
-    {s:20,x:"18%",y:"32%",c:C.pri,o:0.06,a:"fl3",d:35,dl:0,ring:true},
-    {s:24,x:"80%",y:"48%",c:C.acc,o:0.05,a:"fl4",d:38,dl:4,ring:true},
-    {s:18,x:"60%",y:"82%",c:C.sec,o:0.06,a:"fl1",d:33,dl:8,ring:true},
-    {s:16,x:"42%",y:"18%",c:C.pri,o:0.05,a:"fl2",d:36,dl:2,ring:true},
-    {s:55,x:"12%",y:"45%",c:C.pri,o:0.04,a:"fl4",d:42,dl:0,blur:true},
-    {s:65,x:"82%",y:"28%",c:C.acc,o:0.035,a:"fl3",d:48,dl:3,blur:true},
-    {s:50,x:"48%",y:"72%",c:C.sec,o:0.04,a:"fl1",d:40,dl:6,blur:true},
-    {s:70,x:"30%",y:"15%",c:C.acc,o:0.03,a:"fl2",d:50,dl:10,blur:true},
+  const _routes = useMemo(()=>[
+    { d:"M-30,520 C150,400 350,260 550,180 S800,60 1030,10", c:C.pri, lo:0.12, po:0.22, pd:"26s", dd:"4s", wp:[[180,410],[420,240],[700,110],[900,45]] },
+    { d:"M-30,80 C180,180 380,340 580,400 S830,500 1030,560", c:C.acc, lo:0.10, po:0.18, pd:"32s", dd:"5s", wp:[[160,170],[400,320],[650,420],[880,520]], rev:true },
+    { d:"M1030,300 C820,240 620,320 420,300 S180,340 -30,370", c:C.sec, lo:0.10, po:0.20, pd:"24s", dd:"3.5s", wp:[[870,260],[640,310],[350,310],[120,355]] },
+    { d:"M500,-30 C520,100 470,240 510,370 S480,490 530,630", c:C.pri, lo:0.08, po:0.16, pd:"22s", dd:"4.5s", wp:[[512,80],[480,260],[505,430]] },
+    { d:"M-30,200 C80,150 200,90 340,50 S500,20 600,-20", c:C.acc, lo:0.09, po:0.17, pd:"18s", dd:"3s", wp:[[70,160],[220,85],[420,35]] },
+    { d:"M1030,480 C900,440 780,500 650,520 S480,560 350,590", c:C.sec, lo:0.07, po:0.15, pd:"20s", dd:"4s", wp:[[920,450],[720,500],[530,540]] },
   ],[]);
 
   return (
     <div style={{ minHeight:"100dvh", background:C.bg, fontFamily:FONT, display:"flex", flexDirection:"column", overflow:"hidden", WebkitOverflowScrolling:"touch", position:"relative" }}>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&display=swap');*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}html,body,#root{margin:0;padding:0;background:${C.bg};height:auto!important;overflow:visible!important;overflow-x:hidden!important}@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}@keyframes dotPulse{0%,100%{opacity:0.3;transform:scale(0.8)}50%{opacity:1;transform:scale(1.2)}}@keyframes splashIn{0%{opacity:0;transform:scale(0.85)}100%{opacity:1;transform:scale(1)}}@keyframes fl1{0%,100%{transform:translate(0,0) rotate(0deg)}20%{transform:translate(70px,-50px) rotate(72deg)}40%{transform:translate(15px,-110px) rotate(144deg)}60%{transform:translate(-45px,-70px) rotate(216deg)}80%{transform:translate(-15px,-15px) rotate(288deg)}}@keyframes fl2{0%,100%{transform:translate(0,0) scale(1)}25%{transform:translate(-60px,45px) scale(1.12)}50%{transform:translate(-25px,95px) scale(0.92)}75%{transform:translate(35px,35px) scale(1.06)}}@keyframes fl3{0%,100%{transform:translate(0,0)}30%{transform:translate(45px,65px)}55%{transform:translate(-35px,110px)}80%{transform:translate(-70px,40px)}}@keyframes fl4{0%,100%{transform:translate(0,0) rotate(0deg)}35%{transform:translate(-50px,-85px) rotate(126deg)}65%{transform:translate(45px,-25px) rotate(234deg)}}`}</style>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&display=swap');*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}html,body,#root{margin:0;padding:0;background:${C.bg};height:auto!important;overflow:visible!important;overflow-x:hidden!important}@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}@keyframes dotPulse{0%,100%{opacity:0.3;transform:scale(0.8)}50%{opacity:1;transform:scale(1.2)}}@keyframes splashIn{0%{opacity:0;transform:scale(0.85)}100%{opacity:1;transform:scale(1)}}`}</style>
 
-      {/* Floating background particles */}
-      <div style={{ position:"absolute", inset:0, overflow:"hidden", pointerEvents:"none", zIndex:0 }}>
-        {_particles.map((p,i)=><div key={i} style={{ position:"absolute", left:p.x, top:p.y, width:p.s, height:p.s, borderRadius:"50%", background:p.ring?"transparent":p.c, border:p.ring?`2px solid ${p.c}`:"none", opacity:p.o, animation:`${p.a} ${p.d}s ease-in-out infinite`, animationDelay:`${p.dl}s`, ...(p.blur?{filter:"blur(14px)",background:p.c}:{}) }}/>)}
-      </div>
+      {/* Animated routes background — SVG with flowing dashes + moving pins */}
+      <svg viewBox="0 0 1000 600" preserveAspectRatio="xMidYMid slice" style={{ position:"absolute", inset:0, width:"100%", height:"100%", pointerEvents:"none", zIndex:0 }}>
+        {_routes.map((r,i)=><g key={i}>
+          {/* Route line with flowing dashes */}
+          <path d={r.d} stroke={r.c} strokeWidth="2" fill="none" strokeDasharray="14,18" strokeLinecap="round" opacity={r.lo}>
+            <animate attributeName="stroke-dashoffset" from="0" to={r.rev?64:-64} dur={r.dd} repeatCount="indefinite"/>
+          </path>
+          {/* Waypoint dots */}
+          {r.wp.map((w,j)=><circle key={j} cx={w[0]} cy={w[1]} r="4" fill={r.c} opacity={r.lo*1.2}/>)}
+          {/* Moving pin along route */}
+          <g opacity={r.po}>
+            <animateMotion dur={r.pd} repeatCount="indefinite" rotate="auto" keyPoints={r.rev?"1;0":"0;1"} keyTimes="0;1" calcMode="linear">
+              <mpath xlinkHref={`#lr${i}`}/>
+            </animateMotion>
+            <path d="M0,-10 C-5,-10 -8,-5 -8,0 C-8,5 0,12 0,12 S8,5 8,0 C8,-5 5,-10 0,-10Z" fill={r.c}/>
+            <circle cx="0" cy="-2" r="3" fill={C.bg} opacity="0.85"/>
+          </g>
+          {/* Hidden path for mpath reference */}
+          <path id={`lr${i}`} d={r.d} fill="none" stroke="none"/>
+        </g>)}
+      </svg>
 
       {/* Main content — centered */}
       <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"40px 24px", textAlign:"center", paddingTop:"max(40px, env(safe-area-inset-top))", position:"relative", zIndex:1 }}>
 
-        {/* Big logo — 30% larger */}
+        {/* Big logo — 43% larger than original */}
         <div style={{ animation:"splashIn 0.8s ease-out", marginBottom:36 }}>
           <div style={{ display:"inline-flex", alignItems:"flex-start" }}>
-            <span style={{ fontSize:126, fontWeight:800, color:C.pri, letterSpacing:-6, lineHeight:1 }}>tolvink</span>
-            <span style={{ width:23, height:23, borderRadius:12, background:C.acc, marginLeft:8, marginTop:6, display:"inline-block", animation:"dotPulse 1.5s ease-in-out infinite" }} />
+            <span style={{ fontSize:139, fontWeight:800, color:C.pri, letterSpacing:-6.6, lineHeight:1 }}>tolvink</span>
+            <span style={{ width:25, height:25, borderRadius:13, background:C.acc, marginLeft:9, marginTop:7, display:"inline-block", animation:"dotPulse 1.5s ease-in-out infinite" }} />
           </div>
         </div>
 
