@@ -594,7 +594,7 @@ function LandingScreen({ onLogin, onSignup, loading, error, clearError }) {
 
   return (
     <div style={{ minHeight:"100dvh", background:C.bg, fontFamily:FONT, display:"flex", flexDirection:"column", overflow:"auto", WebkitOverflowScrolling:"touch" }}>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&display=swap');*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}body{background:${C.bg};overscroll-behavior:none;margin:0}@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}@keyframes dotPulse{0%,100%{opacity:0.3;transform:scale(0.8)}50%{opacity:1;transform:scale(1.2)}}@keyframes splashIn{0%{opacity:0;transform:scale(0.85)}100%{opacity:1;transform:scale(1)}}`}</style>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&display=swap');*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}html,body,#root{margin:0;padding:0;background:${C.bg};height:auto!important;overflow:visible!important;overflow-x:hidden!important}@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}@keyframes dotPulse{0%,100%{opacity:0.3;transform:scale(0.8)}50%{opacity:1;transform:scale(1.2)}}@keyframes splashIn{0%{opacity:0;transform:scale(0.85)}100%{opacity:1;transform:scale(1)}}`}</style>
 
       {/* Main content — centered */}
       <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"40px 24px", textAlign:"center", paddingTop:"max(40px, env(safe-area-inset-top))" }}>
@@ -689,56 +689,58 @@ function AuthScreen({ onLogin, onSignup, loading, error, clearError, onBackToLan
   },[]);
 
   return (
-    <div style={{ minHeight:"100dvh", height:mode==="signup"?"auto":"100dvh", background:C.bg, fontFamily:FONT, display:"flex", flexDirection:"column", justifyContent:mode==="login"?"center":"flex-start", padding:"0 28px", maxWidth:430, margin:"0 auto", boxSizing:"border-box" }}>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&family=JetBrains+Mono:wght@400;500&display=swap');*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}html{height:100%;overflow-y:auto!important;overflow-x:hidden;-webkit-overflow-scrolling:touch}body{min-height:100%;margin:0;background:${C.bg};overflow-y:auto!important;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior-y:auto}input::placeholder,textarea::placeholder{color:${C.t3}}@keyframes dotPulse{0%,100%{opacity:0.3;transform:scale(0.8)}50%{opacity:1;transform:scale(1.2)}}@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}`}</style>
-      <div style={{ paddingTop:mode==="signup"?"max(24px, env(safe-area-inset-top))":"28px", paddingBottom:"max(28px, env(safe-area-inset-bottom))", flex:mode==="login"?undefined:undefined }}>
-      <div style={{ textAlign:"center", marginBottom:mode==="login"?32:20 }}>
-        {onBackToLanding && <button onClick={onBackToLanding} style={{ background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", fontSize:13, fontWeight:600, color:C.pri, marginBottom:14, padding:0, display:"flex", alignItems:"center", gap:4, margin:"0 auto 14px" }}>{Ic.chev(C.pri,18)} Volver</button>}
-        <div style={{ display:"inline-flex", alignItems:"flex-start", animation:"fadeUp 0.6s ease-out" }}>
-          <span style={{ fontSize:48, fontWeight:800, color:C.pri, letterSpacing:-2.5, lineHeight:1 }}>tolvink</span>
-          <span style={{ width:10, height:10, borderRadius:5, background:C.acc, marginLeft:3, marginTop:2, display:"inline-block", animation:"dotPulse 1.5s ease-in-out infinite" }} />
+    <>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&family=JetBrains+Mono:wght@400;500&display=swap');*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}html,body,#root{margin:0;padding:0;background:${C.bg};height:auto!important;min-height:0!important;overflow:visible!important;overflow-x:hidden!important;-webkit-overflow-scrolling:touch;position:static!important}input::placeholder,textarea::placeholder{color:${C.t3}}@keyframes dotPulse{0%,100%{opacity:0.3;transform:scale(0.8)}50%{opacity:1;transform:scale(1.2)}}@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}`}</style>
+      <div style={{ background:C.bg, fontFamily:FONT, maxWidth:430, margin:"0 auto", padding:"0 28px", boxSizing:"border-box" }}>
+        <div style={{ paddingTop:mode==="signup"?"max(24px, env(safe-area-inset-top))":"28px", paddingBottom:"max(40px, env(safe-area-inset-bottom))", minHeight:mode==="login"?"100svh":"auto", display:"flex", flexDirection:"column", justifyContent:mode==="login"?"center":"flex-start" }}>
+          <div style={{ textAlign:"center", marginBottom:mode==="login"?32:20 }}>
+            {onBackToLanding && <button onClick={onBackToLanding} style={{ background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", fontSize:13, fontWeight:600, color:C.pri, marginBottom:14, padding:0, display:"flex", alignItems:"center", gap:4, margin:"0 auto 14px" }}>{Ic.chev(C.pri,18)} Volver</button>}
+            <div style={{ display:"inline-flex", alignItems:"flex-start", animation:"fadeUp 0.6s ease-out" }}>
+              <span style={{ fontSize:48, fontWeight:800, color:C.pri, letterSpacing:-2.5, lineHeight:1 }}>tolvink</span>
+              <span style={{ width:10, height:10, borderRadius:5, background:C.acc, marginLeft:3, marginTop:2, display:"inline-block", animation:"dotPulse 1.5s ease-in-out infinite" }} />
+            </div>
+            <div style={{ fontSize:12, color:C.t2, marginTop:10, fontWeight:500, animation:"fadeUp 0.8s ease-out" }}>Logística agrícola simplificada</div>
+          </div>
+          <div style={{ background:C.w, borderRadius:16, padding:22, boxShadow:C.shMd, border:`1px solid ${C.b2}` }}>
+            <div style={{ fontSize:17, fontWeight:700, marginBottom:3, color:C.t1 }}>{mode==="login"?"Iniciar sesión":"Crear cuenta"}</div>
+            <div style={{ fontSize:12.5, color:C.t2, marginBottom:18 }}>{mode==="login"?"Ingresá con tu email y contraseña":"Completá tus datos"}</div>
+            <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
+              {mode==="signup" && <><Field label="Nombre" icon={Ic.user(C.t2,14)} value={name} onChange={setName} placeholder="Tu nombre completo"/>{touched&&<FieldError error={errs.name}/>}</>}
+              <div><Field label="Email" icon={Ic.mail(C.t2,14)} value={email} onChange={setEmail} placeholder="tu@email.com" type="email"/>{touched&&<FieldError error={errs.email}/>}</div>
+              <div><Field label="Contraseña" icon={Ic.lock(C.t2,14)} value={pw} onChange={setPw} placeholder="••••••" type="password"/>{touched&&<FieldError error={errs.pw}/>}</div>
+              {mode==="signup" && <>
+                <Field label="Tipo de usuario" icon={Ic.user(C.t2,14)}>
+                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:6 }}>
+                    {[{k:"planta",l:"Planta"},{k:"transporter",l:"Transp."},{k:"producer",l:"Productor"}].map(t=><button key={t.k} onClick={()=>setUType(t.k)} style={{ padding:"10px 6px", borderRadius:8, border:`1.5px solid ${uType===t.k?tc[t.k]||C.pri:C.b1}`, background:uType===t.k?`${tc[t.k]||C.pri}0D`:C.w, color:uType===t.k?tc[t.k]||C.pri:C.t2, cursor:"pointer", fontSize:11.5, fontWeight:600, fontFamily:"inherit" }}>{t.l}</button>)}
+                  </div>
+                </Field>
+                {touched&&<FieldError error={errs.userType}/>}
+                <Field label="Rol" icon={Ic.shield(C.t2,14)}>
+                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:6 }}>
+                    {[{k:"admin",l:"Gerente"},{k:"operator",l:"Operario"}].map(r=><button key={r.k} onClick={()=>setURole(r.k)} style={{ padding:"10px 8px", borderRadius:8, border:`1.5px solid ${uRole===r.k?C.pri:C.b1}`, background:uRole===r.k?C.priPale:C.w, color:uRole===r.k?C.pri:C.t2, cursor:"pointer", fontSize:12, fontWeight:600, fontFamily:"inherit" }}>{r.l}</button>)}
+                  </div>
+                </Field>
+                {touched&&<FieldError error={errs.role}/>}
+                <div><Field label="Empresa" icon={Ic.plant(C.t2,14)} value={entity} onChange={setEntity} placeholder="Nombre de tu empresa"/>{touched&&<FieldError error={errs.entity}/>}</div>
+              </>}
+              {error && <div style={{ padding:"10px 14px", background:C.errPale, borderRadius:8, fontSize:12.5, color:C.err, fontWeight:600, display:"flex", alignItems:"center", gap:6 }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.err} strokeWidth="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>{error}</div>}
+              <Btn full onClick={submit} disabled={loading}>{loading?"Cargando...":mode==="login"?"Ingresar":"Crear cuenta"}</Btn>
+            </div>
+          </div>
+          <div style={{ textAlign:"center", marginTop:16 }}>
+            <span style={{ fontSize:13, color:C.t2 }}>{mode==="login"?"¿No tenés cuenta? ":"¿Ya tenés cuenta? "}</span>
+            <button onClick={toggle} style={{ background:"none", border:"none", color:C.pri, fontWeight:700, fontSize:13, cursor:"pointer", fontFamily:"inherit" }}>{mode==="login"?"Registrate":"Iniciá sesión"}</button>
+          </div>
+          {canInstall && <button onClick={()=>window.installPWA?.()} style={{marginTop:14,width:"100%",padding:"12px",borderRadius:10,border:`1.5px solid ${C.pri}`,background:C.priPale,color:C.pri,fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>{Ic.plus(C.pri,16)} Instalar Tolvink en tu dispositivo</button>}
+          <div style={{ marginTop:14, padding:12, background:C.bgCardAlt, borderRadius:10, border:`1px solid ${C.b2}` }}>
+            <div style={{ fontSize:10, fontWeight:700, color:C.t2, marginBottom:4 }}>CUENTAS DEMO</div>
+            <div style={{ fontSize:10, color:C.t3, lineHeight:1.7, fontFamily:MONO }}>
+              carolina@planta.com · maria@planta.com{"\n"}ricardo@transp.com · miguel@transp.com{"\n"}juan@campo.com · pedro@campo.com{"\n"}<span style={{color:C.t2,fontWeight:600}}>pw: 1234</span>
+            </div>
+          </div>
         </div>
-        <div style={{ fontSize:12, color:C.t2, marginTop:10, fontWeight:500, animation:"fadeUp 0.8s ease-out" }}>Logística agrícola simplificada</div>
       </div>
-      <div style={{ background:C.w, borderRadius:16, padding:22, boxShadow:C.shMd, border:`1px solid ${C.b2}` }}>
-        <div style={{ fontSize:17, fontWeight:700, marginBottom:3, color:C.t1 }}>{mode==="login"?"Iniciar sesión":"Crear cuenta"}</div>
-        <div style={{ fontSize:12.5, color:C.t2, marginBottom:18 }}>{mode==="login"?"Ingresá con tu email y contraseña":"Completá tus datos"}</div>
-        <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
-          {mode==="signup" && <><Field label="Nombre" icon={Ic.user(C.t2,14)} value={name} onChange={setName} placeholder="Tu nombre completo"/>{touched&&<FieldError error={errs.name}/>}</>}
-          <div><Field label="Email" icon={Ic.mail(C.t2,14)} value={email} onChange={setEmail} placeholder="tu@email.com" type="email"/>{touched&&<FieldError error={errs.email}/>}</div>
-          <div><Field label="Contraseña" icon={Ic.lock(C.t2,14)} value={pw} onChange={setPw} placeholder="••••••" type="password"/>{touched&&<FieldError error={errs.pw}/>}</div>
-          {mode==="signup" && <>
-            <Field label="Tipo de usuario" icon={Ic.user(C.t2,14)}>
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:6 }}>
-                {[{k:"planta",l:"Planta"},{k:"transporter",l:"Transp."},{k:"producer",l:"Productor"}].map(t=><button key={t.k} onClick={()=>setUType(t.k)} style={{ padding:"10px 6px", borderRadius:8, border:`1.5px solid ${uType===t.k?tc[t.k]||C.pri:C.b1}`, background:uType===t.k?`${tc[t.k]||C.pri}0D`:C.w, color:uType===t.k?tc[t.k]||C.pri:C.t2, cursor:"pointer", fontSize:11.5, fontWeight:600, fontFamily:"inherit" }}>{t.l}</button>)}
-              </div>
-            </Field>
-            {touched&&<FieldError error={errs.userType}/>}
-            <Field label="Rol" icon={Ic.shield(C.t2,14)}>
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:6 }}>
-                {[{k:"admin",l:"Gerente"},{k:"operator",l:"Operario"}].map(r=><button key={r.k} onClick={()=>setURole(r.k)} style={{ padding:"10px 8px", borderRadius:8, border:`1.5px solid ${uRole===r.k?C.pri:C.b1}`, background:uRole===r.k?C.priPale:C.w, color:uRole===r.k?C.pri:C.t2, cursor:"pointer", fontSize:12, fontWeight:600, fontFamily:"inherit" }}>{r.l}</button>)}
-              </div>
-            </Field>
-            {touched&&<FieldError error={errs.role}/>}
-            <div><Field label="Empresa" icon={Ic.plant(C.t2,14)} value={entity} onChange={setEntity} placeholder="Nombre de tu empresa"/>{touched&&<FieldError error={errs.entity}/>}</div>
-          </>}
-          {error && <div style={{ padding:"10px 14px", background:C.errPale, borderRadius:8, fontSize:12.5, color:C.err, fontWeight:600, display:"flex", alignItems:"center", gap:6 }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.err} strokeWidth="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>{error}</div>}
-          <Btn full onClick={submit} disabled={loading}>{loading?"Cargando...":mode==="login"?"Ingresar":"Crear cuenta"}</Btn>
-        </div>
-      </div>
-      <div style={{ textAlign:"center", marginTop:16 }}>
-        <span style={{ fontSize:13, color:C.t2 }}>{mode==="login"?"¿No tenés cuenta? ":"¿Ya tenés cuenta? "}</span>
-        <button onClick={toggle} style={{ background:"none", border:"none", color:C.pri, fontWeight:700, fontSize:13, cursor:"pointer", fontFamily:"inherit" }}>{mode==="login"?"Registrate":"Iniciá sesión"}</button>
-      </div>
-      {canInstall && <button onClick={()=>window.installPWA?.()} style={{marginTop:14,width:"100%",padding:"12px",borderRadius:10,border:`1.5px solid ${C.pri}`,background:C.priPale,color:C.pri,fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>{Ic.plus(C.pri,16)} Instalar Tolvink en tu dispositivo</button>}
-      <div style={{ marginTop:14, padding:12, background:C.bgCardAlt, borderRadius:10, border:`1px solid ${C.b2}` }}>
-        <div style={{ fontSize:10, fontWeight:700, color:C.t2, marginBottom:4 }}>CUENTAS DEMO</div>
-        <div style={{ fontSize:10, color:C.t3, lineHeight:1.7, fontFamily:MONO }}>
-          carolina@planta.com · maria@planta.com{"\n"}ricardo@transp.com · miguel@transp.com{"\n"}juan@campo.com · pedro@campo.com{"\n"}<span style={{color:C.t2,fontWeight:600}}>pw: 1234</span>
-        </div>
-      </div>
-      </div>
-    </div>
+    </>
   );
 }
 
@@ -4409,7 +4411,7 @@ export default function Tolvink() {
   };
 
   if(auth.loading) return <div style={{minHeight:"100dvh",background:C.bg,fontFamily:"'DM Sans',system-ui,-apple-system,sans-serif",display:"flex",alignItems:"center",justifyContent:"center"}}>
-    <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,800&display=swap');@keyframes splashIn{0%{opacity:0;transform:scale(0.7)}50%{opacity:1;transform:scale(1.05)}100%{opacity:1;transform:scale(1)}}@keyframes dotPulse{0%,100%{opacity:0.3;transform:scale(0.8)}50%{opacity:1;transform:scale(1.2)}}*{margin:0;padding:0;box-sizing:border-box}body{background:${C.bg}}`}</style>
+    <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,800&display=swap');@keyframes splashIn{0%{opacity:0;transform:scale(0.7)}50%{opacity:1;transform:scale(1.05)}100%{opacity:1;transform:scale(1)}}@keyframes dotPulse{0%,100%{opacity:0.3;transform:scale(0.8)}50%{opacity:1;transform:scale(1.2)}}*{margin:0;padding:0;box-sizing:border-box}html,body,#root{background:${C.bg};margin:0;height:auto!important;overflow:visible!important}`}</style>
     <div style={{textAlign:"center",animation:"splashIn 0.8s ease-out forwards"}}>
       <span style={{fontSize:72,fontWeight:800,color:C.pri,letterSpacing:-3,display:"inline-block"}}>tolvink</span>
       <span style={{width:14,height:14,borderRadius:7,background:C.acc,display:"inline-block",marginLeft:4,marginTop:-30,verticalAlign:"top",animation:"dotPulse 1.5s ease-in-out infinite"}}></span>
