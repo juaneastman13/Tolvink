@@ -148,6 +148,10 @@ export async function apiRevokeAccess(prodId) { return api(`/plant-access/revoke
 export async function apiListAccessProducers() { return api('/plant-access/producers'); }
 export async function apiListAccessPlants() { return api('/plant-access/plants'); }
 export async function apiSearchProducer(phone) { return api(`/plant-access/search-producer?phone=${encodeURIComponent(phone)}`); }
+export async function apiGetMyFacilities() { return api('/plant-access/my-facilities'); }
+
+// Catalog - Branches
+export async function apiGetBranches() { return api('/catalog/branches'); }
 
 // Conversations
 export async function apiStartConversation(b) { return api('/conversations/start',{body:b}); }

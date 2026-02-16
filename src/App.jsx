@@ -10,7 +10,7 @@ import {
   apiGetPlants, apiGetLots, apiGetTransportCompanies, apiGetTrucks,
   apiCreateTruck, apiDeactivateTruck,
   apiGetFields, apiCreateField, apiUpdateField, apiCreateLot, apiUpdateLot, apiGetFieldLots,
-  apiGrantAccess, apiRevokeAccess, apiListAccessProducers, apiListAccessPlants, apiSearchProducer,
+  apiGrantAccess, apiRevokeAccess, apiListAccessProducers, apiListAccessPlants, apiSearchProducer, apiGetMyFacilities, apiGetBranches,
   apiStartConversation, apiListConversations, apiGetMessages, apiSendMessage,
   uploadPhoto, apiAddDocument, uploadChatFile,
   apiAdminStats, apiAdminListCompanies, apiAdminGetCompany, apiAdminCreateCompany, apiAdminUpdateCompany,
@@ -230,6 +230,7 @@ const UNITS = [{v:"toneladas",l:"Toneladas"},{v:"cantidad",l:"Cantidad"},{v:"met
 // ======================== CATALOG HOOK (Real API) ====================
 function useCatalog(user) {
   const [plants, setPlants] = useState([]);
+  const [branches, setBranches] = useState([]);
   const [lots, setLots] = useState([]);
   const [fields, setFields] = useState([]);
   const [transporters, setTransporters] = useState([]);
@@ -245,12 +246,14 @@ function useCatalog(user) {
       apiGetTransportCompanies().catch(()=>[]),
       (user.userType==="transporter"||user.userType==="producer"||(user.userTypes||[]).includes("transporter")||(user.userTypes||[]).includes("producer")) ? apiGetTrucks().catch(()=>[]) : Promise.resolve([]),
       (user.userType==="producer"||(user.userTypes||[]).includes("producer")) ? apiGetFields().catch(()=>[]) : Promise.resolve([]),
-    ]).then(([p,l,t,tr,f])=>{
+      apiGetBranches().catch(()=>[]),
+    ]).then(([p,l,t,tr,f,b])=>{
       setPlants(p||[]);
       setLots(l||[]);
       setTransporters(t||[]);
       setTrucks(tr||[]);
       setFields(f||[]);
+      setBranches(b||[]);
     }).finally(()=>setLoading(false));
   },[user]);
 
@@ -258,7 +261,7 @@ function useCatalog(user) {
 
   const refresh = useCallback(()=>{ load(); },[load]);
 
-  return { plants, lots, fields, transporters, trucks, loading, refresh };
+  return { plants, branches, lots, fields, transporters, trucks, loading, refresh };
 }
 
 
@@ -2581,7 +2584,7 @@ function DetailScreen({ user, freight, perms, onBack, onAction, actionLoading, o
 
 // ======================== NEW FREIGHT ================================
 
-function NewScreen({ user, lots, plants, fields, trucks, onBack, onCreate, duplicateFrom }) {
+function NewScreen({ user, lots, plants, branches, fields, trucks, onBack, onCreate, duplicateFrom }) {
   const dup = duplicateFrom;
   const [destMode, setDestMode] = useState(dup?.destPlantId ? "plant" : "plant");
   const [customDest, setCustomDest] = useState({ name:"", lat:null, lng:null });
@@ -2590,6 +2593,7 @@ function NewScreen({ user, lots, plants, fields, trucks, onBack, onCreate, dupli
     tons: dup?.tons?.toString() || "",
     lotId: dup?.originLotId || "",
     plantId: dup?.destPlantId || "",
+    branchId: "",
     fieldId: dup?.fieldId || "",
     loadDate: dup?.loadDate?.split("T")[0] || dup?.preDate || "", loadTime: dup?.loadTime || "",
     notes: dup?.notes || "",
@@ -2610,6 +2614,63 @@ function NewScreen({ user, lots, plants, fields, trucks, onBack, onCreate, dupli
   const nfDocRef = useRef(null);
   const u = f => setForm(p=>({...p,...f}));
 
+  // Section refs for smart scroll
+  const secRefs = { product:useRef(null), quantity:useRef(null), origin:useRef(null), destination:useRef(null), schedule:useRef(null), extras:useRef(null), submit:useRef(null) };
+  const [expandedSecs, setExpandedSecs] = useState({});
+
+  // Section completeness
+  const secComplete = useMemo(()=>({
+    product: !!form.grain && (form.grain!=="Otros" || !!form.productTypeOther.trim()),
+    quantity: !!form.tons && parseFloat(form.tons) > 0,
+    origin: !!form.fieldId && !!form.lotId,
+    destination: destMode==="plant" ? !!form.plantId : destMode==="branch" ? !!form.branchId : !!customDest.name?.trim(),
+    schedule: !!form.loadDate && /^\d{2}:\d{2}$/.test(form.loadTime),
+  }),[form, destMode, customDest]);
+
+  // Auto-scroll to next section on completion
+  const prevComp = useRef({});
+  useEffect(()=>{
+    const order = ['product','quantity','origin','destination','schedule','extras','submit'];
+    for (const sec of order) {
+      if (secComplete[sec] && !prevComp.current[sec]) {
+        const idx = order.indexOf(sec);
+        for (let i=idx+1; i<order.length; i++) {
+          if (!secComplete[order[i]] || order[i]==='submit') {
+            setTimeout(()=>{ secRefs[order[i]]?.current?.scrollIntoView({ behavior:'smooth', block:'center' }); },200);
+            break;
+          }
+        }
+        break;
+      }
+    }
+    prevComp.current = {...secComplete};
+  },[secComplete]);
+
+  // Collapsible section wrapper
+  const Sec = ({ id, label, complete, summary, children }) => {
+    const isExp = expandedSecs[id] !== undefined ? expandedSecs[id] : !complete;
+    const toggle = () => setExpandedSecs(p=>({...p,[id]:!isExp}));
+    return (
+      <div ref={secRefs[id]} style={{ transition:"all 0.2s ease" }}>
+        {complete && !isExp ? (
+          <button onClick={toggle} style={{ width:"100%", display:"flex", alignItems:"center", gap:8, padding:"10px 14px", borderRadius:10, border:`1px solid ${C.ok}30`, background:`${C.ok}08`, cursor:"pointer", fontFamily:"inherit", textAlign:"left" }}>
+            {Ic.chk(C.ok,16)}
+            <div style={{ flex:1 }}>
+              <div style={{ fontSize:10, fontWeight:700, color:C.t2, textTransform:"uppercase", letterSpacing:0.5 }}>{label}</div>
+              <div style={{ fontSize:12, fontWeight:600, color:C.t1, marginTop:1 }}>{summary}</div>
+            </div>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.t3} strokeWidth="2"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+        ) : (
+          <div>
+            {complete && <button onClick={toggle} style={{ background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", fontSize:10, fontWeight:600, color:C.ok, padding:0, marginBottom:4, display:"flex", alignItems:"center", gap:4 }}>{Ic.chk(C.ok,12)} Completado — tocar para minimizar</button>}
+            {children}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   // Load lots when field changes
   useEffect(()=>{
     if(!form.fieldId){ setFieldLots([]); return; }
@@ -2620,15 +2681,20 @@ function NewScreen({ user, lots, plants, fields, trucks, onBack, onCreate, dupli
   const fieldOpts = (fields||[]).map(f=>({ value:f.id, label:f.name, sub:f.address||"" }));
   const lotOpts = fieldLots.map(l=>({ value:l.id, label:l.name, sub:l.hectares?`${l.hectares} ha`:'' }));
   const plantOpts = (plants||[]).map(p=>({ value:p.id, label:p.name }));
+  const branchOpts = (branches||[]).map(b=>({ value:b.id, label:b.name }));
   const selectedLot = fieldLots.find(l=>l.id===form.lotId);
   const selectedPlant = (plants||[]).find(p=>p.id===form.plantId);
+  const selectedBranch = (branches||[]).find(b=>b.id===form.branchId);
   const truckOpts = (trucks||[]).map(t=>({ value:t.id, label:`${t.plate}${t.model?` · ${t.model}`:""}` }));
   const showTruckSelect = (user.userType==="producer"||(user.userTypes||[]).includes("producer")) && truckOpts.length > 0;
+  const hasBranches = branchOpts.length > 0;
 
   // Coords for map preview
   const originCoords = selectedLot?.lat ? { lat: parseFloat(selectedLot.lat), lng: parseFloat(selectedLot.lng) } : null;
   const destCoords = destMode==="plant"
     ? (selectedPlant?.lat ? { lat: parseFloat(selectedPlant.lat), lng: parseFloat(selectedPlant.lng) } : null)
+    : destMode==="branch"
+    ? (selectedBranch?.lat ? { lat: parseFloat(selectedBranch.lat), lng: parseFloat(selectedBranch.lng) } : null)
     : (customDest.lat ? { lat: customDest.lat, lng: customDest.lng } : null);
   const [editingOrigin, setEditingOrigin] = useState(false);
   const [editingDest, setEditingDest] = useState(false);
@@ -2637,6 +2703,8 @@ function NewScreen({ user, lots, plants, fields, trucks, onBack, onCreate, dupli
   const finalOrigin = overrideOrigin || originCoords;
   const finalDest = overrideDest || destCoords;
 
+  const destDisplayName = destMode==="plant" ? (selectedPlant?.name||"") : destMode==="branch" ? (selectedBranch?.name||"") : (customDest.name||"");
+
   const submit = () => {
     setTouched(true);
     const {ok,errs:e} = validate(form, SCHEMAS.freight);
@@ -2644,6 +2712,7 @@ function NewScreen({ user, lots, plants, fields, trucks, onBack, onCreate, dupli
     if(form.fieldId && !form.lotId) { e.lotId="Seleccioná un lote del campo"; }
     // Destination validation
     if(destMode==="plant" && !form.plantId) { e.plantId="Seleccioná una planta"; }
+    if(destMode==="branch" && !form.branchId) { e.branchId="Seleccioná una sucursal"; }
     if(destMode==="custom" && !customDest.name?.trim()) { e.customDestName="Nombre de destino obligatorio"; }
     setErrs(e);
     if(!ok || Object.keys(e).filter(k=>e[k]).length>0) return;
@@ -2653,6 +2722,12 @@ function NewScreen({ user, lots, plants, fields, trucks, onBack, onCreate, dupli
       overrideDestLat: overrideDest?.lat || undefined,
       overrideDestLng: overrideDest?.lng || undefined,
     };
+    if(destMode==="branch") {
+      payload.plantId = undefined;
+      payload.customDestName = selectedBranch?.name;
+      payload.customDestLat = selectedBranch?.lat ? parseFloat(selectedBranch.lat) : undefined;
+      payload.customDestLng = selectedBranch?.lng ? parseFloat(selectedBranch.lng) : undefined;
+    }
     if(destMode==="custom") {
       payload.plantId = undefined;
       payload.customDestName = customDest.name;
@@ -2675,6 +2750,14 @@ function NewScreen({ user, lots, plants, fields, trucks, onBack, onCreate, dupli
     setPhotos(prev=>prev.filter((_,i)=>i!==idx));
   };
 
+  const secSummary = {
+    product: form.grain ? (form.grain==="Otros" ? `Otros: ${form.productTypeOther}` : form.grain) : "",
+    quantity: form.tons ? `${form.tons} ${form.unit}${form.amount?` · $${form.amount}`:""}` : "",
+    origin: (fieldOpts.find(f=>f.value===form.fieldId)?.label||"")+(selectedLot?` → ${selectedLot.name}`:""),
+    destination: destDisplayName,
+    schedule: form.loadDate&&form.loadTime ? `${form.loadDate} a las ${form.loadTime}` : "",
+  };
+
   return (
     <div style={{ flex:1, overflow:"auto", padding:18, animation:"slideUp 0.25s ease" }}>
       <button onClick={onBack} style={{ background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", fontSize:13, fontWeight:600, color:C.pri, marginBottom:14, padding:0, display:"flex", alignItems:"center", gap:4 }}>{Ic.chev(C.pri,18)} Volver</button>
@@ -2682,61 +2765,76 @@ function NewScreen({ user, lots, plants, fields, trucks, onBack, onCreate, dupli
       <div style={{ fontSize:12, color:C.t2, marginBottom:22 }}>Solicitando como: <span style={{fontWeight:600,color:C.t1}}>{user.name}</span></div>
 
       <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
-        <div>
-          <Field label="Tipo de producto" icon={Ic.grain(C.pri,14)}>
-            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:6 }}>
-              {GRANOS.map(g=><button key={g} onClick={()=>{u({grain:g}); if(g!=="Otros")u({productTypeOther:""});}} style={{ padding:"10px 8px", borderRadius:8, border:`1.5px solid ${form.grain===g?C.pri:C.b1}`, background:form.grain===g?C.priPale:C.w, color:form.grain===g?C.pri:C.t2, cursor:"pointer", fontSize:12, fontWeight:600, fontFamily:"inherit" }}>{g}</button>)}
+        {/* PRODUCT SECTION */}
+        <Sec id="product" label="Producto" complete={secComplete.product} summary={secSummary.product}>
+          <div>
+            <Field label="Tipo de producto" icon={Ic.grain(C.pri,14)}>
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:6 }}>
+                {GRANOS.map(g=><button key={g} onClick={()=>{u({grain:g}); if(g!=="Otros")u({productTypeOther:""});}} style={{ padding:"10px 8px", borderRadius:8, border:`1.5px solid ${form.grain===g?C.pri:C.b1}`, background:form.grain===g?C.priPale:C.w, color:form.grain===g?C.pri:C.t2, cursor:"pointer", fontSize:12, fontWeight:600, fontFamily:"inherit" }}>{g}</button>)}
+              </div>
+            </Field>
+            {touched&&<FieldError error={errs.grain}/>}
+          </div>
+          {form.grain==="Otros" && (
+            <div style={{ marginTop:10 }}>
+              <Field label="Descripción de producto" value={form.productTypeOther} onChange={v=>u({productTypeOther:v})} placeholder="Ej: Arena, Cemento, etc."/>
+              {touched&&<FieldError error={errs.productTypeOther}/>}
             </div>
-          </Field>
-          {touched&&<FieldError error={errs.grain}/>}
-        </div>
+          )}
+        </Sec>
 
-        {form.grain==="Otros" && (
-          <div>
-            <Field label="Descripción de producto" value={form.productTypeOther} onChange={v=>u({productTypeOther:v})} placeholder="Ej: Arena, Cemento, etc."/>
-            {touched&&<FieldError error={errs.productTypeOther}/>}
-          </div>
-        )}
-
-        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
-          <div>
-            <Field label="Cantidad" icon={Ic.grain(C.t2,14)} value={form.tons} onChange={v=>u({tons:v})} placeholder="Ej: 30"/>
-            {touched&&<FieldError error={errs.tons}/>}
-          </div>
-          <div>
-            <label style={{ fontSize:10.5, fontWeight:600, color:C.t2, marginBottom:6, display:"flex", alignItems:"center", gap:4, textTransform:"uppercase", letterSpacing:0.6 }}>Unidad</label>
-            <div style={{ display:"flex", gap:4 }}>
-              {UNITS.map(uu=><button key={uu.v} onClick={()=>u({unit:uu.v})} style={{ flex:1, padding:"10px 4px", borderRadius:8, border:`1.5px solid ${form.unit===uu.v?C.pri:C.b1}`, background:form.unit===uu.v?C.priPale:C.w, color:form.unit===uu.v?C.pri:C.t2, cursor:"pointer", fontSize:10, fontWeight:600, fontFamily:"inherit" }}>{uu.l}</button>)}
+        {/* QUANTITY SECTION */}
+        <Sec id="quantity" label="Cantidad" complete={secComplete.quantity} summary={secSummary.quantity}>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
+            <div>
+              <Field label="Cantidad" icon={Ic.grain(C.t2,14)} value={form.tons} onChange={v=>u({tons:v})} placeholder="Ej: 30"/>
+              {touched&&<FieldError error={errs.tons}/>}
+            </div>
+            <div>
+              <label style={{ fontSize:10.5, fontWeight:600, color:C.t2, marginBottom:6, display:"flex", alignItems:"center", gap:4, textTransform:"uppercase", letterSpacing:0.6 }}>Unidad</label>
+              <div style={{ display:"flex", gap:4 }}>
+                {UNITS.map(uu=><button key={uu.v} onClick={()=>u({unit:uu.v})} style={{ flex:1, padding:"10px 4px", borderRadius:8, border:`1.5px solid ${form.unit===uu.v?C.pri:C.b1}`, background:form.unit===uu.v?C.priPale:C.w, color:form.unit===uu.v?C.pri:C.t2, cursor:"pointer", fontSize:10, fontWeight:600, fontFamily:"inherit" }}>{uu.l}</button>)}
+              </div>
             </div>
           </div>
-        </div>
+          <div style={{ marginTop:10 }}>
+            <Field label="Importe (opcional)" value={form.amount} onChange={v=>u({amount:v})} placeholder="Ej: 150000"/>
+          </div>
+        </Sec>
 
-        <div>
-          <Field label="Importe (opcional)" value={form.amount} onChange={v=>u({amount:v})} placeholder="Ej: 150000"/>
-        </div>
+        {/* ORIGIN SECTION */}
+        <Sec id="origin" label="Origen" complete={secComplete.origin} summary={secSummary.origin}>
+          <div>
+            <Select label="Campo" icon={Ic.pin(C.ok,14)} value={form.fieldId} onChange={v=>{u({fieldId:v,lotId:""});}} options={fieldOpts} placeholder="Seleccionar campo..."/>
+          </div>
+          <div style={{ marginTop:10 }}>
+            <Select label="Origen (lote)" icon={Ic.pin(C.pri,14)} value={form.lotId} onChange={v=>u({lotId:v})} options={lotOpts} placeholder={loadingLots?"Cargando lotes...":form.fieldId?"Seleccionar lote...":"Primero seleccioná un campo"}/>
+            {touched&&<FieldError error={errs.lotId}/>}
+            {selectedLot && selectedLot.lat && <div style={{ display:"flex", alignItems:"center", gap:6, padding:"6px 10px", background:C.priPale, borderRadius:8, marginTop:6 }}>{Ic.chk(C.pri,14)}<span style={{fontSize:10.5,color:C.pri,fontWeight:500}}>{selectedLot.lat}, {selectedLot.lng}</span></div>}
+          </div>
+        </Sec>
 
-        <div>
-          <Select label="Campo" icon={Ic.pin(C.ok,14)} value={form.fieldId} onChange={v=>{u({fieldId:v,lotId:""});}} options={fieldOpts} placeholder="Seleccionar campo..."/>
-        </div>
-
-        <div>
-          <Select label="Origen (lote)" icon={Ic.pin(C.pri,14)} value={form.lotId} onChange={v=>u({lotId:v})} options={lotOpts} placeholder={loadingLots?"Cargando lotes...":form.fieldId?"Seleccionar lote...":"Primero seleccioná un campo"}/>
-          {touched&&<FieldError error={errs.lotId}/>}
-          {selectedLot && selectedLot.lat && <div style={{ display:"flex", alignItems:"center", gap:6, padding:"6px 10px", background:C.priPale, borderRadius:8, marginTop:6 }}>{Ic.chk(C.pri,14)}<span style={{fontSize:10.5,color:C.pri,fontWeight:500}}>{selectedLot.lat}, {selectedLot.lng}</span></div>}
-        </div>
-
-        <div>
+        {/* DESTINATION SECTION */}
+        <Sec id="destination" label="Destino" complete={secComplete.destination} summary={secSummary.destination}>
           <label style={{ fontSize:10.5, fontWeight:600, color:C.t2, marginBottom:6, display:"flex", alignItems:"center", gap:4, textTransform:"uppercase", letterSpacing:0.6 }}>{Ic.plant(C.t2,14)} Destino</label>
           <div style={{ display:"flex", gap:6, marginBottom:10 }}>
-            <button onClick={()=>{setDestMode("plant"); setCustomDest({name:"",lat:null,lng:null});}} style={{ flex:1, padding:"10px 8px", borderRadius:8, border:`1.5px solid ${destMode==="plant"?C.pri:C.b1}`, background:destMode==="plant"?C.priPale:C.w, color:destMode==="plant"?C.pri:C.t2, cursor:"pointer", fontSize:12, fontWeight:600, fontFamily:"inherit" }}>Seleccionar Planta</button>
-            <button onClick={()=>{setDestMode("custom"); u({plantId:""});}} style={{ flex:1, padding:"10px 8px", borderRadius:8, border:`1.5px solid ${destMode==="custom"?C.acc:C.b1}`, background:destMode==="custom"?C.accPale:C.w, color:destMode==="custom"?C.acc:C.t2, cursor:"pointer", fontSize:12, fontWeight:600, fontFamily:"inherit" }}>Destino Personalizado</button>
+            <button onClick={()=>{setDestMode("plant"); u({branchId:""}); setCustomDest({name:"",lat:null,lng:null});}} style={{ flex:1, padding:"10px 8px", borderRadius:8, border:`1.5px solid ${destMode==="plant"?C.pri:C.b1}`, background:destMode==="plant"?C.priPale:C.w, color:destMode==="plant"?C.pri:C.t2, cursor:"pointer", fontSize:12, fontWeight:600, fontFamily:"inherit" }}>Planta</button>
+            {hasBranches && <button onClick={()=>{setDestMode("branch"); u({plantId:""}); setCustomDest({name:"",lat:null,lng:null});}} style={{ flex:1, padding:"10px 8px", borderRadius:8, border:`1.5px solid ${destMode==="branch"?C.sec:C.b1}`, background:destMode==="branch"?`${C.sec}10`:C.w, color:destMode==="branch"?C.sec:C.t2, cursor:"pointer", fontSize:12, fontWeight:600, fontFamily:"inherit" }}>Sucursal</button>}
+            <button onClick={()=>{setDestMode("custom"); u({plantId:"",branchId:""});}} style={{ flex:1, padding:"10px 8px", borderRadius:8, border:`1.5px solid ${destMode==="custom"?C.acc:C.b1}`, background:destMode==="custom"?C.accPale:C.w, color:destMode==="custom"?C.acc:C.t2, cursor:"pointer", fontSize:12, fontWeight:600, fontFamily:"inherit" }}>Personalizado</button>
           </div>
-          {destMode==="plant" ? (
+          {destMode==="plant" && (
             <>
               <Select value={form.plantId} onChange={v=>u({plantId:v})} options={plantOpts} placeholder="Seleccionar planta..."/>
               {touched&&<FieldError error={errs.plantId}/>}
             </>
-          ) : (
+          )}
+          {destMode==="branch" && (
+            <>
+              <Select value={form.branchId} onChange={v=>u({branchId:v})} options={branchOpts} placeholder="Seleccionar sucursal..."/>
+              {touched&&<FieldError error={errs.branchId}/>}
+            </>
+          )}
+          {destMode==="custom" && (
             <>
               <Field label="Nombre del destino" value={customDest.name} onChange={v=>setCustomDest(p=>({...p,name:v}))} placeholder="Ej: Acopio Central, Puerto Rosario..."/>
               {touched&&<FieldError error={errs.customDestName}/>}
@@ -2745,7 +2843,7 @@ function NewScreen({ user, lots, plants, fields, trucks, onBack, onCreate, dupli
               </div>
             </>
           )}
-        </div>
+        </Sec>
 
         {/* Route preview map */}
         {(finalOrigin || finalDest) && (
@@ -2756,7 +2854,7 @@ function NewScreen({ user, lots, plants, fields, trucks, onBack, onCreate, dupli
             </div>
 
             {finalOrigin && finalDest ? (
-              <FreightMap freightId={null} originLat={finalOrigin.lat} originLng={finalOrigin.lng} destLat={finalDest.lat} destLng={finalDest.lng} originName={fieldLots.find(l=>l.id===form.lotId)?.name||"Origen"} destName={destMode==="plant"?((plants||[]).find(p=>p.id===form.plantId)?.name||"Destino"):(customDest.name||"Destino")} status="preview" isDriver={false}/>
+              <FreightMap freightId={null} originLat={finalOrigin.lat} originLng={finalOrigin.lng} destLat={finalDest.lat} destLng={finalDest.lng} originName={fieldLots.find(l=>l.id===form.lotId)?.name||"Origen"} destName={destDisplayName||"Destino"} status="preview" isDriver={false}/>
             ) : (
               <div style={{ padding:"20px 14px", textAlign:"center", fontSize:12, color:C.t3 }}>
                 Seleccioná {!finalOrigin?"origen (lote)":""}{!finalOrigin&&!finalDest?" y ":""}{!finalDest?"destino":""} para ver la ruta
@@ -2790,56 +2888,64 @@ function NewScreen({ user, lots, plants, fields, trucks, onBack, onCreate, dupli
           </div>
         )}
 
-        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
-          <div>
-            <label style={{ fontSize:10.5, fontWeight:600, color:C.t2, marginBottom:6, display:"flex", alignItems:"center", gap:4, textTransform:"uppercase", letterSpacing:0.6 }}>{Ic.cal(C.pri,14)} Fecha carga</label>
-            <input type="date" value={form.loadDate} onChange={e=>u({loadDate:e.target.value})} onClick={e=>e.target.showPicker?.()} style={{ width:"100%", padding:"12px 14px", borderRadius:10, border:`1.5px solid ${touched&&errs.loadDate?C.err:C.b1}`, background:C.w, color:C.t1, fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box", cursor:"pointer" }}/>
-            {touched&&<FieldError error={errs.loadDate}/>}
+        {/* SCHEDULE SECTION */}
+        <Sec id="schedule" label="Fecha y hora" complete={secComplete.schedule} summary={secSummary.schedule}>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
+            <div>
+              <label style={{ fontSize:10.5, fontWeight:600, color:C.t2, marginBottom:6, display:"flex", alignItems:"center", gap:4, textTransform:"uppercase", letterSpacing:0.6 }}>{Ic.cal(C.pri,14)} Fecha carga</label>
+              <input type="date" value={form.loadDate} onChange={e=>u({loadDate:e.target.value})} onClick={e=>e.target.showPicker?.()} style={{ width:"100%", padding:"12px 14px", borderRadius:10, border:`1.5px solid ${touched&&errs.loadDate?C.err:C.b1}`, background:C.w, color:C.t1, fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box", cursor:"pointer" }}/>
+              {touched&&<FieldError error={errs.loadDate}/>}
+            </div>
+            <div>
+              <label style={{ fontSize:10.5, fontWeight:600, color:C.t2, marginBottom:6, display:"flex", alignItems:"center", gap:4, textTransform:"uppercase", letterSpacing:0.6 }}>{Ic.clk(C.pri,14)} Hora carga</label>
+              <input type="time" value={form.loadTime} onChange={e=>u({loadTime:e.target.value})} onClick={e=>e.target.showPicker?.()} style={{ width:"100%", padding:"12px 14px", borderRadius:10, border:`1.5px solid ${touched&&errs.loadTime?C.err:C.b1}`, background:C.w, color:C.t1, fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box", cursor:"pointer" }}/>
+              {touched&&<FieldError error={errs.loadTime}/>}
+            </div>
           </div>
-          <div>
-            <label style={{ fontSize:10.5, fontWeight:600, color:C.t2, marginBottom:6, display:"flex", alignItems:"center", gap:4, textTransform:"uppercase", letterSpacing:0.6 }}>{Ic.clk(C.pri,14)} Hora carga</label>
-            <input type="time" value={form.loadTime} onChange={e=>u({loadTime:e.target.value})} onClick={e=>e.target.showPicker?.()} style={{ width:"100%", padding:"12px 14px", borderRadius:10, border:`1.5px solid ${touched&&errs.loadTime?C.err:C.b1}`, background:C.w, color:C.t1, fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box", cursor:"pointer" }}/>
-            {touched&&<FieldError error={errs.loadTime}/>}
-          </div>
-        </div>
+        </Sec>
 
-        {showTruckSelect && (
-          <div style={{ background:C.accPale, border:`1.5px solid ${C.acc}30`, borderRadius:12, padding:14 }}>
-            <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:10 }}>{Ic.truck(C.acc,16)}<span style={{ fontSize:10.5, fontWeight:700, color:C.acc, textTransform:"uppercase", letterSpacing:0.5 }}>Flota propia (opcional)</span></div>
-            <Select value={form.truckId} onChange={v=>u({truckId:v})} options={truckOpts} placeholder="Sin camión propio — la planta asigna"/>
-            {form.truckId && <button onClick={()=>u({truckId:""})} style={{ marginTop:6, background:"none", border:"none", cursor:"pointer", fontSize:11, color:C.err, fontWeight:600, fontFamily:"inherit" }}>Quitar camión propio</button>}
-          </div>
-        )}
-
-        <div>
-          <label style={{ fontSize:10.5, fontWeight:600, color:C.t2, marginBottom:6, display:"block", textTransform:"uppercase", letterSpacing:0.6 }}>Notas</label>
-          <textarea value={form.notes} onChange={e=>u({notes:e.target.value})} placeholder="Indicaciones, horarios especiales..." rows={3} style={{ width:"100%", padding:"12px 14px", borderRadius:10, border:`1.5px solid ${C.b1}`, background:C.w, color:C.t1, fontSize:13, fontFamily:"inherit", outline:"none", resize:"none", boxSizing:"border-box" }}/>
-        </div>
-
-        {/* Photo/file attachments */}
-        <div>
-          <label style={{ fontSize:10.5, fontWeight:600, color:C.t2, marginBottom:8, display:"flex", alignItems:"center", gap:4, textTransform:"uppercase", letterSpacing:0.6 }}>{Ic.clip(C.acc,14)} Adjuntar archivos (opcional)</label>
-          {photos.length > 0 && (
-            <div style={{ display:"flex", gap:8, flexWrap:"wrap", marginBottom:8 }}>
-              {photos.map((p,i)=>(
-                <div key={i} style={{ position:"relative", width:72, height:72, borderRadius:10, overflow:"hidden", border:`1px solid ${C.b1}` }}>
-                  {p.preview ? <img src={p.preview} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }}/> : <div style={{ width:"100%", height:"100%", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", background:C.bg, padding:4 }}>{Ic.doc(C.pri,18)}<span style={{fontSize:7,color:C.t3,textAlign:"center",marginTop:2,wordBreak:"break-all"}}>{(p.name||"").slice(-12)}</span></div>}
-                  <button onClick={()=>removePhoto(i)} style={{ position:"absolute", top:2, right:2, width:20, height:20, borderRadius:10, background:C.err, border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>{Ic.cross(C.w,12)}</button>
-                </div>
-              ))}
+        {/* EXTRAS SECTION */}
+        <div ref={secRefs.extras}>
+          {showTruckSelect && (
+            <div style={{ background:C.accPale, border:`1.5px solid ${C.acc}30`, borderRadius:12, padding:14, marginBottom:12 }}>
+              <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:10 }}>{Ic.truck(C.acc,16)}<span style={{ fontSize:10.5, fontWeight:700, color:C.acc, textTransform:"uppercase", letterSpacing:0.5 }}>Flota propia (opcional)</span></div>
+              <Select value={form.truckId} onChange={v=>u({truckId:v})} options={truckOpts} placeholder="Sin camión propio — la planta asigna"/>
+              {form.truckId && <button onClick={()=>u({truckId:""})} style={{ marginTop:6, background:"none", border:"none", cursor:"pointer", fontSize:11, color:C.err, fontWeight:600, fontFamily:"inherit" }}>Quitar camión propio</button>}
             </div>
           )}
-          {/* Hidden inputs */}
-          <input ref={nfCamRef} type="file" accept="image/*" capture="environment" onChange={addPhoto} style={{ display:"none" }}/>
-          <input ref={nfGalRef} type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={e=>{Array.from(e.target.files||[]).forEach(f=>{if(f.type.startsWith('image/')&&f.size<=10*1024*1024)setPhotos(prev=>[...prev,{file:f,preview:URL.createObjectURL(f)}])});e.target.value="";}} style={{ display:"none" }}/>
-          <input ref={nfDocRef} type="file" accept="image/*,.pdf,.doc,.docx" multiple onChange={e=>{Array.from(e.target.files||[]).forEach(f=>{if(f.size<=10*1024*1024)setPhotos(prev=>[...prev,{file:f,preview:f.type.startsWith('image/')?URL.createObjectURL(f):null,name:f.name}])});e.target.value="";}} style={{ display:"none" }}/>
-          <button onClick={()=>setShowAttach(true)} style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"10px 16px", borderRadius:10, border:`1.5px dashed ${C.b1}`, background:C.bg, cursor:"pointer", fontFamily:"inherit", fontSize:12, fontWeight:600, color:C.t2 }}>
-            {Ic.clip(C.t2,16)} Adjuntar archivo
-          </button>
-          <AttachMenu open={showAttach} onClose={()=>setShowAttach(false)} onCamera={()=>nfCamRef.current?.click()} onGallery={()=>nfGalRef.current?.click()} onFiles={()=>nfDocRef.current?.click()} />
+
+          <div>
+            <label style={{ fontSize:10.5, fontWeight:600, color:C.t2, marginBottom:6, display:"block", textTransform:"uppercase", letterSpacing:0.6 }}>Notas</label>
+            <textarea value={form.notes} onChange={e=>u({notes:e.target.value})} placeholder="Indicaciones, horarios especiales..." rows={3} style={{ width:"100%", padding:"12px 14px", borderRadius:10, border:`1.5px solid ${C.b1}`, background:C.w, color:C.t1, fontSize:13, fontFamily:"inherit", outline:"none", resize:"none", boxSizing:"border-box" }}/>
+          </div>
+
+          {/* Photo/file attachments */}
+          <div style={{ marginTop:12 }}>
+            <label style={{ fontSize:10.5, fontWeight:600, color:C.t2, marginBottom:8, display:"flex", alignItems:"center", gap:4, textTransform:"uppercase", letterSpacing:0.6 }}>{Ic.clip(C.acc,14)} Adjuntar archivos (opcional)</label>
+            {photos.length > 0 && (
+              <div style={{ display:"flex", gap:8, flexWrap:"wrap", marginBottom:8 }}>
+                {photos.map((p,i)=>(
+                  <div key={i} style={{ position:"relative", width:72, height:72, borderRadius:10, overflow:"hidden", border:`1px solid ${C.b1}` }}>
+                    {p.preview ? <img src={p.preview} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }}/> : <div style={{ width:"100%", height:"100%", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", background:C.bg, padding:4 }}>{Ic.doc(C.pri,18)}<span style={{fontSize:7,color:C.t3,textAlign:"center",marginTop:2,wordBreak:"break-all"}}>{(p.name||"").slice(-12)}</span></div>}
+                    <button onClick={()=>removePhoto(i)} style={{ position:"absolute", top:2, right:2, width:20, height:20, borderRadius:10, background:C.err, border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>{Ic.cross(C.w,12)}</button>
+                  </div>
+                ))}
+              </div>
+            )}
+            {/* Hidden inputs */}
+            <input ref={nfCamRef} type="file" accept="image/*" capture="environment" onChange={addPhoto} style={{ display:"none" }}/>
+            <input ref={nfGalRef} type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={e=>{Array.from(e.target.files||[]).forEach(f=>{if(f.type.startsWith('image/')&&f.size<=10*1024*1024)setPhotos(prev=>[...prev,{file:f,preview:URL.createObjectURL(f)}])});e.target.value="";}} style={{ display:"none" }}/>
+            <input ref={nfDocRef} type="file" accept="image/*,.pdf,.doc,.docx" multiple onChange={e=>{Array.from(e.target.files||[]).forEach(f=>{if(f.size<=10*1024*1024)setPhotos(prev=>[...prev,{file:f,preview:f.type.startsWith('image/')?URL.createObjectURL(f):null,name:f.name}])});e.target.value="";}} style={{ display:"none" }}/>
+            <button onClick={()=>setShowAttach(true)} style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"10px 16px", borderRadius:10, border:`1.5px dashed ${C.b1}`, background:C.bg, cursor:"pointer", fontFamily:"inherit", fontSize:12, fontWeight:600, color:C.t2 }}>
+              {Ic.clip(C.t2,16)} Adjuntar archivo
+            </button>
+            <AttachMenu open={showAttach} onClose={()=>setShowAttach(false)} onCamera={()=>nfCamRef.current?.click()} onGallery={()=>nfGalRef.current?.click()} onFiles={()=>nfDocRef.current?.click()} />
+          </div>
         </div>
 
-        <Btn full icon={Ic.chk(C.w,16)} disabled={submitting} onClick={submit}>{submitting?"Enviando...":"Solicitar Flete"}</Btn>
+        <div ref={secRefs.submit}>
+          <Btn full icon={Ic.chk(C.w,16)} disabled={submitting} onClick={submit}>{submitting?"Enviando...":"Solicitar Flete"}</Btn>
+        </div>
       </div>
     </div>
   );
@@ -3202,6 +3308,9 @@ function AccessScreen({ onBack }) {
   const [searchResult, setSearchResult] = useState(null);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState(null);
+  const [facilities, setFacilities] = useState(null);
+  const [selectedPlantIds, setSelectedPlantIds] = useState([]);
+  const [selectedBranchIds, setSelectedBranchIds] = useState([]);
 
   const load = useCallback(async () => {
     try {
@@ -3210,6 +3319,13 @@ function AccessScreen({ onBack }) {
     } catch {} finally { setLoading(false); }
   }, []);
   useEffect(() => { load(); }, [load]);
+
+  // Load facilities when grant panel opens
+  useEffect(() => {
+    if (showGrant && !facilities) {
+      apiGetMyFacilities().then(f => setFacilities(f)).catch(() => setFacilities({ plants: [], branches: [] }));
+    }
+  }, [showGrant, facilities]);
 
   const handleSearch = async () => {
     const clean = phone.replace(/[\s\-()]/g,'');
@@ -3222,15 +3338,20 @@ function AccessScreen({ onBack }) {
     } catch (e) { setMsg({ t: e.message, k: "err" }); } finally { setSearching(false); }
   };
 
+  const togglePlant = (id) => setSelectedPlantIds(prev => prev.includes(id) ? prev.filter(x=>x!==id) : [...prev, id]);
+  const toggleBranch = (id) => setSelectedBranchIds(prev => prev.includes(id) ? prev.filter(x=>x!==id) : [...prev, id]);
+
   const handleGrant = async () => {
     if (!searchResult?.producerCompanyId) return;
-    // Check for duplicate
-    const existing = producers.find(p => p.producerCompanyId === searchResult.producerCompanyId && p.active);
-    if (existing) { setMsg({ t: "Este productor ya está habilitado", k: "err" }); return; }
+    if (selectedPlantIds.length === 0 && selectedBranchIds.length === 0) {
+      setMsg({ t: "Seleccioná al menos una planta o sucursal", k: "err" }); return;
+    }
     setSaving(true);
     try {
-      await apiGrantAccess({ producerCompanyId: searchResult.producerCompanyId });
-      setPhone(""); setSearchResult(null); setShowGrant(false); setMsg({ t: "Productor habilitado", k: "ok" }); load();
+      await apiGrantAccess({ producerCompanyId: searchResult.producerCompanyId, allowedPlantIds: selectedPlantIds, allowedBranchIds: selectedBranchIds });
+      setPhone(""); setSearchResult(null); setShowGrant(false);
+      setSelectedPlantIds([]); setSelectedBranchIds([]);
+      setMsg({ t: "Productor habilitado", k: "ok" }); load();
     } catch (e) { setMsg({ t: e.message, k: "err" }); } finally { setSaving(false); }
   };
 
@@ -3239,12 +3360,26 @@ function AccessScreen({ onBack }) {
     catch (e) { setMsg({ t: e.message, k: "err" }); }
   };
 
+  const selCount = selectedPlantIds.length + selectedBranchIds.length;
+
+  const FacilityToggle = ({ id, name, address, selected, color, onToggle }) => (
+    <button onClick={()=>onToggle(id)} style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 12px", borderRadius:8, border:`1.5px solid ${selected?color:C.b1}`, background:selected?`${color}0A`:C.w, cursor:"pointer", fontFamily:"inherit", textAlign:"left", transition:"all 0.15s", width:"100%" }}>
+      <div style={{ flex:1 }}>
+        <div style={{ fontSize:12, fontWeight:selected?700:500, color:selected?color:C.t1 }}>{name}</div>
+        {address && <div style={{ fontSize:10, color:C.t3 }}>{address}</div>}
+      </div>
+      <div style={{ width:18, height:18, borderRadius:5, border:`2px solid ${selected?color:C.b1}`, background:selected?color:"transparent", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, transition:"all 0.15s" }}>
+        {selected && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={C.w} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
+      </div>
+    </button>
+  );
+
   return (
     <div style={{ flex: 1, overflow: "auto", padding: 18 }}>
       <button onClick={onBack} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 600, color: C.pri, marginBottom: 14, padding: 0, display: "flex", alignItems: "center", gap: 4 }}>{Ic.chev(C.pri, 18)} Mi Perfil</button>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
         <div style={{ fontSize: 20, fontWeight: 800, letterSpacing: -0.3 }}>Productores</div>
-        <Btn sm onClick={() => { setShowGrant(!showGrant); setSearchResult(null); setPhone(""); setMsg(null); }} icon={showGrant ? Ic.cross(C.w, 14) : Ic.plus(C.w, 14)}>{showGrant ? "Cerrar" : "Habilitar"}</Btn>
+        <Btn sm onClick={() => { setShowGrant(!showGrant); setSearchResult(null); setPhone(""); setMsg(null); setSelectedPlantIds([]); setSelectedBranchIds([]); }} icon={showGrant ? Ic.cross(C.w, 14) : Ic.plus(C.w, 14)}>{showGrant ? "Cerrar" : "Habilitar"}</Btn>
       </div>
 
       {msg && <div style={{ padding: "10px 14px", borderRadius: 10, marginBottom: 12, fontSize: 12, fontWeight: 600, background: msg.k === "ok" ? C.okPale : C.errPale, color: msg.k === "ok" ? C.ok : C.err }}>{msg.t}</div>}
@@ -3264,8 +3399,35 @@ function AccessScreen({ onBack }) {
                   <div style={{ fontSize:11, color:C.t2 }}>{searchResult.phone}</div>
                 </div>
               </div>
-              <div style={{ fontSize:12, color:C.t2, marginBottom:10 }}>Empresa: <span style={{fontWeight:600,color:C.t1}}>{searchResult.producerCompanyName}</span></div>
-              <Btn full v="acc" disabled={saving} onClick={handleGrant}>{saving ? "Habilitando..." : "Habilitar productor"}</Btn>
+              <div style={{ fontSize:12, color:C.t2, marginBottom:12 }}>Empresa: <span style={{fontWeight:600,color:C.t1}}>{searchResult.producerCompanyName}</span></div>
+
+              {facilities ? (
+                <div style={{ marginBottom:12 }}>
+                  {(facilities.plants||[]).length > 0 && (
+                    <>
+                      <div style={{ fontSize:11, fontWeight:700, color:C.t2, marginBottom:6, textTransform:"uppercase", letterSpacing:0.5, display:"flex", alignItems:"center", gap:4 }}>{Ic.plant(C.pri,14)} Plantas</div>
+                      <div style={{ display:"flex", flexDirection:"column", gap:6, marginBottom:10 }}>
+                        {facilities.plants.map(p => <FacilityToggle key={p.id} id={p.id} name={p.name} address={p.address} selected={selectedPlantIds.includes(p.id)} color={C.pri} onToggle={togglePlant}/>)}
+                      </div>
+                    </>
+                  )}
+                  {(facilities.branches||[]).length > 0 && (
+                    <>
+                      <div style={{ fontSize:11, fontWeight:700, color:C.t2, marginBottom:6, textTransform:"uppercase", letterSpacing:0.5, display:"flex", alignItems:"center", gap:4 }}>{Ic.pin(C.acc,14)} Sucursales</div>
+                      <div style={{ display:"flex", flexDirection:"column", gap:6, marginBottom:10 }}>
+                        {facilities.branches.map(b => <FacilityToggle key={b.id} id={b.id} name={b.name} address={b.address} selected={selectedBranchIds.includes(b.id)} color={C.acc} onToggle={toggleBranch}/>)}
+                      </div>
+                    </>
+                  )}
+                  {(facilities.plants||[]).length === 0 && (facilities.branches||[]).length === 0 && (
+                    <div style={{ fontSize:12, color:C.t3, marginBottom:8 }}>Tu empresa no tiene plantas ni sucursales registradas.</div>
+                  )}
+                </div>
+              ) : (
+                <div style={{ fontSize:11, color:C.t3, marginBottom:8 }}>Cargando instalaciones...</div>
+              )}
+
+              <Btn full v="acc" disabled={saving || selCount === 0} onClick={handleGrant}>{saving ? "Habilitando..." : `Habilitar productor (${selCount} seleccionados)`}</Btn>
             </div>
           )}
         </div>
@@ -3274,21 +3436,26 @@ function AccessScreen({ onBack }) {
       {loading ? <div style={{ textAlign: "center", padding: 40, color: C.t3, fontSize: 13 }}>Cargando...</div> :
         producers.length === 0 ? <div style={{ textAlign: "center", padding: 40, color: C.t3, fontSize: 13 }}>Ningún productor habilitado aún.</div> :
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {producers.map(p => (
-              <div key={p.id} style={{ background: C.w, border: `1px solid ${C.b1}`, borderLeft: `3px solid ${p.active ? C.ok : C.muted}`, borderRadius: 12, padding: 14, boxShadow: C.sh, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  {Ic.user(p.active ? C.ok : C.muted, 20)}
-                  <div>
-                    <div style={{ fontSize: 14, fontWeight: 700 }}>{p.producerCompany?.name || "Productor"}</div>
-                    <div style={{ fontSize: 10, color: C.t3 }}>{p.producerCompany?.email || ""}</div>
+            {producers.map(p => {
+              const nPlants = ((p.allowedPlantIds) || []).length;
+              const nBranches = ((p.allowedBranchIds) || []).length;
+              return (
+                <div key={p.id} style={{ background: C.w, border: `1px solid ${C.b1}`, borderLeft: `3px solid ${p.active ? C.ok : C.muted}`, borderRadius: 12, padding: 14, boxShadow: C.sh, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    {Ic.user(p.active ? C.ok : C.muted, 20)}
+                    <div>
+                      <div style={{ fontSize: 14, fontWeight: 700 }}>{p.producerCompany?.name || "Productor"}</div>
+                      <div style={{ fontSize: 10, color: C.t3 }}>{p.producerCompany?.email || ""}</div>
+                      {(nPlants > 0 || nBranches > 0) && <div style={{ fontSize: 10, color: C.t2, marginTop: 2 }}>{nPlants} planta{nPlants!==1?"s":""}, {nBranches} sucursal{nBranches!==1?"es":""}</div>}
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <Bd color={p.active ? C.ok : C.muted} small>{p.active ? "Activo" : "Revocado"}</Bd>
+                    {p.active && <button onClick={() => handleRevoke(p.producerCompany?.id || p.producerCompanyId)} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }}>{Ic.ban(C.err, 16)}</button>}
                   </div>
                 </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <Bd color={p.active ? C.ok : C.muted} small>{p.active ? "Activo" : "Revocado"}</Bd>
-                  {p.active && <button onClick={() => handleRevoke(p.producerCompany?.id || p.producerCompanyId)} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }}>{Ic.ban(C.err, 16)}</button>}
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
       }
     </div>
@@ -5466,7 +5633,7 @@ export default function Tolvink() {
         {screen==="pending" && <PendingScreen user={auth.user} freights={fh.freights} onNav={nav} onNewFreight={()=>nav("new")}/>}
         {screen==="calendar" && <CalendarScreen freights={fh.freights} perms={perms} onNav={nav} isDesktop={isDesktop}/>}
         {screen==="detail" && <DetailScreen user={auth.user} freight={curFreight} perms={perms} onBack={()=>setScreen("list")} onAction={handleAction} actionLoading={actionLoading} onChat={(convId)=>{if(convId){setChatConvId(convId);setScreen("chats");}}} onRefresh={(id)=>fh.refresh(id)} onDuplicate={(f)=>{setDuplicateData(f);setScreen("new");}} onEdit={(f)=>{setEditData(f);setScreen("edit");}}/>}
-        {screen==="new" && <NewScreen user={auth.user} lots={catalog.lots} plants={catalog.plants} fields={catalog.fields} trucks={catalog.trucks} onBack={()=>{setDuplicateData(null);setScreen("home");}} onCreate={handleCreate} submitting={submitting} duplicateFrom={duplicateData}/>}
+        {screen==="new" && <NewScreen user={auth.user} lots={catalog.lots} plants={catalog.plants} branches={catalog.branches} fields={catalog.fields} trucks={catalog.trucks} onBack={()=>{setDuplicateData(null);setScreen("home");}} onCreate={handleCreate} submitting={submitting} duplicateFrom={duplicateData}/>}
         {screen==="edit" && editData && <EditScreen freight={editData} fields={catalog.fields} plants={catalog.plants} onBack={()=>{setEditData(null);setScreen("detail");}} onSave={async(id,data)=>{const r=await fh.update(id,data);if(r.ok){setEditData(null);setScreen("detail");show("Flete actualizado");}else show(r.error,"err");}}/>}
         {screen==="profile" && <ProfileScreen user={auth.user} perms={perms} onLogout={auth.logout} onNav={nav} theme={theme} toggleTheme={toggleTheme}/>}
         {screen==="trucks" && <TrucksScreen onBack={()=>{catalog.refresh();setScreen("profile");}}/>}
