@@ -10,7 +10,7 @@ import {
   apiGetPlants, apiGetLots, apiGetTransportCompanies, apiGetTrucks,
   apiCreateTruck, apiDeactivateTruck,
   apiGetFields, apiCreateField, apiUpdateField, apiCreateLot, apiUpdateLot, apiGetFieldLots,
-  apiGrantAccess, apiRevokeAccess, apiListAccessProducers, apiListAccessPlants,
+  apiGrantAccess, apiRevokeAccess, apiListAccessProducers, apiListAccessPlants, apiSearchProducer,
   apiStartConversation, apiListConversations, apiGetMessages, apiSendMessage,
   uploadPhoto, apiAddDocument, uploadChatFile,
   apiAdminStats, apiAdminListCompanies, apiAdminGetCompany, apiAdminCreateCompany, apiAdminUpdateCompany,
@@ -51,7 +51,7 @@ function validate(vals, schema) {
 const SCHEMAS = {
   login:   { email:[V.email], pw:[V.min(4)] },
   signup:  { name:[V.req,V.min(3)], email:[V.email], phone:[V.phone], pw:[V.min(4)], userTypes:[V.userTypes] },
-  freight: { grain:[v=>V.sel(v,'tipo de grano')], tons:[V.posNum], lotId:[v=>V.sel(v,'lote')], plantId:[v=>V.sel(v,'planta')], loadDate:[V.req], loadTime:[V.time] },
+  freight: { grain:[v=>V.sel(v,'tipo de grano')], tons:[V.posNum], lotId:[v=>V.sel(v,'lote')], loadDate:[V.req], loadTime:[V.time] },
 };
 
 // ======================== FILTER ENGINE ===============================
@@ -243,8 +243,8 @@ function useCatalog(user) {
       apiGetPlants().catch(()=>[]),
       apiGetLots().catch(()=>[]),
       apiGetTransportCompanies().catch(()=>[]),
-      (user.userType==="transporter"||user.userType==="producer") ? apiGetTrucks().catch(()=>[]) : Promise.resolve([]),
-      user.userType==="producer" ? apiGetFields().catch(()=>[]) : Promise.resolve([]),
+      (user.userType==="transporter"||user.userType==="producer"||(user.userTypes||[]).includes("transporter")||(user.userTypes||[]).includes("producer")) ? apiGetTrucks().catch(()=>[]) : Promise.resolve([]),
+      (user.userType==="producer"||(user.userTypes||[]).includes("producer")) ? apiGetFields().catch(()=>[]) : Promise.resolve([]),
     ]).then(([p,l,t,tr,f])=>{
       setPlants(p||[]);
       setLots(l||[]);
@@ -371,6 +371,7 @@ function mapUser(u) {
   const av = name.split(" ").filter(w=>w).map(w=>w[0]).join("").slice(0,2).toUpperCase() || "U";
   return {
     id:u.id, email:u.email, phone:u.phone||"", name, role, userType, userTypes,
+    companyByType: u.companyByType||{},
     entity:co?.name||"", entityId:co?.id||"", companyId:co?.id||"",
     hasInternalFleet: co?.hasInternalFleet||false,
     isSuperAdmin: u.isSuperAdmin||false,
@@ -409,7 +410,9 @@ function useFreights(user, isAuthInitialized) {
     catch(e) { setError(e.message); return null; }
   },[]);
   const create = useCallback(async (form)=>{
-    try { const c=await apiCreateFreight({ originLotId:form.lotId, fieldId:form.fieldId||undefined, destPlantId:form.plantId, loadDate:form.loadDate, loadTime:form.loadTime, items:[{grain:form.grain,tons:parseFloat(form.tons),unit:form.unit||"toneladas",amount:form.amount?parseFloat(form.amount):0,productTypeOther:form.productTypeOther||undefined}], notes:form.notes||"", truckId:form.truckId||undefined, overrideOriginLat:form.overrideOriginLat, overrideOriginLng:form.overrideOriginLng, overrideDestLat:form.overrideDestLat, overrideDestLng:form.overrideDestLng });
+    try { const body = { originLotId:form.lotId, fieldId:form.fieldId||undefined, destPlantId:form.plantId||undefined, loadDate:form.loadDate, loadTime:form.loadTime, items:[{grain:form.grain,tons:parseFloat(form.tons),unit:form.unit||"toneladas",amount:form.amount?parseFloat(form.amount):0,productTypeOther:form.productTypeOther||undefined}], notes:form.notes||"", truckId:form.truckId||undefined, overrideOriginLat:form.overrideOriginLat, overrideOriginLng:form.overrideOriginLng, overrideDestLat:form.overrideDestLat, overrideDestLng:form.overrideDestLng };
+      if(form.customDestName) { body.customDestName=form.customDestName; body.customDestLat=form.customDestLat; body.customDestLng=form.customDestLng; delete body.destPlantId; }
+      const c=await apiCreateFreight(body);
       const m=mapFreight(c); setFreights(p=>[m,...p]); return {ok:true, freightId:c.id}; } catch(e) { return {ok:false,error:e.message}; }
   },[]);
   const assign = useCallback(async (fId,compId)=>{ try { await apiAssignFreight(fId,{transportCompanyId:compId}); await refresh(fId); return {ok:true}; } catch(e) { return {ok:false,error:e.message}; } },[refresh]);
@@ -2580,6 +2583,8 @@ function DetailScreen({ user, freight, perms, onBack, onAction, actionLoading, o
 
 function NewScreen({ user, lots, plants, fields, trucks, onBack, onCreate, duplicateFrom }) {
   const dup = duplicateFrom;
+  const [destMode, setDestMode] = useState(dup?.destPlantId ? "plant" : "plant");
+  const [customDest, setCustomDest] = useState({ name:"", lat:null, lng:null });
   const [form, setForm] = useState({
     grain: dup?.grain || "",
     tons: dup?.tons?.toString() || "",
@@ -2618,11 +2623,13 @@ function NewScreen({ user, lots, plants, fields, trucks, onBack, onCreate, dupli
   const selectedLot = fieldLots.find(l=>l.id===form.lotId);
   const selectedPlant = (plants||[]).find(p=>p.id===form.plantId);
   const truckOpts = (trucks||[]).map(t=>({ value:t.id, label:`${t.plate}${t.model?` · ${t.model}`:""}` }));
-  const showTruckSelect = user.userType==="producer" && truckOpts.length > 0;
+  const showTruckSelect = (user.userType==="producer"||(user.userTypes||[]).includes("producer")) && truckOpts.length > 0;
 
   // Coords for map preview
   const originCoords = selectedLot?.lat ? { lat: parseFloat(selectedLot.lat), lng: parseFloat(selectedLot.lng) } : null;
-  const destCoords = selectedPlant?.lat ? { lat: parseFloat(selectedPlant.lat), lng: parseFloat(selectedPlant.lng) } : null;
+  const destCoords = destMode==="plant"
+    ? (selectedPlant?.lat ? { lat: parseFloat(selectedPlant.lat), lng: parseFloat(selectedPlant.lng) } : null)
+    : (customDest.lat ? { lat: customDest.lat, lng: customDest.lng } : null);
   const [editingOrigin, setEditingOrigin] = useState(false);
   const [editingDest, setEditingDest] = useState(false);
   const [overrideOrigin, setOverrideOrigin] = useState(null);
@@ -2635,14 +2642,24 @@ function NewScreen({ user, lots, plants, fields, trucks, onBack, onCreate, dupli
     const {ok,errs:e} = validate(form, SCHEMAS.freight);
     if(form.grain==="Otros" && !form.productTypeOther.trim()) { e.productTypeOther="Descripción obligatoria"; }
     if(form.fieldId && !form.lotId) { e.lotId="Seleccioná un lote del campo"; }
+    // Destination validation
+    if(destMode==="plant" && !form.plantId) { e.plantId="Seleccioná una planta"; }
+    if(destMode==="custom" && !customDest.name?.trim()) { e.customDestName="Nombre de destino obligatorio"; }
     setErrs(e);
     if(!ok || Object.keys(e).filter(k=>e[k]).length>0) return;
-    onCreate({...form, amount:form.amount?parseFloat(form.amount):0, photos: photos.map(p=>p.preview),
+    const payload = {...form, amount:form.amount?parseFloat(form.amount):0, photos: photos.map(p=>p.preview),
       overrideOriginLat: overrideOrigin?.lat || undefined,
       overrideOriginLng: overrideOrigin?.lng || undefined,
       overrideDestLat: overrideDest?.lat || undefined,
       overrideDestLng: overrideDest?.lng || undefined,
-    });
+    };
+    if(destMode==="custom") {
+      payload.plantId = undefined;
+      payload.customDestName = customDest.name;
+      payload.customDestLat = customDest.lat || undefined;
+      payload.customDestLng = customDest.lng || undefined;
+    }
+    onCreate(payload);
   };
 
   const addPhoto = (e) => {
@@ -2709,8 +2726,25 @@ function NewScreen({ user, lots, plants, fields, trucks, onBack, onCreate, dupli
         </div>
 
         <div>
-          <Select label="Destino (planta)" icon={Ic.plant(C.t2,14)} value={form.plantId} onChange={v=>u({plantId:v})} options={plantOpts} placeholder="Seleccionar planta..."/>
-          {touched&&<FieldError error={errs.plantId}/>}
+          <label style={{ fontSize:10.5, fontWeight:600, color:C.t2, marginBottom:6, display:"flex", alignItems:"center", gap:4, textTransform:"uppercase", letterSpacing:0.6 }}>{Ic.plant(C.t2,14)} Destino</label>
+          <div style={{ display:"flex", gap:6, marginBottom:10 }}>
+            <button onClick={()=>{setDestMode("plant"); setCustomDest({name:"",lat:null,lng:null});}} style={{ flex:1, padding:"10px 8px", borderRadius:8, border:`1.5px solid ${destMode==="plant"?C.pri:C.b1}`, background:destMode==="plant"?C.priPale:C.w, color:destMode==="plant"?C.pri:C.t2, cursor:"pointer", fontSize:12, fontWeight:600, fontFamily:"inherit" }}>Seleccionar Planta</button>
+            <button onClick={()=>{setDestMode("custom"); u({plantId:""});}} style={{ flex:1, padding:"10px 8px", borderRadius:8, border:`1.5px solid ${destMode==="custom"?C.acc:C.b1}`, background:destMode==="custom"?C.accPale:C.w, color:destMode==="custom"?C.acc:C.t2, cursor:"pointer", fontSize:12, fontWeight:600, fontFamily:"inherit" }}>Destino Personalizado</button>
+          </div>
+          {destMode==="plant" ? (
+            <>
+              <Select value={form.plantId} onChange={v=>u({plantId:v})} options={plantOpts} placeholder="Seleccionar planta..."/>
+              {touched&&<FieldError error={errs.plantId}/>}
+            </>
+          ) : (
+            <>
+              <Field label="Nombre del destino" value={customDest.name} onChange={v=>setCustomDest(p=>({...p,name:v}))} placeholder="Ej: Acopio Central, Puerto Rosario..."/>
+              {touched&&<FieldError error={errs.customDestName}/>}
+              <div style={{ marginTop:8 }}>
+                <LocationPicker label="Ubicación del destino" value={customDest.lat?{lat:customDest.lat,lng:customDest.lng}:null} onChange={loc=>setCustomDest(p=>({...p,lat:loc.lat,lng:loc.lng}))}/>
+              </div>
+            </>
+          )}
         </div>
 
         {/* Route preview map */}
@@ -2722,10 +2756,10 @@ function NewScreen({ user, lots, plants, fields, trucks, onBack, onCreate, dupli
             </div>
 
             {finalOrigin && finalDest ? (
-              <FreightMap freightId={null} originLat={finalOrigin.lat} originLng={finalOrigin.lng} destLat={finalDest.lat} destLng={finalDest.lng} originName={fieldLots.find(l=>l.id===form.lotId)?.name||"Origen"} destName={(plants||[]).find(p=>p.id===form.plantId)?.name||"Destino"} status="preview" isDriver={false}/>
+              <FreightMap freightId={null} originLat={finalOrigin.lat} originLng={finalOrigin.lng} destLat={finalDest.lat} destLng={finalDest.lng} originName={fieldLots.find(l=>l.id===form.lotId)?.name||"Origen"} destName={destMode==="plant"?((plants||[]).find(p=>p.id===form.plantId)?.name||"Destino"):(customDest.name||"Destino")} status="preview" isDriver={false}/>
             ) : (
               <div style={{ padding:"20px 14px", textAlign:"center", fontSize:12, color:C.t3 }}>
-                Seleccioná {!finalOrigin?"origen (lote)":""}{!finalOrigin&&!finalDest?" y ":""}{!finalDest?"destino (planta)":""} para ver la ruta
+                Seleccioná {!finalOrigin?"origen (lote)":""}{!finalOrigin&&!finalDest?" y ":""}{!finalDest?"destino":""} para ver la ruta
               </div>
             )}
 
@@ -3163,10 +3197,11 @@ function AccessScreen({ onBack }) {
   const [producers, setProducers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showGrant, setShowGrant] = useState(false);
-  const [prodId, setProdId] = useState("");
+  const [phone, setPhone] = useState("");
+  const [searching, setSearching] = useState(false);
+  const [searchResult, setSearchResult] = useState(null);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState(null);
-  const [allCompanies, setAllCompanies] = useState([]);
 
   const load = useCallback(async () => {
     try {
@@ -3176,12 +3211,26 @@ function AccessScreen({ onBack }) {
   }, []);
   useEffect(() => { load(); }, [load]);
 
+  const handleSearch = async () => {
+    const clean = phone.replace(/[\s\-()]/g,'');
+    if (!clean) { setMsg({ t: "Ingresá un teléfono", k: "err" }); return; }
+    setSearching(true); setSearchResult(null); setMsg(null);
+    try {
+      const r = await apiSearchProducer(clean);
+      setSearchResult(r);
+      if (!r.found) setMsg({ t: r.message || "No se encontró productor", k: "err" });
+    } catch (e) { setMsg({ t: e.message, k: "err" }); } finally { setSearching(false); }
+  };
+
   const handleGrant = async () => {
-    if (!prodId.trim()) { setMsg({ t: "Ingresá el ID del productor", k: "err" }); return; }
+    if (!searchResult?.producerCompanyId) return;
+    // Check for duplicate
+    const existing = producers.find(p => p.producerCompanyId === searchResult.producerCompanyId && p.active);
+    if (existing) { setMsg({ t: "Este productor ya está habilitado", k: "err" }); return; }
     setSaving(true);
     try {
-      await apiGrantAccess({ producerCompanyId: prodId.trim() });
-      setProdId(""); setShowGrant(false); setMsg({ t: "Productor habilitado", k: "ok" }); load();
+      await apiGrantAccess({ producerCompanyId: searchResult.producerCompanyId });
+      setPhone(""); setSearchResult(null); setShowGrant(false); setMsg({ t: "Productor habilitado", k: "ok" }); load();
     } catch (e) { setMsg({ t: e.message, k: "err" }); } finally { setSaving(false); }
   };
 
@@ -3195,16 +3244,30 @@ function AccessScreen({ onBack }) {
       <button onClick={onBack} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 600, color: C.pri, marginBottom: 14, padding: 0, display: "flex", alignItems: "center", gap: 4 }}>{Ic.chev(C.pri, 18)} Mi Perfil</button>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
         <div style={{ fontSize: 20, fontWeight: 800, letterSpacing: -0.3 }}>Productores</div>
-        <Btn sm onClick={() => setShowGrant(!showGrant)} icon={showGrant ? Ic.cross(C.w, 14) : Ic.plus(C.w, 14)}>{showGrant ? "Cerrar" : "Habilitar"}</Btn>
+        <Btn sm onClick={() => { setShowGrant(!showGrant); setSearchResult(null); setPhone(""); setMsg(null); }} icon={showGrant ? Ic.cross(C.w, 14) : Ic.plus(C.w, 14)}>{showGrant ? "Cerrar" : "Habilitar"}</Btn>
       </div>
 
       {msg && <div style={{ padding: "10px 14px", borderRadius: 10, marginBottom: 12, fontSize: 12, fontWeight: 600, background: msg.k === "ok" ? C.okPale : C.errPale, color: msg.k === "ok" ? C.ok : C.err }}>{msg.t}</div>}
 
       {showGrant && (
         <div style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: 12, padding: 16, marginBottom: 16, boxShadow: C.sh }}>
-          <Field label="ID de empresa productora" value={prodId} onChange={setProdId} placeholder="UUID del productor" />
-          <div style={{ fontSize: 10, color: C.t3, marginTop: 4, marginBottom: 10 }}>Pedile el ID al productor desde su perfil</div>
-          <Btn full v="acc" disabled={saving} onClick={handleGrant}>{saving ? "Guardando..." : "Habilitar productor"}</Btn>
+          <Field label="Teléfono del productor" value={phone} onChange={setPhone} placeholder="09X XXX XXX"/>
+          <div style={{ fontSize: 10, color: C.t3, marginTop: 4, marginBottom: 10 }}>Ingresá el teléfono del productor para buscarlo</div>
+          <Btn full disabled={searching} onClick={handleSearch}>{searching ? "Buscando..." : "Buscar productor"}</Btn>
+
+          {searchResult?.found && (
+            <div style={{ marginTop:12, background:C.priPale, border:`1.5px solid ${C.pri}30`, borderRadius:10, padding:14 }}>
+              <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:8 }}>
+                {Ic.user(C.pri,20)}
+                <div>
+                  <div style={{ fontSize:14, fontWeight:700, color:C.t1 }}>{searchResult.userName}</div>
+                  <div style={{ fontSize:11, color:C.t2 }}>{searchResult.phone}</div>
+                </div>
+              </div>
+              <div style={{ fontSize:12, color:C.t2, marginBottom:10 }}>Empresa: <span style={{fontWeight:600,color:C.t1}}>{searchResult.producerCompanyName}</span></div>
+              <Btn full v="acc" disabled={saving} onClick={handleGrant}>{saving ? "Habilitando..." : "Habilitar productor"}</Btn>
+            </div>
+          )}
         </div>
       )}
 

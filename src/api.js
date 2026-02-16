@@ -147,6 +147,7 @@ export async function apiGrantAccess(b) { return api('/plant-access/grant',{body
 export async function apiRevokeAccess(prodId) { return api(`/plant-access/revoke/${prodId}`,{body:{},method:'PATCH'}); }
 export async function apiListAccessProducers() { return api('/plant-access/producers'); }
 export async function apiListAccessPlants() { return api('/plant-access/plants'); }
+export async function apiSearchProducer(phone) { return api(`/plant-access/search-producer?phone=${encodeURIComponent(phone)}`); }
 
 // Conversations
 export async function apiStartConversation(b) { return api('/conversations/start',{body:b}); }
