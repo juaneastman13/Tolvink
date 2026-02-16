@@ -11,7 +11,7 @@ import {
   apiCreateTruck, apiDeactivateTruck,
   apiGetFields, apiCreateField, apiUpdateField, apiCreateLot, apiUpdateLot, apiGetFieldLots,
   apiGrantAccess, apiRevokeAccess, apiListAccessProducers, apiListAccessPlants, apiSearchProducer, apiGetMyFacilities,
-  apiSearchUsers, apiStartConversation, apiListConversations, apiGetMessages, apiSendMessage,
+  apiSearchUsers, apiStartConversation, apiListConversations, apiGetMessages, apiSendMessage, apiMarkRead,
   uploadPhoto, apiAddDocument, uploadChatFile,
   apiAdminStats, apiAdminListCompanies, apiAdminGetCompany, apiAdminCreateCompany, apiAdminUpdateCompany,
   apiAdminListBranches, apiAdminCreateBranch, apiAdminUpdateBranch, apiAdminDeleteBranch,
@@ -3554,9 +3554,6 @@ function ChatsScreen({ user, openConvId, onConvOpened, isDesktop }) {
   const [compSearching, setCompSearching] = useState(false);
   const compSearchTimer = useRef(null);
   const [searchQ, setSearchQ] = useState("");
-  const [filterPlant, setFilterPlant] = useState("");
-  const [filterTransporter, setFilterTransporter] = useState("");
-  const [filterProducer, setFilterProducer] = useState("");
   const msgEndRef = useRef(null);
 
   const loadConvs = useCallback(async () => {
@@ -3576,7 +3573,11 @@ function ChatsScreen({ user, openConvId, onConvOpened, isDesktop }) {
 
   const openConv = async (conv) => {
     setActiveConv(conv);
-    try { const m = await apiGetMessages(conv.id); setMessages(m || []); } catch {}
+    try {
+      const m = await apiGetMessages(conv.id);
+      setMessages(m || []);
+      apiMarkRead(conv.id).catch(() => {});
+    } catch {}
   };
 
   useEffect(() => { if (msgEndRef.current) msgEndRef.current.scrollIntoView({ behavior: "smooth" }); }, [messages]);
@@ -3643,6 +3644,8 @@ function ChatsScreen({ user, openConvId, onConvOpened, isDesktop }) {
   const handleCompSearch = (q) => {
     setCompSearchQ(q);
     setNewCompId("");
+    setNewUserId("");
+    setNewErr(null);
     clearTimeout(compSearchTimer.current);
     if (q.trim().length < 2) { setCompResults([]); return; }
     setCompSearching(true);
@@ -3659,12 +3662,10 @@ function ChatsScreen({ user, openConvId, onConvOpened, isDesktop }) {
   };
 
   const handleStartConv = async () => {
-    if (!newCompId.trim()) { setNewErr("Buscá y seleccioná un usuario"); return; }
+    if (!newUserId) { setNewErr("Buscá y seleccioná un usuario"); return; }
     setNewErr(null);
     try {
-      const body = { targetCompanyId: newCompId.trim() };
-      if (newUserId) body.targetUserId = newUserId;
-      const conv = await apiStartConversation(body);
+      const conv = await apiStartConversation({ targetUserId: newUserId });
       setShowNew(false); setNewCompId(""); setNewUserId(""); setCompSearchQ(""); setCompResults([]);
       loadConvs();
       openConv(conv);
@@ -3708,56 +3709,6 @@ function ChatsScreen({ user, openConvId, onConvOpened, isDesktop }) {
   const [expandedGroups, setExpandedGroups] = useState({});
   const toggleGroup = (key) => setExpandedGroups(prev=>({...prev,[key]:!prev[key]}));
 
-  // Extract unique companies by type for filter dropdowns
-  const filterOptions = useMemo(() => {
-    const plants = new Map();
-    const transporters = new Map();
-    const producers = new Map();
-    convs.forEach(c => {
-      (c.participants || []).forEach(p => {
-        const co = p.company;
-        if (!co?.name || !co?.id) return;
-        const t = co.type;
-        if (t === "plant") plants.set(co.id, co.name);
-        else if (t === "transporter") transporters.set(co.id, co.name);
-        else if (t === "producer") producers.set(co.id, co.name);
-      });
-      // Also check freight origin/dest companies
-      if (c.freight) {
-        const oc = c.freight.originCompany;
-        const dc = c.freight.destCompany;
-        if (oc?.id && oc?.name) {
-          if (oc.type === "producer") producers.set(oc.id, oc.name);
-          if (oc.type === "plant") plants.set(oc.id, oc.name);
-        }
-        if (dc?.id && dc?.name) {
-          if (dc.type === "plant") plants.set(dc.id, dc.name);
-          if (dc.type === "producer") producers.set(dc.id, dc.name);
-        }
-      }
-    });
-    const toArr = (m) => [...m.entries()].map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name));
-    return { plants: toArr(plants), transporters: toArr(transporters), producers: toArr(producers) };
-  }, [convs]);
-
-  // Filter conversations
-  const filteredConvs = useMemo(() => {
-    if (!filterPlant && !filterTransporter && !filterProducer) return convs;
-    return convs.filter(c => {
-      const participantIds = (c.participants || []).map(p => p.companyId);
-      const freightCompanyIds = [];
-      if (c.freight) {
-        if (c.freight.originCompanyId) freightCompanyIds.push(c.freight.originCompanyId);
-        if (c.freight.destCompanyId) freightCompanyIds.push(c.freight.destCompanyId);
-      }
-      const allIds = [...participantIds, ...freightCompanyIds];
-      if (filterPlant && !allIds.includes(filterPlant)) return false;
-      if (filterTransporter && !allIds.includes(filterTransporter)) return false;
-      if (filterProducer && !allIds.includes(filterProducer)) return false;
-      return true;
-    });
-  }, [convs, filterPlant, filterTransporter, filterProducer]);
-
   // Group conversations: company → user (nested folders)
   const grouped = useMemo(() => {
     const byCompany = {};
@@ -3775,7 +3726,7 @@ function ChatsScreen({ user, openConvId, onConvOpened, isDesktop }) {
       return tb.localeCompare(ta);
     });
 
-    filteredConvs.forEach(c => {
+    convs.forEach(c => {
       // Find "other" participants (not mine)
       const others = (c.participants || []).filter(p => p.userId !== user.id && p.companyId !== user.companyId);
       const companyName = others.map(o => o.company?.name || "").filter(Boolean).sort().join(", ") || "Otros";
@@ -3811,7 +3762,7 @@ function ChatsScreen({ user, openConvId, onConvOpened, isDesktop }) {
     const companyKeys = Object.keys(byCompany).sort((a, b) => getLatest(byCompany[b]).localeCompare(getLatest(byCompany[a])));
 
     return { companyKeys, byCompany };
-  }, [filteredConvs, user.companyId, user.id]);
+  }, [convs, user.companyId, user.id]);
 
   // Chat detail view
   const chatDetailPanel = activeConv ? (
@@ -3944,35 +3895,6 @@ function ChatsScreen({ user, openConvId, onConvOpened, isDesktop }) {
         {searchQ && <button onClick={()=>setSearchQ("")} style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",display:"flex"}}>{Ic.cross(C.t3,16)}</button>}
       </div>
 
-      {/* Filters */}
-      {(filterOptions.plants.length > 0 || filterOptions.transporters.length > 0 || filterOptions.producers.length > 0) && (
-        <div style={{ display:"flex", gap:6, marginBottom:10, flexWrap:"wrap" }}>
-          {filterOptions.plants.length > 0 && (
-            <select value={filterPlant} onChange={e=>setFilterPlant(e.target.value)} style={{ flex:1, minWidth:100, padding:"8px 10px", borderRadius:8, border:`1.5px solid ${filterPlant?C.pri:C.b1}`, background:filterPlant?C.priPale:C.w, color:filterPlant?C.pri:C.t2, fontSize:11.5, fontWeight:600, fontFamily:"inherit", outline:"none", cursor:"pointer", appearance:"auto" }}>
-              <option value="">Planta</option>
-              {filterOptions.plants.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
-            </select>
-          )}
-          {filterOptions.transporters.length > 0 && (
-            <select value={filterTransporter} onChange={e=>setFilterTransporter(e.target.value)} style={{ flex:1, minWidth:100, padding:"8px 10px", borderRadius:8, border:`1.5px solid ${filterTransporter?C.sec:C.b1}`, background:filterTransporter?C.secPale:C.w, color:filterTransporter?C.sec:C.t2, fontSize:11.5, fontWeight:600, fontFamily:"inherit", outline:"none", cursor:"pointer", appearance:"auto" }}>
-              <option value="">Transportista</option>
-              {filterOptions.transporters.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
-            </select>
-          )}
-          {filterOptions.producers.length > 0 && (
-            <select value={filterProducer} onChange={e=>setFilterProducer(e.target.value)} style={{ flex:1, minWidth:100, padding:"8px 10px", borderRadius:8, border:`1.5px solid ${filterProducer?C.acc:C.b1}`, background:filterProducer?C.accPale:C.w, color:filterProducer?C.acc:C.t2, fontSize:11.5, fontWeight:600, fontFamily:"inherit", outline:"none", cursor:"pointer", appearance:"auto" }}>
-              <option value="">Productor</option>
-              {filterOptions.producers.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
-            </select>
-          )}
-          {(filterPlant||filterTransporter||filterProducer) && (
-            <button onClick={()=>{setFilterPlant("");setFilterTransporter("");setFilterProducer("");}} style={{ padding:"8px 10px", borderRadius:8, border:`1.5px solid ${C.err}30`, background:C.errPale, color:C.err, fontSize:11, fontWeight:600, fontFamily:"inherit", cursor:"pointer", whiteSpace:"nowrap" }}>
-              Limpiar
-            </button>
-          )}
-        </div>
-      )}
-
       {showNew && (
         <div style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: 12, padding: 16, marginBottom: 14, boxShadow: C.sh }}>
           <Field label="Buscar usuario" value={compSearchQ} onChange={handleCompSearch} placeholder="Escribí el nombre de la persona..."/>
@@ -3994,7 +3916,7 @@ function ChatsScreen({ user, openConvId, onConvOpened, isDesktop }) {
           {compSearchQ.length>=2 && !compSearching && compResults.length===0 && !newUserId && <div style={{ fontSize:11, color:C.t3, marginTop:6 }}>Sin resultados</div>}
           {newUserId && <div style={{ fontSize:11, color:C.ok, marginTop:6, fontWeight:600 }}>Usuario seleccionado: {compSearchQ}</div>}
           {newErr && <div style={{ fontSize: 11, color: C.err, marginTop:6, marginBottom: 4 }}>{newErr}</div>}
-          <div style={{ marginTop:10 }}><Btn full v="acc" disabled={!newCompId} onClick={handleStartConv}>Iniciar conversación</Btn></div>
+          <div style={{ marginTop:10 }}><Btn full v="acc" disabled={!newUserId} onClick={handleStartConv}>Iniciar conversación</Btn></div>
         </div>
       )}
 
@@ -4007,6 +3929,7 @@ function ChatsScreen({ user, openConvId, onConvOpened, isDesktop }) {
               const freightCount = group.freightConvs.length;
               const userNames = Object.keys(group.byUser);
               const directCount = userNames.reduce((sum, u) => sum + group.byUser[u].length, 0);
+              const unreadCount = group.freightConvs.filter(c=>c.unread).length + userNames.reduce((sum,u) => sum + group.byUser[u].filter(c=>c.unread).length, 0);
               const countParts = [];
               if (freightCount > 0) countParts.push(`${freightCount} flete${freightCount !== 1 ? "s" : ""}`);
               if (directCount > 0) countParts.push(`${userNames.length} contacto${userNames.length !== 1 ? "s" : ""}`);
@@ -4021,6 +3944,7 @@ function ChatsScreen({ user, openConvId, onConvOpened, isDesktop }) {
                       <div style={{ fontSize: 13, fontWeight: 700, color: C.t1 }}>{companyName}</div>
                       <div style={{ fontSize: 10.5, color: C.t3 }}>{countParts.join(" · ")}</div>
                     </div>
+                    {unreadCount > 0 && <span style={{ minWidth: 18, height: 18, borderRadius: 9, background: C.acc, color: "#fff", fontSize: 10, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 4px", flexShrink: 0 }}>{unreadCount}</span>}
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={C.t3} strokeWidth="2.5" style={{ transform: isOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }}><polyline points="6 9 12 15 18 9"/></svg>
                   </button>
 
@@ -4028,15 +3952,16 @@ function ChatsScreen({ user, openConvId, onConvOpened, isDesktop }) {
                     <div style={{ display: "flex", flexDirection: "column" }}>
                       {/* Freight conversations (company level) */}
                       {group.freightConvs.map((c, i) => (
-                        <button key={c.id} onClick={() => openConv(c)} style={{ padding: "10px 14px", border: "none", borderTop: `1px solid ${C.b2}`, background: C.w, cursor: "pointer", fontFamily: "inherit", textAlign: "left", display: "flex", alignItems: "center", gap: 10, width: "100%", transition: "background 0.15s" }} onMouseEnter={e=>e.currentTarget.style.background=C.priGhost} onMouseLeave={e=>e.currentTarget.style.background=C.w}>
+                        <button key={c.id} onClick={() => openConv(c)} style={{ padding: "10px 14px", border: "none", borderTop: `1px solid ${C.b2}`, background: c.unread ? C.accPale+"30" : C.w, cursor: "pointer", fontFamily: "inherit", textAlign: "left", display: "flex", alignItems: "center", gap: 10, width: "100%", transition: "background 0.15s" }} onMouseEnter={e=>e.currentTarget.style.background=C.priGhost} onMouseLeave={e=>e.currentTarget.style.background=c.unread?C.accPale+"30":C.w}>
                           <div style={{ width: 8, height: 8, borderRadius: 4, background: stColor(c.freight?.status), flexShrink: 0 }} />
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                              <span style={{ fontSize: 12, fontWeight: 700, color: C.t1 }}>Flete {c.freight.code}</span>
+                              <span style={{ fontSize: 12, fontWeight: c.unread ? 800 : 700, color: C.t1 }}>Flete {c.freight.code}</span>
                               <span style={{ fontSize: 9, fontWeight: 600, color: stColor(c.freight?.status), textTransform: "uppercase" }}>{stLabel(c.freight?.status)}</span>
                             </div>
-                            <div style={{ fontSize: 11, color: C.t3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", marginTop: 2 }}>{getLastMsg(c)}</div>
+                            <div style={{ fontSize: 11, color: c.unread ? C.t1 : C.t3, fontWeight: c.unread ? 600 : 400, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", marginTop: 2 }}>{getLastMsg(c)}</div>
                           </div>
+                          {c.unread && <div style={{ width: 8, height: 8, borderRadius: 4, background: C.acc, flexShrink: 0 }} />}
                           <span style={{ fontSize: 9.5, color: C.t3, flexShrink: 0 }}>{getLastMsgTime(c)}</span>
                         </button>
                       ))}
@@ -4046,16 +3971,18 @@ function ChatsScreen({ user, openConvId, onConvOpened, isDesktop }) {
                         const userConvs = group.byUser[userName];
                         const userKey = `${companyName}::${userName}`;
                         const userOpen = expandedGroups[userKey] !== false;
+                        const hasUnread = userConvs.some(c => c.unread);
                         return (
                           <div key={userName}>
-                            <button onClick={() => userConvs.length === 1 ? openConv(userConvs[0]) : toggleGroup(userKey)} style={{ width: "100%", padding: "10px 14px 10px 20px", border: "none", borderTop: `1px solid ${C.b2}`, background: C.w, cursor: "pointer", fontFamily: "inherit", textAlign: "left", display: "flex", alignItems: "center", gap: 10, transition: "background 0.15s" }} onMouseEnter={e=>e.currentTarget.style.background=C.priGhost} onMouseLeave={e=>e.currentTarget.style.background=C.w}>
-                              <div style={{ width: 28, height: 28, borderRadius: 14, background: C.accPale, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                                {Ic.user(C.acc, 12)}
+                            <button onClick={() => userConvs.length === 1 ? openConv(userConvs[0]) : toggleGroup(userKey)} style={{ width: "100%", padding: "10px 14px 10px 20px", border: "none", borderTop: `1px solid ${C.b2}`, background: hasUnread ? C.accPale+"30" : C.w, cursor: "pointer", fontFamily: "inherit", textAlign: "left", display: "flex", alignItems: "center", gap: 10, transition: "background 0.15s" }} onMouseEnter={e=>e.currentTarget.style.background=C.priGhost} onMouseLeave={e=>e.currentTarget.style.background=hasUnread?C.accPale+"30":C.w}>
+                              <div style={{ width: 28, height: 28, borderRadius: 14, background: hasUnread ? C.acc : C.accPale, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, position: "relative" }}>
+                                {Ic.user(hasUnread ? "#fff" : C.acc, 12)}
                               </div>
                               <div style={{ flex: 1, minWidth: 0 }}>
-                                <div style={{ fontSize: 12, fontWeight: 700, color: C.t1 }}>{userName}</div>
-                                <div style={{ fontSize: 11, color: C.t3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", marginTop: 1 }}>{getLastMsg(userConvs[0])}</div>
+                                <div style={{ fontSize: 12, fontWeight: hasUnread ? 800 : 700, color: C.t1 }}>{userName}</div>
+                                <div style={{ fontSize: 11, color: hasUnread ? C.t1 : C.t3, fontWeight: hasUnread ? 600 : 400, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", marginTop: 1 }}>{getLastMsg(userConvs[0])}</div>
                               </div>
+                              {hasUnread && <div style={{ width: 8, height: 8, borderRadius: 4, background: C.acc, flexShrink: 0 }} />}
                               <span style={{ fontSize: 9.5, color: C.t3, flexShrink: 0 }}>{getLastMsgTime(userConvs[0])}</span>
                               {userConvs.length > 1 && <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.t3} strokeWidth="2.5" style={{ transform: userOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s", flexShrink: 0 }}><polyline points="6 9 12 15 18 9"/></svg>}
                             </button>
@@ -5671,21 +5598,14 @@ export default function Tolvink() {
     return fh.freights.filter(f => getPendingActions(f, auth.user.userType) !== null).length;
   }, [fh.freights, auth.user]);
 
-  // Poll for unread chats (simple: count convs with recent messages)
+  // Poll for unread chats (uses server-side lastReadAt tracking)
   useEffect(()=>{
     if(!auth.user) return;
     const checkUnread = async ()=>{
       try {
         const convs = await apiListConversations();
-        const recent = (convs||[]).filter(c=>{
-          const m = c.messages?.[0];
-          if(!m) return false;
-          const senderId = m.sender?.id || m.senderId;
-          if(senderId === auth.user.id) return false;
-          const age = Date.now() - new Date(m.createdAt).getTime();
-          return age < 300000; // 5 min
-        });
-        setUnreadChats(recent.length);
+        const count = (convs||[]).filter(c => c.unread).length;
+        setUnreadChats(count);
       } catch {}
     };
     checkUnread();
