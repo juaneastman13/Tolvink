@@ -2689,6 +2689,8 @@ function NewScreen({ user, lots, plants, branches, fields, trucks, onBack, onCre
     if(destMode==="custom" && !customDest.name?.trim()) { e.customDestName="Nombre de destino obligatorio"; }
     setErrs(e);
     if(!ok || Object.keys(e).filter(k=>e[k]).length>0) return;
+    if(submitting) return;
+    setSubmitting(true);
     const payload = {...form, amount:form.amount?parseFloat(form.amount):0, photos: photos.map(p=>p.preview),
       overrideOriginLat: overrideOrigin?.lat || undefined,
       overrideOriginLng: overrideOrigin?.lng || undefined,
@@ -3016,8 +3018,11 @@ function TrucksScreen({ onBack, embedded }) {
   };
 
   const handleDeactivate = async (id) => {
+    if(saving) return;
+    setSaving(true);
     try { await apiDeactivateTruck(id); setMsg({ t: "Camión eliminado", k: "ok" }); load(); }
     catch (e) { setMsg({ t: e.message, k: "err" }); }
+    finally { setSaving(false); }
   };
 
   return (
@@ -3053,7 +3058,7 @@ function TrucksScreen({ onBack, embedded }) {
                     {t.assignedUser && <div style={{ fontSize: 10, color: C.t2 }}>Chofer: {t.assignedUser.name}</div>}
                   </div>
                 </div>
-                <button onClick={() => handleDeactivate(t.id)} style={{ background: "none", border: "none", cursor: "pointer", padding: 6 }}>{Ic.ban(C.err, 18)}</button>
+                <button disabled={saving} onClick={() => handleDeactivate(t.id)} style={{ background: "none", border: "none", cursor: saving?"not-allowed":"pointer", padding: 6, opacity:saving?0.4:1 }}>{Ic.ban(C.err, 18)}</button>
               </div>
             ))}
           </div>
@@ -3332,8 +3337,11 @@ function AccessScreen({ onBack }) {
   };
 
   const handleRevoke = async (accessId) => {
+    if(saving) return;
+    setSaving(true);
     try { await apiRevokeAccess(accessId); setMsg({ t: "Acceso revocado", k: "ok" }); setConfirmRevoke(null); load(); }
     catch (e) { setMsg({ t: e.message, k: "err" }); }
+    finally { setSaving(false); }
   };
 
   const startEdit = (p) => {
@@ -3433,7 +3441,7 @@ function AccessScreen({ onBack }) {
             <div style={{ fontSize:13, color:C.t2, marginBottom:16 }}>¿Revocar el acceso de <b>{confirmRevoke.producerUser?.name||confirmRevoke.producerCompany?.name}</b>? No podrá enviar fletes a tus plantas.</div>
             <div style={{ display:"flex", gap:8 }}>
               <button onClick={()=>setConfirmRevoke(null)} style={{ flex:1, padding:"10px 14px", borderRadius:8, border:`1px solid ${C.b1}`, background:C.w, cursor:"pointer", fontFamily:"inherit", fontSize:13, fontWeight:600, color:C.t2 }}>Cancelar</button>
-              <button onClick={()=>handleRevoke(confirmRevoke.id)} style={{ flex:1, padding:"10px 14px", borderRadius:8, border:"none", background:C.err, cursor:"pointer", fontFamily:"inherit", fontSize:13, fontWeight:600, color:C.w }}>Revocar</button>
+              <button disabled={saving} onClick={()=>handleRevoke(confirmRevoke.id)} style={{ flex:1, padding:"10px 14px", borderRadius:8, border:"none", background:saving?C.muted:C.err, cursor:saving?"not-allowed":"pointer", fontFamily:"inherit", fontSize:13, fontWeight:600, color:C.w, opacity:saving?0.7:1 }}>{saving?"Revocando...":"Revocar"}</button>
             </div>
           </div>
         </div>
@@ -3661,8 +3669,11 @@ function ChatsScreen({ user, openConvId, onConvOpened, isDesktop }) {
     setCompResults([]);
   };
 
+  const [startingConv, setStartingConv] = useState(false);
   const handleStartConv = async () => {
     if (!newUserId) { setNewErr("Buscá y seleccioná un usuario"); return; }
+    if(startingConv) return;
+    setStartingConv(true);
     setNewErr(null);
     try {
       const conv = await apiStartConversation({ targetUserId: newUserId });
@@ -3670,6 +3681,7 @@ function ChatsScreen({ user, openConvId, onConvOpened, isDesktop }) {
       loadConvs();
       openConv(conv);
     } catch (e) { setNewErr(e.message); }
+    finally { setStartingConv(false); }
   };
 
   const getConvName = (conv) => {
@@ -3910,7 +3922,7 @@ function ChatsScreen({ user, openConvId, onConvOpened, isDesktop }) {
           {compSearchQ.length>=2 && !compSearching && compResults.length===0 && !newUserId && <div style={{ fontSize:11, color:C.t3, marginTop:6 }}>Sin resultados</div>}
           {newUserId && <div style={{ fontSize:11, color:C.ok, marginTop:6, fontWeight:600 }}>Usuario seleccionado: {compSearchQ}</div>}
           {newErr && <div style={{ fontSize: 11, color: C.err, marginTop:6, marginBottom: 4 }}>{newErr}</div>}
-          <div style={{ marginTop:10 }}><Btn full v="acc" disabled={!newUserId} onClick={handleStartConv}>Iniciar conversación</Btn></div>
+          <div style={{ marginTop:10 }}><Btn full v="acc" disabled={!newUserId||startingConv} onClick={handleStartConv}>{startingConv?"Iniciando...":"Iniciar conversación"}</Btn></div>
         </div>
       )}
 
@@ -4990,7 +5002,7 @@ function AdminScreen({ user, onBack }) {
       setShowBranchForm(false); const b=await apiAdminListBranches(selectedCompany.id); setBranches(b||[]); load();
     } catch(e) { show(e.message,"err"); } finally { setSaving(false); }
   };
-  const handleDeleteBranch = async (id) => { try { await apiAdminDeleteBranch(id); show("Sucursal eliminada"); const b=await apiAdminListBranches(selectedCompany.id); setBranches(b||[]); load(); } catch(e) { show(e.message,"err"); } };
+  const handleDeleteBranch = async (id) => { if(saving) return; setSaving(true); try { await apiAdminDeleteBranch(id); show("Sucursal eliminada"); const b=await apiAdminListBranches(selectedCompany.id); setBranches(b||[]); load(); } catch(e) { show(e.message,"err"); } finally { setSaving(false); } };
 
   // --- Fields ---
   const openNewField = () => { setFieldForm({name:"",lat:null,lng:null,address:"",hectares:"",comments:""}); setEditFieldId(null); setShowFieldForm(true); };
@@ -5006,7 +5018,7 @@ function AdminScreen({ user, onBack }) {
       setShowFieldForm(false); const f=await apiAdminListFields(selectedCompany.id); setFields(f||[]);
     } catch(e) { show(e.message,"err"); } finally { setSaving(false); }
   };
-  const handleDeleteField = async (id) => { try { await apiAdminDeleteField(id); show("Campo eliminado"); const f=await apiAdminListFields(selectedCompany.id); setFields(f||[]); } catch(e) { show(e.message,"err"); } };
+  const handleDeleteField = async (id) => { if(saving) return; setSaving(true); try { await apiAdminDeleteField(id); show("Campo eliminado"); const f=await apiAdminListFields(selectedCompany.id); setFields(f||[]); } catch(e) { show(e.message,"err"); } finally { setSaving(false); } };
 
   // --- Lots ---
   const expandField = async (fieldId) => {
@@ -5028,7 +5040,7 @@ function AdminScreen({ user, onBack }) {
       const f=await apiAdminListFields(selectedCompany.id); setFields(f||[]);
     } catch(e) { show(e.message,"err"); } finally { setSaving(false); }
   };
-  const handleDeleteLot = async (id) => { try { await apiAdminDeleteLot(id); show("Lote eliminado"); const l=await apiAdminListLots(expandedFieldId); setLots(l||[]); } catch(e) { show(e.message,"err"); } };
+  const handleDeleteLot = async (id) => { if(saving) return; setSaving(true); try { await apiAdminDeleteLot(id); show("Lote eliminado"); const l=await apiAdminListLots(expandedFieldId); setLots(l||[]); } catch(e) { show(e.message,"err"); } finally { setSaving(false); } };
 
   // --- Trucks ---
   const openNewTruck = () => { setTruckForm({plate:"",brand:"",model:"",capacity:""}); setEditTruckId(null); setShowTruckForm(true); };
@@ -5042,7 +5054,7 @@ function AdminScreen({ user, onBack }) {
       setShowTruckForm(false); const t=await apiAdminListTrucks(selectedCompany.id); setTrucks(t||[]);
     } catch(e) { show(e.message,"err"); } finally { setSaving(false); }
   };
-  const handleDeleteTruck = async (id) => { try { await apiAdminDeleteTruck(id); show("Vehículo eliminado"); const t=await apiAdminListTrucks(selectedCompany.id); setTrucks(t||[]); } catch(e) { show(e.message,"err"); } };
+  const handleDeleteTruck = async (id) => { if(saving) return; setSaving(true); try { await apiAdminDeleteTruck(id); show("Vehículo eliminado"); const t=await apiAdminListTrucks(selectedCompany.id); setTrucks(t||[]); } catch(e) { show(e.message,"err"); } finally { setSaving(false); } };
 
   // --- Users with companyByType + roleByType ---
   const toggleFormUserType = (t) => setUserForm(p=>({...p,userTypes:p.userTypes.includes(t)?p.userTypes.filter(x=>x!==t):[...p.userTypes,t]}));
@@ -5330,7 +5342,7 @@ function AdminScreen({ user, onBack }) {
           {branches.map(b=>(<div key={b.id} style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius:10,padding:"12px 14px",marginBottom:8,boxShadow:C.sh}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
               <div style={{flex:1}}><div style={{fontSize:13,fontWeight:600,color:C.t1}}>{b.name}</div>{b.address&&<div style={{fontSize:11,color:C.t3}}>{b.address}</div>}{b.lat&&<div style={{fontSize:9,color:C.t3}}>📍 {Number(b.lat).toFixed(5)}, {Number(b.lng).toFixed(5)}</div>}</div>
-              <div style={{display:"flex",gap:4}}><button onClick={()=>openEditBranch(b)} style={{padding:"4px 8px",borderRadius:6,border:`1px solid ${C.pri}40`,background:"none",fontSize:10,color:C.pri,cursor:"pointer",fontFamily:"inherit"}}>Editar</button><button onClick={()=>handleDeleteBranch(b.id)} style={{padding:"4px 8px",borderRadius:6,border:`1px solid ${C.err}30`,background:"none",fontSize:10,color:C.err,cursor:"pointer",fontFamily:"inherit"}}>Eliminar</button></div>
+              <div style={{display:"flex",gap:4}}><button onClick={()=>openEditBranch(b)} style={{padding:"4px 8px",borderRadius:6,border:`1px solid ${C.pri}40`,background:"none",fontSize:10,color:C.pri,cursor:"pointer",fontFamily:"inherit"}}>Editar</button><button disabled={saving} onClick={()=>handleDeleteBranch(b.id)} style={{padding:"4px 8px",borderRadius:6,border:`1px solid ${C.err}30`,background:"none",fontSize:10,color:saving?C.t3:C.err,cursor:saving?"not-allowed":"pointer",fontFamily:"inherit",opacity:saving?0.5:1}}>Eliminar</button></div>
             </div>
           </div>))}
           {branches.length===0&&!showBranchForm&&<div style={{textAlign:"center",padding:20,color:C.t3,fontSize:12}}>Sin sucursales</div>}
@@ -5371,7 +5383,7 @@ function AdminScreen({ user, onBack }) {
               </div>
               <div style={{display:"flex",gap:4,alignItems:"center"}}>
                 <button onClick={(e)=>{e.stopPropagation();openEditField(f);}} style={{padding:"4px 8px",borderRadius:6,border:`1px solid ${C.pri}40`,background:"none",fontSize:10,color:C.pri,cursor:"pointer",fontFamily:"inherit"}}>Editar</button>
-                <button onClick={(e)=>{e.stopPropagation();handleDeleteField(f.id);}} style={{padding:"4px 8px",borderRadius:6,border:`1px solid ${C.err}30`,background:"none",fontSize:10,color:C.err,cursor:"pointer",fontFamily:"inherit"}}>Eliminar</button>
+                <button disabled={saving} onClick={(e)=>{e.stopPropagation();handleDeleteField(f.id);}} style={{padding:"4px 8px",borderRadius:6,border:`1px solid ${C.err}30`,background:"none",fontSize:10,color:saving?C.t3:C.err,cursor:saving?"not-allowed":"pointer",fontFamily:"inherit",opacity:saving?0.5:1}}>Eliminar</button>
                 <span style={{fontSize:12,color:C.t3,marginLeft:4}}>{expandedFieldId===f.id?"▾":"▸"}</span>
               </div>
             </div>
@@ -5406,7 +5418,7 @@ function AdminScreen({ user, onBack }) {
                     </div>
                     <div style={{display:"flex",gap:4}}>
                       <button onClick={()=>openEditLot(l)} style={{padding:"3px 6px",borderRadius:4,border:`1px solid ${C.pri}40`,background:"none",fontSize:9,color:C.pri,cursor:"pointer",fontFamily:"inherit"}}>Editar</button>
-                      <button onClick={()=>handleDeleteLot(l.id)} style={{padding:"3px 6px",borderRadius:4,border:`1px solid ${C.err}30`,background:"none",fontSize:9,color:C.err,cursor:"pointer",fontFamily:"inherit"}}>Eliminar</button>
+                      <button disabled={saving} onClick={()=>handleDeleteLot(l.id)} style={{padding:"3px 6px",borderRadius:4,border:`1px solid ${C.err}30`,background:"none",fontSize:9,color:saving?C.t3:C.err,cursor:saving?"not-allowed":"pointer",fontFamily:"inherit",opacity:saving?0.5:1}}>Eliminar</button>
                     </div>
                   </div>
                 </div>))}
@@ -5450,7 +5462,7 @@ function AdminScreen({ user, onBack }) {
               </div>
               <div style={{display:"flex",gap:4}}>
                 <button onClick={()=>openEditTruck(t)} style={{padding:"4px 8px",borderRadius:6,border:`1px solid ${C.pri}40`,background:"none",fontSize:10,color:C.pri,cursor:"pointer",fontFamily:"inherit"}}>Editar</button>
-                <button onClick={()=>handleDeleteTruck(t.id)} style={{padding:"4px 8px",borderRadius:6,border:`1px solid ${C.err}30`,background:"none",fontSize:10,color:C.err,cursor:"pointer",fontFamily:"inherit"}}>Eliminar</button>
+                <button disabled={saving} onClick={()=>handleDeleteTruck(t.id)} style={{padding:"4px 8px",borderRadius:6,border:`1px solid ${C.err}30`,background:"none",fontSize:10,color:saving?C.t3:C.err,cursor:saving?"not-allowed":"pointer",fontFamily:"inherit",opacity:saving?0.5:1}}>Eliminar</button>
               </div>
             </div>
           </div>))}
