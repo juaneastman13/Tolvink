@@ -96,26 +96,26 @@ const LIGHT = {
 };
 
 const DARK = {
-  bg:"#0F1512",
-  bgCard:"#1A2420",
-  bgCardAlt:"#212E28",
-  bgInput:"#253530",
+  bg:"#0D1210",
+  bgCard:"#1A211E",
+  bgCardAlt:"#222B27",
+  bgInput:"#252F2A",
   bgOverlay:"rgba(0,0,0,0.75)",
-  nav:"#1A2420",
+  nav:"#161D1A",
   pri:"#2EBF5E", priLt:"#38D96E", priPale:"#1A3328", priGhost:"rgba(46,191,94,0.08)",
   acc:"#FF8533", accLt:"#FF9F5C", accPale:"#33241A",
-  sec:"#22D3EE", secLt:"#67E8F9", secPale:"#164E63",
+  sec:"#22D3EE", secLt:"#67E8F9", secPale:"#14303A",
   ok:"#2EBF5E", okPale:"#1A3328",
-  info:"#22D3EE", infoPale:"#164E63",
-  warn:"#FACC15", warnPale:"#33291A",
-  err:"#EF4444", errPale:"#331A1A",
-  muted:"#9CA3AF", mutedPale:"#27302C",
-  t1:"#E8F0EC", t2:"#A0B5A8", t3:"#6B8273", tOn:"#FFFFFF",
-  b1:"#2A3832", b2:"#1F2D26", bFocus:"#2EBF5E",
-  w:"#1A2420",
-  sh:"0 1px 3px rgba(0,0,0,0.2),0 1px 2px rgba(0,0,0,0.15)",
-  shMd:"0 4px 14px rgba(0,0,0,0.25)",
-  shLg:"0 12px 32px rgba(0,0,0,0.35)",
+  info:"#22D3EE", infoPale:"#14303A",
+  warn:"#E5B800", warnPale:"#2E2610",
+  err:"#F87171", errPale:"#3A1C1C",
+  muted:"#8A9590", mutedPale:"#252E2A",
+  t1:"#F0F5F2", t2:"#B0C4B6", t3:"#7A8F82", tOn:"#FFFFFF",
+  b1:"#313D37", b2:"#262F2A", bFocus:"#2EBF5E",
+  w:"#1A211E",
+  sh:"0 1px 3px rgba(0,0,0,0.25),0 1px 2px rgba(0,0,0,0.18)",
+  shMd:"0 4px 14px rgba(0,0,0,0.30)",
+  shLg:"0 12px 32px rgba(0,0,0,0.40)",
 };
 
 // Global theme state — persisted in localStorage
@@ -558,6 +558,12 @@ function Toast({ msg, type="ok", onClose }) {
   useEffect(()=>{ const t=setTimeout(onClose,3500); return()=>clearTimeout(t); },[onClose]);
   const cfg = { ok:{bg:C.pri,ic:Ic.chk(C.w,16)}, err:{bg:C.err,ic:Ic.warn(C.w,16)}, info:{bg:C.info,ic:Ic.bell(C.w,16)} }[type]||{bg:C.pri,ic:Ic.chk(C.w,16)};
   return <div style={{ position:"fixed", top:"max(20px, env(safe-area-inset-top))", left:"50%", transform:"translateX(-50%)", zIndex:200, background:cfg.bg, color:C.w, padding:"11px 22px", borderRadius:12, fontSize:13, fontWeight:600, boxShadow:C.shLg, display:"flex", alignItems:"center", gap:8, animation:"fadeIn 0.3s ease", maxWidth:"calc(100vw - 40px)" }}>{cfg.ic} {msg}</div>;
+}
+
+function Loader() {
+  return <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:32, gap:12 }}>
+    <span style={{ width:14, height:14, borderRadius:7, background:C.acc, display:"inline-block", animation:"dotPulse 1.5s ease-in-out infinite" }}></span>
+  </div>;
 }
 
 // ======================== ATTACH MENU (action sheet) ==================
@@ -1018,9 +1024,6 @@ function HomeScreen({ user, freights, perms, onNav, catalog, isDesktop }) {
 
   const displayFreights = useMemo(()=>freights.filter(f=>!["canceled","draft"].includes(f.status)),[freights]);
 
-  const tc = ({plant:C.pri,transporter:C.info,producer:C.acc})[user.userType]||C.pri;
-  const typeLabel = ({plant:"Planta de Acopio",transporter:"Transportista",producer:"Productor"})[user.userType];
-
   const statCards = [
     {k:"requested",l:"Solicitados",v:stats.avail,c:C.acc,bg:C.accPale},
     {k:"active",l:"En curso",v:stats.active,c:"#258B3E",bg:"#D0EBD7"},
@@ -1044,10 +1047,7 @@ function HomeScreen({ user, freights, perms, onNav, catalog, isDesktop }) {
     <div style={{ width:isDesktop&&activePanel?280:undefined, flexShrink:0, overflow:"auto", padding:"0 18px 18px 18px", boxSizing:"border-box" }}>
       {/* Greeting */}
       <div style={{ padding:"18px 0 12px 0" }}>
-        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-          <div><div style={{ fontSize:13, color:C.t2 }}>Hola,</div><div style={{ fontSize:isDesktop&&activePanel?18:22, fontWeight:800, letterSpacing:-0.3, color:C.t1 }}>{user.name.split(" ")[0]}</div></div>
-          {!(isDesktop&&activePanel) && <div style={{ textAlign:"right" }}><Bd color={tc}>{typeLabel}</Bd><div style={{ fontSize:10, color:C.t3, marginTop:4 }}>{user.role==="admin"?"Gerente":"Operario"} · {user.entity}</div></div>}
-        </div>
+        <div><div style={{ fontSize:13, color:C.t2 }}>Hola,</div><div style={{ fontSize:isDesktop&&activePanel?18:22, fontWeight:800, letterSpacing:-0.3, color:C.t1 }}>{user.name.split(" ")[0]}</div></div>
       </div>
 
       {/* Stat cards */}
@@ -3043,7 +3043,7 @@ function TrucksScreen({ onBack, embedded }) {
         </div>
       )}
 
-      {loading ? <div style={{ textAlign: "center", padding: 32, color: C.t3, fontSize: 13 }}>Cargando...</div> :
+      {loading ? <Loader/> :
         trucks.length === 0 ? <div style={{ textAlign: "center", padding: 32, color: C.t3, fontSize: 13 }}>No tenés camiones registrados.</div> :
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {trucks.map(t => (
@@ -3189,7 +3189,7 @@ function FieldsScreen({ onBack, embedded }) {
         </div>
       )}
 
-      {loading ? <div style={{ textAlign: "center", padding: 40, color: C.t3, fontSize: 13 }}>Cargando...</div> :
+      {loading ? <Loader/> :
         fields.length === 0 ? <div style={{ textAlign: "center", padding: 40, color: C.t3, fontSize: 13 }}>No tenés campos registrados.</div> :
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             {fields.map(f => (
@@ -3503,7 +3503,7 @@ function AccessScreen({ onBack }) {
       )}
 
       {/* Producer list grouped by plant */}
-      {loading ? <div style={{ textAlign: "center", padding: 40, color: C.t3, fontSize: 13 }}>Cargando...</div> :
+      {loading ? <Loader/> :
         activeProducers.length === 0 ? <div style={{ textAlign: "center", padding: 40, color: C.t3, fontSize: 13 }}>Ningún productor habilitado aún.</div> :
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             {fPlants.map(plant => {
@@ -3917,7 +3917,7 @@ function ChatsScreen({ user, openConvId, onConvOpened, isDesktop }) {
         </div>
       )}
 
-      {loading ? <div style={{ textAlign: "center", padding: 40, color: C.t3, fontSize: 13 }}>Cargando...</div> :
+      {loading ? <Loader/> :
         convs.length === 0 ? <div style={{ textAlign: "center", padding: 40, color: C.t3, fontSize: 13 }}>Sin conversaciones aún.{!showNew && <><br/><button onClick={()=>setShowNew(true)} style={{background:"none",border:"none",color:C.acc,fontWeight:600,cursor:"pointer",fontFamily:"inherit",fontSize:13,marginTop:8}}>Iniciar una nueva</button></>}</div> :
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {/* Direct conversations (flat, no nesting) */}
@@ -5494,7 +5494,7 @@ function AdminScreen({ user, onBack }) {
       <input value={search} onChange={e=>setSearch(e.target.value)} placeholder={tab==="companies"?"Buscar empresa o RUT...":"Buscar usuario..."} style={{...s.inp,marginBottom:10,paddingLeft:12}} />
       <MsgBar/>
 
-      {loading?<div style={{textAlign:"center",padding:40,color:C.t3}}>Cargando...</div>:(<>
+      {loading?<Loader/>:(<>
         {tab==="companies"&&(<>
           {isPlatform&&<button onClick={openNewCompany} style={{width:"100%",padding:"10px 14px",borderRadius:8,border:`1px dashed ${C.pri}`,background:`${C.pri}08`,color:C.pri,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"inherit",marginBottom:8}}>+ Nueva Empresa</button>}
           <div style={{display:"flex",flexDirection:"column",gap:8}}>
@@ -5684,8 +5684,8 @@ export default function Tolvink() {
   const navActive = ["detail"].includes(screen)?"list":["trucks","fields","access","admin","mydata"].includes(screen)?"profile":(!isDesktop&&screen==="reports")?"profile":(!isDesktop&&screen==="calendar")?"profile":screen;
 
   return (
-    <div className="tv-shell" style={{height:"100dvh",background:C.bg,color:C.t1,fontFamily:FONT,display:"flex",flexDirection:isDesktop?"row":"column",maxWidth:isDesktop?1400:1100,width:"100%",margin:"0 auto",position:"relative",overflow:"hidden"}}>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&family=JetBrains+Mono:wght@400;500&display=swap');*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}html,body{height:100%;margin:0;overflow-x:hidden;max-width:100vw}body{background:${C.bg};overflow-y:hidden;overscroll-behavior:none}input,textarea,select,button{font-size:16px}input::placeholder,textarea::placeholder{color:${C.t3}}::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:${C.b1};border-radius:4px}@keyframes ti{0%,100%{opacity:1}50%{opacity:.4}}@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}@keyframes cardIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}@keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}@keyframes dotPulse{0%,100%{opacity:0.3;transform:scale(0.8)}50%{opacity:1;transform:scale(1.2)}}.tv-card{transition:transform 0.15s ease,box-shadow 0.15s ease}.tv-row{transition:background 0.1s ease}@media(hover:hover){.tv-card:hover{transform:translateY(-2px);box-shadow:${C.shMd}!important}.tv-row:hover{background:${C.priGhost}!important}}@media(min-width:640px){.tv-grid{display:grid!important;grid-template-columns:1fr 1fr!important;gap:12px!important}.tv-grid3{display:grid!important;grid-template-columns:1fr 1fr 1fr!important;gap:12px!important}.tv-pad{padding:24px 32px!important}.tv-detail-grid{display:grid!important;grid-template-columns:1fr 1fr!important;gap:16px!important}.tv-table th,.tv-table td{padding:10px 12px!important;font-size:12px!important}.tv-stats{gap:12px!important}.tv-stats>div{padding:14px 12px!important;border-radius:12px!important}.tv-stats .tv-stat-num{font-size:28px!important}.tv-header-bar{padding:10px 32px 0 32px!important}}@media(min-width:768px){.tv-shell{max-width:1400px!important}.tv-mobile-header{display:none!important}.tv-mobile-nav{display:none!important}.tv-kanban{flex-direction:row!important;gap:12px!important}.tv-kanban-col{max-height:calc(100vh - 280px)!important;overflow-y:auto!important}}@media(max-width:767px){.tv-sidebar{display:none!important}.tv-shell{max-width:100vw!important;width:100%!important}}@media(min-width:900px){.tv-grid{grid-template-columns:1fr 1fr 1fr!important}}@media(min-width:1100px){.tv-grid{grid-template-columns:repeat(4,1fr)!important}}`}</style>
+    <div className="tv-shell" style={{height:"100dvh",background:C.bg,color:C.t1,fontFamily:FONT,display:"flex",flexDirection:isDesktop?"row":"column",width:"100%",position:"relative",overflow:"hidden"}}>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&family=JetBrains+Mono:wght@400;500&display=swap');*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}html,body{height:100%;margin:0;overflow-x:hidden;max-width:100vw}body{background:${C.bg};overflow-y:hidden;overscroll-behavior:none}input,textarea,select,button{font-size:16px}input::placeholder,textarea::placeholder{color:${C.t3}}::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:${C.b1};border-radius:4px}@keyframes ti{0%,100%{opacity:1}50%{opacity:.4}}@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}@keyframes cardIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}@keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}@keyframes dotPulse{0%,100%{opacity:0.3;transform:scale(0.8)}50%{opacity:1;transform:scale(1.2)}}@keyframes pageIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}.tv-page{animation:pageIn 0.25s ease-out}.tv-card{transition:transform 0.15s ease,box-shadow 0.15s ease}.tv-row{transition:background 0.1s ease}@media(hover:hover){.tv-card:hover{transform:translateY(-2px);box-shadow:${C.shMd}!important}.tv-row:hover{background:${C.priGhost}!important}}@media(min-width:640px){.tv-grid{display:grid!important;grid-template-columns:1fr 1fr!important;gap:12px!important}.tv-grid3{display:grid!important;grid-template-columns:1fr 1fr 1fr!important;gap:12px!important}.tv-pad{padding:24px 32px!important}.tv-detail-grid{display:grid!important;grid-template-columns:1fr 1fr!important;gap:16px!important}.tv-table th,.tv-table td{padding:10px 12px!important;font-size:12px!important}.tv-stats{gap:12px!important}.tv-stats>div{padding:14px 12px!important;border-radius:12px!important}.tv-stats .tv-stat-num{font-size:28px!important}.tv-header-bar{padding:10px 32px 0 32px!important}}@media(min-width:768px){.tv-mobile-header{display:none!important}.tv-mobile-nav{display:none!important}.tv-kanban{flex-direction:row!important;gap:12px!important}.tv-kanban-col{max-height:calc(100vh - 280px)!important;overflow-y:auto!important}}@media(max-width:767px){.tv-sidebar{display:none!important}.tv-shell{max-width:100vw!important;width:100%!important}}@media(min-width:900px){.tv-grid{grid-template-columns:1fr 1fr 1fr!important}}@media(min-width:1100px){.tv-grid{grid-template-columns:repeat(4,1fr)!important}}`}</style>
 
       {/* Desktop Sidebar */}
       <div className="tv-sidebar">
@@ -5704,6 +5704,7 @@ export default function Tolvink() {
 
         {/* Scrollable content area */}
         <div style={{flex:1,overflow:(screen==="chats"||screen==="calendar")&&isDesktop?"hidden":"auto",display:"flex",flexDirection:"column",WebkitOverflowScrolling:"touch",overscrollBehavior:"contain"}}>
+        <div key={screen} className="tv-page" style={{flex:1,display:"flex",flexDirection:"column"}}>
         {screen==="home" && <HomeScreen user={auth.user} freights={fh.freights} perms={perms} onNav={nav} catalog={catalog} isDesktop={isDesktop}/>}
         {screen==="list" && <ListScreen freights={fh.freights} onNav={nav} onRefresh={fh.fetchAll}/>}
         {screen==="pending" && <PendingScreen user={auth.user} freights={fh.freights} onNav={nav} onNewFreight={()=>nav("new")}/>}
@@ -5719,6 +5720,7 @@ export default function Tolvink() {
         {screen==="mydata" && <MyDataScreen user={auth.user} onBack={()=>setScreen("profile")}/>}
         {screen==="reports" && <ReportsScreen onBack={()=>setScreen(isDesktop?"reports":"profile")} freights={fh.freights} isDesktop={isDesktop}/>}
         {screen==="chats" && <ChatsScreen user={auth.user} openConvId={chatConvId} onConvOpened={()=>setChatConvId(null)} isDesktop={isDesktop}/>}
+        </div>
         </div>
 
         {/* Mobile-only bottom nav */}
