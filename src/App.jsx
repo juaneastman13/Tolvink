@@ -620,8 +620,10 @@ function Sidebar({ active, onChange, unread=0, pendingCount=0, canRequest=false,
     <div style={{ width:200, minWidth:200, height:"100%", background:C.w, borderRight:`1px solid ${C.b2}`, display:"flex", flexDirection:"column", flexShrink:0, overflow:"hidden" }}>
       {/* Logo */}
       <div style={{ padding:"20px 20px 16px", borderBottom:`1px solid ${C.b2}` }}>
-        <span style={{ fontSize:28, fontWeight:800, color:C.pri, letterSpacing:-0.9 }}>tolvink</span>
-        <span style={{ width:7, height:7, borderRadius:4, background:C.acc, display:"inline-block", marginLeft:2, marginTop:-12 }}></span>
+        <div style={{ display:"inline-flex", alignItems:"flex-start" }}>
+          <span style={{ fontSize:28, fontWeight:800, color:C.pri, letterSpacing:-0.9, lineHeight:1 }}>tolvink</span>
+          <span style={{ width:7, height:7, borderRadius:4, background:C.acc, display:"inline-block", marginLeft:2, marginTop:1, animation:"dotPulse 1.5s ease-in-out infinite" }}></span>
+        </div>
       </div>
 
       {/* Status + Solicitar */}
@@ -872,26 +874,31 @@ function AuthScreen({ onLogin, onSignup, loading, error, clearError, onBackToLan
               </>}
 
               {/* === SIGNUP MODE === */}
-              {mode==="signup" && <>
-                <div>
+              {mode==="signup" && (()=>{
+                const showEmail = name.trim().length >= 3;
+                const showPhone = showEmail && email.trim().length >= 5 && email.includes("@");
+                const showPw = showPhone && phone.replace(/\D/g,"").length >= 9;
+                const showTypes = showPw && pw.length >= 4;
+                return <>
+                <div style={{animation:"fadeUp 0.3s ease-out"}}>
                   <Field label="Nombre completo" icon={Ic.user(C.t2,14)} value={name} onChange={setName} placeholder="Tu nombre completo"/>
                   {touched&&<FieldError error={errs.name}/>}
                 </div>
-                <div>
+                {showEmail && <div style={{animation:"fadeUp 0.3s ease-out"}}>
                   <Field label="Email" icon={Ic.mail(C.t2,14)} value={email} onChange={setEmail} placeholder="tu@email.com" type="email"/>
                   {touched&&<FieldError error={errs.email}/>}
-                </div>
-                <div>
+                </div>}
+                {showPhone && <div style={{animation:"fadeUp 0.3s ease-out"}}>
                   <Field label="Celular" icon={Ic.phone(C.t2,14)} value={phone} onChange={handlePhone} placeholder="09X XXX XXX" type="tel"/>
                   {touched&&<FieldError error={errs.phone}/>}
-                </div>
-                <div>
+                </div>}
+                {showPw && <div style={{animation:"fadeUp 0.3s ease-out"}}>
                   <Field label="Contraseña" icon={Ic.lock(C.t2,14)} value={pw} onChange={setPw} placeholder="Mínimo 4 caracteres" type="password"/>
                   {touched&&<FieldError error={errs.pw}/>}
-                </div>
+                </div>}
 
                 {/* Multi-select user types */}
-                <div>
+                {showTypes && <div style={{animation:"fadeUp 0.3s ease-out"}}>
                   <div style={{ fontSize:12, fontWeight:600, color:C.t2, marginBottom:8 }}>¿Qué tipo de usuario sos?</div>
                   <div style={{ fontSize:10.5, color:C.t3, marginBottom:10 }}>Podés seleccionar más de uno</div>
                   <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
@@ -914,8 +921,8 @@ function AuthScreen({ onLogin, onSignup, loading, error, clearError, onBackToLan
                     })}
                   </div>
                   {touched&&<FieldError error={errs.userTypes}/>}
-                </div>
-              </>}
+                </div>}
+              </>})()}
 
               {error && <div style={{ padding:"10px 14px", background:C.errPale, borderRadius:8, fontSize:12.5, color:C.err, fontWeight:600, display:"flex", alignItems:"center", gap:6 }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.err} strokeWidth="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>{error}</div>}
               <Btn full onClick={submit} disabled={loading}>{loading?"Cargando...":mode==="login"?"Ingresar":"Crear cuenta"}</Btn>
@@ -2921,17 +2928,17 @@ function NewScreen({ user, lots, plants, branches, fields, trucks, onBack, onCre
 
 // ======================== PROFILE =====================================
 
-function ProfileScreen({ user, perms, onLogout, onNav, theme, toggleTheme }) {
+function ProfileScreen({ user, perms, onLogout, onNav, theme, toggleTheme, isDesktop }) {
   const tc = ({plant:C.pri,transporter:C.info,producer:C.acc})[user.userType]||C.pri;
   const pl = []; if(perms.canRequest)pl.push("Solicitar fletes"); if(perms.canApprove)pl.push("Aprobar fletes"); if(perms.canAssignDriver)pl.push("Asignar choferes"); if(perms.canCancel)pl.push("Cancelar fletes"); if(perms.canReject)pl.push("Rechazar viajes");
   const isDark = theme === "dark";
 
   const mgmtItems = [];
-  if(user.userType==="transporter"||user.userType==="producer") mgmtItems.push({k:"trucks",l:"Mis Camiones",ic:Ic.truck(C.acc,18),c:C.acc});
+  if(user.userType==="transporter"||user.userType==="producer") mgmtItems.push({k:"trucks",l:"Mi Flota",ic:Ic.truck(C.acc,18),c:C.acc});
   if(user.userType==="producer") mgmtItems.push({k:"fields",l:"Mis Campos y Lotes",ic:Ic.pin(C.pri,18),c:C.pri});
-  if(user.userType==="plant") mgmtItems.push({k:"access",l:"Productores Habilitados",ic:Ic.user(C.pri,18),c:C.pri});
-  mgmtItems.push({k:"calendar",l:"Calendario",ic:Ic.cal(C.info||C.sec,18),c:C.info||C.sec});
-  mgmtItems.push({k:"reports",l:"Informes y Documentos",ic:Ic.doc(C.sec,18),c:C.sec});
+  if(user.userType==="plant") mgmtItems.push({k:"access",l:"Productores / Transportistas",ic:Ic.user(C.pri,18),c:C.pri});
+  if(!isDesktop) mgmtItems.push({k:"calendar",l:"Calendario",ic:Ic.cal(C.info||C.sec,18),c:C.info||C.sec});
+  if(!isDesktop) mgmtItems.push({k:"reports",l:"Informes y Documentos",ic:Ic.doc(C.sec,18),c:C.sec});
   if(user.role==="platform_admin"||user.role==="admin") mgmtItems.push({k:"admin",l:"Administración",ic:Ic.shield(C.err,18),c:C.err});
 
   return (
@@ -3020,7 +3027,7 @@ function TrucksScreen({ onBack, embedded }) {
     <div style={{ flex: embedded?undefined:1, overflow: embedded?"visible":"auto", padding: embedded?0:18 }}>
       {!embedded && <button onClick={onBack} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 600, color: C.pri, marginBottom: 14, padding: 0, display: "flex", alignItems: "center", gap: 4 }}>{Ic.chev(C.pri, 18)} Mi Perfil</button>}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
-        <div style={{ fontSize: 20, fontWeight: 800, letterSpacing: -0.3 }}>Mis Camiones</div>
+        <div style={{ fontSize: 20, fontWeight: 800, letterSpacing: -0.3 }}>Mi Flota</div>
         <Btn sm onClick={() => setShowForm(!showForm)} icon={showForm ? Ic.cross(C.w, 14) : Ic.plus(C.w, 14)}>{showForm ? "Cerrar" : "Agregar"}</Btn>
       </div>
 
@@ -3415,7 +3422,7 @@ function AccessScreen({ onBack }) {
     <div style={{ flex: 1, overflow: "auto", padding: 18 }}>
       <button onClick={onBack} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 600, color: C.pri, marginBottom: 14, padding: 0, display: "flex", alignItems: "center", gap: 4 }}>{Ic.chev(C.pri, 18)} Mi Perfil</button>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
-        <div style={{ fontSize: 20, fontWeight: 800, letterSpacing: -0.3 }}>Productores Habilitados</div>
+        <div style={{ fontSize: 20, fontWeight: 800, letterSpacing: -0.3 }}>Productores / Transportistas</div>
         <Btn sm onClick={() => { setShowGrant(!showGrant); setEditingAccess(null); setSelectedProducer(null); setSearchResults([]); setSearchQ(""); setMsg(null); setSelectedPlantIds([]); }} icon={showGrant ? Ic.cross(C.w, 14) : Ic.plus(C.w, 14)}>{showGrant ? "Cerrar" : "Habilitar"}</Btn>
       </div>
 
@@ -4769,7 +4776,7 @@ function AssignModal({ freight, transporters, onClose, onConfirm }) {
   const ts = transporters||[];
   const doConfirm = async ()=>{ if(loading||!t) return; setLoading(true); await onConfirm(t); setLoading(false); };
   return (
-    <div style={{position:"fixed",inset:0,background:C.bgOverlay,display:"flex",alignItems:"flex-end",justifyContent:"center",zIndex:100,padding:"16px 16px max(16px, env(safe-area-inset-bottom))"}}>
+    <div style={{position:"fixed",inset:0,background:C.bgOverlay,display:"flex",alignItems:"center",justifyContent:"center",zIndex:100,padding:24}}>
       <div style={{background:C.w,borderRadius:18,padding:22,width:"100%",maxWidth:400,boxShadow:C.shLg}}>
         <div style={{fontSize:17,fontWeight:700,marginBottom:4}}>Asignar transporte · {freight.code}</div>
         <div style={{fontSize:12,color:C.t2,marginBottom:18}}>{freight.grain} · {freight.tons}tn · {freight.originName}</div>
@@ -4790,7 +4797,7 @@ function TruckSelectModal({ freight, trucks, onClose, onConfirm }) {
   const ts = (trucks||[]).filter(t=>t.active!==false);
   const doConfirm = async ()=>{ if(loading||!sel) return; setLoading(true); await onConfirm(sel); setLoading(false); };
   return (
-    <div style={{position:"fixed",inset:0,background:C.bgOverlay,display:"flex",alignItems:"flex-end",justifyContent:"center",zIndex:100,padding:"16px 16px max(16px, env(safe-area-inset-bottom))"}}>
+    <div style={{position:"fixed",inset:0,background:C.bgOverlay,display:"flex",alignItems:"center",justifyContent:"center",zIndex:100,padding:24}}>
       <div style={{background:C.w,borderRadius:18,padding:22,width:"100%",maxWidth:400,boxShadow:C.shLg}}>
         <div style={{fontSize:17,fontWeight:700,marginBottom:4}}>Aceptar flete · {freight.code}</div>
         <div style={{fontSize:12,color:C.t2,marginBottom:18}}>{freight.grain} · {freight.tons}tn → {freight.destName}</div>
@@ -4817,7 +4824,7 @@ function ReasonModal({ title, freight, btnLabel, btnType="err", onClose, onConfi
   const [loading,setLoading] = useState(false);
   const doConfirm = async ()=>{ if(loading||!reason) return; setLoading(true); await onConfirm(reason); setLoading(false); };
   return (
-    <div style={{position:"fixed",inset:0,background:C.bgOverlay,display:"flex",alignItems:"flex-end",justifyContent:"center",zIndex:100,padding:"16px 16px max(16px, env(safe-area-inset-bottom))"}}>
+    <div style={{position:"fixed",inset:0,background:C.bgOverlay,display:"flex",alignItems:"center",justifyContent:"center",zIndex:100,padding:24}}>
       <div style={{background:C.w,borderRadius:18,padding:22,width:"100%",maxWidth:400,boxShadow:C.shLg}}>
         <div style={{fontSize:17,fontWeight:700,marginBottom:4,color:btnType==="err"?C.err:C.t1}}>{title} · {freight.code}</div>
         <div style={{fontSize:12,color:C.t2,marginBottom:18}}>{freight.grain} · {freight.tons}tn</div>
@@ -5687,7 +5694,7 @@ export default function Tolvink() {
 
   return (
     <div className="tv-shell" style={{height:"100dvh",background:C.bg,color:C.t1,fontFamily:FONT,display:"flex",flexDirection:isDesktop?"row":"column",maxWidth:isDesktop?1400:1100,width:"100%",margin:"0 auto",position:"relative",overflow:"hidden"}}>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&family=JetBrains+Mono:wght@400;500&display=swap');*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}html,body{height:100%;margin:0;overflow-x:hidden;max-width:100vw}body{background:${C.bg};overflow-y:hidden;overscroll-behavior:none}input,textarea,select,button{font-size:16px}input::placeholder,textarea::placeholder{color:${C.t3}}::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:${C.b1};border-radius:4px}@keyframes ti{0%,100%{opacity:1}50%{opacity:.4}}@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}@keyframes cardIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}@keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}.tv-card{transition:transform 0.15s ease,box-shadow 0.15s ease}.tv-row{transition:background 0.1s ease}@media(hover:hover){.tv-card:hover{transform:translateY(-2px);box-shadow:${C.shMd}!important}.tv-row:hover{background:${C.priGhost}!important}}@media(min-width:640px){.tv-grid{display:grid!important;grid-template-columns:1fr 1fr!important;gap:12px!important}.tv-grid3{display:grid!important;grid-template-columns:1fr 1fr 1fr!important;gap:12px!important}.tv-pad{padding:24px 32px!important}.tv-detail-grid{display:grid!important;grid-template-columns:1fr 1fr!important;gap:16px!important}.tv-table th,.tv-table td{padding:10px 12px!important;font-size:12px!important}.tv-stats{gap:12px!important}.tv-stats>div{padding:14px 12px!important;border-radius:12px!important}.tv-stats .tv-stat-num{font-size:28px!important}.tv-header-bar{padding:10px 32px 0 32px!important}}@media(min-width:768px){.tv-shell{max-width:1400px!important}.tv-mobile-header{display:none!important}.tv-mobile-nav{display:none!important}.tv-kanban{flex-direction:row!important;gap:12px!important}.tv-kanban-col{max-height:calc(100vh - 280px)!important;overflow-y:auto!important}}@media(max-width:767px){.tv-sidebar{display:none!important}.tv-shell{max-width:100vw!important;width:100%!important}}@media(min-width:900px){.tv-grid{grid-template-columns:1fr 1fr 1fr!important}}@media(min-width:1100px){.tv-grid{grid-template-columns:repeat(4,1fr)!important}}`}</style>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&family=JetBrains+Mono:wght@400;500&display=swap');*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}html,body{height:100%;margin:0;overflow-x:hidden;max-width:100vw}body{background:${C.bg};overflow-y:hidden;overscroll-behavior:none}input,textarea,select,button{font-size:16px}input::placeholder,textarea::placeholder{color:${C.t3}}::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:${C.b1};border-radius:4px}@keyframes ti{0%,100%{opacity:1}50%{opacity:.4}}@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}@keyframes cardIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}@keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}@keyframes dotPulse{0%,100%{opacity:0.3;transform:scale(0.8)}50%{opacity:1;transform:scale(1.2)}}.tv-card{transition:transform 0.15s ease,box-shadow 0.15s ease}.tv-row{transition:background 0.1s ease}@media(hover:hover){.tv-card:hover{transform:translateY(-2px);box-shadow:${C.shMd}!important}.tv-row:hover{background:${C.priGhost}!important}}@media(min-width:640px){.tv-grid{display:grid!important;grid-template-columns:1fr 1fr!important;gap:12px!important}.tv-grid3{display:grid!important;grid-template-columns:1fr 1fr 1fr!important;gap:12px!important}.tv-pad{padding:24px 32px!important}.tv-detail-grid{display:grid!important;grid-template-columns:1fr 1fr!important;gap:16px!important}.tv-table th,.tv-table td{padding:10px 12px!important;font-size:12px!important}.tv-stats{gap:12px!important}.tv-stats>div{padding:14px 12px!important;border-radius:12px!important}.tv-stats .tv-stat-num{font-size:28px!important}.tv-header-bar{padding:10px 32px 0 32px!important}}@media(min-width:768px){.tv-shell{max-width:1400px!important}.tv-mobile-header{display:none!important}.tv-mobile-nav{display:none!important}.tv-kanban{flex-direction:row!important;gap:12px!important}.tv-kanban-col{max-height:calc(100vh - 280px)!important;overflow-y:auto!important}}@media(max-width:767px){.tv-sidebar{display:none!important}.tv-shell{max-width:100vw!important;width:100%!important}}@media(min-width:900px){.tv-grid{grid-template-columns:1fr 1fr 1fr!important}}@media(min-width:1100px){.tv-grid{grid-template-columns:repeat(4,1fr)!important}}`}</style>
 
       {/* Desktop Sidebar */}
       <div className="tv-sidebar">
@@ -5698,8 +5705,10 @@ export default function Tolvink() {
       <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden", minWidth:0 }}>
         {/* Mobile-only header */}
         <div className="tv-mobile-header" style={{paddingTop:"max(12px, env(safe-area-inset-top))",paddingBottom:12,paddingLeft:18,paddingRight:18,display:"flex",alignItems:"center",borderBottom:`1px solid ${C.b2}`,background:C.w,flexShrink:0,zIndex:10}}>
-          <span style={{fontSize:30,fontWeight:800,color:C.pri,letterSpacing:-0.9}}>tolvink</span>
-          <span style={{width:8,height:8,borderRadius:4,background:C.acc,display:"inline-block",marginLeft:3,marginTop:-14}}></span>
+          <div style={{display:"inline-flex",alignItems:"flex-start"}}>
+            <span style={{fontSize:30,fontWeight:800,color:C.pri,letterSpacing:-0.9,lineHeight:1}}>tolvink</span>
+            <span style={{width:8,height:8,borderRadius:4,background:C.acc,display:"inline-block",marginLeft:3,marginTop:1,animation:"dotPulse 1.5s ease-in-out infinite"}}></span>
+          </div>
         </div>
 
         {/* Scrollable content area */}
@@ -5711,7 +5720,7 @@ export default function Tolvink() {
         {screen==="detail" && <DetailScreen user={auth.user} freight={curFreight} perms={perms} onBack={()=>setScreen("list")} onAction={handleAction} actionLoading={actionLoading} onChat={(convId)=>{if(convId){setChatConvId(convId);setScreen("chats");}}} onRefresh={(id)=>fh.refresh(id)} onDuplicate={(f)=>{setDuplicateData(f);setScreen("new");}} onEdit={(f)=>{setEditData(f);setScreen("edit");}}/>}
         {screen==="new" && <NewScreen user={auth.user} lots={catalog.lots} plants={catalog.plants} branches={catalog.branches} fields={catalog.fields} trucks={catalog.trucks} onBack={()=>{setDuplicateData(null);setScreen("home");}} onCreate={handleCreate} submitting={submitting} duplicateFrom={duplicateData}/>}
         {screen==="edit" && editData && <EditScreen freight={editData} fields={catalog.fields} plants={catalog.plants} onBack={()=>{setEditData(null);setScreen("detail");}} onSave={async(id,data)=>{const r=await fh.update(id,data);if(r.ok){setEditData(null);setScreen("detail");show("Flete actualizado");}else show(r.error,"err");}}/>}
-        {screen==="profile" && <ProfileScreen user={auth.user} perms={perms} onLogout={auth.logout} onNav={nav} theme={theme} toggleTheme={toggleTheme}/>}
+        {screen==="profile" && <ProfileScreen user={auth.user} perms={perms} onLogout={auth.logout} onNav={nav} theme={theme} toggleTheme={toggleTheme} isDesktop={isDesktop}/>}
         {screen==="trucks" && <TrucksScreen onBack={()=>{catalog.refresh();setScreen("profile");}}/>}
         {screen==="fields" && <FieldsScreen onBack={()=>{catalog.refresh();setScreen("profile");}}/>}
         {screen==="access" && <AccessScreen onBack={()=>setScreen("profile")}/>}
