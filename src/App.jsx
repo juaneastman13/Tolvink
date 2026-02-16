@@ -485,10 +485,12 @@ function Sidebar({ active, onChange, unread=0, pendingCount=0, canRequest=false,
   const hasPending = pendingCount > 0;
   const centerColor = hasPending ? C.acc : C.ok;
   const items = [
-    { k:"home",   ic:a=>Ic.home(a?C.pri:C.t3,20),  l:"Inicio" },
-    { k:"list",   ic:a=>Ic.truck(a?C.pri:C.t3,20),  l:"Fletes" },
-    { k:"chats",  ic:a=>Ic.msg(a?C.pri:C.t3,20),    l:"Chat", bd:unread },
-    { k:"profile",ic:a=>Ic.user(a?C.pri:C.t3,20),   l:"Perfil" },
+    { k:"home",    ic:a=>Ic.home(a?C.pri:C.t3,20),  l:"Inicio" },
+    { k:"list",    ic:a=>Ic.truck(a?C.pri:C.t3,20),  l:"Fletes" },
+    { k:"calendar",ic:a=>Ic.cal(a?C.pri:C.t3,20),    l:"Calendario" },
+    { k:"chats",   ic:a=>Ic.msg(a?C.pri:C.t3,20),    l:"Chat", bd:unread },
+    { k:"reports", ic:a=>Ic.doc(a?C.pri:C.t3,20),    l:"Informes" },
+    { k:"profile", ic:a=>Ic.user(a?C.pri:C.t3,20),   l:"Perfil" },
   ];
   return (
     <div style={{ width:200, minWidth:200, height:"100%", background:C.w, borderRight:`1px solid ${C.b2}`, display:"flex", flexDirection:"column", flexShrink:0, overflow:"hidden" }}>
@@ -836,10 +838,8 @@ function HomeScreen({ user, freights, perms, onNav }) {
     {k:"done",l:"Finalizados",v:stats.done,c:C.pri,bg:C.priPale},
   ];
 
-  const viewLabels = {cards:"Tarjetas",table:"Tabla",map:"Mapa",calendar:"Calendario"};
-  const nextView = () => setViewMode(v => v==="cards"?"table":v==="table"?"map":v==="map"?"calendar":"cards");
-  const [calMonth, setCalMonth] = useState(()=>{const d=new Date();return{y:d.getFullYear(),m:d.getMonth()}});
-  const [calSelDay, setCalSelDay] = useState(null);
+  const viewLabels = {cards:"Tarjetas",table:"Tabla",map:"Mapa"};
+  const nextView = () => setViewMode(v => v==="cards"?"table":v==="table"?"map":"cards");
 
   return (
     <div style={{ flex:1, overflow:"auto" }}>
@@ -882,7 +882,7 @@ function HomeScreen({ user, freights, perms, onNav }) {
             </>}
             <span style={{ fontSize:10, color:C.t3, whiteSpace:"nowrap" }}>Cambiar visualización</span>
             <button onClick={nextView} style={{ display:"flex", alignItems:"center", gap:4, background:C.priPale, border:`1px solid ${C.pri}20`, borderRadius:8, padding:"5px 10px", cursor:"pointer", fontFamily:"inherit", fontSize:10.5, fontWeight:600, color:C.pri }}>
-              {viewMode==="map"?Ic.pin(C.pri,13):viewMode==="table"?Ic.doc(C.pri,13):viewMode==="calendar"?Ic.cal(C.pri,13):Ic.home(C.pri,13)} {viewLabels[viewMode]}
+              {viewMode==="map"?Ic.pin(C.pri,13):viewMode==="table"?Ic.doc(C.pri,13):Ic.home(C.pri,13)} {viewLabels[viewMode]}
             </button>
           </div>
         </div>
@@ -900,9 +900,7 @@ function HomeScreen({ user, freights, perms, onNav }) {
       )}
 
       {/* MAP VIEW */}
-      {/* MAP VIEW moved below calendar */}
-
-      {/* TABLE VIEW */}
+      {viewMode==="map" && <HomeMapView freights={displayFreights} onNav={onNav} />}
       {viewMode==="table" && (
         <div style={{ overflowX:"auto", borderRadius:10, border:`1px solid ${C.b1}`, background:C.w }}>
           <table className="tv-table" style={{ width:"100%", borderCollapse:"collapse", fontSize:11 }}>
@@ -935,7 +933,7 @@ function HomeScreen({ user, freights, perms, onNav }) {
       )}
 
       {/* CARDS VIEW */}
-      {viewMode==="cards" && (
+      {viewMode==="cards" && activeFilter!=="all" && (
         <div style={{ display:"flex", flexDirection:"column", gap:10 }} className="tv-grid">
           {displayFreights.length===0 && <div style={{ textAlign:"center", padding:40, color:C.t3, fontSize:13, gridColumn:"1/-1" }}>Sin fletes en esta categoría</div>}
           {displayFreights.map((f,idx)=>{
@@ -961,72 +959,41 @@ function HomeScreen({ user, freights, perms, onNav }) {
           })}
         </div>
       )}
-      {/* CALENDAR VIEW */}
-      {viewMode==="calendar" && (()=>{
-        const days=[];
-        const first=new Date(calMonth.y,calMonth.m,1);
-        const lastDay=new Date(calMonth.y,calMonth.m+1,0).getDate();
-        const startDow=(first.getDay()+6)%7;
-        for(let i=0;i<startDow;i++)days.push(null);
-        for(let d=1;d<=lastDay;d++)days.push(d);
-        const monNames=["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
-        const byDay={};
-        displayFreights.forEach(f=>{
-          if(!f.loadDate)return;
-          const dd=parseInt(f.loadDate.slice(8,10),10);
-          const mm=parseInt(f.loadDate.slice(5,7),10)-1;
-          const yy=parseInt(f.loadDate.slice(0,4),10);
-          if(yy===calMonth.y&&mm===calMonth.m){
-            if(!byDay[dd])byDay[dd]=[];
-            byDay[dd].push(f);
-          }
-        });
-        const selFreights=calSelDay?byDay[calSelDay]||[]:[];
-        const today=new Date();const isToday=(d)=>d===today.getDate()&&calMonth.m===today.getMonth()&&calMonth.y===today.getFullYear();
-        return <div>
-          <div style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius:12,padding:14,boxShadow:C.sh,marginBottom:10}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-              <button onClick={()=>setCalMonth(p=>p.m===0?{y:p.y-1,m:11}:{y:p.y,m:p.m-1})} style={{background:"none",border:"none",cursor:"pointer",padding:4}}>{Ic.chev(C.pri,20)}</button>
-              <span style={{fontSize:15,fontWeight:700,color:C.t1}}>{monNames[calMonth.m]} {calMonth.y}</span>
-              <button onClick={()=>setCalMonth(p=>p.m===11?{y:p.y+1,m:0}:{y:p.y,m:p.m+1})} style={{background:"none",border:"none",cursor:"pointer",padding:4,transform:"rotate(180deg)"}}>{Ic.chev(C.pri,20)}</button>
-            </div>
-            <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:2,textAlign:"center"}}>
-              {["Lu","Ma","Mi","Ju","Vi","Sá","Do"].map(d=><div key={d} style={{fontSize:9,fontWeight:600,color:C.t3,padding:4}}>{d}</div>)}
-              {days.map((d,i)=>{
-                if(!d)return<div key={`e${i}`}/>;
-                const cnt=byDay[d]?.length||0;
-                const sel=calSelDay===d;
-                const td=isToday(d);
-                const statuses=byDay[d]?.map(f=>stCfg(f.status).color)||[];
-                return <div key={d} onClick={()=>setCalSelDay(sel?null:d)} style={{padding:"6px 2px",borderRadius:8,cursor:"pointer",background:sel?C.pri:td?C.priPale:"transparent",transition:"background 0.15s"}}>
-                  <div style={{fontSize:12,fontWeight:sel||td?700:400,color:sel?C.w:td?C.pri:C.t1}}>{d}</div>
-                  {cnt>0&&<div style={{display:"flex",gap:2,justifyContent:"center",marginTop:2}}>
-                    {statuses.slice(0,3).map((c,j)=><div key={j} style={{width:5,height:5,borderRadius:3,background:sel?"#fff":c}}/>)}
-                    {cnt>3&&<div style={{fontSize:7,color:sel?C.w:C.t3}}>+</div>}
-                  </div>}
-                </div>;
-              })}
-            </div>
-          </div>
-          {calSelDay&&<div>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-              <span style={{fontSize:13,fontWeight:700,color:C.t1}}>{calSelDay} {monNames[calMonth.m]} — {selFreights.length} flete{selFreights.length!==1?"s":""}</span>
-              {perms.canRequest&&<Btn sm v="acc" icon={Ic.plus(C.w,12)} onClick={()=>{const dd=String(calSelDay).padStart(2,"0");const mm=String(calMonth.m+1).padStart(2,"0");onNav("new_date",`${calMonth.y}-${mm}-${dd}`)}}>Nuevo</Btn>}
-            </div>
-            <div style={{display:"flex",flexDirection:"column",gap:8}}>
-              {selFreights.map(f=>{const st=stCfg(f.status);return <div key={f.id} className="tv-card" onClick={()=>onNav("detail",f.id)} style={{background:C.w,border:`1px solid ${C.b1}`,borderLeft:`3px solid ${st.border}`,borderRadius:10,padding:12,cursor:"pointer",boxShadow:C.sh}}>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}><span style={{fontSize:11,fontWeight:700,color:C.t3,fontFamily:MONO}}>{f.code}</span><Bd color={st.color} bg={st.bg} small>{st.label}</Bd></div>
-                <div style={{fontSize:13,fontWeight:700,color:C.t1,marginTop:4}}>{f.grain} · {f.tons} tn</div>
-                <div style={{fontSize:10.5,color:C.t2,marginTop:3}}>{(f.originName||"").split("—")[0].trim()} → {f.destName}</div>
-              </div>})}
-              {selFreights.length===0&&<div style={{textAlign:"center",padding:20,color:C.t3,fontSize:12}}>Sin fletes este día</div>}
-            </div>
-          </div>}
+
+      {/* KANBAN COLUMN VIEW — when "all" filter is active */}
+      {viewMode==="cards" && activeFilter==="all" && (()=>{
+        const cols = [
+          { key:"requested", label:"Solicitados", color:C.acc, bg:C.accPale, statuses:["draft","pending_assignment"] },
+          { key:"active", label:"En curso", color:"#258B3E", bg:"#D0EBD7", statuses:["assigned","accepted","in_progress","loaded"] },
+          { key:"done", label:"Finalizados", color:C.pri, bg:C.priPale, statuses:["finished"] },
+        ];
+        return <div className="tv-kanban" style={{ display:"flex", flexDirection:"column", gap:16 }}>
+          {cols.map(col=>{
+            const items = displayFreights.filter(f=>col.statuses.includes(f.status));
+            return <div key={col.key} style={{ flex:1, minWidth:0, display:"flex", flexDirection:"column" }}>
+              <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8, padding:"8px 12px", background:col.bg, borderRadius:8, borderLeft:`3px solid ${col.color}`, flexShrink:0 }}>
+                <span style={{ fontSize:12, fontWeight:700, color:col.color }}>{col.label}</span>
+                <span style={{ fontSize:11, fontWeight:600, color:col.color, opacity:0.7 }}>({items.length})</span>
+              </div>
+              <div className="tv-kanban-col" style={{ display:"flex", flexDirection:"column", gap:8, flex:1, overflowY:"auto" }}>
+                {items.length===0 && <div style={{ textAlign:"center", padding:16, color:C.t3, fontSize:11, background:C.w, borderRadius:8, border:`1px dashed ${C.b1}` }}>Sin fletes</div>}
+                {items.map((f,idx)=>{
+                  const st = stCfg(f.status);
+                  return <div key={f.id} className="tv-card" onClick={()=>onNav("detail",f.id)} style={{ background:C.w, border:`1px solid ${C.b1}`, borderLeft:`3px solid ${st.border}`, borderRadius:10, padding:12, cursor:"pointer", boxShadow:C.sh, animation:`cardIn 0.3s ease ${idx*0.03}s both` }}>
+                    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:4 }}>
+                      <span style={{ fontSize:10, fontWeight:700, color:C.t3, fontFamily:MONO }}>{f.code}</span>
+                      <Bd color={st.color} bg={st.bg} small>{st.label}</Bd>
+                    </div>
+                    <div style={{ fontSize:13, fontWeight:700, color:C.t1 }}>{f.grain} · {f.tons} tn</div>
+                    <div style={{ fontSize:10.5, color:C.t2, marginTop:3 }}>{(f.originName||"").split("—")[0].trim()} → {f.destName}</div>
+                    <div style={{ fontSize:10, color:C.t3, marginTop:3 }}>{Ic.cal(C.t3,10)} {f.loadDate}{f.transporterName?` · ${f.transporterName}`:""}</div>
+                  </div>;
+                })}
+              </div>
+            </div>;
+          })}
         </div>;
       })()}
-
-      {/* MAP — fullscreen button */}
-      {viewMode==="map" && <HomeMapView freights={displayFreights} onNav={onNav} />}
 
       {/* Solicitar button is in Nav bar */}
       </div>{/* end scrollable content */}
@@ -1206,9 +1173,7 @@ function ListScreen({ freights, onNav, onRefresh }) {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [datePreset, setDatePreset] = useState("");
-  const [viewMode, setViewMode] = useState("cards"); // cards | table | calendar
-  const [calMonth2, setCalMonth2] = useState(()=>{const d=new Date();return{y:d.getFullYear(),m:d.getMonth()}});
-  const [calSelDay2, setCalSelDay2] = useState(null);
+  const [viewMode, setViewMode] = useState("cards"); // cards | table
   const sort = useTableSort();
   const LIST_GETTERS = { code:f=>f.code, status:f=>stCfg(f.status).label, origin:f=>(f.originName||"").split("—")[0].trim(), dest:f=>f.destName, product:f=>f.grain, truck:f=>f.truckPlate||"", date:f=>f.loadDate, qty:f=>f.tons };
 
@@ -1311,8 +1276,8 @@ function ListScreen({ freights, onNav, onRefresh }) {
             </button>
           </>}
           <span style={{ fontSize:10, color:C.t3, whiteSpace:"nowrap" }}>Cambiar visualización</span>
-          <button onClick={()=>setViewMode(v=>v==="cards"?"table":v==="table"?"calendar":"cards")} style={{ display:"flex", alignItems:"center", gap:4, background:C.priPale, border:`1px solid ${C.pri}20`, borderRadius:8, padding:"4px 8px", cursor:"pointer", fontFamily:"inherit", fontSize:10, fontWeight:600, color:C.pri }}>
-            {viewMode==="table"?Ic.doc(C.pri,12):viewMode==="calendar"?Ic.cal(C.pri,12):Ic.home(C.pri,12)} {viewMode==="cards"?"Tabla":viewMode==="table"?"Calendario":"Tarjetas"}
+          <button onClick={()=>setViewMode(v=>v==="cards"?"table":"cards")} style={{ display:"flex", alignItems:"center", gap:4, background:C.priPale, border:`1px solid ${C.pri}20`, borderRadius:8, padding:"4px 8px", cursor:"pointer", fontFamily:"inherit", fontSize:10, fontWeight:600, color:C.pri }}>
+            {viewMode==="table"?Ic.home(C.pri,12):Ic.doc(C.pri,12)} {viewMode==="cards"?"Tabla":"Tarjetas"}
           </button>
         </div>
       </div>
@@ -1378,39 +1343,7 @@ function ListScreen({ freights, onNav, onRefresh }) {
       </div>
       )}
 
-      {/* CALENDAR VIEW */}
-      {viewMode==="calendar" && (()=>{
-        const days2=[];const first2=new Date(calMonth2.y,calMonth2.m,1);const lastDay2=new Date(calMonth2.y,calMonth2.m+1,0).getDate();const startDow2=(first2.getDay()+6)%7;
-        for(let i=0;i<startDow2;i++)days2.push(null);for(let d=1;d<=lastDay2;d++)days2.push(d);
-        const monNames2=["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
-        const byDay2={};filtered.forEach(f=>{if(!f.loadDate)return;const dd=parseInt(f.loadDate.slice(8,10),10);const mm=parseInt(f.loadDate.slice(5,7),10)-1;const yy=parseInt(f.loadDate.slice(0,4),10);if(yy===calMonth2.y&&mm===calMonth2.m){if(!byDay2[dd])byDay2[dd]=[];byDay2[dd].push(f);}});
-        const selF2=calSelDay2?byDay2[calSelDay2]||[]:[];const today2=new Date();const isToday2=(d)=>d===today2.getDate()&&calMonth2.m===today2.getMonth()&&calMonth2.y===today2.getFullYear();
-        return <div>
-          <div style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius:12,padding:14,boxShadow:C.sh,marginBottom:10}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-              <button onClick={()=>setCalMonth2(p=>p.m===0?{y:p.y-1,m:11}:{y:p.y,m:p.m-1})} style={{background:"none",border:"none",cursor:"pointer",padding:4}}>{Ic.chev(C.pri,20)}</button>
-              <span style={{fontSize:15,fontWeight:700,color:C.t1}}>{monNames2[calMonth2.m]} {calMonth2.y}</span>
-              <button onClick={()=>setCalMonth2(p=>p.m===11?{y:p.y+1,m:0}:{y:p.y,m:p.m+1})} style={{background:"none",border:"none",cursor:"pointer",padding:4,transform:"rotate(180deg)"}}>{Ic.chev(C.pri,20)}</button>
-            </div>
-            <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:2,textAlign:"center"}}>
-              {["Lu","Ma","Mi","Ju","Vi","Sá","Do"].map(d=><div key={d} style={{fontSize:9,fontWeight:600,color:C.t3,padding:4}}>{d}</div>)}
-              {days2.map((d,i)=>{if(!d)return<div key={`e${i}`}/>;const cnt=byDay2[d]?.length||0;const sel=calSelDay2===d;const td=isToday2(d);const sts=byDay2[d]?.map(f=>stCfg(f.status).color)||[];
-                return <div key={d} onClick={()=>setCalSelDay2(sel?null:d)} style={{padding:"6px 2px",borderRadius:8,cursor:"pointer",background:sel?C.pri:td?C.priPale:"transparent",transition:"background 0.15s"}}>
-                  <div style={{fontSize:12,fontWeight:sel||td?700:400,color:sel?C.w:td?C.pri:C.t1}}>{d}</div>
-                  {cnt>0&&<div style={{display:"flex",gap:2,justifyContent:"center",marginTop:2}}>{sts.slice(0,3).map((c,j)=><div key={j} style={{width:5,height:5,borderRadius:3,background:sel?"#fff":c}}/>)}{cnt>3&&<div style={{fontSize:7,color:sel?C.w:C.t3}}>+</div>}</div>}
-                </div>;})}
-            </div>
-          </div>
-          {calSelDay2&&<div style={{display:"flex",flexDirection:"column",gap:8}}>
-            <div style={{fontSize:13,fontWeight:700,color:C.t1}}>{calSelDay2} {monNames2[calMonth2.m]} — {selF2.length} flete{selF2.length!==1?"s":""}</div>
-            {selF2.map(f=>{const st=stCfg(f.status);return <div key={f.id} className="tv-card" onClick={()=>onNav("detail",f.id)} style={{background:C.w,border:`1px solid ${C.b1}`,borderLeft:`3px solid ${st.border}`,borderRadius:10,padding:12,cursor:"pointer",boxShadow:C.sh}}>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}><span style={{fontSize:11,fontWeight:700,color:C.t3,fontFamily:MONO}}>{f.code}</span><Bd color={st.color} bg={st.bg} small>{st.label}</Bd></div>
-              <div style={{fontSize:13,fontWeight:700,color:C.t1,marginTop:4}}>{f.grain} · {f.tons} tn</div>
-            </div>})}
-            {selF2.length===0&&<div style={{textAlign:"center",padding:20,color:C.t3,fontSize:12}}>Sin fletes este día</div>}
-          </div>}
-        </div>;
-      })()}
+
     </div>
   );
 }
@@ -3039,7 +2972,7 @@ function AccessScreen({ onBack }) {
 
 // ======================== CHATS SCREEN ================================
 
-function ChatsScreen({ user, openConvId, onConvOpened }) {
+function ChatsScreen({ user, openConvId, onConvOpened, isDesktop }) {
   const [convs, setConvs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeConv, setActiveConv] = useState(null);
@@ -3272,11 +3205,11 @@ function ChatsScreen({ user, openConvId, onConvOpened }) {
   }, [filteredConvs, user.companyId]);
 
   // Chat detail view
-  if (activeConv) {
-    return (
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", animation: "fadeIn 0.2s ease" }}>
-        <div style={{ padding: "12px 18px", borderBottom: `1px solid ${C.b1}`, background: C.w, display: "flex", alignItems: "center", gap: 10 }}>
-          <button onClick={() => { setActiveConv(null); setChatTab("chat"); }} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", padding: 0 }}>{Ic.chev(C.pri, 20)}</button>
+  const chatDetailPanel = activeConv ? (
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", animation: isDesktop ? undefined : "fadeIn 0.2s ease" }}>
+        <div style={{ padding: "12px 18px", borderBottom: `1px solid ${C.b1}`, background: C.w, display: "flex", alignItems: "center", gap: 10, paddingTop: isDesktop ? 12 : "max(12px, env(safe-area-inset-top))" }}>
+          {!isDesktop && <button onClick={() => { setActiveConv(null); setChatTab("chat"); }} style={{ background: C.priPale, border: `1px solid ${C.pri}20`, borderRadius: 8, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, padding: "6px 10px", fontFamily:"inherit", fontSize:11, fontWeight:600, color:C.pri }}>{Ic.chev(C.pri, 16)} Chats</button>}
+          {isDesktop && <button onClick={() => { setActiveConv(null); setChatTab("chat"); }} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", padding: 0 }}>{Ic.chev(C.pri, 20)}</button>}
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 14, fontWeight: 700, color: C.t1 }}>{activeConv.freight?.code ? `Flete ${activeConv.freight.code}` : "Mensaje directo"}</div>
             <div style={{ fontSize: 10, color: C.t3 }}>{getConvName(activeConv)} · {messages.length} mensaje{messages.length !== 1 ? "s" : ""}</div>
@@ -3377,14 +3310,20 @@ function ChatsScreen({ user, openConvId, onConvOpened }) {
           </div>
         )}
       </div>
-    );
+    ) : isDesktop ? (
+      <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: C.t3, fontSize: 13 }}>Seleccioná una conversación</div>
+    ) : null;
+
+  // Mobile: show detail fullscreen if activeConv
+  if (!isDesktop && activeConv) {
+    return chatDetailPanel;
   }
 
-  // Unified conversation list
-  return (
-    <div style={{ flex: 1, overflow: "auto", padding: 18 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-        <div style={{ fontSize: 20, fontWeight: 800, letterSpacing: -0.3 }}>Mensajes</div>
+  // Desktop: split layout / Mobile: list only
+  const chatListPanel = (
+    <div style={{ flex: isDesktop ? undefined : 1, overflow: "auto", padding: isDesktop ? "14px 12px" : 18, width: isDesktop ? 320 : undefined, minWidth: isDesktop ? 320 : undefined, borderRight: isDesktop ? `1px solid ${C.b2}` : undefined, display: "flex", flexDirection: "column" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: isDesktop ? 10 : 14 }}>
+        <div style={{ fontSize: isDesktop ? 16 : 20, fontWeight: 800, letterSpacing: -0.3 }}>Mensajes</div>
         <Btn sm onClick={() => setShowNew(!showNew)} icon={showNew ? Ic.cross(C.w, 14) : Ic.plus(C.w, 14)}>{showNew ? "Cerrar" : "Nuevo"}</Btn>
       </div>
 
@@ -3489,6 +3428,122 @@ function ChatsScreen({ user, openConvId, onConvOpened }) {
       }
     </div>
   );
+
+  if (isDesktop) {
+    return (
+      <div style={{ flex: 1, display: "flex", flexDirection: "row", overflow: "hidden" }}>
+        {chatListPanel}
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+          {chatDetailPanel}
+        </div>
+      </div>
+    );
+  }
+
+  return chatListPanel;
+}
+
+// ======================== CALENDAR SCREEN =============================
+
+function CalendarScreen({ freights, perms, onNav }) {
+  const [calMonth, setCalMonth] = useState(()=>{const d=new Date();return{y:d.getFullYear(),m:d.getMonth()}});
+  const [calSelDay, setCalSelDay] = useState(null);
+  const [fStatus, setFStatus] = useState("");
+
+  const filtered = useMemo(()=>{
+    let ff = freights.filter(f=>!["canceled","draft"].includes(f.status));
+    if(fStatus) ff = ff.filter(f=>f.status===fStatus);
+    return ff;
+  },[freights,fStatus]);
+
+  const monNames=["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+
+  const days=useMemo(()=>{
+    const arr=[];
+    const first=new Date(calMonth.y,calMonth.m,1);
+    const lastDay=new Date(calMonth.y,calMonth.m+1,0).getDate();
+    const startDow=(first.getDay()+6)%7;
+    for(let i=0;i<startDow;i++)arr.push(null);
+    for(let d=1;d<=lastDay;d++)arr.push(d);
+    return arr;
+  },[calMonth]);
+
+  const byDay=useMemo(()=>{
+    const map={};
+    filtered.forEach(f=>{
+      if(!f.loadDate)return;
+      const dd=parseInt(f.loadDate.slice(8,10),10);
+      const mm=parseInt(f.loadDate.slice(5,7),10)-1;
+      const yy=parseInt(f.loadDate.slice(0,4),10);
+      if(yy===calMonth.y&&mm===calMonth.m){
+        if(!map[dd])map[dd]=[];
+        map[dd].push(f);
+      }
+    });
+    return map;
+  },[filtered,calMonth]);
+
+  const selFreights=calSelDay?byDay[calSelDay]||[]:[];
+  const today=new Date();
+  const isToday=(d)=>d===today.getDate()&&calMonth.m===today.getMonth()&&calMonth.y===today.getFullYear();
+  const totalInMonth = Object.values(byDay).reduce((s,a)=>s+a.length,0);
+
+  return (
+    <div style={{ flex:1, overflow:"auto", padding:18 }}>
+      <div style={{ fontSize:20, fontWeight:800, letterSpacing:-0.3, marginBottom:4 }}>Calendario</div>
+      <div style={{ fontSize:12, color:C.t2, marginBottom:14 }}>{totalInMonth} flete{totalInMonth!==1?"s":""} en {monNames[calMonth.m]}</div>
+
+      {/* Status filter */}
+      <div style={{ display:"flex", gap:6, marginBottom:14, flexWrap:"wrap" }}>
+        {[{k:"",l:"Todos"},{k:"pending_assignment",l:"Solicitados"},{k:"assigned",l:"Asignados"},{k:"accepted",l:"Aceptados"},{k:"in_progress",l:"En viaje"},{k:"loaded",l:"Cargados"},{k:"finished",l:"Finalizados"}].map(opt=>(
+          <button key={opt.k} onClick={()=>setFStatus(opt.k)} style={{ padding:"5px 12px", borderRadius:20, border:`1.5px solid ${fStatus===opt.k?C.pri:C.b1}`, background:fStatus===opt.k?C.priPale:C.w, color:fStatus===opt.k?C.pri:C.t2, fontSize:10.5, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>{opt.l}</button>
+        ))}
+      </div>
+
+      {/* Calendar grid */}
+      <div style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius:12,padding:16,boxShadow:C.sh,marginBottom:14}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+          <button onClick={()=>{setCalMonth(p=>p.m===0?{y:p.y-1,m:11}:{y:p.y,m:p.m-1});setCalSelDay(null);}} style={{background:"none",border:"none",cursor:"pointer",padding:6,display:"flex"}}>{Ic.chev(C.pri,22)}</button>
+          <span style={{fontSize:17,fontWeight:700,color:C.t1}}>{monNames[calMonth.m]} {calMonth.y}</span>
+          <button onClick={()=>{setCalMonth(p=>p.m===11?{y:p.y+1,m:0}:{y:p.y,m:p.m+1});setCalSelDay(null);}} style={{background:"none",border:"none",cursor:"pointer",padding:6,display:"flex",transform:"rotate(180deg)"}}>{Ic.chev(C.pri,22)}</button>
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:3,textAlign:"center"}}>
+          {["Lu","Ma","Mi","Ju","Vi","Sá","Do"].map(d=><div key={d} style={{fontSize:10,fontWeight:700,color:C.t3,padding:6}}>{d}</div>)}
+          {days.map((d,i)=>{
+            if(!d)return<div key={`e${i}`}/>;
+            const cnt=byDay[d]?.length||0;
+            const sel=calSelDay===d;
+            const td=isToday(d);
+            const statuses=byDay[d]?.map(f=>stCfg(f.status).color)||[];
+            return <div key={d} onClick={()=>setCalSelDay(sel?null:d)} style={{padding:"8px 4px",borderRadius:10,cursor:"pointer",background:sel?C.pri:td?C.priPale:"transparent",transition:"all 0.15s",minHeight:44}}>
+              <div style={{fontSize:14,fontWeight:sel||td?700:400,color:sel?C.w:td?C.pri:C.t1}}>{d}</div>
+              {cnt>0&&<div style={{display:"flex",gap:2,justifyContent:"center",marginTop:3,flexWrap:"wrap"}}>
+                {statuses.slice(0,4).map((c,j)=><div key={j} style={{width:6,height:6,borderRadius:3,background:sel?"#fff":c}}/>)}
+                {cnt>4&&<div style={{fontSize:8,color:sel?C.w:C.t3,lineHeight:1}}>+{cnt-4}</div>}
+              </div>}
+            </div>;
+          })}
+        </div>
+      </div>
+
+      {/* Selected day detail */}
+      {calSelDay&&<div style={{animation:"fadeIn 0.2s ease"}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+          <span style={{fontSize:15,fontWeight:700,color:C.t1}}>{calSelDay} de {monNames[calMonth.m]} — {selFreights.length} flete{selFreights.length!==1?"s":""}</span>
+          {perms.canRequest&&<Btn sm v="acc" icon={Ic.plus(C.w,12)} onClick={()=>{const dd=String(calSelDay).padStart(2,"0");const mm=String(calMonth.m+1).padStart(2,"0");onNav("new_date",`${calMonth.y}-${mm}-${dd}`)}}>Nuevo flete</Btn>}
+        </div>
+        <div style={{display:"flex",flexDirection:"column",gap:8}} className="tv-grid">
+          {selFreights.map(f=>{const st=stCfg(f.status);return <div key={f.id} className="tv-card" onClick={()=>onNav("detail",f.id)} style={{background:C.w,border:`1px solid ${C.b1}`,borderLeft:`3px solid ${st.border}`,borderRadius:10,padding:12,cursor:"pointer",boxShadow:C.sh}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}><span style={{fontSize:10,fontWeight:700,color:C.t3,fontFamily:MONO}}>{f.code}</span><Bd color={st.color} bg={st.bg} small>{st.label}</Bd></div>
+            <div style={{fontSize:13,fontWeight:700,color:C.t1}}>{f.grain} · {f.tons} tn</div>
+            <div style={{fontSize:10.5,color:C.t2,marginTop:3}}>{(f.originName||"").split("—")[0].trim()} → {f.destName}</div>
+            <div style={{fontSize:10,color:C.t3,marginTop:3}}>{f.loadTime||""} {f.transporterName?`· ${f.transporterName}`:""}</div>
+          </div>})}
+          {selFreights.length===0&&<div style={{textAlign:"center",padding:24,color:C.t3,fontSize:12}}>Sin fletes este día</div>}
+        </div>
+      </div>}
+    </div>
+  );
 }
 
 // ======================== REPORTS =====================================
@@ -3566,7 +3621,7 @@ function EditScreen({ freight, fields, plants, onBack, onSave }) {
   );
 }
 
-function ReportsScreen({ onBack, freights }) {
+function ReportsScreen({ onBack, freights, isDesktop }) {
   const [expanded, setExpanded] = useState({});
   const [generating, setGenerating] = useState(null);
   const [showColPicker, setShowColPicker] = useState(false);
@@ -3945,7 +4000,7 @@ function ReportsScreen({ onBack, freights }) {
 
   return (
     <div style={{ flex:1, overflow:"auto", padding:18 }}>
-      <button onClick={onBack} style={{ background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", fontSize:13, fontWeight:600, color:C.pri, marginBottom:14, padding:0, display:"flex", alignItems:"center", gap:4 }}>{Ic.chev(C.pri,18)} Mi Perfil</button>
+      {!isDesktop && <button onClick={onBack} style={{ background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", fontSize:13, fontWeight:600, color:C.pri, marginBottom:14, padding:0, display:"flex", alignItems:"center", gap:4 }}>{Ic.chev(C.pri,18)} Mi Perfil</button>}
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:4 }}>
         <div style={{ fontSize:20, fontWeight:800, letterSpacing:-0.3 }}>Informes y Documentos</div>
       </div>
@@ -4252,11 +4307,11 @@ export default function Tolvink() {
 
   if(!auth.user) return <LandingScreen onLogin={auth.login} onSignup={auth.signup} loading={auth.loading} error={auth.error} clearError={auth.clearError}/>;
   const curFreight = fh.freights.find(f=>f.id===selFreight);
-  const navActive = ["detail"].includes(screen)?"list":["trucks","fields","access","reports"].includes(screen)?"profile":screen;
+  const navActive = ["detail"].includes(screen)?"list":["trucks","fields","access"].includes(screen)?"profile":(!isDesktop&&screen==="reports")?"profile":screen;
 
   return (
     <div className="tv-shell" style={{height:"100dvh",background:C.bg,color:C.t1,fontFamily:FONT,display:"flex",flexDirection:isDesktop?"row":"column",maxWidth:isDesktop?1400:1100,margin:"0 auto",position:"relative",overflow:"hidden"}}>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&family=JetBrains+Mono:wght@400;500&display=swap');*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}html,body{height:100%;margin:0}body{background:${C.bg};overflow:hidden;overscroll-behavior:none}input,textarea,select,button{font-size:16px}input::placeholder,textarea::placeholder{color:${C.t3}}::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:${C.b1};border-radius:4px}@keyframes ti{0%,100%{opacity:1}50%{opacity:.4}}@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}@keyframes cardIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}@keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}.tv-card{transition:transform 0.15s ease,box-shadow 0.15s ease}.tv-row{transition:background 0.1s ease}@media(hover:hover){.tv-card:hover{transform:translateY(-2px);box-shadow:${C.shMd}!important}.tv-row:hover{background:${C.priGhost}!important}}@media(min-width:640px){.tv-grid{display:grid!important;grid-template-columns:1fr 1fr!important;gap:12px!important}.tv-grid3{display:grid!important;grid-template-columns:1fr 1fr 1fr!important;gap:12px!important}.tv-pad{padding:24px 32px!important}.tv-detail-grid{display:grid!important;grid-template-columns:1fr 1fr!important;gap:16px!important}.tv-table th,.tv-table td{padding:10px 12px!important;font-size:12px!important}.tv-stats{gap:12px!important}.tv-stats>div{padding:14px 12px!important;border-radius:12px!important}.tv-stats .tv-stat-num{font-size:28px!important}.tv-header-bar{padding:10px 32px 0 32px!important}}@media(min-width:768px){.tv-shell{max-width:1400px!important}.tv-mobile-header{display:none!important}.tv-mobile-nav{display:none!important}}@media(max-width:767px){.tv-sidebar{display:none!important}}@media(min-width:900px){.tv-grid{grid-template-columns:1fr 1fr 1fr!important}}@media(min-width:1100px){.tv-grid{grid-template-columns:repeat(4,1fr)!important}}`}</style>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&family=JetBrains+Mono:wght@400;500&display=swap');*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}html,body{height:100%;margin:0}body{background:${C.bg};overflow:hidden;overscroll-behavior:none}input,textarea,select,button{font-size:16px}input::placeholder,textarea::placeholder{color:${C.t3}}::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:${C.b1};border-radius:4px}@keyframes ti{0%,100%{opacity:1}50%{opacity:.4}}@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}@keyframes cardIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}@keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}.tv-card{transition:transform 0.15s ease,box-shadow 0.15s ease}.tv-row{transition:background 0.1s ease}@media(hover:hover){.tv-card:hover{transform:translateY(-2px);box-shadow:${C.shMd}!important}.tv-row:hover{background:${C.priGhost}!important}}@media(min-width:640px){.tv-grid{display:grid!important;grid-template-columns:1fr 1fr!important;gap:12px!important}.tv-grid3{display:grid!important;grid-template-columns:1fr 1fr 1fr!important;gap:12px!important}.tv-pad{padding:24px 32px!important}.tv-detail-grid{display:grid!important;grid-template-columns:1fr 1fr!important;gap:16px!important}.tv-table th,.tv-table td{padding:10px 12px!important;font-size:12px!important}.tv-stats{gap:12px!important}.tv-stats>div{padding:14px 12px!important;border-radius:12px!important}.tv-stats .tv-stat-num{font-size:28px!important}.tv-header-bar{padding:10px 32px 0 32px!important}}@media(min-width:768px){.tv-shell{max-width:1400px!important}.tv-mobile-header{display:none!important}.tv-mobile-nav{display:none!important}.tv-kanban{flex-direction:row!important;gap:12px!important}.tv-kanban-col{max-height:calc(100vh - 280px)!important;overflow-y:auto!important}}@media(max-width:767px){.tv-sidebar{display:none!important}}@media(min-width:900px){.tv-grid{grid-template-columns:1fr 1fr 1fr!important}}@media(min-width:1100px){.tv-grid{grid-template-columns:repeat(4,1fr)!important}}`}</style>
 
       {/* Desktop Sidebar */}
       <div className="tv-sidebar">
@@ -4272,10 +4327,11 @@ export default function Tolvink() {
         </div>
 
         {/* Scrollable content area */}
-        <div style={{flex:1,overflow:"auto",display:"flex",flexDirection:"column",WebkitOverflowScrolling:"touch",overscrollBehavior:"contain"}}>
+        <div style={{flex:1,overflow:screen==="chats"&&isDesktop?"hidden":"auto",display:"flex",flexDirection:"column",WebkitOverflowScrolling:"touch",overscrollBehavior:"contain"}}>
         {screen==="home" && <HomeScreen user={auth.user} freights={fh.freights} perms={perms} onNav={nav}/>}
         {screen==="list" && <ListScreen freights={fh.freights} onNav={nav} onRefresh={fh.fetchAll}/>}
         {screen==="pending" && <PendingScreen user={auth.user} freights={fh.freights} onNav={nav} onNewFreight={()=>nav("new")}/>}
+        {screen==="calendar" && <CalendarScreen freights={fh.freights} perms={perms} onNav={nav}/>}
         {screen==="detail" && <DetailScreen user={auth.user} freight={curFreight} perms={perms} onBack={()=>setScreen("list")} onAction={handleAction} actionLoading={actionLoading} onChat={(convId)=>{if(convId){setChatConvId(convId);setScreen("chats");}}} onRefresh={(id)=>fh.refresh(id)} onDuplicate={(f)=>{setDuplicateData(f);setScreen("new");}} onEdit={(f)=>{setEditData(f);setScreen("edit");}}/>}
         {screen==="new" && <NewScreen user={auth.user} lots={catalog.lots} plants={catalog.plants} fields={catalog.fields} trucks={catalog.trucks} onBack={()=>{setDuplicateData(null);setScreen("home");}} onCreate={handleCreate} submitting={submitting} duplicateFrom={duplicateData}/>}
         {screen==="edit" && editData && <EditScreen freight={editData} fields={catalog.fields} plants={catalog.plants} onBack={()=>{setEditData(null);setScreen("detail");}} onSave={async(id,data)=>{const r=await fh.update(id,data);if(r.ok){setEditData(null);setScreen("detail");show("Flete actualizado");}else show(r.error,"err");}}/>}
@@ -4283,8 +4339,8 @@ export default function Tolvink() {
         {screen==="trucks" && <TrucksScreen onBack={()=>{catalog.refresh();setScreen("profile");}}/>}
         {screen==="fields" && <FieldsScreen onBack={()=>{catalog.refresh();setScreen("profile");}}/>}
         {screen==="access" && <AccessScreen onBack={()=>setScreen("profile")}/>}
-        {screen==="reports" && <ReportsScreen onBack={()=>setScreen("profile")} freights={fh.freights}/>}
-        {screen==="chats" && <ChatsScreen user={auth.user} openConvId={chatConvId} onConvOpened={()=>setChatConvId(null)}/>}
+        {screen==="reports" && <ReportsScreen onBack={()=>setScreen(isDesktop?"reports":"profile")} freights={fh.freights} isDesktop={isDesktop}/>}
+        {screen==="chats" && <ChatsScreen user={auth.user} openConvId={chatConvId} onConvOpened={()=>setChatConvId(null)} isDesktop={isDesktop}/>}
         </div>
 
         {/* Mobile-only bottom nav */}
