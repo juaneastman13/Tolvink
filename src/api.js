@@ -33,8 +33,18 @@ export default async function api(path, opts={}) {
 }
 
 // Auth
-export async function apiLogin(email,password) { const d=await api('/auth/login',{body:{email,password}}); setToken(d.access_token); saveUser(d.user); return d; }
-export async function apiRegister(b) { const d=await api('/auth/register',{body:b}); setToken(d.access_token); saveUser(d.user); return d; }
+export async function apiLogin(identifier,password) {
+  // identifier can be email or phone — backend will detect
+  const isPhone = /^09[1-9]\d{6}$/.test(identifier.replace(/[\s\-()]/g,''));
+  const body = isPhone ? { phone:identifier.replace(/[\s\-()]/g,''), password } : { email:identifier, password };
+  const d=await api('/auth/login',{body});
+  setToken(d.access_token); saveUser(d.user); return d;
+}
+export async function apiRegister(b) {
+  // b = { name, email, phone, password, userTypes:["plant","producer",...] }
+  const d=await api('/auth/register',{body:b});
+  setToken(d.access_token); saveUser(d.user); return d;
+}
 export function apiLogout() { clearAuth(); }
 
 // Freights

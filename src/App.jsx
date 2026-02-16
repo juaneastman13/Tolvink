@@ -31,6 +31,8 @@ const V = {
   posNum: (v, f) => { if(!v&&v!==0) return `${f} es obligatorio`; return Number(v)>0?null:`${f} debe ser mayor a 0`; },
   sel: (v, f) => !v ? `Seleccioná ${f}` : null,
   time: (v, f) => { if(!v) return `${f} es obligatorio`; return /^\d{2}:\d{2}$/.test(v)?null:`${f} inválido`; },
+  phone: (v) => { if(!v) return 'Teléfono es obligatorio'; const clean=v.replace(/[\s\-()]/g,''); return /^09[1-9]\d{6}$/.test(clean)?null:'Formato: 09X XXX XXX'; },
+  userTypes: (v) => { if(!v||!Array.isArray(v)||v.length===0) return 'Seleccioná al menos un tipo'; return null; },
 };
 function validate(vals, schema) {
   const errs = {}; let ok = true;
@@ -42,7 +44,7 @@ function validate(vals, schema) {
 }
 const SCHEMAS = {
   login:   { email:[V.email], pw:[V.min(4)] },
-  signup:  { name:[V.req,V.min(3)], email:[V.email], pw:[V.min(4)], userType:[v=>V.sel(v,'tipo de usuario')], role:[v=>V.sel(v,'rol')], entity:[V.req] },
+  signup:  { name:[V.req,V.min(3)], email:[V.email], phone:[V.phone], pw:[V.min(4)], userTypes:[V.userTypes] },
   freight: { grain:[v=>V.sel(v,'tipo de grano')], tons:[V.posNum], lotId:[v=>V.sel(v,'lote')], plantId:[v=>V.sel(v,'planta')], loadDate:[V.req], loadTime:[V.time] },
 };
 
@@ -167,6 +169,7 @@ const Ic = {
   collapse:(c=C.t2,s=18)=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></svg>,
   edit:(c=C.t2,s=18)=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>,
   clip:(c=C.t3,s=18)=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>,
+  phone:(c=C.t3,s=18)=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>,
 };
 
 // ======================== STATE MACHINE ==============================
@@ -268,9 +271,9 @@ function useAuth() {
     setAuthFailHandler(()=>{ setUser(null); setError("Tu sesión expiró."); });
   },[]);
 
-  const login = useCallback(async (email,pw) => {
+  const login = useCallback(async (identifier,pw) => {
     setLoading(true); setError(null);
-    try { const d = await apiLogin(email,pw); setUser(mapUser(d.user)); }
+    try { const d = await apiLogin(identifier,pw); setUser(mapUser(d.user)); }
     catch(e) { setError(e.message||"Error al iniciar sesión"); }
     finally { setLoading(false); }
   },[]);
@@ -279,7 +282,9 @@ function useAuth() {
     setLoading(true); setError(null);
     try {
       const typeMap = {planta:"plant",transporter:"transporter",producer:"producer"};
-      const d = await apiRegister({ name:form.name, email:form.email, password:form.pw, companyType:typeMap[form.userType]||form.userType, companyName:form.entity, role:form.role });
+      const userTypes = (form.userTypes||[]).map(t=>typeMap[t]||t);
+      const phone = form.phone?.replace(/[\s\-()]/g,'')||"";
+      const d = await apiRegister({ name:form.name, email:form.email, phone, password:form.pw, userTypes });
       setUser(mapUser(d.user));
     } catch(e) { setError(e.message||"Error al crear cuenta"); }
     finally { setLoading(false); }
@@ -292,9 +297,20 @@ function useAuth() {
 function mapUser(u) {
   if(!u) return null;
   const co = u.company;
-  return { id:u.id, email:u.email, name:u.name, role:u.role, userType:co?.type||"producer", entity:co?.name||"", entityId:co?.id||"", companyId:co?.id||"",
+  // Support new multi-type structure: u.userTypes = ["plant","producer",...]
+  // Fallback to legacy: co?.type
+  const userTypes = u.userTypes || (co?.type ? [co.type] : ["producer"]);
+  // Active type: first type or legacy
+  const userType = u.activeType || userTypes[0] || co?.type || "producer";
+  // Role: from user_companies join or legacy
+  const role = u.role || "operator";
+  return {
+    id:u.id, email:u.email, phone:u.phone||"", name:u.name, role, userType, userTypes,
+    entity:co?.name||"", entityId:co?.id||"", companyId:co?.id||"",
     hasInternalFleet: co?.hasInternalFleet||false,
-    av: u.name.split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase() };
+    isSuperAdmin: u.isSuperAdmin||false,
+    av: u.name.split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase()
+  };
 }
 
 // ======================== FREIGHTS HOOK (Real API) ====================
@@ -657,28 +673,57 @@ function LandingScreen({ onLogin, onSignup, loading, error, clearError }) {
 
 function AuthScreen({ onLogin, onSignup, loading, error, clearError, onBackToLanding }) {
   const [mode, setMode] = useState("login");
+  const [loginId, setLoginId] = useState(""); // email or phone
   const [email, setEmail] = useState("");
   const [pw, setPw] = useState("");
   const [name, setName] = useState("");
-  const [uType, setUType] = useState("");
-  const [uRole, setURole] = useState("");
-  const [entity, setEntity] = useState("");
+  const [phone, setPhone] = useState("");
+  const [userTypes, setUserTypes] = useState([]); // multi-select: ["planta","transporter","producer"]
   const [errs, setErrs] = useState({});
   const [touched, setTouched] = useState(false);
 
   const toggle = () => { setMode(m=>m==="login"?"signup":"login"); clearError(); setErrs({}); setTouched(false); };
 
+  const toggleType = (t) => setUserTypes(prev=>prev.includes(t)?prev.filter(x=>x!==t):[...prev,t]);
+
+  // Phone formatter: 09X XXX XXX
+  const formatPhone = (v) => {
+    const digits = v.replace(/\D/g,'').slice(0,9);
+    if(digits.length<=3) return digits;
+    if(digits.length<=6) return digits.slice(0,3)+' '+digits.slice(3);
+    return digits.slice(0,3)+' '+digits.slice(3,6)+' '+digits.slice(6);
+  };
+  const handlePhone = (v) => setPhone(formatPhone(v));
+
   const submit = () => {
     setTouched(true);
-    const schema = mode==="login" ? SCHEMAS.login : SCHEMAS.signup;
-    const vals = mode==="login" ? {email,pw} : {name,email,pw,userType:uType,role:uRole,entity};
-    const {ok,errs:e} = validate(vals, schema);
-    setErrs(e);
-    if(!ok) return;
-    if(mode==="login") onLogin(email,pw);
-    else onSignup({name,email,pw,userType:uType,role:uRole,entity});
+    if(mode==="login") {
+      // Login accepts email or phone
+      const isPhone = /^09/.test(loginId.replace(/[\s\-()]/g,''));
+      if(isPhone) {
+        const cleanPhone = loginId.replace(/[\s\-()]/g,'');
+        if(!/^09[1-9]\d{6}$/.test(cleanPhone)) { setErrs({email:"Formato: 09X XXX XXX"}); return; }
+      } else {
+        const {ok,errs:e} = validate({email:loginId,pw}, {email:[V.email],pw:[V.min(4)]});
+        if(!ok) { setErrs(e); return; }
+      }
+      if(!pw||pw.length<4) { setErrs(prev=>({...prev,pw:"Mínimo 4 caracteres"})); return; }
+      setErrs({});
+      onLogin(loginId.replace(/[\s\-()]/g,''),pw);
+    } else {
+      const vals = {name,email,phone:phone.replace(/[\s\-()]/g,''),pw,userTypes};
+      const {ok,errs:e} = validate(vals, SCHEMAS.signup);
+      setErrs(e);
+      if(!ok) return;
+      onSignup({name,email,phone,pw,userTypes});
+    }
   };
-  const tc = {planta:C.pri,transporter:C.info,producer:C.acc};
+
+  const typeOptions = [
+    {k:"planta",l:"Planta de Acopio",desc:"Recibís y gestionás cargas",c:C.pri,ic:Ic.plant},
+    {k:"transporter",l:"Transportista",desc:"Realizás fletes y entregas",c:C.info||C.sec,ic:Ic.truck},
+    {k:"producer",l:"Productor",desc:"Solicitás fletes desde el campo",c:C.acc,ic:Ic.seedling},
+  ];
 
   // PWA install prompt
   const [canInstall, setCanInstall] = useState(false);
@@ -703,26 +748,67 @@ function AuthScreen({ onLogin, onSignup, loading, error, clearError, onBackToLan
           </div>
           <div style={{ background:C.w, borderRadius:16, padding:22, boxShadow:C.shMd, border:`1px solid ${C.b2}` }}>
             <div style={{ fontSize:17, fontWeight:700, marginBottom:3, color:C.t1 }}>{mode==="login"?"Iniciar sesión":"Crear cuenta"}</div>
-            <div style={{ fontSize:12.5, color:C.t2, marginBottom:18 }}>{mode==="login"?"Ingresá con tu email y contraseña":"Completá tus datos"}</div>
+            <div style={{ fontSize:12.5, color:C.t2, marginBottom:18 }}>{mode==="login"?"Ingresá con email o teléfono":"Completá tus datos para registrarte"}</div>
             <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
-              {mode==="signup" && <><Field label="Nombre" icon={Ic.user(C.t2,14)} value={name} onChange={setName} placeholder="Tu nombre completo"/>{touched&&<FieldError error={errs.name}/>}</>}
-              <div><Field label="Email" icon={Ic.mail(C.t2,14)} value={email} onChange={setEmail} placeholder="tu@email.com" type="email"/>{touched&&<FieldError error={errs.email}/>}</div>
-              <div><Field label="Contraseña" icon={Ic.lock(C.t2,14)} value={pw} onChange={setPw} placeholder="••••••" type="password"/>{touched&&<FieldError error={errs.pw}/>}</div>
-              {mode==="signup" && <>
-                <Field label="Tipo de usuario" icon={Ic.user(C.t2,14)}>
-                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:6 }}>
-                    {[{k:"planta",l:"Planta"},{k:"transporter",l:"Transp."},{k:"producer",l:"Productor"}].map(t=><button key={t.k} onClick={()=>setUType(t.k)} style={{ padding:"10px 6px", borderRadius:8, border:`1.5px solid ${uType===t.k?tc[t.k]||C.pri:C.b1}`, background:uType===t.k?`${tc[t.k]||C.pri}0D`:C.w, color:uType===t.k?tc[t.k]||C.pri:C.t2, cursor:"pointer", fontSize:11.5, fontWeight:600, fontFamily:"inherit" }}>{t.l}</button>)}
-                  </div>
-                </Field>
-                {touched&&<FieldError error={errs.userType}/>}
-                <Field label="Rol" icon={Ic.shield(C.t2,14)}>
-                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:6 }}>
-                    {[{k:"admin",l:"Gerente"},{k:"operator",l:"Operario"}].map(r=><button key={r.k} onClick={()=>setURole(r.k)} style={{ padding:"10px 8px", borderRadius:8, border:`1.5px solid ${uRole===r.k?C.pri:C.b1}`, background:uRole===r.k?C.priPale:C.w, color:uRole===r.k?C.pri:C.t2, cursor:"pointer", fontSize:12, fontWeight:600, fontFamily:"inherit" }}>{r.l}</button>)}
-                  </div>
-                </Field>
-                {touched&&<FieldError error={errs.role}/>}
-                <div><Field label="Empresa" icon={Ic.plant(C.t2,14)} value={entity} onChange={setEntity} placeholder="Nombre de tu empresa"/>{touched&&<FieldError error={errs.entity}/>}</div>
+
+              {/* === LOGIN MODE === */}
+              {mode==="login" && <>
+                <div>
+                  <Field label="Email o teléfono" icon={Ic.mail(C.t2,14)} value={loginId} onChange={setLoginId} placeholder="tu@email.com o 09X XXX XXX"/>
+                  {touched&&<FieldError error={errs.email}/>}
+                </div>
+                <div>
+                  <Field label="Contraseña" icon={Ic.lock(C.t2,14)} value={pw} onChange={setPw} placeholder="••••••" type="password"/>
+                  {touched&&<FieldError error={errs.pw}/>}
+                </div>
               </>}
+
+              {/* === SIGNUP MODE === */}
+              {mode==="signup" && <>
+                <div>
+                  <Field label="Nombre completo" icon={Ic.user(C.t2,14)} value={name} onChange={setName} placeholder="Tu nombre completo"/>
+                  {touched&&<FieldError error={errs.name}/>}
+                </div>
+                <div>
+                  <Field label="Email" icon={Ic.mail(C.t2,14)} value={email} onChange={setEmail} placeholder="tu@email.com" type="email"/>
+                  {touched&&<FieldError error={errs.email}/>}
+                </div>
+                <div>
+                  <Field label="Celular" icon={Ic.phone(C.t2,14)} value={phone} onChange={handlePhone} placeholder="09X XXX XXX" type="tel"/>
+                  {touched&&<FieldError error={errs.phone}/>}
+                </div>
+                <div>
+                  <Field label="Contraseña" icon={Ic.lock(C.t2,14)} value={pw} onChange={setPw} placeholder="Mínimo 4 caracteres" type="password"/>
+                  {touched&&<FieldError error={errs.pw}/>}
+                </div>
+
+                {/* Multi-select user types */}
+                <div>
+                  <div style={{ fontSize:12, fontWeight:600, color:C.t2, marginBottom:8 }}>¿Qué tipo de usuario sos?</div>
+                  <div style={{ fontSize:10.5, color:C.t3, marginBottom:10 }}>Podés seleccionar más de uno</div>
+                  <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                    {typeOptions.map(t=>{
+                      const sel = userTypes.includes(t.k);
+                      return (
+                        <button key={t.k} onClick={()=>toggleType(t.k)} style={{ display:"flex", alignItems:"center", gap:12, padding:"12px 14px", borderRadius:10, border:`1.5px solid ${sel?t.c:C.b1}`, background:sel?`${t.c}0A`:C.w, cursor:"pointer", fontFamily:"inherit", textAlign:"left", transition:"all 0.15s", width:"100%" }}>
+                          <div style={{ width:36, height:36, borderRadius:9, background:sel?`${t.c}18`:`${t.c}08`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, transition:"background 0.15s" }}>
+                            {t.ic(sel?t.c:C.t3, 18)}
+                          </div>
+                          <div style={{ flex:1 }}>
+                            <div style={{ fontSize:13, fontWeight:sel?700:600, color:sel?t.c:C.t1 }}>{t.l}</div>
+                            <div style={{ fontSize:10.5, color:C.t3, marginTop:1 }}>{t.desc}</div>
+                          </div>
+                          <div style={{ width:20, height:20, borderRadius:6, border:`2px solid ${sel?t.c:C.b1}`, background:sel?t.c:"transparent", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, transition:"all 0.15s" }}>
+                            {sel && <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={C.w} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {touched&&<FieldError error={errs.userTypes}/>}
+                </div>
+              </>}
+
               {error && <div style={{ padding:"10px 14px", background:C.errPale, borderRadius:8, fontSize:12.5, color:C.err, fontWeight:600, display:"flex", alignItems:"center", gap:6 }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.err} strokeWidth="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>{error}</div>}
               <Btn full onClick={submit} disabled={loading}>{loading?"Cargando...":mode==="login"?"Ingresar":"Crear cuenta"}</Btn>
             </div>
