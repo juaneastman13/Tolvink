@@ -7,7 +7,7 @@ import {
   apiSendTracking, apiGetLastPosition,
   apiGetAuditLog,
   apiUpdateFreight,
-  apiGetPlants, apiGetLots, apiGetTransportCompanies, apiGetTrucks,
+  apiGetPlants, apiGetLots, apiGetTransportCompanies, apiGetTrucks, apiGetBranches,
   apiCreateTruck, apiDeactivateTruck,
   apiGetFields, apiCreateField, apiUpdateField, apiCreateLot, apiUpdateLot, apiGetFieldLots,
   apiGrantAccess, apiRevokeAccess, apiListAccessProducers, apiListAccessPlants, apiSearchProducer, apiGetMyFacilities,
@@ -230,6 +230,7 @@ const UNITS = [{v:"toneladas",l:"Toneladas"},{v:"cantidad",l:"Cantidad"},{v:"met
 // ======================== CATALOG HOOK (Real API) ====================
 function useCatalog(user) {
   const [plants, setPlants] = useState([]);
+  const [branches, setBranches] = useState([]);
   const [lots, setLots] = useState([]);
   const [fields, setFields] = useState([]);
   const [transporters, setTransporters] = useState([]);
@@ -241,12 +242,14 @@ function useCatalog(user) {
     setLoading(true);
     Promise.all([
       apiGetPlants().catch(()=>[]),
+      apiGetBranches().catch(()=>[]),
       apiGetLots().catch(()=>[]),
       apiGetTransportCompanies().catch(()=>[]),
       (user.userType==="transporter"||user.userType==="producer"||(user.userTypes||[]).includes("transporter")||(user.userTypes||[]).includes("producer")) ? apiGetTrucks().catch(()=>[]) : Promise.resolve([]),
       (user.userType==="producer"||(user.userTypes||[]).includes("producer")) ? apiGetFields().catch(()=>[]) : Promise.resolve([]),
-    ]).then(([p,l,t,tr,f])=>{
+    ]).then(([p,br,l,t,tr,f])=>{
       setPlants(p||[]);
+      setBranches(br||[]);
       setLots(l||[]);
       setTransporters(t||[]);
       setTrucks(tr||[]);
@@ -258,7 +261,7 @@ function useCatalog(user) {
 
   const refresh = useCallback(()=>{ load(); },[load]);
 
-  return { plants, lots, fields, transporters, trucks, loading, refresh };
+  return { plants, branches, lots, fields, transporters, trucks, loading, refresh };
 }
 
 
@@ -2601,7 +2604,7 @@ function DetailScreen({ user, freight, perms, onBack, onAction, actionLoading, o
 
 // ======================== NEW FREIGHT ================================
 
-function NewScreen({ user, lots, plants, fields, trucks, onBack, onCreate, duplicateFrom }) {
+function NewScreen({ user, lots, plants, branches, fields, trucks, onBack, onCreate, duplicateFrom }) {
   const dup = duplicateFrom;
   const [destMode, setDestMode] = useState("plant");
   const [customDest, setCustomDest] = useState({ name:"", lat:null, lng:null });
@@ -2610,6 +2613,7 @@ function NewScreen({ user, lots, plants, fields, trucks, onBack, onCreate, dupli
     tons: dup?.tons?.toString() || "",
     lotId: dup?.originLotId || "",
     plantId: dup?.destPlantId || "",
+    branchId: dup?.destBranchId || "",
     fieldId: dup?.fieldId || "",
     loadDate: dup?.loadDate?.split("T")[0] || dup?.preDate || "", loadTime: dup?.loadTime || "",
     notes: dup?.notes || "",
@@ -2653,15 +2657,18 @@ function NewScreen({ user, lots, plants, fields, trucks, onBack, onCreate, dupli
   const fieldOpts = (fields||[]).map(f=>({ value:f.id, label:f.name, sub:f.address||"" }));
   const lotOpts = fieldLots.map(l=>({ value:l.id, label:l.name, sub:l.hectares?`${l.hectares} ha`:'' }));
   const plantOpts = (plants||[]).map(p=>({ value:p.id, label:p.name }));
+  const selectedPlantCompanyId = (plants||[]).find(p=>p.id===form.plantId)?.companyId;
+  const branchOpts = (branches||[]).filter(b=>b.companyId===selectedPlantCompanyId).map(b=>({ value:b.id, label:b.name }));
   const selectedLot = fieldLots.find(l=>l.id===form.lotId);
   const selectedPlant = (plants||[]).find(p=>p.id===form.plantId);
+  const selectedBranch = (branches||[]).find(b=>b.id===form.branchId);
   const truckOpts = (trucks||[]).map(t=>({ value:t.id, label:`${t.plate}${t.model?` · ${t.model}`:""}` }));
   const showTruckSelect = (user.userType==="producer"||(user.userTypes||[]).includes("producer")) && truckOpts.length > 0;
 
   // Coords for map preview
   const originCoords = selectedLot?.lat ? { lat: parseFloat(selectedLot.lat), lng: parseFloat(selectedLot.lng) } : null;
   const destCoords = destMode==="plant"
-    ? (selectedPlant?.lat ? { lat: parseFloat(selectedPlant.lat), lng: parseFloat(selectedPlant.lng) } : null)
+    ? (selectedBranch?.lat ? { lat: parseFloat(selectedBranch.lat), lng: parseFloat(selectedBranch.lng) } : selectedPlant?.lat ? { lat: parseFloat(selectedPlant.lat), lng: parseFloat(selectedPlant.lng) } : null)
     : (customDest.lat ? { lat: customDest.lat, lng: customDest.lng } : null);
   const [editingOrigin, setEditingOrigin] = useState(false);
   const [editingDest, setEditingDest] = useState(false);
@@ -2670,7 +2677,7 @@ function NewScreen({ user, lots, plants, fields, trucks, onBack, onCreate, dupli
   const finalOrigin = overrideOrigin || originCoords;
   const finalDest = overrideDest || destCoords;
 
-  const destDisplayName = destMode==="plant" ? (selectedPlant?.name||"") : (customDest.name||"");
+  const destDisplayName = destMode==="plant" ? ((selectedPlant?.name||"")+(selectedBranch?` → ${selectedBranch.name}`:"")) : (customDest.name||"");
 
   const submit = () => {
     setTouched(true);
@@ -2690,9 +2697,15 @@ function NewScreen({ user, lots, plants, fields, trucks, onBack, onCreate, dupli
     };
     if(destMode==="custom") {
       payload.plantId = undefined;
+      payload.branchId = undefined;
       payload.customDestName = customDest.name;
       payload.customDestLat = customDest.lat || undefined;
       payload.customDestLng = customDest.lng || undefined;
+    }
+    if(selectedBranch) {
+      payload.customDestName = selectedBranch.name;
+      payload.customDestLat = selectedBranch.lat ? parseFloat(selectedBranch.lat) : undefined;
+      payload.customDestLng = selectedBranch.lng ? parseFloat(selectedBranch.lng) : undefined;
     }
     onCreate(payload);
   };
@@ -2714,7 +2727,7 @@ function NewScreen({ user, lots, plants, fields, trucks, onBack, onCreate, dupli
     product: form.grain ? (form.grain==="Otros" ? `Otros: ${form.productTypeOther}` : form.grain) : "",
     quantity: form.tons ? `${form.tons} ${form.unit}${form.amount?` · $${form.amount}`:""}` : "",
     origin: (fieldOpts.find(f=>f.value===form.fieldId)?.label||"")+(selectedLot?` → ${selectedLot.name}`:""),
-    destination: destDisplayName,
+    destination: destDisplayName || "",
     schedule: form.loadDate&&form.loadTime ? `${form.loadDate} a las ${form.loadTime}` : "",
   };
 
@@ -2783,8 +2796,13 @@ function NewScreen({ user, lots, plants, fields, trucks, onBack, onCreate, dupli
           </div>
           {destMode==="plant" && (
             <>
-              <Select value={form.plantId} onChange={v=>u({plantId:v})} options={plantOpts} placeholder="Seleccionar planta..."/>
+              <Select value={form.plantId} onChange={v=>u({plantId:v,branchId:""})} options={plantOpts} placeholder="Seleccionar planta..."/>
               {touched&&<FieldError error={errs.plantId}/>}
+              {form.plantId && branchOpts.length > 0 && (
+                <div style={{ marginTop:10 }}>
+                  <Select label="Sucursal (opcional)" icon={Ic.pin(C.sec,14)} value={form.branchId} onChange={v=>u({branchId:v})} options={branchOpts} placeholder="Seleccionar sucursal..."/>
+                </div>
+              )}
             </>
           )}
           {destMode==="custom" && (
@@ -5723,7 +5741,7 @@ export default function Tolvink() {
         {screen==="pending" && <PendingScreen user={auth.user} freights={fh.freights} onNav={nav} onNewFreight={()=>nav("new")}/>}
         {screen==="calendar" && <CalendarScreen freights={fh.freights} perms={perms} onNav={nav} isDesktop={isDesktop}/>}
         {screen==="detail" && <DetailScreen user={auth.user} freight={curFreight} perms={perms} onBack={()=>setScreen("list")} onAction={handleAction} actionLoading={actionLoading} onChat={(convId)=>{if(convId){setChatConvId(convId);setScreen("chats");}}} onRefresh={(id)=>fh.refresh(id)} onDuplicate={(f)=>{setDuplicateData(f);setScreen("new");}} onEdit={(f)=>{setEditData(f);setScreen("edit");}}/>}
-        {screen==="new" && <NewScreen user={auth.user} lots={catalog.lots} plants={catalog.plants} fields={catalog.fields} trucks={catalog.trucks} onBack={()=>{setDuplicateData(null);setScreen("home");}} onCreate={handleCreate} submitting={submitting} duplicateFrom={duplicateData}/>}
+        {screen==="new" && <NewScreen user={auth.user} lots={catalog.lots} plants={catalog.plants} branches={catalog.branches} fields={catalog.fields} trucks={catalog.trucks} onBack={()=>{setDuplicateData(null);setScreen("home");}} onCreate={handleCreate} submitting={submitting} duplicateFrom={duplicateData}/>}
         {screen==="edit" && editData && <EditScreen freight={editData} fields={catalog.fields} plants={catalog.plants} onBack={()=>{setEditData(null);setScreen("detail");}} onSave={async(id,data)=>{const r=await fh.update(id,data);if(r.ok){setEditData(null);setScreen("detail");show("Flete actualizado");}else show(r.error,"err");}}/>}
         {screen==="profile" && <ProfileScreen user={auth.user} perms={perms} onLogout={auth.logout} onNav={nav} theme={theme} toggleTheme={toggleTheme}/>}
         {screen==="trucks" && <TrucksScreen onBack={()=>{catalog.refresh();setScreen("profile");}}/>}
