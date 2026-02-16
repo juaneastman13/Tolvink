@@ -689,8 +689,9 @@ function AuthScreen({ onLogin, onSignup, loading, error, clearError, onBackToLan
   },[]);
 
   return (
-    <div style={{ minHeight:"100dvh", background:C.bg, fontFamily:FONT, display:"flex", flexDirection:"column", justifyContent:mode==="login"?"center":"flex-start", padding:28, paddingTop:mode==="signup"?"max(20px, env(safe-area-inset-top))":28, paddingBottom:"max(28px, env(safe-area-inset-bottom))", maxWidth:430, margin:"0 auto", overflow:"auto", WebkitOverflowScrolling:"touch" }}>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&family=JetBrains+Mono:wght@400;500&display=swap');*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}html,body{height:100%;margin:0;overflow:auto}body{background:${C.bg}}input::placeholder,textarea::placeholder{color:${C.t3}}@keyframes dotPulse{0%,100%{opacity:0.3;transform:scale(0.8)}50%{opacity:1;transform:scale(1.2)}}@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}`}</style>
+    <div style={{ minHeight:"100dvh", height:mode==="signup"?"auto":"100dvh", background:C.bg, fontFamily:FONT, display:"flex", flexDirection:"column", justifyContent:mode==="login"?"center":"flex-start", padding:"0 28px", maxWidth:430, margin:"0 auto", boxSizing:"border-box" }}>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&family=JetBrains+Mono:wght@400;500&display=swap');*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}html{height:100%;overflow-y:auto!important;overflow-x:hidden;-webkit-overflow-scrolling:touch}body{min-height:100%;margin:0;background:${C.bg};overflow-y:auto!important;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior-y:auto}input::placeholder,textarea::placeholder{color:${C.t3}}@keyframes dotPulse{0%,100%{opacity:0.3;transform:scale(0.8)}50%{opacity:1;transform:scale(1.2)}}@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}`}</style>
+      <div style={{ paddingTop:mode==="signup"?"max(24px, env(safe-area-inset-top))":"28px", paddingBottom:"max(28px, env(safe-area-inset-bottom))", flex:mode==="login"?undefined:undefined }}>
       <div style={{ textAlign:"center", marginBottom:mode==="login"?32:20 }}>
         {onBackToLanding && <button onClick={onBackToLanding} style={{ background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", fontSize:13, fontWeight:600, color:C.pri, marginBottom:14, padding:0, display:"flex", alignItems:"center", gap:4, margin:"0 auto 14px" }}>{Ic.chev(C.pri,18)} Volver</button>}
         <div style={{ display:"inline-flex", alignItems:"flex-start", animation:"fadeUp 0.6s ease-out" }}>
@@ -735,6 +736,7 @@ function AuthScreen({ onLogin, onSignup, loading, error, clearError, onBackToLan
         <div style={{ fontSize:10, color:C.t3, lineHeight:1.7, fontFamily:MONO }}>
           carolina@planta.com · maria@planta.com{"\n"}ricardo@transp.com · miguel@transp.com{"\n"}juan@campo.com · pedro@campo.com{"\n"}<span style={{color:C.t2,fontWeight:600}}>pw: 1234</span>
         </div>
+      </div>
       </div>
     </div>
   );
