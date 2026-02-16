@@ -170,7 +170,7 @@ const Ic = {
   cam:(c=C.t2,s=18)=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>,
   img:(c=C.t2,s=18)=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>,
   doc:(c=C.t2,s=18)=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>,
-  seedling:(c="#1A6B37",s=22)=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22V10"/><path d="M6 13c0-3.5 2.7-6 6-6 3.3 0 6 2.5 6 6"/><path d="M12 10c0-4-2.5-7-6-8 0 3.5 2 7 6 8z"/><path d="M12 10c0-4 2.5-7 6-8 0 3.5-2 7-6 8z"/></svg>,
+  seedling:(c="#1A6B37",s=22)=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 22L12 12l10 10"/><path d="M2 16l5-5 3 3 4-4 3 3 5-5"/><line x1="2" y1="22" x2="22" y2="22"/></svg>,
   expand:(c=C.t2,s=18)=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>,
   collapse:(c=C.t2,s=18)=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></svg>,
   edit:(c=C.t2,s=18)=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>,
@@ -621,8 +621,8 @@ function Sidebar({ active, onChange, unread=0, pendingCount=0, canRequest=false,
       {/* Logo */}
       <div style={{ padding:"20px 20px 16px", borderBottom:`1px solid ${C.b2}` }}>
         <div style={{ display:"inline-flex", alignItems:"flex-start" }}>
-          <span style={{ fontSize:42, fontWeight:800, color:C.pri, letterSpacing:-1.8, lineHeight:1 }}>tolvink</span>
-          <span style={{ width:11, height:11, borderRadius:6, background:C.acc, display:"inline-block", marginLeft:3, marginTop:2, animation:"dotPulse 1.5s ease-in-out infinite" }}></span>
+          <span style={{ fontSize:63, fontWeight:800, color:C.pri, letterSpacing:-2.8, lineHeight:1 }}>tolvink</span>
+          <span style={{ width:15, height:15, borderRadius:8, background:C.acc, display:"inline-block", marginLeft:4, marginTop:3, animation:"dotPulse 1.5s ease-in-out infinite" }}></span>
         </div>
       </div>
 
@@ -1294,8 +1294,8 @@ function HomeMapView({ freights, onNav }) {
           <option value="">Productor</option>
           {prodOpts.map(p=><option key={p} value={p}>{p}</option>)}
         </select>}
-        <input type="date" value={fDateFrom} onChange={e=>setFDateFrom(e.target.value)} onClick={e=>e.target.showPicker?.()} title="Desde" style={{ padding:"5px 8px", borderRadius:6, border:`1px solid ${C.b1}`, fontSize:10, background:C.w, color:fDateFrom?C.t1:C.t3, fontFamily:"inherit", cursor:"pointer" }}/>
-        <input type="date" value={fDateTo} onChange={e=>setFDateTo(e.target.value)} onClick={e=>e.target.showPicker?.()} title="Hasta" style={{ padding:"5px 8px", borderRadius:6, border:`1px solid ${C.b1}`, fontSize:10, background:C.w, color:fDateTo?C.t1:C.t3, fontFamily:"inherit", cursor:"pointer" }}/>
+        <div style={{display:"flex",alignItems:"center",gap:2}}><span style={{fontSize:9,color:C.t3,fontWeight:600}}>Desde</span><input type="date" value={fDateFrom} onChange={e=>setFDateFrom(e.target.value)} onClick={e=>e.target.showPicker?.()} style={{ padding:"5px 8px", borderRadius:6, border:`1px solid ${C.b1}`, fontSize:10, background:C.w, color:fDateFrom?C.t1:C.t3, fontFamily:"inherit", cursor:"pointer" }}/></div>
+        <div style={{display:"flex",alignItems:"center",gap:2}}><span style={{fontSize:9,color:C.t3,fontWeight:600}}>Hasta</span><input type="date" value={fDateTo} onChange={e=>setFDateTo(e.target.value)} onClick={e=>e.target.showPicker?.()} style={{ padding:"5px 8px", borderRadius:6, border:`1px solid ${C.b1}`, fontSize:10, background:C.w, color:fDateTo?C.t1:C.t3, fontFamily:"inherit", cursor:"pointer" }}/></div>
         {hasFilters&&<button onClick={clearAll} style={{ background:"none", border:"none", fontSize:10, color:C.err, fontWeight:600, cursor:"pointer", fontFamily:"inherit", padding:"2px 4px" }}>Limpiar</button>}
         <span style={{ fontSize:10, color:C.t3, marginLeft:"auto" }}>{filteredMF.length} fletes</span>
         <button onClick={()=>setFullscreen(!fullscreen)} style={{ background:C.priPale, border:`1px solid ${C.pri}20`, borderRadius:6, padding:"5px 10px", cursor:"pointer", display:"flex", alignItems:"center", gap:4, fontSize:10, fontWeight:600, color:C.pri, fontFamily:"inherit" }}>
@@ -3677,13 +3677,15 @@ function ChatsScreen({ user, openConvId, onConvOpened, isDesktop }) {
 
   const getConvName = (conv) => {
     if (!conv) return "Chat";
-    if (conv.displayName) return conv.displayName;
     if (conv.freight) return `Flete ${conv.freight.code}`;
-    const otherP = (conv.participants || []).find(p => p.userId !== user.id && p.companyId !== user.companyId);
-    const parts = [];
-    if (otherP?.company?.name) parts.push(otherP.company.name);
-    if (otherP?.user?.name) parts.push(otherP.user.name);
-    return parts.join(" · ") || otherP?.companyId?.slice(0, 8) || "Chat";
+    // For direct conversations, find the other user by userId
+    const otherP = (conv.participants || []).find(p => p.userId && p.userId !== user.id);
+    if (otherP?.user?.name) return otherP.user.name;
+    // Fallback: message sender name
+    const lastMsg = conv.messages?.[0];
+    if (lastMsg?.sender?.id !== user.id && lastMsg?.sender?.name) return lastMsg.sender.name;
+    if (conv.displayName) return conv.displayName;
+    return "Chat";
   };
 
   const getLastMsg = (conv) => {
@@ -3719,16 +3721,20 @@ function ChatsScreen({ user, openConvId, onConvOpened, isDesktop }) {
     const statusOrder = { in_progress: 0, loaded: 1, accepted: 2, assigned: 3, pending_assignment: 4, finished: 5, canceled: 6 };
 
     convs.forEach(c => {
-      const others = (c.participants || []).filter(p => p.userId !== user.id && p.companyId !== user.companyId);
-
       if (c.freight) {
+        const others = (c.participants || []).filter(p => p.userId !== user.id && p.companyId !== user.companyId);
         const companyName = others.map(o => o.company?.name || "").filter(Boolean).sort().join(", ") || "Otros";
         const companyType = others[0]?.company?.type || "";
         if (!byCompany[companyName]) byCompany[companyName] = { companyType, freightConvs: [] };
         byCompany[companyName].freightConvs.push(c);
       } else {
+        // For direct conversations, find the OTHER person by userId only
+        const others = (c.participants || []).filter(p => p.userId && p.userId !== user.id);
         const otherUser = others.find(o => o.user?.name) || others[0];
-        const userName = otherUser?.user?.name || c.displayName || "Chat";
+        // Fallback: get name from last message sender
+        const lastMsg = c.messages?.[0];
+        const msgSenderName = (lastMsg?.sender?.id && lastMsg.sender.id !== user.id) ? lastMsg.sender.name : null;
+        const userName = otherUser?.user?.name || msgSenderName || "Chat";
         const companyName = otherUser?.company?.name || "";
         directConvs.push({ ...c, _userName: userName, _companyName: companyName });
       }
