@@ -11,7 +11,7 @@ import {
   apiCreateTruck, apiDeactivateTruck,
   apiGetFields, apiCreateField, apiUpdateField, apiCreateLot, apiUpdateLot, apiGetFieldLots,
   apiGrantAccess, apiRevokeAccess, apiListAccessProducers, apiListAccessPlants, apiSearchProducer, apiGetMyFacilities, apiGetBranches,
-  apiStartConversation, apiListConversations, apiGetMessages, apiSendMessage,
+  apiSearchCompanies, apiStartConversation, apiListConversations, apiGetMessages, apiSendMessage,
   uploadPhoto, apiAddDocument, uploadChatFile,
   apiAdminStats, apiAdminListCompanies, apiAdminGetCompany, apiAdminCreateCompany, apiAdminUpdateCompany,
   apiAdminListBranches, apiAdminCreateBranch, apiAdminUpdateBranch, apiAdminDeleteBranch,
@@ -2613,30 +2613,69 @@ function NewScreen({ user, lots, plants, branches, fields, trucks, onBack, onCre
   const nfGalRef = useRef(null);
   const nfDocRef = useRef(null);
   const u = f => setForm(p=>({...p,...f}));
+  const scrollContainerRef = useRef(null);
+  const isUserScrolling = useRef(false);
+  const scrollTimer = useRef(null);
 
   // Section refs for smart scroll
   const secRefs = { product:useRef(null), quantity:useRef(null), origin:useRef(null), destination:useRef(null), schedule:useRef(null), extras:useRef(null), submit:useRef(null) };
   const [expandedSecs, setExpandedSecs] = useState({});
+
+  // Detect manual scroll to avoid fighting with user
+  useEffect(()=>{
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    const onScroll = () => {
+      isUserScrolling.current = true;
+      clearTimeout(scrollTimer.current);
+      scrollTimer.current = setTimeout(()=>{ isUserScrolling.current = false; }, 1500);
+    };
+    el.addEventListener('touchstart', onScroll, { passive:true });
+    el.addEventListener('wheel', onScroll, { passive:true });
+    return ()=>{ el.removeEventListener('touchstart', onScroll); el.removeEventListener('wheel', onScroll); };
+  },[]);
+
+  // Branches for the selected plant's company
+  const plantBranchesForSelected = useMemo(()=>{
+    if (!form.plantId) return [];
+    const p = (plants||[]).find(x=>x.id===form.plantId);
+    if (!p) return [];
+    return (branches||[]).filter(b=>b.companyId===p.companyId);
+  },[form.plantId, plants, branches]);
+  const needsBranch = destMode==="plant" && plantBranchesForSelected.length > 0;
+  const plantBranchOpts = plantBranchesForSelected.map(b=>({ value:b.id, label:b.name }));
 
   // Section completeness
   const secComplete = useMemo(()=>({
     product: !!form.grain && (form.grain!=="Otros" || !!form.productTypeOther.trim()),
     quantity: !!form.tons && parseFloat(form.tons) > 0,
     origin: !!form.fieldId && !!form.lotId,
-    destination: destMode==="plant" ? !!form.plantId : destMode==="branch" ? !!form.branchId : !!customDest.name?.trim(),
+    destination: destMode==="plant" ? (!!form.plantId && (!needsBranch || !!form.branchId)) : !!customDest.name?.trim(),
     schedule: !!form.loadDate && /^\d{2}:\d{2}$/.test(form.loadTime),
-  }),[form, destMode, customDest]);
+  }),[form, destMode, customDest, needsBranch]);
 
-  // Auto-scroll to next section on completion
+  // Auto-scroll to next section on completion (smooth, no fighting user)
   const prevComp = useRef({});
   useEffect(()=>{
+    if (isUserScrolling.current) { prevComp.current = {...secComplete}; return; }
     const order = ['product','quantity','origin','destination','schedule','extras','submit'];
     for (const sec of order) {
       if (secComplete[sec] && !prevComp.current[sec]) {
         const idx = order.indexOf(sec);
         for (let i=idx+1; i<order.length; i++) {
           if (!secComplete[order[i]] || order[i]==='submit') {
-            setTimeout(()=>{ secRefs[order[i]]?.current?.scrollIntoView({ behavior:'smooth', block:'center' }); },200);
+            const target = secRefs[order[i]]?.current;
+            if (target) {
+              setTimeout(()=>{
+                if (isUserScrolling.current) return;
+                const container = scrollContainerRef.current;
+                if (!container) return;
+                const rect = target.getBoundingClientRect();
+                const containerRect = container.getBoundingClientRect();
+                const scrollTarget = container.scrollTop + rect.top - containerRect.top - containerRect.height * 0.3;
+                container.scrollTo({ top: scrollTarget, behavior: 'smooth' });
+              }, 350);
+            }
             break;
           }
         }
@@ -2651,7 +2690,7 @@ function NewScreen({ user, lots, plants, branches, fields, trucks, onBack, onCre
     const isExp = expandedSecs[id] !== undefined ? expandedSecs[id] : !complete;
     const toggle = () => setExpandedSecs(p=>({...p,[id]:!isExp}));
     return (
-      <div ref={secRefs[id]} style={{ transition:"all 0.2s ease" }}>
+      <div ref={secRefs[id]} style={{ transition:"all 0.3s ease" }}>
         {complete && !isExp ? (
           <button onClick={toggle} style={{ width:"100%", display:"flex", alignItems:"center", gap:8, padding:"10px 14px", borderRadius:10, border:`1px solid ${C.ok}30`, background:`${C.ok}08`, cursor:"pointer", fontFamily:"inherit", textAlign:"left" }}>
             {Ic.chk(C.ok,16)}
@@ -2678,23 +2717,23 @@ function NewScreen({ user, lots, plants, branches, fields, trucks, onBack, onCre
     apiGetFieldLots(form.fieldId).then(l=>setFieldLots(l||[])).catch(()=>setFieldLots([])).finally(()=>setLoadingLots(false));
   },[form.fieldId]);
 
+  // Clear branch when plant changes
+  useEffect(()=>{ u({branchId:""}); },[form.plantId]);
+
   const fieldOpts = (fields||[]).map(f=>({ value:f.id, label:f.name, sub:f.address||"" }));
   const lotOpts = fieldLots.map(l=>({ value:l.id, label:l.name, sub:l.hectares?`${l.hectares} ha`:'' }));
   const plantOpts = (plants||[]).map(p=>({ value:p.id, label:p.name }));
-  const branchOpts = (branches||[]).map(b=>({ value:b.id, label:b.name }));
   const selectedLot = fieldLots.find(l=>l.id===form.lotId);
   const selectedPlant = (plants||[]).find(p=>p.id===form.plantId);
-  const selectedBranch = (branches||[]).find(b=>b.id===form.branchId);
+  const selectedBranch = plantBranchesForSelected.find(b=>b.id===form.branchId);
   const truckOpts = (trucks||[]).map(t=>({ value:t.id, label:`${t.plate}${t.model?` · ${t.model}`:""}` }));
   const showTruckSelect = (user.userType==="producer"||(user.userTypes||[]).includes("producer")) && truckOpts.length > 0;
-  const hasBranches = branchOpts.length > 0;
 
   // Coords for map preview
   const originCoords = selectedLot?.lat ? { lat: parseFloat(selectedLot.lat), lng: parseFloat(selectedLot.lng) } : null;
   const destCoords = destMode==="plant"
-    ? (selectedPlant?.lat ? { lat: parseFloat(selectedPlant.lat), lng: parseFloat(selectedPlant.lng) } : null)
-    : destMode==="branch"
-    ? (selectedBranch?.lat ? { lat: parseFloat(selectedBranch.lat), lng: parseFloat(selectedBranch.lng) } : null)
+    ? (selectedBranch?.lat ? { lat: parseFloat(selectedBranch.lat), lng: parseFloat(selectedBranch.lng) }
+      : selectedPlant?.lat ? { lat: parseFloat(selectedPlant.lat), lng: parseFloat(selectedPlant.lng) } : null)
     : (customDest.lat ? { lat: customDest.lat, lng: customDest.lng } : null);
   const [editingOrigin, setEditingOrigin] = useState(false);
   const [editingDest, setEditingDest] = useState(false);
@@ -2703,7 +2742,7 @@ function NewScreen({ user, lots, plants, branches, fields, trucks, onBack, onCre
   const finalOrigin = overrideOrigin || originCoords;
   const finalDest = overrideDest || destCoords;
 
-  const destDisplayName = destMode==="plant" ? (selectedPlant?.name||"") : destMode==="branch" ? (selectedBranch?.name||"") : (customDest.name||"");
+  const destDisplayName = destMode==="plant" ? (selectedBranch ? `${selectedPlant?.name||""} → ${selectedBranch.name}` : (selectedPlant?.name||"")) : (customDest.name||"");
 
   const submit = () => {
     setTouched(true);
@@ -2711,8 +2750,10 @@ function NewScreen({ user, lots, plants, branches, fields, trucks, onBack, onCre
     if(form.grain==="Otros" && !form.productTypeOther.trim()) { e.productTypeOther="Descripción obligatoria"; }
     if(form.fieldId && !form.lotId) { e.lotId="Seleccioná un lote del campo"; }
     // Destination validation
-    if(destMode==="plant" && !form.plantId) { e.plantId="Seleccioná una planta"; }
-    if(destMode==="branch" && !form.branchId) { e.branchId="Seleccioná una sucursal"; }
+    if(destMode==="plant") {
+      if(!form.plantId) { e.plantId="Seleccioná una planta"; }
+      else if(needsBranch && !form.branchId) { e.branchId="Seleccioná una sucursal"; }
+    }
     if(destMode==="custom" && !customDest.name?.trim()) { e.customDestName="Nombre de destino obligatorio"; }
     setErrs(e);
     if(!ok || Object.keys(e).filter(k=>e[k]).length>0) return;
@@ -2722,11 +2763,11 @@ function NewScreen({ user, lots, plants, branches, fields, trucks, onBack, onCre
       overrideDestLat: overrideDest?.lat || undefined,
       overrideDestLng: overrideDest?.lng || undefined,
     };
-    if(destMode==="branch") {
-      payload.plantId = undefined;
-      payload.customDestName = selectedBranch?.name;
-      payload.customDestLat = selectedBranch?.lat ? parseFloat(selectedBranch.lat) : undefined;
-      payload.customDestLng = selectedBranch?.lng ? parseFloat(selectedBranch.lng) : undefined;
+    // Plant mode: send destPlantId. If branch selected, also send branch info as custom overrides.
+    if(destMode==="plant" && selectedBranch) {
+      payload.customDestName = selectedBranch.name;
+      payload.customDestLat = selectedBranch.lat ? parseFloat(selectedBranch.lat) : undefined;
+      payload.customDestLng = selectedBranch.lng ? parseFloat(selectedBranch.lng) : undefined;
     }
     if(destMode==="custom") {
       payload.plantId = undefined;
@@ -2759,7 +2800,7 @@ function NewScreen({ user, lots, plants, branches, fields, trucks, onBack, onCre
   };
 
   return (
-    <div style={{ flex:1, overflow:"auto", padding:18, animation:"slideUp 0.25s ease" }}>
+    <div ref={scrollContainerRef} style={{ flex:1, overflow:"auto", padding:18, animation:"slideUp 0.25s ease", scrollBehavior:"smooth" }}>
       <button onClick={onBack} style={{ background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", fontSize:13, fontWeight:600, color:C.pri, marginBottom:14, padding:0, display:"flex", alignItems:"center", gap:4 }}>{Ic.chev(C.pri,18)} Volver</button>
       <div style={{ fontSize:20, fontWeight:800, marginBottom:4, letterSpacing:-0.3 }}>Solicitar Flete</div>
       <div style={{ fontSize:12, color:C.t2, marginBottom:22 }}>Solicitando como: <span style={{fontWeight:600,color:C.t1}}>{user.name}</span></div>
@@ -2818,20 +2859,19 @@ function NewScreen({ user, lots, plants, branches, fields, trucks, onBack, onCre
         <Sec id="destination" label="Destino" complete={secComplete.destination} summary={secSummary.destination}>
           <label style={{ fontSize:10.5, fontWeight:600, color:C.t2, marginBottom:6, display:"flex", alignItems:"center", gap:4, textTransform:"uppercase", letterSpacing:0.6 }}>{Ic.plant(C.t2,14)} Destino</label>
           <div style={{ display:"flex", gap:6, marginBottom:10 }}>
-            <button onClick={()=>{setDestMode("plant"); u({branchId:""}); setCustomDest({name:"",lat:null,lng:null});}} style={{ flex:1, padding:"10px 8px", borderRadius:8, border:`1.5px solid ${destMode==="plant"?C.pri:C.b1}`, background:destMode==="plant"?C.priPale:C.w, color:destMode==="plant"?C.pri:C.t2, cursor:"pointer", fontSize:12, fontWeight:600, fontFamily:"inherit" }}>Planta</button>
-            {hasBranches && <button onClick={()=>{setDestMode("branch"); u({plantId:""}); setCustomDest({name:"",lat:null,lng:null});}} style={{ flex:1, padding:"10px 8px", borderRadius:8, border:`1.5px solid ${destMode==="branch"?C.sec:C.b1}`, background:destMode==="branch"?`${C.sec}10`:C.w, color:destMode==="branch"?C.sec:C.t2, cursor:"pointer", fontSize:12, fontWeight:600, fontFamily:"inherit" }}>Sucursal</button>}
+            <button onClick={()=>{setDestMode("plant"); setCustomDest({name:"",lat:null,lng:null});}} style={{ flex:1, padding:"10px 8px", borderRadius:8, border:`1.5px solid ${destMode==="plant"?C.pri:C.b1}`, background:destMode==="plant"?C.priPale:C.w, color:destMode==="plant"?C.pri:C.t2, cursor:"pointer", fontSize:12, fontWeight:600, fontFamily:"inherit" }}>Planta</button>
             <button onClick={()=>{setDestMode("custom"); u({plantId:"",branchId:""});}} style={{ flex:1, padding:"10px 8px", borderRadius:8, border:`1.5px solid ${destMode==="custom"?C.acc:C.b1}`, background:destMode==="custom"?C.accPale:C.w, color:destMode==="custom"?C.acc:C.t2, cursor:"pointer", fontSize:12, fontWeight:600, fontFamily:"inherit" }}>Personalizado</button>
           </div>
           {destMode==="plant" && (
             <>
               <Select value={form.plantId} onChange={v=>u({plantId:v})} options={plantOpts} placeholder="Seleccionar planta..."/>
               {touched&&<FieldError error={errs.plantId}/>}
-            </>
-          )}
-          {destMode==="branch" && (
-            <>
-              <Select value={form.branchId} onChange={v=>u({branchId:v})} options={branchOpts} placeholder="Seleccionar sucursal..."/>
-              {touched&&<FieldError error={errs.branchId}/>}
+              {needsBranch && (
+                <div style={{ marginTop:10, background:`${C.sec}08`, border:`1px solid ${C.sec}20`, borderRadius:10, padding:12 }}>
+                  <Select label="Sucursal" icon={Ic.pin(C.sec,14)} value={form.branchId} onChange={v=>u({branchId:v})} options={plantBranchOpts} placeholder="Seleccionar sucursal (obligatorio)..."/>
+                  {touched&&<FieldError error={errs.branchId}/>}
+                </div>
+              )}
             </>
           )}
           {destMode==="custom" && (
@@ -3311,21 +3351,17 @@ function AccessScreen({ onBack }) {
   const [facilities, setFacilities] = useState(null);
   const [selectedPlantIds, setSelectedPlantIds] = useState([]);
   const [selectedBranchIds, setSelectedBranchIds] = useState([]);
+  const [editingAccess, setEditingAccess] = useState(null); // producer record being edited
+  const [confirmRevoke, setConfirmRevoke] = useState(null);
 
   const load = useCallback(async () => {
     try {
-      const p = await apiListAccessProducers();
+      const [p, f] = await Promise.all([apiListAccessProducers(), apiGetMyFacilities().catch(()=>({plants:[],branches:[]}))]);
       setProducers(p || []);
+      setFacilities(f);
     } catch {} finally { setLoading(false); }
   }, []);
   useEffect(() => { load(); }, [load]);
-
-  // Load facilities when grant panel opens
-  useEffect(() => {
-    if (showGrant && !facilities) {
-      apiGetMyFacilities().then(f => setFacilities(f)).catch(() => setFacilities({ plants: [], branches: [] }));
-    }
-  }, [showGrant, facilities]);
 
   const handleSearch = async () => {
     const clean = phone.replace(/[\s\-()]/g,'');
@@ -3342,25 +3378,53 @@ function AccessScreen({ onBack }) {
   const toggleBranch = (id) => setSelectedBranchIds(prev => prev.includes(id) ? prev.filter(x=>x!==id) : [...prev, id]);
 
   const handleGrant = async () => {
-    if (!searchResult?.producerCompanyId) return;
+    if (!searchResult?.producerCompanyId && !editingAccess) return;
     if (selectedPlantIds.length === 0 && selectedBranchIds.length === 0) {
       setMsg({ t: "Seleccioná al menos una planta o sucursal", k: "err" }); return;
     }
     setSaving(true);
+    const prodId = editingAccess ? editingAccess.producerCompanyId : searchResult.producerCompanyId;
     try {
-      await apiGrantAccess({ producerCompanyId: searchResult.producerCompanyId, allowedPlantIds: selectedPlantIds, allowedBranchIds: selectedBranchIds });
-      setPhone(""); setSearchResult(null); setShowGrant(false);
+      await apiGrantAccess({ producerCompanyId: prodId, allowedPlantIds: selectedPlantIds, allowedBranchIds: selectedBranchIds });
+      setPhone(""); setSearchResult(null); setShowGrant(false); setEditingAccess(null);
       setSelectedPlantIds([]); setSelectedBranchIds([]);
-      setMsg({ t: "Productor habilitado", k: "ok" }); load();
+      setMsg({ t: editingAccess ? "Habilitación actualizada" : "Productor habilitado", k: "ok" }); load();
     } catch (e) { setMsg({ t: e.message, k: "err" }); } finally { setSaving(false); }
   };
 
   const handleRevoke = async (companyId) => {
-    try { await apiRevokeAccess(companyId); setMsg({ t: "Acceso revocado", k: "ok" }); load(); }
+    try { await apiRevokeAccess(companyId); setMsg({ t: "Acceso revocado", k: "ok" }); setConfirmRevoke(null); load(); }
     catch (e) { setMsg({ t: e.message, k: "err" }); }
   };
 
+  const startEdit = (p) => {
+    setEditingAccess(p);
+    setSelectedPlantIds((p.allowedPlantIds || []).slice());
+    setSelectedBranchIds((p.allowedBranchIds || []).slice());
+    setShowGrant(false); setSearchResult(null); setPhone("");
+  };
+
   const selCount = selectedPlantIds.length + selectedBranchIds.length;
+  const fPlants = facilities?.plants || [];
+  const fBranches = facilities?.branches || [];
+  const plantMap = useMemo(()=>new Map(fPlants.map(p=>[p.id,p])),[fPlants]);
+  const branchMap = useMemo(()=>new Map(fBranches.map(b=>[b.id,b])),[fBranches]);
+
+  // Group active producers by plant
+  const activeProducers = producers.filter(p=>p.active);
+  const grouped = useMemo(()=>{
+    const byPlant = {};
+    const general = [];
+    for (const p of activeProducers) {
+      const pIds = (p.allowedPlantIds || []);
+      if (pIds.length === 0) { general.push(p); continue; }
+      for (const pid of pIds) {
+        if (!byPlant[pid]) byPlant[pid] = [];
+        byPlant[pid].push(p);
+      }
+    }
+    return { byPlant, general };
+  },[activeProducers]);
 
   const FacilityToggle = ({ id, name, address, selected, color, onToggle }) => (
     <button onClick={()=>onToggle(id)} style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 12px", borderRadius:8, border:`1.5px solid ${selected?color:C.b1}`, background:selected?`${color}0A`:C.w, cursor:"pointer", fontFamily:"inherit", textAlign:"left", transition:"all 0.15s", width:"100%" }}>
@@ -3374,17 +3438,94 @@ function AccessScreen({ onBack }) {
     </button>
   );
 
+  const FacilitySelector = () => (
+    <div style={{ marginBottom:12 }}>
+      {fPlants.length > 0 && (
+        <>
+          <div style={{ fontSize:11, fontWeight:700, color:C.t2, marginBottom:6, textTransform:"uppercase", letterSpacing:0.5, display:"flex", alignItems:"center", gap:4 }}>{Ic.plant(C.pri,14)} Plantas</div>
+          <div style={{ display:"flex", flexDirection:"column", gap:6, marginBottom:10 }}>
+            {fPlants.map(p => <FacilityToggle key={p.id} id={p.id} name={p.name} address={p.address} selected={selectedPlantIds.includes(p.id)} color={C.pri} onToggle={togglePlant}/>)}
+          </div>
+        </>
+      )}
+      {fBranches.length > 0 && (
+        <>
+          <div style={{ fontSize:11, fontWeight:700, color:C.t2, marginBottom:6, textTransform:"uppercase", letterSpacing:0.5, display:"flex", alignItems:"center", gap:4 }}>{Ic.pin(C.acc,14)} Sucursales</div>
+          <div style={{ display:"flex", flexDirection:"column", gap:6, marginBottom:10 }}>
+            {fBranches.map(b => <FacilityToggle key={b.id} id={b.id} name={b.name} address={b.address} selected={selectedBranchIds.includes(b.id)} color={C.acc} onToggle={toggleBranch}/>)}
+          </div>
+        </>
+      )}
+      {fPlants.length === 0 && fBranches.length === 0 && (
+        <div style={{ fontSize:12, color:C.t3, marginBottom:8 }}>Tu empresa no tiene plantas ni sucursales registradas.</div>
+      )}
+    </div>
+  );
+
+  const ProducerRow = ({ p }) => {
+    const nPlants = (p.allowedPlantIds||[]).length;
+    const nBranches = (p.allowedBranchIds||[]).length;
+    const plantNames = (p.allowedPlantIds||[]).map(id=>plantMap.get(id)?.name).filter(Boolean).join(", ");
+    const branchNames = (p.allowedBranchIds||[]).map(id=>branchMap.get(id)?.name).filter(Boolean).join(", ");
+    return (
+      <div style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 0" }}>
+        <button onClick={()=>startEdit(p)} style={{ flex:1, display:"flex", alignItems:"center", gap:10, background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", textAlign:"left", padding:0 }}>
+          {Ic.user(C.ok,18)}
+          <div>
+            <div style={{ fontSize:13, fontWeight:700, color:C.t1 }}>{p.producerCompany?.name||"Productor"}</div>
+            {plantNames && <div style={{ fontSize:10, color:C.pri }}>{plantNames}</div>}
+            {branchNames && <div style={{ fontSize:10, color:C.acc }}>{branchNames}</div>}
+            {nPlants===0 && nBranches===0 && <div style={{ fontSize:10, color:C.t3 }}>Acceso general</div>}
+          </div>
+        </button>
+        <button onClick={()=>setConfirmRevoke(p)} style={{ background:"none", border:"none", cursor:"pointer", padding:6, borderRadius:6, display:"flex", alignItems:"center" }}>
+          {Ic.cross(C.err,16)}
+        </button>
+      </div>
+    );
+  };
+
   return (
     <div style={{ flex: 1, overflow: "auto", padding: 18 }}>
       <button onClick={onBack} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 600, color: C.pri, marginBottom: 14, padding: 0, display: "flex", alignItems: "center", gap: 4 }}>{Ic.chev(C.pri, 18)} Mi Perfil</button>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
-        <div style={{ fontSize: 20, fontWeight: 800, letterSpacing: -0.3 }}>Productores</div>
-        <Btn sm onClick={() => { setShowGrant(!showGrant); setSearchResult(null); setPhone(""); setMsg(null); setSelectedPlantIds([]); setSelectedBranchIds([]); }} icon={showGrant ? Ic.cross(C.w, 14) : Ic.plus(C.w, 14)}>{showGrant ? "Cerrar" : "Habilitar"}</Btn>
+        <div style={{ fontSize: 20, fontWeight: 800, letterSpacing: -0.3 }}>Productores Habilitados</div>
+        <Btn sm onClick={() => { setShowGrant(!showGrant); setEditingAccess(null); setSearchResult(null); setPhone(""); setMsg(null); setSelectedPlantIds([]); setSelectedBranchIds([]); }} icon={showGrant ? Ic.cross(C.w, 14) : Ic.plus(C.w, 14)}>{showGrant ? "Cerrar" : "Habilitar"}</Btn>
       </div>
 
       {msg && <div style={{ padding: "10px 14px", borderRadius: 10, marginBottom: 12, fontSize: 12, fontWeight: 600, background: msg.k === "ok" ? C.okPale : C.errPale, color: msg.k === "ok" ? C.ok : C.err }}>{msg.t}</div>}
 
-      {showGrant && (
+      {/* Confirm revoke modal */}
+      {confirmRevoke && (
+        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.4)", zIndex:999, display:"flex", alignItems:"center", justifyContent:"center", padding:24 }} onClick={()=>setConfirmRevoke(null)}>
+          <div onClick={e=>e.stopPropagation()} style={{ background:C.w, borderRadius:14, padding:24, maxWidth:340, width:"100%", boxShadow:"0 8px 32px rgba(0,0,0,0.2)" }}>
+            <div style={{ fontSize:16, fontWeight:700, marginBottom:8 }}>Revocar acceso</div>
+            <div style={{ fontSize:13, color:C.t2, marginBottom:16 }}>¿Revocar el acceso de <b>{confirmRevoke.producerCompany?.name}</b>? No podrá enviar fletes a tus plantas.</div>
+            <div style={{ display:"flex", gap:8 }}>
+              <button onClick={()=>setConfirmRevoke(null)} style={{ flex:1, padding:"10px 14px", borderRadius:8, border:`1px solid ${C.b1}`, background:C.w, cursor:"pointer", fontFamily:"inherit", fontSize:13, fontWeight:600, color:C.t2 }}>Cancelar</button>
+              <button onClick={()=>handleRevoke(confirmRevoke.producerCompany?.id||confirmRevoke.producerCompanyId)} style={{ flex:1, padding:"10px 14px", borderRadius:8, border:"none", background:C.err, cursor:"pointer", fontFamily:"inherit", fontSize:13, fontWeight:600, color:C.w }}>Revocar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit access panel */}
+      {editingAccess && (
+        <div style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: 12, padding: 16, marginBottom: 16, boxShadow: C.sh }}>
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:12 }}>
+            <div>
+              <div style={{ fontSize:14, fontWeight:700 }}>Editar: {editingAccess.producerCompany?.name}</div>
+              <div style={{ fontSize:10, color:C.t3 }}>Modificá las plantas y sucursales habilitadas</div>
+            </div>
+            <button onClick={()=>{setEditingAccess(null); setSelectedPlantIds([]); setSelectedBranchIds([]);}} style={{ background:"none", border:"none", cursor:"pointer" }}>{Ic.cross(C.t2,18)}</button>
+          </div>
+          <FacilitySelector/>
+          <Btn full v="acc" disabled={saving || selCount === 0} onClick={handleGrant}>{saving ? "Guardando..." : `Guardar cambios (${selCount} seleccionados)`}</Btn>
+        </div>
+      )}
+
+      {/* Grant new producer */}
+      {showGrant && !editingAccess && (
         <div style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: 12, padding: 16, marginBottom: 16, boxShadow: C.sh }}>
           <Field label="Teléfono del productor" value={phone} onChange={setPhone} placeholder="09X XXX XXX"/>
           <div style={{ fontSize: 10, color: C.t3, marginTop: 4, marginBottom: 10 }}>Ingresá el teléfono del productor para buscarlo</div>
@@ -3400,62 +3541,44 @@ function AccessScreen({ onBack }) {
                 </div>
               </div>
               <div style={{ fontSize:12, color:C.t2, marginBottom:12 }}>Empresa: <span style={{fontWeight:600,color:C.t1}}>{searchResult.producerCompanyName}</span></div>
-
-              {facilities ? (
-                <div style={{ marginBottom:12 }}>
-                  {(facilities.plants||[]).length > 0 && (
-                    <>
-                      <div style={{ fontSize:11, fontWeight:700, color:C.t2, marginBottom:6, textTransform:"uppercase", letterSpacing:0.5, display:"flex", alignItems:"center", gap:4 }}>{Ic.plant(C.pri,14)} Plantas</div>
-                      <div style={{ display:"flex", flexDirection:"column", gap:6, marginBottom:10 }}>
-                        {facilities.plants.map(p => <FacilityToggle key={p.id} id={p.id} name={p.name} address={p.address} selected={selectedPlantIds.includes(p.id)} color={C.pri} onToggle={togglePlant}/>)}
-                      </div>
-                    </>
-                  )}
-                  {(facilities.branches||[]).length > 0 && (
-                    <>
-                      <div style={{ fontSize:11, fontWeight:700, color:C.t2, marginBottom:6, textTransform:"uppercase", letterSpacing:0.5, display:"flex", alignItems:"center", gap:4 }}>{Ic.pin(C.acc,14)} Sucursales</div>
-                      <div style={{ display:"flex", flexDirection:"column", gap:6, marginBottom:10 }}>
-                        {facilities.branches.map(b => <FacilityToggle key={b.id} id={b.id} name={b.name} address={b.address} selected={selectedBranchIds.includes(b.id)} color={C.acc} onToggle={toggleBranch}/>)}
-                      </div>
-                    </>
-                  )}
-                  {(facilities.plants||[]).length === 0 && (facilities.branches||[]).length === 0 && (
-                    <div style={{ fontSize:12, color:C.t3, marginBottom:8 }}>Tu empresa no tiene plantas ni sucursales registradas.</div>
-                  )}
-                </div>
-              ) : (
-                <div style={{ fontSize:11, color:C.t3, marginBottom:8 }}>Cargando instalaciones...</div>
-              )}
-
+              {facilities ? <FacilitySelector/> : <div style={{ fontSize:11, color:C.t3, marginBottom:8 }}>Cargando instalaciones...</div>}
               <Btn full v="acc" disabled={saving || selCount === 0} onClick={handleGrant}>{saving ? "Habilitando..." : `Habilitar productor (${selCount} seleccionados)`}</Btn>
             </div>
           )}
         </div>
       )}
 
+      {/* Producer list grouped by plant */}
       {loading ? <div style={{ textAlign: "center", padding: 40, color: C.t3, fontSize: 13 }}>Cargando...</div> :
-        producers.length === 0 ? <div style={{ textAlign: "center", padding: 40, color: C.t3, fontSize: 13 }}>Ningún productor habilitado aún.</div> :
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {producers.map(p => {
-              const nPlants = ((p.allowedPlantIds) || []).length;
-              const nBranches = ((p.allowedBranchIds) || []).length;
+        activeProducers.length === 0 ? <div style={{ textAlign: "center", padding: 40, color: C.t3, fontSize: 13 }}>Ningún productor habilitado aún.</div> :
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            {fPlants.map(plant => {
+              const prods = grouped.byPlant[plant.id];
+              if (!prods || prods.length === 0) return null;
               return (
-                <div key={p.id} style={{ background: C.w, border: `1px solid ${C.b1}`, borderLeft: `3px solid ${p.active ? C.ok : C.muted}`, borderRadius: 12, padding: 14, boxShadow: C.sh, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    {Ic.user(p.active ? C.ok : C.muted, 20)}
-                    <div>
-                      <div style={{ fontSize: 14, fontWeight: 700 }}>{p.producerCompany?.name || "Productor"}</div>
-                      <div style={{ fontSize: 10, color: C.t3 }}>{p.producerCompany?.email || ""}</div>
-                      {(nPlants > 0 || nBranches > 0) && <div style={{ fontSize: 10, color: C.t2, marginTop: 2 }}>{nPlants} planta{nPlants!==1?"s":""}, {nBranches} sucursal{nBranches!==1?"es":""}</div>}
-                    </div>
+                <div key={plant.id} style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: 12, boxShadow: C.sh, overflow:"hidden" }}>
+                  <div style={{ padding:"12px 14px", background:`${C.pri}08`, borderBottom:`1px solid ${C.b2}`, display:"flex", alignItems:"center", gap:8 }}>
+                    {Ic.plant(C.pri,16)}
+                    <div style={{ fontSize:13, fontWeight:700, color:C.pri }}>{plant.name}</div>
+                    <div style={{ fontSize:10, color:C.t3, marginLeft:4 }}>{prods.length} productor{prods.length!==1?"es":""}</div>
                   </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <Bd color={p.active ? C.ok : C.muted} small>{p.active ? "Activo" : "Revocado"}</Bd>
-                    {p.active && <button onClick={() => handleRevoke(p.producerCompany?.id || p.producerCompanyId)} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }}>{Ic.ban(C.err, 16)}</button>}
+                  <div style={{ padding:"4px 14px" }}>
+                    {prods.map(p => <ProducerRow key={p.id} p={p}/>)}
                   </div>
                 </div>
               );
             })}
+            {grouped.general.length > 0 && (
+              <div style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: 12, boxShadow: C.sh, overflow:"hidden" }}>
+                <div style={{ padding:"12px 14px", background:`${C.t2}08`, borderBottom:`1px solid ${C.b2}`, display:"flex", alignItems:"center", gap:8 }}>
+                  {Ic.user(C.t2,16)}
+                  <div style={{ fontSize:13, fontWeight:700, color:C.t2 }}>Acceso general</div>
+                </div>
+                <div style={{ padding:"4px 14px" }}>
+                  {grouped.general.map(p => <ProducerRow key={p.id} p={p}/>)}
+                </div>
+              </div>
+            )}
           </div>
       }
     </div>
@@ -3474,6 +3597,10 @@ function ChatsScreen({ user, openConvId, onConvOpened, isDesktop }) {
   const [showNew, setShowNew] = useState(false);
   const [newCompId, setNewCompId] = useState("");
   const [newErr, setNewErr] = useState(null);
+  const [compSearchQ, setCompSearchQ] = useState("");
+  const [compResults, setCompResults] = useState([]);
+  const [compSearching, setCompSearching] = useState(false);
+  const compSearchTimer = useRef(null);
   const [searchQ, setSearchQ] = useState("");
   const [filterPlant, setFilterPlant] = useState("");
   const [filterTransporter, setFilterTransporter] = useState("");
@@ -3560,12 +3687,30 @@ function ChatsScreen({ user, openConvId, onConvOpened, isDesktop }) {
     }));
   }, [messages]);
 
+  // Search companies by name for new chat
+  const handleCompSearch = (q) => {
+    setCompSearchQ(q);
+    setNewCompId("");
+    clearTimeout(compSearchTimer.current);
+    if (q.trim().length < 2) { setCompResults([]); return; }
+    setCompSearching(true);
+    compSearchTimer.current = setTimeout(()=>{
+      apiSearchCompanies(q.trim()).then(r=>setCompResults(r||[])).catch(()=>setCompResults([])).finally(()=>setCompSearching(false));
+    }, 300);
+  };
+
+  const handleSelectCompany = (co) => {
+    setNewCompId(co.id);
+    setCompSearchQ(co.name);
+    setCompResults([]);
+  };
+
   const handleStartConv = async () => {
-    if (!newCompId.trim()) { setNewErr("Ingresá el ID de la empresa"); return; }
+    if (!newCompId.trim()) { setNewErr("Buscá y seleccioná una empresa"); return; }
     setNewErr(null);
     try {
       const conv = await apiStartConversation({ targetCompanyId: newCompId.trim() });
-      setShowNew(false); setNewCompId("");
+      setShowNew(false); setNewCompId(""); setCompSearchQ(""); setCompResults([]);
       loadConvs();
       openConv(conv);
     } catch (e) { setNewErr(e.message); }
@@ -3858,10 +4003,25 @@ function ChatsScreen({ user, openConvId, onConvOpened, isDesktop }) {
 
       {showNew && (
         <div style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: 12, padding: 16, marginBottom: 14, boxShadow: C.sh }}>
-          <Field label="ID de empresa" value={newCompId} onChange={setNewCompId} placeholder="UUID de la empresa" />
-          <div style={{ fontSize: 10, color: C.t3, marginTop: 4, marginBottom: 10 }}>Copiá el ID desde el perfil de la otra empresa</div>
-          {newErr && <div style={{ fontSize: 11, color: C.err, marginBottom: 8 }}>{newErr}</div>}
-          <Btn full v="acc" onClick={handleStartConv}>Iniciar conversación</Btn>
+          <Field label="Buscar empresa" value={compSearchQ} onChange={handleCompSearch} placeholder="Escribí el nombre de la empresa..."/>
+          {compSearching && <div style={{ fontSize:10, color:C.t3, marginTop:4 }}>Buscando...</div>}
+          {compResults.length > 0 && (
+            <div style={{ marginTop:6, border:`1px solid ${C.b1}`, borderRadius:8, maxHeight:160, overflow:"auto" }}>
+              {compResults.map(co=>(
+                <button key={co.id} onClick={()=>handleSelectCompany(co)} style={{ width:"100%", display:"flex", alignItems:"center", gap:8, padding:"10px 12px", background:newCompId===co.id?C.priPale:C.w, border:"none", borderBottom:`1px solid ${C.b2}`, cursor:"pointer", fontFamily:"inherit", textAlign:"left" }}>
+                  <div style={{ flex:1 }}>
+                    <div style={{ fontSize:13, fontWeight:600, color:C.t1 }}>{co.name}</div>
+                    <div style={{ fontSize:10, color:C.t3 }}>{({plant:"Planta",transporter:"Transportista",producer:"Productor"})[co.type]||co.type}</div>
+                  </div>
+                  {newCompId===co.id && Ic.chk(C.pri,14)}
+                </button>
+              ))}
+            </div>
+          )}
+          {compSearchQ.length>=2 && !compSearching && compResults.length===0 && !newCompId && <div style={{ fontSize:11, color:C.t3, marginTop:6 }}>Sin resultados</div>}
+          {newCompId && <div style={{ fontSize:11, color:C.ok, marginTop:6, fontWeight:600 }}>Empresa seleccionada: {compSearchQ}</div>}
+          {newErr && <div style={{ fontSize: 11, color: C.err, marginTop:6, marginBottom: 4 }}>{newErr}</div>}
+          <div style={{ marginTop:10 }}><Btn full v="acc" disabled={!newCompId} onClick={handleStartConv}>Iniciar conversación</Btn></div>
         </div>
       )}
 

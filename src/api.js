@@ -154,6 +154,7 @@ export async function apiGetMyFacilities() { return api('/plant-access/my-facili
 export async function apiGetBranches() { return api('/catalog/branches'); }
 
 // Conversations
+export async function apiSearchCompanies(q) { return api(`/conversations/search-companies?q=${encodeURIComponent(q)}`); }
 export async function apiStartConversation(b) { return api('/conversations/start',{body:b}); }
 export async function apiListConversations(search) { const q=search?`?search=${encodeURIComponent(search)}`:''; return api(`/conversations${q}`); }
 export async function apiGetMessages(convId) { return api(`/conversations/${convId}/messages`); }
