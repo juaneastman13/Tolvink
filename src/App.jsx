@@ -13,8 +13,9 @@ import {
   apiGrantAccess, apiRevokeAccess, apiListAccessProducers, apiListAccessPlants,
   apiStartConversation, apiListConversations, apiGetMessages, apiSendMessage,
   uploadPhoto, apiAddDocument, uploadChatFile,
-  apiAdminStats, apiAdminListCompanies, apiAdminCreateCompany, apiAdminUpdateCompany,
-  apiAdminListUsers, apiAdminUpdateUser, apiAdminLinkUser, apiAdminUnlinkUser,
+  apiAdminStats, apiAdminListCompanies, apiAdminGetCompany, apiAdminCreateCompany, apiAdminUpdateCompany,
+  apiAdminListBranches, apiAdminCreateBranch, apiAdminUpdateBranch, apiAdminDeleteBranch,
+  apiAdminListUsers, apiAdminCreateUser, apiAdminUpdateUser, apiUpdateMe,
   getToken, getSavedUser, setAuthFailHandler, clearAuth,
 } from "./api";
 
@@ -499,7 +500,7 @@ function useIsDesktop(bp = 768) {
 
 // ======================== DESKTOP SIDEBAR =============================
 
-function Sidebar({ active, onChange, unread=0, pendingCount=0, canRequest=false, onNew, isSuperAdmin=false }) {
+function Sidebar({ active, onChange, unread=0, pendingCount=0, canRequest=false, onNew }) {
   const hasPending = pendingCount > 0;
   const centerColor = hasPending ? C.acc : C.ok;
   const items = [
@@ -508,7 +509,6 @@ function Sidebar({ active, onChange, unread=0, pendingCount=0, canRequest=false,
     { k:"calendar",ic:a=>Ic.cal(a?C.pri:C.t3,20),    l:"Calendario" },
     { k:"chats",   ic:a=>Ic.msg(a?C.pri:C.t3,20),    l:"Chat", bd:unread },
     { k:"reports", ic:a=>Ic.doc(a?C.pri:C.t3,20),    l:"Informes" },
-    ...(isSuperAdmin ? [{ k:"admin", ic:a=>Ic.shield(a?C.pri:C.t3,20), l:"Admin" }] : []),
     { k:"profile", ic:a=>Ic.user(a?C.pri:C.t3,20),   l:"Perfil" },
   ];
   return (
@@ -2748,7 +2748,7 @@ function ProfileScreen({ user, perms, onLogout, onNav, theme, toggleTheme }) {
   if(user.userType==="plant") mgmtItems.push({k:"access",l:"Productores Habilitados",ic:Ic.user(C.pri,18),c:C.pri});
   mgmtItems.push({k:"calendar",l:"Calendario",ic:Ic.cal(C.info||C.sec,18),c:C.info||C.sec});
   mgmtItems.push({k:"reports",l:"Informes y Documentos",ic:Ic.doc(C.sec,18),c:C.sec});
-  if(user.isSuperAdmin) mgmtItems.push({k:"admin",l:"Panel de Administración",ic:Ic.shield(C.err,18),c:C.err});
+  if(user.role==="platform_admin"||user.role==="admin") mgmtItems.push({k:"admin",l:"Administración",ic:Ic.shield(C.err,18),c:C.err});
 
   return (
     <div style={{flex:1,overflow:"auto",padding:18}}>
@@ -4438,254 +4438,332 @@ function ReasonModal({ title, freight, btnLabel, btnType="err", onClose, onConfi
   );
 }
 
-// ======================== ADMIN SCREEN (SuperAdmin) ===================
-
-function AdminScreen({ onBack }) {
-  const [tab, setTab] = useState("users"); // users | companies
-  const [users, setUsers] = useState([]);
+// ======================== ADMIN SCREEN ================================
+function AdminScreen({ user, onBack }) {
+  const isPlatform = user.role === "platform_admin";
+  const [tab, setTab] = useState("companies");
   const [companies, setCompanies] = useState([]);
+  const [users, setUsers] = useState([]);
   const [stats, setStats] = useState(null);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState(null);
-  // Company form
-  const [showCompanyForm, setShowCompanyForm] = useState(false);
-  const [companyForm, setCompanyForm] = useState({ name:"", type:"producer", phone:"", email:"", hasInternalFleet:false });
   const [saving, setSaving] = useState(false);
-  // Link modal
-  const [linkModal, setLinkModal] = useState(null); // { userId, userName }
+
+  // Forms
+  const [showForm, setShowForm] = useState(false);
+  const [companyForm, setCompanyForm] = useState({ name:"",type:"producer",phone:"",email:"",rut:"",hasInternalFleet:false,lat:null,lng:null });
+  const [userForm, setUserForm] = useState({ name:"",email:"",phone:"",password:"",userTypes:[],role:"operator",companyId:"" });
+  const [branchForm, setBranchForm] = useState({ name:"",address:"",reference:"",companyId:"",lat:null,lng:null });
+
+  // Detail view
+  const [selectedCompany, setSelectedCompany] = useState(null);
+  const [branches, setBranches] = useState([]);
+  const [showBranchForm, setShowBranchForm] = useState(false);
+
+  const typeColors = { producer:"#F59E0B",plant:"#6366F1",transporter:"#3B82F6" };
+  const typeLabels = { producer:"Productor",plant:"Planta",transporter:"Transportista" };
+  const roleLabels = { platform_admin:"Admin Principal",admin:"Gerente",operator:"Operario" };
+
+  const show = (t,k="ok") => { setMsg({t,k}); setTimeout(()=>setMsg(null),3000); };
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [s, u, c] = await Promise.all([apiAdminStats(), apiAdminListUsers(), apiAdminListCompanies()]);
-      setStats(s); setUsers(u||[]); setCompanies(c||[]);
-    } catch(e) { setMsg({ t: e.message, k:"err" }); }
+      const [c, u] = await Promise.all([apiAdminListCompanies(), apiAdminListUsers()]);
+      setCompanies(c||[]); setUsers(u||[]);
+      if(isPlatform) { const s = await apiAdminStats(); setStats(s); }
+    } catch(e) { show(e.message,"err"); }
     finally { setLoading(false); }
-  }, []);
+  }, [isPlatform]);
 
   useEffect(() => { load(); }, [load]);
 
-  const doSearch = async () => {
-    try {
-      if(tab==="users") { const u=await apiAdminListUsers(search); setUsers(u||[]); }
-      else { const c=await apiAdminListCompanies(search); setCompanies(c||[]); }
-    } catch(e) { setMsg({ t:e.message, k:"err" }); }
-  };
+  // Search
+  useEffect(() => {
+    const t = setTimeout(async () => {
+      try {
+        if(tab==="companies") { const c=await apiAdminListCompanies(search); setCompanies(c||[]); }
+        else { const u=await apiAdminListUsers(search); setUsers(u||[]); }
+      } catch {}
+    }, 300);
+    return ()=>clearTimeout(t);
+  }, [search, tab]);
 
-  useEffect(() => { const t=setTimeout(doSearch, 300); return ()=>clearTimeout(t); }, [search, tab]);
-
+  // Company CRUD
   const handleCreateCompany = async () => {
-    if(!companyForm.name.trim()) return setMsg({ t:"Nombre requerido", k:"err" });
+    if(!companyForm.name.trim()) return show("Nombre requerido","err");
     setSaving(true);
-    try {
-      await apiAdminCreateCompany(companyForm);
-      setMsg({ t:"Empresa creada", k:"ok" }); setShowCompanyForm(false);
-      setCompanyForm({ name:"", type:"producer", phone:"", email:"", hasInternalFleet:false });
-      load();
-    } catch(e) { setMsg({ t:e.message, k:"err" }); }
-    finally { setSaving(false); }
+    try { await apiAdminCreateCompany(companyForm); show("Empresa creada"); setShowForm(false); setCompanyForm({name:"",type:"producer",phone:"",email:"",rut:"",hasInternalFleet:false,lat:null,lng:null}); load(); }
+    catch(e) { show(e.message,"err"); } finally { setSaving(false); }
   };
 
-  const handleLink = async (userId, companyId, role="operator") => {
-    try {
-      await apiAdminLinkUser({ userId, companyId, role });
-      setMsg({ t:"Usuario vinculado", k:"ok" }); setLinkModal(null); load();
-    } catch(e) { setMsg({ t:e.message, k:"err" }); }
+  // User CRUD
+  const toggleUserType = (t) => setUserForm(p=>({...p,userTypes:p.userTypes.includes(t)?p.userTypes.filter(x=>x!==t):[...p.userTypes,t]}));
+
+  const handleCreateUser = async () => {
+    if(!userForm.name.trim()||!userForm.email.trim()||!userForm.password) return show("Nombre, email y contraseña obligatorios","err");
+    setSaving(true);
+    try { await apiAdminCreateUser({...userForm,companyId:userForm.companyId||undefined}); show("Usuario creado"); setShowForm(false); setUserForm({name:"",email:"",phone:"",password:"",userTypes:[],role:"operator",companyId:""}); load(); }
+    catch(e) { show(e.message,"err"); } finally { setSaving(false); }
   };
 
-  const handleUnlink = async (userId) => {
-    try {
-      await apiAdminUnlinkUser(userId);
-      setMsg({ t:"Usuario desvinculado", k:"ok" }); load();
-    } catch(e) { setMsg({ t:e.message, k:"err" }); }
+  const handleUpdateUser = async (id, data) => {
+    try { await apiAdminUpdateUser(id, data); show("Usuario actualizado"); load(); }
+    catch(e) { show(e.message,"err"); }
   };
 
-  const handleToggleAdmin = async (userId, current) => {
-    try {
-      await apiAdminUpdateUser(userId, { role: current==="admin"?"operator":"admin" });
-      setMsg({ t:"Rol actualizado", k:"ok" }); load();
-    } catch(e) { setMsg({ t:e.message, k:"err" }); }
+  // Branch CRUD
+  const loadBranches = async (companyId) => {
+    try { const b = await apiAdminListBranches(companyId); setBranches(b||[]); } catch {}
   };
 
-  const handleToggleActive = async (userId, current) => {
-    try {
-      await apiAdminUpdateUser(userId, { active: !current });
-      setMsg({ t: !current?"Usuario activado":"Usuario desactivado", k:"ok" }); load();
-    } catch(e) { setMsg({ t:e.message, k:"err" }); }
+  const openCompanyDetail = async (c) => {
+    setSelectedCompany(c); await loadBranches(c.id);
   };
 
-  const typeColors = { producer:C.acc, plant:C.pri, transporter:C.info||"#3B82F6" };
-  const typeLabels = { producer:"Productor", plant:"Planta", transporter:"Transportista" };
+  const handleCreateBranch = async () => {
+    if(!branchForm.name.trim()) return show("Nombre requerido","err");
+    setSaving(true);
+    try { await apiAdminCreateBranch({...branchForm,companyId:selectedCompany.id}); show("Sucursal creada"); setShowBranchForm(false); setBranchForm({name:"",address:"",reference:"",companyId:"",lat:null,lng:null}); loadBranches(selectedCompany.id); load(); }
+    catch(e) { show(e.message,"err"); } finally { setSaving(false); }
+  };
 
-  return (
-    <div style={{ flex:1, overflow:"auto", padding:18 }}>
-      {/* Header */}
-      <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:16 }}>
-        <button onClick={onBack} style={{ background:"none", border:"none", cursor:"pointer", padding:4 }}>{Ic.chev(C.pri,18)}</button>
-        <div>
-          <div style={{ fontSize:18, fontWeight:800, color:C.t1 }}>{Ic.shield(C.err,20)} Panel de Administración</div>
-          <div style={{ fontSize:11, color:C.t3 }}>Gestión de usuarios y empresas</div>
+  const handleDeleteBranch = async (id) => {
+    try { await apiAdminDeleteBranch(id); show("Sucursal eliminada"); loadBranches(selectedCompany.id); load(); }
+    catch(e) { show(e.message,"err"); }
+  };
+
+  // MapPicker inline
+  const MapPicker = ({ lat, lng, onChange }) => {
+    const mapRef = useRef(null);
+    const [pin, setPin] = useState({ lat: lat||-34.9, lng: lng||-56.2 });
+    const handleClick = (e) => {
+      const rect = e.currentTarget.getBoundingClientRect();
+      const x = (e.clientX - rect.left) / rect.width;
+      const y = (e.clientY - rect.top) / rect.height;
+      const newLat = -30 - (y * 8);
+      const newLng = -58 + (x * 6);
+      const rounded = { lat: Math.round(newLat*1000)/1000, lng: Math.round(newLng*1000)/1000 };
+      setPin(rounded); onChange(rounded);
+    };
+    return (
+      <div style={{marginBottom:8}}>
+        <div style={{fontSize:11,fontWeight:600,color:C.t3,marginBottom:4}}>Ubicación (clic para marcar):</div>
+        <div ref={mapRef} onClick={handleClick} style={{width:"100%",height:150,borderRadius:8,border:`1px solid ${C.b1}`,background:`linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 50%, #a5d6a7 100%)`,cursor:"crosshair",position:"relative",overflow:"hidden"}}>
+          <div style={{position:"absolute",inset:0,opacity:0.1,background:"repeating-linear-gradient(0deg,transparent,transparent 30px,#000 30px,#000 31px),repeating-linear-gradient(90deg,transparent,transparent 30px,#000 30px,#000 31px)"}}/>
+          {(pin.lat&&pin.lng) && <div style={{position:"absolute",left:`${((pin.lng+58)/6)*100}%`,top:`${((pin.lat+30)/-8)*100}%`,transform:"translate(-50%,-100%)",fontSize:24,filter:"drop-shadow(0 2px 2px rgba(0,0,0,0.3))"}}>📍</div>}
         </div>
+        {(pin.lat&&pin.lng) && <div style={{fontSize:10,color:C.t3,marginTop:2}}>Lat: {pin.lat}, Lng: {pin.lng}</div>}
       </div>
+    );
+  };
+
+  const inputStyle = { width:"100%", padding:"8px 10px", borderRadius:6, border:`1px solid ${C.b1}`, fontSize:13, fontFamily:"inherit", background:C.bgInput, color:C.t1, boxSizing:"border-box" };
+  const halfInputStyle = { ...inputStyle, flex:1 };
+
+  // === COMPANY DETAIL VIEW ===
+  if (selectedCompany) {
+    return (
+      <div style={{flex:1,overflow:"auto",padding:18}}>
+        <button onClick={()=>setSelectedCompany(null)} style={{background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",fontSize:13,fontWeight:600,color:C.pri,marginBottom:14,padding:0,display:"flex",alignItems:"center",gap:4}}>{Ic.chev(C.pri,18)} Volver</button>
+        <div style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius:12,padding:16,marginBottom:12,boxShadow:C.sh}}>
+          <div style={{fontSize:16,fontWeight:700,color:C.t1}}>{selectedCompany.name}</div>
+          <div style={{display:"flex",gap:6,marginTop:6}}>
+            <Bd color={typeColors[selectedCompany.type]}>{typeLabels[selectedCompany.type]}</Bd>
+            {selectedCompany.rut && <Bd color={C.t2}>RUT: {selectedCompany.rut}</Bd>}
+          </div>
+          {selectedCompany.email && <div style={{fontSize:12,color:C.t2,marginTop:4}}>{selectedCompany.email}</div>}
+          {selectedCompany.phone && <div style={{fontSize:12,color:C.t3}}>{selectedCompany.phone}</div>}
+        </div>
+
+        {/* Branches */}
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+          <div style={{fontSize:14,fontWeight:700,color:C.t1}}>Sucursales ({branches.length})</div>
+          <button onClick={()=>setShowBranchForm(!showBranchForm)} style={{padding:"6px 12px",borderRadius:6,border:`1px solid ${C.pri}`,background:`${C.pri}12`,color:C.pri,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>{showBranchForm?"Cancelar":"+ Nueva"}</button>
+        </div>
+
+        {showBranchForm && (
+          <div style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius:10,padding:14,marginBottom:10,boxShadow:C.sh}}>
+            <input value={branchForm.name} onChange={e=>setBranchForm({...branchForm,name:e.target.value})} placeholder="Nombre de sucursal" style={{...inputStyle,marginBottom:8}} />
+            <input value={branchForm.address} onChange={e=>setBranchForm({...branchForm,address:e.target.value})} placeholder="Dirección" style={{...inputStyle,marginBottom:8}} />
+            <input value={branchForm.reference} onChange={e=>setBranchForm({...branchForm,reference:e.target.value})} placeholder="Referencia (opcional)" style={{...inputStyle,marginBottom:8}} />
+            <MapPicker lat={branchForm.lat} lng={branchForm.lng} onChange={({lat,lng})=>setBranchForm({...branchForm,lat,lng})} />
+            <button onClick={handleCreateBranch} disabled={saving} style={{width:"100%",padding:"10px 0",borderRadius:8,background:C.pri,color:"#fff",border:"none",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit",opacity:saving?0.6:1}}>{saving?"Creando...":"Crear sucursal"}</button>
+          </div>
+        )}
+
+        {branches.map(b => (
+          <div key={b.id} style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius:10,padding:"12px 14px",marginBottom:8,boxShadow:C.sh,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+            <div>
+              <div style={{fontSize:13,fontWeight:600,color:C.t1}}>{b.name}</div>
+              {b.address && <div style={{fontSize:11,color:C.t3}}>{b.address}</div>}
+              {b.reference && <div style={{fontSize:10,color:C.t3,fontStyle:"italic"}}>{b.reference}</div>}
+              {b.lat && <div style={{fontSize:9,color:C.t3}}>📍 {Number(b.lat).toFixed(3)}, {Number(b.lng).toFixed(3)}</div>}
+            </div>
+            <button onClick={()=>handleDeleteBranch(b.id)} style={{background:"none",border:`1px solid ${C.err}30`,borderRadius:6,padding:"4px 8px",fontSize:10,color:C.err,cursor:"pointer",fontFamily:"inherit"}}>Eliminar</button>
+          </div>
+        ))}
+        {branches.length===0 && !showBranchForm && <div style={{textAlign:"center",padding:20,color:C.t3,fontSize:12}}>Sin sucursales</div>}
+
+        {msg && <div style={{padding:"8px 12px",borderRadius:8,background:msg.k==="ok"?C.okPale:`${C.err}15`,color:msg.k==="ok"?C.ok:C.err,fontSize:12,marginTop:10}}>{msg.t}</div>}
+      </div>
+    );
+  }
+
+  // === MAIN ADMIN VIEW ===
+  return (
+    <div style={{flex:1,overflow:"auto",padding:18}}>
+      <button onClick={onBack} style={{background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",fontSize:13,fontWeight:600,color:C.pri,marginBottom:14,padding:0,display:"flex",alignItems:"center",gap:4}}>{Ic.chev(C.pri,18)} Volver</button>
+      <div style={{fontSize:18,fontWeight:800,color:C.t1,marginBottom:4}}>Administración</div>
+      <div style={{fontSize:11,color:C.t3,marginBottom:14}}>{isPlatform?"Admin Principal — Control total":"Gerente — Tu empresa"}</div>
 
       {/* Stats */}
-      {stats && (
-        <div style={{ display:"grid", gridTemplateColumns:"repeat(4, 1fr)", gap:10, marginBottom:16 }}>
-          {[
-            { l:"Usuarios", v:stats.users, c:C.pri },
-            { l:"Empresas", v:stats.companies, c:C.acc },
-            { l:"Fletes", v:stats.freights, c:C.info||"#3B82F6" },
-            { l:"Sin empresa", v:stats.unlinkedUsers, c:C.err },
-          ].map(s => (
-            <div key={s.l} style={{ background:C.w, border:`1px solid ${C.b1}`, borderRadius:10, padding:"12px 10px", textAlign:"center", boxShadow:C.sh }}>
-              <div style={{ fontSize:22, fontWeight:800, color:s.c }}>{s.v}</div>
-              <div style={{ fontSize:10, color:C.t3, marginTop:2 }}>{s.l}</div>
+      {stats && isPlatform && (
+        <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,marginBottom:14}}>
+          {[{l:"Empresas",v:stats.companies,c:C.pri},{l:"Sucursales",v:stats.branches,c:C.info||"#3B82F6"},{l:"Usuarios",v:stats.users,c:C.acc},{l:"Fletes",v:stats.freights,c:C.ok}].map(s=>(
+            <div key={s.l} style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius:8,padding:"10px 8px",textAlign:"center",boxShadow:C.sh}}>
+              <div style={{fontSize:20,fontWeight:800,color:s.c}}>{s.v}</div>
+              <div style={{fontSize:9,color:C.t3}}>{s.l}</div>
             </div>
           ))}
         </div>
       )}
 
       {/* Tabs */}
-      <div style={{ display:"flex", gap:6, marginBottom:12 }}>
-        {["users","companies"].map(t => (
-          <button key={t} onClick={()=>{setTab(t);setSearch("");}} style={{ flex:1, padding:"10px 0", borderRadius:8, border:`1px solid ${tab===t?C.pri:C.b1}`, background:tab===t?`${C.pri}12`:C.w, color:tab===t?C.pri:C.t2, fontWeight:600, fontSize:13, cursor:"pointer", fontFamily:"inherit" }}>
-            {t==="users"?"Usuarios":"Empresas"}
+      <div style={{display:"flex",gap:6,marginBottom:10}}>
+        {["companies","users"].map(t=>(
+          <button key={t} onClick={()=>{setTab(t);setSearch("");setShowForm(false);}} style={{flex:1,padding:"9px 0",borderRadius:8,border:`1px solid ${tab===t?C.pri:C.b1}`,background:tab===t?`${C.pri}12`:C.w,color:tab===t?C.pri:C.t2,fontWeight:600,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>
+            {t==="companies"?"Empresas":"Usuarios"}
           </button>
         ))}
       </div>
 
       {/* Search */}
-      <div style={{ position:"relative", marginBottom:12 }}>
-        <input value={search} onChange={e=>setSearch(e.target.value)} placeholder={tab==="users"?"Buscar por nombre, email o teléfono...":"Buscar empresa..."} style={{ width:"100%", padding:"10px 12px 10px 36px", borderRadius:8, border:`1px solid ${C.b1}`, background:C.bgInput, fontSize:13, fontFamily:"inherit", color:C.t1, outline:"none", boxSizing:"border-box" }} />
-        <span style={{ position:"absolute", left:10, top:10, color:C.t3, fontSize:14 }}>🔍</span>
-      </div>
+      <input value={search} onChange={e=>setSearch(e.target.value)} placeholder={tab==="companies"?"Buscar empresa o RUT...":"Buscar usuario..."} style={{...inputStyle,marginBottom:10,paddingLeft:12}} />
 
       {/* Message */}
-      {msg && (
-        <div style={{ padding:"8px 12px", borderRadius:8, background:msg.k==="ok"?C.okPale:`${C.err}15`, color:msg.k==="ok"?C.ok:C.err, fontSize:12, marginBottom:10, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-          {msg.t} <button onClick={()=>setMsg(null)} style={{ background:"none", border:"none", cursor:"pointer", fontSize:14, color:"inherit" }}>✕</button>
-        </div>
-      )}
+      {msg && <div style={{padding:"8px 12px",borderRadius:8,background:msg.k==="ok"?C.okPale:`${C.err}15`,color:msg.k==="ok"?C.ok:C.err,fontSize:12,marginBottom:10,display:"flex",justifyContent:"space-between"}}>{msg.t}<button onClick={()=>setMsg(null)} style={{background:"none",border:"none",cursor:"pointer",color:"inherit"}}>✕</button></div>}
 
-      {loading ? <div style={{ textAlign:"center", padding:40, color:C.t3 }}>Cargando...</div> : (
-        <>
-          {/* ===== USERS TAB ===== */}
-          {tab==="users" && (
-            <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
-              {users.map(u => (
-                <div key={u.id} style={{ background:C.w, border:`1px solid ${C.b1}`, borderRadius:10, padding:"12px 14px", boxShadow:C.sh }}>
-                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
-                    <div>
-                      <div style={{ fontSize:14, fontWeight:700, color:C.t1 }}>{u.name} {u.isSuperAdmin && <span style={{ fontSize:9, background:C.err, color:"#fff", padding:"1px 5px", borderRadius:4, marginLeft:4 }}>SUPER</span>}</div>
-                      <div style={{ fontSize:11.5, color:C.t2, marginTop:2 }}>{u.email}</div>
-                      {u.phone && <div style={{ fontSize:11, color:C.t3 }}>{u.phone}</div>}
-                    </div>
-                    <div style={{ display:"flex", gap:4, flexWrap:"wrap", justifyContent:"flex-end" }}>
-                      {(u.userTypes||[]).map(t => <Bd key={t} color={typeColors[t]||C.t2}>{typeLabels[t]||t}</Bd>)}
-                      <Bd color={u.active?C.ok:C.err}>{u.active?"Activo":"Inactivo"}</Bd>
-                    </div>
-                  </div>
-                  <div style={{ display:"flex", alignItems:"center", gap:8, marginTop:8, paddingTop:8, borderTop:`1px solid ${C.b2}` }}>
-                    {u.company ? (
-                      <div style={{ flex:1, display:"flex", alignItems:"center", gap:6 }}>
-                        <Bd color={typeColors[u.company.type]||C.t2}>{u.company.name}</Bd>
-                        <button onClick={()=>handleUnlink(u.id)} style={{ background:"none", border:"none", cursor:"pointer", fontSize:10, color:C.err, textDecoration:"underline", fontFamily:"inherit" }}>Desvincular</button>
-                      </div>
-                    ) : (
-                      <div style={{ flex:1 }}>
-                        <button onClick={()=>setLinkModal({ userId:u.id, userName:u.name })} style={{ background:`${C.pri}12`, border:`1px solid ${C.pri}40`, borderRadius:6, padding:"4px 10px", fontSize:11, fontWeight:600, color:C.pri, cursor:"pointer", fontFamily:"inherit" }}>Vincular a empresa</button>
-                      </div>
-                    )}
-                    <button onClick={()=>handleToggleAdmin(u.id, u.role)} style={{ background:"none", border:`1px solid ${C.b1}`, borderRadius:6, padding:"4px 8px", fontSize:10, cursor:"pointer", fontFamily:"inherit", color:u.role==="admin"?C.acc:C.t3 }} title={u.role==="admin"?"Quitar admin":"Hacer admin"}>
-                      {u.role==="admin"?"★ Admin":"☆ Operario"}
-                    </button>
-                    <button onClick={()=>handleToggleActive(u.id, u.active)} style={{ background:"none", border:`1px solid ${C.b1}`, borderRadius:6, padding:"4px 8px", fontSize:10, cursor:"pointer", fontFamily:"inherit", color:u.active?C.err:C.ok }}>
-                      {u.active?"Desactivar":"Activar"}
-                    </button>
-                  </div>
-                </div>
-              ))}
-              {users.length===0 && <div style={{ textAlign:"center", padding:24, color:C.t3, fontSize:13 }}>No se encontraron usuarios</div>}
-            </div>
-          )}
+      {loading ? <div style={{textAlign:"center",padding:40,color:C.t3}}>Cargando...</div> : (<>
 
-          {/* ===== COMPANIES TAB ===== */}
-          {tab==="companies" && (
-            <>
-              <button onClick={()=>setShowCompanyForm(!showCompanyForm)} style={{ width:"100%", padding:"10px 14px", borderRadius:8, border:`1px dashed ${C.pri}`, background:`${C.pri}08`, color:C.pri, fontSize:13, fontWeight:600, cursor:"pointer", fontFamily:"inherit", marginBottom:10 }}>
-                {showCompanyForm ? "Cancelar" : "+ Nueva Empresa"}
-              </button>
+        {/* ===== COMPANIES TAB ===== */}
+        {tab==="companies" && (<>
+          {isPlatform && <button onClick={()=>setShowForm(!showForm)} style={{width:"100%",padding:"10px 14px",borderRadius:8,border:`1px dashed ${C.pri}`,background:`${C.pri}08`,color:C.pri,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"inherit",marginBottom:8}}>{showForm?"Cancelar":"+ Nueva Empresa"}</button>}
 
-              {showCompanyForm && (
-                <div style={{ background:C.w, border:`1px solid ${C.b1}`, borderRadius:10, padding:14, marginBottom:12, boxShadow:C.sh }}>
-                  <input value={companyForm.name} onChange={e=>setCompanyForm({...companyForm,name:e.target.value})} placeholder="Nombre de la empresa" style={{ width:"100%", padding:"8px 10px", borderRadius:6, border:`1px solid ${C.b1}`, fontSize:13, fontFamily:"inherit", marginBottom:8, background:C.bgInput, color:C.t1, boxSizing:"border-box" }} />
-                  <div style={{ display:"flex", gap:6, marginBottom:8 }}>
-                    {["producer","plant","transporter"].map(t => (
-                      <button key={t} onClick={()=>setCompanyForm({...companyForm,type:t})} style={{ flex:1, padding:"8px 0", borderRadius:6, border:`1px solid ${companyForm.type===t?typeColors[t]:C.b1}`, background:companyForm.type===t?`${typeColors[t]}15`:C.w, color:companyForm.type===t?typeColors[t]:C.t2, fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>
-                        {typeLabels[t]}
-                      </button>
-                    ))}
-                  </div>
-                  <div style={{ display:"flex", gap:6, marginBottom:8 }}>
-                    <input value={companyForm.phone} onChange={e=>setCompanyForm({...companyForm,phone:e.target.value})} placeholder="Teléfono" style={{ flex:1, padding:"8px 10px", borderRadius:6, border:`1px solid ${C.b1}`, fontSize:12, fontFamily:"inherit", background:C.bgInput, color:C.t1 }} />
-                    <input value={companyForm.email} onChange={e=>setCompanyForm({...companyForm,email:e.target.value})} placeholder="Email" style={{ flex:1, padding:"8px 10px", borderRadius:6, border:`1px solid ${C.b1}`, fontSize:12, fontFamily:"inherit", background:C.bgInput, color:C.t1 }} />
-                  </div>
-                  <label style={{ display:"flex", alignItems:"center", gap:8, fontSize:12, color:C.t2, marginBottom:10, cursor:"pointer" }}>
-                    <input type="checkbox" checked={companyForm.hasInternalFleet} onChange={e=>setCompanyForm({...companyForm,hasInternalFleet:e.target.checked})} /> Tiene flota propia
-                  </label>
-                  <button onClick={handleCreateCompany} disabled={saving} style={{ width:"100%", padding:"10px 0", borderRadius:8, background:C.pri, color:"#fff", border:"none", fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"inherit", opacity:saving?0.6:1 }}>
-                    {saving?"Creando...":"Crear empresa"}
-                  </button>
-                </div>
-              )}
-
-              <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
-                {companies.map(c => (
-                  <div key={c.id} style={{ background:C.w, border:`1px solid ${C.b1}`, borderRadius:10, padding:"12px 14px", boxShadow:C.sh }}>
-                    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-                      <div>
-                        <div style={{ fontSize:14, fontWeight:700, color:C.t1 }}>{c.name}</div>
-                        <div style={{ fontSize:11, color:C.t3, marginTop:2 }}>{c.email||""} {c.phone?`· ${c.phone}`:""}</div>
-                      </div>
-                      <div style={{ display:"flex", gap:4, alignItems:"center" }}>
-                        <Bd color={typeColors[c.type]||C.t2}>{typeLabels[c.type]||c.type}</Bd>
-                        <div style={{ fontSize:10, color:C.t3, background:C.bgInput, padding:"2px 6px", borderRadius:4 }}>{c._count?.users||0} usuarios</div>
-                      </div>
-                    </div>
-                    {c.hasInternalFleet && <div style={{ fontSize:10, color:C.info||"#3B82F6", marginTop:4 }}>🚛 Flota propia</div>}
-                    <div style={{ fontSize:9, color:C.t3, marginTop:4, fontFamily:"monospace" }}>ID: {c.id.slice(0,8)}...</div>
-                  </div>
-                ))}
-                {companies.length===0 && <div style={{ textAlign:"center", padding:24, color:C.t3, fontSize:13 }}>No se encontraron empresas</div>}
+          {showForm && (
+            <div style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius:10,padding:14,marginBottom:10,boxShadow:C.sh}}>
+              <input value={companyForm.name} onChange={e=>setCompanyForm({...companyForm,name:e.target.value})} placeholder="Nombre" style={{...inputStyle,marginBottom:8}} />
+              <div style={{display:"flex",gap:6,marginBottom:8}}>
+                {["producer","plant","transporter"].map(t=>(<button key={t} onClick={()=>setCompanyForm({...companyForm,type:t})} style={{flex:1,padding:"8px 0",borderRadius:6,border:`1px solid ${companyForm.type===t?typeColors[t]:C.b1}`,background:companyForm.type===t?`${typeColors[t]}15`:C.w,color:companyForm.type===t?typeColors[t]:C.t2,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>{typeLabels[t]}</button>))}
               </div>
-            </>
-          )}
-        </>
-      )}
-
-      {/* Link Modal */}
-      {linkModal && (
-        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:1000, padding:20 }} onClick={()=>setLinkModal(null)}>
-          <div onClick={e=>e.stopPropagation()} style={{ background:C.w, borderRadius:14, padding:20, maxWidth:400, width:"100%", maxHeight:"80vh", overflow:"auto", boxShadow:"0 20px 60px rgba(0,0,0,0.3)" }}>
-            <div style={{ fontSize:15, fontWeight:700, color:C.t1, marginBottom:4 }}>Vincular usuario</div>
-            <div style={{ fontSize:12, color:C.t2, marginBottom:14 }}>{linkModal.userName}</div>
-            <div style={{ fontSize:11, fontWeight:600, color:C.t3, marginBottom:8, textTransform:"uppercase" }}>Seleccionar empresa:</div>
-            <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
-              {companies.filter(c=>c.active!==false).map(c => (
-                <button key={c.id} onClick={()=>handleLink(linkModal.userId, c.id)} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"10px 12px", borderRadius:8, border:`1px solid ${C.b1}`, background:C.w, cursor:"pointer", fontFamily:"inherit", textAlign:"left", transition:"background 0.15s" }} onMouseEnter={e=>e.currentTarget.style.background=C.priGhost} onMouseLeave={e=>e.currentTarget.style.background=C.w}>
-                  <div>
-                    <div style={{ fontSize:13, fontWeight:600, color:C.t1 }}>{c.name}</div>
-                    <div style={{ fontSize:10, color:C.t3 }}>{typeLabels[c.type]||c.type}</div>
-                  </div>
-                  <Bd color={typeColors[c.type]||C.t2}>{typeLabels[c.type]||c.type}</Bd>
-                </button>
-              ))}
+              <div style={{display:"flex",gap:6,marginBottom:8}}>
+                <input value={companyForm.email} onChange={e=>setCompanyForm({...companyForm,email:e.target.value})} placeholder="Email" style={halfInputStyle} />
+                <input value={companyForm.phone} onChange={e=>setCompanyForm({...companyForm,phone:e.target.value})} placeholder="Teléfono" style={halfInputStyle} />
+              </div>
+              <input value={companyForm.rut} onChange={e=>setCompanyForm({...companyForm,rut:e.target.value})} placeholder="RUT" style={{...inputStyle,marginBottom:8}} />
+              <label style={{display:"flex",alignItems:"center",gap:8,fontSize:12,color:C.t2,marginBottom:8,cursor:"pointer"}}>
+                <input type="checkbox" checked={companyForm.hasInternalFleet} onChange={e=>setCompanyForm({...companyForm,hasInternalFleet:e.target.checked})} /> Flota propia
+              </label>
+              <MapPicker lat={companyForm.lat} lng={companyForm.lng} onChange={({lat,lng})=>setCompanyForm({...companyForm,lat,lng})} />
+              <button onClick={handleCreateCompany} disabled={saving} style={{width:"100%",padding:"10px 0",borderRadius:8,background:C.pri,color:"#fff",border:"none",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit",opacity:saving?0.6:1}}>{saving?"Creando...":"Crear empresa"}</button>
             </div>
-            <button onClick={()=>setLinkModal(null)} style={{ width:"100%", marginTop:12, padding:"8px 0", borderRadius:8, border:`1px solid ${C.b1}`, background:C.w, fontSize:12, cursor:"pointer", fontFamily:"inherit", color:C.t2 }}>Cancelar</button>
+          )}
+
+          <div style={{display:"flex",flexDirection:"column",gap:8}}>
+            {companies.map(c=>(
+              <button key={c.id} onClick={()=>openCompanyDetail(c)} className="tv-card" style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius:10,padding:"12px 14px",boxShadow:C.sh,cursor:"pointer",fontFamily:"inherit",textAlign:"left",width:"100%"}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                  <div>
+                    <div style={{fontSize:14,fontWeight:700,color:C.t1}}>{c.name}</div>
+                    <div style={{fontSize:11,color:C.t3,marginTop:2}}>{c.email||""} {c.rut?`· RUT: ${c.rut}`:""}</div>
+                  </div>
+                  <div style={{display:"flex",gap:4,alignItems:"center"}}>
+                    <Bd color={typeColors[c.type]}>{typeLabels[c.type]}</Bd>
+                    <div style={{fontSize:10,color:C.t3,background:C.bgInput,padding:"2px 6px",borderRadius:4}}>{c._count?.users||0} usr · {c._count?.branches||0} suc</div>
+                    {Ic.chev(C.t3,14)}
+                  </div>
+                </div>
+              </button>
+            ))}
+            {companies.length===0 && <div style={{textAlign:"center",padding:24,color:C.t3,fontSize:13}}>No se encontraron empresas</div>}
           </div>
-        </div>
-      )}
+        </>)}
+
+        {/* ===== USERS TAB ===== */}
+        {tab==="users" && (<>
+          <button onClick={()=>setShowForm(!showForm)} style={{width:"100%",padding:"10px 14px",borderRadius:8,border:`1px dashed ${C.acc}`,background:`${C.acc}08`,color:C.acc,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"inherit",marginBottom:8}}>{showForm?"Cancelar":"+ Nuevo Usuario"}</button>
+
+          {showForm && (
+            <div style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius:10,padding:14,marginBottom:10,boxShadow:C.sh}}>
+              <input value={userForm.name} onChange={e=>setUserForm({...userForm,name:e.target.value})} placeholder="Nombre completo" style={{...inputStyle,marginBottom:8}} />
+              <div style={{display:"flex",gap:6,marginBottom:8}}>
+                <input value={userForm.email} onChange={e=>setUserForm({...userForm,email:e.target.value})} placeholder="Email" type="email" style={halfInputStyle} />
+                <input value={userForm.phone} onChange={e=>setUserForm({...userForm,phone:e.target.value})} placeholder="Teléfono" style={halfInputStyle} />
+              </div>
+              <input value={userForm.password} onChange={e=>setUserForm({...userForm,password:e.target.value})} placeholder="Contraseña" type="password" style={{...inputStyle,marginBottom:8}} />
+              <div style={{fontSize:11,fontWeight:600,color:C.t3,marginBottom:4}}>Tipo:</div>
+              <div style={{display:"flex",gap:6,marginBottom:8}}>
+                {["producer","plant","transporter"].map(t=>{const sel=userForm.userTypes.includes(t);return(<button key={t} onClick={()=>toggleUserType(t)} style={{flex:1,padding:"8px 0",borderRadius:6,border:`1px solid ${sel?typeColors[t]:C.b1}`,background:sel?`${typeColors[t]}15`:C.w,color:sel?typeColors[t]:C.t2,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>{sel?"✓ ":""}{typeLabels[t]}</button>);})}
+              </div>
+              <div style={{display:"flex",gap:6,marginBottom:8}}>
+                <div style={{flex:1}}>
+                  <div style={{fontSize:11,fontWeight:600,color:C.t3,marginBottom:4}}>Rol:</div>
+                  <select value={userForm.role} onChange={e=>setUserForm({...userForm,role:e.target.value})} style={inputStyle}>
+                    <option value="operator">Operario</option>
+                    <option value="admin">Gerente de empresa</option>
+                    {isPlatform && <option value="platform_admin">Admin Principal</option>}
+                  </select>
+                </div>
+                <div style={{flex:1}}>
+                  <div style={{fontSize:11,fontWeight:600,color:C.t3,marginBottom:4}}>Empresa:</div>
+                  <select value={userForm.companyId} onChange={e=>setUserForm({...userForm,companyId:e.target.value})} style={inputStyle}>
+                    <option value="">Sin empresa</option>
+                    {companies.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}
+                  </select>
+                </div>
+              </div>
+              <button onClick={handleCreateUser} disabled={saving} style={{width:"100%",padding:"10px 0",borderRadius:8,background:C.acc,color:"#fff",border:"none",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit",opacity:saving?0.6:1}}>{saving?"Creando...":"Crear usuario"}</button>
+            </div>
+          )}
+
+          <div style={{display:"flex",flexDirection:"column",gap:8}}>
+            {users.map(u=>(
+              <div key={u.id} style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius:10,padding:"12px 14px",boxShadow:C.sh}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+                  <div>
+                    <div style={{fontSize:14,fontWeight:700,color:C.t1}}>{u.name}</div>
+                    <div style={{fontSize:11.5,color:C.t2,marginTop:1}}>{u.email}</div>
+                    {u.phone && <div style={{fontSize:11,color:C.t3}}>{u.phone}</div>}
+                  </div>
+                  <div style={{display:"flex",gap:4,flexWrap:"wrap",justifyContent:"flex-end"}}>
+                    <Bd color={u.active?C.ok:C.err}>{u.active?"Activo":"Inactivo"}</Bd>
+                    <Bd color={C.t2}>{roleLabels[u.role]||u.role}</Bd>
+                  </div>
+                </div>
+                <div style={{display:"flex",alignItems:"center",gap:6,marginTop:8,paddingTop:8,borderTop:`1px solid ${C.b2}`,flexWrap:"wrap"}}>
+                  {u.company ? <Bd color={typeColors[u.company.type]}>{u.company.name}</Bd> : <span style={{fontSize:11,color:C.t3}}>Sin empresa</span>}
+                  {isPlatform && !u.company && (
+                    <select onChange={e=>{if(e.target.value)handleUpdateUser(u.id,{companyId:e.target.value});}} defaultValue="" style={{padding:"3px 6px",borderRadius:4,border:`1px solid ${C.b1}`,fontSize:10,background:C.bgInput,color:C.t1}}>
+                      <option value="">Asignar empresa...</option>
+                      {companies.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}
+                    </select>
+                  )}
+                  <div style={{marginLeft:"auto",display:"flex",gap:4}}>
+                    <select onChange={e=>handleUpdateUser(u.id,{role:e.target.value})} value={u.role} style={{padding:"3px 6px",borderRadius:4,border:`1px solid ${C.b1}`,fontSize:10,background:C.bgInput,color:C.t1}}>
+                      <option value="operator">Operario</option>
+                      <option value="admin">Gerente</option>
+                      {isPlatform && <option value="platform_admin">Admin</option>}
+                    </select>
+                    <button onClick={()=>handleUpdateUser(u.id,{active:!u.active})} style={{padding:"3px 8px",borderRadius:4,border:`1px solid ${u.active?C.err:C.ok}30`,background:"none",fontSize:10,color:u.active?C.err:C.ok,cursor:"pointer",fontFamily:"inherit"}}>{u.active?"Desactivar":"Activar"}</button>
+                  </div>
+                </div>
+              </div>
+            ))}
+            {users.length===0 && <div style={{textAlign:"center",padding:24,color:C.t3,fontSize:13}}>No se encontraron usuarios</div>}
+          </div>
+        </>)}
+      </>)}
     </div>
   );
 }
@@ -4810,7 +4888,7 @@ export default function Tolvink() {
 
   if(!auth.user) return <LandingScreen onLogin={auth.login} onSignup={auth.signup} loading={auth.loading} error={auth.error} clearError={auth.clearError}/>;
   const curFreight = fh.freights.find(f=>f.id===selFreight);
-  const navActive = ["detail"].includes(screen)?"list":["trucks","fields","access"].includes(screen)?"profile":screen==="admin"?"admin":(!isDesktop&&screen==="reports")?"profile":(!isDesktop&&screen==="calendar")?"profile":screen;
+  const navActive = ["detail"].includes(screen)?"list":["trucks","fields","access","admin"].includes(screen)?"profile":(!isDesktop&&screen==="reports")?"profile":(!isDesktop&&screen==="calendar")?"profile":screen;
 
   return (
     <div className="tv-shell" style={{height:"100dvh",background:C.bg,color:C.t1,fontFamily:FONT,display:"flex",flexDirection:isDesktop?"row":"column",maxWidth:isDesktop?1400:1100,width:"100%",margin:"0 auto",position:"relative",overflow:"hidden"}}>
@@ -4818,7 +4896,7 @@ export default function Tolvink() {
 
       {/* Desktop Sidebar */}
       <div className="tv-sidebar">
-        <Sidebar active={navActive} onChange={nav} unread={unreadChats} pendingCount={pendingCount} canRequest={perms.canRequest} onNew={()=>nav("new")} isSuperAdmin={auth.user?.isSuperAdmin} />
+        <Sidebar active={navActive} onChange={nav} unread={unreadChats} pendingCount={pendingCount} canRequest={perms.canRequest} onNew={()=>nav("new")} />
       </div>
 
       {/* Main content column */}
@@ -4842,9 +4920,9 @@ export default function Tolvink() {
         {screen==="trucks" && <TrucksScreen onBack={()=>{catalog.refresh();setScreen("profile");}}/>}
         {screen==="fields" && <FieldsScreen onBack={()=>{catalog.refresh();setScreen("profile");}}/>}
         {screen==="access" && <AccessScreen onBack={()=>setScreen("profile")}/>}
+        {screen==="admin" && <AdminScreen user={auth.user} onBack={()=>setScreen("profile")}/>}
         {screen==="reports" && <ReportsScreen onBack={()=>setScreen(isDesktop?"reports":"profile")} freights={fh.freights} isDesktop={isDesktop}/>}
         {screen==="chats" && <ChatsScreen user={auth.user} openConvId={chatConvId} onConvOpened={()=>setChatConvId(null)} isDesktop={isDesktop}/>}
-        {screen==="admin" && auth.user?.isSuperAdmin && <AdminScreen onBack={()=>nav("profile")}/>}
         </div>
 
         {/* Mobile-only bottom nav */}

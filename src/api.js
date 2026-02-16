@@ -103,14 +103,29 @@ export async function apiSendMessage(convId,text) { return api(`/conversations/$
 export async function apiAddDocument(freightId, body) { return api(`/freights/${freightId}/documents`,{body}); }
 
 // ======================== ADMIN ======================================
+// Stats
 export async function apiAdminStats() { return api('/admin/stats'); }
+// Companies
 export async function apiAdminListCompanies(search) { const q=search?`?search=${encodeURIComponent(search)}`:''; return api(`/admin/companies${q}`); }
+export async function apiAdminGetCompany(id) { return api(`/admin/companies/${id}`); }
 export async function apiAdminCreateCompany(b) { return api('/admin/companies',{body:b}); }
 export async function apiAdminUpdateCompany(id,b) { return api(`/admin/companies/${id}`,{method:'PATCH',body:b}); }
-export async function apiAdminListUsers(search) { const q=search?`?search=${encodeURIComponent(search)}`:''; return api(`/admin/users${q}`); }
+// Branches
+export async function apiAdminListBranches(companyId) { return api(`/admin/branches/${companyId}`); }
+export async function apiAdminCreateBranch(b) { return api('/admin/branches',{body:b}); }
+export async function apiAdminUpdateBranch(id,b) { return api(`/admin/branches/${id}`,{method:'PATCH',body:b}); }
+export async function apiAdminDeleteBranch(id) { return api(`/admin/branches/${id}`,{method:'DELETE'}); }
+// Users
+export async function apiAdminListUsers(search, companyId) {
+  const p=new URLSearchParams();
+  if(search)p.set('search',search);
+  if(companyId)p.set('companyId',companyId);
+  const q=p.toString(); return api(`/admin/users${q?`?${q}`:''}`);
+}
+export async function apiAdminCreateUser(b) { return api('/admin/users',{body:b}); }
 export async function apiAdminUpdateUser(id,b) { return api(`/admin/users/${id}`,{method:'PATCH',body:b}); }
-export async function apiAdminLinkUser(b) { return api('/admin/link-user',{body:b}); }
-export async function apiAdminUnlinkUser(id) { return api(`/admin/users/${id}/unlink`,{method:'PATCH',body:{}}); }
+// Self-edit
+export async function apiUpdateMe(b) { return api('/admin/me',{method:'PATCH',body:b}); }
 
 // Photo Upload — direct to Supabase Storage (public bucket)
 export async function uploadPhoto(file, freightId, step) {
