@@ -689,8 +689,8 @@ function AuthScreen({ onLogin, onSignup, loading, error, clearError, onBackToLan
   },[]);
 
   return (
-    <div style={{ minHeight:"100dvh", background:C.bg, fontFamily:FONT, display:"flex", flexDirection:"column", justifyContent:"center", padding:28, maxWidth:430, margin:"0 auto" }}>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&family=JetBrains+Mono:wght@400;500&display=swap');*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}body{background:${C.bg};margin:0}input::placeholder,textarea::placeholder{color:${C.t3}}@keyframes dotPulse{0%,100%{opacity:0.3;transform:scale(0.8)}50%{opacity:1;transform:scale(1.2)}}@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}`}</style>
+    <div style={{ minHeight:"100dvh", background:C.bg, fontFamily:FONT, display:"flex", flexDirection:"column", justifyContent:mode==="login"?"center":"flex-start", padding:28, paddingTop:mode==="signup"?"max(20px, env(safe-area-inset-top))":28, paddingBottom:"max(28px, env(safe-area-inset-bottom))", maxWidth:430, margin:"0 auto", overflow:"auto", WebkitOverflowScrolling:"touch" }}>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&family=JetBrains+Mono:wght@400;500&display=swap');*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}html,body{height:100%;margin:0;overflow:auto}body{background:${C.bg}}input::placeholder,textarea::placeholder{color:${C.t3}}@keyframes dotPulse{0%,100%{opacity:0.3;transform:scale(0.8)}50%{opacity:1;transform:scale(1.2)}}@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}`}</style>
       <div style={{ textAlign:"center", marginBottom:mode==="login"?32:20 }}>
         {onBackToLanding && <button onClick={onBackToLanding} style={{ background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", fontSize:13, fontWeight:600, color:C.pri, marginBottom:14, padding:0, display:"flex", alignItems:"center", gap:4, margin:"0 auto 14px" }}>{Ic.chev(C.pri,18)} Volver</button>}
         <div style={{ display:"inline-flex", alignItems:"flex-start", animation:"fadeUp 0.6s ease-out" }}>
@@ -801,12 +801,8 @@ function exportCSV(freights, filename) {
   URL.revokeObjectURL(url);
 }
 
-function HomeScreen({ user, freights, perms, onNav, catalog }) {
-  const [activeFilter, setActiveFilter] = useState("all");
-  const [viewMode, setViewMode] = useState("cards"); // cards | table | map
+function HomeScreen({ user, freights, perms, onNav, catalog, isDesktop }) {
   const [activePanel, setActivePanel] = useState(null); // null | "map" | "pending" | "calendar" | "reports" | "fields" | "trucks"
-  const sort = useTableSort();
-  const HOME_GETTERS = { code:f=>f.code, status:f=>stCfg(f.status).label, producer:f=>f.requestedByName||"", origin:f=>(f.originName||"").split("—")[0].trim(), dest:f=>f.destName, product:f=>f.grain, qty:f=>f.tons, truck:f=>f.truckPlate||"", date:f=>f.loadDate };
 
   const FILTER_MAP = {
     requested: ["draft","pending_assignment"],
@@ -821,27 +817,16 @@ function HomeScreen({ user, freights, perms, onNav, catalog }) {
     return {avail,active,done};
   },[freights]);
 
-  const displayFreights = useMemo(()=>{
-    if(activeFilter==="all") return freights.filter(f=>!["canceled","draft"].includes(f.status));
-    return freights.filter(f=>FILTER_MAP[activeFilter]?.includes(f.status));
-  },[freights,activeFilter]);
-
-  // Active (non-finished) freights for map
-  const activeFreights = useMemo(()=> freights.filter(f=>!["canceled","draft","finished"].includes(f.status)),[freights]);
+  const displayFreights = useMemo(()=>freights.filter(f=>!["canceled","draft"].includes(f.status)),[freights]);
 
   const tc = ({plant:C.pri,transporter:C.info,producer:C.acc})[user.userType]||C.pri;
   const typeLabel = ({plant:"Planta de Acopio",transporter:"Transportista",producer:"Productor"})[user.userType];
-
-  const toggleFilter = (f) => setActiveFilter(prev=>prev===f?"all":f);
 
   const statCards = [
     {k:"requested",l:"Solicitados",v:stats.avail,c:C.acc,bg:C.accPale},
     {k:"active",l:"En curso",v:stats.active,c:"#258B3E",bg:"#D0EBD7"},
     {k:"done",l:"Finalizados",v:stats.done,c:C.pri,bg:C.priPale},
   ];
-
-  const viewLabels = {cards:"Tarjetas",table:"Tabla",map:"Mapa"};
-  const nextView = () => setViewMode(v => v==="cards"?"table":v==="table"?"map":"cards");
 
   const togglePanel = (key) => setActivePanel(prev=>prev===key?null:key);
 
@@ -855,215 +840,119 @@ function HomeScreen({ user, freights, perms, onNav, catalog }) {
     {k:"trucks",l:"Flota",ic:Ic.truck,c:C.acc,show:user.userType==="transporter"||user.userType==="producer"},
   ].filter(b=>b.show);
 
-  return (
-    <div style={{ flex:1, overflow:"auto" }}>
-      {/* Greeting — scrolls normally */}
-      <div style={{ padding:"18px 18px 10px 18px" }}>
+  // --- Left column: greeting + stats + quick access ---
+  const leftPanel = (
+    <div style={{ width:isDesktop&&activePanel?280:undefined, flexShrink:0, overflow:"auto", padding:"0 18px 18px 18px", boxSizing:"border-box" }}>
+      {/* Greeting */}
+      <div style={{ padding:"18px 0 12px 0" }}>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-          <div><div style={{ fontSize:13, color:C.t2 }}>Hola,</div><div style={{ fontSize:22, fontWeight:800, letterSpacing:-0.3, color:C.t1 }}>{user.name.split(" ")[0]}</div></div>
-          <div style={{ textAlign:"right" }}><Bd color={tc}>{typeLabel}</Bd><div style={{ fontSize:10, color:C.t3, marginTop:4 }}>{user.role==="admin"?"Gerente":"Operario"} · {user.entity}</div></div>
+          <div><div style={{ fontSize:13, color:C.t2 }}>Hola,</div><div style={{ fontSize:isDesktop&&activePanel?18:22, fontWeight:800, letterSpacing:-0.3, color:C.t1 }}>{user.name.split(" ")[0]}</div></div>
+          {!(isDesktop&&activePanel) && <div style={{ textAlign:"right" }}><Bd color={tc}>{typeLabel}</Bd><div style={{ fontSize:10, color:C.t3, marginTop:4 }}>{user.role==="admin"?"Gerente":"Operario"} · {user.entity}</div></div>}
         </div>
       </div>
 
-      {/* Sticky header — stats + view toggle */}
-      <div className="tv-header-bar" style={{ position:"sticky", top:0, zIndex:10, background:C.bg, padding:"8px 18px 0 18px" }}>
-        <div className="tv-stats" style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8, marginBottom:8 }}>
-          {statCards.map(s=>{
-            const sel = activeFilter===s.k;
-            return <div key={s.k} onClick={()=>toggleFilter(s.k)} style={{ background:sel?s.c:s.bg, borderRadius:10, padding:"10px 8px", textAlign:"center", cursor:"pointer", transition:"all 0.2s ease", border:sel?`2px solid ${s.c}`:`2px solid transparent`, transform:sel?"scale(1.03)":"scale(1)" }}>
-              <div className="tv-stat-num" style={{ fontSize:24, fontWeight:800, color:sel?C.w:s.c }}>{s.v}</div>
-              <div style={{ fontSize:9.5, color:sel?C.w:s.c, fontWeight:sel?700:500, marginTop:1, opacity:sel?1:0.8 }}>{s.l}</div>
-            </div>;
-          })}
-        </div>
+      {/* Stat cards */}
+      <div style={{ display:"grid", gridTemplateColumns:isDesktop&&activePanel?"1fr":"1fr 1fr 1fr", gap:8, marginBottom:14 }}>
+        {statCards.map(s=>(
+          <div key={s.k} onClick={()=>onNav("list")} style={{ background:s.bg, borderRadius:10, padding:isDesktop&&activePanel?"8px 10px":"10px 8px", textAlign:"center", cursor:"pointer", transition:"all 0.2s ease", border:"2px solid transparent" }}>
+            <div style={{ fontSize:isDesktop&&activePanel?18:24, fontWeight:800, color:s.c }}>{s.v}</div>
+            <div style={{ fontSize:9.5, color:s.c, fontWeight:500, marginTop:1, opacity:0.8 }}>{s.l}</div>
+          </div>
+        ))}
+      </div>
 
-        {/* View toggle */}
-        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
-          {activeFilter!=="all" ? (
-            <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-              <div style={{fontSize:14,fontWeight:700,color:C.t1}}>{statCards.find(s=>s.k===activeFilter)?.l||"Fletes"} <span style={{fontSize:12,fontWeight:500,color:C.t3}}>({displayFreights.length})</span></div>
-              <button onClick={()=>setActiveFilter("all")} style={{background:"none",border:"none",fontSize:11,fontWeight:600,color:C.acc,cursor:"pointer",fontFamily:"inherit",padding:0}}>Ver todos</button>
+      {/* Pending alert */}
+      {perms.canApprove && stats.avail>0 && (
+        <div onClick={()=>togglePanel("pending")} style={{ background:C.accPale, border:`1px solid ${C.acc}22`, borderLeft:`3px solid ${C.acc}`, borderRadius:10, padding:12, marginBottom:12, cursor:"pointer", display:"flex", alignItems:"center", gap:10 }}>
+          {Ic.warn(C.acc,20)}<div><div style={{ fontSize:12, fontWeight:700, color:C.acc }}>{stats.avail} pendiente{stats.avail>1?"s":""}</div><div style={{ fontSize:10.5, color:C.t2 }}>Esperando asignación</div></div>
+        </div>
+      )}
+
+      {/* Quick access — vertical list */}
+      <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+        <div style={{ fontSize:10, fontWeight:700, color:C.t3, textTransform:"uppercase", letterSpacing:0.5, marginBottom:2 }}>Accesos rápidos</div>
+        {quickItems.map(b=>{
+          const isActive = activePanel===b.k;
+          return (
+            <button key={b.k} onClick={()=>togglePanel(b.k)} style={{ display:"flex", alignItems:"center", gap:10, padding:isDesktop&&activePanel?"9px 10px":"11px 14px", borderRadius:10, background:isActive?`${b.c}12`:C.w, border:`1px solid ${isActive?`${b.c}40`:C.b1}`, cursor:"pointer", fontFamily:"inherit", width:"100%", textAlign:"left", transition:"all 0.15s", boxShadow:isActive?"none":C.sh }} onMouseEnter={e=>{if(!isActive){e.currentTarget.style.background=C.priGhost;e.currentTarget.style.borderColor=`${b.c}40`}}} onMouseLeave={e=>{if(!isActive){e.currentTarget.style.background=C.w;e.currentTarget.style.borderColor=C.b1}}}>
+              <div style={{ width:isDesktop&&activePanel?28:34, height:isDesktop&&activePanel?28:34, borderRadius:8, background:isActive?`${b.c}22`:`${b.c}12`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{b.ic(b.c,isDesktop&&activePanel?14:17)}</div>
+              <span style={{ fontSize:isDesktop&&activePanel?11.5:13, fontWeight:isActive?700:600, color:isActive?b.c:C.t1, flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{b.l}</span>
+              {!isActive && <span style={{ display:"flex", transform:"rotate(180deg)", flexShrink:0 }}>{Ic.chev(C.t3,14)}</span>}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+
+  // --- Right column: dynamic panel content ---
+  const rightPanel = activePanel ? (
+    <div style={{ flex:1, overflow:"auto", borderLeft:isDesktop?`1px solid ${C.b1}`:"none", animation:"fadeIn 0.2s ease", minWidth:0 }}>
+      <div style={{ padding:18 }}>
+        {/* Panel header */}
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14 }}>
+          <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+            <div style={{ width:30, height:30, borderRadius:8, background:`${quickItems.find(q=>q.k===activePanel)?.c||C.pri}12`, display:"flex", alignItems:"center", justifyContent:"center" }}>
+              {quickItems.find(q=>q.k===activePanel)?.ic(quickItems.find(q=>q.k===activePanel)?.c||C.pri,16)}
             </div>
-          ) : (
-            <div style={{ fontSize:14, fontWeight:700, color:C.t1 }}>Fletes <span style={{fontSize:12,fontWeight:500,color:C.t3}}>({displayFreights.length})</span></div>
-          )}
-          <div style={{ display:"flex", gap:6, alignItems:"center" }}>
-            {viewMode==="table" && <>
-              <span style={{ fontSize:10, color:C.t3, whiteSpace:"nowrap" }}>Descargar información</span>
-              <button onClick={()=>exportCSV(displayFreights,`tolvink-inicio-${new Date().toISOString().slice(0,10)}.csv`)} style={{ display:"flex", alignItems:"center", gap:4, background:C.accPale, border:`1px solid ${C.acc}20`, borderRadius:8, padding:"5px 10px", cursor:"pointer", fontFamily:"inherit", fontSize:10.5, fontWeight:600, color:C.acc }}>
-                {Ic.down(C.acc,12)} CSV
-              </button>
-            </>}
-            <span style={{ fontSize:10, color:C.t3, whiteSpace:"nowrap" }}>Cambiar visualización</span>
-            <button onClick={nextView} style={{ display:"flex", alignItems:"center", gap:4, background:C.priPale, border:`1px solid ${C.pri}20`, borderRadius:8, padding:"5px 10px", cursor:"pointer", fontFamily:"inherit", fontSize:10.5, fontWeight:600, color:C.pri }}>
-              {viewMode==="map"?Ic.pin(C.pri,13):viewMode==="table"?Ic.doc(C.pri,13):Ic.home(C.pri,13)} {viewLabels[viewMode]}
-            </button>
+            <span style={{ fontSize:16, fontWeight:800, color:C.t1 }}>{quickItems.find(q=>q.k===activePanel)?.l||""}</span>
           </div>
+          <button onClick={()=>setActivePanel(null)} style={{ background:C.bgCardAlt, border:`1px solid ${C.b1}`, borderRadius:8, padding:"6px 8px", cursor:"pointer", display:"flex", alignItems:"center", fontFamily:"inherit" }}>{Ic.cross(C.t2,16)}</button>
         </div>
-        {/* Bottom border */}
-        <div style={{ height:1, background:C.b2, marginLeft:-18, marginRight:-18 }}/>
+
+        {/* Panel content */}
+        {activePanel==="map" && <HomeMapView freights={displayFreights} onNav={onNav} />}
+        {activePanel==="pending" && <PendingScreen user={user} freights={freights} onNav={onNav} onNewFreight={()=>onNav("new")} embedded />}
+        {activePanel==="calendar" && <HomeCalendarPanel freights={freights} perms={perms} onNav={onNav} />}
+        {activePanel==="reports" && <ReportsScreen onBack={()=>setActivePanel(null)} freights={freights} isDesktop={false} embedded />}
+        {activePanel==="fields" && <FieldsScreen onBack={()=>setActivePanel(null)} embedded />}
+        {activePanel==="trucks" && <TrucksScreen onBack={()=>setActivePanel(null)} embedded />}
       </div>
+    </div>
+  ) : null;
 
-      {/* Scrollable content */}
-      <div style={{ padding:"12px 18px 18px 18px" }}>
-
-      {perms.canApprove && stats.avail>0 && activeFilter==="all" && !activePanel && (
-        <div onClick={()=>toggleFilter("requested")} style={{ background:C.accPale, border:`1px solid ${C.acc}22`, borderLeft:`3px solid ${C.acc}`, borderRadius:12, padding:14, marginBottom:14, cursor:"pointer", display:"flex", alignItems:"center", gap:12 }}>
-          {Ic.warn(C.acc,24)}<div><div style={{ fontSize:13, fontWeight:700, color:C.acc }}>{stats.avail} flete{stats.avail>1?"s":""} solicitado{stats.avail>1?"s":""}</div><div style={{ fontSize:11.5, color:C.t2 }}>Esperando asignación de transporte</div></div>
+  // --- Desktop split or Mobile stacked ---
+  if(isDesktop) {
+    return (
+      <div style={{ flex:1, display:"flex", flexDirection:"row", overflow:"hidden" }}>
+        <div style={{ width:activePanel?280:undefined, flex:activePanel?undefined:1, overflow:"auto", transition:"width 0.2s ease" }}>
+          {leftPanel}
         </div>
-      )}
+        {rightPanel}
+      </div>
+    );
+  }
 
-      {/* Quick access — vertical list below stats */}
-      {!activePanel && (
-        <div style={{ display:"flex", flexDirection:"column", gap:6, marginBottom:16 }}>
-          <div style={{ fontSize:11, fontWeight:700, color:C.t3, textTransform:"uppercase", letterSpacing:0.5, marginBottom:2 }}>Accesos rápidos</div>
-          {quickItems.map(b=>(
-            <button key={b.k} onClick={()=>togglePanel(b.k)} style={{ display:"flex", alignItems:"center", gap:12, padding:"11px 14px", borderRadius:10, background:C.w, border:`1px solid ${C.b1}`, cursor:"pointer", fontFamily:"inherit", width:"100%", textAlign:"left", transition:"all 0.15s", boxShadow:C.sh }} onMouseEnter={e=>{e.currentTarget.style.background=C.priGhost;e.currentTarget.style.borderColor=`${b.c}40`}} onMouseLeave={e=>{e.currentTarget.style.background=C.w;e.currentTarget.style.borderColor=C.b1}}>
-              <div style={{ width:34, height:34, borderRadius:9, background:`${b.c}12`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{b.ic(b.c,17)}</div>
-              <span style={{ fontSize:13, fontWeight:600, color:C.t1 }}>{b.l}</span>
-              <span style={{ marginLeft:"auto", display:"flex", transform:"rotate(180deg)" }}>{Ic.chev(C.t3,16)}</span>
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* Active panel — inline content */}
-      {activePanel && (
-        <div style={{ marginBottom:16, animation:"fadeIn 0.2s ease" }}>
-          {/* Panel header with close */}
-          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:10 }}>
-            <button onClick={()=>setActivePanel(null)} style={{ display:"flex", alignItems:"center", gap:6, background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", padding:0 }}>
-              {Ic.chev(C.pri,18)}
-              <span style={{ fontSize:14, fontWeight:700, color:C.pri }}>Inicio</span>
-            </button>
-            <span style={{ fontSize:13, fontWeight:700, color:C.t1 }}>{quickItems.find(q=>q.k===activePanel)?.l||""}</span>
+  // Mobile: if panel active, show panel fullscreen with back button
+  if(activePanel) {
+    return (
+      <div style={{ flex:1, overflow:"auto" }}>
+        <div style={{ padding:18 }}>
+          <button onClick={()=>setActivePanel(null)} style={{ display:"flex", alignItems:"center", gap:6, background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", padding:0, marginBottom:12 }}>
+            {Ic.chev(C.pri,18)}
+            <span style={{ fontSize:14, fontWeight:700, color:C.pri }}>Inicio</span>
+          </button>
+          <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:14 }}>
+            <div style={{ width:30, height:30, borderRadius:8, background:`${quickItems.find(q=>q.k===activePanel)?.c||C.pri}12`, display:"flex", alignItems:"center", justifyContent:"center" }}>
+              {quickItems.find(q=>q.k===activePanel)?.ic(quickItems.find(q=>q.k===activePanel)?.c||C.pri,16)}
+            </div>
+            <span style={{ fontSize:16, fontWeight:800, color:C.t1 }}>{quickItems.find(q=>q.k===activePanel)?.l||""}</span>
           </div>
-
-          {/* Map panel */}
           {activePanel==="map" && <HomeMapView freights={displayFreights} onNav={onNav} />}
-
-          {/* Pending panel */}
           {activePanel==="pending" && <PendingScreen user={user} freights={freights} onNav={onNav} onNewFreight={()=>onNav("new")} embedded />}
-
-          {/* Calendar panel */}
           {activePanel==="calendar" && <HomeCalendarPanel freights={freights} perms={perms} onNav={onNav} />}
-
-          {/* Reports panel */}
           {activePanel==="reports" && <ReportsScreen onBack={()=>setActivePanel(null)} freights={freights} isDesktop={false} embedded />}
-
-          {/* Fields panel */}
           {activePanel==="fields" && <FieldsScreen onBack={()=>setActivePanel(null)} embedded />}
-
-          {/* Trucks panel */}
           {activePanel==="trucks" && <TrucksScreen onBack={()=>setActivePanel(null)} embedded />}
         </div>
-      )}
+      </div>
+    );
+  }
 
-      {/* Freight views — only when no panel is active */}
-      {!activePanel && <>
-
-      {/* MAP VIEW */}
-      {viewMode==="map" && <HomeMapView freights={displayFreights} onNav={onNav} />}
-      {viewMode==="table" && (
-        <div style={{ overflowX:"auto", borderRadius:10, border:`1px solid ${C.b1}`, background:C.w }}>
-          <table className="tv-table" style={{ width:"100%", borderCollapse:"collapse", fontSize:11 }}>
-            <thead>
-              <tr style={{ background:C.bg }}>
-                {[["Código","code"],["Estado","status"],["Productor","producer"],["Origen","origin"],["Destino","dest"],["Producto","product"],["Cant.","qty"],["Camión","truck"],["Fecha","date"]].map(([h,k])=>(
-                  <SortTh key={k} label={h} colKey={k} sortCol={sort.sortCol} sortDir={sort.sortDir} onSort={sort.toggle}/>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {displayFreights.length===0 && <tr><td colSpan={9} style={{ padding:24, textAlign:"center", color:C.t3 }}>Sin fletes</td></tr>}
-              {sort.sortData(displayFreights, HOME_GETTERS).map(f=>{
-                const st = stCfg(f.status);
-                const fmtDate = f.loadDate ? f.loadDate.slice(8,10)+"-"+f.loadDate.slice(5,7)+"-"+f.loadDate.slice(2,4) : "";
-                return (
-                  <tr key={f.id} className="tv-row" onClick={()=>onNav("detail",f.id)} style={{ cursor:"pointer", borderBottom:`1px solid ${C.b2}` }}>
-                    <td style={{ padding:"7px 6px", fontFamily:MONO, fontWeight:600, color:C.t1, whiteSpace:"nowrap" }}>{f.code}</td>
-                    <td style={{ padding:"7px 6px" }}><Bd color={st.color} bg={st.bg} small>{st.label}</Bd></td>
-                    <td style={{ padding:"7px 6px", color:C.t2, maxWidth:100, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{f.requestedByName||"-"}</td>
-                    <td style={{ padding:"7px 6px", color:C.t2, maxWidth:110, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{(f.originName||"").split("—")[0].trim()}</td>
-                    <td style={{ padding:"7px 6px", color:C.t2, maxWidth:100, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{f.destName}</td>
-                    <td style={{ padding:"7px 6px", fontWeight:600, color:C.t1, whiteSpace:"nowrap" }}>{f.grain}</td>
-                    <td style={{ padding:"7px 6px", fontWeight:600, color:C.t1, whiteSpace:"nowrap" }}>{f.tons} tn</td>
-                    <td style={{ padding:"7px 6px", color:C.t3, whiteSpace:"nowrap" }}>{f.truckPlate||"-"}</td>
-                    <td style={{ padding:"7px 6px", color:C.t3, whiteSpace:"nowrap" }}>{fmtDate}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {/* CARDS VIEW */}
-      {viewMode==="cards" && activeFilter!=="all" && (
-        <div style={{ display:"flex", flexDirection:"column", gap:10 }} className="tv-grid">
-          {displayFreights.length===0 && <div style={{ textAlign:"center", padding:40, color:C.t3, fontSize:13, gridColumn:"1/-1" }}>Sin fletes en esta categoría</div>}
-          {displayFreights.map((f,idx)=>{
-            const st = stCfg(f.status);
-            return (
-              <div key={f.id} className="tv-card" onClick={()=>onNav("detail",f.id)} style={{ background:C.w, border:`1px solid ${C.b1}`, borderLeft:`3px solid ${st.border}`, borderRadius:12, padding:14, cursor:"pointer", boxShadow:C.sh, animation:`cardIn 0.3s ease ${idx*0.04}s both` }}>
-                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
-                  <span style={{ fontSize:11, fontWeight:700, color:C.t3, fontFamily:MONO }}>{f.code}</span>
-                  <Bd color={st.color} bg={st.bg} small>{st.label}</Bd>
-                </div>
-                <div style={{ fontSize:14, fontWeight:700, color:C.t1 }}>{f.grain} · {f.tons} tn</div>
-                <div style={{ display:"flex", alignItems:"center", gap:4, marginTop:6, fontSize:11.5, color:C.t2 }}>
-                  {Ic.pin(C.t3,13)} <span>{(f.originName||"").split("—")[0].trim()}</span>
-                  <span style={{color:C.t3,margin:"0 2px"}}>&rarr;</span>
-                  {Ic.plant(C.t3,13)} <span>{f.destName}</span>
-                </div>
-                <div style={{ display:"flex", alignItems:"center", gap:6, fontSize:10.5, color:C.t3, marginTop:6 }}>
-                  {Ic.cal(C.t3,12)} {f.loadDate} {f.loadTime}
-                  {f.transporterName && <><span style={{color:C.b1}}>|</span>{Ic.truck(C.t3,12)} {f.transporterName}</>}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {/* KANBAN COLUMN VIEW — when "all" filter is active */}
-      {viewMode==="cards" && activeFilter==="all" && (()=>{
-        const cols = [
-          { key:"requested", label:"Solicitados", color:C.acc, bg:C.accPale, statuses:["draft","pending_assignment"] },
-          { key:"active", label:"En curso", color:"#258B3E", bg:"#D0EBD7", statuses:["assigned","accepted","in_progress","loaded"] },
-          { key:"done", label:"Finalizados", color:C.pri, bg:C.priPale, statuses:["finished"] },
-        ];
-        return <div className="tv-kanban" style={{ display:"flex", flexDirection:"column", gap:16 }}>
-          {cols.map(col=>{
-            const items = displayFreights.filter(f=>col.statuses.includes(f.status));
-            return <div key={col.key} style={{ flex:1, minWidth:0, display:"flex", flexDirection:"column" }}>
-              <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8, padding:"8px 12px", background:col.bg, borderRadius:8, borderLeft:`3px solid ${col.color}`, flexShrink:0 }}>
-                <span style={{ fontSize:12, fontWeight:700, color:col.color }}>{col.label}</span>
-                <span style={{ fontSize:11, fontWeight:600, color:col.color, opacity:0.7 }}>({items.length})</span>
-              </div>
-              <div className="tv-kanban-col" style={{ display:"flex", flexDirection:"column", gap:8, flex:1, overflowY:"auto" }}>
-                {items.length===0 && <div style={{ textAlign:"center", padding:16, color:C.t3, fontSize:11, background:C.w, borderRadius:8, border:`1px dashed ${C.b1}` }}>Sin fletes</div>}
-                {items.map((f,idx)=>{
-                  const st = stCfg(f.status);
-                  return <div key={f.id} className="tv-card" onClick={()=>onNav("detail",f.id)} style={{ background:C.w, border:`1px solid ${C.b1}`, borderLeft:`3px solid ${st.border}`, borderRadius:10, padding:12, cursor:"pointer", boxShadow:C.sh, animation:`cardIn 0.3s ease ${idx*0.03}s both` }}>
-                    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:4 }}>
-                      <span style={{ fontSize:10, fontWeight:700, color:C.t3, fontFamily:MONO }}>{f.code}</span>
-                      <Bd color={st.color} bg={st.bg} small>{st.label}</Bd>
-                    </div>
-                    <div style={{ fontSize:13, fontWeight:700, color:C.t1 }}>{f.grain} · {f.tons} tn</div>
-                    <div style={{ fontSize:10.5, color:C.t2, marginTop:3 }}>{(f.originName||"").split("—")[0].trim()} → {f.destName}</div>
-                    <div style={{ fontSize:10, color:C.t3, marginTop:3 }}>{Ic.cal(C.t3,10)} {f.loadDate}{f.transporterName?` · ${f.transporterName}`:""}</div>
-                  </div>;
-                })}
-              </div>
-            </div>;
-          })}
-        </div>;
-      })()}
-
-      {/* Solicitar button is in Nav bar */}
-      </>}
-      </div>{/* end scrollable content */}
+  // Mobile: default dashboard
+  return (
+    <div style={{ flex:1, overflow:"auto" }}>
+      {leftPanel}
     </div>
   );
 }
@@ -4427,6 +4316,13 @@ export default function Tolvink() {
   const [unreadChats, setUnreadChats] = useState(0);
   const isDesktop = useIsDesktop(768);
 
+  // 4. Redirect to home when user logs in
+  const prevUser = useRef(null);
+  useEffect(()=>{
+    if(auth.user && !prevUser.current) { setScreen("home"); }
+    prevUser.current = auth.user;
+  },[auth.user]);
+
   // Calculate pending actions count
   const pendingCount = useMemo(() => {
     if (!auth.user || !fh.freights) return 0;
@@ -4523,8 +4419,8 @@ export default function Tolvink() {
   const navActive = ["detail"].includes(screen)?"list":["trucks","fields","access"].includes(screen)?"profile":(!isDesktop&&screen==="reports")?"profile":(!isDesktop&&screen==="calendar")?"profile":screen;
 
   return (
-    <div className="tv-shell" style={{height:"100dvh",background:C.bg,color:C.t1,fontFamily:FONT,display:"flex",flexDirection:isDesktop?"row":"column",maxWidth:isDesktop?1400:1100,margin:"0 auto",position:"relative",overflow:"hidden"}}>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&family=JetBrains+Mono:wght@400;500&display=swap');*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}html,body{height:100%;margin:0}body{background:${C.bg};overflow:hidden;overscroll-behavior:none}input,textarea,select,button{font-size:16px}input::placeholder,textarea::placeholder{color:${C.t3}}::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:${C.b1};border-radius:4px}@keyframes ti{0%,100%{opacity:1}50%{opacity:.4}}@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}@keyframes cardIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}@keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}.tv-card{transition:transform 0.15s ease,box-shadow 0.15s ease}.tv-row{transition:background 0.1s ease}@media(hover:hover){.tv-card:hover{transform:translateY(-2px);box-shadow:${C.shMd}!important}.tv-row:hover{background:${C.priGhost}!important}}@media(min-width:640px){.tv-grid{display:grid!important;grid-template-columns:1fr 1fr!important;gap:12px!important}.tv-grid3{display:grid!important;grid-template-columns:1fr 1fr 1fr!important;gap:12px!important}.tv-pad{padding:24px 32px!important}.tv-detail-grid{display:grid!important;grid-template-columns:1fr 1fr!important;gap:16px!important}.tv-table th,.tv-table td{padding:10px 12px!important;font-size:12px!important}.tv-stats{gap:12px!important}.tv-stats>div{padding:14px 12px!important;border-radius:12px!important}.tv-stats .tv-stat-num{font-size:28px!important}.tv-header-bar{padding:10px 32px 0 32px!important}}@media(min-width:768px){.tv-shell{max-width:1400px!important}.tv-mobile-header{display:none!important}.tv-mobile-nav{display:none!important}.tv-kanban{flex-direction:row!important;gap:12px!important}.tv-kanban-col{max-height:calc(100vh - 280px)!important;overflow-y:auto!important}}@media(max-width:767px){.tv-sidebar{display:none!important}}@media(min-width:900px){.tv-grid{grid-template-columns:1fr 1fr 1fr!important}}@media(min-width:1100px){.tv-grid{grid-template-columns:repeat(4,1fr)!important}}`}</style>
+    <div className="tv-shell" style={{height:"100dvh",background:C.bg,color:C.t1,fontFamily:FONT,display:"flex",flexDirection:isDesktop?"row":"column",maxWidth:isDesktop?1400:1100,width:"100%",margin:"0 auto",position:"relative",overflow:"hidden"}}>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&family=JetBrains+Mono:wght@400;500&display=swap');*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}html,body{height:100%;margin:0;overflow-x:hidden;max-width:100vw}body{background:${C.bg};overflow-y:hidden;overscroll-behavior:none}input,textarea,select,button{font-size:16px}input::placeholder,textarea::placeholder{color:${C.t3}}::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:${C.b1};border-radius:4px}@keyframes ti{0%,100%{opacity:1}50%{opacity:.4}}@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}@keyframes cardIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}@keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}.tv-card{transition:transform 0.15s ease,box-shadow 0.15s ease}.tv-row{transition:background 0.1s ease}@media(hover:hover){.tv-card:hover{transform:translateY(-2px);box-shadow:${C.shMd}!important}.tv-row:hover{background:${C.priGhost}!important}}@media(min-width:640px){.tv-grid{display:grid!important;grid-template-columns:1fr 1fr!important;gap:12px!important}.tv-grid3{display:grid!important;grid-template-columns:1fr 1fr 1fr!important;gap:12px!important}.tv-pad{padding:24px 32px!important}.tv-detail-grid{display:grid!important;grid-template-columns:1fr 1fr!important;gap:16px!important}.tv-table th,.tv-table td{padding:10px 12px!important;font-size:12px!important}.tv-stats{gap:12px!important}.tv-stats>div{padding:14px 12px!important;border-radius:12px!important}.tv-stats .tv-stat-num{font-size:28px!important}.tv-header-bar{padding:10px 32px 0 32px!important}}@media(min-width:768px){.tv-shell{max-width:1400px!important}.tv-mobile-header{display:none!important}.tv-mobile-nav{display:none!important}.tv-kanban{flex-direction:row!important;gap:12px!important}.tv-kanban-col{max-height:calc(100vh - 280px)!important;overflow-y:auto!important}}@media(max-width:767px){.tv-sidebar{display:none!important}.tv-shell{max-width:100vw!important;width:100%!important}}@media(min-width:900px){.tv-grid{grid-template-columns:1fr 1fr 1fr!important}}@media(min-width:1100px){.tv-grid{grid-template-columns:repeat(4,1fr)!important}}`}</style>
 
       {/* Desktop Sidebar */}
       <div className="tv-sidebar">
@@ -4541,7 +4437,7 @@ export default function Tolvink() {
 
         {/* Scrollable content area */}
         <div style={{flex:1,overflow:(screen==="chats"||screen==="calendar")&&isDesktop?"hidden":"auto",display:"flex",flexDirection:"column",WebkitOverflowScrolling:"touch",overscrollBehavior:"contain"}}>
-        {screen==="home" && <HomeScreen user={auth.user} freights={fh.freights} perms={perms} onNav={nav} catalog={catalog}/>}
+        {screen==="home" && <HomeScreen user={auth.user} freights={fh.freights} perms={perms} onNav={nav} catalog={catalog} isDesktop={isDesktop}/>}
         {screen==="list" && <ListScreen freights={fh.freights} onNav={nav} onRefresh={fh.fetchAll}/>}
         {screen==="pending" && <PendingScreen user={auth.user} freights={fh.freights} onNav={nav} onNewFreight={()=>nav("new")}/>}
         {screen==="calendar" && <CalendarScreen freights={fh.freights} perms={perms} onNav={nav} isDesktop={isDesktop}/>}
