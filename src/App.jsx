@@ -746,49 +746,69 @@ function Nav({ active, onChange, unread=0, pendingCount=0, canRequest=false, onN
 // ======================== LANDING PAGE ================================
 
 function LandingScreen({ onLogin, onSignup, loading, error, clearError }) {
+  const isMob = !useIsDesktop(768);
   const [showAuth, setShowAuth] = useState(false);
 
   if (showAuth) return <AuthScreen onLogin={onLogin} onSignup={onSignup} loading={loading} error={error} clearError={clearError} onBackToLanding={()=>setShowAuth(false)} />;
 
   const _routes = useMemo(()=>[
-    { d:"M-30,520 C150,400 350,260 550,180 S800,60 1030,10", c:C.pri, lo:0.12, po:0.22, pd:"26s", dd:"4s", wp:[[180,410],[420,240],[700,110],[900,45]] },
-    { d:"M-30,80 C180,180 380,340 580,400 S830,500 1030,560", c:C.acc, lo:0.10, po:0.18, pd:"32s", dd:"5s", wp:[[160,170],[400,320],[650,420],[880,520]], rev:true },
-    { d:"M1030,300 C820,240 620,320 420,300 S180,340 -30,370", c:C.sec, lo:0.10, po:0.20, pd:"24s", dd:"3.5s", wp:[[870,260],[640,310],[350,310],[120,355]] },
-    { d:"M500,-30 C520,100 470,240 510,370 S480,490 530,630", c:C.pri, lo:0.08, po:0.16, pd:"22s", dd:"4.5s", wp:[[512,80],[480,260],[505,430]] },
-    { d:"M-30,200 C80,150 200,90 340,50 S500,20 600,-20", c:C.acc, lo:0.09, po:0.17, pd:"18s", dd:"3s", wp:[[70,160],[220,85],[420,35]] },
-    { d:"M1030,480 C900,440 780,500 650,520 S480,560 350,590", c:C.sec, lo:0.07, po:0.15, pd:"20s", dd:"4s", wp:[[920,450],[720,500],[530,540]] },
+    { d:"M-30,520 C150,400 350,260 550,180 S800,60 1030,10", c:C.pri, lo:0.12, to:0.20, td:"26s", dd:"4s", wp:[[180,410],[420,240],[700,110],[900,45]] },
+    { d:"M-30,80 C180,180 380,340 580,400 S830,500 1030,560", c:C.acc, lo:0.10, to:0.16, td:"32s", dd:"5s", wp:[[160,170],[400,320],[650,420],[880,520]], rev:true },
+    { d:"M1030,300 C820,240 620,320 420,300 S180,340 -30,370", c:C.sec, lo:0.10, to:0.18, td:"24s", dd:"3.5s", wp:[[870,260],[640,310],[350,310],[120,355]] },
+    { d:"M500,-30 C520,100 470,240 510,370 S480,490 530,630", c:C.pri, lo:0.08, to:0.14, td:"22s", dd:"4.5s", wp:[[512,80],[480,260],[505,430]] },
+    { d:"M-30,200 C80,150 200,90 340,50 S500,20 600,-20", c:C.acc, lo:0.09, to:0.15, td:"18s", dd:"3s", wp:[[70,160],[220,85],[420,35]] },
+    { d:"M1030,480 C900,440 780,500 650,520 S480,560 350,590", c:C.sec, lo:0.07, to:0.13, td:"20s", dd:"4s", wp:[[920,450],[720,500],[530,540]] },
   ],[]);
 
   return (
     <div style={{ minHeight:"100dvh", background:C.bg, fontFamily:FONT, display:"flex", flexDirection:"column", overflow:"hidden", WebkitOverflowScrolling:"touch", position:"relative" }}>
       <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&display=swap');*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}html,body,#root{margin:0;padding:0;background:${C.bg};height:auto!important;overflow:visible!important;overflow-x:hidden!important}@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}@keyframes dotPulse{0%,100%{opacity:0.3;transform:scale(0.8)}50%{opacity:1;transform:scale(1.2)}}@keyframes splashIn{0%{opacity:0;transform:scale(0.85)}100%{opacity:1;transform:scale(1)}}`}</style>
 
-      {/* Animated routes background — SVG with flowing dashes + moving pins */}
+      {/* Animated routes background — flowing dashes, static pins, moving trucks */}
       <svg viewBox="0 0 1000 600" preserveAspectRatio="xMidYMid slice" style={{ position:"absolute", inset:0, width:"100%", height:"100%", pointerEvents:"none", zIndex:0 }}>
+        {/* Center fade mask — trucks become subtle behind text */}
+        <defs>
+          <radialGradient id="ctrFade" cx="50%" cy="48%" rx="30%" ry="28%">
+            <stop offset="0%" stopColor="white" stopOpacity="0.15"/>
+            <stop offset="70%" stopColor="white" stopOpacity="0.6"/>
+            <stop offset="100%" stopColor="white" stopOpacity="1"/>
+          </radialGradient>
+          <mask id="ctrMask"><rect width="1000" height="600" fill="url(#ctrFade)"/></mask>
+        </defs>
+        <g mask="url(#ctrMask)">
         {_routes.map((r,i)=><g key={i}>
           {/* Route line with flowing dashes */}
           <path d={r.d} stroke={r.c} strokeWidth="2" fill="none" strokeDasharray="14,18" strokeLinecap="round" opacity={r.lo}>
             <animate attributeName="stroke-dashoffset" from="0" to={r.rev?64:-64} dur={r.dd} repeatCount="indefinite"/>
           </path>
-          {/* Waypoint dots */}
-          {r.wp.map((w,j)=><circle key={j} cx={w[0]} cy={w[1]} r="4" fill={r.c} opacity={r.lo*1.2}/>)}
-          {/* Moving pin along route */}
-          <g opacity={r.po}>
-            <animateMotion dur={r.pd} repeatCount="indefinite" rotate="auto" keyPoints={r.rev?"1;0":"0;1"} keyTimes="0;1" calcMode="linear">
+          {/* Static pin waypoints */}
+          {r.wp.map((w,j)=><g key={j} opacity={r.lo*1.6}>
+            <path d={`M${w[0]},${w[1]-10} c-4,0 -7,3 -7,7 c0,4 7,11 7,11 s7,-7 7,-11 c0,-4 -3,-7 -7,-7Z`} fill={r.c}/>
+            <circle cx={w[0]} cy={w[1]-5} r="2.5" fill={C.bg} opacity="0.9"/>
+          </g>)}
+          {/* Moving truck along route */}
+          <g opacity={r.to}>
+            <animateMotion dur={r.td} repeatCount="indefinite" rotate="auto" keyPoints={r.rev?"1;0":"0;1"} keyTimes="0;1" calcMode="linear">
               <mpath xlinkHref={`#lr${i}`}/>
             </animateMotion>
-            <path d="M0,-10 C-5,-10 -8,-5 -8,0 C-8,5 0,12 0,12 S8,5 8,0 C8,-5 5,-10 0,-10Z" fill={r.c}/>
-            <circle cx="0" cy="-2" r="3" fill={C.bg} opacity="0.85"/>
+            {/* Truck pictogram — cab + body + wheels */}
+            <rect x="-14" y="-7" width="18" height="14" rx="2" fill={r.c}/>
+            <polygon points="4,-5 10,-5 14,-1 14,7 4,7" fill={r.c}/>
+            <circle cx="-7" cy="8" r="3" fill={r.c}/>
+            <circle cx="-7" cy="8" r="1.5" fill={C.bg}/>
+            <circle cx="10" cy="8" r="3" fill={r.c}/>
+            <circle cx="10" cy="8" r="1.5" fill={C.bg}/>
+            <rect x="5" y="-4" width="5" height="5" rx="1" fill={C.bg} opacity="0.6"/>
           </g>
-          {/* Hidden path for mpath reference */}
           <path id={`lr${i}`} d={r.d} fill="none" stroke="none"/>
         </g>)}
+        </g>
       </svg>
 
       {/* Main content — centered */}
       <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"40px 24px", textAlign:"center", paddingTop:"max(40px, env(safe-area-inset-top))", position:"relative", zIndex:1 }}>
 
-        {/* Big logo — 43% larger than original */}
+        {/* Big logo */}
         <div style={{ animation:"splashIn 0.8s ease-out", marginBottom:36 }}>
           <div style={{ display:"inline-flex", alignItems:"flex-start" }}>
             <span style={{ fontSize:139, fontWeight:800, color:C.pri, letterSpacing:-6.6, lineHeight:1 }}>tolvink</span>
@@ -798,25 +818,25 @@ function LandingScreen({ onLogin, onSignup, loading, error, clearError }) {
 
         {/* Tagline */}
         <div style={{ animation:"fadeUp 0.8s ease-out", marginBottom:40 }}>
-          <div style={{ fontSize:14, fontWeight:700, color:C.acc, textTransform:"uppercase", letterSpacing:2.5, marginBottom:14 }}>
+          <div style={{ fontSize:isMob?11:14, fontWeight:700, color:C.acc, textTransform:"uppercase", letterSpacing:isMob?1.8:2.5, marginBottom:isMob?10:14 }}>
             Logística agrícola simplificada
           </div>
-          <h1 style={{ fontSize:22, fontWeight:700, color:C.t2, lineHeight:1, letterSpacing:-0.3, whiteSpace:"nowrap" }}>
+          <h1 style={{ fontSize:isMob?17:22, fontWeight:700, color:C.t2, lineHeight:1.1, letterSpacing:-0.3, whiteSpace:"nowrap" }}>
             Gestioná tus fletes desde el campo
           </h1>
         </div>
 
         {/* 4 Features inline */}
-        <div style={{ display:"flex", gap:28, justifyContent:"center", marginBottom:44, animation:"fadeUp 1s ease-out", flexWrap:"wrap" }}>
+        <div style={{ display:"flex", gap:isMob?18:28, justifyContent:"center", marginBottom:44, animation:"fadeUp 1s ease-out", flexWrap:"wrap" }}>
           {[
-            { icon: Ic.truck(C.pri,22), label:"Fletes" },
-            { icon: Ic.pin(C.acc,22), label:"Tracking" },
-            { icon: Ic.chk(C.ok,22), label:"Confirmaciones" },
-            { icon: Ic.nav(C.sec,22), label:"Rutas" },
+            { icon: Ic.truck(C.pri,isMob?18:22), label:"Fletes" },
+            { icon: Ic.pin(C.acc,isMob?18:22), label:"Tracking" },
+            { icon: Ic.chk(C.ok,isMob?18:22), label:"Confirmaciones" },
+            { icon: Ic.nav(C.sec,isMob?18:22), label:"Rutas" },
           ].map((f,i) => (
-            <div key={i} style={{ display:"flex", alignItems:"center", gap:6 }}>
+            <div key={i} style={{ display:"flex", alignItems:"center", gap:isMob?4:6 }}>
               {f.icon}
-              <span style={{ fontSize:12, fontWeight:600, color:C.t2 }}>{f.label}</span>
+              <span style={{ fontSize:isMob?10:12, fontWeight:600, color:C.t2 }}>{f.label}</span>
             </div>
           ))}
         </div>
