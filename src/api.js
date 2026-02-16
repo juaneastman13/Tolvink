@@ -126,6 +126,21 @@ export async function apiAdminCreateUser(b) { return api('/admin/users',{body:b}
 export async function apiAdminUpdateUser(id,b) { return api(`/admin/users/${id}`,{method:'PATCH',body:b}); }
 // Self-edit
 export async function apiUpdateMe(b) { return api('/admin/me',{method:'PATCH',body:b}); }
+// Fields (Producer)
+export async function apiAdminListFields(companyId) { return api(`/admin/companies/${companyId}/fields`); }
+export async function apiAdminCreateField(companyId, b) { return api(`/admin/companies/${companyId}/fields`,{body:b}); }
+export async function apiAdminUpdateField(id, b) { return api(`/admin/fields/${id}`,{method:'PATCH',body:b}); }
+export async function apiAdminDeleteField(id) { return api(`/admin/fields/${id}`,{method:'DELETE'}); }
+// Lots (Inside Fields)
+export async function apiAdminListLots(fieldId) { return api(`/admin/fields/${fieldId}/lots`); }
+export async function apiAdminCreateLot(fieldId, b) { return api(`/admin/fields/${fieldId}/lots`,{body:b}); }
+export async function apiAdminUpdateLot(id, b) { return api(`/admin/lots/${id}`,{method:'PATCH',body:b}); }
+export async function apiAdminDeleteLot(id) { return api(`/admin/lots/${id}`,{method:'DELETE'}); }
+// Trucks (Transporter)
+export async function apiAdminListTrucks(companyId) { return api(`/admin/companies/${companyId}/trucks`); }
+export async function apiAdminCreateTruck(companyId, b) { return api(`/admin/companies/${companyId}/trucks`,{body:b}); }
+export async function apiAdminUpdateTruck(id, b) { return api(`/admin/trucks/${id}`,{method:'PATCH',body:b}); }
+export async function apiAdminDeleteTruck(id) { return api(`/admin/trucks/${id}`,{method:'DELETE'}); }
 
 // Photo Upload — direct to Supabase Storage (public bucket)
 export async function uploadPhoto(file, freightId, step) {

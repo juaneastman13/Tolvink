@@ -16,6 +16,9 @@ import {
   apiAdminStats, apiAdminListCompanies, apiAdminGetCompany, apiAdminCreateCompany, apiAdminUpdateCompany,
   apiAdminListBranches, apiAdminCreateBranch, apiAdminUpdateBranch, apiAdminDeleteBranch,
   apiAdminListUsers, apiAdminCreateUser, apiAdminUpdateUser, apiUpdateMe,
+  apiAdminListFields, apiAdminCreateField, apiAdminUpdateField, apiAdminDeleteField,
+  apiAdminListLots, apiAdminCreateLot, apiAdminUpdateLot, apiAdminDeleteLot,
+  apiAdminListTrucks, apiAdminCreateTruck, apiAdminUpdateTruck, apiAdminDeleteTruck,
   getToken, getSavedUser, setAuthFailHandler, clearAuth,
 } from "./api";
 
@@ -4520,6 +4523,26 @@ function AdminScreen({ user, onBack }) {
   const [branches, setBranches] = useState([]);
   const [showBranchForm, setShowBranchForm] = useState(false);
 
+  // Producer: fields + lots
+  const [fields, setFields] = useState([]);
+  const [showFieldForm, setShowFieldForm] = useState(false);
+  const [fieldForm, setFieldForm] = useState({ name:"",lat:null,lng:null,address:"",hectares:"",comments:"" });
+  const [editFieldId, setEditFieldId] = useState(null);
+  const [expandedFieldId, setExpandedFieldId] = useState(null);
+  const [lots, setLots] = useState([]);
+  const [showLotForm, setShowLotForm] = useState(false);
+  const [lotForm, setLotForm] = useState({ name:"",lat:null,lng:null,address:"",hectares:"",comments:"" });
+  const [editLotId, setEditLotId] = useState(null);
+
+  // Transporter: trucks
+  const [trucks, setTrucks] = useState([]);
+  const [showTruckForm, setShowTruckForm] = useState(false);
+  const [truckForm, setTruckForm] = useState({ plate:"",brand:"",model:"",capacity:"" });
+  const [editTruckId, setEditTruckId] = useState(null);
+
+  // Detail tab: branches | fields | trucks
+  const [detailTab, setDetailTab] = useState("branches");
+
   const show = (t,k="ok") => { setMsg({t,k}); setTimeout(()=>setMsg(null),3000); };
 
   const load = useCallback(async () => {
@@ -4566,7 +4589,14 @@ function AdminScreen({ user, onBack }) {
   };
 
   // --- Branches ---
-  const openCompanyDetail = async (c) => { setSelectedCompany(c); setBranches([]); setView("companyDetail"); try { const b=await apiAdminListBranches(c.id); setBranches(b||[]); } catch {} };
+  const openCompanyDetail = async (c) => {
+    setSelectedCompany(c); setBranches([]); setFields([]); setTrucks([]);
+    setShowBranchForm(false); setShowFieldForm(false); setShowTruckForm(false); setShowLotForm(false); setExpandedFieldId(null);
+    setDetailTab("branches"); setView("companyDetail");
+    try { const b=await apiAdminListBranches(c.id); setBranches(b||[]); } catch {}
+    if(c.type==="producer") { try { const f=await apiAdminListFields(c.id); setFields(f||[]); } catch {} }
+    if(c.type==="transporter") { try { const t=await apiAdminListTrucks(c.id); setTrucks(t||[]); } catch {} }
+  };
   const openNewBranch = () => { setBranchForm({name:"",address:"",reference:"",lat:null,lng:null,locationAddress:""}); setEditBranchId(null); setShowBranchForm(true); };
   const openEditBranch = (b) => { setBranchForm({name:b.name,address:b.address||"",reference:b.reference||"",lat:b.lat?Number(b.lat):null,lng:b.lng?Number(b.lng):null,locationAddress:""}); setEditBranchId(b.id); setShowBranchForm(true); };
   const handleSaveBranch = async () => {
@@ -4579,6 +4609,58 @@ function AdminScreen({ user, onBack }) {
     } catch(e) { show(e.message,"err"); } finally { setSaving(false); }
   };
   const handleDeleteBranch = async (id) => { try { await apiAdminDeleteBranch(id); show("Sucursal eliminada"); const b=await apiAdminListBranches(selectedCompany.id); setBranches(b||[]); load(); } catch(e) { show(e.message,"err"); } };
+
+  // --- Fields ---
+  const openNewField = () => { setFieldForm({name:"",lat:null,lng:null,address:"",hectares:"",comments:""}); setEditFieldId(null); setShowFieldForm(true); };
+  const openEditField = (f) => { setFieldForm({name:f.name,lat:f.lat?Number(f.lat):null,lng:f.lng?Number(f.lng):null,address:f.address||"",hectares:f.hectares?String(f.hectares):"",comments:f.comments||""}); setEditFieldId(f.id); setShowFieldForm(true); };
+  const handleSaveField = async () => {
+    if(!fieldForm.name.trim()) return show("Nombre requerido","err");
+    if(fieldForm.lat==null||fieldForm.lng==null) return show("Ubicación requerida","err");
+    setSaving(true);
+    try {
+      const data = {...fieldForm, hectares:fieldForm.hectares?Number(fieldForm.hectares):null};
+      if(editFieldId) { await apiAdminUpdateField(editFieldId, data); show("Campo actualizado"); }
+      else { await apiAdminCreateField(selectedCompany.id, data); show("Campo creado"); }
+      setShowFieldForm(false); const f=await apiAdminListFields(selectedCompany.id); setFields(f||[]);
+    } catch(e) { show(e.message,"err"); } finally { setSaving(false); }
+  };
+  const handleDeleteField = async (id) => { try { await apiAdminDeleteField(id); show("Campo eliminado"); const f=await apiAdminListFields(selectedCompany.id); setFields(f||[]); } catch(e) { show(e.message,"err"); } };
+
+  // --- Lots ---
+  const expandField = async (fieldId) => {
+    if(expandedFieldId===fieldId) { setExpandedFieldId(null); return; }
+    setExpandedFieldId(fieldId); setLots([]); setShowLotForm(false);
+    try { const l=await apiAdminListLots(fieldId); setLots(l||[]); } catch {}
+  };
+  const openNewLot = () => { setLotForm({name:"",lat:null,lng:null,address:"",hectares:"",comments:""}); setEditLotId(null); setShowLotForm(true); };
+  const openEditLot = (l) => { setLotForm({name:l.name,lat:l.lat?Number(l.lat):null,lng:l.lng?Number(l.lng):null,address:"",hectares:l.hectares?String(l.hectares):"",comments:l.comments||""}); setEditLotId(l.id); setShowLotForm(true); };
+  const handleSaveLot = async () => {
+    if(!lotForm.name.trim()) return show("Nombre requerido","err");
+    if(lotForm.lat==null||lotForm.lng==null) return show("Ubicación requerida","err");
+    setSaving(true);
+    try {
+      const data = {...lotForm, hectares:lotForm.hectares?Number(lotForm.hectares):null};
+      if(editLotId) { await apiAdminUpdateLot(editLotId, data); show("Lote actualizado"); }
+      else { await apiAdminCreateLot(expandedFieldId, data); show("Lote creado"); }
+      setShowLotForm(false); const l=await apiAdminListLots(expandedFieldId); setLots(l||[]);
+      const f=await apiAdminListFields(selectedCompany.id); setFields(f||[]);
+    } catch(e) { show(e.message,"err"); } finally { setSaving(false); }
+  };
+  const handleDeleteLot = async (id) => { try { await apiAdminDeleteLot(id); show("Lote eliminado"); const l=await apiAdminListLots(expandedFieldId); setLots(l||[]); } catch(e) { show(e.message,"err"); } };
+
+  // --- Trucks ---
+  const openNewTruck = () => { setTruckForm({plate:"",brand:"",model:"",capacity:""}); setEditTruckId(null); setShowTruckForm(true); };
+  const openEditTruck = (t) => { setTruckForm({plate:t.plate,brand:t.brand||"",model:t.model||"",capacity:t.capacity||""}); setEditTruckId(t.id); setShowTruckForm(true); };
+  const handleSaveTruck = async () => {
+    if(!truckForm.plate.trim()) return show("Patente requerida","err");
+    setSaving(true);
+    try {
+      if(editTruckId) { await apiAdminUpdateTruck(editTruckId, truckForm); show("Vehículo actualizado"); }
+      else { await apiAdminCreateTruck(selectedCompany.id, truckForm); show("Vehículo creado"); }
+      setShowTruckForm(false); const t=await apiAdminListTrucks(selectedCompany.id); setTrucks(t||[]);
+    } catch(e) { show(e.message,"err"); } finally { setSaving(false); }
+  };
+  const handleDeleteTruck = async (id) => { try { await apiAdminDeleteTruck(id); show("Vehículo eliminado"); const t=await apiAdminListTrucks(selectedCompany.id); setTrucks(t||[]); } catch(e) { show(e.message,"err"); } };
 
   // --- Users with companyByType + roleByType ---
   const toggleFormUserType = (t) => setUserForm(p=>({...p,userTypes:p.userTypes.includes(t)?p.userTypes.filter(x=>x!==t):[...p.userTypes,t]}));
@@ -4804,17 +4886,26 @@ function AdminScreen({ user, onBack }) {
     );
   }
 
-  // ===================== COMPANY DETAIL + BRANCHES =====================
+  // ===================== COMPANY DETAIL =====================
   if (view==="companyDetail" && selectedCompany) {
+    const cType = selectedCompany.type;
+    const isProducer = cType==="producer";
+    const isTransporter = cType==="transporter";
+    const tabs = [{k:"branches",l:"Sucursales",n:branches.length}];
+    if(isProducer) tabs.push({k:"fields",l:"Campos",n:fields.length});
+    if(isTransporter) tabs.push({k:"trucks",l:"Flota",n:trucks.length});
+    const curTab = tabs.find(t=>t.k===detailTab) ? detailTab : "branches";
+
     return (
       <div style={{flex:1,overflow:"auto",padding:18}}>
-        {adminBackBtn(()=>{setView("list");setShowBranchForm(false);})}
+        {adminBackBtn(()=>{setView("list");setShowBranchForm(false);setShowFieldForm(false);setShowTruckForm(false);})}
+        {/* Company header */}
         <div style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius:12,padding:16,marginBottom:12,boxShadow:C.sh}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
             <div>
               <div style={{fontSize:16,fontWeight:700,color:C.t1}}>{selectedCompany.name}</div>
               <div style={{display:"flex",gap:6,marginTop:6,flexWrap:"wrap"}}>
-                <Bd color={typeColors[selectedCompany.type]}>{typeLabels[selectedCompany.type]}</Bd>
+                <Bd color={typeColors[cType]}>{typeLabels[cType]}</Bd>
                 {selectedCompany.rut&&<Bd color={C.t2}>RUT: {selectedCompany.rut}</Bd>}
                 {selectedCompany.hasInternalFleet&&<Bd color={C.info||"#3B82F6"}>Flota propia</Bd>}
               </div>
@@ -4826,45 +4917,164 @@ function AdminScreen({ user, onBack }) {
           </div>
         </div>
 
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-          <div style={{fontSize:14,fontWeight:700,color:C.t1}}>Sucursales ({branches.length})</div>
-          <button onClick={()=>{showBranchForm?setShowBranchForm(false):openNewBranch();}} style={{padding:"6px 12px",borderRadius:6,border:`1px solid ${C.pri}`,background:`${C.pri}12`,color:C.pri,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>{showBranchForm&&!editBranchId?"Cancelar":"+ Nueva"}</button>
+        {/* Tabs */}
+        <div style={{display:"flex",gap:4,marginBottom:10}}>
+          {tabs.map(t=>(
+            <button key={t.k} onClick={()=>setDetailTab(t.k)} style={{flex:1,padding:"8px 0",borderRadius:8,border:`1.5px solid ${curTab===t.k?C.pri:C.b1}`,background:curTab===t.k?`${C.pri}12`:C.w,color:curTab===t.k?C.pri:C.t2,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>{t.l} ({t.n})</button>
+          ))}
         </div>
 
-        {showBranchForm && (
-          <div style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius:10,padding:14,marginBottom:10,boxShadow:C.sh}}>
-            <div style={{fontSize:12,fontWeight:600,color:C.t1,marginBottom:8}}>{editBranchId?"Editar sucursal":"Nueva sucursal"}</div>
-            <div style={s.lbl}>Nombre:</div>
-            <input value={branchForm.name} onChange={e=>setBranchForm(p=>({...p,name:e.target.value}))} placeholder="Nombre" style={{...s.inp,marginBottom:10}} />
-            <div style={s.lbl}>Dirección:</div>
-            <input value={branchForm.address} onChange={e=>setBranchForm(p=>({...p,address:e.target.value}))} placeholder="Dirección" style={{...s.inp,marginBottom:10}} />
-            <div style={s.lbl}>Referencia:</div>
-            <input value={branchForm.reference} onChange={e=>setBranchForm(p=>({...p,reference:e.target.value}))} placeholder="Referencia (opcional)" style={{...s.inp,marginBottom:10}} />
-            <LocationPicker label="Ubicación sucursal" value={branchForm.lat?{lat:branchForm.lat,lng:branchForm.lng,address:branchForm.locationAddress||""}:null} onChange={(loc)=>setBranchForm(p=>({...p,lat:loc?.lat||null,lng:loc?.lng||null,locationAddress:loc?.address||""}))} />
-            <div style={{display:"flex",gap:8,marginTop:4}}>
-              <button onClick={()=>setShowBranchForm(false)} style={{flex:1,padding:"10px 0",borderRadius:8,border:`1px solid ${C.b1}`,background:C.w,color:C.t2,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>Cancelar</button>
-              <button onClick={handleSaveBranch} disabled={saving} style={{...s.btnP(C.pri,saving),flex:2}}>{saving?"Guardando...":(editBranchId?"Guardar":"Crear")}</button>
-            </div>
+        {/* ====== TAB: BRANCHES ====== */}
+        {curTab==="branches"&&(<>
+          <div style={{display:"flex",justifyContent:"flex-end",marginBottom:8}}>
+            <button onClick={()=>{showBranchForm?setShowBranchForm(false):openNewBranch();}} style={{padding:"6px 12px",borderRadius:6,border:`1px solid ${C.pri}`,background:`${C.pri}12`,color:C.pri,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>{showBranchForm&&!editBranchId?"Cancelar":"+ Nueva"}</button>
           </div>
-        )}
+          {showBranchForm && (
+            <div style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius:10,padding:14,marginBottom:10,boxShadow:C.sh}}>
+              <div style={{fontSize:12,fontWeight:600,color:C.t1,marginBottom:8}}>{editBranchId?"Editar sucursal":"Nueva sucursal"}</div>
+              <div style={s.lbl}>Nombre:</div>
+              <input value={branchForm.name} onChange={e=>setBranchForm(p=>({...p,name:e.target.value}))} placeholder="Nombre" style={{...s.inp,marginBottom:10}} />
+              <div style={s.lbl}>Dirección:</div>
+              <input value={branchForm.address} onChange={e=>setBranchForm(p=>({...p,address:e.target.value}))} placeholder="Dirección" style={{...s.inp,marginBottom:10}} />
+              <div style={s.lbl}>Referencia:</div>
+              <input value={branchForm.reference} onChange={e=>setBranchForm(p=>({...p,reference:e.target.value}))} placeholder="Referencia (opcional)" style={{...s.inp,marginBottom:10}} />
+              <LocationPicker label="Ubicación sucursal" value={branchForm.lat?{lat:branchForm.lat,lng:branchForm.lng,address:branchForm.locationAddress||""}:null} onChange={(loc)=>setBranchForm(p=>({...p,lat:loc?.lat||null,lng:loc?.lng||null,locationAddress:loc?.address||""}))} />
+              <div style={{display:"flex",gap:8,marginTop:4}}>
+                <button onClick={()=>setShowBranchForm(false)} style={{flex:1,padding:"10px 0",borderRadius:8,border:`1px solid ${C.b1}`,background:C.w,color:C.t2,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>Cancelar</button>
+                <button onClick={handleSaveBranch} disabled={saving} style={{...s.btnP(C.pri,saving),flex:2}}>{saving?"Guardando...":(editBranchId?"Guardar":"Crear")}</button>
+              </div>
+            </div>
+          )}
+          {branches.map(b=>(<div key={b.id} style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius:10,padding:"12px 14px",marginBottom:8,boxShadow:C.sh}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <div style={{flex:1}}><div style={{fontSize:13,fontWeight:600,color:C.t1}}>{b.name}</div>{b.address&&<div style={{fontSize:11,color:C.t3}}>{b.address}</div>}{b.lat&&<div style={{fontSize:9,color:C.t3}}>📍 {Number(b.lat).toFixed(5)}, {Number(b.lng).toFixed(5)}</div>}</div>
+              <div style={{display:"flex",gap:4}}><button onClick={()=>openEditBranch(b)} style={{padding:"4px 8px",borderRadius:6,border:`1px solid ${C.pri}40`,background:"none",fontSize:10,color:C.pri,cursor:"pointer",fontFamily:"inherit"}}>Editar</button><button onClick={()=>handleDeleteBranch(b.id)} style={{padding:"4px 8px",borderRadius:6,border:`1px solid ${C.err}30`,background:"none",fontSize:10,color:C.err,cursor:"pointer",fontFamily:"inherit"}}>Eliminar</button></div>
+            </div>
+          </div>))}
+          {branches.length===0&&!showBranchForm&&<div style={{textAlign:"center",padding:20,color:C.t3,fontSize:12}}>Sin sucursales</div>}
+        </>)}
 
-        {branches.map(b=>(
-          <div key={b.id} style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius:10,padding:"12px 14px",marginBottom:8,boxShadow:C.sh}}>
+        {/* ====== TAB: FIELDS (Producer) ====== */}
+        {curTab==="fields"&&isProducer&&(<>
+          <div style={{display:"flex",justifyContent:"flex-end",marginBottom:8}}>
+            <button onClick={()=>{showFieldForm?setShowFieldForm(false):openNewField();}} style={{padding:"6px 12px",borderRadius:6,border:`1px solid ${typeColors.producer}`,background:`${typeColors.producer}12`,color:typeColors.producer,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>{showFieldForm&&!editFieldId?"Cancelar":"+ Nuevo campo"}</button>
+          </div>
+          {showFieldForm && (
+            <div style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius:10,padding:14,marginBottom:10,boxShadow:C.sh}}>
+              <div style={{fontSize:12,fontWeight:600,color:C.t1,marginBottom:8}}>{editFieldId?"Editar campo":"Nuevo campo"}</div>
+              <div style={s.lbl}>Nombre *</div>
+              <input value={fieldForm.name} onChange={e=>setFieldForm(p=>({...p,name:e.target.value}))} placeholder="Nombre del campo" style={{...s.inp,marginBottom:10}} />
+              <LocationPicker label="Ubicación *" value={fieldForm.lat?{lat:fieldForm.lat,lng:fieldForm.lng,address:fieldForm.address}:null} onChange={(loc)=>setFieldForm(p=>({...p,lat:loc?.lat||null,lng:loc?.lng||null,address:loc?.address||""}))} />
+              <div style={{display:"flex",gap:8,marginBottom:10}}>
+                <div style={{flex:1}}><div style={s.lbl}>Hectáreas</div><input value={fieldForm.hectares} onChange={e=>setFieldForm(p=>({...p,hectares:e.target.value}))} placeholder="Ej: 150" type="number" style={s.inp} /></div>
+              </div>
+              <div style={s.lbl}>Comentarios</div>
+              <textarea value={fieldForm.comments} onChange={e=>setFieldForm(p=>({...p,comments:e.target.value}))} placeholder="Notas opcionales..." rows={2} style={{...s.inp,resize:"vertical",marginBottom:10}} />
+              <div style={{display:"flex",gap:8}}>
+                <button onClick={()=>setShowFieldForm(false)} style={{flex:1,padding:"10px 0",borderRadius:8,border:`1px solid ${C.b1}`,background:C.w,color:C.t2,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>Cancelar</button>
+                <button onClick={handleSaveField} disabled={saving} style={{...s.btnP(typeColors.producer,saving),flex:2}}>{saving?"Guardando...":(editFieldId?"Guardar":"Crear campo")}</button>
+              </div>
+            </div>
+          )}
+          {fields.map(f=>(<div key={f.id} style={{background:C.w,border:`1px solid ${expandedFieldId===f.id?typeColors.producer:C.b1}`,borderRadius:10,marginBottom:8,boxShadow:C.sh,overflow:"hidden"}}>
+            <div style={{padding:"12px 14px",cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center"}} onClick={()=>expandField(f.id)}>
+              <div style={{flex:1}}>
+                <div style={{fontSize:13,fontWeight:600,color:C.t1}}>{f.name}</div>
+                <div style={{display:"flex",gap:8,fontSize:10,color:C.t3,marginTop:2}}>
+                  {f.hectares&&<span>{Number(f.hectares)} ha</span>}
+                  {f.lat&&<span>📍 {Number(f.lat).toFixed(3)}, {Number(f.lng).toFixed(3)}</span>}
+                  <span>{f._count?.lots||f.lots?.length||0} lotes</span>
+                </div>
+                {f.comments&&<div style={{fontSize:10,color:C.t3,fontStyle:"italic",marginTop:1}}>{f.comments}</div>}
+              </div>
+              <div style={{display:"flex",gap:4,alignItems:"center"}}>
+                <button onClick={(e)=>{e.stopPropagation();openEditField(f);}} style={{padding:"4px 8px",borderRadius:6,border:`1px solid ${C.pri}40`,background:"none",fontSize:10,color:C.pri,cursor:"pointer",fontFamily:"inherit"}}>Editar</button>
+                <button onClick={(e)=>{e.stopPropagation();handleDeleteField(f.id);}} style={{padding:"4px 8px",borderRadius:6,border:`1px solid ${C.err}30`,background:"none",fontSize:10,color:C.err,cursor:"pointer",fontFamily:"inherit"}}>Eliminar</button>
+                <span style={{fontSize:12,color:C.t3,marginLeft:4}}>{expandedFieldId===f.id?"▾":"▸"}</span>
+              </div>
+            </div>
+            {/* Lots inside field */}
+            {expandedFieldId===f.id&&(
+              <div style={{padding:"0 14px 12px",borderTop:`1px solid ${C.b1}`}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,marginBottom:6}}>
+                  <div style={{fontSize:11,fontWeight:600,color:C.t2}}>Lotes</div>
+                  <button onClick={()=>{showLotForm?setShowLotForm(false):openNewLot();}} style={{padding:"4px 10px",borderRadius:6,border:`1px solid ${typeColors.producer}`,background:`${typeColors.producer}10`,color:typeColors.producer,fontSize:10,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>{showLotForm&&!editLotId?"Cancelar":"+ Lote"}</button>
+                </div>
+                {showLotForm&&(
+                  <div style={{background:C.bgInput,border:`1px solid ${C.b1}`,borderRadius:8,padding:12,marginBottom:8}}>
+                    <div style={s.lbl}>Nombre *</div>
+                    <input value={lotForm.name} onChange={e=>setLotForm(p=>({...p,name:e.target.value}))} placeholder="Nombre del lote" style={{...s.inp,marginBottom:8}} />
+                    <LocationPicker label="Ubicación *" value={lotForm.lat?{lat:lotForm.lat,lng:lotForm.lng,address:lotForm.address}:null} onChange={(loc)=>setLotForm(p=>({...p,lat:loc?.lat||null,lng:loc?.lng||null,address:loc?.address||""}))} />
+                    <div style={{display:"flex",gap:8,marginBottom:8}}>
+                      <div style={{flex:1}}><div style={s.lbl}>Hectáreas</div><input value={lotForm.hectares} onChange={e=>setLotForm(p=>({...p,hectares:e.target.value}))} placeholder="Ej: 50" type="number" style={s.inp} /></div>
+                    </div>
+                    <div style={s.lbl}>Comentarios</div>
+                    <textarea value={lotForm.comments} onChange={e=>setLotForm(p=>({...p,comments:e.target.value}))} placeholder="Notas..." rows={2} style={{...s.inp,resize:"vertical",marginBottom:8}} />
+                    <div style={{display:"flex",gap:8}}>
+                      <button onClick={()=>setShowLotForm(false)} style={{flex:1,padding:"8px 0",borderRadius:8,border:`1px solid ${C.b1}`,background:C.w,color:C.t2,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>Cancelar</button>
+                      <button onClick={handleSaveLot} disabled={saving} style={{...s.btnP(typeColors.producer,saving),flex:2,padding:"8px 0"}}>{saving?"Guardando...":(editLotId?"Guardar":"Crear lote")}</button>
+                    </div>
+                  </div>
+                )}
+                {lots.map(l=>(<div key={l.id} style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius:8,padding:"8px 12px",marginBottom:4}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                    <div><div style={{fontSize:12,fontWeight:600,color:C.t1}}>{l.name}</div>
+                      <div style={{display:"flex",gap:6,fontSize:9,color:C.t3}}>{l.hectares&&<span>{Number(l.hectares)} ha</span>}{l.lat&&<span>📍 {Number(l.lat).toFixed(3)},{Number(l.lng).toFixed(3)}</span>}</div>
+                      {l.comments&&<div style={{fontSize:9,color:C.t3,fontStyle:"italic"}}>{l.comments}</div>}
+                    </div>
+                    <div style={{display:"flex",gap:4}}>
+                      <button onClick={()=>openEditLot(l)} style={{padding:"3px 6px",borderRadius:4,border:`1px solid ${C.pri}40`,background:"none",fontSize:9,color:C.pri,cursor:"pointer",fontFamily:"inherit"}}>Editar</button>
+                      <button onClick={()=>handleDeleteLot(l.id)} style={{padding:"3px 6px",borderRadius:4,border:`1px solid ${C.err}30`,background:"none",fontSize:9,color:C.err,cursor:"pointer",fontFamily:"inherit"}}>Eliminar</button>
+                    </div>
+                  </div>
+                </div>))}
+                {lots.length===0&&!showLotForm&&<div style={{textAlign:"center",padding:10,color:C.t3,fontSize:11}}>Sin lotes</div>}
+              </div>
+            )}
+          </div>))}
+          {fields.length===0&&!showFieldForm&&<div style={{textAlign:"center",padding:20,color:C.t3,fontSize:12}}>Sin campos</div>}
+        </>)}
+
+        {/* ====== TAB: TRUCKS (Transporter) ====== */}
+        {curTab==="trucks"&&isTransporter&&(<>
+          <div style={{display:"flex",justifyContent:"flex-end",marginBottom:8}}>
+            <button onClick={()=>{showTruckForm?setShowTruckForm(false):openNewTruck();}} style={{padding:"6px 12px",borderRadius:6,border:`1px solid ${typeColors.transporter}`,background:`${typeColors.transporter}12`,color:typeColors.transporter,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>{showTruckForm&&!editTruckId?"Cancelar":"+ Nuevo vehículo"}</button>
+          </div>
+          {showTruckForm && (
+            <div style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius:10,padding:14,marginBottom:10,boxShadow:C.sh}}>
+              <div style={{fontSize:12,fontWeight:600,color:C.t1,marginBottom:8}}>{editTruckId?"Editar vehículo":"Nuevo vehículo"}</div>
+              <div style={s.lbl}>Patente *</div>
+              <input value={truckForm.plate} onChange={e=>setTruckForm(p=>({...p,plate:e.target.value}))} placeholder="ABC-1234" style={{...s.inp,marginBottom:10,textTransform:"uppercase"}} />
+              <div style={{display:"flex",gap:8,marginBottom:10}}>
+                <div style={{flex:1}}><div style={s.lbl}>Marca</div><input value={truckForm.brand} onChange={e=>setTruckForm(p=>({...p,brand:e.target.value}))} placeholder="Ej: Scania" style={s.inp} /></div>
+                <div style={{flex:1}}><div style={s.lbl}>Modelo</div><input value={truckForm.model} onChange={e=>setTruckForm(p=>({...p,model:e.target.value}))} placeholder="Ej: R500" style={s.inp} /></div>
+              </div>
+              <div style={s.lbl}>Capacidad</div>
+              <input value={truckForm.capacity} onChange={e=>setTruckForm(p=>({...p,capacity:e.target.value}))} placeholder="Ej: 30 ton" style={{...s.inp,marginBottom:10}} />
+              <div style={{display:"flex",gap:8}}>
+                <button onClick={()=>setShowTruckForm(false)} style={{flex:1,padding:"10px 0",borderRadius:8,border:`1px solid ${C.b1}`,background:C.w,color:C.t2,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>Cancelar</button>
+                <button onClick={handleSaveTruck} disabled={saving} style={{...s.btnP(typeColors.transporter,saving),flex:2}}>{saving?"Guardando...":(editTruckId?"Guardar":"Crear vehículo")}</button>
+              </div>
+            </div>
+          )}
+          {trucks.map(t=>(<div key={t.id} style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius:10,padding:"12px 14px",marginBottom:8,boxShadow:C.sh}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
               <div style={{flex:1}}>
-                <div style={{fontSize:13,fontWeight:600,color:C.t1}}>{b.name}</div>
-                {b.address&&<div style={{fontSize:11,color:C.t3}}>{b.address}</div>}
-                {b.reference&&<div style={{fontSize:10,color:C.t3,fontStyle:"italic"}}>{b.reference}</div>}
-                {b.lat&&<div style={{fontSize:9,color:C.t3}}>📍 {Number(b.lat).toFixed(5)}, {Number(b.lng).toFixed(5)}</div>}
+                <div style={{fontSize:14,fontWeight:700,color:C.t1,letterSpacing:1}}>{t.plate}</div>
+                <div style={{display:"flex",gap:8,fontSize:11,color:C.t3,marginTop:2}}>
+                  {t.brand&&<span>{t.brand}</span>}{t.model&&<span>{t.model}</span>}{t.capacity&&<span>· {t.capacity}</span>}
+                </div>
+                {t.assignedUser&&<div style={{fontSize:10,color:C.t2,marginTop:1}}>Chofer: {t.assignedUser.name}</div>}
               </div>
               <div style={{display:"flex",gap:4}}>
-                <button onClick={()=>openEditBranch(b)} style={{padding:"4px 8px",borderRadius:6,border:`1px solid ${C.pri}40`,background:"none",fontSize:10,color:C.pri,cursor:"pointer",fontFamily:"inherit"}}>Editar</button>
-                <button onClick={()=>handleDeleteBranch(b.id)} style={{padding:"4px 8px",borderRadius:6,border:`1px solid ${C.err}30`,background:"none",fontSize:10,color:C.err,cursor:"pointer",fontFamily:"inherit"}}>Eliminar</button>
+                <button onClick={()=>openEditTruck(t)} style={{padding:"4px 8px",borderRadius:6,border:`1px solid ${C.pri}40`,background:"none",fontSize:10,color:C.pri,cursor:"pointer",fontFamily:"inherit"}}>Editar</button>
+                <button onClick={()=>handleDeleteTruck(t.id)} style={{padding:"4px 8px",borderRadius:6,border:`1px solid ${C.err}30`,background:"none",fontSize:10,color:C.err,cursor:"pointer",fontFamily:"inherit"}}>Eliminar</button>
               </div>
             </div>
-          </div>
-        ))}
-        {branches.length===0&&!showBranchForm&&<div style={{textAlign:"center",padding:20,color:C.t3,fontSize:12}}>Sin sucursales</div>}
+          </div>))}
+          {trucks.length===0&&!showTruckForm&&<div style={{textAlign:"center",padding:20,color:C.t3,fontSize:12}}>Sin vehículos</div>}
+        </>)}
+
         <MsgBar/>
       </div>
     );
