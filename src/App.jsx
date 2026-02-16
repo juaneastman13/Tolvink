@@ -526,10 +526,13 @@ function Select({ label, icon, value, onChange, options, placeholder="Selecciona
   return (
     <div>
       {label && <label style={{ fontSize:10.5, fontWeight:600, color:C.t2, marginBottom:6, display:"flex", alignItems:"center", gap:4, textTransform:"uppercase", letterSpacing:0.6 }}>{icon} {label}</label>}
-      <select value={value||""} onChange={e=>onChange(e.target.value)} style={{ width:"100%", padding:"12px 14px", borderRadius:10, border:`1.5px solid ${C.b1}`, background:C.w, color:value?C.t1:C.t3, fontSize:16, fontFamily:"inherit", cursor:"pointer", boxSizing:"border-box", appearance:"auto", minHeight:44 }}>
-        <option value="" disabled>{placeholder}</option>
-        {options.map(o=><option key={o.value} value={o.value}>{o.label}{o.sub?` — ${o.sub}`:""}</option>)}
-      </select>
+      <div style={{ position:"relative" }}>
+        <select value={value||""} onChange={e=>onChange(e.target.value)} style={{ width:"100%", padding:"12px 14px", paddingRight:36, borderRadius:10, border:`1.5px solid ${C.b1}`, background:C.w, color:value?C.t1:C.t3, fontSize:15, fontFamily:"inherit", cursor:"pointer", boxSizing:"border-box", appearance:"none", WebkitAppearance:"none", minHeight:44, outline:"none" }} onFocus={e=>{e.target.style.borderColor=C.bFocus}} onBlur={e=>{e.target.style.borderColor=C.b1}}>
+          <option value="" disabled>{placeholder}</option>
+          {options.map(o=><option key={o.value} value={o.value}>{o.label}{o.sub?` — ${o.sub}`:""}</option>)}
+        </select>
+        <div style={{ position:"absolute", right:12, top:"50%", transform:"translateY(-50%)", pointerEvents:"none", display:"flex" }}>{Ic.down(C.t3,16)}</div>
+      </div>
     </div>
   );
 }
@@ -1034,7 +1037,7 @@ function HomeScreen({ user, freights, perms, onNav, catalog, isDesktop }) {
 
   // Quick access items
   const quickItems = [
-    {k:"map",l:"Abrir mapa",ic:Ic.pin,c:C.pri,show:true},
+    {k:"map",l:"Mapa",ic:Ic.pin,c:C.pri,show:true},
     {k:"pending",l:"Asignar fletes",ic:Ic.bell,c:C.acc,show:perms.canApprove&&stats.avail>0},
     {k:"calendar",l:"Calendario",ic:Ic.cal,c:C.sec,show:true},
     {k:"reports",l:"Informes y Documentos",ic:Ic.doc,c:"#7C3AED",show:true},
@@ -1430,24 +1433,18 @@ function ListScreen({ freights, onNav, onRefresh }) {
         {searchQ && <button onClick={()=>setSearchQ("")} style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",display:"flex"}}>{Ic.cross(C.t3,16)}</button>}
       </div>
 
-      {/* Persistent date range filter */}
-      <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:8}}>
-        <div style={{flex:1,display:"flex",gap:6,alignItems:"center"}}>
-          <label style={{fontSize:11,fontWeight:600,color:C.t3,whiteSpace:"nowrap"}}>Desde</label>
-          <input type="date" value={dateFrom} onChange={e=>{setDateFrom(e.target.value);setDatePreset("custom");}} onClick={e=>e.target.showPicker?.()} style={{flex:1,padding:"8px 10px",borderRadius:8,border:`1.5px solid ${C.b1}`,background:C.w,color:dateFrom?C.t1:C.t3,fontSize:12,fontFamily:"inherit",outline:"none",boxSizing:"border-box",cursor:"pointer"}}/>
-        </div>
-        <div style={{flex:1,display:"flex",gap:6,alignItems:"center"}}>
-          <label style={{fontSize:11,fontWeight:600,color:C.t3,whiteSpace:"nowrap"}}>Hasta</label>
-          <input type="date" value={dateTo} onChange={e=>{setDateTo(e.target.value);setDatePreset("custom");}} onClick={e=>e.target.showPicker?.()} style={{flex:1,padding:"8px 10px",borderRadius:8,border:`1.5px solid ${C.b1}`,background:C.w,color:dateTo?C.t1:C.t3,fontSize:12,fontFamily:"inherit",outline:"none",boxSizing:"border-box",cursor:"pointer"}}/>
-        </div>
-        {(dateFrom||dateTo)&&<button onClick={()=>{setDateFrom("");setDateTo("");setDatePreset("");}} style={{background:"none",border:"none",cursor:"pointer",display:"flex",padding:2}}>{Ic.cross(C.t3,14)}</button>}
-      </div>
-
-      {/* Quick date presets */}
-      <div style={{display:"flex",gap:4,marginBottom:8,flexWrap:"wrap"}}>
+      {/* Date range + quick presets — single row */}
+      <div style={{display:"flex",gap:6,alignItems:"center",marginBottom:8,flexWrap:"wrap"}}>
         {[{k:"",l:"Todas"},{k:"today",l:"Hoy"},{k:"week",l:"Semana"},{k:"month",l:"Mes"},{k:"quarter",l:"3 meses"}].map(p=>(
           <button key={p.k} onClick={()=>applyDatePreset(p.k)} style={{padding:"5px 10px",borderRadius:6,border:`1px solid ${datePreset===p.k?C.pri:C.b1}`,background:datePreset===p.k?C.priPale:C.w,color:datePreset===p.k?C.pri:C.t2,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>{p.l}</button>
         ))}
+        <div style={{display:"flex",gap:4,alignItems:"center",marginLeft:"auto"}}>
+          <label style={{fontSize:10,fontWeight:600,color:C.t3,whiteSpace:"nowrap"}}>Desde</label>
+          <input type="date" value={dateFrom} onChange={e=>{setDateFrom(e.target.value);setDatePreset("custom");}} onClick={e=>e.target.showPicker?.()} style={{padding:"5px 8px",borderRadius:6,border:`1px solid ${C.b1}`,background:C.w,color:dateFrom?C.t1:C.t3,fontSize:11,fontFamily:"inherit",outline:"none",boxSizing:"border-box",cursor:"pointer"}}/>
+          <label style={{fontSize:10,fontWeight:600,color:C.t3,whiteSpace:"nowrap"}}>Hasta</label>
+          <input type="date" value={dateTo} onChange={e=>{setDateTo(e.target.value);setDatePreset("custom");}} onClick={e=>e.target.showPicker?.()} style={{padding:"5px 8px",borderRadius:6,border:`1px solid ${C.b1}`,background:C.w,color:dateTo?C.t1:C.t3,fontSize:11,fontFamily:"inherit",outline:"none",boxSizing:"border-box",cursor:"pointer"}}/>
+          {(dateFrom||dateTo)&&<button onClick={()=>{setDateFrom("");setDateTo("");setDatePreset("");}} style={{background:"none",border:"none",cursor:"pointer",display:"flex",padding:2}}>{Ic.cross(C.t3,14)}</button>}
+        </div>
       </div>
 
       {/* Advanced filters panel */}
@@ -2867,12 +2864,12 @@ function NewScreen({ user, lots, plants, branches, fields, trucks, onBack, onCre
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
             <div>
               <label style={{ fontSize:10.5, fontWeight:600, color:C.t2, marginBottom:6, display:"flex", alignItems:"center", gap:4, textTransform:"uppercase", letterSpacing:0.6 }}>{Ic.cal(C.pri,14)} Fecha carga</label>
-              <input type="date" value={form.loadDate} onChange={e=>u({loadDate:e.target.value})} onClick={e=>e.target.showPicker?.()} style={{ width:"100%", padding:"12px 14px", borderRadius:10, border:`1.5px solid ${touched&&errs.loadDate?C.err:C.b1}`, background:C.w, color:C.t1, fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box", cursor:"pointer" }}/>
+              <input type="date" value={form.loadDate} onChange={e=>u({loadDate:e.target.value})} onClick={e=>e.target.showPicker?.()} onFocus={e=>{e.target.style.borderColor=touched&&errs.loadDate?C.err:C.bFocus}} onBlur={e=>{e.target.style.borderColor=touched&&errs.loadDate?C.err:C.b1}} style={{ width:"100%", padding:"12px 14px", borderRadius:10, border:`1.5px solid ${touched&&errs.loadDate?C.err:C.b1}`, background:C.w, color:form.loadDate?C.t1:C.t3, fontSize:15, fontFamily:"inherit", outline:"none", boxSizing:"border-box", cursor:"pointer", minHeight:44 }}/>
               {touched&&<FieldError error={errs.loadDate}/>}
             </div>
             <div>
               <label style={{ fontSize:10.5, fontWeight:600, color:C.t2, marginBottom:6, display:"flex", alignItems:"center", gap:4, textTransform:"uppercase", letterSpacing:0.6 }}>{Ic.clk(C.pri,14)} Hora carga</label>
-              <input type="time" value={form.loadTime} onChange={e=>u({loadTime:e.target.value})} onClick={e=>e.target.showPicker?.()} style={{ width:"100%", padding:"12px 14px", borderRadius:10, border:`1.5px solid ${touched&&errs.loadTime?C.err:C.b1}`, background:C.w, color:C.t1, fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box", cursor:"pointer" }}/>
+              <input type="time" value={form.loadTime} onChange={e=>u({loadTime:e.target.value})} onClick={e=>e.target.showPicker?.()} onFocus={e=>{e.target.style.borderColor=touched&&errs.loadTime?C.err:C.bFocus}} onBlur={e=>{e.target.style.borderColor=touched&&errs.loadTime?C.err:C.b1}} style={{ width:"100%", padding:"12px 14px", borderRadius:10, border:`1.5px solid ${touched&&errs.loadTime?C.err:C.b1}`, background:C.w, color:form.loadTime?C.t1:C.t3, fontSize:15, fontFamily:"inherit", outline:"none", boxSizing:"border-box", cursor:"pointer", minHeight:44 }}/>
               {touched&&<FieldError error={errs.loadTime}/>}
             </div>
           </div>
