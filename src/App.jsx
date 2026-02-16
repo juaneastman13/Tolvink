@@ -2564,6 +2564,7 @@ function ProfileScreen({ user, perms, onLogout, onNav, theme, toggleTheme }) {
   if(user.userType==="transporter"||user.userType==="producer") mgmtItems.push({k:"trucks",l:"Mis Camiones",ic:Ic.truck(C.acc,18),c:C.acc});
   if(user.userType==="producer") mgmtItems.push({k:"fields",l:"Mis Campos y Lotes",ic:Ic.pin(C.pri,18),c:C.pri});
   if(user.userType==="plant") mgmtItems.push({k:"access",l:"Productores Habilitados",ic:Ic.user(C.pri,18),c:C.pri});
+  mgmtItems.push({k:"calendar",l:"Calendario",ic:Ic.cal(C.info||C.sec,18),c:C.info||C.sec});
   mgmtItems.push({k:"reports",l:"Informes y Documentos",ic:Ic.doc(C.sec,18),c:C.sec});
 
   return (
@@ -3445,7 +3446,7 @@ function ChatsScreen({ user, openConvId, onConvOpened, isDesktop }) {
 
 // ======================== CALENDAR SCREEN =============================
 
-function CalendarScreen({ freights, perms, onNav }) {
+function CalendarScreen({ freights, perms, onNav, isDesktop }) {
   const [calMonth, setCalMonth] = useState(()=>{const d=new Date();return{y:d.getFullYear(),m:d.getMonth()}});
   const [calSelDay, setCalSelDay] = useState(null);
   const [fStatus, setFStatus] = useState("");
@@ -3488,20 +3489,74 @@ function CalendarScreen({ freights, perms, onNav }) {
   const isToday=(d)=>d===today.getDate()&&calMonth.m===today.getMonth()&&calMonth.y===today.getFullYear();
   const totalInMonth = Object.values(byDay).reduce((s,a)=>s+a.length,0);
 
-  return (
-    <div style={{ flex:1, overflow:"auto", padding:18 }}>
-      <div style={{ fontSize:20, fontWeight:800, letterSpacing:-0.3, marginBottom:4 }}>Calendario</div>
-      <div style={{ fontSize:12, color:C.t2, marginBottom:14 }}>{totalInMonth} flete{totalInMonth!==1?"s":""} en {monNames[calMonth.m]}</div>
+  // --- Detail panel (shared between mobile inline and desktop side panel) ---
+  const detailPanel = calSelDay ? (
+    <div style={{animation:"fadeIn 0.2s ease",padding:isDesktop?"18px 16px":0,overflow:"auto",flex:isDesktop?1:undefined}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+        <div>
+          <div style={{fontSize:16,fontWeight:800,color:C.t1}}>{calSelDay} de {monNames[calMonth.m]}</div>
+          <div style={{fontSize:11,color:C.t2,marginTop:2}}>{selFreights.length} flete{selFreights.length!==1?"s":""}</div>
+        </div>
+        <div style={{display:"flex",gap:6,alignItems:"center"}}>
+          {perms.canRequest&&<Btn sm v="acc" icon={Ic.plus(C.w,12)} onClick={()=>{const dd=String(calSelDay).padStart(2,"0");const mm=String(calMonth.m+1).padStart(2,"0");onNav("new_date",`${calMonth.y}-${mm}-${dd}`)}}>Nuevo</Btn>}
+          {isDesktop&&<button onClick={()=>setCalSelDay(null)} style={{background:"none",border:"none",cursor:"pointer",display:"flex",padding:4}}>{Ic.cross(C.t3,18)}</button>}
+        </div>
+      </div>
+      <div style={{display:"flex",flexDirection:"column",gap:10}}>
+        {selFreights.length===0&&<div style={{textAlign:"center",padding:30,color:C.t3,fontSize:12,background:C.w,borderRadius:10,border:`1px solid ${C.b1}`}}>Sin fletes programados este día</div>}
+        {selFreights.map(f=>{
+          const st=stCfg(f.status);
+          return <div key={f.id} className="tv-card" onClick={()=>onNav("detail",f.id)} style={{background:C.w,border:`1px solid ${C.b1}`,borderLeft:`4px solid ${st.border}`,borderRadius:12,padding:14,cursor:"pointer",boxShadow:C.sh}}>
+            {/* Header: code + status */}
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+              <span style={{fontSize:11,fontWeight:700,color:C.t3,fontFamily:MONO}}>{f.code}</span>
+              <Bd color={st.color} bg={st.bg} small>{st.label}</Bd>
+            </div>
+            {/* Product + qty */}
+            <div style={{fontSize:14,fontWeight:700,color:C.t1,marginBottom:6}}>{f.grain} · {f.tons} {f.unit||"tn"}</div>
+            {/* Route */}
+            <div style={{display:"flex",alignItems:"center",gap:4,fontSize:11,color:C.t2,marginBottom:6}}>
+              {Ic.pin(C.t3,12)} <span style={{maxWidth:120,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{(f.originName||"").split("—")[0].trim()}</span>
+              <span style={{color:C.t3,margin:"0 2px"}}>→</span>
+              {Ic.plant(C.t3,12)} <span style={{maxWidth:120,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.destName}</span>
+            </div>
+            {/* Info grid */}
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"4px 12px",fontSize:10.5,color:C.t2}}>
+              {f.loadTime&&<div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.cal(C.t3,11)} <span style={{fontWeight:600}}>{f.loadTime}</span></div>}
+              {f.destName&&<div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.plant(C.t3,11)} <span>{f.destName}</span></div>}
+              {f.transporterName&&<div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.truck(C.t3,11)} <span>{f.transporterName}</span></div>}
+              {f.truckPlate&&<div style={{fontSize:10,fontFamily:MONO,color:C.t3}}>{f.truckPlate}</div>}
+              {f.driverName&&<div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.user(C.t3,11)} <span>{f.driverName}</span></div>}
+              {f.requestedByName&&<div style={{fontSize:10,color:C.t3}}>Sol: {f.requestedByName}</div>}
+            </div>
+          </div>;
+        })}
+      </div>
+    </div>
+  ) : isDesktop ? (
+    <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",color:C.t3,fontSize:13,padding:20,textAlign:"center"}}>
+      <div>{Ic.cal(C.b1,40)}<div style={{marginTop:8}}>Seleccioná un día para ver los fletes programados</div></div>
+    </div>
+  ) : null;
+
+  // --- Calendar grid panel ---
+  const calendarPanel = (
+    <div style={{flex:isDesktop?undefined:1,overflow:"auto",padding:18,minWidth:isDesktop?420:undefined}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
+        <div style={{ fontSize:20, fontWeight:800, letterSpacing:-0.3 }}>Calendario</div>
+        <div style={{fontSize:11,color:C.t2}}>{totalInMonth} flete{totalInMonth!==1?"s":""}</div>
+      </div>
+      <div style={{ fontSize:12, color:C.t3, marginBottom:12 }}>{monNames[calMonth.m]} {calMonth.y}</div>
 
       {/* Status filter */}
-      <div style={{ display:"flex", gap:6, marginBottom:14, flexWrap:"wrap" }}>
+      <div style={{ display:"flex", gap:5, marginBottom:14, flexWrap:"wrap" }}>
         {[{k:"",l:"Todos"},{k:"pending_assignment",l:"Solicitados"},{k:"assigned",l:"Asignados"},{k:"accepted",l:"Aceptados"},{k:"in_progress",l:"En viaje"},{k:"loaded",l:"Cargados"},{k:"finished",l:"Finalizados"}].map(opt=>(
-          <button key={opt.k} onClick={()=>setFStatus(opt.k)} style={{ padding:"5px 12px", borderRadius:20, border:`1.5px solid ${fStatus===opt.k?C.pri:C.b1}`, background:fStatus===opt.k?C.priPale:C.w, color:fStatus===opt.k?C.pri:C.t2, fontSize:10.5, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>{opt.l}</button>
+          <button key={opt.k} onClick={()=>setFStatus(opt.k)} style={{ padding:"4px 10px", borderRadius:20, border:`1.5px solid ${fStatus===opt.k?C.pri:C.b1}`, background:fStatus===opt.k?C.priPale:C.w, color:fStatus===opt.k?C.pri:C.t2, fontSize:10, fontWeight:600, cursor:"pointer", fontFamily:"inherit", transition:"all 0.15s" }}>{opt.l}</button>
         ))}
       </div>
 
       {/* Calendar grid */}
-      <div style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius:12,padding:16,boxShadow:C.sh,marginBottom:14}}>
+      <div style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius:12,padding:16,boxShadow:C.sh,marginBottom:isDesktop?0:14}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
           <button onClick={()=>{setCalMonth(p=>p.m===0?{y:p.y-1,m:11}:{y:p.y,m:p.m-1});setCalSelDay(null);}} style={{background:"none",border:"none",cursor:"pointer",padding:6,display:"flex"}}>{Ic.chev(C.pri,22)}</button>
           <span style={{fontSize:17,fontWeight:700,color:C.t1}}>{monNames[calMonth.m]} {calMonth.y}</span>
@@ -3526,24 +3581,29 @@ function CalendarScreen({ freights, perms, onNav }) {
         </div>
       </div>
 
-      {/* Selected day detail */}
-      {calSelDay&&<div style={{animation:"fadeIn 0.2s ease"}}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-          <span style={{fontSize:15,fontWeight:700,color:C.t1}}>{calSelDay} de {monNames[calMonth.m]} — {selFreights.length} flete{selFreights.length!==1?"s":""}</span>
-          {perms.canRequest&&<Btn sm v="acc" icon={Ic.plus(C.w,12)} onClick={()=>{const dd=String(calSelDay).padStart(2,"0");const mm=String(calMonth.m+1).padStart(2,"0");onNav("new_date",`${calMonth.y}-${mm}-${dd}`)}}>Nuevo flete</Btn>}
-        </div>
-        <div style={{display:"flex",flexDirection:"column",gap:8}} className="tv-grid">
-          {selFreights.map(f=>{const st=stCfg(f.status);return <div key={f.id} className="tv-card" onClick={()=>onNav("detail",f.id)} style={{background:C.w,border:`1px solid ${C.b1}`,borderLeft:`3px solid ${st.border}`,borderRadius:10,padding:12,cursor:"pointer",boxShadow:C.sh}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}><span style={{fontSize:10,fontWeight:700,color:C.t3,fontFamily:MONO}}>{f.code}</span><Bd color={st.color} bg={st.bg} small>{st.label}</Bd></div>
-            <div style={{fontSize:13,fontWeight:700,color:C.t1}}>{f.grain} · {f.tons} tn</div>
-            <div style={{fontSize:10.5,color:C.t2,marginTop:3}}>{(f.originName||"").split("—")[0].trim()} → {f.destName}</div>
-            <div style={{fontSize:10,color:C.t3,marginTop:3}}>{f.loadTime||""} {f.transporterName?`· ${f.transporterName}`:""}</div>
-          </div>})}
-          {selFreights.length===0&&<div style={{textAlign:"center",padding:24,color:C.t3,fontSize:12}}>Sin fletes este día</div>}
-        </div>
-      </div>}
+      {/* Mobile: inline detail below calendar */}
+      {!isDesktop && detailPanel}
     </div>
   );
+
+  // --- Desktop: split layout (detail panel left, calendar right) ---
+  if (isDesktop) {
+    return (
+      <div style={{flex:1,display:"flex",flexDirection:"row",overflow:"hidden"}}>
+        {calSelDay ? (
+          <div style={{width:380,minWidth:380,borderRight:`1px solid ${C.b2}`,display:"flex",flexDirection:"column",overflow:"hidden",background:C.bg,animation:"fadeIn 0.2s ease"}}>
+            {detailPanel}
+          </div>
+        ) : null}
+        <div style={{flex:1,overflow:"auto"}}>
+          {calendarPanel}
+        </div>
+      </div>
+    );
+  }
+
+  // --- Mobile: single column ---
+  return calendarPanel;
 }
 
 // ======================== REPORTS =====================================
@@ -4307,7 +4367,7 @@ export default function Tolvink() {
 
   if(!auth.user) return <LandingScreen onLogin={auth.login} onSignup={auth.signup} loading={auth.loading} error={auth.error} clearError={auth.clearError}/>;
   const curFreight = fh.freights.find(f=>f.id===selFreight);
-  const navActive = ["detail"].includes(screen)?"list":["trucks","fields","access"].includes(screen)?"profile":(!isDesktop&&screen==="reports")?"profile":screen;
+  const navActive = ["detail"].includes(screen)?"list":["trucks","fields","access"].includes(screen)?"profile":(!isDesktop&&screen==="reports")?"profile":(!isDesktop&&screen==="calendar")?"profile":screen;
 
   return (
     <div className="tv-shell" style={{height:"100dvh",background:C.bg,color:C.t1,fontFamily:FONT,display:"flex",flexDirection:isDesktop?"row":"column",maxWidth:isDesktop?1400:1100,margin:"0 auto",position:"relative",overflow:"hidden"}}>
@@ -4327,11 +4387,11 @@ export default function Tolvink() {
         </div>
 
         {/* Scrollable content area */}
-        <div style={{flex:1,overflow:screen==="chats"&&isDesktop?"hidden":"auto",display:"flex",flexDirection:"column",WebkitOverflowScrolling:"touch",overscrollBehavior:"contain"}}>
+        <div style={{flex:1,overflow:(screen==="chats"||screen==="calendar")&&isDesktop?"hidden":"auto",display:"flex",flexDirection:"column",WebkitOverflowScrolling:"touch",overscrollBehavior:"contain"}}>
         {screen==="home" && <HomeScreen user={auth.user} freights={fh.freights} perms={perms} onNav={nav}/>}
         {screen==="list" && <ListScreen freights={fh.freights} onNav={nav} onRefresh={fh.fetchAll}/>}
         {screen==="pending" && <PendingScreen user={auth.user} freights={fh.freights} onNav={nav} onNewFreight={()=>nav("new")}/>}
-        {screen==="calendar" && <CalendarScreen freights={fh.freights} perms={perms} onNav={nav}/>}
+        {screen==="calendar" && <CalendarScreen freights={fh.freights} perms={perms} onNav={nav} isDesktop={isDesktop}/>}
         {screen==="detail" && <DetailScreen user={auth.user} freight={curFreight} perms={perms} onBack={()=>setScreen("list")} onAction={handleAction} actionLoading={actionLoading} onChat={(convId)=>{if(convId){setChatConvId(convId);setScreen("chats");}}} onRefresh={(id)=>fh.refresh(id)} onDuplicate={(f)=>{setDuplicateData(f);setScreen("new");}} onEdit={(f)=>{setEditData(f);setScreen("edit");}}/>}
         {screen==="new" && <NewScreen user={auth.user} lots={catalog.lots} plants={catalog.plants} fields={catalog.fields} trucks={catalog.trucks} onBack={()=>{setDuplicateData(null);setScreen("home");}} onCreate={handleCreate} submitting={submitting} duplicateFrom={duplicateData}/>}
         {screen==="edit" && editData && <EditScreen freight={editData} fields={catalog.fields} plants={catalog.plants} onBack={()=>{setEditData(null);setScreen("detail");}} onSave={async(id,data)=>{const r=await fh.update(id,data);if(r.ok){setEditData(null);setScreen("detail");show("Flete actualizado");}else show(r.error,"err");}}/>}
