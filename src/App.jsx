@@ -19,7 +19,7 @@ import {
   apiAdminListFields, apiAdminCreateField, apiAdminUpdateField, apiAdminDeleteField,
   apiAdminListLots, apiAdminCreateLot, apiAdminUpdateLot, apiAdminDeleteLot,
   apiAdminListTrucks, apiAdminCreateTruck, apiAdminUpdateTruck, apiAdminDeleteTruck,
-  getToken, getSavedUser, setAuthFailHandler, clearAuth,
+  getToken, getSavedUser, setAuthFailHandler, clearAuth, setLoggingIn,
 } from "./api";
 
 // =====================================================================
@@ -269,35 +269,91 @@ function useAuth() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isInitialized, setIsInitialized] = useState(false);
 
+  // Setup auth fail handler ONCE
   useEffect(()=>{
-    const token = getToken(); const saved = getSavedUser();
-    if(token && saved) setUser(mapUser(saved));
+    setAuthFailHandler(()=>{
+      setUser(null);
+      setError("Tu sesión expiró.");
+      console.log('[AUTH] Session expired, cleared user');
+    });
+  },[]);
+
+  // Initialize user from localStorage
+  useEffect(()=>{
+    const token = getToken();
+    const saved = getSavedUser();
+    console.log('[AUTH] Initializing:', { hasToken: !!token, hasSaved: !!saved });
+
+    if(token && saved) {
+      try {
+        const mappedUser = mapUser(saved);
+        setUser(mappedUser);
+        console.log('[AUTH] User restored from localStorage:', mappedUser);
+      } catch(e) {
+        console.error('[AUTH] Error mapping saved user:', e);
+        clearAuth();
+      }
+    }
     setLoading(false);
-    setAuthFailHandler(()=>{ setUser(null); setError("Tu sesión expiró."); });
+    setIsInitialized(true);
   },[]);
 
   const login = useCallback(async (identifier,pw) => {
     setLoading(true); setError(null);
-    try { const d = await apiLogin(identifier,pw); setUser(mapUser(d.user)); }
-    catch(e) { setError(e.message||"Error al iniciar sesión"); }
+    try {
+      console.log('[AUTH] Login attempt for:', identifier);
+      const d = await apiLogin(identifier,pw);
+      console.log('[AUTH] Login response:', d);
+
+      if(!d.user) {
+        throw new Error('Respuesta inválida del servidor');
+      }
+
+      const mappedUser = mapUser(d.user);
+      setUser(mappedUser);
+      console.log('[AUTH] Login successful, user set:', mappedUser);
+    }
+    catch(e) {
+      console.error('[AUTH] Login error:', e);
+      setError(e.message||"Error al iniciar sesión");
+      clearAuth();
+    }
     finally { setLoading(false); }
   },[]);
 
   const signup = useCallback(async (form) => {
     setLoading(true); setError(null);
     try {
+      console.log('[AUTH] Signup attempt');
       const typeMap = {planta:"plant",transporter:"transporter",producer:"producer"};
       const userTypes = (form.userTypes||[]).map(t=>typeMap[t]||t);
       const phone = form.phone?.replace(/[\s\-()]/g,'')||"";
       const d = await apiRegister({ name:form.name, email:form.email, phone, password:form.pw, userTypes });
-      setUser(mapUser(d.user));
-    } catch(e) { setError(e.message||"Error al crear cuenta"); }
+
+      if(!d.user) {
+        throw new Error('Respuesta inválida del servidor');
+      }
+
+      const mappedUser = mapUser(d.user);
+      setUser(mappedUser);
+      console.log('[AUTH] Signup successful, user set:', mappedUser);
+    } catch(e) {
+      console.error('[AUTH] Signup error:', e);
+      setError(e.message||"Error al crear cuenta");
+      clearAuth();
+    }
     finally { setLoading(false); }
   },[]);
 
-  const logout = useCallback(()=>{ apiLogout(); setUser(null); },[]);
-  return { user, loading, error, login, signup, logout, clearError:()=>setError(null) };
+  const logout = useCallback(()=>{
+    console.log('[AUTH] Logout');
+    apiLogout();
+    setUser(null);
+  },[]);
+
+  return { user, loading, error, isInitialized, login, signup, logout, clearError:()=>setError(null) };
 }
 
 function mapUser(u) {
@@ -310,26 +366,44 @@ function mapUser(u) {
   const userType = u.activeType || userTypes[0] || co?.type || "producer";
   // Role: from user_companies join or legacy
   const role = u.role || "operator";
+  // Safe avatar generation
+  const name = u.name || "Usuario";
+  const av = name.split(" ").filter(w=>w).map(w=>w[0]).join("").slice(0,2).toUpperCase() || "U";
   return {
-    id:u.id, email:u.email, phone:u.phone||"", name:u.name, role, userType, userTypes,
+    id:u.id, email:u.email, phone:u.phone||"", name, role, userType, userTypes,
     entity:co?.name||"", entityId:co?.id||"", companyId:co?.id||"",
     hasInternalFleet: co?.hasInternalFleet||false,
     isSuperAdmin: u.isSuperAdmin||false,
-    av: u.name.split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase()
+    av
   };
 }
 
 // ======================== FREIGHTS HOOK (Real API) ====================
-function useFreights(user) {
+function useFreights(user, isAuthInitialized) {
   const [freights, setFreights] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const fetchAll = useCallback(async ()=>{
-    if(!user) return; setLoading(true);
-    try { const r = await apiListFreights({limit:100}); setFreights((r.data||[]).map(mapFreight)); }
-    catch(e) { setError(e.message); } finally { setLoading(false); }
-  },[user]);
-  useEffect(()=>{ fetchAll(); },[fetchAll]);
+    if(!user || !isAuthInitialized) return;
+    setLoading(true);
+    try {
+      console.log('[FREIGHTS] Fetching freights for user:', user.id);
+      const r = await apiListFreights({limit:100});
+      setFreights((r.data||[]).map(mapFreight));
+      console.log('[FREIGHTS] Fetched:', r.data?.length || 0, 'freights');
+    }
+    catch(e) {
+      console.error('[FREIGHTS] Fetch error:', e);
+      setError(e.message);
+    } finally { setLoading(false); }
+  },[user, isAuthInitialized]);
+
+  // Only fetch when auth is fully initialized and user exists
+  useEffect(()=>{
+    if(isAuthInitialized && user) {
+      fetchAll();
+    }
+  },[fetchAll, isAuthInitialized, user]);
   const refresh = useCallback(async (id)=>{
     try { const u=await apiGetFreight(id); const m=mapFreight(u); setFreights(p=>p.map(f=>f.id===id?m:f)); return m; }
     catch(e) { setError(e.message); return null; }
@@ -5181,7 +5255,7 @@ export default function Tolvink() {
   C = theme === "dark" ? { ...DARK } : { ...LIGHT };
 
   const auth = useAuth();
-  const fh = useFreights(auth.user);
+  const fh = useFreights(auth.user, auth.isInitialized);
   const catalog = useCatalog(auth.user);
   const [screen, setScreen] = useState("home");
   const [selFreight, setSelFreight] = useState(null);
@@ -5284,15 +5358,24 @@ export default function Tolvink() {
     if(r.ok){ setScreen("list"); show("Flete solicitado"); } else show(r.error,"err");
   };
 
-  if(auth.loading) return <div style={{minHeight:"100dvh",background:C.bg,fontFamily:"'DM Sans',system-ui,-apple-system,sans-serif",display:"flex",alignItems:"center",justifyContent:"center"}}>
-    <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,800&display=swap');@keyframes splashIn{0%{opacity:0;transform:scale(0.7)}50%{opacity:1;transform:scale(1.05)}100%{opacity:1;transform:scale(1)}}@keyframes dotPulse{0%,100%{opacity:0.3;transform:scale(0.8)}50%{opacity:1;transform:scale(1.2)}}*{margin:0;padding:0;box-sizing:border-box}html,body,#root{background:${C.bg};margin:0;height:auto!important;overflow:visible!important}`}</style>
-    <div style={{textAlign:"center",animation:"splashIn 0.8s ease-out forwards"}}>
-      <span style={{fontSize:72,fontWeight:800,color:C.pri,letterSpacing:-3,display:"inline-block"}}>tolvink</span>
-      <span style={{width:14,height:14,borderRadius:7,background:C.acc,display:"inline-block",marginLeft:4,marginTop:-30,verticalAlign:"top",animation:"dotPulse 1.5s ease-in-out infinite"}}></span>
-    </div>
-  </div>;
+  // Show loading splash only during initial auth check
+  if (!auth.isInitialized) {
+    return <div style={{minHeight:"100dvh",background:C.bg,fontFamily:"'DM Sans',system-ui,-apple-system,sans-serif",display:"flex",alignItems:"center",justifyContent:"center"}}>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,800&display=swap');@keyframes splashIn{0%{opacity:0;transform:scale(0.7)}50%{opacity:1;transform:scale(1.05)}100%{opacity:1;transform:scale(1)}}@keyframes dotPulse{0%,100%{opacity:0.3;transform:scale(0.8)}50%{opacity:1;transform:scale(1.2)}}*{margin:0;padding:0;box-sizing:border-box}html,body,#root{background:${C.bg};margin:0;height:auto!important;overflow:visible!important}`}</style>
+      <div style={{textAlign:"center",animation:"splashIn 0.8s ease-out forwards"}}>
+        <span style={{fontSize:72,fontWeight:800,color:C.pri,letterSpacing:-3,display:"inline-block"}}>tolvink</span>
+        <span style={{width:14,height:14,borderRadius:7,background:C.acc,display:"inline-block",marginLeft:4,marginTop:-30,verticalAlign:"top",animation:"dotPulse 1.5s ease-in-out infinite"}}></span>
+      </div>
+    </div>;
+  }
 
-  if(!auth.user) return <LandingScreen onLogin={auth.login} onSignup={auth.signup} loading={auth.loading} error={auth.error} clearError={auth.clearError}/>;
+  // If no user after initialization, show landing
+  if(!auth.user) {
+    console.log('[APP] No user, showing landing screen');
+    return <LandingScreen onLogin={auth.login} onSignup={auth.signup} loading={auth.loading} error={auth.error} clearError={auth.clearError}/>;
+  }
+
+  console.log('[APP] User authenticated, rendering main app');
   const curFreight = fh.freights.find(f=>f.id===selFreight);
   const navActive = ["detail"].includes(screen)?"list":["trucks","fields","access","admin","mydata"].includes(screen)?"profile":(!isDesktop&&screen==="reports")?"profile":(!isDesktop&&screen==="calendar")?"profile":screen;
 

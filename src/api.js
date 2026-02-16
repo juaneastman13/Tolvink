@@ -9,13 +9,20 @@ const STORAGE_BUCKET = 'freight-docs';
 
 let _token = localStorage.getItem('tolvink_token');
 let _onAuthFail = null;
+let _isLoggingIn = false;
 
 export function setToken(t) { _token = t; if(t) localStorage.setItem('tolvink_token',t); else localStorage.removeItem('tolvink_token'); }
 export function getToken() { return _token; }
-export function clearAuth() { _token=null; localStorage.removeItem('tolvink_token'); localStorage.removeItem('tolvink_user'); }
+export function clearAuth() {
+  console.log('[API] Clearing auth');
+  _token=null;
+  localStorage.removeItem('tolvink_token');
+  localStorage.removeItem('tolvink_user');
+}
 export function setAuthFailHandler(fn) { _onAuthFail = fn; }
 export function saveUser(u) { localStorage.setItem('tolvink_user', JSON.stringify(u)); }
 export function getSavedUser() { try { const r=localStorage.getItem('tolvink_user'); return r?JSON.parse(r):null; } catch { return null; } }
+export function setLoggingIn(val) { _isLoggingIn = val; }
 
 class ApiError extends Error {
   constructor(s,d) { super(d?.message||d?.error||'Error del servidor'); this.status=s; this.data=d; }
@@ -25,24 +32,72 @@ export default async function api(path, opts={}) {
   const { body, method=body?'POST':'GET', headers={} } = opts;
   const cfg = { method, headers: { 'Content-Type':'application/json', ...(_token?{Authorization:`Bearer ${_token}`}:{}), ...headers } };
   if(body) cfg.body = JSON.stringify(body);
+
+  console.log(`[API] ${method} ${path}`, { hasToken: !!_token, isLoggingIn: _isLoggingIn });
+
   const res = await fetch(`${API_URL}${path}`, cfg);
-  if(res.status===401) { clearAuth(); if(_onAuthFail) _onAuthFail(); throw new ApiError(401,{message:'Sesión expirada'}); }
-  let data; try { data = await res.json(); } catch { if(!res.ok) throw new ApiError(res.status,{message:'Error del servidor'}); return null; }
+
+  // Only trigger auth fail if NOT during login/register
+  if(res.status===401 && !_isLoggingIn) {
+    console.error('[API] 401 Unauthorized - clearing auth');
+    clearAuth();
+    if(_onAuthFail) _onAuthFail();
+    throw new ApiError(401,{message:'Sesión expirada'});
+  }
+
+  let data;
+  try {
+    data = await res.json();
+  } catch {
+    if(!res.ok) throw new ApiError(res.status,{message:'Error del servidor'});
+    return null;
+  }
+
   if(!res.ok) throw new ApiError(res.status, data);
+
+  console.log(`[API] ${method} ${path} - OK`);
   return data;
 }
 
 // Auth
 export async function apiLogin(identifier,password) {
-  const isPhone = /^09[1-9]\d{6}$/.test(identifier.replace(/[\s\-()]/g,''));
-  const body = isPhone ? { phone:identifier.replace(/[\s\-()]/g,''), password } : { email:identifier, password };
-  const d=await api('/auth/login',{body});
-  setToken(d.access_token); saveUser(d.user); return d;
+  setLoggingIn(true);
+  try {
+    const isPhone = /^09[1-9]\d{6}$/.test(identifier.replace(/[\s\-()]/g,''));
+    const body = isPhone ? { phone:identifier.replace(/[\s\-()]/g,''), password } : { email:identifier, password };
+    const d=await api('/auth/login',{body});
+
+    if(!d || !d.access_token || !d.user) {
+      throw new Error('Respuesta inválida del servidor');
+    }
+
+    setToken(d.access_token);
+    saveUser(d.user);
+    console.log('[API] Login successful, token and user saved');
+    return d;
+  } finally {
+    setLoggingIn(false);
+  }
 }
+
 export async function apiRegister(b) {
-  const d=await api('/auth/register',{body:b});
-  setToken(d.access_token); saveUser(d.user); return d;
+  setLoggingIn(true);
+  try {
+    const d=await api('/auth/register',{body:b});
+
+    if(!d || !d.access_token || !d.user) {
+      throw new Error('Respuesta inválida del servidor');
+    }
+
+    setToken(d.access_token);
+    saveUser(d.user);
+    console.log('[API] Register successful, token and user saved');
+    return d;
+  } finally {
+    setLoggingIn(false);
+  }
 }
+
 export function apiLogout() { clearAuth(); }
 
 // Freights
