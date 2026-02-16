@@ -3316,22 +3316,23 @@ function AccessScreen({ onBack }) {
   const togglePlant = (id) => setSelectedPlantIds(prev => prev.includes(id) ? prev.filter(x=>x!==id) : [...prev, id]);
 
   const handleGrant = async () => {
-    if (!selectedProducer?.producerCompanyId && !editingAccess) return;
+    if (!selectedProducer?.userId && !editingAccess) return;
     if (fPlants.length > 0 && selectedPlantIds.length === 0) {
       setMsg({ t: "Seleccioná al menos una planta", k: "err" }); return;
     }
     setSaving(true);
-    const prodId = editingAccess ? editingAccess.producerCompanyId : selectedProducer.producerCompanyId;
+    const userId = editingAccess ? editingAccess.producerUserId : selectedProducer.userId;
+    const companyId = editingAccess ? editingAccess.producerCompanyId : selectedProducer.producerCompanyId;
     try {
-      await apiGrantAccess({ producerCompanyId: prodId, allowedPlantIds: selectedPlantIds });
+      await apiGrantAccess({ producerUserId: userId, producerCompanyId: companyId, allowedPlantIds: selectedPlantIds });
       setSearchQ(""); setSelectedProducer(null); setSearchResults([]); setShowGrant(false); setEditingAccess(null);
       setSelectedPlantIds([]);
       setMsg({ t: editingAccess ? "Habilitación actualizada" : "Productor habilitado — podrá seleccionar tu planta al solicitar flete", k: "ok" }); load();
     } catch (e) { setMsg({ t: e.message, k: "err" }); } finally { setSaving(false); }
   };
 
-  const handleRevoke = async (companyId) => {
-    try { await apiRevokeAccess(companyId); setMsg({ t: "Acceso revocado", k: "ok" }); setConfirmRevoke(null); load(); }
+  const handleRevoke = async (userId) => {
+    try { await apiRevokeAccess(userId); setMsg({ t: "Acceso revocado", k: "ok" }); setConfirmRevoke(null); load(); }
     catch (e) { setMsg({ t: e.message, k: "err" }); }
   };
 
@@ -3394,12 +3395,15 @@ function AccessScreen({ onBack }) {
   const ProducerRow = ({ p }) => {
     const nPlants = (p.allowedPlantIds||[]).length;
     const plantNames = (p.allowedPlantIds||[]).map(id=>plantMap.get(id)?.name).filter(Boolean).join(", ");
+    const userName = p.producerUser?.name || p.producerCompany?.name || "Productor";
+    const companyName = p.producerCompany?.name || "";
     return (
       <div style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 0" }}>
         <button onClick={()=>startEdit(p)} style={{ flex:1, display:"flex", alignItems:"center", gap:10, background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", textAlign:"left", padding:0 }}>
           {Ic.user(C.ok,18)}
           <div>
-            <div style={{ fontSize:13, fontWeight:700, color:C.t1 }}>{p.producerCompany?.name||"Productor"}</div>
+            <div style={{ fontSize:13, fontWeight:700, color:C.t1 }}>{userName}</div>
+            {companyName && <div style={{ fontSize:10, color:C.t2 }}>{companyName}</div>}
             {plantNames && <div style={{ fontSize:10, color:C.pri }}>{plantNames}</div>}
             {nPlants===0 && <div style={{ fontSize:10, color:C.t3 }}>Acceso general</div>}
           </div>
@@ -3426,10 +3430,10 @@ function AccessScreen({ onBack }) {
         <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.4)", zIndex:999, display:"flex", alignItems:"center", justifyContent:"center", padding:24 }} onClick={()=>setConfirmRevoke(null)}>
           <div onClick={e=>e.stopPropagation()} style={{ background:C.w, borderRadius:14, padding:24, maxWidth:340, width:"100%", boxShadow:"0 8px 32px rgba(0,0,0,0.2)" }}>
             <div style={{ fontSize:16, fontWeight:700, marginBottom:8 }}>Revocar acceso</div>
-            <div style={{ fontSize:13, color:C.t2, marginBottom:16 }}>¿Revocar el acceso de <b>{confirmRevoke.producerCompany?.name}</b>? No podrá enviar fletes a tus plantas.</div>
+            <div style={{ fontSize:13, color:C.t2, marginBottom:16 }}>¿Revocar el acceso de <b>{confirmRevoke.producerUser?.name||confirmRevoke.producerCompany?.name}</b>? No podrá enviar fletes a tus plantas.</div>
             <div style={{ display:"flex", gap:8 }}>
               <button onClick={()=>setConfirmRevoke(null)} style={{ flex:1, padding:"10px 14px", borderRadius:8, border:`1px solid ${C.b1}`, background:C.w, cursor:"pointer", fontFamily:"inherit", fontSize:13, fontWeight:600, color:C.t2 }}>Cancelar</button>
-              <button onClick={()=>handleRevoke(confirmRevoke.producerCompany?.id||confirmRevoke.producerCompanyId)} style={{ flex:1, padding:"10px 14px", borderRadius:8, border:"none", background:C.err, cursor:"pointer", fontFamily:"inherit", fontSize:13, fontWeight:600, color:C.w }}>Revocar</button>
+              <button onClick={()=>handleRevoke(confirmRevoke.producerUserId)} style={{ flex:1, padding:"10px 14px", borderRadius:8, border:"none", background:C.err, cursor:"pointer", fontFamily:"inherit", fontSize:13, fontWeight:600, color:C.w }}>Revocar</button>
             </div>
           </div>
         </div>
@@ -3440,7 +3444,7 @@ function AccessScreen({ onBack }) {
         <div style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: 12, padding: 16, marginBottom: 16, boxShadow: C.sh }}>
           <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:12 }}>
             <div>
-              <div style={{ fontSize:14, fontWeight:700 }}>Editar: {editingAccess.producerCompany?.name}</div>
+              <div style={{ fontSize:14, fontWeight:700 }}>Editar: {editingAccess.producerUser?.name||editingAccess.producerCompany?.name}</div>
               <div style={{ fontSize:10, color:C.t3 }}>Modificá las plantas habilitadas</div>
             </div>
             <button onClick={()=>{setEditingAccess(null); setSelectedPlantIds([]);}} style={{ background:"none", border:"none", cursor:"pointer" }}>{Ic.cross(C.t2,18)}</button>
