@@ -2625,7 +2625,7 @@ function NewScreen({ user, lots, plants, fields, trucks, onBack, onCreate, dupli
 
   // Collapsible section wrapper
   const Sec = ({ id, label, complete, summary, children }) => {
-    const isExp = expandedSecs[id] !== undefined ? expandedSecs[id] : !complete;
+    const isExp = expandedSecs[id] !== undefined ? expandedSecs[id] : true;
     const toggle = () => setExpandedSecs(p=>({...p,[id]:!isExp}));
     return (
       <div ref={secRefs[id]} style={{ transition:"all 0.3s ease" }}>
@@ -3295,7 +3295,7 @@ function AccessScreen({ onBack }) {
 
   const handleGrant = async () => {
     if (!searchResult?.producerCompanyId && !editingAccess) return;
-    if (selectedPlantIds.length === 0) {
+    if (fPlants.length > 0 && selectedPlantIds.length === 0) {
       setMsg({ t: "Seleccioná al menos una planta", k: "err" }); return;
     }
     setSaving(true);
@@ -3353,16 +3353,18 @@ function AccessScreen({ onBack }) {
 
   const FacilitySelector = () => (
     <div style={{ marginBottom:12 }}>
-      {fPlants.length > 0 && (
+      {fPlants.length > 0 ? (
         <>
           <div style={{ fontSize:11, fontWeight:700, color:C.t2, marginBottom:6, textTransform:"uppercase", letterSpacing:0.5, display:"flex", alignItems:"center", gap:4 }}>{Ic.plant(C.pri,14)} Plantas</div>
           <div style={{ display:"flex", flexDirection:"column", gap:6, marginBottom:10 }}>
             {fPlants.map(p => <FacilityToggle key={p.id} id={p.id} name={p.name} address={p.address} selected={selectedPlantIds.includes(p.id)} color={C.pri} onToggle={togglePlant}/>)}
           </div>
         </>
-      )}
-      {fPlants.length === 0 && (
-        <div style={{ fontSize:12, color:C.t3, marginBottom:8 }}>Tu empresa no tiene plantas registradas.</div>
+      ) : (
+        <div style={{ padding:"10px 12px", borderRadius:8, background:C.infoPale, border:`1px solid ${C.info}30`, marginBottom:8 }}>
+          <div style={{ fontSize:12, fontWeight:600, color:C.info }}>El productor tendrá acceso general a tu empresa.</div>
+          <div style={{ fontSize:10.5, color:C.t3, marginTop:2 }}>Podés crear plantas desde el panel de administración para habilitar acceso específico.</div>
+        </div>
       )}
     </div>
   );
@@ -3422,7 +3424,7 @@ function AccessScreen({ onBack }) {
             <button onClick={()=>{setEditingAccess(null); setSelectedPlantIds([]);}} style={{ background:"none", border:"none", cursor:"pointer" }}>{Ic.cross(C.t2,18)}</button>
           </div>
           <FacilitySelector/>
-          <Btn full v="acc" disabled={saving || selCount === 0} onClick={handleGrant}>{saving ? "Guardando..." : `Guardar cambios (${selCount} seleccionados)`}</Btn>
+          <Btn full v="acc" disabled={saving || (fPlants.length > 0 && selCount === 0)} onClick={handleGrant}>{saving ? "Guardando..." : fPlants.length > 0 ? `Guardar cambios (${selCount} seleccionados)` : "Guardar cambios"}</Btn>
         </div>
       )}
 
@@ -3444,7 +3446,7 @@ function AccessScreen({ onBack }) {
               </div>
               <div style={{ fontSize:12, color:C.t2, marginBottom:12 }}>Empresa: <span style={{fontWeight:600,color:C.t1}}>{searchResult.producerCompanyName}</span></div>
               {facilities ? <FacilitySelector/> : <div style={{ fontSize:11, color:C.t3, marginBottom:8 }}>Cargando instalaciones...</div>}
-              <Btn full v="acc" disabled={saving || selCount === 0} onClick={handleGrant}>{saving ? "Habilitando..." : `Habilitar productor (${selCount} seleccionados)`}</Btn>
+              <Btn full v="acc" disabled={saving || (fPlants.length > 0 && selCount === 0)} onClick={handleGrant}>{saving ? "Habilitando..." : fPlants.length > 0 ? `Habilitar productor (${selCount} seleccionados)` : "Habilitar productor"}</Btn>
             </div>
           )}
         </div>
