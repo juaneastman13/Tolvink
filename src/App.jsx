@@ -746,22 +746,22 @@ function Nav({ active, onChange, unread=0, pendingCount=0, canRequest=false, onN
 // ======================== LANDING PAGE ================================
 
 function LandingScreen({ onLogin, onSignup, loading, error, clearError }) {
-  const isMob = !useIsDesktop(768);
   const [showAuth, setShowAuth] = useState(false);
-  const _routes = useMemo(()=>[
+
+  if (showAuth) return <AuthScreen onLogin={onLogin} onSignup={onSignup} loading={loading} error={error} clearError={clearError} onBackToLanding={()=>setShowAuth(false)} />;
+
+  const _routes = [
     { d:"M-30,520 C150,400 350,260 550,180 S800,60 1030,10", c:C.pri, lo:0.12, to:0.20, td:"26s", dd:"4s", wp:[[180,410],[420,240],[700,110],[900,45]] },
     { d:"M-30,80 C180,180 380,340 580,400 S830,500 1030,560", c:C.acc, lo:0.10, to:0.16, td:"32s", dd:"5s", wp:[[160,170],[400,320],[650,420],[880,520]], rev:true },
     { d:"M1030,300 C820,240 620,320 420,300 S180,340 -30,370", c:C.sec, lo:0.10, to:0.18, td:"24s", dd:"3.5s", wp:[[870,260],[640,310],[350,310],[120,355]] },
     { d:"M500,-30 C520,100 470,240 510,370 S480,490 530,630", c:C.pri, lo:0.08, to:0.14, td:"22s", dd:"4.5s", wp:[[512,80],[480,260],[505,430]] },
     { d:"M-30,200 C80,150 200,90 340,50 S500,20 600,-20", c:C.acc, lo:0.09, to:0.15, td:"18s", dd:"3s", wp:[[70,160],[220,85],[420,35]] },
     { d:"M1030,480 C900,440 780,500 650,520 S480,560 350,590", c:C.sec, lo:0.07, to:0.13, td:"20s", dd:"4s", wp:[[920,450],[720,500],[530,540]] },
-  ],[]);
-
-  if (showAuth) return <AuthScreen onLogin={onLogin} onSignup={onSignup} loading={loading} error={error} clearError={clearError} onBackToLanding={()=>setShowAuth(false)} />;
+  ];
 
   return (
     <div style={{ minHeight:"100dvh", background:C.bg, fontFamily:FONT, display:"flex", flexDirection:"column", overflow:"hidden", WebkitOverflowScrolling:"touch", position:"relative" }}>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&display=swap');*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}html,body,#root{margin:0;padding:0;background:${C.bg};height:auto!important;overflow:visible!important;overflow-x:hidden!important}@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}@keyframes dotPulse{0%,100%{opacity:0.3;transform:scale(0.8)}50%{opacity:1;transform:scale(1.2)}}@keyframes splashIn{0%{opacity:0;transform:scale(0.85)}100%{opacity:1;transform:scale(1)}}`}</style>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&display=swap');*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}html,body,#root{margin:0;padding:0;background:${C.bg};height:auto!important;overflow:visible!important;overflow-x:hidden!important}@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}@keyframes dotPulse{0%,100%{opacity:0.3;transform:scale(0.8)}50%{opacity:1;transform:scale(1.2)}}@keyframes splashIn{0%{opacity:0;transform:scale(0.85)}100%{opacity:1;transform:scale(1)}}@media(max-width:767px){.tv-ld-tag{font-size:11px!important;letter-spacing:1.8px!important}.tv-ld-h1{font-size:17px!important}.tv-ld-feat{gap:18px!important}.tv-ld-feat svg{width:18px!important;height:18px!important}.tv-ld-feat span{font-size:10px!important}}`}</style>
 
       {/* Animated routes background — flowing dashes, static pins, moving trucks */}
       <svg viewBox="0 0 1000 600" preserveAspectRatio="xMidYMid slice" style={{ position:"absolute", inset:0, width:"100%", height:"100%", pointerEvents:"none", zIndex:0 }}>
@@ -814,25 +814,25 @@ function LandingScreen({ onLogin, onSignup, loading, error, clearError }) {
 
         {/* Tagline */}
         <div style={{ animation:"fadeUp 0.8s ease-out", marginBottom:40 }}>
-          <div style={{ fontSize:isMob?11:14, fontWeight:700, color:C.acc, textTransform:"uppercase", letterSpacing:isMob?1.8:2.5, marginBottom:isMob?10:14 }}>
+          <div className="tv-ld-tag" style={{ fontSize:14, fontWeight:700, color:C.acc, textTransform:"uppercase", letterSpacing:2.5, marginBottom:14 }}>
             Logística agrícola simplificada
           </div>
-          <h1 style={{ fontSize:isMob?17:22, fontWeight:700, color:C.t2, lineHeight:1.1, letterSpacing:-0.3, whiteSpace:"nowrap" }}>
+          <h1 className="tv-ld-h1" style={{ fontSize:22, fontWeight:700, color:C.t2, lineHeight:1.1, letterSpacing:-0.3, whiteSpace:"nowrap" }}>
             Gestioná tus fletes desde el campo
           </h1>
         </div>
 
         {/* 4 Features inline */}
-        <div style={{ display:"flex", gap:isMob?18:28, justifyContent:"center", marginBottom:44, animation:"fadeUp 1s ease-out", flexWrap:"wrap" }}>
+        <div className="tv-ld-feat" style={{ display:"flex", gap:28, justifyContent:"center", marginBottom:44, animation:"fadeUp 1s ease-out", flexWrap:"wrap" }}>
           {[
-            { icon: Ic.truck(C.pri,isMob?18:22), label:"Fletes" },
-            { icon: Ic.pin(C.acc,isMob?18:22), label:"Tracking" },
-            { icon: Ic.chk(C.ok,isMob?18:22), label:"Confirmaciones" },
-            { icon: Ic.nav(C.sec,isMob?18:22), label:"Rutas" },
+            { icon: Ic.truck(C.pri,22), label:"Fletes" },
+            { icon: Ic.pin(C.acc,22), label:"Tracking" },
+            { icon: Ic.chk(C.ok,22), label:"Confirmaciones" },
+            { icon: Ic.nav(C.sec,22), label:"Rutas" },
           ].map((f,i) => (
-            <div key={i} style={{ display:"flex", alignItems:"center", gap:isMob?4:6 }}>
+            <div key={i} style={{ display:"flex", alignItems:"center", gap:6 }}>
               {f.icon}
-              <span style={{ fontSize:isMob?10:12, fontWeight:600, color:C.t2 }}>{f.label}</span>
+              <span style={{ fontSize:12, fontWeight:600, color:C.t2 }}>{f.label}</span>
             </div>
           ))}
         </div>
