@@ -1887,7 +1887,7 @@ function FieldsScreen({ onBack, embedded }) {
 
 // ======================== ACCESS MANAGEMENT (Planta) ==================
 
-function AccessScreen({ user, onBack }) {
+function AccessScreen({ user, onBack, embedded }) {
   const isAdmin = user?.role === "platform_admin";
   const [producers, setProducers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -2047,11 +2047,11 @@ function AccessScreen({ user, onBack }) {
   };
 
   return (
-    <div style={{ flex: 1, overflow: "auto", padding: 18 }}>
+    <div style={{ flex: embedded?undefined:1, overflow: embedded?"visible":"auto", padding: embedded?0:18 }}>
       {(saving||doneMsg) && !confirmRevoke && <LoadingOverlay closing={!!doneMsg} closingText={doneMsg} onClose={()=>setDoneMsg("")}/>}
-      <button onClick={onBack} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 600, color: C.pri, marginBottom: 14, padding: 0, display: "flex", alignItems: "center", gap: 4 }}>{Ic.chev(C.pri, 18)} Mi Perfil</button>
+      {!embedded && <button onClick={onBack} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 600, color: C.pri, marginBottom: 14, padding: 0, display: "flex", alignItems: "center", gap: 4 }}>{Ic.chev(C.pri, 18)} Mi Perfil</button>}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
-        <div style={{ fontSize: 20, fontWeight: 800, letterSpacing: -0.3 }}>Productores / Transportistas</div>
+        <div style={{ fontSize: embedded?16:20, fontWeight: 800, letterSpacing: -0.3 }}>Productores / Transportistas</div>
         <Btn sm onClick={() => { setShowGrant(!showGrant); setEditingAccess(null); setSelectedProducer(null); setSearchResults([]); setSearchQ(""); setMsg(null); setSelectedPlantIds([]); }} icon={showGrant ? Ic.cross(C.w, 14) : Ic.plus(C.w, 14)}>{showGrant ? "Cerrar" : "Habilitar"}</Btn>
       </div>
 
@@ -3321,7 +3321,7 @@ function AdminScreen({ user, onBack }) {
     return {...p, userTypes:newTypes};
   });
 
-  const openNewUser = () => { setUserForm({name:"",email:"",phone:"",password:"",userTypes:[],companyByType:{},roleByType:{}}); setActiveUserType(null); setView("userForm"); };
+  const openNewUser = () => { setUserForm({name:"",email:"",phone:"",password:"",userTypes:[],companyByType:{},roleByType:{},_selectedCompanyId:""}); setActiveUserType(null); setView("userForm"); };
 
   const openEditUser = (u) => {
     const cbt = u.companyByType && typeof u.companyByType === "object" ? {...u.companyByType} : {};
@@ -3338,13 +3338,15 @@ function AdminScreen({ user, onBack }) {
 
   const handleCreateUser = async () => {
     if(!userForm.name.trim()||!userForm.email.trim()||!userForm.password) return show("Nombre, email y contraseña obligatorios","err");
+    if(!userForm._selectedCompanyId) return show("Seleccioná una empresa","err");
     if(userForm.userTypes.length===0) return show("Seleccioná al menos un tipo","err");
     setSaving(true);
     const cbt = userForm.companyByType||{};
     const rbt = userForm.roleByType||{};
     const firstCompanyId = Object.values(cbt).find(v=>v) || undefined;
     const firstRole = Object.values(rbt).find(v=>v) || "operator";
-    try { await apiAdminCreateUser({...userForm, companyId:firstCompanyId, role:firstRole, companyByType:cbt, roleByType:rbt}); setSaving(false); setDoneMsg("Usuario creado"); setView("list"); load(); }
+    const {_selectedCompanyId, ...payload} = userForm;
+    try { await apiAdminCreateUser({...payload, companyId:firstCompanyId, role:firstRole, companyByType:cbt, roleByType:rbt}); setSaving(false); setDoneMsg("Usuario creado"); setView("list"); load(); }
     catch(e) { show(e.message,"err"); setSaving(false); }
   };
 
@@ -3497,42 +3499,56 @@ function AdminScreen({ user, onBack }) {
           <div style={s.lbl}>Contraseña:</div>
           <input value={userForm.password} onChange={e=>setUserForm(p=>({...p,password:e.target.value}))} placeholder="Contraseña" type="password" style={{...s.inp,marginBottom:10}} />
 
-          <div style={s.lbl}>Tipos de usuario:</div>
-          <div style={{display:"flex",gap:6,marginBottom:10}}>
-            {["producer","plant","transporter"].map(t=>{const sel=formTypes.includes(t);return(<button key={t} onClick={()=>toggleFormUserType(t)} style={{flex:1,padding:"9px 0",borderRadius:8,border:`1.5px solid ${sel?typeColors[t]:C.b1}`,background:sel?`${typeColors[t]}12`:C.w,color:sel?typeColors[t]:C.t2,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit",transition:"all 0.15s"}}>{sel?"✓ ":""}{typeLabels[t]}</button>);})}
-          </div>
+          {/* Step 1: Select company */}
+          <div style={s.lbl}>Empresa:</div>
+          <select value={userForm._selectedCompanyId||""} onChange={e=>{
+            const cId=e.target.value;
+            const comp=allCompanies.find(c=>c.id===cId);
+            if(!cId||!comp){setUserForm(p=>({...p,_selectedCompanyId:"",userTypes:[],companyByType:{},roleByType:{}}));return;}
+            const baseType=comp.type;
+            const types=[baseType];
+            const cbt={[baseType]:cId};
+            const rbt={[baseType]:"operator"};
+            if(comp.hasInternalFleet && baseType==="producer"){types.push("transporter");cbt.transporter=cId;rbt.transporter="operator";}
+            setUserForm(p=>({...p,_selectedCompanyId:cId,userTypes:types,companyByType:cbt,roleByType:rbt}));
+          }} style={{...s.sel,marginBottom:10}}>
+            <option value="">Seleccionar empresa...</option>
+            {allCompanies.map(c=><option key={c.id} value={c.id}>{c.name} ({typeLabels[c.type]})</option>)}
+          </select>
 
-          {/* Config per type */}
-          {formTypes.length>0 && (
-            <div style={{background:C.bgInput,border:`1px solid ${C.b1}`,borderRadius:10,padding:12,marginBottom:10}}>
-              {formTypes.length>1 && (
-                <div style={{display:"flex",gap:4,marginBottom:10}}>
-                  {formTypes.map(t=>(
-                    <button key={t} onClick={()=>setActiveUserType(t)} style={{flex:1,padding:"7px 0",borderRadius:6,border:`1.5px solid ${formAt===t?typeColors[t]:C.b1}`,background:formAt===t?`${typeColors[t]}18`:C.w,color:formAt===t?typeColors[t]:C.t3,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:"inherit",transition:"all 0.15s"}}>{typeLabels[t]}</button>
-                  ))}
+          {/* Step 2: Types auto-determined + toggleable extras */}
+          {userForm._selectedCompanyId && (() => {
+            const comp = allCompanies.find(c=>c.id===userForm._selectedCompanyId);
+            if (!comp) return null;
+            const baseType = comp.type;
+            // Available types: always the base type. If producer+fleet, also transporter.
+            const availableTypes = [baseType];
+            if (comp.hasInternalFleet && baseType === "producer") availableTypes.push("transporter");
+            return (
+              <div style={{background:C.bgInput,border:`1px solid ${C.b1}`,borderRadius:10,padding:12,marginBottom:10}}>
+                <div style={s.lbl}>Tipo de usuario:</div>
+                <div style={{display:"flex",gap:6,marginBottom:10}}>
+                  {availableTypes.map(t=>{const sel=formTypes.includes(t);return(
+                    <button key={t} onClick={()=>{if(t===baseType)return; setUserForm(p=>{const has=p.userTypes.includes(t);const newTypes=has?p.userTypes.filter(x=>x!==t):[...p.userTypes,t];const cbt={...p.companyByType};const rbt={...p.roleByType};if(!has){cbt[t]=p._selectedCompanyId;rbt[t]="operator";}else{delete cbt[t];delete rbt[t];}return{...p,userTypes:newTypes,companyByType:cbt,roleByType:rbt};});}} style={{flex:1,padding:"9px 0",borderRadius:8,border:`1.5px solid ${sel?typeColors[t]:C.b1}`,background:sel?`${typeColors[t]}12`:C.w,color:sel?typeColors[t]:C.t2,fontSize:12,fontWeight:600,cursor:t===baseType?"default":"pointer",fontFamily:"inherit",transition:"all 0.15s",opacity:t===baseType?1:undefined}}>{sel?"✓ ":""}{typeLabels[t]}</button>
+                  );})}
                 </div>
-              )}
-              {formAt && (
-                <div key={formAt}>
-                  <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:8}}>
-                    <div style={{width:10,height:10,borderRadius:5,background:typeColors[formAt]}}/>
-                    <span style={{fontSize:12,fontWeight:700,color:typeColors[formAt]}}>{typeLabels[formAt]}</span>
+                {/* Role per type */}
+                {formTypes.map(t=>(
+                  <div key={t} style={{marginBottom:8}}>
+                    <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:4}}>
+                      <div style={{width:8,height:8,borderRadius:4,background:typeColors[t]}}/>
+                      <span style={{fontSize:11,fontWeight:700,color:typeColors[t]}}>Rol como {typeLabels[t]}:</span>
+                    </div>
+                    <select value={(userForm.roleByType||{})[t]||"operator"} onChange={e=>setUserForm(p=>({...p,roleByType:{...(p.roleByType||{}),[t]:e.target.value}}))} style={s.sel}>
+                      <option value="operator">Operario</option>
+                      <option value="admin">Gerente</option>
+                      {isPlatform&&<option value="platform_admin">Admin Principal</option>}
+                    </select>
                   </div>
-                  <div style={s.lbl}>Rol como {typeLabels[formAt]}:</div>
-                  <select value={(userForm.roleByType||{})[formAt]||"operator"} onChange={e=>setUserForm(p=>({...p,roleByType:{...(p.roleByType||{}),[formAt]:e.target.value}}))} style={{...s.sel,marginBottom:8}}>
-                    <option value="operator">Operario</option>
-                    <option value="admin">Gerente</option>
-                    {isPlatform&&<option value="platform_admin">Admin Principal</option>}
-                  </select>
-                  <div style={s.lbl}>Empresa ({typeLabels[formAt]}):</div>
-                  <select value={(userForm.companyByType||{})[formAt]||""} onChange={e=>setUserForm(p=>({...p,companyByType:{...(p.companyByType||{}),[formAt]:e.target.value||null}}))} style={s.sel}>
-                    <option value="">Sin empresa</option>
-                    {allCompanies.filter(c=>c.type===formAt).map(c=><option key={c.id} value={c.id}>{c.name}</option>)}
-                  </select>
-                </div>
-              )}
-            </div>
-          )}
+                ))}
+              </div>
+            );
+          })()}
           <button onClick={handleCreateUser} disabled={saving} style={s.btnP(C.acc,saving)}>{saving?"Creando...":"Crear usuario"}</button>
         </div>
         <MsgBar/>
@@ -3755,9 +3771,9 @@ function AdminScreen({ user, onBack }) {
       )}
 
       <div style={{display:"flex",gap:6,marginBottom:10}}>
-        {["companies","users"].map(t=>(
+        {["companies","users","access"].map(t=>(
           <button key={t} onClick={()=>{setTab(t);setSearch("");setStatsFilter(null);}} style={{flex:1,padding:"9px 0",borderRadius:8,border:`1px solid ${tab===t?C.pri:C.b1}`,background:tab===t?`${C.pri}12`:C.w,color:tab===t?C.pri:C.t2,fontWeight:600,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>
-            {t==="companies"?"Empresas":"Usuarios"}
+            {t==="companies"?"Empresas":t==="users"?"Usuarios":"Accesos"}
           </button>
         ))}
       </div>
@@ -3788,6 +3804,8 @@ function AdminScreen({ user, onBack }) {
             {companies.length===0&&<div style={{textAlign:"center",padding:32,color:C.t3,fontSize:13}}>No se encontraron empresas</div>}
           </div>
         </>)}
+
+        {tab==="access"&&<AccessScreen user={user} embedded/>}
 
         {tab==="users"&&(<>
           <button onClick={openNewUser} style={{width:"100%",padding:"10px 14px",borderRadius:8,border:`1px dashed ${C.acc}`,background:`${C.acc}08`,color:C.acc,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"inherit",marginBottom:8}}>+ Nuevo Usuario</button>
