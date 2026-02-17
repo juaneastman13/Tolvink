@@ -505,9 +505,11 @@ export function FreightsOverviewMap({ freights, onSelect, fields, plants }) {
         icon: { path: maps.SymbolPath.CIRCLE, scale: 8, fillColor: col, fillOpacity: 1, strokeColor: "#fff", strokeWeight: 2 } });
       mk.addListener("click", () => {
         info.current.setContent(
-          `<div style="font-family:system-ui;font-size:12px;line-height:1.5;min-width:150px">` +
+          `<div style="font-family:system-ui;font-size:12px;line-height:1.5;min-width:160px">` +
           `<strong>${f.code}</strong><br/>${f.grain} · ${f.tons} ${f.unit||"tn"}<br/>` +
-          `${f.originCompanyName||f.originName} → ${f.destName}<br/>` +
+          (f.originCompanyName ? `<span style="font-weight:600">${f.originCompanyName}</span><br/>` : "") +
+          ([f.fieldName, f.originName].filter(Boolean).length ? `${[f.fieldName, f.originName].filter(Boolean).join(" / ")}<br/>` : "") +
+          `→ ${f.destName}<br/>` +
           `<span style="color:${col};font-weight:600">${_STATUS_LABEL[f.status]||f.status}</span></div>`
         );
         info.current.open(mapObj.current, mk);
