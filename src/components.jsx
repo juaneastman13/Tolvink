@@ -272,3 +272,65 @@ export function exportCSV(freights, filename) {
   const a = document.createElement("a"); a.href = url; a.download = filename || "tolvink-fletes.csv"; a.click();
   URL.revokeObjectURL(url);
 }
+
+// ======================== EXCEL EXPORT (SpreadsheetML) =================
+
+const _REPORT_HEADERS = ["Código","Estado","Empresa","Campo","Lote","Destino","Producto","Cantidad","Unidad","Matrícula","Fecha Carga","Hora","Transportista","Chofer","Celular","Notas"];
+
+function _reportRows(freights) {
+  return freights.map(f => {
+    const st = stCfg(f.status);
+    const fmtDate = f.loadDate ? f.loadDate.slice(8,10)+"/"+f.loadDate.slice(5,7)+"/"+f.loadDate.slice(0,4) : "";
+    return [f.code, st.label, f.originCompanyName||f.originName||"", f.fieldName||"", f.originName||"", f.destName||"", f.grain==="Otros"?f.productTypeOther||"Otros":f.grain||"", f.tons||"", f.unit||"tn", f.truckPlate||"", fmtDate, f.loadTime||"", f.transporterName||"", f.driverName||"", f.driverPhone||"", (f.notes||"").replace(/[\n\r]+/g," ")];
+  });
+}
+
+export function exportExcel(freights, filename) {
+  const rows = _reportRows(freights);
+  const esc = v => String(v||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  const headerCells = _REPORT_HEADERS.map(h => `<Cell ss:StyleID="hdr"><Data ss:Type="String">${esc(h)}</Data></Cell>`).join("");
+  const dataRows = rows.map(r => "<Row>" + r.map(v => `<Cell><Data ss:Type="String">${esc(v)}</Data></Cell>`).join("") + "</Row>").join("\n");
+  const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
+<Styles><Style ss:ID="hdr"><Font ss:Bold="1" ss:Size="11"/><Interior ss:Color="#E8F0FE" ss:Pattern="Solid"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/></Borders></Style></Styles>
+<Worksheet ss:Name="Fletes"><Table>
+<Row>${headerCells}</Row>
+${dataRows}
+</Table></Worksheet></Workbook>`;
+  const blob = new Blob([xml], { type: "application/vnd.ms-excel" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a"); a.href = url; a.download = filename || "tolvink-fletes.xls"; a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ======================== PDF EXPORT (HTML → Print) ====================
+
+export function exportPDF(freights, title) {
+  const rows = _reportRows(freights);
+  const esc = v => String(v||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  const today = new Date().toLocaleDateString("es-UY",{day:"2-digit",month:"short",year:"numeric"});
+  const headerCells = _REPORT_HEADERS.map(h => `<th>${esc(h)}</th>`).join("");
+  const dataRows = rows.map(r => "<tr>" + r.map(v => `<td>${esc(v)}</td>`).join("") + "</tr>").join("");
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${esc(title||"Informe de Fletes")}</title>
+<style>
+@page{size:landscape;margin:10mm}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,-apple-system,sans-serif;font-size:9px;color:#1a1a1a;padding:8mm}
+h1{font-size:16px;margin-bottom:2px}
+.sub{font-size:10px;color:#666;margin-bottom:10px}
+table{width:100%;border-collapse:collapse;font-size:8px}
+th{background:#003882;color:#fff;padding:5px 4px;text-align:left;font-size:7.5px;text-transform:uppercase;letter-spacing:0.3px;white-space:nowrap}
+td{padding:4px;border-bottom:1px solid #e0e0e0;white-space:nowrap}
+tr:nth-child(even){background:#f8f9fa}
+.footer{margin-top:8px;font-size:8px;color:#999;text-align:right}
+</style></head><body>
+<h1>${esc(title||"Informe de Fletes")} — Tolvink</h1>
+<div class="sub">${rows.length} flete${rows.length!==1?"s":""} · Generado el ${today}</div>
+<table><thead><tr>${headerCells}</tr></thead><tbody>${dataRows}</tbody></table>
+<div class="footer">tolvink.app</div>
+<script>window.onload=()=>setTimeout(()=>window.print(),300)</script>
+</body></html>`;
+  const w = window.open("","_blank");
+  if(w) { w.document.write(html); w.document.close(); }
+}

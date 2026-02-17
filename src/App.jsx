@@ -17,7 +17,7 @@ import {
 import { C, track, FONT, MONO, Ic } from "./theme";
 import { V, validate, SCHEMAS, textMatch, FieldError } from "./validation";
 import { stCfg, getActions, GRANOS, UNITS } from "./constants";
-import { Av, Bd, Btn, Tabs, Field, Select, Sec, Toast, Loader, AttachMenu, Sidebar, Nav, SortTh, exportCSV } from "./components";
+import { Av, Bd, Btn, Tabs, Field, Select, Sec, Toast, Loader, AttachMenu, Sidebar, Nav, SortTh, exportCSV, exportExcel, exportPDF } from "./components";
 import { useAuth, useCatalog, useFreights, permsFor, useIsDesktop, useTableSort, usePullToRefresh } from "./hooks";
 import { SafeZone, LocationPicker, FreightMap, FreightsOverviewMap } from "./maps";
 import { PhotoUpload, DocsGallery, FreightFileUpload } from "./uploads";
@@ -2842,6 +2842,14 @@ function ReportsScreen({ onBack, freights, isDesktop, embedded }) {
       {!isDesktop && !embedded && <button onClick={onBack} style={{ background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", fontSize:13, fontWeight:600, color:C.pri, marginBottom:14, padding:0, display:"flex", alignItems:"center", gap:4 }}>{Ic.chev(C.pri,18)} Mi Perfil</button>}
       {!embedded && <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:4 }}>
         <div style={{ fontSize:20, fontWeight:800, letterSpacing:-0.3 }}>Informes y Documentos</div>
+        <div style={{ display:"flex", gap:6 }}>
+          <button onClick={()=>exportExcel(filtered,"tolvink-fletes.xls")} style={{padding:"6px 12px",borderRadius:8,border:`1.5px solid #1A6B37`,background:"#E6F4EA",color:"#1A6B37",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:5}}>
+            {Ic.doc("#1A6B37",13)} Excel
+          </button>
+          <button onClick={()=>exportPDF(filtered,"Informe de Fletes")} style={{padding:"6px 12px",borderRadius:8,border:`1.5px solid #DC2626`,background:"#FEE2E2",color:"#DC2626",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:5}}>
+            {Ic.doc("#DC2626",13)} PDF
+          </button>
+        </div>
       </div>}
       <div style={{ fontSize:12, color:C.t2, marginBottom:12 }}>{allFreights.length} flete{allFreights.length!==1?"s":""} · {totalDocs} documento{totalDocs!==1?"s":""}</div>
 
