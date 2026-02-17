@@ -1107,6 +1107,16 @@ function NewScreen({ user, lots, plants, branches, fields, trucks, onBack, onCre
   // Next section to fill (highlight it when collapsed)
   const nextToFill = SEC_ORDER.find(s => !secComplete[s]);
 
+  // Sections are locked if previous required sections are incomplete
+  const secEnabled = {
+    product: true,
+    quantity: secComplete.product,
+    origin: secComplete.product && secComplete.quantity,
+    ownfleet: secComplete.product && secComplete.quantity && secComplete.origin,
+    destination: secComplete.product && secComplete.quantity && secComplete.origin,
+    schedule: secComplete.product && secComplete.quantity && secComplete.origin && secComplete.destination,
+  };
+
   // Load lots when field changes
   useEffect(()=>{
     if(!form.fieldId){ setFieldLots([]); return; }
@@ -1227,7 +1237,7 @@ function NewScreen({ user, lots, plants, branches, fields, trucks, onBack, onCre
         </Sec>
 
         {/* QUANTITY SECTION */}
-        <Sec label="Cantidad" complete={secComplete.quantity} summary={secSummary.quantity} isExpanded={activeSection==="quantity"} onFocus={()=>setActiveSection("quantity")} secRef={secRefs.quantity} incomplete={showIncomplete&&!secComplete.quantity} highlight={nextToFill==="quantity"&&activeSection!=="quantity"}>
+        <Sec label="Cantidad" complete={secComplete.quantity} summary={secSummary.quantity} isExpanded={activeSection==="quantity"} onFocus={()=>setActiveSection("quantity")} secRef={secRefs.quantity} incomplete={showIncomplete&&!secComplete.quantity} highlight={nextToFill==="quantity"&&activeSection!=="quantity"} disabled={!secEnabled.quantity}>
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
             <div>
               <Field label="Cantidad" icon={Ic.grain(C.t2,14)} value={form.tons} onChange={v=>u({tons:v})} placeholder="Ej: 30"/>
@@ -1246,7 +1256,7 @@ function NewScreen({ user, lots, plants, branches, fields, trucks, onBack, onCre
         </Sec>
 
         {/* ORIGIN SECTION */}
-        <Sec label="Origen" complete={secComplete.origin} summary={secSummary.origin} isExpanded={activeSection==="origin"} onFocus={()=>setActiveSection("origin")} secRef={secRefs.origin} incomplete={showIncomplete&&!secComplete.origin} highlight={nextToFill==="origin"&&activeSection!=="origin"}>
+        <Sec label="Origen" complete={secComplete.origin} summary={secSummary.origin} isExpanded={activeSection==="origin"} onFocus={()=>setActiveSection("origin")} secRef={secRefs.origin} incomplete={showIncomplete&&!secComplete.origin} highlight={nextToFill==="origin"&&activeSection!=="origin"} disabled={!secEnabled.origin}>
           <div>
             <Select label="Campo" icon={Ic.pin(C.ok,14)} value={form.fieldId} onChange={v=>{u({fieldId:v,lotId:""});}} options={fieldOpts} placeholder="Seleccionar campo..."/>
           </div>
@@ -1259,7 +1269,7 @@ function NewScreen({ user, lots, plants, branches, fields, trucks, onBack, onCre
 
         {/* OWN FLEET (optional, between origin and destination) */}
         {showTruckSelect && (
-          <Sec label="Flete propio (opcional)" complete={!!form.truckId} summary={truckOpts.find(t=>t.value===form.truckId)?.label||""} isExpanded={activeSection==="ownfleet"} onFocus={()=>setActiveSection("ownfleet")} secRef={secRefs.ownfleet} highlight={secComplete.origin&&!form.truckId&&activeSection!=="ownfleet"}>
+          <Sec label="Flete propio (opcional)" complete={!!form.truckId} summary={truckOpts.find(t=>t.value===form.truckId)?.label||""} isExpanded={activeSection==="ownfleet"} onFocus={()=>setActiveSection("ownfleet")} secRef={secRefs.ownfleet} highlight={secComplete.origin&&!form.truckId&&activeSection!=="ownfleet"} disabled={!secEnabled.ownfleet}>
             <div style={{ fontSize:11, color:C.t2, marginBottom:12 }}>Uso mi propia flota — la planta solo autoriza el viaje</div>
             <Select label="Camión" icon={Ic.truck(C.acc,14)} value={form.truckId} onChange={v=>u({truckId:v})} options={truckOpts} placeholder="Seleccionar camión..."/>
             {form.truckId && <button type="button" onClick={()=>u({truckId:""})} style={{ marginTop:8, background:"none", border:"none", cursor:"pointer", fontSize:11, color:C.err, fontWeight:600, fontFamily:"inherit" }}>Quitar camión propio</button>}
@@ -1267,7 +1277,7 @@ function NewScreen({ user, lots, plants, branches, fields, trucks, onBack, onCre
         )}
 
         {/* DESTINATION SECTION */}
-        <Sec label="Destino" complete={secComplete.destination} summary={secSummary.destination} isExpanded={activeSection==="destination"} onFocus={()=>setActiveSection("destination")} secRef={secRefs.destination} incomplete={showIncomplete&&!secComplete.destination} highlight={nextToFill==="destination"&&activeSection!=="destination"}>
+        <Sec label="Destino" complete={secComplete.destination} summary={secSummary.destination} isExpanded={activeSection==="destination"} onFocus={()=>setActiveSection("destination")} secRef={secRefs.destination} incomplete={showIncomplete&&!secComplete.destination} highlight={nextToFill==="destination"&&activeSection!=="destination"} disabled={!secEnabled.destination}>
           <label style={{ fontSize:10.5, fontWeight:600, color:C.t2, marginBottom:6, display:"flex", alignItems:"center", gap:4, textTransform:"uppercase", letterSpacing:0.6 }}>{Ic.plant(C.t2,14)} Destino</label>
           <div style={{ display:"flex", gap:6, marginBottom:10 }}>
             <button onClick={()=>{setDestMode("plant"); setCustomDest({name:"",lat:null,lng:null});}} style={{ flex:1, padding:"10px 8px", borderRadius:8, border:`1.5px solid ${destMode==="plant"?C.pri:C.b1}`, background:destMode==="plant"?C.priPale:C.w, color:destMode==="plant"?C.pri:C.t2, cursor:"pointer", fontSize:12, fontWeight:600, fontFamily:"inherit" }}>Planta</button>
@@ -1365,7 +1375,7 @@ function NewScreen({ user, lots, plants, branches, fields, trucks, onBack, onCre
         )}
 
         {/* SCHEDULE SECTION */}
-        <Sec label="Fecha y hora" complete={secComplete.schedule} summary={secSummary.schedule} isExpanded={activeSection==="schedule"} onFocus={()=>setActiveSection("schedule")} secRef={secRefs.schedule} incomplete={showIncomplete&&!secComplete.schedule} highlight={nextToFill==="schedule"&&activeSection!=="schedule"}>
+        <Sec label="Fecha y hora" complete={secComplete.schedule} summary={secSummary.schedule} isExpanded={activeSection==="schedule"} onFocus={()=>setActiveSection("schedule")} secRef={secRefs.schedule} incomplete={showIncomplete&&!secComplete.schedule} highlight={nextToFill==="schedule"&&activeSection!=="schedule"} disabled={!secEnabled.schedule}>
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
             <div>
               <label style={{ fontSize:10.5, fontWeight:600, color:C.t2, marginBottom:6, display:"flex", alignItems:"center", gap:4, textTransform:"uppercase", letterSpacing:0.6 }}>{Ic.cal(C.pri,14)} Fecha carga</label>
