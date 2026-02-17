@@ -3,8 +3,8 @@
 // =====================================================================
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://tolvink-api-production.up.railway.app/api';
-const SUPABASE_URL = 'https://mlmecljidioymujsazrs.supabase.co';
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1sbWVjbGppZGlveW11anNhenJzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzExMTE2MTYsImV4cCI6MjA4NjY4NzYxNn0.0y0jNN9CcbzfDNOQZqDnjAR8as14dUZ4yQvnJeaYnNM';
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'https://mlmecljidioymujsazrs.supabase.co';
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 const STORAGE_BUCKET = 'freight-docs';
 
 let _token = localStorage.getItem('tolvink_token');
@@ -14,7 +14,6 @@ let _isLoggingIn = false;
 export function setToken(t) { _token = t; if(t) localStorage.setItem('tolvink_token',t); else localStorage.removeItem('tolvink_token'); }
 export function getToken() { return _token; }
 export function clearAuth() {
-  console.log('[API] Clearing auth');
   _token=null;
   localStorage.removeItem('tolvink_token');
   localStorage.removeItem('tolvink_user');
@@ -33,13 +32,10 @@ export default async function api(path, opts={}) {
   const cfg = { method, headers: { 'Content-Type':'application/json', ...(_token?{Authorization:`Bearer ${_token}`}:{}), ...headers } };
   if(body) cfg.body = JSON.stringify(body);
 
-  console.log(`[API] ${method} ${path}`, { hasToken: !!_token, isLoggingIn: _isLoggingIn });
-
   const res = await fetch(`${API_URL}${path}`, cfg);
 
   // Only trigger auth fail if NOT during login/register
   if(res.status===401 && !_isLoggingIn) {
-    console.error('[API] 401 Unauthorized - clearing auth');
     clearAuth();
     if(_onAuthFail) _onAuthFail();
     throw new ApiError(401,{message:'Sesión expirada'});
@@ -54,8 +50,6 @@ export default async function api(path, opts={}) {
   }
 
   if(!res.ok) throw new ApiError(res.status, data);
-
-  console.log(`[API] ${method} ${path} - OK`);
   return data;
 }
 
@@ -73,7 +67,6 @@ export async function apiLogin(identifier,password) {
 
     setToken(d.access_token);
     saveUser(d.user);
-    console.log('[API] Login successful, token and user saved');
     return d;
   } finally {
     setLoggingIn(false);
@@ -91,7 +84,6 @@ export async function apiRegister(b) {
 
     setToken(d.access_token);
     saveUser(d.user);
-    console.log('[API] Register successful, token and user saved');
     return d;
   } finally {
     setLoggingIn(false);

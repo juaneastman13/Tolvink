@@ -4,7 +4,7 @@ import { C, Ic } from "./theme";
 
 // ======================== GOOGLE MAPS ================================
 
-const GMAPS_KEY = "AIzaSyCeRfFUaBJgB7650sTKq_-RujC9jLJtWWw";
+const GMAPS_KEY = import.meta.env.VITE_GMAPS_KEY || "";
 
 export function loadGMaps() {
   return new Promise((resolve, reject) => {
