@@ -1132,7 +1132,7 @@ function NewScreen({ user, lots, plants, branches, fields, trucks, onBack, onCre
   },[form.fieldId]);
 
   const handleCreateLot = async () => {
-    if(!newLotName.trim()||!form.fieldId||newLotSaving) return;
+    if(!newLotName.trim()||!newLotLoc?.lat||!form.fieldId||newLotSaving) return;
     setNewLotSaving(true);
     try {
       const lot = await apiCreateLot(form.fieldId, { name: newLotName.trim(), lat: newLotLoc?.lat || undefined, lng: newLotLoc?.lng || undefined });
@@ -1310,7 +1310,7 @@ function NewScreen({ user, lots, plants, branches, fields, trucks, onBack, onCre
                     <div style={{flex:1}}>
                       <Field label="Nombre del lote" value={newLotName} onChange={setNewLotName} placeholder="Ej: Lote 3"/>
                     </div>
-                    <Btn sm disabled={!newLotName.trim()||newLotSaving} onClick={handleCreateLot}>{newLotSaving?"...":"Crear"}</Btn>
+                    <Btn sm disabled={!newLotName.trim()||!newLotLoc?.lat||newLotSaving} onClick={handleCreateLot}>{newLotSaving?"...":"Crear"}</Btn>
                     <Btn sm v="ghost" onClick={()=>{setNewLot(false);setNewLotName("");setNewLotLoc(null);}}>Cancelar</Btn>
                   </div>
                   <div style={{marginTop:10}}>
