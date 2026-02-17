@@ -3,7 +3,7 @@ import {
   apiGetAuditLog,
   apiCreateTruck, apiDeactivateTruck,
   apiCreateField, apiUpdateField, apiCreateLot, apiUpdateLot, apiGetFieldLots,
-  apiGrantAccess, apiRevokeAccess, apiListAccessProducers, apiListAccessPlants, apiSearchProducer, apiGetMyFacilities,
+  apiGrantAccess, apiRevokeAccess, apiListAccessProducers, apiListAccessPlants, apiSearchProducer, apiGetMyFacilities, apiListPlantCompanies,
   apiSearchUsers, apiStartConversation, apiListConversations, apiGetMessages, apiSendMessage, apiMarkRead,
   uploadPhoto, apiAddDocument, uploadChatFile,
   apiAdminStats, apiAdminListCompanies, apiAdminGetCompany, apiAdminCreateCompany, apiAdminUpdateCompany,
@@ -1861,7 +1861,8 @@ function FieldsScreen({ onBack, embedded }) {
 
 // ======================== ACCESS MANAGEMENT (Planta) ==================
 
-function AccessScreen({ onBack }) {
+function AccessScreen({ user, onBack }) {
+  const isAdmin = user?.role === "platform_admin";
   const [producers, setProducers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showGrant, setShowGrant] = useState(false);
@@ -1878,15 +1879,20 @@ function AccessScreen({ onBack }) {
   const [selectedPlantIds, setSelectedPlantIds] = useState([]);
   const [editingAccess, setEditingAccess] = useState(null); // producer record being edited
   const [confirmRevoke, setConfirmRevoke] = useState(null);
+  // Admin general: company selector
+  const [plantCompanies, setPlantCompanies] = useState([]);
+  const [selCompanyId, setSelCompanyId] = useState("");
 
   const load = useCallback(async () => {
     try {
-      const [p, f] = await Promise.all([apiListAccessProducers(), apiGetMyFacilities().catch(()=>({plants:[],branches:[]}))]);
+      const pcId = isAdmin ? selCompanyId || undefined : undefined;
+      const [p, f] = await Promise.all([apiListAccessProducers(pcId), apiGetMyFacilities(pcId).catch(()=>({plants:[],branches:[]}))]);
       setProducers(p || []);
       setFacilities(f);
     } catch {} finally { setLoading(false); }
-  }, []);
+  }, [isAdmin, selCompanyId]);
   useEffect(() => { load(); }, [load]);
+  useEffect(() => { if (isAdmin) apiListPlantCompanies().then(c => setPlantCompanies(c||[])).catch(()=>{}); }, [isAdmin]);
 
   const handleSearchChange = (q) => {
     setSearchQ(q);
@@ -1910,6 +1916,9 @@ function AccessScreen({ onBack }) {
 
   const handleGrant = async () => {
     if (!selectedProducer?.userId && !editingAccess) return;
+    if (isAdmin && !selCompanyId) {
+      setMsg({ t: "Seleccioná una empresa planta primero", k: "err" }); return;
+    }
     if (fPlants.length > 0 && selectedPlantIds.length === 0) {
       setMsg({ t: "Seleccioná al menos una planta", k: "err" }); return;
     }
@@ -1917,7 +1926,7 @@ function AccessScreen({ onBack }) {
     const userId = editingAccess ? editingAccess.producerUserId : selectedProducer.userId;
     const companyId = editingAccess ? editingAccess.producerCompanyId : selectedProducer.producerCompanyId;
     try {
-      await apiGrantAccess({ producerUserId: userId, producerCompanyId: companyId, allowedPlantIds: selectedPlantIds });
+      await apiGrantAccess({ producerUserId: userId, producerCompanyId: companyId, allowedPlantIds: selectedPlantIds, ...(isAdmin && selCompanyId ? { plantCompanyId: selCompanyId } : {}) });
       setSearchQ(""); setSelectedProducer(null); setSearchResults([]); setShowGrant(false); setEditingAccess(null);
       setSelectedPlantIds([]);
       setSaving(false); setDoneMsg(editingAccess ? "Habilitación actualizada" : "Productor habilitado"); load();
@@ -1999,6 +2008,7 @@ function AccessScreen({ onBack }) {
           <div>
             <div style={{ fontSize:13, fontWeight:700, color:C.t1 }}>{userName}</div>
             {companyName && <div style={{ fontSize:10, color:C.t2 }}>{companyName}</div>}
+            {isAdmin && !selCompanyId && p.plantCompany?.name && <div style={{ fontSize:10, color:C.sec }}>{Ic.plant(C.sec,10)} {p.plantCompany.name}</div>}
             {plantNames && <div style={{ fontSize:10, color:C.pri }}>{plantNames}</div>}
             {nPlants===0 && <div style={{ fontSize:10, color:C.t3 }}>Acceso general</div>}
           </div>
@@ -2018,6 +2028,17 @@ function AccessScreen({ onBack }) {
         <div style={{ fontSize: 20, fontWeight: 800, letterSpacing: -0.3 }}>Productores / Transportistas</div>
         <Btn sm onClick={() => { setShowGrant(!showGrant); setEditingAccess(null); setSelectedProducer(null); setSearchResults([]); setSearchQ(""); setMsg(null); setSelectedPlantIds([]); }} icon={showGrant ? Ic.cross(C.w, 14) : Ic.plus(C.w, 14)}>{showGrant ? "Cerrar" : "Habilitar"}</Btn>
       </div>
+
+      {/* Admin general: company selector */}
+      {isAdmin && plantCompanies.length > 0 && (
+        <div style={{ marginBottom:14, display:"flex", alignItems:"center", gap:10 }}>
+          <span style={{ fontSize:12, fontWeight:600, color:C.t2, whiteSpace:"nowrap" }}>Empresa planta:</span>
+          <select value={selCompanyId} onChange={e=>{setSelCompanyId(e.target.value);setLoading(true);}} style={{ flex:1, padding:"8px 10px", borderRadius:8, border:`1px solid ${C.b1}`, fontSize:12, fontFamily:"inherit", background:C.w, color:C.t1 }}>
+            <option value="">Todas las empresas</option>
+            {plantCompanies.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
+        </div>
+      )}
 
       {msg && <div style={{ padding: "10px 14px", borderRadius: 12, marginBottom: 12, fontSize: 12, fontWeight: 600, background: msg.k === "ok" ? C.okPale : C.errPale, color: msg.k === "ok" ? C.ok : C.err }}>{msg.t}</div>}
 
@@ -3963,7 +3984,7 @@ export default function Tolvink() {
         {screen==="menu" && <MenuScreen user={auth.user} perms={perms} onLogout={auth.logout} onNav={nav} isDesktop={isDesktop}/>}
         {screen==="trucks" && <TrucksScreen onBack={()=>{catalog.refresh();setScreen("menu");}}/>}
         {screen==="fields" && <FieldsScreen onBack={()=>{catalog.refresh();setScreen("menu");}}/>}
-        {screen==="access" && <AccessScreen onBack={()=>setScreen("menu")}/>}
+        {screen==="access" && <AccessScreen user={auth.user} onBack={()=>setScreen("menu")}/>}
         {screen==="admin" && <AdminScreen user={auth.user} onBack={()=>setScreen("menu")}/>}
         {screen==="mydata" && <MyDataScreen user={auth.user} onBack={()=>setScreen("menu")}/>}
         {screen==="reports" && <ReportsScreen onBack={()=>setScreen(isDesktop?"reports":"menu")} freights={fh.freights} isDesktop={isDesktop}/>}

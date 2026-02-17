@@ -137,10 +137,11 @@ export async function apiUpdateLot(fieldId, lotId, b) { return api(`/fields/${fi
 // Plant-Producer Access
 export async function apiGrantAccess(b) { return api('/plant-access/grant',{body:b}); }
 export async function apiRevokeAccess(prodId) { return api(`/plant-access/revoke/${prodId}`,{body:{},method:'PATCH'}); }
-export async function apiListAccessProducers() { return api('/plant-access/producers'); }
+export async function apiListAccessProducers(plantCompanyId) { const q=plantCompanyId?`?plantCompanyId=${plantCompanyId}`:''; return api(`/plant-access/producers${q}`); }
 export async function apiListAccessPlants() { return api('/plant-access/plants'); }
 export async function apiSearchProducer(q) { return api(`/plant-access/search-producer?q=${encodeURIComponent(q)}`); }
-export async function apiGetMyFacilities() { return api('/plant-access/my-facilities'); }
+export async function apiGetMyFacilities(plantCompanyId) { const q=plantCompanyId?`?plantCompanyId=${plantCompanyId}`:''; return api(`/plant-access/my-facilities${q}`); }
+export async function apiListPlantCompanies() { return api('/plant-access/plant-companies'); }
 
 // Catalog - Branches
 export async function apiGetBranches() { return api('/catalog/branches'); }
