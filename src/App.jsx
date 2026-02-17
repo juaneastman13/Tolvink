@@ -262,6 +262,75 @@ function HomeScreen({ user, freights, perms, onNav, catalog, isDesktop, onAction
   const [selectedId, setSelectedId] = useState(null);
   const [pendingFilter, setPendingFilter] = useState("all");
   const [summaryFilter, setSummaryFilter] = useState("all");
+  const [showCompanyPicker, setShowCompanyPicker] = useState(false);
+  const companyPickerRef = useRef(null);
+
+  // Build list of user's companies with names
+  const typeLabels = { producer: "Productor", plant: "Planta", transporter: "Transportista" };
+  const myCompanies = useMemo(() => {
+    const list = [];
+    const seen = new Set();
+    // Primary company
+    if (user.companyId) {
+      list.push({ id: user.companyId, name: user.entity, type: user.userType });
+      seen.add(user.companyId);
+    }
+    // Additional companies from companyByType
+    const cbt = user.companyByType || {};
+    for (const [type, id] of Object.entries(cbt)) {
+      if (id && !seen.has(id)) {
+        seen.add(id);
+        // Look up name from catalog
+        const fromTransporters = (catalog.transporters || []).find(t => t.id === id);
+        const fromPlants = (catalog.plants || []).find(p => p.id === id || p.companyId === id);
+        const name = fromTransporters?.name || fromPlants?.name || (typeLabels[type] || type);
+        list.push({ id, name, type });
+      }
+    }
+    return list;
+  }, [user.companyId, user.entity, user.userType, user.companyByType, catalog.transporters, catalog.plants]);
+
+  const [activeCompanyIds, setActiveCompanyIds] = useState(null); // null = all
+  const toggleCompany = (id) => {
+    setActiveCompanyIds(prev => {
+      const all = new Set(myCompanies.map(c => c.id));
+      const cur = prev ? new Set(prev) : new Set(all);
+      if (cur.has(id)) { cur.delete(id); if (cur.size === 0) return new Set(all); } // can't deselect all
+      else cur.add(id);
+      // If all selected, return null (means "all")
+      return cur.size === all.size ? null : cur;
+    });
+  };
+  const isCompanyActive = (id) => !activeCompanyIds || activeCompanyIds.has(id);
+  const allCompaniesSelected = !activeCompanyIds;
+  const hasMultipleCompanies = myCompanies.length > 1;
+
+  // Plant companyId map for freight filtering
+  const plantCompanyMap = useMemo(() => {
+    const m = {};
+    (catalog.plants || []).forEach(p => { m[p.id] = p.companyId || p.id; });
+    return m;
+  }, [catalog.plants]);
+
+  // Filter freights by selected companies
+  const filteredFreights = useMemo(() => {
+    if (!activeCompanyIds) return freights; // all selected
+    return freights.filter(f => {
+      if (f.originCompanyId && activeCompanyIds.has(f.originCompanyId)) return true;
+      if (f.transporterId && activeCompanyIds.has(f.transporterId)) return true;
+      const plantCo = plantCompanyMap[f.destPlantId];
+      if (plantCo && activeCompanyIds.has(plantCo)) return true;
+      return false;
+    });
+  }, [freights, activeCompanyIds, plantCompanyMap]);
+
+  // Close company picker on outside click
+  useEffect(() => {
+    if (!showCompanyPicker) return;
+    const handler = (e) => { if (companyPickerRef.current && !companyPickerRef.current.contains(e.target)) setShowCompanyPicker(false); };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [showCompanyPicker]);
 
   // Date helpers for filters
   const dateBounds = useMemo(() => {
@@ -286,7 +355,7 @@ function HomeScreen({ user, freights, perms, onNav, catalog, isDesktop, onAction
   // Pending groups — grouped by ACTION type, filtered by date
   const pendingByAction = useMemo(() => {
     const buckets = {};
-    freights.forEach(f => {
+    filteredFreights.forEach(f => {
       const pa = getPendingActions(f, user.userType);
       if (!pa) return;
       if (!matchDate(f.loadDate, pendingFilter)) return;
@@ -297,14 +366,14 @@ function HomeScreen({ user, freights, perms, onNav, catalog, isDesktop, onAction
       b.items.sort((a, b2) => a.loadDate && b2.loadDate ? a.loadDate.localeCompare(b2.loadDate) : 0);
       return b;
     });
-  }, [freights, user.userType, pendingFilter]);
+  }, [filteredFreights, user.userType, pendingFilter]);
   const pendingCount = pendingByAction.reduce((s, g) => s + g.items.length, 0);
   const hasPending = pendingCount > 0;
 
   // Total pending (unfiltered) to know if section should show
   const totalPendingAll = useMemo(() =>
-    freights.filter(f => getPendingActions(f, user.userType)).length
-  , [freights, user.userType]);
+    filteredFreights.filter(f => getPendingActions(f, user.userType)).length
+  , [filteredFreights, user.userType]);
 
   // Summary groups — by freight status, filtered by date
   const STATUS_GROUPS = [
@@ -318,11 +387,11 @@ function HomeScreen({ user, freights, perms, onNav, catalog, isDesktop, onAction
   const summaryGroups = useMemo(() => {
     return STATUS_GROUPS.map(g => {
       const st = stCfg(g.statuses[0]);
-      const items = freights.filter(f => g.statuses.includes(f.status) && !getPendingActions(f, user.userType) && matchDate(f.loadDate, summaryFilter))
+      const items = filteredFreights.filter(f => g.statuses.includes(f.status) && !getPendingActions(f, user.userType) && matchDate(f.loadDate, summaryFilter))
         .sort((a, b) => a.loadDate && b.loadDate ? a.loadDate.localeCompare(b.loadDate) : 0);
       return { ...g, color: st.color, items };
     }).filter(g => g.items.length > 0);
-  }, [freights, user.userType, summaryFilter]);
+  }, [filteredFreights, user.userType, summaryFilter]);
 
   // Collapsed state
   const [collapsed, setCollapsed] = useState({});
@@ -332,7 +401,7 @@ function HomeScreen({ user, freights, perms, onNav, catalog, isDesktop, onAction
   const actionIcon = (icon) => icon === "assign" ? Ic.warn : icon === "authorize" ? Ic.chk : icon === "respond" ? Ic.truck : icon === "start" ? Ic.nav : icon === "confirm" ? Ic.plant : Ic.chk;
 
   // Selected freight for detail
-  const selFreight = selectedId ? freights.find(f => f.id === selectedId) : null;
+  const selFreight = selectedId ? filteredFreights.find(f => f.id === selectedId) || freights.find(f => f.id === selectedId) : null;
   const hasDetail = selectedId && selFreight;
 
   // Render a freight card — compact when detail is open on desktop
@@ -397,14 +466,37 @@ function HomeScreen({ user, freights, perms, onNav, catalog, isDesktop, onAction
   // Sidebar logo area: padTop24 + font63 + padBot20 = 107px → midline ~55px. Solicitar btn top ~122px.
   const listContent = (
     <div style={{ flex: compact ? undefined : 1, width: compact ? 300 : undefined, flexShrink: 0, overflow: "auto", padding: compact ? "0 8px 8px" : "0 18px 18px", boxSizing: "border-box", borderRight: compact ? `1px solid ${C.b1}` : "none" }}>
-      {/* Header — empresa, fecha+hora, fletes — centered with sidebar logo midline */}
+      {/* Header — empresa (clickable), fecha+hora, fletes — centered with sidebar logo midline */}
       <div style={{ display: "flex", alignItems: "center", minHeight: isDesktop ? 107 : 56, padding: compact ? "0 6px" : "0 0", borderBottom: `1px solid ${C.b2}`, marginBottom: isDesktop ? 14 : 10 }}>
-        <div>
-          <div style={{ fontSize: compact ? 13 : 15, fontWeight: 700, color: C.t1 }}>{user.entity}</div>
+        <div style={{ position: "relative" }}>
+          <div ref={companyPickerRef}>
+            <button onClick={() => hasMultipleCompanies && setShowCompanyPicker(p => !p)} style={{ display: "flex", alignItems: "center", gap: 4, background: "none", border: "none", padding: 0, cursor: hasMultipleCompanies ? "pointer" : "default", fontFamily: "inherit" }}>
+              <span style={{ fontSize: compact ? 13 : 15, fontWeight: 700, color: C.t1 }}>
+                {allCompaniesSelected ? (myCompanies.length > 1 ? "Todas las empresas" : user.entity) : myCompanies.filter(c => isCompanyActive(c.id)).map(c => c.name).join(", ")}
+              </span>
+              {hasMultipleCompanies && <span style={{ display: "flex", transform: showCompanyPicker ? "rotate(270deg)" : "rotate(90deg)", transition: "transform 0.15s" }}>{Ic.chev(C.t3, 12)}</span>}
+            </button>
+            {/* Company dropdown */}
+            {showCompanyPicker && (
+              <div style={{ position: "absolute", top: "100%", left: 0, marginTop: 4, background: C.w, border: `1px solid ${C.b1}`, borderRadius: 10, boxShadow: C.shMd, padding: 6, zIndex: 20, minWidth: 200 }}>
+                {myCompanies.map(c => (
+                  <button key={c.id} onClick={() => toggleCompany(c.id)} style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", borderRadius: 6, border: "none", background: isCompanyActive(c.id) ? C.priPale : "transparent", cursor: "pointer", fontFamily: "inherit", textAlign: "left" }}>
+                    <span style={{ width: 16, height: 16, borderRadius: 4, border: `2px solid ${isCompanyActive(c.id) ? C.pri : C.b1}`, background: isCompanyActive(c.id) ? C.pri : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      {isCompanyActive(c.id) && Ic.chk("#fff", 10)}
+                    </span>
+                    <div>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: C.t1 }}>{c.name}</div>
+                      <div style={{ fontSize: 10, color: C.t3 }}>{typeLabels[c.type] || c.type}</div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
           <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginTop: 2 }}>
             <span style={{ fontSize: 11, color: C.t3, textTransform: "capitalize" }}>{todayLabel} · {nowTime}</span>
             <span style={{ fontSize: 11, color: C.t3 }}>·</span>
-            <span style={{ fontSize: 11, color: C.t2, fontWeight: 600 }}>{freights.length} flete{freights.length !== 1 ? "s" : ""}</span>
+            <span style={{ fontSize: 11, color: C.t2, fontWeight: 600 }}>{filteredFreights.length} flete{filteredFreights.length !== 1 ? "s" : ""}</span>
           </div>
         </div>
       </div>
