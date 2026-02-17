@@ -1507,49 +1507,84 @@ function NewScreen({ user, lots, plants, branches, fields, trucks, onBack, onCre
 
 // ======================== PROFILE =====================================
 
-function ProfileScreen({ user, perms, onLogout, onNav, isDesktop }) {
-  const tc = ({plant:C.pri,transporter:C.info,producer:C.acc})[user.userType]||C.pri;
+function MenuScreen({ user, perms, onLogout, onNav, isDesktop }) {
+  const TYPE_LABELS = {plant:"Planta de Acopio",transporter:"Transportista",producer:"Productor"};
+  const TYPE_COLORS = {plant:C.pri,transporter:C.info||C.sec,producer:C.acc};
+  const tc = TYPE_COLORS[user.userType]||C.pri;
   const pl = []; if(perms.canRequest)pl.push("Solicitar fletes"); if(perms.canApprove)pl.push("Aprobar fletes"); if(perms.canAssignDriver)pl.push("Asignar choferes"); if(perms.canCancel)pl.push("Cancelar fletes"); if(perms.canReject)pl.push("Rechazar viajes");
+
+  // Build companies list from companyByType
+  const companies = [];
+  const cbt = user.companyByType||{};
+  Object.entries(cbt).forEach(([type, companyId])=>{
+    if(companyId) companies.push({ type, companyId, label:TYPE_LABELS[type]||type, color:TYPE_COLORS[type]||C.t2 });
+  });
+  if(companies.length===0 && user.entity) companies.push({ type:user.userType, companyId:user.companyId, label:TYPE_LABELS[user.userType]||user.userType, color:tc, name:user.entity });
 
   const mgmtItems = [];
   if(user.userType==="transporter"||user.userType==="producer") mgmtItems.push({k:"trucks",l:"Mi Flota",ic:Ic.truck(C.acc,18),c:C.acc});
   if(user.userType==="producer") mgmtItems.push({k:"fields",l:"Mis Campos y Lotes",ic:Ic.pin(C.pri,18),c:C.pri});
   if(user.userType==="plant") mgmtItems.push({k:"access",l:"Productores / Transportistas",ic:Ic.user(C.pri,18),c:C.pri});
-  if(!isDesktop) mgmtItems.push({k:"calendar",l:"Calendario",ic:Ic.cal(C.info||C.sec,18),c:C.info||C.sec});
-  if(!isDesktop) mgmtItems.push({k:"reports",l:"Informes y Documentos",ic:Ic.doc(C.sec,18),c:C.sec});
   if(user.role==="platform_admin"||user.role==="admin") mgmtItems.push({k:"admin",l:"Administración",ic:Ic.shield(C.err,18),c:C.err});
+
+  const menuItem = (m, i, arr) => (
+    <button key={m.k} onClick={()=>onNav(m.k)} style={{width:"100%",display:"flex",alignItems:"center",gap:12,padding:"14px 14px",background:"none",border:"none",borderTop:i>0?`1px solid ${C.b2}`:"none",cursor:"pointer",fontFamily:"inherit",textAlign:"left",transition:"background 0.15s"}} onMouseEnter={e=>e.currentTarget.style.background=C.priGhost} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+      <div style={{width:36,height:36,borderRadius:10,background:`${m.c}12`,display:"flex",alignItems:"center",justifyContent:"center"}}>{m.ic}</div>
+      <span style={{fontSize:14,fontWeight:600,color:C.t1}}>{m.l}</span>
+      <span style={{marginLeft:"auto",display:"flex"}}>{Ic.chev(C.t3,16)}</span>
+    </button>
+  );
 
   return (
     <div style={{flex:1,overflow:"auto",padding:18}}>
-      <div style={{display:"flex",flexDirection:"column",alignItems:"center",marginBottom:24,marginTop:8,animation:"slideUp 0.3s ease"}}>
-        <Av letters={user.av} size={72} color={tc}/>
-        <div style={{fontSize:18,fontWeight:700,marginTop:12,color:C.t1}}>{user.name}</div>
-        <div style={{fontSize:12,color:C.t2,marginTop:3}}>{user.email}</div>
-        <div style={{display:"flex",gap:6,justifyContent:"center",marginTop:8}}>
-          <Bd color={tc}>{({plant:"Planta",transporter:"Transportista",producer:"Productor"})[user.userType]}</Bd>
-          <Bd color={C.t2} bg={C.bgInput}>{user.role==="admin"?"Gerente":"Operario"}</Bd>
-        </div>
-        <div style={{fontSize:12,color:C.t2,marginTop:6}}>{user.entity}</div>
-        {user.companyId && <div style={{fontSize:9.5,color:C.t3,marginTop:4,fontFamily:MONO}}>ID: {user.companyId}</div>}
-        <button onClick={()=>onNav("mydata")} style={{marginTop:10,padding:"8px 16px",borderRadius:8,border:`1px solid ${C.pri}`,background:`${C.pri}08`,color:C.pri,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>Administrar mis datos</button>
-      </div>
+      <div style={{fontSize:20,fontWeight:800,letterSpacing:-0.3,marginBottom:16}}>Menú</div>
 
+      {/* Management items */}
       {mgmtItems.length>0 && (
-        <div style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius:12,padding:4,marginBottom:12,boxShadow:C.sh,animation:"cardIn 0.3s ease 0.05s both"}}>
-          {mgmtItems.map((m,i)=>(
-            <button key={m.k} onClick={()=>onNav(m.k)} style={{width:"100%",display:"flex",alignItems:"center",gap:12,padding:"14px 14px",background:"none",border:"none",borderTop:i>0?`1px solid ${C.b2}`:"none",cursor:"pointer",fontFamily:"inherit",textAlign:"left",transition:"background 0.15s"}} onMouseEnter={e=>e.currentTarget.style.background=C.priGhost} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
-              <div style={{width:36,height:36,borderRadius:10,background:`${m.c}12`,display:"flex",alignItems:"center",justifyContent:"center"}}>{m.ic}</div>
-              <span style={{fontSize:14,fontWeight:600,color:C.t1}}>{m.l}</span>
-              <span style={{marginLeft:"auto",display:"flex"}}>{Ic.chev(C.t3,16)}</span>
-            </button>
-          ))}
+        <div style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius:12,padding:4,marginBottom:12,boxShadow:C.sh}}>
+          {mgmtItems.map((m,i)=>menuItem(m,i,mgmtItems))}
         </div>
       )}
 
+      {/* Profile section */}
       <div style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius:12,padding:16,marginBottom:12,boxShadow:C.sh}}>
-        <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:10}}>{Ic.shield(C.pri,16)}<span style={{fontSize:10.5,fontWeight:700,color:C.t2,textTransform:"uppercase",letterSpacing:0.5}}>Permisos</span></div>
-        {pl.length>0?pl.map((p,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 0"}}>{Ic.chk(C.pri,14)}<span style={{fontSize:13}}>{p}</span></div>):<div style={{fontSize:12,color:C.t3}}>Rol operativo</div>}
+        <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:14}}>{Ic.user(C.pri,16)}<span style={{fontSize:10.5,fontWeight:700,color:C.t2,textTransform:"uppercase",letterSpacing:0.5}}>Mi Perfil</span></div>
+
+        <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:14}}>
+          <Av letters={user.av} size={56} color={tc}/>
+          <div>
+            <div style={{fontSize:16,fontWeight:700,color:C.t1}}>{user.name}</div>
+            <div style={{fontSize:12,color:C.t2,marginTop:2}}>{user.email}</div>
+            {user.phone && <div style={{fontSize:11,color:C.t3,marginTop:1}}>{user.phone}</div>}
+          </div>
+        </div>
+
+        {/* Companies */}
+        <div style={{marginBottom:12}}>
+          <div style={{fontSize:10,fontWeight:700,color:C.t3,textTransform:"uppercase",letterSpacing:0.5,marginBottom:8}}>Empresas</div>
+          {companies.map((c,i)=>(
+            <div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 0",borderTop:i>0?`1px solid ${C.b2}`:"none"}}>
+              <Bd color={c.color}>{c.label}</Bd>
+              <span style={{fontSize:12,fontWeight:600,color:C.t1}}>{c.name||user.entity}</span>
+              <Bd color={C.t2} bg={C.bgInput}>{user.role==="admin"?"Gerente":"Operario"}</Bd>
+            </div>
+          ))}
+        </div>
+
+        {/* Permissions */}
+        <div style={{marginBottom:12}}>
+          <div style={{fontSize:10,fontWeight:700,color:C.t3,textTransform:"uppercase",letterSpacing:0.5,marginBottom:6}}>Permisos</div>
+          {pl.length>0 ? pl.map((p,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:6,padding:"4px 0"}}>{Ic.chk(C.pri,12)}<span style={{fontSize:12,color:C.t1}}>{p}</span></div>) : <div style={{fontSize:12,color:C.t3}}>Rol operativo</div>}
+        </div>
+
+        {/* ID */}
+        {user.companyId && <div style={{fontSize:9.5,color:C.t3,fontFamily:MONO,marginBottom:10}}>ID: {user.companyId}</div>}
+
+        <button onClick={()=>onNav("mydata")} style={{width:"100%",padding:"10px 16px",borderRadius:8,border:`1px solid ${C.pri}`,background:`${C.pri}08`,color:C.pri,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
+          {Ic.edit(C.pri,14)} Administrar mis datos
+        </button>
       </div>
+
       <Btn full v="err" onClick={onLogout} icon={Ic.out(C.err,16)}>Cerrar sesión</Btn>
     </div>
   );
@@ -3861,7 +3896,7 @@ export default function Tolvink() {
 
   console.log('[APP] User authenticated, rendering main app');
   const curFreight = fh.freights.find(f=>f.id===selFreight);
-  const navActive = ["detail"].includes(screen)?"list":["trucks","fields","access","admin","mydata"].includes(screen)?"profile":(!isDesktop&&screen==="reports")?"profile":(!isDesktop&&screen==="calendar")?"profile":screen;
+  const navActive = ["detail"].includes(screen)?"list":["trucks","fields","access","admin","mydata"].includes(screen)?"menu":screen;
 
   return (
     <div className="tv-shell" style={{height:"100dvh",background:C.bg,color:C.t1,fontFamily:FONT,display:"flex",flexDirection:isDesktop?"row":"column",width:"100%",position:"relative",overflow:"hidden"}}>
@@ -3894,13 +3929,13 @@ export default function Tolvink() {
         {screen==="detail" && <DetailScreen user={curFreight ? {...auth.user, userType: _resolveType(curFreight)} : auth.user} freight={curFreight} perms={perms} onBack={()=>setScreen("list")} onAction={handleAction} actionLoading={actionLoading} onChat={(convId)=>{if(convId){setChatConvId(convId);setScreen("chats");}}} onRefresh={(id)=>fh.refresh(id)} onDuplicate={(f)=>{setDuplicateData(f);setScreen("new");}} onEdit={(f)=>{setEditData(f);setScreen("edit");}}/>}
         {screen==="new" && <NewScreen user={auth.user} lots={catalog.lots} plants={catalog.plants} branches={catalog.branches} fields={catalog.fields} trucks={catalog.trucks} onBack={()=>{setDuplicateData(null);setScreen("home");}} onCreate={handleCreate} submitting={submitting} duplicateFrom={duplicateData}/>}
         {screen==="edit" && editData && <EditScreen freight={editData} fields={catalog.fields} plants={catalog.plants} onBack={()=>{setEditData(null);setScreen("detail");}} onSave={async(id,data)=>{const r=await fh.update(id,data);if(r.ok){setEditData(null);setScreen("detail");show("Flete actualizado");}else show(r.error,"err");}}/>}
-        {screen==="profile" && <ProfileScreen user={auth.user} perms={perms} onLogout={auth.logout} onNav={nav} isDesktop={isDesktop}/>}
-        {screen==="trucks" && <TrucksScreen onBack={()=>{catalog.refresh();setScreen("profile");}}/>}
-        {screen==="fields" && <FieldsScreen onBack={()=>{catalog.refresh();setScreen("profile");}}/>}
-        {screen==="access" && <AccessScreen onBack={()=>setScreen("profile")}/>}
-        {screen==="admin" && <AdminScreen user={auth.user} onBack={()=>setScreen("profile")}/>}
-        {screen==="mydata" && <MyDataScreen user={auth.user} onBack={()=>setScreen("profile")}/>}
-        {screen==="reports" && <ReportsScreen onBack={()=>setScreen(isDesktop?"reports":"profile")} freights={fh.freights} isDesktop={isDesktop}/>}
+        {screen==="menu" && <MenuScreen user={auth.user} perms={perms} onLogout={auth.logout} onNav={nav} isDesktop={isDesktop}/>}
+        {screen==="trucks" && <TrucksScreen onBack={()=>{catalog.refresh();setScreen("menu");}}/>}
+        {screen==="fields" && <FieldsScreen onBack={()=>{catalog.refresh();setScreen("menu");}}/>}
+        {screen==="access" && <AccessScreen onBack={()=>setScreen("menu")}/>}
+        {screen==="admin" && <AdminScreen user={auth.user} onBack={()=>setScreen("menu")}/>}
+        {screen==="mydata" && <MyDataScreen user={auth.user} onBack={()=>setScreen("menu")}/>}
+        {screen==="reports" && <ReportsScreen onBack={()=>setScreen(isDesktop?"reports":"menu")} freights={fh.freights} isDesktop={isDesktop}/>}
         {screen==="chats" && <ChatsScreen user={auth.user} openConvId={chatConvId} onConvOpened={()=>setChatConvId(null)} isDesktop={isDesktop}/>}
         </div>
         </div>

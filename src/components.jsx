@@ -167,10 +167,10 @@ export function Sidebar({ active, onChange, unread=0, pendingCount=0, canRequest
   const items = [
     { k:"home",    ic:a=>Ic.home(a?C.pri:C.t3,20),  l:"Inicio" },
     { k:"list",    ic:a=>Ic.truck(a?C.pri:C.t3,20),  l:"Fletes" },
-    { k:"calendar",ic:a=>Ic.cal(a?C.pri:C.t3,20),    l:"Calendario" },
     { k:"chats",   ic:a=>Ic.msg(a?C.pri:C.t3,20),    l:"Chat", bd:unread },
+    { k:"calendar",ic:a=>Ic.cal(a?C.pri:C.t3,20),    l:"Calendario" },
     { k:"reports", ic:a=>Ic.doc(a?C.pri:C.t3,20),    l:"Informes" },
-    { k:"profile", ic:a=>Ic.user(a?C.pri:C.t3,20),   l:"Perfil" },
+    { k:"menu",    ic:a=>Ic.gear(a?C.pri:C.t3,20),   l:"Menú" },
   ];
   return (
     <div style={{ width:220, minWidth:220, height:"100%", background:C.w, borderRight:`1px solid ${C.b2}`, display:"flex", flexDirection:"column", flexShrink:0, overflow:"hidden" }}>
@@ -222,11 +222,13 @@ export function Nav({ active, onChange, unread=0, pendingCount=0, canRequest=fal
   const hasPending = pendingCount > 0;
   const centerColor = hasPending ? C.acc : C.ok;
   const items = [
-    { k:"home",   ic:a=>Ic.home(a?C.pri:C.t3,22),  l:"Inicio" },
-    { k:"list",   ic:a=>Ic.truck(a?C.pri:C.t3,22),  l:"Fletes" },
-    { k:"pending",sp:true, bd:pendingCount },
-    { k:"chats",  ic:a=>Ic.msg(a?C.pri:C.t3,22),    l:"Chat", bd:unread },
-    { k:"profile",ic:a=>Ic.user(a?C.pri:C.t3,22),   l:"Perfil" },
+    { k:"home",     ic:a=>Ic.home(a?C.pri:C.t3,20),  l:"Inicio" },
+    { k:"list",     ic:a=>Ic.truck(a?C.pri:C.t3,20),  l:"Fletes" },
+    { k:"pending",  sp:true, bd:pendingCount },
+    { k:"chats",    ic:a=>Ic.msg(a?C.pri:C.t3,20),    l:"Chat", bd:unread },
+    { k:"calendar", ic:a=>Ic.cal(a?C.pri:C.t3,20),    l:"Calendario" },
+    { k:"reports",  ic:a=>Ic.doc(a?C.pri:C.t3,20),    l:"Informes" },
+    { k:"menu",     ic:a=>Ic.gear(a?C.pri:C.t3,20),   l:"Menú" },
   ];
   return (
     <div style={{ display:"flex", borderTop:`1px solid ${C.b1}`, background:C.nav, paddingTop:2, paddingBottom:"max(4px, env(safe-area-inset-bottom))", flexShrink:0 }}>
