@@ -1084,6 +1084,7 @@ function NewScreen({ user, lots, plants, branches, fields, trucks, onBack, onCre
   const [loadingLots, setLoadingLots] = useState(false);
   const [newLot, setNewLot] = useState(false);
   const [newLotName, setNewLotName] = useState("");
+  const [newLotLoc, setNewLotLoc] = useState(null);
   const [newLotSaving, setNewLotSaving] = useState(false);
   const [photos, setPhotos] = useState([]);
   const [showAttach, setShowAttach] = useState(false);
@@ -1134,10 +1135,10 @@ function NewScreen({ user, lots, plants, branches, fields, trucks, onBack, onCre
     if(!newLotName.trim()||!form.fieldId||newLotSaving) return;
     setNewLotSaving(true);
     try {
-      const lot = await apiCreateLot(form.fieldId, { name: newLotName.trim() });
+      const lot = await apiCreateLot(form.fieldId, { name: newLotName.trim(), lat: newLotLoc?.lat || undefined, lng: newLotLoc?.lng || undefined });
       setFieldLots(prev=>[...prev, lot]);
       u({ lotId: lot.id });
-      setNewLot(false); setNewLotName("");
+      setNewLot(false); setNewLotName(""); setNewLotLoc(null);
     } catch(e) { console.error("Error creando lote:", e); }
     finally { setNewLotSaving(false); }
   };
@@ -1304,12 +1305,18 @@ function NewScreen({ user, lots, plants, branches, fields, trucks, onBack, onCre
               {selectedLot && selectedLot.lat && <div style={{ display:"flex", alignItems:"center", gap:6, padding:"6px 10px", background:C.priPale, borderRadius:8, marginTop:6 }}>{Ic.chk(C.pri,14)}<span style={{fontSize:10.5,color:C.pri,fontWeight:500}}>{selectedLot.lat}, {selectedLot.lng}</span></div>}
               {form.fieldId && !newLot && <button type="button" onClick={()=>setNewLot(true)} style={{marginTop:8,background:"none",border:"none",cursor:"pointer",fontSize:11,fontWeight:600,color:C.pri,padding:0,fontFamily:"inherit",display:"flex",alignItems:"center",gap:4}}>{Ic.plus(C.pri,13)} Crear lote nuevo</button>}
               {newLot && (
-                <div style={{marginTop:8,background:C.priPale,borderRadius:10,padding:12,display:"flex",gap:8,alignItems:"flex-end"}}>
-                  <div style={{flex:1}}>
-                    <Field label="Nombre del lote" value={newLotName} onChange={setNewLotName} placeholder="Ej: Lote 3"/>
+                <div style={{marginTop:8,background:C.priPale,borderRadius:10,padding:12}}>
+                  <div style={{display:"flex",gap:8,alignItems:"flex-end"}}>
+                    <div style={{flex:1}}>
+                      <Field label="Nombre del lote" value={newLotName} onChange={setNewLotName} placeholder="Ej: Lote 3"/>
+                    </div>
+                    <Btn sm disabled={!newLotName.trim()||newLotSaving} onClick={handleCreateLot}>{newLotSaving?"...":"Crear"}</Btn>
+                    <Btn sm v="ghost" onClick={()=>{setNewLot(false);setNewLotName("");setNewLotLoc(null);}}>Cancelar</Btn>
                   </div>
-                  <Btn sm disabled={!newLotName.trim()||newLotSaving} onClick={handleCreateLot}>{newLotSaving?"...":"Crear"}</Btn>
-                  <Btn sm v="ghost" onClick={()=>{setNewLot(false);setNewLotName("");}}>Cancelar</Btn>
+                  <div style={{marginTop:10}}>
+                    <SafeZone><LocationPicker label="Ubicación del lote" value={newLotLoc} onChange={setNewLotLoc} defaultCenter={(() => { const sf = (fields||[]).find(f=>f.id===form.fieldId); return sf?.lat&&sf?.lng ? {lat:Number(sf.lat),lng:Number(sf.lng)} : null; })()}/></SafeZone>
+                  </div>
+                  {newLotLoc && <div style={{display:"flex",alignItems:"center",gap:6,padding:"6px 10px",background:C.w,borderRadius:8,marginTop:6}}>{Ic.chk(C.pri,14)}<span style={{fontSize:10.5,color:C.pri,fontWeight:500}}>{newLotLoc.lat.toFixed(4)}, {newLotLoc.lng.toFixed(4)}</span></div>}
                 </div>
               )}
             </div>
