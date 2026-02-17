@@ -439,7 +439,7 @@ const _FIELD_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="2
 const _PLANT_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#003882" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20h20"/><path d="M5 20V8l5 4V8l5 4V4h3v16"/></svg>';
 const _TRUCK_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="#FF6A00" stroke="#fff" stroke-width="1.5"><rect x="1" y="3" width="15" height="13" rx="2"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>';
 
-export function FreightsOverviewMap({ freights, onSelect, fields, plants, focus, onFocused }) {
+export function FreightsOverviewMap({ freights, onSelect, fields, plants }) {
   const mapRef = useRef(null);
   const mapObj = useRef(null);
   const markers = useRef([]);
@@ -465,19 +465,6 @@ export function FreightsOverviewMap({ freights, onSelect, fields, plants, focus,
     })();
     return () => { c = true; };
   }, []);
-
-  // Focus on specific location when requested
-  useEffect(() => {
-    if (!ready || !mapObj.current || !focus) return;
-    mapObj.current.panTo({ lat: focus.lat, lng: focus.lng });
-    if (focus.zoom) mapObj.current.setZoom(focus.zoom);
-    const mk = new window.google.maps.Marker({
-      position: { lat: focus.lat, lng: focus.lng }, map: mapObj.current,
-      animation: window.google.maps.Animation.DROP,
-      icon: { path: window.google.maps.SymbolPath.CIRCLE, scale: 14, fillColor: C.pri, fillOpacity: 0.5, strokeColor: C.pri, strokeWeight: 2 },
-    });
-    setTimeout(() => { mk.setMap(null); if (onFocused) onFocused(); }, 3000);
-  }, [ready, focus]);
 
   // Freight + field + plant markers
   useEffect(() => {
@@ -620,6 +607,41 @@ export function FreightsOverviewMap({ freights, onSelect, fields, plants, focus,
         {showFreights?"Ocultar fletes":"Ver fletes"}
       </button>
       <div ref={mapRef} style={{ width:"100%", height:420 }} />
+    </div>
+  );
+}
+
+// ======================== MAP OVERLAY (pin click) ===========================
+
+export function MapOverlay({ lat, lng, onClose }) {
+  const mapRef = useRef(null);
+  useEffect(() => {
+    if (!mapRef.current || !lat || !lng) return;
+    let c = false;
+    (async () => {
+      const maps = await loadGMaps();
+      if (c || !mapRef.current) return;
+      const pos = { lat: Number(lat), lng: Number(lng) };
+      const map = new maps.Map(mapRef.current, {
+        zoom: 15, center: pos,
+        disableDefaultUI: true, zoomControl: true, gestureHandling: "greedy",
+        styles: [{ featureType:"poi", stylers:[{visibility:"off"}] }, { featureType:"transit", stylers:[{visibility:"off"}] }],
+      });
+      new maps.Marker({ position: pos, map, animation: maps.Animation.DROP,
+        icon: { path: maps.SymbolPath.CIRCLE, scale: 12, fillColor: C.pri, fillOpacity: 0.8, strokeColor: "#fff", strokeWeight: 3 } });
+    })();
+    return () => { c = true; };
+  }, [lat, lng]);
+
+  return (
+    <div style={{position:"fixed",inset:0,zIndex:9999,background:"rgba(0,0,0,0.5)",display:"flex",flexDirection:"column"}}>
+      <div style={{padding:"12px 16px",background:C.w,display:"flex",alignItems:"center",gap:10,borderBottom:`1px solid ${C.b1}`,flexShrink:0}}>
+        <button onClick={onClose} style={{background:"none",border:"none",cursor:"pointer",display:"flex",alignItems:"center",gap:6,padding:"6px 12px",borderRadius:8,fontSize:13,fontWeight:700,color:C.pri,fontFamily:"inherit"}}>
+          {Ic.chev(C.pri,16)} Volver
+        </button>
+        <span style={{fontSize:13,color:C.t2,fontWeight:600}}>Ubicación en mapa</span>
+      </div>
+      <div ref={mapRef} style={{flex:1}} />
     </div>
   );
 }

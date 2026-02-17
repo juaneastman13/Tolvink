@@ -19,7 +19,7 @@ import { V, validate, SCHEMAS, textMatch, FieldError } from "./validation";
 import { stCfg, getActions, GRANOS, UNITS } from "./constants";
 import { Av, Bd, Btn, Tabs, Field, Select, Sec, Toast, Loader, LoadingOverlay, AttachMenu, Sidebar, Nav, SortTh, exportCSV, exportExcel, exportPDF, NotifBell, NotificationsPanel, ModalOverlay, FileViewer } from "./components";
 import { useAuth, useCatalog, useFreights, permsFor, useIsDesktop, useTableSort, usePullToRefresh, useOnline, useNotifications } from "./hooks";
-import { SafeZone, LocationPicker, FreightMap, FreightsOverviewMap } from "./maps";
+import { SafeZone, LocationPicker, FreightMap, FreightsOverviewMap, MapOverlay } from "./maps";
 import { PhotoUpload, DocsGallery, FreightFileUpload } from "./uploads";
 import { RoutesBackground } from "./routes-bg";
 
@@ -587,7 +587,7 @@ function HomeScreen({ user, freights, perms, onNav, catalog, isDesktop, onAction
 
 // ======================== FREIGHT LIST ================================
 
-function ListScreen({ freights, onNav, onRefresh, catalog, view, setView, mapFocus, onMapFocused, goToMap }) {
+function ListScreen({ freights, onNav, onRefresh, catalog, view, setView, goToMap }) {
   const [searchQ, setSearchQ] = useState("");
   const [fPlant, setFPlant] = useState("");
   const [fProducer, setFProducer] = useState("");
@@ -729,7 +729,7 @@ function ListScreen({ freights, onNav, onRefresh, catalog, view, setView, mapFoc
 
       {/* View: Mapa */}
       {view==="mapa" && (
-        <FreightsOverviewMap freights={filtered} onSelect={(id)=>onNav("detail",id)} fields={catalog?.fields} plants={catalog?.plants} focus={mapFocus} onFocused={onMapFocused} />
+        <FreightsOverviewMap freights={filtered} onSelect={(id)=>onNav("detail",id)} fields={catalog?.fields} plants={catalog?.plants} />
       )}
 
       {/* View: Tabla */}
@@ -4141,7 +4141,7 @@ export default function Tolvink() {
 
   const perms = useMemo(()=>permsFor(auth.user),[auth.user]);
   const _resolveType = useCallback((f) => resolveUserTypeForFreight(f, auth.user), [auth.user]);
-  const goToMap = (lat, lng) => { if(!lat||!lng) return; setMapFocus({lat:Number(lat),lng:Number(lng),zoom:14}); setListView("mapa"); setScreen("list"); };
+  const goToMap = (lat, lng) => { if(!lat||!lng) return; setMapFocus({lat:Number(lat),lng:Number(lng)}); };
   const show = (msg,type="ok")=>setToast({msg,type});
   const nav = (s,fId)=>{ track("screen_view",{screen:s}); if(s==="new_date"&&fId){if(!perms.canRequest){show("Sin permisos para solicitar","err");return;} setDuplicateData({preDate:fId});setScreen("new");return;} if(fId){ setSelFreight(fId); if(s==="detail") fh.refresh(fId); } if(s==="new"&&!perms.canRequest){show("Sin permisos para solicitar","err");return;} setScreen(s); };
 
@@ -4264,7 +4264,7 @@ export default function Tolvink() {
         <div style={{flex:1,overflow:(screen==="chats"||screen==="calendar")&&isDesktop?"hidden":"auto",display:"flex",flexDirection:"column",WebkitOverflowScrolling:"touch",overscrollBehavior:"contain"}}>
         <div key={screen} className="tv-page" style={{flex:1,display:"flex",flexDirection:"column",minHeight:0}}>
         {screen==="home" && <HomeScreen user={auth.user} freights={fh.freights} perms={perms} onNav={nav} catalog={catalog} isDesktop={isDesktop} onAction={handleAction} actionLoading={actionLoading} onChat={(convId)=>{if(convId){setChatConvId(convId);setScreen("chats");}}} onRefresh={(id)=>fh.refresh(id)} onDuplicate={(f)=>{setDuplicateData(f);setScreen("new");}} onEdit={(f)=>{setEditData(f);setScreen("edit");}} goToMap={goToMap}/>}
-        {screen==="list" && <ListScreen freights={fh.freights} onNav={nav} onRefresh={fh.fetchAll} catalog={catalog} view={listView} setView={setListView} mapFocus={mapFocus} onMapFocused={()=>setMapFocus(null)} goToMap={goToMap}/>}
+        {screen==="list" && <ListScreen freights={fh.freights} onNav={nav} onRefresh={fh.fetchAll} catalog={catalog} view={listView} setView={setListView} goToMap={goToMap}/>}
         {screen==="calendar" && <CalendarScreen freights={fh.freights} perms={perms} onNav={nav} isDesktop={isDesktop} user={auth.user} onAction={handleAction} actionLoading={actionLoading} onChat={(convId)=>{if(convId){setChatConvId(convId);setScreen("chats");}}} onRefresh={(id)=>fh.refresh(id)} onDuplicate={(f)=>{setDuplicateData(f);setScreen("new");}} onEdit={(f)=>{setEditData(f);setScreen("edit");}} goToMap={goToMap}/>}
         {screen==="detail" && <DetailScreen user={curFreight ? {...auth.user, userType: _resolveType(curFreight)} : auth.user} freight={curFreight} perms={perms} onBack={()=>setScreen("list")} onAction={handleAction} actionLoading={actionLoading} onChat={(convId)=>{if(convId){setChatConvId(convId);setScreen("chats");}}} onRefresh={(id)=>fh.refresh(id)} onDuplicate={(f)=>{setDuplicateData(f);setScreen("new");}} onEdit={(f)=>{setEditData(f);setScreen("edit");}} goToMap={goToMap}/>}
         {screen==="new" && <NewScreen user={auth.user} lots={catalog.lots} plants={catalog.plants} branches={catalog.branches} fields={catalog.fields} trucks={catalog.trucks} onBack={()=>{setDuplicateData(null);setScreen("home");}} onCreate={handleCreate} submitting={submitting} duplicateFrom={duplicateData}/>}
@@ -4292,6 +4292,7 @@ export default function Tolvink() {
       {modal?.type==="confirm_action" && <ConfirmActionModal freight={modal.freight} title={modal.title} btnLabel={modal.btnLabel} btnVariant={modal.btnVariant} icon={modal.icon} onClose={()=>setModal(null)} onConfirm={()=>handleConfirmAction(modal.freight.id,modal.action)}/>}
       {modal?.type==="reason" && <ReasonModal title={modal.title} freight={modal.freight} btnLabel={modal.btnLabel} onClose={()=>setModal(null)} onConfirm={r=>handleReasonAction(modal.freight.id,r,modal.action)}/>}
       {toast && <Toast msg={toast.msg} type={toast.type} onClose={()=>setToast(null)}/>}
+      {mapFocus && <MapOverlay lat={mapFocus.lat} lng={mapFocus.lng} onClose={()=>setMapFocus(null)}/>}
     </div>
   );
 }
