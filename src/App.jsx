@@ -259,14 +259,27 @@ function AuthScreen({ onLogin, onSignup, loading, error, clearError, onBackToLan
 
 
 function HomeScreen({ user, freights, perms, onNav, catalog, isDesktop, onAction, actionLoading }) {
-  // Pending action count
-  const pendingCount = useMemo(() =>
-    freights.filter(f => getPendingActions(f, user.userType)).length
-  , [freights, user.userType]);
+  const [selectedId, setSelectedId] = useState(null);
+
+  // Pending groups — grouped by ACTION type, not freight status
+  const pendingByAction = useMemo(() => {
+    const buckets = {};
+    freights.forEach(f => {
+      const pa = getPendingActions(f, user.userType);
+      if (!pa) return;
+      if (!buckets[pa.action]) buckets[pa.action] = { label: pa.action, color: pa.color, actionKey: pa.actionKey, icon: pa.icon, items: [] };
+      buckets[pa.action].items.push({ ...f, pendingAction: pa });
+    });
+    return Object.values(buckets).map(b => {
+      b.items.sort((a, b2) => a.loadDate && b2.loadDate ? a.loadDate.localeCompare(b2.loadDate) : 0);
+      return b;
+    });
+  }, [freights, user.userType]);
+  const pendingCount = pendingByAction.reduce((s, g) => s + g.items.length, 0);
   const hasPending = pendingCount > 0;
   const statusColor = hasPending ? C.acc : C.ok;
 
-  // All freights grouped by status (excluding canceled/draft)
+  // Summary groups — by freight status, only freights WITHOUT pending actions
   const STATUS_GROUPS = [
     { key:"pending_assignment", label:"Solicitado",        icon:Ic.warn,  statuses:["pending_assignment"] },
     { key:"assigned",           label:"Asignado a flota",  icon:Ic.truck, statuses:["assigned"] },
@@ -275,120 +288,210 @@ function HomeScreen({ user, freights, perms, onNav, catalog, isDesktop, onAction
     { key:"loaded",             label:"Cargando",          icon:Ic.plant, statuses:["loaded"] },
     { key:"finished",           label:"Finalizado",        icon:Ic.chk,   statuses:["finished"] },
   ];
-  const grouped = useMemo(() => {
+  const summaryGroups = useMemo(() => {
     return STATUS_GROUPS.map(g => {
       const st = stCfg(g.statuses[0]);
-      const items = freights.filter(f => g.statuses.includes(f.status)).sort((a,b) => a.loadDate && b.loadDate ? a.loadDate.localeCompare(b.loadDate) : 0);
-      const hasActions = items.some(f => getPendingActions(f, user.userType));
-      return { ...g, color: st.color, bg: st.bg, items, hasActions };
+      const items = freights.filter(f => g.statuses.includes(f.status) && !getPendingActions(f, user.userType))
+        .sort((a, b) => a.loadDate && b.loadDate ? a.loadDate.localeCompare(b.loadDate) : 0);
+      return { ...g, color: st.color, items };
     }).filter(g => g.items.length > 0);
   }, [freights, user.userType]);
 
-  const actionGroups = grouped.filter(g => g.hasActions);
-  const summaryGroups = grouped.filter(g => !g.hasActions);
-
-  // Collapsed groups — actions start open, summary start collapsed
-  const [collapsed, setCollapsed] = useState(() => {
-    const init = {};
-    STATUS_GROUPS.forEach(g => init[g.key] = true);
-    return init;
-  });
+  // Collapsed state
+  const [collapsed, setCollapsed] = useState({});
   const toggleGroup = (key) => setCollapsed(prev => ({ ...prev, [key]: !prev[key] }));
 
-  // Render a collapsible group
-  const renderGroup = (group) => {
-    const isOpen = !collapsed[group.key];
+  // Icon map for pending action types
+  const actionIcon = (icon) => icon === "assign" ? Ic.warn : icon === "authorize" ? Ic.chk : icon === "respond" ? Ic.truck : icon === "start" ? Ic.nav : icon === "confirm" ? Ic.plant : Ic.chk;
+
+  // Selected freight for detail panel
+  const selFreight = selectedId ? freights.find(f => f.id === selectedId) : null;
+  const selPa = selFreight ? getPendingActions(selFreight, user.userType) : null;
+  const selSt = selFreight ? stCfg(selFreight.status) : null;
+
+  // Render a freight card (compact)
+  const renderCard = (f, pa) => {
+    const st = stCfg(f.status);
+    const isSel = selectedId === f.id;
     return (
-      <div key={group.key}>
-        <button onClick={() => toggleGroup(group.key)} style={{ width:"100%", display:"flex", alignItems:"center", gap:8, padding:"8px 0", background:"none", border:"none", borderBottom:`1px solid ${C.b2}`, cursor:"pointer", fontFamily:"inherit", textAlign:"left" }}>
+      <div key={f.id} onClick={() => setSelectedId(isSel ? null : f.id)} style={{ background: isSel ? C.priPale : C.w, border: `1px solid ${isSel ? C.pri : C.b1}`, borderLeft: `4px solid ${st.color}`, borderRadius: 12, padding: 14, boxShadow: C.sh, cursor: "pointer", transition: "background 0.15s, border-color 0.15s" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ fontSize: 11, fontWeight: 700, fontFamily: MONO, color: C.t2 }}>{f.code}</span>
+            <Bd color={st.color} bg={st.bg} small>{st.label}</Bd>
+          </div>
+          {f.isOwnFleet && <span style={{ fontSize: 9, color: C.acc, fontWeight: 600 }}>Flota propia</span>}
+        </div>
+        <div style={{ fontSize: 14, fontWeight: 700, color: C.t1, marginBottom: 4 }}>
+          {f.grain === "Otros" ? f.productTypeOther || "Otros" : f.grain} · {f.tons} {f.unit || "tn"}
+        </div>
+        <div style={{ fontSize: 11, color: C.t2, marginBottom: 4 }}>{f.originName} → {f.destName}</div>
+        {f.loadDate && <div style={{ fontSize: 10, color: C.t3 }}>{Ic.cal(C.t3, 10)} {f.loadDate}{f.loadTime ? ` · ${f.loadTime}` : ""}{f.transporterName ? ` · ${f.transporterName}` : ""}</div>}
+      </div>
+    );
+  };
+
+  // Render a collapsible group (pending or summary)
+  const renderGroup = (group, keyPrefix) => {
+    const gKey = keyPrefix + "_" + group.key;
+    const isOpen = !collapsed[gKey];
+    return (
+      <div key={gKey}>
+        <button onClick={() => toggleGroup(gKey)} style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, padding: "8px 0", background: "none", border: "none", borderBottom: `1px solid ${C.b2}`, cursor: "pointer", fontFamily: "inherit", textAlign: "left" }}>
           {group.icon(group.color, 14)}
-          <span style={{ fontSize:14, fontWeight:800, color:group.color }}>{group.items.length}</span>
-          <div style={{ flex:1, fontSize:13, fontWeight:600, color:C.t1 }}>{group.label}</div>
-          <span style={{ display:"flex", transform:isOpen?"rotate(270deg)":"rotate(90deg)", transition:"transform 0.15s ease" }}>{Ic.chev(C.t3,14)}</span>
+          <span style={{ fontSize: 14, fontWeight: 800, color: group.color }}>{group.items.length}</span>
+          <div style={{ flex: 1, fontSize: 13, fontWeight: 600, color: C.t1 }}>{group.label}</div>
+          <span style={{ display: "flex", transform: isOpen ? "rotate(270deg)" : "rotate(90deg)", transition: "transform 0.15s ease" }}>{Ic.chev(C.t3, 14)}</span>
         </button>
         {isOpen && (
-          <div style={{ display:"flex", flexDirection:"column", gap:8, padding:"8px 0 4px 16px", borderLeft:`2px solid ${group.color}30` }}>
-            {group.items.map((f, idx) => {
-              const st = stCfg(f.status);
-              const pa = getPendingActions(f, user.userType);
-              return (
-                <div key={f.id} style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: 12, padding: 14, boxShadow: C.sh, animation:`cardIn 0.2s ease ${idx*0.03}s both` }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <span style={{ fontSize: 11, fontWeight: 700, fontFamily: MONO, color: C.t2 }}>{f.code}</span>
-                      <Bd color={st.color} bg={st.bg} small>{st.label}</Bd>
-                    </div>
-                    {f.isOwnFleet && <span style={{ fontSize: 9, color: C.acc, fontWeight: 600 }}>Flota propia</span>}
-                  </div>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: C.t1, marginBottom: 4 }}>
-                    {f.grain === "Otros" ? f.productTypeOther || "Otros" : f.grain} · {f.tons} {f.unit || "tn"}
-                  </div>
-                  <div style={{ fontSize: 11, color: C.t2, marginBottom: 4 }}>
-                    {f.originName} → {f.destName}
-                  </div>
-                  {f.loadDate && <div style={{ fontSize: 10, color: C.t3, marginBottom: pa ? 8 : 0 }}>
-                    {Ic.cal(C.t3,10)} {f.loadDate}{f.loadTime?` · ${f.loadTime}`:""}{f.transporterName?` · ${f.transporterName}`:""}
-                  </div>}
-                  {pa && pa.actionKey === "respond" ? (
-                    <div style={{ display: "flex", gap: 8 }}>
-                      <button disabled={actionLoading} onClick={() => onAction(f.id, "accept")} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "10px 12px", background: C.pri, borderRadius: 8, border: "none", cursor: "pointer", fontFamily: "inherit" }}>
-                        {Ic.chk("#fff", 14)}<span style={{ fontSize: 12, fontWeight: 700, color: "#fff" }}>Aceptar</span>
-                      </button>
-                      <button disabled={actionLoading} onClick={() => onAction(f.id, "reject")} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "10px 12px", background: C.bg, borderRadius: 8, border: `1px solid ${C.err}`, cursor: "pointer", fontFamily: "inherit" }}>
-                        {Ic.cross(C.err, 14)}<span style={{ fontSize: 12, fontWeight: 700, color: C.err }}>Rechazar</span>
-                      </button>
-                    </div>
-                  ) : pa ? (
-                    <button disabled={actionLoading} onClick={() => onAction(f.id, pa.actionKey)} style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "10px 12px", background: pa.color, borderRadius: 8, border: "none", cursor: "pointer", fontFamily: "inherit", opacity: actionLoading ? 0.6 : 1 }}>
-                      <span style={{ fontSize: 13, fontWeight: 700, color: "#fff" }}>{pa.action}</span>
-                    </button>
-                  ) : null}
-                </div>
-              );
-            })}
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: "8px 0 4px 16px", borderLeft: `2px solid ${group.color}30` }}>
+            {group.items.map(f => renderCard(f, getPendingActions(f, user.userType)))}
           </div>
         )}
       </div>
     );
   };
 
-  return (
-    <div style={{ flex:1, overflow:"auto", padding:"14px 18px 18px 18px" }}>
-      {/* Pendientes — title bar */}
-      <div style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 12px", borderRadius:12, background:`${C.acc}0D`, marginBottom:8 }}>
-        <div style={{ width:32, height:32, borderRadius:16, background:statusColor, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, position:"relative" }}>
-          {hasPending ? Ic.bell(C.w,16) : Ic.chk(C.w,16)}
-          {hasPending && <div style={{ position:"absolute", top:-3, right:-3, minWidth:15, height:15, borderRadius:8, background:C.err, color:C.w, fontSize:8, fontWeight:700, padding:"0 3px", display:"flex", alignItems:"center", justifyContent:"center", border:`2px solid ${C.w}` }}>{pendingCount}</div>}
+  // Detail panel for selected freight
+  const detailPanel = selFreight && (
+    <div style={{ flex: 1, overflow: "auto", borderLeft: isDesktop ? `1px solid ${C.b1}` : "none", animation: "fadeIn 0.2s ease", minWidth: 0 }}>
+      <div style={{ padding: 18 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ fontSize: 13, fontWeight: 700, fontFamily: MONO, color: C.t2 }}>{selFreight.code}</span>
+            <Bd color={selSt.color} bg={selSt.bg}>{selSt.label}</Bd>
+          </div>
+          <button onClick={() => setSelectedId(null)} style={{ background: C.bgCardAlt, border: `1px solid ${C.b1}`, borderRadius: 8, padding: "6px 8px", cursor: "pointer", display: "flex", alignItems: "center", fontFamily: "inherit" }}>{Ic.cross(C.t2, 16)}</button>
         </div>
-        <div>
-          <div style={{ fontSize:12, fontWeight:700, color:statusColor }}>{hasPending?"Pendientes":"Al día"}</div>
-          <div style={{ fontSize:10, color:C.t3 }}>{pendingCount} acción{pendingCount!==1?"es":""}</div>
+
+        {/* Product */}
+        <div style={{ fontSize: 18, fontWeight: 800, color: C.t1, marginBottom: 8 }}>
+          {selFreight.grain === "Otros" ? selFreight.productTypeOther || "Otros" : selFreight.grain} · {selFreight.tons} {selFreight.unit || "tn"}
+        </div>
+
+        {/* Route */}
+        <div style={{ background: C.bg, borderRadius: 10, padding: 14, marginBottom: 12 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+            <div style={{ width: 8, height: 8, borderRadius: 4, background: C.pri }} />
+            <div><div style={{ fontSize: 12, fontWeight: 700, color: C.t1 }}>{selFreight.originName}</div>{selFreight.fieldName && <div style={{ fontSize: 10, color: C.t3 }}>{selFreight.fieldName}</div>}</div>
+          </div>
+          <div style={{ width: 2, height: 16, background: C.b2, marginLeft: 3, marginBottom: 4 }} />
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div style={{ width: 8, height: 8, borderRadius: 2, background: C.acc }} />
+            <div style={{ fontSize: 12, fontWeight: 700, color: C.t1 }}>{selFreight.destName}</div>
+          </div>
+        </div>
+
+        {/* Details grid */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 12 }}>
+          {selFreight.loadDate && <div style={{ background: C.bg, borderRadius: 8, padding: "8px 10px" }}><div style={{ fontSize: 9, color: C.t3, fontWeight: 600, marginBottom: 2 }}>FECHA</div><div style={{ fontSize: 12, fontWeight: 700, color: C.t1 }}>{selFreight.loadDate}</div></div>}
+          {selFreight.loadTime && <div style={{ background: C.bg, borderRadius: 8, padding: "8px 10px" }}><div style={{ fontSize: 9, color: C.t3, fontWeight: 600, marginBottom: 2 }}>HORA</div><div style={{ fontSize: 12, fontWeight: 700, color: C.t1 }}>{selFreight.loadTime}</div></div>}
+          {selFreight.transporterName && <div style={{ background: C.bg, borderRadius: 8, padding: "8px 10px" }}><div style={{ fontSize: 9, color: C.t3, fontWeight: 600, marginBottom: 2 }}>TRANSPORTISTA</div><div style={{ fontSize: 12, fontWeight: 700, color: C.t1 }}>{selFreight.transporterName}</div></div>}
+          {selFreight.truckPlate && <div style={{ background: C.bg, borderRadius: 8, padding: "8px 10px" }}><div style={{ fontSize: 9, color: C.t3, fontWeight: 600, marginBottom: 2 }}>CAMIÓN</div><div style={{ fontSize: 12, fontWeight: 700, color: C.t1 }}>{selFreight.truckPlate}{selFreight.truckModel ? ` · ${selFreight.truckModel}` : ""}</div></div>}
+          {selFreight.driverName && <div style={{ background: C.bg, borderRadius: 8, padding: "8px 10px" }}><div style={{ fontSize: 9, color: C.t3, fontWeight: 600, marginBottom: 2 }}>CHOFER</div><div style={{ fontSize: 12, fontWeight: 700, color: C.t1 }}>{selFreight.driverName}</div></div>}
+          {selFreight.requestedByName && <div style={{ background: C.bg, borderRadius: 8, padding: "8px 10px" }}><div style={{ fontSize: 9, color: C.t3, fontWeight: 600, marginBottom: 2 }}>SOLICITADO POR</div><div style={{ fontSize: 12, fontWeight: 700, color: C.t1 }}>{selFreight.requestedByName}</div></div>}
+        </div>
+
+        {selFreight.notes && <div style={{ background: C.bg, borderRadius: 8, padding: "8px 10px", marginBottom: 12 }}><div style={{ fontSize: 9, color: C.t3, fontWeight: 600, marginBottom: 2 }}>NOTAS</div><div style={{ fontSize: 12, color: C.t1 }}>{selFreight.notes}</div></div>}
+        {selFreight.isOwnFleet && <div style={{ fontSize: 11, color: C.acc, fontWeight: 600, marginBottom: 12 }}>Flota propia</div>}
+
+        {/* Action buttons */}
+        {selPa && selPa.actionKey === "respond" ? (
+          <div style={{ display: "flex", gap: 8 }}>
+            <button disabled={actionLoading} onClick={() => onAction(selFreight.id, "accept")} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "12px 14px", background: C.pri, borderRadius: 10, border: "none", cursor: "pointer", fontFamily: "inherit" }}>
+              {Ic.chk("#fff", 14)}<span style={{ fontSize: 13, fontWeight: 700, color: "#fff" }}>Aceptar</span>
+            </button>
+            <button disabled={actionLoading} onClick={() => onAction(selFreight.id, "reject")} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "12px 14px", background: C.bg, borderRadius: 10, border: `1px solid ${C.err}`, cursor: "pointer", fontFamily: "inherit" }}>
+              {Ic.cross(C.err, 14)}<span style={{ fontSize: 13, fontWeight: 700, color: C.err }}>Rechazar</span>
+            </button>
+          </div>
+        ) : selPa ? (
+          <button disabled={actionLoading} onClick={() => onAction(selFreight.id, selPa.actionKey)} style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "12px 14px", background: selPa.color, borderRadius: 10, border: "none", cursor: "pointer", fontFamily: "inherit", opacity: actionLoading ? 0.6 : 1 }}>
+            <span style={{ fontSize: 14, fontWeight: 700, color: "#fff" }}>{selPa.action}</span>
+          </button>
+        ) : null}
+      </div>
+    </div>
+  );
+
+  // List panel content
+  const todayLabel = new Date().toLocaleDateString("es-UY", { weekday: "long", day: "numeric", month: "long" });
+  const compact = selectedId && isDesktop;
+  const listContent = (
+    <div style={{ flex: compact ? undefined : 1, width: compact ? 320 : undefined, flexShrink: 0, overflow: "auto", padding: "14px 18px 18px 18px", boxSizing: "border-box" }}>
+      {/* Header */}
+      <div style={{ marginBottom: 14 }}>
+        <div style={{ fontSize: compact ? 16 : 20, fontWeight: 800, letterSpacing: -0.3, color: C.t1 }}>Hola, {user.name.split(" ")[0]}</div>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginTop: 4 }}>
+          <span style={{ fontSize: 11, color: C.t2, fontWeight: 600 }}>{user.entity}</span>
+          <span style={{ fontSize: 11, color: C.t3 }}>·</span>
+          <span style={{ fontSize: 11, color: C.t3, textTransform: "capitalize" }}>{todayLabel}</span>
+          <span style={{ fontSize: 11, color: C.t3 }}>·</span>
+          <span style={{ fontSize: 11, color: C.t3 }}>{freights.length} flete{freights.length !== 1 ? "s" : ""} activos</span>
         </div>
       </div>
 
-      {/* Pending action groups — nested under Pendientes */}
-      {actionGroups.length > 0 && (
-        <div style={{ paddingLeft:16, borderLeft:`2px solid ${C.acc}30`, marginBottom:16 }}>
-          {actionGroups.map(renderGroup)}
+      {/* Pendientes — title bar */}
+      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: 12, background: `${C.acc}0D`, marginBottom: 8 }}>
+        <div style={{ width: 32, height: 32, borderRadius: 16, background: statusColor, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, position: "relative" }}>
+          {hasPending ? Ic.bell(C.w, 16) : Ic.chk(C.w, 16)}
+          {hasPending && <div style={{ position: "absolute", top: -3, right: -3, minWidth: 15, height: 15, borderRadius: 8, background: C.err, color: C.w, fontSize: 8, fontWeight: 700, padding: "0 3px", display: "flex", alignItems: "center", justifyContent: "center", border: `2px solid ${C.w}` }}>{pendingCount}</div>}
+        </div>
+        <div>
+          <div style={{ fontSize: 12, fontWeight: 700, color: statusColor }}>{hasPending ? "Pendientes" : "Al día"}</div>
+          <div style={{ fontSize: 10, color: C.t3 }}>{pendingCount} acción{pendingCount !== 1 ? "es" : ""}</div>
+        </div>
+      </div>
+
+      {/* Pending groups — by action type */}
+      {pendingByAction.length > 0 && (
+        <div style={{ paddingLeft: 16, borderLeft: `2px solid ${C.acc}30`, marginBottom: 16 }}>
+          {pendingByAction.map(g => renderGroup({ key: g.actionKey, label: g.label, icon: actionIcon(g.icon), color: g.color, items: g.items }, "pa"))}
         </div>
       )}
 
       {/* Sin pendientes de mi parte — title bar */}
-      <div style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 12px", borderRadius:12, background:C.okPale, marginBottom:8 }}>
-        <div style={{ width:28, height:28, borderRadius:14, background:C.ok, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
-          {Ic.chk(C.w,14)}
+      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: 12, background: C.okPale, marginBottom: 8 }}>
+        <div style={{ width: 28, height: 28, borderRadius: 14, background: C.ok, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+          {Ic.chk(C.w, 14)}
         </div>
-        <div style={{ fontSize:12, fontWeight:700, color:C.ok }}>Sin pendientes de mi parte</div>
+        <div style={{ fontSize: 12, fontWeight: 700, color: C.ok }}>Sin pendientes de mi parte</div>
       </div>
 
-      {/* Summary groups — nested under Sin pendientes */}
+      {/* Summary groups — by status */}
       {summaryGroups.length > 0 && (
-        <div style={{ paddingLeft:16, borderLeft:`2px solid ${C.ok}30` }}>
-          {summaryGroups.map(renderGroup)}
+        <div style={{ paddingLeft: 16, borderLeft: `2px solid ${C.ok}30` }}>
+          {summaryGroups.map(g => renderGroup(g, "sm"))}
         </div>
       )}
     </div>
   );
+
+  // Desktop: split layout when freight selected
+  if (isDesktop) {
+    return (
+      <div style={{ flex: 1, display: "flex", flexDirection: "row", overflow: "hidden" }}>
+        {listContent}
+        {detailPanel}
+      </div>
+    );
+  }
+
+  // Mobile: detail fullscreen or list
+  if (selectedId && selFreight) {
+    return (
+      <div style={{ flex: 1, overflow: "auto" }}>
+        <div style={{ padding: 18 }}>
+          <button onClick={() => setSelectedId(null)} style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", padding: 0, marginBottom: 12 }}>
+            {Ic.chev(C.pri, 18)}<span style={{ fontSize: 14, fontWeight: 700, color: C.pri }}>Inicio</span>
+          </button>
+        </div>
+        {detailPanel}
+      </div>
+    );
+  }
+
+  return listContent;
 }
 
 // Inline calendar panel for Home dashboard
