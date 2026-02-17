@@ -743,6 +743,28 @@ function Nav({ active, onChange, unread=0, pendingCount=0, canRequest=false, onN
   );
 }
 
+// ======================== ROUTE ANIMATIONS SVG BUILDER ================
+
+const ROUTES_DATA = [
+  { d:"M-30,520 C150,400 350,260 550,180 S800,60 1030,10", c:"pri", lo:0.12, to:0.20, td:"26s", dd:"4s", wp:[[180,410],[420,240],[700,110],[900,45]] },
+  { d:"M-30,80 C180,180 380,340 580,400 S830,500 1030,560", c:"acc", lo:0.10, to:0.16, td:"32s", dd:"5s", wp:[[160,170],[400,320],[650,420],[880,520]], rev:true },
+  { d:"M1030,300 C820,240 620,320 420,300 S180,340 -30,370", c:"sec", lo:0.10, to:0.18, td:"24s", dd:"3.5s", wp:[[870,260],[640,310],[350,310],[120,355]] },
+  { d:"M500,-30 C520,100 470,240 510,370 S480,490 530,630", c:"pri", lo:0.08, to:0.14, td:"22s", dd:"4.5s", wp:[[512,80],[480,260],[505,430]] },
+  { d:"M-30,200 C80,150 200,90 340,50 S500,20 600,-20", c:"acc", lo:0.09, to:0.15, td:"18s", dd:"3s", wp:[[70,160],[220,85],[420,35]] },
+  { d:"M1030,480 C900,440 780,500 650,520 S480,560 350,590", c:"sec", lo:0.07, to:0.13, td:"20s", dd:"4s", wp:[[920,450],[720,500],[530,540]] },
+];
+
+let _svgUid = 0;
+function buildRoutesSvg({ trucks = true, opacityMul = 1, centerFade = true } = {}) {
+  const uid = ++_svgUid;
+  const col = k => k === "pri" ? C.pri : k === "acc" ? C.acc : C.sec;
+  return `<svg viewBox="0 0 1000 600" preserveAspectRatio="xMidYMid slice" style="width:100%;height:100%"><defs><radialGradient id="rf${uid}" cx="50%" cy="48%" rx="30%" ry="28%"><stop offset="0%" stop-color="white" stop-opacity="${centerFade?0.15:0.5}"/><stop offset="70%" stop-color="white" stop-opacity="${centerFade?0.6:0.8}"/><stop offset="100%" stop-color="white" stop-opacity="1"/></radialGradient><mask id="rm${uid}"><rect width="1000" height="600" fill="url(#rf${uid})"/></mask></defs><g mask="url(#rm${uid})">${ROUTES_DATA.map(r=>{const cc=col(r.c);const lo=(r.lo*opacityMul).toFixed(3);const to=(r.to*opacityMul).toFixed(3);const wo=(r.lo*1.6*opacityMul).toFixed(3);return`<g><path d="${r.d}" stroke="${cc}" stroke-width="2" fill="none" stroke-dasharray="14,18" stroke-linecap="round" opacity="${lo}"><animate attributeName="stroke-dashoffset" from="0" to="${r.rev?64:-64}" dur="${r.dd}" repeatCount="indefinite"/></path>${r.wp.map(w=>`<g opacity="${wo}"><path d="M${w[0]},${w[1]-10} c-4,0 -7,3 -7,7 c0,4 7,11 7,11 s7,-7 7,-11 c0,-4 -3,-7 -7,-7Z" fill="${cc}"/><circle cx="${w[0]}" cy="${w[1]-5}" r="2.5" fill="${C.bg}" opacity="0.9"/></g>`).join("")}${trucks?`<g opacity="${to}"><animateMotion path="${r.d}" dur="${r.td}" repeatCount="indefinite" rotate="auto" keyPoints="${r.rev?"1;0":"0;1"}" keyTimes="0;1" calcMode="linear"/><rect x="-14" y="-7" width="18" height="14" rx="2" fill="${cc}"/><polygon points="4,-5 10,-5 14,-1 14,7 4,7" fill="${cc}"/><circle cx="-7" cy="8" r="3" fill="${cc}"/><circle cx="-7" cy="8" r="1.5" fill="${C.bg}"/><circle cx="10" cy="8" r="3" fill="${cc}"/><circle cx="10" cy="8" r="1.5" fill="${C.bg}"/><rect x="5" y="-4" width="5" height="5" rx="1" fill="${C.bg}" opacity="0.6"/></g>`:""}</g>`}).join("")}</g></svg>`;
+}
+
+function RoutesBackground({ trucks, opacityMul, centerFade }) {
+  return <div style={{position:"absolute",inset:0,pointerEvents:"none",zIndex:0}} dangerouslySetInnerHTML={{__html:buildRoutesSvg({trucks,opacityMul,centerFade})}} />;
+}
+
 // ======================== LANDING PAGE ================================
 
 function LandingScreen({ onLogin, onSignup, loading, error, clearError }) {
@@ -750,21 +772,11 @@ function LandingScreen({ onLogin, onSignup, loading, error, clearError }) {
 
   if (showAuth) return <AuthScreen onLogin={onLogin} onSignup={onSignup} loading={loading} error={error} clearError={clearError} onBackToLanding={()=>setShowAuth(false)} />;
 
-  const _routes = [
-    { d:"M-30,520 C150,400 350,260 550,180 S800,60 1030,10", c:C.pri, lo:0.12, to:0.20, td:"26s", dd:"4s", wp:[[180,410],[420,240],[700,110],[900,45]] },
-    { d:"M-30,80 C180,180 380,340 580,400 S830,500 1030,560", c:C.acc, lo:0.10, to:0.16, td:"32s", dd:"5s", wp:[[160,170],[400,320],[650,420],[880,520]], rev:true },
-    { d:"M1030,300 C820,240 620,320 420,300 S180,340 -30,370", c:C.sec, lo:0.10, to:0.18, td:"24s", dd:"3.5s", wp:[[870,260],[640,310],[350,310],[120,355]] },
-    { d:"M500,-30 C520,100 470,240 510,370 S480,490 530,630", c:C.pri, lo:0.08, to:0.14, td:"22s", dd:"4.5s", wp:[[512,80],[480,260],[505,430]] },
-    { d:"M-30,200 C80,150 200,90 340,50 S500,20 600,-20", c:C.acc, lo:0.09, to:0.15, td:"18s", dd:"3s", wp:[[70,160],[220,85],[420,35]] },
-    { d:"M1030,480 C900,440 780,500 650,520 S480,560 350,590", c:C.sec, lo:0.07, to:0.13, td:"20s", dd:"4s", wp:[[920,450],[720,500],[530,540]] },
-  ];
-
   return (
     <div style={{ minHeight:"100dvh", background:C.bg, fontFamily:FONT, display:"flex", flexDirection:"column", overflow:"hidden", WebkitOverflowScrolling:"touch", position:"relative" }}>
       <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&display=swap');*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}html,body,#root{margin:0;padding:0;background:${C.bg};height:auto!important;overflow:visible!important;overflow-x:hidden!important}@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}@keyframes dotPulse{0%,100%{opacity:0.3;transform:scale(0.8)}50%{opacity:1;transform:scale(1.2)}}@keyframes splashIn{0%{opacity:0;transform:scale(0.85)}100%{opacity:1;transform:scale(1)}}@media(max-width:767px){.tv-ld-tag{font-size:11px!important;letter-spacing:1.8px!important}.tv-ld-h1{font-size:17px!important}.tv-ld-feat{gap:18px!important}.tv-ld-feat svg{width:18px!important;height:18px!important}.tv-ld-feat span{font-size:10px!important}}`}</style>
 
-      {/* Animated routes background — raw HTML bypasses React SMIL animation issues */}
-      <div style={{position:"absolute",inset:0,pointerEvents:"none",zIndex:0}} dangerouslySetInnerHTML={{__html:`<svg viewBox="0 0 1000 600" preserveAspectRatio="xMidYMid slice" style="width:100%;height:100%"><defs><radialGradient id="ctrFade" cx="50%" cy="48%" rx="30%" ry="28%"><stop offset="0%" stop-color="white" stop-opacity="0.15"/><stop offset="70%" stop-color="white" stop-opacity="0.6"/><stop offset="100%" stop-color="white" stop-opacity="1"/></radialGradient><mask id="ctrMask"><rect width="1000" height="600" fill="url(#ctrFade)"/></mask></defs><g mask="url(#ctrMask)">${_routes.map(r=>`<g><path d="${r.d}" stroke="${r.c}" stroke-width="2" fill="none" stroke-dasharray="14,18" stroke-linecap="round" opacity="${r.lo}"><animate attributeName="stroke-dashoffset" from="0" to="${r.rev?64:-64}" dur="${r.dd}" repeatCount="indefinite"/></path>${r.wp.map(w=>`<g opacity="${(r.lo*1.6).toFixed(3)}"><path d="M${w[0]},${w[1]-10} c-4,0 -7,3 -7,7 c0,4 7,11 7,11 s7,-7 7,-11 c0,-4 -3,-7 -7,-7Z" fill="${r.c}"/><circle cx="${w[0]}" cy="${w[1]-5}" r="2.5" fill="${C.bg}" opacity="0.9"/></g>`).join("")}<g opacity="${r.to}"><animateMotion path="${r.d}" dur="${r.td}" repeatCount="indefinite" rotate="auto" keyPoints="${r.rev?"1;0":"0;1"}" keyTimes="0;1" calcMode="linear"/><rect x="-14" y="-7" width="18" height="14" rx="2" fill="${r.c}"/><polygon points="4,-5 10,-5 14,-1 14,7 4,7" fill="${r.c}"/><circle cx="-7" cy="8" r="3" fill="${r.c}"/><circle cx="-7" cy="8" r="1.5" fill="${C.bg}"/><circle cx="10" cy="8" r="3" fill="${r.c}"/><circle cx="10" cy="8" r="1.5" fill="${C.bg}"/><rect x="5" y="-4" width="5" height="5" rx="1" fill="${C.bg}" opacity="0.6"/></g></g>`).join("")}</g></svg>`}} />
+      <RoutesBackground trucks centerFade />
 
       {/* Main content — centered */}
       <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"40px 24px", textAlign:"center", paddingTop:"max(40px, env(safe-area-inset-top))", position:"relative", zIndex:1 }}>
@@ -886,9 +898,12 @@ function AuthScreen({ onLogin, onSignup, loading, error, clearError, onBackToLan
   },[]);
 
   return (
-    <>
+    <div style={{ minHeight:"100dvh", background:C.bg, fontFamily:FONT, position:"relative", overflow:"hidden" }}>
       <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&family=JetBrains+Mono:wght@400;500&display=swap');*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}html,body,#root{margin:0;padding:0;background:${C.bg};height:auto!important;min-height:0!important;overflow:visible!important;overflow-x:hidden!important;-webkit-overflow-scrolling:touch;position:static!important}input::placeholder,textarea::placeholder{color:${C.t3}}.tv-sel-opt:hover{background:${C.priGhost}!important}input[type="date"],input[type="time"]{color-scheme:${_theme==="dark"?"dark":"light"}}input[type="date"]::-webkit-calendar-picker-indicator,input[type="time"]::-webkit-calendar-picker-indicator{opacity:0;position:absolute;inset:0;width:100%;height:100%;cursor:pointer}@keyframes dotPulse{0%,100%{opacity:0.3;transform:scale(0.8)}50%{opacity:1;transform:scale(1.2)}}@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}`}</style>
-      <div style={{ background:C.bg, fontFamily:FONT, maxWidth:430, margin:"0 auto", padding:"0 28px", boxSizing:"border-box" }}>
+
+      <RoutesBackground trucks centerFade />
+
+      <div style={{ maxWidth:430, margin:"0 auto", padding:"0 28px", boxSizing:"border-box", position:"relative", zIndex:1 }}>
         <div style={{ paddingTop:mode==="signup"?"max(24px, env(safe-area-inset-top))":"28px", paddingBottom:"max(40px, env(safe-area-inset-bottom))", minHeight:mode==="login"?"100svh":"auto", display:"flex", flexDirection:"column", justifyContent:mode==="login"?"center":"flex-start" }}>
           <div style={{ textAlign:"center", marginBottom:mode==="login"?32:20 }}>
             {onBackToLanding && <button onClick={onBackToLanding} style={{ background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", fontSize:13, fontWeight:600, color:C.pri, marginBottom:14, padding:0, display:"flex", alignItems:"center", gap:4, margin:"0 auto 14px" }}>{Ic.chev(C.pri,18)} Volver</button>}
@@ -976,7 +991,7 @@ function AuthScreen({ onLogin, onSignup, loading, error, clearError, onBackToLan
           {canInstall && <button onClick={()=>window.installPWA?.()} style={{marginTop:14,width:"100%",padding:"12px",borderRadius:10,border:`1.5px solid ${C.pri}`,background:C.priPale,color:C.pri,fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>{Ic.plus(C.pri,16)} Instalar Tolvink en tu dispositivo</button>}
         </div>
       </div>
-    </>
+    </div>
   );
 }
 
@@ -5734,13 +5749,15 @@ export default function Tolvink() {
     <div className="tv-shell" style={{height:"100dvh",background:C.bg,color:C.t1,fontFamily:FONT,display:"flex",flexDirection:isDesktop?"row":"column",width:"100%",position:"relative",overflow:"hidden"}}>
       <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&family=JetBrains+Mono:wght@400;500&display=swap');*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}html,body{height:100%;margin:0;overflow-x:hidden;max-width:100vw}body{background:${C.bg};overflow-y:hidden;overscroll-behavior:none}input,textarea,select,button{font-size:16px}input::placeholder,textarea::placeholder{color:${C.t3}}::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:${C.b1};border-radius:4px}@keyframes ti{0%,100%{opacity:1}50%{opacity:.4}}@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}@keyframes cardIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}@keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}@keyframes dotPulse{0%,100%{opacity:0.3;transform:scale(0.8)}50%{opacity:1;transform:scale(1.2)}}@keyframes pageIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}.tv-page{animation:pageIn 0.25s ease-out}.tv-card{transition:transform 0.15s ease,box-shadow 0.15s ease}.tv-row{transition:background 0.1s ease}@media(hover:hover){.tv-card:hover{transform:translateY(-2px);box-shadow:${C.shMd}!important}.tv-row:hover{background:${C.priGhost}!important}}@media(min-width:640px){.tv-grid{display:grid!important;grid-template-columns:1fr 1fr!important;gap:12px!important}.tv-grid3{display:grid!important;grid-template-columns:1fr 1fr 1fr!important;gap:12px!important}.tv-pad{padding:24px 32px!important}.tv-detail-grid{display:grid!important;grid-template-columns:1fr 1fr!important;gap:16px!important}.tv-table th,.tv-table td{padding:10px 12px!important;font-size:12px!important}.tv-stats{gap:12px!important}.tv-stats>div{padding:14px 12px!important;border-radius:12px!important}.tv-stats .tv-stat-num{font-size:28px!important}.tv-header-bar{padding:10px 32px 0 32px!important}}@media(min-width:768px){.tv-mobile-header{display:none!important}.tv-mobile-nav{display:none!important}.tv-kanban{flex-direction:row!important;gap:12px!important}.tv-kanban-col{max-height:calc(100vh - 280px)!important;overflow-y:auto!important}}@media(max-width:767px){.tv-sidebar{display:none!important}.tv-shell{max-width:100vw!important;width:100%!important}}@media(min-width:900px){.tv-grid{grid-template-columns:1fr 1fr 1fr!important}}@media(min-width:1100px){.tv-grid{grid-template-columns:repeat(4,1fr)!important}}`}</style>
 
+      <RoutesBackground trucks={false} opacityMul={0.4} centerFade={false} />
+
       {/* Desktop Sidebar */}
-      <div className="tv-sidebar">
+      <div className="tv-sidebar" style={{position:"relative",zIndex:1}}>
         <Sidebar active={navActive} onChange={nav} unread={unreadChats} pendingCount={pendingCount} canRequest={perms.canRequest} onNew={()=>nav("new")} />
       </div>
 
       {/* Main content column */}
-      <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden", minWidth:0 }}>
+      <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden", minWidth:0, position:"relative", zIndex:1 }}>
         {/* Mobile-only header */}
         <div className="tv-mobile-header" style={{paddingTop:"max(12px, env(safe-area-inset-top))",paddingBottom:12,paddingLeft:18,paddingRight:18,display:"flex",alignItems:"center",borderBottom:`1px solid ${C.b2}`,background:C.w,flexShrink:0,zIndex:10}}>
           <div style={{display:"inline-flex",alignItems:"flex-start"}}>
