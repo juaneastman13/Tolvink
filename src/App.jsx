@@ -446,7 +446,7 @@ function HomeScreen({ user, freights, perms, onNav, catalog, isDesktop, onAction
         <div style={{ fontSize: 14, fontWeight: 700, color: C.t1, marginBottom: 4 }}>
           {f.grain === "Otros" ? f.productTypeOther || "Otros" : f.grain} · {f.tons} {f.unit || "tn"}
         </div>
-        <div style={{ fontSize: 11, color: C.t2, marginBottom: 4 }}>{f.originName} → {f.destName}</div>
+        <div style={{ fontSize: 11, color: C.t2, marginBottom: 4 }}>{f.requestedByName || f.originName} → {f.destName}</div>
         {f.loadDate && <div style={{ fontSize: 10, color: C.t3 }}>{Ic.cal(C.t3, 10)} {f.loadDate}{f.loadTime ? ` · ${f.loadTime}` : ""}{f.transporterName ? ` · ${f.transporterName}` : ""}</div>}
       </div>
     );
@@ -716,7 +716,7 @@ function ListScreen({ freights, onNav, onRefresh }) {
                       {f.isOwnFleet && <span style={{ fontSize:9, color:C.acc, fontWeight:600 }}>Flota propia</span>}
                     </div>
                     <div style={{ fontSize:14, fontWeight:700, color:C.t1, marginBottom:4 }}>{f.grain==="Otros"?f.productTypeOther||"Otros":f.grain} · {f.tons} {f.unit||"tn"}</div>
-                    <div style={{ fontSize:11, color:C.t2, marginBottom:4 }}>{f.originName} → {f.destName}</div>
+                    <div style={{ fontSize:11, color:C.t2, marginBottom:4 }}>{f.requestedByName || f.originName} → {f.destName}</div>
                     {f.loadDate && <div style={{ fontSize:10, color:C.t3 }}>{Ic.cal(C.t3,10)} {f.loadDate}{f.loadTime?` · ${f.loadTime}`:""}{f.transporterName?` · ${f.transporterName}`:""}</div>}
                   </div>
                   );
@@ -2597,7 +2597,7 @@ function CalendarScreen({ freights, perms, onNav, isDesktop }) {
             <div style={{fontSize:14,fontWeight:700,color:C.t1,marginBottom:6}}>{f.grain} · {f.tons} {f.unit||"tn"}</div>
             {/* Route */}
             <div style={{display:"flex",alignItems:"center",gap:4,fontSize:11,color:C.t2,marginBottom:6}}>
-              {Ic.pin(C.t3,12)} <span style={{maxWidth:120,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{(f.originName||"").split("—")[0].trim()}</span>
+              {Ic.user(C.t3,12)} <span style={{maxWidth:120,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.requestedByName || (f.originName||"").split("—")[0].trim()}</span>
               <span style={{color:C.t3,margin:"0 2px"}}>→</span>
               {Ic.plant(C.t3,12)} <span style={{maxWidth:120,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.destName}</span>
             </div>
