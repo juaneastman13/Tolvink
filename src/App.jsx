@@ -736,6 +736,9 @@ function ListScreen({ freights, onNav, onRefresh, catalog }) {
       {/* View: Tabla */}
       {viewMode==="tabla" && (
         <div style={{ background:C.w, border:`1px solid ${C.b1}`, borderRadius:12, overflow:"hidden", boxShadow:"0 1px 4px rgba(0,0,0,0.06)" }}>
+          <div style={{ display:"flex", justifyContent:"flex-end", padding:"10px 12px 0" }}>
+            <button onClick={()=>exportExcel(filtered,"tolvink-fletes.xls")} style={{padding:"5px 12px",borderRadius:8,border:`1.5px solid #1A6B37`,background:"#E6F4EA",color:"#1A6B37",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:5}}>{Ic.doc("#1A6B37",13)} Exportar Excel</button>
+          </div>
           <div style={{ overflowX:"auto" }}>
             <table style={{ width:"100%", borderCollapse:"collapse", fontSize:12, fontFamily:"inherit" }}>
               <thead>
