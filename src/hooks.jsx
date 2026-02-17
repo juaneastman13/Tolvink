@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import {
-  apiLogin, apiRegister, apiLogout, getToken, getSavedUser, clearAuth, setAuthFailHandler,
+  apiLogin, apiRegister, apiLogout, apiSwitchCompany, getToken, getSavedUser, clearAuth, setAuthFailHandler,
   apiListFreights, apiGetFreight, apiCreateFreight, apiAssignFreight, apiRespondFreight,
   apiStartFreight, apiFinishFreight, apiCancelFreight, apiConfirmLoaded, apiConfirmFinished,
   apiAuthorizeFreight, apiUpdateFreight,
@@ -137,7 +137,23 @@ export function useAuth() {
     setUser(null);
   },[]);
 
-  return { user, loading, error, isInitialized, login, signup, logout, clearError:()=>setError(null) };
+  const switchCompany = useCallback(async (companyId) => {
+    try {
+      const d = await apiSwitchCompany(companyId);
+      if (d?.user) {
+        const mappedUser = mapUser(d.user);
+        setUser(mappedUser);
+        console.log('[AUTH] Switched to company:', companyId);
+        return { ok: true };
+      }
+      return { ok: false, error: "Respuesta inválida" };
+    } catch (e) {
+      console.error('[AUTH] Switch company error:', e);
+      return { ok: false, error: e.message };
+    }
+  }, []);
+
+  return { user, loading, error, isInitialized, login, signup, logout, switchCompany, clearError:()=>setError(null) };
 }
 
 // ======================== MAP USER ====================================
@@ -146,13 +162,23 @@ export function mapUser(u) {
   const co = u.company;
   const userTypes = u.userTypes || (co?.type ? [co.type] : ["producer"]);
   const userType = u.activeType || userTypes[0] || co?.type || "producer";
-  const role = u.role || "operator";
+  // Map gerente → admin for backward compat in frontend logic
+  const rawRole = u.role || "operario";
+  const role = rawRole === "gerente" ? "admin" : rawRole;
   const name = u.name || "Usuario";
   const av = name.split(" ").filter(w=>w).map(w=>w[0]).join("").slice(0,2).toUpperCase() || "U";
+  // New: companies array from backend (memberships)
+  const companies = (u.companies || []).map(c => ({
+    ...c,
+    // Map gerente → admin for frontend compat
+    effectiveRole: c.role === "gerente" ? "admin" : c.role,
+  }));
   return {
     id:u.id, email:u.email, phone:u.phone||"", name, role, userType, userTypes,
     companyByType: u.companyByType||{},
     entity:co?.name||"", entityId:co?.id||"", companyId:co?.id||"",
+    activeCompanyId: u.activeCompanyId || co?.id || "",
+    companies,
     hasInternalFleet: co?.hasInternalFleet||false,
     isSuperAdmin: u.isSuperAdmin||false,
     av
@@ -243,12 +269,14 @@ export function mapFreight(f) {
 export function permsFor(user) {
   if (!user) return {};
   const { role, userType } = user;
+  // role is already mapped: gerente→admin in mapUser, platform_admin stays
+  const isManager = role === "admin" || role === "platform_admin" || role === "gerente";
   return {
     canRequest:      ["plant","producer"].includes(userType),
-    canApprove:      userType === "plant" && role === "admin",
-    canAssignDriver: userType === "transporter" && role === "admin",
-    canCancel:       role === "admin",
-    canReject:       userType === "transporter" && role === "admin",
+    canApprove:      userType === "plant" && isManager,
+    canAssignDriver: userType === "transporter" && isManager,
+    canCancel:       isManager,
+    canReject:       userType === "transporter" && isManager,
   };
 }
 

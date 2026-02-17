@@ -1630,19 +1630,25 @@ function NotificationsScreen({ notifications=[], freights=[], onMarkRead, onMark
 
 // ======================== PROFILE =====================================
 
-function MenuScreen({ user, perms, onLogout, onNav, isDesktop }) {
+function MenuScreen({ user, perms, onLogout, onNav, isDesktop, onSwitchCompany, onRefresh }) {
   const TYPE_LABELS = {plant:"Planta de Acopio",transporter:"Transportista",producer:"Productor"};
   const TYPE_COLORS = {plant:C.pri,transporter:C.info||C.sec,producer:C.acc};
   const tc = TYPE_COLORS[user.userType]||C.pri;
   const pl = []; if(perms.canRequest)pl.push("Solicitar fletes"); if(perms.canApprove)pl.push("Aprobar fletes"); if(perms.canAssignDriver)pl.push("Asignar choferes"); if(perms.canCancel)pl.push("Cancelar fletes"); if(perms.canReject)pl.push("Rechazar viajes");
+  const [switching, setSwitching] = useState(null);
 
-  // Build companies list from companyByType
-  const companies = [];
-  const cbt = user.companyByType||{};
-  Object.entries(cbt).forEach(([type, companyId])=>{
-    if(companyId) companies.push({ type, companyId, label:TYPE_LABELS[type]||type, color:TYPE_COLORS[type]||C.t2 });
-  });
-  if(companies.length===0 && user.entity) companies.push({ type:user.userType, companyId:user.companyId, label:TYPE_LABELS[user.userType]||user.userType, color:tc, name:user.entity });
+  // Use new companies array from backend memberships
+  const companies = (user.companies && user.companies.length > 0) ? user.companies.map(c => ({
+    ...c, label: TYPE_LABELS[c.companyType] || c.companyType, color: TYPE_COLORS[c.companyType] || C.t2,
+  })) : [{ companyId: user.companyId, companyName: user.entity, companyType: user.userType, role: user.role === "admin" ? "gerente" : "operario", label: TYPE_LABELS[user.userType] || user.userType, color: tc }];
+
+  const handleSwitch = async (companyId) => {
+    if (!onSwitchCompany || companyId === user.activeCompanyId) return;
+    setSwitching(companyId);
+    const r = await onSwitchCompany(companyId);
+    setSwitching(null);
+    if (r.ok && onRefresh) onRefresh();
+  };
 
   const isGerente = user.role==="admin"||user.role==="platform_admin";
   const mgmtItems = [];
@@ -1689,13 +1695,19 @@ function MenuScreen({ user, perms, onLogout, onNav, isDesktop }) {
         {/* Companies */}
         <div style={{marginBottom:12}}>
           <div style={{fontSize:10,fontWeight:700,color:C.t3,textTransform:"uppercase",letterSpacing:0.5,marginBottom:8}}>Empresas</div>
-          {companies.map((c,i)=>(
-            <div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 0",borderTop:i>0?`1px solid ${C.b2}`:"none"}}>
-              <Bd color={c.color}>{c.label}</Bd>
-              <span style={{fontSize:12,fontWeight:600,color:C.t1}}>{c.name||user.entity}</span>
-              <Bd color={C.t2} bg={C.bgInput}>{user.role==="admin"?"Gerente":"Operario"}</Bd>
-            </div>
-          ))}
+          {companies.map((c,i)=>{
+            const isActive = c.companyId === user.activeCompanyId;
+            const roleLabel = c.role === "gerente" || c.effectiveRole === "admin" ? "Gerente" : "Operario";
+            return (
+              <div key={c.companyId||i} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 0",borderTop:i>0?`1px solid ${C.b2}`:"none",cursor:companies.length>1&&!isActive?"pointer":"default",opacity:switching===c.companyId?0.5:1}} onClick={()=>!isActive&&companies.length>1&&handleSwitch(c.companyId)}>
+                {companies.length>1 && <div style={{width:18,height:18,borderRadius:9,border:`2px solid ${isActive?C.pri:C.b2}`,background:isActive?C.pri:"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{isActive&&<div style={{width:8,height:8,borderRadius:4,background:C.w}}/>}</div>}
+                <Bd color={c.color}>{c.label}</Bd>
+                <span style={{fontSize:12,fontWeight:600,color:C.t1,flex:1}}>{c.companyName||user.entity}</span>
+                <Bd color={C.t2} bg={C.bgInput}>{roleLabel}</Bd>
+              </div>
+            );
+          })}
+          {companies.length>1 && <div style={{fontSize:10,color:C.t3,marginTop:4}}>Tocá una empresa para cambiar tu empresa activa</div>}
         </div>
 
         {/* Permissions */}
@@ -4302,7 +4314,7 @@ export default function Tolvink() {
         {screen==="detail" && <DetailScreen user={curFreight ? {...auth.user, userType: _resolveType(curFreight)} : auth.user} freight={curFreight} perms={perms} onBack={()=>setScreen("list")} onAction={handleAction} actionLoading={actionLoading} onChat={(convId)=>{if(convId){setChatConvId(convId);setScreen("chats");}}} onRefresh={(id)=>fh.refresh(id)} onDuplicate={(f)=>{setDuplicateData(f);setScreen("new");}} onEdit={(f)=>{setEditData(f);setScreen("edit");}} goToMap={goToMap}/>}
         {screen==="new" && <NewScreen user={auth.user} lots={catalog.lots} plants={catalog.plants} branches={catalog.branches} fields={catalog.fields} trucks={catalog.trucks} onBack={()=>{setDuplicateData(null);setScreen("home");}} onCreate={handleCreate} submitting={submitting} duplicateFrom={duplicateData}/>}
         {screen==="edit" && editData && <EditScreen freight={editData} fields={catalog.fields} plants={catalog.plants} onBack={()=>{setEditData(null);setScreen("detail");}} onSave={async(id,data)=>{const r=await fh.update(id,data);if(r.ok) return "Flete actualizado"; show(r.error,"err"); return "";}}/>}
-        {screen==="menu" && <MenuScreen user={auth.user} perms={perms} onLogout={auth.logout} onNav={nav} isDesktop={isDesktop}/>}
+        {screen==="menu" && <MenuScreen user={auth.user} perms={perms} onLogout={auth.logout} onNav={nav} isDesktop={isDesktop} onSwitchCompany={auth.switchCompany} onRefresh={()=>{fh.fetchAll();catalog.refresh();}}/>}
         {screen==="trucks" && <TrucksScreen onBack={()=>{catalog.refresh();setScreen("menu");}}/>}
         {screen==="fields" && <FieldsScreen onBack={()=>{catalog.refresh();setScreen("menu");}} goToMap={goToMap}/>}
         {screen==="admin" && <AdminScreen user={auth.user} onBack={()=>setScreen("menu")}/>}

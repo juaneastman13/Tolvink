@@ -92,6 +92,16 @@ export async function apiRegister(b) {
 
 export function apiLogout() { clearAuth(); }
 
+// Switch active company
+export async function apiSwitchCompany(companyId) {
+  const d = await api('/auth/switch-company', { body: { companyId } });
+  if (d?.access_token) { setToken(d.access_token); saveUser(d.user); }
+  return d;
+}
+
+// Get my companies
+export async function apiGetMyCompanies() { return api('/auth/me/companies'); }
+
 // Freights
 export async function apiListFreights(q={}) { const p=new URLSearchParams(); if(q.status)p.set('status',q.status); if(q.page)p.set('page',String(q.page)); if(q.limit)p.set('limit',String(q.limit)); const qs=p.toString(); return api(`/freights${qs?`?${qs}`:''}`); }
 export async function apiGetFreight(id) { return api(`/freights/${id}`); }
