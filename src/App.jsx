@@ -258,7 +258,7 @@ function AuthScreen({ onLogin, onSignup, loading, error, clearError, onBackToLan
 // ======================== HOME SCREEN ================================
 
 
-function HomeScreen({ user, freights, perms, onNav, catalog, isDesktop }) {
+function HomeScreen({ user, freights, perms, onNav, catalog, isDesktop, onAction, actionLoading }) {
   const [activePanel, setActivePanel] = useState(null); // null | "map" | "pending" | "calendar" | "reports" | "fields" | "trucks"
 
   const FILTER_MAP = {
@@ -285,9 +285,10 @@ function HomeScreen({ user, freights, perms, onNav, catalog, isDesktop }) {
   , [freights, user.userType, user.role]);
   const hasPending = pendingActions.length > 0;
 
-  // Day summary
-  const todayFreights = useMemo(() => displayFreights.filter(f => f.loadDate === todayStr), [displayFreights, todayStr]);
+  // Day summary — all based on today's date
+  const todayScheduled = useMemo(() => displayFreights.filter(f => f.loadDate === todayStr && !["finished"].includes(f.status)).length, [displayFreights, todayStr]);
   const liveNow = useMemo(() => freights.filter(f => ["in_progress","loaded"].includes(f.status)).length, [freights]);
+  const todayDone = useMemo(() => freights.filter(f => f.status === "finished" && f.loadDate === todayStr).length, [freights, todayStr]);
 
   const togglePanel = (key) => setActivePanel(prev=>prev===key?null:key);
 
@@ -327,17 +328,17 @@ function HomeScreen({ user, freights, perms, onNav, catalog, isDesktop }) {
       <div style={{ marginBottom:14 }}>
         <div style={{ fontSize:10, fontWeight:700, color:C.t3, textTransform:"uppercase", letterSpacing:0.5, marginBottom:8 }}>Resumen del día</div>
         <div style={{ display:"grid", gridTemplateColumns:compact?"1fr 1fr":"1fr 1fr 1fr", gap:8 }}>
-          <div onClick={()=>onNav("list")} style={{ background:C.accPale, borderRadius:10, padding:compact?"8px 10px":"10px", textAlign:"center", cursor:"pointer" }}>
-            <div style={{ fontSize:compact?18:22, fontWeight:800, color:C.acc }}>{todayFreights.length}</div>
+          <div style={{ background:C.accPale, borderRadius:10, padding:compact?"8px 10px":"10px", textAlign:"center" }}>
+            <div style={{ fontSize:compact?18:22, fontWeight:800, color:C.acc }}>{todayScheduled}</div>
             <div style={{ fontSize:9, color:C.acc, fontWeight:600, opacity:0.8 }}>Programados hoy</div>
           </div>
-          <div onClick={()=>onNav("list")} style={{ background:"#D0EBD7", borderRadius:10, padding:compact?"8px 10px":"10px", textAlign:"center", cursor:"pointer" }}>
+          <div style={{ background:"#D0EBD7", borderRadius:10, padding:compact?"8px 10px":"10px", textAlign:"center" }}>
             <div style={{ fontSize:compact?18:22, fontWeight:800, color:"#258B3E" }}>{liveNow}</div>
-            <div style={{ fontSize:9, color:"#258B3E", fontWeight:600, opacity:0.8 }}>En ruta ahora</div>
+            <div style={{ fontSize:9, color:"#258B3E", fontWeight:600, opacity:0.8 }}>En curso</div>
           </div>
-          <div onClick={()=>onNav("list")} style={{ background:C.priPale, borderRadius:10, padding:compact?"8px 10px":"10px", textAlign:"center", cursor:"pointer", gridColumn:compact?"1 / -1":undefined }}>
-            <div style={{ fontSize:compact?18:22, fontWeight:800, color:C.pri }}>{stats.done}</div>
-            <div style={{ fontSize:9, color:C.pri, fontWeight:600, opacity:0.8 }}>Finalizados</div>
+          <div style={{ background:C.priPale, borderRadius:10, padding:compact?"8px 10px":"10px", textAlign:"center", gridColumn:compact?"1 / -1":undefined }}>
+            <div style={{ fontSize:compact?18:22, fontWeight:800, color:C.pri }}>{todayDone}</div>
+            <div style={{ fontSize:9, color:C.pri, fontWeight:600, opacity:0.8 }}>Realizados hoy</div>
           </div>
         </div>
       </div>
@@ -380,7 +381,7 @@ function HomeScreen({ user, freights, perms, onNav, catalog, isDesktop }) {
 
         {/* Panel content */}
         {activePanel==="map" && <HomeMapView freights={displayFreights} onNav={onNav} />}
-        {activePanel==="pending" && <PendingScreen user={user} freights={freights} onNav={onNav} onNewFreight={()=>onNav("new")} embedded />}
+        {activePanel==="pending" && <PendingScreen user={user} freights={freights} onNav={onNav} onNewFreight={()=>onNav("new")} onAction={onAction} actionLoading={actionLoading} embedded />}
         {activePanel==="calendar" && <HomeCalendarPanel freights={freights} perms={perms} onNav={onNav} />}
         {activePanel==="reports" && <ReportsScreen onBack={()=>setActivePanel(null)} freights={freights} isDesktop={false} embedded />}
         {activePanel==="fields" && <FieldsScreen onBack={()=>setActivePanel(null)} embedded />}
@@ -417,7 +418,7 @@ function HomeScreen({ user, freights, perms, onNav, catalog, isDesktop }) {
             <span style={{ fontSize:16, fontWeight:800, color:C.t1 }}>{pi.l}</span>
           </div>
           {activePanel==="map" && <HomeMapView freights={displayFreights} onNav={onNav} />}
-          {activePanel==="pending" && <PendingScreen user={user} freights={freights} onNav={onNav} onNewFreight={()=>onNav("new")} embedded />}
+          {activePanel==="pending" && <PendingScreen user={user} freights={freights} onNav={onNav} onNewFreight={()=>onNav("new")} onAction={onAction} actionLoading={actionLoading} embedded />}
           {activePanel==="calendar" && <HomeCalendarPanel freights={freights} perms={perms} onNav={onNav} />}
           {activePanel==="reports" && <ReportsScreen onBack={()=>setActivePanel(null)} freights={freights} isDesktop={false} embedded />}
           {activePanel==="fields" && <FieldsScreen onBack={()=>setActivePanel(null)} embedded />}
@@ -771,28 +772,28 @@ function getPendingActions(freight, userType) {
   const s = freight.status;
   const own = freight.isOwnFleet;
   if (userType === "plant") {
-    if (s === "pending_assignment") return { action: "Asignar transporte", color: C.acc, icon: "assign" };
-    if (s === "assigned" && own) return { action: "Autorizar viaje", color: C.sec, icon: "authorize" };
-    if (s === "loaded" && !freight.plantFinishedConfirmedAt) return { action: "Confirmar entrega", color: C.pri, icon: "confirm" };
+    if (s === "pending_assignment") return { action: "Asignar transporte", color: C.acc, icon: "assign", actionKey: "assign" };
+    if (s === "assigned" && own) return { action: "Autorizar viaje", color: C.sec, icon: "authorize", actionKey: "authorize" };
+    if (s === "loaded" && !freight.plantFinishedConfirmedAt) return { action: "Confirmar entrega", color: C.pri, icon: "confirm", actionKey: "confirm_finished" };
     return null;
   }
   if (userType === "transporter") {
-    if (s === "assigned" && !own) return { action: "Aceptar o rechazar", color: C.sec, icon: "respond" };
-    if (s === "accepted") return { action: "Iniciar viaje", color: C.pri, icon: "start" };
-    if (s === "in_progress" && !freight.transporterLoadedConfirmedAt) return { action: "Confirmar carga", color: C.acc, icon: "confirm" };
-    if (s === "loaded" && !freight.transporterFinishedConfirmedAt) return { action: "Confirmar entrega", color: C.pri, icon: "confirm" };
+    if (s === "assigned" && !own) return { action: "Aceptar o rechazar", color: C.sec, icon: "respond", actionKey: "respond" };
+    if (s === "accepted") return { action: "Iniciar viaje", color: C.pri, icon: "start", actionKey: "start" };
+    if (s === "in_progress" && !freight.transporterLoadedConfirmedAt) return { action: "Confirmar carga", color: C.acc, icon: "confirm", actionKey: "confirm_loaded" };
+    if (s === "loaded" && !freight.transporterFinishedConfirmedAt) return { action: "Confirmar entrega", color: C.pri, icon: "confirm", actionKey: "confirm_finished" };
     return null;
   }
   if (userType === "producer") {
-    if (s === "accepted" && own) return { action: "Iniciar viaje", color: C.pri, icon: "start" };
-    if (s === "in_progress" && own && !freight.transporterLoadedConfirmedAt) return { action: "Confirmar carga", color: C.acc, icon: "confirm" };
-    if (s === "loaded" && !freight.producerLoadedConfirmedAt) return { action: "Confirmar carga", color: C.acc, icon: "confirm" };
+    if (s === "accepted" && own) return { action: "Iniciar viaje", color: C.pri, icon: "start", actionKey: "start" };
+    if (s === "in_progress" && own && !freight.transporterLoadedConfirmedAt) return { action: "Confirmar carga", color: C.acc, icon: "confirm", actionKey: "confirm_loaded" };
+    if (s === "loaded" && !freight.producerLoadedConfirmedAt) return { action: "Confirmar carga", color: C.acc, icon: "confirm", actionKey: "confirm_loaded" };
     return null;
   }
   return null;
 }
 
-function PendingScreen({ user, freights, onNav, onNewFreight, embedded }) {
+function PendingScreen({ user, freights, onNav, onNewFreight, onAction, actionLoading, embedded }) {
   const pending = useMemo(() => {
     return freights.map(f => {
       const pa = getPendingActions(f, user.userType);
@@ -865,8 +866,9 @@ function PendingScreen({ user, freights, onNav, onNewFreight, embedded }) {
                     {group.items.map((f, idx) => {
                       const st = stCfg(f.status);
                       const pa = f.pendingAction;
+                      const canInline = embedded && onAction;
                       return (
-                        <button key={f.id} onClick={() => onNav("detail", f.id)} style={{ width: "100%", background: C.w, border: `1px solid ${C.b1}`, borderLeft: `4px solid ${pa.color}`, borderRadius: 12, padding: 14, cursor: "pointer", fontFamily: "inherit", textAlign: "left", boxShadow: C.sh, animation:`cardIn 0.2s ease ${idx*0.03}s both` }}>
+                        <div key={f.id} style={{ width: "100%", background: C.w, border: `1px solid ${C.b1}`, borderLeft: `4px solid ${pa.color}`, borderRadius: 12, padding: 14, fontFamily: "inherit", textAlign: "left", boxShadow: C.sh, animation:`cardIn 0.2s ease ${idx*0.03}s both` }}>
                           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
                             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                               <span style={{ fontSize: 11, fontWeight: 700, fontFamily: MONO, color: C.t2 }}>{f.code}</span>
@@ -883,12 +885,29 @@ function PendingScreen({ user, freights, onNav, onNewFreight, embedded }) {
                           {f.loadDate && <div style={{ fontSize: 10, color: C.t3, marginBottom: 8 }}>
                             {Ic.cal(C.t3,10)} {f.loadDate}{f.loadTime?` · ${f.loadTime}`:""}{f.transporterName?` · ${f.transporterName}`:""}
                           </div>}
-                          <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 10px", background: `${pa.color}10`, borderRadius: 8, border: `1px solid ${pa.color}20` }}>
-                            <span style={{ width: 8, height: 8, borderRadius: 4, background: pa.color, animation: "ti 1.5s infinite" }} />
-                            <span style={{ fontSize: 12, fontWeight: 700, color: pa.color }}>{pa.action}</span>
-                            <span style={{ marginLeft: "auto", display: "flex" }}>{Ic.chev(pa.color, 16)}</span>
-                          </div>
-                        </button>
+                          {canInline ? (
+                            pa.actionKey === "respond" ? (
+                              <div style={{ display: "flex", gap: 8 }}>
+                                <button disabled={actionLoading} onClick={() => onAction(f.id, "accept")} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "10px 12px", background: C.pri, borderRadius: 8, border: "none", cursor: "pointer", fontFamily: "inherit" }}>
+                                  {Ic.chk("#fff", 14)}<span style={{ fontSize: 12, fontWeight: 700, color: "#fff" }}>Aceptar</span>
+                                </button>
+                                <button disabled={actionLoading} onClick={() => onAction(f.id, "reject")} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "10px 12px", background: C.bg, borderRadius: 8, border: `1px solid ${C.err}`, cursor: "pointer", fontFamily: "inherit" }}>
+                                  {Ic.cross(C.err, 14)}<span style={{ fontSize: 12, fontWeight: 700, color: C.err }}>Rechazar</span>
+                                </button>
+                              </div>
+                            ) : (
+                              <button disabled={actionLoading} onClick={() => onAction(f.id, pa.actionKey)} style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "10px 12px", background: pa.color, borderRadius: 8, border: "none", cursor: "pointer", fontFamily: "inherit", opacity: actionLoading ? 0.6 : 1 }}>
+                                <span style={{ fontSize: 13, fontWeight: 700, color: "#fff" }}>{pa.action}</span>
+                              </button>
+                            )
+                          ) : (
+                            <button onClick={() => onNav("detail", f.id)} style={{ width: "100%", display: "flex", alignItems: "center", gap: 6, padding: "8px 10px", background: `${pa.color}10`, borderRadius: 8, border: `1px solid ${pa.color}20`, cursor: "pointer", fontFamily: "inherit" }}>
+                              <span style={{ width: 8, height: 8, borderRadius: 4, background: pa.color, animation: "ti 1.5s infinite" }} />
+                              <span style={{ fontSize: 12, fontWeight: 700, color: pa.color }}>{pa.action}</span>
+                              <span style={{ marginLeft: "auto", display: "flex" }}>{Ic.chev(pa.color, 16)}</span>
+                            </button>
+                          )}
+                        </div>
                       );
                     })}
                   </div>
@@ -3834,7 +3853,7 @@ export default function Tolvink() {
         {/* Scrollable content area */}
         <div style={{flex:1,overflow:(screen==="chats"||screen==="calendar")&&isDesktop?"hidden":"auto",display:"flex",flexDirection:"column",WebkitOverflowScrolling:"touch",overscrollBehavior:"contain"}}>
         <div key={screen} className="tv-page" style={{flex:1,display:"flex",flexDirection:"column"}}>
-        {screen==="home" && <HomeScreen user={auth.user} freights={fh.freights} perms={perms} onNav={nav} catalog={catalog} isDesktop={isDesktop}/>}
+        {screen==="home" && <HomeScreen user={auth.user} freights={fh.freights} perms={perms} onNav={nav} catalog={catalog} isDesktop={isDesktop} onAction={handleAction} actionLoading={actionLoading}/>}
         {screen==="list" && <ListScreen freights={fh.freights} onNav={nav} onRefresh={fh.fetchAll}/>}
         {screen==="pending" && <PendingScreen user={auth.user} freights={fh.freights} onNav={nav} onNewFreight={()=>nav("new")}/>}
         {screen==="calendar" && <CalendarScreen freights={fh.freights} perms={perms} onNav={nav} isDesktop={isDesktop}/>}
