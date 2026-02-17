@@ -259,9 +259,6 @@ function AuthScreen({ onLogin, onSignup, loading, error, clearError, onBackToLan
 
 
 function HomeScreen({ user, freights, perms, onNav, catalog, isDesktop, onAction, actionLoading }) {
-  const displayFreights = useMemo(()=>freights.filter(f=>!["canceled","draft"].includes(f.status)),[freights]);
-  const todayStr = useMemo(() => new Date().toISOString().slice(0, 10), []);
-
   // Pending actions — freights with getPendingActions result, grouped by status
   const pendingGrouped = useMemo(() => {
     const items = freights.map(f => {
@@ -280,23 +277,12 @@ function HomeScreen({ user, freights, perms, onNav, catalog, isDesktop, onAction
   const totalPending = pendingGrouped.reduce((s,g)=>s+g.items.length, 0);
   const hasPending = totalPending > 0;
 
-  // Day summary
-  const todayScheduled = useMemo(() => displayFreights.filter(f => f.loadDate === todayStr && !["finished"].includes(f.status)).length, [displayFreights, todayStr]);
-  const liveNow = useMemo(() => freights.filter(f => ["in_progress","loaded"].includes(f.status)).length, [freights]);
-  const todayDone = useMemo(() => freights.filter(f => f.status === "finished" && f.loadDate === todayStr).length, [freights, todayStr]);
-
   // Collapsed groups
   const [collapsed, setCollapsed] = useState({});
   const toggleGroup = (key) => setCollapsed(prev=>({...prev,[key]:!prev[key]}));
 
   return (
-    <div style={{ flex:1, overflow:"auto", padding:"0 18px 18px 18px" }}>
-      {/* Greeting */}
-      <div style={{ padding:"18px 0 12px 0" }}>
-        <div style={{ fontSize:13, color:C.t2 }}>Hola,</div>
-        <div style={{ fontSize:22, fontWeight:800, letterSpacing:-0.3, color:C.t1 }}>{user.name.split(" ")[0]}</div>
-      </div>
-
+    <div style={{ flex:1, overflow:"auto", padding:"14px 18px 18px 18px" }}>
       {/* Status bar */}
       <div style={{ display:"flex", alignItems:"center", gap:10, padding:"12px 14px", borderRadius:12, marginBottom:14, background:hasPending?C.acc:C.okPale, border:hasPending?"none":`1px solid ${C.ok}20` }}>
         <div style={{ width:36, height:36, borderRadius:10, background:hasPending?"rgba(255,255,255,0.2)":`${C.ok}15`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, position:"relative" }}>
@@ -311,7 +297,7 @@ function HomeScreen({ user, freights, perms, onNav, catalog, isDesktop, onAction
 
       {/* Pending actions — inline grouped */}
       {hasPending && (
-        <div style={{ display:"flex", flexDirection:"column", gap:12, marginBottom:16 }}>
+        <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
           {pendingGrouped.map((group, gi) => {
             const isCollapsed = collapsed[group.key];
             return (
@@ -375,25 +361,6 @@ function HomeScreen({ user, freights, perms, onNav, catalog, isDesktop, onAction
           })}
         </div>
       )}
-
-      {/* Day summary */}
-      <div style={{ marginBottom:14 }}>
-        <div style={{ fontSize:10, fontWeight:700, color:C.t3, textTransform:"uppercase", letterSpacing:0.5, marginBottom:8 }}>Resumen del día</div>
-        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8 }}>
-          <div style={{ background:C.accPale, borderRadius:10, padding:"10px", textAlign:"center" }}>
-            <div style={{ fontSize:22, fontWeight:800, color:C.acc }}>{todayScheduled}</div>
-            <div style={{ fontSize:9, color:C.acc, fontWeight:600, opacity:0.8 }}>Programados hoy</div>
-          </div>
-          <div style={{ background:"#D0EBD7", borderRadius:10, padding:"10px", textAlign:"center" }}>
-            <div style={{ fontSize:22, fontWeight:800, color:"#258B3E" }}>{liveNow}</div>
-            <div style={{ fontSize:9, color:"#258B3E", fontWeight:600, opacity:0.8 }}>En curso</div>
-          </div>
-          <div style={{ background:C.priPale, borderRadius:10, padding:"10px", textAlign:"center" }}>
-            <div style={{ fontSize:22, fontWeight:800, color:C.pri }}>{todayDone}</div>
-            <div style={{ fontSize:9, color:C.pri, fontWeight:600, opacity:0.8 }}>Realizados hoy</div>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }
