@@ -1,0 +1,44 @@
+import { C } from "./theme";
+
+// ======================== VALIDATION ENGINE ===========================
+export const V = {
+  req: (v, f) => (!v || (typeof v==='string' && !v.trim())) ? `${f} es obligatorio` : null,
+  email: (v) => { if(!v) return 'Email es obligatorio'; return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)?null:'Email inválido'; },
+  min: (n) => (v,f) => { if(!v) return `${f} es obligatorio`; return v.length>=n?null:`${f}: mínimo ${n} caracteres`; },
+  posNum: (v, f) => { if(!v&&v!==0) return `${f} es obligatorio`; return Number(v)>0?null:`${f} debe ser mayor a 0`; },
+  sel: (v, f) => !v ? `Seleccioná ${f}` : null,
+  time: (v, f) => { if(!v) return `${f} es obligatorio`; return /^\d{2}:\d{2}$/.test(v)?null:`${f} inválido`; },
+  phone: (v) => { if(!v) return 'Teléfono es obligatorio'; const clean=v.replace(/[\s\-()]/g,''); return /^09[1-9]\d{6}$/.test(clean)?null:'Formato: 09X XXX XXX'; },
+  userTypes: (v) => { if(!v||!Array.isArray(v)||v.length===0) return 'Seleccioná al menos un tipo'; return null; },
+};
+
+export function validate(vals, schema) {
+  const errs = {}; let ok = true;
+  for (const [k, rules] of Object.entries(schema)) {
+    for (const rule of rules) { const e = rule(vals[k],k); if(e){errs[k]=e;ok=false;break;} }
+    if(!errs[k]) errs[k]=null;
+  }
+  return {ok,errs};
+}
+
+export const SCHEMAS = {
+  login:   { email:[V.email], pw:[V.min(4)] },
+  signup:  { name:[V.req,V.min(3)], email:[V.email], phone:[V.phone], pw:[V.min(4)], userTypes:[V.userTypes] },
+  freight: { grain:[v=>V.sel(v,'tipo de grano')], tons:[V.posNum], lotId:[v=>V.sel(v,'lote')], loadDate:[V.req], loadTime:[V.time] },
+};
+
+// ======================== FILTER ENGINE ===============================
+export function textMatch(haystack, needle) {
+  if(!needle||!needle.trim()) return true;
+  if(!haystack) return false;
+  return String(haystack).toLowerCase().includes(needle.toLowerCase().trim());
+}
+
+// Inline error display component
+export function FieldError({ error }) {
+  if(!error) return null;
+  return <div style={{fontSize:11,color:C.err,fontWeight:500,marginTop:4,display:"flex",alignItems:"center",gap:4}}>
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={C.err} strokeWidth="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    {error}
+  </div>;
+}
