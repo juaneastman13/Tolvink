@@ -1530,8 +1530,12 @@ function _timeAgo(dateStr) {
   return `hace ${Math.floor(d / 7)} sem`;
 }
 
-function _NotifRow({ n, onMarkRead, onTap, isLast }) {
+function _fmtDate(d) { if(!d) return ""; return d.slice(8,10)+"/"+d.slice(5,7)+"/"+d.slice(2,4); }
+
+function _NotifRow({ n, freight, onMarkRead, onTap, isLast }) {
   const icFn = NOTIF_ICONS[n.type] || ((s) => Ic.bell(C.t3, s));
+  const f = freight;
+  const detailStyle = { fontSize:11, color:C.t3, display:"flex", alignItems:"center", gap:4 };
   return (
     <button onClick={() => { if (!n.read) onMarkRead(n.id); if (n.entityId) onTap(n.entityId); }}
       className="tv-row"
@@ -1551,13 +1555,22 @@ function _NotifRow({ n, onMarkRead, onTap, isLast }) {
           <span style={{ fontSize:11, color:C.t3, fontWeight:500, flexShrink:0 }}>{_timeAgo(n.createdAt)}</span>
         </div>
         <div style={{ fontSize:12.5, color:C.t3, marginTop:3, lineHeight:1.4 }}>{n.body}</div>
+        {f && (
+          <div style={{ display:"flex", flexWrap:"wrap", gap:"4px 12px", marginTop:6 }}>
+            {f.requestedByName && <span style={detailStyle}>{Ic.user(C.t3,11)} {f.requestedByName}</span>}
+            {f.destName && <span style={detailStyle}>{Ic.plant(C.t3,11)} {f.destName}</span>}
+            {f.transporterName && <span style={detailStyle}>{Ic.truck(C.t3,11)} {f.transporterName}</span>}
+            {(f.loadDate||f.loadTime) && <span style={detailStyle}>{Ic.cal(C.t3,11)} {_fmtDate(f.loadDate)}{f.loadTime ? ` ${f.loadTime}` : ""}</span>}
+          </div>
+        )}
       </div>
       {!n.read && <div style={{ width:8, height:8, borderRadius:4, background:C.pri, flexShrink:0, marginTop:8 }} />}
     </button>
   );
 }
 
-function NotificationsScreen({ notifications=[], onMarkRead, onMarkAllRead, onTap }) {
+function NotificationsScreen({ notifications=[], freights=[], onMarkRead, onMarkAllRead, onTap }) {
+  const freightMap = useMemo(() => { const m = {}; freights.forEach(f => { m[f.id] = f; }); return m; }, [freights]);
   const unread = notifications.filter(n => !n.read);
   const read = notifications.filter(n => n.read);
   return (
@@ -1587,7 +1600,7 @@ function NotificationsScreen({ notifications=[], onMarkRead, onMarkAllRead, onTa
           <div style={{ marginBottom:20 }}>
             <div style={{ fontSize:11, fontWeight:700, color:C.t3, textTransform:"uppercase", letterSpacing:0.5, padding:"0 4px", marginBottom:8 }}>Nuevas</div>
             <div style={{ background:C.w, borderRadius:14, border:`1px solid ${C.b2}`, overflow:"hidden" }}>
-              {unread.map((n, i) => <_NotifRow key={n.id} n={n} onMarkRead={onMarkRead} onTap={onTap} isLast={i === unread.length - 1} />)}
+              {unread.map((n, i) => <_NotifRow key={n.id} n={n} freight={freightMap[n.entityId]} onMarkRead={onMarkRead} onTap={onTap} isLast={i === unread.length - 1} />)}
             </div>
           </div>
         )}
@@ -1597,7 +1610,7 @@ function NotificationsScreen({ notifications=[], onMarkRead, onMarkAllRead, onTa
           <div>
             <div style={{ fontSize:11, fontWeight:700, color:C.t3, textTransform:"uppercase", letterSpacing:0.5, padding:"0 4px", marginBottom:8 }}>Anteriores</div>
             <div style={{ background:C.w, borderRadius:14, border:`1px solid ${C.b2}`, overflow:"hidden" }}>
-              {read.map((n, i) => <_NotifRow key={n.id} n={n} onMarkRead={onMarkRead} onTap={onTap} isLast={i === read.length - 1} />)}
+              {read.map((n, i) => <_NotifRow key={n.id} n={n} freight={freightMap[n.entityId]} onMarkRead={onMarkRead} onTap={onTap} isLast={i === read.length - 1} />)}
             </div>
           </div>
         )}
@@ -4049,7 +4062,7 @@ export default function Tolvink() {
         {screen==="mydata" && <MyDataScreen user={auth.user} onBack={()=>setScreen("menu")}/>}
         {screen==="reports" && <ReportsScreen onBack={()=>setScreen(isDesktop?"reports":"menu")} freights={fh.freights} isDesktop={isDesktop}/>}
         {screen==="chats" && <ChatsScreen user={auth.user} openConvId={chatConvId} onConvOpened={()=>setChatConvId(null)} isDesktop={isDesktop}/>}
-        {screen==="notifs" && <NotificationsScreen notifications={notif.notifications} onMarkRead={notif.markRead} onMarkAllRead={notif.markAllRead} onTap={handleNotifTap} />}
+        {screen==="notifs" && <NotificationsScreen notifications={notif.notifications} freights={fh.freights} onMarkRead={notif.markRead} onMarkAllRead={notif.markAllRead} onTap={handleNotifTap} />}
         </div>
         </div>
 
