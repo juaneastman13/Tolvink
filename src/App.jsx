@@ -1530,16 +1530,44 @@ function _timeAgo(dateStr) {
   return `hace ${Math.floor(d / 7)} sem`;
 }
 
+function _NotifRow({ n, onMarkRead, onTap, isLast }) {
+  const icFn = NOTIF_ICONS[n.type] || ((s) => Ic.bell(C.t3, s));
+  return (
+    <button onClick={() => { if (!n.read) onMarkRead(n.id); if (n.entityId) onTap(n.entityId); }}
+      className="tv-row"
+      style={{
+        display:"flex", alignItems:"flex-start", gap:14, width:"100%", padding:"14px 18px",
+        border:"none", background: n.read ? "transparent" : C.priGhost, cursor:"pointer",
+        fontFamily:"inherit", textAlign:"left",
+        borderBottom: isLast ? "none" : `1px solid ${C.b2}`,
+        WebkitTapHighlightColor:"transparent", touchAction:"manipulation", transition:"background 0.15s"
+      }}>
+      <div style={{ width:40, height:40, borderRadius:12, background: n.read ? C.bg : C.priPale, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+        {icFn(18)}
+      </div>
+      <div style={{ flex:1, minWidth:0 }}>
+        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+          <span style={{ fontSize:14, fontWeight: n.read ? 500 : 700, color: n.read ? C.t2 : C.t1, flex:1 }}>{n.title}</span>
+          <span style={{ fontSize:11, color:C.t3, fontWeight:500, flexShrink:0 }}>{_timeAgo(n.createdAt)}</span>
+        </div>
+        <div style={{ fontSize:12.5, color:C.t3, marginTop:3, lineHeight:1.4 }}>{n.body}</div>
+      </div>
+      {!n.read && <div style={{ width:8, height:8, borderRadius:4, background:C.pri, flexShrink:0, marginTop:8 }} />}
+    </button>
+  );
+}
+
 function NotificationsScreen({ notifications=[], onMarkRead, onMarkAllRead, onTap }) {
-  const unreadCount = notifications.filter(n => !n.read).length;
+  const unread = notifications.filter(n => !n.read);
+  const read = notifications.filter(n => n.read);
   return (
     <div className="tv-pad" style={{ padding:"16px 18px", flex:1 }}>
       <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:18 }}>
         <div>
           <h2 style={{ fontSize:20, fontWeight:700, color:C.t1, margin:0 }}>Notificaciones</h2>
-          {unreadCount > 0 && <span style={{ fontSize:12, color:C.t3, fontWeight:500 }}>{unreadCount} sin leer</span>}
+          {unread.length > 0 && <span style={{ fontSize:12, color:C.t3, fontWeight:500 }}>{unread.length} sin leer</span>}
         </div>
-        {unreadCount > 0 && (
+        {unread.length > 0 && (
           <button onClick={onMarkAllRead} style={{ border:"none", background:C.priPale, cursor:"pointer", fontSize:12, fontWeight:600, color:C.pri, fontFamily:"inherit", padding:"8px 14px", borderRadius:8 }}
             onMouseEnter={e=>e.currentTarget.style.background=C.priGhost} onMouseLeave={e=>e.currentTarget.style.background=C.priPale}>
             Marcar todas leídas
@@ -1553,39 +1581,27 @@ function NotificationsScreen({ notifications=[], onMarkRead, onMarkAllRead, onTa
           <div style={{ fontSize:15, fontWeight:600, color:C.t3 }}>Sin notificaciones</div>
           <div style={{ fontSize:13, color:C.t3, marginTop:6 }}>Las novedades de tus fletes aparecerán aquí</div>
         </div>
-      ) : (
-        <div style={{ background:C.w, borderRadius:14, border:`1px solid ${C.b2}`, overflow:"hidden" }}>
-          {notifications.map((n, i) => {
-            const icFn = NOTIF_ICONS[n.type] || ((s) => Ic.bell(C.t3, s));
-            return (
-              <button key={n.id} onClick={() => { if (!n.read) onMarkRead(n.id); if (n.entityId) onTap(n.entityId); }}
-                className="tv-row"
-                style={{
-                  display:"flex", alignItems:"flex-start", gap:14, width:"100%", padding:"14px 18px",
-                  border:"none", background: n.read ? "transparent" : C.priGhost, cursor:"pointer",
-                  fontFamily:"inherit", textAlign:"left",
-                  borderBottom: i < notifications.length-1 ? `1px solid ${C.b2}` : "none",
-                  WebkitTapHighlightColor:"transparent", touchAction:"manipulation", transition:"background 0.15s"
-                }}>
+      ) : <>
+        {/* No leídas */}
+        {unread.length > 0 && (
+          <div style={{ marginBottom:20 }}>
+            <div style={{ fontSize:11, fontWeight:700, color:C.t3, textTransform:"uppercase", letterSpacing:0.5, padding:"0 4px", marginBottom:8 }}>Nuevas</div>
+            <div style={{ background:C.w, borderRadius:14, border:`1px solid ${C.b2}`, overflow:"hidden" }}>
+              {unread.map((n, i) => <_NotifRow key={n.id} n={n} onMarkRead={onMarkRead} onTap={onTap} isLast={i === unread.length - 1} />)}
+            </div>
+          </div>
+        )}
 
-                <div style={{ width:40, height:40, borderRadius:12, background: n.read ? C.bg : C.priPale, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
-                  {icFn(18)}
-                </div>
-
-                <div style={{ flex:1, minWidth:0 }}>
-                  <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                    <span style={{ fontSize:14, fontWeight: n.read ? 500 : 700, color: n.read ? C.t2 : C.t1, flex:1 }}>{n.title}</span>
-                    <span style={{ fontSize:11, color:C.t3, fontWeight:500, flexShrink:0 }}>{_timeAgo(n.createdAt)}</span>
-                  </div>
-                  <div style={{ fontSize:12.5, color:C.t3, marginTop:3, lineHeight:1.4 }}>{n.body}</div>
-                </div>
-
-                {!n.read && <div style={{ width:8, height:8, borderRadius:4, background:C.pri, flexShrink:0, marginTop:8 }} />}
-              </button>
-            );
-          })}
-        </div>
-      )}
+        {/* Leídas */}
+        {read.length > 0 && (
+          <div>
+            <div style={{ fontSize:11, fontWeight:700, color:C.t3, textTransform:"uppercase", letterSpacing:0.5, padding:"0 4px", marginBottom:8 }}>Anteriores</div>
+            <div style={{ background:C.w, borderRadius:14, border:`1px solid ${C.b2}`, overflow:"hidden" }}>
+              {read.map((n, i) => <_NotifRow key={n.id} n={n} onMarkRead={onMarkRead} onTap={onTap} isLast={i === read.length - 1} />)}
+            </div>
+          </div>
+        )}
+      </>}
     </div>
   );
 }
