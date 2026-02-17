@@ -2808,7 +2808,9 @@ function ReportsScreen({ onBack, freights, isDesktop, embedded }) {
   const [expanded, setExpanded] = useState({});
   const [filterStatus, setFilterStatus] = useState("all");
   const [searchQ, setSearchQ] = useState("");
+  const [selected, setSelected] = useState(new Set());
   const toggle = (k) => setExpanded(p=>({...p,[k]:!p[k]}));
+  const toggleSel = (id, e) => { e.stopPropagation(); setSelected(p => { const n = new Set(p); if(n.has(id)) n.delete(id); else n.add(id); return n; }); };
 
   const allFreights = (freights||[]).filter(f=>{
     if(!searchQ) return true;
@@ -2833,6 +2835,7 @@ function ReportsScreen({ onBack, freights, isDesktop, embedded }) {
   },[filtered]);
 
   const totalDocs = allFreights.reduce((sum,f)=>sum+(f.documents?.length||0),0);
+  const exportData = selected.size > 0 ? filtered.filter(f=>selected.has(f.id)) : filtered;
 
   return (
     <div style={{ flex:embedded?undefined:1, overflow:embedded?"visible":"auto", padding:embedded?0:18 }}>
@@ -2853,11 +2856,14 @@ function ReportsScreen({ onBack, freights, isDesktop, embedded }) {
         {[{k:"all",l:"Todos"},{k:"solicitado",l:"Solicitado"},{k:"en_curso",l:"En curso"},{k:"finalizados",l:"Finalizados"},{k:"cancelados",l:"Cancelados"}].map(opt=>(
           <button key={opt.k} onClick={()=>setFilterStatus(opt.k)} style={{ padding:"6px 14px", borderRadius:20, border:`1.5px solid ${filterStatus===opt.k?C.pri:C.b1}`, background:filterStatus===opt.k?C.priPale:C.w, color:filterStatus===opt.k?C.pri:C.t2, fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>{opt.l}</button>
         ))}
-        <div style={{ marginLeft:"auto", display:"flex", gap:6 }}>
-          <button onClick={()=>exportExcel(filtered,"tolvink-fletes.xls")} style={{padding:"5px 10px",borderRadius:8,border:`1.5px solid #1A6B37`,background:"#E6F4EA",color:"#1A6B37",fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:4}}>
+        <div style={{ marginLeft:"auto", display:"flex", gap:6, alignItems:"center" }}>
+          {selected.size>0 && <button onClick={()=>setSelected(new Set())} style={{padding:"5px 10px",borderRadius:8,border:`1.5px solid ${C.pri}`,background:C.priPale,color:C.pri,fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:4}}>
+            {selected.size} seleccionado{selected.size!==1?"s":""} {Ic.cross(C.pri,10)}
+          </button>}
+          <button onClick={()=>exportExcel(exportData,"tolvink-fletes.xls")} style={{padding:"5px 10px",borderRadius:8,border:`1.5px solid #1A6B37`,background:"#E6F4EA",color:"#1A6B37",fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:4}}>
             {Ic.doc("#1A6B37",12)} Excel
           </button>
-          <button onClick={()=>exportPDF(filtered,"Informe de Fletes")} style={{padding:"5px 10px",borderRadius:8,border:`1.5px solid #DC2626`,background:"#FEE2E2",color:"#DC2626",fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:4}}>
+          <button onClick={()=>exportPDF(exportData,"Informe de Fletes")} style={{padding:"5px 10px",borderRadius:8,border:`1.5px solid #DC2626`,background:"#FEE2E2",color:"#DC2626",fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:4}}>
             {Ic.doc("#DC2626",12)} PDF
           </button>
         </div>
@@ -2874,11 +2880,14 @@ function ReportsScreen({ onBack, freights, isDesktop, embedded }) {
 
           {group.items.map(f=>{
             const isOpen = expanded[f.id];
+            const isSel = selected.has(f.id);
             const docs = f.documents||[];
             return (
-              <div key={f.id} style={{ background:C.w, border:`1px solid ${C.b1}`, borderRadius:12, overflow:"hidden", marginBottom:8, boxShadow:C.sh }}>
-                <button onClick={()=>toggle(f.id)} style={{ width:"100%", padding:"12px 14px", background:C.w, border:"none", cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:10, textAlign:"left" }}>
-                  {Ic.doc(group.color,18)}
+              <div key={f.id} style={{ background:isSel?C.priPale:C.w, border:`1px solid ${isSel?C.pri:C.b1}`, borderRadius:12, overflow:"hidden", marginBottom:8, boxShadow:C.sh, transition:"all 0.15s" }}>
+                <button onClick={()=>toggle(f.id)} style={{ width:"100%", padding:"12px 14px", background:"transparent", border:"none", cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:10, textAlign:"left" }}>
+                  <span onClick={(e)=>toggleSel(f.id,e)} style={{width:20,height:20,borderRadius:6,border:`2px solid ${isSel?C.pri:C.b1}`,background:isSel?C.pri:"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,cursor:"pointer",transition:"all 0.15s"}}>
+                    {isSel && Ic.chk("#fff",12)}
+                  </span>
                   <div style={{ flex:1 }}>
                     <div style={{ display:"flex", alignItems:"center", gap:6 }}>
                       <span style={{ fontSize:12, fontWeight:700, fontFamily:MONO }}>{f.code}</span>
