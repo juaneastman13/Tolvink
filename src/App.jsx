@@ -598,20 +598,11 @@ function HomeScreen({ user, freights, perms, onNav, catalog, isDesktop, onAction
 // ======================== FREIGHT LIST ================================
 
 function ListScreen({ freights, onNav, onRefresh }) {
-  const [tab, setTab] = useState("all");
-  const [showFilters, setShowFilters] = useState(false);
   const [searchQ, setSearchQ] = useState("");
-  const [fPlant, setFPlant] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [datePreset, setDatePreset] = useState("");
-  const [viewMode, setViewMode] = useState("cards"); // cards | table
-  const sort = useTableSort();
-  const LIST_GETTERS = { code:f=>f.code, status:f=>stCfg(f.status).label, producer:f=>f.requestedByName||"", origin:f=>(f.originName||"").split("—")[0].trim(), dest:f=>f.destName, product:f=>f.grain, qty:f=>f.tons, truck:f=>f.truckPlate||"", date:f=>f.loadDate };
 
-  const plantOptions = useMemo(()=>[...new Set(freights.map(f=>f.destName).filter(Boolean))].sort(),[freights]);
-
-  // Date preset handler
   const applyDatePreset = (preset) => {
     setDatePreset(preset);
     const today = new Date();
@@ -625,148 +616,82 @@ function ListScreen({ freights, onNav, onRefresh }) {
 
   const filtered = useMemo(()=>{
     return freights.filter(f=>{
-      if(tab==="available" && f.status!=="pending_assignment") return false;
-      if(tab==="active" && !["assigned","accepted","in_progress","loaded"].includes(f.status)) return false;
-      if(tab==="done" && f.status!=="finished") return false;
-      if(tab==="closed" && f.status!=="canceled") return false;
       if(searchQ && !textMatch(f.requestedByName,searchQ) && !textMatch(f.code,searchQ) && !textMatch(f.grain,searchQ) && !textMatch(f.originName,searchQ) && !textMatch(f.destName,searchQ) && !textMatch(f.transporterName,searchQ)) return false;
-      if(fPlant && f.destName!==fPlant) return false;
       if(dateFrom && f.loadDate < dateFrom) return false;
       if(dateTo && f.loadDate > dateTo) return false;
       return true;
     });
-  },[freights,tab,searchQ,fPlant,dateFrom,dateTo]);
+  },[freights,searchQ,dateFrom,dateTo]);
 
-  const activeFilters = [fPlant,searchQ,dateFrom,dateTo].filter(Boolean).length;
+  const STATUS_ORDER = ["pending_assignment","assigned","accepted","in_progress","loaded","finished","canceled"];
+  const grouped = useMemo(()=>{
+    const map = {};
+    STATUS_ORDER.forEach(s => map[s] = []);
+    filtered.forEach(f => { if(map[f.status]) map[f.status].push(f); });
+    return map;
+  },[filtered]);
+
   const { containerRef, indicator } = usePullToRefresh(onRefresh);
 
   return (
     <div ref={containerRef} style={{ flex:1, overflow:"auto", padding:18, WebkitOverflowScrolling:"touch" }}>
       {indicator}
-      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
-        <div style={{ fontSize:20, fontWeight:800, letterSpacing:-0.3 }}>Fletes</div>
-        <button onClick={()=>setShowFilters(!showFilters)} style={{display:"flex",alignItems:"center",gap:4,background:activeFilters>0?C.priPale:"none",border:activeFilters>0?`1px solid ${C.pri}30`:"1px solid transparent",borderRadius:8,padding:"6px 10px",cursor:"pointer",fontFamily:"inherit",fontSize:11,fontWeight:600,color:activeFilters>0?C.pri:C.t2}}>
-          {Ic.filter(activeFilters>0?C.pri:C.t2,14)} Filtros{activeFilters>0?` (${activeFilters})`:""}
-        </button>
-      </div>
-
-      {/* Search bar */}
-      <div style={{ position:"relative", marginBottom:8 }}>
-        <div style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",display:"flex"}}>{Ic.srch(C.t3,16)}</div>
-        <input value={searchQ} onChange={e=>setSearchQ(e.target.value)} placeholder="Buscar productor, código, grano..."
-          style={{width:"100%",padding:"10px 14px 10px 36px",borderRadius:10,border:`1.5px solid ${C.b1}`,background:C.w,color:C.t1,fontSize:13,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}/>
-        {searchQ && <button onClick={()=>setSearchQ("")} style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",display:"flex"}}>{Ic.cross(C.t3,16)}</button>}
-      </div>
-
-      {/* Date range + quick presets — single row */}
-      <div style={{display:"flex",gap:6,alignItems:"center",marginBottom:8,flexWrap:"wrap"}}>
-        {[{k:"",l:"Todas"},{k:"today",l:"Hoy"},{k:"week",l:"Semana"},{k:"month",l:"Mes"},{k:"quarter",l:"3 meses"}].map(p=>(
-          <button key={p.k} onClick={()=>applyDatePreset(p.k)} style={{padding:"5px 10px",borderRadius:6,border:`1px solid ${datePreset===p.k?C.pri:C.b1}`,background:datePreset===p.k?C.priPale:C.w,color:datePreset===p.k?C.pri:C.t2,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>{p.l}</button>
+      {/* Header: title + search + date filters — single row */}
+      <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:12, flexWrap:"wrap" }}>
+        <div style={{ fontSize:20, fontWeight:800, letterSpacing:-0.3, marginRight:8 }}>Fletes</div>
+        <div style={{ position:"relative", flex:"1 1 180px", minWidth:160 }}>
+          <div style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",display:"flex"}}>{Ic.srch(C.t3,14)}</div>
+          <input value={searchQ} onChange={e=>setSearchQ(e.target.value)} placeholder="Buscar..."
+            style={{width:"100%",padding:"7px 12px 7px 30px",borderRadius:8,border:`1.5px solid ${C.b1}`,background:C.w,color:C.t1,fontSize:12,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}/>
+          {searchQ && <button onClick={()=>setSearchQ("")} style={{position:"absolute",right:8,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",display:"flex"}}>{Ic.cross(C.t3,14)}</button>}
+        </div>
+        {[{k:"",l:"Todas"},{k:"today",l:"Hoy"},{k:"week",l:"Semana"},{k:"month",l:"Mes"}].map(p=>(
+          <button key={p.k} onClick={()=>applyDatePreset(p.k)} style={{padding:"5px 10px",borderRadius:6,border:`1px solid ${datePreset===p.k?C.pri:C.b1}`,background:datePreset===p.k?C.priPale:C.w,color:datePreset===p.k?C.pri:C.t2,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>{p.l}</button>
         ))}
-        <div style={{display:"flex",gap:4,alignItems:"center",marginLeft:"auto"}}>
-          <label style={{fontSize:10,fontWeight:600,color:C.t3,whiteSpace:"nowrap"}}>Desde</label>
+        <div style={{display:"flex",gap:4,alignItems:"center"}}>
           <input type="date" value={dateFrom} onChange={e=>{setDateFrom(e.target.value);setDatePreset("custom");}} onClick={e=>e.target.showPicker?.()} style={{padding:"5px 8px",borderRadius:6,border:`1px solid ${C.b1}`,background:C.w,color:dateFrom?C.t1:C.t3,fontSize:11,fontFamily:"inherit",outline:"none",boxSizing:"border-box",cursor:"pointer"}}/>
-          <label style={{fontSize:10,fontWeight:600,color:C.t3,whiteSpace:"nowrap"}}>Hasta</label>
+          <span style={{fontSize:10,color:C.t3}}>—</span>
           <input type="date" value={dateTo} onChange={e=>{setDateTo(e.target.value);setDatePreset("custom");}} onClick={e=>e.target.showPicker?.()} style={{padding:"5px 8px",borderRadius:6,border:`1px solid ${C.b1}`,background:C.w,color:dateTo?C.t1:C.t3,fontSize:11,fontFamily:"inherit",outline:"none",boxSizing:"border-box",cursor:"pointer"}}/>
           {(dateFrom||dateTo)&&<button onClick={()=>{setDateFrom("");setDateTo("");setDatePreset("");}} style={{background:"none",border:"none",cursor:"pointer",display:"flex",padding:2}}>{Ic.cross(C.t3,14)}</button>}
         </div>
       </div>
 
-      {/* Advanced filters panel */}
-      {showFilters && (
-        <div style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius:12,padding:14,marginBottom:10,boxShadow:C.sh}}>
-          <div style={{display:"flex",gap:8}}>
-            <div style={{flex:1}}>
-              <label style={{fontSize:10,fontWeight:600,color:C.t2,textTransform:"uppercase",letterSpacing:0.5,marginBottom:4,display:"block"}}>Planta</label>
-              <select value={fPlant} onChange={e=>setFPlant(e.target.value)} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:`1.5px solid ${C.b1}`,background:C.w,color:C.t1,fontSize:12,fontFamily:"inherit",outline:"none"}}>
-                <option value="">Todas</option>
-                {plantOptions.map(p=><option key={p} value={p}>{p}</option>)}
-              </select>
-            </div>
-          </div>
-          {activeFilters>0 && <button onClick={()=>{setFPlant("");setSearchQ("");setDateFrom("");setDateTo("");setDatePreset("");}} style={{fontSize:11,color:C.pri,fontWeight:600,background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",padding:0,marginTop:8}}>Limpiar filtros</button>}
-        </div>
-      )}
-
-      <Tabs items={[{k:"all",l:"Todos"},{k:"available",l:"Solicitados"},{k:"active",l:"Activos"},{k:"done",l:"Finalizados"},{k:"closed",l:"Cerrados"}]} active={tab} onChange={setTab}/>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:8,marginBottom:6}}>
-        <div style={{fontSize:11,color:C.t3}}>{filtered.length} resultado{filtered.length!==1?"s":""}</div>
-        <div style={{ display:"flex", gap:6, alignItems:"center" }}>
-          {viewMode==="table" && <>
-            <span style={{ fontSize:10, color:C.t3, whiteSpace:"nowrap" }}>Descargar información</span>
-            <button onClick={()=>exportCSV(filtered,`tolvink-fletes-${new Date().toISOString().slice(0,10)}.csv`)} style={{ display:"flex", alignItems:"center", gap:4, background:C.accPale, border:`1px solid ${C.acc}20`, borderRadius:8, padding:"4px 8px", cursor:"pointer", fontFamily:"inherit", fontSize:10, fontWeight:600, color:C.acc }}>
-              {Ic.down(C.acc,12)} CSV
-            </button>
-          </>}
-          <button onClick={()=>setViewMode(v=>v==="cards"?"table":"cards")} style={{ display:"flex", alignItems:"center", gap:4, background:C.priPale, border:`1px solid ${C.pri}20`, borderRadius:8, padding:"4px 8px", cursor:"pointer", fontFamily:"inherit", fontSize:10, fontWeight:600, color:C.pri }}>
-            {viewMode==="cards"?Ic.doc(C.pri,12):Ic.home(C.pri,12)} {viewMode==="cards"?"Tabla":"Tarjetas"}
-          </button>
-        </div>
-      </div>
-
-      {/* TABLE VIEW */}
-      {viewMode==="table" && (
-        <div style={{ overflowX:"auto", borderRadius:12, border:`1px solid ${C.b1}`, background:C.w }}>
-          <table className="tv-table" style={{ width:"100%", borderCollapse:"collapse", fontSize:11 }}>
-            <thead>
-              <tr style={{ background:C.bg }}>
-                {[["Código","code"],["Estado","status"],["Productor","producer"],["Origen","origin"],["Destino","dest"],["Producto","product"],["Cant.","qty"],["Camión","truck"],["Fecha","date"]].map(([h,k])=>(
-                  <SortTh key={k} label={h} colKey={k} sortCol={sort.sortCol} sortDir={sort.sortDir} onSort={sort.toggle}/>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.length===0 && <tr><td colSpan={9} style={{ padding:32, textAlign:"center", color:C.t3, fontSize:13 }}>Sin fletes</td></tr>}
-              {sort.sortData(filtered, LIST_GETTERS).map(f=>{
-                const st = stCfg(f.status);
-                const fmtDate = f.loadDate ? f.loadDate.slice(8,10)+"-"+f.loadDate.slice(5,7)+"-"+f.loadDate.slice(2,4) : "";
-                return (
-                  <tr key={f.id} className="tv-row" onClick={()=>onNav("detail",f.id)} style={{ cursor:"pointer", borderBottom:`1px solid ${C.b2}` }}>
-                    <td style={{ padding:"9px 10px", fontFamily:MONO, fontWeight:600, color:C.t1, whiteSpace:"nowrap" }}>{f.code}</td>
-                    <td style={{ padding:"9px 10px" }}><Bd color={st.color} bg={st.bg} small>{st.label}</Bd></td>
-                    <td style={{ padding:"9px 10px", color:C.t2, maxWidth:100, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{f.requestedByName||"-"}</td>
-                    <td style={{ padding:"9px 10px", color:C.t2, maxWidth:110, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{(f.originName||"").split("—")[0].trim()}</td>
-                    <td style={{ padding:"9px 10px", color:C.t2, maxWidth:100, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{f.destName}</td>
-                    <td style={{ padding:"9px 10px", fontWeight:600, color:C.t1, whiteSpace:"nowrap" }}>{f.grain}</td>
-                    <td style={{ padding:"9px 10px", fontWeight:600, color:C.t1, whiteSpace:"nowrap" }}>{f.tons} tn</td>
-                    <td style={{ padding:"9px 10px", color:C.t3, whiteSpace:"nowrap" }}>{f.truckPlate||"-"}</td>
-                    <td style={{ padding:"9px 10px", color:C.t3, whiteSpace:"nowrap" }}>{fmtDate}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {/* CARDS VIEW */}
-      {viewMode==="cards" && (
-      <div style={{ display:"flex", flexDirection:"column", gap:12 }} className="tv-grid">
-        {filtered.length===0 && <div style={{ textAlign:"center", padding:32, color:C.t3, fontSize:13, gridColumn:"1/-1" }}>Sin fletes en esta categoría</div>}
-        {filtered.map((f,idx)=>{
-          const st = stCfg(f.status);
+      {/* Kanban columns by status */}
+      <div style={{ display:"flex", gap:12, overflowX:"auto", alignItems:"flex-start", paddingBottom:8 }}>
+        {STATUS_ORDER.map(status => {
+          const items = grouped[status];
+          const st = stCfg(status);
           return (
-          <div key={f.id} className="tv-card" onClick={()=>onNav("detail",f.id)} style={{ background:C.w, border:`1px solid ${C.b1}`, borderLeft:`3px solid ${st.border}`, borderRadius:12, padding:14, cursor:"pointer", boxShadow:C.sh, animation:`cardIn 0.3s ease ${idx*0.04}s both` }}>
-            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
-              <span style={{ fontSize:11, fontWeight:700, color:C.t3, fontFamily:MONO }}>{f.code}</span>
-              <Bd color={st.color} bg={st.bg} small>{st.label}</Bd>
+            <div key={status} style={{ minWidth:220, maxWidth:280, flex:"1 0 220px", background:C.bg, borderRadius:12, border:`1px solid ${C.b1}`, overflow:"hidden" }}>
+              <div style={{ padding:"10px 12px", borderBottom:`2px solid ${st.border}`, display:"flex", alignItems:"center", gap:6 }}>
+                <span style={{ width:8, height:8, borderRadius:4, background:st.border, flexShrink:0 }}/>
+                <span style={{ fontSize:11, fontWeight:700, color:st.color }}>{st.label}</span>
+                <span style={{ fontSize:10, fontWeight:600, color:C.t3, marginLeft:"auto" }}>{items.length}</span>
+              </div>
+              <div style={{ padding:8, display:"flex", flexDirection:"column", gap:8, maxHeight:"calc(100vh - 180px)", overflowY:"auto" }}>
+                {items.length===0 && <div style={{ fontSize:11, color:C.t3, textAlign:"center", padding:16 }}>Sin fletes</div>}
+                {items.map(f => (
+                  <div key={f.id} onClick={()=>onNav("detail",f.id)} style={{ background:C.w, border:`1px solid ${C.b1}`, borderRadius:10, padding:10, cursor:"pointer", boxShadow:C.sh }}>
+                    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:4 }}>
+                      <span style={{ fontSize:10, fontWeight:700, color:C.t3, fontFamily:MONO }}>{f.code}</span>
+                    </div>
+                    <div style={{ fontSize:13, fontWeight:700, color:C.t1 }}>{f.grain} · {f.tons} tn</div>
+                    <div style={{ display:"flex", alignItems:"center", gap:3, marginTop:4, fontSize:10.5, color:C.t2 }}>
+                      {Ic.pin(C.t3,11)} <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{(f.originName||"").split("—")[0].trim()}</span>
+                      <span style={{color:C.t3}}>&rarr;</span>
+                      <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.destName}</span>
+                    </div>
+                    <div style={{ display:"flex", alignItems:"center", gap:4, fontSize:9.5, color:C.t3, marginTop:4 }}>
+                      {Ic.cal(C.t3,10)} {f.loadDate} {f.loadTime}
+                      {f.transporterName && <><span style={{color:C.b1}}>|</span>{f.transporterName}</>}
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
-            <div style={{ fontSize:14, fontWeight:700, color:C.t1 }}>{f.grain} · {f.tons} tn</div>
-            <div style={{ display:"flex", alignItems:"center", gap:4, marginTop:6, fontSize:11.5, color:C.t2 }}>
-              {Ic.pin(C.t3,13)} <span>{(f.originName||"").split("—")[0].trim()}</span>
-              <span style={{color:C.t3,margin:"0 2px"}}>&rarr;</span>
-              {Ic.plant(C.t3,13)} <span>{f.destName}</span>
-            </div>
-            <div style={{ display:"flex", alignItems:"center", gap:6, fontSize:10.5, color:C.t3, marginTop:6 }}>
-              {Ic.cal(C.t3,12)} {f.loadDate} {f.loadTime}
-              {f.transporterName && <><span style={{color:C.b1}}>|</span>{Ic.truck(C.t3,12)} {f.transporterName}</>}
-            </div>
-          </div>
           );
         })}
       </div>
-      )}
-
     </div>
   );
 }
