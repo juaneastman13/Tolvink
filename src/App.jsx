@@ -951,6 +951,7 @@ function DetailScreen({ user, freight, perms, onBack, onAction, actionLoading, o
     return () => { document.removeEventListener("mousedown", handler); document.removeEventListener("touchstart", handler); };
   }, [showAudit]);
 
+  const _isDesktop = useIsDesktop(768);
   const st = stCfg(freight.status);
   const actions = getActions(freight.status, user.userType, user.role, freight.isOwnFleet);
 
@@ -965,81 +966,79 @@ function DetailScreen({ user, freight, perms, onBack, onAction, actionLoading, o
 
   return (
     <div style={{ flex:1, overflow:"auto", animation:"slideUp 0.25s ease" }}>
-      {/* Sticky header — back + product + actions + progress */}
+      {/* Sticky header — back + product title */}
       <div style={{ position:"sticky", top:0, zIndex:10, padding:"18px 18px 8px", background:C.bg }}>
         <button onClick={onBack} style={{ background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", fontSize:13, fontWeight:600, color:C.pri, marginBottom:14, padding:0, display:"flex", alignItems:"center", gap:4 }}>{Ic.chev(C.pri,18)} Volver</button>
-        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
           <div>
             <div style={{ fontSize:11, color:C.t3, fontWeight:600, fontFamily:MONO }}>{freight.code}</div>
             <div style={{ fontSize:22, fontWeight:800, marginTop:2, letterSpacing:-0.3 }}>{freight.grain==="Otros"?freight.productTypeOther||"Otros":freight.grain} · {freight.tons} {freight.unit||"tn"}</div>
           </div>
           <Bd color={st.color} bg={st.bg}>{st.label}</Bd>
         </div>
-        {/* Actions — immediately below product detail */}
-        {filteredActions.length > 0 && <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
-          {filteredActions.includes("authorize") && <Btn full icon={Ic.chk(C.w,16)} disabled={actionLoading} onClick={()=>onAction(freight.id,"authorize")}>{actionLoading?"Procesando...":"Autorizar viaje"}</Btn>}
-          {filteredActions.includes("assign") && <Btn full v="acc" icon={Ic.chk(C.w,16)} disabled={actionLoading} onClick={()=>onAction(freight.id,"assign")}>Asignar transportista</Btn>}
-          {filteredActions.includes("accept") && <Btn full icon={Ic.chk(C.w,16)} disabled={actionLoading} onClick={()=>onAction(freight.id,"accept")}>Aceptar flete</Btn>}
-          {filteredActions.includes("start") && <Btn full icon={Ic.truck(C.w,16)} disabled={actionLoading} onClick={()=>onAction(freight.id,"start")}>{actionLoading?"Procesando...":"Iniciar viaje"}</Btn>}
-          {filteredActions.includes("confirm_loaded") && <Btn full v="acc" icon={Ic.chk(C.w,16)} disabled={actionLoading} onClick={()=>onAction(freight.id,"confirm_loaded")}>{actionLoading?"Procesando...":"Confirmar carga"}</Btn>}
-          {filteredActions.includes("confirm_finished") && <Btn full v="acc" icon={Ic.chk(C.w,16)} disabled={actionLoading} onClick={()=>onAction(freight.id,"confirm_finished")}>{actionLoading?"Procesando...":"Confirmar entrega"}</Btn>}
-          {filteredActions.includes("reject") && <Btn full v="err" icon={Ic.ban(C.w,16)} disabled={actionLoading} onClick={()=>onAction(freight.id,"reject")}>Rechazar asignación</Btn>}
-          {filteredActions.includes("cancel") && <Btn full v="err" icon={Ic.cross(C.err,16)} disabled={actionLoading} onClick={()=>onAction(freight.id,"cancel")}>Cancelar flete</Btn>}
-        </div>}
-        {freight.status==="pending_assignment" && perms.canRequest && <div style={{ display:"flex", gap:8, marginTop:8 }}><Btn full sm v="sec" icon={Ic.doc(C.pri,14)} onClick={()=>onEdit(freight)}>Editar</Btn></div>}
-
-        {/* Progress — click to see audit history */}
-        {freight.status !== "canceled" && (()=>{
-          const steps = ["pending_assignment","assigned","accepted","in_progress","loaded","finished"];
-          const curIdx = steps.indexOf(freight.status);
-          return <div ref={auditRef} style={{ background:C.w, border:`1px solid ${C.b1}`, borderRadius:12, padding:16, marginTop:8, boxShadow:C.sh, position:"relative" }}>
-            <div onClick={loadAudit} style={{ fontSize:10.5, fontWeight:700, marginBottom:12, color:C.t2, textTransform:"uppercase", letterSpacing:0.5, cursor:"pointer", display:"flex", alignItems:"center", gap:6 }}>
-              Progreso <span style={{ fontSize:9, fontWeight:500, color:C.t3, textTransform:"none", letterSpacing:0 }}>{showAudit?"▲ ocultar historial":"▼ ver historial"}</span>
-            </div>
-            <div style={{display:"flex",gap:3,alignItems:"flex-start"}}>
-              {steps.map((s,i)=>{
-                const done = i < curIdx; const active = i === curIdx; const c = stCfg(s);
-                return <div key={s} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4,minWidth:0}}>
-                  <div style={{width:"100%",height:active?5:4,borderRadius:3,background:done?C.pri:active?c.border:C.b1,transition:"all 0.2s"}}/>
-                  {active && <div style={{width:6,height:6,borderRadius:3,background:c.border,marginTop:-2}}/>}
-                  <span style={{fontSize:7.5,fontWeight:active?700:500,color:active?c.color:done?C.t2:C.t3,textAlign:"center",lineHeight:1.2,wordBreak:"break-word",maxWidth:"100%"}}>{c.label}</span>
-                </div>;
-              })}
-            </div>
-            {/* Audit popover */}
-            {showAudit && auditLog && (
-              <div style={{ marginTop:14, borderTop:`1px solid ${C.b1}`, paddingTop:14 }}>
-                <div style={{ fontSize:10, fontWeight:700, color:C.t2, textTransform:"uppercase", letterSpacing:0.5, marginBottom:10 }}>Historial de cambios</div>
-                <div style={{ position:"relative", paddingLeft:18 }}>
-                  <div style={{ position:"absolute", left:5, top:4, bottom:4, width:2, background:C.b1, borderRadius:1 }} />
-                  {auditLog.map((log, i) => {
-                    const fmtD = (d) => { try { const dt=new Date(d); return dt.toLocaleDateString("es-AR",{day:"2-digit",month:"short"})+" "+dt.toLocaleTimeString("es-AR",{hour:"2-digit",minute:"2-digit",hour12:false}); } catch(e){ return ""; } };
-                    const actionLabels = { created:"Solicitado", assigned:"Asignado", accepted:"Aceptado", rejected:"Rechazado", started:"Viaje iniciado", confirm_loaded:"Carga confirmada", confirm_finished:"Entrega confirmada", finished:"Finalizado", canceled:"Cancelado", authorized:"Autorizado", updated:"Editado" };
-                    const label = actionLabels[log.action] || log.action;
-                    const actionColors = { created:C.pri, assigned:C.sec, accepted:C.info, rejected:C.err, started:C.acc, confirm_loaded:C.acc, confirm_finished:C.pri, finished:C.ok, canceled:C.err, authorized:C.info, updated:C.t2 };
-                    const col = actionColors[log.action] || C.t2;
-                    return (
-                      <div key={log.id} style={{ position:"relative", paddingBottom:i<auditLog.length-1?14:0 }}>
-                        <div style={{ position:"absolute", left:-16, top:2, width:10, height:10, borderRadius:5, background:col, zIndex:2 }} />
-                        <div style={{ fontSize:12, fontWeight:700, color:col }}>{label}</div>
-                        <div style={{ fontSize:10.5, color:C.t2, marginTop:1 }}>{log.user?.name || "Sistema"} {log.user?.company?.name ? `· ${log.user.company.name}` : ""}</div>
-                        {log.reason && <div style={{ fontSize:10, color:C.t3, fontStyle:"italic", marginTop:2 }}>"{log.reason}"</div>}
-                        <div style={{ fontSize:9.5, color:C.t3, marginTop:2 }}>{fmtD(log.createdAt)}</div>
-                      </div>
-                    );
-                  })}
-                  {auditLog.length === 0 && <div style={{ fontSize:11, color:C.t3 }}>Sin registros</div>}
-                </div>
-              </div>
-            )}
-          </div>;
-        })()}
       </div>
 
       <div style={{ padding:"0 18px 18px" }}>
 
-      {/* Map */}
-      <FreightMap freightId={freight.id} originLat={freight.originLat} originLng={freight.originLng} destLat={freight.destLat} destLng={freight.destLng} originName={freight.originName} destName={freight.destName} status={freight.status} isDriver={user.userType==="transporter"||(user.userType==="producer"&&freight.isOwnFleet)}/>
+      {/* Actions */}
+      {filteredActions.length > 0 && <div style={{ display:"flex", flexDirection:"column", gap:8, marginBottom:12 }}>
+        {filteredActions.includes("authorize") && <Btn full icon={Ic.chk(C.w,16)} disabled={actionLoading} onClick={()=>onAction(freight.id,"authorize")}>{actionLoading?"Procesando...":"Autorizar viaje"}</Btn>}
+        {filteredActions.includes("assign") && <Btn full v="acc" icon={Ic.chk(C.w,16)} disabled={actionLoading} onClick={()=>onAction(freight.id,"assign")}>Asignar transportista</Btn>}
+        {filteredActions.includes("accept") && <Btn full icon={Ic.chk(C.w,16)} disabled={actionLoading} onClick={()=>onAction(freight.id,"accept")}>Aceptar flete</Btn>}
+        {filteredActions.includes("start") && <Btn full icon={Ic.truck(C.w,16)} disabled={actionLoading} onClick={()=>onAction(freight.id,"start")}>{actionLoading?"Procesando...":"Iniciar viaje"}</Btn>}
+        {filteredActions.includes("confirm_loaded") && <Btn full v="acc" icon={Ic.chk(C.w,16)} disabled={actionLoading} onClick={()=>onAction(freight.id,"confirm_loaded")}>{actionLoading?"Procesando...":"Confirmar carga"}</Btn>}
+        {filteredActions.includes("confirm_finished") && <Btn full v="acc" icon={Ic.chk(C.w,16)} disabled={actionLoading} onClick={()=>onAction(freight.id,"confirm_finished")}>{actionLoading?"Procesando...":"Confirmar entrega"}</Btn>}
+        {filteredActions.includes("reject") && <Btn full v="err" icon={Ic.ban(C.w,16)} disabled={actionLoading} onClick={()=>onAction(freight.id,"reject")}>Rechazar asignación</Btn>}
+        {filteredActions.includes("cancel") && <Btn full v="err" icon={Ic.cross(C.err,16)} disabled={actionLoading} onClick={()=>onAction(freight.id,"cancel")}>Cancelar flete</Btn>}
+      </div>}
+      {freight.status==="pending_assignment" && perms.canRequest && <div style={{ display:"flex", gap:8, marginBottom:12 }}><Btn full sm v="sec" icon={Ic.doc(C.pri,14)} onClick={()=>onEdit(freight)}>Editar</Btn></div>}
+
+      {/* Progress — click to see audit history */}
+      {freight.status !== "canceled" && (()=>{
+        const steps = ["pending_assignment","assigned","accepted","in_progress","loaded","finished"];
+        const curIdx = steps.indexOf(freight.status);
+        return <div ref={auditRef} style={{ background:C.w, border:`1px solid ${C.b1}`, borderRadius:12, padding:16, marginBottom:12, boxShadow:C.sh, position:"relative" }}>
+          <div onClick={loadAudit} style={{ fontSize:10.5, fontWeight:700, marginBottom:12, color:C.t2, textTransform:"uppercase", letterSpacing:0.5, cursor:"pointer", display:"flex", alignItems:"center", gap:6 }}>
+            Progreso <span style={{ fontSize:9, fontWeight:500, color:C.t3, textTransform:"none", letterSpacing:0 }}>{showAudit?"▲ ocultar historial":"▼ ver historial"}</span>
+          </div>
+          <div style={{display:"flex",gap:3,alignItems:"flex-start"}}>
+            {steps.map((s,i)=>{
+              const done = i < curIdx; const active = i === curIdx; const c = stCfg(s);
+              return <div key={s} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4,minWidth:0}}>
+                <div style={{width:"100%",height:active?5:4,borderRadius:3,background:done?C.pri:active?c.border:C.b1,transition:"all 0.2s"}}/>
+                {active && <div style={{width:6,height:6,borderRadius:3,background:c.border,marginTop:-2}}/>}
+                <span style={{fontSize:7.5,fontWeight:active?700:500,color:active?c.color:done?C.t2:C.t3,textAlign:"center",lineHeight:1.2,wordBreak:"break-word",maxWidth:"100%"}}>{c.label}</span>
+              </div>;
+            })}
+          </div>
+          {/* Audit popover */}
+          {showAudit && auditLog && (
+            <div style={{ marginTop:14, borderTop:`1px solid ${C.b1}`, paddingTop:14 }}>
+              <div style={{ fontSize:10, fontWeight:700, color:C.t2, textTransform:"uppercase", letterSpacing:0.5, marginBottom:10 }}>Historial de cambios</div>
+              <div style={{ position:"relative", paddingLeft:18 }}>
+                <div style={{ position:"absolute", left:5, top:4, bottom:4, width:2, background:C.b1, borderRadius:1 }} />
+                {auditLog.map((log, i) => {
+                  const fmtD = (d) => { try { const dt=new Date(d); return dt.toLocaleDateString("es-AR",{day:"2-digit",month:"short"})+" "+dt.toLocaleTimeString("es-AR",{hour:"2-digit",minute:"2-digit",hour12:false}); } catch(e){ return ""; } };
+                  const actionLabels = { created:"Solicitado", assigned:"Asignado", accepted:"Aceptado", rejected:"Rechazado", started:"Viaje iniciado", confirm_loaded:"Carga confirmada", confirm_finished:"Entrega confirmada", finished:"Finalizado", canceled:"Cancelado", authorized:"Autorizado", updated:"Editado" };
+                  const label = actionLabels[log.action] || log.action;
+                  const actionColors = { created:C.pri, assigned:C.sec, accepted:C.info, rejected:C.err, started:C.acc, confirm_loaded:C.acc, confirm_finished:C.pri, finished:C.ok, canceled:C.err, authorized:C.info, updated:C.t2 };
+                  const col = actionColors[log.action] || C.t2;
+                  return (
+                    <div key={log.id} style={{ position:"relative", paddingBottom:i<auditLog.length-1?14:0 }}>
+                      <div style={{ position:"absolute", left:-16, top:2, width:10, height:10, borderRadius:5, background:col, zIndex:2 }} />
+                      <div style={{ fontSize:12, fontWeight:700, color:col }}>{label}</div>
+                      <div style={{ fontSize:10.5, color:C.t2, marginTop:1 }}>{log.user?.name || "Sistema"} {log.user?.company?.name ? `· ${log.user.company.name}` : ""}</div>
+                      {log.reason && <div style={{ fontSize:10, color:C.t3, fontStyle:"italic", marginTop:2 }}>"{log.reason}"</div>}
+                      <div style={{ fontSize:9.5, color:C.t3, marginTop:2 }}>{fmtD(log.createdAt)}</div>
+                    </div>
+                  );
+                })}
+                {auditLog.length === 0 && <div style={{ fontSize:11, color:C.t3 }}>Sin registros</div>}
+              </div>
+            </div>
+          )}
+        </div>;
+      })()}
 
       {/* Cross-confirmations panel */}
       {(freight.status==="loaded" || freight.status==="in_progress") && (
@@ -1085,30 +1084,35 @@ function DetailScreen({ user, freight, perms, onBack, onAction, actionLoading, o
         </div>
       )}
 
-      {/* Info */}
-      <div style={{ background:C.w, border:`1px solid ${C.b1}`, borderRadius:12, padding:16, marginBottom:12, boxShadow:C.sh }}>
-        <div style={{ fontSize:10.5, fontWeight:700, marginBottom:12, color:C.t2, textTransform:"uppercase", letterSpacing:0.5 }}>Información del flete</div>
-        {[
-          [Ic.pin(C.pri,15),"Origen",freight.originName],
-          freight.fieldName&&[Ic.pin(C.ok,15),"Campo",freight.fieldName],
-          [Ic.plant(C.t2,15),"Destino",freight.destName],
-          [Ic.cal(C.t2,15),"Fecha carga",freight.loadDate],
-          [Ic.clk(C.t2,15),"Hora carga",freight.loadTime],
-          [Ic.user(C.t2,15),"Solicitado por",freight.requestedByName],
-          [Ic.grain(C.t2,15),"Producto",`${freight.grain==="Otros"?freight.productTypeOther||"Otros":freight.grain} · ${freight.tons} ${freight.unit||"tn"}`],
-          freight.amount>0&&[Ic.grain(C.t2,15),"Importe",`$${Number(freight.amount).toLocaleString()}`],
-          freight.transporterName&&[Ic.truck(C.t2,15),"Transportista",freight.transporterName],
-          freight.truckPlate&&[Ic.truck(C.acc,15),"Camión",`${freight.truckPlate}${freight.truckModel?` · ${freight.truckModel}`:""}`],
-          freight.driverName&&[Ic.user(C.pri,15),"Chofer",freight.driverName],
-          freight.driverPhone&&[Ic.msg(C.info,15),"Teléfono",freight.driverPhone],
-        ].filter(Boolean).map(([ic,label,val],i,arr)=>(
-          <div key={i} style={{ display:"flex", alignItems:"center", gap:10, padding:"9px 0", borderBottom:i<arr.length-1?`1px solid ${C.b2}`:"none" }}>
-            <span style={{display:"flex",flexShrink:0}}>{ic}</span>
-            <span style={{ fontSize:11.5, color:C.t2, minWidth:85 }}>{label}</span>
-            {label==="Teléfono"?<a href={`tel:${val}`} style={{ fontSize:12, fontWeight:600, color:C.info, marginLeft:"auto", textDecoration:"none" }}>{val}</a>:
-            <span style={{ fontSize:12, fontWeight:600, color:C.t1, marginLeft:"auto", textAlign:"right" }}>{val}</span>}
-          </div>
-        ))}
+      {/* Info + Map — side by side on desktop */}
+      <div style={{ display:"flex", flexDirection:_isDesktop?"row":"column", gap:12, marginBottom:12 }}>
+        <div style={{ flex:1, background:C.w, border:`1px solid ${C.b1}`, borderRadius:12, padding:16, boxShadow:C.sh }}>
+          <div style={{ fontSize:10.5, fontWeight:700, marginBottom:12, color:C.t2, textTransform:"uppercase", letterSpacing:0.5 }}>Información del flete</div>
+          {[
+            [Ic.pin(C.pri,15),"Origen",freight.originName],
+            freight.fieldName&&[Ic.pin(C.ok,15),"Campo",freight.fieldName],
+            [Ic.plant(C.t2,15),"Destino",freight.destName],
+            [Ic.cal(C.t2,15),"Fecha carga",freight.loadDate],
+            [Ic.clk(C.t2,15),"Hora carga",freight.loadTime],
+            [Ic.user(C.t2,15),"Solicitado por",freight.requestedByName],
+            [Ic.grain(C.t2,15),"Producto",`${freight.grain==="Otros"?freight.productTypeOther||"Otros":freight.grain} · ${freight.tons} ${freight.unit||"tn"}`],
+            freight.amount>0&&[Ic.grain(C.t2,15),"Importe",`$${Number(freight.amount).toLocaleString()}`],
+            freight.transporterName&&[Ic.truck(C.t2,15),"Transportista",freight.transporterName],
+            freight.truckPlate&&[Ic.truck(C.acc,15),"Camión",`${freight.truckPlate}${freight.truckModel?` · ${freight.truckModel}`:""}`],
+            freight.driverName&&[Ic.user(C.pri,15),"Chofer",freight.driverName],
+            freight.driverPhone&&[Ic.msg(C.info,15),"Teléfono",freight.driverPhone],
+          ].filter(Boolean).map(([ic,label,val],i,arr)=>(
+            <div key={i} style={{ display:"flex", alignItems:"center", gap:10, padding:"9px 0", borderBottom:i<arr.length-1?`1px solid ${C.b2}`:"none" }}>
+              <span style={{display:"flex",flexShrink:0}}>{ic}</span>
+              <span style={{ fontSize:11.5, color:C.t2, minWidth:85 }}>{label}</span>
+              {label==="Teléfono"?<a href={`tel:${val}`} style={{ fontSize:12, fontWeight:600, color:C.info, marginLeft:"auto", textDecoration:"none" }}>{val}</a>:
+              <span style={{ fontSize:12, fontWeight:600, color:C.t1, marginLeft:"auto", textAlign:"right" }}>{val}</span>}
+            </div>
+          ))}
+        </div>
+        <div style={{ flex:1 }}>
+          <FreightMap freightId={freight.id} originLat={freight.originLat} originLng={freight.originLng} destLat={freight.destLat} destLng={freight.destLng} originName={freight.originName} destName={freight.destName} status={freight.status} isDriver={user.userType==="transporter"||(user.userType==="producer"&&freight.isOwnFleet)}/>
+        </div>
       </div>
 
       {/* Notes / Observaciones */}
@@ -1119,21 +1123,6 @@ function DetailScreen({ user, freight, perms, onBack, onAction, actionLoading, o
             <span style={{ fontSize:10.5, fontWeight:700, color:C.warn, textTransform:"uppercase", letterSpacing:0.5 }}>Observaciones</span>
           </div>
           <div style={{ fontSize:12.5, color:C.t1, lineHeight:1.5, whiteSpace:"pre-wrap" }}>{freight.notes}</div>
-        </div>
-      )}
-
-      {/* Assignment history */}
-      {freight.assignments?.length > 0 && (
-        <div style={{ background:C.w, border:`1px solid ${C.b1}`, borderRadius:12, padding:16, marginBottom:12, boxShadow:C.sh }}>
-          <div style={{ fontSize:10.5, fontWeight:700, marginBottom:10, color:C.t2, textTransform:"uppercase", letterSpacing:0.5 }}>Historial de asignaciones</div>
-          {freight.assignments.map((a,i)=>{
-            const ac = {active:{l:"Pendiente",c:C.info,bg:C.infoPale},accepted:{l:"Aceptada",c:C.ok,bg:C.okPale},rejected:{l:"Rechazada",c:C.err,bg:C.errPale},canceled:{l:"Cancelada",c:C.muted,bg:C.mutedPale}}[a.status]||{l:a.status,c:C.muted,bg:C.mutedPale};
-            return <div key={a.id} style={{ display:"flex", alignItems:"center", gap:8, padding:"8px 0", borderBottom:i<freight.assignments.length-1?`1px solid ${C.b2}`:"none" }}>
-              <Bd color={ac.c} bg={ac.bg} small>{ac.l}</Bd>
-              <span style={{fontSize:11,color:C.t2}}>{a.transporterName}</span>
-              {a.reason && <span style={{fontSize:10,color:C.err,fontStyle:"italic",marginLeft:"auto"}}>"{a.reason}"</span>}
-            </div>;
-          })}
         </div>
       )}
 
@@ -1154,7 +1143,6 @@ function DetailScreen({ user, freight, perms, onBack, onAction, actionLoading, o
           </div>
         </div>;
       })()}
-
 
       {/* Documents gallery */}
       <DocsGallery documents={freight.documents}/>
