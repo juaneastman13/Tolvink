@@ -24,7 +24,7 @@ export function validate(vals, schema) {
 export const SCHEMAS = {
   login:   { email:[V.email] },
   signup:  { name:[V.req,V.min(3)], email:[V.email], phone:[V.phone], userTypes:[V.userTypes] },
-  freight: { grain:[v=>V.sel(v,'tipo de grano')], tons:[V.posNum], lotId:[v=>V.sel(v,'lote')], loadDate:[V.req], loadTime:[V.time] },
+  freight: { grain:[v=>V.sel(v,'tipo de grano')], tons:[V.posNum], loadDate:[V.req], loadTime:[V.time] },
 };
 
 // ======================== FILTER ENGINE ===============================

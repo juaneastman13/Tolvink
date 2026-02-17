@@ -1082,6 +1082,9 @@ function NewScreen({ user, lots, plants, branches, fields, trucks, onBack, onCre
   const [submitting, setSubmitting] = useState(false);
   const [fieldLots, setFieldLots] = useState([]);
   const [loadingLots, setLoadingLots] = useState(false);
+  const [newLot, setNewLot] = useState(false);
+  const [newLotName, setNewLotName] = useState("");
+  const [newLotSaving, setNewLotSaving] = useState(false);
   const [photos, setPhotos] = useState([]);
   const [showAttach, setShowAttach] = useState(false);
   const nfCamRef = useRef(null);
@@ -1127,6 +1130,18 @@ function NewScreen({ user, lots, plants, branches, fields, trucks, onBack, onCre
     apiGetFieldLots(form.fieldId).then(l=>setFieldLots(l||[])).catch(()=>setFieldLots([])).finally(()=>setLoadingLots(false));
   },[form.fieldId]);
 
+  const handleCreateLot = async () => {
+    if(!newLotName.trim()||!form.fieldId||newLotSaving) return;
+    setNewLotSaving(true);
+    try {
+      const lot = await apiCreateLot(form.fieldId, { name: newLotName.trim() });
+      setFieldLots(prev=>[...prev, lot]);
+      u({ lotId: lot.id });
+      setNewLot(false); setNewLotName("");
+    } catch(e) { console.error("Error creando lote:", e); }
+    finally { setNewLotSaving(false); }
+  };
+
   const fieldOpts = (fields||[]).map(f=>({ value:f.id, label:f.name, sub:f.address||"" }));
   const lotOpts = fieldLots.map(l=>({ value:l.id, label:l.name, sub:l.hectares?`${l.hectares} ha`:'' }));
   const plantOpts = (plants||[]).map(p=>({ value:p.id, label:p.name }));
@@ -1158,6 +1173,7 @@ function NewScreen({ user, lots, plants, branches, fields, trucks, onBack, onCre
     setTouched(true);
     const {ok,errs:e} = validate(form, SCHEMAS.freight);
     if(form.grain==="Otros" && !form.productTypeOther.trim()) { e.productTypeOther="Descripción obligatoria"; }
+    if(originMode==="field" && !form.fieldId) { e.fieldId="Seleccioná un campo"; }
     if(originMode==="field" && form.fieldId && !form.lotId) { e.lotId="Seleccioná un lote del campo"; }
     if(originMode==="map" && !customOrigin.lat) { e.customOrigin="Indicá una ubicación en el mapa"; }
     // Destination validation
@@ -1286,6 +1302,16 @@ function NewScreen({ user, lots, plants, branches, fields, trucks, onBack, onCre
               <Select label="Origen (lote)" icon={Ic.pin(C.pri,14)} value={form.lotId} onChange={v=>u({lotId:v})} options={lotOpts} placeholder={loadingLots?"Cargando lotes...":form.fieldId?"Seleccionar lote...":"Primero seleccioná un campo"}/>
               {touched&&<FieldError error={errs.lotId}/>}
               {selectedLot && selectedLot.lat && <div style={{ display:"flex", alignItems:"center", gap:6, padding:"6px 10px", background:C.priPale, borderRadius:8, marginTop:6 }}>{Ic.chk(C.pri,14)}<span style={{fontSize:10.5,color:C.pri,fontWeight:500}}>{selectedLot.lat}, {selectedLot.lng}</span></div>}
+              {form.fieldId && !newLot && <button type="button" onClick={()=>setNewLot(true)} style={{marginTop:8,background:"none",border:"none",cursor:"pointer",fontSize:11,fontWeight:600,color:C.pri,padding:0,fontFamily:"inherit",display:"flex",alignItems:"center",gap:4}}>{Ic.plus(C.pri,13)} Crear lote nuevo</button>}
+              {newLot && (
+                <div style={{marginTop:8,background:C.priPale,borderRadius:10,padding:12,display:"flex",gap:8,alignItems:"flex-end"}}>
+                  <div style={{flex:1}}>
+                    <Field label="Nombre del lote" value={newLotName} onChange={setNewLotName} placeholder="Ej: Lote 3"/>
+                  </div>
+                  <Btn sm disabled={!newLotName.trim()||newLotSaving} onClick={handleCreateLot}>{newLotSaving?"...":"Crear"}</Btn>
+                  <Btn sm v="ghost" onClick={()=>{setNewLot(false);setNewLotName("");}}>Cancelar</Btn>
+                </div>
+              )}
             </div>
           </>) : (<>
             <Field label="Nombre del origen" value={customOrigin.name} onChange={v=>setCustomOrigin(p=>({...p,name:v}))} placeholder="Ej: Chacra Los Álamos"/>
