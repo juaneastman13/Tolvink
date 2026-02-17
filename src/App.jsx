@@ -304,8 +304,8 @@ function HomeScreen({ user, freights, perms, onNav, catalog, isDesktop, onAction
           <div style={{ width:28, height:28, borderRadius:7, background:`${group.color}22`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
             {group.icon(group.color, 14)}
           </div>
+          <span style={{ fontSize:13, fontWeight:800, color:group.color, minWidth:20, textAlign:"center" }}>{group.items.length}</span>
           <div style={{ flex:1, fontSize:13, fontWeight:700, color:group.color }}>{group.label}</div>
-          <span style={{ fontSize:12, fontWeight:800, color:group.color, background:`${group.color}18`, padding:"2px 8px", borderRadius:6 }}>{group.items.length}</span>
           <span style={{ display:"flex", transform:isOpen?"rotate(270deg)":"rotate(90deg)", transition:"transform 0.15s ease" }}>{Ic.chev(group.color,16)}</span>
         </button>
         {isOpen && (
@@ -368,24 +368,26 @@ function HomeScreen({ user, freights, perms, onNav, catalog, isDesktop, onAction
         </div>
       </div>
 
-      {/* Acciones necesarias */}
+      {/* Pending action groups — no title */}
       {actionGroups.length > 0 && (
-        <div style={{ marginBottom:16 }}>
-          <div style={{ fontSize:11, fontWeight:700, color:C.t2, textTransform:"uppercase", letterSpacing:0.5, marginBottom:8 }}>Acciones necesarias</div>
-          <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
-            {actionGroups.map(renderGroup)}
-          </div>
+        <div style={{ display:"flex", flexDirection:"column", gap:8, marginBottom:summaryGroups.length>0?12:0 }}>
+          {actionGroups.map(renderGroup)}
         </div>
       )}
 
-      {/* Resumen */}
+      {/* Sin pendientes + Resumen */}
       {summaryGroups.length > 0 && (
-        <div>
-          <div style={{ fontSize:11, fontWeight:700, color:C.t2, textTransform:"uppercase", letterSpacing:0.5, marginBottom:8 }}>Resumen</div>
+        <>
+          <div style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 12px", borderRadius:12, background:C.okPale, marginBottom:10 }}>
+            <div style={{ width:28, height:28, borderRadius:14, background:C.ok, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+              {Ic.chk(C.w,14)}
+            </div>
+            <div style={{ fontSize:12, fontWeight:700, color:C.ok }}>Sin pendientes de mi parte</div>
+          </div>
           <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
             {summaryGroups.map(renderGroup)}
           </div>
-        </div>
+        </>
       )}
     </div>
   );
