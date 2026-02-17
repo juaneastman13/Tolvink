@@ -966,7 +966,10 @@ function DetailScreen({ user, freight, perms, onBack, onAction, actionLoading, o
       {/* Info + Map — side by side on desktop */}
       <div style={{ display:"flex", flexDirection:_isDesktop?"row":"column", gap:12, marginBottom:12, alignItems:_isDesktop?"stretch":undefined }}>
         <div style={{ flex:1, background:C.w, border:`1px solid ${C.b1}`, borderRadius:12, padding:16, boxShadow:C.sh }}>
-          <div style={{ fontSize:10.5, fontWeight:700, marginBottom:12, color:C.t2, textTransform:"uppercase", letterSpacing:0.5 }}>Información del flete</div>
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:12 }}>
+            <span style={{ fontSize:10.5, fontWeight:700, color:C.t2, textTransform:"uppercase", letterSpacing:0.5 }}>Información del flete</span>
+            {freight.originLat&&freight.destLat&&<button onClick={()=>window.open(`https://www.google.com/maps/dir/?api=1&origin=${freight.originLat},${freight.originLng}&destination=${freight.destLat},${freight.destLng}&travelmode=driving`,"_blank")} style={{background:"none",border:`1px solid ${C.b1}`,cursor:"pointer",display:"flex",alignItems:"center",gap:4,padding:"4px 10px",borderRadius:6,fontSize:10,fontWeight:600,color:C.pri,fontFamily:"inherit"}}>{Ic.nav(C.pri,11)} Google Maps</button>}
+          </div>
           {[
             [Ic.user(C.pri,15),"Empresa",freight.originCompanyName||freight.originName],
             [Ic.pin(C.ok,15),"Campo",<>{[freight.fieldName,freight.originName].filter(Boolean).join(" / ")||"—"}{freight.originLat&&freight.originLng&&<span onClick={()=>goToMap(freight.originLat,freight.originLng,[freight.fieldName,freight.originName].filter(Boolean).join(" / "))} style={{cursor:"pointer",opacity:0.7,marginLeft:4,fontSize:11}} title="Ver en mapa">📍</span>}</>],
@@ -991,10 +994,6 @@ function DetailScreen({ user, freight, perms, onBack, onAction, actionLoading, o
         </div>
         <div style={{ flex:1 }}>
           <FreightMap freightId={freight.id} originLat={freight.originLat} originLng={freight.originLng} destLat={freight.destLat} destLng={freight.destLng} originName={[freight.originCompanyName, [freight.fieldName,freight.originName].filter(Boolean).join("/")].filter(Boolean).join(" — ")} destName={freight.destName} status={freight.status} isDriver={user.userType==="transporter"||(user.userType==="producer"&&freight.isOwnFleet)}/>
-          {freight.originLat&&freight.destLat&&<div style={{display:"flex",gap:8,marginTop:8}}>
-            <button onClick={()=>goToMap(freight.originLat,freight.originLng,[freight.fieldName,freight.originName].filter(Boolean).join(" / "),freight.destLat,freight.destLng,freight.destName)} style={{flex:1,padding:"10px 12px",borderRadius:10,border:`1.5px solid ${C.pri}`,background:C.w,color:C.pri,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>{Ic.nav(C.pri,14)} Ver ruta en mapa</button>
-            <button onClick={()=>window.open(`https://www.google.com/maps/dir/?api=1&origin=${freight.originLat},${freight.originLng}&destination=${freight.destLat},${freight.destLng}&travelmode=driving`,"_blank")} style={{flex:1,padding:"10px 12px",borderRadius:10,border:"none",background:C.pri,color:"#fff",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>{Ic.nav("#fff",14)} Abrir en Google Maps</button>
-          </div>}
         </div>
       </div>
 

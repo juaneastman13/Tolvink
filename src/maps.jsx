@@ -615,6 +615,12 @@ export function FreightsOverviewMap({ freights, onSelect, fields, plants }) {
 
 export function MapOverlay({ lat, lng, label, destLat, destLng, destLabel, onClose }) {
   const mapRef = useRef(null);
+  const mkInfoContent = (name, lt, ln, isOrigin) => {
+    const dirUrl = isOrigin && destLat && destLng
+      ? `https://www.google.com/maps/dir/?api=1&origin=${lt},${ln}&destination=${destLat},${destLng}&travelmode=driving`
+      : `https://www.google.com/maps/dir/?api=1&destination=${lt},${ln}&travelmode=driving`;
+    return `<div style="font-family:sans-serif;padding:4px 2px"><div style="font-weight:700;font-size:13px;color:#1a1a1a">${name||"Ubicación"}</div><div style="font-size:11px;color:#888;margin-top:3px">${Number(lt).toFixed(5)}, ${Number(ln).toFixed(5)}</div><a href="${dirUrl}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:4px;margin-top:6px;padding:5px 10px;background:#1A6B37;color:#fff;border-radius:6px;font-size:11px;font-weight:700;text-decoration:none">▶ Cómo llegar</a></div>`;
+  };
   useEffect(() => {
     if (!mapRef.current || !lat || !lng) return;
     let c = false;
@@ -629,20 +635,15 @@ export function MapOverlay({ lat, lng, label, destLat, destLng, destLabel, onClo
       });
       const marker = new maps.Marker({ position: pos, map, animation: maps.Animation.DROP,
         icon: { path: maps.SymbolPath.CIRCLE, scale: 12, fillColor: C.pri, fillOpacity: 0.8, strokeColor: "#fff", strokeWeight: 3 } });
-      if (label) {
-        const iw = new maps.InfoWindow({ content: `<div style="font-family:inherit;padding:4px 2px"><div style="font-weight:700;font-size:13px;color:#1a1a1a">${label}</div><div style="font-size:11px;color:#888;margin-top:3px">${Number(lat).toFixed(5)}, ${Number(lng).toFixed(5)}</div></div>` });
-        iw.open(map, marker);
-        marker.addListener("click", () => iw.open(map, marker));
-      }
-      // If route mode (origin + dest), show both markers and fit bounds
+      const iw = new maps.InfoWindow({ content: mkInfoContent(label, lat, lng, true) });
+      iw.open(map, marker);
+      marker.addListener("click", () => iw.open(map, marker));
       if (destLat && destLng) {
         const dpos = { lat: Number(destLat), lng: Number(destLng) };
-        new maps.Marker({ position: dpos, map, animation: maps.Animation.DROP,
+        const dm = new maps.Marker({ position: dpos, map, animation: maps.Animation.DROP,
           icon: { path: maps.SymbolPath.CIRCLE, scale: 12, fillColor: "#0891B2", fillOpacity: 0.8, strokeColor: "#fff", strokeWeight: 3 } });
-        if (destLabel) {
-          const iw2 = new maps.InfoWindow({ content: `<div style="font-family:inherit;padding:4px 2px"><div style="font-weight:700;font-size:13px;color:#1a1a1a">${destLabel}</div><div style="font-size:11px;color:#888;margin-top:3px">${Number(destLat).toFixed(5)}, ${Number(destLng).toFixed(5)}</div></div>` });
-          // Don't auto-open both, just the origin
-        }
+        const iw2 = new maps.InfoWindow({ content: mkInfoContent(destLabel, destLat, destLng, false) });
+        dm.addListener("click", () => iw2.open(map, dm));
         const bounds = new maps.LatLngBounds();
         bounds.extend(pos);
         bounds.extend(dpos);
@@ -652,14 +653,6 @@ export function MapOverlay({ lat, lng, label, destLat, destLng, destLabel, onClo
     return () => { c = true; };
   }, [lat, lng, label, destLat, destLng]);
 
-  const openGMaps = () => {
-    if (destLat && destLng) {
-      window.open(`https://www.google.com/maps/dir/?api=1&origin=${lat},${lng}&destination=${destLat},${destLng}&travelmode=driving`, "_blank");
-    } else {
-      window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=driving`, "_blank");
-    }
-  };
-
   return (
     <div style={{position:"fixed",inset:0,zIndex:9999,background:"rgba(0,0,0,0.5)",display:"flex",flexDirection:"column"}}>
       <div style={{padding:"12px 16px",background:C.w,display:"flex",alignItems:"center",gap:10,borderBottom:`1px solid ${C.b1}`,flexShrink:0}}>
@@ -667,9 +660,6 @@ export function MapOverlay({ lat, lng, label, destLat, destLng, destLabel, onClo
           {Ic.chev(C.pri,16)} Volver
         </button>
         <span style={{flex:1,fontSize:13,color:C.t2,fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{label || "Ubicación en mapa"}</span>
-        <button onClick={openGMaps} style={{background:C.pri,border:"none",cursor:"pointer",display:"flex",alignItems:"center",gap:5,padding:"7px 14px",borderRadius:8,fontSize:12,fontWeight:700,color:"#fff",fontFamily:"inherit",flexShrink:0}}>
-          {Ic.nav("#fff",14)} {destLat && destLng ? "Ver ruta" : "Cómo llegar"}
-        </button>
       </div>
       <div ref={mapRef} style={{flex:1}} />
     </div>
