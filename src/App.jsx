@@ -300,21 +300,19 @@ function HomeScreen({ user, freights, perms, onNav, catalog, isDesktop, onAction
     const isOpen = !collapsed[group.key];
     return (
       <div key={group.key}>
-        <button onClick={() => toggleGroup(group.key)} style={{ width:"100%", display:"flex", alignItems:"center", gap:10, padding:"10px 14px", background:group.bg, borderRadius:10, border:`1px solid ${group.color}20`, cursor:"pointer", fontFamily:"inherit", textAlign:"left", marginBottom:isOpen?8:0, transition:"margin 0.15s ease" }}>
-          <div style={{ width:28, height:28, borderRadius:7, background:`${group.color}22`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
-            {group.icon(group.color, 14)}
-          </div>
-          <span style={{ fontSize:13, fontWeight:800, color:group.color, minWidth:20, textAlign:"center" }}>{group.items.length}</span>
-          <div style={{ flex:1, fontSize:13, fontWeight:700, color:group.color }}>{group.label}</div>
-          <span style={{ display:"flex", transform:isOpen?"rotate(270deg)":"rotate(90deg)", transition:"transform 0.15s ease" }}>{Ic.chev(group.color,16)}</span>
+        <button onClick={() => toggleGroup(group.key)} style={{ width:"100%", display:"flex", alignItems:"center", gap:8, padding:"8px 0", background:"none", border:"none", borderBottom:`1px solid ${C.b2}`, cursor:"pointer", fontFamily:"inherit", textAlign:"left" }}>
+          {group.icon(group.color, 14)}
+          <span style={{ fontSize:14, fontWeight:800, color:group.color }}>{group.items.length}</span>
+          <div style={{ flex:1, fontSize:13, fontWeight:600, color:C.t1 }}>{group.label}</div>
+          <span style={{ display:"flex", transform:isOpen?"rotate(270deg)":"rotate(90deg)", transition:"transform 0.15s ease" }}>{Ic.chev(C.t3,14)}</span>
         </button>
         {isOpen && (
-          <div style={{ display:"flex", flexDirection:"column", gap:8, paddingLeft:4 }}>
+          <div style={{ display:"flex", flexDirection:"column", gap:8, padding:"8px 0 4px 16px", borderLeft:`2px solid ${group.color}30` }}>
             {group.items.map((f, idx) => {
               const st = stCfg(f.status);
               const pa = getPendingActions(f, user.userType);
               return (
-                <div key={f.id} style={{ background: C.w, border: `1px solid ${C.b1}`, borderLeft: `4px solid ${st.color}`, borderRadius: 12, padding: 14, boxShadow: C.sh, animation:`cardIn 0.2s ease ${idx*0.03}s both` }}>
+                <div key={f.id} style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: 12, padding: 14, boxShadow: C.sh, animation:`cardIn 0.2s ease ${idx*0.03}s both` }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                       <span style={{ fontSize: 11, fontWeight: 700, fontFamily: MONO, color: C.t2 }}>{f.code}</span>
@@ -356,8 +354,8 @@ function HomeScreen({ user, freights, perms, onNav, catalog, isDesktop, onAction
 
   return (
     <div style={{ flex:1, overflow:"auto", padding:"14px 18px 18px 18px" }}>
-      {/* Status — sidebar style */}
-      <div style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 12px", borderRadius:12, background:hasPending?`${C.acc}0D`:C.okPale, marginBottom:14 }}>
+      {/* Pendientes — title bar */}
+      <div style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 12px", borderRadius:12, background:`${C.acc}0D`, marginBottom:8 }}>
         <div style={{ width:32, height:32, borderRadius:16, background:statusColor, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, position:"relative" }}>
           {hasPending ? Ic.bell(C.w,16) : Ic.chk(C.w,16)}
           {hasPending && <div style={{ position:"absolute", top:-3, right:-3, minWidth:15, height:15, borderRadius:8, background:C.err, color:C.w, fontSize:8, fontWeight:700, padding:"0 3px", display:"flex", alignItems:"center", justifyContent:"center", border:`2px solid ${C.w}` }}>{pendingCount}</div>}
@@ -368,26 +366,26 @@ function HomeScreen({ user, freights, perms, onNav, catalog, isDesktop, onAction
         </div>
       </div>
 
-      {/* Pending action groups — no title */}
+      {/* Pending action groups — nested under Pendientes */}
       {actionGroups.length > 0 && (
-        <div style={{ display:"flex", flexDirection:"column", gap:8, marginBottom:summaryGroups.length>0?12:0 }}>
+        <div style={{ paddingLeft:16, borderLeft:`2px solid ${C.acc}30`, marginBottom:16 }}>
           {actionGroups.map(renderGroup)}
         </div>
       )}
 
-      {/* Sin pendientes + Resumen */}
+      {/* Sin pendientes de mi parte — title bar */}
+      <div style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 12px", borderRadius:12, background:C.okPale, marginBottom:8 }}>
+        <div style={{ width:28, height:28, borderRadius:14, background:C.ok, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+          {Ic.chk(C.w,14)}
+        </div>
+        <div style={{ fontSize:12, fontWeight:700, color:C.ok }}>Sin pendientes de mi parte</div>
+      </div>
+
+      {/* Summary groups — nested under Sin pendientes */}
       {summaryGroups.length > 0 && (
-        <>
-          <div style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 12px", borderRadius:12, background:C.okPale, marginBottom:10 }}>
-            <div style={{ width:28, height:28, borderRadius:14, background:C.ok, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
-              {Ic.chk(C.w,14)}
-            </div>
-            <div style={{ fontSize:12, fontWeight:700, color:C.ok }}>Sin pendientes de mi parte</div>
-          </div>
-          <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
-            {summaryGroups.map(renderGroup)}
-          </div>
-        </>
+        <div style={{ paddingLeft:16, borderLeft:`2px solid ${C.ok}30` }}>
+          {summaryGroups.map(renderGroup)}
+        </div>
       )}
     </div>
   );
