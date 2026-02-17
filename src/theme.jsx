@@ -4,7 +4,7 @@ export const LIGHT = {
   bgCard:"#FFFFFF",
   bgCardAlt:"#F1F4F2",
   bgInput:"#EDEFED",
-  bgOverlay:"rgba(10,20,14,0.6)",
+  bgOverlay:"rgba(10,20,14,0.85)",
   nav:"#FFFFFF",
   pri:"#1A6B37", priLt:"#228B46", priPale:"#E4F3EA", priGhost:"rgba(26,107,55,0.06)",
   acc:"#FF6A00", accLt:"#FF8124", accPale:"#FFF3E8",
