@@ -5,7 +5,7 @@
 export const STATUS_LIGHT = {
   draft:              { label:"Borrador",            color:"#71717A",   bg:"#F4F4F5",   border:"#71717A"   },
   pending_assignment: { label:"Solicitado",          color:"#FF6A00",   bg:"#FFF3E8",   border:"#FF6A00"   },
-  assigned:           { label:"Asignado a flota",    color:"#22D3EE",   bg:"#ECFEFF",   border:"#22D3EE"   },
+  assigned:           { label:"Asignado a flota",    color:"#0891B2",   bg:"#ECFEFF",   border:"#0891B2"   },
   accepted:           { label:"Confirmado camión",   color:"#2563EB",   bg:"#EFF6FF",   border:"#2563EB"   },
   in_progress:        { label:"En curso",            color:"#4ADE80",   bg:"#ECFDF5",   border:"#4ADE80"   },
   loaded:             { label:"Cargando",            color:"#22C55E",   bg:"#DCFCE7",   border:"#22C55E"   },

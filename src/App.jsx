@@ -430,6 +430,7 @@ function HomeScreen({ user, freights, perms, onNav, catalog, isDesktop, onAction
             <Bd color={st.color} bg={st.bg} small>{st.label}</Bd>
           </div>
           <div style={{ fontSize: 12, fontWeight: 700, color: C.t1, marginTop: 3 }}>{f.grain === "Otros" ? f.productTypeOther || "Otros" : f.grain} · {f.tons} {f.unit || "tn"}</div>
+          {f.loadDate && <div style={{ fontSize: 9, color: C.t3, marginTop: 2 }}>{Ic.cal(C.t3, 8)} {f.loadDate}{f.loadTime ? ` · ${f.loadTime}` : ""}</div>}
         </div>
       );
     }
@@ -524,13 +525,11 @@ function HomeScreen({ user, freights, perms, onNav, catalog, isDesktop, onAction
             <div style={{ fontSize: compact ? 11 : 12, fontWeight: 700, color: C.acc }}>Pendientes</div>
             {!compact && <div style={{ fontSize: 10, color: C.t3 }}>{pendingCount} acción{pendingCount !== 1 ? "es" : ""}</div>}
           </div>
-          {!compact && (
-            <div style={{ display: "flex", gap: 4 }}>
-              {[{k:"all",l:"Todo"},{k:"today",l:"Hoy"},{k:"tomorrow",l:"Mañana"},{k:"week",l:"Semana"}].map(o => (
-                <button key={o.k} onClick={() => setPendingFilter(o.k)} style={{ padding: "4px 8px", borderRadius: 6, border: `1px solid ${pendingFilter === o.k ? C.acc : C.b1}`, background: pendingFilter === o.k ? `${C.acc}15` : "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 10, fontWeight: pendingFilter === o.k ? 700 : 500, color: pendingFilter === o.k ? C.acc : C.t3 }}>{o.l}</button>
-              ))}
-            </div>
-          )}
+          <div style={{ display: "flex", gap: 4 }}>
+            {[{k:"all",l:"Todo"},{k:"today",l:"Hoy"},{k:"tomorrow",l:"Mañana"},{k:"week",l:"Semana"}].map(o => (
+              <button key={o.k} onClick={() => setPendingFilter(o.k)} style={{ padding: compact ? "3px 6px" : "4px 8px", borderRadius: 6, border: `1px solid ${pendingFilter === o.k ? C.acc : C.b1}`, background: pendingFilter === o.k ? `${C.acc}15` : "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: compact ? 9 : 10, fontWeight: pendingFilter === o.k ? 700 : 500, color: pendingFilter === o.k ? C.acc : C.t3 }}>{o.l}</button>
+            ))}
+          </div>
         </div>
         {pendingByAction.length > 0 && (
           <div style={{ paddingLeft: compact ? 12 : 16, borderLeft: `2px solid ${C.acc}30`, marginBottom: 16 }}>
@@ -546,13 +545,11 @@ function HomeScreen({ user, freights, perms, onNav, catalog, isDesktop, onAction
           {Ic.chk(C.w, compact ? 11 : 14)}
         </div>
         <div style={{ flex: 1, fontSize: compact ? 11 : 12, fontWeight: 700, color: C.ok }}>Sin pendientes de mi parte</div>
-        {!compact && (
-          <div style={{ display: "flex", gap: 4 }}>
-            {[{k:"all",l:"Todo"},{k:"today",l:"Hoy"},{k:"tomorrow",l:"Mañana"},{k:"week",l:"Semana"}].map(o => (
-              <button key={o.k} onClick={() => setSummaryFilter(o.k)} style={{ padding: "4px 8px", borderRadius: 6, border: `1px solid ${summaryFilter === o.k ? C.ok : C.b1}`, background: summaryFilter === o.k ? `${C.ok}15` : "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 10, fontWeight: summaryFilter === o.k ? 700 : 500, color: summaryFilter === o.k ? C.ok : C.t3 }}>{o.l}</button>
-            ))}
-          </div>
-        )}
+        <div style={{ display: "flex", gap: 4 }}>
+          {[{k:"all",l:"Todo"},{k:"today",l:"Hoy"},{k:"tomorrow",l:"Mañana"},{k:"week",l:"Semana"}].map(o => (
+            <button key={o.k} onClick={() => setSummaryFilter(o.k)} style={{ padding: compact ? "3px 6px" : "4px 8px", borderRadius: 6, border: `1px solid ${summaryFilter === o.k ? C.ok : C.b1}`, background: summaryFilter === o.k ? `${C.ok}15` : "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: compact ? 9 : 10, fontWeight: summaryFilter === o.k ? 700 : 500, color: summaryFilter === o.k ? C.ok : C.t3 }}>{o.l}</button>
+          ))}
+        </div>
       </div>
 
       {/* Summary groups — by status */}
@@ -981,54 +978,54 @@ function DetailScreen({ user, freight, perms, onBack, onAction, actionLoading, o
           {filteredActions.includes("cancel") && <Btn full v="err" icon={Ic.cross(C.err,16)} disabled={actionLoading} onClick={()=>onAction(freight.id,"cancel")}>Cancelar flete</Btn>}
         </div>}
         {freight.status==="pending_assignment" && perms.canRequest && <div style={{ display:"flex", gap:8, marginTop:8 }}><Btn full sm v="sec" icon={Ic.doc(C.pri,14)} onClick={()=>onEdit(freight)}>Editar</Btn></div>}
-      </div>
 
-      {/* Progress — click to see audit history */}
-      {freight.status !== "canceled" && (()=>{
-        const steps = ["pending_assignment","assigned","accepted","in_progress","loaded","finished"];
-        const curIdx = steps.indexOf(freight.status);
-        return <div ref={auditRef} style={{ background:C.w, border:`1px solid ${C.b1}`, borderRadius:12, padding:16, marginBottom:12, boxShadow:C.sh, position:"relative" }}>
-          <div onClick={loadAudit} style={{ fontSize:10.5, fontWeight:700, marginBottom:12, color:C.t2, textTransform:"uppercase", letterSpacing:0.5, cursor:"pointer", display:"flex", alignItems:"center", gap:6 }}>
-            Progreso <span style={{ fontSize:9, fontWeight:500, color:C.t3, textTransform:"none", letterSpacing:0 }}>{showAudit?"▲ ocultar historial":"▼ ver historial"}</span>
-          </div>
-          <div style={{display:"flex",gap:3,alignItems:"flex-start"}}>
-            {steps.map((s,i)=>{
-              const done = i < curIdx; const active = i === curIdx; const c = stCfg(s);
-              return <div key={s} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4,minWidth:0}}>
-                <div style={{width:"100%",height:active?5:4,borderRadius:3,background:done?C.pri:active?c.border:C.b1,transition:"all 0.2s"}}/>
-                {active && <div style={{width:6,height:6,borderRadius:3,background:c.border,marginTop:-2}}/>}
-                <span style={{fontSize:7.5,fontWeight:active?700:500,color:active?c.color:done?C.t2:C.t3,textAlign:"center",lineHeight:1.2,wordBreak:"break-word",maxWidth:"100%"}}>{c.label}</span>
-              </div>;
-            })}
-          </div>
-          {/* Audit popover */}
-          {showAudit && auditLog && (
-            <div style={{ marginTop:14, borderTop:`1px solid ${C.b1}`, paddingTop:14 }}>
-              <div style={{ fontSize:10, fontWeight:700, color:C.t2, textTransform:"uppercase", letterSpacing:0.5, marginBottom:10 }}>Historial de cambios</div>
-              <div style={{ position:"relative", paddingLeft:18 }}>
-                <div style={{ position:"absolute", left:5, top:4, bottom:4, width:2, background:C.b1, borderRadius:1 }} />
-                {auditLog.map((log, i) => {
-                  const fmtD = (d) => { try { const dt=new Date(d); return dt.toLocaleDateString("es-AR",{day:"2-digit",month:"short"})+" "+dt.toLocaleTimeString("es-AR",{hour:"2-digit",minute:"2-digit",hour12:false}); } catch(e){ return ""; } };
-                  const actionLabels = { created:"Solicitado", assigned:"Asignado", accepted:"Aceptado", rejected:"Rechazado", started:"Viaje iniciado", confirm_loaded:"Carga confirmada", confirm_finished:"Entrega confirmada", finished:"Finalizado", canceled:"Cancelado", authorized:"Autorizado", updated:"Editado" };
-                  const label = actionLabels[log.action] || log.action;
-                  const actionColors = { created:C.pri, assigned:C.sec, accepted:C.info, rejected:C.err, started:C.acc, confirm_loaded:C.acc, confirm_finished:C.pri, finished:C.ok, canceled:C.err, authorized:C.info, updated:C.t2 };
-                  const col = actionColors[log.action] || C.t2;
-                  return (
-                    <div key={log.id} style={{ position:"relative", paddingBottom:i<auditLog.length-1?14:0 }}>
-                      <div style={{ position:"absolute", left:-16, top:2, width:10, height:10, borderRadius:5, background:col, zIndex:2 }} />
-                      <div style={{ fontSize:12, fontWeight:700, color:col }}>{label}</div>
-                      <div style={{ fontSize:10.5, color:C.t2, marginTop:1 }}>{log.user?.name || "Sistema"} {log.user?.company?.name ? `· ${log.user.company.name}` : ""}</div>
-                      {log.reason && <div style={{ fontSize:10, color:C.t3, fontStyle:"italic", marginTop:2 }}>"{log.reason}"</div>}
-                      <div style={{ fontSize:9.5, color:C.t3, marginTop:2 }}>{fmtD(log.createdAt)}</div>
-                    </div>
-                  );
-                })}
-                {auditLog.length === 0 && <div style={{ fontSize:11, color:C.t3 }}>Sin registros</div>}
-              </div>
+        {/* Progress — click to see audit history */}
+        {freight.status !== "canceled" && (()=>{
+          const steps = ["pending_assignment","assigned","accepted","in_progress","loaded","finished"];
+          const curIdx = steps.indexOf(freight.status);
+          return <div ref={auditRef} style={{ background:C.w, border:`1px solid ${C.b1}`, borderRadius:12, padding:16, marginTop:8, boxShadow:C.sh, position:"relative" }}>
+            <div onClick={loadAudit} style={{ fontSize:10.5, fontWeight:700, marginBottom:12, color:C.t2, textTransform:"uppercase", letterSpacing:0.5, cursor:"pointer", display:"flex", alignItems:"center", gap:6 }}>
+              Progreso <span style={{ fontSize:9, fontWeight:500, color:C.t3, textTransform:"none", letterSpacing:0 }}>{showAudit?"▲ ocultar historial":"▼ ver historial"}</span>
             </div>
-          )}
-        </div>;
-      })()}
+            <div style={{display:"flex",gap:3,alignItems:"flex-start"}}>
+              {steps.map((s,i)=>{
+                const done = i < curIdx; const active = i === curIdx; const c = stCfg(s);
+                return <div key={s} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4,minWidth:0}}>
+                  <div style={{width:"100%",height:active?5:4,borderRadius:3,background:done?C.pri:active?c.border:C.b1,transition:"all 0.2s"}}/>
+                  {active && <div style={{width:6,height:6,borderRadius:3,background:c.border,marginTop:-2}}/>}
+                  <span style={{fontSize:7.5,fontWeight:active?700:500,color:active?c.color:done?C.t2:C.t3,textAlign:"center",lineHeight:1.2,wordBreak:"break-word",maxWidth:"100%"}}>{c.label}</span>
+                </div>;
+              })}
+            </div>
+            {/* Audit popover */}
+            {showAudit && auditLog && (
+              <div style={{ marginTop:14, borderTop:`1px solid ${C.b1}`, paddingTop:14 }}>
+                <div style={{ fontSize:10, fontWeight:700, color:C.t2, textTransform:"uppercase", letterSpacing:0.5, marginBottom:10 }}>Historial de cambios</div>
+                <div style={{ position:"relative", paddingLeft:18 }}>
+                  <div style={{ position:"absolute", left:5, top:4, bottom:4, width:2, background:C.b1, borderRadius:1 }} />
+                  {auditLog.map((log, i) => {
+                    const fmtD = (d) => { try { const dt=new Date(d); return dt.toLocaleDateString("es-AR",{day:"2-digit",month:"short"})+" "+dt.toLocaleTimeString("es-AR",{hour:"2-digit",minute:"2-digit",hour12:false}); } catch(e){ return ""; } };
+                    const actionLabels = { created:"Solicitado", assigned:"Asignado", accepted:"Aceptado", rejected:"Rechazado", started:"Viaje iniciado", confirm_loaded:"Carga confirmada", confirm_finished:"Entrega confirmada", finished:"Finalizado", canceled:"Cancelado", authorized:"Autorizado", updated:"Editado" };
+                    const label = actionLabels[log.action] || log.action;
+                    const actionColors = { created:C.pri, assigned:C.sec, accepted:C.info, rejected:C.err, started:C.acc, confirm_loaded:C.acc, confirm_finished:C.pri, finished:C.ok, canceled:C.err, authorized:C.info, updated:C.t2 };
+                    const col = actionColors[log.action] || C.t2;
+                    return (
+                      <div key={log.id} style={{ position:"relative", paddingBottom:i<auditLog.length-1?14:0 }}>
+                        <div style={{ position:"absolute", left:-16, top:2, width:10, height:10, borderRadius:5, background:col, zIndex:2 }} />
+                        <div style={{ fontSize:12, fontWeight:700, color:col }}>{label}</div>
+                        <div style={{ fontSize:10.5, color:C.t2, marginTop:1 }}>{log.user?.name || "Sistema"} {log.user?.company?.name ? `· ${log.user.company.name}` : ""}</div>
+                        {log.reason && <div style={{ fontSize:10, color:C.t3, fontStyle:"italic", marginTop:2 }}>"{log.reason}"</div>}
+                        <div style={{ fontSize:9.5, color:C.t3, marginTop:2 }}>{fmtD(log.createdAt)}</div>
+                      </div>
+                    );
+                  })}
+                  {auditLog.length === 0 && <div style={{ fontSize:11, color:C.t3 }}>Sin registros</div>}
+                </div>
+              </div>
+            )}
+          </div>;
+        })()}
+      </div>
 
       {/* Map */}
       <FreightMap freightId={freight.id} originLat={freight.originLat} originLng={freight.originLng} destLat={freight.destLat} destLng={freight.destLng} originName={freight.originName} destName={freight.destName} status={freight.status} isDriver={user.userType==="transporter"||(user.userType==="producer"&&freight.isOwnFleet)}/>
