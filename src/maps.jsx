@@ -613,7 +613,7 @@ export function FreightsOverviewMap({ freights, onSelect, fields, plants }) {
 
 // ======================== MAP OVERLAY (pin click) ===========================
 
-export function MapOverlay({ lat, lng, onClose }) {
+export function MapOverlay({ lat, lng, label, onClose }) {
   const mapRef = useRef(null);
   useEffect(() => {
     if (!mapRef.current || !lat || !lng) return;
@@ -627,11 +627,16 @@ export function MapOverlay({ lat, lng, onClose }) {
         disableDefaultUI: true, zoomControl: true, gestureHandling: "greedy",
         styles: [{ featureType:"poi", stylers:[{visibility:"off"}] }, { featureType:"transit", stylers:[{visibility:"off"}] }],
       });
-      new maps.Marker({ position: pos, map, animation: maps.Animation.DROP,
+      const marker = new maps.Marker({ position: pos, map, animation: maps.Animation.DROP,
         icon: { path: maps.SymbolPath.CIRCLE, scale: 12, fillColor: C.pri, fillOpacity: 0.8, strokeColor: "#fff", strokeWeight: 3 } });
+      if (label) {
+        const iw = new maps.InfoWindow({ content: `<div style="font-family:inherit;padding:4px 2px"><div style="font-weight:700;font-size:13px;color:#1a1a1a">${label}</div><div style="font-size:11px;color:#888;margin-top:3px">${Number(lat).toFixed(5)}, ${Number(lng).toFixed(5)}</div></div>` });
+        iw.open(map, marker);
+        marker.addListener("click", () => iw.open(map, marker));
+      }
     })();
     return () => { c = true; };
-  }, [lat, lng]);
+  }, [lat, lng, label]);
 
   return (
     <div style={{position:"fixed",inset:0,zIndex:9999,background:"rgba(0,0,0,0.5)",display:"flex",flexDirection:"column"}}>
@@ -639,7 +644,7 @@ export function MapOverlay({ lat, lng, onClose }) {
         <button onClick={onClose} style={{background:"none",border:"none",cursor:"pointer",display:"flex",alignItems:"center",gap:6,padding:"6px 12px",borderRadius:8,fontSize:13,fontWeight:700,color:C.pri,fontFamily:"inherit"}}>
           {Ic.chev(C.pri,16)} Volver
         </button>
-        <span style={{fontSize:13,color:C.t2,fontWeight:600}}>Ubicación en mapa</span>
+        <span style={{fontSize:13,color:C.t2,fontWeight:600}}>{label || "Ubicación en mapa"}</span>
       </div>
       <div ref={mapRef} style={{flex:1}} />
     </div>
