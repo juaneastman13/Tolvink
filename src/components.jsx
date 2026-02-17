@@ -479,6 +479,38 @@ export function NotifBell({ count=0, onClick }) {
   );
 }
 
+// ======================== FILE VIEWER (in-app) =======================
+
+export function FileViewer({ file, onClose }) {
+  if (!file) return null;
+  const isImg = file.type === "image" || file.type === "photo" || file.url?.match(/\.(jpg|jpeg|png|webp|gif|svg)$/i);
+  const isPdf = file.url?.match(/\.pdf$/i);
+  return (
+    <div onClick={onClose} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.85)", display:"flex", flexDirection:"column", zIndex:250, animation:"moFadeIn 0.2s ease" }}>
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"12px 16px", flexShrink:0 }}>
+        <div style={{ color:"#fff", fontSize:13, fontWeight:600, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", flex:1, marginRight:12 }}>{file.name||"Archivo"}</div>
+        <div style={{ display:"flex", gap:8 }}>
+          <a href={file.url} download style={{ display:"flex", alignItems:"center", gap:4, padding:"6px 12px", borderRadius:8, background:"rgba(255,255,255,0.15)", color:"#fff", textDecoration:"none", fontSize:12, fontWeight:600 }} onClick={e=>e.stopPropagation()}>{Ic.down("#fff",14)} Descargar</a>
+          <button onClick={onClose} style={{ display:"flex", alignItems:"center", justifyContent:"center", width:36, height:36, borderRadius:8, background:"rgba(255,255,255,0.15)", border:"none", cursor:"pointer" }}>{Ic.cross("#fff",20)}</button>
+        </div>
+      </div>
+      <div onClick={e=>e.stopPropagation()} style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", overflow:"auto", padding:16 }}>
+        {isImg ? (
+          <img src={file.url} alt={file.name||""} style={{ maxWidth:"100%", maxHeight:"100%", objectFit:"contain", borderRadius:8 }} />
+        ) : isPdf ? (
+          <iframe src={file.url} title={file.name||"PDF"} style={{ width:"100%", height:"100%", border:"none", borderRadius:8, background:"#fff" }} />
+        ) : (
+          <div style={{ textAlign:"center", color:"#fff" }}>
+            <div style={{ marginBottom:16 }}>{Ic.doc("#fff",48)}</div>
+            <div style={{ fontSize:16, fontWeight:700, marginBottom:8 }}>{file.name||"Archivo"}</div>
+            <a href={file.url} download style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"10px 20px", borderRadius:10, background:C.pri, color:"#fff", textDecoration:"none", fontSize:14, fontWeight:600 }} onClick={e=>e.stopPropagation()}>{Ic.down("#fff",16)} Descargar archivo</a>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ======================== CSV EXPORT =================================
 
 export function exportCSV(freights, filename) {

@@ -57,7 +57,7 @@ export function PhotoUpload({ freightId, step, label, onUploaded }) {
 
 // ======================== DOCUMENTS GALLERY ============================
 
-export function DocsGallery({ documents }) {
+export function DocsGallery({ documents, onViewFile }) {
   if (!documents || documents.length === 0) return null;
   const stepLabels = { request: "Solicitud", assignment: "Asignación", load_confirmation: "Carga", delivery_confirmation: "Entrega", cancellation: "Cancelación" };
   return (
@@ -67,7 +67,7 @@ export function DocsGallery({ documents }) {
         {documents.map(d => {
           const isImg = d.type === "photo" || d.url?.match(/\.(jpg|jpeg|png|webp|gif)$/i);
           return (
-            <a key={d.id} href={d.url} target="_blank" rel="noopener noreferrer" style={{ display: "flex", alignItems: "center", gap: 10, padding: 8, background: C.bg, border: `1px solid ${C.b2}`, borderRadius: 8, textDecoration: "none" }}>
+            <button key={d.id} onClick={()=>onViewFile?onViewFile({url:d.url,name:d.name||"Archivo",type:d.type}):null} style={{ display: "flex", alignItems: "center", gap: 10, padding: 8, background: C.bg, border: `1px solid ${C.b2}`, borderRadius: 8, cursor:"pointer", fontFamily:"inherit", textAlign:"left", width:"100%" }}>
               {isImg ? (
                 <img src={d.url} alt={d.name} style={{ width: 48, height: 48, borderRadius: 6, objectFit: "cover", flexShrink: 0 }} onError={e => { e.target.style.display = "none"; }} />
               ) : (
@@ -81,8 +81,8 @@ export function DocsGallery({ documents }) {
                   {d.uploadedBy?.name && ` · ${d.uploadedBy.name.split(" ")[0]}`}
                 </div>
               </div>
-              {Ic.down(C.pri, 14)}
-            </a>
+              {Ic.eye(C.pri, 14)}
+            </button>
           );
         })}
       </div>

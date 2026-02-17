@@ -17,7 +17,7 @@ import {
 import { C, track, FONT, MONO, Ic } from "./theme";
 import { V, validate, SCHEMAS, textMatch, FieldError } from "./validation";
 import { stCfg, getActions, GRANOS, UNITS } from "./constants";
-import { Av, Bd, Btn, Tabs, Field, Select, Sec, Toast, Loader, LoadingOverlay, AttachMenu, Sidebar, Nav, SortTh, exportCSV, exportExcel, exportPDF, NotifBell, NotificationsPanel, ModalOverlay } from "./components";
+import { Av, Bd, Btn, Tabs, Field, Select, Sec, Toast, Loader, LoadingOverlay, AttachMenu, Sidebar, Nav, SortTh, exportCSV, exportExcel, exportPDF, NotifBell, NotificationsPanel, ModalOverlay, FileViewer } from "./components";
 import { useAuth, useCatalog, useFreights, permsFor, useIsDesktop, useTableSort, usePullToRefresh, useOnline, useNotifications } from "./hooks";
 import { SafeZone, LocationPicker, FreightMap, FreightsOverviewMap } from "./maps";
 import { PhotoUpload, DocsGallery, FreightFileUpload } from "./uploads";
@@ -810,6 +810,7 @@ function DetailScreen({ user, freight, perms, onBack, onAction, actionLoading, o
   if(!freight) return null;
   const [auditLog, setAuditLog] = useState(null);
   const [showAudit, setShowAudit] = useState(false);
+  const [viewFile, setViewFile] = useState(null);
   const auditRef = useRef(null);
 
   const loadAudit = async () => {
@@ -1021,7 +1022,7 @@ function DetailScreen({ user, freight, perms, onBack, onAction, actionLoading, o
       })()}
 
       {/* Documents gallery */}
-      <DocsGallery documents={freight.documents}/>
+      <DocsGallery documents={freight.documents} onViewFile={setViewFile}/>
 
       {/* File upload — multi-source, any status except finished/canceled */}
       {freight.status !== "finished" && freight.status !== "canceled" && (
@@ -1047,6 +1048,7 @@ function DetailScreen({ user, freight, perms, onBack, onAction, actionLoading, o
 
 function NewScreen({ user, lots, plants, branches, fields, trucks, onBack, onCreate, duplicateFrom }) {
   const dup = duplicateFrom;
+  const _isDesktop = useIsDesktop(768);
   const [destMode, setDestMode] = useState("plant");
   const [customDest, setCustomDest] = useState({ name:"", lat:null, lng:null });
   const [form, setForm] = useState({
@@ -1252,54 +1254,80 @@ function NewScreen({ user, lots, plants, branches, fields, trucks, onBack, onCre
             <>
               <Field label="Nombre del destino" value={customDest.name} onChange={v=>setCustomDest(p=>({...p,name:v}))} placeholder="Ej: Acopio Central, Puerto Rosario..."/>
               {touched&&<FieldError error={errs.customDestName}/>}
-              <div style={{ marginTop:8 }}>
+              {!_isDesktop && <div style={{ marginTop:8 }}>
                 <LocationPicker label="Ubicación del destino" value={customDest.lat?{lat:customDest.lat,lng:customDest.lng}:null} onChange={loc=>setCustomDest(p=>({...p,lat:loc.lat,lng:loc.lng}))}/>
-              </div>
+              </div>}
             </>
           )}
         </Sec>
 
-        {/* Route preview map */}
-        {(finalOrigin || finalDest) && (
-          <div style={{ background:C.w, border:`1px solid ${C.b1}`, borderRadius:12, overflow:"hidden", boxShadow:C.sh }}>
-            <div style={{ display:"flex", alignItems:"center", gap:6, padding:"10px 14px" }}>
-              {Ic.pin(C.pri,14)}
-              <span style={{ fontSize:10.5, fontWeight:700, color:C.t2, textTransform:"uppercase", letterSpacing:0.5 }}>Vista previa del recorrido</span>
+        {/* Route preview + custom dest map — side by side on desktop when custom */}
+        {destMode==="custom" && _isDesktop ? (
+          <div style={{ display:"flex", gap:16, alignItems:"flex-start" }}>
+            <div style={{ flex:1, minWidth:0 }}>
+              <LocationPicker label="Ubicación del destino" value={customDest.lat?{lat:customDest.lat,lng:customDest.lng}:null} onChange={loc=>setCustomDest(p=>({...p,lat:loc.lat,lng:loc.lng}))}/>
             </div>
-
-            {finalOrigin && finalDest ? (
-              <FreightMap freightId={null} originLat={finalOrigin.lat} originLng={finalOrigin.lng} destLat={finalDest.lat} destLng={finalDest.lng} originName={fieldLots.find(l=>l.id===form.lotId)?.name||"Origen"} destName={destDisplayName||"Destino"} status="preview" isDriver={false}/>
-            ) : (
-              <div style={{ padding:"20px 14px", textAlign:"center", fontSize:12, color:C.t3 }}>
-                Seleccioná {!finalOrigin?"origen (lote)":""}{!finalOrigin&&!finalDest?" y ":""}{!finalDest?"destino":""} para ver la ruta
-              </div>
-            )}
-
-            {/* Edit location buttons */}
-            <div style={{ padding:"6px 14px 10px", display:"flex", gap:8 }}>
-              {finalOrigin && (
-                <button onClick={()=>setEditingOrigin(!editingOrigin)} style={{ flex:1, padding:"7px 10px", borderRadius:8, border:`1px solid ${editingOrigin?C.pri:C.b1}`, background:editingOrigin?C.priPale:C.w, cursor:"pointer", fontFamily:"inherit", fontSize:10.5, fontWeight:600, color:editingOrigin?C.pri:C.t2, display:"flex", alignItems:"center", justifyContent:"center", gap:4 }}>
-                  {Ic.pin("#1A6B37",12)} {editingOrigin?"Editando origen":"Editar origen"}
-                </button>
-              )}
-              {finalDest && (
-                <button onClick={()=>setEditingDest(!editingDest)} style={{ flex:1, padding:"7px 10px", borderRadius:8, border:`1px solid ${editingDest?C.sec:C.b1}`, background:editingDest?C.secPale:C.w, cursor:"pointer", fontFamily:"inherit", fontSize:10.5, fontWeight:600, color:editingDest?C.sec:C.t2, display:"flex", alignItems:"center", justifyContent:"center", gap:4 }}>
-                  {Ic.pin("#003882",12)} {editingDest?"Editando destino":"Editar destino"}
-                </button>
-              )}
-            </div>
-
-            {editingOrigin && (
-              <div style={{ padding:"0 14px 12px" }}>
-                <LocationPicker label="Corregir ubicación de origen" value={overrideOrigin||originCoords} onChange={loc=>setOverrideOrigin({lat:loc.lat,lng:loc.lng})}/>
-              </div>
-            )}
-            {editingDest && (
-              <div style={{ padding:"0 14px 12px" }}>
-                <LocationPicker label="Corregir ubicación de destino" value={overrideDest||destCoords} onChange={loc=>setOverrideDest({lat:loc.lat,lng:loc.lng})}/>
+            {(finalOrigin || finalDest) && (
+              <div style={{ flex:1, minWidth:0, background:C.w, border:`1px solid ${C.b1}`, borderRadius:12, overflow:"hidden", boxShadow:C.sh }}>
+                <div style={{ display:"flex", alignItems:"center", gap:6, padding:"10px 14px" }}>
+                  {Ic.pin(C.pri,14)}
+                  <span style={{ fontSize:10.5, fontWeight:700, color:C.t2, textTransform:"uppercase", letterSpacing:0.5 }}>Vista previa del recorrido</span>
+                </div>
+                {finalOrigin && finalDest ? (
+                  <FreightMap freightId={null} originLat={finalOrigin.lat} originLng={finalOrigin.lng} destLat={finalDest.lat} destLng={finalDest.lng} originName={fieldLots.find(l=>l.id===form.lotId)?.name||"Origen"} destName={destDisplayName||"Destino"} status="preview" isDriver={false}/>
+                ) : (
+                  <div style={{ padding:"20px 14px", textAlign:"center", fontSize:12, color:C.t3 }}>
+                    Seleccioná {!finalOrigin?"origen (lote)":""}{!finalOrigin&&!finalDest?" y ":""}{!finalDest?"destino":""} para ver la ruta
+                  </div>
+                )}
+                <div style={{ padding:"6px 14px 10px", display:"flex", gap:8 }}>
+                  {finalOrigin && (
+                    <button onClick={()=>setEditingOrigin(!editingOrigin)} style={{ flex:1, padding:"7px 10px", borderRadius:8, border:`1px solid ${editingOrigin?C.pri:C.b1}`, background:editingOrigin?C.priPale:C.w, cursor:"pointer", fontFamily:"inherit", fontSize:10.5, fontWeight:600, color:editingOrigin?C.pri:C.t2, display:"flex", alignItems:"center", justifyContent:"center", gap:4 }}>
+                      {Ic.pin("#1A6B37",12)} {editingOrigin?"Editando origen":"Editar origen"}
+                    </button>
+                  )}
+                  {finalDest && (
+                    <button onClick={()=>setEditingDest(!editingDest)} style={{ flex:1, padding:"7px 10px", borderRadius:8, border:`1px solid ${editingDest?C.sec:C.b1}`, background:editingDest?C.secPale:C.w, cursor:"pointer", fontFamily:"inherit", fontSize:10.5, fontWeight:600, color:editingDest?C.sec:C.t2, display:"flex", alignItems:"center", justifyContent:"center", gap:4 }}>
+                      {Ic.pin("#003882",12)} {editingDest?"Editando destino":"Editar destino"}
+                    </button>
+                  )}
+                </div>
+                {editingOrigin && <div style={{ padding:"0 14px 12px" }}><LocationPicker label="Corregir ubicación de origen" value={overrideOrigin||originCoords} onChange={loc=>setOverrideOrigin({lat:loc.lat,lng:loc.lng})}/></div>}
+                {editingDest && <div style={{ padding:"0 14px 12px" }}><LocationPicker label="Corregir ubicación de destino" value={overrideDest||destCoords} onChange={loc=>setOverrideDest({lat:loc.lat,lng:loc.lng})}/></div>}
               </div>
             )}
           </div>
+        ) : (
+          /* Standard stacked layout (mobile or plant mode) */
+          (finalOrigin || finalDest) && (
+            <div style={{ background:C.w, border:`1px solid ${C.b1}`, borderRadius:12, overflow:"hidden", boxShadow:C.sh }}>
+              <div style={{ display:"flex", alignItems:"center", gap:6, padding:"10px 14px" }}>
+                {Ic.pin(C.pri,14)}
+                <span style={{ fontSize:10.5, fontWeight:700, color:C.t2, textTransform:"uppercase", letterSpacing:0.5 }}>Vista previa del recorrido</span>
+              </div>
+              {finalOrigin && finalDest ? (
+                <FreightMap freightId={null} originLat={finalOrigin.lat} originLng={finalOrigin.lng} destLat={finalDest.lat} destLng={finalDest.lng} originName={fieldLots.find(l=>l.id===form.lotId)?.name||"Origen"} destName={destDisplayName||"Destino"} status="preview" isDriver={false}/>
+              ) : (
+                <div style={{ padding:"20px 14px", textAlign:"center", fontSize:12, color:C.t3 }}>
+                  Seleccioná {!finalOrigin?"origen (lote)":""}{!finalOrigin&&!finalDest?" y ":""}{!finalDest?"destino":""} para ver la ruta
+                </div>
+              )}
+              <div style={{ padding:"6px 14px 10px", display:"flex", gap:8 }}>
+                {finalOrigin && (
+                  <button onClick={()=>setEditingOrigin(!editingOrigin)} style={{ flex:1, padding:"7px 10px", borderRadius:8, border:`1px solid ${editingOrigin?C.pri:C.b1}`, background:editingOrigin?C.priPale:C.w, cursor:"pointer", fontFamily:"inherit", fontSize:10.5, fontWeight:600, color:editingOrigin?C.pri:C.t2, display:"flex", alignItems:"center", justifyContent:"center", gap:4 }}>
+                    {Ic.pin("#1A6B37",12)} {editingOrigin?"Editando origen":"Editar origen"}
+                  </button>
+                )}
+                {finalDest && (
+                  <button onClick={()=>setEditingDest(!editingDest)} style={{ flex:1, padding:"7px 10px", borderRadius:8, border:`1px solid ${editingDest?C.sec:C.b1}`, background:editingDest?C.secPale:C.w, cursor:"pointer", fontFamily:"inherit", fontSize:10.5, fontWeight:600, color:editingDest?C.sec:C.t2, display:"flex", alignItems:"center", justifyContent:"center", gap:4 }}>
+                    {Ic.pin("#003882",12)} {editingDest?"Editando destino":"Editar destino"}
+                  </button>
+                )}
+              </div>
+              {editingOrigin && <div style={{ padding:"0 14px 12px" }}><LocationPicker label="Corregir ubicación de origen" value={overrideOrigin||originCoords} onChange={loc=>setOverrideOrigin({lat:loc.lat,lng:loc.lng})}/></div>}
+              {editingDest && <div style={{ padding:"0 14px 12px" }}><LocationPicker label="Corregir ubicación de destino" value={overrideDest||destCoords} onChange={loc=>setOverrideDest({lat:loc.lat,lng:loc.lng})}/></div>}
+            </div>
+          )
         )}
 
         {/* SCHEDULE SECTION */}
@@ -2283,6 +2311,7 @@ function ChatsScreen({ user, openConvId, onConvOpened, isDesktop }) {
   const [compSearching, setCompSearching] = useState(false);
   const compSearchTimer = useRef(null);
   const [searchQ, setSearchQ] = useState("");
+  const [viewFile, setViewFile] = useState(null);
   const msgEndRef = useRef(null);
 
   const loadConvs = useCallback(async () => {
@@ -2524,17 +2553,17 @@ function ChatsScreen({ user, openConvId, onConvOpened, isDesktop }) {
                     <div style={{ padding: fileData ? "6px" : "10px 14px", borderRadius: 14, borderBottomRightRadius: mine ? 4 : 14, borderBottomLeftRadius: mine ? 14 : 4, background: mine ? C.pri : C.w, color: mine ? C.w : C.t1, fontSize: 13, border: mine ? "none" : `1px solid ${C.b1}`, boxShadow: C.sh, overflow: "hidden" }}>
                       {fileData ? (
                         fileData.type === "image" ? (
-                          <a href={fileData.url} target="_blank" rel="noopener noreferrer">
+                          <button onClick={()=>setViewFile({url:fileData.url,name:fileData.name,type:"image"})} style={{ background:"none", border:"none", cursor:"pointer", padding:0 }}>
                             <img src={fileData.url} alt={fileData.name} style={{ maxWidth: 220, maxHeight: 200, borderRadius: 10, display: "block" }} />
-                          </a>
+                          </button>
                         ) : (
-                          <a href={fileData.url} target="_blank" rel="noopener noreferrer" style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", textDecoration: "none", color: mine ? "#fff" : C.t1 }}>
+                          <button onClick={()=>setViewFile({url:fileData.url,name:fileData.name})} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", color: mine ? "#fff" : C.t1 }}>
                             {Ic.doc(mine ? "#fff" : C.pri, 20)}
-                            <div>
+                            <div style={{ textAlign:"left" }}>
                               <div style={{ fontSize: 12, fontWeight: 600, wordBreak: "break-all" }}>{fileData.name}</div>
-                              <div style={{ fontSize: 10, opacity: 0.7 }}>Abrir archivo</div>
+                              <div style={{ fontSize: 10, opacity: 0.7 }}>Ver archivo</div>
                             </div>
-                          </a>
+                          </button>
                         )
                       ) : m.text}
                     </div>
@@ -2579,7 +2608,7 @@ function ChatsScreen({ user, openConvId, onConvOpened, isDesktop }) {
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 {chatFiles.map(f => (
-                  <a key={f.id} href={f.url} target="_blank" rel="noopener noreferrer" style={{ display: "flex", alignItems: "center", gap: 12, padding: 12, background: C.w, border: `1px solid ${C.b1}`, borderRadius: 10, textDecoration: "none", boxShadow: C.sh }}>
+                  <button key={f.id} onClick={()=>setViewFile({url:f.url,name:f.name,type:f.type})} style={{ display: "flex", alignItems: "center", gap: 12, padding: 12, background: C.w, border: `1px solid ${C.b1}`, borderRadius: 10, cursor:"pointer", fontFamily:"inherit", textAlign:"left", boxShadow: C.sh, width:"100%" }}>
                     {f.type === "image" ? (
                       <img src={f.url} alt="" style={{ width: 48, height: 48, borderRadius: 8, objectFit: "cover", flexShrink: 0 }} />
                     ) : (
@@ -2589,8 +2618,8 @@ function ChatsScreen({ user, openConvId, onConvOpened, isDesktop }) {
                       <div style={{ fontSize: 12, fontWeight: 600, color: C.t1, wordBreak: "break-all" }}>{f.name}</div>
                       <div style={{ fontSize: 10, color: C.t3, marginTop: 2 }}>{f.sender} · {new Date(f.date).toLocaleDateString("es", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}</div>
                     </div>
-                    {Ic.down(C.pri, 16)}
-                  </a>
+                    {Ic.eye(C.pri, 16)}
+                  </button>
                 ))}
               </div>
             )}
@@ -2716,16 +2745,19 @@ function ChatsScreen({ user, openConvId, onConvOpened, isDesktop }) {
 
   if (isDesktop) {
     return (
-      <div style={{ flex: 1, display: "flex", flexDirection: "row", overflow: "hidden" }}>
-        {chatListPanel}
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-          {chatDetailPanel}
+      <>
+        <div style={{ flex: 1, display: "flex", flexDirection: "row", overflow: "hidden" }}>
+          {chatListPanel}
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+            {chatDetailPanel}
+          </div>
         </div>
-      </div>
+        <FileViewer file={viewFile} onClose={()=>setViewFile(null)}/>
+      </>
     );
   }
 
-  return chatListPanel;
+  return <>{chatListPanel}<FileViewer file={viewFile} onClose={()=>setViewFile(null)}/></>;
 }
 
 // ======================== CALENDAR SCREEN =============================
@@ -3067,9 +3099,9 @@ function ReportsScreen({ onBack, freights, isDesktop, embedded }) {
                     {docs.length>0 ? docs.map((d,i)=>(
                       <div key={d.id||i} style={{ display:"flex", alignItems:"center", gap:10, padding:"8px 0", borderBottom:i<docs.length-1?`1px solid ${C.b2}`:"none" }}>
                         {d.type==="photo" ? (
-                          <a href={d.url} target="_blank" rel="noopener noreferrer" style={{ width:48, height:48, borderRadius:8, overflow:"hidden", flexShrink:0, border:`1px solid ${C.b1}` }}>
+                          <button onClick={()=>setViewFile({url:d.url,name:d.name||"Foto",type:"photo"})} style={{ width:48, height:48, borderRadius:8, overflow:"hidden", flexShrink:0, border:`1px solid ${C.b1}`, padding:0, background:"none", cursor:"pointer" }}>
                             <img src={d.url} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }}/>
-                          </a>
+                          </button>
                         ) : (
                           <div style={{ width:48, height:48, borderRadius:8, background:C.secPale, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
                             {Ic.doc(C.sec,20)}
@@ -3079,9 +3111,9 @@ function ReportsScreen({ onBack, freights, isDesktop, embedded }) {
                           <div style={{ fontSize:12, fontWeight:600, color:C.t1, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{d.name||"Documento"}</div>
                           <div style={{ fontSize:10, color:C.t3 }}>{d.step==="request"?"Solicitud":d.step==="load_confirmation"?"Carga":d.step==="assignment"?"Asignación":"Otro"} · {d.createdAt?new Date(d.createdAt).toLocaleDateString("es",{day:"2-digit",month:"short"}):""}</div>
                         </div>
-                        <a href={d.url} target="_blank" rel="noopener noreferrer" style={{ display:"flex", padding:6, borderRadius:8, background:C.secPale, textDecoration:"none" }}>
+                        <button onClick={()=>setViewFile({url:d.url,name:d.name||"Documento",type:d.type})} style={{ display:"flex", padding:6, borderRadius:8, background:C.secPale, border:"none", cursor:"pointer" }}>
                           {Ic.eye(C.sec,16)}
-                        </a>
+                        </button>
                       </div>
                     )) : <div style={{ fontSize:11, color:C.t3, padding:"8px 0" }}>Sin documentos adjuntos</div>}
                   </div>
@@ -3091,6 +3123,7 @@ function ReportsScreen({ onBack, freights, isDesktop, embedded }) {
           })}
         </div>
       ))}
+      <FileViewer file={viewFile} onClose={()=>setViewFile(null)}/>
     </div>
   );
 }
