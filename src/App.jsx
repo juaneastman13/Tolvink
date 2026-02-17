@@ -1085,7 +1085,7 @@ function DetailScreen({ user, freight, perms, onBack, onAction, actionLoading, o
       )}
 
       {/* Info + Map — side by side on desktop */}
-      <div style={{ display:"flex", flexDirection:_isDesktop?"row":"column", gap:12, marginBottom:12 }}>
+      <div style={{ display:"flex", flexDirection:_isDesktop?"row":"column", gap:12, marginBottom:12, alignItems:_isDesktop?"stretch":undefined }}>
         <div style={{ flex:1, background:C.w, border:`1px solid ${C.b1}`, borderRadius:12, padding:16, boxShadow:C.sh }}>
           <div style={{ fontSize:10.5, fontWeight:700, marginBottom:12, color:C.t2, textTransform:"uppercase", letterSpacing:0.5 }}>Información del flete</div>
           {[

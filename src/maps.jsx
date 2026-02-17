@@ -279,10 +279,10 @@ export function FreightMap({ freightId, originLat, originLng, destLat, destLng, 
           zoom: 7,
           center: { lat: (originLat + destLat) / 2, lng: (originLng + destLng) / 2 },
           disableDefaultUI: true,
-          zoomControl: true,
+          zoomControl: false,
           mapTypeControl: false,
           streetViewControl: false,
-          fullscreenControl: true,
+          fullscreenControl: false,
           gestureHandling: "greedy",
           styles: [
             { featureType: "poi", stylers: [{ visibility: "off" }] },
@@ -399,7 +399,7 @@ export function FreightMap({ freightId, originLat, originLng, destLat, destLng, 
   if (!hasCoords) return null;
 
   const mapContainer = (
-    <div style={fullscreen ? { position:"fixed", inset:0, zIndex:150, background:C.w, display:"flex", flexDirection:"column" } : { background: C.w, border: `1px solid ${C.b1}`, borderRadius: 12, overflow: "hidden", marginBottom: 12, boxShadow: C.sh }}>
+    <div style={fullscreen ? { position:"fixed", inset:0, zIndex:150, background:C.w, display:"flex", flexDirection:"column" } : { background: C.w, border: `1px solid ${C.b1}`, borderRadius: 12, overflow: "hidden", boxShadow: C.sh, display:"flex", flexDirection:"column", height:"100%" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 6, padding: fullscreen?"14px 18px":"10px 14px", paddingTop: fullscreen?"max(14px, env(safe-area-inset-top))":10, flexShrink:0 }}>
         {Ic.pin(C.pri, 14)}
         <span style={{ fontSize: 10.5, fontWeight: 700, color: C.t2, textTransform: "uppercase", letterSpacing: 0.5 }}>Recorrido</span>
@@ -415,7 +415,7 @@ export function FreightMap({ freightId, originLat, originLng, destLat, destLng, 
       {error ? (
         <div style={{ padding: 20, textAlign: "center", fontSize: 12, color: C.t3 }}>{error}</div>
       ) : (
-        <div ref={mapRef} style={{ width: "100%", flex: fullscreen?1:"none", height: fullscreen?"auto":220 }} />
+        <div ref={mapRef} style={{ width: "100%", flex:1, minHeight:180 }} />
       )}
       <div style={{ padding: fullscreen?"10px 18px":"8px 14px", paddingBottom: fullscreen?"max(10px, env(safe-area-inset-bottom))":8, display: "flex", gap: 12, fontSize: 10.5, flexWrap: "wrap", alignItems: "center", flexShrink:0 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
