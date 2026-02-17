@@ -260,13 +260,36 @@ function AuthScreen({ onLogin, onSignup, loading, error, clearError, onBackToLan
 
 function HomeScreen({ user, freights, perms, onNav, catalog, isDesktop, onAction, actionLoading }) {
   const [selectedId, setSelectedId] = useState(null);
+  const [pendingFilter, setPendingFilter] = useState("all");
+  const [summaryFilter, setSummaryFilter] = useState("all");
 
-  // Pending groups — grouped by ACTION type, not freight status
+  // Date helpers for filters
+  const dateBounds = useMemo(() => {
+    const now = new Date();
+    const todayStr = now.toISOString().slice(0, 10);
+    const tom = new Date(now); tom.setDate(tom.getDate() + 1);
+    const tomorrowStr = tom.toISOString().slice(0, 10);
+    const day = now.getDay(); // 0=sun
+    const endWk = new Date(now); endWk.setDate(now.getDate() + (7 - day));
+    const weekEndStr = endWk.toISOString().slice(0, 10);
+    return { todayStr, tomorrowStr, weekEndStr };
+  }, []);
+  const matchDate = (loadDate, filter) => {
+    if (filter === "all") return true;
+    if (!loadDate) return false;
+    if (filter === "today") return loadDate === dateBounds.todayStr;
+    if (filter === "tomorrow") return loadDate === dateBounds.tomorrowStr;
+    if (filter === "week") return loadDate >= dateBounds.todayStr && loadDate <= dateBounds.weekEndStr;
+    return true;
+  };
+
+  // Pending groups — grouped by ACTION type, filtered by date
   const pendingByAction = useMemo(() => {
     const buckets = {};
     freights.forEach(f => {
       const pa = getPendingActions(f, user.userType);
       if (!pa) return;
+      if (!matchDate(f.loadDate, pendingFilter)) return;
       if (!buckets[pa.action]) buckets[pa.action] = { label: pa.action, color: pa.color, actionKey: pa.actionKey, icon: pa.icon, items: [] };
       buckets[pa.action].items.push({ ...f, pendingAction: pa });
     });
@@ -274,12 +297,16 @@ function HomeScreen({ user, freights, perms, onNav, catalog, isDesktop, onAction
       b.items.sort((a, b2) => a.loadDate && b2.loadDate ? a.loadDate.localeCompare(b2.loadDate) : 0);
       return b;
     });
-  }, [freights, user.userType]);
+  }, [freights, user.userType, pendingFilter]);
   const pendingCount = pendingByAction.reduce((s, g) => s + g.items.length, 0);
   const hasPending = pendingCount > 0;
-  const statusColor = hasPending ? C.acc : C.ok;
 
-  // Summary groups — by freight status, only freights WITHOUT pending actions
+  // Total pending (unfiltered) to know if section should show
+  const totalPendingAll = useMemo(() =>
+    freights.filter(f => getPendingActions(f, user.userType)).length
+  , [freights, user.userType]);
+
+  // Summary groups — by freight status, filtered by date
   const STATUS_GROUPS = [
     { key:"pending_assignment", label:"Solicitado",        icon:Ic.warn,  statuses:["pending_assignment"] },
     { key:"assigned",           label:"Asignado a flota",  icon:Ic.truck, statuses:["assigned"] },
@@ -291,11 +318,11 @@ function HomeScreen({ user, freights, perms, onNav, catalog, isDesktop, onAction
   const summaryGroups = useMemo(() => {
     return STATUS_GROUPS.map(g => {
       const st = stCfg(g.statuses[0]);
-      const items = freights.filter(f => g.statuses.includes(f.status) && !getPendingActions(f, user.userType))
+      const items = freights.filter(f => g.statuses.includes(f.status) && !getPendingActions(f, user.userType) && matchDate(f.loadDate, summaryFilter))
         .sort((a, b) => a.loadDate && b.loadDate ? a.loadDate.localeCompare(b.loadDate) : 0);
       return { ...g, color: st.color, items };
     }).filter(g => g.items.length > 0);
-  }, [freights, user.userType]);
+  }, [freights, user.userType, summaryFilter]);
 
   // Collapsed state
   const [collapsed, setCollapsed] = useState({});
@@ -431,38 +458,51 @@ function HomeScreen({ user, freights, perms, onNav, catalog, isDesktop, onAction
         </div>
       </div>
 
-      {/* Pendientes — title bar */}
-      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: 12, background: `${C.acc}0D`, marginBottom: 8 }}>
-        <div style={{ width: 32, height: 32, borderRadius: 16, background: statusColor, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, position: "relative" }}>
-          {hasPending ? Ic.bell(C.w, 16) : Ic.chk(C.w, 16)}
-          {hasPending && <div style={{ position: "absolute", top: -3, right: -3, minWidth: 15, height: 15, borderRadius: 8, background: C.err, color: C.w, fontSize: 8, fontWeight: 700, padding: "0 3px", display: "flex", alignItems: "center", justifyContent: "center", border: `2px solid ${C.w}` }}>{pendingCount}</div>}
+      {/* Pendientes — only if any exist */}
+      {totalPendingAll > 0 && (<>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: 12, background: `${C.acc}0D`, marginBottom: 8 }}>
+          <div style={{ width: 32, height: 32, borderRadius: 16, background: C.acc, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, position: "relative" }}>
+            {Ic.bell(C.w, 16)}
+            <div style={{ position: "absolute", top: -3, right: -3, minWidth: 15, height: 15, borderRadius: 8, background: C.err, color: C.w, fontSize: 8, fontWeight: 700, padding: "0 3px", display: "flex", alignItems: "center", justifyContent: "center", border: `2px solid ${C.w}` }}>{pendingCount}</div>
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: C.acc }}>Pendientes</div>
+            <div style={{ fontSize: 10, color: C.t3 }}>{pendingCount} acción{pendingCount !== 1 ? "es" : ""}</div>
+          </div>
+          <div style={{ display: "flex", gap: 4 }}>
+            {[{k:"all",l:"Todo"},{k:"today",l:"Hoy"},{k:"tomorrow",l:"Mañana"},{k:"week",l:"Semana"}].map(o => (
+              <button key={o.k} onClick={() => setPendingFilter(o.k)} style={{ padding: "4px 8px", borderRadius: 6, border: `1px solid ${pendingFilter === o.k ? C.acc : C.b1}`, background: pendingFilter === o.k ? `${C.acc}15` : "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 10, fontWeight: pendingFilter === o.k ? 700 : 500, color: pendingFilter === o.k ? C.acc : C.t3 }}>{o.l}</button>
+            ))}
+          </div>
         </div>
-        <div>
-          <div style={{ fontSize: 12, fontWeight: 700, color: statusColor }}>{hasPending ? "Pendientes" : "Al día"}</div>
-          <div style={{ fontSize: 10, color: C.t3 }}>{pendingCount} acción{pendingCount !== 1 ? "es" : ""}</div>
-        </div>
-      </div>
+        {pendingByAction.length > 0 && (
+          <div style={{ paddingLeft: 16, borderLeft: `2px solid ${C.acc}30`, marginBottom: 16 }}>
+            {pendingByAction.map(g => renderGroup({ key: g.actionKey, label: g.label, icon: actionIcon(g.icon), color: g.color, items: g.items }, "pa"))}
+          </div>
+        )}
+        {pendingByAction.length === 0 && <div style={{ fontSize: 11, color: C.t3, paddingLeft: 16, marginBottom: 16 }}>Sin pendientes en este período</div>}
+      </>)}
 
-      {/* Pending groups — by action type */}
-      {pendingByAction.length > 0 && (
-        <div style={{ paddingLeft: 16, borderLeft: `2px solid ${C.acc}30`, marginBottom: 16 }}>
-          {pendingByAction.map(g => renderGroup({ key: g.actionKey, label: g.label, icon: actionIcon(g.icon), color: g.color, items: g.items }, "pa"))}
-        </div>
-      )}
-
-      {/* Sin pendientes de mi parte — title bar */}
+      {/* Sin pendientes de mi parte */}
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: 12, background: C.okPale, marginBottom: 8 }}>
         <div style={{ width: 28, height: 28, borderRadius: 14, background: C.ok, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
           {Ic.chk(C.w, 14)}
         </div>
-        <div style={{ fontSize: 12, fontWeight: 700, color: C.ok }}>Sin pendientes de mi parte</div>
+        <div style={{ flex: 1, fontSize: 12, fontWeight: 700, color: C.ok }}>Sin pendientes de mi parte</div>
+        <div style={{ display: "flex", gap: 4 }}>
+          {[{k:"all",l:"Todo"},{k:"today",l:"Hoy"},{k:"tomorrow",l:"Mañana"},{k:"week",l:"Semana"}].map(o => (
+            <button key={o.k} onClick={() => setSummaryFilter(o.k)} style={{ padding: "4px 8px", borderRadius: 6, border: `1px solid ${summaryFilter === o.k ? C.ok : C.b1}`, background: summaryFilter === o.k ? `${C.ok}15` : "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 10, fontWeight: summaryFilter === o.k ? 700 : 500, color: summaryFilter === o.k ? C.ok : C.t3 }}>{o.l}</button>
+          ))}
+        </div>
       </div>
 
       {/* Summary groups — by status */}
-      {summaryGroups.length > 0 && (
+      {summaryGroups.length > 0 ? (
         <div style={{ paddingLeft: 16, borderLeft: `2px solid ${C.ok}30` }}>
           {summaryGroups.map(g => renderGroup(g, "sm"))}
         </div>
+      ) : (
+        <div style={{ fontSize: 11, color: C.t3, paddingLeft: 16 }}>Sin fletes en este período</div>
       )}
     </div>
   );
