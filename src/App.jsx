@@ -1183,9 +1183,12 @@ function NewScreen({ user, lots, plants, branches, fields, trucks, onBack, onCre
   };
 
   return (
-    <div style={{ flex:1, overflow:"auto", padding:18, animation:"slideUp 0.25s ease" }}>
-      <button onClick={onBack} style={{ background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", fontSize:13, fontWeight:600, color:C.pri, marginBottom:14, padding:0, display:"flex", alignItems:"center", gap:4 }}>{Ic.chev(C.pri,18)} Volver</button>
-      <div style={{ fontSize:20, fontWeight:800, marginBottom:4, letterSpacing:-0.3 }}>Solicitar Flete</div>
+    <div style={{ flex:1, overflow:"auto", animation:"slideUp 0.25s ease" }}>
+      <div style={{ position:"sticky", top:0, zIndex:10, background:C.bg, padding:"18px 18px 8px" }}>
+        <button onClick={onBack} style={{ background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", fontSize:13, fontWeight:600, color:C.pri, marginBottom:14, padding:0, display:"flex", alignItems:"center", gap:4 }}>{Ic.chev(C.pri,18)} Volver</button>
+        <div style={{ fontSize:20, fontWeight:800, marginBottom:4, letterSpacing:-0.3 }}>Solicitar Flete</div>
+      </div>
+      <div style={{ padding:"0 18px 18px" }}>
       <div style={{ fontSize:12, color:C.t2, marginBottom:22 }}>Solicitando como: <span style={{fontWeight:600,color:C.t1}}>{user.name}</span></div>
 
       <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
@@ -1400,6 +1403,7 @@ function NewScreen({ user, lots, plants, branches, fields, trucks, onBack, onCre
         <div ref={secRefs.submit}>
           <Btn full icon={Ic.chk(C.w,16)} disabled={submitting} onClick={submit}>{submitting?"Enviando...":"Solicitar Flete"}</Btn>
         </div>
+      </div>
       </div>
     </div>
   );
@@ -1642,9 +1646,10 @@ function TrucksScreen({ onBack, embedded }) {
   };
 
   return (
-    <div style={{ flex: embedded?undefined:1, overflow: embedded?"visible":"auto", padding: embedded?0:18 }}>
+    <div style={{ flex: embedded?undefined:1, overflow: embedded?"visible":"auto", padding: embedded?0:undefined }}>
       {(saving||doneMsg) && <LoadingOverlay closing={!!doneMsg} closingText={doneMsg} onClose={()=>setDoneMsg("")}/>}
-      {!embedded && <button onClick={onBack} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 600, color: C.pri, marginBottom: 14, padding: 0, display: "flex", alignItems: "center", gap: 4 }}>{Ic.chev(C.pri, 18)} Mi Perfil</button>}
+      {!embedded && <div style={{ position:"sticky", top:0, zIndex:10, background:C.bg, padding:"18px 18px 8px" }}><button onClick={onBack} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 600, color: C.pri, marginBottom: 14, padding: 0, display: "flex", alignItems: "center", gap: 4 }}>{Ic.chev(C.pri, 18)} Mi Perfil</button></div>}
+      <div style={{ padding: embedded?0:"0 18px 18px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
         <div style={{ fontSize: 20, fontWeight: 800, letterSpacing: -0.3 }}>Mi Flota</div>
         <Btn sm onClick={() => setShowForm(!showForm)} icon={showForm ? Ic.cross(C.w, 14) : Ic.plus(C.w, 14)}>{showForm ? "Cerrar" : "Agregar"}</Btn>
@@ -1680,6 +1685,7 @@ function TrucksScreen({ onBack, embedded }) {
             ))}
           </div>
       }
+      </div>
     </div>
   );
 }
@@ -1790,9 +1796,10 @@ function FieldsScreen({ onBack, embedded }) {
   };
 
   return (
-    <div style={{ flex: embedded?undefined:1, overflow: embedded?"visible":"auto", padding: embedded?0:18 }}>
+    <div style={{ flex: embedded?undefined:1, overflow: embedded?"visible":"auto", padding: embedded?0:undefined }}>
       {(saving||doneMsg) && <LoadingOverlay closing={!!doneMsg} closingText={doneMsg} onClose={()=>setDoneMsg("")}/>}
-      {!embedded && <button onClick={onBack} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 600, color: C.pri, marginBottom: 14, padding: 0, display: "flex", alignItems: "center", gap: 4 }}>{Ic.chev(C.pri, 18)} Mi Perfil</button>}
+      {!embedded && <div style={{ position:"sticky", top:0, zIndex:10, background:C.bg, padding:"18px 18px 8px" }}><button onClick={onBack} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 600, color: C.pri, marginBottom: 14, padding: 0, display: "flex", alignItems: "center", gap: 4 }}>{Ic.chev(C.pri, 18)} Mi Perfil</button></div>}
+      <div style={{ padding: embedded?0:"0 18px 18px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
         <div style={{ fontSize: 20, fontWeight: 800, letterSpacing: -0.3 }}>Mis Campos</div>
         <Btn sm onClick={() => setShowFieldForm(!showFieldForm)} icon={showFieldForm ? Ic.cross(C.w, 14) : Ic.plus(C.w, 14)}>{showFieldForm ? "Cerrar" : "Agregar"}</Btn>
@@ -1914,6 +1921,7 @@ function FieldsScreen({ onBack, embedded }) {
             );
           })()
       }
+      </div>
     </div>
   );
 }
@@ -2089,9 +2097,10 @@ function AccessScreen({ user, onBack, embedded }) {
   };
 
   return (
-    <div style={{ flex: embedded?undefined:1, overflow: embedded?"visible":"auto", padding: embedded?0:18 }}>
+    <div style={{ flex: embedded?undefined:1, overflow: embedded?"visible":"auto", padding: embedded?0:undefined }}>
       {(saving||doneMsg) && !confirmRevoke && <LoadingOverlay closing={!!doneMsg} closingText={doneMsg} onClose={()=>setDoneMsg("")}/>}
-      {!embedded && <button onClick={onBack} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 600, color: C.pri, marginBottom: 14, padding: 0, display: "flex", alignItems: "center", gap: 4 }}>{Ic.chev(C.pri, 18)} Mi Perfil</button>}
+      {!embedded && <div style={{ position:"sticky", top:0, zIndex:10, background:C.bg, padding:"18px 18px 8px" }}><button onClick={onBack} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 600, color: C.pri, marginBottom: 14, padding: 0, display: "flex", alignItems: "center", gap: 4 }}>{Ic.chev(C.pri, 18)} Mi Perfil</button></div>}
+      <div style={{ padding: embedded?0:"0 18px 18px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
         <div style={{ fontSize: embedded?16:20, fontWeight: 800, letterSpacing: -0.3 }}>{isAdmin && selCompanyType === "producer" ? "Accesos del productor" : isAdmin && selCompanyType === "transporter" ? "Accesos del transportista" : "Accesos"}</div>
         <Btn sm onClick={() => { setShowGrant(!showGrant); setEditingAccess(null); setSelectedProducer(null); setSearchResults([]); setSearchQ(""); setMsg(null); setSelectedPlantIds([]); setGrantType("producer"); }} icon={showGrant ? Ic.cross(C.w, 14) : Ic.plus(C.w, 14)}>{showGrant ? "Cerrar" : "Habilitar"}</Btn>
@@ -2295,6 +2304,7 @@ function AccessScreen({ user, onBack, embedded }) {
           </div>
         )
       }
+      </div>
     </div>
   );
 }
@@ -2768,7 +2778,10 @@ function ChatsScreen({ user, openConvId, onConvOpened, isDesktop }) {
 
 // ======================== CALENDAR SCREEN =============================
 
-function CalendarScreen({ freights, perms, onNav, isDesktop }) {
+function CalendarScreen({ freights, perms, onNav, isDesktop, user, onAction, actionLoading, onChat, onRefresh, onDuplicate, onEdit }) {
+  const [selectedId, setSelectedId] = useState(null);
+  const selFreightObj = selectedId ? freights.find(f => f.id === selectedId) : null;
+  const calDetailUser = selFreightObj ? { ...user, userType: resolveUserTypeForFreight(selFreightObj, user) } : user;
   const [calMonth, setCalMonth] = useState(()=>{const d=new Date();return{y:d.getFullYear(),m:d.getMonth()}});
   const [calSelDay, setCalSelDay] = useState(null);
   const [calSelMonth, setCalSelMonth] = useState(null);
@@ -2831,7 +2844,7 @@ function CalendarScreen({ freights, perms, onNav, isDesktop }) {
         {selFreights.length===0&&<div style={{textAlign:"center",padding:30,color:C.t3,fontSize:12,background:C.w,borderRadius:10,border:`1px solid ${C.b1}`}}>Sin fletes programados este día</div>}
         {selFreights.map(f=>{
           const st=stCfg(f.status);
-          return <div key={f.id} className="tv-card" onClick={()=>onNav("detail",f.id)} style={{background:C.w,border:`1px solid ${C.b1}`,borderLeft:`4px solid ${st.border}`,borderRadius:12,padding:14,cursor:"pointer",boxShadow:C.sh}}>
+          return <div key={f.id} className="tv-card" onClick={()=>{setSelectedId(f.id);onRefresh(f.id);}} style={{background:C.w,border:`1px solid ${C.b1}`,borderLeft:`4px solid ${st.border}`,borderRadius:12,padding:14,cursor:"pointer",boxShadow:C.sh}}>
             {/* Header: code + status */}
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
               <span style={{fontSize:11,fontWeight:700,color:C.t3,fontFamily:MONO}}>{f.code}</span>
@@ -2916,15 +2929,20 @@ function CalendarScreen({ freights, perms, onNav, isDesktop }) {
     </div>
   );
 
-  // --- Desktop: split layout (detail panel left, calendar right) ---
+  // --- Desktop: split layout ---
   if (isDesktop) {
+    const leftPanel = selFreightObj ? (
+      <div style={{width:420,minWidth:420,borderRight:`1px solid ${C.b2}`,display:"flex",flexDirection:"column",overflow:"hidden",background:C.bg,animation:"fadeIn 0.2s ease"}}>
+        <DetailScreen user={calDetailUser} freight={selFreightObj} perms={perms} onBack={()=>setSelectedId(null)} onAction={onAction} actionLoading={actionLoading} onChat={onChat} onRefresh={onRefresh} onDuplicate={onDuplicate} onEdit={onEdit} />
+      </div>
+    ) : calSelDay ? (
+      <div style={{width:380,minWidth:380,borderRight:`1px solid ${C.b2}`,display:"flex",flexDirection:"column",overflow:"hidden",background:C.bg,animation:"fadeIn 0.2s ease"}}>
+        {detailPanel}
+      </div>
+    ) : null;
     return (
       <div style={{flex:1,display:"flex",flexDirection:"row",overflow:"hidden"}}>
-        {calSelDay ? (
-          <div style={{width:380,minWidth:380,borderRight:`1px solid ${C.b2}`,display:"flex",flexDirection:"column",overflow:"hidden",background:C.bg,animation:"fadeIn 0.2s ease"}}>
-            {detailPanel}
-          </div>
-        ) : null}
+        {leftPanel}
         <div style={{flex:1,overflow:"auto"}}>
           {calendarPanel}
         </div>
@@ -2932,7 +2950,10 @@ function CalendarScreen({ freights, perms, onNav, isDesktop }) {
     );
   }
 
-  // --- Mobile: single column ---
+  // --- Mobile: fullscreen detail or calendar ---
+  if (selFreightObj) {
+    return <DetailScreen user={calDetailUser} freight={selFreightObj} perms={perms} onBack={()=>setSelectedId(null)} onAction={onAction} actionLoading={actionLoading} onChat={onChat} onRefresh={onRefresh} onDuplicate={onDuplicate} onEdit={onEdit} />;
+  }
   return calendarPanel;
 }
 
@@ -2959,10 +2980,13 @@ function EditScreen({ freight, fields, plants, onBack, onSave }) {
   };
 
   return (
-    <div style={{ flex:1, overflow:"auto", padding:18 }}>
+    <div style={{ flex:1, overflow:"auto" }}>
       {(saving||doneMsg) && <LoadingOverlay closing={!!doneMsg} closingText={doneMsg} onClose={()=>{setDoneMsg("");onBack();}}/>}
-      <button onClick={onBack} style={{ background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", fontSize:13, fontWeight:600, color:C.pri, marginBottom:14, padding:0, display:"flex", alignItems:"center", gap:4 }}>{Ic.chev(C.pri,18)} Volver</button>
-      <div style={{ fontSize:20, fontWeight:800, marginBottom:4, letterSpacing:-0.3 }}>Editar Flete</div>
+      <div style={{ position:"sticky", top:0, zIndex:10, background:C.bg, padding:"18px 18px 8px" }}>
+        <button onClick={onBack} style={{ background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", fontSize:13, fontWeight:600, color:C.pri, marginBottom:14, padding:0, display:"flex", alignItems:"center", gap:4 }}>{Ic.chev(C.pri,18)} Volver</button>
+        <div style={{ fontSize:20, fontWeight:800, marginBottom:4, letterSpacing:-0.3 }}>Editar Flete</div>
+      </div>
+      <div style={{ padding:"0 18px 18px" }}>
       <div style={{ fontSize:12, color:C.t2, marginBottom:22 }}>{freight.code} · {freight.grain} · {freight.tons} {freight.unit||"tn"}</div>
 
       <div style={{ background:C.w, border:`1px solid ${C.b1}`, borderRadius:12, padding:16, boxShadow:C.sh }}>
@@ -2987,6 +3011,7 @@ function EditScreen({ freight, fields, plants, onBack, onSave }) {
 
       <div style={{ marginTop:16, padding:12, background:C.bgInput, borderRadius:10, fontSize:11, color:C.t3 }}>
         Solo se puede editar fecha, hora y notas. Para cambiar origen, destino o producto, cancelá y creá un flete nuevo.
+      </div>
       </div>
     </div>
   );
@@ -3031,8 +3056,9 @@ function ReportsScreen({ onBack, freights, isDesktop, embedded }) {
   const exportData = selected.size > 0 ? filtered.filter(f=>selected.has(f.id)) : filtered;
 
   return (
-    <div style={{ flex:embedded?undefined:1, overflow:embedded?"visible":"auto", padding:embedded?0:18 }}>
-      {!isDesktop && !embedded && <button onClick={onBack} style={{ background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", fontSize:13, fontWeight:600, color:C.pri, marginBottom:14, padding:0, display:"flex", alignItems:"center", gap:4 }}>{Ic.chev(C.pri,18)} Mi Perfil</button>}
+    <div style={{ flex:embedded?undefined:1, overflow:embedded?"visible":"auto", padding:embedded?0:undefined }}>
+      {!isDesktop && !embedded && <div style={{ position:"sticky", top:0, zIndex:10, background:C.bg, padding:"18px 18px 8px" }}><button onClick={onBack} style={{ background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", fontSize:13, fontWeight:600, color:C.pri, marginBottom:14, padding:0, display:"flex", alignItems:"center", gap:4 }}>{Ic.chev(C.pri,18)} Mi Perfil</button></div>}
+      <div style={{ padding:embedded?0:"0 18px 18px" }}>
       {!embedded && <div style={{ fontSize:20, fontWeight:800, letterSpacing:-0.3, marginBottom:4 }}>Informes y Documentos</div>}
       <div style={{ fontSize:12, color:C.t2, marginBottom:12 }}>{allFreights.length} flete{allFreights.length!==1?"s":""} · {totalDocs} documento{totalDocs!==1?"s":""}</div>
 
@@ -3131,6 +3157,7 @@ function ReportsScreen({ onBack, freights, isDesktop, embedded }) {
         </div>
       ))}
       <FileViewer file={viewFile} onClose={()=>setViewFile(null)}/>
+      </div>
     </div>
   );
 }
@@ -3246,9 +3273,10 @@ function MyDataScreen({ user, onBack }) {
     try { await apiUpdateMe(form); setSaving(false); setDoneMsg("Datos actualizados"); } catch(e) { show(e.message,"err"); setSaving(false); }
   };
   return (
-    <div style={{flex:1,overflow:"auto",padding:18}}>
+    <div style={{flex:1,overflow:"auto"}}>
       {(saving||doneMsg) && <LoadingOverlay closing={!!doneMsg} closingText={doneMsg} onClose={()=>setDoneMsg("")}/>}
-      {adminBackBtn(onBack)}
+      <div style={{position:"sticky",top:0,zIndex:10,background:C.bg,padding:"18px 18px 8px"}}>{adminBackBtn(onBack)}</div>
+      <div style={{padding:"0 18px 18px"}}>
       <div style={{fontSize:18,fontWeight:800,color:C.t1,marginBottom:4}}>Mis datos</div>
       <div style={{fontSize:11,color:C.t3,marginBottom:14}}>Editá tu información personal</div>
       <div style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius:10,padding:14,boxShadow:C.sh}}>
@@ -3266,6 +3294,7 @@ function MyDataScreen({ user, onBack }) {
         <button onClick={handleSave} disabled={saving} style={s.btnP(C.pri,saving)}>{saving?"Guardando...":"Guardar cambios"}</button>
       </div>
       {msg&&<div style={{padding:"8px 12px",borderRadius:8,background:msg.k==="ok"?C.okPale:`${C.err}15`,color:msg.k==="ok"?C.ok:C.err,fontSize:12,marginTop:10}}>{msg.t}</div>}
+      </div>
     </div>
   );
 }
@@ -3881,9 +3910,10 @@ function AdminScreen({ user, onBack }) {
 
   // ===================== MAIN LIST =====================
   return (
-    <div style={{flex:1,overflow:"auto",padding:18}}>
+    <div style={{flex:1,overflow:"auto"}}>
       {(saving||doneMsg) && <LoadingOverlay closing={!!doneMsg} closingText={doneMsg} onClose={()=>setDoneMsg("")}/>}
-      {adminBackBtn(onBack)}
+      <div style={{position:"sticky",top:0,zIndex:10,background:C.bg,padding:"18px 18px 8px"}}>{adminBackBtn(onBack)}</div>
+      <div style={{padding:"0 18px 18px"}}>
       <div style={{fontSize:18,fontWeight:800,color:C.t1,marginBottom:4}}>Administración</div>
       <div style={{fontSize:11,color:C.t3,marginBottom:14}}>{isPlatform?"Admin Principal — Control total":isManager?"Gerente — Tu empresa":""}</div>
 
@@ -3972,6 +4002,7 @@ function AdminScreen({ user, onBack }) {
           </div>
         </>)}
       </>)}
+      </div>
     </div>
   );
 }
@@ -4149,7 +4180,7 @@ export default function Tolvink() {
         <div key={screen} className="tv-page" style={{flex:1,display:"flex",flexDirection:"column"}}>
         {screen==="home" && <HomeScreen user={auth.user} freights={fh.freights} perms={perms} onNav={nav} catalog={catalog} isDesktop={isDesktop} onAction={handleAction} actionLoading={actionLoading} onChat={(convId)=>{if(convId){setChatConvId(convId);setScreen("chats");}}} onRefresh={(id)=>fh.refresh(id)} onDuplicate={(f)=>{setDuplicateData(f);setScreen("new");}} onEdit={(f)=>{setEditData(f);setScreen("edit");}}/>}
         {screen==="list" && <ListScreen freights={fh.freights} onNav={nav} onRefresh={fh.fetchAll} catalog={catalog}/>}
-        {screen==="calendar" && <CalendarScreen freights={fh.freights} perms={perms} onNav={nav} isDesktop={isDesktop}/>}
+        {screen==="calendar" && <CalendarScreen freights={fh.freights} perms={perms} onNav={nav} isDesktop={isDesktop} user={auth.user} onAction={handleAction} actionLoading={actionLoading} onChat={(convId)=>{if(convId){setChatConvId(convId);setScreen("chats");}}} onRefresh={(id)=>fh.refresh(id)} onDuplicate={(f)=>{setDuplicateData(f);setScreen("new");}} onEdit={(f)=>{setEditData(f);setScreen("edit");}}/>}
         {screen==="detail" && <DetailScreen user={curFreight ? {...auth.user, userType: _resolveType(curFreight)} : auth.user} freight={curFreight} perms={perms} onBack={()=>setScreen("list")} onAction={handleAction} actionLoading={actionLoading} onChat={(convId)=>{if(convId){setChatConvId(convId);setScreen("chats");}}} onRefresh={(id)=>fh.refresh(id)} onDuplicate={(f)=>{setDuplicateData(f);setScreen("new");}} onEdit={(f)=>{setEditData(f);setScreen("edit");}}/>}
         {screen==="new" && <NewScreen user={auth.user} lots={catalog.lots} plants={catalog.plants} branches={catalog.branches} fields={catalog.fields} trucks={catalog.trucks} onBack={()=>{setDuplicateData(null);setScreen("home");}} onCreate={handleCreate} submitting={submitting} duplicateFrom={duplicateData}/>}
         {screen==="edit" && editData && <EditScreen freight={editData} fields={catalog.fields} plants={catalog.plants} onBack={()=>{setEditData(null);setScreen("detail");}} onSave={async(id,data)=>{const r=await fh.update(id,data);if(r.ok) return "Flete actualizado"; show(r.error,"err"); return "";}}/>}
