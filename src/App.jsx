@@ -525,7 +525,7 @@ function HomeScreen({ user, freights, perms, onNav, catalog, isDesktop, onAction
               <div style={{ position: "absolute", top: -3, right: -3, minWidth: 15, height: 15, borderRadius: 8, background: C.err, color: C.w, fontSize: 8, fontWeight: 700, padding: "0 3px", display: "flex", alignItems: "center", justifyContent: "center", border: `2px solid ${C.w}` }}>{pendingCount}</div>
             </div>
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: compact ? 11 : 12, fontWeight: 700, color: C.acc }}>Pendientes</div>
+              <div style={{ fontSize: compact ? 11 : 12, fontWeight: 700, color: C.acc }}>Con pendientes de mi parte</div>
               {!compact && <div style={{ fontSize: 10, color: C.t3 }}>{pendingCount} acción{pendingCount !== 1 ? "es" : ""}</div>}
             </div>
           </div>
