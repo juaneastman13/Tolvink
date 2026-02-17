@@ -2929,23 +2929,23 @@ function CalendarScreen({ freights, perms, onNav, isDesktop, user, onAction, act
     </div>
   );
 
-  // --- Desktop: split layout ---
+  // --- Desktop: split layout (calendar left, detail right) ---
   if (isDesktop) {
-    const leftPanel = selFreightObj ? (
-      <div style={{width:420,minWidth:420,borderRight:`1px solid ${C.b2}`,display:"flex",flexDirection:"column",overflow:"hidden",background:C.bg,animation:"fadeIn 0.2s ease"}}>
+    const rightPanel = selFreightObj ? (
+      <div style={{width:420,minWidth:420,borderLeft:`1px solid ${C.b2}`,display:"flex",flexDirection:"column",overflow:"hidden",background:C.bg,animation:"fadeIn 0.2s ease"}}>
         <DetailScreen user={calDetailUser} freight={selFreightObj} perms={perms} onBack={()=>setSelectedId(null)} onAction={onAction} actionLoading={actionLoading} onChat={onChat} onRefresh={onRefresh} onDuplicate={onDuplicate} onEdit={onEdit} />
       </div>
     ) : calSelDay ? (
-      <div style={{width:380,minWidth:380,borderRight:`1px solid ${C.b2}`,display:"flex",flexDirection:"column",overflow:"hidden",background:C.bg,animation:"fadeIn 0.2s ease"}}>
+      <div style={{width:380,minWidth:380,borderLeft:`1px solid ${C.b2}`,display:"flex",flexDirection:"column",overflow:"hidden",background:C.bg,animation:"fadeIn 0.2s ease"}}>
         {detailPanel}
       </div>
     ) : null;
     return (
       <div style={{flex:1,display:"flex",flexDirection:"row",overflow:"hidden"}}>
-        {leftPanel}
         <div style={{flex:1,overflow:"auto"}}>
           {calendarPanel}
         </div>
+        {rightPanel}
       </div>
     );
   }
