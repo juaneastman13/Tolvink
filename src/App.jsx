@@ -391,84 +391,74 @@ function HomeScreen({ user, freights, perms, onNav, catalog, isDesktop, onAction
     );
   };
 
-  // All freights flat for collapsed sidebar
-  const allFreights = useMemo(() => {
-    const pending = freights.filter(f => getPendingActions(f, user.userType));
-    const rest = freights.filter(f => !getPendingActions(f, user.userType));
-    return [...pending, ...rest];
-  }, [freights, user.userType]);
-
   // List panel content
   const todayLabel = new Date().toLocaleDateString("es-UY", { weekday: "long", day: "numeric", month: "long" });
+  const nowTime = new Date().toLocaleTimeString("es-UY", { hour: "2-digit", minute: "2-digit", hour12: false });
+  // Sidebar logo area: padTop24 + font63 + padBot20 = 107px → midline ~55px. Solicitar btn top ~122px.
   const listContent = (
-    <div style={{ flex: compact ? undefined : 1, width: compact ? 300 : undefined, flexShrink: 0, overflow: "auto", padding: compact ? "10px 8px" : "14px 18px 18px 18px", boxSizing: "border-box", borderRight: compact ? `1px solid ${C.b1}` : "none" }}>
-      {/* Header — hidden when compact */}
-      {!compact && (
-        <div style={{ marginBottom: 14 }}>
-          <div style={{ fontSize: 20, fontWeight: 800, letterSpacing: -0.3, color: C.t1 }}>Hola, {user.name.split(" ")[0]}</div>
-          <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginTop: 4 }}>
-            <span style={{ fontSize: 11, color: C.t2, fontWeight: 600 }}>{user.entity}</span>
+    <div style={{ flex: compact ? undefined : 1, width: compact ? 300 : undefined, flexShrink: 0, overflow: "auto", padding: compact ? "0 8px 8px" : "0 18px 18px", boxSizing: "border-box", borderRight: compact ? `1px solid ${C.b1}` : "none" }}>
+      {/* Header — empresa, fecha+hora, fletes — centered with sidebar logo midline */}
+      <div style={{ display: "flex", alignItems: "center", minHeight: isDesktop ? 107 : 56, padding: compact ? "0 6px" : "0 0", borderBottom: `1px solid ${C.b2}`, marginBottom: isDesktop ? 14 : 10 }}>
+        <div>
+          <div style={{ fontSize: compact ? 13 : 15, fontWeight: 700, color: C.t1 }}>{user.entity}</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginTop: 2 }}>
+            <span style={{ fontSize: 11, color: C.t3, textTransform: "capitalize" }}>{todayLabel} · {nowTime}</span>
             <span style={{ fontSize: 11, color: C.t3 }}>·</span>
-            <span style={{ fontSize: 11, color: C.t3, textTransform: "capitalize" }}>{todayLabel}</span>
-            <span style={{ fontSize: 11, color: C.t3 }}>·</span>
-            <span style={{ fontSize: 11, color: C.t3 }}>{freights.length} flete{freights.length !== 1 ? "s" : ""} activos</span>
+            <span style={{ fontSize: 11, color: C.t2, fontWeight: 600 }}>{freights.length} flete{freights.length !== 1 ? "s" : ""}</span>
           </div>
         </div>
-      )}
+      </div>
 
-      {/* Compact mode: flat card list without filters */}
-      {compact ? (
-        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          {allFreights.map(f => renderCard(f, getPendingActions(f, user.userType)))}
-        </div>
-      ) : (<>
-        {/* Pendientes — only if any exist */}
-        {totalPendingAll > 0 && (<>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: 12, background: `${C.acc}0D`, marginBottom: 8 }}>
-            <div style={{ width: 32, height: 32, borderRadius: 16, background: C.acc, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, position: "relative" }}>
-              {Ic.bell(C.w, 16)}
-              <div style={{ position: "absolute", top: -3, right: -3, minWidth: 15, height: 15, borderRadius: 8, background: C.err, color: C.w, fontSize: 8, fontWeight: 700, padding: "0 3px", display: "flex", alignItems: "center", justifyContent: "center", border: `2px solid ${C.w}` }}>{pendingCount}</div>
-            </div>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: C.acc }}>Pendientes</div>
-              <div style={{ fontSize: 10, color: C.t3 }}>{pendingCount} acción{pendingCount !== 1 ? "es" : ""}</div>
-            </div>
+      {/* Pendientes — top aligned with Solicitar flete button (~14px padding in sidebar) */}
+      {totalPendingAll > 0 && (<>
+        <div style={{ display: "flex", alignItems: "center", gap: compact ? 8 : 10, padding: compact ? "8px 10px" : "10px 12px", borderRadius: 12, background: `${C.acc}0D`, marginBottom: 8 }}>
+          <div style={{ width: compact ? 26 : 32, height: compact ? 26 : 32, borderRadius: "50%", background: C.acc, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, position: "relative" }}>
+            {Ic.bell(C.w, compact ? 13 : 16)}
+            <div style={{ position: "absolute", top: -3, right: -3, minWidth: 15, height: 15, borderRadius: 8, background: C.err, color: C.w, fontSize: 8, fontWeight: 700, padding: "0 3px", display: "flex", alignItems: "center", justifyContent: "center", border: `2px solid ${C.w}` }}>{pendingCount}</div>
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: compact ? 11 : 12, fontWeight: 700, color: C.acc }}>Pendientes</div>
+            {!compact && <div style={{ fontSize: 10, color: C.t3 }}>{pendingCount} acción{pendingCount !== 1 ? "es" : ""}</div>}
+          </div>
+          {!compact && (
             <div style={{ display: "flex", gap: 4 }}>
               {[{k:"all",l:"Todo"},{k:"today",l:"Hoy"},{k:"tomorrow",l:"Mañana"},{k:"week",l:"Semana"}].map(o => (
                 <button key={o.k} onClick={() => setPendingFilter(o.k)} style={{ padding: "4px 8px", borderRadius: 6, border: `1px solid ${pendingFilter === o.k ? C.acc : C.b1}`, background: pendingFilter === o.k ? `${C.acc}15` : "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 10, fontWeight: pendingFilter === o.k ? 700 : 500, color: pendingFilter === o.k ? C.acc : C.t3 }}>{o.l}</button>
               ))}
             </div>
-          </div>
-          {pendingByAction.length > 0 && (
-            <div style={{ paddingLeft: 16, borderLeft: `2px solid ${C.acc}30`, marginBottom: 16 }}>
-              {pendingByAction.map(g => renderGroup({ key: g.actionKey, label: g.label, icon: actionIcon(g.icon), color: g.color, items: g.items }, "pa"))}
-            </div>
           )}
-          {pendingByAction.length === 0 && <div style={{ fontSize: 11, color: C.t3, paddingLeft: 16, marginBottom: 16 }}>Sin pendientes en este período</div>}
-        </>)}
-
-        {/* Sin pendientes de mi parte */}
-        <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: 12, background: C.okPale, marginBottom: 8 }}>
-          <div style={{ width: 28, height: 28, borderRadius: 14, background: C.ok, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-            {Ic.chk(C.w, 14)}
+        </div>
+        {pendingByAction.length > 0 && (
+          <div style={{ paddingLeft: compact ? 12 : 16, borderLeft: `2px solid ${C.acc}30`, marginBottom: 16 }}>
+            {pendingByAction.map(g => renderGroup({ key: g.actionKey, label: g.label, icon: actionIcon(g.icon), color: g.color, items: g.items }, "pa"))}
           </div>
-          <div style={{ flex: 1, fontSize: 12, fontWeight: 700, color: C.ok }}>Sin pendientes de mi parte</div>
+        )}
+        {!compact && pendingByAction.length === 0 && <div style={{ fontSize: 11, color: C.t3, paddingLeft: 16, marginBottom: 16 }}>Sin pendientes en este período</div>}
+      </>)}
+
+      {/* Sin pendientes de mi parte */}
+      <div style={{ display: "flex", alignItems: "center", gap: compact ? 8 : 10, padding: compact ? "8px 10px" : "10px 12px", borderRadius: 12, background: C.okPale, marginBottom: 8 }}>
+        <div style={{ width: compact ? 22 : 28, height: compact ? 22 : 28, borderRadius: "50%", background: C.ok, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+          {Ic.chk(C.w, compact ? 11 : 14)}
+        </div>
+        <div style={{ flex: 1, fontSize: compact ? 11 : 12, fontWeight: 700, color: C.ok }}>Sin pendientes de mi parte</div>
+        {!compact && (
           <div style={{ display: "flex", gap: 4 }}>
             {[{k:"all",l:"Todo"},{k:"today",l:"Hoy"},{k:"tomorrow",l:"Mañana"},{k:"week",l:"Semana"}].map(o => (
               <button key={o.k} onClick={() => setSummaryFilter(o.k)} style={{ padding: "4px 8px", borderRadius: 6, border: `1px solid ${summaryFilter === o.k ? C.ok : C.b1}`, background: summaryFilter === o.k ? `${C.ok}15` : "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 10, fontWeight: summaryFilter === o.k ? 700 : 500, color: summaryFilter === o.k ? C.ok : C.t3 }}>{o.l}</button>
             ))}
           </div>
-        </div>
-
-        {/* Summary groups — by status */}
-        {summaryGroups.length > 0 ? (
-          <div style={{ paddingLeft: 16, borderLeft: `2px solid ${C.ok}30` }}>
-            {summaryGroups.map(g => renderGroup(g, "sm"))}
-          </div>
-        ) : (
-          <div style={{ fontSize: 11, color: C.t3, paddingLeft: 16 }}>Sin fletes en este período</div>
         )}
-      </>)}
+      </div>
+
+      {/* Summary groups — by status */}
+      {summaryGroups.length > 0 ? (
+        <div style={{ paddingLeft: compact ? 12 : 16, borderLeft: `2px solid ${C.ok}30` }}>
+          {summaryGroups.map(g => renderGroup(g, "sm"))}
+        </div>
+      ) : (
+        !compact && <div style={{ fontSize: 11, color: C.t3, paddingLeft: 16 }}>Sin fletes en este período</div>
+      )}
     </div>
   );
 
