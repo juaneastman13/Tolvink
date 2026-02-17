@@ -1098,8 +1098,8 @@ function DetailScreen({ user, freight, perms, onBack, onAction, actionLoading, o
         <div style={{ flex:1, background:C.w, border:`1px solid ${C.b1}`, borderRadius:12, padding:16, boxShadow:C.sh }}>
           <div style={{ fontSize:10.5, fontWeight:700, marginBottom:12, color:C.t2, textTransform:"uppercase", letterSpacing:0.5 }}>Información del flete</div>
           {[
-            [Ic.pin(C.pri,15),"Origen",freight.originName],
-            freight.fieldName&&[Ic.pin(C.ok,15),"Campo",freight.fieldName],
+            [Ic.user(C.pri,15),"Empresa",freight.originCompanyName||freight.originName],
+            [Ic.pin(C.ok,15),"Campo",[freight.fieldName,freight.originName].filter(Boolean).join(" / ")||"—"],
             [Ic.plant(C.t2,15),"Destino",freight.destName],
             [Ic.cal(C.t2,15),"Fecha carga",freight.loadDate],
             [Ic.clk(C.t2,15),"Hora carga",freight.loadTime],
@@ -1120,7 +1120,7 @@ function DetailScreen({ user, freight, perms, onBack, onAction, actionLoading, o
           ))}
         </div>
         <div style={{ flex:1 }}>
-          <FreightMap freightId={freight.id} originLat={freight.originLat} originLng={freight.originLng} destLat={freight.destLat} destLng={freight.destLng} originName={freight.originName} destName={freight.destName} status={freight.status} isDriver={user.userType==="transporter"||(user.userType==="producer"&&freight.isOwnFleet)}/>
+          <FreightMap freightId={freight.id} originLat={freight.originLat} originLng={freight.originLng} destLat={freight.destLat} destLng={freight.destLng} originName={[freight.originCompanyName, [freight.fieldName,freight.originName].filter(Boolean).join("/")].filter(Boolean).join(" — ")} destName={freight.destName} status={freight.status} isDriver={user.userType==="transporter"||(user.userType==="producer"&&freight.isOwnFleet)}/>
         </div>
       </div>
 
