@@ -2,6 +2,26 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import Tolvink from "./App";
 
+class ErrorBoundary extends React.Component {
+  state = { hasError: false };
+  static getDerivedStateFromError() { return { hasError: true }; }
+  componentDidCatch(err, info) { console.error('[ErrorBoundary]', err, info); }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ minHeight:"100dvh", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"DM Sans, sans-serif", padding:32, textAlign:"center" }}>
+          <div>
+            <div style={{ fontSize:48, marginBottom:16 }}>Algo salió mal</div>
+            <p style={{ color:"#666", marginBottom:24 }}>Ocurrió un error inesperado.</p>
+            <button onClick={() => window.location.reload()} style={{ padding:"10px 24px", borderRadius:10, border:"none", background:"#4F46E5", color:"#fff", fontWeight:600, cursor:"pointer", fontSize:14 }}>Recargar</button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 // Register service worker for offline + push notifications
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
@@ -11,4 +31,8 @@ if ('serviceWorker' in navigator) {
   });
 }
 
-ReactDOM.createRoot(document.getElementById("root")).render(<Tolvink />);
+ReactDOM.createRoot(document.getElementById("root")).render(
+  <ErrorBoundary>
+    <Tolvink />
+  </ErrorBoundary>
+);

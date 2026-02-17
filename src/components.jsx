@@ -290,8 +290,8 @@ export function NotificationsPanel({ open, onClose, notifications=[], onMarkRead
   useEffect(() => {
     if (!open) return;
     const handleClick = (e) => { if (panelRef.current && !panelRef.current.contains(e.target)) onClose(); };
-    setTimeout(() => document.addEventListener("click", handleClick), 10);
-    return () => document.removeEventListener("click", handleClick);
+    const tid = setTimeout(() => document.addEventListener("click", handleClick), 10);
+    return () => { clearTimeout(tid); document.removeEventListener("click", handleClick); };
   }, [open, onClose]);
 
   if (!open) return null;

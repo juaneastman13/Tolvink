@@ -2287,8 +2287,8 @@ function ChatsScreen({ user, openConvId, onConvOpened, isDesktop }) {
     try {
       const m = await apiGetMessages(conv.id);
       setMessages(m || []);
-      apiMarkRead(conv.id).catch(() => {});
-    } catch {}
+      apiMarkRead(conv.id).catch(() => {}); // fire-and-forget
+    } catch { /* network error — keep previous messages */ }
   };
 
   useEffect(() => { if (msgEndRef.current) msgEndRef.current.scrollIntoView({ behavior: "smooth" }); }, [messages]);
@@ -2296,7 +2296,7 @@ function ChatsScreen({ user, openConvId, onConvOpened, isDesktop }) {
   useEffect(() => {
     if (!activeConv) return;
     const iv = setInterval(async () => {
-      try { const m = await apiGetMessages(activeConv.id); setMessages(m || []); } catch {}
+      try { const m = await apiGetMessages(activeConv.id); setMessages(m || []); } catch { /* poll — silent */ }
     }, 5000);
     return () => clearInterval(iv);
   }, [activeConv]);
@@ -3267,7 +3267,7 @@ function AdminScreen({ user, onBack }) {
       try {
         if(tab==="companies") { const c=search?(await apiAdminListCompanies(search)):allCompanies; setCompanies(c||[]); }
         else { const u=search?(await apiAdminListUsers(search)):allUsers; setUsers(u||[]); }
-      } catch {}
+      } catch { /* debounced search — silent */ }
     }, 300);
     return ()=>clearTimeout(t);
   }, [search, tab, allCompanies, allUsers]);
