@@ -693,7 +693,7 @@ function ListScreen({ freights, onNav, onRefresh }) {
         </select>
         <button onClick={()=>setViewMode(v=>v==="kanban"?"mapa":v==="mapa"?"tabla":"kanban")} style={{marginLeft:"auto",padding:"5px 12px",borderRadius:8,border:`1.5px solid ${C.pri}`,background:C.priPale,color:C.pri,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:5,whiteSpace:"nowrap"}}>
           {viewMode==="kanban"?Ic.pin(C.pri,13):viewMode==="mapa"?Ic.doc(C.pri,13):Ic.home(C.pri,13)}
-          {viewMode==="kanban"?"Cambiar a mapa":viewMode==="mapa"?"Cambiar a tabla":"Cambiar a columnas"}
+          {viewMode==="kanban"?"Cambiar a mapa":viewMode==="mapa"?"Cambiar a tabla":"Cambiar a etiquetas"}
         </button>
       </div>
 
