@@ -2528,9 +2528,10 @@ function CalendarScreen({ freights, perms, onNav, isDesktop }) {
   const [fStatus, setFStatus] = useState("");
   const [monthsToShow, setMonthsToShow] = useState(3);
 
+  const STATUS_GROUPS_CAL = { solicitado:["pending_assignment"], en_curso:["assigned","accepted","in_progress","loaded"], finalizados:["finished"], cancelados:["canceled"] };
   const filtered = useMemo(()=>{
-    let ff = freights.filter(f=>!["canceled","draft"].includes(f.status));
-    if(fStatus) ff = ff.filter(f=>f.status===fStatus);
+    let ff = freights.filter(f=>f.status!=="draft");
+    if(fStatus) ff = ff.filter(f=>(STATUS_GROUPS_CAL[fStatus]||[]).includes(f.status));
     return ff;
   },[freights,fStatus]);
 
@@ -2630,7 +2631,7 @@ function CalendarScreen({ freights, perms, onNav, isDesktop }) {
 
       {/* Status filter */}
       <div style={{ display:"flex", gap:5, marginBottom:14, flexWrap:"wrap" }}>
-        {[{k:"",l:"Todos"},{k:"pending_assignment",l:"Solicitados"},{k:"assigned",l:"Asignados"},{k:"accepted",l:"Aceptados"},{k:"in_progress",l:"En viaje"},{k:"loaded",l:"Cargados"},{k:"finished",l:"Finalizados"}].map(opt=>(
+        {[{k:"",l:"Todos"},{k:"solicitado",l:"Solicitado"},{k:"en_curso",l:"En curso"},{k:"finalizados",l:"Finalizados"},{k:"cancelados",l:"Cancelados"}].map(opt=>(
           <button key={opt.k} onClick={()=>setFStatus(opt.k)} style={{ padding:"4px 10px", borderRadius:20, border:`1.5px solid ${fStatus===opt.k?C.pri:C.b1}`, background:fStatus===opt.k?C.priPale:C.w, color:fStatus===opt.k?C.pri:C.t2, fontSize:10, fontWeight:600, cursor:"pointer", fontFamily:"inherit", transition:"all 0.15s" }}>{opt.l}</button>
         ))}
       </div>
@@ -2765,16 +2766,19 @@ function ReportsScreen({ onBack, freights, isDesktop, embedded }) {
     return (f.code||"").toLowerCase().includes(q) || (f.originName||"").toLowerCase().includes(q) || (f.destName||"").toLowerCase().includes(q) || (f.grain||"").toLowerCase().includes(q) || (f.transporterName||"").toLowerCase().includes(q) || (f.requestedByName||"").toLowerCase().includes(q);
   });
 
-  const filtered = filterStatus==="all" ? allFreights : allFreights.filter(f=> filterStatus==="active" ? !["finished","canceled"].includes(f.status) : f.status===filterStatus);
+  const STATUS_GROUPS_RPT = { solicitado:["pending_assignment"], en_curso:["assigned","accepted","in_progress","loaded"], finalizados:["finished"], cancelados:["canceled"] };
+  const filtered = filterStatus==="all" ? allFreights : allFreights.filter(f=>(STATUS_GROUPS_RPT[filterStatus]||[]).includes(f.status));
 
   const groups = useMemo(()=>{
-    const active = filtered.filter(f=>!["finished","canceled"].includes(f.status));
+    const solicitado = filtered.filter(f=>f.status==="pending_assignment");
+    const enCurso = filtered.filter(f=>["assigned","accepted","in_progress","loaded"].includes(f.status));
     const finished = filtered.filter(f=>f.status==="finished");
     const canceled = filtered.filter(f=>f.status==="canceled");
     return [
-      {key:"active", label:"Fletes activos", items:active, color:C.acc},
-      {key:"finished", label:"Finalizados", items:finished, color:C.ok},
-      {key:"canceled", label:"Cancelados", items:canceled, color:C.muted},
+      {key:"solicitado", label:"Solicitado", items:solicitado, color:"#FF6A00"},
+      {key:"en_curso", label:"En curso", items:enCurso, color:"#2563EB"},
+      {key:"finished", label:"Finalizados", items:finished, color:"#1A6B37"},
+      {key:"canceled", label:"Cancelados", items:canceled, color:"#DC2626"},
     ].filter(g=>g.items.length>0);
   },[filtered]);
 
@@ -2798,7 +2802,7 @@ function ReportsScreen({ onBack, freights, isDesktop, embedded }) {
 
       {/* Status filter pills */}
       <div style={{ display:"flex", gap:6, marginBottom:12, flexWrap:"wrap" }}>
-        {[{k:"all",l:"Todos"},{k:"active",l:"Activos"},{k:"finished",l:"Finalizados"},{k:"canceled",l:"Cancelados"}].map(opt=>(
+        {[{k:"all",l:"Todos"},{k:"solicitado",l:"Solicitado"},{k:"en_curso",l:"En curso"},{k:"finalizados",l:"Finalizados"},{k:"cancelados",l:"Cancelados"}].map(opt=>(
           <button key={opt.k} onClick={()=>setFilterStatus(opt.k)} style={{ padding:"6px 14px", borderRadius:20, border:`1.5px solid ${filterStatus===opt.k?C.pri:C.b1}`, background:filterStatus===opt.k?C.priPale:C.w, color:filterStatus===opt.k?C.pri:C.t2, fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>{opt.l}</button>
         ))}
       </div>
