@@ -1087,7 +1087,7 @@ function NewScreen({ user, lots, plants, branches, fields, trucks, onBack, onCre
   const u = f => setForm(p=>({...p,...f}));
 
   // Section refs for collapsible sections
-  const secRefs = { product:useRef(null), quantity:useRef(null), origin:useRef(null), destination:useRef(null), schedule:useRef(null), extras:useRef(null), submit:useRef(null) };
+  const secRefs = { product:useRef(null), quantity:useRef(null), origin:useRef(null), ownfleet:useRef(null), destination:useRef(null), schedule:useRef(null), extras:useRef(null), submit:useRef(null) };
   const SEC_ORDER = ["product","quantity","origin","destination","schedule"];
   const [activeSection, setActiveSection] = useState(()=>{
     const g=!!form.grain&&(form.grain!=="Otros"||!!form.productTypeOther.trim()), q=!!form.tons&&parseFloat(form.tons)>0, o=!!form.fieldId&&!!form.lotId, d=destMode==="plant"?!!form.plantId:!!customDest.name?.trim(), s=!!form.loadDate&&/^\d{2}:\d{2}$/.test(form.loadTime);
@@ -1257,23 +1257,13 @@ function NewScreen({ user, lots, plants, branches, fields, trucks, onBack, onCre
           </div>
         </Sec>
 
-        {/* OWN FLEET TOGGLE (between origin and destination) */}
+        {/* OWN FLEET (optional, between origin and destination) */}
         {showTruckSelect && (
-          <div style={{ background:form.truckId?C.accPale:C.w, border:`1.5px solid ${form.truckId?C.acc+'50':C.b1}`, borderRadius:12, padding:14, transition:"all 0.2s ease" }}>
-            <button type="button" onClick={()=>{if(form.truckId)u({truckId:""});else{const first=truckOpts[0];if(first)u({truckId:first.value});}}} style={{ width:"100%", display:"flex", alignItems:"center", gap:10, background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", padding:0 }}>
-              <div style={{ width:20, height:20, borderRadius:6, border:`2px solid ${form.truckId?C.acc:C.b1}`, background:form.truckId?C.acc:"transparent", display:"flex", alignItems:"center", justifyContent:"center", transition:"all 0.15s", flexShrink:0 }}>{form.truckId && Ic.chk("#fff",14)}</div>
-              <div style={{ flex:1, textAlign:"left" }}>
-                <div style={{ fontSize:12, fontWeight:700, color:form.truckId?C.acc:C.t1 }}>Flete propio</div>
-                <div style={{ fontSize:10, color:C.t3, marginTop:1 }}>Uso mi propia flota — la planta solo autoriza el viaje</div>
-              </div>
-              {Ic.truck(form.truckId?C.acc:C.t3,20)}
-            </button>
-            {form.truckId && (
-              <div style={{ marginTop:12, paddingTop:12, borderTop:`1px solid ${C.acc}30` }}>
-                <Select label="Camión" icon={Ic.truck(C.acc,14)} value={form.truckId} onChange={v=>u({truckId:v})} options={truckOpts} placeholder="Seleccionar camión..."/>
-              </div>
-            )}
-          </div>
+          <Sec label="Flete propio (opcional)" complete={!!form.truckId} summary={truckOpts.find(t=>t.value===form.truckId)?.label||""} isExpanded={activeSection==="ownfleet"} onFocus={()=>setActiveSection("ownfleet")} secRef={secRefs.ownfleet} highlight={secComplete.origin&&!form.truckId&&activeSection!=="ownfleet"}>
+            <div style={{ fontSize:11, color:C.t2, marginBottom:12 }}>Uso mi propia flota — la planta solo autoriza el viaje</div>
+            <Select label="Camión" icon={Ic.truck(C.acc,14)} value={form.truckId} onChange={v=>u({truckId:v})} options={truckOpts} placeholder="Seleccionar camión..."/>
+            {form.truckId && <button type="button" onClick={()=>u({truckId:""})} style={{ marginTop:8, background:"none", border:"none", cursor:"pointer", fontSize:11, color:C.err, fontWeight:600, fontFamily:"inherit" }}>Quitar camión propio</button>}
+          </Sec>
         )}
 
         {/* DESTINATION SECTION */}
