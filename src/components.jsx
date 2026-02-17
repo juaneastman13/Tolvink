@@ -86,20 +86,23 @@ export function Select({ label, icon, value, onChange, options, placeholder="Sel
 }
 
 // Collapsible form section — defined at module level for stable React identity
-export function Sec({ label, complete, summary, children, isExpanded, onFocus, secRef }) {
+export function Sec({ label, complete, summary, children, isExpanded, onFocus, secRef, incomplete }) {
   return (
-    <div ref={secRef} style={{ transition:"all 0.3s ease" }} onFocus={onFocus}>
-      {complete && !isExpanded ? (
-        <button type="button" style={{ width:"100%", display:"flex", alignItems:"center", gap:8, padding:"10px 14px", borderRadius:10, border:`1px solid ${C.ok}30`, background:`${C.ok}08`, cursor:"pointer", fontFamily:"inherit", textAlign:"left" }} tabIndex={0}>
-          {Ic.chk(C.ok,16)}
-          <div style={{ flex:1 }}>
-            <div style={{ fontSize:10, fontWeight:700, color:C.t2, textTransform:"uppercase", letterSpacing:0.5 }}>{label}</div>
-            <div style={{ fontSize:12, fontWeight:600, color:C.t1, marginTop:1 }}>{summary}</div>
+    <div ref={secRef} style={{ transition:"all 0.3s ease" }}>
+      {!isExpanded ? (
+        <button type="button" onClick={onFocus} style={{ width:"100%", display:"flex", alignItems:"center", gap:10, padding:"12px 14px", borderRadius:12, border:`1.5px solid ${complete?C.ok+'40':incomplete?C.acc+'60':C.b1}`, background:complete?`${C.ok}08`:incomplete?`${C.acc}08`:C.w, cursor:"pointer", fontFamily:"inherit", textAlign:"left", transition:"all 0.2s ease" }} tabIndex={0}>
+          {complete ? Ic.chk(C.ok,16) : incomplete ? <span style={{width:10,height:10,borderRadius:5,background:C.acc,display:"inline-block",animation:"dotPulse 1.5s ease-in-out infinite",flexShrink:0}}/> : <span style={{width:10,height:10,borderRadius:5,border:`2px solid ${C.b1}`,display:"inline-block",flexShrink:0}}/>}
+          <div style={{ flex:1, minWidth:0 }}>
+            <div style={{ fontSize:10, fontWeight:700, color:complete?C.ok:incomplete?C.acc:C.t3, textTransform:"uppercase", letterSpacing:0.5 }}>{label}</div>
+            {complete && summary && <div style={{ fontSize:12, fontWeight:600, color:C.t1, marginTop:2, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{summary}</div>}
           </div>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.t3} strokeWidth="2"><polyline points="6 9 12 15 18 9"/></svg>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.t3} strokeWidth="2" style={{flexShrink:0}}><polyline points="6 9 12 15 18 9"/></svg>
         </button>
       ) : (
-        <div>{children}</div>
+        <div>
+          <div style={{fontSize:11,fontWeight:700,color:C.pri,textTransform:"uppercase",letterSpacing:0.5,marginBottom:12,display:"flex",alignItems:"center",gap:6}}><span style={{width:8,height:8,borderRadius:4,background:C.pri,display:"inline-block"}}/>{label}</div>
+          {children}
+        </div>
       )}
     </div>
   );
