@@ -1106,7 +1106,7 @@ function NewScreen({ user, lots, plants, branches, fields, trucks, onBack, onCre
     origin: originMode==="field" ? (!!form.fieldId && !!form.lotId) : (!!customOrigin.lat && !!customOrigin.name?.trim()),
     destination: destMode==="plant" ? !!form.plantId : (!!customDest.name?.trim() && (confirmMode==="none" || !!confirmPlantId)),
     schedule: !!form.loadDate && /^\d{2}:\d{2}$/.test(form.loadTime),
-  }),[form, destMode, customDest]);
+  }),[form, originMode, customOrigin, destMode, customDest, confirmMode, confirmPlantId]);
 
   // Next section to fill (highlight it when collapsed)
   const nextToFill = SEC_ORDER.find(s => !secComplete[s]);
