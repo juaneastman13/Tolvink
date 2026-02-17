@@ -258,6 +258,126 @@ export function Nav({ active, onChange, unread=0, pendingCount=0, notifCount=0, 
   );
 }
 
+// ======================== NOTIFICATIONS PANEL ========================
+
+const NOTIF_ICONS = {
+  freight_created: (s) => Ic.truck(C.pri, s),
+  freight_assigned: (s) => Ic.truck(C.info, s),
+  freight_accepted: (s) => Ic.chk(C.ok, s),
+  freight_rejected: (s) => Ic.ban(C.err, s),
+  freight_started: (s) => Ic.nav(C.info, s),
+  freight_loaded: (s) => Ic.truck(C.ok, s),
+  freight_finished: (s) => Ic.chk(C.ok, s),
+  freight_cancelled: (s) => Ic.ban(C.err, s),
+};
+
+function timeAgo(dateStr) {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const m = Math.floor(diff / 60000);
+  if (m < 1) return "ahora";
+  if (m < 60) return `${m}m`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h`;
+  const d = Math.floor(h / 24);
+  if (d < 7) return `${d}d`;
+  return `${Math.floor(d / 7)}sem`;
+}
+
+export function NotificationsPanel({ open, onClose, notifications=[], onMarkRead, onMarkAllRead, onTap }) {
+  const panelRef = useRef(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handleClick = (e) => { if (panelRef.current && !panelRef.current.contains(e.target)) onClose(); };
+    setTimeout(() => document.addEventListener("click", handleClick), 10);
+    return () => document.removeEventListener("click", handleClick);
+  }, [open, onClose]);
+
+  if (!open) return null;
+
+  const unread = notifications.filter(n => !n.read);
+  const read = notifications.filter(n => n.read);
+
+  return (
+    <div ref={panelRef} style={{
+      position:"absolute", top:"100%", right:0, marginTop:8, width:360, maxWidth:"calc(100vw - 24px)",
+      background:C.w, borderRadius:16, boxShadow:C.shLg, border:`1px solid ${C.b2}`,
+      zIndex:150, overflow:"hidden", animation:"fadeIn 0.2s ease"
+    }}>
+      <style>{`@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}`}</style>
+
+      {/* Header */}
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"16px 18px 12px" }}>
+        <span style={{ fontSize:16, fontWeight:700, color:C.t1 }}>Notificaciones</span>
+        {unread.length > 0 && (
+          <button onClick={onMarkAllRead} style={{ border:"none", background:"none", cursor:"pointer", fontSize:12, fontWeight:600, color:C.pri, fontFamily:"inherit", padding:"4px 8px", borderRadius:6 }}
+            onMouseEnter={e=>e.currentTarget.style.background=C.priGhost} onMouseLeave={e=>e.currentTarget.style.background="none"}>
+            Marcar todas leídas
+          </button>
+        )}
+      </div>
+
+      {/* List */}
+      <div style={{ maxHeight:420, overflowY:"auto", overscrollBehavior:"contain" }}>
+        {notifications.length === 0 && (
+          <div style={{ padding:"40px 20px", textAlign:"center" }}>
+            <div style={{ marginBottom:8 }}>{Ic.bell(C.b1, 36)}</div>
+            <div style={{ fontSize:13, fontWeight:600, color:C.t3 }}>Sin notificaciones</div>
+            <div style={{ fontSize:11, color:C.t3, marginTop:4 }}>Las novedades de tus fletes aparecerán aquí</div>
+          </div>
+        )}
+
+        {notifications.map(n => {
+          const icFn = NOTIF_ICONS[n.type] || ((s) => Ic.bell(C.t3, s));
+          return (
+            <button key={n.id} onClick={() => { if (!n.read) onMarkRead(n.id); if (n.entityId) onTap(n.entityId); onClose(); }}
+              style={{
+                display:"flex", alignItems:"flex-start", gap:12, width:"100%", padding:"12px 18px",
+                border:"none", background: n.read ? "none" : C.priGhost, cursor:"pointer",
+                fontFamily:"inherit", textAlign:"left", borderBottom:`1px solid ${C.b2}`,
+                WebkitTapHighlightColor:"transparent", touchAction:"manipulation", transition:"background 0.15s"
+              }}
+              onMouseEnter={e=>e.currentTarget.style.background=n.read?C.bg:C.priPale}
+              onMouseLeave={e=>e.currentTarget.style.background=n.read?"transparent":C.priGhost}>
+
+              {/* Icon */}
+              <div style={{ width:36, height:36, borderRadius:10, background: n.read ? C.bg : C.priPale, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, marginTop:1 }}>
+                {icFn(16)}
+              </div>
+
+              {/* Content */}
+              <div style={{ flex:1, minWidth:0 }}>
+                <div style={{ fontSize:13, fontWeight: n.read ? 500 : 700, color: n.read ? C.t2 : C.t1, lineHeight:1.35 }}>{n.title}</div>
+                <div style={{ fontSize:11.5, color:C.t3, marginTop:2, lineHeight:1.3, overflow:"hidden", textOverflow:"ellipsis", display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical" }}>{n.body}</div>
+                <div style={{ fontSize:10, color:C.t3, marginTop:4, fontWeight:500 }}>{timeAgo(n.createdAt)}</div>
+              </div>
+
+              {/* Unread dot */}
+              {!n.read && <div style={{ width:8, height:8, borderRadius:4, background:C.pri, flexShrink:0, marginTop:6 }} />}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ======================== NOTIFICATION BELL ===========================
+
+export function NotifBell({ count=0, onClick }) {
+  return (
+    <button onClick={onClick} style={{ position:"relative", border:"none", background:"none", cursor:"pointer", padding:6, borderRadius:8, display:"flex", alignItems:"center", justifyContent:"center", WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}
+      onMouseEnter={e=>e.currentTarget.style.background=C.priGhost} onMouseLeave={e=>e.currentTarget.style.background="none"}>
+      {Ic.bell(C.t2, 22)}
+      {count > 0 && (
+        <div style={{ position:"absolute", top:2, right:2, minWidth:16, height:16, borderRadius:8, background:C.err, color:C.w, fontSize:9, fontWeight:700, padding:"0 4px", display:"flex", alignItems:"center", justifyContent:"center", border:`2px solid ${C.w}`, lineHeight:1 }}>
+          {count > 99 ? "99+" : count}
+        </div>
+      )}
+    </button>
+  );
+}
+
 // ======================== CSV EXPORT =================================
 
 export function exportCSV(freights, filename) {

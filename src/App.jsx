@@ -17,7 +17,7 @@ import {
 import { C, track, FONT, MONO, Ic } from "./theme";
 import { V, validate, SCHEMAS, textMatch, FieldError } from "./validation";
 import { stCfg, getActions, GRANOS, UNITS } from "./constants";
-import { Av, Bd, Btn, Tabs, Field, Select, Sec, Toast, Loader, AttachMenu, Sidebar, Nav, SortTh, exportCSV, exportExcel, exportPDF } from "./components";
+import { Av, Bd, Btn, Tabs, Field, Select, Sec, Toast, Loader, AttachMenu, Sidebar, Nav, SortTh, exportCSV, exportExcel, exportPDF, NotifBell, NotificationsPanel } from "./components";
 import { useAuth, useCatalog, useFreights, permsFor, useIsDesktop, useTableSort, usePullToRefresh, useOnline, useNotifications } from "./hooks";
 import { SafeZone, LocationPicker, FreightMap, FreightsOverviewMap } from "./maps";
 import { PhotoUpload, DocsGallery, FreightFileUpload } from "./uploads";
@@ -3829,6 +3829,8 @@ export default function Tolvink() {
   const nav = (s,fId)=>{ track("screen_view",{screen:s}); if(s==="new_date"&&fId){if(!perms.canRequest){show("Sin permisos para solicitar","err");return;} setDuplicateData({preDate:fId});setScreen("new");return;} if(fId){ setSelFreight(fId); if(s==="detail") fh.refresh(fId); } if(s==="new"&&!perms.canRequest){show("Sin permisos para solicitar","err");return;} setScreen(s); };
 
   const [actionLoading, setActionLoading] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
+  const handleNotifTap = (freightId) => { setSelFreight(freightId); fh.refresh(freightId); setScreen("detail"); };
 
   const handleAction = (fId,action)=>{
     if(actionLoading) return;
@@ -3907,17 +3909,26 @@ export default function Tolvink() {
       <RoutesBackground trucks={false} opacityMul={0.4} centerFade={false} />
 
       {/* Desktop Sidebar */}
-      <div className="tv-sidebar" style={{position:"relative",zIndex:1}}>
-        <Sidebar active={navActive} onChange={nav} unread={unreadChats} pendingCount={pendingCount} notifCount={notif.unreadCount} canRequest={perms.canRequest} onNew={()=>nav("new")} />
+      <div className="tv-sidebar" style={{position:"relative",zIndex:11}}>
+        <Sidebar active={navActive} onChange={nav} unread={unreadChats} pendingCount={pendingCount} notifCount={0} canRequest={perms.canRequest} onNew={()=>nav("new")} />
+        {/* Desktop bell – absolute positioned over sidebar header */}
+        <div style={{position:"absolute",top:30,right:14,zIndex:12}}>
+          <NotifBell count={notif.unreadCount} onClick={()=>setNotifOpen(!notifOpen)} />
+          <NotificationsPanel open={notifOpen} onClose={()=>setNotifOpen(false)} notifications={notif.notifications} onMarkRead={notif.markRead} onMarkAllRead={notif.markAllRead} onTap={handleNotifTap} />
+        </div>
       </div>
 
       {/* Main content column */}
       <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden", minWidth:0, position:"relative", zIndex:1 }}>
         {/* Mobile-only header */}
-        <div className="tv-mobile-header" style={{paddingTop:"max(12px, env(safe-area-inset-top))",paddingBottom:12,paddingLeft:18,paddingRight:18,display:"flex",alignItems:"center",borderBottom:`1px solid ${C.b2}`,background:C.w,flexShrink:0,zIndex:10}}>
+        <div className="tv-mobile-header" style={{paddingTop:"max(12px, env(safe-area-inset-top))",paddingBottom:12,paddingLeft:18,paddingRight:18,display:"flex",alignItems:"center",justifyContent:"space-between",borderBottom:`1px solid ${C.b2}`,background:C.w,flexShrink:0,zIndex:10,position:"relative"}}>
           <div style={{display:"inline-flex",alignItems:"flex-start"}}>
             <span style={{fontSize:30,fontWeight:800,color:C.pri,letterSpacing:-0.9,lineHeight:1}}>tolvink</span>
             <span style={{width:8,height:8,borderRadius:4,background:C.acc,display:"inline-block",marginLeft:3,marginTop:1,animation:"dotPulse 1.5s ease-in-out infinite"}}></span>
+          </div>
+          <div style={{position:"relative"}}>
+            <NotifBell count={notif.unreadCount} onClick={()=>setNotifOpen(!notifOpen)} />
+            <NotificationsPanel open={notifOpen} onClose={()=>setNotifOpen(false)} notifications={notif.notifications} onMarkRead={notif.markRead} onMarkAllRead={notif.markAllRead} onTap={handleNotifTap} />
           </div>
         </div>
 
@@ -3947,7 +3958,7 @@ export default function Tolvink() {
 
         {/* Mobile-only bottom nav */}
         <div className="tv-mobile-nav">
-          <Nav active={navActive} onChange={nav} unread={unreadChats} pendingCount={pendingCount} notifCount={notif.unreadCount} canRequest={perms.canRequest} onNew={()=>nav("new")}/>
+          <Nav active={navActive} onChange={nav} unread={unreadChats} pendingCount={pendingCount} notifCount={0} canRequest={perms.canRequest} onNew={()=>nav("new")}/>
         </div>
       </div>
 
