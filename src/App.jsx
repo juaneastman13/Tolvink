@@ -373,7 +373,7 @@ function HomeScreen({ user, freights, perms, onNav, catalog, isDesktop, onAction
   // Render a collapsible group (pending or summary)
   const renderGroup = (group, keyPrefix) => {
     const gKey = keyPrefix + "_" + group.key;
-    const isOpen = !collapsed[gKey];
+    const isOpen = !!collapsed[gKey];
     return (
       <div key={gKey}>
         <button onClick={() => toggleGroup(gKey)} style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, padding: "8px 0", background: "none", border: "none", borderBottom: `1px solid ${C.b2}`, cursor: "pointer", fontFamily: "inherit", textAlign: "left" }}>
