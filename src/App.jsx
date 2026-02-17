@@ -478,9 +478,9 @@ function HomeScreen({ user, freights, perms, onNav, catalog, isDesktop, onAction
   const nowTime = new Date().toLocaleTimeString("es-UY", { hour: "2-digit", minute: "2-digit", hour12: false });
   // Sidebar logo area: padTop24 + font63 + padBot20 = 107px → midline ~55px. Solicitar btn top ~122px.
   const listContent = (
-    <div style={{ flex: compact ? undefined : 1, width: compact ? 300 : undefined, flexShrink: 0, overflow: "auto", padding: compact ? "0 8px 8px" : "0 18px 18px", boxSizing: "border-box", borderRight: compact ? `1px solid ${C.b1}` : "none" }}>
-      {/* Header — empresa (clickable), fecha+hora, fletes — centered with sidebar logo midline */}
-      <div style={{ position:"sticky", top:0, zIndex:10, background:C.bg, display: "flex", alignItems: "center", minHeight: isDesktop ? 107 : 56, padding: compact ? "0 6px" : "0 0", borderBottom: `1px solid ${C.b2}`, marginBottom: isDesktop ? 14 : 10 }}>
+    <div style={{ flex: compact ? undefined : 1, width: compact ? 300 : undefined, flexShrink: 0, display: "flex", flexDirection: "column", overflow: "hidden", boxSizing: "border-box", borderRight: compact ? `1px solid ${C.b1}` : "none" }}>
+      {/* Fixed header — empresa (clickable), fecha+hora, fletes */}
+      <div style={{ flexShrink: 0, background:C.bg, display: "flex", alignItems: "center", minHeight: isDesktop ? 107 : 56, padding: compact ? "0 14px" : "0 18px", borderBottom: `1px solid ${C.b2}` }}>
         <div style={{ position: "relative" }}>
           <div ref={companyPickerRef}>
             <button onClick={() => hasMultipleCompanies && setShowCompanyPicker(p => !p)} style={{ display: "flex", alignItems: "center", gap: 4, background: "none", border: "none", padding: 0, cursor: hasMultipleCompanies ? "pointer" : "default", fontFamily: "inherit" }}>
@@ -514,18 +514,23 @@ function HomeScreen({ user, freights, perms, onNav, catalog, isDesktop, onAction
         </div>
       </div>
 
+      {/* Scrollable content */}
+      <div style={{ flex: 1, overflow: "auto", padding: compact ? "0 8px 8px" : "0 18px 18px" }}>
+
       {/* Pendientes — top aligned with Solicitar flete button (~14px padding in sidebar) */}
       {totalPendingAll > 0 && (<>
-        <div style={{ display: "flex", alignItems: "center", gap: compact ? 8 : 10, padding: compact ? "8px 10px" : "10px 12px", borderRadius: 12, background: `${C.acc}0D`, marginBottom: 8 }}>
-          <div style={{ width: compact ? 26 : 32, height: compact ? 26 : 32, borderRadius: "50%", background: C.acc, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, position: "relative" }}>
-            {Ic.bell(C.w, compact ? 13 : 16)}
-            <div style={{ position: "absolute", top: -3, right: -3, minWidth: 15, height: 15, borderRadius: 8, background: C.err, color: C.w, fontSize: 8, fontWeight: 700, padding: "0 3px", display: "flex", alignItems: "center", justifyContent: "center", border: `2px solid ${C.w}` }}>{pendingCount}</div>
+        <div style={{ padding: compact ? "8px 10px" : "10px 12px", borderRadius: 12, background: `${C.acc}0D`, marginBottom: 8 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: compact ? 8 : 10 }}>
+            <div style={{ width: compact ? 26 : 32, height: compact ? 26 : 32, borderRadius: "50%", background: C.acc, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, position: "relative" }}>
+              {Ic.bell(C.w, compact ? 13 : 16)}
+              <div style={{ position: "absolute", top: -3, right: -3, minWidth: 15, height: 15, borderRadius: 8, background: C.err, color: C.w, fontSize: 8, fontWeight: 700, padding: "0 3px", display: "flex", alignItems: "center", justifyContent: "center", border: `2px solid ${C.w}` }}>{pendingCount}</div>
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: compact ? 11 : 12, fontWeight: 700, color: C.acc }}>Pendientes</div>
+              {!compact && <div style={{ fontSize: 10, color: C.t3 }}>{pendingCount} acción{pendingCount !== 1 ? "es" : ""}</div>}
+            </div>
           </div>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: compact ? 11 : 12, fontWeight: 700, color: C.acc }}>Pendientes</div>
-            {!compact && <div style={{ fontSize: 10, color: C.t3 }}>{pendingCount} acción{pendingCount !== 1 ? "es" : ""}</div>}
-          </div>
-          <div style={{ display: "flex", gap: 4 }}>
+          <div style={{ display: "flex", gap: 4, marginTop: 6, flexWrap: "wrap" }}>
             {[{k:"all",l:"Todo"},{k:"today",l:"Hoy"},{k:"tomorrow",l:"Mañana"},{k:"week",l:"Semana"}].map(o => (
               <button key={o.k} onClick={() => setPendingFilter(o.k)} style={{ padding: compact ? "3px 6px" : "4px 8px", borderRadius: 6, border: `1px solid ${pendingFilter === o.k ? C.acc : C.b1}`, background: pendingFilter === o.k ? `${C.acc}15` : "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: compact ? 9 : 10, fontWeight: pendingFilter === o.k ? 700 : 500, color: pendingFilter === o.k ? C.acc : C.t3 }}>{o.l}</button>
             ))}
@@ -540,12 +545,14 @@ function HomeScreen({ user, freights, perms, onNav, catalog, isDesktop, onAction
       </>)}
 
       {/* Sin pendientes de mi parte */}
-      <div style={{ display: "flex", alignItems: "center", gap: compact ? 8 : 10, padding: compact ? "8px 10px" : "10px 12px", borderRadius: 12, background: C.okPale, marginBottom: 8 }}>
-        <div style={{ width: compact ? 22 : 28, height: compact ? 22 : 28, borderRadius: "50%", background: C.ok, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-          {Ic.chk(C.w, compact ? 11 : 14)}
+      <div style={{ padding: compact ? "8px 10px" : "10px 12px", borderRadius: 12, background: C.okPale, marginBottom: 8 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: compact ? 8 : 10 }}>
+          <div style={{ width: compact ? 22 : 28, height: compact ? 22 : 28, borderRadius: "50%", background: C.ok, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            {Ic.chk(C.w, compact ? 11 : 14)}
+          </div>
+          <div style={{ flex: 1, fontSize: compact ? 11 : 12, fontWeight: 700, color: C.ok }}>Sin pendientes de mi parte</div>
         </div>
-        <div style={{ flex: 1, fontSize: compact ? 11 : 12, fontWeight: 700, color: C.ok }}>Sin pendientes de mi parte</div>
-        <div style={{ display: "flex", gap: 4 }}>
+        <div style={{ display: "flex", gap: 4, marginTop: 6, flexWrap: "wrap" }}>
           {[{k:"all",l:"Todo"},{k:"today",l:"Hoy"},{k:"tomorrow",l:"Mañana"},{k:"week",l:"Semana"}].map(o => (
             <button key={o.k} onClick={() => setSummaryFilter(o.k)} style={{ padding: compact ? "3px 6px" : "4px 8px", borderRadius: 6, border: `1px solid ${summaryFilter === o.k ? C.ok : C.b1}`, background: summaryFilter === o.k ? `${C.ok}15` : "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: compact ? 9 : 10, fontWeight: summaryFilter === o.k ? 700 : 500, color: summaryFilter === o.k ? C.ok : C.t3 }}>{o.l}</button>
           ))}
@@ -560,6 +567,7 @@ function HomeScreen({ user, freights, perms, onNav, catalog, isDesktop, onAction
       ) : (
         !compact && <div style={{ fontSize: 11, color: C.t3, paddingLeft: 16 }}>Sin fletes en este período</div>
       )}
+      </div>
     </div>
   );
 
@@ -955,9 +963,9 @@ function DetailScreen({ user, freight, perms, onBack, onAction, actionLoading, o
   });
 
   return (
-    <div style={{ flex:1, overflow:"auto", padding:"0 18px 18px", animation:"slideUp 0.25s ease" }}>
-      {/* Sticky header — back + product + actions */}
-      <div style={{ position:"sticky", top:0, zIndex:10, background:C.bg, paddingTop:18, paddingBottom:8 }}>
+    <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden", animation:"slideUp 0.25s ease" }}>
+      {/* Fixed header — back + product + actions + progress */}
+      <div style={{ flexShrink:0, padding:"18px 18px 8px", background:C.bg }}>
         <button onClick={onBack} style={{ background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", fontSize:13, fontWeight:600, color:C.pri, marginBottom:14, padding:0, display:"flex", alignItems:"center", gap:4 }}>{Ic.chev(C.pri,18)} Volver</button>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
           <div>
@@ -1026,6 +1034,9 @@ function DetailScreen({ user, freight, perms, onBack, onAction, actionLoading, o
           </div>;
         })()}
       </div>
+
+      {/* Scrollable content */}
+      <div style={{ flex:1, overflow:"auto", padding:"0 18px 18px" }}>
 
       {/* Map */}
       <FreightMap freightId={freight.id} originLat={freight.originLat} originLng={freight.originLng} destLat={freight.destLat} destLng={freight.destLng} originName={freight.originName} destName={freight.destName} status={freight.status} isDriver={user.userType==="transporter"||(user.userType==="producer"&&freight.isOwnFleet)}/>
@@ -1157,6 +1168,7 @@ function DetailScreen({ user, freight, perms, onBack, onAction, actionLoading, o
         style={{ width:"100%", background:C.priPale, borderRadius:10, padding:12, display:"flex", alignItems:"center", gap:10, border:`1.5px solid ${C.pri}30`, cursor:freight.conversationId?"pointer":"default", fontFamily:"inherit" }}>
         {Ic.msg(C.pri,20)}<div style={{textAlign:"left"}}><div style={{ fontSize:12, fontWeight:700, color:C.pri }}>Chat del flete</div><div style={{ fontSize:10, color:C.t2 }}>Conversá con las partes involucradas</div></div>
       </button>
+      </div>
     </div>
   );
 }
