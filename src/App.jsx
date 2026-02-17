@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import {
   apiGetAuditLog,
-  apiCreateTruck, apiDeactivateTruck,
-  apiCreateField, apiUpdateField, apiCreateLot, apiUpdateLot, apiGetFieldLots,
+  apiGetTrucks, apiCreateTruck, apiDeactivateTruck,
+  apiGetFields, apiCreateField, apiUpdateField, apiCreateLot, apiUpdateLot, apiGetFieldLots,
   apiGrantAccess, apiRevokeAccess, apiListAccessProducers, apiListAccessPlants, apiSearchProducer, apiGetMyFacilities,
   apiSearchUsers, apiStartConversation, apiListConversations, apiGetMessages, apiSendMessage, apiMarkRead,
   uploadPhoto, apiAddDocument, uploadChatFile,
@@ -1060,6 +1060,8 @@ function NewScreen({ user, lots, plants, branches, fields, trucks, onBack, onCre
   const _isDesktop = useIsDesktop(768);
   const [destMode, setDestMode] = useState("plant");
   const [customDest, setCustomDest] = useState({ name:"", lat:null, lng:null });
+  const [confirmMode, setConfirmMode] = useState("none"); // "plant" | "none"
+  const [confirmPlantId, setConfirmPlantId] = useState("");
   const [form, setForm] = useState({
     grain: dup?.grain || "",
     tons: dup?.tons?.toString() || "",
@@ -1100,7 +1102,7 @@ function NewScreen({ user, lots, plants, branches, fields, trucks, onBack, onCre
     product: !!form.grain && (form.grain!=="Otros" || !!form.productTypeOther.trim()),
     quantity: !!form.tons && parseFloat(form.tons) > 0,
     origin: !!form.fieldId && !!form.lotId,
-    destination: destMode==="plant" ? !!form.plantId : !!customDest.name?.trim(),
+    destination: destMode==="plant" ? !!form.plantId : (!!customDest.name?.trim() && (confirmMode==="none" || !!confirmPlantId)),
     schedule: !!form.loadDate && /^\d{2}:\d{2}$/.test(form.loadTime),
   }),[form, destMode, customDest]);
 
@@ -1178,6 +1180,10 @@ function NewScreen({ user, lots, plants, branches, fields, trucks, onBack, onCre
       payload.customDestName = customDest.name;
       payload.customDestLat = customDest.lat || undefined;
       payload.customDestLng = customDest.lng || undefined;
+      if(confirmMode==="plant" && confirmPlantId) {
+        const cp = (plants||[]).find(p=>p.id===confirmPlantId);
+        if(cp) payload.destCompanyId = cp.companyId;
+      }
     }
     if(selectedBranch) {
       payload.customDestName = selectedBranch.name;
@@ -1204,7 +1210,7 @@ function NewScreen({ user, lots, plants, branches, fields, trucks, onBack, onCre
     product: form.grain ? (form.grain==="Otros" ? `Otros: ${form.productTypeOther}` : form.grain) : "",
     quantity: form.tons ? `${form.tons} ${form.unit}${form.amount?` · $${form.amount}`:""}` : "",
     origin: (fieldOpts.find(f=>f.value===form.fieldId)?.label||"")+(selectedLot?` → ${selectedLot.name}`:""),
-    destination: destDisplayName || "",
+    destination: destMode==="plant" ? (destDisplayName||"") : ((customDest.name||"")+(confirmMode==="plant"&&confirmPlantId?` · Confirma: ${(plants||[]).find(p=>p.id===confirmPlantId)?.name||""}`:" · Sin confirmación")),
     schedule: form.loadDate&&form.loadTime ? `${form.loadDate} a las ${form.loadTime}` : "",
   };
 
@@ -1280,8 +1286,8 @@ function NewScreen({ user, lots, plants, branches, fields, trucks, onBack, onCre
         <Sec label="Destino" complete={secComplete.destination} summary={secSummary.destination} isExpanded={activeSection==="destination"} onFocus={()=>setActiveSection("destination")} secRef={secRefs.destination} incomplete={showIncomplete&&!secComplete.destination} highlight={nextToFill==="destination"&&activeSection!=="destination"} disabled={!secEnabled.destination}>
           <label style={{ fontSize:10.5, fontWeight:600, color:C.t2, marginBottom:6, display:"flex", alignItems:"center", gap:4, textTransform:"uppercase", letterSpacing:0.6 }}>{Ic.plant(C.t2,14)} Destino</label>
           <div style={{ display:"flex", gap:6, marginBottom:10 }}>
-            <button onClick={()=>{setDestMode("plant"); setCustomDest({name:"",lat:null,lng:null});}} style={{ flex:1, padding:"10px 8px", borderRadius:8, border:`1.5px solid ${destMode==="plant"?C.pri:C.b1}`, background:destMode==="plant"?C.priPale:C.w, color:destMode==="plant"?C.pri:C.t2, cursor:"pointer", fontSize:12, fontWeight:600, fontFamily:"inherit" }}>Planta</button>
-            <button onClick={()=>{setDestMode("custom"); u({plantId:""});}} style={{ flex:1, padding:"10px 8px", borderRadius:8, border:`1.5px solid ${destMode==="custom"?C.acc:C.b1}`, background:destMode==="custom"?C.accPale:C.w, color:destMode==="custom"?C.acc:C.t2, cursor:"pointer", fontSize:12, fontWeight:600, fontFamily:"inherit" }}>Personalizado</button>
+            <button onClick={()=>{setDestMode("plant"); setCustomDest({name:"",lat:null,lng:null}); setConfirmMode("none"); setConfirmPlantId("");}} style={{ flex:1, padding:"10px 8px", borderRadius:8, border:`1.5px solid ${destMode==="plant"?C.pri:C.b1}`, background:destMode==="plant"?C.priPale:C.w, color:destMode==="plant"?C.pri:C.t2, cursor:"pointer", fontSize:12, fontWeight:600, fontFamily:"inherit" }}>Planta</button>
+            <button onClick={()=>{setDestMode("custom"); u({plantId:""}); setConfirmMode("none"); setConfirmPlantId("");}} style={{ flex:1, padding:"10px 8px", borderRadius:8, border:`1.5px solid ${destMode==="custom"?C.acc:C.b1}`, background:destMode==="custom"?C.accPale:C.w, color:destMode==="custom"?C.acc:C.t2, cursor:"pointer", fontSize:12, fontWeight:600, fontFamily:"inherit" }}>Personalizado</button>
           </div>
           {destMode==="plant" && (
             <>
@@ -1301,6 +1307,21 @@ function NewScreen({ user, lots, plants, branches, fields, trucks, onBack, onCre
               {!_isDesktop && <div style={{ marginTop:8 }}>
                 <LocationPicker label="Ubicación del destino" value={customDest.lat?{lat:customDest.lat,lng:customDest.lng}:null} onChange={loc=>setCustomDest(p=>({...p,lat:loc.lat,lng:loc.lng}))}/>
               </div>}
+              <div style={{marginTop:14}}>
+                <label style={{fontSize:10.5,fontWeight:600,color:C.t2,marginBottom:6,display:"flex",alignItems:"center",gap:4,textTransform:"uppercase",letterSpacing:0.6}}>{Ic.chk(C.t2,14)} ¿Quién debe confirmar el viaje?</label>
+                <div style={{display:"flex",gap:6,marginBottom:confirmMode==="plant"?10:0}}>
+                  <button onClick={()=>setConfirmMode("plant")} style={{flex:1,padding:"10px 8px",borderRadius:8,border:`1.5px solid ${confirmMode==="plant"?C.pri:C.b1}`,background:confirmMode==="plant"?C.priPale:C.w,color:confirmMode==="plant"?C.pri:C.t2,cursor:"pointer",fontSize:12,fontWeight:600,fontFamily:"inherit"}}>Planta</button>
+                  <button onClick={()=>{setConfirmMode("none");setConfirmPlantId("");}} style={{flex:1,padding:"10px 8px",borderRadius:8,border:`1.5px solid ${confirmMode==="none"?C.ok:C.b1}`,background:confirmMode==="none"?C.okPale:C.w,color:confirmMode==="none"?C.ok:C.t2,cursor:"pointer",fontSize:12,fontWeight:600,fontFamily:"inherit"}}>Nadie</button>
+                </div>
+                {confirmMode==="plant" && (
+                  <>
+                    <Select value={confirmPlantId} onChange={v=>setConfirmPlantId(v)} options={plantOpts} placeholder="Seleccionar planta que confirma..."/>
+                    {touched&&!confirmPlantId&&<FieldError error="Seleccioná una planta que confirme el viaje"/>}
+                    <div style={{fontSize:10,color:C.t3,marginTop:6}}>La planta debe aceptar el flete para que se realice el viaje</div>
+                  </>
+                )}
+                {confirmMode==="none" && <div style={{fontSize:10,color:C.t3,marginTop:6}}>El flete no requiere confirmación externa</div>}
+              </div>
             </>
           )}
         </Sec>
@@ -1566,9 +1587,10 @@ function MenuScreen({ user, perms, onLogout, onNav, isDesktop }) {
   });
   if(companies.length===0 && user.entity) companies.push({ type:user.userType, companyId:user.companyId, label:TYPE_LABELS[user.userType]||user.userType, color:tc, name:user.entity });
 
+  const isGerente = user.role==="admin"||user.role==="platform_admin";
   const mgmtItems = [];
-  if(user.userType==="transporter"||user.userType==="producer") mgmtItems.push({k:"trucks",l:"Mi Flota",ic:Ic.truck(C.acc,18),c:C.acc});
-  if(user.userType==="producer") mgmtItems.push({k:"fields",l:"Mis Campos y Lotes",ic:Ic.pin(C.pri,18),c:C.pri});
+  if(user.userType==="transporter"||user.userType==="producer"||isGerente) mgmtItems.push({k:"trucks",l:"Mi Flota",ic:Ic.truck(C.acc,18),c:C.acc});
+  if(user.userType==="producer"||isGerente) mgmtItems.push({k:"fields",l:"Mis Campos y Lotes",ic:Ic.pin(C.pri,18),c:C.pri});
   if(user.role==="platform_admin"||user.role==="admin") mgmtItems.push({k:"admin",l:"Administración",ic:Ic.shield(C.err,18),c:C.err});
   if(!isDesktop) {
     mgmtItems.push({k:"calendar",l:"Calendario",ic:Ic.cal(C.sec,18),c:C.sec});
@@ -1651,7 +1673,7 @@ function TrucksScreen({ onBack, embedded }) {
   const [doneMsg, setDoneMsg] = useState("");
 
   const load = useCallback(async () => {
-    try { const t = await apiGetTrucks(); setTrucks(t||[]); } catch {} finally { setLoading(false); }
+    try { const t = await apiGetTrucks(); setTrucks(t||[]); } catch(e) { setMsg({t:e.message||"Error al cargar flota",k:"err"}); } finally { setLoading(false); }
   }, []);
   useEffect(() => { load(); }, [load]);
 
@@ -1675,7 +1697,7 @@ function TrucksScreen({ onBack, embedded }) {
   return (
     <div style={{ flex: embedded?undefined:1, overflow: embedded?"visible":"auto", padding: embedded?0:undefined }}>
       {(saving||doneMsg) && <LoadingOverlay closing={!!doneMsg} closingText={doneMsg} onClose={()=>setDoneMsg("")}/>}
-      {!embedded && <div style={{ position:"sticky", top:0, zIndex:10, background:C.bg, padding:"18px 18px 8px" }}><button onClick={onBack} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 600, color: C.pri, marginBottom: 14, padding: 0, display: "flex", alignItems: "center", gap: 4 }}>{Ic.chev(C.pri, 18)} Mi Perfil</button></div>}
+      {!embedded && <div style={{ position:"sticky", top:0, zIndex:10, background:C.bg, padding:"18px 18px 8px" }}><button onClick={onBack} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 600, color: C.pri, marginBottom: 14, padding: 0, display: "flex", alignItems: "center", gap: 4 }}>{Ic.chev(C.pri, 18)} Menú</button></div>}
       <div style={{ padding: embedded?0:"0 18px 18px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
         <div style={{ fontSize: 20, fontWeight: 800, letterSpacing: -0.3 }}>Mi Flota</div>
@@ -1742,7 +1764,7 @@ function FieldsScreen({ onBack, embedded }) {
   const [editLotLoc, setEditLotLoc] = useState(null);
 
   const load = useCallback(async () => {
-    try { const f = await apiGetFields(); setFields(f || []); } catch {} finally { setLoading(false); }
+    try { const f = await apiGetFields(); setFields(f || []); } catch(e) { setMsg({t:e.message||"Error al cargar campos",k:"err"}); } finally { setLoading(false); }
   }, []);
   useEffect(() => { load(); }, [load]);
 
@@ -1825,7 +1847,7 @@ function FieldsScreen({ onBack, embedded }) {
   return (
     <div style={{ flex: embedded?undefined:1, overflow: embedded?"visible":"auto", padding: embedded?0:undefined }}>
       {(saving||doneMsg) && <LoadingOverlay closing={!!doneMsg} closingText={doneMsg} onClose={()=>setDoneMsg("")}/>}
-      {!embedded && <div style={{ position:"sticky", top:0, zIndex:10, background:C.bg, padding:"18px 18px 8px" }}><button onClick={onBack} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 600, color: C.pri, marginBottom: 14, padding: 0, display: "flex", alignItems: "center", gap: 4 }}>{Ic.chev(C.pri, 18)} Mi Perfil</button></div>}
+      {!embedded && <div style={{ position:"sticky", top:0, zIndex:10, background:C.bg, padding:"18px 18px 8px" }}><button onClick={onBack} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 600, color: C.pri, marginBottom: 14, padding: 0, display: "flex", alignItems: "center", gap: 4 }}>{Ic.chev(C.pri, 18)} Menú</button></div>}
       <div style={{ padding: embedded?0:"0 18px 18px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
         <div style={{ fontSize: 20, fontWeight: 800, letterSpacing: -0.3 }}>Mis Campos</div>
@@ -1914,7 +1936,7 @@ function FieldsScreen({ onBack, embedded }) {
                         <div style={{ fontSize: 11, fontWeight: 700, color: C.acc, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>Editar lote</div>
                         <Field label="Hectáreas" value={editLotHa} onChange={setEditLotHa} placeholder="Ej: 150" />
                         <div style={{ height: 8 }} />
-                        <SafeZone><LocationPicker label="Ubicación del lote" value={editLotLoc} onChange={setEditLotLoc} /></SafeZone>
+                        <SafeZone><LocationPicker label="Ubicación del lote" value={editLotLoc} onChange={setEditLotLoc} defaultCenter={f.lat&&f.lng?{lat:f.lat,lng:f.lng}:null} /></SafeZone>
                         <div style={{ display: "flex", gap: 6, marginTop: 10 }}>
                           <Btn sm v="ghost" onClick={() => setEditLot(null)}>Cancelar</Btn>
                           <Btn sm v="acc" disabled={saving} onClick={handleUpdateLot}>{saving ? "..." : "Guardar"}</Btn>
@@ -1930,7 +1952,7 @@ function FieldsScreen({ onBack, embedded }) {
                     <div style={{ height: 8 }} />
                     <Field label="Hectáreas (opcional)" value={lotHa} onChange={setLotHa} placeholder="Ej: 150" />
                     <div style={{ height: 8 }} />
-                    <SafeZone><LocationPicker label="Ubicación del lote" value={lotLoc} onChange={setLotLoc} /></SafeZone>
+                    <SafeZone><LocationPicker label="Ubicación del lote" value={lotLoc} onChange={setLotLoc} defaultCenter={f.lat&&f.lng?{lat:f.lat,lng:f.lng}:null} /></SafeZone>
                     <div style={{ display: "flex", gap: 6, marginTop: 10 }}>
                       <Btn sm v="ghost" onClick={() => { setShowLotForm(null); setLotName(""); setLotHa(""); setLotLoc(null); }}>Cancelar</Btn>
                       <Btn sm v="acc" disabled={saving} onClick={() => handleCreateLot(f.id)}>{saving ? "..." : "Crear lote"}</Btn>
@@ -2126,7 +2148,7 @@ function AccessScreen({ user, onBack, embedded }) {
   return (
     <div style={{ flex: embedded?undefined:1, overflow: embedded?"visible":"auto", padding: embedded?0:undefined }}>
       {(saving||doneMsg) && !confirmRevoke && <LoadingOverlay closing={!!doneMsg} closingText={doneMsg} onClose={()=>setDoneMsg("")}/>}
-      {!embedded && <div style={{ position:"sticky", top:0, zIndex:10, background:C.bg, padding:"18px 18px 8px" }}><button onClick={onBack} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 600, color: C.pri, marginBottom: 14, padding: 0, display: "flex", alignItems: "center", gap: 4 }}>{Ic.chev(C.pri, 18)} Mi Perfil</button></div>}
+      {!embedded && <div style={{ position:"sticky", top:0, zIndex:10, background:C.bg, padding:"18px 18px 8px" }}><button onClick={onBack} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 600, color: C.pri, marginBottom: 14, padding: 0, display: "flex", alignItems: "center", gap: 4 }}>{Ic.chev(C.pri, 18)} Menú</button></div>}
       <div style={{ padding: embedded?0:"0 18px 18px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
         <div style={{ fontSize: embedded?16:20, fontWeight: 800, letterSpacing: -0.3 }}>{isAdmin && selCompanyType === "producer" ? "Accesos del productor" : isAdmin && selCompanyType === "transporter" ? "Accesos del transportista" : "Accesos"}</div>
@@ -3868,7 +3890,7 @@ function AdminScreen({ user, onBack }) {
                   <div style={{background:C.bgInput,border:`1px solid ${C.b1}`,borderRadius:8,padding:12,marginBottom:8}}>
                     <div style={s.lbl}>Nombre *</div>
                     <input value={lotForm.name} onChange={e=>setLotForm(p=>({...p,name:e.target.value}))} placeholder="Nombre del lote" style={{...s.inp,marginBottom:8}} />
-                    <LocationPicker label="Ubicación *" value={lotForm.lat?{lat:lotForm.lat,lng:lotForm.lng,address:lotForm.address}:null} onChange={(loc)=>setLotForm(p=>({...p,lat:loc?.lat||null,lng:loc?.lng||null,address:loc?.address||""}))} />
+                    <LocationPicker label="Ubicación *" value={lotForm.lat?{lat:lotForm.lat,lng:lotForm.lng,address:lotForm.address}:null} onChange={(loc)=>setLotForm(p=>({...p,lat:loc?.lat||null,lng:loc?.lng||null,address:loc?.address||""}))} defaultCenter={f.lat&&f.lng?{lat:f.lat,lng:f.lng}:null} />
                     <div style={{display:"flex",gap:8,marginBottom:8}}>
                       <div style={{flex:1}}><div style={s.lbl}>Hectáreas</div><input value={lotForm.hectares} onChange={e=>setLotForm(p=>({...p,hectares:e.target.value}))} placeholder="Ej: 50" type="number" style={s.inp} /></div>
                     </div>

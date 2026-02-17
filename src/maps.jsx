@@ -40,7 +40,9 @@ export class SafeZone extends Component {
 }
 
 // Location Picker: Autocomplete + Map Pin
-export function LocationPicker({ label, value, onChange }) {
+const URUGUAY_CENTER = { lat: -33.0, lng: -56.0 };
+
+export function LocationPicker({ label, value, onChange, defaultCenter }) {
   const inputRef = useRef(null);
   const mapRef = useRef(null);
   const markerRef = useRef(null);
@@ -118,30 +120,26 @@ export function LocationPicker({ label, value, onChange }) {
 
     if (value?.lat && value?.lng) {
       initMap({ lat: Number(value.lat), lng: Number(value.lng) }, 13);
+    } else if (defaultCenter?.lat && defaultCenter?.lng) {
+      initMap({ lat: Number(defaultCenter.lat), lng: Number(defaultCenter.lng) }, 13);
     } else {
+      // Show Uruguay immediately, then recenter if geolocation available
+      initMap(URUGUAY_CENTER, 7);
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
           (pos) => {
             if (cancelled) return;
             const lat = pos.coords.latitude;
             const lng = pos.coords.longitude;
-            initMap({ lat, lng }, 14);
-            const maps = window.google?.maps;
-            if (maps) {
-              new maps.Geocoder().geocode({ location: { lat, lng } }, (results, status) => {
-                const a = status === "OK" && results[0] ? results[0].formatted_address : "";
-                setAddr(a);
-                onChange({ lat, lng, address: a });
-              });
+            if (mapObjRef.current && markerRef.current) {
+              mapObjRef.current.setCenter({ lat, lng });
+              mapObjRef.current.setZoom(14);
+              markerRef.current.setPosition({ lat, lng });
             }
           },
-          () => {
-            if (!cancelled) initMap({ lat: -34.6, lng: -56.2 }, 6);
-          },
-          { enableHighAccuracy: true, timeout: 5000 }
+          () => {},
+          { enableHighAccuracy: false, timeout: 3000 }
         );
-      } else {
-        initMap({ lat: -34.6, lng: -56.2 }, 6);
       }
     }
 

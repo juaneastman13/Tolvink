@@ -27,8 +27,8 @@ export function useCatalog(user) {
       apiGetBranches().catch(()=>[]),
       apiGetLots().catch(()=>[]),
       apiGetTransportCompanies().catch(()=>[]),
-      (user.userType==="transporter"||user.userType==="producer"||(user.userTypes||[]).includes("transporter")||(user.userTypes||[]).includes("producer")) ? apiGetTrucks().catch(()=>[]) : Promise.resolve([]),
-      (user.userType==="producer"||(user.userTypes||[]).includes("producer")) ? apiGetFields().catch(()=>[]) : Promise.resolve([]),
+      (user.role==="admin"||user.role==="platform_admin"||user.userType==="transporter"||user.userType==="producer"||(user.userTypes||[]).includes("transporter")||(user.userTypes||[]).includes("producer")) ? apiGetTrucks().catch(()=>[]) : Promise.resolve([]),
+      (user.role==="admin"||user.role==="platform_admin"||user.userType==="producer"||(user.userTypes||[]).includes("producer")) ? apiGetFields().catch(()=>[]) : Promise.resolve([]),
     ]).then(([p,br,l,t,tr,f])=>{
       setPlants(p||[]);
       setBranches(br||[]);
@@ -190,7 +190,7 @@ export function useFreights(user, isAuthInitialized) {
   },[]);
   const create = useCallback(async (form)=>{
     try { const body = { originLotId:form.lotId, fieldId:form.fieldId||undefined, destPlantId:form.plantId||undefined, loadDate:form.loadDate, loadTime:form.loadTime, items:[{grain:form.grain,tons:parseFloat(form.tons),unit:form.unit||"toneladas",amount:form.amount?parseFloat(form.amount):0,productTypeOther:form.productTypeOther||undefined}], notes:form.notes||"", truckId:form.truckId||undefined, overrideOriginLat:form.overrideOriginLat, overrideOriginLng:form.overrideOriginLng, overrideDestLat:form.overrideDestLat, overrideDestLng:form.overrideDestLng };
-      if(form.customDestName) { body.customDestName=form.customDestName; body.customDestLat=form.customDestLat; body.customDestLng=form.customDestLng; if(!form.plantId) delete body.destPlantId; }
+      if(form.customDestName) { body.customDestName=form.customDestName; body.customDestLat=form.customDestLat; body.customDestLng=form.customDestLng; if(form.destCompanyId) body.destCompanyId=form.destCompanyId; if(!form.plantId) delete body.destPlantId; }
       const c=await apiCreateFreight(body);
       const m=mapFreight(c); setFreights(p=>[m,...p]); return {ok:true, freightId:c.id}; } catch(e) { return {ok:false,error:e.message}; }
   },[]);
