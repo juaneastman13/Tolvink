@@ -2931,11 +2931,20 @@ function CalendarScreen({ freights, perms, onNav, isDesktop, user, onAction, act
 
   // --- Desktop: split layout (calendar left, detail right) ---
   if (isDesktop) {
-    const rightPanel = selFreightObj ? (
-      <div style={{width:420,minWidth:420,borderLeft:`1px solid ${C.b2}`,display:"flex",flexDirection:"column",overflow:"hidden",background:C.bg,animation:"fadeIn 0.2s ease"}}>
-        <DetailScreen user={calDetailUser} freight={selFreightObj} perms={perms} onBack={()=>setSelectedId(null)} onAction={onAction} actionLoading={actionLoading} onChat={onChat} onRefresh={onRefresh} onDuplicate={onDuplicate} onEdit={onEdit} />
-      </div>
-    ) : calSelDay ? (
+    if (selFreightObj) {
+      // Freight selected: same layout as HomeScreen (calendar compressed, detail fills rest)
+      return (
+        <div style={{flex:1,position:"relative"}}>
+          <div style={{position:"absolute",top:0,left:0,right:0,bottom:0,display:"flex",flexDirection:"row"}}>
+            <div style={{overflow:"auto",minWidth:380}}>
+              {calendarPanel}
+            </div>
+            <DetailScreen user={calDetailUser} freight={selFreightObj} perms={perms} onBack={()=>setSelectedId(null)} onAction={onAction} actionLoading={actionLoading} onChat={onChat} onRefresh={onRefresh} onDuplicate={onDuplicate} onEdit={onEdit} />
+          </div>
+        </div>
+      );
+    }
+    const rightPanel = calSelDay ? (
       <div style={{width:380,minWidth:380,borderLeft:`1px solid ${C.b2}`,display:"flex",flexDirection:"column",overflow:"hidden",background:C.bg,animation:"fadeIn 0.2s ease"}}>
         {detailPanel}
       </div>
