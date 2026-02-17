@@ -95,42 +95,11 @@ const LIGHT = {
   shLg:"0 12px 32px rgba(0,0,0,0.10)",
 };
 
-const DARK = {
-  bg:"#0D1210",
-  bgCard:"#1A211E",
-  bgCardAlt:"#222B27",
-  bgInput:"#252F2A",
-  bgOverlay:"rgba(0,0,0,0.75)",
-  nav:"#161D1A",
-  pri:"#2EBF5E", priLt:"#38D96E", priPale:"#1A3328", priGhost:"rgba(46,191,94,0.08)",
-  acc:"#FF8533", accLt:"#FF9F5C", accPale:"#33241A",
-  sec:"#22D3EE", secLt:"#67E8F9", secPale:"#14303A",
-  ok:"#2EBF5E", okPale:"#1A3328",
-  info:"#22D3EE", infoPale:"#14303A",
-  warn:"#E5B800", warnPale:"#2E2610",
-  err:"#F87171", errPale:"#3A1C1C",
-  muted:"#8A9590", mutedPale:"#252E2A",
-  t1:"#F0F5F2", t2:"#B0C4B6", t3:"#7A8F82", tOn:"#FFFFFF",
-  b1:"#313D37", b2:"#262F2A", bFocus:"#2EBF5E",
-  w:"#1A211E",
-  sh:"0 1px 3px rgba(0,0,0,0.25),0 1px 2px rgba(0,0,0,0.18)",
-  shMd:"0 4px 14px rgba(0,0,0,0.30)",
-  shLg:"0 12px 32px rgba(0,0,0,0.40)",
-};
-
-// Global theme state — persisted in localStorage
 let _theme = "light";
-try { _theme = localStorage.getItem("tv-theme") || "light"; } catch {}
-let _listeners = [];
-function getTheme() { return _theme; }
-function setTheme(t) { _theme = t; try { localStorage.setItem("tv-theme", t); } catch {} _listeners.forEach(fn => fn(t)); }
-function useTheme() {
-  const [t, setT] = useState(getTheme);
-  useEffect(() => { const fn = (v) => setT(v); _listeners.push(fn); return () => { _listeners = _listeners.filter(f => f !== fn); }; }, []);
-  return [t, setTheme];
-}
+let C = { ...LIGHT };
 
-let C = _theme === "dark" ? { ...DARK } : { ...LIGHT };
+// Analytics — lightweight tracking (console for now, backend endpoint later)
+function track(event, data = {}) { console.log("[TRACK]", event, data); }
 
 const FONT = `'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif`;
 const MONO = `'JetBrains Mono','IBM Plex Mono','SF Mono',monospace`;
@@ -195,19 +164,8 @@ const STATUS_LIGHT = {
   finished:           { label:"Finalizado",          color:"#1A6B37",   bg:"#E4F3EA",   border:"#1A6B37"   },
   canceled:           { label:"Cancelado",           color:"#DC2626",   bg:"#FEE2E2",   border:"#DC2626"   },
 };
-const STATUS_DARK = {
-  draft:              { label:"Borrador",            color:"#9CA3AF",   bg:"#27302C",   border:"#9CA3AF"   },
-  pending_assignment: { label:"Solicitado",          color:"#FF8533",   bg:"#33241A",   border:"#FF8533"   },
-  assigned:           { label:"Asignado a flota",    color:"#22D3EE",   bg:"#164E63",   border:"#22D3EE"   },
-  accepted:           { label:"Confirmado camión",   color:"#22D3EE",   bg:"#164E63",   border:"#22D3EE"   },
-  in_progress:        { label:"En curso",            color:"#4ADE80",   bg:"#1A3328",   border:"#4ADE80"   },
-  loaded:             { label:"Cargando",            color:"#34D399",   bg:"#1A332D",   border:"#34D399"   },
-  finished:           { label:"Finalizado",          color:"#2EBF5E",   bg:"#1A3328",   border:"#2EBF5E"   },
-  canceled:           { label:"Cancelado",           color:"#EF4444",   bg:"#331A1A",   border:"#EF4444"   },
-};
-function stCfg(s) { 
-  const map = _theme === "dark" ? STATUS_DARK : STATUS_LIGHT;
-  return map[s] || map.pending_assignment; 
+function stCfg(s) {
+  return STATUS_LIGHT[s] || STATUS_LIGHT.pending_assignment;
 }
 
 function getActions(status, userType, role, isOwnFleet) {
@@ -316,6 +274,7 @@ function useAuth() {
 
       const mappedUser = mapUser(d.user);
       setUser(mappedUser);
+      track("login");
       console.log('[AUTH] Login successful, user set:', mappedUser);
     }
     catch(e) {
@@ -341,6 +300,7 @@ function useAuth() {
 
       const mappedUser = mapUser(d.user);
       setUser(mappedUser);
+      track("signup");
       console.log('[AUTH] Signup successful, user set:', mappedUser);
     } catch(e) {
       console.error('[AUTH] Signup error:', e);
@@ -899,7 +859,7 @@ function AuthScreen({ onLogin, onSignup, loading, error, clearError, onBackToLan
 
   return (
     <div style={{ minHeight:"100dvh", background:C.bg, fontFamily:FONT, position:"relative", overflow:"hidden" }}>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&family=JetBrains+Mono:wght@400;500&display=swap');*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}html,body,#root{margin:0;padding:0;background:${C.bg};height:auto!important;min-height:0!important;overflow:visible!important;overflow-x:hidden!important;-webkit-overflow-scrolling:touch;position:static!important}input::placeholder,textarea::placeholder{color:${C.t3}}.tv-sel-opt:hover{background:${C.priGhost}!important}input[type="date"],input[type="time"]{color-scheme:${_theme==="dark"?"dark":"light"}}input[type="date"]::-webkit-calendar-picker-indicator,input[type="time"]::-webkit-calendar-picker-indicator{opacity:0;position:absolute;inset:0;width:100%;height:100%;cursor:pointer}@keyframes dotPulse{0%,100%{opacity:0.3;transform:scale(0.8)}50%{opacity:1;transform:scale(1.2)}}@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}`}</style>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&family=JetBrains+Mono:wght@400;500&display=swap');*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}html,body,#root{margin:0;padding:0;background:${C.bg};height:auto!important;min-height:0!important;overflow:visible!important;overflow-x:hidden!important;-webkit-overflow-scrolling:touch;position:static!important}input::placeholder,textarea::placeholder{color:${C.t3}}.tv-sel-opt:hover{background:${C.priGhost}!important}input[type="date"],input[type="time"]{color-scheme:light}input[type="date"]::-webkit-calendar-picker-indicator,input[type="time"]::-webkit-calendar-picker-indicator{opacity:0;position:absolute;inset:0;width:100%;height:100%;cursor:pointer}@keyframes dotPulse{0%,100%{opacity:0.3;transform:scale(0.8)}50%{opacity:1;transform:scale(1.2)}}@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}`}</style>
 
       <RoutesBackground trucks centerFade />
 
@@ -1427,7 +1387,7 @@ function ListScreen({ freights, onNav, onRefresh }) {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [datePreset, setDatePreset] = useState("");
-  const [viewMode, setViewMode] = useState("cards"); // cards | table | map
+  const [viewMode, setViewMode] = useState("cards"); // cards | table
   const sort = useTableSort();
   const LIST_GETTERS = { code:f=>f.code, status:f=>stCfg(f.status).label, producer:f=>f.requestedByName||"", origin:f=>(f.originName||"").split("—")[0].trim(), dest:f=>f.destName, product:f=>f.grain, qty:f=>f.tons, truck:f=>f.truckPlate||"", date:f=>f.loadDate };
 
@@ -1520,9 +1480,8 @@ function ListScreen({ freights, onNav, onRefresh }) {
               {Ic.down(C.acc,12)} CSV
             </button>
           </>}
-          <span style={{ fontSize:10, color:C.t3, whiteSpace:"nowrap" }}>Cambiar visualización</span>
-          <button onClick={()=>setViewMode(v=>v==="cards"?"table":v==="table"?"map":"cards")} style={{ display:"flex", alignItems:"center", gap:4, background:C.priPale, border:`1px solid ${C.pri}20`, borderRadius:8, padding:"4px 8px", cursor:"pointer", fontFamily:"inherit", fontSize:10, fontWeight:600, color:C.pri }}>
-            {viewMode==="table"?Ic.doc(C.pri,12):viewMode==="map"?Ic.pin(C.pri,12):Ic.home(C.pri,12)} {viewMode==="cards"?"Tabla":viewMode==="table"?"Mapa":"Tarjetas"}
+          <button onClick={()=>setViewMode(v=>v==="cards"?"table":"cards")} style={{ display:"flex", alignItems:"center", gap:4, background:C.priPale, border:`1px solid ${C.pri}20`, borderRadius:8, padding:"4px 8px", cursor:"pointer", fontFamily:"inherit", fontSize:10, fontWeight:600, color:C.pri }}>
+            {viewMode==="cards"?Ic.doc(C.pri,12):Ic.home(C.pri,12)} {viewMode==="cards"?"Tabla":"Tarjetas"}
           </button>
         </div>
       </div>
@@ -1562,8 +1521,8 @@ function ListScreen({ freights, onNav, onRefresh }) {
         </div>
       )}
 
-      {/* CARDS VIEW — filtered (single status) */}
-      {viewMode==="cards" && tab!=="all" && (
+      {/* CARDS VIEW */}
+      {viewMode==="cards" && (
       <div style={{ display:"flex", flexDirection:"column", gap:12 }} className="tv-grid">
         {filtered.length===0 && <div style={{ textAlign:"center", padding:32, color:C.t3, fontSize:13, gridColumn:"1/-1" }}>Sin fletes en esta categoría</div>}
         {filtered.map((f,idx)=>{
@@ -1589,44 +1548,6 @@ function ListScreen({ freights, onNav, onRefresh }) {
         })}
       </div>
       )}
-
-      {/* KANBAN COLUMNS — when tab=all */}
-      {viewMode==="cards" && tab==="all" && (()=>{
-        const cols = [
-          { key:"available", label:"Solicitados", color:C.acc, bg:C.accPale, statuses:["pending_assignment"] },
-          { key:"active", label:"En curso", color:"#258B3E", bg:"#D0EBD7", statuses:["assigned","accepted","in_progress","loaded"] },
-          { key:"done", label:"Finalizados", color:C.pri, bg:C.priPale, statuses:["finished"] },
-        ];
-        return <div className="tv-kanban" style={{ display:"flex", flexDirection:"column", gap:16 }}>
-          {cols.map(col=>{
-            const items = filtered.filter(f=>col.statuses.includes(f.status));
-            return <div key={col.key} style={{ flex:1, minWidth:0, display:"flex", flexDirection:"column" }}>
-              <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8, padding:"8px 12px", background:col.bg, borderRadius:8, borderLeft:`3px solid ${col.color}`, flexShrink:0 }}>
-                <span style={{ fontSize:12, fontWeight:700, color:col.color }}>{col.label}</span>
-                <span style={{ fontSize:11, fontWeight:600, color:col.color, opacity:0.7 }}>({items.length})</span>
-              </div>
-              <div style={{ display:"flex", flexDirection:"column", gap:8, flex:1 }}>
-                {items.length===0 && <div style={{ textAlign:"center", padding:32, color:C.t3, fontSize:13 }}>Sin fletes</div>}
-                {items.map((f,idx)=>{
-                  const st = stCfg(f.status);
-                  return <div key={f.id} className="tv-card" onClick={()=>onNav("detail",f.id)} style={{ background:C.w, border:`1px solid ${C.b1}`, borderLeft:`3px solid ${st.border}`, borderRadius:12, padding:12, cursor:"pointer", boxShadow:C.sh, animation:`cardIn 0.3s ease ${idx*0.03}s both` }}>
-                    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:4 }}>
-                      <span style={{ fontSize:10, fontWeight:700, color:C.t3, fontFamily:MONO }}>{f.code}</span>
-                      <Bd color={st.color} bg={st.bg} small>{st.label}</Bd>
-                    </div>
-                    <div style={{ fontSize:13, fontWeight:700, color:C.t1 }}>{f.grain} · {f.tons} tn</div>
-                    <div style={{ fontSize:10.5, color:C.t2, marginTop:3 }}>{(f.originName||"").split("—")[0].trim()} → {f.destName}</div>
-                    <div style={{ fontSize:10, color:C.t3, marginTop:3 }}>{Ic.cal(C.t3,10)} {f.loadDate}{f.transporterName?` · ${f.transporterName}`:""}</div>
-                  </div>;
-                })}
-              </div>
-            </div>;
-          })}
-        </div>;
-      })()}
-
-      {/* MAP VIEW */}
-      {viewMode==="map" && <HomeMapView freights={filtered} onNav={onNav} />}
 
     </div>
   );
@@ -2980,10 +2901,9 @@ function NewScreen({ user, lots, plants, branches, fields, trucks, onBack, onCre
 
 // ======================== PROFILE =====================================
 
-function ProfileScreen({ user, perms, onLogout, onNav, theme, toggleTheme, isDesktop }) {
+function ProfileScreen({ user, perms, onLogout, onNav, isDesktop }) {
   const tc = ({plant:C.pri,transporter:C.info,producer:C.acc})[user.userType]||C.pri;
   const pl = []; if(perms.canRequest)pl.push("Solicitar fletes"); if(perms.canApprove)pl.push("Aprobar fletes"); if(perms.canAssignDriver)pl.push("Asignar choferes"); if(perms.canCancel)pl.push("Cancelar fletes"); if(perms.canReject)pl.push("Rechazar viajes");
-  const isDark = theme === "dark";
 
   const mgmtItems = [];
   if(user.userType==="transporter"||user.userType==="producer") mgmtItems.push({k:"trucks",l:"Mi Flota",ic:Ic.truck(C.acc,18),c:C.acc});
@@ -3024,20 +2944,6 @@ function ProfileScreen({ user, perms, onLogout, onNav, theme, toggleTheme, isDes
         <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:10}}>{Ic.shield(C.pri,16)}<span style={{fontSize:10.5,fontWeight:700,color:C.t2,textTransform:"uppercase",letterSpacing:0.5}}>Permisos</span></div>
         {pl.length>0?pl.map((p,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 0"}}>{Ic.chk(C.pri,14)}<span style={{fontSize:13}}>{p}</span></div>):<div style={{fontSize:12,color:C.t3}}>Rol operativo</div>}
       </div>
-      {/* Dark Mode Toggle */}
-      <div style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius:12,padding:16,marginBottom:12,boxShadow:C.sh,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-        <div style={{display:"flex",alignItems:"center",gap:10}}>
-          <span style={{fontSize:18}}>{isDark?"🌙":"☀️"}</span>
-          <div>
-            <div style={{fontSize:13,fontWeight:600,color:C.t1}}>Modo {isDark?"oscuro":"claro"}</div>
-            <div style={{fontSize:10.5,color:C.t3}}>Cambiar apariencia</div>
-          </div>
-        </div>
-        <button onClick={()=>toggleTheme(isDark?"light":"dark")} style={{width:48,height:28,borderRadius:14,background:isDark?C.pri:C.b1,border:"none",cursor:"pointer",position:"relative",transition:"background 0.2s"}}>
-          <div style={{width:22,height:22,borderRadius:11,background:C.w,position:"absolute",top:3,left:isDark?23:3,transition:"left 0.2s",boxShadow:"0 1px 3px rgba(0,0,0,0.2)"}}/>
-        </button>
-      </div>
-
       <Btn full v="err" onClick={onLogout} icon={Ic.out(C.err,16)}>Cerrar sesión</Btn>
     </div>
   );
@@ -4243,28 +4149,6 @@ function CalendarScreen({ freights, perms, onNav, isDesktop }) {
 
 // ======================== REPORTS =====================================
 
-const REPORT_COLUMNS = [
-  { key:"code", label:"Código", default:true, get:f=>f.code },
-  { key:"status", label:"Estado", default:true, get:f=>stCfg(f.status).label },
-  { key:"grain", label:"Producto", default:true, get:f=>f.grain==="Otros"?f.productTypeOther||"Otros":f.grain },
-  { key:"tons", label:"Cantidad", default:true, get:f=>`${f.tons} ${f.unit||"tn"}` },
-  { key:"amount", label:"Importe", default:false, get:f=>f.amount>0?`$${Number(f.amount).toLocaleString()}`:"" },
-  { key:"originName", label:"Origen", default:true, get:f=>f.originName },
-  { key:"fieldName", label:"Campo", default:false, get:f=>f.fieldName||"" },
-  { key:"destName", label:"Destino", default:true, get:f=>f.destName },
-  { key:"loadDate", label:"Fecha carga", default:true, get:f=>f.loadDate },
-  { key:"loadTime", label:"Hora carga", default:false, get:f=>f.loadTime||"" },
-  { key:"requestedByName", label:"Solicitado por", default:false, get:f=>f.requestedByName },
-  { key:"transporterName", label:"Transportista", default:true, get:f=>f.transporterName||"" },
-  { key:"truckPlate", label:"Matrícula", default:false, get:f=>f.truckPlate||"" },
-  { key:"truckModel", label:"Modelo camión", default:false, get:f=>f.truckModel||"" },
-  { key:"driverName", label:"Chofer", default:false, get:f=>f.driverName||"" },
-  { key:"driverPhone", label:"Tel. chofer", default:false, get:f=>f.driverPhone||"" },
-  { key:"isOwnFleet", label:"Flota propia", default:false, get:f=>f.isOwnFleet?"Sí":"No" },
-  { key:"notes", label:"Notas", default:false, get:f=>f.notes||"" },
-  { key:"docsCount", label:"Documentos", default:false, get:f=>(f.documents?.length||0).toString() },
-  { key:"createdAt", label:"Creado", default:false, get:f=>f.createdAt?new Date(f.createdAt).toLocaleDateString("es",{day:"2-digit",month:"short",year:"numeric"}):"" },
-];
 
 // ======================== EDIT FREIGHT ================================
 
@@ -4318,380 +4202,30 @@ function EditScreen({ freight, fields, plants, onBack, onSave }) {
 
 function ReportsScreen({ onBack, freights, isDesktop, embedded }) {
   const [expanded, setExpanded] = useState({});
-  const [generating, setGenerating] = useState(null);
-  const [showColPicker, setShowColPicker] = useState(false);
-  const [selectedCols, setSelectedCols] = useState(()=>REPORT_COLUMNS.filter(c=>c.default).map(c=>c.key));
   const [filterStatus, setFilterStatus] = useState("all");
   const [searchQ, setSearchQ] = useState("");
   const toggle = (k) => setExpanded(p=>({...p,[k]:!p[k]}));
-  const toggleCol = (key) => setSelectedCols(prev=>prev.includes(key)?prev.filter(k=>k!==key):[...prev,key]);
 
   const allFreights = (freights||[]).filter(f=>{
     if(!searchQ) return true;
     const q = searchQ.toLowerCase();
     return (f.code||"").toLowerCase().includes(q) || (f.originName||"").toLowerCase().includes(q) || (f.destName||"").toLowerCase().includes(q) || (f.grain||"").toLowerCase().includes(q) || (f.transporterName||"").toLowerCase().includes(q) || (f.requestedByName||"").toLowerCase().includes(q);
   });
-  const filteredForExport = filterStatus==="all" ? allFreights : allFreights.filter(f=> filterStatus==="active" ? !["finished","canceled"].includes(f.status) : f.status===filterStatus);
 
-  // Group by status
+  const filtered = filterStatus==="all" ? allFreights : allFreights.filter(f=> filterStatus==="active" ? !["finished","canceled"].includes(f.status) : f.status===filterStatus);
+
   const groups = useMemo(()=>{
-    const active = allFreights.filter(f=>!["finished","canceled"].includes(f.status));
-    const finished = allFreights.filter(f=>f.status==="finished");
-    const canceled = allFreights.filter(f=>f.status==="canceled");
+    const active = filtered.filter(f=>!["finished","canceled"].includes(f.status));
+    const finished = filtered.filter(f=>f.status==="finished");
+    const canceled = filtered.filter(f=>f.status==="canceled");
     return [
       {key:"active", label:"Fletes activos", items:active, color:C.acc},
       {key:"finished", label:"Finalizados", items:finished, color:C.ok},
       {key:"canceled", label:"Cancelados", items:canceled, color:C.muted},
     ].filter(g=>g.items.length>0);
-  },[allFreights]);
+  },[filtered]);
 
   const totalDocs = allFreights.reduce((sum,f)=>sum+(f.documents?.length||0),0);
-
-  // Load SheetJS
-  const loadXLSX = async () => {
-    if(window.XLSX) return window.XLSX;
-    await new Promise((resolve, reject) => {
-      const s = document.createElement("script");
-      s.src = "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";
-      s.onload = resolve; s.onerror = reject;
-      document.head.appendChild(s);
-    });
-    return window.XLSX;
-  };
-
-  // Excel — summary with selected columns
-  const generateExcel = async () => {
-    setGenerating("excel");
-    try {
-      const XLSX = await loadXLSX();
-      const cols = REPORT_COLUMNS.filter(c=>selectedCols.includes(c.key));
-      const headers = cols.map(c=>c.label);
-      const rows = filteredForExport.map(f=>cols.map(c=>c.get(f)));
-      const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
-      ws['!cols'] = cols.map(c=>({ wch: Math.max(c.label.length+2, 14) }));
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, "Fletes");
-      // Docs sheet
-      const allDocs = [];
-      filteredForExport.forEach(f=>(f.documents||[]).forEach(d=>{
-        allDocs.push({ "Flete":f.code, "Documento":d.name||"Documento", "Tipo":d.type||"otro", "Etapa":d.step==="request"?"Solicitud":d.step==="load_confirmation"?"Carga":d.step==="assignment"?"Asignación":"Otro", "Fecha":d.createdAt?new Date(d.createdAt).toLocaleDateString("es",{day:"2-digit",month:"short",year:"numeric"}):"", "URL":d.url||"" });
-      }));
-      if(allDocs.length>0) {
-        const wsD = XLSX.utils.json_to_sheet(allDocs);
-        wsD['!cols'] = [{wch:12},{wch:25},{wch:10},{wch:12},{wch:12},{wch:50}];
-        XLSX.utils.book_append_sheet(wb, wsD, "Documentos");
-      }
-      // Audit sheet — fetch all audit logs
-      try {
-        const auditRows = [];
-        const fmtDt = d => { try { const dt=new Date(d); return dt.toLocaleDateString("es-AR",{day:"2-digit",month:"short",year:"numeric"})+" "+dt.toLocaleTimeString("es-AR",{hour:"2-digit",minute:"2-digit",hour12:false}); } catch(e){ return ""; }};
-        const actionLabels = { created:"Solicitado", assigned:"Asignado", accepted:"Aceptado", rejected:"Rechazado", started:"Viaje iniciado", confirm_loaded:"Carga confirmada", confirm_finished:"Entrega confirmada", finished:"Finalizado", canceled:"Cancelado", authorized:"Autorizado", updated:"Editado" };
-        for (const f of filteredForExport) {
-          try {
-            const logs = await apiGetAuditLog(f.id);
-            (logs||[]).forEach(l => {
-              auditRows.push({ "Flete":f.code, "Acción":actionLabels[l.action]||l.action, "Usuario":l.user?.name||"", "Empresa":l.user?.company?.name||"", "Motivo":l.reason||"", "Fecha":fmtDt(l.createdAt) });
-            });
-          } catch(e) { /* skip */ }
-        }
-        if(auditRows.length>0) {
-          const wsA = XLSX.utils.json_to_sheet(auditRows);
-          wsA['!cols'] = [{wch:12},{wch:20},{wch:20},{wch:20},{wch:30},{wch:18}];
-          XLSX.utils.book_append_sheet(wb, wsA, "Historial");
-        }
-      } catch(e) { /* skip audit */ }
-      const label = filterStatus==="all"?"todos":filterStatus==="active"?"activos":filterStatus;
-      XLSX.writeFile(wb, `tolvink-fletes-${label}-${new Date().toISOString().slice(0,10)}.xlsx`);
-    } catch(e) { console.error("Excel error",e); }
-    setGenerating(null);
-  };
-
-  // Excel — single freight
-  const generateFreightExcel = async (f) => {
-    setGenerating(f.id+"x");
-    try {
-      const XLSX = await loadXLSX();
-      const info = [
-        ["Código", f.code], ["Estado", stCfg(f.status).label],
-        ["Producto", f.grain==="Otros"?f.productTypeOther||"Otros":f.grain],
-        ["Cantidad", `${f.tons} ${f.unit||"tn"}`],
-        f.amount>0&&["Importe", `$${Number(f.amount).toLocaleString()}`],
-        ["Origen", f.originName], f.fieldName&&["Campo", f.fieldName],
-        ["Destino", f.destName], ["Fecha carga", f.loadDate],
-        f.loadTime&&["Hora", f.loadTime], ["Solicitado por", f.requestedByName],
-        f.transporterName&&["Transportista", f.transporterName],
-        f.truckPlate&&["Matrícula", f.truckPlate], f.truckModel&&["Modelo", f.truckModel],
-        f.driverName&&["Chofer", f.driverName], f.driverPhone&&["Teléfono", f.driverPhone],
-        f.isOwnFleet&&["Flota propia", "Sí"], f.notes&&["Notas", f.notes],
-        ["Creado", f.createdAt?new Date(f.createdAt).toLocaleDateString("es",{day:"2-digit",month:"short",year:"numeric"}):""],
-      ].filter(Boolean);
-      const ws = XLSX.utils.aoa_to_sheet([["Campo","Valor"], ...info]);
-      ws['!cols'] = [{wch:18},{wch:40}];
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, "Informe");
-      const docs = f.documents||[];
-      if(docs.length>0) {
-        const wsD = XLSX.utils.json_to_sheet(docs.map(d=>({ "Documento":d.name||"Documento", "Tipo":d.type||"otro", "Etapa":d.step==="request"?"Solicitud":d.step==="load_confirmation"?"Carga":"Otro", "Fecha":d.createdAt?new Date(d.createdAt).toLocaleDateString("es",{day:"2-digit",month:"short",year:"numeric"}):"", "URL":d.url||"" })));
-        XLSX.utils.book_append_sheet(wb, wsD, "Documentos");
-      }
-      // Audit sheet
-      try {
-        const logs = await apiGetAuditLog(f.id);
-        const fmtDt = d => { try { const dt=new Date(d); return dt.toLocaleDateString("es-AR",{day:"2-digit",month:"short",year:"numeric"})+" "+dt.toLocaleTimeString("es-AR",{hour:"2-digit",minute:"2-digit",hour12:false}); } catch(e){ return ""; }};
-        const actionLabels = { created:"Solicitado", assigned:"Asignado", accepted:"Aceptado", rejected:"Rechazado", started:"Viaje iniciado", confirm_loaded:"Carga confirmada", confirm_finished:"Entrega confirmada", finished:"Finalizado", canceled:"Cancelado", authorized:"Autorizado", updated:"Editado" };
-        if(logs && logs.length>0) {
-          const wsA = XLSX.utils.json_to_sheet(logs.map(l=>({ "Acción":actionLabels[l.action]||l.action, "Usuario":l.user?.name||"", "Empresa":l.user?.company?.name||"", "Motivo":l.reason||"", "Fecha":fmtDt(l.createdAt) })));
-          wsA['!cols'] = [{wch:20},{wch:20},{wch:20},{wch:30},{wch:18}];
-          XLSX.utils.book_append_sheet(wb, wsA, "Historial");
-        }
-      } catch(e) { /* skip */ }
-      XLSX.writeFile(wb, `${f.code}-informe.xlsx`);
-    } catch(e) { console.error("Excel error",e); }
-    setGenerating(null);
-  };
-
-  // PDF generation for a single freight
-  const generatePDF = async (f) => {
-    setGenerating(f.id);
-    try {
-      if(!window.jspdf) {
-        await new Promise((resolve, reject) => {
-          const s = document.createElement("script");
-          s.src = "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
-          s.onload = resolve; s.onerror = reject;
-          document.head.appendChild(s);
-        });
-      }
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF();
-      const st = stCfg(f.status);
-      const lm = 18; const rm = 192; const pw = rm - lm;
-      let y = 0;
-
-      const addFooter = (pg, total) => {
-        doc.setDrawColor(26,107,55); doc.setLineWidth(0.5);
-        doc.line(lm, 280, rm, 280);
-        doc.setFontSize(7); doc.setFont("helvetica","normal"); doc.setTextColor(140,140,140);
-        doc.text("tolvink — Plataforma de gestión logística de fletes", lm, 285);
-        doc.text(`Generado: ${new Date().toLocaleString("es-AR")}`, lm + 80, 285);
-        doc.text(`Pág. ${pg}/${total}`, rm - 15, 285);
-      };
-      const checkPage = (need) => { if(y+need>268) { doc.addPage(); y=20; return true; } return false; };
-
-      // ─── HEADER BAR ───
-      doc.setFillColor(26,107,55); doc.rect(0, 0, 210, 28, "F");
-      doc.setFontSize(20); doc.setFont("helvetica","bold"); doc.setTextColor(255,255,255);
-      doc.text("tolvink", lm, 16);
-      doc.setFontSize(9); doc.setFont("helvetica","normal"); doc.setTextColor(200,230,210);
-      doc.text("Informe de Flete", lm + 44, 16);
-      // Code badge right
-      doc.setFontSize(14); doc.setFont("helvetica","bold"); doc.setTextColor(255,255,255);
-      doc.text(f.code, rm - doc.getTextWidth(f.code), 16);
-      doc.setFontSize(8); doc.setFont("helvetica","normal"); doc.setTextColor(200,230,210);
-      const idStr = `ID: ${f.id?.slice(0,8)||"—"}`;
-      doc.text(idStr, rm - doc.getTextWidth(idStr), 23);
-
-      y = 36;
-
-      // ─── STATUS + SUMMARY LINE ───
-      doc.setFillColor(245,247,245); doc.roundedRect(lm, y, pw, 18, 3, 3, "F");
-      doc.setFontSize(11); doc.setFont("helvetica","bold"); doc.setTextColor(30,30,30);
-      doc.text(`${f.grain==="Otros"?f.productTypeOther||"Otros":f.grain} · ${f.tons} ${f.unit||"tn"}`, lm + 6, y + 11);
-      const stLabel = `Estado: ${st.label}`;
-      doc.setFontSize(9); doc.setFont("helvetica","normal"); doc.setTextColor(80,80,80);
-      doc.text(stLabel, rm - 6 - doc.getTextWidth(stLabel), y + 11);
-      y += 26;
-
-      // ─── INFO TABLE (two-column layout) ───
-      const sectionTitle = (title) => {
-        checkPage(18);
-        doc.setFontSize(10); doc.setFont("helvetica","bold"); doc.setTextColor(26,107,55);
-        doc.text(title, lm, y); y += 2;
-        doc.setDrawColor(26,107,55); doc.setLineWidth(0.3); doc.line(lm, y, rm, y); y += 7;
-      };
-
-      const infoRow = (label, val, highlight) => {
-        checkPage(9);
-        doc.setFontSize(9); doc.setFont("helvetica","normal"); doc.setTextColor(110,110,110);
-        doc.text(label, lm, y);
-        doc.setFont("helvetica", highlight?"bold":"normal"); doc.setTextColor(30,30,30);
-        const valStr = String(val||"—");
-        const maxW = pw - 58;
-        const lines = doc.splitTextToSize(valStr, maxW);
-        doc.text(lines, lm + 56, y);
-        y += 6 * lines.length;
-      };
-
-      sectionTitle("Datos del Flete");
-      infoRow("Código", f.code, true);
-      infoRow("Producto", `${f.grain==="Otros"?f.productTypeOther||"Otros":f.grain}`, true);
-      infoRow("Cantidad", `${f.tons} ${f.unit||"tn"}`, true);
-      if(f.amount>0) infoRow("Importe", `$${Number(f.amount).toLocaleString()}`);
-      infoRow("Estado", st.label);
-      y += 3;
-
-      sectionTitle("Logística");
-      infoRow("Origen", f.originName);
-      if(f.fieldName) infoRow("Campo", f.fieldName);
-      infoRow("Destino", f.destName);
-      infoRow("Fecha carga", f.loadDate || "—");
-      if(f.loadTime) infoRow("Hora carga", f.loadTime);
-      y += 3;
-
-      sectionTitle("Participantes");
-      infoRow("Solicitado por", f.requestedByName);
-      if(f.transporterName) infoRow("Transportista", f.transporterName);
-      if(f.truckPlate) infoRow("Camión", `${f.truckPlate}${f.truckModel?` · ${f.truckModel}`:""}`);
-      if(f.driverName) infoRow("Chofer", f.driverName);
-      if(f.driverPhone) infoRow("Teléfono", f.driverPhone);
-      if(f.isOwnFleet) infoRow("Tipo", "Flota propia del productor");
-      y += 3;
-
-      if(f.notes) {
-        sectionTitle("Observaciones");
-        doc.setFontSize(9); doc.setFont("helvetica","normal"); doc.setTextColor(50,50,50);
-        const noteLines = doc.splitTextToSize(f.notes, pw);
-        noteLines.forEach(l => { checkPage(6); doc.text(l, lm, y); y += 5; });
-        y += 3;
-      }
-
-      sectionTitle("Identificadores");
-      infoRow("ID interno", f.id || "—");
-      infoRow("Código", f.code);
-      infoRow("Creado", f.createdAt ? new Date(f.createdAt).toLocaleString("es-AR",{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"}) : "—");
-
-      // ─── QR-like code block ───
-      y += 5; checkPage(30);
-      doc.setFillColor(245,247,245); doc.roundedRect(lm, y, pw, 22, 2, 2, "F");
-      doc.setFontSize(8); doc.setFont("helvetica","normal"); doc.setTextColor(100,100,100);
-      doc.text("Verificación:", lm + 4, y + 9);
-      doc.setFont("courier","bold"); doc.setFontSize(9); doc.setTextColor(26,107,55);
-      const verCode = `${f.code}-${(f.id||"").slice(0,8).toUpperCase()}`;
-      doc.text(verCode, lm + 34, y + 9);
-      doc.setFont("helvetica","normal"); doc.setFontSize(7); doc.setTextColor(130,130,130);
-      doc.text(`Fecha generación: ${new Date().toISOString().slice(0,19).replace("T"," ")}`, lm + 4, y + 17);
-      y += 28;
-
-      // ─── DOCUMENTS ───
-      const docs = f.documents||[];
-      if(docs.length>0) {
-        sectionTitle(`Documentos adjuntos (${docs.length})`);
-        doc.setFontSize(8.5); doc.setFont("helvetica","normal");
-        docs.forEach((d,i)=>{
-          checkPage(12);
-          const stepLabel = d.step==="request"?"Solicitud":d.step==="load_confirmation"?"Carga":d.step==="assignment"?"Asignación":"Otro";
-          const dateStr = d.createdAt?new Date(d.createdAt).toLocaleDateString("es",{day:"2-digit",month:"short"}):"";
-          doc.setTextColor(30,30,30);
-          doc.text(`${i+1}. ${d.name||"Documento"}`, lm, y);
-          doc.setTextColor(100,100,100);
-          doc.text(`${stepLabel} · ${dateStr}`, lm+78, y);
-          y+=5;
-          if(d.url) {
-            doc.setTextColor(0,56,130);
-            doc.textWithLink(d.url.length>55?d.url.slice(0,55)+"...":d.url, lm+4, y, {url:d.url});
-            y+=6;
-          }
-        });
-        y += 3;
-      }
-
-      // ─── AUDIT HISTORY ───
-      try {
-        const logs = await apiGetAuditLog(f.id);
-        const actionLabels = { created:"Solicitado", assigned:"Asignado", accepted:"Aceptado", rejected:"Rechazado", started:"Viaje iniciado", confirm_loaded:"Carga confirmada", confirm_finished:"Entrega confirmada", finished:"Finalizado", canceled:"Cancelado", authorized:"Autorizado", updated:"Editado" };
-        if(logs && logs.length>0) {
-          sectionTitle(`Historial de cambios (${logs.length})`);
-          doc.setFontSize(8.5);
-          logs.forEach(l => {
-            checkPage(10);
-            const fmtDt = d => { try { const dt=new Date(d); return dt.toLocaleDateString("es-AR",{day:"2-digit",month:"short"})+" "+dt.toLocaleTimeString("es-AR",{hour:"2-digit",minute:"2-digit",hour12:false}); } catch(e){ return ""; }};
-            doc.setFont("helvetica","bold"); doc.setTextColor(30,30,30);
-            doc.text(actionLabels[l.action]||l.action, lm, y);
-            doc.setFont("helvetica","normal"); doc.setTextColor(100,100,100);
-            doc.text(`${l.user?.name||""} ${l.user?.company?.name?`· ${l.user.company.name}`:""}`, lm+42, y);
-            doc.setTextColor(150,150,150);
-            doc.text(fmtDt(l.createdAt), rm - 35, y);
-            y += 5;
-            if(l.reason) { doc.setTextColor(120,120,120); doc.text(`  Motivo: ${l.reason}`, lm, y); y += 5; }
-          });
-        }
-      } catch(e) { /* skip audit */ }
-
-      // ─── ADD FOOTERS TO ALL PAGES ───
-      const totalPages = doc.internal.getNumberOfPages();
-      for(let p=1; p<=totalPages; p++) { doc.setPage(p); addFooter(p, totalPages); }
-
-      doc.save(`${f.code}-informe.pdf`);
-    } catch(e) { console.error("PDF error",e); }
-    setGenerating(null);
-  };
-
-  // Generate summary PDF of all freights
-  const generateSummaryPDF = async () => {
-    setGenerating("summary");
-    try {
-      if(!window.jspdf) {
-        await new Promise((resolve, reject) => {
-          const s = document.createElement("script");
-          s.src = "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
-          s.onload = resolve; s.onerror = reject;
-          document.head.appendChild(s);
-        });
-      }
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF();
-      let y = 0;
-      const lm = 18; const rm = 192; const pw = rm - lm;
-
-      // Header bar
-      doc.setFillColor(26,107,55); doc.rect(0, 0, 210, 28, "F");
-      doc.setFontSize(20); doc.setFont("helvetica","bold"); doc.setTextColor(255,255,255);
-      doc.text("tolvink", lm, 16);
-      doc.setFontSize(9); doc.setFont("helvetica","normal"); doc.setTextColor(200,230,210);
-      doc.text("Resumen de Fletes", lm + 44, 16);
-      doc.setFontSize(8); doc.setTextColor(200,230,210);
-      doc.text(new Date().toLocaleDateString("es-AR",{day:"2-digit",month:"long",year:"numeric"}), rm - 40, 16);
-
-      y = 36;
-      doc.setFillColor(245,247,245); doc.roundedRect(lm, y, pw, 14, 2, 2, "F");
-      doc.setFontSize(10); doc.setFont("helvetica","bold"); doc.setTextColor(30,30,30);
-      doc.text(`${allFreights.length} fletes · ${totalDocs} documentos`, lm + 6, y + 9);
-      y += 22;
-
-      // Table header
-      doc.setFontSize(8.5); doc.setFont("helvetica","bold"); doc.setTextColor(26,107,55);
-      doc.text("Código", lm, y); doc.text("Producto", lm+26, y); doc.text("Origen", lm+62, y); doc.text("Destino", lm+104, y); doc.text("Estado", lm+144, y);
-      y+=2; doc.setDrawColor(26,107,55); doc.setLineWidth(0.3); doc.line(lm, y, rm, y); y+=5;
-
-      doc.setFont("helvetica","normal"); doc.setFontSize(8.5);
-      allFreights.forEach(f=>{
-        const st2 = stCfg(f.status);
-        doc.setTextColor(30,30,30); doc.setFont("helvetica","bold");
-        doc.text(f.code||"—", lm, y);
-        doc.setFont("helvetica","normal");
-        doc.text(`${(f.grain||"").slice(0,12)} ${f.tons}${f.unit==="toneladas"?"tn":f.unit||""}`, lm+26, y);
-        doc.text((f.originName||"").slice(0,22), lm+62, y);
-        doc.text((f.destName||"").slice(0,22), lm+104, y);
-        doc.setTextColor(100,100,100);
-        doc.text(st2.label, lm+144, y);
-        y+=6;
-        if(y>268) { doc.addPage(); y=20; }
-      });
-
-      // Footer on all pages
-      const totalPages = doc.internal.getNumberOfPages();
-      for(let p=1; p<=totalPages; p++) {
-        doc.setPage(p);
-        doc.setDrawColor(26,107,55); doc.setLineWidth(0.5); doc.line(lm, 280, rm, 280);
-        doc.setFontSize(7); doc.setFont("helvetica","normal"); doc.setTextColor(140,140,140);
-        doc.text("tolvink — Plataforma de gestión logística de fletes", lm, 285);
-        doc.text(`Pág. ${p}/${totalPages}`, rm - 15, 285);
-      }
-
-      doc.save(`tolvink-resumen-${new Date().toISOString().slice(0,10)}.pdf`);
-    } catch(e) { console.error("PDF error",e); }
-    setGenerating(null);
-  };
 
   return (
     <div style={{ flex:embedded?undefined:1, overflow:embedded?"visible":"auto", padding:embedded?0:18 }}>
@@ -4714,40 +4248,6 @@ function ReportsScreen({ onBack, freights, isDesktop, embedded }) {
         {[{k:"all",l:"Todos"},{k:"active",l:"Activos"},{k:"finished",l:"Finalizados"},{k:"canceled",l:"Cancelados"}].map(opt=>(
           <button key={opt.k} onClick={()=>setFilterStatus(opt.k)} style={{ padding:"6px 14px", borderRadius:20, border:`1.5px solid ${filterStatus===opt.k?C.pri:C.b1}`, background:filterStatus===opt.k?C.priPale:C.w, color:filterStatus===opt.k?C.pri:C.t2, fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>{opt.l}</button>
         ))}
-      </div>
-
-      {/* Column selector */}
-      <button onClick={()=>setShowColPicker(!showColPicker)} style={{ background:C.w, border:`1px solid ${C.b1}`, borderRadius:10, padding:"10px 14px", cursor:"pointer", fontFamily:"inherit", fontSize:11, fontWeight:600, color:C.sec, display:"flex", alignItems:"center", gap:6, marginBottom:showColPicker?0:10, width:"100%" }}>
-        {Ic.doc(C.sec,14)} Columnas del Excel ({selectedCols.length}/{REPORT_COLUMNS.length})
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={C.sec} strokeWidth="2.5" style={{marginLeft:"auto",transform:showColPicker?"rotate(180deg)":"rotate(0deg)",transition:"transform 0.2s"}}><polyline points="6 9 12 15 18 9"/></svg>
-      </button>
-
-      {showColPicker && (
-        <div style={{ background:C.w, border:`1px solid ${C.b1}`, borderTop:"none", borderRadius:"0 0 12px 12px", padding:12, marginBottom:10, boxShadow:C.sh }}>
-          <div style={{ display:"flex", gap:6, marginBottom:10 }}>
-            <button onClick={()=>setSelectedCols(REPORT_COLUMNS.map(c=>c.key))} style={{fontSize:10,fontWeight:600,color:C.pri,background:"none",border:"none",cursor:"pointer",fontFamily:"inherit"}}>Todas</button>
-            <span style={{color:C.t3}}>·</span>
-            <button onClick={()=>setSelectedCols(REPORT_COLUMNS.filter(c=>c.default).map(c=>c.key))} style={{fontSize:10,fontWeight:600,color:C.t2,background:"none",border:"none",cursor:"pointer",fontFamily:"inherit"}}>Predeterminadas</button>
-            <span style={{color:C.t3}}>·</span>
-            <button onClick={()=>setSelectedCols([])} style={{fontSize:10,fontWeight:600,color:C.err,background:"none",border:"none",cursor:"pointer",fontFamily:"inherit"}}>Ninguna</button>
-          </div>
-          <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
-            {REPORT_COLUMNS.map(col=>{
-              const sel = selectedCols.includes(col.key);
-              return <button key={col.key} onClick={()=>toggleCol(col.key)} style={{ padding:"5px 10px", borderRadius:8, border:`1.5px solid ${sel?C.sec:C.b1}`, background:sel?C.secPale:C.w, color:sel?C.sec:C.t2, fontSize:10.5, fontWeight:sel?600:500, cursor:"pointer", fontFamily:"inherit" }}>{sel?"✓ ":""}{col.label}</button>;
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* Export buttons — Excel + PDF */}
-      <div style={{ display:"flex", gap:8, marginBottom:16 }}>
-        <button onClick={generateExcel} disabled={generating==="excel"||selectedCols.length===0} style={{ flex:1, padding:"12px 10px", borderRadius:10, border:`1.5px solid ${C.sec}`, background:C.secPale, cursor:selectedCols.length===0?"default":"pointer", fontFamily:"inherit", fontSize:12, fontWeight:700, color:C.sec, display:"flex", alignItems:"center", justifyContent:"center", gap:6, opacity:selectedCols.length===0?0.5:1 }}>
-          {Ic.doc(C.sec,15)} {generating==="excel"?"Generando...":"Excel"}
-        </button>
-        <button onClick={generateSummaryPDF} disabled={generating==="summary"} style={{ flex:1, padding:"12px 10px", borderRadius:10, border:`1.5px solid ${C.pri}`, background:C.priPale, cursor:"pointer", fontFamily:"inherit", fontSize:12, fontWeight:700, color:C.pri, display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
-          {Ic.doc(C.pri,15)} {generating==="summary"?"Generando...":"PDF"}
-        </button>
       </div>
 
       {allFreights.length===0 && <div style={{ textAlign:"center", padding:32, color:C.t3, fontSize:13 }}>No hay fletes registrados.</div>}
@@ -4778,18 +4278,6 @@ function ReportsScreen({ onBack, freights, isDesktop, embedded }) {
 
                 {isOpen && (
                   <div style={{ borderTop:`1px solid ${C.b2}`, padding:"8px 14px" }}>
-                    {/* Export buttons */}
-                    <div style={{ display:"flex", gap:6, marginBottom:8 }}>
-                      <button onClick={()=>generateFreightExcel(f)} disabled={generating===f.id+"x"}
-                        style={{ flex:1, padding:"9px 10px", borderRadius:8, border:`1.5px solid ${C.sec}30`, background:C.secPale, cursor:"pointer", fontFamily:"inherit", fontSize:11, fontWeight:600, color:C.sec, display:"flex", alignItems:"center", justifyContent:"center", gap:5 }}>
-                        {Ic.doc(C.sec,13)} {generating===f.id+"x"?"...":"Excel"}
-                      </button>
-                      <button onClick={()=>generatePDF(f)} disabled={generating===f.id}
-                        style={{ flex:1, padding:"9px 10px", borderRadius:8, border:`1.5px solid ${C.pri}30`, background:C.priPale, cursor:"pointer", fontFamily:"inherit", fontSize:11, fontWeight:600, color:C.pri, display:"flex", alignItems:"center", justifyContent:"center", gap:5 }}>
-                        {Ic.doc(C.pri,13)} {generating===f.id?"...":"PDF"}
-                      </button>
-                    </div>
-
                     {docs.length>0 ? docs.map((d,i)=>(
                       <div key={d.id||i} style={{ display:"flex", alignItems:"center", gap:10, padding:"8px 0", borderBottom:i<docs.length-1?`1px solid ${C.b2}`:"none" }}>
                         {d.type==="photo" ? (
@@ -5623,9 +5111,6 @@ function AdminScreen({ user, onBack }) {
 
 // ======================== MAIN APP ====================================
 export default function Tolvink() {
-  const [theme, toggleTheme] = useTheme();
-  // Update global C object when theme changes
-  C = theme === "dark" ? { ...DARK } : { ...LIGHT };
 
   const auth = useAuth();
   const fh = useFreights(auth.user, auth.isInitialized);
@@ -5671,7 +5156,7 @@ export default function Tolvink() {
 
   const perms = useMemo(()=>permsFor(auth.user),[auth.user]);
   const show = (msg,type="ok")=>setToast({msg,type});
-  const nav = (s,fId)=>{ if(s==="new_date"&&fId){if(!perms.canRequest){show("Sin permisos para solicitar","err");return;} setDuplicateData({preDate:fId});setScreen("new");return;} if(fId){ setSelFreight(fId); if(s==="detail") fh.refresh(fId); } if(s==="new"&&!perms.canRequest){show("Sin permisos para solicitar","err");return;} setScreen(s); };
+  const nav = (s,fId)=>{ track("screen_view",{screen:s}); if(s==="new_date"&&fId){if(!perms.canRequest){show("Sin permisos para solicitar","err");return;} setDuplicateData({preDate:fId});setScreen("new");return;} if(fId){ setSelFreight(fId); if(s==="detail") fh.refresh(fId); } if(s==="new"&&!perms.canRequest){show("Sin permisos para solicitar","err");return;} setScreen(s); };
 
   const [actionLoading, setActionLoading] = useState(false);
 
@@ -5691,12 +5176,12 @@ export default function Tolvink() {
 
   const handleAcceptWithTruck = async (fId, truckId)=>{
     const r = await fh.respond(fId, "accepted", undefined, truckId);
-    if(r.ok){ setModal(null); show("Flete aceptado"); } else { setModal(null); show(r.error,"err"); }
+    if(r.ok){ track("freight_accept"); setModal(null); show("Flete aceptado"); } else { setModal(null); show(r.error,"err"); }
   };
 
   const handleAssign = async (fId, transportCompanyId)=>{
     const r = await fh.assign(fId, transportCompanyId);
-    if(r.ok){ setModal(null); show("Transportista asignado"); } else { setModal(null); show(r.error,"err"); }
+    if(r.ok){ track("freight_assign"); setModal(null); show("Transportista asignado"); } else { setModal(null); show(r.error,"err"); }
   };
 
   const handleReasonAction = async (fId,reason,action)=>{
@@ -5721,7 +5206,7 @@ export default function Tolvink() {
       }
     }
     setSubmitting(false);
-    if(r.ok){ setScreen("list"); show("Flete solicitado"); } else show(r.error,"err");
+    if(r.ok){ track("freight_create"); setScreen("list"); show("Flete solicitado"); } else show(r.error,"err");
   };
 
   // Show loading splash only during initial auth check
@@ -5776,7 +5261,7 @@ export default function Tolvink() {
         {screen==="detail" && <DetailScreen user={auth.user} freight={curFreight} perms={perms} onBack={()=>setScreen("list")} onAction={handleAction} actionLoading={actionLoading} onChat={(convId)=>{if(convId){setChatConvId(convId);setScreen("chats");}}} onRefresh={(id)=>fh.refresh(id)} onDuplicate={(f)=>{setDuplicateData(f);setScreen("new");}} onEdit={(f)=>{setEditData(f);setScreen("edit");}}/>}
         {screen==="new" && <NewScreen user={auth.user} lots={catalog.lots} plants={catalog.plants} branches={catalog.branches} fields={catalog.fields} trucks={catalog.trucks} onBack={()=>{setDuplicateData(null);setScreen("home");}} onCreate={handleCreate} submitting={submitting} duplicateFrom={duplicateData}/>}
         {screen==="edit" && editData && <EditScreen freight={editData} fields={catalog.fields} plants={catalog.plants} onBack={()=>{setEditData(null);setScreen("detail");}} onSave={async(id,data)=>{const r=await fh.update(id,data);if(r.ok){setEditData(null);setScreen("detail");show("Flete actualizado");}else show(r.error,"err");}}/>}
-        {screen==="profile" && <ProfileScreen user={auth.user} perms={perms} onLogout={auth.logout} onNav={nav} theme={theme} toggleTheme={toggleTheme} isDesktop={isDesktop}/>}
+        {screen==="profile" && <ProfileScreen user={auth.user} perms={perms} onLogout={auth.logout} onNav={nav} isDesktop={isDesktop}/>}
         {screen==="trucks" && <TrucksScreen onBack={()=>{catalog.refresh();setScreen("profile");}}/>}
         {screen==="fields" && <FieldsScreen onBack={()=>{catalog.refresh();setScreen("profile");}}/>}
         {screen==="access" && <AccessScreen onBack={()=>setScreen("profile")}/>}
