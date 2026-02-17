@@ -623,11 +623,19 @@ function ListScreen({ freights, onNav, onRefresh }) {
     });
   },[freights,searchQ,dateFrom,dateTo]);
 
-  const STATUS_ORDER = ["pending_assignment","assigned","accepted","in_progress","loaded","finished","canceled"];
+  const GROUPS = [
+    { key:"solicitado", label:"Solicitado", color:"#FF6A00", statuses:["pending_assignment"] },
+    { key:"en_curso", label:"En curso", color:"#2563EB", statuses:["assigned","accepted","in_progress","loaded"] },
+    { key:"finalizados", label:"Finalizados", color:"#1A6B37", statuses:["finished"] },
+    { key:"cancelados", label:"Cancelados", color:"#DC2626", statuses:["canceled"] },
+  ];
   const grouped = useMemo(()=>{
     const map = {};
-    STATUS_ORDER.forEach(s => map[s] = []);
-    filtered.forEach(f => { if(map[f.status]) map[f.status].push(f); });
+    GROUPS.forEach(g => map[g.key] = []);
+    filtered.forEach(f => {
+      const g = GROUPS.find(g => g.statuses.includes(f.status));
+      if(g) map[g.key].push(f);
+    });
     return map;
   },[filtered]);
 
@@ -636,9 +644,9 @@ function ListScreen({ freights, onNav, onRefresh }) {
   return (
     <div ref={containerRef} style={{ flex:1, overflow:"auto", padding:18, WebkitOverflowScrolling:"touch" }}>
       {indicator}
-      {/* Header: title + search + date filters — single row */}
+      <div style={{ fontSize:20, fontWeight:800, letterSpacing:-0.3, marginBottom:10 }}>Fletes</div>
+      {/* Search + date filters — single row */}
       <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:12, flexWrap:"wrap" }}>
-        <div style={{ fontSize:20, fontWeight:800, letterSpacing:-0.3, marginRight:8 }}>Fletes</div>
         <div style={{ position:"relative", flex:"1 1 180px", minWidth:160 }}>
           <div style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",display:"flex"}}>{Ic.srch(C.t3,14)}</div>
           <input value={searchQ} onChange={e=>setSearchQ(e.target.value)} placeholder="Buscar..."
@@ -656,16 +664,15 @@ function ListScreen({ freights, onNav, onRefresh }) {
         </div>
       </div>
 
-      {/* Kanban columns by status */}
+      {/* Kanban columns by group */}
       <div style={{ display:"flex", gap:12, overflowX:"auto", alignItems:"flex-start", paddingBottom:8 }}>
-        {STATUS_ORDER.map(status => {
-          const items = grouped[status];
-          const st = stCfg(status);
+        {GROUPS.map(group => {
+          const items = grouped[group.key];
           return (
-            <div key={status} style={{ minWidth:220, maxWidth:280, flex:"1 0 220px", background:C.bg, borderRadius:12, border:`1px solid ${C.b1}`, overflow:"hidden" }}>
-              <div style={{ padding:"10px 12px", borderBottom:`2px solid ${st.border}`, display:"flex", alignItems:"center", gap:6 }}>
-                <span style={{ width:8, height:8, borderRadius:4, background:st.border, flexShrink:0 }}/>
-                <span style={{ fontSize:11, fontWeight:700, color:st.color }}>{st.label}</span>
+            <div key={group.key} style={{ minWidth:220, flex:"1 1 0", background:C.bg, borderRadius:12, border:`1px solid ${C.b1}`, overflow:"hidden" }}>
+              <div style={{ padding:"10px 12px", borderBottom:`2px solid ${group.color}`, display:"flex", alignItems:"center", gap:6 }}>
+                <span style={{ width:8, height:8, borderRadius:4, background:group.color, flexShrink:0 }}/>
+                <span style={{ fontSize:11, fontWeight:700, color:group.color }}>{group.label}</span>
                 <span style={{ fontSize:10, fontWeight:600, color:C.t3, marginLeft:"auto" }}>{items.length}</span>
               </div>
               <div style={{ padding:8, display:"flex", flexDirection:"column", gap:8, maxHeight:"calc(100vh - 180px)", overflowY:"auto" }}>
