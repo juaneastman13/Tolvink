@@ -144,18 +144,41 @@ export function SortTh({ label, colKey, sortCol, sortDir, onSort }) {
 
 // ======================== MODAL OVERLAY (animated logo → card) ========
 
-export function ModalOverlay({ children, onClose, maxWidth=400, loading=false }) {
-  // Stages: 0=logo in, 1=text collapses/dot centers, 2=dot grows, 3=card
+export function ModalOverlay({ children, onClose, maxWidth=400, loading=false, closing=false }) {
+  // Intro stages: 0=logo in, 1=text collapses, 2=dot grows, 3=card
   const [stage, setStage] = useState(0);
+  // Outro stages: 0=logo in, 1=text collapses, 2=dot grows, 3=done
+  const [outro, setOutro] = useState(-1);
+
+  // Intro sequence (only when not loading and not closing)
   useEffect(() => {
-    if (loading) { setStage(0); return; }
+    if (loading || closing) return;
     const t1 = setTimeout(() => setStage(1), 500);
     const t2 = setTimeout(() => setStage(2), 1050);
     const t3 = setTimeout(() => setStage(3), 1750);
     return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
-  }, [loading]);
+  }, [loading, closing]);
+
+  // When loading starts, reset intro
+  useEffect(() => { if (loading) setStage(0); }, [loading]);
+
+  // Outro sequence (closing animation after action completes)
+  useEffect(() => {
+    if (!closing) return;
+    setOutro(0);
+    const t1 = setTimeout(() => setOutro(1), 400);
+    const t2 = setTimeout(() => setOutro(2), 900);
+    const t3 = setTimeout(() => { if (onClose) onClose(); }, 1600);
+    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
+  }, [closing]);
+
+  const isIntro = !loading && !closing && stage < 3;
+  const isCard = !loading && !closing && stage === 3;
+  const isLoading = loading && !closing;
+  const isOutro = closing;
+
   return (
-    <div onClick={(!loading&&stage===3&&onClose)||undefined} style={{position:"fixed",inset:0,background:C.bgOverlay,display:"flex",alignItems:"center",justifyContent:"center",zIndex:200,padding:24,animation:"moFadeIn 0.25s ease"}}>
+    <div onClick={(isCard&&onClose)||undefined} style={{position:"fixed",inset:0,background:C.bgOverlay,display:"flex",alignItems:"center",justifyContent:"center",zIndex:200,padding:24,animation:"moFadeIn 0.25s ease"}}>
       <style>{`
 @keyframes moFadeIn{from{opacity:0}to{opacity:1}}
 @keyframes moLogoIn{from{opacity:0;transform:scale(0.7)}to{opacity:1;transform:scale(1)}}
@@ -164,14 +187,14 @@ export function ModalOverlay({ children, onClose, maxWidth=400, loading=false })
 @keyframes moCardIn{from{opacity:0;transform:scale(0.82)}to{opacity:1;transform:scale(1)}}
       `}</style>
       {/* Loading: full logo with pulsing dot */}
-      {loading && (
-        <div style={{display:"flex",alignItems:"flex-start",animation:"moLogoIn 0.35s ease-out",pointerEvents:"none"}}>
+      {isLoading && (
+        <div style={{position:"absolute",display:"flex",alignItems:"flex-start",animation:"moLogoIn 0.35s ease-out",pointerEvents:"none"}}>
           <span style={{fontSize:44,fontWeight:800,color:C.pri,letterSpacing:-2,lineHeight:1}}>tolvink</span>
           <span style={{width:13,height:13,borderRadius:7,background:C.acc,marginLeft:4,marginTop:2,display:"inline-block",animation:"dotPulse 1.5s ease-in-out infinite"}} />
         </div>
       )}
       {/* Intro: staged animation */}
-      {!loading && stage < 3 && (
+      {isIntro && (
         <div style={{position:"absolute",display:"flex",alignItems:"center",justifyContent:"center",animation:stage===0?"moLogoIn 0.35s ease-out forwards":"none",pointerEvents:"none"}}>
           {stage < 2 && (
             <span style={{fontSize:44,fontWeight:800,color:C.pri,letterSpacing:-2,lineHeight:1,display:"inline-block",overflow:"hidden",whiteSpace:"nowrap",marginRight:4,animation:stage===1?"moTextOut 0.55s ease forwards":"none"}}>tolvink</span>
@@ -179,9 +202,18 @@ export function ModalOverlay({ children, onClose, maxWidth=400, loading=false })
           <span style={{width:13,height:13,borderRadius:7,background:C.acc,display:"inline-block",animation:stage===2?"moDotGrow 0.7s ease forwards":"dotPulse 1.5s ease-in-out infinite"}} />
         </div>
       )}
-      {/* Card */}
-      {!loading && stage===3 && (
-        <div onClick={e=>e.stopPropagation()} style={{background:C.w,borderRadius:18,padding:22,width:"100%",maxWidth,boxShadow:C.shLg,animation:"moCardIn 0.3s cubic-bezier(0.34,1.56,0.64,1)"}}>
+      {/* Outro: closing animation (same as intro but after action) */}
+      {isOutro && (
+        <div style={{position:"absolute",display:"flex",alignItems:"center",justifyContent:"center",animation:outro===0?"moLogoIn 0.35s ease-out forwards":"none",pointerEvents:"none"}}>
+          {outro < 2 && (
+            <span style={{fontSize:44,fontWeight:800,color:C.pri,letterSpacing:-2,lineHeight:1,display:"inline-block",overflow:"hidden",whiteSpace:"nowrap",marginRight:4,animation:outro===1?"moTextOut 0.5s ease forwards":"none"}}>tolvink</span>
+          )}
+          <span style={{width:13,height:13,borderRadius:7,background:C.acc,display:"inline-block",animation:outro===2?"moDotGrow 0.7s ease forwards":"dotPulse 1.5s ease-in-out infinite"}} />
+        </div>
+      )}
+      {/* Card — centered */}
+      {isCard && (
+        <div onClick={e=>e.stopPropagation()} style={{background:C.w,borderRadius:18,padding:22,width:"100%",maxWidth,boxShadow:C.shLg,animation:"moCardIn 0.3s cubic-bezier(0.34,1.56,0.64,1)",margin:"auto"}}>
           {children}
         </div>
       )}

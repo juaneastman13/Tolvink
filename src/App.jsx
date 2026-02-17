@@ -2964,13 +2964,14 @@ function ReportsScreen({ onBack, freights, isDesktop, embedded }) {
 
 function ConfirmActionModal({ freight, title, btnLabel, btnVariant="pri", icon, onClose, onConfirm }) {
   const [loading,setLoading] = useState(false);
-  const doConfirm = async ()=>{ if(loading) return; setLoading(true); await onConfirm(); setLoading(false); };
+  const [closing,setClosing] = useState(false);
+  const doConfirm = async ()=>{ if(loading||closing) return; setLoading(true); const ok=await onConfirm(); setLoading(false); if(ok) setClosing(true); };
   return (
-    <ModalOverlay onClose={onClose} maxWidth={360} loading={loading}>
+    <ModalOverlay onClose={onClose} maxWidth={360} loading={loading} closing={closing}>
       {icon && <div style={{display:"flex",justifyContent:"center",marginBottom:12}}><div style={{width:48,height:48,borderRadius:24,background:`${btnVariant==="acc"?C.acc:C.pri}12`,display:"flex",alignItems:"center",justifyContent:"center"}}>{icon}</div></div>}
       <div style={{fontSize:17,fontWeight:700,marginBottom:6,textAlign:"center"}}>{title}</div>
       <div style={{fontSize:12,color:C.t2,marginBottom:20,textAlign:"center"}}>{freight.code} · {freight.grain} · {freight.tons}{freight.unit||"tn"}</div>
-      <div style={{display:"flex",gap:8}}><Btn full v="ghost" onClick={onClose} disabled={loading}>Cancelar</Btn><Btn full v={btnVariant} disabled={loading} onClick={doConfirm}>{loading?"Procesando...":btnLabel}</Btn></div>
+      <div style={{display:"flex",gap:8}}><Btn full v="ghost" onClick={onClose} disabled={loading||closing}>Cancelar</Btn><Btn full v={btnVariant} disabled={loading||closing} onClick={doConfirm}>{loading?"Procesando...":btnLabel}</Btn></div>
     </ModalOverlay>
   );
 }
@@ -2978,10 +2979,11 @@ function ConfirmActionModal({ freight, title, btnLabel, btnVariant="pri", icon, 
 function AssignModal({ freight, transporters, onClose, onConfirm }) {
   const [t,setT] = useState("");
   const [loading,setLoading] = useState(false);
+  const [closing,setClosing] = useState(false);
   const ts = transporters||[];
-  const doConfirm = async ()=>{ if(loading||!t) return; setLoading(true); await onConfirm(t); setLoading(false); };
+  const doConfirm = async ()=>{ if(loading||closing||!t) return; setLoading(true); const ok=await onConfirm(t); setLoading(false); if(ok) setClosing(true); };
   return (
-    <ModalOverlay onClose={onClose} loading={loading}>
+    <ModalOverlay onClose={onClose} loading={loading} closing={closing}>
       <div style={{fontSize:17,fontWeight:700,marginBottom:4}}>Asignar transporte · {freight.code}</div>
       <div style={{fontSize:12,color:C.t2,marginBottom:18}}>{freight.grain} · {freight.tons}tn · {freight.originName}</div>
       <label style={{fontSize:10.5,fontWeight:600,color:C.t2,marginBottom:8,display:"block",textTransform:"uppercase",letterSpacing:0.6}}>Transportista</label>
@@ -2989,7 +2991,7 @@ function AssignModal({ freight, transporters, onClose, onConfirm }) {
         {ts.length===0 && <div style={{fontSize:12,color:C.t3,padding:10}}>No hay transportistas disponibles</div>}
         {ts.map(x=><button key={x.id} onClick={()=>setT(x.id)} style={{padding:"13px 14px",borderRadius:12,textAlign:"left",fontFamily:"inherit",border:`1.5px solid ${t===x.id?C.pri:C.b1}`,background:t===x.id?C.priPale:C.w,color:t===x.id?C.pri:C.t2,fontSize:13.5,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",gap:8}}>{Ic.truck(t===x.id?C.pri:C.t3,16)} {x.name}</button>)}
       </div>
-      <div style={{display:"flex",gap:8}}><Btn full v="ghost" onClick={onClose} disabled={loading}>Cancelar</Btn><Btn full disabled={!t||loading} onClick={doConfirm}>{loading?"Asignando...":"Asignar"}</Btn></div>
+      <div style={{display:"flex",gap:8}}><Btn full v="ghost" onClick={onClose} disabled={loading||closing}>Cancelar</Btn><Btn full disabled={!t||loading||closing} onClick={doConfirm}>{loading?"Asignando...":"Asignar"}</Btn></div>
     </ModalOverlay>
   );
 }
@@ -2997,10 +2999,11 @@ function AssignModal({ freight, transporters, onClose, onConfirm }) {
 function TruckSelectModal({ freight, trucks, onClose, onConfirm }) {
   const [sel,setSel] = useState("");
   const [loading,setLoading] = useState(false);
+  const [closing,setClosing] = useState(false);
   const ts = (trucks||[]).filter(t=>t.active!==false);
-  const doConfirm = async ()=>{ if(loading||!sel) return; setLoading(true); await onConfirm(sel); setLoading(false); };
+  const doConfirm = async ()=>{ if(loading||closing||!sel) return; setLoading(true); const ok=await onConfirm(sel); setLoading(false); if(ok) setClosing(true); };
   return (
-    <ModalOverlay onClose={onClose} loading={loading}>
+    <ModalOverlay onClose={onClose} loading={loading} closing={closing}>
       <div style={{fontSize:17,fontWeight:700,marginBottom:4}}>Aceptar flete · {freight.code}</div>
       <div style={{fontSize:12,color:C.t2,marginBottom:18}}>{freight.grain} · {freight.tons}tn → {freight.destName}</div>
       <label style={{fontSize:10.5,fontWeight:600,color:C.t2,marginBottom:8,display:"block",textTransform:"uppercase",letterSpacing:0.6}}>Seleccioná un camión</label>
@@ -3015,7 +3018,7 @@ function TruckSelectModal({ freight, trucks, onClose, onConfirm }) {
           </div>
         </button>)}
       </div>
-      <div style={{display:"flex",gap:8}}><Btn full v="ghost" onClick={onClose} disabled={loading}>Cancelar</Btn><Btn full v="acc" disabled={!sel||loading} onClick={doConfirm}>{loading?"Aceptando...":"Aceptar flete"}</Btn></div>
+      <div style={{display:"flex",gap:8}}><Btn full v="ghost" onClick={onClose} disabled={loading||closing}>Cancelar</Btn><Btn full v="acc" disabled={!sel||loading||closing} onClick={doConfirm}>{loading?"Aceptando...":"Aceptar flete"}</Btn></div>
     </ModalOverlay>
   );
 }
@@ -3023,14 +3026,15 @@ function TruckSelectModal({ freight, trucks, onClose, onConfirm }) {
 function ReasonModal({ title, freight, btnLabel, btnType="err", onClose, onConfirm }) {
   const [reason,setReason] = useState("");
   const [loading,setLoading] = useState(false);
-  const doConfirm = async ()=>{ if(loading||!reason) return; setLoading(true); await onConfirm(reason); setLoading(false); };
+  const [closing,setClosing] = useState(false);
+  const doConfirm = async ()=>{ if(loading||closing||!reason) return; setLoading(true); const ok=await onConfirm(reason); setLoading(false); if(ok) setClosing(true); };
   return (
-    <ModalOverlay onClose={onClose} loading={loading}>
+    <ModalOverlay onClose={onClose} loading={loading} closing={closing}>
       <div style={{fontSize:17,fontWeight:700,marginBottom:4,color:btnType==="err"?C.err:C.t1}}>{title} · {freight.code}</div>
       <div style={{fontSize:12,color:C.t2,marginBottom:18}}>{freight.grain} · {freight.tons}tn</div>
       <label style={{fontSize:10.5,fontWeight:600,color:C.t2,marginBottom:6,display:"block",textTransform:"uppercase",letterSpacing:0.6}}>Motivo</label>
       <textarea value={reason} onChange={e=>setReason(e.target.value)} placeholder="Describí el motivo..." rows={3} style={{width:"100%",padding:"12px 14px",borderRadius:10,border:`1.5px solid ${C.b1}`,background:C.w,color:C.t1,fontSize:13,fontFamily:"inherit",outline:"none",resize:"none",boxSizing:"border-box",marginBottom:16}}/>
-      <div style={{display:"flex",gap:8}}><Btn full v="ghost" onClick={onClose} disabled={loading}>Volver</Btn><Btn full v={btnType} disabled={!reason||loading} onClick={doConfirm}>{loading?"Procesando...":btnLabel}</Btn></div>
+      <div style={{display:"flex",gap:8}}><Btn full v="ghost" onClick={onClose} disabled={loading||closing}>Volver</Btn><Btn full v={btnType} disabled={!reason||loading||closing} onClick={doConfirm}>{loading?"Procesando...":btnLabel}</Btn></div>
     </ModalOverlay>
   );
 }
@@ -3841,27 +3845,31 @@ export default function Tolvink() {
 
   const handleAcceptWithTruck = async (fId, truckId)=>{
     const r = await fh.respond(fId, "accepted", undefined, truckId);
-    if(r.ok){ track("freight_accept"); setModal(null); show("Flete aceptado"); } else { setModal(null); show(r.error,"err"); }
+    if(r.ok){ track("freight_accept"); show("Flete aceptado"); } else show(r.error,"err");
+    return r.ok;
   };
 
   const handleAssign = async (fId, transportCompanyId)=>{
     const r = await fh.assign(fId, transportCompanyId);
-    if(r.ok){ track("freight_assign"); setModal(null); show("Transportista asignado"); } else { setModal(null); show(r.error,"err"); }
+    if(r.ok){ track("freight_assign"); show("Transportista asignado"); } else show(r.error,"err");
+    return r.ok;
   };
 
   const handleConfirmAction = async (fId, action)=>{
     const msgs = { start:"Viaje iniciado", authorize:"Viaje autorizado", confirm_loaded:"Carga confirmada", confirm_finished:"Entrega confirmada" };
     const fn = { start:fh.start, authorize:fh.authorize, confirm_loaded:fh.confirmLoaded, confirm_finished:fh.confirmFinished }[action];
-    if(!fn) return;
+    if(!fn) return false;
     const r = await fn(fId);
-    if(r.ok){ setModal(null); show(msgs[action]||"Hecho"); } else { setModal(null); show(r.error,"err"); }
+    if(r.ok) show(msgs[action]||"Hecho"); else show(r.error,"err");
+    return r.ok;
   };
 
   const handleReasonAction = async (fId,reason,action)=>{
     let r;
     if(action==="cancel") r = await fh.cancel(fId,reason);
     else if(action==="reject") r = await fh.respond(fId,"rejected",reason);
-    if(r?.ok){ setModal(null); show(action==="cancel"?"Flete cancelado":"Asignación rechazada","info"); } else { setModal(null); show(r?.error||"Error","err"); }
+    if(r?.ok) show(action==="cancel"?"Flete cancelado":"Asignación rechazada","info"); else show(r?.error||"Error","err");
+    return !!r?.ok;
   };
 
   const handleCreate = async (form)=>{
