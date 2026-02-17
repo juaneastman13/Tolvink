@@ -479,7 +479,7 @@ function HomeScreen({ user, freights, perms, onNav, catalog, isDesktop, onAction
   const listContent = (
     <div style={{ flex: compact ? undefined : 1, width: compact ? 300 : undefined, flexShrink: 0, overflow: "auto", padding: compact ? "0 8px 8px" : "0 18px 18px", boxSizing: "border-box", borderRight: compact ? `1px solid ${C.b1}` : "none" }}>
       {/* Header — empresa (clickable), fecha+hora, fletes — centered with sidebar logo midline */}
-      <div style={{ display: "flex", alignItems: "center", minHeight: isDesktop ? 107 : 56, padding: compact ? "0 6px" : "0 0", borderBottom: `1px solid ${C.b2}`, marginBottom: isDesktop ? 14 : 10 }}>
+      <div style={{ position:"sticky", top:0, zIndex:10, background:C.bg, display: "flex", alignItems: "center", minHeight: isDesktop ? 107 : 56, padding: compact ? "0 6px" : "0 0", borderBottom: `1px solid ${C.b2}`, marginBottom: isDesktop ? 14 : 10 }}>
         <div style={{ position: "relative" }}>
           <div ref={companyPickerRef}>
             <button onClick={() => hasMultipleCompanies && setShowCompanyPicker(p => !p)} style={{ display: "flex", alignItems: "center", gap: 4, background: "none", border: "none", padding: 0, cursor: hasMultipleCompanies ? "pointer" : "default", fontFamily: "inherit" }}>
@@ -958,14 +958,29 @@ function DetailScreen({ user, freight, perms, onBack, onAction, actionLoading, o
   });
 
   return (
-    <div style={{ flex:1, overflow:"auto", padding:18, animation:"slideUp 0.25s ease" }}>
-      <button onClick={onBack} style={{ background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", fontSize:13, fontWeight:600, color:C.pri, marginBottom:14, padding:0, display:"flex", alignItems:"center", gap:4 }}>{Ic.chev(C.pri,18)} Volver</button>
-      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:18 }}>
-        <div>
-          <div style={{ fontSize:11, color:C.t3, fontWeight:600, fontFamily:MONO }}>{freight.code}</div>
-          <div style={{ fontSize:22, fontWeight:800, marginTop:2, letterSpacing:-0.3 }}>{freight.grain==="Otros"?freight.productTypeOther||"Otros":freight.grain} · {freight.tons} {freight.unit||"tn"}</div>
+    <div style={{ flex:1, overflow:"auto", padding:"0 18px 18px", animation:"slideUp 0.25s ease" }}>
+      {/* Sticky header — back + product + actions */}
+      <div style={{ position:"sticky", top:0, zIndex:10, background:C.bg, paddingTop:18, paddingBottom:8 }}>
+        <button onClick={onBack} style={{ background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", fontSize:13, fontWeight:600, color:C.pri, marginBottom:14, padding:0, display:"flex", alignItems:"center", gap:4 }}>{Ic.chev(C.pri,18)} Volver</button>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
+          <div>
+            <div style={{ fontSize:11, color:C.t3, fontWeight:600, fontFamily:MONO }}>{freight.code}</div>
+            <div style={{ fontSize:22, fontWeight:800, marginTop:2, letterSpacing:-0.3 }}>{freight.grain==="Otros"?freight.productTypeOther||"Otros":freight.grain} · {freight.tons} {freight.unit||"tn"}</div>
+          </div>
+          <Bd color={st.color} bg={st.bg}>{st.label}</Bd>
         </div>
-        <Bd color={st.color} bg={st.bg}>{st.label}</Bd>
+        {/* Actions — immediately below product detail */}
+        {filteredActions.length > 0 && <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+          {filteredActions.includes("authorize") && <Btn full icon={Ic.chk(C.w,16)} disabled={actionLoading} onClick={()=>onAction(freight.id,"authorize")}>{actionLoading?"Procesando...":"Autorizar viaje"}</Btn>}
+          {filteredActions.includes("assign") && <Btn full v="acc" icon={Ic.chk(C.w,16)} disabled={actionLoading} onClick={()=>onAction(freight.id,"assign")}>Asignar transportista</Btn>}
+          {filteredActions.includes("accept") && <Btn full icon={Ic.chk(C.w,16)} disabled={actionLoading} onClick={()=>onAction(freight.id,"accept")}>Aceptar flete</Btn>}
+          {filteredActions.includes("start") && <Btn full icon={Ic.truck(C.w,16)} disabled={actionLoading} onClick={()=>onAction(freight.id,"start")}>{actionLoading?"Procesando...":"Iniciar viaje"}</Btn>}
+          {filteredActions.includes("confirm_loaded") && <Btn full v="acc" icon={Ic.chk(C.w,16)} disabled={actionLoading} onClick={()=>onAction(freight.id,"confirm_loaded")}>{actionLoading?"Procesando...":"Confirmar carga"}</Btn>}
+          {filteredActions.includes("confirm_finished") && <Btn full v="acc" icon={Ic.chk(C.w,16)} disabled={actionLoading} onClick={()=>onAction(freight.id,"confirm_finished")}>{actionLoading?"Procesando...":"Confirmar entrega"}</Btn>}
+          {filteredActions.includes("reject") && <Btn full v="err" icon={Ic.ban(C.w,16)} disabled={actionLoading} onClick={()=>onAction(freight.id,"reject")}>Rechazar asignación</Btn>}
+          {filteredActions.includes("cancel") && <Btn full v="err" icon={Ic.cross(C.err,16)} disabled={actionLoading} onClick={()=>onAction(freight.id,"cancel")}>Cancelar flete</Btn>}
+        </div>}
+        {freight.status==="pending_assignment" && perms.canRequest && <div style={{ display:"flex", gap:8, marginTop:8 }}><Btn full sm v="sec" icon={Ic.doc(C.pri,14)} onClick={()=>onEdit(freight)}>Editar</Btn></div>}
       </div>
 
       {/* Progress — click to see audit history */}
@@ -1132,22 +1147,6 @@ function DetailScreen({ user, freight, perms, onBack, onAction, actionLoading, o
         </div>;
       })()}
 
-      {/* Actions */}
-      <div style={{ display:"flex", flexDirection:"column", gap:8, marginBottom:14 }}>
-        {filteredActions.includes("authorize") && <Btn full icon={Ic.chk(C.w,16)} disabled={actionLoading} onClick={()=>onAction(freight.id,"authorize")}>{actionLoading?"Procesando...":"Autorizar viaje"}</Btn>}
-        {filteredActions.includes("assign") && <Btn full v="acc" icon={Ic.chk(C.w,16)} disabled={actionLoading} onClick={()=>onAction(freight.id,"assign")}>Asignar transportista</Btn>}
-        {filteredActions.includes("accept") && <Btn full icon={Ic.chk(C.w,16)} disabled={actionLoading} onClick={()=>onAction(freight.id,"accept")}>Aceptar flete</Btn>}
-        {filteredActions.includes("start") && <Btn full icon={Ic.truck(C.w,16)} disabled={actionLoading} onClick={()=>onAction(freight.id,"start")}>{actionLoading?"Procesando...":"Iniciar viaje"}</Btn>}
-        {filteredActions.includes("confirm_loaded") && <Btn full v="acc" icon={Ic.chk(C.w,16)} disabled={actionLoading} onClick={()=>onAction(freight.id,"confirm_loaded")}>{actionLoading?"Procesando...":"Confirmar carga"}</Btn>}
-        {filteredActions.includes("confirm_finished") && <Btn full v="acc" icon={Ic.chk(C.w,16)} disabled={actionLoading} onClick={()=>onAction(freight.id,"confirm_finished")}>{actionLoading?"Procesando...":"Confirmar entrega"}</Btn>}
-        {filteredActions.includes("reject") && <Btn full v="err" icon={Ic.ban(C.w,16)} disabled={actionLoading} onClick={()=>onAction(freight.id,"reject")}>Rechazar asignación</Btn>}
-        {filteredActions.includes("cancel") && <Btn full v="err" icon={Ic.cross(C.err,16)} disabled={actionLoading} onClick={()=>onAction(freight.id,"cancel")}>Cancelar flete</Btn>}
-      </div>
-
-      {/* Secondary actions — edit */}
-      <div style={{ display:"flex", gap:8, marginBottom:14 }}>
-        {freight.status==="pending_assignment" && perms.canRequest && <Btn full sm v="sec" icon={Ic.doc(C.pri,14)} onClick={()=>onEdit(freight)}>Editar</Btn>}
-      </div>
 
       {/* Documents gallery */}
       <DocsGallery documents={freight.documents}/>
