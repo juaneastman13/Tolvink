@@ -261,7 +261,7 @@ function resolveUserTypeForFreight(freight, user) {
   return user.userType;
 }
 
-function HomeScreen({ user, freights, perms, onNav, catalog, isDesktop, onAction, actionLoading, onChat, onRefresh, onDuplicate, onEdit }) {
+function HomeScreen({ user, freights, perms, onNav, catalog, isDesktop, onAction, actionLoading, onChat, onRefresh, onDuplicate, onEdit, goToMap }) {
   const [selectedId, setSelectedId] = useState(null);
   const [pendingFilter, setPendingFilter] = useState("all");
   const [summaryFilter, setSummaryFilter] = useState("all");
@@ -434,9 +434,9 @@ function HomeScreen({ user, freights, perms, onNav, catalog, isDesktop, onAction
         </div>
         <div style={{fontSize:14,fontWeight:700,color:C.t1,marginBottom:6}}>{f.grain==="Otros"?f.productTypeOther||"Otros":f.grain} · {f.tons} {f.unit||"tn"}</div>
         <div style={{display:"flex",flexDirection:"column",gap:3,fontSize:11,color:C.t2}}>
-          <div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.user(C.t3,12)} <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.originCompanyName||(f.originName||"").split("—")[0].trim()}</span></div>
+          <div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.user(C.t3,12)} <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.originCompanyName||(f.originName||"").split("—")[0].trim()}</span>{f.originLat&&f.originLng&&<span onClick={(e)=>{e.stopPropagation();goToMap(f.originLat,f.originLng);}} style={{cursor:"pointer",opacity:0.6,marginLeft:3,fontSize:10,flexShrink:0}} title="Ver en mapa">📍</span>}</div>
           {f.transporterName&&<div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.truck(C.t3,12)} <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.transporterName}{f.truckPlate?` (${f.truckPlate})`:""}</span></div>}
-          <div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.plant(C.t3,12)} <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.destName}</span></div>
+          <div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.plant(C.t3,12)} <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.destName}</span>{f.destLat&&f.destLng&&<span onClick={(e)=>{e.stopPropagation();goToMap(f.destLat,f.destLng);}} style={{cursor:"pointer",opacity:0.6,marginLeft:3,fontSize:10,flexShrink:0}} title="Ver en mapa">📍</span>}</div>
         </div>
       </div>
     );
@@ -587,7 +587,7 @@ function HomeScreen({ user, freights, perms, onNav, catalog, isDesktop, onAction
 
 // ======================== FREIGHT LIST ================================
 
-function ListScreen({ freights, onNav, onRefresh, catalog }) {
+function ListScreen({ freights, onNav, onRefresh, catalog, view, setView, mapFocus, onMapFocused, goToMap }) {
   const [searchQ, setSearchQ] = useState("");
   const [fPlant, setFPlant] = useState("");
   const [fProducer, setFProducer] = useState("");
@@ -595,7 +595,6 @@ function ListScreen({ freights, onNav, onRefresh, catalog }) {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [datePreset, setDatePreset] = useState("");
-  const [viewMode, setViewMode] = useState("kanban"); // kanban | mapa | tabla
 
   const plantOptions = useMemo(()=>[...new Set(freights.map(f=>f.destName).filter(Boolean))].sort(),[freights]);
   const producerOptions = useMemo(()=>[...new Set(freights.map(f=>f.originCompanyName).filter(Boolean))].sort(),[freights]);
@@ -681,14 +680,14 @@ function ListScreen({ freights, onNav, onRefresh, catalog }) {
           <option value="">Transportista</option>
           {transporterOptions.map(p=><option key={p} value={p}>{p}</option>)}
         </select>
-        <button onClick={()=>setViewMode(v=>v==="kanban"?"mapa":v==="mapa"?"tabla":"kanban")} style={{marginLeft:"auto",padding:"5px 12px",borderRadius:8,border:`1.5px solid ${C.pri}`,background:C.priPale,color:C.pri,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:5,whiteSpace:"nowrap"}}>
-          {viewMode==="kanban"?Ic.pin(C.pri,13):viewMode==="mapa"?Ic.doc(C.pri,13):Ic.home(C.pri,13)}
-          {viewMode==="kanban"?"Cambiar a mapa":viewMode==="mapa"?"Cambiar a tabla":"Cambiar a etiquetas"}
+        <button onClick={()=>setView(v=>v==="kanban"?"mapa":v==="mapa"?"tabla":"kanban")} style={{marginLeft:"auto",padding:"5px 12px",borderRadius:8,border:`1.5px solid ${C.pri}`,background:C.priPale,color:C.pri,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:5,whiteSpace:"nowrap"}}>
+          {view==="kanban"?Ic.pin(C.pri,13):view==="mapa"?Ic.doc(C.pri,13):Ic.home(C.pri,13)}
+          {view==="kanban"?"Cambiar a mapa":view==="mapa"?"Cambiar a tabla":"Cambiar a etiquetas"}
         </button>
       </div>
 
       {/* View: Kanban */}
-      {viewMode==="kanban" && (
+      {view==="kanban" && (
       <div style={{ display:"flex", gap:12, overflowX:"auto", alignItems:"flex-start", paddingBottom:8 }}>
         {GROUPS.map(group => {
           const items = grouped[group.key];
@@ -714,9 +713,9 @@ function ListScreen({ freights, onNav, onRefresh, catalog }) {
                     </div>
                     <div style={{fontSize:14,fontWeight:700,color:C.t1,marginBottom:6}}>{f.grain==="Otros"?f.productTypeOther||"Otros":f.grain} · {f.tons} {f.unit||"tn"}</div>
                     <div style={{display:"flex",flexDirection:"column",gap:3,fontSize:11,color:C.t2}}>
-                      <div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.user(C.t3,12)} <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.originCompanyName||(f.originName||"").split("—")[0].trim()}</span></div>
+                      <div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.user(C.t3,12)} <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.originCompanyName||(f.originName||"").split("—")[0].trim()}</span>{f.originLat&&f.originLng&&<span onClick={(e)=>{e.stopPropagation();goToMap(f.originLat,f.originLng);}} style={{cursor:"pointer",opacity:0.6,marginLeft:3,fontSize:10,flexShrink:0}} title="Ver en mapa">📍</span>}</div>
                       {f.transporterName&&<div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.truck(C.t3,12)} <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.transporterName}{f.truckPlate?` (${f.truckPlate})`:""}</span></div>}
-                      <div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.plant(C.t3,12)} <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.destName}</span></div>
+                      <div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.plant(C.t3,12)} <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.destName}</span>{f.destLat&&f.destLng&&<span onClick={(e)=>{e.stopPropagation();goToMap(f.destLat,f.destLng);}} style={{cursor:"pointer",opacity:0.6,marginLeft:3,fontSize:10,flexShrink:0}} title="Ver en mapa">📍</span>}</div>
                     </div>
                   </div>
                   );
@@ -729,12 +728,12 @@ function ListScreen({ freights, onNav, onRefresh, catalog }) {
       )}
 
       {/* View: Mapa */}
-      {viewMode==="mapa" && (
-        <FreightsOverviewMap freights={filtered} onSelect={(id)=>onNav("detail",id)} fields={catalog?.fields} plants={catalog?.plants} />
+      {view==="mapa" && (
+        <FreightsOverviewMap freights={filtered} onSelect={(id)=>onNav("detail",id)} fields={catalog?.fields} plants={catalog?.plants} focus={mapFocus} onFocused={onMapFocused} />
       )}
 
       {/* View: Tabla */}
-      {viewMode==="tabla" && (
+      {view==="tabla" && (
         <div style={{ background:C.w, border:`1px solid ${C.b1}`, borderRadius:12, overflow:"hidden", boxShadow:"0 1px 4px rgba(0,0,0,0.06)" }}>
           <div style={{ display:"flex", justifyContent:"flex-end", padding:"10px 12px 0" }}>
             <button onClick={()=>exportExcel(filtered,"tolvink-fletes.xls")} style={{padding:"5px 12px",borderRadius:8,border:`1.5px solid #1A6B37`,background:"#E6F4EA",color:"#1A6B37",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:5}}>{Ic.doc("#1A6B37",13)} Exportar Excel</button>
@@ -759,8 +758,8 @@ function ListScreen({ freights, onNav, onRefresh, catalog }) {
                       <td style={{ padding:"10px 12px" }}><Bd color={st.color} bg={st.bg} small>{st.label}</Bd></td>
                       <td style={{ padding:"10px 12px", fontWeight:600, color:C.t1 }}>{f.grain==="Otros"?f.productTypeOther||"Otros":f.grain} · {f.tons} {f.unit||"tn"}</td>
                       <td style={{ padding:"10px 12px", color:C.t2 }}>{f.originCompanyName||f.originName}</td>
-                      <td style={{ padding:"10px 12px", color:C.t2 }}>{campoLote}</td>
-                      <td style={{ padding:"10px 12px", color:C.t2 }}>{f.destName}</td>
+                      <td style={{ padding:"10px 12px", color:C.t2 }}>{campoLote}{f.originLat&&f.originLng&&<span onClick={(e)=>{e.stopPropagation();goToMap(f.originLat,f.originLng);}} style={{cursor:"pointer",opacity:0.6,marginLeft:3,fontSize:10}} title="Ver en mapa">📍</span>}</td>
+                      <td style={{ padding:"10px 12px", color:C.t2 }}>{f.destName}{f.destLat&&f.destLng&&<span onClick={(e)=>{e.stopPropagation();goToMap(f.destLat,f.destLng);}} style={{cursor:"pointer",opacity:0.6,marginLeft:3,fontSize:10}} title="Ver en mapa">📍</span>}</td>
                       <td style={{ padding:"10px 12px", color:C.t2, whiteSpace:"nowrap" }}>{f.loadDate}</td>
                       <td style={{ padding:"10px 12px", color:C.t3, whiteSpace:"nowrap" }}>{f.loadTime||"—"}</td>
                       <td style={{ padding:"10px 12px", color:C.t2 }}>{f.transporterName||"—"}</td>
@@ -809,7 +808,7 @@ function getPendingActions(freight, userType) {
 
 // ======================== FREIGHT DETAIL ==============================
 
-function DetailScreen({ user, freight, perms, onBack, onAction, actionLoading, onChat, onRefresh, onDuplicate, onEdit }) {
+function DetailScreen({ user, freight, perms, onBack, onAction, actionLoading, onChat, onRefresh, onDuplicate, onEdit, goToMap }) {
   if(!freight) return null;
   const [auditLog, setAuditLog] = useState(null);
   const [showAudit, setShowAudit] = useState(false);
@@ -970,8 +969,8 @@ function DetailScreen({ user, freight, perms, onBack, onAction, actionLoading, o
           <div style={{ fontSize:10.5, fontWeight:700, marginBottom:12, color:C.t2, textTransform:"uppercase", letterSpacing:0.5 }}>Información del flete</div>
           {[
             [Ic.user(C.pri,15),"Empresa",freight.originCompanyName||freight.originName],
-            [Ic.pin(C.ok,15),"Campo",[freight.fieldName,freight.originName].filter(Boolean).join(" / ")||"—"],
-            [Ic.plant(C.t2,15),"Destino",freight.destName],
+            [Ic.pin(C.ok,15),"Campo",<>{[freight.fieldName,freight.originName].filter(Boolean).join(" / ")||"—"}{freight.originLat&&freight.originLng&&<span onClick={()=>goToMap(freight.originLat,freight.originLng)} style={{cursor:"pointer",opacity:0.6,marginLeft:4,fontSize:10}} title="Ver en mapa">📍</span>}</>],
+            [Ic.plant(C.t2,15),"Destino",<>{freight.destName}{freight.destLat&&freight.destLng&&<span onClick={()=>goToMap(freight.destLat,freight.destLng)} style={{cursor:"pointer",opacity:0.6,marginLeft:4,fontSize:10}} title="Ver en mapa">📍</span>}</>],
             [Ic.cal(C.t2,15),"Fecha carga",freight.loadDate],
             [Ic.clk(C.t2,15),"Hora carga",freight.loadTime],
             [Ic.user(C.t2,15),"Solicitado por",freight.requestedByName],
@@ -1766,7 +1765,7 @@ function TrucksScreen({ onBack, embedded }) {
 
 // ======================== FIELDS MANAGEMENT (Productor) ===============
 
-function FieldsScreen({ onBack, embedded }) {
+function FieldsScreen({ onBack, embedded, goToMap }) {
   const [fields, setFields] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showFieldForm, setShowFieldForm] = useState(false);
@@ -1921,7 +1920,7 @@ function FieldsScreen({ onBack, embedded }) {
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                     {Ic.pin(C.pri, 18)}
                     <div>
-                      <div style={{ fontSize: 14, fontWeight: 700 }}>{f.name}</div>
+                      <div style={{ fontSize: 14, fontWeight: 700 }}>{f.name}{f.lat&&f.lng&&goToMap&&<span onClick={(e)=>{e.stopPropagation();goToMap(f.lat,f.lng);}} style={{cursor:"pointer",opacity:0.6,marginLeft:4,fontSize:10}} title="Ver en mapa">📍</span>}</div>
                       {f.address && <div style={{ fontSize: 11, color: C.t3 }}>{f.address}</div>}
                       {f.lat && <div style={{ fontSize: 9.5, color: C.ok, fontWeight: 600 }}>📍 Ubicación cargada</div>}
                     </div>
@@ -1951,7 +1950,7 @@ function FieldsScreen({ onBack, embedded }) {
                         {Ic.grain(C.ok, 14)}
                         <span style={{ fontSize: 12, fontWeight: 500 }}>{l.name}</span>
                         {l.hectares && <span style={{ fontSize: 10, color: C.t3 }}>{l.hectares} ha</span>}
-                        {l.lat && <span style={{ fontSize: 9, color: C.ok }}>📍</span>}
+                        {l.lat&&l.lng&&goToMap?<span onClick={(e)=>{e.stopPropagation();goToMap(l.lat,l.lng);}} style={{cursor:"pointer",opacity:0.6,fontSize:10}} title="Ver en mapa">📍</span>:l.lat&&<span style={{ fontSize: 9, color: C.ok }}>📍</span>}
                       </div>
                       <button onClick={() => editLot?.lotId === l.id ? setEditLot(null) : startEditLot(f.id, l)} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }}>{Ic.edit(editLot?.lotId === l.id ? C.pri : C.t3, 14)}</button>
                     </div>
@@ -2852,7 +2851,7 @@ function ChatsScreen({ user, openConvId, onConvOpened, isDesktop }) {
 
 // ======================== CALENDAR SCREEN =============================
 
-function CalendarScreen({ freights, perms, onNav, isDesktop, user, onAction, actionLoading, onChat, onRefresh, onDuplicate, onEdit }) {
+function CalendarScreen({ freights, perms, onNav, isDesktop, user, onAction, actionLoading, onChat, onRefresh, onDuplicate, onEdit, goToMap }) {
   const [selectedId, setSelectedId] = useState(null);
   const selFreightObj = selectedId ? freights.find(f => f.id === selectedId) : null;
   const calDetailUser = selFreightObj ? { ...user, userType: resolveUserTypeForFreight(selFreightObj, user) } : user;
@@ -2928,9 +2927,9 @@ function CalendarScreen({ freights, perms, onNav, isDesktop, user, onAction, act
             <div style={{fontSize:14,fontWeight:700,color:C.t1,marginBottom:6}}>{f.grain} · {f.tons} {f.unit||"tn"}</div>
             {/* Route */}
             <div style={{display:"flex",flexDirection:"column",gap:3,fontSize:11,color:C.t2}}>
-              <div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.user(C.t3,12)} <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.originCompanyName||(f.originName||"").split("—")[0].trim()}</span></div>
+              <div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.user(C.t3,12)} <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.originCompanyName||(f.originName||"").split("—")[0].trim()}</span>{f.originLat&&f.originLng&&<span onClick={(e)=>{e.stopPropagation();goToMap(f.originLat,f.originLng);}} style={{cursor:"pointer",opacity:0.6,marginLeft:3,fontSize:10,flexShrink:0}} title="Ver en mapa">📍</span>}</div>
               {f.transporterName&&<div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.truck(C.t3,12)} <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.transporterName}{f.truckPlate?` (${f.truckPlate})`:""}</span></div>}
-              <div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.plant(C.t3,12)} <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.destName}</span></div>
+              <div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.plant(C.t3,12)} <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.destName}</span>{f.destLat&&f.destLng&&<span onClick={(e)=>{e.stopPropagation();goToMap(f.destLat,f.destLng);}} style={{cursor:"pointer",opacity:0.6,marginLeft:3,fontSize:10,flexShrink:0}} title="Ver en mapa">📍</span>}</div>
             </div>
           </div>;
         })}
@@ -4109,6 +4108,8 @@ export default function Tolvink() {
   const [editData, setEditData] = useState(null);
   const [unreadChats, setUnreadChats] = useState(0);
   const isDesktop = useIsDesktop(768);
+  const [listView, setListView] = useState("kanban");
+  const [mapFocus, setMapFocus] = useState(null);
 
   // 4. Redirect to home when user logs in
   const prevUser = useRef(null);
@@ -4140,6 +4141,7 @@ export default function Tolvink() {
 
   const perms = useMemo(()=>permsFor(auth.user),[auth.user]);
   const _resolveType = useCallback((f) => resolveUserTypeForFreight(f, auth.user), [auth.user]);
+  const goToMap = (lat, lng) => { if(!lat||!lng) return; setMapFocus({lat:Number(lat),lng:Number(lng),zoom:14}); setListView("mapa"); setScreen("list"); };
   const show = (msg,type="ok")=>setToast({msg,type});
   const nav = (s,fId)=>{ track("screen_view",{screen:s}); if(s==="new_date"&&fId){if(!perms.canRequest){show("Sin permisos para solicitar","err");return;} setDuplicateData({preDate:fId});setScreen("new");return;} if(fId){ setSelFreight(fId); if(s==="detail") fh.refresh(fId); } if(s==="new"&&!perms.canRequest){show("Sin permisos para solicitar","err");return;} setScreen(s); };
 
@@ -4261,15 +4263,15 @@ export default function Tolvink() {
         {/* Scrollable content area */}
         <div style={{flex:1,overflow:(screen==="chats"||screen==="calendar")&&isDesktop?"hidden":"auto",display:"flex",flexDirection:"column",WebkitOverflowScrolling:"touch",overscrollBehavior:"contain"}}>
         <div key={screen} className="tv-page" style={{flex:1,display:"flex",flexDirection:"column",minHeight:0}}>
-        {screen==="home" && <HomeScreen user={auth.user} freights={fh.freights} perms={perms} onNav={nav} catalog={catalog} isDesktop={isDesktop} onAction={handleAction} actionLoading={actionLoading} onChat={(convId)=>{if(convId){setChatConvId(convId);setScreen("chats");}}} onRefresh={(id)=>fh.refresh(id)} onDuplicate={(f)=>{setDuplicateData(f);setScreen("new");}} onEdit={(f)=>{setEditData(f);setScreen("edit");}}/>}
-        {screen==="list" && <ListScreen freights={fh.freights} onNav={nav} onRefresh={fh.fetchAll} catalog={catalog}/>}
-        {screen==="calendar" && <CalendarScreen freights={fh.freights} perms={perms} onNav={nav} isDesktop={isDesktop} user={auth.user} onAction={handleAction} actionLoading={actionLoading} onChat={(convId)=>{if(convId){setChatConvId(convId);setScreen("chats");}}} onRefresh={(id)=>fh.refresh(id)} onDuplicate={(f)=>{setDuplicateData(f);setScreen("new");}} onEdit={(f)=>{setEditData(f);setScreen("edit");}}/>}
-        {screen==="detail" && <DetailScreen user={curFreight ? {...auth.user, userType: _resolveType(curFreight)} : auth.user} freight={curFreight} perms={perms} onBack={()=>setScreen("list")} onAction={handleAction} actionLoading={actionLoading} onChat={(convId)=>{if(convId){setChatConvId(convId);setScreen("chats");}}} onRefresh={(id)=>fh.refresh(id)} onDuplicate={(f)=>{setDuplicateData(f);setScreen("new");}} onEdit={(f)=>{setEditData(f);setScreen("edit");}}/>}
+        {screen==="home" && <HomeScreen user={auth.user} freights={fh.freights} perms={perms} onNav={nav} catalog={catalog} isDesktop={isDesktop} onAction={handleAction} actionLoading={actionLoading} onChat={(convId)=>{if(convId){setChatConvId(convId);setScreen("chats");}}} onRefresh={(id)=>fh.refresh(id)} onDuplicate={(f)=>{setDuplicateData(f);setScreen("new");}} onEdit={(f)=>{setEditData(f);setScreen("edit");}} goToMap={goToMap}/>}
+        {screen==="list" && <ListScreen freights={fh.freights} onNav={nav} onRefresh={fh.fetchAll} catalog={catalog} view={listView} setView={setListView} mapFocus={mapFocus} onMapFocused={()=>setMapFocus(null)} goToMap={goToMap}/>}
+        {screen==="calendar" && <CalendarScreen freights={fh.freights} perms={perms} onNav={nav} isDesktop={isDesktop} user={auth.user} onAction={handleAction} actionLoading={actionLoading} onChat={(convId)=>{if(convId){setChatConvId(convId);setScreen("chats");}}} onRefresh={(id)=>fh.refresh(id)} onDuplicate={(f)=>{setDuplicateData(f);setScreen("new");}} onEdit={(f)=>{setEditData(f);setScreen("edit");}} goToMap={goToMap}/>}
+        {screen==="detail" && <DetailScreen user={curFreight ? {...auth.user, userType: _resolveType(curFreight)} : auth.user} freight={curFreight} perms={perms} onBack={()=>setScreen("list")} onAction={handleAction} actionLoading={actionLoading} onChat={(convId)=>{if(convId){setChatConvId(convId);setScreen("chats");}}} onRefresh={(id)=>fh.refresh(id)} onDuplicate={(f)=>{setDuplicateData(f);setScreen("new");}} onEdit={(f)=>{setEditData(f);setScreen("edit");}} goToMap={goToMap}/>}
         {screen==="new" && <NewScreen user={auth.user} lots={catalog.lots} plants={catalog.plants} branches={catalog.branches} fields={catalog.fields} trucks={catalog.trucks} onBack={()=>{setDuplicateData(null);setScreen("home");}} onCreate={handleCreate} submitting={submitting} duplicateFrom={duplicateData}/>}
         {screen==="edit" && editData && <EditScreen freight={editData} fields={catalog.fields} plants={catalog.plants} onBack={()=>{setEditData(null);setScreen("detail");}} onSave={async(id,data)=>{const r=await fh.update(id,data);if(r.ok) return "Flete actualizado"; show(r.error,"err"); return "";}}/>}
         {screen==="menu" && <MenuScreen user={auth.user} perms={perms} onLogout={auth.logout} onNav={nav} isDesktop={isDesktop}/>}
         {screen==="trucks" && <TrucksScreen onBack={()=>{catalog.refresh();setScreen("menu");}}/>}
-        {screen==="fields" && <FieldsScreen onBack={()=>{catalog.refresh();setScreen("menu");}}/>}
+        {screen==="fields" && <FieldsScreen onBack={()=>{catalog.refresh();setScreen("menu");}} goToMap={goToMap}/>}
         {screen==="admin" && <AdminScreen user={auth.user} onBack={()=>setScreen("menu")}/>}
         {screen==="mydata" && <MyDataScreen user={auth.user} onBack={()=>setScreen("menu")}/>}
         {screen==="reports" && <ReportsScreen onBack={()=>setScreen(isDesktop?"reports":"menu")} freights={fh.freights} isDesktop={isDesktop}/>}

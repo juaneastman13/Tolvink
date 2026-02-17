@@ -439,13 +439,14 @@ const _FIELD_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="2
 const _PLANT_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#003882" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20h20"/><path d="M5 20V8l5 4V8l5 4V4h3v16"/></svg>';
 const _TRUCK_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="#FF6A00" stroke="#fff" stroke-width="1.5"><rect x="1" y="3" width="15" height="13" rx="2"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>';
 
-export function FreightsOverviewMap({ freights, onSelect, fields, plants }) {
+export function FreightsOverviewMap({ freights, onSelect, fields, plants, focus, onFocused }) {
   const mapRef = useRef(null);
   const mapObj = useRef(null);
   const markers = useRef([]);
   const truckMarkers = useRef([]);
   const info = useRef(null);
   const [ready, setReady] = useState(false);
+  const [showFreights, setShowFreights] = useState(true);
 
   // Init map once
   useEffect(() => {
@@ -465,6 +466,19 @@ export function FreightsOverviewMap({ freights, onSelect, fields, plants }) {
     return () => { c = true; };
   }, []);
 
+  // Focus on specific location when requested
+  useEffect(() => {
+    if (!ready || !mapObj.current || !focus) return;
+    mapObj.current.panTo({ lat: focus.lat, lng: focus.lng });
+    if (focus.zoom) mapObj.current.setZoom(focus.zoom);
+    const mk = new window.google.maps.Marker({
+      position: { lat: focus.lat, lng: focus.lng }, map: mapObj.current,
+      animation: window.google.maps.Animation.DROP,
+      icon: { path: window.google.maps.SymbolPath.CIRCLE, scale: 14, fillColor: C.pri, fillOpacity: 0.5, strokeColor: C.pri, strokeWeight: 2 },
+    });
+    setTimeout(() => { mk.setMap(null); if (onFocused) onFocused(); }, 3000);
+  }, [ready, focus]);
+
   // Freight + field + plant markers
   useEffect(() => {
     if (!ready || !mapObj.current) return;
@@ -475,29 +489,31 @@ export function FreightsOverviewMap({ freights, onSelect, fields, plants }) {
     const bounds = new maps.LatLngBounds();
     let has = false;
 
-    // Freight origin markers
-    freights.forEach(f => {
-      if (!f.originLat || !f.originLng) return;
-      const col = _STATUS_COLOR(f.status);
-      const pos = { lat: f.originLat, lng: f.originLng };
-      bounds.extend(pos); has = true;
-      if (f.destLat && f.destLng) bounds.extend({ lat: f.destLat, lng: f.destLng });
-      const mk = new maps.Marker({ position: pos, map: mapObj.current, title: f.code,
-        icon: { path: maps.SymbolPath.CIRCLE, scale: 8, fillColor: col, fillOpacity: 1, strokeColor: "#fff", strokeWeight: 2 } });
-      mk.addListener("click", () => {
-        info.current.setContent(
-          `<div style="font-family:system-ui;font-size:12px;line-height:1.5;min-width:160px">` +
-          `<strong>${f.code}</strong><br/>${f.grain} · ${f.tons} ${f.unit||"tn"}<br/>` +
-          (f.originCompanyName ? `<span style="font-weight:600">${f.originCompanyName}</span><br/>` : "") +
-          ([f.fieldName, f.originName].filter(Boolean).length ? `${[f.fieldName, f.originName].filter(Boolean).join(" / ")}<br/>` : "") +
-          `→ ${f.destName}<br/>` +
-          `<span style="color:${col};font-weight:600">${_STATUS_LABEL[f.status]||f.status}</span></div>`
-        );
-        info.current.open(mapObj.current, mk);
+    // Freight origin markers (conditional on showFreights)
+    if (showFreights) {
+      freights.forEach(f => {
+        if (!f.originLat || !f.originLng) return;
+        const col = _STATUS_COLOR(f.status);
+        const pos = { lat: f.originLat, lng: f.originLng };
+        bounds.extend(pos); has = true;
+        if (f.destLat && f.destLng) bounds.extend({ lat: f.destLat, lng: f.destLng });
+        const mk = new maps.Marker({ position: pos, map: mapObj.current, title: f.code,
+          icon: { path: maps.SymbolPath.CIRCLE, scale: 8, fillColor: col, fillOpacity: 1, strokeColor: "#fff", strokeWeight: 2 } });
+        mk.addListener("click", () => {
+          info.current.setContent(
+            `<div style="font-family:system-ui;font-size:12px;line-height:1.5;min-width:160px">` +
+            `<strong>${f.code}</strong><br/>${f.grain} · ${f.tons} ${f.unit||"tn"}<br/>` +
+            (f.originCompanyName ? `<span style="font-weight:600">${f.originCompanyName}</span><br/>` : "") +
+            ([f.fieldName, f.originName].filter(Boolean).length ? `${[f.fieldName, f.originName].filter(Boolean).join(" / ")}<br/>` : "") +
+            `→ ${f.destName}<br/>` +
+            `<span style="color:${col};font-weight:600">${_STATUS_LABEL[f.status]||f.status}</span></div>`
+          );
+          info.current.open(mapObj.current, mk);
+        });
+        if (onSelect) mk.addListener("dblclick", () => onSelect(f.id));
+        markers.current.push(mk);
       });
-      if (onSelect) mk.addListener("dblclick", () => onSelect(f.id));
-      markers.current.push(mk);
-    });
+    }
 
     // Field markers (seedling icon)
     (fields||[]).forEach(f => {
@@ -532,11 +548,11 @@ export function FreightsOverviewMap({ freights, onSelect, fields, plants }) {
     });
 
     if (has) mapObj.current.fitBounds(bounds, 40);
-  }, [ready, freights, fields, plants, onSelect]);
+  }, [ready, freights, fields, plants, onSelect, showFreights]);
 
   // Live truck tracking for in_progress freights
   useEffect(() => {
-    if (!ready || !mapObj.current) return;
+    if (!ready || !mapObj.current || !showFreights) return;
     const maps = window.google.maps;
     const liveFreights = freights.filter(f => f.status === "in_progress" && f.id);
     if (!liveFreights.length) {
@@ -592,13 +608,17 @@ export function FreightsOverviewMap({ freights, onSelect, fields, plants }) {
     poll();
     const iv = setInterval(poll, 10000);
     return () => { cancelled = true; clearInterval(iv); };
-  }, [ready, freights, onSelect]);
+  }, [ready, freights, onSelect, showFreights]);
 
   // Cleanup truck markers on unmount
   useEffect(() => () => { truckMarkers.current.forEach(m => m.setMap(null)); }, []);
 
   return (
-    <div style={{ background:C.w, border:`1px solid ${C.b1}`, borderRadius:12, overflow:"hidden", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
+    <div style={{ background:C.w, border:`1px solid ${C.b1}`, borderRadius:12, overflow:"hidden", boxShadow:"0 1px 4px rgba(0,0,0,0.06)", position:"relative" }}>
+      <button onClick={()=>setShowFreights(v=>!v)} style={{position:"absolute",top:12,right:12,zIndex:10,padding:"6px 12px",borderRadius:8,border:`1.5px solid ${C.pri}`,background:C.w,color:C.pri,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:5,boxShadow:C.shMd}}>
+        {showFreights?Ic.eyeOff(C.pri,13):Ic.eye(C.pri,13)}
+        {showFreights?"Ocultar fletes":"Ver fletes"}
+      </button>
       <div ref={mapRef} style={{ width:"100%", height:420 }} />
     </div>
   );
