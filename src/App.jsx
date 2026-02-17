@@ -276,6 +276,17 @@ function HomeScreen({ user, freights, perms, onNav, catalog, isDesktop }) {
 
   const displayFreights = useMemo(()=>freights.filter(f=>!["canceled","draft"].includes(f.status)),[freights]);
 
+  const ut = user.userType;
+  const todayStr = useMemo(() => new Date().toISOString().slice(0, 10), []);
+
+  // Hero section data
+  const nextFreight = useMemo(() =>
+    freights.filter(f => !["finished","canceled"].includes(f.status) && f.loadDate >= todayStr)
+      .sort((a, b) => (a.loadDate + (a.loadTime||"")).localeCompare(b.loadDate + (b.loadTime||"")))[0] || null
+  , [freights, todayStr]);
+  const todayReceptions = useMemo(() => displayFreights.filter(f => f.loadDate === todayStr).length, [displayFreights, todayStr]);
+
+  const sub = ut==="plant"?"hacia tu planta":ut==="transporter"?"de tus viajes":"de tus fletes";
   const statCards = [
     {k:"requested",l:"Solicitados",v:stats.avail,c:C.acc,bg:C.accPale},
     {k:"active",l:"En curso",v:stats.active,c:"#258B3E",bg:"#D0EBD7"},
@@ -284,15 +295,16 @@ function HomeScreen({ user, freights, perms, onNav, catalog, isDesktop }) {
 
   const togglePanel = (key) => setActivePanel(prev=>prev===key?null:key);
 
-  // Quick access items
-  const quickItems = [
-    {k:"map",l:"Mapa",ic:Ic.pin,c:C.pri,show:true},
-    {k:"pending",l:"Asignar fletes",ic:Ic.bell,c:C.acc,show:perms.canApprove&&stats.avail>0},
-    {k:"calendar",l:"Calendario",ic:Ic.cal,c:C.sec,show:true},
-    {k:"reports",l:"Informes y Documentos",ic:Ic.doc,c:"#7C3AED",show:true},
-    {k:"fields",l:"Campos y Lotes",ic:Ic.seedling,c:C.pri,show:user.userType==="producer"},
-    {k:"trucks",l:"Flota",ic:Ic.truck,c:C.acc,show:user.userType==="transporter"||user.userType==="producer"},
-  ].filter(b=>b.show);
+  // Quick access items — ordered by relevance per user type
+  const allQuickItems = [
+    {k:"fields",l:"Campos y Lotes",ic:Ic.seedling,c:C.pri,types:["producer"]},
+    {k:"pending",l:"Asignar fletes",ic:Ic.bell,c:C.acc,types:["plant"],show:perms.canApprove},
+    {k:"trucks",l:"Flota",ic:Ic.truck,c:C.acc,types:["transporter","producer"]},
+    {k:"calendar",l:"Calendario",ic:Ic.cal,c:C.sec,types:["producer","plant","transporter"]},
+    {k:"map",l:"Mapa",ic:Ic.pin,c:C.pri,types:["producer","plant","transporter"]},
+    {k:"reports",l:"Informes y Documentos",ic:Ic.doc,c:"#7C3AED",types:["producer","plant","transporter"]},
+  ];
+  const quickItems = allQuickItems.filter(b=>b.types.includes(ut)&&(b.show===undefined||b.show));
 
   // --- Left column: greeting + stats + quick access ---
   const leftPanel = (
@@ -300,6 +312,65 @@ function HomeScreen({ user, freights, perms, onNav, catalog, isDesktop }) {
       {/* Greeting */}
       <div style={{ padding:"18px 0 12px 0" }}>
         <div><div style={{ fontSize:13, color:C.t2 }}>Hola,</div><div style={{ fontSize:isDesktop&&activePanel?18:22, fontWeight:800, letterSpacing:-0.3, color:C.t1 }}>{user.name.split(" ")[0]}</div></div>
+      </div>
+
+      {/* Hero section — personalized by user type */}
+      <div style={{ display:"grid", gridTemplateColumns:isDesktop&&activePanel?"1fr":"1fr 1fr", gap:8, marginBottom:14 }}>
+        {ut==="producer" && <>
+          <div onClick={()=>togglePanel("fields")} style={{ background:C.priPale, borderRadius:12, padding:14, cursor:"pointer", border:`1px solid ${C.pri}15` }}>
+            <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:8 }}>{Ic.seedling(C.pri,16)}<span style={{ fontSize:10, fontWeight:700, color:C.pri, textTransform:"uppercase", letterSpacing:0.5 }}>Mis Campos</span></div>
+            <div style={{ fontSize:22, fontWeight:800, color:C.pri }}>{catalog.fields?.length||0}</div>
+            <div style={{ fontSize:10, color:C.t2 }}>{catalog.lots?.length||0} lotes registrados</div>
+          </div>
+          {nextFreight ? (
+            <div onClick={()=>onNav("list")} style={{ background:`${C.sec}0D`, borderRadius:12, padding:14, cursor:"pointer", border:`1px solid ${C.sec}15` }}>
+              <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:8 }}>{Ic.truck(C.sec,16)}<span style={{ fontSize:10, fontWeight:700, color:C.sec, textTransform:"uppercase", letterSpacing:0.5 }}>Próximo flete</span></div>
+              <div style={{ fontSize:13, fontWeight:700, color:C.t1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{nextFreight.grain} — {nextFreight.tons}{nextFreight.unit==="toneladas"?" tn":""}</div>
+              <div style={{ fontSize:10, color:C.t2 }}>{nextFreight.destName?.split("—")[0]?.trim()} · {nextFreight.loadDate.slice(8,10)}/{nextFreight.loadDate.slice(5,7)}</div>
+            </div>
+          ) : (
+            <div style={{ background:C.bgCardAlt, borderRadius:12, padding:14, border:`1px solid ${C.b1}`, display:"flex", flexDirection:"column", justifyContent:"center" }}>
+              <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:4 }}>{Ic.truck(C.t3,16)}<span style={{ fontSize:10, fontWeight:700, color:C.t3, textTransform:"uppercase", letterSpacing:0.5 }}>Próximo flete</span></div>
+              <div style={{ fontSize:12, color:C.t3, fontWeight:500 }}>Sin fletes programados</div>
+            </div>
+          )}
+        </>}
+        {ut==="plant" && <>
+          {perms.canApprove && stats.avail>0 ? (
+            <div onClick={()=>togglePanel("pending")} style={{ background:C.acc, borderRadius:12, padding:14, cursor:"pointer", gridColumn:isDesktop&&activePanel?undefined:"1 / -1" }}>
+              <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                <div style={{ width:40, height:40, borderRadius:12, background:"rgba(255,255,255,0.2)", display:"flex", alignItems:"center", justifyContent:"center" }}>{Ic.bell("#fff",20)}</div>
+                <div>
+                  <div style={{ fontSize:20, fontWeight:800, color:"#fff" }}>{stats.avail}</div>
+                  <div style={{ fontSize:11, color:"rgba(255,255,255,0.85)", fontWeight:600 }}>flete{stats.avail>1?"s":""} esperando asignación</div>
+                </div>
+                <span style={{ marginLeft:"auto", display:"flex", transform:"rotate(180deg)" }}>{Ic.chev("#fff",18)}</span>
+              </div>
+            </div>
+          ) : (
+            <div style={{ background:C.okPale, borderRadius:12, padding:14, border:`1px solid ${C.ok}15` }}>
+              <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:4 }}>{Ic.chk(C.ok,16)}<span style={{ fontSize:10, fontWeight:700, color:C.ok, textTransform:"uppercase", letterSpacing:0.5 }}>Asignaciones</span></div>
+              <div style={{ fontSize:13, fontWeight:700, color:C.ok }}>Todo al día</div>
+            </div>
+          )}
+          <div onClick={()=>onNav("list")} style={{ background:`${C.sec}0D`, borderRadius:12, padding:14, cursor:"pointer", border:`1px solid ${C.sec}15`, display:perms.canApprove&&stats.avail>0&&!(isDesktop&&activePanel)?"none":undefined }}>
+            <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:8 }}>{Ic.truck(C.sec,16)}<span style={{ fontSize:10, fontWeight:700, color:C.sec, textTransform:"uppercase", letterSpacing:0.5 }}>Recepciones hoy</span></div>
+            <div style={{ fontSize:22, fontWeight:800, color:C.sec }}>{todayReceptions}</div>
+            <div style={{ fontSize:10, color:C.t2 }}>flete{todayReceptions!==1?"s":""} programado{todayReceptions!==1?"s":""}</div>
+          </div>
+        </>}
+        {ut==="transporter" && <>
+          <div onClick={()=>togglePanel("trucks")} style={{ background:C.accPale, borderRadius:12, padding:14, cursor:"pointer", border:`1px solid ${C.acc}15` }}>
+            <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:8 }}>{Ic.truck(C.acc,16)}<span style={{ fontSize:10, fontWeight:700, color:C.acc, textTransform:"uppercase", letterSpacing:0.5 }}>Mi Flota</span></div>
+            <div style={{ fontSize:22, fontWeight:800, color:C.acc }}>{catalog.trucks?.length||0}</div>
+            <div style={{ fontSize:10, color:C.t2 }}>camiones activos</div>
+          </div>
+          <div onClick={()=>onNav("list")} style={{ background:`#258B3E0D`, borderRadius:12, padding:14, cursor:"pointer", border:"1px solid #258B3E15" }}>
+            <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:8 }}>{Ic.nav("#258B3E",16)}<span style={{ fontSize:10, fontWeight:700, color:"#258B3E", textTransform:"uppercase", letterSpacing:0.5 }}>Viajes en curso</span></div>
+            <div style={{ fontSize:22, fontWeight:800, color:"#258B3E" }}>{stats.active}</div>
+            <div style={{ fontSize:10, color:C.t2 }}>flete{stats.active!==1?"s":""} activo{stats.active!==1?"s":""}</div>
+          </div>
+        </>}
       </div>
 
       {/* Stat cards */}
@@ -310,14 +381,8 @@ function HomeScreen({ user, freights, perms, onNav, catalog, isDesktop }) {
             <div style={{ fontSize:9.5, color:s.c, fontWeight:500, marginTop:1, opacity:0.8 }}>{s.l}</div>
           </div>
         ))}
+        <div style={{ gridColumn:"1 / -1", fontSize:9, color:C.t3, textAlign:"center", marginTop:-6 }}>{sub}</div>
       </div>
-
-      {/* Pending alert */}
-      {perms.canApprove && stats.avail>0 && (
-        <div onClick={()=>togglePanel("pending")} style={{ background:C.accPale, border:`1px solid ${C.acc}22`, borderLeft:`3px solid ${C.acc}`, borderRadius:12, padding:12, marginBottom:12, cursor:"pointer", display:"flex", alignItems:"center", gap:10 }}>
-          {Ic.warn(C.acc,20)}<div><div style={{ fontSize:12, fontWeight:700, color:C.acc }}>{stats.avail} pendiente{stats.avail>1?"s":""}</div><div style={{ fontSize:10.5, color:C.t2 }}>Esperando asignación</div></div>
-        </div>
-      )}
 
       {/* Quick access — vertical list */}
       <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
