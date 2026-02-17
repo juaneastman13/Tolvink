@@ -1979,20 +1979,25 @@ function AccessScreen({ user, onBack, embedded }) {
   const fPlants = facilities?.plants || [];
   const plantMap = useMemo(()=>new Map(fPlants.map(p=>[p.id,p])),[fPlants]);
 
-  // Group active producers by plant
+  // Group active records by type (producer/transporter) then by plant
   const activeProducers = producers.filter(p=>p.active);
   const grouped = useMemo(()=>{
-    const byPlant = {};
-    const general = [];
-    for (const p of activeProducers) {
-      const pIds = (p.allowedPlantIds || []);
-      if (pIds.length === 0) { general.push(p); continue; }
-      for (const pid of pIds) {
-        if (!byPlant[pid]) byPlant[pid] = [];
-        byPlant[pid].push(p);
+    const producerRecords = activeProducers.filter(p=>p.producerCompany?.type==="producer"||(!p.producerCompany?.type));
+    const transporterRecords = activeProducers.filter(p=>p.producerCompany?.type==="transporter");
+    const groupByPlant = (records) => {
+      const byPlant = {};
+      const general = [];
+      for (const p of records) {
+        const pIds = (p.allowedPlantIds || []);
+        if (pIds.length === 0) { general.push(p); continue; }
+        for (const pid of pIds) {
+          if (!byPlant[pid]) byPlant[pid] = [];
+          byPlant[pid].push(p);
+        }
       }
-    }
-    return { byPlant, general };
+      return { byPlant, general };
+    };
+    return { producers: groupByPlant(producerRecords), transporters: groupByPlant(transporterRecords) };
   },[activeProducers]);
 
   const FacilityToggle = ({ id, name, address, selected, color, onToggle }) => (
@@ -2180,33 +2185,76 @@ function AccessScreen({ user, onBack, embedded }) {
             })()}
           </div>
         ) : (
-          /* Plant view (default): show producers grouped by plant facility */
-          activeProducers.length === 0 ? <div style={{ textAlign: "center", padding: 40, color: C.t3, fontSize: 13 }}>Ningún productor habilitado aún.</div> :
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            {fPlants.map(plant => {
-              const prods = grouped.byPlant[plant.id];
-              if (!prods || prods.length === 0) return null;
-              return (
-                <div key={plant.id} style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: 12, boxShadow: C.sh, overflow:"hidden" }}>
-                  <div style={{ padding:"12px 14px", background:`${C.pri}08`, borderBottom:`1px solid ${C.b2}`, display:"flex", alignItems:"center", gap:8 }}>
-                    {Ic.plant(C.pri,16)}
-                    <div style={{ fontSize:13, fontWeight:700, color:C.pri }}>{plant.name}</div>
-                    <div style={{ fontSize:10, color:C.t3, marginLeft:4 }}>{prods.length} productor{prods.length!==1?"es":""}</div>
-                  </div>
-                  <div style={{ padding:"4px 14px" }}>
-                    {prods.map(p => <ProducerRow key={p.id} p={p}/>)}
-                  </div>
+          /* Plant view (default): show records grouped by type then by plant */
+          activeProducers.length === 0 ? <div style={{ textAlign: "center", padding: 40, color: C.t3, fontSize: 13 }}>Ningún acceso habilitado aún.</div> :
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            {/* Productores section */}
+            {(Object.keys(grouped.producers.byPlant).length > 0 || grouped.producers.general.length > 0) && (
+              <div>
+                <div style={{ fontSize:13, fontWeight:700, color:C.pri, marginBottom:8, display:"flex", alignItems:"center", gap:6 }}>{Ic.user(C.pri,16)} Productores</div>
+                <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                  {fPlants.map(plant => {
+                    const prods = grouped.producers.byPlant[plant.id];
+                    if (!prods || prods.length === 0) return null;
+                    return (
+                      <div key={plant.id} style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: 12, boxShadow: C.sh, overflow:"hidden" }}>
+                        <div style={{ padding:"10px 14px", background:`${C.pri}08`, borderBottom:`1px solid ${C.b2}`, display:"flex", alignItems:"center", gap:8 }}>
+                          {Ic.plant(C.pri,14)}
+                          <div style={{ fontSize:12, fontWeight:700, color:C.pri }}>{plant.name}</div>
+                          <div style={{ fontSize:10, color:C.t3, marginLeft:4 }}>{prods.length}</div>
+                        </div>
+                        <div style={{ padding:"4px 14px" }}>
+                          {prods.map(p => <ProducerRow key={p.id} p={p}/>)}
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {grouped.producers.general.length > 0 && (
+                    <div style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: 12, boxShadow: C.sh, overflow:"hidden" }}>
+                      <div style={{ padding:"10px 14px", background:`${C.t2}08`, borderBottom:`1px solid ${C.b2}`, display:"flex", alignItems:"center", gap:8 }}>
+                        {Ic.user(C.t2,14)}
+                        <div style={{ fontSize:12, fontWeight:600, color:C.t2 }}>Acceso general</div>
+                      </div>
+                      <div style={{ padding:"4px 14px" }}>
+                        {grouped.producers.general.map(p => <ProducerRow key={p.id} p={p}/>)}
+                      </div>
+                    </div>
+                  )}
                 </div>
-              );
-            })}
-            {grouped.general.length > 0 && (
-              <div style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: 12, boxShadow: C.sh, overflow:"hidden" }}>
-                <div style={{ padding:"12px 14px", background:`${C.t2}08`, borderBottom:`1px solid ${C.b2}`, display:"flex", alignItems:"center", gap:8 }}>
-                  {Ic.user(C.t2,16)}
-                  <div style={{ fontSize:13, fontWeight:700, color:C.t2 }}>Acceso general</div>
-                </div>
-                <div style={{ padding:"4px 14px" }}>
-                  {grouped.general.map(p => <ProducerRow key={p.id} p={p}/>)}
+              </div>
+            )}
+            {/* Transportistas section */}
+            {(Object.keys(grouped.transporters.byPlant).length > 0 || grouped.transporters.general.length > 0) && (
+              <div>
+                <div style={{ fontSize:13, fontWeight:700, color:C.acc, marginBottom:8, display:"flex", alignItems:"center", gap:6 }}>{Ic.truck(C.acc,16)} Transportistas</div>
+                <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                  {fPlants.map(plant => {
+                    const trans = grouped.transporters.byPlant[plant.id];
+                    if (!trans || trans.length === 0) return null;
+                    return (
+                      <div key={plant.id} style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: 12, boxShadow: C.sh, overflow:"hidden" }}>
+                        <div style={{ padding:"10px 14px", background:`${C.acc}08`, borderBottom:`1px solid ${C.b2}`, display:"flex", alignItems:"center", gap:8 }}>
+                          {Ic.plant(C.acc,14)}
+                          <div style={{ fontSize:12, fontWeight:700, color:C.acc }}>{plant.name}</div>
+                          <div style={{ fontSize:10, color:C.t3, marginLeft:4 }}>{trans.length}</div>
+                        </div>
+                        <div style={{ padding:"4px 14px" }}>
+                          {trans.map(p => <ProducerRow key={p.id} p={p}/>)}
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {grouped.transporters.general.length > 0 && (
+                    <div style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: 12, boxShadow: C.sh, overflow:"hidden" }}>
+                      <div style={{ padding:"10px 14px", background:`${C.t2}08`, borderBottom:`1px solid ${C.b2}`, display:"flex", alignItems:"center", gap:8 }}>
+                        {Ic.truck(C.t2,14)}
+                        <div style={{ fontSize:12, fontWeight:600, color:C.t2 }}>Acceso general</div>
+                      </div>
+                      <div style={{ padding:"4px 14px" }}>
+                        {grouped.transporters.general.map(p => <ProducerRow key={p.id} p={p}/>)}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
