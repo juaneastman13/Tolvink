@@ -123,24 +123,7 @@ export function LocationPicker({ label, value, onChange, defaultCenter }) {
     } else if (defaultCenter?.lat && defaultCenter?.lng) {
       initMap({ lat: Number(defaultCenter.lat), lng: Number(defaultCenter.lng) }, 13);
     } else {
-      // Show Uruguay immediately, then recenter if geolocation available
       initMap(URUGUAY_CENTER, 7);
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          (pos) => {
-            if (cancelled) return;
-            const lat = pos.coords.latitude;
-            const lng = pos.coords.longitude;
-            if (mapObjRef.current && markerRef.current) {
-              mapObjRef.current.setCenter({ lat, lng });
-              mapObjRef.current.setZoom(14);
-              markerRef.current.setPosition({ lat, lng });
-            }
-          },
-          () => {},
-          { enableHighAccuracy: false, timeout: 3000 }
-        );
-      }
     }
 
     return () => { cancelled = true; };
