@@ -279,120 +279,78 @@ function HomeScreen({ user, freights, perms, onNav, catalog, isDesktop }) {
   const ut = user.userType;
   const todayStr = useMemo(() => new Date().toISOString().slice(0, 10), []);
 
-  // Hero section data
-  const nextFreight = useMemo(() =>
-    freights.filter(f => !["finished","canceled"].includes(f.status) && f.loadDate >= todayStr)
-      .sort((a, b) => (a.loadDate + (a.loadTime||"")).localeCompare(b.loadDate + (b.loadTime||"")))[0] || null
-  , [freights, todayStr]);
-  const todayReceptions = useMemo(() => displayFreights.filter(f => f.loadDate === todayStr).length, [displayFreights, todayStr]);
+  // Pending actions — freights that need this user's action
+  const pendingActions = useMemo(() =>
+    freights.filter(f => getActions(f.status, user.userType, user.role, f.isOwnFleet).length > 0)
+  , [freights, user.userType, user.role]);
+  const hasPending = pendingActions.length > 0;
 
-  const sub = ut==="plant"?"hacia tu planta":ut==="transporter"?"de tus viajes":"de tus fletes";
-  const statCards = [
-    {k:"requested",l:"Solicitados",v:stats.avail,c:C.acc,bg:C.accPale},
-    {k:"active",l:"En curso",v:stats.active,c:"#258B3E",bg:"#D0EBD7"},
-    {k:"done",l:"Finalizados",v:stats.done,c:C.pri,bg:C.priPale},
-  ];
+  // Day summary
+  const todayFreights = useMemo(() => displayFreights.filter(f => f.loadDate === todayStr), [displayFreights, todayStr]);
+  const liveNow = useMemo(() => freights.filter(f => ["in_progress","loaded"].includes(f.status)).length, [freights]);
 
   const togglePanel = (key) => setActivePanel(prev=>prev===key?null:key);
 
-  // Quick access items — ordered by relevance per user type
-  const allQuickItems = [
-    {k:"fields",l:"Campos y Lotes",ic:Ic.seedling,c:C.pri,types:["producer"]},
-    {k:"pending",l:"Asignar fletes",ic:Ic.bell,c:C.acc,types:["plant"],show:perms.canApprove},
-    {k:"trucks",l:"Flota",ic:Ic.truck,c:C.acc,types:["transporter","producer"]},
-    {k:"calendar",l:"Calendario",ic:Ic.cal,c:C.sec,types:["producer","plant","transporter"]},
-    {k:"map",l:"Mapa",ic:Ic.pin,c:C.pri,types:["producer","plant","transporter"]},
-    {k:"reports",l:"Informes y Documentos",ic:Ic.doc,c:"#7C3AED",types:["producer","plant","transporter"]},
+  // Quick access — all relevant items per type
+  const quickItems = [
+    {k:"calendar",l:"Calendario",ic:Ic.cal,c:C.sec},
+    {k:"map",l:"Mapa",ic:Ic.pin,c:C.pri},
+    ...(ut==="transporter"||ut==="producer"?[{k:"trucks",l:"Flota",ic:Ic.truck,c:C.acc}]:[]),
+    ...(ut==="producer"?[{k:"fields",l:"Campos y Lotes",ic:Ic.seedling,c:C.pri}]:[]),
+    {k:"reports",l:"Informes",ic:Ic.doc,c:"#7C3AED"},
   ];
-  const quickItems = allQuickItems.filter(b=>b.types.includes(ut)&&(b.show===undefined||b.show));
 
-  // --- Left column: greeting + stats + quick access ---
+  // --- Left column: status + day summary + quick access ---
+  const compact = isDesktop && activePanel;
   const leftPanel = (
-    <div style={{ width:isDesktop&&activePanel?280:undefined, flexShrink:0, overflow:"auto", padding:"0 18px 18px 18px", boxSizing:"border-box" }}>
+    <div style={{ width:compact?280:undefined, flexShrink:0, overflow:"auto", padding:"0 18px 18px 18px", boxSizing:"border-box" }}>
       {/* Greeting */}
       <div style={{ padding:"18px 0 12px 0" }}>
-        <div><div style={{ fontSize:13, color:C.t2 }}>Hola,</div><div style={{ fontSize:isDesktop&&activePanel?18:22, fontWeight:800, letterSpacing:-0.3, color:C.t1 }}>{user.name.split(" ")[0]}</div></div>
+        <div style={{ fontSize:13, color:C.t2 }}>Hola,</div>
+        <div style={{ fontSize:compact?18:22, fontWeight:800, letterSpacing:-0.3, color:C.t1 }}>{user.name.split(" ")[0]}</div>
       </div>
 
-      {/* Hero section — personalized by user type */}
-      <div style={{ display:"grid", gridTemplateColumns:isDesktop&&activePanel?"1fr":"1fr 1fr", gap:8, marginBottom:14 }}>
-        {ut==="producer" && <>
-          <div onClick={()=>togglePanel("fields")} style={{ background:C.priPale, borderRadius:12, padding:14, cursor:"pointer", border:`1px solid ${C.pri}15` }}>
-            <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:8 }}>{Ic.seedling(C.pri,16)}<span style={{ fontSize:10, fontWeight:700, color:C.pri, textTransform:"uppercase", letterSpacing:0.5 }}>Mis Campos</span></div>
-            <div style={{ fontSize:22, fontWeight:800, color:C.pri }}>{catalog.fields?.length||0}</div>
-            <div style={{ fontSize:10, color:C.t2 }}>{catalog.lots?.length||0} lotes registrados</div>
-          </div>
-          {nextFreight ? (
-            <div onClick={()=>onNav("list")} style={{ background:`${C.sec}0D`, borderRadius:12, padding:14, cursor:"pointer", border:`1px solid ${C.sec}15` }}>
-              <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:8 }}>{Ic.truck(C.sec,16)}<span style={{ fontSize:10, fontWeight:700, color:C.sec, textTransform:"uppercase", letterSpacing:0.5 }}>Próximo flete</span></div>
-              <div style={{ fontSize:13, fontWeight:700, color:C.t1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{nextFreight.grain} — {nextFreight.tons}{nextFreight.unit==="toneladas"?" tn":""}</div>
-              <div style={{ fontSize:10, color:C.t2 }}>{nextFreight.destName?.split("—")[0]?.trim()} · {nextFreight.loadDate.slice(8,10)}/{nextFreight.loadDate.slice(5,7)}</div>
-            </div>
-          ) : (
-            <div style={{ background:C.bgCardAlt, borderRadius:12, padding:14, border:`1px solid ${C.b1}`, display:"flex", flexDirection:"column", justifyContent:"center" }}>
-              <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:4 }}>{Ic.truck(C.t3,16)}<span style={{ fontSize:10, fontWeight:700, color:C.t3, textTransform:"uppercase", letterSpacing:0.5 }}>Próximo flete</span></div>
-              <div style={{ fontSize:12, color:C.t3, fontWeight:500 }}>Sin fletes programados</div>
-            </div>
-          )}
-        </>}
-        {ut==="plant" && <>
-          {perms.canApprove && stats.avail>0 ? (
-            <div onClick={()=>togglePanel("pending")} style={{ background:C.acc, borderRadius:12, padding:14, cursor:"pointer", gridColumn:isDesktop&&activePanel?undefined:"1 / -1" }}>
-              <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                <div style={{ width:40, height:40, borderRadius:12, background:"rgba(255,255,255,0.2)", display:"flex", alignItems:"center", justifyContent:"center" }}>{Ic.bell("#fff",20)}</div>
-                <div>
-                  <div style={{ fontSize:20, fontWeight:800, color:"#fff" }}>{stats.avail}</div>
-                  <div style={{ fontSize:11, color:"rgba(255,255,255,0.85)", fontWeight:600 }}>flete{stats.avail>1?"s":""} esperando asignación</div>
-                </div>
-                <span style={{ marginLeft:"auto", display:"flex", transform:"rotate(180deg)" }}>{Ic.chev("#fff",18)}</span>
-              </div>
-            </div>
-          ) : (
-            <div style={{ background:C.okPale, borderRadius:12, padding:14, border:`1px solid ${C.ok}15` }}>
-              <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:4 }}>{Ic.chk(C.ok,16)}<span style={{ fontSize:10, fontWeight:700, color:C.ok, textTransform:"uppercase", letterSpacing:0.5 }}>Asignaciones</span></div>
-              <div style={{ fontSize:13, fontWeight:700, color:C.ok }}>Todo al día</div>
-            </div>
-          )}
-          <div onClick={()=>onNav("list")} style={{ background:`${C.sec}0D`, borderRadius:12, padding:14, cursor:"pointer", border:`1px solid ${C.sec}15`, display:perms.canApprove&&stats.avail>0&&!(isDesktop&&activePanel)?"none":undefined }}>
-            <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:8 }}>{Ic.truck(C.sec,16)}<span style={{ fontSize:10, fontWeight:700, color:C.sec, textTransform:"uppercase", letterSpacing:0.5 }}>Recepciones hoy</span></div>
-            <div style={{ fontSize:22, fontWeight:800, color:C.sec }}>{todayReceptions}</div>
-            <div style={{ fontSize:10, color:C.t2 }}>flete{todayReceptions!==1?"s":""} programado{todayReceptions!==1?"s":""}</div>
-          </div>
-        </>}
-        {ut==="transporter" && <>
-          <div onClick={()=>togglePanel("trucks")} style={{ background:C.accPale, borderRadius:12, padding:14, cursor:"pointer", border:`1px solid ${C.acc}15` }}>
-            <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:8 }}>{Ic.truck(C.acc,16)}<span style={{ fontSize:10, fontWeight:700, color:C.acc, textTransform:"uppercase", letterSpacing:0.5 }}>Mi Flota</span></div>
-            <div style={{ fontSize:22, fontWeight:800, color:C.acc }}>{catalog.trucks?.length||0}</div>
-            <div style={{ fontSize:10, color:C.t2 }}>camiones activos</div>
-          </div>
-          <div onClick={()=>onNav("list")} style={{ background:`#258B3E0D`, borderRadius:12, padding:14, cursor:"pointer", border:"1px solid #258B3E15" }}>
-            <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:8 }}>{Ic.nav("#258B3E",16)}<span style={{ fontSize:10, fontWeight:700, color:"#258B3E", textTransform:"uppercase", letterSpacing:0.5 }}>Viajes en curso</span></div>
-            <div style={{ fontSize:22, fontWeight:800, color:"#258B3E" }}>{stats.active}</div>
-            <div style={{ fontSize:10, color:C.t2 }}>flete{stats.active!==1?"s":""} activo{stats.active!==1?"s":""}</div>
-          </div>
-        </>}
+      {/* Status button — pending actions */}
+      <div onClick={()=>togglePanel("pending")} style={{ display:"flex", alignItems:"center", gap:10, padding:"12px 14px", borderRadius:12, cursor:"pointer", marginBottom:14, background:hasPending?C.acc:C.okPale, border:hasPending?"none":`1px solid ${C.ok}20`, transition:"all 0.3s ease" }}>
+        <div style={{ width:36, height:36, borderRadius:10, background:hasPending?"rgba(255,255,255,0.2)":`${C.ok}15`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, position:"relative" }}>
+          {hasPending ? Ic.bell("#fff",18) : Ic.chk(C.ok,18)}
+          {hasPending && <div style={{ position:"absolute", top:-3, right:-3, minWidth:16, height:16, borderRadius:8, background:C.err, color:C.w, fontSize:9, fontWeight:700, padding:"0 4px", display:"flex", alignItems:"center", justifyContent:"center", border:`2px solid ${C.acc}` }}>{pendingActions.length}</div>}
+        </div>
+        <div style={{ flex:1 }}>
+          <div style={{ fontSize:13, fontWeight:700, color:hasPending?"#fff":C.ok }}>{hasPending?`${pendingActions.length} acción${pendingActions.length>1?"es":""}  pendiente${pendingActions.length>1?"s":""}`:"Todo al día"}</div>
+          <div style={{ fontSize:10, color:hasPending?"rgba(255,255,255,0.8)":C.t3 }}>{hasPending?"Tocar para resolver":"Sin acciones pendientes"}</div>
+        </div>
+        {hasPending && <span style={{ display:"flex", transform:"rotate(180deg)" }}>{Ic.chev("#fff",16)}</span>}
       </div>
 
-      {/* Stat cards */}
-      <div style={{ display:"grid", gridTemplateColumns:isDesktop&&activePanel?"1fr":"1fr 1fr 1fr", gap:8, marginBottom:14 }}>
-        {statCards.map(s=>(
-          <div key={s.k} onClick={()=>onNav("list")} style={{ background:s.bg, borderRadius:12, padding:isDesktop&&activePanel?"8px 10px":"10px 8px", textAlign:"center", cursor:"pointer", transition:"all 0.2s ease", border:"2px solid transparent" }}>
-            <div style={{ fontSize:isDesktop&&activePanel?18:24, fontWeight:800, color:s.c }}>{s.v}</div>
-            <div style={{ fontSize:9.5, color:s.c, fontWeight:500, marginTop:1, opacity:0.8 }}>{s.l}</div>
+      {/* Day summary */}
+      <div style={{ marginBottom:14 }}>
+        <div style={{ fontSize:10, fontWeight:700, color:C.t3, textTransform:"uppercase", letterSpacing:0.5, marginBottom:8 }}>Resumen del día</div>
+        <div style={{ display:"grid", gridTemplateColumns:compact?"1fr 1fr":"1fr 1fr 1fr", gap:8 }}>
+          <div onClick={()=>onNav("list")} style={{ background:C.accPale, borderRadius:10, padding:compact?"8px 10px":"10px", textAlign:"center", cursor:"pointer" }}>
+            <div style={{ fontSize:compact?18:22, fontWeight:800, color:C.acc }}>{todayFreights.length}</div>
+            <div style={{ fontSize:9, color:C.acc, fontWeight:600, opacity:0.8 }}>Programados hoy</div>
           </div>
-        ))}
-        <div style={{ gridColumn:"1 / -1", fontSize:9, color:C.t3, textAlign:"center", marginTop:-6 }}>{sub}</div>
+          <div onClick={()=>onNav("list")} style={{ background:"#D0EBD7", borderRadius:10, padding:compact?"8px 10px":"10px", textAlign:"center", cursor:"pointer" }}>
+            <div style={{ fontSize:compact?18:22, fontWeight:800, color:"#258B3E" }}>{liveNow}</div>
+            <div style={{ fontSize:9, color:"#258B3E", fontWeight:600, opacity:0.8 }}>En ruta ahora</div>
+          </div>
+          <div onClick={()=>onNav("list")} style={{ background:C.priPale, borderRadius:10, padding:compact?"8px 10px":"10px", textAlign:"center", cursor:"pointer", gridColumn:compact?"1 / -1":undefined }}>
+            <div style={{ fontSize:compact?18:22, fontWeight:800, color:C.pri }}>{stats.done}</div>
+            <div style={{ fontSize:9, color:C.pri, fontWeight:600, opacity:0.8 }}>Finalizados</div>
+          </div>
+        </div>
       </div>
 
-      {/* Quick access — vertical list */}
+      {/* Quick access */}
       <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
         <div style={{ fontSize:10, fontWeight:700, color:C.t3, textTransform:"uppercase", letterSpacing:0.5, marginBottom:2 }}>Accesos rápidos</div>
         {quickItems.map(b=>{
           const isActive = activePanel===b.k;
           return (
-            <button key={b.k} onClick={()=>togglePanel(b.k)} style={{ display:"flex", alignItems:"center", gap:10, padding:isDesktop&&activePanel?"9px 10px":"11px 14px", borderRadius:12, background:isActive?`${b.c}12`:C.w, border:`1px solid ${isActive?`${b.c}40`:C.b1}`, cursor:"pointer", fontFamily:"inherit", width:"100%", textAlign:"left", transition:"all 0.15s", boxShadow:isActive?"none":C.sh }} onMouseEnter={e=>{if(!isActive){e.currentTarget.style.background=C.priGhost;e.currentTarget.style.borderColor=`${b.c}40`}}} onMouseLeave={e=>{if(!isActive){e.currentTarget.style.background=C.w;e.currentTarget.style.borderColor=C.b1}}}>
-              <div style={{ width:isDesktop&&activePanel?28:34, height:isDesktop&&activePanel?28:34, borderRadius:8, background:isActive?`${b.c}22`:`${b.c}12`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{b.ic(b.c,isDesktop&&activePanel?14:17)}</div>
-              <span style={{ fontSize:isDesktop&&activePanel?11.5:13, fontWeight:isActive?700:600, color:isActive?b.c:C.t1, flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{b.l}</span>
+            <button key={b.k} onClick={()=>togglePanel(b.k)} style={{ display:"flex", alignItems:"center", gap:10, padding:compact?"9px 10px":"11px 14px", borderRadius:12, background:isActive?`${b.c}12`:C.w, border:`1px solid ${isActive?`${b.c}40`:C.b1}`, cursor:"pointer", fontFamily:"inherit", width:"100%", textAlign:"left", transition:"all 0.15s", boxShadow:isActive?"none":C.sh }} onMouseEnter={e=>{if(!isActive){e.currentTarget.style.background=C.priGhost;e.currentTarget.style.borderColor=`${b.c}40`}}} onMouseLeave={e=>{if(!isActive){e.currentTarget.style.background=C.w;e.currentTarget.style.borderColor=C.b1}}}>
+              <div style={{ width:compact?28:34, height:compact?28:34, borderRadius:8, background:isActive?`${b.c}22`:`${b.c}12`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{b.ic(b.c,compact?14:17)}</div>
+              <span style={{ fontSize:compact?11.5:13, fontWeight:isActive?700:600, color:isActive?b.c:C.t1, flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{b.l}</span>
               {!isActive && <span style={{ display:"flex", transform:"rotate(180deg)", flexShrink:0 }}>{Ic.chev(C.t3,14)}</span>}
             </button>
           );
@@ -401,6 +359,10 @@ function HomeScreen({ user, freights, perms, onNav, catalog, isDesktop }) {
     </div>
   );
 
+  // Panel info lookup (includes "pending" which isn't in quickItems)
+  const panelInfo = quickItems.find(q=>q.k===activePanel) || (activePanel==="pending"?{k:"pending",l:"Acciones pendientes",ic:Ic.bell,c:C.acc}:null);
+  const pi = panelInfo || {l:"",ic:Ic.home,c:C.pri};
+
   // --- Right column: dynamic panel content ---
   const rightPanel = activePanel ? (
     <div style={{ flex:1, overflow:"auto", borderLeft:isDesktop?`1px solid ${C.b1}`:"none", animation:"fadeIn 0.2s ease", minWidth:0 }}>
@@ -408,10 +370,10 @@ function HomeScreen({ user, freights, perms, onNav, catalog, isDesktop }) {
         {/* Panel header */}
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14 }}>
           <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-            <div style={{ width:30, height:30, borderRadius:8, background:`${quickItems.find(q=>q.k===activePanel)?.c||C.pri}12`, display:"flex", alignItems:"center", justifyContent:"center" }}>
-              {quickItems.find(q=>q.k===activePanel)?.ic(quickItems.find(q=>q.k===activePanel)?.c||C.pri,16)}
+            <div style={{ width:30, height:30, borderRadius:8, background:`${pi.c}12`, display:"flex", alignItems:"center", justifyContent:"center" }}>
+              {pi.ic(pi.c,16)}
             </div>
-            <span style={{ fontSize:16, fontWeight:800, color:C.t1 }}>{quickItems.find(q=>q.k===activePanel)?.l||""}</span>
+            <span style={{ fontSize:16, fontWeight:800, color:C.t1 }}>{pi.l}</span>
           </div>
           <button onClick={()=>setActivePanel(null)} style={{ background:C.bgCardAlt, border:`1px solid ${C.b1}`, borderRadius:8, padding:"6px 8px", cursor:"pointer", display:"flex", alignItems:"center", fontFamily:"inherit" }}>{Ic.cross(C.t2,16)}</button>
         </div>
@@ -449,10 +411,10 @@ function HomeScreen({ user, freights, perms, onNav, catalog, isDesktop }) {
             <span style={{ fontSize:14, fontWeight:700, color:C.pri }}>Inicio</span>
           </button>
           <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:14 }}>
-            <div style={{ width:30, height:30, borderRadius:8, background:`${quickItems.find(q=>q.k===activePanel)?.c||C.pri}12`, display:"flex", alignItems:"center", justifyContent:"center" }}>
-              {quickItems.find(q=>q.k===activePanel)?.ic(quickItems.find(q=>q.k===activePanel)?.c||C.pri,16)}
+            <div style={{ width:30, height:30, borderRadius:8, background:`${pi.c}12`, display:"flex", alignItems:"center", justifyContent:"center" }}>
+              {pi.ic(pi.c,16)}
             </div>
-            <span style={{ fontSize:16, fontWeight:800, color:C.t1 }}>{quickItems.find(q=>q.k===activePanel)?.l||""}</span>
+            <span style={{ fontSize:16, fontWeight:800, color:C.t1 }}>{pi.l}</span>
           </div>
           {activePanel==="map" && <HomeMapView freights={displayFreights} onNav={onNav} />}
           {activePanel==="pending" && <PendingScreen user={user} freights={freights} onNav={onNav} onNewFreight={()=>onNav("new")} embedded />}
