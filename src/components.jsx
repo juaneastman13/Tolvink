@@ -146,8 +146,9 @@ export function SortTh({ label, colKey, sortCol, sortDir, onSort }) {
 
 export function ModalOverlay({ children, onClose, maxWidth=400, loading=false, closing=false, closingText="" }) {
   const [stage, setStage] = useState(0);
-  const [outro, setOutro] = useState(-1);
+  const [fading, setFading] = useState(false);
 
+  // Intro stages (logo → text collapse → dot grow → card)
   useEffect(() => {
     if (loading || closing) return;
     const t1 = setTimeout(() => setStage(1), 500);
@@ -158,43 +159,38 @@ export function ModalOverlay({ children, onClose, maxWidth=400, loading=false, c
 
   useEffect(() => { if (loading) setStage(0); }, [loading]);
 
-  // Outro: logo → text collapse → dot grows with result text → hold → fade → close
+  // Outro: show result circle → hold 0.5s → fade → close
   useEffect(() => {
     if (!closing) return;
-    setOutro(0);
-    const t1 = setTimeout(() => setOutro(1), 300);
-    const t2 = setTimeout(() => setOutro(2), 750);
-    const t3 = setTimeout(() => setOutro(3), 1750);
-    const t4 = setTimeout(() => { if (onClose) onClose(); }, 2050);
-    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); clearTimeout(t4); };
+    const t1 = setTimeout(() => setFading(true), 1100);
+    const t2 = setTimeout(() => { if (onClose) onClose(); }, 1500);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
   }, [closing]);
 
-  const isIntro = !loading && !closing && stage < 3;
-  const isCard = !loading && !closing && stage === 3;
-  const isLoading = loading && !closing;
-  const isOutro = closing;
+  const showIntro = !loading && !closing && stage < 3;
+  const showCard = !loading && !closing && stage === 3;
+  const showLoading = loading && !closing;
 
   return (
-    <div onClick={(isCard&&onClose)||undefined} style={{position:"fixed",inset:0,background:C.bgOverlay,display:"flex",alignItems:"center",justifyContent:"center",zIndex:200,padding:24,animation:"moFadeIn 0.25s ease"}}>
+    <div onClick={showCard ? onClose : undefined} style={{position:"fixed",inset:0,background:C.bgOverlay,display:"flex",alignItems:"center",justifyContent:"center",zIndex:200,padding:24,animation:fading ? "moOutroFade 0.4s ease forwards" : "moFadeIn 0.25s ease"}}>
       <style>{`
 @keyframes moFadeIn{from{opacity:0}to{opacity:1}}
 @keyframes moLogoIn{from{opacity:0;transform:scale(0.7)}to{opacity:1;transform:scale(1)}}
 @keyframes moTextOut{0%{opacity:1;max-width:200px;margin-right:4px}40%{opacity:0;max-width:200px;margin-right:4px}100%{opacity:0;max-width:0;margin-right:0;overflow:hidden}}
 @keyframes moDotGrow{0%{transform:scale(1);opacity:1}60%{transform:scale(25);opacity:0.5}100%{transform:scale(50);opacity:0}}
 @keyframes moCardIn{from{opacity:0;transform:scale(0.82)}to{opacity:1;transform:scale(1)}}
-@keyframes moOutroDot{0%{transform:scale(1)}100%{transform:scale(12)}}
-@keyframes moOutroFade{to{opacity:0;transform:scale(0.95)}}
-@keyframes moTextIn{from{opacity:0;transform:scale(0.8)}to{opacity:1;transform:scale(1)}}
+@keyframes moCircleIn{from{transform:scale(0);opacity:0}to{transform:scale(1);opacity:1}}
+@keyframes moOutroFade{to{opacity:0}}
       `}</style>
       {/* Loading: full logo with pulsing dot */}
-      {isLoading && (
+      {showLoading && (
         <div style={{position:"absolute",display:"flex",alignItems:"flex-start",animation:"moLogoIn 0.35s ease-out",pointerEvents:"none"}}>
           <span style={{fontSize:44,fontWeight:800,color:C.pri,letterSpacing:-2,lineHeight:1}}>tolvink</span>
           <span style={{width:13,height:13,borderRadius:7,background:C.acc,marginLeft:4,marginTop:2,display:"inline-block",animation:"dotPulse 1.5s ease-in-out infinite"}} />
         </div>
       )}
       {/* Intro: staged animation */}
-      {isIntro && (
+      {showIntro && (
         <div style={{position:"absolute",display:"flex",alignItems:"center",justifyContent:"center",animation:stage===0?"moLogoIn 0.35s ease-out forwards":"none",pointerEvents:"none"}}>
           {stage < 2 && (
             <span style={{fontSize:44,fontWeight:800,color:C.pri,letterSpacing:-2,lineHeight:1,display:"inline-block",overflow:"hidden",whiteSpace:"nowrap",marginRight:4,animation:stage===1?"moTextOut 0.55s ease forwards":"none"}}>tolvink</span>
@@ -202,22 +198,17 @@ export function ModalOverlay({ children, onClose, maxWidth=400, loading=false, c
           <span style={{width:13,height:13,borderRadius:7,background:C.acc,display:"inline-block",animation:stage===2?"moDotGrow 0.7s ease forwards":"dotPulse 1.5s ease-in-out infinite"}} />
         </div>
       )}
-      {/* Outro: dot grows with result text inside, then fades */}
-      {isOutro && (
-        <div style={{position:"absolute",display:"flex",alignItems:"center",justifyContent:"center",animation:outro===0?"moLogoIn 0.3s ease-out":"none",pointerEvents:"none",...(outro===3?{animation:"moOutroFade 0.3s ease forwards"}:{})}}>
-          {outro < 2 && (
-            <span style={{fontSize:44,fontWeight:800,color:C.pri,letterSpacing:-2,lineHeight:1,display:"inline-block",overflow:"hidden",whiteSpace:"nowrap",marginRight:4,animation:outro===1?"moTextOut 0.4s ease forwards":"none"}}>tolvink</span>
-          )}
-          {/* Orange dot — grows as background for result text */}
-          <span style={{width:13,height:13,borderRadius:"50%",background:C.acc,display:"inline-block",position:outro>=2?"absolute":"relative",zIndex:0,animation:outro>=2?"moOutroDot 0.5s ease forwards":"dotPulse 1.5s ease-in-out infinite"}} />
-          {/* Result text centered on top of grown dot */}
-          {outro >= 2 && closingText && (
-            <span style={{position:"absolute",zIndex:1,color:"#fff",fontSize:16,fontWeight:700,textAlign:"center",lineHeight:1.3,maxWidth:180,textShadow:"0 1px 6px rgba(0,0,0,0.15)",animation:"moTextIn 0.3s ease 0.15s both"}}>{closingText}</span>
+      {/* Outro: orange circle with result text */}
+      {closing && (
+        <div style={{width:150,height:150,borderRadius:"50%",background:C.acc,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:6,animation:"moCircleIn 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards",boxShadow:"0 8px 32px rgba(0,0,0,0.18)",pointerEvents:"none"}}>
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          {closingText && (
+            <span style={{color:"#fff",fontSize:14,fontWeight:700,textAlign:"center",lineHeight:1.3,padding:"0 16px"}}>{closingText}</span>
           )}
         </div>
       )}
-      {/* Card — centered vertically and horizontally */}
-      {isCard && (
+      {/* Card */}
+      {showCard && (
         <div onClick={e=>e.stopPropagation()} style={{background:C.w,borderRadius:18,padding:22,width:"100%",maxWidth,boxShadow:C.shLg,animation:"moCardIn 0.3s cubic-bezier(0.34,1.56,0.64,1)"}}>
           {children}
         </div>
