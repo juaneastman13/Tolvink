@@ -1505,6 +1505,91 @@ function NewScreen({ user, lots, plants, branches, fields, trucks, onBack, onCre
 }
 
 
+// ======================== NOTIFICATIONS SCREEN =======================
+
+const NOTIF_ICONS = {
+  freight_created: (s) => Ic.truck(C.pri, s),
+  freight_assigned: (s) => Ic.truck(C.info, s),
+  freight_accepted: (s) => Ic.chk(C.ok, s),
+  freight_rejected: (s) => Ic.ban(C.err, s),
+  freight_started: (s) => Ic.nav(C.info, s),
+  freight_loaded: (s) => Ic.truck(C.ok, s),
+  freight_finished: (s) => Ic.chk(C.ok, s),
+  freight_cancelled: (s) => Ic.ban(C.err, s),
+};
+
+function _timeAgo(dateStr) {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const m = Math.floor(diff / 60000);
+  if (m < 1) return "ahora";
+  if (m < 60) return `hace ${m}m`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `hace ${h}h`;
+  const d = Math.floor(h / 24);
+  if (d < 7) return `hace ${d}d`;
+  return `hace ${Math.floor(d / 7)} sem`;
+}
+
+function NotificationsScreen({ notifications=[], onMarkRead, onMarkAllRead, onTap }) {
+  const unreadCount = notifications.filter(n => !n.read).length;
+  return (
+    <div className="tv-pad" style={{ padding:"16px 18px", flex:1 }}>
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:18 }}>
+        <div>
+          <h2 style={{ fontSize:20, fontWeight:700, color:C.t1, margin:0 }}>Notificaciones</h2>
+          {unreadCount > 0 && <span style={{ fontSize:12, color:C.t3, fontWeight:500 }}>{unreadCount} sin leer</span>}
+        </div>
+        {unreadCount > 0 && (
+          <button onClick={onMarkAllRead} style={{ border:"none", background:C.priPale, cursor:"pointer", fontSize:12, fontWeight:600, color:C.pri, fontFamily:"inherit", padding:"8px 14px", borderRadius:8 }}
+            onMouseEnter={e=>e.currentTarget.style.background=C.priGhost} onMouseLeave={e=>e.currentTarget.style.background=C.priPale}>
+            Marcar todas leídas
+          </button>
+        )}
+      </div>
+
+      {notifications.length === 0 ? (
+        <div style={{ textAlign:"center", padding:"60px 20px" }}>
+          <div style={{ marginBottom:12 }}>{Ic.bell(C.b1, 48)}</div>
+          <div style={{ fontSize:15, fontWeight:600, color:C.t3 }}>Sin notificaciones</div>
+          <div style={{ fontSize:13, color:C.t3, marginTop:6 }}>Las novedades de tus fletes aparecerán aquí</div>
+        </div>
+      ) : (
+        <div style={{ background:C.w, borderRadius:14, border:`1px solid ${C.b2}`, overflow:"hidden" }}>
+          {notifications.map((n, i) => {
+            const icFn = NOTIF_ICONS[n.type] || ((s) => Ic.bell(C.t3, s));
+            return (
+              <button key={n.id} onClick={() => { if (!n.read) onMarkRead(n.id); if (n.entityId) onTap(n.entityId); }}
+                className="tv-row"
+                style={{
+                  display:"flex", alignItems:"flex-start", gap:14, width:"100%", padding:"14px 18px",
+                  border:"none", background: n.read ? "transparent" : C.priGhost, cursor:"pointer",
+                  fontFamily:"inherit", textAlign:"left",
+                  borderBottom: i < notifications.length-1 ? `1px solid ${C.b2}` : "none",
+                  WebkitTapHighlightColor:"transparent", touchAction:"manipulation", transition:"background 0.15s"
+                }}>
+
+                <div style={{ width:40, height:40, borderRadius:12, background: n.read ? C.bg : C.priPale, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                  {icFn(18)}
+                </div>
+
+                <div style={{ flex:1, minWidth:0 }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                    <span style={{ fontSize:14, fontWeight: n.read ? 500 : 700, color: n.read ? C.t2 : C.t1, flex:1 }}>{n.title}</span>
+                    <span style={{ fontSize:11, color:C.t3, fontWeight:500, flexShrink:0 }}>{_timeAgo(n.createdAt)}</span>
+                  </div>
+                  <div style={{ fontSize:12.5, color:C.t3, marginTop:3, lineHeight:1.4 }}>{n.body}</div>
+                </div>
+
+                {!n.read && <div style={{ width:8, height:8, borderRadius:4, background:C.pri, flexShrink:0, marginTop:8 }} />}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ======================== PROFILE =====================================
 
 function MenuScreen({ user, perms, onLogout, onNav, isDesktop }) {
@@ -3909,13 +3994,8 @@ export default function Tolvink() {
       <RoutesBackground trucks={false} opacityMul={0.4} centerFade={false} />
 
       {/* Desktop Sidebar */}
-      <div className="tv-sidebar" style={{position:"relative",zIndex:11}}>
-        <Sidebar active={navActive} onChange={nav} unread={unreadChats} pendingCount={pendingCount} notifCount={0} canRequest={perms.canRequest} onNew={()=>nav("new")} />
-        {/* Desktop bell – absolute positioned over sidebar header */}
-        <div style={{position:"absolute",top:30,right:14,zIndex:12}}>
-          <NotifBell count={notif.unreadCount} onClick={()=>setNotifOpen(!notifOpen)} />
-          <NotificationsPanel open={notifOpen} onClose={()=>setNotifOpen(false)} notifications={notif.notifications} onMarkRead={notif.markRead} onMarkAllRead={notif.markAllRead} onTap={handleNotifTap} />
-        </div>
+      <div className="tv-sidebar" style={{position:"relative",zIndex:1}}>
+        <Sidebar active={navActive} onChange={nav} unread={unreadChats} pendingCount={pendingCount} notifCount={notif.unreadCount} canRequest={perms.canRequest} onNew={()=>nav("new")} />
       </div>
 
       {/* Main content column */}
@@ -3953,6 +4033,7 @@ export default function Tolvink() {
         {screen==="mydata" && <MyDataScreen user={auth.user} onBack={()=>setScreen("menu")}/>}
         {screen==="reports" && <ReportsScreen onBack={()=>setScreen(isDesktop?"reports":"menu")} freights={fh.freights} isDesktop={isDesktop}/>}
         {screen==="chats" && <ChatsScreen user={auth.user} openConvId={chatConvId} onConvOpened={()=>setChatConvId(null)} isDesktop={isDesktop}/>}
+        {screen==="notifs" && <NotificationsScreen notifications={notif.notifications} onMarkRead={notif.markRead} onMarkAllRead={notif.markAllRead} onTap={handleNotifTap} />}
         </div>
         </div>
 
