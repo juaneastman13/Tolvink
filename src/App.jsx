@@ -432,10 +432,11 @@ function HomeScreen({ user, freights, perms, onNav, catalog, isDesktop, onAction
           </div>
           {f.isOwnFleet && <span style={{ fontSize: 9, color: C.acc, fontWeight: 600 }}>Flota propia</span>}
         </div>
-        <div style={{ fontSize: 14, fontWeight: 700, color: C.t1, marginBottom: 4 }}>
+        <div style={{ fontSize: 14, fontWeight: 700, color: C.t1, marginBottom: 6 }}>
           {f.grain === "Otros" ? f.productTypeOther || "Otros" : f.grain} · {f.tons} {f.unit || "tn"}
         </div>
-        <div style={{ fontSize: 11, color: C.t2, marginBottom: 4 }}>{f.originCompanyName || f.originName} → {f.destName}</div>
+        <div style={{ display:"flex", alignItems:"center", gap:6, fontSize:11, color:C.t1, marginBottom:3 }}>{Ic.user(C.pri,13)}<span style={{fontWeight:600}}>{f.originCompanyName||f.originName}</span>{f.fieldName&&<span style={{color:C.t3,fontWeight:400}}> · {f.fieldName}</span>}</div>
+        <div style={{ display:"flex", alignItems:"center", gap:6, fontSize:11, color:C.t1, marginBottom:4 }}>{Ic.plant(C.t2,13)}<span style={{fontWeight:600}}>{f.destName}</span></div>
         {f.loadDate && <div style={{ fontSize: 10, color: C.t3 }}>{Ic.cal(C.t3, 10)} {f.loadDate}{f.loadTime ? ` · ${f.loadTime}` : ""}{f.transporterName ? ` · ${f.transporterName}` : ""}</div>}
       </div>
     );
@@ -711,8 +712,9 @@ function ListScreen({ freights, onNav, onRefresh, catalog }) {
                       </div>
                       {f.isOwnFleet && <span style={{ fontSize:9, color:C.acc, fontWeight:600 }}>Flota propia</span>}
                     </div>
-                    <div style={{ fontSize:14, fontWeight:700, color:C.t1, marginBottom:4 }}>{f.grain==="Otros"?f.productTypeOther||"Otros":f.grain} · {f.tons} {f.unit||"tn"}</div>
-                    <div style={{ fontSize:11, color:C.t2, marginBottom:4 }}>{f.originCompanyName || f.originName} → {f.destName}</div>
+                    <div style={{ fontSize:14, fontWeight:700, color:C.t1, marginBottom:6 }}>{f.grain==="Otros"?f.productTypeOther||"Otros":f.grain} · {f.tons} {f.unit||"tn"}</div>
+                    <div style={{ display:"flex", alignItems:"center", gap:6, fontSize:11, color:C.t1, marginBottom:3 }}>{Ic.user(C.pri,13)}<span style={{fontWeight:600}}>{f.originCompanyName||f.originName}</span>{f.fieldName&&<span style={{color:C.t3,fontWeight:400}}> · {f.fieldName}</span>}</div>
+                    <div style={{ display:"flex", alignItems:"center", gap:6, fontSize:11, color:C.t1, marginBottom:4 }}>{Ic.plant(C.t2,13)}<span style={{fontWeight:600}}>{f.destName}</span></div>
                     {f.loadDate && <div style={{ fontSize:10, color:C.t3 }}>{Ic.cal(C.t3,10)} {f.loadDate}{f.loadTime?` · ${f.loadTime}`:""}{f.transporterName?` · ${f.transporterName}`:""}</div>}
                   </div>
                   );
