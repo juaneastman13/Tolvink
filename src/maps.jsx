@@ -441,3 +441,77 @@ export function FreightMap({ freightId, originLat, originLng, destLat, destLng, 
 
   return mapContainer;
 }
+
+// ======================== FREIGHTS OVERVIEW MAP ===========================
+
+const _STATUS_COLOR = s => {
+  if (s === "pending_assignment") return "#FF6A00";
+  if (["assigned","accepted","in_progress","loaded"].includes(s)) return "#2563EB";
+  if (s === "finished") return "#1A6B37";
+  if (s === "canceled") return "#DC2626";
+  return "#999";
+};
+const _STATUS_LABEL = { pending_assignment:"Solicitado", assigned:"Asignado a flota", accepted:"Camión confirmado", in_progress:"En curso", loaded:"Cargando", finished:"Finalizado", canceled:"Cancelado" };
+
+export function FreightsOverviewMap({ freights, onSelect }) {
+  const mapRef = useRef(null);
+  const mapObj = useRef(null);
+  const markers = useRef([]);
+  const info = useRef(null);
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    if (!mapRef.current) return;
+    let c = false;
+    (async () => {
+      const maps = await loadGMaps();
+      if (c || !mapRef.current) return;
+      mapObj.current = new maps.Map(mapRef.current, {
+        zoom: 6, center: { lat: -34.6, lng: -56.2 },
+        disableDefaultUI: true, zoomControl: true, gestureHandling: "greedy",
+        styles: [{ featureType:"poi", stylers:[{visibility:"off"}] }, { featureType:"transit", stylers:[{visibility:"off"}] }],
+      });
+      info.current = new maps.InfoWindow();
+      setReady(true);
+    })();
+    return () => { c = true; };
+  }, []);
+
+  useEffect(() => {
+    if (!ready || !mapObj.current) return;
+    const maps = window.google.maps;
+    markers.current.forEach(m => m.setMap(null));
+    markers.current = [];
+    if (info.current) info.current.close();
+    const bounds = new maps.LatLngBounds();
+    let has = false;
+    freights.forEach(f => {
+      if (!f.originLat || !f.originLng) return;
+      const col = _STATUS_COLOR(f.status);
+      const pos = { lat: f.originLat, lng: f.originLng };
+      bounds.extend(pos);
+      has = true;
+      if (f.destLat && f.destLng) bounds.extend({ lat: f.destLat, lng: f.destLng });
+      const mk = new maps.Marker({ position: pos, map: mapObj.current, title: f.code,
+        icon: { path: maps.SymbolPath.CIRCLE, scale: 8, fillColor: col, fillOpacity: 1, strokeColor: "#fff", strokeWeight: 2 } });
+      mk.addListener("click", () => {
+        info.current.setContent(
+          `<div style="font-family:system-ui;font-size:12px;line-height:1.5;min-width:150px;cursor:pointer" id="_fi_${f.id}">` +
+          `<strong>${f.code}</strong><br/>${f.grain} · ${f.tons} ${f.unit||"tn"}<br/>` +
+          `${f.originCompanyName||f.originName} → ${f.destName}<br/>` +
+          `<span style="color:${col};font-weight:600">${_STATUS_LABEL[f.status]||f.status}</span></div>`
+        );
+        info.current.open(mapObj.current, mk);
+      });
+      if (onSelect) mk.addListener("dblclick", () => onSelect(f.id));
+      markers.current.push(mk);
+    });
+    if (has) mapObj.current.fitBounds(bounds, 40);
+  }, [ready, freights, onSelect]);
+
+  return (
+    <div style={{ background:C.w, border:`1px solid ${C.b1}`, borderRadius:12, overflow:"hidden", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
+      <div ref={mapRef} style={{ width:"100%", height:420 }} />
+    </div>
+  );
+}

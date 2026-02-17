@@ -19,7 +19,7 @@ import { V, validate, SCHEMAS, textMatch, FieldError } from "./validation";
 import { stCfg, getActions, GRANOS, UNITS } from "./constants";
 import { Av, Bd, Btn, Tabs, Field, Select, Sec, Toast, Loader, AttachMenu, Sidebar, Nav, SortTh, exportCSV } from "./components";
 import { useAuth, useCatalog, useFreights, permsFor, useIsDesktop, useTableSort, usePullToRefresh } from "./hooks";
-import { SafeZone, LocationPicker, FreightMap } from "./maps";
+import { SafeZone, LocationPicker, FreightMap, FreightsOverviewMap } from "./maps";
 import { PhotoUpload, DocsGallery, FreightFileUpload } from "./uploads";
 import { RoutesBackground } from "./routes-bg";
 
@@ -605,6 +605,7 @@ function ListScreen({ freights, onNav, onRefresh }) {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [datePreset, setDatePreset] = useState("");
+  const [viewMode, setViewMode] = useState("kanban"); // kanban | mapa | tabla
 
   const plantOptions = useMemo(()=>[...new Set(freights.map(f=>f.destName).filter(Boolean))].sort(),[freights]);
   const producerOptions = useMemo(()=>[...new Set(freights.map(f=>f.originCompanyName).filter(Boolean))].sort(),[freights]);
@@ -637,10 +638,10 @@ function ListScreen({ freights, onNav, onRefresh }) {
   },[freights,searchQ,fPlant,fProducer,fTransporter,dateFrom,dateTo]);
 
   const GROUPS = [
-    { key:"solicitado", label:"Solicitado", color:"#FF6A00", statuses:["pending_assignment"] },
-    { key:"en_curso", label:"En curso", color:"#2563EB", statuses:["assigned","accepted","in_progress","loaded"] },
-    { key:"finalizados", label:"Finalizados", color:"#1A6B37", statuses:["finished"] },
-    { key:"cancelados", label:"Cancelados", color:"#DC2626", statuses:["canceled"] },
+    { key:"solicitado", label:"Solicitado", color:"#FF6A00", icon:Ic.warn, statuses:["pending_assignment"] },
+    { key:"en_curso", label:"En curso", color:"#2563EB", icon:Ic.nav, statuses:["assigned","accepted","in_progress","loaded"] },
+    { key:"finalizados", label:"Finalizados", color:"#1A6B37", icon:Ic.chk, statuses:["finished"] },
+    { key:"cancelados", label:"Cancelados", color:"#DC2626", icon:Ic.ban, statuses:["canceled"] },
   ];
   const grouped = useMemo(()=>{
     const map = {};
@@ -657,11 +658,18 @@ function ListScreen({ freights, onNav, onRefresh }) {
   return (
     <div ref={containerRef} style={{ flex:1, overflow:"auto", padding:18, WebkitOverflowScrolling:"touch" }}>
       {indicator}
-      <div style={{ fontSize:20, fontWeight:800, letterSpacing:-0.3, marginBottom:10 }}>Fletes</div>
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:10 }}>
+        <div style={{ fontSize:20, fontWeight:800, letterSpacing:-0.3 }}>Fletes</div>
+        <button onClick={()=>setViewMode(v=>v==="kanban"?"mapa":v==="mapa"?"tabla":"kanban")} style={{padding:"6px 14px",borderRadius:8,border:`1.5px solid ${C.pri}`,background:C.priPale,color:C.pri,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:6}}>
+          {viewMode==="kanban"?Ic.pin(C.pri,14):viewMode==="mapa"?Ic.doc(C.pri,14):Ic.home(C.pri,14)}
+          {viewMode==="kanban"?"Cambiar a mapa":viewMode==="mapa"?"Cambiar a tabla":"Cambiar a columnas"}
+        </button>
+      </div>
       {/* Date filters — line 1 */}
       <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:6 }}>
+        <span style={{fontSize:10,color:C.t2,fontWeight:600}}>Desde</span>
         <input type="date" value={dateFrom} onChange={e=>{setDateFrom(e.target.value);setDatePreset("custom");}} onClick={e=>e.target.showPicker?.()} style={{padding:"5px 8px",borderRadius:6,border:`1px solid ${C.b1}`,background:C.w,color:dateFrom?C.t1:C.t3,fontSize:11,fontFamily:"inherit",outline:"none",boxSizing:"border-box",cursor:"pointer"}}/>
-        <span style={{fontSize:10,color:C.t3}}>—</span>
+        <span style={{fontSize:10,color:C.t2,fontWeight:600}}>Hasta</span>
         <input type="date" value={dateTo} onChange={e=>{setDateTo(e.target.value);setDatePreset("custom");}} onClick={e=>e.target.showPicker?.()} style={{padding:"5px 8px",borderRadius:6,border:`1px solid ${C.b1}`,background:C.w,color:dateTo?C.t1:C.t3,fontSize:11,fontFamily:"inherit",outline:"none",boxSizing:"border-box",cursor:"pointer"}}/>
         {(dateFrom||dateTo)&&<button onClick={()=>{setDateFrom("");setDateTo("");setDatePreset("");}} style={{background:"none",border:"none",cursor:"pointer",display:"flex",padding:2}}>{Ic.cross(C.t3,14)}</button>}
         {[{k:"today",l:"Hoy"},{k:"week",l:"Semana"},{k:"month",l:"Mes"}].map(p=>(
@@ -691,14 +699,15 @@ function ListScreen({ freights, onNav, onRefresh }) {
         </select>
       </div>
 
-      {/* Kanban columns by group */}
+      {/* View: Kanban */}
+      {viewMode==="kanban" && (
       <div style={{ display:"flex", gap:12, overflowX:"auto", alignItems:"flex-start", paddingBottom:8 }}>
         {GROUPS.map(group => {
           const items = grouped[group.key];
           return (
             <div key={group.key} style={{ minWidth:220, flex:"1 1 0", background:C.bg, borderRadius:12, border:`1px solid ${C.b1}`, overflow:"hidden" }}>
               <div style={{ padding:"10px 12px", borderBottom:`2px solid ${group.color}`, display:"flex", alignItems:"center", gap:6 }}>
-                <span style={{ width:8, height:8, borderRadius:4, background:group.color, flexShrink:0 }}/>
+                <span style={{ display:"flex", flexShrink:0 }}>{group.icon(group.color, 14)}</span>
                 <span style={{ fontSize:11, fontWeight:700, color:group.color }}>{group.label}</span>
                 <span style={{ fontSize:10, fontWeight:600, color:C.t3, marginLeft:"auto" }}>{items.length}</span>
               </div>
@@ -726,6 +735,47 @@ function ListScreen({ freights, onNav, onRefresh }) {
           );
         })}
       </div>
+      )}
+
+      {/* View: Mapa */}
+      {viewMode==="mapa" && (
+        <FreightsOverviewMap freights={filtered} onSelect={(id)=>onNav("detail",id)} />
+      )}
+
+      {/* View: Tabla */}
+      {viewMode==="tabla" && (
+        <div style={{ background:C.w, border:`1px solid ${C.b1}`, borderRadius:12, overflow:"hidden", boxShadow:"0 1px 4px rgba(0,0,0,0.06)" }}>
+          <div style={{ overflowX:"auto" }}>
+            <table style={{ width:"100%", borderCollapse:"collapse", fontSize:12, fontFamily:"inherit" }}>
+              <thead>
+                <tr style={{ background:C.bg, borderBottom:`2px solid ${C.b1}` }}>
+                  {["Código","Estado","Producto","Empresa","Destino","Fecha","Hora","Transportista"].map(h=>(
+                    <th key={h} style={{ padding:"10px 12px", textAlign:"left", fontSize:10, fontWeight:700, color:C.t2, textTransform:"uppercase", letterSpacing:0.5, whiteSpace:"nowrap" }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.length===0 && <tr><td colSpan={8} style={{ padding:24, textAlign:"center", color:C.t3, fontSize:12 }}>Sin fletes</td></tr>}
+                {filtered.map(f=>{
+                  const st = stCfg(f.status);
+                  return (
+                    <tr key={f.id} onClick={()=>onNav("detail",f.id)} style={{ borderBottom:`1px solid ${C.b1}`, cursor:"pointer", transition:"background 0.1s" }} onMouseEnter={e=>e.currentTarget.style.background=C.bg} onMouseLeave={e=>e.currentTarget.style.background=""}>
+                      <td style={{ padding:"10px 12px", fontFamily:MONO, fontWeight:700, fontSize:11, color:C.t2, whiteSpace:"nowrap" }}>{f.code}</td>
+                      <td style={{ padding:"10px 12px" }}><Bd color={st.color} bg={st.bg} small>{st.label}</Bd></td>
+                      <td style={{ padding:"10px 12px", fontWeight:600, color:C.t1 }}>{f.grain==="Otros"?f.productTypeOther||"Otros":f.grain} · {f.tons} {f.unit||"tn"}</td>
+                      <td style={{ padding:"10px 12px", color:C.t2 }}>{f.originCompanyName||f.originName}</td>
+                      <td style={{ padding:"10px 12px", color:C.t2 }}>{f.destName}</td>
+                      <td style={{ padding:"10px 12px", color:C.t2, whiteSpace:"nowrap" }}>{f.loadDate}</td>
+                      <td style={{ padding:"10px 12px", color:C.t3, whiteSpace:"nowrap" }}>{f.loadTime||"—"}</td>
+                      <td style={{ padding:"10px 12px", color:C.t2 }}>{f.transporterName||"—"}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
