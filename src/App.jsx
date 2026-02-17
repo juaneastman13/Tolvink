@@ -18,7 +18,7 @@ import { C, track, FONT, MONO, Ic } from "./theme";
 import { V, validate, SCHEMAS, textMatch, FieldError } from "./validation";
 import { stCfg, getActions, GRANOS, UNITS } from "./constants";
 import { Av, Bd, Btn, Tabs, Field, Select, Sec, Toast, Loader, AttachMenu, Sidebar, Nav, SortTh, exportCSV, exportExcel, exportPDF } from "./components";
-import { useAuth, useCatalog, useFreights, permsFor, useIsDesktop, useTableSort, usePullToRefresh } from "./hooks";
+import { useAuth, useCatalog, useFreights, permsFor, useIsDesktop, useTableSort, usePullToRefresh, useOnline, useNotifications } from "./hooks";
 import { SafeZone, LocationPicker, FreightMap, FreightsOverviewMap } from "./maps";
 import { PhotoUpload, DocsGallery, FreightFileUpload } from "./uploads";
 import { RoutesBackground } from "./routes-bg";
@@ -3782,6 +3782,8 @@ export default function Tolvink() {
   const auth = useAuth();
   const fh = useFreights(auth.user, auth.isInitialized);
   const catalog = useCatalog(auth.user);
+  const online = useOnline();
+  const notif = useNotifications(auth.user);
   const [screen, setScreen] = useState("home");
   const [selFreight, setSelFreight] = useState(null);
   const [modal, setModal] = useState(null);
@@ -3906,7 +3908,7 @@ export default function Tolvink() {
 
       {/* Desktop Sidebar */}
       <div className="tv-sidebar" style={{position:"relative",zIndex:1}}>
-        <Sidebar active={navActive} onChange={nav} unread={unreadChats} pendingCount={pendingCount} canRequest={perms.canRequest} onNew={()=>nav("new")} />
+        <Sidebar active={navActive} onChange={nav} unread={unreadChats} pendingCount={pendingCount} notifCount={notif.unreadCount} canRequest={perms.canRequest} onNew={()=>nav("new")} />
       </div>
 
       {/* Main content column */}
@@ -3918,6 +3920,9 @@ export default function Tolvink() {
             <span style={{width:8,height:8,borderRadius:4,background:C.acc,display:"inline-block",marginLeft:3,marginTop:1,animation:"dotPulse 1.5s ease-in-out infinite"}}></span>
           </div>
         </div>
+
+        {/* Offline banner */}
+        {!online && <div style={{background:"#f59e0b",color:"#fff",textAlign:"center",padding:"6px 12px",fontSize:13,fontWeight:600,flexShrink:0,zIndex:10}}>{Ic.warn("#fff",14)} Sin conexión — mostrando datos guardados</div>}
 
         {/* Scrollable content area */}
         <div style={{flex:1,overflow:(screen==="chats"||screen==="calendar")&&isDesktop?"hidden":"auto",display:"flex",flexDirection:"column",WebkitOverflowScrolling:"touch",overscrollBehavior:"contain"}}>
@@ -3942,7 +3947,7 @@ export default function Tolvink() {
 
         {/* Mobile-only bottom nav */}
         <div className="tv-mobile-nav">
-          <Nav active={navActive} onChange={nav} unread={unreadChats} pendingCount={pendingCount} canRequest={perms.canRequest} onNew={()=>nav("new")}/>
+          <Nav active={navActive} onChange={nav} unread={unreadChats} pendingCount={pendingCount} notifCount={notif.unreadCount} canRequest={perms.canRequest} onNew={()=>nav("new")}/>
         </div>
       </div>
 

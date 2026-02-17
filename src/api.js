@@ -204,6 +204,16 @@ export async function apiAdminCreateTruck(companyId, b) { return api(`/admin/com
 export async function apiAdminUpdateTruck(id, b) { return api(`/admin/trucks/${id}`,{method:'PATCH',body:b}); }
 export async function apiAdminDeleteTruck(id) { return api(`/admin/trucks/${id}`,{method:'DELETE'}); }
 
+// Notifications
+export async function apiGetNotifications() { return api('/notifications'); }
+export async function apiMarkNotificationRead(id) { return api(`/notifications/${id}/read`,{method:'PATCH',body:{}}); }
+export async function apiMarkAllRead() { return api('/notifications/read-all',{method:'PATCH',body:{}}); }
+export async function apiSubscribePush(subscription) { return api('/notifications/subscribe',{body:subscription}); }
+export async function apiUnsubscribePush(endpoint) { return api('/notifications/subscribe',{method:'DELETE',body:{endpoint}}); }
+
+// VAPID public key for push subscription
+export const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY || '';
+
 // Photo Upload — direct to Supabase Storage (public bucket)
 export async function uploadPhoto(file, freightId, step) {
   const ext = file.name?.split('.').pop() || 'jpg';

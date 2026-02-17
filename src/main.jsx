@@ -2,13 +2,12 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import Tolvink from "./App";
 
-// Clear stale service workers and caches
+// Register service worker for offline + push notifications
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.getRegistrations().then(regs => {
-    regs.forEach(r => r.unregister());
-  });
-  caches.keys().then(names => {
-    names.forEach(name => caches.delete(name));
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js')
+      .then(reg => console.log('[SW] Registered:', reg.scope))
+      .catch(err => console.error('[SW] Registration failed:', err));
   });
 }
 

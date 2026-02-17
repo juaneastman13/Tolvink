@@ -161,7 +161,7 @@ export function AttachMenu({ open, onClose, onCamera, onGallery, onFiles }) {
 
 // ======================== DESKTOP SIDEBAR =============================
 
-export function Sidebar({ active, onChange, unread=0, pendingCount=0, canRequest=false, onNew }) {
+export function Sidebar({ active, onChange, unread=0, pendingCount=0, notifCount=0, canRequest=false, onNew }) {
   const hasPending = pendingCount > 0;
   const centerColor = hasPending ? C.acc : C.ok;
   const items = [
@@ -170,7 +170,7 @@ export function Sidebar({ active, onChange, unread=0, pendingCount=0, canRequest
     { k:"chats",   ic:a=>Ic.msg(a?C.pri:C.t3,20),    l:"Chat", bd:unread },
     { k:"calendar",ic:a=>Ic.cal(a?C.pri:C.t3,20),    l:"Calendario" },
     { k:"reports", ic:a=>Ic.doc(a?C.pri:C.t3,20),    l:"Informes" },
-    { k:"menu",    ic:a=>Ic.gear(a?C.pri:C.t3,20),   l:"Menú" },
+    { k:"menu",    ic:a=>Ic.gear(a?C.pri:C.t3,20),   l:"Menú", bd:notifCount },
   ];
   return (
     <div style={{ width:220, minWidth:220, height:"100%", background:C.w, borderRight:`1px solid ${C.b2}`, display:"flex", flexDirection:"column", flexShrink:0, overflow:"hidden" }}>
@@ -218,7 +218,7 @@ export function Sidebar({ active, onChange, unread=0, pendingCount=0, canRequest
 
 // ======================== BOTTOM NAV =================================
 
-export function Nav({ active, onChange, unread=0, pendingCount=0, canRequest=false, onNew }) {
+export function Nav({ active, onChange, unread=0, pendingCount=0, notifCount=0, canRequest=false, onNew }) {
   const hasPending = pendingCount > 0;
   const centerColor = hasPending ? C.acc : C.ok;
   const items = [
@@ -228,7 +228,7 @@ export function Nav({ active, onChange, unread=0, pendingCount=0, canRequest=fal
     { k:"chats",    ic:a=>Ic.msg(a?C.pri:C.t3,20),    l:"Chat", bd:unread },
     { k:"calendar", ic:a=>Ic.cal(a?C.pri:C.t3,20),    l:"Calendario" },
     { k:"reports",  ic:a=>Ic.doc(a?C.pri:C.t3,20),    l:"Informes" },
-    { k:"menu",     ic:a=>Ic.gear(a?C.pri:C.t3,20),   l:"Menú" },
+    { k:"menu",     ic:a=>Ic.gear(a?C.pri:C.t3,20),   l:"Menú", bd:notifCount },
   ];
   return (
     <div style={{ display:"flex", borderTop:`1px solid ${C.b1}`, background:C.nav, paddingTop:2, paddingBottom:"max(4px, env(safe-area-inset-bottom))", flexShrink:0 }}>

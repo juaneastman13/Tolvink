@@ -4,7 +4,8 @@ import {
   apiListFreights, apiGetFreight, apiCreateFreight, apiAssignFreight, apiRespondFreight,
   apiStartFreight, apiFinishFreight, apiCancelFreight, apiConfirmLoaded, apiConfirmFinished,
   apiAuthorizeFreight, apiUpdateFreight,
-  apiGetPlants, apiGetBranches, apiGetLots, apiGetTransportCompanies, apiGetTrucks, apiGetFields
+  apiGetPlants, apiGetBranches, apiGetLots, apiGetTransportCompanies, apiGetTrucks, apiGetFields,
+  apiGetNotifications, apiMarkNotificationRead, apiMarkAllRead, apiSubscribePush, VAPID_PUBLIC_KEY
 } from "./api";
 import { C, track } from "./theme";
 
@@ -261,6 +262,90 @@ export function useIsDesktop(bp = 768) {
     return () => mq.removeEventListener("change", handler);
   }, [bp]);
   return isDesktop;
+}
+
+// ======================== ONLINE STATUS HOOK ==========================
+export function useOnline() {
+  const [online, setOnline] = useState(navigator.onLine);
+  useEffect(() => {
+    const on = () => setOnline(true);
+    const off = () => setOnline(false);
+    window.addEventListener('online', on);
+    window.addEventListener('offline', off);
+    return () => { window.removeEventListener('online', on); window.removeEventListener('offline', off); };
+  }, []);
+  return online;
+}
+
+// ======================== NOTIFICATIONS HOOK ==========================
+export function useNotifications(user) {
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const subscribedRef = useRef(false);
+
+  // Subscribe to push notifications on first load
+  useEffect(() => {
+    if (!user || subscribedRef.current || !VAPID_PUBLIC_KEY) return;
+    subscribedRef.current = true;
+
+    (async () => {
+      try {
+        if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+
+        const permission = await Notification.requestPermission();
+        if (permission !== 'granted') return;
+
+        const reg = await navigator.serviceWorker.ready;
+        let sub = await reg.pushManager.getSubscription();
+
+        if (!sub) {
+          const key = Uint8Array.from(atob(VAPID_PUBLIC_KEY.replace(/-/g,'+').replace(/_/g,'/')), c => c.charCodeAt(0));
+          sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key });
+        }
+
+        const subJson = sub.toJSON();
+        await apiSubscribePush({ endpoint: subJson.endpoint, keys: subJson.keys });
+        console.log('[PUSH] Subscribed');
+      } catch (e) {
+        console.warn('[PUSH] Subscription failed:', e.message);
+      }
+    })();
+  }, [user]);
+
+  // Poll for notifications every 30s
+  useEffect(() => {
+    if (!user) return;
+
+    const fetchNotifications = async () => {
+      try {
+        const r = await apiGetNotifications();
+        setNotifications(r.notifications || []);
+        setUnreadCount(r.unreadCount || 0);
+      } catch { /* ignore fetch errors */ }
+    };
+
+    fetchNotifications();
+    const interval = setInterval(fetchNotifications, 30000);
+    return () => clearInterval(interval);
+  }, [user]);
+
+  const markRead = useCallback(async (id) => {
+    try {
+      await apiMarkNotificationRead(id);
+      setNotifications(p => p.map(n => n.id === id ? { ...n, read: true } : n));
+      setUnreadCount(p => Math.max(0, p - 1));
+    } catch { /* ignore */ }
+  }, []);
+
+  const markAllRead = useCallback(async () => {
+    try {
+      await apiMarkAllRead();
+      setNotifications(p => p.map(n => ({ ...n, read: true })));
+      setUnreadCount(0);
+    } catch { /* ignore */ }
+  }, []);
+
+  return { notifications, unreadCount, markRead, markAllRead };
 }
 
 // ======================== TABLE SORT HOOK =============================
