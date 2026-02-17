@@ -97,7 +97,6 @@ function AuthScreen({ onLogin, onSignup, loading, error, clearError, onBackToLan
   const [mode, setMode] = useState("login");
   const [loginId, setLoginId] = useState(""); // email or phone
   const [email, setEmail] = useState("");
-  const [pw, setPw] = useState("");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [userTypes, setUserTypes] = useState([]); // multi-select: ["planta","transporter","producer"]
@@ -126,19 +125,18 @@ function AuthScreen({ onLogin, onSignup, loading, error, clearError, onBackToLan
         const cleanPhone = loginId.replace(/[\s\-()]/g,'');
         if(!/^09[1-9]\d{6}$/.test(cleanPhone)) { setErrs({email:"Formato: 09X XXX XXX"}); return; }
       } else {
-        const {ok,errs:e} = validate({email:loginId,pw}, {email:[V.email],pw:[V.min(4)]});
+        const {ok,errs:e} = validate({email:loginId}, SCHEMAS.login);
         if(!ok) { setErrs(e); return; }
       }
-      if(!pw||pw.length<4) { setErrs(prev=>({...prev,pw:"Mínimo 4 caracteres"})); return; }
       setErrs({});
       const cleanId = loginId.replace(/[\s\-()]/g,'');
-      onLogin(/^09/.test(cleanId) ? cleanId : cleanId.toLowerCase(), pw);
+      onLogin(/^09/.test(cleanId) ? cleanId : cleanId.toLowerCase());
     } else {
-      const vals = {name,email,phone:phone.replace(/[\s\-()]/g,''),pw,userTypes};
+      const vals = {name,email,phone:phone.replace(/[\s\-()]/g,''),userTypes};
       const {ok,errs:e} = validate(vals, SCHEMAS.signup);
       setErrs(e);
       if(!ok) return;
-      onSignup({name,email,phone,pw,userTypes});
+      onSignup({name,email,phone,userTypes});
     }
   };
 
@@ -182,18 +180,13 @@ function AuthScreen({ onLogin, onSignup, loading, error, clearError, onBackToLan
                   <Field label="Email o teléfono" icon={Ic.mail(errs.email||error?C.err:C.t2,14)} value={loginId} onChange={v=>{setLoginId(v);if(error)clearError();}} placeholder="tu@email.com o 09X XXX XXX" hasError={!!(errs.email||error)}/>
                   {touched&&<FieldError error={errs.email}/>}
                 </div>
-                <div>
-                  <Field label="Contraseña" icon={Ic.lock(errs.pw||error?C.err:C.t2,14)} value={pw} onChange={v=>{setPw(v);if(error)clearError();}} placeholder="••••••" type="password" hasError={!!(errs.pw||error)}/>
-                  {touched&&<FieldError error={errs.pw}/>}
-                </div>
               </>}
 
               {/* === SIGNUP MODE === */}
               {mode==="signup" && (()=>{
                 const showEmail = name.trim().length >= 3;
                 const showPhone = showEmail && email.trim().length >= 5 && email.includes("@");
-                const showPw = showPhone && phone.replace(/\D/g,"").length >= 9;
-                const showTypes = showPw && pw.length >= 4;
+                const showTypes = showPhone && phone.replace(/\D/g,"").length >= 9;
                 return <>
                 <div style={{animation:"fadeUp 0.3s ease-out"}}>
                   <Field label="Nombre completo" icon={Ic.user(C.t2,14)} value={name} onChange={setName} placeholder="Tu nombre completo"/>
@@ -206,10 +199,6 @@ function AuthScreen({ onLogin, onSignup, loading, error, clearError, onBackToLan
                 {showPhone && <div style={{animation:"fadeUp 0.3s ease-out"}}>
                   <Field label="Celular" icon={Ic.phone(C.t2,14)} value={phone} onChange={handlePhone} placeholder="09X XXX XXX" type="tel"/>
                   {touched&&<FieldError error={errs.phone}/>}
-                </div>}
-                {showPw && <div style={{animation:"fadeUp 0.3s ease-out"}}>
-                  <Field label="Contraseña" icon={Ic.lock(C.t2,14)} value={pw} onChange={setPw} placeholder="Mínimo 4 caracteres" type="password"/>
-                  {touched&&<FieldError error={errs.pw}/>}
                 </div>}
 
                 {/* Multi-select user types */}

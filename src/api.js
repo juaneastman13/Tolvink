@@ -54,11 +54,11 @@ export default async function api(path, opts={}) {
 }
 
 // Auth
-export async function apiLogin(identifier,password) {
+export async function apiLogin(identifier) {
   setLoggingIn(true);
   try {
     const isPhone = /^09[1-9]\d{6}$/.test(identifier.replace(/[\s\-()]/g,''));
-    const body = isPhone ? { phone:identifier.replace(/[\s\-()]/g,''), password } : { email:identifier, password };
+    const body = isPhone ? { phone:identifier.replace(/[\s\-()]/g,'') } : { email:identifier };
     const d=await api('/auth/login',{body});
 
     if(!d || !d.access_token || !d.user) {

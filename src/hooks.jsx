@@ -82,11 +82,11 @@ export function useAuth() {
     setIsInitialized(true);
   },[]);
 
-  const login = useCallback(async (identifier,pw) => {
+  const login = useCallback(async (identifier) => {
     setLoading(true); setError(null);
     try {
       console.log('[AUTH] Login attempt for:', identifier);
-      const d = await apiLogin(identifier,pw);
+      const d = await apiLogin(identifier);
       console.log('[AUTH] Login response:', d);
 
       if(!d.user) {
@@ -113,7 +113,7 @@ export function useAuth() {
       const typeMap = {planta:"plant",transporter:"transporter",producer:"producer"};
       const userTypes = (form.userTypes||[]).map(t=>typeMap[t]||t);
       const phone = form.phone?.replace(/[\s\-()]/g,'')||"";
-      const d = await apiRegister({ name:form.name, email:form.email, phone, password:form.pw, userTypes });
+      const d = await apiRegister({ name:form.name, email:form.email, phone, userTypes });
 
       if(!d.user) {
         throw new Error('Respuesta inválida del servidor');
