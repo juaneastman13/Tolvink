@@ -478,9 +478,9 @@ function HomeScreen({ user, freights, perms, onNav, catalog, isDesktop, onAction
   const nowTime = new Date().toLocaleTimeString("es-UY", { hour: "2-digit", minute: "2-digit", hour12: false });
   // Sidebar logo area: padTop24 + font63 + padBot20 = 107px → midline ~55px. Solicitar btn top ~122px.
   const listContent = (
-    <div style={{ flex: compact ? undefined : 1, width: compact ? 300 : undefined, flexShrink: 0, display: "flex", flexDirection: "column", overflow: "hidden", boxSizing: "border-box", borderRight: compact ? `1px solid ${C.b1}` : "none" }}>
-      {/* Fixed header — empresa (clickable), fecha+hora, fletes */}
-      <div style={{ flexShrink: 0, background:C.bg, display: "flex", alignItems: "center", minHeight: isDesktop ? 107 : 56, padding: compact ? "0 14px" : "0 18px", borderBottom: `1px solid ${C.b2}` }}>
+    <div style={{ flex: compact ? undefined : 1, width: compact ? 300 : undefined, flexShrink: 0, overflow: compact ? "auto" : undefined, boxSizing: "border-box", borderRight: compact ? `1px solid ${C.b1}` : "none" }}>
+      {/* Sticky header — empresa (clickable), fecha+hora, fletes */}
+      <div style={{ position: compact ? "sticky" : undefined, top: 0, zIndex: 10, background:C.bg, display: "flex", alignItems: "center", minHeight: isDesktop ? 107 : 56, padding: compact ? "0 14px" : "0 18px", borderBottom: `1px solid ${C.b2}` }}>
         <div style={{ position: "relative" }}>
           <div ref={companyPickerRef}>
             <button onClick={() => hasMultipleCompanies && setShowCompanyPicker(p => !p)} style={{ display: "flex", alignItems: "center", gap: 4, background: "none", border: "none", padding: 0, cursor: hasMultipleCompanies ? "pointer" : "default", fontFamily: "inherit" }}>
@@ -514,8 +514,7 @@ function HomeScreen({ user, freights, perms, onNav, catalog, isDesktop, onAction
         </div>
       </div>
 
-      {/* Scrollable content */}
-      <div style={{ flex: 1, overflow: "auto", padding: compact ? "0 8px 8px" : "0 18px 18px" }}>
+      <div style={{ padding: compact ? "0 8px 8px" : "0 18px 18px" }}>
 
       {/* Pendientes — top aligned with Solicitar flete button (~14px padding in sidebar) */}
       {totalPendingAll > 0 && (<>
@@ -577,9 +576,11 @@ function HomeScreen({ user, freights, perms, onNav, catalog, isDesktop, onAction
 
   if (isDesktop && hasDetail) {
     return (
-      <div style={{ flex: 1, display: "flex", flexDirection: "row", overflow: "hidden" }}>
-        {listContent}
-        <DetailScreen user={detailUser} freight={selFreight} perms={perms} onBack={() => setSelectedId(null)} onAction={onAction} actionLoading={actionLoading} onChat={onChat} onRefresh={onRefresh} onDuplicate={onDuplicate} onEdit={onEdit} />
+      <div style={{ flex: 1, position: "relative" }}>
+        <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, display: "flex", flexDirection: "row" }}>
+          {listContent}
+          <DetailScreen user={detailUser} freight={selFreight} perms={perms} onBack={() => setSelectedId(null)} onAction={onAction} actionLoading={actionLoading} onChat={onChat} onRefresh={onRefresh} onDuplicate={onDuplicate} onEdit={onEdit} />
+        </div>
       </div>
     );
   }
@@ -963,9 +964,9 @@ function DetailScreen({ user, freight, perms, onBack, onAction, actionLoading, o
   });
 
   return (
-    <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden", animation:"slideUp 0.25s ease" }}>
-      {/* Fixed header — back + product + actions + progress */}
-      <div style={{ flexShrink:0, padding:"18px 18px 8px", background:C.bg }}>
+    <div style={{ flex:1, overflow:"auto", animation:"slideUp 0.25s ease" }}>
+      {/* Sticky header — back + product + actions + progress */}
+      <div style={{ position:"sticky", top:0, zIndex:10, padding:"18px 18px 8px", background:C.bg }}>
         <button onClick={onBack} style={{ background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", fontSize:13, fontWeight:600, color:C.pri, marginBottom:14, padding:0, display:"flex", alignItems:"center", gap:4 }}>{Ic.chev(C.pri,18)} Volver</button>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
           <div>
@@ -1035,8 +1036,7 @@ function DetailScreen({ user, freight, perms, onBack, onAction, actionLoading, o
         })()}
       </div>
 
-      {/* Scrollable content */}
-      <div style={{ flex:1, overflow:"auto", padding:"0 18px 18px" }}>
+      <div style={{ padding:"0 18px 18px" }}>
 
       {/* Map */}
       <FreightMap freightId={freight.id} originLat={freight.originLat} originLng={freight.originLng} destLat={freight.destLat} destLng={freight.destLng} originName={freight.originName} destName={freight.destName} status={freight.status} isDriver={user.userType==="transporter"||(user.userType==="producer"&&freight.isOwnFleet)}/>
@@ -3857,7 +3857,7 @@ export default function Tolvink() {
         </div>
 
         {/* Scrollable content area */}
-        <div style={{flex:1,overflow:(screen==="chats"||screen==="calendar"||screen==="list"||screen==="home"||screen==="detail")&&isDesktop?"hidden":"auto",display:"flex",flexDirection:"column",WebkitOverflowScrolling:"touch",overscrollBehavior:"contain"}}>
+        <div style={{flex:1,overflow:(screen==="chats"||screen==="calendar")&&isDesktop?"hidden":"auto",display:"flex",flexDirection:"column",WebkitOverflowScrolling:"touch",overscrollBehavior:"contain"}}>
         <div key={screen} className="tv-page" style={{flex:1,display:"flex",flexDirection:"column"}}>
         {screen==="home" && <HomeScreen user={auth.user} freights={fh.freights} perms={perms} onNav={nav} catalog={catalog} isDesktop={isDesktop} onAction={handleAction} actionLoading={actionLoading} onChat={(convId)=>{if(convId){setChatConvId(convId);setScreen("chats");}}} onRefresh={(id)=>fh.refresh(id)} onDuplicate={(f)=>{setDuplicateData(f);setScreen("new");}} onEdit={(f)=>{setEditData(f);setScreen("edit");}}/>}
         {screen==="list" && <ListScreen freights={fh.freights} onNav={nav} onRefresh={fh.fetchAll}/>}
