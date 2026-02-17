@@ -129,6 +129,41 @@ export function SortTh({ label, colKey, sortCol, sortDir, onSort }) {
   );
 }
 
+// ======================== MODAL OVERLAY (animated logo → card) ========
+
+export function ModalOverlay({ children, onClose, maxWidth=400 }) {
+  const [stage, setStage] = useState(0); // 0=logo, 1=transition, 2=card
+  useEffect(() => {
+    const t1 = setTimeout(() => setStage(1), 400);
+    const t2 = setTimeout(() => setStage(2), 700);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
+  }, []);
+  return (
+    <div onClick={onClose||undefined} style={{position:"fixed",inset:0,background:C.bgOverlay,display:"flex",alignItems:"center",justifyContent:"center",zIndex:200,padding:24,animation:"moFadeIn 0.25s ease"}}>
+      <style>{`
+@keyframes moFadeIn{from{opacity:0}to{opacity:1}}
+@keyframes moLogoIn{from{opacity:0;transform:scale(0.7)}to{opacity:1;transform:scale(1)}}
+@keyframes moLogoOut{to{opacity:0;transform:scale(0.92)}}
+@keyframes moDotBurst{0%{transform:scale(1);opacity:1}100%{transform:scale(35);opacity:0}}
+@keyframes moCardIn{from{opacity:0;transform:scale(0.82)}to{opacity:1;transform:scale(1)}}
+      `}</style>
+      {/* Logo phase */}
+      {stage<2 && (
+        <div style={{position:"absolute",display:"flex",alignItems:"flex-start",animation:stage===0?"moLogoIn 0.35s ease-out forwards":"moLogoOut 0.25s ease forwards",pointerEvents:"none"}}>
+          <span style={{fontSize:44,fontWeight:800,color:C.pri,letterSpacing:-2,lineHeight:1}}>tolvink</span>
+          <span style={{width:13,height:13,borderRadius:7,background:C.acc,marginLeft:4,marginTop:2,display:"inline-block",animation:stage===0?"dotPulse 1.5s ease-in-out infinite":"moDotBurst 0.3s ease forwards"}} />
+        </div>
+      )}
+      {/* Card phase */}
+      {stage===2 && (
+        <div onClick={e=>e.stopPropagation()} style={{background:C.w,borderRadius:18,padding:22,width:"100%",maxWidth,boxShadow:C.shLg,animation:"moCardIn 0.3s cubic-bezier(0.34,1.56,0.64,1)"}}>
+          {children}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ======================== ATTACH MENU (action sheet) ==================
 
 export function AttachMenu({ open, onClose, onCamera, onGallery, onFiles }) {
@@ -225,7 +260,7 @@ export function Nav({ active, onChange, unread=0, pendingCount=0, notifCount=0, 
   const items = [
     { k:"home",     ic:a=>Ic.home(a?C.pri:C.t3,20),  l:"Inicio" },
     { k:"list",     ic:a=>Ic.truck(a?C.pri:C.t3,20),  l:"Fletes" },
-    { k:"pending",  sp:true, bd:pendingCount },
+    { k:"home",  sp:true, bd:pendingCount },
     { k:"chats",    ic:a=>Ic.msg(a?C.pri:C.t3,20),    l:"Chat", bd:unread },
     { k:"menu",     ic:a=>Ic.menu3(a?C.pri:C.t3,20),  l:"Menú", bd:notifCount },
   ];
@@ -235,7 +270,7 @@ export function Nav({ active, onChange, unread=0, pendingCount=0, notifCount=0, 
       {items.map(it=>(
         <button key={it.k} onClick={()=>onChange(it.k)} style={{ flex:it.sp&&canRequest?1.6:1, display:"flex", flexDirection:"column", alignItems:"center", gap:1, border:"none", background:"none", cursor:"pointer", fontFamily:"inherit", position:"relative", padding:it.sp?"0":"5px 0", minHeight:42, WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
           {it.sp ? <>
-            <div onClick={e=>{e.stopPropagation();onChange("pending")}} style={{ width:40, height:40, borderRadius:20, background:centerColor, display:"flex", alignItems:"center", justifyContent:"center", marginTop:-16, boxShadow:`0 3px 12px ${centerColor}40`, position:"relative", transition:"background 0.5s ease, box-shadow 0.5s ease" }}>
+            <div onClick={e=>{e.stopPropagation();onChange("home")}} style={{ width:40, height:40, borderRadius:20, background:centerColor, display:"flex", alignItems:"center", justifyContent:"center", marginTop:-16, boxShadow:`0 3px 12px ${centerColor}40`, position:"relative", transition:"background 0.5s ease, box-shadow 0.5s ease" }}>
               {hasPending ? Ic.clk(C.w,18) : Ic.chk(C.w,18)}
               {it.bd>0 && <div style={{ position:"absolute", top:-4, right:-4, minWidth:16, height:16, borderRadius:8, background:C.err, color:C.w, fontSize:8, fontWeight:700, padding:"0 4px", display:"flex", alignItems:"center", justifyContent:"center", border:`2px solid ${C.nav}` }}>{it.bd}</div>}
             </div>

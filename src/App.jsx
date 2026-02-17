@@ -17,7 +17,7 @@ import {
 import { C, track, FONT, MONO, Ic } from "./theme";
 import { V, validate, SCHEMAS, textMatch, FieldError } from "./validation";
 import { stCfg, getActions, GRANOS, UNITS } from "./constants";
-import { Av, Bd, Btn, Tabs, Field, Select, Sec, Toast, Loader, AttachMenu, Sidebar, Nav, SortTh, exportCSV, exportExcel, exportPDF, NotifBell, NotificationsPanel } from "./components";
+import { Av, Bd, Btn, Tabs, Field, Select, Sec, Toast, Loader, AttachMenu, Sidebar, Nav, SortTh, exportCSV, exportExcel, exportPDF, NotifBell, NotificationsPanel, ModalOverlay } from "./components";
 import { useAuth, useCatalog, useFreights, permsFor, useIsDesktop, useTableSort, usePullToRefresh, useOnline, useNotifications } from "./hooks";
 import { SafeZone, LocationPicker, FreightMap, FreightsOverviewMap } from "./maps";
 import { PhotoUpload, DocsGallery, FreightFileUpload } from "./uploads";
@@ -797,133 +797,7 @@ function getPendingActions(freight, userType) {
   return null;
 }
 
-function PendingScreen({ user, freights, onNav, onNewFreight, onAction, actionLoading, embedded }) {
-  const pending = useMemo(() => {
-    return freights.map(f => {
-      const pa = getPendingActions(f, user.userType);
-      return pa ? { ...f, pendingAction: pa } : null;
-    }).filter(Boolean);
-  }, [freights, user.userType]);
 
-  // Collapsed state per group (starts expanded)
-  const [collapsed, setCollapsed] = useState({});
-  const toggleGroup = (key) => setCollapsed(prev=>({...prev,[key]:!prev[key]}));
-
-  // Define status groups in priority order
-  const statusGroups = useMemo(()=>{
-    const groups = [
-      { key:"pending_assignment", label:"Pendientes de asignación", icon:Ic.warn, color:C.acc,   statuses:["pending_assignment"] },
-      { key:"assigned",           label:"Asignados — esperando respuesta", icon:Ic.truck, color:C.sec,   statuses:["assigned"] },
-      { key:"accepted",           label:"Confirmados — listos para iniciar", icon:Ic.chk, color:C.pri,   statuses:["accepted"] },
-      { key:"in_progress",        label:"En curso — confirmación de carga", icon:Ic.nav, color:"#258B3E", statuses:["in_progress"] },
-      { key:"loaded",             label:"Cargados — confirmar entrega", icon:Ic.plant, color:"#1B7D33", statuses:["loaded"] },
-    ];
-    return groups.map(g=>({
-      ...g,
-      items: pending.filter(f=>g.statuses.includes(f.status)).sort((a,b)=>{
-        // Sort by loadDate within group
-        if(a.loadDate && b.loadDate) return a.loadDate.localeCompare(b.loadDate);
-        return 0;
-      })
-    })).filter(g=>g.items.length>0);
-  },[pending]);
-
-  return (
-    <div style={{ flex: embedded?undefined:1, overflow: embedded?"visible":"auto", padding: embedded?0:18 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-        <div style={{ fontSize: 20, fontWeight: 800, letterSpacing: -0.3 }}>Pendientes</div>
-        <Btn sm v="acc" icon={Ic.plus(C.w, 14)} onClick={onNewFreight}>Nuevo flete</Btn>
-      </div>
-      <div style={{ fontSize: 12, color: C.t2, marginBottom: 18 }}>
-        {pending.length > 0 ? `${pending.length} flete${pending.length !== 1 ? "s" : ""} esperando tu acción` : "No tenés acciones pendientes"}
-      </div>
-
-      {statusGroups.length === 0 ? (
-        <div style={{ textAlign: "center", padding: 48 }}>
-          <div style={{ fontSize: 48, marginBottom: 12 }}>✓</div>
-          <div style={{ fontSize: 15, fontWeight: 700, color: C.pri, marginBottom: 6 }}>Todo al día</div>
-          <div style={{ fontSize: 12, color: C.t3 }}>No hay fletes que requieran tu atención</div>
-        </div>
-      ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          {statusGroups.map((group, gi) => {
-            const isCollapsed = collapsed[group.key];
-            return (
-              <div key={group.key} style={{ animation:`fadeIn 0.2s ease ${gi*0.05}s both` }}>
-                {/* Group header — clickable to collapse */}
-                <button onClick={()=>toggleGroup(group.key)} style={{ width:"100%", display:"flex", alignItems:"center", gap:10, padding:"10px 14px", background:`${group.color}0A`, borderRadius:10, border:`1px solid ${group.color}20`, borderLeft:`3px solid ${group.color}`, cursor:"pointer", fontFamily:"inherit", textAlign:"left", marginBottom:isCollapsed?0:10, transition:"margin 0.15s ease" }}>
-                  <div style={{ width:28, height:28, borderRadius:7, background:`${group.color}15`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
-                    {group.icon(group.color, 14)}
-                  </div>
-                  <div style={{ flex:1, minWidth:0 }}>
-                    <div style={{ fontSize:13, fontWeight:700, color:group.color }}>{group.label}</div>
-                  </div>
-                  <div style={{ display:"flex", alignItems:"center", gap:6, flexShrink:0 }}>
-                    <span style={{ fontSize:12, fontWeight:800, color:group.color, background:`${group.color}15`, padding:"2px 8px", borderRadius:6 }}>{group.items.length}</span>
-                    <span style={{ display:"flex", transform:isCollapsed?"rotate(90deg)":"rotate(270deg)", transition:"transform 0.15s ease" }}>{Ic.chev(group.color,16)}</span>
-                  </div>
-                </button>
-
-                {/* Group items */}
-                {!isCollapsed && (
-                  <div style={{ display: "flex", flexDirection: "column", gap: 8, paddingLeft:4 }}>
-                    {group.items.map((f, idx) => {
-                      const st = stCfg(f.status);
-                      const pa = f.pendingAction;
-                      const canInline = embedded && onAction;
-                      return (
-                        <div key={f.id} style={{ width: "100%", background: C.w, border: `1px solid ${C.b1}`, borderLeft: `4px solid ${pa.color}`, borderRadius: 12, padding: 14, fontFamily: "inherit", textAlign: "left", boxShadow: C.sh, animation:`cardIn 0.2s ease ${idx*0.03}s both` }}>
-                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-                            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                              <span style={{ fontSize: 11, fontWeight: 700, fontFamily: MONO, color: C.t2 }}>{f.code}</span>
-                              <Bd color={st.color} bg={st.bg} small>{st.label}</Bd>
-                            </div>
-                            {f.isOwnFleet && <span style={{ fontSize: 9, color: C.acc, fontWeight: 600 }}>Flota propia</span>}
-                          </div>
-                          <div style={{ fontSize: 14, fontWeight: 700, color: C.t1, marginBottom: 4 }}>
-                            {f.grain === "Otros" ? f.productTypeOther || "Otros" : f.grain} · {f.tons} {f.unit || "tn"}
-                          </div>
-                          <div style={{ fontSize: 11, color: C.t2, marginBottom: 4 }}>
-                            {f.originName} → {f.destName}
-                          </div>
-                          {f.loadDate && <div style={{ fontSize: 10, color: C.t3, marginBottom: 8 }}>
-                            {Ic.cal(C.t3,10)} {f.loadDate}{f.loadTime?` · ${f.loadTime}`:""}{f.transporterName?` · ${f.transporterName}`:""}
-                          </div>}
-                          {canInline ? (
-                            pa.actionKey === "respond" ? (
-                              <div style={{ display: "flex", gap: 8 }}>
-                                <button disabled={actionLoading} onClick={() => onAction(f.id, "accept")} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "10px 12px", background: C.pri, borderRadius: 8, border: "none", cursor: "pointer", fontFamily: "inherit" }}>
-                                  {Ic.chk("#fff", 14)}<span style={{ fontSize: 12, fontWeight: 700, color: "#fff" }}>Aceptar</span>
-                                </button>
-                                <button disabled={actionLoading} onClick={() => onAction(f.id, "reject")} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "10px 12px", background: C.bg, borderRadius: 8, border: `1px solid ${C.err}`, cursor: "pointer", fontFamily: "inherit" }}>
-                                  {Ic.cross(C.err, 14)}<span style={{ fontSize: 12, fontWeight: 700, color: C.err }}>Rechazar</span>
-                                </button>
-                              </div>
-                            ) : (
-                              <button disabled={actionLoading} onClick={() => onAction(f.id, pa.actionKey)} style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "10px 12px", background: pa.color, borderRadius: 8, border: "none", cursor: "pointer", fontFamily: "inherit", opacity: actionLoading ? 0.6 : 1 }}>
-                                <span style={{ fontSize: 13, fontWeight: 700, color: "#fff" }}>{pa.action}</span>
-                              </button>
-                            )
-                          ) : (
-                            <button onClick={() => onNav("detail", f.id)} style={{ width: "100%", display: "flex", alignItems: "center", gap: 6, padding: "8px 10px", background: `${pa.color}10`, borderRadius: 8, border: `1px solid ${pa.color}20`, cursor: "pointer", fontFamily: "inherit" }}>
-                              <span style={{ width: 8, height: 8, borderRadius: 4, background: pa.color, animation: "ti 1.5s infinite" }} />
-                              <span style={{ fontSize: 12, fontWeight: 700, color: pa.color }}>{pa.action}</span>
-                              <span style={{ marginLeft: "auto", display: "flex" }}>{Ic.chev(pa.color, 16)}</span>
-                            </button>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
-}
 
 
 // ======================== FREIGHT DETAIL ==============================
@@ -2142,16 +2016,14 @@ function AccessScreen({ onBack }) {
 
       {/* Confirm revoke modal */}
       {confirmRevoke && (
-        <div style={{ position:"fixed", inset:0, background:C.bgOverlay, zIndex:200, display:"flex", alignItems:"center", justifyContent:"center", padding:24 }} onClick={()=>setConfirmRevoke(null)}>
-          <div onClick={e=>e.stopPropagation()} style={{ background:C.w, borderRadius:18, padding:24, maxWidth:340, width:"100%", boxShadow:C.shLg }}>
-            <div style={{ fontSize:16, fontWeight:700, marginBottom:8 }}>Revocar acceso</div>
-            <div style={{ fontSize:13, color:C.t2, marginBottom:16 }}>¿Revocar el acceso de <b>{confirmRevoke.producerUser?.name||confirmRevoke.producerCompany?.name}</b>? No podrá enviar fletes a tus plantas.</div>
-            <div style={{ display:"flex", gap:8 }}>
-              <button onClick={()=>setConfirmRevoke(null)} style={{ flex:1, padding:"10px 14px", borderRadius:8, border:`1px solid ${C.b1}`, background:C.w, cursor:"pointer", fontFamily:"inherit", fontSize:13, fontWeight:600, color:C.t2 }}>Cancelar</button>
-              <button disabled={saving} onClick={()=>handleRevoke(confirmRevoke.id)} style={{ flex:1, padding:"10px 14px", borderRadius:8, border:"none", background:saving?C.muted:C.err, cursor:saving?"not-allowed":"pointer", fontFamily:"inherit", fontSize:13, fontWeight:600, color:C.w, opacity:saving?0.7:1 }}>{saving?"Revocando...":"Revocar"}</button>
-            </div>
+        <ModalOverlay onClose={()=>setConfirmRevoke(null)} maxWidth={340}>
+          <div style={{ fontSize:16, fontWeight:700, marginBottom:8 }}>Revocar acceso</div>
+          <div style={{ fontSize:13, color:C.t2, marginBottom:16 }}>¿Revocar el acceso de <b>{confirmRevoke.producerUser?.name||confirmRevoke.producerCompany?.name}</b>? No podrá enviar fletes a tus plantas.</div>
+          <div style={{ display:"flex", gap:8 }}>
+            <button onClick={()=>setConfirmRevoke(null)} style={{ flex:1, padding:"10px 14px", borderRadius:8, border:`1px solid ${C.b1}`, background:C.w, cursor:"pointer", fontFamily:"inherit", fontSize:13, fontWeight:600, color:C.t2 }}>Cancelar</button>
+            <button disabled={saving} onClick={()=>handleRevoke(confirmRevoke.id)} style={{ flex:1, padding:"10px 14px", borderRadius:8, border:"none", background:saving?C.muted:C.err, cursor:saving?"not-allowed":"pointer", fontFamily:"inherit", fontSize:13, fontWeight:600, color:C.w, opacity:saving?0.7:1 }}>{saving?"Revocando...":"Revocar"}</button>
           </div>
-        </div>
+        </ModalOverlay>
       )}
 
       {/* Edit access panel */}
@@ -3085,24 +2957,35 @@ function ReportsScreen({ onBack, freights, isDesktop, embedded }) {
 
 // ======================== MODALS =====================================
 
+function ConfirmActionModal({ freight, title, btnLabel, btnVariant="pri", icon, onClose, onConfirm }) {
+  const [loading,setLoading] = useState(false);
+  const doConfirm = async ()=>{ if(loading) return; setLoading(true); await onConfirm(); setLoading(false); };
+  return (
+    <ModalOverlay onClose={onClose} maxWidth={360}>
+      {icon && <div style={{display:"flex",justifyContent:"center",marginBottom:12}}><div style={{width:48,height:48,borderRadius:24,background:`${btnVariant==="acc"?C.acc:C.pri}12`,display:"flex",alignItems:"center",justifyContent:"center"}}>{icon}</div></div>}
+      <div style={{fontSize:17,fontWeight:700,marginBottom:6,textAlign:"center"}}>{title}</div>
+      <div style={{fontSize:12,color:C.t2,marginBottom:20,textAlign:"center"}}>{freight.code} · {freight.grain} · {freight.tons}{freight.unit||"tn"}</div>
+      <div style={{display:"flex",gap:8}}><Btn full v="ghost" onClick={onClose} disabled={loading}>Cancelar</Btn><Btn full v={btnVariant} disabled={loading} onClick={doConfirm}>{loading?"Procesando...":btnLabel}</Btn></div>
+    </ModalOverlay>
+  );
+}
+
 function AssignModal({ freight, transporters, onClose, onConfirm }) {
   const [t,setT] = useState("");
   const [loading,setLoading] = useState(false);
   const ts = transporters||[];
   const doConfirm = async ()=>{ if(loading||!t) return; setLoading(true); await onConfirm(t); setLoading(false); };
   return (
-    <div style={{position:"fixed",inset:0,background:C.bgOverlay,display:"flex",alignItems:"center",justifyContent:"center",zIndex:200,padding:24}}>
-      <div style={{background:C.w,borderRadius:18,padding:22,width:"100%",maxWidth:400,boxShadow:C.shLg}}>
-        <div style={{fontSize:17,fontWeight:700,marginBottom:4}}>Asignar transporte · {freight.code}</div>
-        <div style={{fontSize:12,color:C.t2,marginBottom:18}}>{freight.grain} · {freight.tons}tn · {freight.originName}</div>
-        <label style={{fontSize:10.5,fontWeight:600,color:C.t2,marginBottom:8,display:"block",textTransform:"uppercase",letterSpacing:0.6}}>Transportista</label>
-        <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:18}}>
-          {ts.length===0 && <div style={{fontSize:12,color:C.t3,padding:10}}>No hay transportistas disponibles</div>}
-          {ts.map(x=><button key={x.id} onClick={()=>setT(x.id)} style={{padding:"13px 14px",borderRadius:12,textAlign:"left",fontFamily:"inherit",border:`1.5px solid ${t===x.id?C.pri:C.b1}`,background:t===x.id?C.priPale:C.w,color:t===x.id?C.pri:C.t2,fontSize:13.5,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",gap:8}}>{Ic.truck(t===x.id?C.pri:C.t3,16)} {x.name}</button>)}
-        </div>
-        <div style={{display:"flex",gap:8}}><Btn full v="ghost" onClick={onClose} disabled={loading}>Cancelar</Btn><Btn full disabled={!t||loading} onClick={doConfirm}>{loading?"Asignando...":"Asignar"}</Btn></div>
+    <ModalOverlay onClose={onClose}>
+      <div style={{fontSize:17,fontWeight:700,marginBottom:4}}>Asignar transporte · {freight.code}</div>
+      <div style={{fontSize:12,color:C.t2,marginBottom:18}}>{freight.grain} · {freight.tons}tn · {freight.originName}</div>
+      <label style={{fontSize:10.5,fontWeight:600,color:C.t2,marginBottom:8,display:"block",textTransform:"uppercase",letterSpacing:0.6}}>Transportista</label>
+      <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:18}}>
+        {ts.length===0 && <div style={{fontSize:12,color:C.t3,padding:10}}>No hay transportistas disponibles</div>}
+        {ts.map(x=><button key={x.id} onClick={()=>setT(x.id)} style={{padding:"13px 14px",borderRadius:12,textAlign:"left",fontFamily:"inherit",border:`1.5px solid ${t===x.id?C.pri:C.b1}`,background:t===x.id?C.priPale:C.w,color:t===x.id?C.pri:C.t2,fontSize:13.5,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",gap:8}}>{Ic.truck(t===x.id?C.pri:C.t3,16)} {x.name}</button>)}
       </div>
-    </div>
+      <div style={{display:"flex",gap:8}}><Btn full v="ghost" onClick={onClose} disabled={loading}>Cancelar</Btn><Btn full disabled={!t||loading} onClick={doConfirm}>{loading?"Asignando...":"Asignar"}</Btn></div>
+    </ModalOverlay>
   );
 }
 
@@ -3112,25 +2995,23 @@ function TruckSelectModal({ freight, trucks, onClose, onConfirm }) {
   const ts = (trucks||[]).filter(t=>t.active!==false);
   const doConfirm = async ()=>{ if(loading||!sel) return; setLoading(true); await onConfirm(sel); setLoading(false); };
   return (
-    <div style={{position:"fixed",inset:0,background:C.bgOverlay,display:"flex",alignItems:"center",justifyContent:"center",zIndex:200,padding:24}}>
-      <div style={{background:C.w,borderRadius:18,padding:22,width:"100%",maxWidth:400,boxShadow:C.shLg}}>
-        <div style={{fontSize:17,fontWeight:700,marginBottom:4}}>Aceptar flete · {freight.code}</div>
-        <div style={{fontSize:12,color:C.t2,marginBottom:18}}>{freight.grain} · {freight.tons}tn → {freight.destName}</div>
-        <label style={{fontSize:10.5,fontWeight:600,color:C.t2,marginBottom:8,display:"block",textTransform:"uppercase",letterSpacing:0.6}}>Seleccioná un camión</label>
-        <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:18,maxHeight:220,overflowY:"auto"}}>
-          {ts.length===0 && <div style={{fontSize:12,color:C.t3,padding:10,textAlign:"center"}}>No tenés camiones registrados.<br/><span style={{color:C.acc,fontWeight:600}}>Registrá uno desde tu perfil.</span></div>}
-          {ts.map(t=><button key={t.id} onClick={()=>setSel(t.id)} style={{padding:"13px 14px",borderRadius:12,textAlign:"left",fontFamily:"inherit",border:`1.5px solid ${sel===t.id?C.acc:C.b1}`,background:sel===t.id?C.accPale:C.w,color:sel===t.id?C.acc:C.t2,fontSize:13.5,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",gap:10}}>
-            {Ic.truck(sel===t.id?C.acc:C.t3,18)}
-            <div>
-              <div style={{fontSize:13,fontWeight:700,color:sel===t.id?C.acc:C.t1}}>{t.plate}</div>
-              {t.model && <div style={{fontSize:10.5,fontWeight:400,color:C.t3,marginTop:1}}>{t.model}</div>}
-              {t.assignedUser && <div style={{fontSize:10,color:C.t3,marginTop:1}}>Chofer: {t.assignedUser.name}</div>}
-            </div>
-          </button>)}
-        </div>
-        <div style={{display:"flex",gap:8}}><Btn full v="ghost" onClick={onClose} disabled={loading}>Cancelar</Btn><Btn full v="acc" disabled={!sel||loading} onClick={doConfirm}>{loading?"Aceptando...":"Aceptar flete"}</Btn></div>
+    <ModalOverlay onClose={onClose}>
+      <div style={{fontSize:17,fontWeight:700,marginBottom:4}}>Aceptar flete · {freight.code}</div>
+      <div style={{fontSize:12,color:C.t2,marginBottom:18}}>{freight.grain} · {freight.tons}tn → {freight.destName}</div>
+      <label style={{fontSize:10.5,fontWeight:600,color:C.t2,marginBottom:8,display:"block",textTransform:"uppercase",letterSpacing:0.6}}>Seleccioná un camión</label>
+      <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:18,maxHeight:220,overflowY:"auto"}}>
+        {ts.length===0 && <div style={{fontSize:12,color:C.t3,padding:10,textAlign:"center"}}>No tenés camiones registrados.<br/><span style={{color:C.acc,fontWeight:600}}>Registrá uno desde tu perfil.</span></div>}
+        {ts.map(t=><button key={t.id} onClick={()=>setSel(t.id)} style={{padding:"13px 14px",borderRadius:12,textAlign:"left",fontFamily:"inherit",border:`1.5px solid ${sel===t.id?C.acc:C.b1}`,background:sel===t.id?C.accPale:C.w,color:sel===t.id?C.acc:C.t2,fontSize:13.5,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",gap:10}}>
+          {Ic.truck(sel===t.id?C.acc:C.t3,18)}
+          <div>
+            <div style={{fontSize:13,fontWeight:700,color:sel===t.id?C.acc:C.t1}}>{t.plate}</div>
+            {t.model && <div style={{fontSize:10.5,fontWeight:400,color:C.t3,marginTop:1}}>{t.model}</div>}
+            {t.assignedUser && <div style={{fontSize:10,color:C.t3,marginTop:1}}>Chofer: {t.assignedUser.name}</div>}
+          </div>
+        </button>)}
       </div>
-    </div>
+      <div style={{display:"flex",gap:8}}><Btn full v="ghost" onClick={onClose} disabled={loading}>Cancelar</Btn><Btn full v="acc" disabled={!sel||loading} onClick={doConfirm}>{loading?"Aceptando...":"Aceptar flete"}</Btn></div>
+    </ModalOverlay>
   );
 }
 
@@ -3139,15 +3020,13 @@ function ReasonModal({ title, freight, btnLabel, btnType="err", onClose, onConfi
   const [loading,setLoading] = useState(false);
   const doConfirm = async ()=>{ if(loading||!reason) return; setLoading(true); await onConfirm(reason); setLoading(false); };
   return (
-    <div style={{position:"fixed",inset:0,background:C.bgOverlay,display:"flex",alignItems:"center",justifyContent:"center",zIndex:200,padding:24}}>
-      <div style={{background:C.w,borderRadius:18,padding:22,width:"100%",maxWidth:400,boxShadow:C.shLg}}>
-        <div style={{fontSize:17,fontWeight:700,marginBottom:4,color:btnType==="err"?C.err:C.t1}}>{title} · {freight.code}</div>
-        <div style={{fontSize:12,color:C.t2,marginBottom:18}}>{freight.grain} · {freight.tons}tn</div>
-        <label style={{fontSize:10.5,fontWeight:600,color:C.t2,marginBottom:6,display:"block",textTransform:"uppercase",letterSpacing:0.6}}>Motivo</label>
-        <textarea value={reason} onChange={e=>setReason(e.target.value)} placeholder="Describí el motivo..." rows={3} style={{width:"100%",padding:"12px 14px",borderRadius:10,border:`1.5px solid ${C.b1}`,background:C.w,color:C.t1,fontSize:13,fontFamily:"inherit",outline:"none",resize:"none",boxSizing:"border-box",marginBottom:16}}/>
-        <div style={{display:"flex",gap:8}}><Btn full v="ghost" onClick={onClose} disabled={loading}>Volver</Btn><Btn full v={btnType} disabled={!reason||loading} onClick={doConfirm}>{loading?"Procesando...":btnLabel}</Btn></div>
-      </div>
-    </div>
+    <ModalOverlay onClose={onClose}>
+      <div style={{fontSize:17,fontWeight:700,marginBottom:4,color:btnType==="err"?C.err:C.t1}}>{title} · {freight.code}</div>
+      <div style={{fontSize:12,color:C.t2,marginBottom:18}}>{freight.grain} · {freight.tons}tn</div>
+      <label style={{fontSize:10.5,fontWeight:600,color:C.t2,marginBottom:6,display:"block",textTransform:"uppercase",letterSpacing:0.6}}>Motivo</label>
+      <textarea value={reason} onChange={e=>setReason(e.target.value)} placeholder="Describí el motivo..." rows={3} style={{width:"100%",padding:"12px 14px",borderRadius:10,border:`1.5px solid ${C.b1}`,background:C.w,color:C.t1,fontSize:13,fontFamily:"inherit",outline:"none",resize:"none",boxSizing:"border-box",marginBottom:16}}/>
+      <div style={{display:"flex",gap:8}}><Btn full v="ghost" onClick={onClose} disabled={loading}>Volver</Btn><Btn full v={btnType} disabled={!reason||loading} onClick={doConfirm}>{loading?"Procesando...":btnLabel}</Btn></div>
+    </ModalOverlay>
   );
 }
 
@@ -3947,10 +3826,10 @@ export default function Tolvink() {
     else if(action==="cancel") { setModal({type:"reason",freight:f,title:"Cancelar flete",btnLabel:"Cancelar flete",action:"cancel"}); }
     else if(action==="reject") { setModal({type:"reason",freight:f,title:"Rechazar asignación",btnLabel:"Rechazar",action:"reject"}); }
     else if(action==="accept") { setModal({type:"truck_select",freight:f}); }
-    else if(action==="start") { setActionLoading(true); (async()=>{ const r=await fh.start(fId); setActionLoading(false); if(r.ok) show("Viaje iniciado"); else show(r.error,"err"); })(); }
-    else if(action==="authorize") { setActionLoading(true); (async()=>{ const r=await fh.authorize(fId); setActionLoading(false); if(r.ok) show("Viaje autorizado"); else show(r.error,"err"); })(); }
-    else if(action==="confirm_loaded") { setActionLoading(true); (async()=>{ const r=await fh.confirmLoaded(fId); setActionLoading(false); if(r.ok) show("Carga confirmada"); else show(r.error,"err"); })(); }
-    else if(action==="confirm_finished") { setActionLoading(true); (async()=>{ const r=await fh.confirmFinished(fId); setActionLoading(false); if(r.ok) show("Entrega confirmada"); else show(r.error,"err"); })(); }
+    else if(action==="start") { setModal({type:"confirm_action",freight:f,title:"Iniciar viaje",btnLabel:"Iniciar viaje",btnVariant:"acc",icon:Ic.truck(C.acc,24),action:"start"}); }
+    else if(action==="authorize") { setModal({type:"confirm_action",freight:f,title:"Autorizar viaje",btnLabel:"Autorizar",icon:Ic.chk(C.pri,24),action:"authorize"}); }
+    else if(action==="confirm_loaded") { setModal({type:"confirm_action",freight:f,title:"Confirmar carga",btnLabel:"Confirmar carga",btnVariant:"acc",icon:Ic.chk(C.acc,24),action:"confirm_loaded"}); }
+    else if(action==="confirm_finished") { setModal({type:"confirm_action",freight:f,title:"Confirmar entrega",btnLabel:"Confirmar entrega",icon:Ic.chk(C.pri,24),action:"confirm_finished"}); }
   };
 
   const handleAcceptWithTruck = async (fId, truckId)=>{
@@ -3961,6 +3840,14 @@ export default function Tolvink() {
   const handleAssign = async (fId, transportCompanyId)=>{
     const r = await fh.assign(fId, transportCompanyId);
     if(r.ok){ track("freight_assign"); setModal(null); show("Transportista asignado"); } else { setModal(null); show(r.error,"err"); }
+  };
+
+  const handleConfirmAction = async (fId, action)=>{
+    const msgs = { start:"Viaje iniciado", authorize:"Viaje autorizado", confirm_loaded:"Carga confirmada", confirm_finished:"Entrega confirmada" };
+    const fn = { start:fh.start, authorize:fh.authorize, confirm_loaded:fh.confirmLoaded, confirm_finished:fh.confirmFinished }[action];
+    if(!fn) return;
+    const r = await fn(fId);
+    if(r.ok){ setModal(null); show(msgs[action]||"Hecho"); } else { setModal(null); show(r.error,"err"); }
   };
 
   const handleReasonAction = async (fId,reason,action)=>{
@@ -4042,7 +3929,6 @@ export default function Tolvink() {
         <div key={screen} className="tv-page" style={{flex:1,display:"flex",flexDirection:"column"}}>
         {screen==="home" && <HomeScreen user={auth.user} freights={fh.freights} perms={perms} onNav={nav} catalog={catalog} isDesktop={isDesktop} onAction={handleAction} actionLoading={actionLoading} onChat={(convId)=>{if(convId){setChatConvId(convId);setScreen("chats");}}} onRefresh={(id)=>fh.refresh(id)} onDuplicate={(f)=>{setDuplicateData(f);setScreen("new");}} onEdit={(f)=>{setEditData(f);setScreen("edit");}}/>}
         {screen==="list" && <ListScreen freights={fh.freights} onNav={nav} onRefresh={fh.fetchAll} catalog={catalog}/>}
-        {screen==="pending" && <PendingScreen user={auth.user} freights={fh.freights} onNav={nav} onNewFreight={()=>nav("new")}/>}
         {screen==="calendar" && <CalendarScreen freights={fh.freights} perms={perms} onNav={nav} isDesktop={isDesktop}/>}
         {screen==="detail" && <DetailScreen user={curFreight ? {...auth.user, userType: _resolveType(curFreight)} : auth.user} freight={curFreight} perms={perms} onBack={()=>setScreen("list")} onAction={handleAction} actionLoading={actionLoading} onChat={(convId)=>{if(convId){setChatConvId(convId);setScreen("chats");}}} onRefresh={(id)=>fh.refresh(id)} onDuplicate={(f)=>{setDuplicateData(f);setScreen("new");}} onEdit={(f)=>{setEditData(f);setScreen("edit");}}/>}
         {screen==="new" && <NewScreen user={auth.user} lots={catalog.lots} plants={catalog.plants} branches={catalog.branches} fields={catalog.fields} trucks={catalog.trucks} onBack={()=>{setDuplicateData(null);setScreen("home");}} onCreate={handleCreate} submitting={submitting} duplicateFrom={duplicateData}/>}
@@ -4067,6 +3953,7 @@ export default function Tolvink() {
 
       {modal?.type==="assign" && <AssignModal freight={modal.freight} transporters={catalog.transporters} onClose={()=>setModal(null)} onConfirm={t=>handleAssign(modal.freight.id,t)}/>}
       {modal?.type==="truck_select" && <TruckSelectModal freight={modal.freight} trucks={catalog.trucks} onClose={()=>setModal(null)} onConfirm={t=>handleAcceptWithTruck(modal.freight.id,t)}/>}
+      {modal?.type==="confirm_action" && <ConfirmActionModal freight={modal.freight} title={modal.title} btnLabel={modal.btnLabel} btnVariant={modal.btnVariant} icon={modal.icon} onClose={()=>setModal(null)} onConfirm={()=>handleConfirmAction(modal.freight.id,modal.action)}/>}
       {modal?.type==="reason" && <ReasonModal title={modal.title} freight={modal.freight} btnLabel={modal.btnLabel} onClose={()=>setModal(null)} onConfirm={r=>handleReasonAction(modal.freight.id,r,modal.action)}/>}
       {toast && <Toast msg={toast.msg} type={toast.type} onClose={()=>setToast(null)}/>}
     </div>
