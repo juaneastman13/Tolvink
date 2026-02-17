@@ -279,64 +279,59 @@ function HomeScreen({ user, freights, perms, onNav, catalog, isDesktop, onAction
   const [showCompanyPicker, setShowCompanyPicker] = useState(false);
   const companyPickerRef = useRef(null);
 
-  // Build list of user's companies with names
+  // Build company list from user types + freight data (works even if companyByType is empty)
   const typeLabels = { producer: "Productor", plant: "Planta", transporter: "Transportista" };
   const myCompanies = useMemo(() => {
-    const list = [];
-    const seen = new Set();
-    // Primary company
-    if (user.companyId) {
-      list.push({ id: user.companyId, name: user.entity, type: user.userType });
-      seen.add(user.companyId);
-    }
-    // Additional companies from companyByType
-    const cbt = user.companyByType || {};
-    for (const [type, id] of Object.entries(cbt)) {
-      if (id && !seen.has(id)) {
-        seen.add(id);
-        // Look up name from catalog
-        const fromTransporters = (catalog.transporters || []).find(t => t.id === id);
-        const fromPlants = (catalog.plants || []).find(p => p.id === id || p.companyId === id);
-        const name = fromTransporters?.name || fromPlants?.name || (typeLabels[type] || type);
-        list.push({ id, name, type });
+    const types = user.userTypes || [user.userType];
+    if (types.length <= 1) return [{ key: user.userType, name: user.entity, type: user.userType }];
+    // For each type, find the company name from freight data or catalog
+    return types.map(type => {
+      const cbt = user.companyByType || {};
+      const companyId = cbt[type] || user.companyId;
+      // Try primary company
+      let name = companyId === user.companyId ? user.entity : null;
+      // Try catalog
+      if (!name) {
+        const t = (catalog.transporters || []).find(x => x.id === companyId);
+        if (t) name = t.name;
       }
-    }
-    return list;
-  }, [user.companyId, user.entity, user.userType, user.companyByType, catalog.transporters, catalog.plants]);
+      if (!name) {
+        const p = (catalog.plants || []).find(x => x.id === companyId || x.companyId === companyId);
+        if (p) name = p.name;
+      }
+      // Scan freights for this type's company name
+      if (!name) {
+        for (const f of freights) {
+          if (resolveUserTypeForFreight(f, user) === type) {
+            if (type === "plant" && f.destName) { name = f.destName; break; }
+            if (type === "transporter" && f.transporterName) { name = f.transporterName; break; }
+          }
+        }
+      }
+      if (!name) name = typeLabels[type] || type;
+      return { key: type, name, type };
+    });
+  }, [user, freights, catalog.transporters, catalog.plants]);
 
-  const [activeCompanyIds, setActiveCompanyIds] = useState(null); // null = all
-  const toggleCompany = (id) => {
-    setActiveCompanyIds(prev => {
-      const all = new Set(myCompanies.map(c => c.id));
+  const [activeTypes, setActiveTypes] = useState(null); // null = all types
+  const toggleType = (key) => {
+    setActiveTypes(prev => {
+      const all = new Set(myCompanies.map(c => c.key));
       const cur = prev ? new Set(prev) : new Set(all);
-      if (cur.has(id)) { cur.delete(id); if (cur.size === 0) return new Set(all); } // can't deselect all
-      else cur.add(id);
-      // If all selected, return null (means "all")
+      if (cur.has(key)) { cur.delete(key); if (cur.size === 0) return new Set(all); }
+      else cur.add(key);
       return cur.size === all.size ? null : cur;
     });
   };
-  const isCompanyActive = (id) => !activeCompanyIds || activeCompanyIds.has(id);
-  const allCompaniesSelected = !activeCompanyIds;
+  const isTypeActive = (key) => !activeTypes || activeTypes.has(key);
+  const allSelected = !activeTypes;
   const hasMultipleCompanies = myCompanies.length > 1;
 
-  // Plant companyId map for freight filtering
-  const plantCompanyMap = useMemo(() => {
-    const m = {};
-    (catalog.plants || []).forEach(p => { m[p.id] = p.companyId || p.id; });
-    return m;
-  }, [catalog.plants]);
-
-  // Filter freights by selected companies
+  // Filter freights by selected types (using resolved type per freight)
   const filteredFreights = useMemo(() => {
-    if (!activeCompanyIds) return freights; // all selected
-    return freights.filter(f => {
-      if (f.originCompanyId && activeCompanyIds.has(f.originCompanyId)) return true;
-      if (f.transporterId && activeCompanyIds.has(f.transporterId)) return true;
-      const plantCo = plantCompanyMap[f.destPlantId];
-      if (plantCo && activeCompanyIds.has(plantCo)) return true;
-      return false;
-    });
-  }, [freights, activeCompanyIds, plantCompanyMap]);
+    if (!activeTypes) return freights;
+    return freights.filter(f => activeTypes.has(resolveUserTypeForFreight(f, user)));
+  }, [freights, activeTypes, user]);
 
   // Close company picker on outside click
   useEffect(() => {
@@ -489,7 +484,7 @@ function HomeScreen({ user, freights, perms, onNav, catalog, isDesktop, onAction
           <div ref={companyPickerRef}>
             <button onClick={() => hasMultipleCompanies && setShowCompanyPicker(p => !p)} style={{ display: "flex", alignItems: "center", gap: 4, background: "none", border: "none", padding: 0, cursor: hasMultipleCompanies ? "pointer" : "default", fontFamily: "inherit" }}>
               <span style={{ fontSize: compact ? 13 : 15, fontWeight: 700, color: C.t1 }}>
-                {allCompaniesSelected ? (myCompanies.length > 1 ? "Todas las empresas" : user.entity) : myCompanies.filter(c => isCompanyActive(c.id)).map(c => c.name).join(", ")}
+                {allSelected ? (myCompanies.length > 1 ? "Todas las empresas" : user.entity) : myCompanies.filter(c => isTypeActive(c.key)).map(c => c.name).join(", ")}
               </span>
               {hasMultipleCompanies && <span style={{ display: "flex", transform: showCompanyPicker ? "rotate(270deg)" : "rotate(90deg)", transition: "transform 0.15s" }}>{Ic.chev(C.t3, 12)}</span>}
             </button>
@@ -497,9 +492,9 @@ function HomeScreen({ user, freights, perms, onNav, catalog, isDesktop, onAction
             {showCompanyPicker && (
               <div style={{ position: "absolute", top: "100%", left: 0, marginTop: 4, background: C.w, border: `1px solid ${C.b1}`, borderRadius: 10, boxShadow: C.shMd, padding: 6, zIndex: 20, minWidth: 200 }}>
                 {myCompanies.map(c => (
-                  <button key={c.id} onClick={() => toggleCompany(c.id)} style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", borderRadius: 6, border: "none", background: isCompanyActive(c.id) ? C.priPale : "transparent", cursor: "pointer", fontFamily: "inherit", textAlign: "left" }}>
-                    <span style={{ width: 16, height: 16, borderRadius: 4, border: `2px solid ${isCompanyActive(c.id) ? C.pri : C.b1}`, background: isCompanyActive(c.id) ? C.pri : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                      {isCompanyActive(c.id) && Ic.chk("#fff", 10)}
+                  <button key={c.key} onClick={() => toggleType(c.key)} style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", borderRadius: 6, border: "none", background: isTypeActive(c.key) ? C.priPale : "transparent", cursor: "pointer", fontFamily: "inherit", textAlign: "left" }}>
+                    <span style={{ width: 16, height: 16, borderRadius: 4, border: `2px solid ${isTypeActive(c.key) ? C.pri : C.b1}`, background: isTypeActive(c.key) ? C.pri : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      {isTypeActive(c.key) && Ic.chk("#fff", 10)}
                     </span>
                     <div>
                       <div style={{ fontSize: 12, fontWeight: 600, color: C.t1 }}>{c.name}</div>
