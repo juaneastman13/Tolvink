@@ -258,6 +258,23 @@ function AuthScreen({ onLogin, onSignup, loading, error, clearError, onBackToLan
 // ======================== HOME SCREEN ================================
 
 
+// Resolve effective userType for a freight (multi-type users)
+function resolveUserTypeForFreight(freight, user, plantCompanyMap) {
+  if (!user.userTypes || user.userTypes.length <= 1) return user.userType;
+  const cbt = user.companyByType || {};
+  const plantCo = cbt.plant || (user.userType === "plant" ? user.companyId : null);
+  const transporterCo = cbt.transporter || (user.userType === "transporter" ? user.companyId : null);
+  const producerCo = cbt.producer || (user.userType === "producer" ? user.companyId : null);
+  // Check plant first (assign/confirm actions are most critical)
+  if (plantCo) {
+    const freightPlantCo = plantCompanyMap?.[freight.destPlantId];
+    if (freightPlantCo === plantCo || freight.destPlantId === plantCo) return "plant";
+  }
+  if (transporterCo && freight.transporterId === transporterCo) return "transporter";
+  if (producerCo && freight.originCompanyId === producerCo) return "producer";
+  return user.userType;
+}
+
 function HomeScreen({ user, freights, perms, onNav, catalog, isDesktop, onAction, actionLoading, onChat, onRefresh, onDuplicate, onEdit }) {
   const [selectedId, setSelectedId] = useState(null);
   const [pendingFilter, setPendingFilter] = useState("all");
@@ -352,11 +369,14 @@ function HomeScreen({ user, freights, perms, onNav, catalog, isDesktop, onAction
     return true;
   };
 
+  // Helper: resolve effective userType per freight for multi-type users
+  const effectiveType = useCallback((f) => resolveUserTypeForFreight(f, user, plantCompanyMap), [user, plantCompanyMap]);
+
   // Pending groups — grouped by ACTION type, filtered by date
   const pendingByAction = useMemo(() => {
     const buckets = {};
     filteredFreights.forEach(f => {
-      const pa = getPendingActions(f, user.userType);
+      const pa = getPendingActions(f, effectiveType(f));
       if (!pa) return;
       if (!matchDate(f.loadDate, pendingFilter)) return;
       if (!buckets[pa.action]) buckets[pa.action] = { label: pa.action, color: pa.color, actionKey: pa.actionKey, icon: pa.icon, items: [] };
@@ -366,14 +386,14 @@ function HomeScreen({ user, freights, perms, onNav, catalog, isDesktop, onAction
       b.items.sort((a, b2) => a.loadDate && b2.loadDate ? a.loadDate.localeCompare(b2.loadDate) : 0);
       return b;
     });
-  }, [filteredFreights, user.userType, pendingFilter]);
+  }, [filteredFreights, effectiveType, pendingFilter]);
   const pendingCount = pendingByAction.reduce((s, g) => s + g.items.length, 0);
   const hasPending = pendingCount > 0;
 
   // Total pending (unfiltered) to know if section should show
   const totalPendingAll = useMemo(() =>
-    filteredFreights.filter(f => getPendingActions(f, user.userType)).length
-  , [filteredFreights, user.userType]);
+    filteredFreights.filter(f => getPendingActions(f, effectiveType(f))).length
+  , [filteredFreights, effectiveType]);
 
   // Summary groups — by freight status, filtered by date
   const STATUS_GROUPS = [
@@ -387,11 +407,11 @@ function HomeScreen({ user, freights, perms, onNav, catalog, isDesktop, onAction
   const summaryGroups = useMemo(() => {
     return STATUS_GROUPS.map(g => {
       const st = stCfg(g.statuses[0]);
-      const items = filteredFreights.filter(f => g.statuses.includes(f.status) && !getPendingActions(f, user.userType) && matchDate(f.loadDate, summaryFilter))
+      const items = filteredFreights.filter(f => g.statuses.includes(f.status) && !getPendingActions(f, effectiveType(f)) && matchDate(f.loadDate, summaryFilter))
         .sort((a, b) => a.loadDate && b.loadDate ? a.loadDate.localeCompare(b.loadDate) : 0);
       return { ...g, color: st.color, items };
     }).filter(g => g.items.length > 0);
-  }, [filteredFreights, user.userType, summaryFilter]);
+  }, [filteredFreights, effectiveType, summaryFilter]);
 
   // Collapsed state
   const [collapsed, setCollapsed] = useState({});
@@ -453,7 +473,7 @@ function HomeScreen({ user, freights, perms, onNav, catalog, isDesktop, onAction
         </button>
         {isOpen && (
           <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: "8px 0 4px 16px", borderLeft: `2px solid ${group.color}30` }}>
-            {group.items.map(f => renderCard(f, getPendingActions(f, user.userType)))}
+            {group.items.map(f => renderCard(f, getPendingActions(f, effectiveType(f))))}
           </div>
         )}
       </div>
@@ -555,18 +575,21 @@ function HomeScreen({ user, freights, perms, onNav, catalog, isDesktop, onAction
   );
 
   // Desktop: split layout — collapsed list left + DetailScreen right
+  // Resolve effective userType for selected freight so DetailScreen shows correct actions
+  const detailUser = selFreight ? { ...user, userType: effectiveType(selFreight) } : user;
+
   if (isDesktop && hasDetail) {
     return (
       <div style={{ flex: 1, display: "flex", flexDirection: "row", overflow: "hidden" }}>
         {listContent}
-        <DetailScreen user={user} freight={selFreight} perms={perms} onBack={() => setSelectedId(null)} onAction={onAction} actionLoading={actionLoading} onChat={onChat} onRefresh={onRefresh} onDuplicate={onDuplicate} onEdit={onEdit} />
+        <DetailScreen user={detailUser} freight={selFreight} perms={perms} onBack={() => setSelectedId(null)} onAction={onAction} actionLoading={actionLoading} onChat={onChat} onRefresh={onRefresh} onDuplicate={onDuplicate} onEdit={onEdit} />
       </div>
     );
   }
 
   // Mobile: fullscreen detail or list
   if (!isDesktop && hasDetail) {
-    return <DetailScreen user={user} freight={selFreight} perms={perms} onBack={() => setSelectedId(null)} onAction={onAction} actionLoading={actionLoading} onChat={onChat} onRefresh={onRefresh} onDuplicate={onDuplicate} onEdit={onEdit} />;
+    return <DetailScreen user={detailUser} freight={selFreight} perms={perms} onBack={() => setSelectedId(null)} onAction={onAction} actionLoading={actionLoading} onChat={onChat} onRefresh={onRefresh} onDuplicate={onDuplicate} onEdit={onEdit} />;
   }
 
   return listContent;
@@ -3736,6 +3759,9 @@ export default function Tolvink() {
   },[auth.user]);
 
   const perms = useMemo(()=>permsFor(auth.user),[auth.user]);
+  // Plant companyId map for multi-type user resolution
+  const _plantCoMap = useMemo(() => { const m = {}; (catalog.plants || []).forEach(p => { m[p.id] = p.companyId || p.id; }); return m; }, [catalog.plants]);
+  const _resolveType = useCallback((f) => resolveUserTypeForFreight(f, auth.user, _plantCoMap), [auth.user, _plantCoMap]);
   const show = (msg,type="ok")=>setToast({msg,type});
   const nav = (s,fId)=>{ track("screen_view",{screen:s}); if(s==="new_date"&&fId){if(!perms.canRequest){show("Sin permisos para solicitar","err");return;} setDuplicateData({preDate:fId});setScreen("new");return;} if(fId){ setSelFreight(fId); if(s==="detail") fh.refresh(fId); } if(s==="new"&&!perms.canRequest){show("Sin permisos para solicitar","err");return;} setScreen(s); };
 
@@ -3839,7 +3865,7 @@ export default function Tolvink() {
         {screen==="list" && <ListScreen freights={fh.freights} onNav={nav} onRefresh={fh.fetchAll}/>}
         {screen==="pending" && <PendingScreen user={auth.user} freights={fh.freights} onNav={nav} onNewFreight={()=>nav("new")}/>}
         {screen==="calendar" && <CalendarScreen freights={fh.freights} perms={perms} onNav={nav} isDesktop={isDesktop}/>}
-        {screen==="detail" && <DetailScreen user={auth.user} freight={curFreight} perms={perms} onBack={()=>setScreen("list")} onAction={handleAction} actionLoading={actionLoading} onChat={(convId)=>{if(convId){setChatConvId(convId);setScreen("chats");}}} onRefresh={(id)=>fh.refresh(id)} onDuplicate={(f)=>{setDuplicateData(f);setScreen("new");}} onEdit={(f)=>{setEditData(f);setScreen("edit");}}/>}
+        {screen==="detail" && <DetailScreen user={curFreight ? {...auth.user, userType: _resolveType(curFreight)} : auth.user} freight={curFreight} perms={perms} onBack={()=>setScreen("list")} onAction={handleAction} actionLoading={actionLoading} onChat={(convId)=>{if(convId){setChatConvId(convId);setScreen("chats");}}} onRefresh={(id)=>fh.refresh(id)} onDuplicate={(f)=>{setDuplicateData(f);setScreen("new");}} onEdit={(f)=>{setEditData(f);setScreen("edit");}}/>}
         {screen==="new" && <NewScreen user={auth.user} lots={catalog.lots} plants={catalog.plants} branches={catalog.branches} fields={catalog.fields} trucks={catalog.trucks} onBack={()=>{setDuplicateData(null);setScreen("home");}} onCreate={handleCreate} submitting={submitting} duplicateFrom={duplicateData}/>}
         {screen==="edit" && editData && <EditScreen freight={editData} fields={catalog.fields} plants={catalog.plants} onBack={()=>{setEditData(null);setScreen("detail");}} onSave={async(id,data)=>{const r=await fh.update(id,data);if(r.ok){setEditData(null);setScreen("detail");show("Flete actualizado");}else show(r.error,"err");}}/>}
         {screen==="profile" && <ProfileScreen user={auth.user} perms={perms} onLogout={auth.logout} onNav={nav} isDesktop={isDesktop}/>}
