@@ -599,9 +599,16 @@ function HomeScreen({ user, freights, perms, onNav, catalog, isDesktop, onAction
 
 function ListScreen({ freights, onNav, onRefresh }) {
   const [searchQ, setSearchQ] = useState("");
+  const [fPlant, setFPlant] = useState("");
+  const [fProducer, setFProducer] = useState("");
+  const [fTransporter, setFTransporter] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [datePreset, setDatePreset] = useState("");
+
+  const plantOptions = useMemo(()=>[...new Set(freights.map(f=>f.destName).filter(Boolean))].sort(),[freights]);
+  const producerOptions = useMemo(()=>[...new Set(freights.map(f=>f.requestedByName).filter(Boolean))].sort(),[freights]);
+  const transporterOptions = useMemo(()=>[...new Set(freights.map(f=>f.transporterName).filter(Boolean))].sort(),[freights]);
 
   const applyDatePreset = (preset) => {
     setDatePreset(preset);
@@ -614,14 +621,20 @@ function ListScreen({ freights, onNav, onRefresh }) {
     else { setDateFrom(""); setDateTo(""); }
   };
 
+  const clearAll = () => { setSearchQ(""); setFPlant(""); setFProducer(""); setFTransporter(""); setDateFrom(""); setDateTo(""); setDatePreset(""); };
+  const hasFilters = searchQ || fPlant || fProducer || fTransporter || dateFrom || dateTo;
+
   const filtered = useMemo(()=>{
     return freights.filter(f=>{
       if(searchQ && !textMatch(f.requestedByName,searchQ) && !textMatch(f.code,searchQ) && !textMatch(f.grain,searchQ) && !textMatch(f.originName,searchQ) && !textMatch(f.destName,searchQ) && !textMatch(f.transporterName,searchQ)) return false;
+      if(fPlant && f.destName!==fPlant) return false;
+      if(fProducer && f.requestedByName!==fProducer) return false;
+      if(fTransporter && f.transporterName!==fTransporter) return false;
       if(dateFrom && f.loadDate < dateFrom) return false;
       if(dateTo && f.loadDate > dateTo) return false;
       return true;
     });
-  },[freights,searchQ,dateFrom,dateTo]);
+  },[freights,searchQ,fPlant,fProducer,fTransporter,dateFrom,dateTo]);
 
   const GROUPS = [
     { key:"solicitado", label:"Solicitado", color:"#FF6A00", statuses:["pending_assignment"] },
@@ -645,15 +658,27 @@ function ListScreen({ freights, onNav, onRefresh }) {
     <div ref={containerRef} style={{ flex:1, overflow:"auto", padding:18, WebkitOverflowScrolling:"touch" }}>
       {indicator}
       <div style={{ fontSize:20, fontWeight:800, letterSpacing:-0.3, marginBottom:10 }}>Fletes</div>
-      {/* Search + date filters — single row */}
-      <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:12, flexWrap:"wrap" }}>
-        <div style={{ position:"relative", flex:"1 1 180px", minWidth:160 }}>
+      {/* Filters row */}
+      <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:12, flexWrap:"wrap" }}>
+        <div style={{ position:"relative", minWidth:140, flex:"0 1 200px" }}>
           <div style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",display:"flex"}}>{Ic.srch(C.t3,14)}</div>
           <input value={searchQ} onChange={e=>setSearchQ(e.target.value)} placeholder="Buscar..."
-            style={{width:"100%",padding:"7px 12px 7px 30px",borderRadius:8,border:`1.5px solid ${C.b1}`,background:C.w,color:C.t1,fontSize:12,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}/>
-          {searchQ && <button onClick={()=>setSearchQ("")} style={{position:"absolute",right:8,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",display:"flex"}}>{Ic.cross(C.t3,14)}</button>}
+            style={{width:"100%",padding:"6px 12px 6px 30px",borderRadius:8,border:`1.5px solid ${C.b1}`,background:C.w,color:C.t1,fontSize:11,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}/>
+          {searchQ && <button onClick={()=>setSearchQ("")} style={{position:"absolute",right:6,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",display:"flex"}}>{Ic.cross(C.t3,12)}</button>}
         </div>
-        {[{k:"",l:"Todas"},{k:"today",l:"Hoy"},{k:"week",l:"Semana"},{k:"month",l:"Mes"}].map(p=>(
+        <select value={fPlant} onChange={e=>setFPlant(e.target.value)} style={{padding:"6px 8px",borderRadius:8,border:`1.5px solid ${fPlant?C.pri:C.b1}`,background:fPlant?C.priPale:C.w,color:fPlant?C.pri:C.t3,fontSize:11,fontFamily:"inherit",outline:"none",cursor:"pointer"}}>
+          <option value="">Planta</option>
+          {plantOptions.map(p=><option key={p} value={p}>{p}</option>)}
+        </select>
+        <select value={fProducer} onChange={e=>setFProducer(e.target.value)} style={{padding:"6px 8px",borderRadius:8,border:`1.5px solid ${fProducer?C.pri:C.b1}`,background:fProducer?C.priPale:C.w,color:fProducer?C.pri:C.t3,fontSize:11,fontFamily:"inherit",outline:"none",cursor:"pointer"}}>
+          <option value="">Productor</option>
+          {producerOptions.map(p=><option key={p} value={p}>{p}</option>)}
+        </select>
+        <select value={fTransporter} onChange={e=>setFTransporter(e.target.value)} style={{padding:"6px 8px",borderRadius:8,border:`1.5px solid ${fTransporter?C.pri:C.b1}`,background:fTransporter?C.priPale:C.w,color:fTransporter?C.pri:C.t3,fontSize:11,fontFamily:"inherit",outline:"none",cursor:"pointer"}}>
+          <option value="">Transportista</option>
+          {transporterOptions.map(p=><option key={p} value={p}>{p}</option>)}
+        </select>
+        {[{k:"today",l:"Hoy"},{k:"week",l:"Semana"},{k:"month",l:"Mes"}].map(p=>(
           <button key={p.k} onClick={()=>applyDatePreset(p.k)} style={{padding:"5px 10px",borderRadius:6,border:`1px solid ${datePreset===p.k?C.pri:C.b1}`,background:datePreset===p.k?C.priPale:C.w,color:datePreset===p.k?C.pri:C.t2,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>{p.l}</button>
         ))}
         <div style={{display:"flex",gap:4,alignItems:"center"}}>
@@ -662,6 +687,7 @@ function ListScreen({ freights, onNav, onRefresh }) {
           <input type="date" value={dateTo} onChange={e=>{setDateTo(e.target.value);setDatePreset("custom");}} onClick={e=>e.target.showPicker?.()} style={{padding:"5px 8px",borderRadius:6,border:`1px solid ${C.b1}`,background:C.w,color:dateTo?C.t1:C.t3,fontSize:11,fontFamily:"inherit",outline:"none",boxSizing:"border-box",cursor:"pointer"}}/>
           {(dateFrom||dateTo)&&<button onClick={()=>{setDateFrom("");setDateTo("");setDatePreset("");}} style={{background:"none",border:"none",cursor:"pointer",display:"flex",padding:2}}>{Ic.cross(C.t3,14)}</button>}
         </div>
+        {hasFilters && <button onClick={clearAll} style={{padding:"5px 10px",borderRadius:6,border:`1px solid ${C.err}40`,background:C.errPale,color:C.err,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>Limpiar</button>}
       </div>
 
       {/* Kanban columns by group */}
@@ -677,23 +703,23 @@ function ListScreen({ freights, onNav, onRefresh }) {
               </div>
               <div style={{ padding:8, display:"flex", flexDirection:"column", gap:8, maxHeight:"calc(100vh - 180px)", overflowY:"auto" }}>
                 {items.length===0 && <div style={{ fontSize:11, color:C.t3, textAlign:"center", padding:16 }}>Sin fletes</div>}
-                {items.map(f => (
-                  <div key={f.id} onClick={()=>onNav("detail",f.id)} style={{ background:C.w, border:`1px solid ${C.b1}`, borderRadius:10, padding:10, cursor:"pointer", boxShadow:C.sh }}>
-                    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:4 }}>
-                      <span style={{ fontSize:10, fontWeight:700, color:C.t3, fontFamily:MONO }}>{f.code}</span>
+                {items.map(f => {
+                  const st = stCfg(f.status);
+                  return (
+                  <div key={f.id} onClick={()=>onNav("detail",f.id)} style={{ background:C.w, border:`1px solid ${C.b1}`, borderLeft:`4px solid ${st.color}`, borderRadius:12, padding:14, cursor:"pointer", boxShadow:C.sh, transition:"background 0.15s" }}>
+                    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
+                      <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                        <span style={{ fontSize:11, fontWeight:700, fontFamily:MONO, color:C.t2 }}>{f.code}</span>
+                        <Bd color={st.color} bg={st.bg} small>{st.label}</Bd>
+                      </div>
+                      {f.isOwnFleet && <span style={{ fontSize:9, color:C.acc, fontWeight:600 }}>Flota propia</span>}
                     </div>
-                    <div style={{ fontSize:13, fontWeight:700, color:C.t1 }}>{f.grain} · {f.tons} tn</div>
-                    <div style={{ display:"flex", alignItems:"center", gap:3, marginTop:4, fontSize:10.5, color:C.t2 }}>
-                      {Ic.pin(C.t3,11)} <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{(f.originName||"").split("—")[0].trim()}</span>
-                      <span style={{color:C.t3}}>&rarr;</span>
-                      <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.destName}</span>
-                    </div>
-                    <div style={{ display:"flex", alignItems:"center", gap:4, fontSize:9.5, color:C.t3, marginTop:4 }}>
-                      {Ic.cal(C.t3,10)} {f.loadDate} {f.loadTime}
-                      {f.transporterName && <><span style={{color:C.b1}}>|</span>{f.transporterName}</>}
-                    </div>
+                    <div style={{ fontSize:14, fontWeight:700, color:C.t1, marginBottom:4 }}>{f.grain==="Otros"?f.productTypeOther||"Otros":f.grain} · {f.tons} {f.unit||"tn"}</div>
+                    <div style={{ fontSize:11, color:C.t2, marginBottom:4 }}>{f.originName} → {f.destName}</div>
+                    {f.loadDate && <div style={{ fontSize:10, color:C.t3 }}>{Ic.cal(C.t3,10)} {f.loadDate}{f.loadTime?` · ${f.loadTime}`:""}{f.transporterName?` · ${f.transporterName}`:""}</div>}
                   </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           );
