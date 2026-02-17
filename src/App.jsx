@@ -1779,8 +1779,29 @@ function FieldsScreen({ onBack, embedded }) {
 
       {loading ? <Loader/> :
         fields.length === 0 ? <div style={{ textAlign: "center", padding: 40, color: C.t3, fontSize: 13 }}>No tenés campos registrados.</div> :
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            {fields.map(f => (
+          (() => {
+            // Group fields by company
+            const companyMap = new Map();
+            for (const f of fields) {
+              const cId = f.company?.id || f.companyId || "_";
+              if (!companyMap.has(cId)) companyMap.set(cId, { name: f.company?.name || "Mi empresa", fields: [] });
+              companyMap.get(cId).fields.push(f);
+            }
+            const companies = Array.from(companyMap.entries());
+            const multiCompany = companies.length > 1;
+            return (
+              <div style={{ display: "flex", flexDirection: "column", gap: multiCompany ? 20 : 12 }}>
+                {companies.map(([cId, group]) => (
+                  <div key={cId}>
+                    {multiCompany && (
+                      <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:10 }}>
+                        {Ic.user(C.sec,16)}
+                        <span style={{ fontSize:14, fontWeight:800, color:C.t1 }}>{group.name}</span>
+                        <span style={{ fontSize:10, color:C.t3 }}>{group.fields.length} campo{group.fields.length!==1?"s":""}</span>
+                      </div>
+                    )}
+                    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                    {group.fields.map(f => (
               <div key={f.id} style={{ background: C.w, border: `1px solid ${C.b1}`, borderLeft: `3px solid ${C.pri}`, borderRadius: 12, padding: 14, boxShadow: C.sh }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -1853,7 +1874,12 @@ function FieldsScreen({ onBack, embedded }) {
                 )}
               </div>
             ))}
-          </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            );
+          })()
       }
     </div>
   );
