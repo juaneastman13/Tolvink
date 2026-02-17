@@ -658,13 +658,7 @@ function ListScreen({ freights, onNav, onRefresh }) {
   return (
     <div ref={containerRef} style={{ flex:1, overflow:"auto", padding:18, WebkitOverflowScrolling:"touch" }}>
       {indicator}
-      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:10 }}>
-        <div style={{ fontSize:20, fontWeight:800, letterSpacing:-0.3 }}>Fletes</div>
-        <button onClick={()=>setViewMode(v=>v==="kanban"?"mapa":v==="mapa"?"tabla":"kanban")} style={{padding:"6px 14px",borderRadius:8,border:`1.5px solid ${C.pri}`,background:C.priPale,color:C.pri,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:6}}>
-          {viewMode==="kanban"?Ic.pin(C.pri,14):viewMode==="mapa"?Ic.doc(C.pri,14):Ic.home(C.pri,14)}
-          {viewMode==="kanban"?"Cambiar a mapa":viewMode==="mapa"?"Cambiar a tabla":"Cambiar a columnas"}
-        </button>
-      </div>
+      <div style={{ fontSize:20, fontWeight:800, letterSpacing:-0.3, marginBottom:10 }}>Fletes</div>
       {/* Date filters — line 1 */}
       <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:6 }}>
         <span style={{fontSize:10,color:C.t2,fontWeight:600}}>Desde</span>
@@ -697,6 +691,10 @@ function ListScreen({ freights, onNav, onRefresh }) {
           <option value="">Transportista</option>
           {transporterOptions.map(p=><option key={p} value={p}>{p}</option>)}
         </select>
+        <button onClick={()=>setViewMode(v=>v==="kanban"?"mapa":v==="mapa"?"tabla":"kanban")} style={{marginLeft:"auto",padding:"5px 12px",borderRadius:8,border:`1.5px solid ${C.pri}`,background:C.priPale,color:C.pri,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:5,whiteSpace:"nowrap"}}>
+          {viewMode==="kanban"?Ic.pin(C.pri,13):viewMode==="mapa"?Ic.doc(C.pri,13):Ic.home(C.pri,13)}
+          {viewMode==="kanban"?"Cambiar a mapa":viewMode==="mapa"?"Cambiar a tabla":"Cambiar a columnas"}
+        </button>
       </div>
 
       {/* View: Kanban */}
@@ -749,13 +747,13 @@ function ListScreen({ freights, onNav, onRefresh }) {
             <table style={{ width:"100%", borderCollapse:"collapse", fontSize:12, fontFamily:"inherit" }}>
               <thead>
                 <tr style={{ background:C.bg, borderBottom:`2px solid ${C.b1}` }}>
-                  {["Código","Estado","Producto","Empresa","Destino","Fecha","Hora","Transportista"].map(h=>(
+                  {["Código","Estado","Producto","Empresa","Campo","Lote","Destino","Fecha","Hora","Transportista","Matrícula","Chofer","Celular"].map(h=>(
                     <th key={h} style={{ padding:"10px 12px", textAlign:"left", fontSize:10, fontWeight:700, color:C.t2, textTransform:"uppercase", letterSpacing:0.5, whiteSpace:"nowrap" }}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {filtered.length===0 && <tr><td colSpan={8} style={{ padding:24, textAlign:"center", color:C.t3, fontSize:12 }}>Sin fletes</td></tr>}
+                {filtered.length===0 && <tr><td colSpan={13} style={{ padding:24, textAlign:"center", color:C.t3, fontSize:12 }}>Sin fletes</td></tr>}
                 {filtered.map(f=>{
                   const st = stCfg(f.status);
                   return (
@@ -764,10 +762,15 @@ function ListScreen({ freights, onNav, onRefresh }) {
                       <td style={{ padding:"10px 12px" }}><Bd color={st.color} bg={st.bg} small>{st.label}</Bd></td>
                       <td style={{ padding:"10px 12px", fontWeight:600, color:C.t1 }}>{f.grain==="Otros"?f.productTypeOther||"Otros":f.grain} · {f.tons} {f.unit||"tn"}</td>
                       <td style={{ padding:"10px 12px", color:C.t2 }}>{f.originCompanyName||f.originName}</td>
+                      <td style={{ padding:"10px 12px", color:C.t2 }}>{f.fieldName||"—"}</td>
+                      <td style={{ padding:"10px 12px", color:C.t2 }}>{f.originName||"—"}</td>
                       <td style={{ padding:"10px 12px", color:C.t2 }}>{f.destName}</td>
                       <td style={{ padding:"10px 12px", color:C.t2, whiteSpace:"nowrap" }}>{f.loadDate}</td>
                       <td style={{ padding:"10px 12px", color:C.t3, whiteSpace:"nowrap" }}>{f.loadTime||"—"}</td>
                       <td style={{ padding:"10px 12px", color:C.t2 }}>{f.transporterName||"—"}</td>
+                      <td style={{ padding:"10px 12px", fontFamily:MONO, fontSize:11, color:C.t2, whiteSpace:"nowrap" }}>{f.truckPlate||"—"}</td>
+                      <td style={{ padding:"10px 12px", color:C.t2 }}>{f.driverName||"—"}</td>
+                      <td style={{ padding:"10px 12px", color:C.t2, whiteSpace:"nowrap" }}>{f.driverPhone||"—"}</td>
                     </tr>
                   );
                 })}
