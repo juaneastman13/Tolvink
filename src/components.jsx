@@ -117,15 +117,29 @@ export function Loader() {
   </div>;
 }
 
-export function LoadingOverlay() {
+export function LoadingOverlay({ closing=false, closingText="", onClose }) {
+  const [fading, setFading] = useState(false);
+  useEffect(() => {
+    if (!closing) return;
+    const t1 = setTimeout(() => setFading(true), 1600);
+    const t2 = setTimeout(() => { if (onClose) onClose(); }, 2000);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
+  }, [closing]);
   return (
-    <div style={{position:"fixed",inset:0,background:C.bgOverlay,display:"flex",alignItems:"center",justifyContent:"center",zIndex:250,animation:"moFadeIn 0.2s ease"}}>
-      <style>{`@keyframes moFadeIn{from{opacity:0}to{opacity:1}}`}</style>
-      <div style={{display:"flex",alignItems:"flex-start",animation:"moLogoIn 0.35s ease-out"}}>
-        <style>{`@keyframes moLogoIn{from{opacity:0;transform:scale(0.7)}to{opacity:1;transform:scale(1)}}`}</style>
-        <span style={{fontSize:44,fontWeight:800,color:C.pri,letterSpacing:-2,lineHeight:1}}>tolvink</span>
-        <span style={{width:13,height:13,borderRadius:7,background:C.acc,marginLeft:4,marginTop:2,display:"inline-block",animation:"dotPulse 1.5s ease-in-out infinite"}} />
-      </div>
+    <div style={{position:"fixed",inset:0,background:C.bgOverlay,display:"flex",alignItems:"center",justifyContent:"center",zIndex:250,animation:fading?"moOutroFade 0.4s ease forwards":"moFadeIn 0.2s ease"}}>
+      <style>{`@keyframes moFadeIn{from{opacity:0}to{opacity:1}}@keyframes moLogoIn{from{opacity:0;transform:scale(0.7)}to{opacity:1;transform:scale(1)}}@keyframes moCircleIn{from{transform:scale(0);opacity:0}to{transform:scale(1);opacity:1}}@keyframes moOutroFade{to{opacity:0}}`}</style>
+      {!closing && (
+        <div style={{display:"flex",alignItems:"flex-start",animation:"moLogoIn 0.35s ease-out"}}>
+          <span style={{fontSize:57,fontWeight:800,color:C.pri,letterSpacing:-2.5,lineHeight:1}}>tolvink</span>
+          <span style={{width:17,height:17,borderRadius:9,background:C.acc,marginLeft:5,marginTop:3,display:"inline-block",animation:"dotPulse 1.5s ease-in-out infinite"}} />
+        </div>
+      )}
+      {closing && (
+        <div style={{width:150,height:150,borderRadius:"50%",background:C.acc,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:6,animation:"moCircleIn 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards",boxShadow:"0 8px 32px rgba(0,0,0,0.18)",pointerEvents:"none"}}>
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          {closingText && <span style={{color:"#fff",fontSize:14,fontWeight:700,textAlign:"center",lineHeight:1.3,padding:"0 16px"}}>{closingText}</span>}
+        </div>
+      )}
     </div>
   );
 }
@@ -162,8 +176,8 @@ export function ModalOverlay({ children, onClose, maxWidth=400, loading=false, c
   // Outro: show result circle → hold 0.5s → fade → close
   useEffect(() => {
     if (!closing) return;
-    const t1 = setTimeout(() => setFading(true), 1100);
-    const t2 = setTimeout(() => { if (onClose) onClose(); }, 1500);
+    const t1 = setTimeout(() => setFading(true), 1600);
+    const t2 = setTimeout(() => { if (onClose) onClose(); }, 2000);
     return () => { clearTimeout(t1); clearTimeout(t2); };
   }, [closing]);
 
@@ -185,17 +199,17 @@ export function ModalOverlay({ children, onClose, maxWidth=400, loading=false, c
       {/* Loading: full logo with pulsing dot */}
       {showLoading && (
         <div style={{position:"absolute",display:"flex",alignItems:"flex-start",animation:"moLogoIn 0.35s ease-out",pointerEvents:"none"}}>
-          <span style={{fontSize:44,fontWeight:800,color:C.pri,letterSpacing:-2,lineHeight:1}}>tolvink</span>
-          <span style={{width:13,height:13,borderRadius:7,background:C.acc,marginLeft:4,marginTop:2,display:"inline-block",animation:"dotPulse 1.5s ease-in-out infinite"}} />
+          <span style={{fontSize:57,fontWeight:800,color:C.pri,letterSpacing:-2.5,lineHeight:1}}>tolvink</span>
+          <span style={{width:17,height:17,borderRadius:9,background:C.acc,marginLeft:5,marginTop:3,display:"inline-block",animation:"dotPulse 1.5s ease-in-out infinite"}} />
         </div>
       )}
       {/* Intro: staged animation */}
       {showIntro && (
         <div style={{position:"absolute",display:"flex",alignItems:"center",justifyContent:"center",animation:stage===0?"moLogoIn 0.35s ease-out forwards":"none",pointerEvents:"none"}}>
           {stage < 2 && (
-            <span style={{fontSize:44,fontWeight:800,color:C.pri,letterSpacing:-2,lineHeight:1,display:"inline-block",overflow:"hidden",whiteSpace:"nowrap",marginRight:4,animation:stage===1?"moTextOut 0.55s ease forwards":"none"}}>tolvink</span>
+            <span style={{fontSize:57,fontWeight:800,color:C.pri,letterSpacing:-2.5,lineHeight:1,display:"inline-block",overflow:"hidden",whiteSpace:"nowrap",marginRight:5,animation:stage===1?"moTextOut 0.55s ease forwards":"none"}}>tolvink</span>
           )}
-          <span style={{width:13,height:13,borderRadius:7,background:C.acc,display:"inline-block",animation:stage===2?"moDotGrow 0.7s ease forwards":"dotPulse 1.5s ease-in-out infinite"}} />
+          <span style={{width:17,height:17,borderRadius:9,background:C.acc,display:"inline-block",animation:stage===2?"moDotGrow 0.7s ease forwards":"dotPulse 1.5s ease-in-out infinite"}} />
         </div>
       )}
       {/* Outro: orange circle with result text */}

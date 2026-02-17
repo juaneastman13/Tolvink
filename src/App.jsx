@@ -1172,7 +1172,6 @@ function NewScreen({ user, lots, plants, branches, fields, trucks, onBack, onCre
 
   return (
     <div style={{ flex:1, overflow:"auto", padding:18, animation:"slideUp 0.25s ease" }}>
-      {submitting && <LoadingOverlay/>}
       <button onClick={onBack} style={{ background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", fontSize:13, fontWeight:600, color:C.pri, marginBottom:14, padding:0, display:"flex", alignItems:"center", gap:4 }}>{Ic.chev(C.pri,18)} Volver</button>
       <div style={{ fontSize:20, fontWeight:800, marginBottom:4, letterSpacing:-0.3 }}>Solicitar Flete</div>
       <div style={{ fontSize:12, color:C.t2, marginBottom:22 }}>Solicitando como: <span style={{fontWeight:600,color:C.t1}}>{user.name}</span></div>
@@ -1582,6 +1581,7 @@ function TrucksScreen({ onBack, embedded }) {
   const [model, setModel] = useState("");
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState(null);
+  const [doneMsg, setDoneMsg] = useState("");
 
   const load = useCallback(async () => {
     try { const t = await apiGetTrucks(); setTrucks(t||[]); } catch {} finally { setLoading(false); }
@@ -1593,23 +1593,21 @@ function TrucksScreen({ onBack, embedded }) {
     setSaving(true);
     try {
       await apiCreateTruck({ plate: plate.trim().toUpperCase(), model: model.trim() || undefined });
-      setPlate(""); setModel(""); setShowForm(false); setMsg({ t: "Camión registrado", k: "ok" });
+      setPlate(""); setModel(""); setShowForm(false); setSaving(false); setDoneMsg("Camión registrado");
       load();
-    } catch (e) { setMsg({ t: e.message, k: "err" }); }
-    finally { setSaving(false); }
+    } catch (e) { setMsg({ t: e.message, k: "err" }); setSaving(false); }
   };
 
   const handleDeactivate = async (id) => {
-    if(saving) return;
+    if(saving||doneMsg) return;
     setSaving(true);
-    try { await apiDeactivateTruck(id); setMsg({ t: "Camión eliminado", k: "ok" }); load(); }
-    catch (e) { setMsg({ t: e.message, k: "err" }); }
-    finally { setSaving(false); }
+    try { await apiDeactivateTruck(id); setSaving(false); setDoneMsg("Camión eliminado"); load(); }
+    catch (e) { setMsg({ t: e.message, k: "err" }); setSaving(false); }
   };
 
   return (
     <div style={{ flex: embedded?undefined:1, overflow: embedded?"visible":"auto", padding: embedded?0:18 }}>
-      {saving && <LoadingOverlay/>}
+      {(saving||doneMsg) && <LoadingOverlay closing={!!doneMsg} closingText={doneMsg} onClose={()=>setDoneMsg("")}/>}
       {!embedded && <button onClick={onBack} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 600, color: C.pri, marginBottom: 14, padding: 0, display: "flex", alignItems: "center", gap: 4 }}>{Ic.chev(C.pri, 18)} Mi Perfil</button>}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
         <div style={{ fontSize: 20, fontWeight: 800, letterSpacing: -0.3 }}>Mi Flota</div>
@@ -1665,6 +1663,7 @@ function FieldsScreen({ onBack, embedded }) {
   const [lotLoc, setLotLoc] = useState(null);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState(null);
+  const [doneMsg, setDoneMsg] = useState("");
   // Edit states
   const [editField, setEditField] = useState(null); // field id being edited
   const [editFieldAddr, setEditFieldAddr] = useState("");
@@ -1688,8 +1687,8 @@ function FieldsScreen({ onBack, embedded }) {
         lat: fieldLoc?.lat || undefined,
         lng: fieldLoc?.lng || undefined,
       });
-      setFieldName(""); setFieldAddr(""); setFieldLoc(null); setShowFieldForm(false); setMsg({ t: "Campo creado", k: "ok" }); load();
-    } catch (e) { setMsg({ t: e.message, k: "err" }); } finally { setSaving(false); }
+      setFieldName(""); setFieldAddr(""); setFieldLoc(null); setShowFieldForm(false); setSaving(false); setDoneMsg("Campo creado"); load();
+    } catch (e) { setMsg({ t: e.message, k: "err" }); setSaving(false); }
   };
 
   const handleCreateLot = async (fieldId) => {
@@ -1702,8 +1701,8 @@ function FieldsScreen({ onBack, embedded }) {
         lat: lotLoc?.lat || undefined,
         lng: lotLoc?.lng || undefined,
       });
-      setLotName(""); setLotHa(""); setLotLoc(null); setShowLotForm(null); setMsg({ t: "Lote creado", k: "ok" }); load();
-    } catch (e) { setMsg({ t: e.message, k: "err" }); } finally { setSaving(false); }
+      setLotName(""); setLotHa(""); setLotLoc(null); setShowLotForm(null); setSaving(false); setDoneMsg("Lote creado"); load();
+    } catch (e) { setMsg({ t: e.message, k: "err" }); setSaving(false); }
   };
 
   const startEditField = (f) => {
@@ -1722,8 +1721,8 @@ function FieldsScreen({ onBack, embedded }) {
         lat: editFieldLoc?.lat || undefined,
         lng: editFieldLoc?.lng || undefined,
       });
-      setEditField(null); setMsg({ t: "Campo actualizado", k: "ok" }); load();
-    } catch (e) { setMsg({ t: e.message, k: "err" }); } finally { setSaving(false); }
+      setEditField(null); setSaving(false); setDoneMsg("Campo actualizado"); load();
+    } catch (e) { setMsg({ t: e.message, k: "err" }); setSaving(false); }
   };
 
   const startEditLot = (fieldId, l) => {
@@ -1750,13 +1749,13 @@ function FieldsScreen({ onBack, embedded }) {
         lat: editLotLoc?.lat || undefined,
         lng: editLotLoc?.lng || undefined,
       });
-      setEditLot(null); setMsg({ t: "Lote actualizado", k: "ok" }); load();
-    } catch (e) { setMsg({ t: e.message, k: "err" }); } finally { setSaving(false); }
+      setEditLot(null); setSaving(false); setDoneMsg("Lote actualizado"); load();
+    } catch (e) { setMsg({ t: e.message, k: "err" }); setSaving(false); }
   };
 
   return (
     <div style={{ flex: embedded?undefined:1, overflow: embedded?"visible":"auto", padding: embedded?0:18 }}>
-      {saving && <LoadingOverlay/>}
+      {(saving||doneMsg) && <LoadingOverlay closing={!!doneMsg} closingText={doneMsg} onClose={()=>setDoneMsg("")}/>}
       {!embedded && <button onClick={onBack} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 600, color: C.pri, marginBottom: 14, padding: 0, display: "flex", alignItems: "center", gap: 4 }}>{Ic.chev(C.pri, 18)} Mi Perfil</button>}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
         <div style={{ fontSize: 20, fontWeight: 800, letterSpacing: -0.3 }}>Mis Campos</div>
@@ -1870,6 +1869,8 @@ function AccessScreen({ onBack }) {
   const searchTimer = useRef(null);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState(null);
+  const [doneMsg, setDoneMsg] = useState("");
+  const [revokeClosing, setRevokeClosing] = useState("");
   const [facilities, setFacilities] = useState(null);
   const [selectedPlantIds, setSelectedPlantIds] = useState([]);
   const [editingAccess, setEditingAccess] = useState(null); // producer record being edited
@@ -1916,16 +1917,15 @@ function AccessScreen({ onBack }) {
       await apiGrantAccess({ producerUserId: userId, producerCompanyId: companyId, allowedPlantIds: selectedPlantIds });
       setSearchQ(""); setSelectedProducer(null); setSearchResults([]); setShowGrant(false); setEditingAccess(null);
       setSelectedPlantIds([]);
-      setMsg({ t: editingAccess ? "Habilitación actualizada" : "Productor habilitado — podrá seleccionar tu planta al solicitar flete", k: "ok" }); load();
-    } catch (e) { setMsg({ t: e.message, k: "err" }); } finally { setSaving(false); }
+      setSaving(false); setDoneMsg(editingAccess ? "Habilitación actualizada" : "Productor habilitado"); load();
+    } catch (e) { setMsg({ t: e.message, k: "err" }); setSaving(false); }
   };
 
   const handleRevoke = async (accessId) => {
     if(saving) return;
     setSaving(true);
-    try { await apiRevokeAccess(accessId); setMsg({ t: "Acceso revocado", k: "ok" }); setConfirmRevoke(null); load(); }
-    catch (e) { setMsg({ t: e.message, k: "err" }); }
-    finally { setSaving(false); }
+    try { await apiRevokeAccess(accessId); setSaving(false); setRevokeClosing("Acceso revocado"); load(); }
+    catch (e) { setMsg({ t: e.message, k: "err" }); setSaving(false); }
   };
 
   const startEdit = (p) => {
@@ -2009,7 +2009,7 @@ function AccessScreen({ onBack }) {
 
   return (
     <div style={{ flex: 1, overflow: "auto", padding: 18 }}>
-      {saving && <LoadingOverlay/>}
+      {(saving||doneMsg) && !confirmRevoke && <LoadingOverlay closing={!!doneMsg} closingText={doneMsg} onClose={()=>setDoneMsg("")}/>}
       <button onClick={onBack} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 600, color: C.pri, marginBottom: 14, padding: 0, display: "flex", alignItems: "center", gap: 4 }}>{Ic.chev(C.pri, 18)} Mi Perfil</button>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
         <div style={{ fontSize: 20, fontWeight: 800, letterSpacing: -0.3 }}>Productores / Transportistas</div>
@@ -2020,12 +2020,12 @@ function AccessScreen({ onBack }) {
 
       {/* Confirm revoke modal */}
       {confirmRevoke && (
-        <ModalOverlay onClose={()=>setConfirmRevoke(null)} maxWidth={340} loading={saving}>
+        <ModalOverlay onClose={()=>{setConfirmRevoke(null);setRevokeClosing("");}} maxWidth={340} loading={saving} closing={!!revokeClosing} closingText={revokeClosing}>
           <div style={{ fontSize:16, fontWeight:700, marginBottom:8 }}>Revocar acceso</div>
           <div style={{ fontSize:13, color:C.t2, marginBottom:16 }}>¿Revocar el acceso de <b>{confirmRevoke.producerUser?.name||confirmRevoke.producerCompany?.name}</b>? No podrá enviar fletes a tus plantas.</div>
           <div style={{ display:"flex", gap:8 }}>
             <button onClick={()=>setConfirmRevoke(null)} style={{ flex:1, padding:"10px 14px", borderRadius:8, border:`1px solid ${C.b1}`, background:C.w, cursor:"pointer", fontFamily:"inherit", fontSize:13, fontWeight:600, color:C.t2 }}>Cancelar</button>
-            <button disabled={saving} onClick={()=>handleRevoke(confirmRevoke.id)} style={{ flex:1, padding:"10px 14px", borderRadius:8, border:"none", background:saving?C.muted:C.err, cursor:saving?"not-allowed":"pointer", fontFamily:"inherit", fontSize:13, fontWeight:600, color:C.w, opacity:saving?0.7:1 }}>{saving?"Revocando...":"Revocar"}</button>
+            <button disabled={saving||!!revokeClosing} onClick={()=>handleRevoke(confirmRevoke.id)} style={{ flex:1, padding:"10px 14px", borderRadius:8, border:"none", background:saving?C.muted:C.err, cursor:saving?"not-allowed":"pointer", fontFamily:"inherit", fontSize:13, fontWeight:600, color:C.w, opacity:saving?0.7:1 }}>{saving?"Revocando...":"Revocar"}</button>
           </div>
         </ModalOverlay>
       )}
@@ -2781,17 +2781,19 @@ function EditScreen({ freight, fields, plants, onBack, onSave }) {
     notes: freight.notes || "",
   });
   const [saving, setSaving] = useState(false);
+  const [doneMsg, setDoneMsg] = useState("");
   const u = f => setForm(p=>({...p,...f}));
 
   const save = async () => {
     setSaving(true);
-    await onSave(freight.id, form);
+    const msg = await onSave(freight.id, form);
     setSaving(false);
+    if(msg) setDoneMsg(msg);
   };
 
   return (
     <div style={{ flex:1, overflow:"auto", padding:18 }}>
-      {saving && <LoadingOverlay/>}
+      {(saving||doneMsg) && <LoadingOverlay closing={!!doneMsg} closingText={doneMsg} onClose={()=>{setDoneMsg("");onBack();}}/>}
       <button onClick={onBack} style={{ background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", fontSize:13, fontWeight:600, color:C.pri, marginBottom:14, padding:0, display:"flex", alignItems:"center", gap:4 }}>{Ic.chev(C.pri,18)} Volver</button>
       <div style={{ fontSize:20, fontWeight:800, marginBottom:4, letterSpacing:-0.3 }}>Editar Flete</div>
       <div style={{ fontSize:12, color:C.t2, marginBottom:22 }}>{freight.code} · {freight.grain} · {freight.tons} {freight.unit||"tn"}</div>
@@ -3063,15 +3065,16 @@ function MyDataScreen({ user, onBack }) {
   const [form, setForm] = useState({ name:user.name||"", email:user.email||"", phone:user.phone||"" });
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState(null);
+  const [doneMsg, setDoneMsg] = useState("");
   const show = (t,k="ok") => { setMsg({t,k}); setTimeout(()=>setMsg(null),3000); };
   const handleSave = async () => {
     if(!form.name.trim()||!form.email.trim()) return show("Nombre y email obligatorios","err");
     setSaving(true);
-    try { await apiUpdateMe(form); show("Datos actualizados"); } catch(e) { show(e.message,"err"); } finally { setSaving(false); }
+    try { await apiUpdateMe(form); setSaving(false); setDoneMsg("Datos actualizados"); } catch(e) { show(e.message,"err"); setSaving(false); }
   };
   return (
     <div style={{flex:1,overflow:"auto",padding:18}}>
-      {saving && <LoadingOverlay/>}
+      {(saving||doneMsg) && <LoadingOverlay closing={!!doneMsg} closingText={doneMsg} onClose={()=>setDoneMsg("")}/>}
       {adminBackBtn(onBack)}
       <div style={{fontSize:18,fontWeight:800,color:C.t1,marginBottom:4}}>Mis datos</div>
       <div style={{fontSize:11,color:C.t3,marginBottom:14}}>Editá tu información personal</div>
@@ -3110,6 +3113,7 @@ function AdminScreen({ user, onBack }) {
   const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [doneMsg, setDoneMsg] = useState("");
   const [statsFilter, setStatsFilter] = useState(null);
 
   // Views: list | companyForm | companyDetail | userForm | userEdit
@@ -3184,10 +3188,10 @@ function AdminScreen({ user, onBack }) {
     if(!companyForm.name.trim()) return show("Nombre requerido","err");
     setSaving(true);
     try {
-      if(editCompanyId) { await apiAdminUpdateCompany(editCompanyId, companyForm); show("Empresa actualizada"); }
-      else { await apiAdminCreateCompany(companyForm); show("Empresa creada"); }
+      if(editCompanyId) { await apiAdminUpdateCompany(editCompanyId, companyForm); setSaving(false); setDoneMsg("Empresa actualizada"); }
+      else { await apiAdminCreateCompany(companyForm); setSaving(false); setDoneMsg("Empresa creada"); }
       setView("list"); load();
-    } catch(e) { show(e.message,"err"); } finally { setSaving(false); }
+    } catch(e) { show(e.message,"err"); setSaving(false); }
   };
 
   // --- Branches ---
@@ -3205,12 +3209,12 @@ function AdminScreen({ user, onBack }) {
     if(!branchForm.name.trim()) return show("Nombre requerido","err");
     setSaving(true);
     try {
-      if(editBranchId) { await apiAdminUpdateBranch(editBranchId, branchForm); show("Sucursal actualizada"); }
-      else { await apiAdminCreateBranch({...branchForm,companyId:selectedCompany.id}); show("Sucursal creada"); }
+      if(editBranchId) { await apiAdminUpdateBranch(editBranchId, branchForm); setSaving(false); setDoneMsg("Sucursal actualizada"); }
+      else { await apiAdminCreateBranch({...branchForm,companyId:selectedCompany.id}); setSaving(false); setDoneMsg("Sucursal creada"); }
       setShowBranchForm(false); const b=await apiAdminListBranches(selectedCompany.id); setBranches(b||[]); load();
-    } catch(e) { show(e.message,"err"); } finally { setSaving(false); }
+    } catch(e) { show(e.message,"err"); setSaving(false); }
   };
-  const handleDeleteBranch = async (id) => { if(saving) return; setSaving(true); try { await apiAdminDeleteBranch(id); show("Sucursal eliminada"); const b=await apiAdminListBranches(selectedCompany.id); setBranches(b||[]); load(); } catch(e) { show(e.message,"err"); } finally { setSaving(false); } };
+  const handleDeleteBranch = async (id) => { if(saving) return; setSaving(true); try { await apiAdminDeleteBranch(id); setSaving(false); setDoneMsg("Sucursal eliminada"); const b=await apiAdminListBranches(selectedCompany.id); setBranches(b||[]); load(); } catch(e) { show(e.message,"err"); setSaving(false); } };
 
   // --- Fields ---
   const openNewField = () => { setFieldForm({name:"",lat:null,lng:null,address:"",hectares:"",comments:""}); setEditFieldId(null); setShowFieldForm(true); };
@@ -3221,12 +3225,12 @@ function AdminScreen({ user, onBack }) {
     setSaving(true);
     try {
       const data = {...fieldForm, hectares:fieldForm.hectares?Number(fieldForm.hectares):null};
-      if(editFieldId) { await apiAdminUpdateField(editFieldId, data); show("Campo actualizado"); }
-      else { await apiAdminCreateField(selectedCompany.id, data); show("Campo creado"); }
+      if(editFieldId) { await apiAdminUpdateField(editFieldId, data); setSaving(false); setDoneMsg("Campo actualizado"); }
+      else { await apiAdminCreateField(selectedCompany.id, data); setSaving(false); setDoneMsg("Campo creado"); }
       setShowFieldForm(false); const f=await apiAdminListFields(selectedCompany.id); setFields(f||[]);
-    } catch(e) { show(e.message,"err"); } finally { setSaving(false); }
+    } catch(e) { show(e.message,"err"); setSaving(false); }
   };
-  const handleDeleteField = async (id) => { if(saving) return; setSaving(true); try { await apiAdminDeleteField(id); show("Campo eliminado"); const f=await apiAdminListFields(selectedCompany.id); setFields(f||[]); } catch(e) { show(e.message,"err"); } finally { setSaving(false); } };
+  const handleDeleteField = async (id) => { if(saving) return; setSaving(true); try { await apiAdminDeleteField(id); setSaving(false); setDoneMsg("Campo eliminado"); const f=await apiAdminListFields(selectedCompany.id); setFields(f||[]); } catch(e) { show(e.message,"err"); setSaving(false); } };
 
   // --- Lots ---
   const expandField = async (fieldId) => {
@@ -3242,13 +3246,13 @@ function AdminScreen({ user, onBack }) {
     setSaving(true);
     try {
       const data = {...lotForm, hectares:lotForm.hectares?Number(lotForm.hectares):null};
-      if(editLotId) { await apiAdminUpdateLot(editLotId, data); show("Lote actualizado"); }
-      else { await apiAdminCreateLot(expandedFieldId, data); show("Lote creado"); }
+      if(editLotId) { await apiAdminUpdateLot(editLotId, data); setSaving(false); setDoneMsg("Lote actualizado"); }
+      else { await apiAdminCreateLot(expandedFieldId, data); setSaving(false); setDoneMsg("Lote creado"); }
       setShowLotForm(false); const l=await apiAdminListLots(expandedFieldId); setLots(l||[]);
       const f=await apiAdminListFields(selectedCompany.id); setFields(f||[]);
-    } catch(e) { show(e.message,"err"); } finally { setSaving(false); }
+    } catch(e) { show(e.message,"err"); setSaving(false); }
   };
-  const handleDeleteLot = async (id) => { if(saving) return; setSaving(true); try { await apiAdminDeleteLot(id); show("Lote eliminado"); const l=await apiAdminListLots(expandedFieldId); setLots(l||[]); } catch(e) { show(e.message,"err"); } finally { setSaving(false); } };
+  const handleDeleteLot = async (id) => { if(saving) return; setSaving(true); try { await apiAdminDeleteLot(id); setSaving(false); setDoneMsg("Lote eliminado"); const l=await apiAdminListLots(expandedFieldId); setLots(l||[]); } catch(e) { show(e.message,"err"); setSaving(false); } };
 
   // --- Trucks ---
   const openNewTruck = () => { setTruckForm({plate:"",brand:"",model:"",capacity:""}); setEditTruckId(null); setShowTruckForm(true); };
@@ -3257,12 +3261,12 @@ function AdminScreen({ user, onBack }) {
     if(!truckForm.plate.trim()) return show("Patente requerida","err");
     setSaving(true);
     try {
-      if(editTruckId) { await apiAdminUpdateTruck(editTruckId, truckForm); show("Vehículo actualizado"); }
-      else { await apiAdminCreateTruck(selectedCompany.id, truckForm); show("Vehículo creado"); }
+      if(editTruckId) { await apiAdminUpdateTruck(editTruckId, truckForm); setSaving(false); setDoneMsg("Vehículo actualizado"); }
+      else { await apiAdminCreateTruck(selectedCompany.id, truckForm); setSaving(false); setDoneMsg("Vehículo creado"); }
       setShowTruckForm(false); const t=await apiAdminListTrucks(selectedCompany.id); setTrucks(t||[]);
-    } catch(e) { show(e.message,"err"); } finally { setSaving(false); }
+    } catch(e) { show(e.message,"err"); setSaving(false); }
   };
-  const handleDeleteTruck = async (id) => { if(saving) return; setSaving(true); try { await apiAdminDeleteTruck(id); show("Vehículo eliminado"); const t=await apiAdminListTrucks(selectedCompany.id); setTrucks(t||[]); } catch(e) { show(e.message,"err"); } finally { setSaving(false); } };
+  const handleDeleteTruck = async (id) => { if(saving) return; setSaving(true); try { await apiAdminDeleteTruck(id); setSaving(false); setDoneMsg("Vehículo eliminado"); const t=await apiAdminListTrucks(selectedCompany.id); setTrucks(t||[]); } catch(e) { show(e.message,"err"); setSaving(false); } };
 
   // --- Users with companyByType + roleByType ---
   const toggleFormUserType = (t) => setUserForm(p=>({...p,userTypes:p.userTypes.includes(t)?p.userTypes.filter(x=>x!==t):[...p.userTypes,t]}));
@@ -3295,8 +3299,8 @@ function AdminScreen({ user, onBack }) {
     const rbt = userForm.roleByType||{};
     const firstCompanyId = Object.values(cbt).find(v=>v) || undefined;
     const firstRole = Object.values(rbt).find(v=>v) || "operator";
-    try { await apiAdminCreateUser({...userForm, companyId:firstCompanyId, role:firstRole, companyByType:cbt, roleByType:rbt}); show("Usuario creado"); setView("list"); load(); }
-    catch(e) { show(e.message,"err"); } finally { setSaving(false); }
+    try { await apiAdminCreateUser({...userForm, companyId:firstCompanyId, role:firstRole, companyByType:cbt, roleByType:rbt}); setSaving(false); setDoneMsg("Usuario creado"); setView("list"); load(); }
+    catch(e) { show(e.message,"err"); setSaving(false); }
   };
 
   const handleSaveEditUser = async () => {
@@ -3307,8 +3311,8 @@ function AdminScreen({ user, onBack }) {
     const highestRole = Object.values(rbt).includes("platform_admin") ? "platform_admin" : Object.values(rbt).includes("admin") ? "admin" : "operator";
     try {
       await apiAdminUpdateUser(editUserData.id, { name:editUserData.name, email:editUserData.email, phone:editUserData.phone, role:highestRole, userTypes:editUserData.userTypes, companyId:firstCompanyId, companyByType:cbt, roleByType:rbt, active:editUserData.active });
-      show("Usuario actualizado"); setView("list"); load();
-    } catch(e) { show(e.message,"err"); } finally { setSaving(false); }
+      setSaving(false); setDoneMsg("Usuario actualizado"); setView("list"); load();
+    } catch(e) { show(e.message,"err"); setSaving(false); }
   };
 
   const MsgBar = () => msg ? <div style={{padding:"8px 12px",borderRadius:8,background:msg.k==="ok"?C.okPale:`${C.err}15`,color:msg.k==="ok"?C.ok:C.err,fontSize:12,marginTop:10,marginBottom:10,display:"flex",justifyContent:"space-between"}}>{msg.t}<button onClick={()=>setMsg(null)} style={{background:"none",border:"none",cursor:"pointer",color:"inherit",fontFamily:"inherit"}}>✕</button></div> : null;
@@ -3317,6 +3321,7 @@ function AdminScreen({ user, onBack }) {
   if (view==="companyForm") {
     return (
       <div style={{flex:1,overflow:"auto",padding:18}}>
+        {(saving||doneMsg) && <LoadingOverlay closing={!!doneMsg} closingText={doneMsg} onClose={()=>setDoneMsg("")}/>}
         {adminBackBtn(()=>setView("list"))}
         <div style={{fontSize:16,fontWeight:700,color:C.t1,marginBottom:12}}>{editCompanyId?"Editar empresa":"Nueva empresa"}</div>
         <div style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius:10,padding:14,boxShadow:C.sh}}>
@@ -3352,6 +3357,7 @@ function AdminScreen({ user, onBack }) {
     const at = activeUserType && types.includes(activeUserType) ? activeUserType : types[0]||null;
     return (
       <div style={{flex:1,overflow:"auto",padding:18}}>
+        {(saving||doneMsg) && <LoadingOverlay closing={!!doneMsg} closingText={doneMsg} onClose={()=>setDoneMsg("")}/>}
         {adminBackBtn(()=>setView("list"))}
         <div style={{fontSize:16,fontWeight:700,color:C.t1,marginBottom:12}}>Editar usuario</div>
         <div style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius:10,padding:14,boxShadow:C.sh}}>
@@ -3433,6 +3439,7 @@ function AdminScreen({ user, onBack }) {
     const formAt = activeUserType && formTypes.includes(activeUserType) ? activeUserType : formTypes[0]||null;
     return (
       <div style={{flex:1,overflow:"auto",padding:18}}>
+        {(saving||doneMsg) && <LoadingOverlay closing={!!doneMsg} closingText={doneMsg} onClose={()=>setDoneMsg("")}/>}
         {adminBackBtn(()=>setView("list"))}
         <div style={{fontSize:16,fontWeight:700,color:C.t1,marginBottom:12}}>Nuevo usuario</div>
         <div style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius:10,padding:14,boxShadow:C.sh}}>
@@ -3500,6 +3507,7 @@ function AdminScreen({ user, onBack }) {
 
     return (
       <div style={{flex:1,overflow:"auto",padding:18}}>
+        {(saving||doneMsg) && <LoadingOverlay closing={!!doneMsg} closingText={doneMsg} onClose={()=>setDoneMsg("")}/>}
         {adminBackBtn(()=>{setView("list");setShowBranchForm(false);setShowFieldForm(false);setShowTruckForm(false);})}
         {/* Company header */}
         <div style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius:12,padding:16,marginBottom:12,boxShadow:C.sh}}>
@@ -3685,7 +3693,7 @@ function AdminScreen({ user, onBack }) {
   // ===================== MAIN LIST =====================
   return (
     <div style={{flex:1,overflow:"auto",padding:18}}>
-      {saving && <LoadingOverlay/>}
+      {(saving||doneMsg) && <LoadingOverlay closing={!!doneMsg} closingText={doneMsg} onClose={()=>setDoneMsg("")}/>}
       {adminBackBtn(onBack)}
       <div style={{fontSize:18,fontWeight:800,color:C.t1,marginBottom:4}}>Administración</div>
       <div style={{fontSize:11,color:C.t3,marginBottom:14}}>{isPlatform?"Admin Principal — Control total":isManager?"Gerente — Tu empresa":""}</div>
@@ -3790,6 +3798,7 @@ export default function Tolvink() {
   const [modal, setModal] = useState(null);
   const [toast, setToast] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+  const [submitDone, setSubmitDone] = useState("");
   const [chatConvId, setChatConvId] = useState(null);
   const [duplicateData, setDuplicateData] = useState(null);
   const [editData, setEditData] = useState(null);
@@ -3892,7 +3901,7 @@ export default function Tolvink() {
       }
     }
     setSubmitting(false);
-    if(r.ok){ track("freight_create"); setScreen("list"); show("Flete solicitado"); } else show(r.error,"err");
+    if(r.ok){ track("freight_create"); setSubmitDone("Flete solicitado"); } else show(r.error,"err");
   };
 
   // Show loading splash only during initial auth check
@@ -3952,7 +3961,7 @@ export default function Tolvink() {
         {screen==="calendar" && <CalendarScreen freights={fh.freights} perms={perms} onNav={nav} isDesktop={isDesktop}/>}
         {screen==="detail" && <DetailScreen user={curFreight ? {...auth.user, userType: _resolveType(curFreight)} : auth.user} freight={curFreight} perms={perms} onBack={()=>setScreen("list")} onAction={handleAction} actionLoading={actionLoading} onChat={(convId)=>{if(convId){setChatConvId(convId);setScreen("chats");}}} onRefresh={(id)=>fh.refresh(id)} onDuplicate={(f)=>{setDuplicateData(f);setScreen("new");}} onEdit={(f)=>{setEditData(f);setScreen("edit");}}/>}
         {screen==="new" && <NewScreen user={auth.user} lots={catalog.lots} plants={catalog.plants} branches={catalog.branches} fields={catalog.fields} trucks={catalog.trucks} onBack={()=>{setDuplicateData(null);setScreen("home");}} onCreate={handleCreate} submitting={submitting} duplicateFrom={duplicateData}/>}
-        {screen==="edit" && editData && <EditScreen freight={editData} fields={catalog.fields} plants={catalog.plants} onBack={()=>{setEditData(null);setScreen("detail");}} onSave={async(id,data)=>{const r=await fh.update(id,data);if(r.ok){setEditData(null);setScreen("detail");show("Flete actualizado");}else show(r.error,"err");}}/>}
+        {screen==="edit" && editData && <EditScreen freight={editData} fields={catalog.fields} plants={catalog.plants} onBack={()=>{setEditData(null);setScreen("detail");}} onSave={async(id,data)=>{const r=await fh.update(id,data);if(r.ok) return "Flete actualizado"; show(r.error,"err"); return "";}}/>}
         {screen==="menu" && <MenuScreen user={auth.user} perms={perms} onLogout={auth.logout} onNav={nav} isDesktop={isDesktop}/>}
         {screen==="trucks" && <TrucksScreen onBack={()=>{catalog.refresh();setScreen("menu");}}/>}
         {screen==="fields" && <FieldsScreen onBack={()=>{catalog.refresh();setScreen("menu");}}/>}
@@ -3971,7 +3980,7 @@ export default function Tolvink() {
         </div>
       </div>
 
-      {submitting && <LoadingOverlay/>}
+      {(submitting||submitDone) && <LoadingOverlay closing={!!submitDone} closingText={submitDone} onClose={()=>{setSubmitDone("");setScreen("list");}}/>}
       {modal?.type==="assign" && <AssignModal freight={modal.freight} transporters={catalog.transporters} onClose={()=>setModal(null)} onConfirm={t=>handleAssign(modal.freight.id,t)}/>}
       {modal?.type==="truck_select" && <TruckSelectModal freight={modal.freight} trucks={catalog.trucks} onClose={()=>setModal(null)} onConfirm={t=>handleAcceptWithTruck(modal.freight.id,t)}/>}
       {modal?.type==="confirm_action" && <ConfirmActionModal freight={modal.freight} title={modal.title} btnLabel={modal.btnLabel} btnVariant={modal.btnVariant} icon={modal.icon} onClose={()=>setModal(null)} onConfirm={()=>handleConfirmAction(modal.freight.id,modal.action)}/>}
