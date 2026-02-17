@@ -2965,9 +2965,10 @@ function ReportsScreen({ onBack, freights, isDesktop, embedded }) {
 function ConfirmActionModal({ freight, title, btnLabel, btnVariant="pri", icon, onClose, onConfirm }) {
   const [loading,setLoading] = useState(false);
   const [closing,setClosing] = useState(false);
-  const doConfirm = async ()=>{ if(loading||closing) return; setLoading(true); const ok=await onConfirm(); setLoading(false); if(ok) setClosing(true); };
+  const [closingText,setClosingText] = useState("");
+  const doConfirm = async ()=>{ if(loading||closing) return; setLoading(true); const msg=await onConfirm(); setLoading(false); if(msg){ setClosingText(msg); setClosing(true); } };
   return (
-    <ModalOverlay onClose={onClose} maxWidth={360} loading={loading} closing={closing}>
+    <ModalOverlay onClose={onClose} maxWidth={360} loading={loading} closing={closing} closingText={closingText}>
       {icon && <div style={{display:"flex",justifyContent:"center",marginBottom:12}}><div style={{width:48,height:48,borderRadius:24,background:`${btnVariant==="acc"?C.acc:C.pri}12`,display:"flex",alignItems:"center",justifyContent:"center"}}>{icon}</div></div>}
       <div style={{fontSize:17,fontWeight:700,marginBottom:6,textAlign:"center"}}>{title}</div>
       <div style={{fontSize:12,color:C.t2,marginBottom:20,textAlign:"center"}}>{freight.code} · {freight.grain} · {freight.tons}{freight.unit||"tn"}</div>
@@ -2980,10 +2981,11 @@ function AssignModal({ freight, transporters, onClose, onConfirm }) {
   const [t,setT] = useState("");
   const [loading,setLoading] = useState(false);
   const [closing,setClosing] = useState(false);
+  const [closingText,setClosingText] = useState("");
   const ts = transporters||[];
-  const doConfirm = async ()=>{ if(loading||closing||!t) return; setLoading(true); const ok=await onConfirm(t); setLoading(false); if(ok) setClosing(true); };
+  const doConfirm = async ()=>{ if(loading||closing||!t) return; setLoading(true); const msg=await onConfirm(t); setLoading(false); if(msg){ setClosingText(msg); setClosing(true); } };
   return (
-    <ModalOverlay onClose={onClose} loading={loading} closing={closing}>
+    <ModalOverlay onClose={onClose} loading={loading} closing={closing} closingText={closingText}>
       <div style={{fontSize:17,fontWeight:700,marginBottom:4}}>Asignar transporte · {freight.code}</div>
       <div style={{fontSize:12,color:C.t2,marginBottom:18}}>{freight.grain} · {freight.tons}tn · {freight.originName}</div>
       <label style={{fontSize:10.5,fontWeight:600,color:C.t2,marginBottom:8,display:"block",textTransform:"uppercase",letterSpacing:0.6}}>Transportista</label>
@@ -3000,10 +3002,11 @@ function TruckSelectModal({ freight, trucks, onClose, onConfirm }) {
   const [sel,setSel] = useState("");
   const [loading,setLoading] = useState(false);
   const [closing,setClosing] = useState(false);
+  const [closingText,setClosingText] = useState("");
   const ts = (trucks||[]).filter(t=>t.active!==false);
-  const doConfirm = async ()=>{ if(loading||closing||!sel) return; setLoading(true); const ok=await onConfirm(sel); setLoading(false); if(ok) setClosing(true); };
+  const doConfirm = async ()=>{ if(loading||closing||!sel) return; setLoading(true); const msg=await onConfirm(sel); setLoading(false); if(msg){ setClosingText(msg); setClosing(true); } };
   return (
-    <ModalOverlay onClose={onClose} loading={loading} closing={closing}>
+    <ModalOverlay onClose={onClose} loading={loading} closing={closing} closingText={closingText}>
       <div style={{fontSize:17,fontWeight:700,marginBottom:4}}>Aceptar flete · {freight.code}</div>
       <div style={{fontSize:12,color:C.t2,marginBottom:18}}>{freight.grain} · {freight.tons}tn → {freight.destName}</div>
       <label style={{fontSize:10.5,fontWeight:600,color:C.t2,marginBottom:8,display:"block",textTransform:"uppercase",letterSpacing:0.6}}>Seleccioná un camión</label>
@@ -3027,9 +3030,10 @@ function ReasonModal({ title, freight, btnLabel, btnType="err", onClose, onConfi
   const [reason,setReason] = useState("");
   const [loading,setLoading] = useState(false);
   const [closing,setClosing] = useState(false);
-  const doConfirm = async ()=>{ if(loading||closing||!reason) return; setLoading(true); const ok=await onConfirm(reason); setLoading(false); if(ok) setClosing(true); };
+  const [closingText,setClosingText] = useState("");
+  const doConfirm = async ()=>{ if(loading||closing||!reason) return; setLoading(true); const msg=await onConfirm(reason); setLoading(false); if(msg){ setClosingText(msg); setClosing(true); } };
   return (
-    <ModalOverlay onClose={onClose} loading={loading} closing={closing}>
+    <ModalOverlay onClose={onClose} loading={loading} closing={closing} closingText={closingText}>
       <div style={{fontSize:17,fontWeight:700,marginBottom:4,color:btnType==="err"?C.err:C.t1}}>{title} · {freight.code}</div>
       <div style={{fontSize:12,color:C.t2,marginBottom:18}}>{freight.grain} · {freight.tons}tn</div>
       <label style={{fontSize:10.5,fontWeight:600,color:C.t2,marginBottom:6,display:"block",textTransform:"uppercase",letterSpacing:0.6}}>Motivo</label>
@@ -3845,31 +3849,32 @@ export default function Tolvink() {
 
   const handleAcceptWithTruck = async (fId, truckId)=>{
     const r = await fh.respond(fId, "accepted", undefined, truckId);
-    if(r.ok){ track("freight_accept"); show("Flete aceptado"); } else show(r.error,"err");
-    return r.ok;
+    if(r.ok){ track("freight_accept"); return "Flete aceptado"; }
+    show(r.error,"err"); return "";
   };
 
   const handleAssign = async (fId, transportCompanyId)=>{
     const r = await fh.assign(fId, transportCompanyId);
-    if(r.ok){ track("freight_assign"); show("Transportista asignado"); } else show(r.error,"err");
-    return r.ok;
+    if(r.ok){ track("freight_assign"); return "Transportista asignado"; }
+    show(r.error,"err"); return "";
   };
 
   const handleConfirmAction = async (fId, action)=>{
     const msgs = { start:"Viaje iniciado", authorize:"Viaje autorizado", confirm_loaded:"Carga confirmada", confirm_finished:"Entrega confirmada" };
     const fn = { start:fh.start, authorize:fh.authorize, confirm_loaded:fh.confirmLoaded, confirm_finished:fh.confirmFinished }[action];
-    if(!fn) return false;
+    if(!fn) return "";
     const r = await fn(fId);
-    if(r.ok) show(msgs[action]||"Hecho"); else show(r.error,"err");
-    return r.ok;
+    if(r.ok) return msgs[action]||"Hecho";
+    show(r.error,"err"); return "";
   };
 
   const handleReasonAction = async (fId,reason,action)=>{
     let r;
     if(action==="cancel") r = await fh.cancel(fId,reason);
     else if(action==="reject") r = await fh.respond(fId,"rejected",reason);
-    if(r?.ok) show(action==="cancel"?"Flete cancelado":"Asignación rechazada","info"); else show(r?.error||"Error","err");
-    return !!r?.ok;
+    const msg = action==="cancel"?"Flete cancelado":"Asignación rechazada";
+    if(r?.ok) return msg;
+    show(r?.error||"Error","err"); return "";
   };
 
   const handleCreate = async (form)=>{
