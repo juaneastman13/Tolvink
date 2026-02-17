@@ -486,7 +486,8 @@ export function FileViewer({ file, onClose }) {
   const isImg = file.type === "image" || file.type === "photo" || file.url?.match(/\.(jpg|jpeg|png|webp|gif|svg)$/i);
   const isPdf = file.url?.match(/\.pdf$/i);
   return (
-    <div onClick={onClose} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.85)", display:"flex", flexDirection:"column", zIndex:250, animation:"moFadeIn 0.2s ease" }}>
+    <div onClick={onClose} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.85)", display:"flex", flexDirection:"column", zIndex:250, animation:"fvFadeIn 0.2s ease" }}>
+      <style>{`@keyframes fvFadeIn{from{opacity:0}to{opacity:1}}`}</style>
       <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"12px 16px", flexShrink:0 }}>
         <div style={{ color:"#fff", fontSize:13, fontWeight:600, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", flex:1, marginRight:12 }}>{file.name||"Archivo"}</div>
         <div style={{ display:"flex", gap:8 }}>

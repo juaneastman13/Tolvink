@@ -2993,6 +2993,7 @@ function ReportsScreen({ onBack, freights, isDesktop, embedded }) {
   const [selected, setSelected] = useState(new Set());
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  const [viewFile, setViewFile] = useState(null);
   const toggle = (k) => setExpanded(p=>({...p,[k]:!p[k]}));
   const toggleSel = (id, e) => { e.stopPropagation(); setSelected(p => { const n = new Set(p); if(n.has(id)) n.delete(id); else n.add(id); return n; }); };
 
