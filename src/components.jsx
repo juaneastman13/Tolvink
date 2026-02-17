@@ -145,34 +145,42 @@ export function SortTh({ label, colKey, sortCol, sortDir, onSort }) {
 // ======================== MODAL OVERLAY (animated logo → card) ========
 
 export function ModalOverlay({ children, onClose, maxWidth=400, loading=false }) {
-  const [stage, setStage] = useState(0); // 0=logo, 1=transition, 2=card
+  // Stages: 0=logo in, 1=text collapses/dot centers, 2=dot grows, 3=card
+  const [stage, setStage] = useState(0);
   useEffect(() => {
-    if (loading) return; // stay on logo while loading
-    const t1 = setTimeout(() => setStage(1), 400);
-    const t2 = setTimeout(() => setStage(2), 700);
-    return () => { clearTimeout(t1); clearTimeout(t2); };
+    if (loading) { setStage(0); return; }
+    const t1 = setTimeout(() => setStage(1), 500);
+    const t2 = setTimeout(() => setStage(2), 1050);
+    const t3 = setTimeout(() => setStage(3), 1750);
+    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
   }, [loading]);
-  // When loading activates after card was shown, go back to logo
-  const showLogo = loading || stage < 2;
-  const showCard = !loading && stage === 2;
   return (
-    <div onClick={(!loading&&onClose)||undefined} style={{position:"fixed",inset:0,background:C.bgOverlay,display:"flex",alignItems:"center",justifyContent:"center",zIndex:200,padding:24,animation:"moFadeIn 0.25s ease"}}>
+    <div onClick={(!loading&&stage===3&&onClose)||undefined} style={{position:"fixed",inset:0,background:C.bgOverlay,display:"flex",alignItems:"center",justifyContent:"center",zIndex:200,padding:24,animation:"moFadeIn 0.25s ease"}}>
       <style>{`
 @keyframes moFadeIn{from{opacity:0}to{opacity:1}}
 @keyframes moLogoIn{from{opacity:0;transform:scale(0.7)}to{opacity:1;transform:scale(1)}}
-@keyframes moLogoOut{to{opacity:0;transform:scale(0.92)}}
-@keyframes moDotBurst{0%{transform:scale(1);opacity:1}100%{transform:scale(35);opacity:0}}
+@keyframes moTextOut{0%{opacity:1;max-width:200px;margin-right:4px}40%{opacity:0;max-width:200px;margin-right:4px}100%{opacity:0;max-width:0;margin-right:0;overflow:hidden}}
+@keyframes moDotGrow{0%{transform:scale(1);opacity:1}60%{transform:scale(25);opacity:0.5}100%{transform:scale(50);opacity:0}}
 @keyframes moCardIn{from{opacity:0;transform:scale(0.82)}to{opacity:1;transform:scale(1)}}
       `}</style>
-      {/* Logo phase — shown during intro and during loading */}
-      {showLogo && (
-        <div style={{position:"absolute",display:"flex",alignItems:"flex-start",animation:(!loading&&stage===1)?"moLogoOut 0.25s ease forwards":"moLogoIn 0.35s ease-out forwards",pointerEvents:"none"}}>
+      {/* Loading: full logo with pulsing dot */}
+      {loading && (
+        <div style={{display:"flex",alignItems:"flex-start",animation:"moLogoIn 0.35s ease-out",pointerEvents:"none"}}>
           <span style={{fontSize:44,fontWeight:800,color:C.pri,letterSpacing:-2,lineHeight:1}}>tolvink</span>
-          <span style={{width:13,height:13,borderRadius:7,background:C.acc,marginLeft:4,marginTop:2,display:"inline-block",animation:(!loading&&stage===1)?"moDotBurst 0.3s ease forwards":"dotPulse 1.5s ease-in-out infinite"}} />
+          <span style={{width:13,height:13,borderRadius:7,background:C.acc,marginLeft:4,marginTop:2,display:"inline-block",animation:"dotPulse 1.5s ease-in-out infinite"}} />
         </div>
       )}
-      {/* Card phase */}
-      {showCard && (
+      {/* Intro: staged animation */}
+      {!loading && stage < 3 && (
+        <div style={{position:"absolute",display:"flex",alignItems:"center",justifyContent:"center",animation:stage===0?"moLogoIn 0.35s ease-out forwards":"none",pointerEvents:"none"}}>
+          {stage < 2 && (
+            <span style={{fontSize:44,fontWeight:800,color:C.pri,letterSpacing:-2,lineHeight:1,display:"inline-block",overflow:"hidden",whiteSpace:"nowrap",marginRight:4,animation:stage===1?"moTextOut 0.55s ease forwards":"none"}}>tolvink</span>
+          )}
+          <span style={{width:13,height:13,borderRadius:7,background:C.acc,display:"inline-block",animation:stage===2?"moDotGrow 0.7s ease forwards":"dotPulse 1.5s ease-in-out infinite"}} />
+        </div>
+      )}
+      {/* Card */}
+      {!loading && stage===3 && (
         <div onClick={e=>e.stopPropagation()} style={{background:C.w,borderRadius:18,padding:22,width:"100%",maxWidth,boxShadow:C.shLg,animation:"moCardIn 0.3s cubic-bezier(0.34,1.56,0.64,1)"}}>
           {children}
         </div>
