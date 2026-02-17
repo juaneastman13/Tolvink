@@ -25,8 +25,18 @@ export const LIGHT = {
 export let _theme = "light";
 export let C = { ...LIGHT };
 
-// Analytics — lightweight tracking (console for now, backend endpoint later)
-export function track(event, data = {}) { console.log("[TRACK]", event, data); }
+// Analytics — fire-and-forget to backend
+const _API = import.meta.env.VITE_API_URL || 'https://tolvink-api-production.up.railway.app/api';
+let _sid = sessionStorage.getItem('tv_sid');
+if (!_sid) { _sid = Math.random().toString(36).slice(2); sessionStorage.setItem('tv_sid', _sid); }
+export function track(event, data = {}) {
+  const token = localStorage.getItem('tolvink_token');
+  fetch(`${_API}/analytics/track`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+    body: JSON.stringify({ event, data, sessionId: _sid }),
+  }).catch(() => {});
+}
 
 export const FONT = `'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif`;
 export const MONO = `'JetBrains Mono','IBM Plex Mono','SF Mono',monospace`;
