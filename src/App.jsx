@@ -1021,13 +1021,18 @@ function DetailScreen({ user, freight, perms, onBack, onAction, actionLoading, o
         </div>;
       })()}
 
-      {/* Documents gallery */}
-      <DocsGallery documents={freight.documents} onViewFile={setViewFile}/>
-
-      {/* File upload — multi-source, any status except finished/canceled */}
-      {freight.status !== "finished" && freight.status !== "canceled" && (
-        <FreightFileUpload freightId={freight.id} step={freight.status==="pending_assignment"?"request":freight.status==="in_progress"||freight.status==="loaded"?"load_confirmation":"assignment"} onUploaded={()=>{ if(onRefresh) onRefresh(freight.id); }} />
-      )}
+      {/* Documents: gallery + upload side-by-side on desktop */}
+      {(() => {
+        const canUpload = freight.status !== "finished" && freight.status !== "canceled";
+        const hasDocs = freight.documents && freight.documents.length > 0;
+        if (!canUpload && !hasDocs) return null;
+        return (
+          <div style={{ display: _isDesktop && canUpload && hasDocs ? "flex" : "block", gap: 12, marginBottom: 0 }}>
+            {hasDocs && <div style={{ flex: 1, minWidth: 0 }}><DocsGallery documents={freight.documents} onViewFile={setViewFile}/></div>}
+            {canUpload && <div style={{ flex: 1, minWidth: 0 }}><FreightFileUpload freightId={freight.id} step={freight.status==="pending_assignment"?"request":freight.status==="in_progress"||freight.status==="loaded"?"load_confirmation":"assignment"} onUploaded={()=>{ if(onRefresh) onRefresh(freight.id); }} /></div>}
+          </div>
+        );
+      })()}
 
       <button onClick={()=>onChat(freight.conversationId)} disabled={!freight.conversationId}
         style={{ width:"100%", background:C.priPale, borderRadius:10, padding:12, display:"flex", alignItems:"center", gap:10, border:`1.5px solid ${C.pri}30`, cursor:freight.conversationId?"pointer":"default", fontFamily:"inherit", marginBottom:12 }}>

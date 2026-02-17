@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { uploadPhoto, apiAddDocument } from "./api";
 import { C, Ic } from "./theme";
 import { AttachMenu, Btn } from "./components";
@@ -90,17 +90,71 @@ export function DocsGallery({ documents, onViewFile }) {
   );
 }
 
+// ======================== UPLOAD OVERLAY (Tolvink dot animation) =======
+
+function UploadOverlay({ uploading, done, total, current }) {
+  const [stage, setStage] = useState("idle"); // idle | uploading | success | fadeout
+  const [opacity, setOpacity] = useState(0);
+
+  useEffect(() => {
+    if (uploading && stage === "idle") {
+      setStage("uploading");
+      setOpacity(1);
+    }
+    if (!uploading && stage === "uploading") {
+      if (done) {
+        setStage("success");
+        const t1 = setTimeout(() => setStage("fadeout"), 1400);
+        const t2 = setTimeout(() => { setStage("idle"); setOpacity(0); }, 1800);
+        return () => { clearTimeout(t1); clearTimeout(t2); };
+      } else {
+        setStage("idle");
+        setOpacity(0);
+      }
+    }
+  }, [uploading, done]);
+
+  if (stage === "idle") return null;
+
+  return (
+    <div style={{ position: "absolute", inset: 0, borderRadius: 12, background: "rgba(255,255,255,0.92)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", zIndex: 5, transition: "opacity 0.35s ease", opacity: stage === "fadeout" ? 0 : 1 }}>
+      <style>{`
+@keyframes uplPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.5)}}
+@keyframes uplCircleIn{from{transform:scale(0);opacity:0}to{transform:scale(1);opacity:1}}
+@keyframes uplChkDraw{to{stroke-dashoffset:0}}
+      `}</style>
+      {stage === "uploading" && (
+        <>
+          <div style={{ display: "flex", alignItems: "flex-start", marginBottom: 12 }}>
+            <span style={{ fontSize: 28, fontWeight: 800, color: C.pri, letterSpacing: -1.5, lineHeight: 1 }}>tolvink</span>
+            <span style={{ width: 10, height: 10, borderRadius: 5, background: C.acc, marginLeft: 3, marginTop: 2, display: "inline-block", animation: "uplPulse 1.2s ease-in-out infinite" }} />
+          </div>
+          {total > 1 && <div style={{ fontSize: 11, color: C.t2, fontWeight: 600 }}>Subiendo {current}/{total}...</div>}
+          {total <= 1 && <div style={{ fontSize: 11, color: C.t2, fontWeight: 600 }}>Subiendo...</div>}
+        </>
+      )}
+      {(stage === "success" || stage === "fadeout") && (
+        <div style={{ width: 80, height: 80, borderRadius: "50%", background: C.acc, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, animation: "uplCircleIn 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards", boxShadow: "0 6px 24px rgba(0,0,0,0.12)" }}>
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ strokeDasharray: 30, strokeDashoffset: 30, animation: "uplChkDraw 0.4s ease 0.2s forwards" }}><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ======================== FREIGHT FILE UPLOAD (multi-source) ===========
 
 export function FreightFileUpload({ freightId, step, onUploaded }) {
   const [files, setFiles] = useState([]);
   const [uploadingAll, setUploadingAll] = useState(false);
+  const [uploadDone, setUploadDone] = useState(false);
+  const [currentIdx, setCurrentIdx] = useState(0);
   const [showAttach, setShowAttach] = useState(false);
   const camRef = useRef(null);
   const galRef = useRef(null);
   const docRef = useRef(null);
 
-  const addFiles = (fileList, fromCamera = false) => {
+  const addFiles = (fileList) => {
     const newFiles = Array.from(fileList).filter(f => f.size <= 15 * 1024 * 1024).map(f => ({
       file: f,
       preview: f.type.startsWith("image/") ? URL.createObjectURL(f) : null,
@@ -116,8 +170,12 @@ export function FreightFileUpload({ freightId, step, onUploaded }) {
 
   const uploadAll = async () => {
     setUploadingAll(true);
-    for (let i = 0; i < files.length; i++) {
-      if (files[i].done) continue;
+    setUploadDone(false);
+    let allOk = true;
+    const pending = files.reduce((acc, f, i) => f.done ? acc : [...acc, i], []);
+    for (let pi = 0; pi < pending.length; pi++) {
+      const i = pending[pi];
+      setCurrentIdx(pi + 1);
       setFiles(prev => prev.map((f, j) => j === i ? { ...f, uploading: true, error: null } : f));
       try {
         const url = await uploadPhoto(files[i].file, freightId, step);
@@ -125,16 +183,21 @@ export function FreightFileUpload({ freightId, step, onUploaded }) {
         setFiles(prev => prev.map((f, j) => j === i ? { ...f, uploading: false, done: true } : f));
       } catch (err) {
         setFiles(prev => prev.map((f, j) => j === i ? { ...f, uploading: false, error: err.message || "Error" } : f));
+        allOk = false;
       }
     }
+    setUploadDone(allOk);
     setUploadingAll(false);
     if (onUploaded) onUploaded();
   };
 
   const pending = files.filter(f => !f.done);
+  const pendingCount = pending.length;
 
   return (
-    <div style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: 12, padding: 14, marginBottom: 12, boxShadow: C.sh }}>
+    <div style={{ position: "relative", background: C.w, border: `1px solid ${C.b1}`, borderRadius: 12, padding: 14, marginBottom: 12, boxShadow: C.sh, overflow: "hidden" }}>
+      <UploadOverlay uploading={uploadingAll} done={uploadDone} total={pendingCount || 1} current={currentIdx} />
+
       <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
         {Ic.clip(C.acc, 16)}
         <span style={{ fontSize: 10.5, fontWeight: 700, color: C.t2, textTransform: "uppercase", letterSpacing: 0.5 }}>Adjuntar archivos</span>
@@ -152,7 +215,6 @@ export function FreightFileUpload({ freightId, step, onUploaded }) {
                   <span style={{ fontSize: 7, color: C.t3, textAlign: "center", marginTop: 2, wordBreak: "break-all", lineHeight: 1.1 }}>{f.name?.slice(-12)}</span>
                 </div>
               )}
-              {f.uploading && <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.45)", display: "flex", alignItems: "center", justifyContent: "center" }}><div style={{ width: 18, height: 18, border: "2px solid #fff", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} /><style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style></div>}
               {f.done && <div style={{ position: "absolute", top: 3, right: 3, width: 18, height: 18, borderRadius: 9, background: C.ok, display: "flex", alignItems: "center", justifyContent: "center" }}>{Ic.chk("#fff", 12)}</div>}
               {!f.done && !f.uploading && <button onClick={() => removeFile(i)} style={{ position: "absolute", top: 2, right: 2, width: 18, height: 18, borderRadius: 9, background: C.err, border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>{Ic.cross("#fff", 10)}</button>}
               {f.error && <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: C.err, color: "#fff", fontSize: 7, textAlign: "center", padding: 2 }}>Error</div>}
@@ -162,11 +224,11 @@ export function FreightFileUpload({ freightId, step, onUploaded }) {
       )}
 
       {/* Hidden file inputs */}
-      <input ref={camRef} type="file" accept="image/*" capture="environment" onChange={e => { if (e.target.files?.length) addFiles(e.target.files, true); e.target.value = ""; }} style={{ display: "none" }} />
+      <input ref={camRef} type="file" accept="image/*" capture="environment" onChange={e => { if (e.target.files?.length) addFiles(e.target.files); e.target.value = ""; }} style={{ display: "none" }} />
       <input ref={galRef} type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={e => { if (e.target.files?.length) addFiles(e.target.files); e.target.value = ""; }} style={{ display: "none" }} />
       <input ref={docRef} type="file" accept="image/*,.pdf,.doc,.docx,.xlsx" multiple onChange={e => { if (e.target.files?.length) addFiles(e.target.files); e.target.value = ""; }} style={{ display: "none" }} />
 
-      <div style={{ marginBottom: pending.length > 0 ? 10 : 0 }}>
+      <div style={{ marginBottom: pendingCount > 0 ? 10 : 0 }}>
         <button onClick={() => setShowAttach(true)} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "10px 16px", borderRadius: 10, border: `1.5px dashed ${C.b1}`, background: C.bg, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 600, color: C.t2 }}>
           {Ic.clip(C.t2, 16)} Adjuntar archivo
         </button>
@@ -174,9 +236,9 @@ export function FreightFileUpload({ freightId, step, onUploaded }) {
 
       <AttachMenu open={showAttach} onClose={() => setShowAttach(false)} onCamera={() => camRef.current?.click()} onGallery={() => galRef.current?.click()} onFiles={() => docRef.current?.click()} />
 
-      {pending.length > 0 && (
+      {pendingCount > 0 && (
         <Btn full v="acc" icon={uploadingAll ? null : Ic.chk(C.w, 14)} disabled={uploadingAll} onClick={uploadAll}>
-          {uploadingAll ? "Subiendo..." : `Subir ${pending.length} archivo${pending.length > 1 ? "s" : ""}`}
+          {uploadingAll ? "Subiendo..." : `Subir ${pendingCount} archivo${pendingCount > 1 ? "s" : ""}`}
         </Btn>
       )}
     </div>
