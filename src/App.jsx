@@ -1039,6 +1039,7 @@ function DetailScreen({ user, freight, perms, onBack, onAction, actionLoading, o
       {filteredActions.includes("cancel") && <div style={{ marginBottom:8 }}><Btn full v="err" icon={Ic.cross(C.err,16)} disabled={actionLoading} onClick={()=>onAction(freight.id,"cancel")}>Cancelar flete</Btn></div>}
       {filteredActions.includes("reject") && <div style={{ marginBottom:8 }}><Btn full v="err" icon={Ic.ban(C.w,16)} disabled={actionLoading} onClick={()=>onAction(freight.id,"reject")}>Rechazar asignación</Btn></div>}
       </div>
+      <FileViewer file={viewFile} onClose={()=>setViewFile(null)}/>
     </div>
   );
 }
