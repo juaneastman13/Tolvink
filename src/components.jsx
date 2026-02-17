@@ -171,7 +171,7 @@ export function Sidebar({ active, onChange, unread=0, pendingCount=0, notifCount
     { k:"notifs",  ic:a=>Ic.bell(a?C.pri:C.t3,20),   l:"Notificaciones", bd:notifCount },
     { k:"calendar",ic:a=>Ic.cal(a?C.pri:C.t3,20),    l:"Calendario" },
     { k:"reports", ic:a=>Ic.doc(a?C.pri:C.t3,20),    l:"Informes" },
-    { k:"menu",    ic:a=>Ic.gear(a?C.pri:C.t3,20),   l:"Menú" },
+    { k:"menu",    ic:a=>Ic.menu3(a?C.pri:C.t3,20),   l:"Menú" },
   ];
   return (
     <div style={{ width:220, minWidth:220, height:"100%", background:C.w, borderRight:`1px solid ${C.b2}`, display:"flex", flexDirection:"column", flexShrink:0, overflow:"hidden" }}>
@@ -227,9 +227,7 @@ export function Nav({ active, onChange, unread=0, pendingCount=0, notifCount=0, 
     { k:"list",     ic:a=>Ic.truck(a?C.pri:C.t3,20),  l:"Fletes" },
     { k:"pending",  sp:true, bd:pendingCount },
     { k:"chats",    ic:a=>Ic.msg(a?C.pri:C.t3,20),    l:"Chat", bd:unread },
-    { k:"calendar", ic:a=>Ic.cal(a?C.pri:C.t3,20),    l:"Calendario" },
-    { k:"reports",  ic:a=>Ic.doc(a?C.pri:C.t3,20),    l:"Informes" },
-    { k:"menu",     ic:a=>Ic.gear(a?C.pri:C.t3,20),   l:"Menú", bd:notifCount },
+    { k:"menu",     ic:a=>Ic.menu3(a?C.pri:C.t3,20),  l:"Menú", bd:notifCount },
   ];
   return (
     <div style={{ display:"flex", borderTop:`1px solid ${C.b1}`, background:C.nav, paddingTop:2, paddingBottom:"max(4px, env(safe-area-inset-bottom))", flexShrink:0 }}>
@@ -238,7 +236,7 @@ export function Nav({ active, onChange, unread=0, pendingCount=0, notifCount=0, 
         <button key={it.k} onClick={()=>onChange(it.k)} style={{ flex:it.sp&&canRequest?1.6:1, display:"flex", flexDirection:"column", alignItems:"center", gap:1, border:"none", background:"none", cursor:"pointer", fontFamily:"inherit", position:"relative", padding:it.sp?"0":"5px 0", minHeight:42, WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
           {it.sp ? <>
             <div onClick={e=>{e.stopPropagation();onChange("pending")}} style={{ width:40, height:40, borderRadius:20, background:centerColor, display:"flex", alignItems:"center", justifyContent:"center", marginTop:-16, boxShadow:`0 3px 12px ${centerColor}40`, position:"relative", transition:"background 0.5s ease, box-shadow 0.5s ease" }}>
-              {hasPending ? Ic.bell(C.w,18) : Ic.chk(C.w,18)}
+              {hasPending ? Ic.clk(C.w,18) : Ic.chk(C.w,18)}
               {it.bd>0 && <div style={{ position:"absolute", top:-4, right:-4, minWidth:16, height:16, borderRadius:8, background:C.err, color:C.w, fontSize:8, fontWeight:700, padding:"0 4px", display:"flex", alignItems:"center", justifyContent:"center", border:`2px solid ${C.nav}` }}>{it.bd}</div>}
             </div>
             <span style={{ fontSize:7.5, fontWeight:700, color:centerColor, marginTop:1, transition:"color 0.5s ease" }}>{hasPending?"Pendientes":"Al día"}</span>

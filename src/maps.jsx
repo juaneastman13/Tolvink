@@ -399,7 +399,7 @@ export function FreightMap({ freightId, originLat, originLng, destLat, destLng, 
   if (!hasCoords) return null;
 
   const mapContainer = (
-    <div style={fullscreen ? { position:"fixed", inset:0, zIndex:150, background:C.w, display:"flex", flexDirection:"column" } : { background: C.w, border: `1px solid ${C.b1}`, borderRadius: 12, overflow: "hidden", boxShadow: C.sh, display:"flex", flexDirection:"column", height:"100%" }}>
+    <div style={fullscreen ? { position:"fixed", inset:0, zIndex:150, background:C.w, display:"flex", flexDirection:"column", maxHeight:"100dvh" } : { background: C.w, border: `1px solid ${C.b1}`, borderRadius: 12, overflow: "hidden", boxShadow: C.sh, display:"flex", flexDirection:"column", height:"100%" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 6, padding: fullscreen?"14px 18px":"10px 14px", paddingTop: fullscreen?"max(14px, env(safe-area-inset-top))":10, flexShrink:0 }}>
         {Ic.pin(C.pri, 14)}
         <span style={{ fontSize: 10.5, fontWeight: 700, color: C.t2, textTransform: "uppercase", letterSpacing: 0.5 }}>Recorrido</span>

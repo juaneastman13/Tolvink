@@ -1546,7 +1546,7 @@ function _NotifRow({ n, freight, onMarkRead, onTap, isLast }) {
         <div style={{ fontSize:12.5, color:C.t3, marginTop:3, lineHeight:1.4 }}>{n.body}</div>
         {f && (
           <div style={{ display:"flex", flexWrap:"wrap", gap:"4px 12px", marginTop:6 }}>
-            {f.requestedByName && <span style={detailStyle}>{Ic.user(C.t3,11)} {f.requestedByName}</span>}
+            {(f.requestedByName||f.originCompanyName) && <span style={detailStyle}>{Ic.user(C.t3,11)} {f.requestedByName}{f.originCompanyName ? ` · ${f.originCompanyName}` : ""}</span>}
             {f.destName && <span style={detailStyle}>{Ic.plant(C.t3,11)} {f.destName}</span>}
             {f.transporterName && <span style={detailStyle}>{Ic.truck(C.t3,11)} {f.transporterName}</span>}
             {(f.loadDate||f.loadTime) && <span style={detailStyle}>{Ic.cal(C.t3,11)} {_fmtDate(f.loadDate)}{f.loadTime ? ` ${f.loadTime}` : ""}</span>}
@@ -1629,6 +1629,10 @@ function MenuScreen({ user, perms, onLogout, onNav, isDesktop }) {
   if(user.userType==="producer") mgmtItems.push({k:"fields",l:"Mis Campos y Lotes",ic:Ic.pin(C.pri,18),c:C.pri});
   if(user.userType==="plant") mgmtItems.push({k:"access",l:"Productores / Transportistas",ic:Ic.user(C.pri,18),c:C.pri});
   if(user.role==="platform_admin"||user.role==="admin") mgmtItems.push({k:"admin",l:"Administración",ic:Ic.shield(C.err,18),c:C.err});
+  if(!isDesktop) {
+    mgmtItems.push({k:"calendar",l:"Calendario",ic:Ic.cal(C.sec,18),c:C.sec});
+    mgmtItems.push({k:"reports",l:"Informes",ic:Ic.doc(C.t2,18),c:C.t2});
+  }
 
   const menuItem = (m, i, arr) => (
     <button key={m.k} onClick={()=>onNav(m.k)} style={{width:"100%",display:"flex",alignItems:"center",gap:12,padding:"14px 14px",background:"none",border:"none",borderTop:i>0?`1px solid ${C.b2}`:"none",cursor:"pointer",fontFamily:"inherit",textAlign:"left",transition:"background 0.15s"}} onMouseEnter={e=>e.currentTarget.style.background=C.priGhost} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
@@ -4003,7 +4007,7 @@ export default function Tolvink() {
 
   console.log('[APP] User authenticated, rendering main app');
   const curFreight = fh.freights.find(f=>f.id===selFreight);
-  const navActive = ["detail"].includes(screen)?"list":["trucks","fields","access","admin","mydata"].includes(screen)?"menu":screen;
+  const navActive = ["detail"].includes(screen)?"list":["trucks","fields","access","admin","mydata","calendar","reports"].includes(screen)&&!isDesktop?"menu":["trucks","fields","access","admin","mydata"].includes(screen)?"menu":screen;
 
   return (
     <div className="tv-shell" style={{height:"100dvh",background:C.bg,color:C.t1,fontFamily:FONT,display:"flex",flexDirection:isDesktop?"row":"column",width:"100%",position:"relative",overflow:"hidden"}}>
