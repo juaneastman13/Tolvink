@@ -258,7 +258,7 @@ function AuthScreen({ onLogin, onSignup, loading, error, clearError, onBackToLan
 // ======================== HOME SCREEN ================================
 
 
-function HomeScreen({ user, freights, perms, onNav, catalog, isDesktop, onAction, actionLoading }) {
+function HomeScreen({ user, freights, perms, onNav, catalog, isDesktop, onAction, actionLoading, onChat, onRefresh, onDuplicate, onEdit }) {
   const [selectedId, setSelectedId] = useState(null);
   const [pendingFilter, setPendingFilter] = useState("all");
   const [summaryFilter, setSummaryFilter] = useState("all");
@@ -331,17 +331,14 @@ function HomeScreen({ user, freights, perms, onNav, catalog, isDesktop, onAction
   // Icon map for pending action types
   const actionIcon = (icon) => icon === "assign" ? Ic.warn : icon === "authorize" ? Ic.chk : icon === "respond" ? Ic.truck : icon === "start" ? Ic.nav : icon === "confirm" ? Ic.plant : Ic.chk;
 
-  // Selected freight for detail panel
+  // Selected freight for detail
   const selFreight = selectedId ? freights.find(f => f.id === selectedId) : null;
-  const selPa = selFreight ? getPendingActions(selFreight, user.userType) : null;
-  const selSt = selFreight ? stCfg(selFreight.status) : null;
 
   // Render a freight card (compact)
   const renderCard = (f, pa) => {
     const st = stCfg(f.status);
-    const isSel = selectedId === f.id;
     return (
-      <div key={f.id} onClick={() => setSelectedId(isSel ? null : f.id)} style={{ background: isSel ? C.priPale : C.w, border: `1px solid ${isSel ? C.pri : C.b1}`, borderLeft: `4px solid ${st.color}`, borderRadius: 12, padding: 14, boxShadow: C.sh, cursor: "pointer", transition: "background 0.15s, border-color 0.15s" }}>
+      <div key={f.id} onClick={() => setSelectedId(f.id)} style={{ background: C.w, border: `1px solid ${C.b1}`, borderLeft: `4px solid ${st.color}`, borderRadius: 12, padding: 14, boxShadow: C.sh, cursor: "pointer", transition: "background 0.15s, border-color 0.15s" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <span style={{ fontSize: 11, fontWeight: 700, fontFamily: MONO, color: C.t2 }}>{f.code}</span>
@@ -379,76 +376,13 @@ function HomeScreen({ user, freights, perms, onNav, catalog, isDesktop, onAction
     );
   };
 
-  // Detail panel for selected freight
-  const detailPanel = selFreight && (
-    <div style={{ flex: 1, overflow: "auto", borderLeft: isDesktop ? `1px solid ${C.b1}` : "none", animation: "fadeIn 0.2s ease", minWidth: 0 }}>
-      <div style={{ padding: 18 }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <span style={{ fontSize: 13, fontWeight: 700, fontFamily: MONO, color: C.t2 }}>{selFreight.code}</span>
-            <Bd color={selSt.color} bg={selSt.bg}>{selSt.label}</Bd>
-          </div>
-          <button onClick={() => setSelectedId(null)} style={{ background: C.bgCardAlt, border: `1px solid ${C.b1}`, borderRadius: 8, padding: "6px 8px", cursor: "pointer", display: "flex", alignItems: "center", fontFamily: "inherit" }}>{Ic.cross(C.t2, 16)}</button>
-        </div>
-
-        {/* Product */}
-        <div style={{ fontSize: 18, fontWeight: 800, color: C.t1, marginBottom: 8 }}>
-          {selFreight.grain === "Otros" ? selFreight.productTypeOther || "Otros" : selFreight.grain} · {selFreight.tons} {selFreight.unit || "tn"}
-        </div>
-
-        {/* Route */}
-        <div style={{ background: C.bg, borderRadius: 10, padding: 14, marginBottom: 12 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-            <div style={{ width: 8, height: 8, borderRadius: 4, background: C.pri }} />
-            <div><div style={{ fontSize: 12, fontWeight: 700, color: C.t1 }}>{selFreight.originName}</div>{selFreight.fieldName && <div style={{ fontSize: 10, color: C.t3 }}>{selFreight.fieldName}</div>}</div>
-          </div>
-          <div style={{ width: 2, height: 16, background: C.b2, marginLeft: 3, marginBottom: 4 }} />
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <div style={{ width: 8, height: 8, borderRadius: 2, background: C.acc }} />
-            <div style={{ fontSize: 12, fontWeight: 700, color: C.t1 }}>{selFreight.destName}</div>
-          </div>
-        </div>
-
-        {/* Details grid */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 12 }}>
-          {selFreight.loadDate && <div style={{ background: C.bg, borderRadius: 8, padding: "8px 10px" }}><div style={{ fontSize: 9, color: C.t3, fontWeight: 600, marginBottom: 2 }}>FECHA</div><div style={{ fontSize: 12, fontWeight: 700, color: C.t1 }}>{selFreight.loadDate}</div></div>}
-          {selFreight.loadTime && <div style={{ background: C.bg, borderRadius: 8, padding: "8px 10px" }}><div style={{ fontSize: 9, color: C.t3, fontWeight: 600, marginBottom: 2 }}>HORA</div><div style={{ fontSize: 12, fontWeight: 700, color: C.t1 }}>{selFreight.loadTime}</div></div>}
-          {selFreight.transporterName && <div style={{ background: C.bg, borderRadius: 8, padding: "8px 10px" }}><div style={{ fontSize: 9, color: C.t3, fontWeight: 600, marginBottom: 2 }}>TRANSPORTISTA</div><div style={{ fontSize: 12, fontWeight: 700, color: C.t1 }}>{selFreight.transporterName}</div></div>}
-          {selFreight.truckPlate && <div style={{ background: C.bg, borderRadius: 8, padding: "8px 10px" }}><div style={{ fontSize: 9, color: C.t3, fontWeight: 600, marginBottom: 2 }}>CAMIÓN</div><div style={{ fontSize: 12, fontWeight: 700, color: C.t1 }}>{selFreight.truckPlate}{selFreight.truckModel ? ` · ${selFreight.truckModel}` : ""}</div></div>}
-          {selFreight.driverName && <div style={{ background: C.bg, borderRadius: 8, padding: "8px 10px" }}><div style={{ fontSize: 9, color: C.t3, fontWeight: 600, marginBottom: 2 }}>CHOFER</div><div style={{ fontSize: 12, fontWeight: 700, color: C.t1 }}>{selFreight.driverName}</div></div>}
-          {selFreight.requestedByName && <div style={{ background: C.bg, borderRadius: 8, padding: "8px 10px" }}><div style={{ fontSize: 9, color: C.t3, fontWeight: 600, marginBottom: 2 }}>SOLICITADO POR</div><div style={{ fontSize: 12, fontWeight: 700, color: C.t1 }}>{selFreight.requestedByName}</div></div>}
-        </div>
-
-        {selFreight.notes && <div style={{ background: C.bg, borderRadius: 8, padding: "8px 10px", marginBottom: 12 }}><div style={{ fontSize: 9, color: C.t3, fontWeight: 600, marginBottom: 2 }}>NOTAS</div><div style={{ fontSize: 12, color: C.t1 }}>{selFreight.notes}</div></div>}
-        {selFreight.isOwnFleet && <div style={{ fontSize: 11, color: C.acc, fontWeight: 600, marginBottom: 12 }}>Flota propia</div>}
-
-        {/* Action buttons */}
-        {selPa && selPa.actionKey === "respond" ? (
-          <div style={{ display: "flex", gap: 8 }}>
-            <button disabled={actionLoading} onClick={() => onAction(selFreight.id, "accept")} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "12px 14px", background: C.pri, borderRadius: 10, border: "none", cursor: "pointer", fontFamily: "inherit" }}>
-              {Ic.chk("#fff", 14)}<span style={{ fontSize: 13, fontWeight: 700, color: "#fff" }}>Aceptar</span>
-            </button>
-            <button disabled={actionLoading} onClick={() => onAction(selFreight.id, "reject")} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "12px 14px", background: C.bg, borderRadius: 10, border: `1px solid ${C.err}`, cursor: "pointer", fontFamily: "inherit" }}>
-              {Ic.cross(C.err, 14)}<span style={{ fontSize: 13, fontWeight: 700, color: C.err }}>Rechazar</span>
-            </button>
-          </div>
-        ) : selPa ? (
-          <button disabled={actionLoading} onClick={() => onAction(selFreight.id, selPa.actionKey)} style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "12px 14px", background: selPa.color, borderRadius: 10, border: "none", cursor: "pointer", fontFamily: "inherit", opacity: actionLoading ? 0.6 : 1 }}>
-            <span style={{ fontSize: 14, fontWeight: 700, color: "#fff" }}>{selPa.action}</span>
-          </button>
-        ) : null}
-      </div>
-    </div>
-  );
-
   // List panel content
   const todayLabel = new Date().toLocaleDateString("es-UY", { weekday: "long", day: "numeric", month: "long" });
-  const compact = selectedId && isDesktop;
   const listContent = (
-    <div style={{ flex: compact ? undefined : 1, width: compact ? 320 : undefined, flexShrink: 0, overflow: "auto", padding: "14px 18px 18px 18px", boxSizing: "border-box" }}>
+    <div style={{ flex: 1, overflow: "auto", padding: "14px 18px 18px 18px", boxSizing: "border-box" }}>
       {/* Header */}
       <div style={{ marginBottom: 14 }}>
-        <div style={{ fontSize: compact ? 16 : 20, fontWeight: 800, letterSpacing: -0.3, color: C.t1 }}>Hola, {user.name.split(" ")[0]}</div>
+        <div style={{ fontSize: 20, fontWeight: 800, letterSpacing: -0.3, color: C.t1 }}>Hola, {user.name.split(" ")[0]}</div>
         <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginTop: 4 }}>
           <span style={{ fontSize: 11, color: C.t2, fontWeight: 600 }}>{user.entity}</span>
           <span style={{ fontSize: 11, color: C.t3 }}>·</span>
@@ -507,28 +441,9 @@ function HomeScreen({ user, freights, perms, onNav, catalog, isDesktop, onAction
     </div>
   );
 
-  // Desktop: split layout when freight selected
-  if (isDesktop) {
-    return (
-      <div style={{ flex: 1, display: "flex", flexDirection: "row", overflow: "hidden" }}>
-        {listContent}
-        {detailPanel}
-      </div>
-    );
-  }
-
-  // Mobile: detail fullscreen or list
+  // If a freight is selected, show full DetailScreen (same as freight list detail)
   if (selectedId && selFreight) {
-    return (
-      <div style={{ flex: 1, overflow: "auto" }}>
-        <div style={{ padding: 18 }}>
-          <button onClick={() => setSelectedId(null)} style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", padding: 0, marginBottom: 12 }}>
-            {Ic.chev(C.pri, 18)}<span style={{ fontSize: 14, fontWeight: 700, color: C.pri }}>Inicio</span>
-          </button>
-        </div>
-        {detailPanel}
-      </div>
-    );
+    return <DetailScreen user={user} freight={selFreight} perms={perms} onBack={() => setSelectedId(null)} onAction={onAction} actionLoading={actionLoading} onChat={onChat} onRefresh={onRefresh} onDuplicate={onDuplicate} onEdit={onEdit} />;
   }
 
   return listContent;
@@ -3797,7 +3712,7 @@ export default function Tolvink() {
         {/* Scrollable content area */}
         <div style={{flex:1,overflow:(screen==="chats"||screen==="calendar")&&isDesktop?"hidden":"auto",display:"flex",flexDirection:"column",WebkitOverflowScrolling:"touch",overscrollBehavior:"contain"}}>
         <div key={screen} className="tv-page" style={{flex:1,display:"flex",flexDirection:"column"}}>
-        {screen==="home" && <HomeScreen user={auth.user} freights={fh.freights} perms={perms} onNav={nav} catalog={catalog} isDesktop={isDesktop} onAction={handleAction} actionLoading={actionLoading}/>}
+        {screen==="home" && <HomeScreen user={auth.user} freights={fh.freights} perms={perms} onNav={nav} catalog={catalog} isDesktop={isDesktop} onAction={handleAction} actionLoading={actionLoading} onChat={(convId)=>{if(convId){setChatConvId(convId);setScreen("chats");}}} onRefresh={(id)=>fh.refresh(id)} onDuplicate={(f)=>{setDuplicateData(f);setScreen("new");}} onEdit={(f)=>{setEditData(f);setScreen("edit");}}/>}
         {screen==="list" && <ListScreen freights={fh.freights} onNav={nav} onRefresh={fh.fetchAll}/>}
         {screen==="pending" && <PendingScreen user={auth.user} freights={fh.freights} onNav={nav} onNewFreight={()=>nav("new")}/>}
         {screen==="calendar" && <CalendarScreen freights={fh.freights} perms={perms} onNav={nav} isDesktop={isDesktop}/>}
