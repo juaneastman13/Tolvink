@@ -2888,6 +2888,7 @@ function ReportsScreen({ onBack, freights, isDesktop, embedded }) {
                   <span onClick={(e)=>toggleSel(f.id,e)} style={{width:20,height:20,borderRadius:6,border:`2px solid ${isSel?C.pri:C.b1}`,background:isSel?C.pri:"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,cursor:"pointer",transition:"all 0.15s"}}>
                     {isSel && Ic.chk("#fff",12)}
                   </span>
+                  {Ic.doc(group.color,18)}
                   <div style={{ flex:1 }}>
                     <div style={{ display:"flex", alignItems:"center", gap:6 }}>
                       <span style={{ fontSize:12, fontWeight:700, fontFamily:MONO }}>{f.code}</span>
