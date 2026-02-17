@@ -991,6 +991,10 @@ function DetailScreen({ user, freight, perms, onBack, onAction, actionLoading, o
         </div>
         <div style={{ flex:1 }}>
           <FreightMap freightId={freight.id} originLat={freight.originLat} originLng={freight.originLng} destLat={freight.destLat} destLng={freight.destLng} originName={[freight.originCompanyName, [freight.fieldName,freight.originName].filter(Boolean).join("/")].filter(Boolean).join(" — ")} destName={freight.destName} status={freight.status} isDriver={user.userType==="transporter"||(user.userType==="producer"&&freight.isOwnFleet)}/>
+          {freight.originLat&&freight.destLat&&<div style={{display:"flex",gap:8,marginTop:8}}>
+            <button onClick={()=>goToMap(freight.originLat,freight.originLng,[freight.fieldName,freight.originName].filter(Boolean).join(" / "),freight.destLat,freight.destLng,freight.destName)} style={{flex:1,padding:"10px 12px",borderRadius:10,border:`1.5px solid ${C.pri}`,background:C.w,color:C.pri,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>{Ic.nav(C.pri,14)} Ver ruta en mapa</button>
+            <button onClick={()=>window.open(`https://www.google.com/maps/dir/?api=1&origin=${freight.originLat},${freight.originLng}&destination=${freight.destLat},${freight.destLng}&travelmode=driving`,"_blank")} style={{flex:1,padding:"10px 12px",borderRadius:10,border:"none",background:C.pri,color:"#fff",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>{Ic.nav("#fff",14)} Abrir en Google Maps</button>
+          </div>}
         </div>
       </div>
 
@@ -4174,7 +4178,7 @@ export default function Tolvink() {
 
   const perms = useMemo(()=>permsFor(auth.user),[auth.user]);
   const _resolveType = useCallback((f) => resolveUserTypeForFreight(f, auth.user), [auth.user]);
-  const goToMap = (lat, lng, label) => { if(!lat||!lng) return; setMapFocus({lat:Number(lat),lng:Number(lng),label:label||""}); };
+  const goToMap = (lat, lng, label, destLat, destLng, destLabel) => { if(!lat||!lng) return; setMapFocus({lat:Number(lat),lng:Number(lng),label:label||"",destLat:destLat?Number(destLat):null,destLng:destLng?Number(destLng):null,destLabel:destLabel||""}); };
   const show = (msg,type="ok")=>setToast({msg,type});
   const nav = (s,fId)=>{ track("screen_view",{screen:s}); if(s==="new_date"&&fId){if(!perms.canRequest){show("Sin permisos para solicitar","err");return;} setDuplicateData({preDate:fId});setScreen("new");return;} if(fId){ setSelFreight(fId); if(s==="detail") fh.refresh(fId); } if(s==="new"&&!perms.canRequest){show("Sin permisos para solicitar","err");return;} setScreen(s); };
 
@@ -4325,7 +4329,7 @@ export default function Tolvink() {
       {modal?.type==="confirm_action" && <ConfirmActionModal freight={modal.freight} title={modal.title} btnLabel={modal.btnLabel} btnVariant={modal.btnVariant} icon={modal.icon} onClose={()=>setModal(null)} onConfirm={()=>handleConfirmAction(modal.freight.id,modal.action)}/>}
       {modal?.type==="reason" && <ReasonModal title={modal.title} freight={modal.freight} btnLabel={modal.btnLabel} onClose={()=>setModal(null)} onConfirm={r=>handleReasonAction(modal.freight.id,r,modal.action)}/>}
       {toast && <Toast msg={toast.msg} type={toast.type} onClose={()=>setToast(null)}/>}
-      {mapFocus && <MapOverlay lat={mapFocus.lat} lng={mapFocus.lng} label={mapFocus.label} onClose={()=>setMapFocus(null)}/>}
+      {mapFocus && <MapOverlay lat={mapFocus.lat} lng={mapFocus.lng} label={mapFocus.label} destLat={mapFocus.destLat} destLng={mapFocus.destLng} destLabel={mapFocus.destLabel} onClose={()=>setMapFocus(null)}/>}
     </div>
   );
 }
