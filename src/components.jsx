@@ -182,26 +182,16 @@ export function Sidebar({ active, onChange, unread=0, pendingCount=0, canRequest
         </div>
       </div>
 
-      {/* Status + Solicitar */}
-      <div style={{ padding:"14px 14px 10px" }}>
-        <button onClick={()=>onChange("pending")} style={{ width:"100%", display:"flex", alignItems:"center", gap:10, padding:"10px 12px", borderRadius:12, border:"none", background:hasPending?`${C.acc}0D`:C.okPale, cursor:"pointer", fontFamily:"inherit", marginBottom:8, transition:"background 0.15s" }}>
-          <div style={{ width:32, height:32, borderRadius:16, background:centerColor, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, position:"relative" }}>
-            {hasPending ? Ic.bell(C.w,16) : Ic.chk(C.w,16)}
-            {pendingCount>0 && <div style={{ position:"absolute", top:-3, right:-3, minWidth:15, height:15, borderRadius:8, background:C.err, color:C.w, fontSize:8, fontWeight:700, padding:"0 3px", display:"flex", alignItems:"center", justifyContent:"center", border:`2px solid ${C.w}` }}>{pendingCount}</div>}
-          </div>
-          <div style={{ textAlign:"left" }}>
-            <div style={{ fontSize:12, fontWeight:700, color:centerColor }}>{hasPending?"Pendientes":"Al día"}</div>
-            <div style={{ fontSize:10, color:C.t3 }}>{pendingCount} acción{pendingCount!==1?"es":""}</div>
-          </div>
-        </button>
-        {canRequest && (
+      {/* Solicitar */}
+      {canRequest && (
+        <div style={{ padding:"14px 14px 10px" }}>
           <button onClick={onNew} style={{ width:"100%", display:"flex", alignItems:"center", justifyContent:"center", gap:8, padding:"10px 14px", borderRadius:12, background:C.acc, border:"none", cursor:"pointer", fontFamily:"inherit", boxShadow:`0 2px 8px ${C.acc}30`, transition:"transform 0.15s, box-shadow 0.15s" }} onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-1px)";e.currentTarget.style.boxShadow=`0 4px 12px ${C.acc}40`}} onMouseLeave={e=>{e.currentTarget.style.transform="none";e.currentTarget.style.boxShadow=`0 2px 8px ${C.acc}30`}}>
             <style>{`@keyframes truckDrive{0%,100%{transform:translateX(0)}50%{transform:translateX(3px)}}`}</style>
             <span style={{ display:"inline-flex", animation:"truckDrive 1.5s ease-in-out infinite" }}>{Ic.truck("#fff",16)}</span>
             <span style={{ fontSize:12.5, fontWeight:700, color:"#fff" }}>Solicitar flete</span>
           </button>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Nav items */}
       <div style={{ flex:1, padding:"4px 8px", display:"flex", flexDirection:"column", gap:2 }}>
