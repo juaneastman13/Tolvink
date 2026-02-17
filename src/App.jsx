@@ -19,7 +19,7 @@ import { V, validate, SCHEMAS, textMatch, FieldError } from "./validation";
 import { stCfg, getActions, GRANOS, UNITS } from "./constants";
 import { Av, Bd, Btn, Tabs, Field, Select, Sec, Toast, Loader, AttachMenu, Sidebar, Nav, SortTh, exportCSV } from "./components";
 import { useAuth, useCatalog, useFreights, permsFor, useIsDesktop, useTableSort, usePullToRefresh } from "./hooks";
-import { loadGMaps, SafeZone, LocationPicker, FreightMap } from "./maps";
+import { SafeZone, LocationPicker, FreightMap } from "./maps";
 import { PhotoUpload, DocsGallery, FreightFileUpload } from "./uploads";
 import { RoutesBackground } from "./routes-bg";
 
@@ -259,338 +259,146 @@ function AuthScreen({ onLogin, onSignup, loading, error, clearError, onBackToLan
 
 
 function HomeScreen({ user, freights, perms, onNav, catalog, isDesktop, onAction, actionLoading }) {
-  const [activePanel, setActivePanel] = useState(null); // null | "map" | "pending" | "calendar" | "reports" | "fields" | "trucks"
-
-  const FILTER_MAP = {
-    requested: ["draft","pending_assignment"],
-    active: ["assigned","accepted","in_progress","loaded"],
-    done: ["finished"],
-  };
-
-  const stats = useMemo(()=>{
-    const avail = freights.filter(f=>FILTER_MAP.requested.includes(f.status)).length;
-    const active = freights.filter(f=>FILTER_MAP.active.includes(f.status)).length;
-    const done = freights.filter(f=>f.status==="finished").length;
-    return {avail,active,done};
-  },[freights]);
-
   const displayFreights = useMemo(()=>freights.filter(f=>!["canceled","draft"].includes(f.status)),[freights]);
-
-  const ut = user.userType;
   const todayStr = useMemo(() => new Date().toISOString().slice(0, 10), []);
 
-  // Pending actions — freights that need this user's action
-  const pendingActions = useMemo(() =>
-    freights.filter(f => getActions(f.status, user.userType, user.role, f.isOwnFleet).length > 0)
-  , [freights, user.userType, user.role]);
-  const hasPending = pendingActions.length > 0;
+  // Pending actions — freights with getPendingActions result, grouped by status
+  const pendingGrouped = useMemo(() => {
+    const items = freights.map(f => {
+      const pa = getPendingActions(f, user.userType);
+      return pa ? { ...f, pendingAction: pa } : null;
+    }).filter(Boolean);
+    const groups = [
+      { key:"pending_assignment", label:"Pendientes de asignación", icon:Ic.warn, color:C.acc, statuses:["pending_assignment"] },
+      { key:"assigned", label:"Asignados — esperando respuesta", icon:Ic.truck, color:C.sec, statuses:["assigned"] },
+      { key:"accepted", label:"Confirmados — listos para iniciar", icon:Ic.chk, color:C.pri, statuses:["accepted"] },
+      { key:"in_progress", label:"En curso — confirmación de carga", icon:Ic.nav, color:"#258B3E", statuses:["in_progress"] },
+      { key:"loaded", label:"Cargados — confirmar entrega", icon:Ic.plant, color:"#1B7D33", statuses:["loaded"] },
+    ];
+    return groups.map(g=>({ ...g, items: items.filter(f=>g.statuses.includes(f.status)).sort((a,b)=> a.loadDate && b.loadDate ? a.loadDate.localeCompare(b.loadDate) : 0) })).filter(g=>g.items.length>0);
+  }, [freights, user.userType]);
+  const totalPending = pendingGrouped.reduce((s,g)=>s+g.items.length, 0);
+  const hasPending = totalPending > 0;
 
-  // Day summary — all based on today's date
+  // Day summary
   const todayScheduled = useMemo(() => displayFreights.filter(f => f.loadDate === todayStr && !["finished"].includes(f.status)).length, [displayFreights, todayStr]);
   const liveNow = useMemo(() => freights.filter(f => ["in_progress","loaded"].includes(f.status)).length, [freights]);
   const todayDone = useMemo(() => freights.filter(f => f.status === "finished" && f.loadDate === todayStr).length, [freights, todayStr]);
 
-  const togglePanel = (key) => setActivePanel(prev=>prev===key?null:key);
+  // Collapsed groups
+  const [collapsed, setCollapsed] = useState({});
+  const toggleGroup = (key) => setCollapsed(prev=>({...prev,[key]:!prev[key]}));
 
-  // Quick access — all relevant items per type
-  const quickItems = [
-    {k:"calendar",l:"Calendario",ic:Ic.cal,c:C.sec},
-    {k:"map",l:"Mapa",ic:Ic.pin,c:C.pri},
-    ...(ut==="transporter"||ut==="producer"?[{k:"trucks",l:"Flota",ic:Ic.truck,c:C.acc}]:[]),
-    ...(ut==="producer"?[{k:"fields",l:"Campos y Lotes",ic:Ic.seedling,c:C.pri}]:[]),
-    {k:"reports",l:"Informes",ic:Ic.doc,c:"#7C3AED"},
-  ];
-
-  // --- Left column: status + day summary + quick access ---
-  const compact = isDesktop && activePanel;
-  const leftPanel = (
-    <div style={{ width:compact?280:undefined, flexShrink:0, overflow:"auto", padding:"0 18px 18px 18px", boxSizing:"border-box" }}>
+  return (
+    <div style={{ flex:1, overflow:"auto", padding:"0 18px 18px 18px" }}>
       {/* Greeting */}
       <div style={{ padding:"18px 0 12px 0" }}>
         <div style={{ fontSize:13, color:C.t2 }}>Hola,</div>
-        <div style={{ fontSize:compact?18:22, fontWeight:800, letterSpacing:-0.3, color:C.t1 }}>{user.name.split(" ")[0]}</div>
+        <div style={{ fontSize:22, fontWeight:800, letterSpacing:-0.3, color:C.t1 }}>{user.name.split(" ")[0]}</div>
       </div>
 
-      {/* Status button — pending actions */}
-      <div onClick={()=>togglePanel("pending")} style={{ display:"flex", alignItems:"center", gap:10, padding:"12px 14px", borderRadius:12, cursor:"pointer", marginBottom:14, background:hasPending?C.acc:C.okPale, border:hasPending?"none":`1px solid ${C.ok}20`, transition:"all 0.3s ease" }}>
+      {/* Status bar */}
+      <div style={{ display:"flex", alignItems:"center", gap:10, padding:"12px 14px", borderRadius:12, marginBottom:14, background:hasPending?C.acc:C.okPale, border:hasPending?"none":`1px solid ${C.ok}20` }}>
         <div style={{ width:36, height:36, borderRadius:10, background:hasPending?"rgba(255,255,255,0.2)":`${C.ok}15`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, position:"relative" }}>
           {hasPending ? Ic.bell("#fff",18) : Ic.chk(C.ok,18)}
-          {hasPending && <div style={{ position:"absolute", top:-3, right:-3, minWidth:16, height:16, borderRadius:8, background:C.err, color:C.w, fontSize:9, fontWeight:700, padding:"0 4px", display:"flex", alignItems:"center", justifyContent:"center", border:`2px solid ${C.acc}` }}>{pendingActions.length}</div>}
+          {hasPending && <div style={{ position:"absolute", top:-3, right:-3, minWidth:16, height:16, borderRadius:8, background:C.err, color:C.w, fontSize:9, fontWeight:700, padding:"0 4px", display:"flex", alignItems:"center", justifyContent:"center", border:`2px solid ${C.acc}` }}>{totalPending}</div>}
         </div>
         <div style={{ flex:1 }}>
-          <div style={{ fontSize:13, fontWeight:700, color:hasPending?"#fff":C.ok }}>{hasPending?`${pendingActions.length} acción${pendingActions.length>1?"es":""}  pendiente${pendingActions.length>1?"s":""}`:"Todo al día"}</div>
-          <div style={{ fontSize:10, color:hasPending?"rgba(255,255,255,0.8)":C.t3 }}>{hasPending?"Tocar para resolver":"Sin acciones pendientes"}</div>
+          <div style={{ fontSize:13, fontWeight:700, color:hasPending?"#fff":C.ok }}>{hasPending?`${totalPending} acción${totalPending>1?"es":""} pendiente${totalPending>1?"s":""}`:"Todo al día"}</div>
+          <div style={{ fontSize:10, color:hasPending?"rgba(255,255,255,0.8)":C.t3 }}>{hasPending?"Resolvé desde acá":"Sin acciones pendientes"}</div>
         </div>
-        {hasPending && <span style={{ display:"flex", transform:"rotate(180deg)" }}>{Ic.chev("#fff",16)}</span>}
       </div>
+
+      {/* Pending actions — inline grouped */}
+      {hasPending && (
+        <div style={{ display:"flex", flexDirection:"column", gap:12, marginBottom:16 }}>
+          {pendingGrouped.map((group, gi) => {
+            const isCollapsed = collapsed[group.key];
+            return (
+              <div key={group.key} style={{ animation:`fadeIn 0.2s ease ${gi*0.05}s both` }}>
+                <button onClick={()=>toggleGroup(group.key)} style={{ width:"100%", display:"flex", alignItems:"center", gap:10, padding:"10px 14px", background:`${group.color}0A`, borderRadius:10, border:`1px solid ${group.color}20`, borderLeft:`3px solid ${group.color}`, cursor:"pointer", fontFamily:"inherit", textAlign:"left", marginBottom:isCollapsed?0:8, transition:"margin 0.15s ease" }}>
+                  <div style={{ width:28, height:28, borderRadius:7, background:`${group.color}15`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                    {group.icon(group.color, 14)}
+                  </div>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ fontSize:13, fontWeight:700, color:group.color }}>{group.label}</div>
+                  </div>
+                  <div style={{ display:"flex", alignItems:"center", gap:6, flexShrink:0 }}>
+                    <span style={{ fontSize:12, fontWeight:800, color:group.color, background:`${group.color}15`, padding:"2px 8px", borderRadius:6 }}>{group.items.length}</span>
+                    <span style={{ display:"flex", transform:isCollapsed?"rotate(90deg)":"rotate(270deg)", transition:"transform 0.15s ease" }}>{Ic.chev(group.color,16)}</span>
+                  </div>
+                </button>
+                {!isCollapsed && (
+                  <div style={{ display:"flex", flexDirection:"column", gap:8, paddingLeft:4 }}>
+                    {group.items.map((f, idx) => {
+                      const st = stCfg(f.status);
+                      const pa = f.pendingAction;
+                      return (
+                        <div key={f.id} style={{ background: C.w, border: `1px solid ${C.b1}`, borderLeft: `4px solid ${pa.color}`, borderRadius: 12, padding: 14, boxShadow: C.sh, animation:`cardIn 0.2s ease ${idx*0.03}s both` }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                              <span style={{ fontSize: 11, fontWeight: 700, fontFamily: MONO, color: C.t2 }}>{f.code}</span>
+                              <Bd color={st.color} bg={st.bg} small>{st.label}</Bd>
+                            </div>
+                            {f.isOwnFleet && <span style={{ fontSize: 9, color: C.acc, fontWeight: 600 }}>Flota propia</span>}
+                          </div>
+                          <div style={{ fontSize: 14, fontWeight: 700, color: C.t1, marginBottom: 4 }}>
+                            {f.grain === "Otros" ? f.productTypeOther || "Otros" : f.grain} · {f.tons} {f.unit || "tn"}
+                          </div>
+                          <div style={{ fontSize: 11, color: C.t2, marginBottom: 4 }}>
+                            {f.originName} → {f.destName}
+                          </div>
+                          {f.loadDate && <div style={{ fontSize: 10, color: C.t3, marginBottom: 8 }}>
+                            {Ic.cal(C.t3,10)} {f.loadDate}{f.loadTime?` · ${f.loadTime}`:""}{f.transporterName?` · ${f.transporterName}`:""}
+                          </div>}
+                          {pa.actionKey === "respond" ? (
+                            <div style={{ display: "flex", gap: 8 }}>
+                              <button disabled={actionLoading} onClick={() => onAction(f.id, "accept")} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "10px 12px", background: C.pri, borderRadius: 8, border: "none", cursor: "pointer", fontFamily: "inherit" }}>
+                                {Ic.chk("#fff", 14)}<span style={{ fontSize: 12, fontWeight: 700, color: "#fff" }}>Aceptar</span>
+                              </button>
+                              <button disabled={actionLoading} onClick={() => onAction(f.id, "reject")} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "10px 12px", background: C.bg, borderRadius: 8, border: `1px solid ${C.err}`, cursor: "pointer", fontFamily: "inherit" }}>
+                                {Ic.cross(C.err, 14)}<span style={{ fontSize: 12, fontWeight: 700, color: C.err }}>Rechazar</span>
+                              </button>
+                            </div>
+                          ) : (
+                            <button disabled={actionLoading} onClick={() => onAction(f.id, pa.actionKey)} style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "10px 12px", background: pa.color, borderRadius: 8, border: "none", cursor: "pointer", fontFamily: "inherit", opacity: actionLoading ? 0.6 : 1 }}>
+                              <span style={{ fontSize: 13, fontWeight: 700, color: "#fff" }}>{pa.action}</span>
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* Day summary */}
       <div style={{ marginBottom:14 }}>
         <div style={{ fontSize:10, fontWeight:700, color:C.t3, textTransform:"uppercase", letterSpacing:0.5, marginBottom:8 }}>Resumen del día</div>
-        <div style={{ display:"grid", gridTemplateColumns:compact?"1fr 1fr":"1fr 1fr 1fr", gap:8 }}>
-          <div style={{ background:C.accPale, borderRadius:10, padding:compact?"8px 10px":"10px", textAlign:"center" }}>
-            <div style={{ fontSize:compact?18:22, fontWeight:800, color:C.acc }}>{todayScheduled}</div>
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8 }}>
+          <div style={{ background:C.accPale, borderRadius:10, padding:"10px", textAlign:"center" }}>
+            <div style={{ fontSize:22, fontWeight:800, color:C.acc }}>{todayScheduled}</div>
             <div style={{ fontSize:9, color:C.acc, fontWeight:600, opacity:0.8 }}>Programados hoy</div>
           </div>
-          <div style={{ background:"#D0EBD7", borderRadius:10, padding:compact?"8px 10px":"10px", textAlign:"center" }}>
-            <div style={{ fontSize:compact?18:22, fontWeight:800, color:"#258B3E" }}>{liveNow}</div>
+          <div style={{ background:"#D0EBD7", borderRadius:10, padding:"10px", textAlign:"center" }}>
+            <div style={{ fontSize:22, fontWeight:800, color:"#258B3E" }}>{liveNow}</div>
             <div style={{ fontSize:9, color:"#258B3E", fontWeight:600, opacity:0.8 }}>En curso</div>
           </div>
-          <div style={{ background:C.priPale, borderRadius:10, padding:compact?"8px 10px":"10px", textAlign:"center", gridColumn:compact?"1 / -1":undefined }}>
-            <div style={{ fontSize:compact?18:22, fontWeight:800, color:C.pri }}>{todayDone}</div>
+          <div style={{ background:C.priPale, borderRadius:10, padding:"10px", textAlign:"center" }}>
+            <div style={{ fontSize:22, fontWeight:800, color:C.pri }}>{todayDone}</div>
             <div style={{ fontSize:9, color:C.pri, fontWeight:600, opacity:0.8 }}>Realizados hoy</div>
           </div>
         </div>
       </div>
-
-      {/* Quick access */}
-      <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
-        <div style={{ fontSize:10, fontWeight:700, color:C.t3, textTransform:"uppercase", letterSpacing:0.5, marginBottom:2 }}>Accesos rápidos</div>
-        {quickItems.map(b=>{
-          const isActive = activePanel===b.k;
-          return (
-            <button key={b.k} onClick={()=>togglePanel(b.k)} style={{ display:"flex", alignItems:"center", gap:10, padding:compact?"9px 10px":"11px 14px", borderRadius:12, background:isActive?`${b.c}12`:C.w, border:`1px solid ${isActive?`${b.c}40`:C.b1}`, cursor:"pointer", fontFamily:"inherit", width:"100%", textAlign:"left", transition:"all 0.15s", boxShadow:isActive?"none":C.sh }} onMouseEnter={e=>{if(!isActive){e.currentTarget.style.background=C.priGhost;e.currentTarget.style.borderColor=`${b.c}40`}}} onMouseLeave={e=>{if(!isActive){e.currentTarget.style.background=C.w;e.currentTarget.style.borderColor=C.b1}}}>
-              <div style={{ width:compact?28:34, height:compact?28:34, borderRadius:8, background:isActive?`${b.c}22`:`${b.c}12`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{b.ic(b.c,compact?14:17)}</div>
-              <span style={{ fontSize:compact?11.5:13, fontWeight:isActive?700:600, color:isActive?b.c:C.t1, flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{b.l}</span>
-              {!isActive && <span style={{ display:"flex", transform:"rotate(180deg)", flexShrink:0 }}>{Ic.chev(C.t3,14)}</span>}
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-
-  // Panel info lookup (includes "pending" which isn't in quickItems)
-  const panelInfo = quickItems.find(q=>q.k===activePanel) || (activePanel==="pending"?{k:"pending",l:"Acciones pendientes",ic:Ic.bell,c:C.acc}:null);
-  const pi = panelInfo || {l:"",ic:Ic.home,c:C.pri};
-
-  // --- Right column: dynamic panel content ---
-  const rightPanel = activePanel ? (
-    <div style={{ flex:1, overflow:"auto", borderLeft:isDesktop?`1px solid ${C.b1}`:"none", animation:"fadeIn 0.2s ease", minWidth:0 }}>
-      <div style={{ padding:18 }}>
-        {/* Panel header */}
-        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14 }}>
-          <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-            <div style={{ width:30, height:30, borderRadius:8, background:`${pi.c}12`, display:"flex", alignItems:"center", justifyContent:"center" }}>
-              {pi.ic(pi.c,16)}
-            </div>
-            <span style={{ fontSize:16, fontWeight:800, color:C.t1 }}>{pi.l}</span>
-          </div>
-          <button onClick={()=>setActivePanel(null)} style={{ background:C.bgCardAlt, border:`1px solid ${C.b1}`, borderRadius:8, padding:"6px 8px", cursor:"pointer", display:"flex", alignItems:"center", fontFamily:"inherit" }}>{Ic.cross(C.t2,16)}</button>
-        </div>
-
-        {/* Panel content */}
-        {activePanel==="map" && <HomeMapView freights={displayFreights} onNav={onNav} />}
-        {activePanel==="pending" && <PendingScreen user={user} freights={freights} onNav={onNav} onNewFreight={()=>onNav("new")} onAction={onAction} actionLoading={actionLoading} embedded />}
-        {activePanel==="calendar" && <HomeCalendarPanel freights={freights} perms={perms} onNav={onNav} />}
-        {activePanel==="reports" && <ReportsScreen onBack={()=>setActivePanel(null)} freights={freights} isDesktop={false} embedded />}
-        {activePanel==="fields" && <FieldsScreen onBack={()=>setActivePanel(null)} embedded />}
-        {activePanel==="trucks" && <TrucksScreen onBack={()=>setActivePanel(null)} embedded />}
-      </div>
-    </div>
-  ) : null;
-
-  // --- Desktop split or Mobile stacked ---
-  if(isDesktop) {
-    return (
-      <div style={{ flex:1, display:"flex", flexDirection:"row", overflow:"hidden" }}>
-        <div style={{ width:activePanel?280:undefined, flex:activePanel?undefined:1, overflow:"auto", transition:"width 0.2s ease" }}>
-          {leftPanel}
-        </div>
-        {rightPanel}
-      </div>
-    );
-  }
-
-  // Mobile: if panel active, show panel fullscreen with back button
-  if(activePanel) {
-    return (
-      <div style={{ flex:1, overflow:"auto" }}>
-        <div style={{ padding:18 }}>
-          <button onClick={()=>setActivePanel(null)} style={{ display:"flex", alignItems:"center", gap:6, background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", padding:0, marginBottom:12 }}>
-            {Ic.chev(C.pri,18)}
-            <span style={{ fontSize:14, fontWeight:700, color:C.pri }}>Inicio</span>
-          </button>
-          <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:14 }}>
-            <div style={{ width:30, height:30, borderRadius:8, background:`${pi.c}12`, display:"flex", alignItems:"center", justifyContent:"center" }}>
-              {pi.ic(pi.c,16)}
-            </div>
-            <span style={{ fontSize:16, fontWeight:800, color:C.t1 }}>{pi.l}</span>
-          </div>
-          {activePanel==="map" && <HomeMapView freights={displayFreights} onNav={onNav} />}
-          {activePanel==="pending" && <PendingScreen user={user} freights={freights} onNav={onNav} onNewFreight={()=>onNav("new")} onAction={onAction} actionLoading={actionLoading} embedded />}
-          {activePanel==="calendar" && <HomeCalendarPanel freights={freights} perms={perms} onNav={onNav} />}
-          {activePanel==="reports" && <ReportsScreen onBack={()=>setActivePanel(null)} freights={freights} isDesktop={false} embedded />}
-          {activePanel==="fields" && <FieldsScreen onBack={()=>setActivePanel(null)} embedded />}
-          {activePanel==="trucks" && <TrucksScreen onBack={()=>setActivePanel(null)} embedded />}
-        </div>
-      </div>
-    );
-  }
-
-  // Mobile: default dashboard
-  return (
-    <div style={{ flex:1, overflow:"auto" }}>
-      {leftPanel}
     </div>
   );
 }
 
 // Inline calendar panel for Home dashboard
-function HomeCalendarPanel({ freights, perms, onNav }) {
-  const [calMonth, setCalMonth] = useState(()=>{const d=new Date();return{y:d.getFullYear(),m:d.getMonth()}});
-  const [calSelDay, setCalSelDay] = useState(null);
-  const monNames=["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
-  const filtered = useMemo(()=>freights.filter(f=>!["canceled","draft"].includes(f.status)),[freights]);
-  const days=useMemo(()=>{const arr=[];const first=new Date(calMonth.y,calMonth.m,1);const lastDay=new Date(calMonth.y,calMonth.m+1,0).getDate();const startDow=(first.getDay()+6)%7;for(let i=0;i<startDow;i++)arr.push(null);for(let d=1;d<=lastDay;d++)arr.push(d);return arr;},[calMonth]);
-  const byDay=useMemo(()=>{const map={};filtered.forEach(f=>{if(!f.loadDate)return;const dd=parseInt(f.loadDate.slice(8,10),10);const mm=parseInt(f.loadDate.slice(5,7),10)-1;const yy=parseInt(f.loadDate.slice(0,4),10);if(yy===calMonth.y&&mm===calMonth.m){if(!map[dd])map[dd]=[];map[dd].push(f);}});return map;},[filtered,calMonth]);
-  const selFreights=calSelDay?byDay[calSelDay]||[]:[];
-  const today=new Date();const isToday=(d)=>d===today.getDate()&&calMonth.m===today.getMonth()&&calMonth.y===today.getFullYear();
-
-  return <div>
-    <div style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius:12,padding:14,boxShadow:C.sh,marginBottom:10}}>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-        <button onClick={()=>{setCalMonth(p=>p.m===0?{y:p.y-1,m:11}:{y:p.y,m:p.m-1});setCalSelDay(null);}} style={{background:"none",border:"none",cursor:"pointer",padding:4,display:"flex"}}>{Ic.chev(C.pri,20)}</button>
-        <span style={{fontSize:15,fontWeight:700,color:C.t1}}>{monNames[calMonth.m]} {calMonth.y}</span>
-        <button onClick={()=>{setCalMonth(p=>p.m===11?{y:p.y+1,m:0}:{y:p.y,m:p.m+1});setCalSelDay(null);}} style={{background:"none",border:"none",cursor:"pointer",padding:4,display:"flex",transform:"rotate(180deg)"}}>{Ic.chev(C.pri,20)}</button>
-      </div>
-      <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:2,textAlign:"center"}}>
-        {["Lu","Ma","Mi","Ju","Vi","Sá","Do"].map(d=><div key={d} style={{fontSize:9,fontWeight:700,color:C.t3,padding:4}}>{d}</div>)}
-        {days.map((d,i)=>{if(!d)return<div key={`e${i}`}/>;const cnt=byDay[d]?.length||0;const sel=calSelDay===d;const td=isToday(d);const statuses=byDay[d]?.map(f=>stCfg(f.status).color)||[];
-          return <div key={d} onClick={()=>setCalSelDay(sel?null:d)} style={{padding:"6px 2px",borderRadius:8,cursor:"pointer",background:sel?C.pri:td?C.priPale:"transparent",transition:"background 0.15s",minHeight:36}}>
-            <div style={{fontSize:12,fontWeight:sel||td?700:400,color:sel?C.w:td?C.pri:C.t1}}>{d}</div>
-            {cnt>0&&<div style={{display:"flex",gap:2,justifyContent:"center",marginTop:2}}>{statuses.slice(0,3).map((c,j)=><div key={j} style={{width:5,height:5,borderRadius:3,background:sel?"#fff":c}}/>)}{cnt>3&&<div style={{fontSize:7,color:sel?C.w:C.t3}}>+</div>}</div>}
-          </div>;})}
-      </div>
-    </div>
-    {calSelDay&&<div style={{animation:"fadeIn 0.15s ease"}}>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-        <span style={{fontSize:13,fontWeight:700,color:C.t1}}>{calSelDay} de {monNames[calMonth.m]} — {selFreights.length} flete{selFreights.length!==1?"s":""}</span>
-        {perms.canRequest&&<Btn sm v="acc" icon={Ic.plus(C.w,12)} onClick={()=>{const dd=String(calSelDay).padStart(2,"0");const mm=String(calMonth.m+1).padStart(2,"0");onNav("new_date",`${calMonth.y}-${mm}-${dd}`)}}>Nuevo</Btn>}
-      </div>
-      <div style={{display:"flex",flexDirection:"column",gap:8}}>
-        {selFreights.map(f=>{const st=stCfg(f.status);return <div key={f.id} className="tv-card" onClick={()=>onNav("detail",f.id)} style={{background:C.w,border:`1px solid ${C.b1}`,borderLeft:`3px solid ${st.border}`,borderRadius:10,padding:12,cursor:"pointer",boxShadow:C.sh}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}><span style={{fontSize:10,fontWeight:700,color:C.t3,fontFamily:MONO}}>{f.code}</span><Bd color={st.color} bg={st.bg} small>{st.label}</Bd></div>
-          <div style={{fontSize:13,fontWeight:700,color:C.t1}}>{f.grain} · {f.tons} tn</div>
-          <div style={{fontSize:10.5,color:C.t2,marginTop:3}}>{(f.originName||"").split("—")[0].trim()} → {f.destName}</div>
-          <div style={{fontSize:10,color:C.t3,marginTop:3}}>{f.loadTime||""}{f.transporterName?` · ${f.transporterName}`:""}</div>
-        </div>})}
-        {selFreights.length===0&&<div style={{textAlign:"center",padding:20,color:C.t3,fontSize:12}}>Sin fletes este día</div>}
-      </div>
-    </div>}
-  </div>;
-}
-
-function HomeMapView({ freights, onNav }) {
-  const mapRef = useRef(null);
-  const [mapReady, setMapReady] = useState(false);
-  const [fullscreen, setFullscreen] = useState(false);
-  const [fStatus, setFStatus] = useState("");
-  const [fPlant, setFPlant] = useState("");
-  const [fTransp, setFTransp] = useState("");
-  const [fProd, setFProd] = useState("");
-  const [fDateFrom, setFDateFrom] = useState("");
-  const [fDateTo, setFDateTo] = useState("");
-
-  const filteredMF = useMemo(()=>{
-    let ff=freights;
-    if(fStatus)ff=ff.filter(f=>f.status===fStatus);
-    if(fPlant)ff=ff.filter(f=>f.destName===fPlant);
-    if(fTransp)ff=ff.filter(f=>f.transporterName===fTransp);
-    if(fProd)ff=ff.filter(f=>f.requestedByName===fProd);
-    if(fDateFrom)ff=ff.filter(f=>f.loadDate>=fDateFrom);
-    if(fDateTo)ff=ff.filter(f=>f.loadDate<=fDateTo);
-    return ff;
-  },[freights,fStatus,fPlant,fTransp,fProd,fDateFrom,fDateTo]);
-
-  const plantOpts = useMemo(()=>[...new Set(freights.map(f=>f.destName).filter(Boolean))].sort(),[freights]);
-  const transpOpts = useMemo(()=>[...new Set(freights.map(f=>f.transporterName).filter(Boolean))].sort(),[freights]);
-  const prodOpts = useMemo(()=>[...new Set(freights.map(f=>f.requestedByName).filter(Boolean))].sort(),[freights]);
-  const hasFilters = fStatus||fPlant||fTransp||fProd||fDateFrom||fDateTo;
-  const clearAll = ()=>{setFStatus("");setFPlant("");setFTransp("");setFProd("");setFDateFrom("");setFDateTo("");};
-
-  useEffect(() => {
-    if (!mapRef.current) return;
-    let cancelled = false;
-    (async () => {
-      const maps = await loadGMaps();
-      if (cancelled) return;
-      const bounds = new maps.LatLngBounds();
-      let hasPoints = false;
-      const center = { lat: -34.6, lng: -56.2 };
-
-      const map = new maps.Map(mapRef.current, {
-        zoom: 6, center, disableDefaultUI: true, zoomControl: true,
-        gestureHandling: "greedy", mapTypeControl: false, streetViewControl: false, fullscreenControl: false,
-      });
-
-      filteredMF.forEach(f => {
-        const oLat = parseFloat(f.originLat); const oLng = parseFloat(f.originLng);
-        const dLat = parseFloat(f.destLat); const dLng = parseFloat(f.destLng);
-        const st = stCfg(f.status);
-
-        if (oLat && oLng) {
-          bounds.extend({ lat: oLat, lng: oLng });
-          hasPoints = true;
-          const m = new maps.Marker({ position: { lat: oLat, lng: oLng }, map, title: `${f.code} — Origen`, icon: { path: maps.SymbolPath.CIRCLE, scale: 7, fillColor: st.color, fillOpacity: 0.9, strokeColor: "#fff", strokeWeight: 2 } });
-          m.addListener("click", () => onNav("detail", f.id));
-        }
-        if (dLat && dLng) {
-          bounds.extend({ lat: dLat, lng: dLng });
-          hasPoints = true;
-          const m = new maps.Marker({ position: { lat: dLat, lng: dLng }, map, title: `${f.code} — Destino`, icon: { path: maps.SymbolPath.BACKWARD_CLOSED_ARROW, scale: 5, fillColor: st.color, fillOpacity: 0.9, strokeColor: "#fff", strokeWeight: 2 } });
-          m.addListener("click", () => onNav("detail", f.id));
-        }
-        if (oLat && oLng && dLat && dLng) {
-          new maps.Polyline({ path: [{ lat: oLat, lng: oLng }, { lat: dLat, lng: dLng }], map, strokeColor: st.color, strokeOpacity: 0.5, strokeWeight: 2 });
-        }
-      });
-
-      if (hasPoints) map.fitBounds(bounds, 40);
-      setMapReady(true);
-    })();
-    return () => { cancelled = true; };
-  }, [filteredMF]);
-
-  const wrapStyle = fullscreen ? { position:"fixed", inset:0, zIndex:200, background:C.bg, display:"flex", flexDirection:"column" } : { borderRadius: 12, overflow: "hidden", border: `1px solid ${C.b1}`, boxShadow: C.sh };
-
-  return (
-    <div style={wrapStyle}>
-      {/* Filters bar */}
-      <div style={{ padding:fullscreen?"10px 16px":"6px 12px", background:C.w, display:"flex", gap:6, alignItems:"center", flexWrap:"wrap", borderBottom:`1px solid ${C.b2}` }}>
-        <select value={fStatus} onChange={e=>setFStatus(e.target.value)} style={{ padding:"5px 8px", borderRadius:6, border:`1px solid ${C.b1}`, fontSize:10, background:C.w, color:fStatus?C.t1:C.t3, fontFamily:"inherit" }}>
-          <option value="">Estado</option>
-          <option value="pending_assignment">Solicitado</option><option value="assigned">Asignado</option><option value="accepted">Aceptado</option><option value="in_progress">En viaje</option><option value="loaded">Cargado</option><option value="finished">Finalizado</option>
-        </select>
-        <select value={fPlant} onChange={e=>setFPlant(e.target.value)} style={{ padding:"5px 8px", borderRadius:6, border:`1px solid ${C.b1}`, fontSize:10, background:C.w, color:fPlant?C.t1:C.t3, fontFamily:"inherit" }}>
-          <option value="">Planta</option>
-          {plantOpts.map(p=><option key={p} value={p}>{p}</option>)}
-        </select>
-        {transpOpts.length>0&&<select value={fTransp} onChange={e=>setFTransp(e.target.value)} style={{ padding:"5px 8px", borderRadius:6, border:`1px solid ${C.b1}`, fontSize:10, background:C.w, color:fTransp?C.t1:C.t3, fontFamily:"inherit" }}>
-          <option value="">Transportista</option>
-          {transpOpts.map(t=><option key={t} value={t}>{t}</option>)}
-        </select>}
-        {prodOpts.length>0&&<select value={fProd} onChange={e=>setFProd(e.target.value)} style={{ padding:"5px 8px", borderRadius:6, border:`1px solid ${C.b1}`, fontSize:10, background:C.w, color:fProd?C.t1:C.t3, fontFamily:"inherit" }}>
-          <option value="">Productor</option>
-          {prodOpts.map(p=><option key={p} value={p}>{p}</option>)}
-        </select>}
-        <div style={{display:"flex",alignItems:"center",gap:4}}><span style={{fontSize:10,color:C.t3,fontWeight:600}}>Desde</span><input type="date" value={fDateFrom} onChange={e=>setFDateFrom(e.target.value)} onClick={e=>e.target.showPicker?.()} style={{ padding:"6px 8px", borderRadius:6, border:`1px solid ${C.b1}`, fontSize:11, background:C.w, color:fDateFrom?C.t1:C.t3, fontFamily:"inherit", cursor:"pointer" }}/></div>
-        <div style={{display:"flex",alignItems:"center",gap:4}}><span style={{fontSize:10,color:C.t3,fontWeight:600}}>Hasta</span><input type="date" value={fDateTo} onChange={e=>setFDateTo(e.target.value)} onClick={e=>e.target.showPicker?.()} style={{ padding:"6px 8px", borderRadius:6, border:`1px solid ${C.b1}`, fontSize:11, background:C.w, color:fDateTo?C.t1:C.t3, fontFamily:"inherit", cursor:"pointer" }}/></div>
-        {hasFilters&&<button onClick={clearAll} style={{ background:"none", border:"none", fontSize:10, color:C.err, fontWeight:600, cursor:"pointer", fontFamily:"inherit", padding:"2px 4px" }}>Limpiar</button>}
-        <span style={{ fontSize:10, color:C.t3, marginLeft:"auto" }}>{filteredMF.length} fletes</span>
-        <button onClick={()=>setFullscreen(!fullscreen)} style={{ background:C.priPale, border:`1px solid ${C.pri}20`, borderRadius:6, padding:"5px 10px", cursor:"pointer", display:"flex", alignItems:"center", gap:4, fontSize:10, fontWeight:600, color:C.pri, fontFamily:"inherit" }}>
-          {fullscreen?Ic.collapse(C.pri,12):Ic.expand(C.pri,12)} {fullscreen?"Cerrar":"Expandir"}
-        </button>
-      </div>
-      <div ref={mapRef} style={{ width: "100%", flex:fullscreen?1:undefined, height: fullscreen?undefined:350 }} />
-      {!mapReady && <div style={{ textAlign: "center", padding: 20, fontSize: 12, color: C.t3 }}>Cargando mapa...</div>}
-      <div style={{ padding: "6px 12px", background: C.w, fontSize: 10, color: C.t3, display: "flex", gap: 12 }}>
-        <span>● Origen</span> <span>▼ Destino</span> <span>— Ruta</span>
-      </div>
-    </div>
-  );
-}
-
 
 // ======================== FREIGHT LIST ================================
 
