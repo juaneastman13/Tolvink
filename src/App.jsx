@@ -279,17 +279,80 @@ function HomeScreen({ user, freights, perms, onNav, catalog, isDesktop, onAction
     return STATUS_GROUPS.map(g => {
       const st = stCfg(g.statuses[0]);
       const items = freights.filter(f => g.statuses.includes(f.status)).sort((a,b) => a.loadDate && b.loadDate ? a.loadDate.localeCompare(b.loadDate) : 0);
-      return { ...g, color: st.color, bg: st.bg, items };
+      const hasActions = items.some(f => getPendingActions(f, user.userType));
+      return { ...g, color: st.color, bg: st.bg, items, hasActions };
     }).filter(g => g.items.length > 0);
-  }, [freights]);
+  }, [freights, user.userType]);
 
-  // Collapsed groups — all start collapsed
+  const actionGroups = grouped.filter(g => g.hasActions);
+  const summaryGroups = grouped.filter(g => !g.hasActions);
+
+  // Collapsed groups — actions start open, summary start collapsed
   const [collapsed, setCollapsed] = useState(() => {
     const init = {};
     STATUS_GROUPS.forEach(g => init[g.key] = true);
     return init;
   });
   const toggleGroup = (key) => setCollapsed(prev => ({ ...prev, [key]: !prev[key] }));
+
+  // Render a collapsible group
+  const renderGroup = (group) => {
+    const isOpen = !collapsed[group.key];
+    return (
+      <div key={group.key}>
+        <button onClick={() => toggleGroup(group.key)} style={{ width:"100%", display:"flex", alignItems:"center", gap:10, padding:"10px 14px", background:group.bg, borderRadius:10, border:`1px solid ${group.color}20`, cursor:"pointer", fontFamily:"inherit", textAlign:"left", marginBottom:isOpen?8:0, transition:"margin 0.15s ease" }}>
+          <div style={{ width:28, height:28, borderRadius:7, background:`${group.color}22`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+            {group.icon(group.color, 14)}
+          </div>
+          <div style={{ flex:1, fontSize:13, fontWeight:700, color:group.color }}>{group.label}</div>
+          <span style={{ fontSize:12, fontWeight:800, color:group.color, background:`${group.color}18`, padding:"2px 8px", borderRadius:6 }}>{group.items.length}</span>
+          <span style={{ display:"flex", transform:isOpen?"rotate(270deg)":"rotate(90deg)", transition:"transform 0.15s ease" }}>{Ic.chev(group.color,16)}</span>
+        </button>
+        {isOpen && (
+          <div style={{ display:"flex", flexDirection:"column", gap:8, paddingLeft:4 }}>
+            {group.items.map((f, idx) => {
+              const st = stCfg(f.status);
+              const pa = getPendingActions(f, user.userType);
+              return (
+                <div key={f.id} style={{ background: C.w, border: `1px solid ${C.b1}`, borderLeft: `4px solid ${st.color}`, borderRadius: 12, padding: 14, boxShadow: C.sh, animation:`cardIn 0.2s ease ${idx*0.03}s both` }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <span style={{ fontSize: 11, fontWeight: 700, fontFamily: MONO, color: C.t2 }}>{f.code}</span>
+                      <Bd color={st.color} bg={st.bg} small>{st.label}</Bd>
+                    </div>
+                    {f.isOwnFleet && <span style={{ fontSize: 9, color: C.acc, fontWeight: 600 }}>Flota propia</span>}
+                  </div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: C.t1, marginBottom: 4 }}>
+                    {f.grain === "Otros" ? f.productTypeOther || "Otros" : f.grain} · {f.tons} {f.unit || "tn"}
+                  </div>
+                  <div style={{ fontSize: 11, color: C.t2, marginBottom: 4 }}>
+                    {f.originName} → {f.destName}
+                  </div>
+                  {f.loadDate && <div style={{ fontSize: 10, color: C.t3, marginBottom: pa ? 8 : 0 }}>
+                    {Ic.cal(C.t3,10)} {f.loadDate}{f.loadTime?` · ${f.loadTime}`:""}{f.transporterName?` · ${f.transporterName}`:""}
+                  </div>}
+                  {pa && pa.actionKey === "respond" ? (
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <button disabled={actionLoading} onClick={() => onAction(f.id, "accept")} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "10px 12px", background: C.pri, borderRadius: 8, border: "none", cursor: "pointer", fontFamily: "inherit" }}>
+                        {Ic.chk("#fff", 14)}<span style={{ fontSize: 12, fontWeight: 700, color: "#fff" }}>Aceptar</span>
+                      </button>
+                      <button disabled={actionLoading} onClick={() => onAction(f.id, "reject")} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "10px 12px", background: C.bg, borderRadius: 8, border: `1px solid ${C.err}`, cursor: "pointer", fontFamily: "inherit" }}>
+                        {Ic.cross(C.err, 14)}<span style={{ fontSize: 12, fontWeight: 700, color: C.err }}>Rechazar</span>
+                      </button>
+                    </div>
+                  ) : pa ? (
+                    <button disabled={actionLoading} onClick={() => onAction(f.id, pa.actionKey)} style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "10px 12px", background: pa.color, borderRadius: 8, border: "none", cursor: "pointer", fontFamily: "inherit", opacity: actionLoading ? 0.6 : 1 }}>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: "#fff" }}>{pa.action}</span>
+                    </button>
+                  ) : null}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div style={{ flex:1, overflow:"auto", padding:"14px 18px 18px 18px" }}>
@@ -305,66 +368,25 @@ function HomeScreen({ user, freights, perms, onNav, catalog, isDesktop, onAction
         </div>
       </div>
 
-      {/* Freights grouped by status — collapsible */}
-      <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
-        {grouped.map((group) => {
-          const isOpen = !collapsed[group.key];
-          return (
-            <div key={group.key}>
-              <button onClick={() => toggleGroup(group.key)} style={{ width:"100%", display:"flex", alignItems:"center", gap:10, padding:"10px 14px", background:group.bg, borderRadius:10, border:`1px solid ${group.color}20`, cursor:"pointer", fontFamily:"inherit", textAlign:"left", marginBottom:isOpen?8:0, transition:"margin 0.15s ease" }}>
-                <div style={{ width:28, height:28, borderRadius:7, background:`${group.color}22`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
-                  {group.icon(group.color, 14)}
-                </div>
-                <div style={{ flex:1, fontSize:13, fontWeight:700, color:group.color }}>{group.label}</div>
-                <span style={{ fontSize:12, fontWeight:800, color:group.color, background:`${group.color}18`, padding:"2px 8px", borderRadius:6 }}>{group.items.length}</span>
-                <span style={{ display:"flex", transform:isOpen?"rotate(270deg)":"rotate(90deg)", transition:"transform 0.15s ease" }}>{Ic.chev(group.color,16)}</span>
-              </button>
-              {isOpen && (
-                <div style={{ display:"flex", flexDirection:"column", gap:8, paddingLeft:4 }}>
-                  {group.items.map((f, idx) => {
-                    const st = stCfg(f.status);
-                    const pa = getPendingActions(f, user.userType);
-                    return (
-                      <div key={f.id} onClick={() => { if(!pa) onNav("detail", f.id); }} style={{ background: C.w, border: `1px solid ${C.b1}`, borderLeft: `4px solid ${st.color}`, borderRadius: 12, padding: 14, boxShadow: C.sh, cursor: pa ? "default" : "pointer", animation:`cardIn 0.2s ease ${idx*0.03}s both` }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                            <span style={{ fontSize: 11, fontWeight: 700, fontFamily: MONO, color: C.t2 }}>{f.code}</span>
-                            <Bd color={st.color} bg={st.bg} small>{st.label}</Bd>
-                          </div>
-                          {f.isOwnFleet && <span style={{ fontSize: 9, color: C.acc, fontWeight: 600 }}>Flota propia</span>}
-                        </div>
-                        <div style={{ fontSize: 14, fontWeight: 700, color: C.t1, marginBottom: 4 }}>
-                          {f.grain === "Otros" ? f.productTypeOther || "Otros" : f.grain} · {f.tons} {f.unit || "tn"}
-                        </div>
-                        <div style={{ fontSize: 11, color: C.t2, marginBottom: 4 }}>
-                          {f.originName} → {f.destName}
-                        </div>
-                        {f.loadDate && <div style={{ fontSize: 10, color: C.t3, marginBottom: pa ? 8 : 0 }}>
-                          {Ic.cal(C.t3,10)} {f.loadDate}{f.loadTime?` · ${f.loadTime}`:""}{f.transporterName?` · ${f.transporterName}`:""}
-                        </div>}
-                        {pa && pa.actionKey === "respond" ? (
-                          <div style={{ display: "flex", gap: 8 }}>
-                            <button disabled={actionLoading} onClick={() => onAction(f.id, "accept")} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "10px 12px", background: C.pri, borderRadius: 8, border: "none", cursor: "pointer", fontFamily: "inherit" }}>
-                              {Ic.chk("#fff", 14)}<span style={{ fontSize: 12, fontWeight: 700, color: "#fff" }}>Aceptar</span>
-                            </button>
-                            <button disabled={actionLoading} onClick={() => onAction(f.id, "reject")} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "10px 12px", background: C.bg, borderRadius: 8, border: `1px solid ${C.err}`, cursor: "pointer", fontFamily: "inherit" }}>
-                              {Ic.cross(C.err, 14)}<span style={{ fontSize: 12, fontWeight: 700, color: C.err }}>Rechazar</span>
-                            </button>
-                          </div>
-                        ) : pa ? (
-                          <button disabled={actionLoading} onClick={() => onAction(f.id, pa.actionKey)} style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "10px 12px", background: pa.color, borderRadius: 8, border: "none", cursor: "pointer", fontFamily: "inherit", opacity: actionLoading ? 0.6 : 1 }}>
-                            <span style={{ fontSize: 13, fontWeight: 700, color: "#fff" }}>{pa.action}</span>
-                          </button>
-                        ) : null}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
+      {/* Acciones necesarias */}
+      {actionGroups.length > 0 && (
+        <div style={{ marginBottom:16 }}>
+          <div style={{ fontSize:11, fontWeight:700, color:C.t2, textTransform:"uppercase", letterSpacing:0.5, marginBottom:8 }}>Acciones necesarias</div>
+          <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+            {actionGroups.map(renderGroup)}
+          </div>
+        </div>
+      )}
+
+      {/* Resumen */}
+      {summaryGroups.length > 0 && (
+        <div>
+          <div style={{ fontSize:11, fontWeight:700, color:C.t2, textTransform:"uppercase", letterSpacing:0.5, marginBottom:8 }}>Resumen</div>
+          <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+            {summaryGroups.map(renderGroup)}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
