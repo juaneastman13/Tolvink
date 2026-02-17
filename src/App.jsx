@@ -259,19 +259,16 @@ function AuthScreen({ onLogin, onSignup, loading, error, clearError, onBackToLan
 
 
 // Resolve effective userType for a freight (multi-type users)
-function resolveUserTypeForFreight(freight, user, plantCompanyMap) {
-  if (!user.userTypes || user.userTypes.length <= 1) return user.userType;
-  const cbt = user.companyByType || {};
-  const plantCo = cbt.plant || (user.userType === "plant" ? user.companyId : null);
-  const transporterCo = cbt.transporter || (user.userType === "transporter" ? user.companyId : null);
-  const producerCo = cbt.producer || (user.userType === "producer" ? user.companyId : null);
-  // Check plant first (assign/confirm actions are most critical)
-  if (plantCo) {
-    const freightPlantCo = plantCompanyMap?.[freight.destPlantId];
-    if (freightPlantCo === plantCo || freight.destPlantId === plantCo) return "plant";
+// Tries each type: prefer the one with pending actions, then any actions
+function resolveUserTypeForFreight(freight, user) {
+  const types = user.userTypes || [user.userType];
+  if (types.length <= 1) return user.userType;
+  for (const type of types) {
+    if (getPendingActions(freight, type)) return type;
   }
-  if (transporterCo && freight.transporterId === transporterCo) return "transporter";
-  if (producerCo && freight.originCompanyId === producerCo) return "producer";
+  for (const type of types) {
+    if (getActions(freight.status, type, user.role, freight.isOwnFleet).length > 0) return type;
+  }
   return user.userType;
 }
 
@@ -370,7 +367,7 @@ function HomeScreen({ user, freights, perms, onNav, catalog, isDesktop, onAction
   };
 
   // Helper: resolve effective userType per freight for multi-type users
-  const effectiveType = useCallback((f) => resolveUserTypeForFreight(f, user, plantCompanyMap), [user, plantCompanyMap]);
+  const effectiveType = useCallback((f) => resolveUserTypeForFreight(f, user), [user]);
 
   // Pending groups — grouped by ACTION type, filtered by date
   const pendingByAction = useMemo(() => {
@@ -3759,9 +3756,7 @@ export default function Tolvink() {
   },[auth.user]);
 
   const perms = useMemo(()=>permsFor(auth.user),[auth.user]);
-  // Plant companyId map for multi-type user resolution
-  const _plantCoMap = useMemo(() => { const m = {}; (catalog.plants || []).forEach(p => { m[p.id] = p.companyId || p.id; }); return m; }, [catalog.plants]);
-  const _resolveType = useCallback((f) => resolveUserTypeForFreight(f, auth.user, _plantCoMap), [auth.user, _plantCoMap]);
+  const _resolveType = useCallback((f) => resolveUserTypeForFreight(f, auth.user), [auth.user]);
   const show = (msg,type="ok")=>setToast({msg,type});
   const nav = (s,fId)=>{ track("screen_view",{screen:s}); if(s==="new_date"&&fId){if(!perms.canRequest){show("Sin permisos para solicitar","err");return;} setDuplicateData({preDate:fId});setScreen("new");return;} if(fId){ setSelFreight(fId); if(s==="detail") fh.refresh(fId); } if(s==="new"&&!perms.canRequest){show("Sin permisos para solicitar","err");return;} setScreen(s); };
 
