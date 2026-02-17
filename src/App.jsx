@@ -17,7 +17,7 @@ import {
 import { C, track, FONT, MONO, Ic } from "./theme";
 import { V, validate, SCHEMAS, textMatch, FieldError } from "./validation";
 import { stCfg, getActions, GRANOS, UNITS } from "./constants";
-import { Av, Bd, Btn, Tabs, Field, Select, Sec, Toast, Loader, AttachMenu, Sidebar, Nav, SortTh, exportCSV, exportExcel, exportPDF, NotifBell, NotificationsPanel, ModalOverlay } from "./components";
+import { Av, Bd, Btn, Tabs, Field, Select, Sec, Toast, Loader, LoadingOverlay, AttachMenu, Sidebar, Nav, SortTh, exportCSV, exportExcel, exportPDF, NotifBell, NotificationsPanel, ModalOverlay } from "./components";
 import { useAuth, useCatalog, useFreights, permsFor, useIsDesktop, useTableSort, usePullToRefresh, useOnline, useNotifications } from "./hooks";
 import { SafeZone, LocationPicker, FreightMap, FreightsOverviewMap } from "./maps";
 import { PhotoUpload, DocsGallery, FreightFileUpload } from "./uploads";
@@ -1172,6 +1172,7 @@ function NewScreen({ user, lots, plants, branches, fields, trucks, onBack, onCre
 
   return (
     <div style={{ flex:1, overflow:"auto", padding:18, animation:"slideUp 0.25s ease" }}>
+      {submitting && <LoadingOverlay/>}
       <button onClick={onBack} style={{ background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", fontSize:13, fontWeight:600, color:C.pri, marginBottom:14, padding:0, display:"flex", alignItems:"center", gap:4 }}>{Ic.chev(C.pri,18)} Volver</button>
       <div style={{ fontSize:20, fontWeight:800, marginBottom:4, letterSpacing:-0.3 }}>Solicitar Flete</div>
       <div style={{ fontSize:12, color:C.t2, marginBottom:22 }}>Solicitando como: <span style={{fontWeight:600,color:C.t1}}>{user.name}</span></div>
@@ -1608,6 +1609,7 @@ function TrucksScreen({ onBack, embedded }) {
 
   return (
     <div style={{ flex: embedded?undefined:1, overflow: embedded?"visible":"auto", padding: embedded?0:18 }}>
+      {saving && <LoadingOverlay/>}
       {!embedded && <button onClick={onBack} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 600, color: C.pri, marginBottom: 14, padding: 0, display: "flex", alignItems: "center", gap: 4 }}>{Ic.chev(C.pri, 18)} Mi Perfil</button>}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
         <div style={{ fontSize: 20, fontWeight: 800, letterSpacing: -0.3 }}>Mi Flota</div>
@@ -1754,6 +1756,7 @@ function FieldsScreen({ onBack, embedded }) {
 
   return (
     <div style={{ flex: embedded?undefined:1, overflow: embedded?"visible":"auto", padding: embedded?0:18 }}>
+      {saving && <LoadingOverlay/>}
       {!embedded && <button onClick={onBack} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 600, color: C.pri, marginBottom: 14, padding: 0, display: "flex", alignItems: "center", gap: 4 }}>{Ic.chev(C.pri, 18)} Mi Perfil</button>}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
         <div style={{ fontSize: 20, fontWeight: 800, letterSpacing: -0.3 }}>Mis Campos</div>
@@ -2006,6 +2009,7 @@ function AccessScreen({ onBack }) {
 
   return (
     <div style={{ flex: 1, overflow: "auto", padding: 18 }}>
+      {saving && <LoadingOverlay/>}
       <button onClick={onBack} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 600, color: C.pri, marginBottom: 14, padding: 0, display: "flex", alignItems: "center", gap: 4 }}>{Ic.chev(C.pri, 18)} Mi Perfil</button>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
         <div style={{ fontSize: 20, fontWeight: 800, letterSpacing: -0.3 }}>Productores / Transportistas</div>
@@ -2016,7 +2020,7 @@ function AccessScreen({ onBack }) {
 
       {/* Confirm revoke modal */}
       {confirmRevoke && (
-        <ModalOverlay onClose={()=>setConfirmRevoke(null)} maxWidth={340}>
+        <ModalOverlay onClose={()=>setConfirmRevoke(null)} maxWidth={340} loading={saving}>
           <div style={{ fontSize:16, fontWeight:700, marginBottom:8 }}>Revocar acceso</div>
           <div style={{ fontSize:13, color:C.t2, marginBottom:16 }}>¿Revocar el acceso de <b>{confirmRevoke.producerUser?.name||confirmRevoke.producerCompany?.name}</b>? No podrá enviar fletes a tus plantas.</div>
           <div style={{ display:"flex", gap:8 }}>
@@ -2787,6 +2791,7 @@ function EditScreen({ freight, fields, plants, onBack, onSave }) {
 
   return (
     <div style={{ flex:1, overflow:"auto", padding:18 }}>
+      {saving && <LoadingOverlay/>}
       <button onClick={onBack} style={{ background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", fontSize:13, fontWeight:600, color:C.pri, marginBottom:14, padding:0, display:"flex", alignItems:"center", gap:4 }}>{Ic.chev(C.pri,18)} Volver</button>
       <div style={{ fontSize:20, fontWeight:800, marginBottom:4, letterSpacing:-0.3 }}>Editar Flete</div>
       <div style={{ fontSize:12, color:C.t2, marginBottom:22 }}>{freight.code} · {freight.grain} · {freight.tons} {freight.unit||"tn"}</div>
@@ -2961,7 +2966,7 @@ function ConfirmActionModal({ freight, title, btnLabel, btnVariant="pri", icon, 
   const [loading,setLoading] = useState(false);
   const doConfirm = async ()=>{ if(loading) return; setLoading(true); await onConfirm(); setLoading(false); };
   return (
-    <ModalOverlay onClose={onClose} maxWidth={360}>
+    <ModalOverlay onClose={onClose} maxWidth={360} loading={loading}>
       {icon && <div style={{display:"flex",justifyContent:"center",marginBottom:12}}><div style={{width:48,height:48,borderRadius:24,background:`${btnVariant==="acc"?C.acc:C.pri}12`,display:"flex",alignItems:"center",justifyContent:"center"}}>{icon}</div></div>}
       <div style={{fontSize:17,fontWeight:700,marginBottom:6,textAlign:"center"}}>{title}</div>
       <div style={{fontSize:12,color:C.t2,marginBottom:20,textAlign:"center"}}>{freight.code} · {freight.grain} · {freight.tons}{freight.unit||"tn"}</div>
@@ -2976,7 +2981,7 @@ function AssignModal({ freight, transporters, onClose, onConfirm }) {
   const ts = transporters||[];
   const doConfirm = async ()=>{ if(loading||!t) return; setLoading(true); await onConfirm(t); setLoading(false); };
   return (
-    <ModalOverlay onClose={onClose}>
+    <ModalOverlay onClose={onClose} loading={loading}>
       <div style={{fontSize:17,fontWeight:700,marginBottom:4}}>Asignar transporte · {freight.code}</div>
       <div style={{fontSize:12,color:C.t2,marginBottom:18}}>{freight.grain} · {freight.tons}tn · {freight.originName}</div>
       <label style={{fontSize:10.5,fontWeight:600,color:C.t2,marginBottom:8,display:"block",textTransform:"uppercase",letterSpacing:0.6}}>Transportista</label>
@@ -2995,7 +3000,7 @@ function TruckSelectModal({ freight, trucks, onClose, onConfirm }) {
   const ts = (trucks||[]).filter(t=>t.active!==false);
   const doConfirm = async ()=>{ if(loading||!sel) return; setLoading(true); await onConfirm(sel); setLoading(false); };
   return (
-    <ModalOverlay onClose={onClose}>
+    <ModalOverlay onClose={onClose} loading={loading}>
       <div style={{fontSize:17,fontWeight:700,marginBottom:4}}>Aceptar flete · {freight.code}</div>
       <div style={{fontSize:12,color:C.t2,marginBottom:18}}>{freight.grain} · {freight.tons}tn → {freight.destName}</div>
       <label style={{fontSize:10.5,fontWeight:600,color:C.t2,marginBottom:8,display:"block",textTransform:"uppercase",letterSpacing:0.6}}>Seleccioná un camión</label>
@@ -3020,7 +3025,7 @@ function ReasonModal({ title, freight, btnLabel, btnType="err", onClose, onConfi
   const [loading,setLoading] = useState(false);
   const doConfirm = async ()=>{ if(loading||!reason) return; setLoading(true); await onConfirm(reason); setLoading(false); };
   return (
-    <ModalOverlay onClose={onClose}>
+    <ModalOverlay onClose={onClose} loading={loading}>
       <div style={{fontSize:17,fontWeight:700,marginBottom:4,color:btnType==="err"?C.err:C.t1}}>{title} · {freight.code}</div>
       <div style={{fontSize:12,color:C.t2,marginBottom:18}}>{freight.grain} · {freight.tons}tn</div>
       <label style={{fontSize:10.5,fontWeight:600,color:C.t2,marginBottom:6,display:"block",textTransform:"uppercase",letterSpacing:0.6}}>Motivo</label>
@@ -3058,6 +3063,7 @@ function MyDataScreen({ user, onBack }) {
   };
   return (
     <div style={{flex:1,overflow:"auto",padding:18}}>
+      {saving && <LoadingOverlay/>}
       {adminBackBtn(onBack)}
       <div style={{fontSize:18,fontWeight:800,color:C.t1,marginBottom:4}}>Mis datos</div>
       <div style={{fontSize:11,color:C.t3,marginBottom:14}}>Editá tu información personal</div>
@@ -3671,6 +3677,7 @@ function AdminScreen({ user, onBack }) {
   // ===================== MAIN LIST =====================
   return (
     <div style={{flex:1,overflow:"auto",padding:18}}>
+      {saving && <LoadingOverlay/>}
       {adminBackBtn(onBack)}
       <div style={{fontSize:18,fontWeight:800,color:C.t1,marginBottom:4}}>Administración</div>
       <div style={{fontSize:11,color:C.t3,marginBottom:14}}>{isPlatform?"Admin Principal — Control total":isManager?"Gerente — Tu empresa":""}</div>
@@ -3951,6 +3958,7 @@ export default function Tolvink() {
         </div>
       </div>
 
+      {submitting && <LoadingOverlay/>}
       {modal?.type==="assign" && <AssignModal freight={modal.freight} transporters={catalog.transporters} onClose={()=>setModal(null)} onConfirm={t=>handleAssign(modal.freight.id,t)}/>}
       {modal?.type==="truck_select" && <TruckSelectModal freight={modal.freight} trucks={catalog.trucks} onClose={()=>setModal(null)} onConfirm={t=>handleAcceptWithTruck(modal.freight.id,t)}/>}
       {modal?.type==="confirm_action" && <ConfirmActionModal freight={modal.freight} title={modal.title} btnLabel={modal.btnLabel} btnVariant={modal.btnVariant} icon={modal.icon} onClose={()=>setModal(null)} onConfirm={()=>handleConfirmAction(modal.freight.id,modal.action)}/>}

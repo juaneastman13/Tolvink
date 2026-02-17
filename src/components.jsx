@@ -117,6 +117,19 @@ export function Loader() {
   </div>;
 }
 
+export function LoadingOverlay() {
+  return (
+    <div style={{position:"fixed",inset:0,background:C.bgOverlay,display:"flex",alignItems:"center",justifyContent:"center",zIndex:250,animation:"moFadeIn 0.2s ease"}}>
+      <style>{`@keyframes moFadeIn{from{opacity:0}to{opacity:1}}`}</style>
+      <div style={{display:"flex",alignItems:"flex-start",animation:"moLogoIn 0.35s ease-out"}}>
+        <style>{`@keyframes moLogoIn{from{opacity:0;transform:scale(0.7)}to{opacity:1;transform:scale(1)}}`}</style>
+        <span style={{fontSize:44,fontWeight:800,color:C.pri,letterSpacing:-2,lineHeight:1}}>tolvink</span>
+        <span style={{width:13,height:13,borderRadius:7,background:C.acc,marginLeft:4,marginTop:2,display:"inline-block",animation:"dotPulse 1.5s ease-in-out infinite"}} />
+      </div>
+    </div>
+  );
+}
+
 // ======================== SORT TABLE HEADER ===========================
 
 export function SortTh({ label, colKey, sortCol, sortDir, onSort }) {
@@ -131,15 +144,19 @@ export function SortTh({ label, colKey, sortCol, sortDir, onSort }) {
 
 // ======================== MODAL OVERLAY (animated logo → card) ========
 
-export function ModalOverlay({ children, onClose, maxWidth=400 }) {
+export function ModalOverlay({ children, onClose, maxWidth=400, loading=false }) {
   const [stage, setStage] = useState(0); // 0=logo, 1=transition, 2=card
   useEffect(() => {
+    if (loading) return; // stay on logo while loading
     const t1 = setTimeout(() => setStage(1), 400);
     const t2 = setTimeout(() => setStage(2), 700);
     return () => { clearTimeout(t1); clearTimeout(t2); };
-  }, []);
+  }, [loading]);
+  // When loading activates after card was shown, go back to logo
+  const showLogo = loading || stage < 2;
+  const showCard = !loading && stage === 2;
   return (
-    <div onClick={onClose||undefined} style={{position:"fixed",inset:0,background:C.bgOverlay,display:"flex",alignItems:"center",justifyContent:"center",zIndex:200,padding:24,animation:"moFadeIn 0.25s ease"}}>
+    <div onClick={(!loading&&onClose)||undefined} style={{position:"fixed",inset:0,background:C.bgOverlay,display:"flex",alignItems:"center",justifyContent:"center",zIndex:200,padding:24,animation:"moFadeIn 0.25s ease"}}>
       <style>{`
 @keyframes moFadeIn{from{opacity:0}to{opacity:1}}
 @keyframes moLogoIn{from{opacity:0;transform:scale(0.7)}to{opacity:1;transform:scale(1)}}
@@ -147,15 +164,15 @@ export function ModalOverlay({ children, onClose, maxWidth=400 }) {
 @keyframes moDotBurst{0%{transform:scale(1);opacity:1}100%{transform:scale(35);opacity:0}}
 @keyframes moCardIn{from{opacity:0;transform:scale(0.82)}to{opacity:1;transform:scale(1)}}
       `}</style>
-      {/* Logo phase */}
-      {stage<2 && (
-        <div style={{position:"absolute",display:"flex",alignItems:"flex-start",animation:stage===0?"moLogoIn 0.35s ease-out forwards":"moLogoOut 0.25s ease forwards",pointerEvents:"none"}}>
+      {/* Logo phase — shown during intro and during loading */}
+      {showLogo && (
+        <div style={{position:"absolute",display:"flex",alignItems:"flex-start",animation:(!loading&&stage===1)?"moLogoOut 0.25s ease forwards":"moLogoIn 0.35s ease-out forwards",pointerEvents:"none"}}>
           <span style={{fontSize:44,fontWeight:800,color:C.pri,letterSpacing:-2,lineHeight:1}}>tolvink</span>
-          <span style={{width:13,height:13,borderRadius:7,background:C.acc,marginLeft:4,marginTop:2,display:"inline-block",animation:stage===0?"dotPulse 1.5s ease-in-out infinite":"moDotBurst 0.3s ease forwards"}} />
+          <span style={{width:13,height:13,borderRadius:7,background:C.acc,marginLeft:4,marginTop:2,display:"inline-block",animation:(!loading&&stage===1)?"moDotBurst 0.3s ease forwards":"dotPulse 1.5s ease-in-out infinite"}} />
         </div>
       )}
       {/* Card phase */}
-      {stage===2 && (
+      {showCard && (
         <div onClick={e=>e.stopPropagation()} style={{background:C.w,borderRadius:18,padding:22,width:"100%",maxWidth,boxShadow:C.shLg,animation:"moCardIn 0.3s cubic-bezier(0.34,1.56,0.64,1)"}}>
           {children}
         </div>
