@@ -433,18 +433,11 @@ function HomeScreen({ user, freights, perms, onNav, catalog, isDesktop, onAction
           {f.isOwnFleet && <span style={{ fontSize: 9, color: C.acc, fontWeight: 600 }}>Flota propia</span>}
         </div>
         <div style={{fontSize:14,fontWeight:700,color:C.t1,marginBottom:6}}>{f.grain==="Otros"?f.productTypeOther||"Otros":f.grain} · {f.tons} {f.unit||"tn"}</div>
-        <div style={{display:"flex",alignItems:"center",gap:4,fontSize:11,color:C.t2,marginBottom:6}}>
+        <div style={{display:"flex",alignItems:"center",flexWrap:"wrap",gap:4,fontSize:11,color:C.t2}}>
           {Ic.user(C.t3,12)} <span style={{maxWidth:120,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.originCompanyName||(f.originName||"").split("—")[0].trim()}</span>
-          <span style={{color:C.t3,margin:"0 2px"}}>→</span>
+          <span style={{color:C.t3}}>→</span>
+          {f.transporterName&&<>{Ic.truck(C.t3,12)} <span style={{maxWidth:120,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.transporterName}{f.truckPlate?` (${f.truckPlate})`:""}</span><span style={{color:C.t3}}>→</span></>}
           {Ic.plant(C.t3,12)} <span style={{maxWidth:120,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.destName}</span>
-        </div>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"4px 12px",fontSize:10.5,color:C.t2}}>
-          {f.loadTime&&<div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.cal(C.t3,11)} <span style={{fontWeight:600}}>{f.loadTime}</span></div>}
-          {f.destName&&<div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.plant(C.t3,11)} <span>{f.destName}</span></div>}
-          {f.transporterName&&<div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.truck(C.t3,11)} <span>{f.transporterName}</span></div>}
-          {f.truckPlate&&<div style={{fontSize:10,fontFamily:MONO,color:C.t3}}>{f.truckPlate}</div>}
-          {f.driverName&&<div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.user(C.t3,11)} <span>{f.driverName}</span></div>}
-          {f.requestedByName&&<div style={{fontSize:10,color:C.t3}}>Sol: {f.requestedByName}</div>}
         </div>
       </div>
     );
@@ -721,18 +714,11 @@ function ListScreen({ freights, onNav, onRefresh, catalog }) {
                       {f.isOwnFleet && <span style={{ fontSize:9, color:C.acc, fontWeight:600 }}>Flota propia</span>}
                     </div>
                     <div style={{fontSize:14,fontWeight:700,color:C.t1,marginBottom:6}}>{f.grain==="Otros"?f.productTypeOther||"Otros":f.grain} · {f.tons} {f.unit||"tn"}</div>
-                    <div style={{display:"flex",alignItems:"center",gap:4,fontSize:11,color:C.t2,marginBottom:6}}>
+                    <div style={{display:"flex",alignItems:"center",flexWrap:"wrap",gap:4,fontSize:11,color:C.t2}}>
                       {Ic.user(C.t3,12)} <span style={{maxWidth:120,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.originCompanyName||(f.originName||"").split("—")[0].trim()}</span>
-                      <span style={{color:C.t3,margin:"0 2px"}}>→</span>
+                      <span style={{color:C.t3}}>→</span>
+                      {f.transporterName&&<>{Ic.truck(C.t3,12)} <span style={{maxWidth:120,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.transporterName}{f.truckPlate?` (${f.truckPlate})`:""}</span><span style={{color:C.t3}}>→</span></>}
                       {Ic.plant(C.t3,12)} <span style={{maxWidth:120,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.destName}</span>
-                    </div>
-                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"4px 12px",fontSize:10.5,color:C.t2}}>
-                      {f.loadTime&&<div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.cal(C.t3,11)} <span style={{fontWeight:600}}>{f.loadTime}</span></div>}
-                      {f.destName&&<div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.plant(C.t3,11)} <span>{f.destName}</span></div>}
-                      {f.transporterName&&<div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.truck(C.t3,11)} <span>{f.transporterName}</span></div>}
-                      {f.truckPlate&&<div style={{fontSize:10,fontFamily:MONO,color:C.t3}}>{f.truckPlate}</div>}
-                      {f.driverName&&<div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.user(C.t3,11)} <span>{f.driverName}</span></div>}
-                      {f.requestedByName&&<div style={{fontSize:10,color:C.t3}}>Sol: {f.requestedByName}</div>}
                     </div>
                   </div>
                   );
@@ -2684,19 +2670,11 @@ function CalendarScreen({ freights, perms, onNav, isDesktop }) {
             {/* Product + qty */}
             <div style={{fontSize:14,fontWeight:700,color:C.t1,marginBottom:6}}>{f.grain} · {f.tons} {f.unit||"tn"}</div>
             {/* Route */}
-            <div style={{display:"flex",alignItems:"center",gap:4,fontSize:11,color:C.t2,marginBottom:6}}>
-              {Ic.user(C.t3,12)} <span style={{maxWidth:120,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.originCompanyName || (f.originName||"").split("—")[0].trim()}</span>
-              <span style={{color:C.t3,margin:"0 2px"}}>→</span>
+            <div style={{display:"flex",alignItems:"center",flexWrap:"wrap",gap:4,fontSize:11,color:C.t2}}>
+              {Ic.user(C.t3,12)} <span style={{maxWidth:120,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.originCompanyName||(f.originName||"").split("—")[0].trim()}</span>
+              <span style={{color:C.t3}}>→</span>
+              {f.transporterName&&<>{Ic.truck(C.t3,12)} <span style={{maxWidth:120,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.transporterName}{f.truckPlate?` (${f.truckPlate})`:""}</span><span style={{color:C.t3}}>→</span></>}
               {Ic.plant(C.t3,12)} <span style={{maxWidth:120,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.destName}</span>
-            </div>
-            {/* Info grid */}
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"4px 12px",fontSize:10.5,color:C.t2}}>
-              {f.loadTime&&<div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.cal(C.t3,11)} <span style={{fontWeight:600}}>{f.loadTime}</span></div>}
-              {f.destName&&<div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.plant(C.t3,11)} <span>{f.destName}</span></div>}
-              {f.transporterName&&<div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.truck(C.t3,11)} <span>{f.transporterName}</span></div>}
-              {f.truckPlate&&<div style={{fontSize:10,fontFamily:MONO,color:C.t3}}>{f.truckPlate}</div>}
-              {f.driverName&&<div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.user(C.t3,11)} <span>{f.driverName}</span></div>}
-              {f.requestedByName&&<div style={{fontSize:10,color:C.t3}}>Sol: {f.requestedByName}</div>}
             </div>
           </div>;
         })}
@@ -2944,10 +2922,11 @@ function ReportsScreen({ onBack, freights, isDesktop, embedded }) {
                       <span style={{ fontSize:12, fontWeight:700, fontFamily:MONO }}>{f.code}</span>
                       <span style={{ fontSize:10, color:C.t3 }}>{f.grain} · {f.tons} {f.unit||"tn"}</span>
                     </div>
-                    <div style={{display:"flex",alignItems:"center",gap:4,fontSize:11,color:C.t2,marginTop:2}}>
-                      {Ic.user(C.t3,12)} <span style={{maxWidth:100,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.originCompanyName||(f.originName||"").split("—")[0].trim()}</span>
-                      <span style={{color:C.t3,margin:"0 2px"}}>→</span>
-                      {Ic.plant(C.t3,12)} <span style={{maxWidth:100,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.destName}</span>
+                    <div style={{display:"flex",alignItems:"center",flexWrap:"wrap",gap:4,fontSize:11,color:C.t2,marginTop:2}}>
+                      {Ic.user(C.t3,12)} <span style={{maxWidth:90,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.originCompanyName||(f.originName||"").split("—")[0].trim()}</span>
+                      <span style={{color:C.t3}}>→</span>
+                      {f.transporterName&&<>{Ic.truck(C.t3,12)} <span style={{maxWidth:90,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.transporterName}{f.truckPlate?` (${f.truckPlate})`:""}</span><span style={{color:C.t3}}>→</span></>}
+                      {Ic.plant(C.t3,12)} <span style={{maxWidth:90,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.destName}</span>
                       <span style={{color:C.t3,marginLeft:4,fontSize:10}}>{docs.length} doc{docs.length!==1?"s":""}</span>
                     </div>
                   </div>
