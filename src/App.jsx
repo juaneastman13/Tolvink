@@ -433,11 +433,10 @@ function HomeScreen({ user, freights, perms, onNav, catalog, isDesktop, onAction
           {f.isOwnFleet && <span style={{ fontSize: 9, color: C.acc, fontWeight: 600 }}>Flota propia</span>}
         </div>
         <div style={{fontSize:14,fontWeight:700,color:C.t1,marginBottom:6}}>{f.grain==="Otros"?f.productTypeOther||"Otros":f.grain} · {f.tons} {f.unit||"tn"}</div>
-        <div style={{display:"flex",alignItems:"center",flexWrap:"wrap",gap:4,fontSize:11,color:C.t2}}>
-          {Ic.user(C.t3,12)} <span style={{maxWidth:120,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.originCompanyName||(f.originName||"").split("—")[0].trim()}</span>
-          <span style={{color:C.t3}}>→</span>
-          {f.transporterName&&<>{Ic.truck(C.t3,12)} <span style={{maxWidth:120,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.transporterName}{f.truckPlate?` (${f.truckPlate})`:""}</span><span style={{color:C.t3}}>→</span></>}
-          {Ic.plant(C.t3,12)} <span style={{maxWidth:120,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.destName}</span>
+        <div style={{display:"flex",flexDirection:"column",gap:3,fontSize:11,color:C.t2}}>
+          <div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.user(C.t3,12)} <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.originCompanyName||(f.originName||"").split("—")[0].trim()}</span></div>
+          {f.transporterName&&<div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.truck(C.t3,12)} <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.transporterName}{f.truckPlate?` (${f.truckPlate})`:""}</span></div>}
+          <div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.plant(C.t3,12)} <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.destName}</span></div>
         </div>
       </div>
     );
@@ -714,11 +713,10 @@ function ListScreen({ freights, onNav, onRefresh, catalog }) {
                       {f.isOwnFleet && <span style={{ fontSize:9, color:C.acc, fontWeight:600 }}>Flota propia</span>}
                     </div>
                     <div style={{fontSize:14,fontWeight:700,color:C.t1,marginBottom:6}}>{f.grain==="Otros"?f.productTypeOther||"Otros":f.grain} · {f.tons} {f.unit||"tn"}</div>
-                    <div style={{display:"flex",alignItems:"center",flexWrap:"wrap",gap:4,fontSize:11,color:C.t2}}>
-                      {Ic.user(C.t3,12)} <span style={{maxWidth:120,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.originCompanyName||(f.originName||"").split("—")[0].trim()}</span>
-                      <span style={{color:C.t3}}>→</span>
-                      {f.transporterName&&<>{Ic.truck(C.t3,12)} <span style={{maxWidth:120,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.transporterName}{f.truckPlate?` (${f.truckPlate})`:""}</span><span style={{color:C.t3}}>→</span></>}
-                      {Ic.plant(C.t3,12)} <span style={{maxWidth:120,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.destName}</span>
+                    <div style={{display:"flex",flexDirection:"column",gap:3,fontSize:11,color:C.t2}}>
+                      <div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.user(C.t3,12)} <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.originCompanyName||(f.originName||"").split("—")[0].trim()}</span></div>
+                      {f.transporterName&&<div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.truck(C.t3,12)} <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.transporterName}{f.truckPlate?` (${f.truckPlate})`:""}</span></div>}
+                      <div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.plant(C.t3,12)} <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.destName}</span></div>
                     </div>
                   </div>
                   );
@@ -1425,11 +1423,10 @@ function _NotifRow({ n, freight, onMarkRead, onTap, isLast }) {
         </div>
         <div style={{ fontSize:12.5, color:C.t3, marginTop:3, lineHeight:1.4 }}>{n.body}</div>
         {f && (
-          <div style={{ display:"flex", flexWrap:"wrap", gap:"4px 12px", marginTop:6 }}>
-            {(f.requestedByName||f.originCompanyName) && <span style={detailStyle}>{Ic.user(C.t3,11)} {f.requestedByName}{f.originCompanyName ? ` · ${f.originCompanyName}` : ""}</span>}
+          <div style={{ display:"flex", flexDirection:"column", gap:2, marginTop:6 }}>
+            {(f.originCompanyName||f.requestedByName) && <span style={detailStyle}>{Ic.user(C.t3,11)} {f.originCompanyName||f.requestedByName}</span>}
+            {f.transporterName && <span style={detailStyle}>{Ic.truck(C.t3,11)} {f.transporterName}{f.truckPlate?` (${f.truckPlate})`:""}</span>}
             {f.destName && <span style={detailStyle}>{Ic.plant(C.t3,11)} {f.destName}</span>}
-            {f.transporterName && <span style={detailStyle}>{Ic.truck(C.t3,11)} {f.transporterName}</span>}
-            {(f.loadDate||f.loadTime) && <span style={detailStyle}>{Ic.cal(C.t3,11)} {_fmtDate(f.loadDate)}{f.loadTime ? ` ${f.loadTime}` : ""}</span>}
           </div>
         )}
       </div>
@@ -2670,11 +2667,10 @@ function CalendarScreen({ freights, perms, onNav, isDesktop }) {
             {/* Product + qty */}
             <div style={{fontSize:14,fontWeight:700,color:C.t1,marginBottom:6}}>{f.grain} · {f.tons} {f.unit||"tn"}</div>
             {/* Route */}
-            <div style={{display:"flex",alignItems:"center",flexWrap:"wrap",gap:4,fontSize:11,color:C.t2}}>
-              {Ic.user(C.t3,12)} <span style={{maxWidth:120,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.originCompanyName||(f.originName||"").split("—")[0].trim()}</span>
-              <span style={{color:C.t3}}>→</span>
-              {f.transporterName&&<>{Ic.truck(C.t3,12)} <span style={{maxWidth:120,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.transporterName}{f.truckPlate?` (${f.truckPlate})`:""}</span><span style={{color:C.t3}}>→</span></>}
-              {Ic.plant(C.t3,12)} <span style={{maxWidth:120,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.destName}</span>
+            <div style={{display:"flex",flexDirection:"column",gap:3,fontSize:11,color:C.t2}}>
+              <div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.user(C.t3,12)} <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.originCompanyName||(f.originName||"").split("—")[0].trim()}</span></div>
+              {f.transporterName&&<div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.truck(C.t3,12)} <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.transporterName}{f.truckPlate?` (${f.truckPlate})`:""}</span></div>}
+              <div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.plant(C.t3,12)} <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.destName}</span></div>
             </div>
           </div>;
         })}
@@ -2922,12 +2918,10 @@ function ReportsScreen({ onBack, freights, isDesktop, embedded }) {
                       <span style={{ fontSize:12, fontWeight:700, fontFamily:MONO }}>{f.code}</span>
                       <span style={{ fontSize:10, color:C.t3 }}>{f.grain} · {f.tons} {f.unit||"tn"}</span>
                     </div>
-                    <div style={{display:"flex",alignItems:"center",flexWrap:"wrap",gap:4,fontSize:11,color:C.t2,marginTop:2}}>
-                      {Ic.user(C.t3,12)} <span style={{maxWidth:90,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.originCompanyName||(f.originName||"").split("—")[0].trim()}</span>
-                      <span style={{color:C.t3}}>→</span>
-                      {f.transporterName&&<>{Ic.truck(C.t3,12)} <span style={{maxWidth:90,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.transporterName}{f.truckPlate?` (${f.truckPlate})`:""}</span><span style={{color:C.t3}}>→</span></>}
-                      {Ic.plant(C.t3,12)} <span style={{maxWidth:90,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.destName}</span>
-                      <span style={{color:C.t3,marginLeft:4,fontSize:10}}>{docs.length} doc{docs.length!==1?"s":""}</span>
+                    <div style={{display:"flex",flexDirection:"column",gap:2,fontSize:11,color:C.t2,marginTop:2}}>
+                      <div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.user(C.t3,12)} <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.originCompanyName||(f.originName||"").split("—")[0].trim()}</span></div>
+                      {f.transporterName&&<div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.truck(C.t3,12)} <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.transporterName}{f.truckPlate?` (${f.truckPlate})`:""}</span></div>}
+                      <div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.plant(C.t3,12)} <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.destName}</span> <span style={{color:C.t3,marginLeft:4,fontSize:10}}>{docs.length} doc{docs.length!==1?"s":""}</span></div>
                     </div>
                   </div>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.t3} strokeWidth="2.5" style={{transform:isOpen?"rotate(180deg)":"rotate(0deg)",transition:"transform 0.2s"}}><polyline points="6 9 12 15 18 9"/></svg>
