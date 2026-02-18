@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { uploadPhoto, apiAddDocument, apiDeleteDocument } from "./api";
 import { C, Ic } from "./theme";
 import { AttachMenu, Btn } from "./components";
+import { useUIStore } from "./store";
 
 // ======================== PHOTO UPLOAD ================================
 
@@ -60,6 +61,7 @@ export function PhotoUpload({ freightId, step, label, onUploaded }) {
 export function DocsGallery({ documents, onViewFile, freightId, canDelete, onDeleted }) {
   const [deleting, setDeleting] = useState(null);
   const [confirm, setConfirm] = useState(null);
+  const show = useUIStore(s => s.show);
   if (!documents || documents.length === 0) return null;
   const stepLabels = { request: "Solicitud", assignment: "Asignación", load_confirmation: "Carga", delivery_confirmation: "Entrega", cancellation: "Cancelación" };
 
@@ -68,9 +70,12 @@ export function DocsGallery({ documents, onViewFile, freightId, canDelete, onDel
     try {
       await apiDeleteDocument(freightId, docId);
       setConfirm(null);
+      show("Archivo eliminado", "ok");
       if (onDeleted) onDeleted();
     } catch (e) {
       console.error("Delete doc failed:", e);
+      show(e?.message || "Error al eliminar archivo", "err");
+      setConfirm(null);
     } finally {
       setDeleting(null);
     }
