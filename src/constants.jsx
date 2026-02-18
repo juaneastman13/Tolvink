@@ -34,6 +34,14 @@ export function getActions(status, userType, role, isOwnFleet) {
 export const GRANOS = ["Soja","Maíz","Trigo","Girasol","Sorgo","Cebada","Otros"];
 export const UNITS = [{v:"toneladas",l:"Toneladas"},{v:"cantidad",l:"Cantidad"},{v:"metros",l:"Metros"},{v:"m3",l:"M³"}];
 
+// Polling intervals (ms)
+export const POLL_INTERVALS = {
+  FREIGHTS: 15000,      // 15s - freight list universal poll
+  UNREAD_CHATS: 30000,  // 30s - unread chat count
+  CHAT_MESSAGES: 3000,  // 3s - active chat messages (adapts to 60s)
+  DETAIL_REFRESH: 10000 // 10s - freight detail auto-refresh
+};
+
 // Dev-only logger (no-ops in production)
 const isDev = import.meta.env.DEV;
 export const logger = {

@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { C, Ic, FONT, MONO, track } from "../theme";
-import { stCfg, getActions } from "../constants";
+import { stCfg, getActions, POLL_INTERVALS } from "../constants";
 import { Bd, Btn, Loader, Sec, FileViewer } from "../components";
 import { FreightMap, SafeZone } from "../maps";
 import { DocsGallery, FreightFileUpload } from "../uploads";
@@ -17,7 +17,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, a
   // Auto-refresh freight detail every 10s
   useEffect(() => {
     if (!freight?.id || !onRefresh) return;
-    const iv = setInterval(() => { if (!document.hidden) onRefresh(freight.id); }, 10000);
+    const iv = setInterval(() => { if (!document.hidden) onRefresh(freight.id); }, POLL_INTERVALS.DETAIL_REFRESH);
     return () => clearInterval(iv);
   }, [freight?.id, onRefresh]);
 

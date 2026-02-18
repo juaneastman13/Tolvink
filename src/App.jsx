@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback, useMemo, lazy, Suspense } fro
 import { useNavigate, useLocation } from "react-router-dom";
 import { uploadPhoto, apiAddDocument, apiListConversations } from "./api";
 import { C, track, FONT, Ic } from "./theme";
+import { POLL_INTERVALS } from "./constants";
 import { Toast, LoadingOverlay, Sidebar, Nav, NotifBell, NotificationsPanel, ErrorBoundary, SkeletonList, PwaInstallCard, EmptyState } from "./components";
 import { useAuth, useCatalog, useFreights, permsFor, useIsDesktop, useOnline, useNotifications, useSSE, useInstallPrompt } from "./hooks";
 import { MapOverlay, LocPickerFullscreen } from "./maps";
@@ -158,7 +159,7 @@ export default function Tolvink() {
       fh.fetchAll();
       notif.refresh();
     };
-    const iv = setInterval(poll, 15000);
+    const iv = setInterval(poll, POLL_INTERVALS.FREIGHTS);
     return ()=>clearInterval(iv);
   },[auth.user]);
 
@@ -174,7 +175,7 @@ export default function Tolvink() {
       } catch (e) { console.warn('[CHAT] Unread check failed:', e.message); }
     };
     checkUnread();
-    const iv = setInterval(checkUnread, 30000);
+    const iv = setInterval(checkUnread, POLL_INTERVALS.UNREAD_CHATS);
     return ()=>clearInterval(iv);
   },[auth.user]);
 
