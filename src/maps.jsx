@@ -657,14 +657,17 @@ export function MapOverlay({ lat, lng, label, destLat, destLng, destLabel, onClo
   }, [lat, lng, label, destLat, destLng]);
 
   return (
-    <div style={{position:"fixed",inset:0,zIndex:9999,background:"rgba(0,0,0,0.5)",display:"flex",flexDirection:"column"}}>
-      <div style={{padding:"12px 16px",background:C.w,display:"flex",alignItems:"center",gap:10,borderBottom:`1px solid ${C.b1}`,flexShrink:0}}>
-        <button onClick={onClose} style={{background:"none",border:"none",cursor:"pointer",display:"flex",alignItems:"center",gap:6,padding:"6px 12px",borderRadius:8,fontSize:13,fontWeight:700,color:C.pri,fontFamily:"inherit"}}>
-          {Ic.chev(C.pri,16)} Volver
-        </button>
-        <span style={{flex:1,fontSize:13,color:C.t2,fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{label || "Ubicación en mapa"}</span>
+    <div style={{position:"fixed",inset:0,zIndex:9999,background:"rgba(0,0,0,0.45)",display:"flex",alignItems:"center",justifyContent:"center",padding:12}}>
+      <div style={{width:"100%",maxWidth:800,height:"calc(100dvh - 24px)",background:C.w,borderRadius:14,border:`1.5px solid ${C.b1}`,boxShadow:"0 8px 32px rgba(0,0,0,0.25)",display:"flex",flexDirection:"column",overflow:"hidden"}}>
+        <div style={{padding:"10px 14px",display:"flex",alignItems:"center",gap:10,borderBottom:`1px solid ${C.b1}`,flexShrink:0}}>
+          <button onClick={onClose} style={{background:"none",border:"none",cursor:"pointer",display:"flex",alignItems:"center",gap:6,padding:"6px 12px",borderRadius:8,fontSize:13,fontWeight:700,color:C.pri,fontFamily:"inherit"}}>
+            {Ic.chev(C.pri,16)} Volver
+          </button>
+          <span style={{flex:1,fontSize:13,color:C.t2,fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{label || "Ubicación en mapa"}</span>
+          <button onClick={onClose} style={{display:"flex",alignItems:"center",justifyContent:"center",width:32,height:32,borderRadius:8,background:C.bg,border:`1px solid ${C.b1}`,cursor:"pointer",flexShrink:0}}>{Ic.cross(C.t2,16)}</button>
+        </div>
+        <div ref={mapRef} style={{flex:1}} />
       </div>
-      <div ref={mapRef} style={{flex:1}} />
     </div>
   );
 }
