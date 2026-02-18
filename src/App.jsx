@@ -1709,32 +1709,52 @@ function MenuScreen({ user, perms, onLogout, onNav, isDesktop, onSwitchCompany, 
           </div>
         </div>
 
-        {/* Companies */}
+        {/* Companies table */}
         <div style={{marginBottom:12}}>
           <div style={{fontSize:10,fontWeight:700,color:C.t3,textTransform:"uppercase",letterSpacing:0.5,marginBottom:8}}>Empresas</div>
-          {companies.map((c,i)=>{
-            const isActive = c.companyId === user.activeCompanyId;
-            const roleLabel = c.role === "gerente" || c.effectiveRole === "admin" ? "Gerente" : "Operario";
-            return (
-              <div key={c.companyId||i} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 0",borderTop:i>0?`1px solid ${C.b2}`:"none",cursor:companies.length>1&&!isActive?"pointer":"default",opacity:switching===c.companyId?0.5:1}} onClick={()=>!isActive&&companies.length>1&&handleSwitch(c.companyId)}>
-                {companies.length>1 && <div style={{width:18,height:18,borderRadius:9,border:`2px solid ${isActive?C.pri:C.b2}`,background:isActive?C.pri:"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{isActive&&<div style={{width:8,height:8,borderRadius:4,background:C.w}}/>}</div>}
-                <Bd color={c.color}>{c.label}</Bd>
-                <span style={{fontSize:12,fontWeight:600,color:C.t1,flex:1}}>{c.companyName||user.entity}</span>
-                <Bd color={C.t2} bg={C.bgInput}>{roleLabel}</Bd>
-              </div>
-            );
-          })}
-          {companies.length>1 && <div style={{fontSize:10,color:C.t3,marginTop:4}}>Tocá una empresa para cambiar tu empresa activa</div>}
+          <div style={{border:`1px solid ${C.b2}`,borderRadius:8,overflow:"hidden"}}>
+            <table style={{width:"100%",borderCollapse:"collapse",fontSize:12,fontFamily:"inherit"}}>
+              <thead>
+                <tr style={{background:C.bg,borderBottom:`1.5px solid ${C.b1}`}}>
+                  <th style={{padding:"7px 10px",textAlign:"left",fontSize:9.5,fontWeight:700,color:C.t3,textTransform:"uppercase",letterSpacing:0.4}}>Empresa</th>
+                  <th style={{padding:"7px 10px",textAlign:"left",fontSize:9.5,fontWeight:700,color:C.t3,textTransform:"uppercase",letterSpacing:0.4}}>Tipo</th>
+                  <th style={{padding:"7px 10px",textAlign:"left",fontSize:9.5,fontWeight:700,color:C.t3,textTransform:"uppercase",letterSpacing:0.4}}>Rol</th>
+                </tr>
+              </thead>
+              <tbody>
+                {companies.map((c,i)=>{
+                  const isActive = c.companyId === user.activeCompanyId;
+                  const roleLabel = c.role === "gerente" || c.effectiveRole === "admin" ? "Gerente" : "Operario";
+                  const isExp = switching === "exp_"+c.companyId;
+                  return (<Fragment key={c.companyId||i}>
+                    <tr onClick={()=>setSwitching(isExp?null:"exp_"+c.companyId)} style={{cursor:"pointer",borderTop:i>0?`1px solid ${C.b2}`:"none",background:isExp?`${C.pri}06`:"transparent",transition:"background 0.15s"}}>
+                      <td style={{padding:"8px 10px",fontWeight:600,color:C.t1,fontSize:12}}>
+                        <div style={{display:"flex",alignItems:"center",gap:5}}>
+                          {companies.length>1 && <div style={{width:14,height:14,borderRadius:7,border:`2px solid ${isActive?C.pri:C.b2}`,background:isActive?C.pri:"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,cursor:"pointer"}} onClick={e=>{e.stopPropagation();if(!isActive)handleSwitch(c.companyId);}}>{isActive&&<div style={{width:6,height:6,borderRadius:3,background:C.w}}/>}</div>}
+                          <span>{c.companyName||user.entity}</span>
+                        </div>
+                      </td>
+                      <td style={{padding:"8px 10px"}}><Bd color={c.color}>{c.label}</Bd></td>
+                      <td style={{padding:"8px 10px"}}><Bd color={C.t2} bg={C.bgInput}>{roleLabel}</Bd></td>
+                    </tr>
+                    {isExp && <tr><td colSpan={3} style={{padding:"6px 10px 10px",background:`${C.pri}04`,borderTop:`1px dashed ${C.b2}`}}>
+                      <div style={{fontSize:9.5,fontWeight:700,color:C.t3,textTransform:"uppercase",marginBottom:5}}>Permisos</div>
+                      <div style={{display:"flex",flexWrap:"wrap",gap:4}}>
+                        {(()=>{
+                          const p=[];
+                          if(roleLabel==="Gerente"){if(perms.canRequest)p.push("Solicitar fletes");if(perms.canApprove)p.push("Aprobar fletes");if(perms.canAssignDriver)p.push("Asignar choferes");if(perms.canCancel)p.push("Cancelar fletes");if(perms.canReject)p.push("Rechazar viajes");p.push("Ver informes","Administrar empresa");}
+                          else{p.push("Ver fletes asignados","Confirmar carga","Confirmar descarga");}
+                          return p.map((pp,j)=><div key={j} style={{display:"flex",alignItems:"center",gap:3,fontSize:11,color:C.t1,padding:"2px 7px",background:C.w,borderRadius:5,border:`1px solid ${C.b2}`}}>{Ic.chk(C.pri,10)} {pp}</div>);
+                        })()}
+                      </div>
+                    </td></tr>}
+                  </Fragment>);
+                })}
+              </tbody>
+            </table>
+          </div>
+          {companies.length>1 && <div style={{fontSize:10,color:C.t3,marginTop:4}}>Tocá el círculo para cambiar empresa activa · Tocá la fila para ver permisos</div>}
         </div>
-
-        {/* Permissions */}
-        <div style={{marginBottom:12}}>
-          <div style={{fontSize:10,fontWeight:700,color:C.t3,textTransform:"uppercase",letterSpacing:0.5,marginBottom:6}}>Permisos</div>
-          {pl.length>0 ? pl.map((p,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:6,padding:"4px 0"}}>{Ic.chk(C.pri,12)}<span style={{fontSize:12,color:C.t1}}>{p}</span></div>) : <div style={{fontSize:12,color:C.t3}}>Rol operativo</div>}
-        </div>
-
-        {/* ID */}
-        {user.companyId && <div style={{fontSize:9.5,color:C.t3,fontFamily:MONO,marginBottom:10}}>ID: {user.companyId}</div>}
 
         <button onClick={()=>onNav("mydata")} style={{width:"100%",padding:"10px 16px",borderRadius:8,border:`1px solid ${C.pri}`,background:`${C.pri}08`,color:C.pri,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
           {Ic.edit(C.pri,14)} Administrar mis datos
