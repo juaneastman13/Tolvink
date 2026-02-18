@@ -98,7 +98,13 @@ export default function Tolvink() {
   // SSE — real-time sync
   const sse = useSSE(auth.user, {
     onFreightUpdate: () => fh.fetchAll(),
-    onMessageNew: (data) => { setUnreadChats(p => p + 1); setSseMsg(data); },
+    onMessageNew: (data) => {
+      // Issue #9 fix: only increment unread if message is from another user
+      if (data.senderId && data.senderId !== auth.user?.id) {
+        setUnreadChats(p => p + 1);
+      }
+      setSseMsg(data);
+    },
     onNotification: () => { notif.refresh(); },
     onCatalogChanged: () => { catalog.refresh(); },
     onTyping: (data) => { setSseTyping(data); },

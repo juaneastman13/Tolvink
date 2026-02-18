@@ -51,6 +51,8 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const inputRef = useRef(null);
   const [newMsgIndicator, setNewMsgIndicator] = useState(false);
+  const [chatTab, setChatTab] = useState("chat"); // Moved up from line 338 (Issue #2)
+  const prevMessagesLengthRef = useRef(0); // Issue #10 fix: track previous length
 
   // SSE: incoming message → instant refresh
   useEffect(() => {
@@ -58,22 +60,22 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
     if (activeConv && sseMsg.conversationId === activeConv.id) {
       // Refresh messages for active conversation
       apiGetMessages(activeConv.id, {take:50}).then(r => {
-        const fresh = r.messages || [];
+        const fresh = Array.isArray(r) ? r : (r?.messages || []); // Issue #21 fix
         setMessages(prev => {
           if(prev.length===0) return fresh;
-          const lastId = prev[prev.length-1]?.id;
-          const lastIdx = fresh.findIndex(m=>m.id===lastId);
-          if(lastIdx>=0 && lastIdx<fresh.length-1) return [...prev, ...fresh.slice(lastIdx+1)];
-          return fresh;
+          // Issue #15 fix: deduplicate by ID instead of position
+          const idSet = new Set(prev.map(m => m.id));
+          const newMsgs = fresh.filter(m => !idSet.has(m.id));
+          return [...prev, ...newMsgs];
         });
       }).catch(()=>{});
-      pollDelayRef.current = sseConnected ? 60000 : 3000;
+      // Issue #1 fix: removed pollDelayRef.current (undefined in this scope)
     } else {
       // Different conversation — refresh list to update unread badges
       loadConvs();
     }
     if (onSseMsgHandled) onSseMsgHandled();
-  }, [sseMsg]);
+  }, [sseMsg, activeConv?.id]); // Issue #3 fix: added activeConv?.id dependency
 
   // SSE: typing indicator
   useEffect(() => {
@@ -82,14 +84,14 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
     setTypingUser(sseTyping.userName || "Alguien");
     clearTimeout(typingTimer.current);
     typingTimer.current = setTimeout(() => setTypingUser(null), 3000);
-  }, [sseTyping]);
+  }, [sseTyping, user.id, activeConv?.id]); // Issue #4 fix: added user.id, activeConv?.id
 
   // SSE: read receipt
   useEffect(() => {
     if (!sseRead || !activeConv || sseRead.conversationId !== activeConv.id) return;
     if (sseRead.readByUserId === user.id) return;
     setPeerReadAt(sseRead.readAt);
-  }, [sseRead]);
+  }, [sseRead, user.id, activeConv?.id]); // Issue #5 fix: added user.id, activeConv?.id
 
   // Reset typing + read state when switching conversations
   useEffect(() => { setTypingUser(null); setPeerReadAt(null); }, [activeConv?.id]);
@@ -112,7 +114,19 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
   }, [activeConv]);
 
   const loadConvs = useCallback(async () => {
-    try { const c = await apiListConversations(searchQ||undefined); setConvs(c || []); return c||[]; } catch { return []; } finally { setLoading(false); }
+    // Issue #11 fix: normalize input and output
+    try {
+      const query = searchQ?.trim() || undefined;
+      const c = await apiListConversations(query);
+      const result = Array.isArray(c) ? c : [];
+      setConvs(result);
+      return result;
+    } catch (err) {
+      console.warn('[CHATS] loadConvs failed:', err);
+      return [];
+    } finally {
+      setLoading(false);
+    }
   }, [searchQ]);
 
   // Load initial conversations + handle openConvId
@@ -129,17 +143,24 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
   }, [openConvId]);
 
   // Reload when search changes (debounced)
-  useEffect(()=>{ const t=setTimeout(()=>loadConvs(),300); return ()=>clearTimeout(t); },[searchQ]);
+  useEffect(() => {
+    const t = setTimeout(() => loadConvs(), 300);
+    return () => clearTimeout(t);
+  }, [searchQ, loadConvs]); // Issue #6 fix: added loadConvs dependency
 
   const openConv = async (conv) => {
     setActiveConv(conv);
     setMsgHasMore(false);
     try {
       const r = await apiGetMessages(conv.id, {take:50});
-      setMessages(r.messages || r || []);
+      const msgs = Array.isArray(r) ? r : (r?.messages || []); // Issue #21 fix
+      setMessages(msgs);
       setMsgHasMore(r.hasMore || false);
-      apiMarkRead(conv.id).catch(() => {}); // fire-and-forget
-    } catch { /* network error — keep previous messages */ }
+      // Issue #13 fix: log mark-read failures
+      apiMarkRead(conv.id).catch((e) => console.warn('[CHATS] Mark read failed:', e));
+    } catch (err) {
+      console.warn('[CHATS] openConv failed:', err);
+    }
   };
 
   const loadOlderMessages = async () => {
@@ -161,13 +182,18 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
 
   // Smart scroll: only auto-scroll when at bottom (new messages), NOT when loading older
   useEffect(() => {
+    const prevLength = prevMessagesLengthRef.current;
+    const hasNewMessages = messages.length > prevLength;
+
     if (isAtBottom && msgEndRef.current) {
       msgEndRef.current.scrollIntoView({ behavior: "smooth" });
-      setNewMsgIndicator(false);
-    } else if (messages.length > 0 && !isAtBottom) {
-      // New message arrived but user not at bottom → show indicator
+      setNewMsgIndicator(false); // Issue #12 fix: clear when at bottom
+    } else if (hasNewMessages && !isAtBottom) {
+      // Issue #10 fix: only show indicator if NEW messages arrived while not at bottom
       setNewMsgIndicator(true);
     }
+
+    prevMessagesLengthRef.current = messages.length;
   }, [messages.length, isAtBottom]);
 
   const scrollToBottom = () => {
@@ -335,7 +361,7 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
   const chatFileRef = useRef(null);
   const chatCamRef = useRef(null);
   const chatGalRef = useRef(null);
-  const [chatTab, setChatTab] = useState("chat");
+  // chatTab moved to line 54 (Issue #2 fix)
   const [showChatAttach, setShowChatAttach] = useState(false);
 
   const handleFileUpload = async (e) => {
@@ -454,7 +480,9 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
 
     convs.forEach(c => {
       if (c.freight) {
-        const others = (c.participants || []).filter(p => p.userId !== user.id && p.companyId !== user.companyId);
+        // Issue #14 fix: use activeCompanyId instead of deprecated user.companyId
+        const activeCompanyId = user.activeCompanyId || user.companyId;
+        const others = (c.participants || []).filter(p => p.userId !== user.id && p.companyId !== activeCompanyId);
         const companyName = others.map(o => o.company?.name || "").filter(Boolean).sort().join(", ") || "Otros";
         const companyType = others[0]?.company?.type || "";
         if (!byCompany[companyName]) byCompany[companyName] = { companyType, freightConvs: [] };
@@ -474,10 +502,18 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
 
     Object.values(byCompany).forEach(group => {
       group.freightConvs.sort((a, b) => {
+        // Issue #16 fix: sort by pinnedAt first
+        if (a.pinnedAt && !b.pinnedAt) return -1;
+        if (!a.pinnedAt && b.pinnedAt) return 1;
+
         const sa = statusOrder[a.freight?.status] ?? 99;
         const sb = statusOrder[b.freight?.status] ?? 99;
         if (sa !== sb) return sa - sb;
-        return (b.messages?.[0]?.createdAt||"").localeCompare(a.messages?.[0]?.createdAt||"");
+
+        // Issue #24 fix: proper date comparison instead of localeCompare
+        const dateA = new Date(b.messages?.[0]?.createdAt || 0).getTime();
+        const dateB = new Date(a.messages?.[0]?.createdAt || 0).getTime();
+        return dateA - dateB;
       });
     });
 
@@ -535,7 +571,8 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
               )}
               {messages.length === 0 && !loadingOlder && <div style={{ textAlign: "center", padding: 40, color: C.t3, fontSize: 13 }}>Sin mensajes aún. Escribí el primero.</div>}
               {messages.map((m, idx) => {
-                const mine = m.senderId === user.id || m.sender?.id === user.id;
+                // Issue #25 fix: explicit null safety on senderId
+                const mine = !!(m.senderId && m.senderId === user.id) || !!(m.sender?.id && m.sender.id === user.id);
                 const fileData = parseFileMsg(m.text);
                 const prevMsg = messages[idx - 1];
                 const showDateDivider = !prevMsg || new Date(m.createdAt).toDateString() !== new Date(prevMsg.createdAt).toDateString();
