@@ -114,14 +114,19 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
   const loadConvs = useCallback(async () => {
     try { const c = await apiListConversations(searchQ||undefined); setConvs(c || []); return c||[]; } catch { return []; } finally { setLoading(false); }
   }, [searchQ]);
-  useEffect(() => { loadConvs().then(cs => {
-    if(openConvId) {
-      const found = cs.find(c=>c.id===openConvId);
-      if(found) { openConv(found); }
-      else { openConv({id:openConvId}); }
-      if(onConvOpened) onConvOpened();
-    }
-  }); }, [loadConvs, openConvId]);
+
+  // Load initial conversations + handle openConvId
+  useEffect(() => {
+    loadConvs().then(cs => {
+      if(openConvId) {
+        const found = cs.find(c=>c.id===openConvId);
+        if(found) { openConv(found); }
+        else { openConv({id:openConvId}); }
+        if(onConvOpened) onConvOpened();
+      }
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openConvId]);
 
   // Reload when search changes (debounced)
   useEffect(()=>{ const t=setTimeout(()=>loadConvs(),300); return ()=>clearTimeout(t); },[searchQ]);

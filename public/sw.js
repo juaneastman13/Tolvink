@@ -159,7 +159,8 @@ self.addEventListener('fetch', (event) => {
       if (cached) return cached;
       return fetch(request).then((r) => {
         if (url.origin === location.origin && r.ok) {
-          const c = caches.open(CACHE_NAME).then((cache) => cache.put(request, r.clone()));
+          const clone = r.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
         }
         return r;
       });
