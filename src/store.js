@@ -19,6 +19,7 @@ export const useUIStore = create((set) => ({
   chatConvId: null,
   duplicateData: null,
   editData: null,
+  locPicker: null,
 
   setModal: (modal) => set({ modal }),
   setToast: (toast) => set({ toast }),
@@ -32,6 +33,7 @@ export const useUIStore = create((set) => ({
   setChatConvId: (chatConvId) => set({ chatConvId }),
   setDuplicateData: (duplicateData) => set({ duplicateData }),
   setEditData: (editData) => set({ editData }),
+  setLocPicker: (locPicker) => set({ locPicker }),
 
   goToMap: (lat, lng, label, destLat, destLng, destLabel) => {
     if (!lat || !lng) return;

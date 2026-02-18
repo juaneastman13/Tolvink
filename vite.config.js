@@ -30,6 +30,13 @@ export default defineConfig({
         drop_debugger: true,
       },
     },
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom', 'react-router-dom', 'zustand'],
+        },
+      },
+    },
   },
   server: {
     port: 3000,

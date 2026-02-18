@@ -725,7 +725,7 @@ function ListScreen({ freights, onNav, onRefresh, catalog, view, setView, goToMa
                 {items.map(f => {
                   const st = stCfg(f.status);
                   return (
-                  <div key={f.id} onClick={()=>onNav("detail",f.id)} style={{ background:C.w, border:`1px solid ${C.b1}`, borderLeft:`4px solid ${st.color}`, borderRadius:12, padding:14, cursor:"pointer", boxShadow:C.sh, transition:"background 0.15s" }}>
+                  <div key={f.id} onClick={()=>onNav("detail",f.id)} style={{ background:C.w, border:`1px solid ${C.b1}`, borderLeft:`4px solid ${st.color}`, borderRadius:12, padding:14, cursor:"pointer", boxShadow:C.sh, transition:"background 0.15s", contentVisibility:"auto", containIntrinsicSize:"0 120px" }}>
                     <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
                       <div style={{ display:"flex", alignItems:"center", gap:8 }}>
                         <span style={{ fontSize:11, fontWeight:700, fontFamily:MONO, color:C.t2 }}>{f.code}</span>
@@ -763,7 +763,7 @@ function ListScreen({ freights, onNav, onRefresh, catalog, view, setView, goToMa
                 {items.map(f => {
                   const st = stCfg(f.status);
                   return (
-                  <div key={f.id} onClick={()=>onNav("detail",f.id)} style={{ background:C.w, border:`1px solid ${C.b1}`, borderLeft:`4px solid ${st.color}`, borderRadius:12, padding:14, cursor:"pointer", boxShadow:C.sh, transition:"background 0.15s", flex:"1 1 280px", maxWidth:420, minWidth:240 }}>
+                  <div key={f.id} onClick={()=>onNav("detail",f.id)} style={{ background:C.w, border:`1px solid ${C.b1}`, borderLeft:`4px solid ${st.color}`, borderRadius:12, padding:14, cursor:"pointer", boxShadow:C.sh, transition:"background 0.15s", flex:"1 1 280px", maxWidth:420, minWidth:240, contentVisibility:"auto", containIntrinsicSize:"0 120px" }}>
                     <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
                       <div style={{ display:"flex", alignItems:"center", gap:8 }}>
                         <span style={{ fontSize:11, fontWeight:700, fontFamily:MONO, color:C.t2 }}>{f.code}</span>
@@ -813,7 +813,7 @@ function ListScreen({ freights, onNav, onRefresh, catalog, view, setView, goToMa
                   const st = stCfg(f.status);
                   const campoLote = [f.fieldName, f.originName].filter(Boolean).join(" / ") || "—";
                   return (
-                    <tr key={f.id} onClick={()=>onNav("detail",f.id)} style={{ borderBottom:`1px solid ${C.b1}`, cursor:"pointer", transition:"background 0.1s" }} onMouseEnter={e=>e.currentTarget.style.background=C.bg} onMouseLeave={e=>e.currentTarget.style.background=""}>
+                    <tr key={f.id} onClick={()=>onNav("detail",f.id)} style={{ borderBottom:`1px solid ${C.b1}`, cursor:"pointer", transition:"background 0.1s", contentVisibility:"auto", containIntrinsicSize:"0 44px" }} onMouseEnter={e=>e.currentTarget.style.background=C.bg} onMouseLeave={e=>e.currentTarget.style.background=""}>
                       <td style={{ padding:"10px 12px", fontFamily:MONO, fontWeight:700, fontSize:11, color:C.t2, whiteSpace:"nowrap" }}>{f.code}</td>
                       <td style={{ padding:"10px 12px" }}><Bd color={st.color} bg={st.bg} small>{st.label}</Bd></td>
                       <td style={{ padding:"10px 12px", fontWeight:600, color:C.t1 }}>{f.grain==="Otros"?f.productTypeOther||"Otros":f.grain} · {f.tons} {f.unit||"tn"}</td>
@@ -2584,10 +2584,15 @@ function ChatsScreen({ user, openConvId, onConvOpened, isDesktop }) {
 
   useEffect(() => { if (msgEndRef.current) msgEndRef.current.scrollIntoView({ behavior: "smooth" }); }, [messages.length]);
 
-  // Poll for new messages only (append new ones, don't replace all)
+  // Poll for new messages — exponential backoff (3s → 10s → 30s → 60s, reset on new msgs)
+  const pollDelayRef = useRef(3000);
   useEffect(() => {
     if (!activeConv) return;
-    const iv = setInterval(async () => {
+    pollDelayRef.current = 3000;
+    let timer = null;
+    let cancelled = false;
+    const poll = async () => {
+      if (cancelled) return;
       try {
         const r = await apiGetMessages(activeConv.id, {take:50});
         const fresh = r.messages || r || [];
@@ -2596,13 +2601,17 @@ function ChatsScreen({ user, openConvId, onConvOpened, isDesktop }) {
           const lastId = prev[prev.length-1]?.id;
           const lastIdx = fresh.findIndex(m=>m.id===lastId);
           if(lastIdx>=0 && lastIdx<fresh.length-1) {
+            pollDelayRef.current = 3000;
             return [...prev, ...fresh.slice(lastIdx+1)];
           }
+          pollDelayRef.current = Math.min(pollDelayRef.current * 1.5, 60000);
           return prev;
         });
       } catch {}
-    }, 5000);
-    return () => clearInterval(iv);
+      if (!cancelled) timer = setTimeout(poll, pollDelayRef.current);
+    };
+    timer = setTimeout(poll, pollDelayRef.current);
+    return () => { cancelled = true; if(timer) clearTimeout(timer); };
   }, [activeConv]);
 
   const handleSend = async () => {
@@ -3044,33 +3053,33 @@ function CalendarScreen({ freights, perms, onNav, isDesktop, user, onAction, act
 
   const monNames=["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 
-  const getMonthData = (y, m) => {
-    const arr=[];
-    const first=new Date(y,m,1);
-    const lastDay=new Date(y,m+1,0).getDate();
-    const startDow=(first.getDay()+6)%7;
-    for(let i=0;i<startDow;i++)arr.push(null);
-    for(let d=1;d<=lastDay;d++)arr.push(d);
-    const map={};
-    filtered.forEach(f=>{
-      if(!f.loadDate)return;
-      const dd=parseInt(f.loadDate.slice(8,10),10);
-      const mm=parseInt(f.loadDate.slice(5,7),10)-1;
-      const yy=parseInt(f.loadDate.slice(0,4),10);
-      if(yy===y&&mm===m){ if(!map[dd])map[dd]=[]; map[dd].push(f); }
-    });
-    return { days: arr, byDay: map };
-  };
+  // Pre-index freights by YYYY-MM-DD key once (avoids repeated parseInt per freight per month)
+  const freightsByDate = useMemo(()=>{
+    const idx={};
+    filtered.forEach(f=>{ if(f.loadDate){ if(!idx[f.loadDate])idx[f.loadDate]=[]; idx[f.loadDate].push(f); } });
+    return idx;
+  },[filtered]);
 
   const months = useMemo(()=>{
     const result = [];
     for(let i=0;i<monthsToShow;i++){
       let y=calMonth.y, m=calMonth.m+i;
       if(m>11){m-=12;y++;}
-      result.push({y,m,...getMonthData(y,m)});
+      const arr=[];
+      const first=new Date(y,m,1);
+      const lastDay=new Date(y,m+1,0).getDate();
+      const startDow=(first.getDay()+6)%7;
+      for(let j=0;j<startDow;j++)arr.push(null);
+      for(let d=1;d<=lastDay;d++)arr.push(d);
+      const map={};
+      for(let d=1;d<=lastDay;d++){
+        const key=`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+        if(freightsByDate[key]) map[d]=freightsByDate[key];
+      }
+      result.push({y,m,days:arr,byDay:map});
     }
     return result;
-  },[calMonth,monthsToShow,filtered]);
+  },[calMonth,monthsToShow,freightsByDate]);
 
   const activeMonth = calSelMonth!==null ? months[calSelMonth] : months[0];
   const selFreights = calSelDay && activeMonth ? (activeMonth.byDay[calSelDay]||[]) : [];
@@ -4634,8 +4643,8 @@ export default function Tolvink() {
     return <LandingScreen onLogin={auth.login} onSignup={auth.signup} loading={auth.loading} error={auth.error} clearError={auth.clearError}/>;
   }
 
-  console.log('[APP] User authenticated, rendering main app');
-  const curFreight = fh.freights.find(f=>f.id===selFreight);
+  const freightMap = useMemo(() => { const m = new Map(); fh.freights.forEach(f => m.set(f.id, f)); return m; }, [fh.freights]);
+  const curFreight = freightMap.get(selFreight) || null;
   const navActive = ["detail"].includes(screen)?"list":["trucks","fields","admin","mydata","calendar","reports"].includes(screen)&&!isDesktop?"menu":["trucks","fields","admin","mydata"].includes(screen)?"menu":screen;
 
   return (
