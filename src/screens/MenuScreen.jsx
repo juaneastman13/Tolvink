@@ -1,8 +1,8 @@
 import { useState, Fragment } from "react";
 import { C, Ic } from "../theme";
-import { Av, Bd, Btn } from "../components";
+import { Av, Bd, Btn, PwaInstallCard } from "../components";
 
-export default function MenuScreen({ user, perms, onLogout, onNav, isDesktop, onSwitchCompany, onRefresh }) {
+export default function MenuScreen({ user, perms, onLogout, onNav, isDesktop, onSwitchCompany, onRefresh, pwa }) {
   const TYPE_LABELS = {plant:"Planta de Acopio",transporter:"Transportista",producer:"Productor"};
   const TYPE_COLORS = {plant:C.pri,transporter:C.info||C.sec,producer:C.acc};
   const tc = TYPE_COLORS[user.userType]||C.pri;
@@ -114,6 +114,8 @@ export default function MenuScreen({ user, perms, onLogout, onNav, isDesktop, on
           {Ic.edit(C.pri,14)} Administrar mis datos
         </button>
       </div>
+
+      <PwaInstallCard pwa={pwa} />
 
       <Btn full v="err" onClick={onLogout} icon={Ic.out(C.err,16)}>Cerrar sesión</Btn>
     </div>

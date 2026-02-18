@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback, useMemo, lazy, Suspense } fro
 import { useNavigate, useLocation } from "react-router-dom";
 import { uploadPhoto, apiAddDocument, apiListConversations } from "./api";
 import { C, track, FONT, Ic } from "./theme";
-import { Toast, LoadingOverlay, Sidebar, Nav, NotifBell, NotificationsPanel } from "./components";
+import { Toast, LoadingOverlay, Sidebar, Nav, NotifBell, NotificationsPanel, ErrorBoundary, SkeletonList, PwaInstallCard, EmptyState } from "./components";
 import { useAuth, useCatalog, useFreights, permsFor, useIsDesktop, useOnline, useNotifications, useSSE, useInstallPrompt } from "./hooks";
 import { MapOverlay, LocPickerFullscreen } from "./maps";
 import { RoutesBackground } from "./routes-bg";
@@ -45,8 +45,11 @@ const PATH_TO_SCREEN = {};
 Object.entries(SCREEN_TO_PATH).forEach(([s, p]) => { PATH_TO_SCREEN[p] = s; });
 
 // ======================== SCREEN LOADER ===============================
-const SL = () => <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",padding:40}}>
-  <div style={{width:24,height:24,border:`3px solid ${C.b1}`,borderTopColor:C.pri,borderRadius:"50%",animation:"ti 0.8s linear infinite"}} />
+const SL = () => <div style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:40,gap:14,animation:"fadeIn 0.3s ease"}}>
+  <div style={{display:"flex",gap:6}}>
+    {[0,1,2].map(i=><div key={i} style={{width:8,height:8,borderRadius:4,background:C.pri,opacity:0.3,animation:`tvDots 1.2s ${i*0.15}s ease-in-out infinite`}}/>)}
+  </div>
+  <style>{`@keyframes tvDots{0%,80%,100%{opacity:0.3;transform:scale(1)}40%{opacity:1;transform:scale(1.3)}}`}</style>
 </div>;
 
 // ======================== MAIN APP ====================================
@@ -374,13 +377,13 @@ export default function Tolvink() {
         <div style={{flex:1,overflow:(screen==="chats"||screen==="calendar")&&isDesktop?"hidden":"auto",display:(mapFocus||locPicker)?"none":"flex",flexDirection:"column",WebkitOverflowScrolling:"touch",overscrollBehavior:"contain"}}>
         <div key={screen} className="tv-page" style={{flex:1,display:"flex",flexDirection:"column",minHeight:0}}>
         <Suspense fallback={<SL/>}>
-        {screen==="home" && <HomeScreen user={auth.user} freights={fh.freights} perms={perms} onNav={nav} catalog={catalog} isDesktop={isDesktop} onAction={handleAction} actionLoading={actionLoading} onChat={(convId)=>{if(convId){setChatConvId(convId);navigate("/chats");}}} onRefresh={(id)=>fh.refresh(id)} onDuplicate={(f)=>{setDuplicateData(f);navigate("/new");}} onEdit={(f)=>{setEditData(f);navigate("/edit/"+f.id);}} goToMap={goToMap} pwa={pwa}/>}
-        {screen==="list" && <ListScreen freights={fh.freights} onNav={nav} onRefresh={fh.fetchAll} catalog={catalog} view={listView} setView={setListView} goToMap={goToMap} hasMore={fh.hasMore} loadMore={fh.loadMore} loadingMore={fh.loadingMore} total={fh.total} isDesktop={isDesktop}/>}
+        {screen==="home" && <HomeScreen user={auth.user} freights={fh.freights} loading={fh.loading} perms={perms} onNav={nav} catalog={catalog} isDesktop={isDesktop} onAction={handleAction} actionLoading={actionLoading} onChat={(convId)=>{if(convId){setChatConvId(convId);navigate("/chats");}}} onRefresh={(id)=>fh.refresh(id)} onDuplicate={(f)=>{setDuplicateData(f);navigate("/new");}} onEdit={(f)=>{setEditData(f);navigate("/edit/"+f.id);}} goToMap={goToMap} pwa={pwa}/>}
+        {screen==="list" && <ListScreen freights={fh.freights} loading={fh.loading} onNav={nav} onRefresh={fh.fetchAll} catalog={catalog} view={listView} setView={setListView} goToMap={goToMap} hasMore={fh.hasMore} loadMore={fh.loadMore} loadingMore={fh.loadingMore} total={fh.total} isDesktop={isDesktop}/>}
         {screen==="calendar" && <CalendarScreen freights={fh.freights} perms={perms} onNav={nav} isDesktop={isDesktop} user={auth.user} onAction={handleAction} actionLoading={actionLoading} onChat={(convId)=>{if(convId){setChatConvId(convId);navigate("/chats");}}} onRefresh={(id)=>fh.refresh(id)} onDuplicate={(f)=>{setDuplicateData(f);navigate("/new");}} onEdit={(f)=>{setEditData(f);navigate("/edit/"+f.id);}} goToMap={goToMap}/>}
         {screen==="detail" && <DetailScreen user={curFreight ? {...auth.user, userType: _resolveType(curFreight)} : auth.user} freight={curFreight} perms={perms} onBack={()=>navigate("/list")} onAction={handleAction} actionLoading={actionLoading} onChat={(convId)=>{if(convId){setChatConvId(convId);navigate("/chats");}}} onRefresh={(id)=>fh.refresh(id)} onDuplicate={(f)=>{setDuplicateData(f);navigate("/new");}} onEdit={(f)=>{setEditData(f);navigate("/edit/"+f.id);}} goToMap={goToMap}/>}
         {screen==="new" && <NewScreen user={auth.user} lots={catalog.lots} plants={catalog.plants} branches={catalog.branches} fields={catalog.fields} trucks={catalog.trucks} onBack={()=>{setDuplicateData(null);navigate("/");}} onCreate={handleCreate} submitting={submitting} duplicateFrom={duplicateData}/>}
         {screen==="edit" && editData && <EditScreen freight={editData} fields={catalog.fields} plants={catalog.plants} onBack={()=>{setEditData(null);navigate(-1);}} onSave={async(id,data)=>{const r=await fh.update(id,data);if(r.ok) return "Flete actualizado"; show(r.error,"err"); return "";}}/>}
-        {screen==="menu" && <MenuScreen user={auth.user} perms={perms} onLogout={auth.logout} onNav={nav} isDesktop={isDesktop} onSwitchCompany={auth.switchCompany} onRefresh={()=>{fh.fetchAll();catalog.refresh();}}/>}
+        {screen==="menu" && <MenuScreen user={auth.user} perms={perms} onLogout={auth.logout} onNav={nav} isDesktop={isDesktop} onSwitchCompany={auth.switchCompany} onRefresh={()=>{fh.fetchAll();catalog.refresh();}} pwa={pwa}/>}
         {screen==="trucks" && <TrucksScreen onBack={()=>{catalog.refresh();navigate("/menu");}}/>}
         {screen==="fields" && <FieldsScreen onBack={()=>{catalog.refresh();navigate("/menu");}} goToMap={goToMap}/>}
         {screen==="admin" && <AdminScreen user={auth.user} onBack={()=>navigate("/menu")}/>}

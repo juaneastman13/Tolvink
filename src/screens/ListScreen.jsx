@@ -1,12 +1,12 @@
 import { useState, useMemo } from "react";
 import { C, Ic, FONT, MONO } from "../theme";
 import { stCfg } from "../constants";
-import { Bd, Btn, Select, SortTh, Tabs, exportExcel } from "../components";
+import { Bd, Btn, Select, SortTh, Tabs, exportExcel, SkeletonList, EmptyState } from "../components";
 import { useTableSort, usePullToRefresh } from "../hooks";
 import { textMatch } from "../validation";
 import { FreightsOverviewMap } from "../maps";
 
-export default function ListScreen({ freights, onNav, onRefresh, catalog, view, setView, goToMap, hasMore, loadMore, loadingMore, total, isDesktop }) {
+export default function ListScreen({ freights, loading, onNav, onRefresh, catalog, view, setView, goToMap, hasMore, loadMore, loadingMore, total, isDesktop }) {
   const [searchQ, setSearchQ] = useState("");
   const [fPlant, setFPlant] = useState("");
   const [fProducer, setFProducer] = useState("");
@@ -137,8 +137,14 @@ export default function ListScreen({ freights, onNav, onRefresh, catalog, view, 
       </div>
       </>)}
 
+      {/* Skeleton while loading */}
+      {loading && freights.length === 0 && <SkeletonList count={5} />}
+
+      {/* Empty state */}
+      {!loading && freights.length === 0 && <EmptyState icon={Ic.truck(C.t3, 28)} title="Sin fletes todavía" subtitle="Los fletes que solicites o te asignen aparecerán acá" />}
+
       {/* View: Kanban — desktop: horizontal columns, mobile: stacked */}
-      {view==="kanban" && (isDesktop ? (
+      {view==="kanban" && freights.length > 0 && (isDesktop ? (
       <div style={{ display:"flex", gap:12, overflowX:"auto", alignItems:"flex-start", paddingBottom:8 }}>
         {GROUPS.map(group => {
           const items = grouped[group.key];

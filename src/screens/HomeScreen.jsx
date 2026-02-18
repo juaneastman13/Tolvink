@@ -1,12 +1,12 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { C, Ic, MONO } from "../theme";
 import { stCfg, getActions } from "../constants";
-import { Bd, Btn } from "../components";
+import { Bd, Btn, SkeletonList, EmptyState } from "../components";
 import { useIsDesktop } from "../hooks";
 import { getPendingActions, resolveUserTypeForFreight } from "../utils/freight-helpers";
 import DetailScreen from "./DetailScreen";
 
-export default function HomeScreen({ user, freights, perms, onNav, catalog, isDesktop, onAction, actionLoading, onChat, onRefresh, onDuplicate, onEdit, goToMap, pwa }) {
+export default function HomeScreen({ user, freights, loading, perms, onNav, catalog, isDesktop, onAction, actionLoading, onChat, onRefresh, onDuplicate, onEdit, goToMap, pwa }) {
   const [selectedId, setSelectedId] = useState(null);
   const [pendingFilter, setPendingFilter] = useState("all");
   const [summaryFilter, setSummaryFilter] = useState("all");
@@ -217,6 +217,9 @@ export default function HomeScreen({ user, freights, perms, onNav, catalog, isDe
 
       <div style={{ padding: compact ? "0 8px 8px" : "0 18px 18px" }}>
 
+      {/* Skeleton while loading */}
+      {loading && freights.length === 0 && <SkeletonList count={3} />}
+
       {/* PWA install prompt */}
       {pwa && !pwa.isInstalled && (pwa.canPrompt || pwa.isIOS) && (
         <div style={{ background:C.priPale, border:`1.5px solid ${C.pri}30`, borderRadius:12, padding:"12px 14px", marginBottom:12, display:"flex", alignItems:"center", gap:10 }}>
@@ -252,7 +255,7 @@ export default function HomeScreen({ user, freights, perms, onNav, catalog, isDe
             {pendingByAction.map(g => renderGroup({ key: g.actionKey, label: g.label, icon: actionIcon(g.icon), color: g.color, items: g.items }, "pa"))}
           </div>
         )}
-        {!compact && pendingByAction.length === 0 && <div style={{ fontSize: 11, color: C.t3, paddingLeft: 16, marginBottom: 16 }}>Sin pendientes en este per\u00edodo</div>}
+        {!compact && pendingByAction.length === 0 && <div style={{ padding:"12px 16px", fontSize:12, color:C.t3, display:"flex", alignItems:"center", gap:8 }}>{Ic.chk(C.ok,14)} Sin pendientes en este período</div>}
       </>)}
 
       {/* Sin pendientes de mi parte */}
@@ -276,7 +279,7 @@ export default function HomeScreen({ user, freights, perms, onNav, catalog, isDe
           {summaryGroups.map(g => renderGroup(g, "sm"))}
         </div>
       ) : (
-        !compact && <div style={{ fontSize: 11, color: C.t3, paddingLeft: 16 }}>Sin fletes en este per\u00edodo</div>
+        !compact && <div style={{ padding:"12px 16px", fontSize:12, color:C.t3, display:"flex", alignItems:"center", gap:8 }}>{Ic.truck(C.t3,14)} Sin fletes en este período</div>
       )}
       </div>
     </div>

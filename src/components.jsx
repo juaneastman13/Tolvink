@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, memo, useMemo } from "react";
+import { useState, useEffect, useRef, memo, useMemo, Component } from "react";
 import { C, Ic } from "./theme";
 import { stCfg } from "./constants";
 
@@ -610,4 +610,123 @@ tr:nth-child(even){background:#f8f9fa}
 </body></html>`;
   const w = window.open("","_blank");
   if(w) { w.document.write(html); w.document.close(); }
+}
+
+// ======================== SKELETON LOADERS ============================
+
+const shimmerStyle = `@keyframes tvShimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}`;
+
+function SkeletonBlock({ w="100%", h=16, r=8, mb=0, style={} }) {
+  return <div style={{ width:w, height:h, borderRadius:r, background:`linear-gradient(90deg, ${C.bgInput} 25%, ${C.b2} 50%, ${C.bgInput} 75%)`, backgroundSize:"200% 100%", animation:"tvShimmer 1.5s ease-in-out infinite", marginBottom:mb, flexShrink:0, ...style }} />;
+}
+
+export function SkeletonCard() {
+  return <>
+    <style>{shimmerStyle}</style>
+    <div style={{ background:C.w, borderRadius:14, padding:16, border:`1px solid ${C.b2}`, marginBottom:10 }}>
+      <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:12 }}>
+        <SkeletonBlock w={42} h={42} r={12} />
+        <div style={{ flex:1 }}>
+          <SkeletonBlock w="60%" h={14} mb={6} />
+          <SkeletonBlock w="40%" h={10} />
+        </div>
+        <SkeletonBlock w={70} h={24} r={6} />
+      </div>
+      <div style={{ display:"flex", gap:8 }}>
+        <SkeletonBlock w="50%" h={12} />
+        <SkeletonBlock w="30%" h={12} />
+      </div>
+    </div>
+  </>;
+}
+
+export function SkeletonList({ count=4 }) {
+  return <div style={{ padding:"0 2px" }}>
+    <style>{shimmerStyle}</style>
+    {Array.from({ length: count }, (_, i) => <SkeletonCard key={i} />)}
+  </div>;
+}
+
+export function SkeletonDetail() {
+  return <>
+    <style>{shimmerStyle}</style>
+    <div style={{ padding:18 }}>
+      <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:20 }}>
+        <SkeletonBlock w={48} h={48} r={14} />
+        <div style={{ flex:1 }}>
+          <SkeletonBlock w="50%" h={18} mb={8} />
+          <SkeletonBlock w="35%" h={12} />
+        </div>
+      </div>
+      {[1,2,3].map(i => <div key={i} style={{ background:C.w, borderRadius:14, padding:16, border:`1px solid ${C.b2}`, marginBottom:12 }}>
+        <SkeletonBlock w="30%" h={10} mb={10} />
+        <SkeletonBlock w="80%" h={14} mb={8} />
+        <SkeletonBlock w="60%" h={14} />
+      </div>)}
+    </div>
+  </>;
+}
+
+// ======================== EMPTY STATE ================================
+
+export function EmptyState({ icon, title, subtitle, action }) {
+  return <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"40px 24px", textAlign:"center", minHeight:200 }}>
+    {icon && <div style={{ width:56, height:56, borderRadius:16, background:C.priPale, display:"flex", alignItems:"center", justifyContent:"center", marginBottom:16 }}>{icon}</div>}
+    <div style={{ fontSize:15, fontWeight:700, color:C.t1, marginBottom:6 }}>{title}</div>
+    {subtitle && <div style={{ fontSize:13, color:C.t3, lineHeight:1.5, maxWidth:300 }}>{subtitle}</div>}
+    {action && <div style={{ marginTop:16 }}>{action}</div>}
+  </div>;
+}
+
+// ======================== ERROR BOUNDARY ==============================
+
+export class ErrorBoundary extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+  componentDidCatch(error, info) {
+    try {
+      import("./sentry").then(m => m.captureError(error, { componentStack: info?.componentStack }));
+    } catch {}
+  }
+  render() {
+    if (this.state.hasError) {
+      return <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", minHeight:"100vh", padding:32, textAlign:"center", background:C.bg, fontFamily:"'DM Sans',sans-serif" }}>
+        <div style={{ width:64, height:64, borderRadius:20, background:C.errPale, display:"flex", alignItems:"center", justifyContent:"center", marginBottom:20 }}>
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={C.err} strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        </div>
+        <div style={{ fontSize:18, fontWeight:700, color:C.t1, marginBottom:8 }}>Algo salió mal</div>
+        <div style={{ fontSize:13, color:C.t3, marginBottom:20, maxWidth:320, lineHeight:1.5 }}>Ocurrió un error inesperado. Podés intentar recargar la página.</div>
+        <button onClick={() => window.location.reload()} style={{ padding:"12px 28px", borderRadius:10, background:C.pri, color:C.w, border:"none", fontSize:14, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>Recargar página</button>
+        {this.state.error && <div style={{ marginTop:16, fontSize:10, color:C.t3, fontFamily:"monospace", maxWidth:400, wordBreak:"break-all" }}>{String(this.state.error.message || this.state.error).slice(0, 200)}</div>}
+      </div>;
+    }
+    return this.props.children;
+  }
+}
+
+// ======================== PWA INSTALL CARD ============================
+
+export function PwaInstallCard({ pwa }) {
+  if (!pwa || pwa.isInstalled) return null;
+  if (!pwa.canPrompt && !pwa.isIOS) return null;
+
+  return <div style={{ background:`linear-gradient(135deg, ${C.pri}08, ${C.acc}08)`, border:`1px solid ${C.b1}`, borderRadius:14, padding:16, marginBottom:12, boxShadow:C.sh }}>
+    <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+      <div style={{ width:44, height:44, borderRadius:12, background:C.pri, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      </div>
+      <div style={{ flex:1 }}>
+        <div style={{ fontSize:13, fontWeight:700, color:C.t1, marginBottom:2 }}>Instalar Tolvink</div>
+        <div style={{ fontSize:11, color:C.t3, lineHeight:1.4 }}>
+          {pwa.isIOS ? "Tocá Compartir → Agregar a pantalla de inicio" : "Accedé más rápido desde tu dispositivo"}
+        </div>
+      </div>
+      {pwa.canPrompt && <button onClick={pwa.install} style={{ padding:"8px 16px", borderRadius:8, background:C.pri, color:C.w, border:"none", fontSize:12, fontWeight:600, cursor:"pointer", fontFamily:"inherit", flexShrink:0 }}>Instalar</button>}
+    </div>
+  </div>;
 }
