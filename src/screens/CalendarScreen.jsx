@@ -3,8 +3,9 @@ import { C, Ic, MONO } from "../theme";
 import { stCfg } from "../constants";
 import { Bd, Btn } from "../components";
 import { resolveUserTypeForFreight } from "../utils/freight-helpers";
+import DetailScreen from "./DetailScreen";
 
-export default function CalendarScreen({ freights, perms, onNav, isDesktop, user, onAction, actionLoading, onChat, onRefresh, onDuplicate, onEdit, goToMap, DetailScreen }) {
+export default function CalendarScreen({ freights, perms, onNav, isDesktop, user, onAction, actionLoading, onChat, onRefresh, onDuplicate, onEdit, goToMap }) {
   const [selectedId, setSelectedId] = useState(null);
   const selFreightObj = selectedId ? freights.find(f => f.id === selectedId) : null;
   const calDetailUser = selFreightObj ? { ...user, userType: resolveUserTypeForFreight(selFreightObj, user) } : user;
