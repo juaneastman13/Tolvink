@@ -454,15 +454,12 @@ export function FreightsOverviewMap({ freights, onSelect, fields, plants }) {
 
   // Init map once
   useEffect(() => {
-    console.log("[FreightsOverviewMap] init effect, ref:", !!mapRef.current, "key:", !!GMAPS_KEY);
     if (!mapRef.current) return;
     if (!GMAPS_KEY) { setMapError("Falta la clave de Google Maps (VITE_GMAPS_KEY)"); return; }
     let c = false;
     const initMap = async () => {
       try {
-        console.log("[FreightsOverviewMap] loading GMaps...");
         const maps = await loadGMaps();
-        console.log("[FreightsOverviewMap] GMaps loaded, cancelled:", c, "ref:", !!mapRef.current);
         if (c || !mapRef.current) return;
         mapObj.current = new maps.Map(mapRef.current, {
           zoom: 6, center: { lat: -34.6, lng: -56.2 },
@@ -471,8 +468,7 @@ export function FreightsOverviewMap({ freights, onSelect, fields, plants }) {
         });
         info.current = new maps.InfoWindow();
         setReady(true);
-        console.log("[FreightsOverviewMap] map ready");
-      } catch(e) { console.error("[FreightsOverviewMap] error:", e); if (!c) setMapError("No se pudo cargar Google Maps"); }
+      } catch(e) { if (!c) setMapError("No se pudo cargar Google Maps"); }
     };
     initMap();
     return () => { c = true; };
