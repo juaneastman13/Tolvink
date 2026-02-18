@@ -483,37 +483,11 @@ function HomeScreen({ user, freights, perms, onNav, catalog, isDesktop, onAction
   const listContent = (
     <div style={{ flex: compact ? undefined : 1, width: compact ? 300 : undefined, flexShrink: 0, overflow: compact ? "auto" : undefined, boxSizing: "border-box", borderRight: compact ? `1px solid ${C.b1}` : "none" }}>
       {/* Sticky header — empresa (clickable), fecha+hora, fletes */}
-      <div style={{ position: compact ? "sticky" : undefined, top: 0, zIndex: 10, background:C.bg, display: "flex", alignItems: "center", minHeight: isDesktop ? 107 : 56, padding: compact ? "0 14px" : "0 18px", borderBottom: `1px solid ${C.b2}` }}>
-        <div style={{ position: "relative" }}>
-          <div ref={companyPickerRef}>
-            <button onClick={() => hasMultipleCompanies && setShowCompanyPicker(p => !p)} style={{ display: "flex", alignItems: "center", gap: 4, background: "none", border: "none", padding: 0, cursor: hasMultipleCompanies ? "pointer" : "default", fontFamily: "inherit" }}>
-              <span style={{ fontSize: compact ? 13 : 15, fontWeight: 700, color: C.t1 }}>
-                {allSelected ? (myCompanies.length > 1 ? "Todas las empresas" : user.entity) : myCompanies.filter(c => isTypeActive(c.key)).map(c => c.name).join(", ")}
-              </span>
-              {hasMultipleCompanies && <span style={{ display: "flex", transform: showCompanyPicker ? "rotate(270deg)" : "rotate(90deg)", transition: "transform 0.15s" }}>{Ic.chev(C.t3, 12)}</span>}
-            </button>
-            {/* Company dropdown */}
-            {showCompanyPicker && (
-              <div style={{ position: "absolute", top: "100%", left: 0, marginTop: 4, background: C.w, border: `1px solid ${C.b1}`, borderRadius: 10, boxShadow: C.shMd, padding: 6, zIndex: 20, minWidth: 200 }}>
-                {myCompanies.map(c => (
-                  <button key={c.key} onClick={() => toggleType(c.key)} style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", borderRadius: 6, border: "none", background: isTypeActive(c.key) ? C.priPale : "transparent", cursor: "pointer", fontFamily: "inherit", textAlign: "left" }}>
-                    <span style={{ width: 16, height: 16, borderRadius: 4, border: `2px solid ${isTypeActive(c.key) ? C.pri : C.b1}`, background: isTypeActive(c.key) ? C.pri : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                      {isTypeActive(c.key) && Ic.chk("#fff", 10)}
-                    </span>
-                    <div>
-                      <div style={{ fontSize: 12, fontWeight: 600, color: C.t1 }}>{c.name}</div>
-                      <div style={{ fontSize: 10, color: C.t3 }}>{typeLabels[c.type] || c.type}</div>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginTop: 2 }}>
-            <span style={{ fontSize: 11, color: C.t3, textTransform: "capitalize" }}>{todayLabel} · {nowTime}</span>
-            <span style={{ fontSize: 11, color: C.t3 }}>·</span>
-            <span style={{ fontSize: 11, color: C.t2, fontWeight: 600 }}>{filteredFreights.length} flete{filteredFreights.length !== 1 ? "s" : ""}</span>
-          </div>
+      <div style={{ position: compact ? "sticky" : undefined, top: 0, zIndex: 10, background:C.bg, display: "flex", alignItems: "center", minHeight: isDesktop ? 60 : 44, padding: compact ? "0 14px" : "0 18px", borderBottom: `1px solid ${C.b2}` }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+          <span style={{ fontSize: 11, color: C.t3, textTransform: "capitalize" }}>{todayLabel} · {nowTime}</span>
+          <span style={{ fontSize: 11, color: C.t3 }}>·</span>
+          <span style={{ fontSize: 11, color: C.t2, fontWeight: 600 }}>{filteredFreights.length} flete{filteredFreights.length !== 1 ? "s" : ""}</span>
         </div>
       </div>
 
@@ -4282,13 +4256,18 @@ function CompanyHeaderPicker({ user, onSwitch }) {
     return ()=>document.removeEventListener("mousedown",h);
   },[open]);
 
+  const now = new Date();
+  const dateLabel = now.toLocaleDateString("es-UY",{weekday:"long",day:"numeric",month:"long"});
+  const timeLabel = now.toLocaleTimeString("es-UY",{hour:"2-digit",minute:"2-digit",hour12:false});
+
   if(!activeName) return null;
   return (
-    <div ref={ref} style={{position:"relative"}}>
-      <button onClick={()=>companies.length>1&&setOpen(!open)} style={{background:"none",border:`1px solid ${C.b2}`,borderRadius:8,padding:"4px 10px",cursor:companies.length>1?"pointer":"default",display:"flex",alignItems:"center",gap:5,fontFamily:"inherit"}}>
-        <span style={{width:6,height:6,borderRadius:3,background:tColor,flexShrink:0}}/>
-        <span style={{fontSize:11,fontWeight:600,color:C.t1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:140}}>{activeName}</span>
-        {companies.length>1 && <span style={{fontSize:9,color:C.t3,flexShrink:0}}>▼</span>}
+    <div ref={ref} style={{position:"relative",display:"flex",flexDirection:"column",alignItems:"flex-end"}}>
+      <div style={{fontSize:10,color:C.t3,textTransform:"capitalize",marginBottom:2}}>{dateLabel} · {timeLabel}</div>
+      <button onClick={()=>companies.length>1&&setOpen(!open)} style={{background:"none",border:`1px solid ${C.b2}`,borderRadius:8,padding:"5px 12px",cursor:companies.length>1?"pointer":"default",display:"flex",alignItems:"center",gap:6,fontFamily:"inherit"}}>
+        <span style={{width:8,height:8,borderRadius:4,background:tColor,flexShrink:0}}/>
+        <span style={{fontSize:13,fontWeight:700,color:C.t1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:180}}>{activeName}</span>
+        {companies.length>1 && <span style={{fontSize:10,color:C.t3,flexShrink:0}}>▼</span>}
       </button>
       {open && companies.length>1 && (
         <div style={{position:"absolute",top:"100%",right:0,marginTop:4,background:C.w,border:`1px solid ${C.b1}`,borderRadius:10,boxShadow:C.shMd,padding:4,zIndex:100,minWidth:180,maxWidth:280}}>
