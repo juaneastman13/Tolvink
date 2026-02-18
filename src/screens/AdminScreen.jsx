@@ -106,9 +106,9 @@ export default function AdminScreen({ user, onBack, AccessScreen }) {
     setSelectedCompany(c); setBranches([]); setFields([]); setTrucks([]);
     setShowBranchForm(false); setShowFieldForm(false); setShowTruckForm(false); setShowLotForm(false); setExpandedFieldId(null);
     setDetailTab("branches"); setView("companyDetail");
-    try { const b=await apiAdminListBranches(c.id); setBranches(b||[]); } catch {}
-    if(c.type==="producer") { try { const f=await apiAdminListFields(c.id); setFields(f||[]); } catch {} }
-    if(c.type==="transporter") { try { const t=await apiAdminListTrucks(c.id); setTrucks(t||[]); } catch {} }
+    try { const b=await apiAdminListBranches(c.id); setBranches(b||[]); } catch(e) { console.warn('[AdminScreen] Load branches failed:', e.message); }
+    if(c.type==="producer") { try { const f=await apiAdminListFields(c.id); setFields(f||[]); } catch(e) { console.warn('[AdminScreen] Load fields failed:', e.message); } }
+    if(c.type==="transporter") { try { const t=await apiAdminListTrucks(c.id); setTrucks(t||[]); } catch(e) { console.warn('[AdminScreen] Load trucks failed:', e.message); } }
   };
   const openNewBranch = () => { setBranchForm({name:"",address:"",reference:"",lat:null,lng:null,locationAddress:""}); setEditBranchId(null); setShowBranchForm(true); };
   const openEditBranch = (b) => { setBranchForm({name:b.name,address:b.address||"",reference:b.reference||"",lat:b.lat?Number(b.lat):null,lng:b.lng?Number(b.lng):null,locationAddress:""}); setEditBranchId(b.id); setShowBranchForm(true); };
@@ -117,6 +117,10 @@ export default function AdminScreen({ user, onBack, AccessScreen }) {
     setSaving(true);
     try {
       const {locationAddress, ...branchData} = branchForm;
+      // If locationAddress exists but address is empty, use locationAddress as address
+      if(locationAddress && !branchData.address?.trim()) {
+        branchData.address = locationAddress;
+      }
       if(editBranchId) { await apiAdminUpdateBranch(editBranchId, branchData); setSaving(false); setDoneMsg("Sucursal actualizada"); }
       else { await apiAdminCreateBranch({...branchData,companyId:selectedCompany.id}); setSaving(false); setDoneMsg("Sucursal creada"); }
       setShowBranchForm(false); const b=await apiAdminListBranches(selectedCompany.id); setBranches(b||[]); load();

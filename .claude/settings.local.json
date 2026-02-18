@@ -48,7 +48,11 @@
       "Bash(du:*)",
       "Bash(grep:*)",
       "Bash(git status:*)",
-      "Bash(npx vitest:*)"
+      "Bash(npx vitest:*)",
+      "Bash(\"C:\\\\Users\\\\Usuario\\\\Desktop\\\\tolvink-deploy\\\\tolvink-native\\\\app.json\":*)",
+      "Bash(\"C:\\\\Users\\\\Usuario\\\\Desktop\\\\tolvink-deploy\\\\tolvink-native\\\\eas.json\":*)",
+      "Bash(\"C:\\\\Users\\\\Usuario\\\\Desktop\\\\tolvink-deploy\\\\tolvink-native\\\\ASSETS_README.md\":*)",
+      "Bash(npm start)"
     ]
   }
 }

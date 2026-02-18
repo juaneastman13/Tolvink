@@ -48,6 +48,30 @@ export const useUIStore = create((set) => ({
   },
 }));
 
+// ======================== CATALOG CACHE STORE =========================
+// Centralized catalog cache (multi-tenant safe)
+export const useCatalogStore = create((set, get) => ({
+  cache: {}, // { [userId]: { data, ts, loading } }
+
+  getCache: (userId) => get().cache[userId] || null,
+
+  setCache: (userId, data) => set((state) => ({
+    cache: {
+      ...state.cache,
+      [userId]: { data, ts: Date.now(), loading: false }
+    }
+  })),
+
+  setLoading: (userId, loading) => set((state) => ({
+    cache: {
+      ...state.cache,
+      [userId]: { ...(state.cache[userId] || {}), loading }
+    }
+  })),
+
+  clearCache: () => set({ cache: {} }),
+}));
+
 // ======================== OFFLINE WRITE QUEUE =========================
 // Queues failed writes when offline, replays when back online
 const DB_NAME = "tolvink-offline";

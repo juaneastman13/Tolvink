@@ -9,44 +9,72 @@ import {
   API_URL,
 } from "./api";
 import { C, track } from "./theme";
+import { useCatalogStore } from "./store";
 
-// ======================== CATALOG HOOK (Real API + client cache) ======
-const _catalogCache = { data: null, ts: 0, userId: null };
+// ======================== CATALOG HOOK (Real API + Zustand cache) ====
 const CATALOG_TTL = 5 * 60 * 1000; // 5 min
+const _loadingPromises = {}; // Singleton: prevent concurrent requests for same user
 
 export function useCatalog(user) {
-  const [plants, setPlants] = useState(_catalogCache.data?.plants || []);
-  const [branches, setBranches] = useState(_catalogCache.data?.branches || []);
-  const [lots, setLots] = useState(_catalogCache.data?.lots || []);
-  const [fields, setFields] = useState(_catalogCache.data?.fields || []);
-  const [transporters, setTransporters] = useState(_catalogCache.data?.transporters || []);
-  const [trucks, setTrucks] = useState(_catalogCache.data?.trucks || []);
-  const [loading, setLoading] = useState(false);
+  const { getCache, setCache, setLoading } = useCatalogStore();
+  const cached = user ? getCache(user.id) : null;
+
+  const [plants, setPlants] = useState(cached?.data?.plants || []);
+  const [branches, setBranches] = useState(cached?.data?.branches || []);
+  const [lots, setLots] = useState(cached?.data?.lots || []);
+  const [fields, setFields] = useState(cached?.data?.fields || []);
+  const [transporters, setTransporters] = useState(cached?.data?.transporters || []);
+  const [trucks, setTrucks] = useState(cached?.data?.trucks || []);
+  const [loading, setLoadingLocal] = useState(cached?.loading || false);
 
   const load = useCallback((force)=>{
     if(!user) return;
+
     const now = Date.now();
-    if(!force && _catalogCache.data && _catalogCache.userId === user.id && (now - _catalogCache.ts) < CATALOG_TTL) {
-      setPlants(_catalogCache.data.plants); setBranches(_catalogCache.data.branches);
-      setLots(_catalogCache.data.lots); setTransporters(_catalogCache.data.transporters);
-      setTrucks(_catalogCache.data.trucks); setFields(_catalogCache.data.fields);
+    const cache = getCache(user.id);
+
+    // Return cached data if fresh
+    if(!force && cache?.data && (now - cache.ts) < CATALOG_TTL) {
+      setPlants(cache.data.plants); setBranches(cache.data.branches);
+      setLots(cache.data.lots); setTransporters(cache.data.transporters);
+      setTrucks(cache.data.trucks); setFields(cache.data.fields);
       return;
     }
-    setLoading(true);
-    Promise.all([
-      apiGetPlants().catch(()=>[]),
-      apiGetBranches().catch(()=>[]),
-      apiGetLots().catch(()=>[]),
-      apiGetTransportCompanies().catch(()=>[]),
-      (user.role==="admin"||user.role==="platform_admin"||user.userType==="transporter"||user.userType==="producer"||(user.userTypes||[]).includes("transporter")||(user.userTypes||[]).includes("producer")) ? apiGetTrucks().catch(()=>[]) : Promise.resolve([]),
-      (user.role==="admin"||user.role==="platform_admin"||user.userType==="producer"||(user.userTypes||[]).includes("producer")) ? apiGetFields().catch(()=>[]) : Promise.resolve([]),
+
+    // Singleton: if already loading for this user, wait for that promise
+    if(_loadingPromises[user.id]) {
+      _loadingPromises[user.id].then((d) => {
+        setPlants(d.plants); setBranches(d.branches); setLots(d.lots);
+        setTransporters(d.transporters); setTrucks(d.trucks); setFields(d.fields);
+      });
+      return;
+    }
+
+    setLoadingLocal(true);
+    setLoading(user.id, true);
+
+    _loadingPromises[user.id] = Promise.all([
+      apiGetPlants().catch((e)=>{ console.warn('[Catalog] apiGetPlants failed:', e.message); return []; }),
+      apiGetBranches().catch((e)=>{ console.warn('[Catalog] apiGetBranches failed:', e.message); return []; }),
+      apiGetLots().catch((e)=>{ console.warn('[Catalog] apiGetLots failed:', e.message); return []; }),
+      apiGetTransportCompanies().catch((e)=>{ console.warn('[Catalog] apiGetTransportCompanies failed:', e.message); return []; }),
+      (user.role==="admin"||user.role==="platform_admin"||user.userType==="transporter"||user.userType==="producer"||(user.userTypes||[]).includes("transporter")||(user.userTypes||[]).includes("producer"))
+        ? apiGetTrucks().catch((e)=>{ console.warn('[Catalog] apiGetTrucks failed:', e.message); return []; })
+        : Promise.resolve([]),
+      (user.role==="admin"||user.role==="platform_admin"||user.userType==="producer"||(user.userTypes||[]).includes("producer"))
+        ? apiGetFields().catch((e)=>{ console.warn('[Catalog] apiGetFields failed:', e.message); return []; })
+        : Promise.resolve([]),
     ]).then(([p,br,l,t,tr,f])=>{
       const d = { plants:p||[], branches:br||[], lots:l||[], transporters:t||[], trucks:tr||[], fields:f||[] };
-      _catalogCache.data = d; _catalogCache.ts = Date.now(); _catalogCache.userId = user.id;
+      setCache(user.id, d);
       setPlants(d.plants); setBranches(d.branches); setLots(d.lots);
       setTransporters(d.transporters); setTrucks(d.trucks); setFields(d.fields);
-    }).finally(()=>setLoading(false));
-  },[user]);
+      return d;
+    }).finally(()=>{
+      setLoadingLocal(false);
+      delete _loadingPromises[user.id];
+    });
+  },[user, getCache, setCache, setLoading]);
 
   useEffect(()=>{ load(); },[load]);
 
@@ -490,11 +518,14 @@ export function useSSE(user, { onFreightUpdate, onMessageNew, onNotification, on
   const esRef = useRef(null);
   const reconnectTimer = useRef(null);
   const reconnectDelay = useRef(5000);
+  const failureCount = useRef(0);
+  const MAX_CONSECUTIVE_FAILURES = 5;
 
   useEffect(() => {
     if (!user) {
       if (esRef.current) { esRef.current.close(); esRef.current = null; }
       setConnected(false);
+      failureCount.current = 0;
       return;
     }
 
@@ -508,6 +539,7 @@ export function useSSE(user, { onFreightUpdate, onMessageNew, onNotification, on
 
       es.addEventListener('connected', () => {
         setConnected(true);
+        failureCount.current = 0; // Reset on successful connection
         console.log('[SSE] Connected');
       });
 
@@ -553,11 +585,28 @@ export function useSSE(user, { onFreightUpdate, onMessageNew, onNotification, on
         } catch (e) { console.warn('[SSE] Event parse error:', e.message); }
       });
 
-      es.onopen = () => { reconnectDelay.current = 5000; };
-      es.onerror = () => {
+      es.onopen = () => {
+        reconnectDelay.current = 5000;
+        failureCount.current = 0;
+      };
+
+      es.onerror = (event) => {
         setConnected(false);
         es.close();
         esRef.current = null;
+
+        failureCount.current += 1;
+        console.warn(`[SSE] Connection failed (${failureCount.current}/${MAX_CONSECUTIVE_FAILURES})`);
+
+        // If too many consecutive failures, assume auth problem and trigger logout
+        if (failureCount.current >= MAX_CONSECUTIVE_FAILURES) {
+          console.error('[SSE] Max consecutive failures reached. Assuming auth failure.');
+          // Import clearAuth at top and call logout
+          clearAuth();
+          window.location.reload();
+          return;
+        }
+
         reconnectTimer.current = setTimeout(connect, reconnectDelay.current);
         reconnectDelay.current = Math.min(reconnectDelay.current * 2, 60000);
       };
