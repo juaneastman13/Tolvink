@@ -3,6 +3,23 @@ import { C, Ic, FONT } from "../theme";
 import { Btn, Field, Tabs, Av, Loader, AttachMenu, FileViewer } from "../components";
 import { apiSearchUsers, apiStartConversation, apiListConversations, apiGetMessages, apiSendMessage, apiMarkRead, apiTyping, uploadChatFile } from "../api";
 
+// Helper: format relative date
+const formatDateDivider = (dateStr) => {
+  const msgDate = new Date(dateStr);
+  const today = new Date();
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+
+  const isSameDay = (d1, d2) =>
+    d1.getFullYear() === d2.getFullYear() &&
+    d1.getMonth() === d2.getMonth() &&
+    d1.getDate() === d2.getDate();
+
+  if (isSameDay(msgDate, today)) return "Hoy";
+  if (isSameDay(msgDate, yesterday)) return "Ayer";
+  return msgDate.toLocaleDateString("es", { day: "2-digit", month: "short", year: msgDate.getFullYear() !== today.getFullYear() ? "numeric" : undefined });
+};
+
 export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop, sseMsg, onSseMsgHandled, sseTyping, sseRead, sseConnected }) {
   const [convs, setConvs] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -28,6 +45,10 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
   const typingTimer = useRef(null);
   const typingSendTimer = useRef(null);
   const [peerReadAt, setPeerReadAt] = useState(null);
+  const [sendError, setSendError] = useState(null);
+  const [isAtBottom, setIsAtBottom] = useState(true);
+  const messagesContainerRef = useRef(null);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
 
   // SSE: incoming message → instant refresh
   useEffect(() => {
@@ -44,7 +65,7 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
           return fresh;
         });
       }).catch(()=>{});
-      pollDelayRef.current = sseConnected ? 10000 : 3000;
+      pollDelayRef.current = sseConnected ? 60000 : 3000;
     } else {
       // Different conversation — refresh list to update unread badges
       loadConvs();
@@ -123,13 +144,42 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
     } catch {} finally { setLoadingOlder(false); }
   };
 
-  useEffect(() => { if (msgEndRef.current) msgEndRef.current.scrollIntoView({ behavior: "smooth" }); }, [messages.length]);
+  // Smart scroll: only auto-scroll when at bottom (new messages), NOT when loading older
+  useEffect(() => {
+    if (isAtBottom && msgEndRef.current) {
+      msgEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages.length, isAtBottom]);
 
-  // Poll for new messages — SSE-aware: 10s base when SSE connected, 3s→60s backoff when disconnected
-  const pollDelayRef = useRef(10000);
+  // Track if user is at bottom of scroll
+  const handleScroll = useCallback(() => {
+    if (!messagesContainerRef.current) return;
+    const { scrollTop, scrollHeight, clientHeight } = messagesContainerRef.current;
+    const atBottom = scrollHeight - scrollTop - clientHeight < 50;
+    setIsAtBottom(atBottom);
+  }, []);
+
+  // Mobile keyboard handling: adjust layout when keyboard shows
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.visualViewport) return;
+
+    const handleResize = () => {
+      const viewport = window.visualViewport;
+      const windowHeight = window.innerHeight;
+      const viewportHeight = viewport.height;
+      const keyboardHeightCalc = windowHeight - viewportHeight;
+      setKeyboardHeight(keyboardHeightCalc > 0 ? keyboardHeightCalc : 0);
+    };
+
+    window.visualViewport.addEventListener('resize', handleResize);
+    return () => window.visualViewport.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Poll for new messages — SSE-aware: 60s base when SSE connected (fallback only), 3s→60s backoff when disconnected
+  const pollDelayRef = useRef(60000);
   useEffect(() => {
     if (!activeConv) return;
-    pollDelayRef.current = sseConnected ? 10000 : 3000;
+    pollDelayRef.current = sseConnected ? 60000 : 3000;
     let timer = null;
     let cancelled = false;
     const poll = async () => {
@@ -142,7 +192,7 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
           const lastId = prev[prev.length-1]?.id;
           const lastIdx = fresh.findIndex(m=>m.id===lastId);
           if(lastIdx>=0 && lastIdx<fresh.length-1) {
-            pollDelayRef.current = sseConnected ? 10000 : 3000;
+            pollDelayRef.current = sseConnected ? 60000 : 3000;
             return [...prev, ...fresh.slice(lastIdx+1)];
           }
           if (!sseConnected) pollDelayRef.current = Math.min(pollDelayRef.current * 1.5, 60000);
@@ -156,13 +206,57 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
   }, [activeConv, sseConnected]);
 
   const handleSend = async () => {
-    if (!msgText.trim() || !activeConv) return;
+    if (!msgText.trim() || !activeConv || sending) return;
+    const textToSend = msgText.trim();
+    const optimisticId = `temp-${Date.now()}`;
+
+    // Optimistic update: show message immediately
+    const optimisticMsg = {
+      id: optimisticId,
+      text: textToSend,
+      senderId: user.id,
+      sender: { id: user.id, name: user.name },
+      createdAt: new Date().toISOString(),
+      status: 'pending',
+    };
+
+    setMessages(prev => [...prev, optimisticMsg]);
+    setMsgText("");
     setSending(true);
+    setSendError(null);
+
     try {
-      const m = await apiSendMessage(activeConv.id, msgText.trim());
-      setMessages(prev => [...prev, m]);
-      setMsgText("");
-    } catch {} finally { setSending(false); }
+      const serverMsg = await apiSendMessage(activeConv.id, textToSend);
+      // Replace optimistic message with confirmed server message
+      setMessages(prev => prev.map(m => m.id === optimisticId ? serverMsg : m));
+    } catch (err) {
+      // Mark message as failed
+      setMessages(prev => prev.map(m => m.id === optimisticId ? {...m, status: 'failed'} : m));
+      setSendError("No se pudo enviar el mensaje. Intenta de nuevo.");
+      setTimeout(() => setSendError(null), 5000);
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const retryFailedMessage = async (failedMsg) => {
+    if (sending) return;
+    setSending(true);
+    setSendError(null);
+
+    // Update to pending status
+    setMessages(prev => prev.map(m => m.id === failedMsg.id ? {...m, status: 'pending'} : m));
+
+    try {
+      const serverMsg = await apiSendMessage(activeConv.id, failedMsg.text);
+      setMessages(prev => prev.map(m => m.id === failedMsg.id ? serverMsg : m));
+    } catch {
+      setMessages(prev => prev.map(m => m.id === failedMsg.id ? {...m, status: 'failed'} : m));
+      setSendError("No se pudo enviar el mensaje. Intenta de nuevo.");
+      setTimeout(() => setSendError(null), 5000);
+    } finally {
+      setSending(false);
+    }
   };
 
   const [uploading, setUploading] = useState(false);
@@ -349,7 +443,12 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
 
         {chatTab === "chat" ? (
           <>
-            <div style={{ flex: 1, overflow: "auto", padding: 18, display: "flex", flexDirection: "column", gap: 6 }}>
+            {sendError && (
+              <div style={{ padding: "10px 18px", background: C.errPale, borderBottom: `1px solid ${C.err}40`, display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ fontSize: 11, color: C.err, fontWeight: 600 }}>{sendError}</span>
+              </div>
+            )}
+            <div ref={messagesContainerRef} onScroll={handleScroll} style={{ flex: 1, overflow: "auto", padding: 18, display: "flex", flexDirection: "column", gap: 6 }}>
               {msgHasMore && (
                 <div style={{textAlign:"center",padding:"8px 0 12px"}}>
                   <button onClick={loadOlderMessages} disabled={loadingOlder} style={{padding:"5px 16px",borderRadius:8,border:`1px solid ${C.b1}`,background:C.bg,color:C.t2,fontSize:11,fontWeight:600,cursor:loadingOlder?"default":"pointer",fontFamily:"inherit",opacity:loadingOlder?0.5:1}}>
@@ -358,31 +457,53 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
                 </div>
               )}
               {messages.length === 0 && !loadingOlder && <div style={{ textAlign: "center", padding: 40, color: C.t3, fontSize: 13 }}>Sin mensajes aún. Escribí el primero.</div>}
-              {messages.map(m => {
+              {messages.map((m, idx) => {
                 const mine = m.senderId === user.id || m.sender?.id === user.id;
                 const fileData = parseFileMsg(m.text);
+                const prevMsg = messages[idx - 1];
+                const showDateDivider = !prevMsg || new Date(m.createdAt).toDateString() !== new Date(prevMsg.createdAt).toDateString();
+
                 return (
-                  <div key={m.id} style={{ alignSelf: mine ? "flex-end" : "flex-start", maxWidth: "80%" }}>
-                    {!mine && <div style={{ fontSize: 9.5, color: C.t3, marginBottom: 2, marginLeft: 4 }}>{m.sender?.name?.split(" ")[0]}</div>}
-                    <div style={{ padding: fileData ? "6px" : "10px 14px", borderRadius: 14, borderBottomRightRadius: mine ? 4 : 14, borderBottomLeftRadius: mine ? 14 : 4, background: mine ? C.pri : C.w, color: mine ? C.w : C.t1, fontSize: 13, border: mine ? "none" : `1px solid ${C.b1}`, boxShadow: C.sh, overflow: "hidden" }}>
-                      {fileData ? (
-                        fileData.type === "image" ? (
-                          <button onClick={()=>setViewFile({url:fileData.url,name:fileData.name,type:"image"})} style={{ background:"none", border:"none", cursor:"pointer", padding:0 }}>
-                            <img src={fileData.url} alt={fileData.name} style={{ maxWidth: 220, maxHeight: 200, borderRadius: 10, display: "block" }} />
+                  <div key={m.id}>
+                    {/* Date divider */}
+                    {showDateDivider && (
+                      <div style={{ textAlign: "center", margin: "12px 0", position: "relative" }}>
+                        <div style={{ display: "inline-block", padding: "4px 12px", background: C.bg, borderRadius: 12, fontSize: 10, fontWeight: 600, color: C.t3, border: `1px solid ${C.b1}` }}>
+                          {formatDateDivider(m.createdAt)}
+                        </div>
+                      </div>
+                    )}
+
+                    <div style={{ alignSelf: mine ? "flex-end" : "flex-start", maxWidth: "80%" }}>
+                      {!mine && <div style={{ fontSize: 9.5, color: C.t3, marginBottom: 2, marginLeft: 4 }}>{m.sender?.name?.split(" ")[0]}</div>}
+                      <div style={{ padding: fileData ? "6px" : "10px 14px", borderRadius: 14, borderBottomRightRadius: mine ? 4 : 14, borderBottomLeftRadius: mine ? 14 : 4, background: mine ? C.pri : C.w, color: mine ? C.w : C.t1, fontSize: 13, border: mine ? "none" : `1px solid ${C.b1}`, boxShadow: C.sh, overflow: "hidden", opacity: m.status === 'pending' ? 0.6 : 1 }}>
+                        {fileData ? (
+                          fileData.type === "image" ? (
+                            <button onClick={()=>setViewFile({url:fileData.url,name:fileData.name,type:"image"})} style={{ background:"none", border:"none", cursor:"pointer", padding:0 }}>
+                              <img src={fileData.url} alt={fileData.name} style={{ maxWidth: 220, maxHeight: 200, borderRadius: 10, display: "block" }} />
+                            </button>
+                          ) : (
+                            <button onClick={()=>setViewFile({url:fileData.url,name:fileData.name})} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", color: mine ? "#fff" : C.t1 }}>
+                              {Ic.doc(mine ? "#fff" : C.pri, 20)}
+                              <div style={{ textAlign:"left" }}>
+                                <div style={{ fontSize: 12, fontWeight: 600, wordBreak: "break-all" }}>{fileData.name}</div>
+                                <div style={{ fontSize: 10, opacity: 0.7 }}>Ver archivo</div>
+                              </div>
+                            </button>
+                          )
+                        ) : m.text}
+                      </div>
+                      <div style={{ fontSize: 9, color: C.t3, marginTop: 2, textAlign: mine ? "right" : "left", marginRight: mine ? 4 : 0, marginLeft: mine ? 0 : 4, display: "flex", alignItems: "center", gap: 4, justifyContent: mine ? "flex-end" : "flex-start" }}>
+                        <span title={new Date(m.createdAt).toLocaleString("es")}>
+                          {new Date(m.createdAt).toLocaleTimeString("es", { hour: "2-digit", minute: "2-digit" })}
+                        </span>
+                        {mine && m.status === 'pending' && <span style={{ fontSize: 10 }}>⏱</span>}
+                        {mine && m.status === 'failed' && (
+                          <button onClick={() => retryFailedMessage(m)} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 2, padding: 0, color: C.err, fontSize: 9, fontWeight: 600 }}>
+                            ❌ Reintentar
                           </button>
-                        ) : (
-                          <button onClick={()=>setViewFile({url:fileData.url,name:fileData.name})} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", color: mine ? "#fff" : C.t1 }}>
-                            {Ic.doc(mine ? "#fff" : C.pri, 20)}
-                            <div style={{ textAlign:"left" }}>
-                              <div style={{ fontSize: 12, fontWeight: 600, wordBreak: "break-all" }}>{fileData.name}</div>
-                              <div style={{ fontSize: 10, opacity: 0.7 }}>Ver archivo</div>
-                            </div>
-                          </button>
-                        )
-                      ) : m.text}
-                    </div>
-                    <div style={{ fontSize: 9, color: C.t3, marginTop: 2, textAlign: mine ? "right" : "left", marginRight: mine ? 4 : 0, marginLeft: mine ? 0 : 4 }}>
-                      {new Date(m.createdAt).toLocaleTimeString("es", { hour: "2-digit", minute: "2-digit" })}
+                        )}
+                      </div>
                     </div>
                   </div>
                 );
@@ -406,7 +527,7 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
               </div>
             )}
 
-            <div style={{ padding: "10px 18px", borderTop: `1px solid ${C.b1}`, background: C.w, display: "flex", gap: 8, alignItems: "center" }}>
+            <div style={{ padding: "10px 18px", paddingBottom: keyboardHeight > 0 ? `${Math.max(10, keyboardHeight - 60)}px` : "max(10px, env(safe-area-inset-bottom))", borderTop: `1px solid ${C.b1}`, background: C.w, display: "flex", gap: 8, alignItems: "center", transition: "padding-bottom 0.2s ease" }}>
               <input ref={chatCamRef} type="file" accept="image/*" capture="environment" onChange={handleFileUpload} style={{ display: "none" }} />
               <input ref={chatGalRef} type="file" accept="image/jpeg,image/png,image/webp" onChange={handleFileUpload} style={{ display: "none" }} />
               <input ref={chatFileRef} type="file" accept="image/*,.pdf,.doc,.docx,.xlsx,.xls,.txt" onChange={handleFileUpload} style={{ display: "none" }} />
