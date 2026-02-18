@@ -151,13 +151,19 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
     }
   }, [messages.length, isAtBottom]);
 
-  // Track if user is at bottom of scroll
+  // Track if user is at bottom of scroll + auto-load older on scroll-to-top
   const handleScroll = useCallback(() => {
     if (!messagesContainerRef.current) return;
     const { scrollTop, scrollHeight, clientHeight } = messagesContainerRef.current;
     const atBottom = scrollHeight - scrollTop - clientHeight < 50;
     setIsAtBottom(atBottom);
-  }, []);
+
+    // Auto-load older messages when scrolling near top (infinite scroll)
+    const atTop = scrollTop < 100;
+    if (atTop && msgHasMore && !loadingOlder && messages.length > 0) {
+      loadOlderMessages();
+    }
+  }, [msgHasMore, loadingOlder, messages.length]);
 
   // Mobile keyboard handling: adjust layout when keyboard shows
   useEffect(() => {
