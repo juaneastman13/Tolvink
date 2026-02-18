@@ -670,19 +670,5 @@ export function MapOverlay({ lat, lng, label, destLat, destLng, destLabel, onClo
     return () => { c = true; };
   }, [lat, lng, label, destLat, destLng]);
 
-  return (
-    <div style={{position:"fixed",inset:0,zIndex:9999,background:"rgba(0,0,0,0.45)",display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
-      <div style={{position:"relative",width:"calc(100% - 32px)",maxWidth:700,height:"calc(100dvh - 64px)",maxHeight:600,borderRadius:14,overflow:"hidden",boxShadow:"0 8px 32px rgba(0,0,0,0.25)"}}>
-        <div ref={mapRef} style={{width:"100%",height:"100%"}} />
-        {/* Floating close button — top right */}
-        <button onClick={onClose} style={{position:"absolute",top:12,right:12,zIndex:10,width:40,height:40,borderRadius:20,background:"rgba(255,255,255,0.95)",border:`1.5px solid ${C.b1}`,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 2px 8px rgba(0,0,0,0.2)"}}>{Ic.cross(C.t1,18)}</button>
-        {/* Floating back button — top left */}
-        <button onClick={onClose} style={{position:"absolute",top:12,left:12,zIndex:10,padding:"8px 14px",borderRadius:10,background:"rgba(255,255,255,0.95)",border:`1.5px solid ${C.b1}`,cursor:"pointer",display:"flex",alignItems:"center",gap:6,boxShadow:"0 2px 8px rgba(0,0,0,0.2)",fontSize:13,fontWeight:700,color:C.pri,fontFamily:"inherit"}}>
-          {Ic.chev(C.pri,16)} Volver
-        </button>
-        {/* Floating label — bottom center */}
-        {label && <div style={{position:"absolute",bottom:12,left:12,right:12,zIndex:10,padding:"8px 14px",borderRadius:10,background:"rgba(255,255,255,0.92)",fontSize:12,fontWeight:600,color:C.t1,textAlign:"center",boxShadow:"0 2px 8px rgba(0,0,0,0.15)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{label}</div>}
-      </div>
-    </div>
-  );
+  return <div ref={mapRef} style={{width:"100%",height:"100%"}} />;
 }
