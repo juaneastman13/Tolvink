@@ -50,9 +50,8 @@ export function LocationPicker({ label, value, onChange, defaultCenter }) {
   const mapObjRef = useRef(null);
   const [showMap, setShowMap] = useState(false);
   const [addr, setAddr] = useState(value?.address || "");
-  const [mapFull, setMapFull] = useState(false);
-  const fullSearchRef = useRef(null);
   const [initError, setInitError] = useState(false);
+  const setLocPicker = useUIStore(s => s.setLocPicker);
 
   useEffect(() => {
     if (!showMap || !mapRef.current) return;
@@ -64,7 +63,7 @@ export function LocationPicker({ label, value, onChange, defaultCenter }) {
         if (cancelled || !mapRef.current) return;
         const map = new maps.Map(mapRef.current, {
           zoom: startZoom, center: startCenter,
-          disableDefaultUI: true, zoomControl: !mapFull, mapTypeControl: false,
+          disableDefaultUI: true, zoomControl: true, mapTypeControl: false,
           streetViewControl: false, fullscreenControl: false,
           gestureHandling: "greedy",
         });
@@ -128,51 +127,12 @@ export function LocationPicker({ label, value, onChange, defaultCenter }) {
     }
 
     return () => { cancelled = true; };
-  }, [showMap, mapFull]);
+  }, [showMap]);
 
-  const toggleFull = (e) => {
+  const openFull = (e) => {
     if (e) { e.preventDefault(); e.stopPropagation(); }
-    setMapFull(f => {
-      const next = !f;
-      setTimeout(() => {
-        if (mapObjRef.current && window.google?.maps) {
-          window.google.maps.event.trigger(mapObjRef.current, "resize");
-          if (value?.lat && value?.lng) {
-            mapObjRef.current.setCenter({ lat: value.lat, lng: value.lng });
-          }
-        }
-      }, 150);
-      return next;
-    });
+    setLocPicker({ value, onChange, defaultCenter, label });
   };
-
-  // Setup autocomplete on fullscreen search input
-  useEffect(() => {
-    if (!mapFull || !fullSearchRef.current || !window.google?.maps?.places) return;
-    const autocomplete = new window.google.maps.places.Autocomplete(fullSearchRef.current, {
-      componentRestrictions: { country: ["ar", "uy", "br", "py"] },
-      fields: ["geometry", "formatted_address", "name"],
-    });
-    autocomplete.addListener("place_changed", () => {
-      const place = autocomplete.getPlace();
-      if (place.geometry?.location && mapObjRef.current && markerRef.current) {
-        const lat = place.geometry.location.lat();
-        const lng = place.geometry.location.lng();
-        const a = place.formatted_address || place.name || "";
-        mapObjRef.current.setCenter({ lat, lng });
-        mapObjRef.current.setZoom(14);
-        markerRef.current.setPosition({ lat, lng });
-        setAddr(a);
-        onChange({ lat, lng, address: a });
-      }
-    });
-  }, [mapFull]);
-
-  useEffect(() => {
-    if (mapObjRef.current) {
-      mapObjRef.current.setOptions({ zoomControl: !mapFull });
-    }
-  }, [mapFull]);
 
   return (
     <div style={{ marginBottom: 6 }}>
@@ -183,38 +143,16 @@ export function LocationPicker({ label, value, onChange, defaultCenter }) {
           placeholder="Buscar dirección o tocar en el mapa..."
           style={{ flex: 1, padding: "10px 12px", borderRadius: 8, border: `1.5px solid ${C.b1}`, fontSize: 12.5, fontFamily: "inherit", outline: "none", color: C.t1, background: C.w, boxSizing: "border-box" }}
           onFocus={() => setShowMap(true)} />
-        <button onClick={() => { if(!showMap) setShowMap(true); else toggleFull(); }} style={{ padding: "9px 12px", borderRadius: 8, border: `1.5px solid ${value?.lat ? C.ok : C.b1}`, background: value?.lat ? C.okPale : C.w, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 4, fontSize: 11, fontWeight: 600, color: value?.lat ? C.ok : C.t3 }}>
+        <button onClick={() => { if(!showMap) setShowMap(true); else openFull(); }} style={{ padding: "9px 12px", borderRadius: 8, border: `1.5px solid ${value?.lat ? C.ok : C.b1}`, background: value?.lat ? C.okPale : C.w, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 4, fontSize: 11, fontWeight: 600, color: value?.lat ? C.ok : C.t3 }}>
           {Ic.pin(value?.lat ? C.ok : C.t3, 14)} {value?.lat ? "✓" : "Mapa"}
         </button>
       </div>
 
-      {/* FULLSCREEN PORTAL */}
-      {mapFull && (
-        <div style={{ position:"fixed", inset:0, zIndex:300, background:"#000", display:"flex", flexDirection:"column" }}>
-          <div style={{ display:"flex", alignItems:"center", gap:8, padding:"10px 12px", paddingTop:"calc(10px + env(safe-area-inset-top))", background:C.w, flexShrink:0, zIndex:2 }}>
-            <button onPointerDown={toggleFull} style={{ width:44, height:44, borderRadius:10, background:C.bg, border:`1.5px solid ${C.b1}`, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, touchAction:"manipulation" }}>
-              {Ic.chev(C.t1,22)}
-            </button>
-            <input ref={fullSearchRef} value={addr} onChange={e => setAddr(e.target.value)} placeholder="Buscar dirección..."
-              style={{ flex:1, padding:"12px 14px", borderRadius:10, border:`1.5px solid ${C.b1}`, fontSize:16, fontFamily:"inherit", outline:"none", color:C.t1, background:C.bg }} />
-            <button onPointerDown={toggleFull} style={{ padding:"12px 20px", borderRadius:10, background:C.pri, color:C.w, border:"none", cursor:"pointer", fontFamily:"inherit", fontSize:15, fontWeight:700, flexShrink:0, minHeight:44, touchAction:"manipulation" }}>Listo</button>
-          </div>
-          <div style={{ flex:1, position:"relative" }}>
-            <div ref={mapRef} style={{ position:"absolute", inset:0 }} />
-          </div>
-          {value?.lat && (
-            <div style={{ fontSize:11, color:C.t3, padding:"8px 16px", paddingBottom:"calc(8px + env(safe-area-inset-bottom))", background:C.w, textAlign:"center", flexShrink:0, zIndex:2 }}>
-              {value.lat.toFixed(5)}, {value.lng.toFixed(5)}
-            </div>
-          )}
-        </div>
-      )}
-
       {/* Inline map (non-fullscreen) */}
-      {showMap && !mapFull && (
+      {showMap && (
         <div style={{ marginTop: 6, borderRadius: 10, overflow: "hidden", border: `1px solid ${C.b1}`, position:"relative" }}>
           <div ref={mapRef} style={{ width: "100%", height: 180 }} />
-          <button onClick={toggleFull} style={{ position:"absolute", top:8, right:8, zIndex:5, padding:"6px 8px", borderRadius:6, background:"rgba(255,255,255,0.9)", border:`1px solid ${C.b1}`, cursor:"pointer", display:"flex", alignItems:"center", boxShadow:"0 1px 4px rgba(0,0,0,0.15)" }}>
+          <button onClick={openFull} style={{ position:"absolute", top:8, right:8, zIndex:5, padding:"6px 8px", borderRadius:6, background:"rgba(255,255,255,0.9)", border:`1px solid ${C.b1}`, cursor:"pointer", display:"flex", alignItems:"center", boxShadow:"0 1px 4px rgba(0,0,0,0.15)" }}>
             {Ic.expand(C.t1,16)}
           </button>
           {value?.lat && <div style={{ fontSize: 10, color: C.t3, padding: "4px 8px", background: C.bg }}>{value.lat.toFixed(5)}, {value.lng.toFixed(5)}</div>}
@@ -222,6 +160,110 @@ export function LocationPicker({ label, value, onChange, defaultCenter }) {
       )}
     </div>
   );
+}
+
+// ======================== LOCATION PICKER FULLSCREEN =====================
+// Rendered in App.jsx below header bar (same pattern as mapFocus)
+
+export function LocPickerFullscreen({ value, onChange, defaultCenter, label, onClose }) {
+  const mapRef = useRef(null);
+  const mapObjRef = useRef(null);
+  const markerRef = useRef(null);
+  const searchRef = useRef(null);
+  const [addr, setAddr] = useState(value?.address || "");
+  const [curValue, setCurValue] = useState(value || null);
+
+  useEffect(() => {
+    if (!mapRef.current) return;
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const maps = await loadGMaps();
+        if (cancelled || !mapRef.current) return;
+
+        const startCenter = curValue?.lat && curValue?.lng
+          ? { lat: Number(curValue.lat), lng: Number(curValue.lng) }
+          : defaultCenter?.lat && defaultCenter?.lng
+            ? { lat: Number(defaultCenter.lat), lng: Number(defaultCenter.lng) }
+            : URUGUAY_CENTER;
+        const startZoom = (curValue?.lat || defaultCenter?.lat) ? 13 : 7;
+
+        const map = new maps.Map(mapRef.current, {
+          zoom: startZoom, center: startCenter,
+          disableDefaultUI: true, zoomControl: true, mapTypeControl: false,
+          streetViewControl: false, fullscreenControl: false,
+          gestureHandling: "greedy",
+        });
+        mapObjRef.current = map;
+
+        const marker = new maps.Marker({ position: startCenter, map, draggable: true });
+        markerRef.current = marker;
+
+        const geocodeAndUpdate = (lat, lng) => {
+          const geocoder = new maps.Geocoder();
+          geocoder.geocode({ location: { lat, lng } }, (results, status) => {
+            const a = status === "OK" && results[0] ? results[0].formatted_address : "";
+            setAddr(a);
+            setCurValue({ lat, lng, address: a });
+            onChange({ lat, lng, address: a });
+          });
+        };
+
+        marker.addListener("dragend", () => {
+          const pos = marker.getPosition();
+          geocodeAndUpdate(pos.lat(), pos.lng());
+        });
+
+        map.addListener("click", (e) => {
+          marker.setPosition(e.latLng);
+          geocodeAndUpdate(e.latLng.lat(), e.latLng.lng());
+        });
+
+        // Autocomplete on search input
+        if (searchRef.current) {
+          const autocomplete = new maps.places.Autocomplete(searchRef.current, {
+            componentRestrictions: { country: ["ar", "uy", "br", "py"] },
+            fields: ["geometry", "formatted_address", "name"],
+          });
+          autocomplete.addListener("place_changed", () => {
+            const place = autocomplete.getPlace();
+            if (place.geometry?.location) {
+              const lat = place.geometry.location.lat();
+              const lng = place.geometry.location.lng();
+              const a = place.formatted_address || place.name || "";
+              map.setCenter({ lat, lng });
+              map.setZoom(14);
+              marker.setPosition({ lat, lng });
+              setAddr(a);
+              setCurValue({ lat, lng, address: a });
+              onChange({ lat, lng, address: a });
+            }
+          });
+        }
+      } catch (err) {
+        console.error("LocPickerFullscreen init error:", err);
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, []);
+
+  return <>
+    <div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 12px",background:C.w,borderBottom:`1px solid ${C.b2}`,flexShrink:0,zIndex:10}}>
+      <button onClick={onClose} style={{display:"flex",alignItems:"center",gap:6,padding:"7px 12px",borderRadius:8,border:`1.5px solid ${C.b1}`,background:C.bg,cursor:"pointer",fontSize:13,fontWeight:700,color:C.pri,fontFamily:"inherit",flexShrink:0}}>{Ic.chev(C.pri,14)} Listo</button>
+      <input ref={searchRef} value={addr} onChange={e => setAddr(e.target.value)} placeholder="Buscar dirección..."
+        style={{flex:1,padding:"10px 14px",borderRadius:10,border:`1.5px solid ${C.b1}`,fontSize:14,fontFamily:"inherit",outline:"none",color:C.t1,background:C.bg}} />
+    </div>
+    <div style={{flex:1,minHeight:0,position:"relative"}}>
+      <div ref={mapRef} style={{position:"absolute",inset:0}} />
+    </div>
+    {curValue?.lat && (
+      <div style={{fontSize:11,color:C.t3,padding:"8px 16px",background:C.w,textAlign:"center",flexShrink:0,borderTop:`1px solid ${C.b2}`}}>
+        {label || "Ubicación"}: {Number(curValue.lat).toFixed(5)}, {Number(curValue.lng).toFixed(5)}
+      </div>
+    )}
+  </>;
 }
 
 // ======================== FREIGHT MAP =================================

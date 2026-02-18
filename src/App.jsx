@@ -20,7 +20,7 @@ import { V, validate, SCHEMAS, textMatch, FieldError } from "./validation";
 import { stCfg, getActions, GRANOS, UNITS } from "./constants";
 import { Av, Bd, Btn, Tabs, Field, Select, Sec, Toast, Loader, LoadingOverlay, AttachMenu, Sidebar, Nav, SortTh, exportCSV, exportExcel, exportPDF, NotifBell, NotificationsPanel, ModalOverlay, FileViewer } from "./components";
 import { useAuth, useCatalog, useFreights, permsFor, useIsDesktop, useTableSort, usePullToRefresh, useOnline, useNotifications, useSSE, useInstallPrompt } from "./hooks";
-import { SafeZone, LocationPicker, FreightMap, FreightsOverviewMap, MapOverlay } from "./maps";
+import { SafeZone, LocationPicker, FreightMap, FreightsOverviewMap, MapOverlay, LocPickerFullscreen } from "./maps";
 import { PhotoUpload, DocsGallery, FreightFileUpload } from "./uploads";
 import { RoutesBackground } from "./routes-bg";
 import { useUIStore, offlineQueue } from "./store";
@@ -4430,6 +4430,8 @@ export default function Tolvink() {
   const setChatConvId = useUIStore(s => s.setChatConvId);
   const setDuplicateData = useUIStore(s => s.setDuplicateData);
   const setEditData = useUIStore(s => s.setEditData);
+  const locPicker = useUIStore(s => s.locPicker);
+  const setLocPicker = useUIStore(s => s.setLocPicker);
   const goToMap = useUIStore(s => s.goToMap);
 
   // SSE — real-time sync
@@ -4683,8 +4685,11 @@ export default function Tolvink() {
           </div>
         </>}
 
+        {/* Location picker fullscreen — same inline pattern as mapFocus */}
+        {locPicker && <LocPickerFullscreen value={locPicker.value} onChange={locPicker.onChange} defaultCenter={locPicker.defaultCenter} label={locPicker.label} onClose={()=>setLocPicker(null)}/>}
+
         {/* Scrollable content area */}
-        <div style={{flex:1,overflow:(screen==="chats"||screen==="calendar")&&isDesktop?"hidden":"auto",display:mapFocus?"none":"flex",flexDirection:"column",WebkitOverflowScrolling:"touch",overscrollBehavior:"contain"}}>
+        <div style={{flex:1,overflow:(screen==="chats"||screen==="calendar")&&isDesktop?"hidden":"auto",display:(mapFocus||locPicker)?"none":"flex",flexDirection:"column",WebkitOverflowScrolling:"touch",overscrollBehavior:"contain"}}>
         <div key={screen} className="tv-page" style={{flex:1,display:"flex",flexDirection:"column",minHeight:0}}>
         {screen==="home" && <HomeScreen user={auth.user} freights={fh.freights} perms={perms} onNav={nav} catalog={catalog} isDesktop={isDesktop} onAction={handleAction} actionLoading={actionLoading} onChat={(convId)=>{if(convId){setChatConvId(convId);navigate("/chats");}}} onRefresh={(id)=>fh.refresh(id)} onDuplicate={(f)=>{setDuplicateData(f);navigate("/new");}} onEdit={(f)=>{setEditData(f);navigate("/edit/"+f.id);}} goToMap={goToMap} pwa={pwa}/>}
         {screen==="list" && <ListScreen freights={fh.freights} onNav={nav} onRefresh={fh.fetchAll} catalog={catalog} view={listView} setView={setListView} goToMap={goToMap} hasMore={fh.hasMore} loadMore={fh.loadMore} loadingMore={fh.loadingMore} total={fh.total} isDesktop={isDesktop}/>}
