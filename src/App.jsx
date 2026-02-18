@@ -4626,6 +4626,9 @@ export default function Tolvink() {
     if(r.ok){ track("freight_create"); setSubmitDone("Flete solicitado"); } else show(r.error,"err");
   };
 
+  // O(1) freight lookup (must be before conditional returns — Rules of Hooks)
+  const freightMap = useMemo(() => { const m = new Map(); fh.freights.forEach(f => m.set(f.id, f)); return m; }, [fh.freights]);
+
   // Show loading splash only during initial auth check
   if (!auth.isInitialized) {
     return <div style={{minHeight:"100dvh",background:C.bg,fontFamily:"'DM Sans',system-ui,-apple-system,sans-serif",display:"flex",alignItems:"center",justifyContent:"center"}}>
@@ -4643,7 +4646,6 @@ export default function Tolvink() {
     return <LandingScreen onLogin={auth.login} onSignup={auth.signup} loading={auth.loading} error={auth.error} clearError={auth.clearError}/>;
   }
 
-  const freightMap = useMemo(() => { const m = new Map(); fh.freights.forEach(f => m.set(f.id, f)); return m; }, [fh.freights]);
   const curFreight = freightMap.get(selFreight) || null;
   const navActive = ["detail"].includes(screen)?"list":["trucks","fields","admin","mydata","calendar","reports"].includes(screen)&&!isDesktop?"menu":["trucks","fields","admin","mydata"].includes(screen)?"menu":screen;
 
