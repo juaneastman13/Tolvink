@@ -190,7 +190,7 @@ function AuthScreen({ onLogin, onSignup, loading, error, clearError, onBackToLan
               {/* === LOGIN MODE === */}
               {mode==="login" && <>
                 <div>
-                  <Field label="Email o teléfono" icon={Ic.mail(errs.email||error?C.err:C.t2,14)} value={loginId} onChange={v=>{setLoginId(v);if(error)clearError();}} placeholder="tu@email.com o 09X XXX XXX" hasError={!!(errs.email||error)}/>
+                  <Field label="Email o teléfono" icon={Ic.mail(errs.email||error?C.err:C.t2,14)} value={loginId} onChange={v=>{setLoginId(v);if(error)clearError();}} placeholder="tu@email.com o 09X XXX XXX" hasError={!!(errs.email||error)} onKeyDown={e=>{if(e.key==='Enter')submit();}}/>
                   {touched&&<FieldError error={errs.email}/>}
                 </div>
               </>}
