@@ -386,7 +386,7 @@ export function useNotifications(user) {
         const r = await apiGetNotifications();
         setNotifications(r.notifications || []);
         setUnreadCount(r.unreadCount || 0);
-      } catch { /* ignore fetch errors */ }
+      } catch (e) { console.warn('[NOTIF] Fetch failed:', e.message); }
     };
     fetchNotifications();
   }, [user]);
@@ -396,7 +396,7 @@ export function useNotifications(user) {
       await apiMarkNotificationRead(id);
       setNotifications(p => p.map(n => n.id === id ? { ...n, read: true } : n));
       setUnreadCount(p => Math.max(0, p - 1));
-    } catch { /* ignore */ }
+    } catch (e) { console.warn('[NOTIF] Mark read failed:', e.message); }
   }, []);
 
   const markAllRead = useCallback(async () => {
@@ -404,7 +404,7 @@ export function useNotifications(user) {
       await apiMarkAllRead();
       setNotifications(p => p.map(n => ({ ...n, read: true })));
       setUnreadCount(0);
-    } catch { /* ignore */ }
+    } catch (e) { console.warn('[NOTIF] Mark all read failed:', e.message); }
   }, []);
 
   const refresh = useCallback(async () => {
@@ -412,7 +412,7 @@ export function useNotifications(user) {
       const r = await apiGetNotifications();
       setNotifications(r.notifications || []);
       setUnreadCount(r.unreadCount || 0);
-    } catch {}
+    } catch (e) { console.warn('[NOTIF] Refresh failed:', e.message); }
   }, []);
 
   return { notifications, unreadCount, markRead, markAllRead, refresh };
@@ -515,42 +515,42 @@ export function useSSE(user, { onFreightUpdate, onMessageNew, onNotification, on
         try {
           const data = JSON.parse(e.data);
           if (onFreightUpdate) onFreightUpdate(data);
-        } catch {}
+        } catch (e) { console.warn('[SSE] Event parse error:', e.message); }
       });
 
       es.addEventListener('message:new', (e) => {
         try {
           const data = JSON.parse(e.data);
           if (onMessageNew) onMessageNew(data);
-        } catch {}
+        } catch (e) { console.warn('[SSE] Event parse error:', e.message); }
       });
 
       es.addEventListener('notification:new', (e) => {
         try {
           const data = JSON.parse(e.data);
           if (onNotification) onNotification(data);
-        } catch {}
+        } catch (e) { console.warn('[SSE] Event parse error:', e.message); }
       });
 
       es.addEventListener('catalog:changed', (e) => {
         try {
           const data = JSON.parse(e.data);
           if (onCatalogChanged) onCatalogChanged(data);
-        } catch {}
+        } catch (e) { console.warn('[SSE] Event parse error:', e.message); }
       });
 
       es.addEventListener('typing', (e) => {
         try {
           const data = JSON.parse(e.data);
           if (onTyping) onTyping(data);
-        } catch {}
+        } catch (e) { console.warn('[SSE] Event parse error:', e.message); }
       });
 
       es.addEventListener('read', (e) => {
         try {
           const data = JSON.parse(e.data);
           if (onRead) onRead(data);
-        } catch {}
+        } catch (e) { console.warn('[SSE] Event parse error:', e.message); }
       });
 
       es.onopen = () => { reconnectDelay.current = 5000; };

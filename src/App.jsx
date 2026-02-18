@@ -171,7 +171,7 @@ export default function Tolvink() {
         const convs = await apiListConversations();
         const count = (convs||[]).filter(c => c.unread).length;
         setUnreadChats(count);
-      } catch {}
+      } catch (e) { console.warn('[CHAT] Unread check failed:', e.message); }
     };
     checkUnread();
     const iv = setInterval(checkUnread, 30000);

@@ -33,3 +33,11 @@ export function getActions(status, userType, role, isOwnFleet) {
 
 export const GRANOS = ["Soja","Maíz","Trigo","Girasol","Sorgo","Cebada","Otros"];
 export const UNITS = [{v:"toneladas",l:"Toneladas"},{v:"cantidad",l:"Cantidad"},{v:"metros",l:"Metros"},{v:"m3",l:"M³"}];
+
+// Dev-only logger (no-ops in production)
+const isDev = import.meta.env.DEV;
+export const logger = {
+  log: (...args) => { if(isDev) console.log(...args); },
+  warn: (...args) => { if(isDev) console.warn(...args); },
+  error: (...args) => { if(isDev) console.error(...args); },
+};
