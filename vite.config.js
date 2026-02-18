@@ -12,7 +12,7 @@ function swVersion() {
       if (!fs.existsSync(swPath)) return;
       let sw = fs.readFileSync(swPath, 'utf-8');
       const hash = Date.now().toString(36);
-      sw = sw.replace("'tolvink-v4.2'", `'tolvink-${hash}'`);
+      sw = sw.replace(/'tolvink-v[\w.]+'/, `'tolvink-${hash}'`);
       fs.writeFileSync(swPath, sw);
     },
   };
