@@ -1642,7 +1642,7 @@ function NotificationsScreen({ notifications=[], freights=[], onMarkRead, onMark
   const unread = notifications.filter(n => !n.read);
   const read = notifications.filter(n => n.read);
   return (
-    <div className="tv-pad" style={{ padding:"16px 18px", flex:1 }}>
+    <div className="tv-pad" style={{ padding:18, flex:1 }}>
       <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:18 }}>
         <div>
           {unread.length > 0 && <span style={{ fontSize:12, color:C.t3, fontWeight:500 }}>{unread.length} sin leer</span>}
@@ -2890,7 +2890,7 @@ function ChatsScreen({ user, openConvId, onConvOpened, isDesktop }) {
 
   // Desktop: split layout / Mobile: list only
   const chatListPanel = (
-    <div style={{ flex: isDesktop ? undefined : 1, overflow: "auto", padding: isDesktop ? "14px 12px" : 18, width: isDesktop ? 320 : undefined, minWidth: isDesktop ? 320 : undefined, borderRight: isDesktop ? `1px solid ${C.b2}` : undefined, display: "flex", flexDirection: "column" }}>
+    <div style={{ flex: isDesktop ? undefined : 1, overflow: "auto", padding: isDesktop ? "18px 12px" : 18, width: isDesktop ? 320 : undefined, minWidth: isDesktop ? 320 : undefined, borderRight: isDesktop ? `1px solid ${C.b2}` : undefined, display: "flex", flexDirection: "column" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: isDesktop ? 10 : 14 }}>
         <Btn sm onClick={() => setShowNew(!showNew)} icon={showNew ? Ic.cross(C.w, 14) : Ic.plus(C.w, 14)}>{showNew ? "Cerrar" : "Nuevo"}</Btn>
       </div>
@@ -3311,7 +3311,7 @@ function ReportsScreen({ onBack, freights, isDesktop, embedded }) {
   return (
     <div style={{ flex:embedded?undefined:1, overflow:embedded?"visible":"auto", padding:embedded?0:undefined }}>
       {!isDesktop && !embedded && <div style={{ position:"sticky", top:0, zIndex:10, background:C.bg, padding:"18px 18px 8px" }}><button onClick={onBack} style={{ background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", fontSize:13, fontWeight:600, color:C.pri, marginBottom:14, padding:0, display:"flex", alignItems:"center", gap:4 }}>{Ic.chev(C.pri,18)} Mi Perfil</button></div>}
-      <div style={{ padding:embedded?0:"0 18px 18px" }}>
+      <div style={{ padding:embedded?0:isDesktop?"18px 18px 18px":"0 18px 18px" }}>
 
       {/* Search bar */}
       <div style={{ position:"relative", marginBottom:12 }}>
