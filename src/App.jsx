@@ -477,16 +477,12 @@ function HomeScreen({ user, freights, perms, onNav, catalog, isDesktop, onAction
   };
 
   // List panel content
-  const todayLabel = new Date().toLocaleDateString("es-UY", { weekday: "long", day: "numeric", month: "long" });
-  const nowTime = new Date().toLocaleTimeString("es-UY", { hour: "2-digit", minute: "2-digit", hour12: false });
   // Sidebar logo area: padTop24 + font63 + padBot20 = 107px → midline ~55px. Solicitar btn top ~122px.
   const listContent = (
     <div style={{ flex: compact ? undefined : 1, width: compact ? 300 : undefined, flexShrink: 0, overflow: compact ? "auto" : undefined, boxSizing: "border-box", borderRight: compact ? `1px solid ${C.b1}` : "none" }}>
       {/* Sticky header — empresa (clickable), fecha+hora, fletes */}
       <div style={{ position: compact ? "sticky" : undefined, top: 0, zIndex: 10, background:C.bg, display: "flex", alignItems: "center", minHeight: isDesktop ? 60 : 44, padding: compact ? "0 14px" : "0 18px", borderBottom: `1px solid ${C.b2}` }}>
         <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-          <span style={{ fontSize: 11, color: C.t3, textTransform: "capitalize" }}>{todayLabel} · {nowTime}</span>
-          <span style={{ fontSize: 11, color: C.t3 }}>·</span>
           <span style={{ fontSize: 11, color: C.t2, fontWeight: 600 }}>{filteredFreights.length} flete{filteredFreights.length !== 1 ? "s" : ""}</span>
         </div>
       </div>
@@ -4552,16 +4548,15 @@ export default function Tolvink() {
           </div>
         </div>
 
-        {/* Desktop company bar */}
-        {isDesktop && <div className="tv-header-bar" style={{display:"flex",alignItems:"center",justifyContent:"flex-end",padding:"8px 18px",borderBottom:`1px solid ${C.b2}`,background:C.w,flexShrink:0,zIndex:10}}>
-          <CompanyHeaderPicker user={auth.user} onSwitch={async(id)=>{const r=await auth.switchCompany(id);if(r.ok){fh.fetchAll();catalog.refresh();}}} />
-        </div>}
-
         {/* Offline banner */}
         {!online && <div style={{background:"#f59e0b",color:"#fff",textAlign:"center",padding:"6px 12px",fontSize:13,fontWeight:600,flexShrink:0,zIndex:10}}>{Ic.warn("#fff",14)} Sin conexión — mostrando datos guardados</div>}
 
         {/* Scrollable content area */}
         <div style={{flex:1,overflow:(screen==="chats"||screen==="calendar")&&isDesktop?"hidden":"auto",display:"flex",flexDirection:"column",WebkitOverflowScrolling:"touch",overscrollBehavior:"contain"}}>
+        {/* Desktop company bar — inside content area */}
+        {isDesktop && <div className="tv-header-bar" style={{display:"flex",alignItems:"center",justifyContent:"flex-end",padding:"8px 18px",background:C.bg,flexShrink:0,zIndex:5}}>
+          <CompanyHeaderPicker user={auth.user} onSwitch={async(id)=>{const r=await auth.switchCompany(id);if(r.ok){fh.fetchAll();catalog.refresh();}}} />
+        </div>}
         <div key={screen} className="tv-page" style={{flex:1,display:"flex",flexDirection:"column",minHeight:0}}>
         {screen==="home" && <HomeScreen user={auth.user} freights={fh.freights} perms={perms} onNav={nav} catalog={catalog} isDesktop={isDesktop} onAction={handleAction} actionLoading={actionLoading} onChat={(convId)=>{if(convId){setChatConvId(convId);navigate("/chats");}}} onRefresh={(id)=>fh.refresh(id)} onDuplicate={(f)=>{setDuplicateData(f);navigate("/new");}} onEdit={(f)=>{setEditData(f);navigate("/edit/"+f.id);}} goToMap={goToMap}/>}
         {screen==="list" && <ListScreen freights={fh.freights} onNav={nav} onRefresh={fh.fetchAll} catalog={catalog} view={listView} setView={setListView} goToMap={goToMap} hasMore={fh.hasMore} loadMore={fh.loadMore} loadingMore={fh.loadingMore} total={fh.total}/>}
