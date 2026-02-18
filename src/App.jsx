@@ -626,7 +626,6 @@ function ListScreen({ freights, onNav, onRefresh, catalog, view, setView, goToMa
   return (
     <div ref={containerRef} style={{ flex:1, overflow:"auto", padding:18, WebkitOverflowScrolling:"touch" }}>
       {indicator}
-      <div style={{ fontSize:20, fontWeight:800, letterSpacing:-0.3, marginBottom:10 }}>Fletes</div>
       {/* Line 1: Search */}
       <div style={{ position:"relative", marginBottom:6 }}>
         <div style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",display:"flex"}}>{Ic.srch(C.t3,14)}</div>
@@ -1569,7 +1568,6 @@ function NotificationsScreen({ notifications=[], freights=[], onMarkRead, onMark
     <div className="tv-pad" style={{ padding:"16px 18px", flex:1 }}>
       <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:18 }}>
         <div>
-          <h2 style={{ fontSize:20, fontWeight:700, color:C.t1, margin:0 }}>Notificaciones</h2>
           {unread.length > 0 && <span style={{ fontSize:12, color:C.t3, fontWeight:500 }}>{unread.length} sin leer</span>}
         </div>
         {unread.length > 0 && (
@@ -1653,7 +1651,6 @@ function MenuScreen({ user, perms, onLogout, onNav, isDesktop, onSwitchCompany, 
 
   return (
     <div style={{flex:1,overflow:"auto",padding:18}}>
-      <div style={{fontSize:20,fontWeight:800,letterSpacing:-0.3,marginBottom:16}}>Menú</div>
 
       {/* Management items */}
       {mgmtItems.length>0 && (
@@ -2818,7 +2815,6 @@ function ChatsScreen({ user, openConvId, onConvOpened, isDesktop }) {
   const chatListPanel = (
     <div style={{ flex: isDesktop ? undefined : 1, overflow: "auto", padding: isDesktop ? "14px 12px" : 18, width: isDesktop ? 320 : undefined, minWidth: isDesktop ? 320 : undefined, borderRight: isDesktop ? `1px solid ${C.b2}` : undefined, display: "flex", flexDirection: "column" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: isDesktop ? 10 : 14 }}>
-        <div style={{ fontSize: isDesktop ? 16 : 20, fontWeight: 800, letterSpacing: -0.3 }}>Mensajes</div>
         <Btn sm onClick={() => setShowNew(!showNew)} icon={showNew ? Ic.cross(C.w, 14) : Ic.plus(C.w, 14)}>{showNew ? "Cerrar" : "Nuevo"}</Btn>
       </div>
 
@@ -3036,7 +3032,6 @@ function CalendarScreen({ freights, perms, onNav, isDesktop, user, onAction, act
     <div style={{flex:isDesktop?undefined:1,overflow:"auto",padding:18,minWidth:isDesktop?420:undefined}}>
       {!isDesktop && <button onClick={()=>onNav("home")} style={{ background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", fontSize:13, fontWeight:600, color:C.pri, marginBottom:10, padding:0, display:"flex", alignItems:"center", gap:4 }}>{Ic.chev(C.pri,18)} Inicio</button>}
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
-        <div style={{ fontSize:20, fontWeight:800, letterSpacing:-0.3 }}>Calendario</div>
         <div style={{fontSize:11,color:C.t2}}>{totalInMonth} flete{totalInMonth!==1?"s":""}</div>
       </div>
 
@@ -3232,7 +3227,6 @@ function ReportsScreen({ onBack, freights, isDesktop, embedded }) {
     <div style={{ flex:embedded?undefined:1, overflow:embedded?"visible":"auto", padding:embedded?0:undefined }}>
       {!isDesktop && !embedded && <div style={{ position:"sticky", top:0, zIndex:10, background:C.bg, padding:"18px 18px 8px" }}><button onClick={onBack} style={{ background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", fontSize:13, fontWeight:600, color:C.pri, marginBottom:14, padding:0, display:"flex", alignItems:"center", gap:4 }}>{Ic.chev(C.pri,18)} Mi Perfil</button></div>}
       <div style={{ padding:embedded?0:"0 18px 18px" }}>
-      {!embedded && <div style={{ fontSize:20, fontWeight:800, letterSpacing:-0.3, marginBottom:4 }}>Informes y Documentos</div>}
       <div style={{ fontSize:12, color:C.t2, marginBottom:12 }}>{allFreights.length} flete{allFreights.length!==1?"s":""} · {totalDocs} documento{totalDocs!==1?"s":""}</div>
 
       {/* Search bar */}
