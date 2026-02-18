@@ -372,11 +372,12 @@ export function useNotifications(user) {
     })();
   }, [user]);
 
-  // Poll for notifications every 30s
+  // Poll for notifications (skip when tab hidden to save bandwidth)
   useEffect(() => {
     if (!user) return;
 
     const fetchNotifications = async () => {
+      if (document.hidden) return;
       try {
         const r = await apiGetNotifications();
         setNotifications(r.notifications || []);
@@ -386,7 +387,9 @@ export function useNotifications(user) {
 
     fetchNotifications();
     const interval = setInterval(fetchNotifications, 120000);
-    return () => clearInterval(interval);
+    const onVisible = () => { if (!document.hidden) fetchNotifications(); };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => { clearInterval(interval); document.removeEventListener('visibilitychange', onVisible); };
   }, [user]);
 
   const markRead = useCallback(async (id) => {

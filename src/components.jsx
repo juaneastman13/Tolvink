@@ -406,10 +406,11 @@ export function NotificationsPanel({ open, onClose, notifications=[], onMarkRead
     return () => { clearTimeout(tid); document.removeEventListener("click", handleClick); };
   }, [open, onClose]);
 
-  const { unread, read } = useMemo(() => ({
-    unread: notifications.filter(n => !n.read),
-    read: notifications.filter(n => n.read),
-  }), [notifications]);
+  const { unread, read } = useMemo(() => {
+    const u = [], r = [];
+    notifications.forEach(n => (n.read ? r : u).push(n));
+    return { unread: u, read: r };
+  }, [notifications]);
 
   if (!open) return null;
 
