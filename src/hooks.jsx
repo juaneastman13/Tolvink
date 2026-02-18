@@ -10,18 +10,28 @@ import {
 } from "./api";
 import { C, track } from "./theme";
 
-// ======================== CATALOG HOOK (Real API) ====================
+// ======================== CATALOG HOOK (Real API + client cache) ======
+const _catalogCache = { data: null, ts: 0, userId: null };
+const CATALOG_TTL = 5 * 60 * 1000; // 5 min
+
 export function useCatalog(user) {
-  const [plants, setPlants] = useState([]);
-  const [branches, setBranches] = useState([]);
-  const [lots, setLots] = useState([]);
-  const [fields, setFields] = useState([]);
-  const [transporters, setTransporters] = useState([]);
-  const [trucks, setTrucks] = useState([]);
+  const [plants, setPlants] = useState(_catalogCache.data?.plants || []);
+  const [branches, setBranches] = useState(_catalogCache.data?.branches || []);
+  const [lots, setLots] = useState(_catalogCache.data?.lots || []);
+  const [fields, setFields] = useState(_catalogCache.data?.fields || []);
+  const [transporters, setTransporters] = useState(_catalogCache.data?.transporters || []);
+  const [trucks, setTrucks] = useState(_catalogCache.data?.trucks || []);
   const [loading, setLoading] = useState(false);
 
-  const load = useCallback(()=>{
+  const load = useCallback((force)=>{
     if(!user) return;
+    const now = Date.now();
+    if(!force && _catalogCache.data && _catalogCache.userId === user.id && (now - _catalogCache.ts) < CATALOG_TTL) {
+      setPlants(_catalogCache.data.plants); setBranches(_catalogCache.data.branches);
+      setLots(_catalogCache.data.lots); setTransporters(_catalogCache.data.transporters);
+      setTrucks(_catalogCache.data.trucks); setFields(_catalogCache.data.fields);
+      return;
+    }
     setLoading(true);
     Promise.all([
       apiGetPlants().catch(()=>[]),
@@ -31,18 +41,16 @@ export function useCatalog(user) {
       (user.role==="admin"||user.role==="platform_admin"||user.userType==="transporter"||user.userType==="producer"||(user.userTypes||[]).includes("transporter")||(user.userTypes||[]).includes("producer")) ? apiGetTrucks().catch(()=>[]) : Promise.resolve([]),
       (user.role==="admin"||user.role==="platform_admin"||user.userType==="producer"||(user.userTypes||[]).includes("producer")) ? apiGetFields().catch(()=>[]) : Promise.resolve([]),
     ]).then(([p,br,l,t,tr,f])=>{
-      setPlants(p||[]);
-      setBranches(br||[]);
-      setLots(l||[]);
-      setTransporters(t||[]);
-      setTrucks(tr||[]);
-      setFields(f||[]);
+      const d = { plants:p||[], branches:br||[], lots:l||[], transporters:t||[], trucks:tr||[], fields:f||[] };
+      _catalogCache.data = d; _catalogCache.ts = Date.now(); _catalogCache.userId = user.id;
+      setPlants(d.plants); setBranches(d.branches); setLots(d.lots);
+      setTransporters(d.transporters); setTrucks(d.trucks); setFields(d.fields);
     }).finally(()=>setLoading(false));
   },[user]);
 
   useEffect(()=>{ load(); },[load]);
 
-  const refresh = useCallback(()=>{ load(); },[load]);
+  const refresh = useCallback(()=>{ load(true); },[load]);
 
   return { plants, branches, lots, fields, transporters, trucks, loading, refresh };
 }
@@ -479,6 +487,7 @@ export function useSSE(user, { onFreightUpdate, onMessageNew, onNotification, on
   const [connected, setConnected] = useState(false);
   const esRef = useRef(null);
   const reconnectTimer = useRef(null);
+  const reconnectDelay = useRef(5000);
 
   useEffect(() => {
     if (!user) {
@@ -528,12 +537,13 @@ export function useSSE(user, { onFreightUpdate, onMessageNew, onNotification, on
         } catch {}
       });
 
+      es.onopen = () => { reconnectDelay.current = 5000; };
       es.onerror = () => {
         setConnected(false);
         es.close();
         esRef.current = null;
-        // Reconnect after 5 seconds
-        reconnectTimer.current = setTimeout(connect, 5000);
+        reconnectTimer.current = setTimeout(connect, reconnectDelay.current);
+        reconnectDelay.current = Math.min(reconnectDelay.current * 2, 60000);
       };
     };
 

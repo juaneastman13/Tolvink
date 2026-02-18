@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, memo } from "react";
+import { useState, useEffect, useRef, memo, useMemo } from "react";
 import { C, Ic } from "./theme";
 import { stCfg } from "./constants";
 
@@ -406,10 +406,12 @@ export function NotificationsPanel({ open, onClose, notifications=[], onMarkRead
     return () => { clearTimeout(tid); document.removeEventListener("click", handleClick); };
   }, [open, onClose]);
 
-  if (!open) return null;
+  const { unread, read } = useMemo(() => ({
+    unread: notifications.filter(n => !n.read),
+    read: notifications.filter(n => n.read),
+  }), [notifications]);
 
-  const unread = notifications.filter(n => !n.read);
-  const read = notifications.filter(n => n.read);
+  if (!open) return null;
 
   return (
     <div ref={panelRef} style={{
