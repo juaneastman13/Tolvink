@@ -359,8 +359,13 @@ export function useNotifications(user) {
         let sub = await reg.pushManager.getSubscription();
 
         if (!sub) {
-          const key = Uint8Array.from(atob(VAPID_PUBLIC_KEY.replace(/-/g,'+').replace(/_/g,'/')), c => c.charCodeAt(0));
-          sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key });
+          try {
+            const key = Uint8Array.from(atob(VAPID_PUBLIC_KEY.replace(/-/g,'+').replace(/_/g,'/')), c => c.charCodeAt(0));
+            sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key });
+          } catch (keyError) {
+            console.warn('[PUSH] Invalid VAPID key or subscription failed:', keyError);
+            return;
+          }
         }
 
         const subJson = sub.toJSON();
