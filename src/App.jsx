@@ -2963,7 +2963,7 @@ function CalendarScreen({ freights, perms, onNav, isDesktop, user, onAction, act
   const [calSelDay, setCalSelDay] = useState(null);
   const [calSelMonth, setCalSelMonth] = useState(null);
   const [fStatus, setFStatus] = useState("");
-  const [monthsToShow, setMonthsToShow] = useState(1);
+  const monthsToShow = 1;
 
   const STATUS_GROUPS_CAL = { solicitado:["pending_assignment"], en_curso:["assigned","accepted","in_progress","loaded"], finalizados:["finished"], cancelados:["canceled"] };
   const filtered = useMemo(()=>{
@@ -3055,18 +3055,19 @@ function CalendarScreen({ freights, perms, onNav, isDesktop, user, onAction, act
       </div>
 
       {/* Status filter */}
-      <div style={{ display:"flex", gap:5, marginBottom:14, flexWrap:"wrap" }}>
-        {[{k:"",l:"Todos"},{k:"solicitado",l:"Solicitado"},{k:"en_curso",l:"En curso"},{k:"finalizados",l:"Finalizados"},{k:"cancelados",l:"Cancelados"}].map(opt=>(
-          <button key={opt.k} onClick={()=>setFStatus(opt.k)} style={{ padding:"4px 10px", borderRadius:20, border:`1.5px solid ${fStatus===opt.k?C.pri:C.b1}`, background:fStatus===opt.k?C.priPale:C.w, color:fStatus===opt.k?C.pri:C.t2, fontSize:10, fontWeight:600, cursor:"pointer", fontFamily:"inherit", transition:"all 0.15s" }}>{opt.l}</button>
-        ))}
+      <div style={{ marginBottom:14 }}>
+        <select value={fStatus} onChange={e=>setFStatus(e.target.value)} style={{padding:"6px 10px",borderRadius:8,border:`1.5px solid ${fStatus?C.pri:C.b1}`,background:fStatus?C.priPale:C.w,color:fStatus?C.pri:C.t2,fontSize:11,fontFamily:"inherit",cursor:"pointer",outline:"none"}}>
+          <option value="">Todos los estados</option>
+          <option value="solicitado">Solicitado</option>
+          <option value="en_curso">En curso</option>
+          <option value="finalizados">Finalizados</option>
+          <option value="cancelados">Cancelados</option>
+        </select>
       </div>
 
-      {/* Navigation + months toggle */}
+      {/* Navigation */}
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
         <button onClick={()=>{setCalMonth(p=>p.m===0?{y:p.y-1,m:11}:{y:p.y,m:p.m-1});setCalSelDay(null);setCalSelMonth(null);}} style={{background:C.priPale,border:`1px solid ${C.pri}20`,borderRadius:8,cursor:"pointer",padding:"6px 10px",display:"flex",alignItems:"center",gap:4,fontSize:11,fontWeight:600,color:C.pri,fontFamily:"inherit"}}>{Ic.chev(C.pri,16)} Anterior</button>
-        <div style={{display:"flex",gap:4}}>
-          {[1,3,6].map(n=><button key={n} onClick={()=>setMonthsToShow(n)} style={{padding:"5px 10px",borderRadius:6,border:`1px solid ${monthsToShow===n?C.pri:C.b1}`,background:monthsToShow===n?C.priPale:C.w,color:monthsToShow===n?C.pri:C.t2,fontSize:10,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>{n} mes{n>1?"es":""}</button>)}
-        </div>
         <button onClick={()=>{setCalMonth(p=>p.m===11?{y:p.y+1,m:0}:{y:p.y,m:p.m+1});setCalSelDay(null);setCalSelMonth(null);}} style={{background:C.priPale,border:`1px solid ${C.pri}20`,borderRadius:8,cursor:"pointer",padding:"6px 10px",display:"flex",alignItems:"center",gap:4,fontSize:11,fontWeight:600,color:C.pri,fontFamily:"inherit"}}>Siguiente <span style={{display:"inline-flex",transform:"rotate(180deg)"}}>{Ic.chev(C.pri,16)}</span></button>
       </div>
 
