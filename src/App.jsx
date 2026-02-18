@@ -661,62 +661,56 @@ function ListScreen({ freights, onNav, onRefresh, catalog, view, setView, goToMa
     <div ref={containerRef} style={{ flex:1, overflow:"auto", padding:18, WebkitOverflowScrolling:"touch" }}>
       {indicator}
       <div style={{ fontSize:20, fontWeight:800, letterSpacing:-0.3, marginBottom:10 }}>Fletes</div>
-      {/* Date filters — line 1 */}
+      {/* Line 1: Search */}
+      <div style={{ position:"relative", marginBottom:6 }}>
+        <div style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",display:"flex"}}>{Ic.srch(C.t3,14)}</div>
+        <input value={searchQ} onChange={e=>setSearchQ(e.target.value)} placeholder="Buscar..."
+          style={{width:"100%",padding:"7px 12px 7px 30px",borderRadius:8,border:`1.5px solid ${C.b1}`,background:C.w,color:C.t1,fontSize:12,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}/>
+        {searchQ && <button onClick={()=>setSearchQ("")} style={{position:"absolute",right:8,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",display:"flex"}}>{Ic.cross(C.t3,12)}</button>}
+      </div>
+      {/* Line 2: Dates + View toggle */}
       <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:6 }}>
         <span style={{fontSize:10,color:C.t2,fontWeight:600}}>Desde</span>
-        <input type="date" value={dateFrom} onChange={e=>{setDateFrom(e.target.value);setDatePreset("custom");}} onClick={e=>e.target.showPicker?.()} style={{padding:"5px 8px",borderRadius:6,border:`1px solid ${C.b1}`,background:C.w,color:dateFrom?C.t1:C.t3,fontSize:11,fontFamily:"inherit",outline:"none",boxSizing:"border-box",cursor:"pointer"}}/>
+        <input type="date" value={dateFrom} onChange={e=>{setDateFrom(e.target.value);setDatePreset("custom");}} onClick={e=>e.target.showPicker?.()} style={{padding:"5px 8px",borderRadius:6,border:`1px solid ${C.b1}`,background:C.w,color:dateFrom?C.t1:C.t3,fontSize:11,fontFamily:"inherit",outline:"none",boxSizing:"border-box",cursor:"pointer",flex:1,minWidth:0}}/>
         <span style={{fontSize:10,color:C.t2,fontWeight:600}}>Hasta</span>
-        <input type="date" value={dateTo} onChange={e=>{setDateTo(e.target.value);setDatePreset("custom");}} onClick={e=>e.target.showPicker?.()} style={{padding:"5px 8px",borderRadius:6,border:`1px solid ${C.b1}`,background:C.w,color:dateTo?C.t1:C.t3,fontSize:11,fontFamily:"inherit",outline:"none",boxSizing:"border-box",cursor:"pointer"}}/>
-        {(dateFrom||dateTo)&&<button onClick={()=>{setDateFrom("");setDateTo("");setDatePreset("");}} style={{background:"none",border:"none",cursor:"pointer",display:"flex",padding:2}}>{Ic.cross(C.t3,14)}</button>}
-        {[{k:"today",l:"Hoy"},{k:"week",l:"Semana"},{k:"month",l:"Mes"}].map(p=>(
-          <button key={p.k} onClick={()=>applyDatePreset(p.k)} style={{padding:"5px 10px",borderRadius:6,border:`1px solid ${datePreset===p.k?C.pri:C.b1}`,background:datePreset===p.k?C.priPale:C.w,color:datePreset===p.k?C.pri:C.t2,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>{p.l}</button>
-        ))}
-        {hasFilters && <button onClick={clearAll} style={{marginLeft:"auto",padding:"5px 10px",borderRadius:6,border:`1px solid ${C.err}40`,background:C.errPale,color:C.err,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>Limpiar</button>}
+        <input type="date" value={dateTo} onChange={e=>{setDateTo(e.target.value);setDatePreset("custom");}} onClick={e=>e.target.showPicker?.()} style={{padding:"5px 8px",borderRadius:6,border:`1px solid ${C.b1}`,background:C.w,color:dateTo?C.t1:C.t3,fontSize:11,fontFamily:"inherit",outline:"none",boxSizing:"border-box",cursor:"pointer",flex:1,minWidth:0}}/>
+        {(dateFrom||dateTo)&&<button onClick={()=>{setDateFrom("");setDateTo("");setDatePreset("");}} style={{background:"none",border:"none",cursor:"pointer",display:"flex",padding:2,flexShrink:0}}>{Ic.cross(C.t3,14)}</button>}
+        <button onClick={()=>setView(v=>v==="kanban"?"mapa":v==="mapa"?"tabla":"kanban")} style={{marginLeft:"auto",padding:"5px 12px",borderRadius:8,border:`1.5px solid ${C.pri}`,background:C.priPale,color:C.pri,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:5,whiteSpace:"nowrap",flexShrink:0}}>
+          {view==="kanban"?Ic.pin(C.pri,13):view==="mapa"?Ic.doc(C.pri,13):Ic.home(C.pri,13)}
+          {view==="kanban"?"Mapa":view==="mapa"?"Tabla":"Etiquetas"}
+        </button>
       </div>
-      {/* Search + entity filters — line 2 */}
+      {/* Line 3: Producer + Transporter + Clear */}
       <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:12 }}>
-        <div style={{ position:"relative", minWidth:140, flex:"0 1 200px" }}>
-          <div style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",display:"flex"}}>{Ic.srch(C.t3,14)}</div>
-          <input value={searchQ} onChange={e=>setSearchQ(e.target.value)} placeholder="Buscar..."
-            style={{width:"100%",padding:"6px 12px 6px 30px",borderRadius:8,border:`1.5px solid ${C.b1}`,background:C.w,color:C.t1,fontSize:11,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}/>
-          {searchQ && <button onClick={()=>setSearchQ("")} style={{position:"absolute",right:6,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",display:"flex"}}>{Ic.cross(C.t3,12)}</button>}
-        </div>
-        <select value={fPlant} onChange={e=>setFPlant(e.target.value)} style={{padding:"6px 8px",borderRadius:8,border:`1.5px solid ${fPlant?C.pri:C.b1}`,background:fPlant?C.priPale:C.w,color:fPlant?C.pri:C.t3,fontSize:11,fontFamily:"inherit",outline:"none",cursor:"pointer"}}>
-          <option value="">Planta</option>
-          {plantOptions.map(p=><option key={p} value={p}>{p}</option>)}
-        </select>
-        <select value={fProducer} onChange={e=>setFProducer(e.target.value)} style={{padding:"6px 8px",borderRadius:8,border:`1.5px solid ${fProducer?C.pri:C.b1}`,background:fProducer?C.priPale:C.w,color:fProducer?C.pri:C.t3,fontSize:11,fontFamily:"inherit",outline:"none",cursor:"pointer"}}>
+        <select value={fProducer} onChange={e=>setFProducer(e.target.value)} style={{flex:1,padding:"6px 8px",borderRadius:8,border:`1.5px solid ${fProducer?C.pri:C.b1}`,background:fProducer?C.priPale:C.w,color:fProducer?C.pri:C.t3,fontSize:11,fontFamily:"inherit",outline:"none",cursor:"pointer",minWidth:0}}>
           <option value="">Productor</option>
           {producerOptions.map(p=><option key={p} value={p}>{p}</option>)}
         </select>
-        <select value={fTransporter} onChange={e=>setFTransporter(e.target.value)} style={{padding:"6px 8px",borderRadius:8,border:`1.5px solid ${fTransporter?C.pri:C.b1}`,background:fTransporter?C.priPale:C.w,color:fTransporter?C.pri:C.t3,fontSize:11,fontFamily:"inherit",outline:"none",cursor:"pointer"}}>
+        <select value={fTransporter} onChange={e=>setFTransporter(e.target.value)} style={{flex:1,padding:"6px 8px",borderRadius:8,border:`1.5px solid ${fTransporter?C.pri:C.b1}`,background:fTransporter?C.priPale:C.w,color:fTransporter?C.pri:C.t3,fontSize:11,fontFamily:"inherit",outline:"none",cursor:"pointer",minWidth:0}}>
           <option value="">Transportista</option>
           {transporterOptions.map(p=><option key={p} value={p}>{p}</option>)}
         </select>
-        <button onClick={()=>setView(v=>v==="kanban"?"mapa":v==="mapa"?"tabla":"kanban")} style={{marginLeft:"auto",padding:"5px 12px",borderRadius:8,border:`1.5px solid ${C.pri}`,background:C.priPale,color:C.pri,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:5,whiteSpace:"nowrap"}}>
-          {view==="kanban"?Ic.pin(C.pri,13):view==="mapa"?Ic.doc(C.pri,13):Ic.home(C.pri,13)}
-          {view==="kanban"?"Cambiar a mapa":view==="mapa"?"Cambiar a tabla":"Cambiar a etiquetas"}
-        </button>
+        {hasFilters && <button onClick={clearAll} style={{padding:"5px 10px",borderRadius:6,border:`1px solid ${C.err}40`,background:C.errPale,color:C.err,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap",flexShrink:0}}>Limpiar</button>}
       </div>
 
-      {/* View: Kanban */}
+      {/* View: Kanban (stacked by status) */}
       {view==="kanban" && (
-      <div style={{ display:"flex", gap:12, overflowX:"auto", alignItems:"flex-start", paddingBottom:8 }}>
+      <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
         {GROUPS.map(group => {
           const items = grouped[group.key];
+          if(items.length===0) return null;
           return (
-            <div key={group.key} style={{ minWidth:220, flex:"1 1 0", background:C.bg, borderRadius:12, border:`1px solid ${C.b1}`, overflow:"hidden" }}>
-              <div style={{ padding:"10px 12px", borderBottom:`2px solid ${group.color}`, display:"flex", alignItems:"center", gap:6 }}>
-                <span style={{ display:"flex", flexShrink:0 }}>{group.icon(group.color, 14)}</span>
-                <span style={{ fontSize:11, fontWeight:700, color:group.color }}>{group.label}</span>
-                <span style={{ fontSize:10, fontWeight:600, color:C.t3, marginLeft:"auto" }}>{items.length}</span>
+            <div key={group.key}>
+              <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8, padding:"6px 0", borderBottom:`2px solid ${group.color}` }}>
+                <span style={{ display:"flex", flexShrink:0 }}>{group.icon(group.color, 15)}</span>
+                <span style={{ fontSize:12, fontWeight:700, color:group.color }}>{group.label}</span>
+                <span style={{ fontSize:11, fontWeight:600, color:C.t3 }}>({items.length})</span>
               </div>
-              <div style={{ padding:8, display:"flex", flexDirection:"column", gap:8, maxHeight:"calc(100vh - 180px)", overflowY:"auto" }}>
-                {items.length===0 && <div style={{ fontSize:11, color:C.t3, textAlign:"center", padding:16 }}>Sin fletes</div>}
+              <div style={{ display:"flex", flexWrap:"wrap", gap:10 }}>
                 {items.map(f => {
                   const st = stCfg(f.status);
                   return (
-                  <div key={f.id} onClick={()=>onNav("detail",f.id)} style={{ background:C.w, border:`1px solid ${C.b1}`, borderLeft:`4px solid ${st.color}`, borderRadius:12, padding:14, cursor:"pointer", boxShadow:C.sh, transition:"background 0.15s" }}>
+                  <div key={f.id} onClick={()=>onNav("detail",f.id)} style={{ background:C.w, border:`1px solid ${C.b1}`, borderLeft:`4px solid ${st.color}`, borderRadius:12, padding:14, cursor:"pointer", boxShadow:C.sh, transition:"background 0.15s", flex:"1 1 280px", maxWidth:420, minWidth:240 }}>
                     <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
                       <div style={{ display:"flex", alignItems:"center", gap:8 }}>
                         <span style={{ fontSize:11, fontWeight:700, fontFamily:MONO, color:C.t2 }}>{f.code}</span>
