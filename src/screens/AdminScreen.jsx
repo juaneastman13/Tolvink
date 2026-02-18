@@ -4,8 +4,9 @@ import { Btn, Field, Tabs, Select, Loader, Av, Bd, LoadingOverlay } from "../com
 import { apiAdminStats, apiAdminListCompanies, apiAdminGetCompany, apiAdminCreateCompany, apiAdminUpdateCompany, apiAdminListBranches, apiAdminCreateBranch, apiAdminUpdateBranch, apiAdminDeleteBranch, apiAdminListUsers, apiAdminCreateUser, apiAdminUpdateUser, apiAdminListFields, apiAdminCreateField, apiAdminUpdateField, apiAdminDeleteField, apiAdminListLots, apiAdminCreateLot, apiAdminUpdateLot, apiAdminDeleteLot, apiAdminListTrucks, apiAdminCreateTruck, apiAdminUpdateTruck, apiAdminDeleteTruck } from "../api";
 import { adminStyles, typeColors, typeLabels, roleLabels, adminBackBtn } from "../utils/freight-helpers";
 import { LocationPicker } from "../maps";
+import AccessScreen from "./AccessScreen";
 
-export default function AdminScreen({ user, onBack, AccessScreen }) {
+export default function AdminScreen({ user, onBack }) {
   const isPlatform = user.role === "platform_admin";
   const isManager = user.role === "admin";
   const s = adminStyles();
