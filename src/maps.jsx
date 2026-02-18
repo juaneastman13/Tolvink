@@ -48,6 +48,7 @@ export function LocationPicker({ label, value, onChange, defaultCenter }) {
   const mapRef = useRef(null);
   const markerRef = useRef(null);
   const mapObjRef = useRef(null);
+  const geocoderRef = useRef(null);
   const [showMap, setShowMap] = useState(false);
   const [addr, setAddr] = useState(value?.address || "");
   const [initError, setInitError] = useState(false);
@@ -72,10 +73,11 @@ export function LocationPicker({ label, value, onChange, defaultCenter }) {
         const marker = new maps.Marker({ position: startCenter, map, draggable: true });
         markerRef.current = marker;
 
+        if (!geocoderRef.current) geocoderRef.current = new maps.Geocoder();
+
         marker.addListener("dragend", () => {
           const pos = marker.getPosition();
-          const geocoder = new maps.Geocoder();
-          geocoder.geocode({ location: { lat: pos.lat(), lng: pos.lng() } }, (results, status) => {
+          geocoderRef.current.geocode({ location: { lat: pos.lat(), lng: pos.lng() } }, (results, status) => {
             const a = status === "OK" && results[0] ? results[0].formatted_address : "";
             setAddr(a);
             onChange({ lat: pos.lat(), lng: pos.lng(), address: a });
@@ -84,8 +86,7 @@ export function LocationPicker({ label, value, onChange, defaultCenter }) {
 
         map.addListener("click", (e) => {
           marker.setPosition(e.latLng);
-          const geocoder = new maps.Geocoder();
-          geocoder.geocode({ location: { lat: e.latLng.lat(), lng: e.latLng.lng() } }, (results, status) => {
+          geocoderRef.current.geocode({ location: { lat: e.latLng.lat(), lng: e.latLng.lng() } }, (results, status) => {
             const a = status === "OK" && results[0] ? results[0].formatted_address : "";
             setAddr(a);
             onChange({ lat: e.latLng.lat(), lng: e.latLng.lng(), address: a });
@@ -170,6 +171,7 @@ export function LocPickerFullscreen({ value, onChange, defaultCenter, label, onC
   const mapObjRef = useRef(null);
   const markerRef = useRef(null);
   const searchRef = useRef(null);
+  const geocoderRef = useRef(null);
   const [addr, setAddr] = useState(value?.address || "");
   const [curValue, setCurValue] = useState(value || null);
 
@@ -200,9 +202,9 @@ export function LocPickerFullscreen({ value, onChange, defaultCenter, label, onC
         const marker = new maps.Marker({ position: startCenter, map, draggable: true });
         markerRef.current = marker;
 
+        if (!geocoderRef.current) geocoderRef.current = new maps.Geocoder();
         const geocodeAndUpdate = (lat, lng) => {
-          const geocoder = new maps.Geocoder();
-          geocoder.geocode({ location: { lat, lng } }, (results, status) => {
+          geocoderRef.current.geocode({ location: { lat, lng } }, (results, status) => {
             const a = status === "OK" && results[0] ? results[0].formatted_address : "";
             setAddr(a);
             setCurValue({ lat, lng, address: a });

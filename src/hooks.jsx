@@ -194,7 +194,7 @@ export function mapUser(u) {
 }
 
 // ======================== FREIGHTS HOOK (Real API) ====================
-const FREIGHTS_PAGE_SIZE = 50;
+const FREIGHTS_PAGE_SIZE = 25;
 
 export function useFreights(user, isAuthInitialized) {
   const [freights, setFreights] = useState([]);
@@ -377,7 +377,7 @@ export function useNotifications(user) {
     if (!user) return;
 
     const fetchNotifications = async () => {
-      if (document.hidden) return;
+      if (document.hidden || !navigator.onLine) return;
       try {
         const r = await apiGetNotifications();
         setNotifications(r.notifications || []);

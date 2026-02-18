@@ -29,6 +29,7 @@ export function PhotoUpload({ freightId, step, label, onUploaded }) {
       if (onUploaded) onUploaded({ url, name: file.name, step });
     } catch (err) {
       setError(err.message || 'Error al subir');
+      if (preview) URL.revokeObjectURL(preview);
       setPreview(null);
     } finally {
       setUploading(false);
@@ -201,7 +202,11 @@ export function FreightFileUpload({ freightId, step, onUploaded }) {
     setFiles(prev => [...prev, ...newFiles]);
   };
 
-  const removeFile = (idx) => setFiles(prev => prev.filter((_, i) => i !== idx));
+  const removeFile = (idx) => setFiles(prev => {
+    const f = prev[idx];
+    if (f?.preview) URL.revokeObjectURL(f.preview);
+    return prev.filter((_, i) => i !== idx);
+  });
 
   const uploadAll = async () => {
     setUploadingAll(true);
