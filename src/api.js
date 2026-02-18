@@ -1,5 +1,5 @@
 // =====================================================================
-// TOLVINK — API Client v6 (with Admin endpoints)
+// TOLVINK — API Client v7 (with Refresh Token)
 // =====================================================================
 
 import { captureError } from "./sentry";
@@ -10,14 +10,18 @@ const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 const STORAGE_BUCKET = 'freight-docs';
 
 let _token = localStorage.getItem('tolvink_token');
+let _refreshToken = localStorage.getItem('tolvink_refresh_token');
 let _onAuthFail = null;
 let _isLoggingIn = false;
+let _refreshPromise = null;
 
 export function setToken(t) { _token = t; if(t) localStorage.setItem('tolvink_token',t); else localStorage.removeItem('tolvink_token'); }
 export function getToken() { return _token; }
+export function setRefreshToken(t) { _refreshToken = t; if(t) localStorage.setItem('tolvink_refresh_token',t); else localStorage.removeItem('tolvink_refresh_token'); }
 export function clearAuth() {
-  _token=null;
+  _token=null; _refreshToken=null;
   localStorage.removeItem('tolvink_token');
+  localStorage.removeItem('tolvink_refresh_token');
   localStorage.removeItem('tolvink_user');
 }
 export function setAuthFailHandler(fn) { _onAuthFail = fn; }
@@ -29,25 +33,61 @@ class ApiError extends Error {
   constructor(s,d) {
     super(d?.message||d?.error||'Error del servidor');
     this.status=s; this.data=d;
-    // Report server errors to Sentry (skip 401/403/404 — those are expected)
     if (s >= 500) {
       try { captureError(this, { status: s, data: d }); } catch {}
     }
   }
 }
 
+// Silent token refresh — returns true if refreshed, false otherwise
+async function tryRefresh() {
+  if (!_refreshToken) return false;
+  if (_refreshPromise) return _refreshPromise;
+
+  _refreshPromise = (async () => {
+    try {
+      const res = await fetch(`${API_URL}/auth/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken: _refreshToken }),
+      });
+      if (!res.ok) return false;
+      const data = await res.json();
+      setToken(data.access_token);
+      setRefreshToken(data.refresh_token);
+      saveUser(data.user);
+      return true;
+    } catch {
+      return false;
+    } finally {
+      _refreshPromise = null;
+    }
+  })();
+  return _refreshPromise;
+}
+
 export default async function api(path, opts={}) {
   const { body, method=body?'POST':'GET', headers={} } = opts;
-  const cfg = { method, headers: { 'Content-Type':'application/json', ...(_token?{Authorization:`Bearer ${_token}`}:{}), ...headers } };
-  if(body) cfg.body = JSON.stringify(body);
 
-  const res = await fetch(`${API_URL}${path}`, cfg);
+  const doFetch = () => {
+    const cfg = { method, headers: { 'Content-Type':'application/json', ...(_token?{Authorization:`Bearer ${_token}`}:{}), ...headers } };
+    if(body) cfg.body = JSON.stringify(body);
+    return fetch(`${API_URL}${path}`, cfg);
+  };
 
-  // Only trigger auth fail if NOT during login/register
+  let res = await doFetch();
+
+  // On 401 — try silent refresh before failing
   if(res.status===401 && !_isLoggingIn) {
-    clearAuth();
-    if(_onAuthFail) _onAuthFail();
-    throw new ApiError(401,{message:'Sesión expirada'});
+    const refreshed = await tryRefresh();
+    if (refreshed) {
+      res = await doFetch(); // Retry with new token
+    }
+    if (res.status===401) {
+      clearAuth();
+      if(_onAuthFail) _onAuthFail();
+      throw new ApiError(401,{message:'Sesión expirada'});
+    }
   }
 
   let data;
@@ -75,6 +115,7 @@ export async function apiLogin(identifier) {
     }
 
     setToken(d.access_token);
+    setRefreshToken(d.refresh_token);
     saveUser(d.user);
     return d;
   } finally {
@@ -92,6 +133,7 @@ export async function apiRegister(b) {
     }
 
     setToken(d.access_token);
+    setRefreshToken(d.refresh_token);
     saveUser(d.user);
     return d;
   } finally {
@@ -99,12 +141,19 @@ export async function apiRegister(b) {
   }
 }
 
-export function apiLogout() { clearAuth(); }
+export async function apiLogout() {
+  try { await api('/auth/logout', { body: {}, method: 'POST' }); } catch {}
+  clearAuth();
+}
 
 // Switch active company
 export async function apiSwitchCompany(companyId) {
   const d = await api('/auth/switch-company', { body: { companyId } });
-  if (d?.access_token) { setToken(d.access_token); saveUser(d.user); }
+  if (d?.access_token) {
+    setToken(d.access_token);
+    setRefreshToken(d.refresh_token);
+    saveUser(d.user);
+  }
   return d;
 }
 

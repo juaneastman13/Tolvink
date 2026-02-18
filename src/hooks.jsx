@@ -132,8 +132,7 @@ export function useAuth() {
   },[]);
 
   const logout = useCallback(()=>{
-    console.log('[AUTH] Logout');
-    apiLogout();
+    apiLogout(); // async — revokes refresh tokens on server
     setUser(null);
   },[]);
 
