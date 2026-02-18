@@ -514,7 +514,7 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
         </div>
 
         {chatTab === "chat" ? (
-          <>
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", position: "relative", overflow: "hidden" }}>
             {sendError && (
               <div style={{ padding: "10px 18px", background: C.errPale, borderBottom: `1px solid ${C.err}40`, display: "flex", alignItems: "center", gap: 8 }}>
                 <span style={{ fontSize: 11, color: C.err, fontWeight: 600 }}>{sendError}</span>
@@ -636,7 +636,7 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
                 {Ic.send(C.w, 16)}
               </button>
             </div>
-          </>
+          </div>
         ) : (
           /* Files tab */
           <div style={{ flex: 1, overflow: "auto", padding: 18 }}>
