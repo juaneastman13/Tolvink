@@ -4264,6 +4264,49 @@ function AdminScreen({ user, onBack }) {
   );
 }
 
+// ======================== COMPANY HEADER PICKER ========================
+function CompanyHeaderPicker({ user, onSwitch }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+  const TYPE_L = {plant:"Planta",transporter:"Transportista",producer:"Productor"};
+  const TYPE_C = {plant:C.pri,transporter:C.info||C.sec,producer:C.acc};
+  const companies = (user.companies && user.companies.length > 0) ? user.companies : (user.companyId ? [{ companyId:user.companyId, companyName:user.entity||"", companyType:user.userType||"", role:user.role }] : []);
+  const active = companies.find(c=>c.companyId===user.activeCompanyId) || companies[0];
+  const activeName = active?.companyName || user.entity || "";
+  const tColor = TYPE_C[active?.companyType] || C.t2;
+
+  useEffect(()=>{
+    if(!open) return;
+    const h = e => { if(ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener("mousedown",h);
+    return ()=>document.removeEventListener("mousedown",h);
+  },[open]);
+
+  if(!activeName) return null;
+  return (
+    <div ref={ref} style={{position:"relative"}}>
+      <button onClick={()=>companies.length>1&&setOpen(!open)} style={{background:"none",border:`1px solid ${C.b2}`,borderRadius:8,padding:"4px 10px",cursor:companies.length>1?"pointer":"default",display:"flex",alignItems:"center",gap:5,fontFamily:"inherit"}}>
+        <span style={{width:6,height:6,borderRadius:3,background:tColor,flexShrink:0}}/>
+        <span style={{fontSize:11,fontWeight:600,color:C.t1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:140}}>{activeName}</span>
+        {companies.length>1 && <span style={{fontSize:9,color:C.t3,flexShrink:0}}>▼</span>}
+      </button>
+      {open && companies.length>1 && (
+        <div style={{position:"absolute",top:"100%",right:0,marginTop:4,background:C.w,border:`1px solid ${C.b1}`,borderRadius:10,boxShadow:C.shMd,padding:4,zIndex:100,minWidth:180,maxWidth:280}}>
+          {companies.map(c=>{
+            const isAct = c.companyId===user.activeCompanyId;
+            return <button key={c.companyId} onClick={()=>{setOpen(false);if(!isAct)onSwitch(c.companyId);}} style={{display:"flex",alignItems:"center",gap:6,width:"100%",padding:"8px 10px",background:isAct?`${C.pri}08`:"transparent",border:"none",borderRadius:8,cursor:isAct?"default":"pointer",fontFamily:"inherit",textAlign:"left"}}>
+              <span style={{width:6,height:6,borderRadius:3,background:TYPE_C[c.companyType]||C.t2,flexShrink:0}}/>
+              <span style={{fontSize:11,fontWeight:isAct?700:500,color:C.t1,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.companyName}</span>
+              <span style={{fontSize:9,color:C.t3}}>{TYPE_L[c.companyType]||""}</span>
+              {isAct && <span style={{fontSize:8,color:C.pri,fontWeight:700}}>✓</span>}
+            </button>;
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ======================== MAIN APP ====================================
 export default function Tolvink() {
 
@@ -4517,16 +4560,23 @@ export default function Tolvink() {
       {/* Main content column */}
       <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden", minWidth:0, position:"relative", zIndex:1 }}>
         {/* Mobile-only header */}
-        <div className="tv-mobile-header" style={{paddingTop:"max(12px, env(safe-area-inset-top))",paddingBottom:12,paddingLeft:18,paddingRight:18,display:"flex",alignItems:"center",justifyContent:"space-between",borderBottom:`1px solid ${C.b2}`,background:C.w,flexShrink:0,zIndex:10,position:"relative"}}>
-          <div style={{display:"inline-flex",alignItems:"flex-start"}}>
+        <div className="tv-mobile-header" style={{paddingTop:"max(12px, env(safe-area-inset-top))",paddingBottom:12,paddingLeft:18,paddingRight:18,display:"flex",alignItems:"center",gap:10,borderBottom:`1px solid ${C.b2}`,background:C.w,flexShrink:0,zIndex:10,position:"relative"}}>
+          <div style={{display:"inline-flex",alignItems:"flex-start",flexShrink:0}}>
             <span style={{fontSize:30,fontWeight:800,color:C.pri,letterSpacing:-0.9,lineHeight:1}}>tolvink</span>
             <span style={{width:8,height:8,borderRadius:4,background:C.acc,display:"inline-block",marginLeft:3,marginTop:1,animation:"dotPulse 1.5s ease-in-out infinite"}}></span>
           </div>
-          <div style={{position:"relative"}}>
+          <div style={{flex:1}}/>
+          <CompanyHeaderPicker user={auth.user} onSwitch={async(id)=>{const r=await auth.switchCompany(id);if(r.ok){fh.fetchAll();catalog.refresh();}}} />
+          <div style={{position:"relative",flexShrink:0}}>
             <NotifBell count={notif.unreadCount} onClick={()=>setNotifOpen(!notifOpen)} />
             <NotificationsPanel open={notifOpen} onClose={()=>setNotifOpen(false)} notifications={notif.notifications} onMarkRead={notif.markRead} onMarkAllRead={notif.markAllRead} onTap={handleNotifTap} />
           </div>
         </div>
+
+        {/* Desktop company bar */}
+        {isDesktop && <div className="tv-header-bar" style={{display:"flex",alignItems:"center",justifyContent:"flex-end",padding:"8px 18px",borderBottom:`1px solid ${C.b2}`,background:C.w,flexShrink:0,zIndex:10}}>
+          <CompanyHeaderPicker user={auth.user} onSwitch={async(id)=>{const r=await auth.switchCompany(id);if(r.ok){fh.fetchAll();catalog.refresh();}}} />
+        </div>}
 
         {/* Offline banner */}
         {!online && <div style={{background:"#f59e0b",color:"#fff",textAlign:"center",padding:"6px 12px",fontSize:13,fontWeight:600,flexShrink:0,zIndex:10}}>{Ic.warn("#fff",14)} Sin conexión — mostrando datos guardados</div>}
