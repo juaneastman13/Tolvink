@@ -3108,9 +3108,6 @@ function CalendarScreen({ freights, perms, onNav, isDesktop, user, onAction, act
   const calendarPanel = (
     <div style={{flex:isDesktop?undefined:1,overflow:"auto",padding:18,minWidth:isDesktop?420:undefined}}>
       {!isDesktop && <button onClick={()=>onNav("home")} style={{ background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", fontSize:13, fontWeight:600, color:C.pri, marginBottom:10, padding:0, display:"flex", alignItems:"center", gap:4 }}>{Ic.chev(C.pri,18)} Inicio</button>}
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
-        <div style={{fontSize:11,color:C.t2}}>{totalInMonth} flete{totalInMonth!==1?"s":""}</div>
-      </div>
 
       {/* Status filter — desktop: pills, mobile: select */}
       {isDesktop ? (
@@ -3315,7 +3312,6 @@ function ReportsScreen({ onBack, freights, isDesktop, embedded }) {
     <div style={{ flex:embedded?undefined:1, overflow:embedded?"visible":"auto", padding:embedded?0:undefined }}>
       {!isDesktop && !embedded && <div style={{ position:"sticky", top:0, zIndex:10, background:C.bg, padding:"18px 18px 8px" }}><button onClick={onBack} style={{ background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", fontSize:13, fontWeight:600, color:C.pri, marginBottom:14, padding:0, display:"flex", alignItems:"center", gap:4 }}>{Ic.chev(C.pri,18)} Mi Perfil</button></div>}
       <div style={{ padding:embedded?0:"0 18px 18px" }}>
-      <div style={{ fontSize:12, color:C.t2, marginBottom:12 }}>{allFreights.length} flete{allFreights.length!==1?"s":""} · {totalDocs} documento{totalDocs!==1?"s":""}</div>
 
       {/* Search bar */}
       <div style={{ position:"relative", marginBottom:12 }}>
