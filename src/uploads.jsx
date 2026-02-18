@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { uploadPhoto, apiAddDocument } from "./api";
+import { uploadPhoto, apiAddDocument, apiDeleteDocument } from "./api";
 import { C, Ic } from "./theme";
 import { AttachMenu, Btn } from "./components";
 
@@ -57,9 +57,25 @@ export function PhotoUpload({ freightId, step, label, onUploaded }) {
 
 // ======================== DOCUMENTS GALLERY ============================
 
-export function DocsGallery({ documents, onViewFile }) {
+export function DocsGallery({ documents, onViewFile, freightId, canDelete, onDeleted }) {
+  const [deleting, setDeleting] = useState(null);
+  const [confirm, setConfirm] = useState(null);
   if (!documents || documents.length === 0) return null;
   const stepLabels = { request: "Solicitud", assignment: "Asignación", load_confirmation: "Carga", delivery_confirmation: "Entrega", cancellation: "Cancelación" };
+
+  const handleDelete = async (docId) => {
+    setDeleting(docId);
+    try {
+      await apiDeleteDocument(freightId, docId);
+      setConfirm(null);
+      if (onDeleted) onDeleted();
+    } catch (e) {
+      console.error("Delete doc failed:", e);
+    } finally {
+      setDeleting(null);
+    }
+  };
+
   return (
     <div style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: 12, padding: 14, marginBottom: 12, boxShadow: C.sh }}>
       <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>{Ic.img(C.pri, 16)}<span style={{ fontSize: 10.5, fontWeight: 700, color: C.t2, textTransform: "uppercase", letterSpacing: 0.5 }}>Archivos del flete ({documents.length})</span></div>
@@ -67,22 +83,36 @@ export function DocsGallery({ documents, onViewFile }) {
         {documents.map(d => {
           const isImg = d.type === "photo" || d.url?.match(/\.(jpg|jpeg|png|webp|gif)$/i);
           return (
-            <button key={d.id} onClick={()=>onViewFile?onViewFile({url:d.url,name:d.name||"Archivo",type:d.type}):null} style={{ display: "flex", alignItems: "center", gap: 10, padding: 8, background: C.bg, border: `1px solid ${C.b2}`, borderRadius: 8, cursor:"pointer", fontFamily:"inherit", textAlign:"left", width:"100%" }}>
-              {isImg ? (
-                <img src={d.url} alt={d.name} style={{ width: 48, height: 48, borderRadius: 6, objectFit: "cover", flexShrink: 0 }} onError={e => { e.target.style.display = "none"; }} />
-              ) : (
-                <div style={{ width: 48, height: 48, borderRadius: 6, background: C.priPale, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{Ic.doc(C.pri, 20)}</div>
-              )}
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 11, fontWeight: 600, color: C.t1, wordBreak: "break-all" }}>{d.name || "Archivo"}</div>
-                <div style={{ fontSize: 9.5, color: C.t3, marginTop: 2 }}>
-                  {stepLabels[d.step] || d.type || "Doc"}
-                  {d.createdAt && ` · ${new Date(d.createdAt).toLocaleDateString("es", { day: "2-digit", month: "short" })}`}
-                  {d.uploadedBy?.name && ` · ${d.uploadedBy.name.split(" ")[0]}`}
-                </div>
+            <div key={d.id} style={{ position:"relative" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 8, background: C.bg, border: `1px solid ${C.b2}`, borderRadius: 8, width:"100%" }}>
+                <button onClick={()=>onViewFile?onViewFile({url:d.url,name:d.name||"Archivo",type:d.type}):null} style={{ display: "flex", alignItems: "center", gap: 10, flex:1, minWidth:0, background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", textAlign:"left", padding:0 }}>
+                  {isImg ? (
+                    <img src={d.url} alt={d.name} style={{ width: 48, height: 48, borderRadius: 6, objectFit: "cover", flexShrink: 0 }} onError={e => { e.target.style.display = "none"; }} />
+                  ) : (
+                    <div style={{ width: 48, height: 48, borderRadius: 6, background: C.priPale, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{Ic.doc(C.pri, 20)}</div>
+                  )}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 11, fontWeight: 600, color: C.t1, wordBreak: "break-all" }}>{d.name || "Archivo"}</div>
+                    <div style={{ fontSize: 9.5, color: C.t3, marginTop: 2 }}>
+                      {stepLabels[d.step] || d.type || "Doc"}
+                      {d.createdAt && ` · ${new Date(d.createdAt).toLocaleDateString("es", { day: "2-digit", month: "short" })}`}
+                      {d.uploadedBy?.name && ` · ${d.uploadedBy.name.split(" ")[0]}`}
+                    </div>
+                  </div>
+                  {Ic.eye(C.pri, 14)}
+                </button>
+                {canDelete && <button onClick={()=>setConfirm(d.id)} disabled={!!deleting} style={{ padding:6, borderRadius:6, border:`1px solid ${C.err}40`, background:C.errPale||"#fef2f2", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{Ic.cross(C.err,14)}</button>}
               </div>
-              {Ic.eye(C.pri, 14)}
-            </button>
+              {confirm===d.id && (
+                <div style={{ position:"absolute", right:0, top:"100%", zIndex:20, background:C.w, border:`1px solid ${C.b1}`, borderRadius:10, padding:12, boxShadow:C.shMd, minWidth:180, marginTop:4 }}>
+                  <div style={{ fontSize:11, color:C.t1, fontWeight:600, marginBottom:8 }}>Eliminar este archivo?</div>
+                  <div style={{ display:"flex", gap:8 }}>
+                    <button onClick={()=>setConfirm(null)} style={{ flex:1, padding:"6px 0", borderRadius:6, border:`1px solid ${C.b1}`, background:C.bg, cursor:"pointer", fontSize:11, fontWeight:600, color:C.t2, fontFamily:"inherit" }}>No</button>
+                    <button onClick={()=>handleDelete(d.id)} disabled={deleting===d.id} style={{ flex:1, padding:"6px 0", borderRadius:6, border:"none", background:C.err, color:"#fff", cursor:"pointer", fontSize:11, fontWeight:600, fontFamily:"inherit", opacity:deleting===d.id?0.6:1 }}>{deleting===d.id?"...":"Sí, eliminar"}</button>
+                  </div>
+                </div>
+              )}
+            </div>
           );
         })}
       </div>

@@ -224,6 +224,7 @@ export async function apiMarkRead(convId) { return api(`/conversations/${convId}
 
 // Documents
 export async function apiAddDocument(freightId, body) { return api(`/freights/${freightId}/documents`,{body}); }
+export async function apiDeleteDocument(freightId, docId) { return api(`/freights/${freightId}/documents/${docId}`,{method:'DELETE'}); }
 
 // ======================== ADMIN ======================================
 // Stats
