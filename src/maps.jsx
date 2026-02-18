@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, Component } from "react";
 import { apiGetLastPosition, apiSendTracking } from "./api";
 import { C, Ic } from "./theme";
+import { useUIStore } from "./store";
 
 // ======================== GOOGLE MAPS ================================
 
@@ -233,16 +234,10 @@ export function FreightMap({ freightId, originLat, originLng, destLat, destLng, 
   const [truckPos, setTruckPos] = useState(null);
   const [tracking, setTracking] = useState(false);
   const [error, setError] = useState(null);
-  const [fullscreen, setFullscreen] = useState(false);
+  const goToMap = useUIStore(s => s.goToMap);
 
   const hasCoords = originLat && originLng && destLat && destLng;
   const isLive = status === "in_progress";
-
-  useEffect(() => {
-    if (mapInstance.current) {
-      setTimeout(() => window.google?.maps?.event?.trigger(mapInstance.current, "resize"), 100);
-    }
-  }, [fullscreen]);
 
   useEffect(() => {
     if (!hasCoords || !mapRef.current) return;
@@ -379,9 +374,9 @@ export function FreightMap({ freightId, originLat, originLng, destLat, destLng, 
 
   if (!hasCoords) return null;
 
-  const mapContainer = (
-    <div style={fullscreen ? { position:"fixed", inset:0, zIndex:150, background:C.w, display:"flex", flexDirection:"column", maxHeight:"100dvh" } : { background: C.w, border: `1px solid ${C.b1}`, borderRadius: 12, overflow: "hidden", boxShadow: C.sh, display:"flex", flexDirection:"column", height:"100%" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 6, padding: fullscreen?"14px 18px":"10px 14px", paddingTop: fullscreen?"max(14px, env(safe-area-inset-top))":10, flexShrink:0 }}>
+  return (
+    <div style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: 12, overflow: "hidden", boxShadow: C.sh, display:"flex", flexDirection:"column", height:"100%" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 6, padding:"10px 14px", flexShrink:0 }}>
         {Ic.pin(C.pri, 14)}
         <span style={{ fontSize: 10.5, fontWeight: 700, color: C.t2, textTransform: "uppercase", letterSpacing: 0.5 }}>Recorrido</span>
         {routeInfo && (
@@ -392,8 +387,8 @@ export function FreightMap({ freightId, originLat, originLng, destLat, destLng, 
         <button onClick={()=>window.open(`https://www.google.com/maps/dir/?api=1&origin=${originLat},${originLng}&destination=${destLat},${destLng}&travelmode=driving`,"_blank")} style={{ marginLeft:"auto", padding:"4px 10px", borderRadius:8, border:`1px solid ${C.b1}`, background:C.w, cursor:"pointer", display:"flex", alignItems:"center", gap:4, fontSize:10, fontWeight:600, color:C.pri, fontFamily:"inherit", WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
           {Ic.nav(C.pri,11)} Abrir en Google Maps
         </button>
-        <button onClick={()=>setFullscreen(!fullscreen)} style={{ padding:6, borderRadius:8, border:`1px solid ${C.b1}`, background:C.w, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
-          {fullscreen ? Ic.collapse(C.t1,16) : Ic.expand(C.t1,16)}
+        <button onClick={()=>goToMap(originLat,originLng,originName,destLat,destLng,destName)} style={{ padding:6, borderRadius:8, border:`1px solid ${C.b1}`, background:C.w, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
+          {Ic.expand(C.t1,16)}
         </button>
       </div>
       {error ? (
@@ -401,7 +396,7 @@ export function FreightMap({ freightId, originLat, originLng, destLat, destLng, 
       ) : (
         <div ref={mapRef} style={{ width: "100%", flex:1, minHeight:180 }} />
       )}
-      <div style={{ padding: fullscreen?"10px 18px":"8px 14px", paddingBottom: fullscreen?"max(10px, env(safe-area-inset-bottom))":8, display: "flex", gap: 12, fontSize: 10.5, flexWrap: "wrap", alignItems: "center", flexShrink:0 }}>
+      <div style={{ padding:"8px 14px", display: "flex", gap: 12, fontSize: 10.5, flexWrap: "wrap", alignItems: "center", flexShrink:0 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
           <span style={{ width: 8, height: 8, borderRadius: 4, background: "#1A6B37" }} />
           <span style={{ color: C.t2 }}>{originName}</span>
@@ -422,8 +417,6 @@ export function FreightMap({ freightId, originLat, originLng, destLat, destLng, 
       </div>
     </div>
   );
-
-  return mapContainer;
 }
 
 // ======================== FREIGHTS OVERVIEW MAP ===========================
