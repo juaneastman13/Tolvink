@@ -3,7 +3,7 @@
 // Cache-first shell, stale-while-revalidate API, navigation preload
 // =====================================================================
 
-const CACHE_NAME = 'tolvink-v4.2';
+const CACHE_NAME = 'tolvink-v4.3';
 const API_CACHE = 'tolvink-api-v2';
 const FONT_CACHE = 'tolvink-fonts-v1';
 const IMG_CACHE = 'tolvink-img-v1';
