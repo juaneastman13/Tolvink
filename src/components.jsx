@@ -448,7 +448,7 @@ export function NotificationsPanel({ open, onClose, notifications=[], onMarkRead
           return (
             <button key={n.id} onClick={() => { if (!n.read) onMarkRead(n.id); if (n.entityId) onTap(n.entityId); onClose(); }}
               style={{
-                display:"flex", alignItems:"flex-start", gap:12, width:"100%", padding:"12px 18px",
+                display:"flex", alignItems:"center", gap:10, width:"100%", padding:"10px 16px",
                 border:"none", background: n.read ? "none" : C.priGhost, cursor:"pointer",
                 fontFamily:"inherit", textAlign:"left", borderBottom:`1px solid ${C.b2}`,
                 WebkitTapHighlightColor:"transparent", touchAction:"manipulation", transition:"background 0.15s"
@@ -457,19 +457,21 @@ export function NotificationsPanel({ open, onClose, notifications=[], onMarkRead
               onMouseLeave={e=>e.currentTarget.style.background=n.read?"transparent":C.priGhost}>
 
               {/* Icon */}
-              <div style={{ width:36, height:36, borderRadius:10, background: n.read ? C.bg : C.priPale, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, marginTop:1 }}>
-                {icFn(16)}
+              <div style={{ width:28, height:28, borderRadius:8, background: n.read ? C.bg : C.priPale, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                {icFn(14)}
               </div>
 
-              {/* Content */}
+              {/* Content — 2 lines max */}
               <div style={{ flex:1, minWidth:0 }}>
-                <div style={{ fontSize:13, fontWeight: n.read ? 500 : 700, color: n.read ? C.t2 : C.t1, lineHeight:1.35 }}>{n.title}</div>
-                <div style={{ fontSize:11.5, color:C.t3, marginTop:2, lineHeight:1.3, overflow:"hidden", textOverflow:"ellipsis", display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical" }}>{n.body}</div>
-                <div style={{ fontSize:10, color:C.t3, marginTop:4, fontWeight:500 }}>{timeAgo(n.createdAt)}</div>
+                <div style={{ display:"flex", alignItems:"baseline", gap:6 }}>
+                  <span style={{ fontSize:12.5, fontWeight: n.read ? 500 : 700, color: n.read ? C.t2 : C.t1, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis", flex:1, minWidth:0 }}>{n.title}</span>
+                  <span style={{ fontSize:10, color:C.t3, fontWeight:500, whiteSpace:"nowrap", flexShrink:0 }}>{timeAgo(n.createdAt)}</span>
+                </div>
+                <div style={{ fontSize:11, color:C.t3, lineHeight:1.3, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{n.body}</div>
               </div>
 
               {/* Unread dot */}
-              {!n.read && <div style={{ width:8, height:8, borderRadius:4, background:C.pri, flexShrink:0, marginTop:6 }} />}
+              {!n.read && <div style={{ width:7, height:7, borderRadius:4, background:C.pri, flexShrink:0 }} />}
             </button>
           );
         })}
