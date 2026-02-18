@@ -480,12 +480,8 @@ function HomeScreen({ user, freights, perms, onNav, catalog, isDesktop, onAction
   // Sidebar logo area: padTop24 + font63 + padBot20 = 107px → midline ~55px. Solicitar btn top ~122px.
   const listContent = (
     <div style={{ flex: compact ? undefined : 1, width: compact ? 300 : undefined, flexShrink: 0, overflow: compact ? "auto" : undefined, boxSizing: "border-box", borderRight: compact ? `1px solid ${C.b1}` : "none" }}>
-      {/* Sticky header — empresa (clickable), fecha+hora, fletes */}
-      <div style={{ position: compact ? "sticky" : undefined, top: 0, zIndex: 10, background:C.bg, display: "flex", alignItems: "center", minHeight: isDesktop ? 60 : 44, padding: compact ? "0 14px" : "0 18px", borderBottom: `1px solid ${C.b2}` }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-          <span style={{ fontSize: 11, color: C.t2, fontWeight: 600 }}>{filteredFreights.length} flete{filteredFreights.length !== 1 ? "s" : ""}</span>
-        </div>
-      </div>
+      {/* Sticky header spacer */}
+      {compact && <div style={{ position: "sticky", top: 0, zIndex: 10, background:C.bg, minHeight: 8 }} />}
 
       <div style={{ padding: compact ? "0 8px 8px" : "0 18px 18px" }}>
 
@@ -4258,7 +4254,7 @@ function CompanyHeaderPicker({ user, onSwitch }) {
 
   if(!activeName) return null;
   return (
-    <div ref={ref} style={{position:"relative",display:"flex",flexDirection:"column",alignItems:"center"}}>
+    <div ref={ref} style={{position:"relative",display:"flex",flexDirection:"column",alignItems:"flex-end"}}>
       <div style={{fontSize:10,color:C.t3,textTransform:"capitalize",marginBottom:2}}>{dateLabel} · {timeLabel}</div>
       <button onClick={()=>companies.length>1&&setOpen(!open)} style={{background:"none",border:`1px solid ${C.b2}`,borderRadius:8,padding:"5px 12px",cursor:companies.length>1?"pointer":"default",display:"flex",alignItems:"center",gap:6,fontFamily:"inherit"}}>
         <span style={{width:8,height:8,borderRadius:4,background:tColor,flexShrink:0}}/>
@@ -4549,7 +4545,7 @@ export default function Tolvink() {
         </div>
 
         {/* Desktop company bar — static, vertically centered with sidebar logo (107px) */}
-        {isDesktop && <div className="tv-header-bar" style={{display:"flex",alignItems:"center",justifyContent:"center",padding:"0 18px",minHeight:107,background:C.w,borderBottom:`1px solid ${C.b2}`,flexShrink:0,zIndex:10}}>
+        {isDesktop && <div className="tv-header-bar" style={{display:"flex",alignItems:"center",justifyContent:"flex-end",padding:"0 18px",minHeight:107,background:C.w,borderBottom:`1px solid ${C.b2}`,flexShrink:0,zIndex:10}}>
           <CompanyHeaderPicker user={auth.user} onSwitch={async(id)=>{const r=await auth.switchCompany(id);if(r.ok){fh.fetchAll();catalog.refresh();}}} />
         </div>}
 
