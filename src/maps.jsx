@@ -450,25 +450,21 @@ export function FreightsOverviewMap({ freights, onSelect, fields, plants }) {
   const info = useRef(null);
   const [ready, setReady] = useState(false);
   const [showFreights, setShowFreights] = useState(true);
-  const [mapError, setMapError] = useState(false);
 
   // Init map once
   useEffect(() => {
     if (!mapRef.current) return;
-    if (!GMAPS_KEY) { setMapError(true); return; }
     let c = false;
     (async () => {
-      try {
-        const maps = await loadGMaps();
-        if (c || !mapRef.current) return;
-        mapObj.current = new maps.Map(mapRef.current, {
-          zoom: 6, center: { lat: -34.6, lng: -56.2 },
-          disableDefaultUI: true, zoomControl: true, gestureHandling: "greedy",
-          styles: [{ featureType:"poi", stylers:[{visibility:"off"}] }, { featureType:"transit", stylers:[{visibility:"off"}] }],
-        });
-        info.current = new maps.InfoWindow();
-        setReady(true);
-      } catch(e) { console.error("[Map] init failed:", e); setMapError(true); }
+      const maps = await loadGMaps();
+      if (c || !mapRef.current) return;
+      mapObj.current = new maps.Map(mapRef.current, {
+        zoom: 6, center: { lat: -34.6, lng: -56.2 },
+        disableDefaultUI: true, zoomControl: true, gestureHandling: "greedy",
+        styles: [{ featureType:"poi", stylers:[{visibility:"off"}] }, { featureType:"transit", stylers:[{visibility:"off"}] }],
+      });
+      info.current = new maps.InfoWindow();
+      setReady(true);
     })();
     return () => { c = true; };
   }, []);
@@ -607,16 +603,6 @@ export function FreightsOverviewMap({ freights, onSelect, fields, plants }) {
   // Cleanup truck markers on unmount
   useEffect(() => () => { truckMarkers.current.forEach(m => m.setMap(null)); }, []);
 
-  if (mapError) {
-    return (
-      <div style={{ background:C.w, border:`1px solid ${C.b1}`, borderRadius:12, overflow:"hidden", boxShadow:"0 1px 4px rgba(0,0,0,0.06)", display:"flex", alignItems:"center", justifyContent:"center", height:420, flexDirection:"column", gap:8 }}>
-        <span style={{fontSize:32,opacity:0.3}}>🗺️</span>
-        <span style={{fontSize:13,color:C.t3,fontWeight:600}}>Mapa no disponible</span>
-        <span style={{fontSize:11,color:C.t3}}>Falta configurar la clave de Google Maps (VITE_GMAPS_KEY)</span>
-      </div>
-    );
-  }
-
   return (
     <div style={{ background:C.w, border:`1px solid ${C.b1}`, borderRadius:12, overflow:"hidden", boxShadow:"0 1px 4px rgba(0,0,0,0.06)", position:"relative" }}>
       <button onClick={()=>setShowFreights(v=>!v)} style={{position:"absolute",top:12,right:12,zIndex:10,padding:"6px 12px",borderRadius:8,border:`1.5px solid ${C.pri}`,background:C.w,color:C.pri,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:5,boxShadow:C.shMd}}>
@@ -671,16 +657,14 @@ export function MapOverlay({ lat, lng, label, destLat, destLng, destLabel, onClo
   }, [lat, lng, label, destLat, destLng]);
 
   return (
-    <div style={{position:"fixed",inset:0,zIndex:9999,background:"rgba(0,0,0,0.45)",display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
-      <div style={{width:"100%",maxWidth:800,height:"85vh",maxHeight:700,background:C.w,borderRadius:16,border:`1.5px solid ${C.b1}`,boxShadow:"0 8px 32px rgba(0,0,0,0.25)",display:"flex",flexDirection:"column",overflow:"hidden"}}>
-        <div style={{padding:"12px 16px",display:"flex",alignItems:"center",gap:10,borderBottom:`1px solid ${C.b1}`,flexShrink:0}}>
-          <button onClick={onClose} style={{background:"none",border:"none",cursor:"pointer",display:"flex",alignItems:"center",gap:6,padding:"6px 12px",borderRadius:8,fontSize:13,fontWeight:700,color:C.pri,fontFamily:"inherit"}}>
-            {Ic.chev(C.pri,16)} Volver
-          </button>
-          <span style={{flex:1,fontSize:13,color:C.t2,fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{label || "Ubicación en mapa"}</span>
-        </div>
-        <div ref={mapRef} style={{flex:1}} />
+    <div style={{position:"fixed",inset:0,zIndex:9999,background:"rgba(0,0,0,0.5)",display:"flex",flexDirection:"column"}}>
+      <div style={{padding:"12px 16px",background:C.w,display:"flex",alignItems:"center",gap:10,borderBottom:`1px solid ${C.b1}`,flexShrink:0}}>
+        <button onClick={onClose} style={{background:"none",border:"none",cursor:"pointer",display:"flex",alignItems:"center",gap:6,padding:"6px 12px",borderRadius:8,fontSize:13,fontWeight:700,color:C.pri,fontFamily:"inherit"}}>
+          {Ic.chev(C.pri,16)} Volver
+        </button>
+        <span style={{flex:1,fontSize:13,color:C.t2,fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{label || "Ubicación en mapa"}</span>
       </div>
+      <div ref={mapRef} style={{flex:1}} />
     </div>
   );
 }

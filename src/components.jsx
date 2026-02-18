@@ -28,7 +28,7 @@ export const Tabs = memo(function Tabs({ items, active, onChange }) {
   return <div style={{ display:"flex", gap:2, background:C.bgInput, borderRadius:10, padding:3 }}>{items.map(t=><button key={t.k} onClick={()=>onChange(t.k)} style={{ flex:1, padding:"8px 4px", borderRadius:8, border:"none", fontFamily:"inherit", fontSize:11, fontWeight:active===t.k?700:500, cursor:"pointer", background:active===t.k?C.w:"transparent", color:active===t.k?C.pri:C.t3, boxShadow:active===t.k?C.sh:"none", transition:"all 0.15s" }}>{t.l}</button>)}</div>;
 });
 
-export function Field({ label, icon, value, onChange, placeholder, type="text", children, hasError, onKeyDown }) {
+export function Field({ label, icon, value, onChange, placeholder, type="text", children, hasError }) {
   const [showPw, setShowPw] = useState(false);
   const isPw = type === "password";
   const borderColor = hasError ? C.err : C.b1;
@@ -40,7 +40,7 @@ export function Field({ label, icon, value, onChange, placeholder, type="text", 
       <div style={{ position:"relative" }}>
         <input value={value} onChange={e=>onChange(e.target.value)} placeholder={placeholder} type={isPw&&!showPw?"password":"text"}
           style={{ width:"100%", padding:"12px 14px", paddingRight:isPw?42:14, borderRadius:10, border:`1.5px solid ${borderColor}`, background:hasError?C.errPale+"40":C.w, color:C.t1, fontSize:16, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }}
-          onFocus={e=>{e.target.style.borderColor=hasError?C.err:C.bFocus;}} onBlur={e=>{e.target.style.borderColor=borderColor;}} onKeyDown={onKeyDown} />
+          onFocus={e=>{e.target.style.borderColor=hasError?C.err:C.bFocus;}} onBlur={e=>{e.target.style.borderColor=borderColor;}} />
         {isPw && <button onClick={()=>setShowPw(!showPw)} style={{ position:"absolute", right:10, top:"50%", transform:"translateY(-50%)", background:"none", border:"none", cursor:"pointer", display:"flex", padding:4 }}>{showPw?Ic.eye(C.t3,18):Ic.eyeOff(C.t3,18)}</button>}
       </div>
     </div>
@@ -504,7 +504,7 @@ export function FileViewer({ file, onClose }) {
         <div style={{ color:"#fff", fontSize:13, fontWeight:600, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", flex:1, marginRight:12 }}>{file.name||"Archivo"}</div>
         <div style={{ display:"flex", gap:8 }}>
           <a href={file.url} download style={{ display:"flex", alignItems:"center", gap:4, padding:"6px 12px", borderRadius:8, background:"rgba(255,255,255,0.15)", color:"#fff", textDecoration:"none", fontSize:12, fontWeight:600 }} onClick={e=>e.stopPropagation()}>{Ic.down("#fff",14)} Descargar</a>
-          <button onClick={onClose} style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:6, padding:"8px 16px", borderRadius:10, background:"rgba(255,255,255,0.25)", border:"1px solid rgba(255,255,255,0.3)", cursor:"pointer", color:"#fff", fontSize:13, fontWeight:600, fontFamily:"inherit" }}>{Ic.cross("#fff",18)} Cerrar</button>
+          <button onClick={onClose} style={{ display:"flex", alignItems:"center", justifyContent:"center", width:36, height:36, borderRadius:8, background:"rgba(255,255,255,0.15)", border:"none", cursor:"pointer" }}>{Ic.cross("#fff",20)}</button>
         </div>
       </div>
       <div onClick={e=>e.stopPropagation()} style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", overflow:"auto", padding:16 }}>

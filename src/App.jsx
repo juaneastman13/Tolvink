@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, useMemo, Fragment } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useNavigate, useLocation, Routes, Route } from "react-router-dom";
 import {
   apiGetAuditLog,
@@ -54,41 +54,41 @@ function LandingScreen({ onLogin, onSignup, loading, error, clearError }) {
       <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"40px 24px", textAlign:"center", paddingTop:"max(40px, env(safe-area-inset-top))", position:"relative", zIndex:1 }}>
 
         {/* Big logo */}
-        <div style={{ animation:"splashIn 0.8s ease-out", marginBottom:30 }}>
+        <div style={{ animation:"splashIn 0.8s ease-out", marginBottom:36 }}>
           <div style={{ display:"inline-flex", alignItems:"flex-start" }}>
-            <span style={{ fontSize:125, fontWeight:800, color:C.pri, letterSpacing:-6, lineHeight:1 }}>tolvink</span>
-            <span style={{ width:22, height:22, borderRadius:11, background:C.acc, marginLeft:8, marginTop:6, display:"inline-block", animation:"dotPulse 1.5s ease-in-out infinite" }} />
+            <span style={{ fontSize:139, fontWeight:800, color:C.pri, letterSpacing:-6.6, lineHeight:1 }}>tolvink</span>
+            <span style={{ width:25, height:25, borderRadius:13, background:C.acc, marginLeft:9, marginTop:7, display:"inline-block", animation:"dotPulse 1.5s ease-in-out infinite" }} />
           </div>
         </div>
 
         {/* Tagline */}
-        <div style={{ animation:"fadeUp 0.8s ease-out", marginBottom:34 }}>
-          <div className="tv-ld-tag" style={{ fontSize:12.5, fontWeight:700, color:C.acc, textTransform:"uppercase", letterSpacing:2.5, marginBottom:12 }}>
+        <div style={{ animation:"fadeUp 0.8s ease-out", marginBottom:40 }}>
+          <div className="tv-ld-tag" style={{ fontSize:14, fontWeight:700, color:C.acc, textTransform:"uppercase", letterSpacing:2.5, marginBottom:14 }}>
             Logística agrícola simplificada
           </div>
-          <h1 className="tv-ld-h1" style={{ fontSize:20, fontWeight:700, color:C.t2, lineHeight:1.1, letterSpacing:-0.3, whiteSpace:"nowrap" }}>
+          <h1 className="tv-ld-h1" style={{ fontSize:22, fontWeight:700, color:C.t2, lineHeight:1.1, letterSpacing:-0.3, whiteSpace:"nowrap" }}>
             Gestioná tus fletes desde el campo
           </h1>
         </div>
 
         {/* 4 Features inline */}
-        <div className="tv-ld-feat" style={{ display:"flex", gap:24, justifyContent:"center", marginBottom:38, animation:"fadeUp 1s ease-out", flexWrap:"wrap" }}>
+        <div className="tv-ld-feat" style={{ display:"flex", gap:28, justifyContent:"center", marginBottom:44, animation:"fadeUp 1s ease-out", flexWrap:"wrap" }}>
           {[
-            { icon: Ic.truck(C.pri,20), label:"Fletes" },
-            { icon: Ic.pin(C.acc,20), label:"Tracking" },
-            { icon: Ic.chk(C.ok,20), label:"Confirmaciones" },
-            { icon: Ic.nav(C.sec,20), label:"Rutas" },
+            { icon: Ic.truck(C.pri,22), label:"Fletes" },
+            { icon: Ic.pin(C.acc,22), label:"Tracking" },
+            { icon: Ic.chk(C.ok,22), label:"Confirmaciones" },
+            { icon: Ic.nav(C.sec,22), label:"Rutas" },
           ].map((f,i) => (
-            <div key={i} style={{ display:"flex", alignItems:"center", gap:5 }}>
+            <div key={i} style={{ display:"flex", alignItems:"center", gap:6 }}>
               {f.icon}
-              <span style={{ fontSize:11, fontWeight:600, color:C.t2 }}>{f.label}</span>
+              <span style={{ fontSize:12, fontWeight:600, color:C.t2 }}>{f.label}</span>
             </div>
           ))}
         </div>
 
         {/* Ingresar — fresh element, no legacy handlers */}
-        <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:18 }}>
-          <a href="#ingresar" onClick={function(ev){ ev.preventDefault(); console.log('[LANDING] Ingresar clicked'); setShowAuth(true); }} style={{ display:"inline-block", padding:"12px 38px", borderRadius:12, background:C.pri, color:C.w, fontSize:14.5, fontWeight:700, textDecoration:"none", fontFamily:"inherit", boxShadow:"0 4px 20px rgba(0,0,0,0.15)", minWidth:200, textAlign:"center", cursor:"pointer", WebkitTapHighlightColor:"rgba(0,0,0,0.1)" }}>Ingresar</a>
+        <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:20 }}>
+          <a href="#ingresar" onClick={function(ev){ ev.preventDefault(); console.log('[LANDING] Ingresar clicked'); setShowAuth(true); }} style={{ display:"inline-block", padding:"14px 42px", borderRadius:12, background:C.pri, color:C.w, fontSize:16, fontWeight:700, textDecoration:"none", fontFamily:"inherit", boxShadow:"0 4px 20px rgba(0,0,0,0.15)", minWidth:200, textAlign:"center", cursor:"pointer", WebkitTapHighlightColor:"rgba(0,0,0,0.1)" }}>Ingresar</a>
 
           <a href="https://wa.me/59898247552?text=Hola%2C%20quiero%20información%20sobre%20Tolvink" target="_blank" rel="noopener noreferrer" style={{ display:"inline-flex", opacity:0.7 }}>
             <svg width="22" height="22" viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
@@ -190,7 +190,7 @@ function AuthScreen({ onLogin, onSignup, loading, error, clearError, onBackToLan
               {/* === LOGIN MODE === */}
               {mode==="login" && <>
                 <div>
-                  <Field label="Email o teléfono" icon={Ic.mail(errs.email||error?C.err:C.t2,14)} value={loginId} onChange={v=>{setLoginId(v);if(error)clearError();}} placeholder="tu@email.com o 09X XXX XXX" hasError={!!(errs.email||error)} onKeyDown={e=>{if(e.key==='Enter')submit();}}/>
+                  <Field label="Email o teléfono" icon={Ic.mail(errs.email||error?C.err:C.t2,14)} value={loginId} onChange={v=>{setLoginId(v);if(error)clearError();}} placeholder="tu@email.com o 09X XXX XXX" hasError={!!(errs.email||error)}/>
                   {touched&&<FieldError error={errs.email}/>}
                 </div>
               </>}
@@ -661,27 +661,26 @@ function ListScreen({ freights, onNav, onRefresh, catalog, view, setView, goToMa
     <div ref={containerRef} style={{ flex:1, overflow:"auto", padding:18, WebkitOverflowScrolling:"touch" }}>
       {indicator}
       <div style={{ fontSize:20, fontWeight:800, letterSpacing:-0.3, marginBottom:10 }}>Fletes</div>
-      {/* Search bar */}
-      <div style={{ position:"relative", marginBottom:6 }}>
-        <div style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",display:"flex"}}>{Ic.srch(C.t3,14)}</div>
-        <input value={searchQ} onChange={e=>setSearchQ(e.target.value)} placeholder="Buscar por código, producto, empresa..."
-          style={{width:"100%",padding:"8px 12px 8px 32px",borderRadius:8,border:`1.5px solid ${C.b1}`,background:C.w,color:C.t1,fontSize:12,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}/>
-        {searchQ && <button onClick={()=>setSearchQ("")} style={{position:"absolute",right:8,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",display:"flex"}}>{Ic.cross(C.t3,14)}</button>}
-      </div>
-      {/* Date filters + view toggle */}
-      <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:6, flexWrap:"wrap" }}>
+      {/* Date filters — line 1 */}
+      <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:6 }}>
         <span style={{fontSize:10,color:C.t2,fontWeight:600}}>Desde</span>
         <input type="date" value={dateFrom} onChange={e=>{setDateFrom(e.target.value);setDatePreset("custom");}} onClick={e=>e.target.showPicker?.()} style={{padding:"5px 8px",borderRadius:6,border:`1px solid ${C.b1}`,background:C.w,color:dateFrom?C.t1:C.t3,fontSize:11,fontFamily:"inherit",outline:"none",boxSizing:"border-box",cursor:"pointer"}}/>
         <span style={{fontSize:10,color:C.t2,fontWeight:600}}>Hasta</span>
         <input type="date" value={dateTo} onChange={e=>{setDateTo(e.target.value);setDatePreset("custom");}} onClick={e=>e.target.showPicker?.()} style={{padding:"5px 8px",borderRadius:6,border:`1px solid ${C.b1}`,background:C.w,color:dateTo?C.t1:C.t3,fontSize:11,fontFamily:"inherit",outline:"none",boxSizing:"border-box",cursor:"pointer"}}/>
         {(dateFrom||dateTo)&&<button onClick={()=>{setDateFrom("");setDateTo("");setDatePreset("");}} style={{background:"none",border:"none",cursor:"pointer",display:"flex",padding:2}}>{Ic.cross(C.t3,14)}</button>}
-        <button onClick={()=>setView(v=>v==="kanban"?"mapa":v==="mapa"?"tabla":"kanban")} style={{marginLeft:"auto",padding:"5px 12px",borderRadius:8,border:`1.5px solid ${C.pri}`,background:C.priPale,color:C.pri,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:5,whiteSpace:"nowrap"}}>
-          {view==="kanban"?Ic.pin(C.pri,13):view==="mapa"?Ic.doc(C.pri,13):Ic.home(C.pri,13)}
-          {view==="kanban"?"Mapa":view==="mapa"?"Tabla":"Etiquetas"}
-        </button>
+        {[{k:"today",l:"Hoy"},{k:"week",l:"Semana"},{k:"month",l:"Mes"}].map(p=>(
+          <button key={p.k} onClick={()=>applyDatePreset(p.k)} style={{padding:"5px 10px",borderRadius:6,border:`1px solid ${datePreset===p.k?C.pri:C.b1}`,background:datePreset===p.k?C.priPale:C.w,color:datePreset===p.k?C.pri:C.t2,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>{p.l}</button>
+        ))}
+        {hasFilters && <button onClick={clearAll} style={{marginLeft:"auto",padding:"5px 10px",borderRadius:6,border:`1px solid ${C.err}40`,background:C.errPale,color:C.err,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>Limpiar</button>}
       </div>
-      {/* Entity filters */}
-      <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:12, flexWrap:"wrap" }}>
+      {/* Search + entity filters — line 2 */}
+      <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:12 }}>
+        <div style={{ position:"relative", minWidth:140, flex:"0 1 200px" }}>
+          <div style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",display:"flex"}}>{Ic.srch(C.t3,14)}</div>
+          <input value={searchQ} onChange={e=>setSearchQ(e.target.value)} placeholder="Buscar..."
+            style={{width:"100%",padding:"6px 12px 6px 30px",borderRadius:8,border:`1.5px solid ${C.b1}`,background:C.w,color:C.t1,fontSize:11,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}/>
+          {searchQ && <button onClick={()=>setSearchQ("")} style={{position:"absolute",right:6,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",display:"flex"}}>{Ic.cross(C.t3,12)}</button>}
+        </div>
         <select value={fPlant} onChange={e=>setFPlant(e.target.value)} style={{padding:"6px 8px",borderRadius:8,border:`1.5px solid ${fPlant?C.pri:C.b1}`,background:fPlant?C.priPale:C.w,color:fPlant?C.pri:C.t3,fontSize:11,fontFamily:"inherit",outline:"none",cursor:"pointer"}}>
           <option value="">Planta</option>
           {plantOptions.map(p=><option key={p} value={p}>{p}</option>)}
@@ -694,27 +693,30 @@ function ListScreen({ freights, onNav, onRefresh, catalog, view, setView, goToMa
           <option value="">Transportista</option>
           {transporterOptions.map(p=><option key={p} value={p}>{p}</option>)}
         </select>
-        {hasFilters && <button onClick={clearAll} style={{marginLeft:"auto",padding:"5px 10px",borderRadius:6,border:`1px solid ${C.err}40`,background:C.errPale,color:C.err,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>Limpiar</button>}
+        <button onClick={()=>setView(v=>v==="kanban"?"mapa":v==="mapa"?"tabla":"kanban")} style={{marginLeft:"auto",padding:"5px 12px",borderRadius:8,border:`1.5px solid ${C.pri}`,background:C.priPale,color:C.pri,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:5,whiteSpace:"nowrap"}}>
+          {view==="kanban"?Ic.pin(C.pri,13):view==="mapa"?Ic.doc(C.pri,13):Ic.home(C.pri,13)}
+          {view==="kanban"?"Cambiar a mapa":view==="mapa"?"Cambiar a tabla":"Cambiar a etiquetas"}
+        </button>
       </div>
 
-      {/* View: Kanban (stacked) */}
+      {/* View: Kanban */}
       {view==="kanban" && (
-      <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
+      <div style={{ display:"flex", gap:12, overflowX:"auto", alignItems:"flex-start", paddingBottom:8 }}>
         {GROUPS.map(group => {
           const items = grouped[group.key];
-          if(items.length===0) return null;
           return (
-            <div key={group.key}>
-              <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8, padding:"6px 0", borderBottom:`2px solid ${group.color}` }}>
-                <span style={{ display:"flex", flexShrink:0 }}>{group.icon(group.color, 15)}</span>
-                <span style={{ fontSize:12, fontWeight:700, color:group.color }}>{group.label}</span>
-                <span style={{ fontSize:11, fontWeight:600, color:C.t3 }}>({items.length})</span>
+            <div key={group.key} style={{ minWidth:220, flex:"1 1 0", background:C.bg, borderRadius:12, border:`1px solid ${C.b1}`, overflow:"hidden" }}>
+              <div style={{ padding:"10px 12px", borderBottom:`2px solid ${group.color}`, display:"flex", alignItems:"center", gap:6 }}>
+                <span style={{ display:"flex", flexShrink:0 }}>{group.icon(group.color, 14)}</span>
+                <span style={{ fontSize:11, fontWeight:700, color:group.color }}>{group.label}</span>
+                <span style={{ fontSize:10, fontWeight:600, color:C.t3, marginLeft:"auto" }}>{items.length}</span>
               </div>
-              <div style={{ display:"flex", flexWrap:"wrap", gap:10 }}>
+              <div style={{ padding:8, display:"flex", flexDirection:"column", gap:8, maxHeight:"calc(100vh - 180px)", overflowY:"auto" }}>
+                {items.length===0 && <div style={{ fontSize:11, color:C.t3, textAlign:"center", padding:16 }}>Sin fletes</div>}
                 {items.map(f => {
                   const st = stCfg(f.status);
                   return (
-                  <div key={f.id} onClick={()=>onNav("detail",f.id)} style={{ background:C.w, border:`1px solid ${C.b1}`, borderLeft:`4px solid ${st.color}`, borderRadius:12, padding:14, cursor:"pointer", boxShadow:C.sh, transition:"background 0.15s", flex:"1 1 280px", maxWidth:420, minWidth:240 }}>
+                  <div key={f.id} onClick={()=>onNav("detail",f.id)} style={{ background:C.w, border:`1px solid ${C.b1}`, borderLeft:`4px solid ${st.color}`, borderRadius:12, padding:14, cursor:"pointer", boxShadow:C.sh, transition:"background 0.15s" }}>
                     <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
                       <div style={{ display:"flex", alignItems:"center", gap:8 }}>
                         <span style={{ fontSize:11, fontWeight:700, fontFamily:MONO, color:C.t2 }}>{f.code}</span>
@@ -2967,7 +2969,7 @@ function CalendarScreen({ freights, perms, onNav, isDesktop, user, onAction, act
   const [calSelDay, setCalSelDay] = useState(null);
   const [calSelMonth, setCalSelMonth] = useState(null);
   const [fStatus, setFStatus] = useState("");
-  const monthsToShow = 1;
+  const [monthsToShow, setMonthsToShow] = useState(1);
 
   const STATUS_GROUPS_CAL = { solicitado:["pending_assignment"], en_curso:["assigned","accepted","in_progress","loaded"], finalizados:["finished"], cancelados:["canceled"] };
   const filtered = useMemo(()=>{
@@ -3058,16 +3060,19 @@ function CalendarScreen({ freights, perms, onNav, isDesktop, user, onAction, act
         <div style={{fontSize:11,color:C.t2}}>{totalInMonth} flete{totalInMonth!==1?"s":""}</div>
       </div>
 
-      {/* Status filter + Navigation */}
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10,gap:8}}>
+      {/* Status filter */}
+      <div style={{ display:"flex", gap:5, marginBottom:14, flexWrap:"wrap" }}>
+        {[{k:"",l:"Todos"},{k:"solicitado",l:"Solicitado"},{k:"en_curso",l:"En curso"},{k:"finalizados",l:"Finalizados"},{k:"cancelados",l:"Cancelados"}].map(opt=>(
+          <button key={opt.k} onClick={()=>setFStatus(opt.k)} style={{ padding:"4px 10px", borderRadius:20, border:`1.5px solid ${fStatus===opt.k?C.pri:C.b1}`, background:fStatus===opt.k?C.priPale:C.w, color:fStatus===opt.k?C.pri:C.t2, fontSize:10, fontWeight:600, cursor:"pointer", fontFamily:"inherit", transition:"all 0.15s" }}>{opt.l}</button>
+        ))}
+      </div>
+
+      {/* Navigation + months toggle */}
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
         <button onClick={()=>{setCalMonth(p=>p.m===0?{y:p.y-1,m:11}:{y:p.y,m:p.m-1});setCalSelDay(null);setCalSelMonth(null);}} style={{background:C.priPale,border:`1px solid ${C.pri}20`,borderRadius:8,cursor:"pointer",padding:"6px 10px",display:"flex",alignItems:"center",gap:4,fontSize:11,fontWeight:600,color:C.pri,fontFamily:"inherit"}}>{Ic.chev(C.pri,16)} Anterior</button>
-        <select value={fStatus} onChange={e=>setFStatus(e.target.value)} style={{padding:"6px 10px",borderRadius:8,border:`1.5px solid ${fStatus?C.pri:C.b1}`,background:fStatus?C.priPale:C.w,color:fStatus?C.pri:C.t2,fontSize:11,fontFamily:"inherit",cursor:"pointer",outline:"none"}}>
-          <option value="">Todos los estados</option>
-          <option value="solicitado">Solicitado</option>
-          <option value="en_curso">En curso</option>
-          <option value="finalizados">Finalizados</option>
-          <option value="cancelados">Cancelados</option>
-        </select>
+        <div style={{display:"flex",gap:4}}>
+          {[1,3,6].map(n=><button key={n} onClick={()=>setMonthsToShow(n)} style={{padding:"5px 10px",borderRadius:6,border:`1px solid ${monthsToShow===n?C.pri:C.b1}`,background:monthsToShow===n?C.priPale:C.w,color:monthsToShow===n?C.pri:C.t2,fontSize:10,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>{n} mes{n>1?"es":""}</button>)}
+        </div>
         <button onClick={()=>{setCalMonth(p=>p.m===11?{y:p.y+1,m:0}:{y:p.y,m:p.m+1});setCalSelDay(null);setCalSelMonth(null);}} style={{background:C.priPale,border:`1px solid ${C.pri}20`,borderRadius:8,cursor:"pointer",padding:"6px 10px",display:"flex",alignItems:"center",gap:4,fontSize:11,fontWeight:600,color:C.pri,fontFamily:"inherit"}}>Siguiente <span style={{display:"inline-flex",transform:"rotate(180deg)"}}>{Ic.chev(C.pri,16)}</span></button>
       </div>
 
@@ -3257,15 +3262,11 @@ function ReportsScreen({ onBack, freights, isDesktop, embedded }) {
         {searchQ && <button onClick={()=>setSearchQ("")} style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",display:"flex"}}>{Ic.cross(C.t3,16)}</button>}
       </div>
 
-      {/* Status filter + date + export */}
+      {/* Status filter pills + export buttons */}
       <div style={{ display:"flex", gap:6, marginBottom:12, flexWrap:"wrap", alignItems:"center" }}>
-        <select value={filterStatus} onChange={e=>setFilterStatus(e.target.value)} style={{padding:"6px 10px",borderRadius:8,border:`1.5px solid ${filterStatus!=="all"?C.pri:C.b1}`,background:filterStatus!=="all"?C.priPale:C.w,color:filterStatus!=="all"?C.pri:C.t2,fontSize:11,fontFamily:"inherit",cursor:"pointer",outline:"none"}}>
-          <option value="all">Todos los estados</option>
-          <option value="solicitado">Solicitado</option>
-          <option value="en_curso">En curso</option>
-          <option value="finalizados">Finalizados</option>
-          <option value="cancelados">Cancelados</option>
-        </select>
+        {[{k:"all",l:"Todos"},{k:"solicitado",l:"Solicitado"},{k:"en_curso",l:"En curso"},{k:"finalizados",l:"Finalizados"},{k:"cancelados",l:"Cancelados"}].map(opt=>(
+          <button key={opt.k} onClick={()=>setFilterStatus(opt.k)} style={{ padding:"6px 14px", borderRadius:20, border:`1.5px solid ${filterStatus===opt.k?C.pri:C.b1}`, background:filterStatus===opt.k?C.priPale:C.w, color:filterStatus===opt.k?C.pri:C.t2, fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>{opt.l}</button>
+        ))}
         <span style={{fontSize:10,color:C.t2,fontWeight:600,marginLeft:4}}>Desde</span>
         <input type="date" value={dateFrom} onChange={e=>setDateFrom(e.target.value)} onClick={e=>e.target.showPicker?.()} style={{padding:"5px 8px",borderRadius:6,border:`1px solid ${C.b1}`,background:C.w,color:dateFrom?C.t1:C.t3,fontSize:11,fontFamily:"inherit",outline:"none",boxSizing:"border-box",cursor:"pointer"}}/>
         <span style={{fontSize:10,color:C.t2,fontWeight:600}}>Hasta</span>
@@ -3457,17 +3458,11 @@ function MyDataScreen({ user, onBack }) {
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState(null);
   const [doneMsg, setDoneMsg] = useState("");
-  const [expandedCo, setExpandedCo] = useState(null);
   const show = (t,k="ok") => { setMsg({t,k}); setTimeout(()=>setMsg(null),3000); };
   const handleSave = async () => {
     if(!form.name.trim()||!form.email.trim()) return show("Nombre y email obligatorios","err");
     setSaving(true);
     try { await apiUpdateMe(form); setSaving(false); setDoneMsg("Datos actualizados"); } catch(e) { show(e.message,"err"); setSaving(false); }
-  };
-  const companies = (user.companies && user.companies.length > 0) ? user.companies : (user.companyId ? [{ companyId:user.companyId, companyName:user.entity||user.company?.name||"", companyType:user.userType||user.company?.type||"", role:user.role==="admin"?"gerente":"operario" }] : []);
-  const permsByRole = (role) => {
-    if(role==="gerente"||role==="admin") return ["Solicitar fletes","Aprobar fletes","Asignar choferes","Cancelar fletes","Ver informes","Administrar empresa"];
-    return ["Ver fletes asignados","Confirmar carga","Confirmar descarga"];
   };
   return (
     <div style={{flex:1,overflow:"auto"}}>
@@ -3476,57 +3471,20 @@ function MyDataScreen({ user, onBack }) {
       <div style={{padding:"0 18px 18px"}}>
       <div style={{fontSize:18,fontWeight:800,color:C.t1,marginBottom:4}}>Mis datos</div>
       <div style={{fontSize:11,color:C.t3,marginBottom:14}}>Editá tu información personal</div>
-      <div style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius:10,padding:14,boxShadow:C.sh,marginBottom:16}}>
+      <div style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius:10,padding:14,boxShadow:C.sh}}>
         <div style={s.lbl}>Nombre:</div>
         <input value={form.name} onChange={e=>setForm(p=>({...p,name:e.target.value}))} placeholder="Nombre completo" style={{...s.inp,marginBottom:10}} />
         <div style={s.lbl}>Email:</div>
         <input value={form.email} onChange={e=>setForm(p=>({...p,email:e.target.value}))} placeholder="Email" type="email" style={{...s.inp,marginBottom:10}} />
         <div style={s.lbl}>Teléfono:</div>
         <input value={form.phone} onChange={e=>setForm(p=>({...p,phone:e.target.value}))} placeholder="Teléfono" style={{...s.inp,marginBottom:10}} />
+        <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:10,paddingTop:8,borderTop:`1px solid ${C.b2}`}}>
+          <Bd color={C.t2}>{roleLabels[user.role]||user.role}</Bd>
+          {(user.userTypes||[]).map(t=><Bd key={t} color={typeColors[t]}>{typeLabels[t]}</Bd>)}
+          {user.company&&<Bd color={typeColors[user.company?.type]||C.t2}>{user.company?.name||user.entity}</Bd>}
+        </div>
         <button onClick={handleSave} disabled={saving} style={s.btnP(C.pri,saving)}>{saving?"Guardando...":"Guardar cambios"}</button>
       </div>
-
-      {companies.length>0 && <>
-      <div style={{fontSize:15,fontWeight:700,color:C.t1,marginBottom:8}}>Mis empresas</div>
-      <div style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius:10,overflow:"hidden",boxShadow:C.sh}}>
-        <table style={{width:"100%",borderCollapse:"collapse",fontSize:12,fontFamily:"inherit"}}>
-          <thead>
-            <tr style={{background:C.bg,borderBottom:`2px solid ${C.b1}`}}>
-              <th style={{padding:"9px 12px",textAlign:"left",fontSize:10,fontWeight:700,color:C.t2,textTransform:"uppercase",letterSpacing:0.5}}>Empresa</th>
-              <th style={{padding:"9px 12px",textAlign:"left",fontSize:10,fontWeight:700,color:C.t2,textTransform:"uppercase",letterSpacing:0.5}}>Tipo empresa</th>
-              <th style={{padding:"9px 12px",textAlign:"left",fontSize:10,fontWeight:700,color:C.t2,textTransform:"uppercase",letterSpacing:0.5}}>Rol</th>
-            </tr>
-          </thead>
-          <tbody>
-            {companies.map((c,i)=>{
-              const isExp = expandedCo===c.companyId;
-              const isActive = c.companyId===user.activeCompanyId;
-              const tColor = typeColors[c.companyType]||C.t2;
-              const rLabel = c.role==="gerente"||c.role==="admin"?"Gerente":"Operario";
-              return (<Fragment key={c.companyId||i}>
-                <tr onClick={()=>setExpandedCo(isExp?null:c.companyId)} style={{cursor:"pointer",borderTop:i>0?`1px solid ${C.b2}`:"none",background:isExp?`${C.pri}06`:"transparent",transition:"background 0.15s"}}>
-                  <td style={{padding:"10px 12px",fontWeight:600,color:C.t1}}>
-                    <div style={{display:"flex",alignItems:"center",gap:6}}>
-                      {c.companyName||user.entity}
-                      {isActive && <span style={{fontSize:8,background:C.pri,color:C.w,borderRadius:4,padding:"1px 5px",fontWeight:700}}>Activa</span>}
-                    </div>
-                  </td>
-                  <td style={{padding:"10px 12px"}}><Bd color={tColor}>{typeLabels[c.companyType]||c.companyType}</Bd></td>
-                  <td style={{padding:"10px 12px"}}><Bd color={C.t2} bg={C.bgInput}>{rLabel}</Bd></td>
-                </tr>
-                {isExp && <tr><td colSpan={3} style={{padding:"8px 12px 12px",background:`${C.pri}04`,borderTop:`1px dashed ${C.b2}`}}>
-                  <div style={{fontSize:10,fontWeight:700,color:C.t3,textTransform:"uppercase",marginBottom:6}}>Permisos</div>
-                  <div style={{display:"flex",flexWrap:"wrap",gap:4}}>
-                    {permsByRole(c.role).map((p,j)=><div key={j} style={{display:"flex",alignItems:"center",gap:4,fontSize:11,color:C.t1,padding:"3px 8px",background:C.w,borderRadius:6,border:`1px solid ${C.b2}`}}>{Ic.chk(C.pri,11)} {p}</div>)}
-                  </div>
-                </td></tr>}
-              </Fragment>);
-            })}
-          </tbody>
-        </table>
-      </div>
-      </>}
-
       {msg&&<div style={{padding:"8px 12px",borderRadius:8,background:msg.k==="ok"?C.okPale:`${C.err}15`,color:msg.k==="ok"?C.ok:C.err,fontSize:12,marginTop:10}}>{msg.t}</div>}
       </div>
     </div>
@@ -4241,41 +4199,6 @@ function AdminScreen({ user, onBack }) {
   );
 }
 
-// ======================== COMPANY HEADER PICKER ========================
-const TYPE_LABELS_H = {plant:"Planta",transporter:"Transportista",producer:"Productor"};
-const TYPE_COLORS_H = {plant:C.pri,transporter:C.info||C.sec,producer:C.acc};
-function CompanyHeaderPicker({ user, onSwitch }) {
-  const [open, setOpen] = useState(false);
-  const companies = (user.companies && user.companies.length > 0) ? user.companies : (user.companyId ? [{ companyId:user.companyId, companyName:user.entity||"", companyType:user.userType||"", role:user.role }] : []);
-  const active = companies.find(c=>c.companyId===user.activeCompanyId) || companies[0];
-  const activeName = active?.companyName || user.entity || "";
-  const tColor = TYPE_COLORS_H[active?.companyType] || C.t2;
-  if(!activeName) return null;
-  return (
-    <div style={{position:"relative",flex:1,minWidth:0,marginLeft:10,marginRight:10}}>
-      <button onClick={()=>companies.length>1&&setOpen(!open)} style={{background:"none",border:`1px solid ${C.b2}`,borderRadius:8,padding:"4px 10px",cursor:companies.length>1?"pointer":"default",display:"flex",alignItems:"center",gap:5,maxWidth:"100%",fontFamily:"inherit"}}>
-        <span style={{width:6,height:6,borderRadius:3,background:tColor,flexShrink:0}}/>
-        <span style={{fontSize:11,fontWeight:600,color:C.t1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{activeName}</span>
-        {companies.length>1 && <span style={{fontSize:9,color:C.t3,flexShrink:0}}>▼</span>}
-      </button>
-      {open && companies.length>1 && <>
-        <div onClick={()=>setOpen(false)} style={{position:"fixed",inset:0,zIndex:99}}/>
-        <div style={{position:"absolute",top:"100%",left:0,marginTop:4,background:C.w,border:`1px solid ${C.b1}`,borderRadius:10,boxShadow:C.shMd,padding:4,zIndex:100,minWidth:180,maxWidth:280}}>
-          {companies.map(c=>{
-            const isAct = c.companyId===user.activeCompanyId;
-            return <button key={c.companyId} onClick={()=>{setOpen(false);if(!isAct)onSwitch(c.companyId);}} style={{display:"flex",alignItems:"center",gap:6,width:"100%",padding:"8px 10px",background:isAct?`${C.pri}08`:"transparent",border:"none",borderRadius:8,cursor:isAct?"default":"pointer",fontFamily:"inherit",textAlign:"left"}}>
-              <span style={{width:6,height:6,borderRadius:3,background:TYPE_COLORS_H[c.companyType]||C.t2,flexShrink:0}}/>
-              <span style={{fontSize:11,fontWeight:isAct?700:500,color:C.t1,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.companyName}</span>
-              <span style={{fontSize:9,color:C.t3}}>{TYPE_LABELS_H[c.companyType]||""}</span>
-              {isAct && <span style={{fontSize:8,color:C.pri,fontWeight:700}}>✓</span>}
-            </button>;
-          })}
-        </div>
-      </>}
-    </div>
-  );
-}
-
 // ======================== MAIN APP ====================================
 export default function Tolvink() {
 
@@ -4534,7 +4457,6 @@ export default function Tolvink() {
             <span style={{fontSize:30,fontWeight:800,color:C.pri,letterSpacing:-0.9,lineHeight:1}}>tolvink</span>
             <span style={{width:8,height:8,borderRadius:4,background:C.acc,display:"inline-block",marginLeft:3,marginTop:1,animation:"dotPulse 1.5s ease-in-out infinite"}}></span>
           </div>
-          <CompanyHeaderPicker user={auth.user} onSwitch={async(id)=>{const r=await auth.switchCompany(id);if(r.ok){fh.fetchAll();catalog.refresh();}}} />
           <div style={{position:"relative"}}>
             <NotifBell count={notif.unreadCount} onClick={()=>setNotifOpen(!notifOpen)} />
             <NotificationsPanel open={notifOpen} onClose={()=>setNotifOpen(false)} notifications={notif.notifications} onMarkRead={notif.markRead} onMarkAllRead={notif.markAllRead} onTap={handleNotifTap} />
