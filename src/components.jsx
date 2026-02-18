@@ -504,7 +504,7 @@ export function FileViewer({ file, onClose }) {
         <div style={{ color:"#fff", fontSize:13, fontWeight:600, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", flex:1, marginRight:12 }}>{file.name||"Archivo"}</div>
         <div style={{ display:"flex", gap:8 }}>
           <a href={file.url} download style={{ display:"flex", alignItems:"center", gap:4, padding:"6px 12px", borderRadius:8, background:"rgba(255,255,255,0.15)", color:"#fff", textDecoration:"none", fontSize:12, fontWeight:600 }} onClick={e=>e.stopPropagation()}>{Ic.down("#fff",14)} Descargar</a>
-          <button onClick={onClose} style={{ display:"flex", alignItems:"center", justifyContent:"center", width:36, height:36, borderRadius:8, background:"rgba(255,255,255,0.15)", border:"none", cursor:"pointer" }}>{Ic.cross("#fff",20)}</button>
+          <button onClick={onClose} style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:5, padding:"6px 14px", borderRadius:8, background:"rgba(255,255,255,0.25)", border:"1px solid rgba(255,255,255,0.3)", cursor:"pointer", color:"#fff", fontSize:12, fontWeight:600, fontFamily:"inherit" }}>{Ic.cross("#fff",16)} Cerrar</button>
         </div>
       </div>
       <div onClick={e=>e.stopPropagation()} style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", overflow:"auto", padding:16 }}>
