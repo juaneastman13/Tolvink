@@ -1,5 +1,6 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
+import { BrowserRouter } from "react-router-dom";
 import Tolvink from "./App";
 import { captureError } from "./sentry";
 
@@ -37,6 +38,8 @@ if ('serviceWorker' in navigator) {
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <ErrorBoundary>
-    <Tolvink />
+    <BrowserRouter>
+      <Tolvink />
+    </BrowserRouter>
   </ErrorBoundary>
 );

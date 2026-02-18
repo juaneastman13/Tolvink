@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useNavigate, useLocation, Routes, Route } from "react-router-dom";
 import {
   apiGetAuditLog,
   apiGetTrucks, apiCreateTruck, apiDeactivateTruck,
@@ -22,6 +23,18 @@ import { useAuth, useCatalog, useFreights, permsFor, useIsDesktop, useTableSort,
 import { SafeZone, LocationPicker, FreightMap, FreightsOverviewMap, MapOverlay } from "./maps";
 import { PhotoUpload, DocsGallery, FreightFileUpload } from "./uploads";
 import { RoutesBackground } from "./routes-bg";
+import { useUIStore, offlineQueue } from "./store";
+
+// ======================== ROUTE MAP ===================================
+// Bidirectional mapping between screen names and URL paths
+const SCREEN_TO_PATH = {
+  home: "/", list: "/list", detail: "/freight", new: "/new", edit: "/edit",
+  calendar: "/calendar", menu: "/menu", trucks: "/trucks", fields: "/fields",
+  admin: "/admin", mydata: "/mydata", reports: "/reports", chats: "/chats",
+  notifs: "/notifications",
+};
+const PATH_TO_SCREEN = {};
+Object.entries(SCREEN_TO_PATH).forEach(([s, p]) => { PATH_TO_SCREEN[p] = s; });
 
 
 // ======================== LANDING PAGE ================================
@@ -4194,24 +4207,41 @@ export default function Tolvink() {
   const catalog = useCatalog(auth.user);
   const online = useOnline();
   const notif = useNotifications(auth.user);
-  const [screen, setScreen] = useState("home");
-  const [selFreight, setSelFreight] = useState(null);
-  const [modal, setModal] = useState(null);
-  const [toast, setToast] = useState(null);
-  const [submitting, setSubmitting] = useState(false);
-  const [submitDone, setSubmitDone] = useState("");
-  const [chatConvId, setChatConvId] = useState(null);
-  const [duplicateData, setDuplicateData] = useState(null);
-  const [editData, setEditData] = useState(null);
-  const [unreadChats, setUnreadChats] = useState(0);
   const isDesktop = useIsDesktop(768);
-  const [listView, setListView] = useState("kanban");
-  const [mapFocus, setMapFocus] = useState(null);
 
-  // 4. Redirect to home when user logs in
+  // Zustand UI store — replaces local useState for UI state
+  const ui = useUIStore();
+  const { modal, toast, mapFocus, listView, submitting, submitDone, actionLoading, notifOpen, chatConvId, duplicateData, editData } = ui;
+
+  // React Router — URL-based navigation
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  // Derive screen from current URL path
+  const screen = useMemo(() => {
+    const p = location.pathname;
+    if (p.startsWith("/freight/")) return "detail";
+    if (p.startsWith("/edit/")) return "edit";
+    if (p.startsWith("/chats/")) return "chats";
+    return PATH_TO_SCREEN[p] || "home";
+  }, [location.pathname]);
+
+  // Extract freight ID from URL params
+  const [selFreight, setSelFreight] = useState(null);
+  useEffect(() => {
+    const p = location.pathname;
+    if (p.startsWith("/freight/")) {
+      const id = p.replace("/freight/", "");
+      if (id && id !== selFreight) { setSelFreight(id); fh.refresh(id); }
+    }
+  }, [location.pathname]);
+
+  const [unreadChats, setUnreadChats] = useState(0);
+
+  // Redirect to home when user logs in
   const prevUser = useRef(null);
   useEffect(()=>{
-    if(auth.user && !prevUser.current) { setScreen("home"); }
+    if(auth.user && !prevUser.current) { navigate("/", { replace: true }); }
     prevUser.current = auth.user;
   },[auth.user]);
 
@@ -4236,28 +4266,63 @@ export default function Tolvink() {
     return ()=>clearInterval(iv);
   },[auth.user]);
 
+  // Replay offline queue when back online
+  useEffect(() => {
+    if (!online || !auth.user) return;
+    (async () => {
+      const items = await offlineQueue.getAll();
+      for (const item of items) {
+        try {
+          if (item.type === "create") await fh.create(item.payload);
+          else if (item.type === "cancel") await fh.cancel(item.payload.id, item.payload.reason);
+          else if (item.type === "update") await fh.update(item.payload.id, item.payload.data);
+          await offlineQueue.remove(item.id);
+          console.log("[OfflineQueue] Replayed:", item.type);
+        } catch (e) {
+          console.error("[OfflineQueue] Replay failed:", item.type, e);
+          break; // Stop on first failure
+        }
+      }
+    })();
+  }, [online, auth.user]);
+
   const perms = useMemo(()=>permsFor(auth.user),[auth.user]);
   const _resolveType = useCallback((f) => resolveUserTypeForFreight(f, auth.user), [auth.user]);
-  const goToMap = (lat, lng, label, destLat, destLng, destLabel) => { if(!lat||!lng) return; setMapFocus({lat:Number(lat),lng:Number(lng),label:label||"",destLat:destLat?Number(destLat):null,destLng:destLng?Number(destLng):null,destLabel:destLabel||""}); };
-  const show = (msg,type="ok")=>setToast({msg,type});
-  const nav = (s,fId)=>{ track("screen_view",{screen:s}); if(s==="new_date"&&fId){if(!perms.canRequest){show("Sin permisos para solicitar","err");return;} setDuplicateData({preDate:fId});setScreen("new");return;} if(fId){ setSelFreight(fId); if(s==="detail") fh.refresh(fId); } if(s==="new"&&!perms.canRequest){show("Sin permisos para solicitar","err");return;} setScreen(s); };
+  const goToMap = ui.goToMap;
+  const show = ui.show;
 
-  const [actionLoading, setActionLoading] = useState(false);
-  const [notifOpen, setNotifOpen] = useState(false);
-  const handleNotifTap = (freightId) => { setSelFreight(freightId); fh.refresh(freightId); setScreen("detail"); };
+  // Navigation — updates URL + triggers side effects
+  const nav = (s, fId) => {
+    track("screen_view", { screen: s });
+    if (s === "new_date" && fId) {
+      if (!perms.canRequest) { show("Sin permisos para solicitar", "err"); return; }
+      ui.setDuplicateData({ preDate: fId });
+      navigate("/new");
+      return;
+    }
+    if (fId) {
+      setSelFreight(fId);
+      if (s === "detail") { fh.refresh(fId); navigate(`/freight/${fId}`); return; }
+    }
+    if (s === "new" && !perms.canRequest) { show("Sin permisos para solicitar", "err"); return; }
+    const path = SCREEN_TO_PATH[s] || "/";
+    navigate(path);
+  };
+
+  const handleNotifTap = (freightId) => { setSelFreight(freightId); fh.refresh(freightId); navigate(`/freight/${freightId}`); };
 
   const handleAction = (fId,action)=>{
     if(actionLoading) return;
     const f = fh.freights.find(x=>x.id===fId);
     if(!f) return;
-    if(action==="assign") { setModal({type:"assign",freight:f}); }
-    else if(action==="cancel") { setModal({type:"reason",freight:f,title:"Cancelar flete",btnLabel:"Cancelar flete",action:"cancel"}); }
-    else if(action==="reject") { setModal({type:"reason",freight:f,title:"Rechazar asignación",btnLabel:"Rechazar",action:"reject"}); }
-    else if(action==="accept") { setModal({type:"truck_select",freight:f}); }
-    else if(action==="start") { setModal({type:"confirm_action",freight:f,title:"Iniciar viaje",btnLabel:"Iniciar viaje",btnVariant:"acc",icon:Ic.truck(C.acc,24),action:"start"}); }
-    else if(action==="authorize") { setModal({type:"confirm_action",freight:f,title:"Autorizar viaje",btnLabel:"Autorizar",icon:Ic.chk(C.pri,24),action:"authorize"}); }
-    else if(action==="confirm_loaded") { setModal({type:"confirm_action",freight:f,title:"Confirmar carga",btnLabel:"Confirmar carga",btnVariant:"acc",icon:Ic.chk(C.acc,24),action:"confirm_loaded"}); }
-    else if(action==="confirm_finished") { setModal({type:"confirm_action",freight:f,title:"Confirmar entrega",btnLabel:"Confirmar entrega",icon:Ic.chk(C.pri,24),action:"confirm_finished"}); }
+    if(action==="assign") { ui.setModal({type:"assign",freight:f}); }
+    else if(action==="cancel") { ui.setModal({type:"reason",freight:f,title:"Cancelar flete",btnLabel:"Cancelar flete",action:"cancel"}); }
+    else if(action==="reject") { ui.setModal({type:"reason",freight:f,title:"Rechazar asignación",btnLabel:"Rechazar",action:"reject"}); }
+    else if(action==="accept") { ui.setModal({type:"truck_select",freight:f}); }
+    else if(action==="start") { ui.setModal({type:"confirm_action",freight:f,title:"Iniciar viaje",btnLabel:"Iniciar viaje",btnVariant:"acc",icon:Ic.truck(C.acc,24),action:"start"}); }
+    else if(action==="authorize") { ui.setModal({type:"confirm_action",freight:f,title:"Autorizar viaje",btnLabel:"Autorizar",icon:Ic.chk(C.pri,24),action:"authorize"}); }
+    else if(action==="confirm_loaded") { ui.setModal({type:"confirm_action",freight:f,title:"Confirmar carga",btnLabel:"Confirmar carga",btnVariant:"acc",icon:Ic.chk(C.acc,24),action:"confirm_loaded"}); }
+    else if(action==="confirm_finished") { ui.setModal({type:"confirm_action",freight:f,title:"Confirmar entrega",btnLabel:"Confirmar entrega",icon:Ic.chk(C.pri,24),action:"confirm_finished"}); }
   };
 
   const handleAcceptWithTruck = async (fId, truckId)=>{
@@ -4291,10 +4356,18 @@ export default function Tolvink() {
   };
 
   const handleCreate = async (form)=>{
-    setSubmitting(true);
+    ui.setSubmitting(true);
+
+    // If offline, queue the write for later
+    if (!navigator.onLine) {
+      await offlineQueue.enqueue({ type: "create", payload: form });
+      ui.setSubmitting(false);
+      ui.setSubmitDone("Flete guardado — se enviará cuando vuelvas a estar en línea");
+      return;
+    }
+
     const r = await fh.create(form);
     if(r.ok && r.freightId && form.photos?.length > 0) {
-      // Upload photos to storage and register as documents
       for(const photoUrl of form.photos) {
         try {
           const blob = await fetch(photoUrl).then(r=>r.blob());
@@ -4304,8 +4377,8 @@ export default function Tolvink() {
         } catch(e) { console.error('Photo upload failed:', e); }
       }
     }
-    setSubmitting(false);
-    if(r.ok){ track("freight_create"); setSubmitDone("Flete solicitado"); } else show(r.error,"err");
+    ui.setSubmitting(false);
+    if(r.ok){ track("freight_create"); ui.setSubmitDone("Flete solicitado"); } else show(r.error,"err");
   };
 
   // Show loading splash only during initial auth check
@@ -4349,8 +4422,8 @@ export default function Tolvink() {
             <span style={{width:8,height:8,borderRadius:4,background:C.acc,display:"inline-block",marginLeft:3,marginTop:1,animation:"dotPulse 1.5s ease-in-out infinite"}}></span>
           </div>
           <div style={{position:"relative"}}>
-            <NotifBell count={notif.unreadCount} onClick={()=>setNotifOpen(!notifOpen)} />
-            <NotificationsPanel open={notifOpen} onClose={()=>setNotifOpen(false)} notifications={notif.notifications} onMarkRead={notif.markRead} onMarkAllRead={notif.markAllRead} onTap={handleNotifTap} />
+            <NotifBell count={notif.unreadCount} onClick={()=>ui.setNotifOpen(!notifOpen)} />
+            <NotificationsPanel open={notifOpen} onClose={()=>ui.setNotifOpen(false)} notifications={notif.notifications} onMarkRead={notif.markRead} onMarkAllRead={notif.markAllRead} onTap={handleNotifTap} />
           </div>
         </div>
 
@@ -4360,19 +4433,19 @@ export default function Tolvink() {
         {/* Scrollable content area */}
         <div style={{flex:1,overflow:(screen==="chats"||screen==="calendar")&&isDesktop?"hidden":"auto",display:"flex",flexDirection:"column",WebkitOverflowScrolling:"touch",overscrollBehavior:"contain"}}>
         <div key={screen} className="tv-page" style={{flex:1,display:"flex",flexDirection:"column",minHeight:0}}>
-        {screen==="home" && <HomeScreen user={auth.user} freights={fh.freights} perms={perms} onNav={nav} catalog={catalog} isDesktop={isDesktop} onAction={handleAction} actionLoading={actionLoading} onChat={(convId)=>{if(convId){setChatConvId(convId);setScreen("chats");}}} onRefresh={(id)=>fh.refresh(id)} onDuplicate={(f)=>{setDuplicateData(f);setScreen("new");}} onEdit={(f)=>{setEditData(f);setScreen("edit");}} goToMap={goToMap}/>}
-        {screen==="list" && <ListScreen freights={fh.freights} onNav={nav} onRefresh={fh.fetchAll} catalog={catalog} view={listView} setView={setListView} goToMap={goToMap} hasMore={fh.hasMore} loadMore={fh.loadMore} loadingMore={fh.loadingMore} total={fh.total}/>}
-        {screen==="calendar" && <CalendarScreen freights={fh.freights} perms={perms} onNav={nav} isDesktop={isDesktop} user={auth.user} onAction={handleAction} actionLoading={actionLoading} onChat={(convId)=>{if(convId){setChatConvId(convId);setScreen("chats");}}} onRefresh={(id)=>fh.refresh(id)} onDuplicate={(f)=>{setDuplicateData(f);setScreen("new");}} onEdit={(f)=>{setEditData(f);setScreen("edit");}} goToMap={goToMap}/>}
-        {screen==="detail" && <DetailScreen user={curFreight ? {...auth.user, userType: _resolveType(curFreight)} : auth.user} freight={curFreight} perms={perms} onBack={()=>setScreen("list")} onAction={handleAction} actionLoading={actionLoading} onChat={(convId)=>{if(convId){setChatConvId(convId);setScreen("chats");}}} onRefresh={(id)=>fh.refresh(id)} onDuplicate={(f)=>{setDuplicateData(f);setScreen("new");}} onEdit={(f)=>{setEditData(f);setScreen("edit");}} goToMap={goToMap}/>}
-        {screen==="new" && <NewScreen user={auth.user} lots={catalog.lots} plants={catalog.plants} branches={catalog.branches} fields={catalog.fields} trucks={catalog.trucks} onBack={()=>{setDuplicateData(null);setScreen("home");}} onCreate={handleCreate} submitting={submitting} duplicateFrom={duplicateData}/>}
-        {screen==="edit" && editData && <EditScreen freight={editData} fields={catalog.fields} plants={catalog.plants} onBack={()=>{setEditData(null);setScreen("detail");}} onSave={async(id,data)=>{const r=await fh.update(id,data);if(r.ok) return "Flete actualizado"; show(r.error,"err"); return "";}}/>}
+        {screen==="home" && <HomeScreen user={auth.user} freights={fh.freights} perms={perms} onNav={nav} catalog={catalog} isDesktop={isDesktop} onAction={handleAction} actionLoading={actionLoading} onChat={(convId)=>{if(convId){ui.setChatConvId(convId);navigate("/chats");}}} onRefresh={(id)=>fh.refresh(id)} onDuplicate={(f)=>{ui.setDuplicateData(f);navigate("/new");}} onEdit={(f)=>{ui.setEditData(f);navigate("/edit/"+f.id);}} goToMap={goToMap}/>}
+        {screen==="list" && <ListScreen freights={fh.freights} onNav={nav} onRefresh={fh.fetchAll} catalog={catalog} view={listView} setView={ui.setListView} goToMap={goToMap} hasMore={fh.hasMore} loadMore={fh.loadMore} loadingMore={fh.loadingMore} total={fh.total}/>}
+        {screen==="calendar" && <CalendarScreen freights={fh.freights} perms={perms} onNav={nav} isDesktop={isDesktop} user={auth.user} onAction={handleAction} actionLoading={actionLoading} onChat={(convId)=>{if(convId){ui.setChatConvId(convId);navigate("/chats");}}} onRefresh={(id)=>fh.refresh(id)} onDuplicate={(f)=>{ui.setDuplicateData(f);navigate("/new");}} onEdit={(f)=>{ui.setEditData(f);navigate("/edit/"+f.id);}} goToMap={goToMap}/>}
+        {screen==="detail" && <DetailScreen user={curFreight ? {...auth.user, userType: _resolveType(curFreight)} : auth.user} freight={curFreight} perms={perms} onBack={()=>navigate("/list")} onAction={handleAction} actionLoading={actionLoading} onChat={(convId)=>{if(convId){ui.setChatConvId(convId);navigate("/chats");}}} onRefresh={(id)=>fh.refresh(id)} onDuplicate={(f)=>{ui.setDuplicateData(f);navigate("/new");}} onEdit={(f)=>{ui.setEditData(f);navigate("/edit/"+f.id);}} goToMap={goToMap}/>}
+        {screen==="new" && <NewScreen user={auth.user} lots={catalog.lots} plants={catalog.plants} branches={catalog.branches} fields={catalog.fields} trucks={catalog.trucks} onBack={()=>{ui.setDuplicateData(null);navigate("/");}} onCreate={handleCreate} submitting={submitting} duplicateFrom={duplicateData}/>}
+        {screen==="edit" && editData && <EditScreen freight={editData} fields={catalog.fields} plants={catalog.plants} onBack={()=>{ui.setEditData(null);navigate(-1);}} onSave={async(id,data)=>{const r=await fh.update(id,data);if(r.ok) return "Flete actualizado"; show(r.error,"err"); return "";}}/>}
         {screen==="menu" && <MenuScreen user={auth.user} perms={perms} onLogout={auth.logout} onNav={nav} isDesktop={isDesktop} onSwitchCompany={auth.switchCompany} onRefresh={()=>{fh.fetchAll();catalog.refresh();}}/>}
-        {screen==="trucks" && <TrucksScreen onBack={()=>{catalog.refresh();setScreen("menu");}}/>}
-        {screen==="fields" && <FieldsScreen onBack={()=>{catalog.refresh();setScreen("menu");}} goToMap={goToMap}/>}
-        {screen==="admin" && <AdminScreen user={auth.user} onBack={()=>setScreen("menu")}/>}
-        {screen==="mydata" && <MyDataScreen user={auth.user} onBack={()=>setScreen("menu")}/>}
-        {screen==="reports" && <ReportsScreen onBack={()=>setScreen(isDesktop?"reports":"menu")} freights={fh.freights} isDesktop={isDesktop}/>}
-        {screen==="chats" && <ChatsScreen user={auth.user} openConvId={chatConvId} onConvOpened={()=>setChatConvId(null)} isDesktop={isDesktop}/>}
+        {screen==="trucks" && <TrucksScreen onBack={()=>{catalog.refresh();navigate("/menu");}}/>}
+        {screen==="fields" && <FieldsScreen onBack={()=>{catalog.refresh();navigate("/menu");}} goToMap={goToMap}/>}
+        {screen==="admin" && <AdminScreen user={auth.user} onBack={()=>navigate("/menu")}/>}
+        {screen==="mydata" && <MyDataScreen user={auth.user} onBack={()=>navigate("/menu")}/>}
+        {screen==="reports" && <ReportsScreen onBack={()=>navigate(isDesktop?"/reports":"/menu")} freights={fh.freights} isDesktop={isDesktop}/>}
+        {screen==="chats" && <ChatsScreen user={auth.user} openConvId={chatConvId} onConvOpened={()=>ui.setChatConvId(null)} isDesktop={isDesktop}/>}
         {screen==="notifs" && <NotificationsScreen notifications={notif.notifications} freights={fh.freights} onMarkRead={notif.markRead} onMarkAllRead={notif.markAllRead} onTap={handleNotifTap} />}
         </div>
         </div>
@@ -4383,13 +4456,13 @@ export default function Tolvink() {
         </div>
       </div>
 
-      {(submitting||submitDone) && <LoadingOverlay closing={!!submitDone} closingText={submitDone} onClose={()=>{setSubmitDone("");setScreen("list");}}/>}
-      {modal?.type==="assign" && <AssignModal freight={modal.freight} transporters={catalog.transporters} onClose={()=>setModal(null)} onConfirm={t=>handleAssign(modal.freight.id,t)}/>}
-      {modal?.type==="truck_select" && <TruckSelectModal freight={modal.freight} trucks={catalog.trucks} onClose={()=>setModal(null)} onConfirm={t=>handleAcceptWithTruck(modal.freight.id,t)}/>}
-      {modal?.type==="confirm_action" && <ConfirmActionModal freight={modal.freight} title={modal.title} btnLabel={modal.btnLabel} btnVariant={modal.btnVariant} icon={modal.icon} onClose={()=>setModal(null)} onConfirm={()=>handleConfirmAction(modal.freight.id,modal.action)}/>}
-      {modal?.type==="reason" && <ReasonModal title={modal.title} freight={modal.freight} btnLabel={modal.btnLabel} onClose={()=>setModal(null)} onConfirm={r=>handleReasonAction(modal.freight.id,r,modal.action)}/>}
-      {toast && <Toast msg={toast.msg} type={toast.type} onClose={()=>setToast(null)}/>}
-      {mapFocus && <MapOverlay lat={mapFocus.lat} lng={mapFocus.lng} label={mapFocus.label} destLat={mapFocus.destLat} destLng={mapFocus.destLng} destLabel={mapFocus.destLabel} onClose={()=>setMapFocus(null)}/>}
+      {(submitting||submitDone) && <LoadingOverlay closing={!!submitDone} closingText={submitDone} onClose={()=>{ui.setSubmitDone("");navigate("/list");}}/>}
+      {modal?.type==="assign" && <AssignModal freight={modal.freight} transporters={catalog.transporters} onClose={()=>ui.setModal(null)} onConfirm={t=>handleAssign(modal.freight.id,t)}/>}
+      {modal?.type==="truck_select" && <TruckSelectModal freight={modal.freight} trucks={catalog.trucks} onClose={()=>ui.setModal(null)} onConfirm={t=>handleAcceptWithTruck(modal.freight.id,t)}/>}
+      {modal?.type==="confirm_action" && <ConfirmActionModal freight={modal.freight} title={modal.title} btnLabel={modal.btnLabel} btnVariant={modal.btnVariant} icon={modal.icon} onClose={()=>ui.setModal(null)} onConfirm={()=>handleConfirmAction(modal.freight.id,modal.action)}/>}
+      {modal?.type==="reason" && <ReasonModal title={modal.title} freight={modal.freight} btnLabel={modal.btnLabel} onClose={()=>ui.setModal(null)} onConfirm={r=>handleReasonAction(modal.freight.id,r,modal.action)}/>}
+      {toast && <Toast msg={toast.msg} type={toast.type} onClose={()=>ui.setToast(null)}/>}
+      {mapFocus && <MapOverlay lat={mapFocus.lat} lng={mapFocus.lng} label={mapFocus.label} destLat={mapFocus.destLat} destLng={mapFocus.destLng} destLabel={mapFocus.destLabel} onClose={()=>ui.setMapFocus(null)}/>}
     </div>
   );
 }
