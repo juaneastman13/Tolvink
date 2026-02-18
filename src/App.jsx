@@ -86,12 +86,19 @@ export default function Tolvink() {
   const setLocPicker = useUIStore(s => s.setLocPicker);
   const goToMap = useUIStore(s => s.goToMap);
 
+  // SSE chat events — forwarded to ChatsScreen
+  const [sseMsg, setSseMsg] = useState(null);
+  const [sseTyping, setSseTyping] = useState(null);
+  const [sseRead, setSseRead] = useState(null);
+
   // SSE — real-time sync
   const sse = useSSE(auth.user, {
     onFreightUpdate: () => fh.fetchAll(),
-    onMessageNew: () => { setUnreadChats(p => p + 1); },
+    onMessageNew: (data) => { setUnreadChats(p => p + 1); setSseMsg(data); },
     onNotification: () => { notif.refresh(); },
     onCatalogChanged: () => { catalog.refresh(); },
+    onTyping: (data) => { setSseTyping(data); },
+    onRead: (data) => { setSseRead(data); },
   });
 
   // React Router — URL-based navigation
@@ -377,7 +384,7 @@ export default function Tolvink() {
         {screen==="admin" && <AdminScreen user={auth.user} onBack={()=>navigate("/menu")}/>}
         {screen==="mydata" && <MyDataScreen user={auth.user} onBack={()=>navigate("/menu")}/>}
         {screen==="reports" && <ReportsScreen onBack={()=>navigate(isDesktop?"/reports":"/menu")} freights={fh.freights} isDesktop={isDesktop}/>}
-        {screen==="chats" && <ChatsScreen user={auth.user} openConvId={chatConvId} onConvOpened={()=>setChatConvId(null)} isDesktop={isDesktop}/>}
+        {screen==="chats" && <ChatsScreen user={auth.user} openConvId={chatConvId} onConvOpened={()=>setChatConvId(null)} isDesktop={isDesktop} sseMsg={sseMsg} onSseMsgHandled={()=>setSseMsg(null)} sseTyping={sseTyping} sseRead={sseRead} sseConnected={sse.connected}/>}
         {screen==="notifs" && <NotificationsScreen notifications={notif.notifications} freights={fh.freights} onMarkRead={notif.markRead} onMarkAllRead={notif.markAllRead} onTap={handleNotifTap} />}
         </Suspense>
         </div>

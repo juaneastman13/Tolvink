@@ -480,7 +480,7 @@ export function useTableSort() {
 }
 
 // ======================== SSE (Server-Sent Events) ===================
-export function useSSE(user, { onFreightUpdate, onMessageNew, onNotification, onCatalogChanged }) {
+export function useSSE(user, { onFreightUpdate, onMessageNew, onNotification, onCatalogChanged, onTyping, onRead }) {
   const [connected, setConnected] = useState(false);
   const esRef = useRef(null);
   const reconnectTimer = useRef(null);
@@ -531,6 +531,20 @@ export function useSSE(user, { onFreightUpdate, onMessageNew, onNotification, on
         try {
           const data = JSON.parse(e.data);
           if (onCatalogChanged) onCatalogChanged(data);
+        } catch {}
+      });
+
+      es.addEventListener('typing', (e) => {
+        try {
+          const data = JSON.parse(e.data);
+          if (onTyping) onTyping(data);
+        } catch {}
+      });
+
+      es.addEventListener('read', (e) => {
+        try {
+          const data = JSON.parse(e.data);
+          if (onRead) onRead(data);
         } catch {}
       });
 

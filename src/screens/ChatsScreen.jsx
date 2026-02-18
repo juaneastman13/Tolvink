@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { C, Ic, FONT } from "../theme";
 import { Btn, Field, Tabs, Av, Loader, AttachMenu, FileViewer } from "../components";
-import { apiSearchUsers, apiStartConversation, apiListConversations, apiGetMessages, apiSendMessage, apiMarkRead, uploadChatFile } from "../api";
+import { apiSearchUsers, apiStartConversation, apiListConversations, apiGetMessages, apiSendMessage, apiMarkRead, apiTyping, uploadChatFile } from "../api";
 
-export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop }) {
+export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop, sseMsg, onSseMsgHandled, sseTyping, sseRead, sseConnected }) {
   const [convs, setConvs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeConv, setActiveConv] = useState(null);
@@ -24,6 +24,61 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop 
   const [loadingOlder, setLoadingOlder] = useState(false);
   const msgEndRef = useRef(null);
   const msgTopRef = useRef(null);
+  const [typingUser, setTypingUser] = useState(null);
+  const typingTimer = useRef(null);
+  const typingSendTimer = useRef(null);
+  const [peerReadAt, setPeerReadAt] = useState(null);
+
+  // SSE: incoming message → instant refresh
+  useEffect(() => {
+    if (!sseMsg || !sseMsg.conversationId) return;
+    if (activeConv && sseMsg.conversationId === activeConv.id) {
+      // Refresh messages for active conversation
+      apiGetMessages(activeConv.id, {take:50}).then(r => {
+        const fresh = r.messages || [];
+        setMessages(prev => {
+          if(prev.length===0) return fresh;
+          const lastId = prev[prev.length-1]?.id;
+          const lastIdx = fresh.findIndex(m=>m.id===lastId);
+          if(lastIdx>=0 && lastIdx<fresh.length-1) return [...prev, ...fresh.slice(lastIdx+1)];
+          return fresh;
+        });
+      }).catch(()=>{});
+      pollDelayRef.current = sseConnected ? 10000 : 3000;
+    } else {
+      // Different conversation — refresh list to update unread badges
+      loadConvs();
+    }
+    if (onSseMsgHandled) onSseMsgHandled();
+  }, [sseMsg]);
+
+  // SSE: typing indicator
+  useEffect(() => {
+    if (!sseTyping || !activeConv || sseTyping.conversationId !== activeConv.id) return;
+    if (sseTyping.userId === user.id) return;
+    setTypingUser(sseTyping.userName || "Alguien");
+    clearTimeout(typingTimer.current);
+    typingTimer.current = setTimeout(() => setTypingUser(null), 3000);
+  }, [sseTyping]);
+
+  // SSE: read receipt
+  useEffect(() => {
+    if (!sseRead || !activeConv || sseRead.conversationId !== activeConv.id) return;
+    if (sseRead.readByUserId === user.id) return;
+    setPeerReadAt(sseRead.readAt);
+  }, [sseRead]);
+
+  // Reset typing + read state when switching conversations
+  useEffect(() => { setTypingUser(null); setPeerReadAt(null); }, [activeConv?.id]);
+
+  // Send typing indicator (debounced 2s)
+  const sendTyping = useCallback(() => {
+    if (!activeConv) return;
+    clearTimeout(typingSendTimer.current);
+    typingSendTimer.current = setTimeout(() => {
+      apiTyping(activeConv.id).catch(()=>{});
+    }, 300);
+  }, [activeConv]);
 
   const loadConvs = useCallback(async () => {
     try { const c = await apiListConversations(searchQ||undefined); setConvs(c || []); return c||[]; } catch { return []; } finally { setLoading(false); }
@@ -70,15 +125,15 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop 
 
   useEffect(() => { if (msgEndRef.current) msgEndRef.current.scrollIntoView({ behavior: "smooth" }); }, [messages.length]);
 
-  // Poll for new messages — exponential backoff (3s → 10s → 30s → 60s, reset on new msgs)
-  const pollDelayRef = useRef(3000);
+  // Poll for new messages — SSE-aware: 10s base when SSE connected, 3s→60s backoff when disconnected
+  const pollDelayRef = useRef(10000);
   useEffect(() => {
     if (!activeConv) return;
-    pollDelayRef.current = 3000;
+    pollDelayRef.current = sseConnected ? 10000 : 3000;
     let timer = null;
     let cancelled = false;
     const poll = async () => {
-      if (cancelled) return;
+      if (cancelled || document.hidden) { if(!cancelled) timer = setTimeout(poll, pollDelayRef.current); return; }
       try {
         const r = await apiGetMessages(activeConv.id, {take:50});
         const fresh = r.messages || r || [];
@@ -87,10 +142,10 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop 
           const lastId = prev[prev.length-1]?.id;
           const lastIdx = fresh.findIndex(m=>m.id===lastId);
           if(lastIdx>=0 && lastIdx<fresh.length-1) {
-            pollDelayRef.current = 3000;
+            pollDelayRef.current = sseConnected ? 10000 : 3000;
             return [...prev, ...fresh.slice(lastIdx+1)];
           }
-          pollDelayRef.current = Math.min(pollDelayRef.current * 1.5, 60000);
+          if (!sseConnected) pollDelayRef.current = Math.min(pollDelayRef.current * 1.5, 60000);
           return prev;
         });
       } catch {}
@@ -98,7 +153,7 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop 
     };
     timer = setTimeout(poll, pollDelayRef.current);
     return () => { cancelled = true; if(timer) clearTimeout(timer); };
-  }, [activeConv]);
+  }, [activeConv, sseConnected]);
 
   const handleSend = async () => {
     if (!msgText.trim() || !activeConv) return;
@@ -332,6 +387,13 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop 
                   </div>
                 );
               })}
+              {/* Read receipt: double check on last own message */}
+              {peerReadAt && messages.length > 0 && (() => {
+                const lastOwn = [...messages].reverse().find(m => m.senderId === user.id || m.sender?.id === user.id);
+                return lastOwn ? <div style={{ textAlign:"right", fontSize:9.5, color:C.pri, fontWeight:600, marginRight:4, marginTop:-2 }}>✓✓ Leído</div> : null;
+              })()}
+              {/* Typing indicator */}
+              {typingUser && <div style={{ alignSelf:"flex-start", padding:"8px 14px", borderRadius:14, background:C.w, border:`1px solid ${C.b1}`, fontSize:12, color:C.t3, fontStyle:"italic", animation:"fadeIn 0.2s ease" }}>{typingUser} está escribiendo...</div>}
               <div ref={msgEndRef} />
             </div>
 
@@ -352,7 +414,7 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop 
                 {Ic.clip(C.t2, 18)}
               </button>
               <AttachMenu open={showChatAttach} onClose={() => setShowChatAttach(false)} onCamera={() => chatCamRef.current?.click()} onGallery={() => chatGalRef.current?.click()} onFiles={() => chatFileRef.current?.click()} />
-              <input value={msgText} onChange={e => setMsgText(e.target.value)} onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
+              <input value={msgText} onChange={e => { setMsgText(e.target.value); sendTyping(); }} onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
                 placeholder="Escribí un mensaje..." style={{ flex: 1, padding: "10px 14px", borderRadius: 20, border: `1.5px solid ${C.b1}`, background: C.bg, color: C.t1, fontSize: 13, fontFamily: "inherit", outline: "none" }} />
               <button onClick={handleSend} disabled={sending || !msgText.trim()} style={{ width: 40, height: 40, borderRadius: 20, background: msgText.trim() ? C.pri : C.b1, border: "none", cursor: msgText.trim() ? "pointer" : "default", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                 {Ic.send(C.w, 16)}

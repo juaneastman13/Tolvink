@@ -221,6 +221,7 @@ export async function apiListConversations(search) { const q=search?`?search=${e
 export async function apiGetMessages(convId, opts={}) { const p=new URLSearchParams(); if(opts.take)p.set('take',String(opts.take)); if(opts.before)p.set('before',opts.before); const qs=p.toString(); return api(`/conversations/${convId}/messages${qs?`?${qs}`:''}`); }
 export async function apiSendMessage(convId,text) { return api(`/conversations/${convId}/messages`,{body:{text}}); }
 export async function apiMarkRead(convId) { return api(`/conversations/${convId}/read`,{method:'PATCH',body:{}}); }
+export async function apiTyping(convId) { return api(`/conversations/${convId}/typing`,{body:{}}); }
 
 // Documents
 export async function apiAddDocument(freightId, body) { return api(`/freights/${freightId}/documents`,{body}); }
