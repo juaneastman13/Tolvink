@@ -132,10 +132,23 @@ export default function Tolvink() {
     return fh.freights.filter(f => getPendingActions(f, auth.user.userType) !== null).length;
   }, [fh.freights, auth.user]);
 
-  // Poll for unread chats — only as fallback when SSE not connected
+  // Universal polling — always active regardless of SSE status
+  useEffect(()=>{
+    if(!auth.user) return;
+    const poll = () => {
+      if (document.hidden || !navigator.onLine) return;
+      fh.fetchAll();
+      notif.refresh();
+    };
+    const iv = setInterval(poll, 15000);
+    return ()=>clearInterval(iv);
+  },[auth.user]);
+
+  // Poll for unread chats
   useEffect(()=>{
     if(!auth.user) return;
     const checkUnread = async ()=>{
+      if (document.hidden || !navigator.onLine) return;
       try {
         const convs = await apiListConversations();
         const count = (convs||[]).filter(c => c.unread).length;
@@ -143,18 +156,26 @@ export default function Tolvink() {
       } catch {}
     };
     checkUnread();
-    if (!sse.connected) {
-      const iv = setInterval(checkUnread, 60000);
-      return ()=>clearInterval(iv);
-    }
-  },[auth.user, sse.connected]);
-
-  // Polling fallback for freights when SSE disconnected
-  useEffect(()=>{
-    if(!auth.user || sse.connected) return;
-    const iv = setInterval(()=>fh.fetchAll(), 30000);
+    const iv = setInterval(checkUnread, 30000);
     return ()=>clearInterval(iv);
-  },[auth.user, sse.connected]);
+  },[auth.user]);
+
+  // Visibility refresh — immediate refetch when user returns to tab
+  useEffect(()=>{
+    if(!auth.user) return;
+    const onVisible = () => {
+      if (document.hidden || !navigator.onLine) return;
+      fh.fetchAll();
+      notif.refresh();
+      catalog.refresh();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", onVisible);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", onVisible);
+    };
+  },[auth.user]);
 
   // Replay offline queue when back online
   useEffect(() => {

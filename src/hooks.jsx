@@ -372,24 +372,18 @@ export function useNotifications(user) {
     })();
   }, [user]);
 
-  // Poll for notifications (skip when tab hidden to save bandwidth)
+  // Initial fetch of notifications (polling handled by App.jsx universal poll)
   useEffect(() => {
     if (!user) return;
-
     const fetchNotifications = async () => {
-      if (document.hidden || !navigator.onLine) return;
+      if (!navigator.onLine) return;
       try {
         const r = await apiGetNotifications();
         setNotifications(r.notifications || []);
         setUnreadCount(r.unreadCount || 0);
       } catch { /* ignore fetch errors */ }
     };
-
     fetchNotifications();
-    const interval = setInterval(fetchNotifications, 120000);
-    const onVisible = () => { if (!document.hidden) fetchNotifications(); };
-    document.addEventListener('visibilitychange', onVisible);
-    return () => { clearInterval(interval); document.removeEventListener('visibilitychange', onVisible); };
   }, [user]);
 
   const markRead = useCallback(async (id) => {

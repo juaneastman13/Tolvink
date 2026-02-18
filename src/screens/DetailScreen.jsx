@@ -14,6 +14,13 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, a
   const [viewFile, setViewFile] = useState(null);
   const auditRef = useRef(null);
 
+  // Auto-refresh freight detail every 10s
+  useEffect(() => {
+    if (!freight?.id || !onRefresh) return;
+    const iv = setInterval(() => { if (!document.hidden) onRefresh(freight.id); }, 10000);
+    return () => clearInterval(iv);
+  }, [freight?.id, onRefresh]);
+
   const loadAudit = async () => {
     if (auditLog) { setShowAudit(!showAudit); return; }
     try {
