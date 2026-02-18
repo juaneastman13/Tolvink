@@ -10,10 +10,26 @@
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="description" content="Tolvink — Logística agrícola simplificada. Gestioná tus fletes desde el campo." />
   <title>Tolvink</title>
+
+  <!-- Preconnect to critical origins -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="preconnect" href="https://tolvink-api-production.up.railway.app" crossorigin />
+  <link rel="dns-prefetch" href="https://maps.googleapis.com" />
+  <link rel="dns-prefetch" href="https://mlmecljidioymujsazrs.supabase.co" />
+
+  <!-- Icons & manifest -->
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
   <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
   <link rel="manifest" href="/manifest.json" />
+
+  <!-- Apple splash screens -->
+  <link rel="apple-touch-startup-image" href="/splash/splash-1290x2796.svg" media="(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3)" />
+  <link rel="apple-touch-startup-image" href="/splash/splash-1179x2556.svg" media="(device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3)" />
+  <link rel="apple-touch-startup-image" href="/splash/splash-1170x2532.svg" media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3)" />
+  <link rel="apple-touch-startup-image" href="/splash/splash-750x1334.svg" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2)" />
+
   <style>
     html, body, #root {
       height: 100%;
@@ -30,9 +46,7 @@
       width: 100%;
       touch-action: pan-y;
     }
-    /* Prevent iOS bounce */
     body { overscroll-behavior-y: none; }
-    /* Safe area env */
     @supports (padding: env(safe-area-inset-top)) {
       body { padding: 0; }
     }

@@ -397,7 +397,53 @@ export function useNotifications(user) {
     } catch { /* ignore */ }
   }, []);
 
-  return { notifications, unreadCount, markRead, markAllRead };
+  const refresh = useCallback(async () => {
+    try {
+      const r = await apiGetNotifications();
+      setNotifications(r.notifications || []);
+      setUnreadCount(r.unreadCount || 0);
+    } catch {}
+  }, []);
+
+  return { notifications, unreadCount, markRead, markAllRead, refresh };
+}
+
+// ======================== INSTALL PROMPT HOOK =========================
+export function useInstallPrompt() {
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
+  const [isInstalled, setIsInstalled] = useState(false);
+
+  useEffect(() => {
+    // Check if already installed
+    if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
+      setIsInstalled(true);
+      return;
+    }
+
+    const handler = (e) => { e.preventDefault(); setDeferredPrompt(e); };
+    window.addEventListener('beforeinstallprompt', handler);
+
+    const installed = () => setIsInstalled(true);
+    window.addEventListener('appinstalled', installed);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handler);
+      window.removeEventListener('appinstalled', installed);
+    };
+  }, []);
+
+  const install = useCallback(async () => {
+    if (!deferredPrompt) return false;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    setDeferredPrompt(null);
+    return outcome === 'accepted';
+  }, [deferredPrompt]);
+
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+  const canPrompt = !!deferredPrompt;
+
+  return { canPrompt, isInstalled, install, isIOS };
 }
 
 // ======================== TABLE SORT HOOK =============================

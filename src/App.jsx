@@ -19,7 +19,7 @@ import { C, track, FONT, MONO, Ic } from "./theme";
 import { V, validate, SCHEMAS, textMatch, FieldError } from "./validation";
 import { stCfg, getActions, GRANOS, UNITS } from "./constants";
 import { Av, Bd, Btn, Tabs, Field, Select, Sec, Toast, Loader, LoadingOverlay, AttachMenu, Sidebar, Nav, SortTh, exportCSV, exportExcel, exportPDF, NotifBell, NotificationsPanel, ModalOverlay, FileViewer } from "./components";
-import { useAuth, useCatalog, useFreights, permsFor, useIsDesktop, useTableSort, usePullToRefresh, useOnline, useNotifications, useSSE } from "./hooks";
+import { useAuth, useCatalog, useFreights, permsFor, useIsDesktop, useTableSort, usePullToRefresh, useOnline, useNotifications, useSSE, useInstallPrompt } from "./hooks";
 import { SafeZone, LocationPicker, FreightMap, FreightsOverviewMap, MapOverlay } from "./maps";
 import { PhotoUpload, DocsGallery, FreightFileUpload } from "./uploads";
 import { RoutesBackground } from "./routes-bg";
@@ -274,7 +274,7 @@ function resolveUserTypeForFreight(freight, user) {
   return user.userType;
 }
 
-function HomeScreen({ user, freights, perms, onNav, catalog, isDesktop, onAction, actionLoading, onChat, onRefresh, onDuplicate, onEdit, goToMap }) {
+function HomeScreen({ user, freights, perms, onNav, catalog, isDesktop, onAction, actionLoading, onChat, onRefresh, onDuplicate, onEdit, goToMap, pwa }) {
   const [selectedId, setSelectedId] = useState(null);
   const [pendingFilter, setPendingFilter] = useState("all");
   const [summaryFilter, setSummaryFilter] = useState("all");
@@ -484,6 +484,17 @@ function HomeScreen({ user, freights, perms, onNav, catalog, isDesktop, onAction
       {compact && <div style={{ position: "sticky", top: 0, zIndex: 10, background:C.bg, minHeight: 8 }} />}
 
       <div style={{ padding: compact ? "0 8px 8px" : "0 18px 18px" }}>
+
+      {/* PWA install prompt */}
+      {pwa && !pwa.isInstalled && (pwa.canPrompt || pwa.isIOS) && (
+        <div style={{ background:C.priPale, border:`1.5px solid ${C.pri}30`, borderRadius:12, padding:"12px 14px", marginBottom:12, display:"flex", alignItems:"center", gap:10 }}>
+          <div style={{flex:1}}>
+            <div style={{ fontSize:12, fontWeight:700, color:C.pri }}>Instalá Tolvink en tu dispositivo</div>
+            <div style={{ fontSize:10.5, color:C.t2, marginTop:2 }}>{pwa.isIOS ? "Tocá Compartir → Agregar a inicio" : "Acceso directo desde tu pantalla de inicio"}</div>
+          </div>
+          {pwa.canPrompt && <button onClick={pwa.install} style={{ padding:"8px 16px", borderRadius:8, border:"none", background:C.pri, color:"#fff", fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"inherit", flexShrink:0 }}>Instalar</button>}
+        </div>
+      )}
 
       {/* Pendientes — top aligned with Solicitar flete button (~14px padding in sidebar) */}
       {totalPendingAll > 0 && (<>
@@ -4393,6 +4404,7 @@ export default function Tolvink() {
   const catalog = useCatalog(auth.user);
   const online = useOnline();
   const notif = useNotifications(auth.user);
+  const pwa = useInstallPrompt();
   const isDesktop = useIsDesktop(768);
 
   // Zustand UI store — individual selectors prevent re-renders
@@ -4674,7 +4686,7 @@ export default function Tolvink() {
         {/* Scrollable content area */}
         <div style={{flex:1,overflow:(screen==="chats"||screen==="calendar")&&isDesktop?"hidden":"auto",display:mapFocus?"none":"flex",flexDirection:"column",WebkitOverflowScrolling:"touch",overscrollBehavior:"contain"}}>
         <div key={screen} className="tv-page" style={{flex:1,display:"flex",flexDirection:"column",minHeight:0}}>
-        {screen==="home" && <HomeScreen user={auth.user} freights={fh.freights} perms={perms} onNav={nav} catalog={catalog} isDesktop={isDesktop} onAction={handleAction} actionLoading={actionLoading} onChat={(convId)=>{if(convId){setChatConvId(convId);navigate("/chats");}}} onRefresh={(id)=>fh.refresh(id)} onDuplicate={(f)=>{setDuplicateData(f);navigate("/new");}} onEdit={(f)=>{setEditData(f);navigate("/edit/"+f.id);}} goToMap={goToMap}/>}
+        {screen==="home" && <HomeScreen user={auth.user} freights={fh.freights} perms={perms} onNav={nav} catalog={catalog} isDesktop={isDesktop} onAction={handleAction} actionLoading={actionLoading} onChat={(convId)=>{if(convId){setChatConvId(convId);navigate("/chats");}}} onRefresh={(id)=>fh.refresh(id)} onDuplicate={(f)=>{setDuplicateData(f);navigate("/new");}} onEdit={(f)=>{setEditData(f);navigate("/edit/"+f.id);}} goToMap={goToMap} pwa={pwa}/>}
         {screen==="list" && <ListScreen freights={fh.freights} onNav={nav} onRefresh={fh.fetchAll} catalog={catalog} view={listView} setView={setListView} goToMap={goToMap} hasMore={fh.hasMore} loadMore={fh.loadMore} loadingMore={fh.loadingMore} total={fh.total} isDesktop={isDesktop}/>}
         {screen==="calendar" && <CalendarScreen freights={fh.freights} perms={perms} onNav={nav} isDesktop={isDesktop} user={auth.user} onAction={handleAction} actionLoading={actionLoading} onChat={(convId)=>{if(convId){setChatConvId(convId);navigate("/chats");}}} onRefresh={(id)=>fh.refresh(id)} onDuplicate={(f)=>{setDuplicateData(f);navigate("/new");}} onEdit={(f)=>{setEditData(f);navigate("/edit/"+f.id);}} goToMap={goToMap}/>}
         {screen==="detail" && <DetailScreen user={curFreight ? {...auth.user, userType: _resolveType(curFreight)} : auth.user} freight={curFreight} perms={perms} onBack={()=>navigate("/list")} onAction={handleAction} actionLoading={actionLoading} onChat={(convId)=>{if(convId){setChatConvId(convId);navigate("/chats");}}} onRefresh={(id)=>fh.refresh(id)} onDuplicate={(f)=>{setDuplicateData(f);navigate("/new");}} onEdit={(f)=>{setEditData(f);navigate("/edit/"+f.id);}} goToMap={goToMap}/>}
