@@ -4544,8 +4544,8 @@ export default function Tolvink() {
           </div>
         </div>
 
-        {/* Desktop company bar — static, vertically centered with sidebar logo (107px) */}
-        {isDesktop && <div className="tv-header-bar" style={{display:"flex",alignItems:"center",justifyContent:"flex-end",padding:"0 18px",minHeight:107,background:C.w,borderBottom:`1px solid ${C.b2}`,flexShrink:0,zIndex:10}}>
+        {/* Desktop company bar — static, vertically centered with sidebar logo (81px) */}
+        {isDesktop && <div className="tv-header-bar" style={{display:"flex",alignItems:"center",justifyContent:"flex-end",padding:"0 18px",minHeight:81,background:C.w,borderBottom:`1px solid ${C.b2}`,flexShrink:0,zIndex:10}}>
           <CompanyHeaderPicker user={auth.user} onSwitch={async(id)=>{const r=await auth.switchCompany(id);if(r.ok){fh.fetchAll();catalog.refresh();}}} />
         </div>}
 
