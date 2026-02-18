@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { C, Ic, FONT } from "../theme";
 import { Btn, Field, Tabs, Av, Loader, AttachMenu, FileViewer } from "../components";
-import { apiSearchUsers, apiStartConversation, apiListConversations, apiGetMessages, apiSendMessage, apiMarkRead, apiTyping, uploadChatFile } from "../api";
+import { apiSearchUsers, apiStartConversation, apiListConversations, apiGetMessages, apiSendMessage, apiMarkRead, apiTyping, apiPinConversation, apiToggleMarkUnread, uploadChatFile } from "../api";
 
 // Helper: format relative date
 const formatDateDivider = (dateStr) => {
@@ -49,6 +49,8 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
   const [isAtBottom, setIsAtBottom] = useState(true);
   const messagesContainerRef = useRef(null);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const inputRef = useRef(null);
+  const [newMsgIndicator, setNewMsgIndicator] = useState(false);
 
   // SSE: incoming message → instant refresh
   useEffect(() => {
@@ -91,6 +93,14 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
 
   // Reset typing + read state when switching conversations
   useEffect(() => { setTypingUser(null); setPeerReadAt(null); }, [activeConv?.id]);
+
+  // Autofocus input when opening conversation
+  useEffect(() => {
+    if (activeConv && inputRef.current && chatTab === "chat") {
+      // Small delay to ensure DOM is ready
+      setTimeout(() => inputRef.current?.focus(), 100);
+    }
+  }, [activeConv?.id, chatTab]);
 
   // Send typing indicator (debounced 2s)
   const sendTyping = useCallback(() => {
@@ -148,8 +158,59 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
   useEffect(() => {
     if (isAtBottom && msgEndRef.current) {
       msgEndRef.current.scrollIntoView({ behavior: "smooth" });
+      setNewMsgIndicator(false);
+    } else if (messages.length > 0 && !isAtBottom) {
+      // New message arrived but user not at bottom → show indicator
+      setNewMsgIndicator(true);
     }
   }, [messages.length, isAtBottom]);
+
+  const scrollToBottom = () => {
+    setIsAtBottom(true);
+    msgEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    setNewMsgIndicator(false);
+  };
+
+  const [copiedMsgId, setCopiedMsgId] = useState(null);
+  const copyMessageText = (text, msgId) => {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopiedMsgId(msgId);
+      setTimeout(() => setCopiedMsgId(null), 2000);
+    }).catch(() => {});
+  };
+
+  // Parse @ mentions in text
+  const renderTextWithMentions = (text, mine) => {
+    const parts = text.split(/(@\w+)/g);
+    return parts.map((part, i) => {
+      if (part.startsWith('@')) {
+        return <span key={i} style={{ background: mine ? "rgba(255,255,255,0.25)" : C.accPale, padding: "1px 4px", borderRadius: 4, fontWeight: 600 }}>{part}</span>;
+      }
+      return <span key={i}>{part}</span>;
+    });
+  };
+
+  // Pin/unpin conversation
+  const handlePinConversation = async (convId, e) => {
+    e?.stopPropagation();
+    try {
+      await apiPinConversation(convId);
+      loadConvs();
+    } catch (err) {
+      console.error('Pin failed:', err);
+    }
+  };
+
+  // Toggle mark unread
+  const handleToggleMarkUnread = async (convId, e) => {
+    e?.stopPropagation();
+    try {
+      await apiToggleMarkUnread(convId);
+      loadConvs();
+    } catch (err) {
+      console.error('Mark unread failed:', err);
+    }
+  };
 
   // Track if user is at bottom of scroll + auto-load older on scroll-to-top
   const handleScroll = useCallback(() => {
@@ -415,7 +476,12 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
       });
     });
 
-    directConvs.sort((a, b) => (b.messages?.[0]?.createdAt||"").localeCompare(a.messages?.[0]?.createdAt||""));
+    // Sort: pinned first, then by last message date
+    directConvs.sort((a, b) => {
+      if (a.pinnedAt && !b.pinnedAt) return -1;
+      if (!a.pinnedAt && b.pinnedAt) return 1;
+      return (b.messages?.[0]?.createdAt||"").localeCompare(a.messages?.[0]?.createdAt||"");
+    });
 
     const getLatest = group => {
       let max = "";
@@ -482,22 +548,36 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
 
                     <div style={{ alignSelf: mine ? "flex-end" : "flex-start", maxWidth: "80%" }}>
                       {!mine && <div style={{ fontSize: 9.5, color: C.t3, marginBottom: 2, marginLeft: 4 }}>{m.sender?.name?.split(" ")[0]}</div>}
-                      <div style={{ padding: fileData ? "6px" : "10px 14px", borderRadius: 14, borderBottomRightRadius: mine ? 4 : 14, borderBottomLeftRadius: mine ? 14 : 4, background: mine ? C.pri : C.w, color: mine ? C.w : C.t1, fontSize: 13, border: mine ? "none" : `1px solid ${C.b1}`, boxShadow: C.sh, overflow: "hidden", opacity: m.status === 'pending' ? 0.6 : 1 }}>
+                      <div style={{ position: "relative", padding: fileData ? "6px" : "10px 14px", borderRadius: 14, borderBottomRightRadius: mine ? 4 : 14, borderBottomLeftRadius: mine ? 14 : 4, background: mine ? C.pri : C.w, color: mine ? C.w : C.t1, fontSize: 13, border: mine ? "none" : `1px solid ${C.b1}`, boxShadow: C.sh, overflow: "hidden", opacity: m.status === 'pending' ? 0.6 : 1 }}>
                         {fileData ? (
                           fileData.type === "image" ? (
                             <button onClick={()=>setViewFile({url:fileData.url,name:fileData.name,type:"image"})} style={{ background:"none", border:"none", cursor:"pointer", padding:0 }}>
                               <img src={fileData.url} alt={fileData.name} style={{ maxWidth: 220, maxHeight: 200, borderRadius: 10, display: "block" }} />
                             </button>
                           ) : (
-                            <button onClick={()=>setViewFile({url:fileData.url,name:fileData.name})} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", color: mine ? "#fff" : C.t1 }}>
-                              {Ic.doc(mine ? "#fff" : C.pri, 20)}
-                              <div style={{ textAlign:"left" }}>
-                                <div style={{ fontSize: 12, fontWeight: 600, wordBreak: "break-all" }}>{fileData.name}</div>
-                                <div style={{ fontSize: 10, opacity: 0.7 }}>Ver archivo</div>
-                              </div>
-                            </button>
+                            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                              <button onClick={()=>setViewFile({url:fileData.url,name:fileData.name})} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", color: mine ? "#fff" : C.t1, flex: 1 }}>
+                                {Ic.doc(mine ? "#fff" : C.pri, 20)}
+                                <div style={{ textAlign:"left" }}>
+                                  <div style={{ fontSize: 12, fontWeight: 600, wordBreak: "break-all" }}>{fileData.name}</div>
+                                  <div style={{ fontSize: 10, opacity: 0.7 }}>Ver archivo</div>
+                                </div>
+                              </button>
+                              <a href={fileData.url} download={fileData.name} style={{ background: mine ? "rgba(255,255,255,0.2)" : C.priPale, border: "none", borderRadius: 6, padding: 6, display: "flex", alignItems: "center", justifyContent: "center", textDecoration: "none" }} title="Descargar">
+                                {Ic.download(mine ? "#fff" : C.pri, 16)}
+                              </a>
+                            </div>
                           )
-                        ) : m.text}
+                        ) : (
+                          <div style={{ display: "flex", alignItems: "flex-start", gap: 6 }}>
+                            <div style={{ flex: 1 }}>{renderTextWithMentions(m.text, mine)}</div>
+                            {!fileData && (
+                              <button onClick={() => copyMessageText(m.text, m.id)} title="Copiar" style={{ background: mine ? "rgba(255,255,255,0.2)" : C.bg, border: "none", borderRadius: 4, padding: "2px 4px", cursor: "pointer", fontSize: 9, color: mine ? "#fff" : C.t2, opacity: copiedMsgId === m.id ? 1 : 0.5, transition: "opacity 0.2s" }}>
+                              {copiedMsgId === m.id ? "✓" : "⎘"}
+                            </button>
+                            )}
+                          </div>
+                        )}
                       </div>
                       <div style={{ fontSize: 9, color: C.t3, marginTop: 2, textAlign: mine ? "right" : "left", marginRight: mine ? 4 : 0, marginLeft: mine ? 0 : 4, display: "flex", alignItems: "center", gap: 4, justifyContent: mine ? "flex-end" : "flex-start" }}>
                         <span title={new Date(m.createdAt).toLocaleString("es")}>
@@ -533,6 +613,15 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
               </div>
             )}
 
+            {/* Nuevo mensaje indicator - floating button */}
+            {newMsgIndicator && (
+              <div style={{ position: "absolute", bottom: keyboardHeight > 0 ? keyboardHeight + 70 : 70, left: "50%", transform: "translateX(-50%)", zIndex: 10, animation: "fadeIn 0.2s ease" }}>
+                <button onClick={scrollToBottom} style={{ padding: "8px 16px", borderRadius: 20, background: C.pri, color: "#fff", border: "none", cursor: "pointer", fontSize: 12, fontWeight: 600, display: "flex", alignItems: "center", gap: 6, boxShadow: "0 4px 12px rgba(0,0,0,0.15)", fontFamily: "inherit", transition: "all 0.2s ease" }}>
+                  Nuevo mensaje {Ic.down("#fff", 14)}
+                </button>
+              </div>
+            )}
+
             <div style={{ padding: "10px 18px", paddingBottom: keyboardHeight > 0 ? `${Math.max(10, keyboardHeight - 60)}px` : "max(10px, env(safe-area-inset-bottom))", borderTop: `1px solid ${C.b1}`, background: C.w, display: "flex", gap: 8, alignItems: "center", transition: "padding-bottom 0.2s ease" }}>
               <input ref={chatCamRef} type="file" accept="image/*" capture="environment" onChange={handleFileUpload} style={{ display: "none" }} />
               <input ref={chatGalRef} type="file" accept="image/jpeg,image/png,image/webp" onChange={handleFileUpload} style={{ display: "none" }} />
@@ -541,7 +630,7 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
                 {Ic.clip(C.t2, 18)}
               </button>
               <AttachMenu open={showChatAttach} onClose={() => setShowChatAttach(false)} onCamera={() => chatCamRef.current?.click()} onGallery={() => chatGalRef.current?.click()} onFiles={() => chatFileRef.current?.click()} />
-              <input value={msgText} onChange={e => { setMsgText(e.target.value); sendTyping(); }} onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
+              <input ref={inputRef} value={msgText} onChange={e => { setMsgText(e.target.value); sendTyping(); }} onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
                 placeholder="Escribí un mensaje..." style={{ flex: 1, padding: "10px 14px", borderRadius: 20, border: `1.5px solid ${C.b1}`, background: C.bg, color: C.t1, fontSize: 13, fontFamily: "inherit", outline: "none" }} />
               <button onClick={handleSend} disabled={sending || !msgText.trim()} style={{ width: 40, height: 40, borderRadius: 20, background: msgText.trim() ? C.pri : C.b1, border: "none", cursor: msgText.trim() ? "pointer" : "default", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                 {Ic.send(C.w, 16)}
@@ -628,20 +717,32 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {/* Direct conversations (flat, no nesting) */}
             {grouped.directConvs.map(c => (
-              <button key={c.id} onClick={() => openConv(c)} style={{ width:"100%", padding:"12px 14px", border:`1px solid ${c.unread?C.acc+"40":C.b1}`, borderRadius:12, background:c.unread?C.accPale+"30":C.w, cursor:"pointer", fontFamily:"inherit", textAlign:"left", display:"flex", alignItems:"center", gap:12, transition:"all 0.15s", boxShadow:C.sh }} onMouseEnter={e=>e.currentTarget.style.background=C.priGhost} onMouseLeave={e=>e.currentTarget.style.background=c.unread?C.accPale+"30":C.w}>
-                <div style={{ width:36, height:36, borderRadius:18, background:c.unread?C.acc:C.accPale, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
-                  {Ic.user(c.unread?"#fff":C.acc, 16)}
-                </div>
-                <div style={{ flex:1, minWidth:0 }}>
-                  <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-                    <span style={{ fontSize:13, fontWeight:c.unread?800:700, color:C.t1 }}>{c._userName}</span>
+              <div key={c.id} style={{ position: "relative", width:"100%", border:`1px solid ${c.unread||c.markedUnread?C.acc+"40":C.b1}`, borderRadius:12, background:c.unread||c.markedUnread?C.accPale+"30":C.w, transition:"all 0.15s", boxShadow:C.sh, overflow: "hidden" }}>
+                <button onClick={() => openConv(c)} style={{ width:"100%", padding:"12px 14px", background: "transparent", border: "none", cursor:"pointer", fontFamily:"inherit", textAlign:"left", display:"flex", alignItems:"center", gap:12 }} onMouseEnter={e=>e.currentTarget.style.background=C.priGhost} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                  <div style={{ width:36, height:36, borderRadius:18, background:c.unread||c.markedUnread?C.acc:C.accPale, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                    {Ic.user(c.unread||c.markedUnread?"#fff":C.acc, 16)}
                   </div>
-                  {c._companyName && <div style={{ fontSize:10, color:C.t3, marginTop:1 }}>{c._companyName}</div>}
-                  <div style={{ fontSize:11, color:c.unread?C.t1:C.t3, fontWeight:c.unread?600:400, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis", marginTop:2 }}>{getLastMsg(c)}</div>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                      <span style={{ fontSize:13, fontWeight:c.unread||c.markedUnread?800:700, color:C.t1 }}>{c._userName}</span>
+                      {c.pinnedAt && <span style={{ fontSize: 10 }} title="Fijada">📌</span>}
+                    </div>
+                    {c._companyName && <div style={{ fontSize:10, color:C.t3, marginTop:1 }}>{c._companyName}</div>}
+                    <div style={{ fontSize:11, color:c.unread||c.markedUnread?C.t1:C.t3, fontWeight:c.unread||c.markedUnread?600:400, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis", marginTop:2 }}>{getLastMsg(c)}</div>
+                  </div>
+                  {(c.unread || c.markedUnread) && <div style={{ width:8, height:8, borderRadius:4, background:C.acc, flexShrink:0 }} />}
+                  <span style={{ fontSize:9.5, color:C.t3, flexShrink:0 }}>{getLastMsgTime(c)}</span>
+                </button>
+                {/* Action buttons */}
+                <div style={{ position: "absolute", top: 8, right: 8, display: "flex", gap: 4 }}>
+                  <button onClick={(e) => handlePinConversation(c.id, e)} title={c.pinnedAt ? "Desfijar" : "Fijar"} style={{ background: c.pinnedAt ? C.accPale : C.bg, border: `1px solid ${c.pinnedAt ? C.acc : C.b1}`, borderRadius: 6, padding: "4px 6px", cursor: "pointer", fontSize: 11, display: "flex", alignItems: "center", opacity: 0.8 }}>
+                    {c.pinnedAt ? "📌" : "📍"}
+                  </button>
+                  <button onClick={(e) => handleToggleMarkUnread(c.id, e)} title={c.markedUnread ? "Marcar como leída" : "Marcar como no leída"} style={{ background: c.markedUnread ? C.accPale : C.bg, border: `1px solid ${c.markedUnread ? C.acc : C.b1}`, borderRadius: 6, padding: "4px 6px", cursor: "pointer", fontSize: 10, display: "flex", alignItems: "center", opacity: 0.8 }}>
+                    {c.markedUnread ? "✉️" : "📧"}
+                  </button>
                 </div>
-                {c.unread && <div style={{ width:8, height:8, borderRadius:4, background:C.acc, flexShrink:0 }} />}
-                <span style={{ fontSize:9.5, color:C.t3, flexShrink:0 }}>{getLastMsgTime(c)}</span>
-              </button>
+              </div>
             ))}
 
             {/* Freight conversations grouped by company */}
@@ -704,5 +805,16 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
     );
   }
 
-  return <>{chatListPanel}<FileViewer file={viewFile} onClose={()=>setViewFile(null)}/></>;
+  return (
+    <>
+      {chatListPanel}
+      <FileViewer file={viewFile} onClose={()=>setViewFile(null)}/>
+      <style>{`
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(8px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
+    </>
+  );
 }

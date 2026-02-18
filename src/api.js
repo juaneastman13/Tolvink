@@ -222,6 +222,8 @@ export async function apiGetMessages(convId, opts={}) { const p=new URLSearchPar
 export async function apiSendMessage(convId,text) { return api(`/conversations/${convId}/messages`,{body:{text}}); }
 export async function apiMarkRead(convId) { return api(`/conversations/${convId}/read`,{method:'PATCH',body:{}}); }
 export async function apiTyping(convId) { return api(`/conversations/${convId}/typing`,{body:{}}); }
+export async function apiPinConversation(convId) { return api(`/conversations/${convId}/pin`,{method:'PATCH',body:{}}); }
+export async function apiToggleMarkUnread(convId) { return api(`/conversations/${convId}/mark-unread`,{method:'PATCH',body:{}}); }
 
 // Documents
 export async function apiAddDocument(freightId, body) { return api(`/freights/${freightId}/documents`,{body}); }
