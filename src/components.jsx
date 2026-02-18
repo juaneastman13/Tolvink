@@ -498,27 +498,31 @@ export function FileViewer({ file, onClose }) {
   const isImg = file.type === "image" || file.type === "photo" || file.url?.match(/\.(jpg|jpeg|png|webp|gif|svg)$/i);
   const isPdf = file.url?.match(/\.pdf$/i);
   return (
-    <div onClick={onClose} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.85)", display:"flex", flexDirection:"column", zIndex:250, animation:"fvFadeIn 0.2s ease" }}>
+    <div onClick={onClose} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.6)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:250, animation:"fvFadeIn 0.2s ease", padding:16 }}>
       <style>{`@keyframes fvFadeIn{from{opacity:0}to{opacity:1}}`}</style>
-      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"12px 16px", flexShrink:0 }}>
-        <div style={{ color:"#fff", fontSize:13, fontWeight:600, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", flex:1, marginRight:12 }}>{file.name||"Archivo"}</div>
-        <div style={{ display:"flex", gap:8 }}>
-          <a href={file.url} download style={{ display:"flex", alignItems:"center", gap:4, padding:"6px 12px", borderRadius:8, background:"rgba(255,255,255,0.15)", color:"#fff", textDecoration:"none", fontSize:12, fontWeight:600 }} onClick={e=>e.stopPropagation()}>{Ic.down("#fff",14)} Descargar</a>
-          <button onClick={onClose} style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:5, padding:"6px 14px", borderRadius:8, background:"rgba(255,255,255,0.25)", border:"1px solid rgba(255,255,255,0.3)", cursor:"pointer", color:"#fff", fontSize:12, fontWeight:600, fontFamily:"inherit" }}>{Ic.cross("#fff",16)} Cerrar</button>
-        </div>
-      </div>
-      <div onClick={e=>e.stopPropagation()} style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", overflow:"auto", padding:16 }}>
-        {isImg ? (
-          <img src={file.url} alt={file.name||""} style={{ maxWidth:"100%", maxHeight:"100%", objectFit:"contain", borderRadius:8 }} />
-        ) : isPdf ? (
-          <iframe src={file.url} title={file.name||"PDF"} style={{ width:"100%", height:"100%", border:"none", borderRadius:8, background:"#fff" }} />
-        ) : (
-          <div style={{ textAlign:"center", color:"#fff" }}>
-            <div style={{ marginBottom:16 }}>{Ic.doc("#fff",48)}</div>
-            <div style={{ fontSize:16, fontWeight:700, marginBottom:8 }}>{file.name||"Archivo"}</div>
-            <a href={file.url} download style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"10px 20px", borderRadius:10, background:C.pri, color:"#fff", textDecoration:"none", fontSize:14, fontWeight:600 }} onClick={e=>e.stopPropagation()}>{Ic.down("#fff",16)} Descargar archivo</a>
+      <div onClick={e=>e.stopPropagation()} style={{ background:C.w, borderRadius:14, boxShadow:"0 8px 32px rgba(0,0,0,0.3)", display:"flex", flexDirection:"column", maxWidth:"92vw", maxHeight:"90vh", width: isImg ? "auto" : "90vw", overflow:"hidden" }}>
+        {/* Header with close */}
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"10px 14px", borderBottom:`1px solid ${C.b2}`, flexShrink:0 }}>
+          <div style={{ fontSize:13, fontWeight:600, color:C.t1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", flex:1, marginRight:10 }}>{file.name||"Archivo"}</div>
+          <div style={{ display:"flex", gap:6, flexShrink:0 }}>
+            <a href={file.url} download style={{ display:"flex", alignItems:"center", gap:4, padding:"5px 10px", borderRadius:8, border:`1px solid ${C.b1}`, background:C.bg, color:C.t1, textDecoration:"none", fontSize:11, fontWeight:600, fontFamily:"inherit" }} onClick={e=>e.stopPropagation()}>{Ic.down(C.t2,13)} Descargar</a>
+            <button onClick={onClose} style={{ display:"flex", alignItems:"center", gap:4, padding:"5px 12px", borderRadius:8, background:C.err, border:"none", cursor:"pointer", color:"#fff", fontSize:11, fontWeight:700, fontFamily:"inherit" }}>{Ic.cross("#fff",14)} Cerrar</button>
           </div>
-        )}
+        </div>
+        {/* Content */}
+        <div style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", overflow:"auto", padding:12, minHeight:200 }}>
+          {isImg ? (
+            <img src={file.url} alt={file.name||""} style={{ maxWidth:"100%", maxHeight:"75vh", objectFit:"contain", borderRadius:6 }} />
+          ) : isPdf ? (
+            <iframe src={file.url} title={file.name||"PDF"} style={{ width:"100%", height:"75vh", border:"none", borderRadius:6, background:"#fff" }} />
+          ) : (
+            <div style={{ textAlign:"center", padding:20 }}>
+              <div style={{ marginBottom:16 }}>{Ic.doc(C.t3,48)}</div>
+              <div style={{ fontSize:16, fontWeight:700, color:C.t1, marginBottom:8 }}>{file.name||"Archivo"}</div>
+              <a href={file.url} download style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"10px 20px", borderRadius:10, background:C.pri, color:"#fff", textDecoration:"none", fontSize:14, fontWeight:600 }} onClick={e=>e.stopPropagation()}>{Ic.down("#fff",16)} Descargar archivo</a>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
