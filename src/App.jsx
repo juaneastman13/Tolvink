@@ -3257,11 +3257,15 @@ function ReportsScreen({ onBack, freights, isDesktop, embedded }) {
         {searchQ && <button onClick={()=>setSearchQ("")} style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",display:"flex"}}>{Ic.cross(C.t3,16)}</button>}
       </div>
 
-      {/* Status filter pills + export buttons */}
+      {/* Status filter + dates + export buttons */}
       <div style={{ display:"flex", gap:6, marginBottom:12, flexWrap:"wrap", alignItems:"center" }}>
-        {[{k:"all",l:"Todos"},{k:"solicitado",l:"Solicitado"},{k:"en_curso",l:"En curso"},{k:"finalizados",l:"Finalizados"},{k:"cancelados",l:"Cancelados"}].map(opt=>(
-          <button key={opt.k} onClick={()=>setFilterStatus(opt.k)} style={{ padding:"6px 14px", borderRadius:20, border:`1.5px solid ${filterStatus===opt.k?C.pri:C.b1}`, background:filterStatus===opt.k?C.priPale:C.w, color:filterStatus===opt.k?C.pri:C.t2, fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>{opt.l}</button>
-        ))}
+        <select value={filterStatus} onChange={e=>setFilterStatus(e.target.value)} style={{padding:"6px 10px",borderRadius:8,border:`1.5px solid ${filterStatus!=="all"?C.pri:C.b1}`,background:filterStatus!=="all"?C.priPale:C.w,color:filterStatus!=="all"?C.pri:C.t2,fontSize:11,fontFamily:"inherit",cursor:"pointer",outline:"none"}}>
+          <option value="all">Todos los estados</option>
+          <option value="solicitado">Solicitado</option>
+          <option value="en_curso">En curso</option>
+          <option value="finalizados">Finalizados</option>
+          <option value="cancelados">Cancelados</option>
+        </select>
         <span style={{fontSize:10,color:C.t2,fontWeight:600,marginLeft:4}}>Desde</span>
         <input type="date" value={dateFrom} onChange={e=>setDateFrom(e.target.value)} onClick={e=>e.target.showPicker?.()} style={{padding:"5px 8px",borderRadius:6,border:`1px solid ${C.b1}`,background:C.w,color:dateFrom?C.t1:C.t3,fontSize:11,fontFamily:"inherit",outline:"none",boxSizing:"border-box",cursor:"pointer"}}/>
         <span style={{fontSize:10,color:C.t2,fontWeight:600}}>Hasta</span>
