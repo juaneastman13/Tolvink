@@ -2,6 +2,8 @@
 // TOLVINK — API Client v6 (with Admin endpoints)
 // =====================================================================
 
+import { captureError } from "./sentry";
+
 const API_URL = import.meta.env.VITE_API_URL || 'https://tolvink-api-production.up.railway.app/api';
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'https://mlmecljidioymujsazrs.supabase.co';
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
@@ -24,7 +26,14 @@ export function getSavedUser() { try { const r=localStorage.getItem('tolvink_use
 export function setLoggingIn(val) { _isLoggingIn = val; }
 
 class ApiError extends Error {
-  constructor(s,d) { super(d?.message||d?.error||'Error del servidor'); this.status=s; this.data=d; }
+  constructor(s,d) {
+    super(d?.message||d?.error||'Error del servidor');
+    this.status=s; this.data=d;
+    // Report server errors to Sentry (skip 401/403/404 — those are expected)
+    if (s >= 500) {
+      try { captureError(this, { status: s, data: d }); } catch {}
+    }
+  }
 }
 
 export default async function api(path, opts={}) {
@@ -160,7 +169,7 @@ export async function apiGetBranches() { return api('/catalog/branches'); }
 export async function apiSearchUsers(q) { return api(`/conversations/search-users?q=${encodeURIComponent(q)}`); }
 export async function apiStartConversation(b) { return api('/conversations/start',{body:b}); }
 export async function apiListConversations(search) { const q=search?`?search=${encodeURIComponent(search)}`:''; return api(`/conversations${q}`); }
-export async function apiGetMessages(convId) { return api(`/conversations/${convId}/messages`); }
+export async function apiGetMessages(convId, opts={}) { const p=new URLSearchParams(); if(opts.take)p.set('take',String(opts.take)); if(opts.before)p.set('before',opts.before); const qs=p.toString(); return api(`/conversations/${convId}/messages${qs?`?${qs}`:''}`); }
 export async function apiSendMessage(convId,text) { return api(`/conversations/${convId}/messages`,{body:{text}}); }
 export async function apiMarkRead(convId) { return api(`/conversations/${convId}/read`,{method:'PATCH',body:{}}); }
 

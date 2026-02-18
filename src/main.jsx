@@ -1,11 +1,15 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import Tolvink from "./App";
+import { captureError } from "./sentry";
 
 class ErrorBoundary extends React.Component {
   state = { hasError: false };
   static getDerivedStateFromError() { return { hasError: true }; }
-  componentDidCatch(err, info) { console.error('[ErrorBoundary]', err, info); }
+  componentDidCatch(err, info) {
+    console.error('[ErrorBoundary]', err, info);
+    captureError(err, { componentStack: info?.componentStack });
+  }
   render() {
     if (this.state.hasError) {
       return (

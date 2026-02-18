@@ -186,30 +186,54 @@ export function mapUser(u) {
 }
 
 // ======================== FREIGHTS HOOK (Real API) ====================
+const FREIGHTS_PAGE_SIZE = 50;
+
 export function useFreights(user, isAuthInitialized) {
   const [freights, setFreights] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState(null);
+  const [hasMore, setHasMore] = useState(false);
+  const [total, setTotal] = useState(0);
+  const pageRef = useRef(1);
+
   const fetchAll = useCallback(async ()=>{
     if(!user || !isAuthInitialized) return;
     setLoading(true);
+    pageRef.current = 1;
     try {
-      console.log('[FREIGHTS] Fetching freights for user:', user.id);
-      const r = await apiListFreights({limit:100});
-      setFreights((r.data||[]).map(mapFreight));
-      console.log('[FREIGHTS] Fetched:', r.data?.length || 0, 'freights');
+      const r = await apiListFreights({page:1, limit:FREIGHTS_PAGE_SIZE});
+      const mapped = (r.data||[]).map(mapFreight);
+      setFreights(mapped);
+      setTotal(r.total||0);
+      setHasMore((r.page||1) < (r.pages||1));
     }
-    catch(e) {
-      console.error('[FREIGHTS] Fetch error:', e);
-      setError(e.message);
-    } finally { setLoading(false); }
+    catch(e) { setError(e.message); }
+    finally { setLoading(false); }
   },[user, isAuthInitialized]);
 
-  useEffect(()=>{
-    if(isAuthInitialized && user) {
-      fetchAll();
+  const loadMore = useCallback(async ()=>{
+    if(!user || loadingMore || !hasMore) return;
+    setLoadingMore(true);
+    const nextPage = pageRef.current + 1;
+    try {
+      const r = await apiListFreights({page:nextPage, limit:FREIGHTS_PAGE_SIZE});
+      const mapped = (r.data||[]).map(mapFreight);
+      pageRef.current = nextPage;
+      setFreights(p=>{
+        const ids = new Set(p.map(f=>f.id));
+        return [...p, ...mapped.filter(f=>!ids.has(f.id))];
+      });
+      setHasMore((r.page||1) < (r.pages||1));
     }
+    catch(e) { setError(e.message); }
+    finally { setLoadingMore(false); }
+  },[user, loadingMore, hasMore]);
+
+  useEffect(()=>{
+    if(isAuthInitialized && user) { fetchAll(); }
   },[fetchAll, isAuthInitialized, user]);
+
   const refresh = useCallback(async (id)=>{
     try { const u=await apiGetFreight(id); const m=mapFreight(u); setFreights(p=>p.map(f=>f.id===id?m:f)); return m; }
     catch(e) { setError(e.message); return null; }
@@ -218,7 +242,7 @@ export function useFreights(user, isAuthInitialized) {
     try { const body = { originLotId:form.lotId||undefined, fieldId:form.fieldId||undefined, destPlantId:form.plantId||undefined, customOriginName:form.customOriginName||undefined, loadDate:form.loadDate, loadTime:form.loadTime, items:[{grain:form.grain,tons:parseFloat(form.tons),unit:form.unit||"toneladas",amount:form.amount?parseFloat(form.amount):0,productTypeOther:form.productTypeOther||undefined}], notes:form.notes||"", truckId:form.truckId||undefined, overrideOriginLat:form.overrideOriginLat, overrideOriginLng:form.overrideOriginLng, overrideDestLat:form.overrideDestLat, overrideDestLng:form.overrideDestLng };
       if(form.customDestName) { body.customDestName=form.customDestName; body.customDestLat=form.customDestLat; body.customDestLng=form.customDestLng; if(form.destCompanyId) body.destCompanyId=form.destCompanyId; if(!form.plantId) delete body.destPlantId; }
       const c=await apiCreateFreight(body);
-      const m=mapFreight(c); setFreights(p=>[m,...p]); return {ok:true, freightId:c.id}; } catch(e) { return {ok:false,error:e.message}; }
+      const m=mapFreight(c); setFreights(p=>[m,...p]); setTotal(t=>t+1); return {ok:true, freightId:c.id}; } catch(e) { return {ok:false,error:e.message}; }
   },[]);
   const assign = useCallback(async (fId,compId)=>{ try { await apiAssignFreight(fId,{transportCompanyId:compId}); await refresh(fId); return {ok:true}; } catch(e) { return {ok:false,error:e.message}; } },[refresh]);
   const respond = useCallback(async (fId,action,reason,truckId)=>{ try { await apiRespondFreight(fId,{action,reason,truckId}); await refresh(fId); return {ok:true}; } catch(e) { return {ok:false,error:e.message}; } },[refresh]);
@@ -229,7 +253,7 @@ export function useFreights(user, isAuthInitialized) {
   const confirmFinished = useCallback(async (fId)=>{ try { await apiConfirmFinished(fId); await refresh(fId); return {ok:true}; } catch(e) { return {ok:false,error:e.message}; } },[refresh]);
   const authorize = useCallback(async (fId)=>{ try { await apiAuthorizeFreight(fId); await refresh(fId); return {ok:true}; } catch(e) { return {ok:false,error:e.message}; } },[refresh]);
   const update = useCallback(async (fId, data)=>{ try { await apiUpdateFreight(fId, data); await refresh(fId); return {ok:true}; } catch(e) { return {ok:false,error:e.message}; } },[refresh]);
-  return { freights, loading, error, fetchAll, refresh, create, assign, respond, start, finish, cancel, confirmLoaded, confirmFinished, authorize, update };
+  return { freights, loading, loadingMore, error, hasMore, total, fetchAll, loadMore, refresh, create, assign, respond, start, finish, cancel, confirmLoaded, confirmFinished, authorize, update };
 }
 
 // ======================== MAP FREIGHT =================================
@@ -353,7 +377,7 @@ export function useNotifications(user) {
     };
 
     fetchNotifications();
-    const interval = setInterval(fetchNotifications, 30000);
+    const interval = setInterval(fetchNotifications, 120000);
     return () => clearInterval(interval);
   }, [user]);
 

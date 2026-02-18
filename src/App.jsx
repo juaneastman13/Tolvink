@@ -587,7 +587,7 @@ function HomeScreen({ user, freights, perms, onNav, catalog, isDesktop, onAction
 
 // ======================== FREIGHT LIST ================================
 
-function ListScreen({ freights, onNav, onRefresh, catalog, view, setView, goToMap }) {
+function ListScreen({ freights, onNav, onRefresh, catalog, view, setView, goToMap, hasMore, loadMore, loadingMore, total }) {
   const [searchQ, setSearchQ] = useState("");
   const [fPlant, setFPlant] = useState("");
   const [fProducer, setFProducer] = useState("");
@@ -772,6 +772,16 @@ function ListScreen({ freights, onNav, onRefresh, catalog, view, setView, goToMa
               </tbody>
             </table>
           </div>
+        </div>
+      )}
+
+      {/* Load more / pagination indicator */}
+      {hasMore && (
+        <div style={{textAlign:"center",padding:"16px 0 24px"}}>
+          <button onClick={loadMore} disabled={loadingMore} style={{padding:"8px 24px",borderRadius:10,border:`1.5px solid ${C.pri}`,background:C.w,color:C.pri,fontSize:12,fontWeight:700,cursor:loadingMore?"default":"pointer",fontFamily:"inherit",opacity:loadingMore?0.5:1}}>
+            {loadingMore?"Cargando...":"Cargar más fletes"}
+          </button>
+          {total>0 && <div style={{fontSize:10,color:C.t3,marginTop:6}}>Mostrando {freights.length} de {total}</div>}
         </div>
       )}
     </div>
@@ -2446,7 +2456,10 @@ function ChatsScreen({ user, openConvId, onConvOpened, isDesktop }) {
   const compSearchTimer = useRef(null);
   const [searchQ, setSearchQ] = useState("");
   const [viewFile, setViewFile] = useState(null);
+  const [msgHasMore, setMsgHasMore] = useState(false);
+  const [loadingOlder, setLoadingOlder] = useState(false);
   const msgEndRef = useRef(null);
+  const msgTopRef = useRef(null);
 
   const loadConvs = useCallback(async () => {
     try { const c = await apiListConversations(searchQ||undefined); setConvs(c || []); return c||[]; } catch { return []; } finally { setLoading(false); }
@@ -2465,19 +2478,51 @@ function ChatsScreen({ user, openConvId, onConvOpened, isDesktop }) {
 
   const openConv = async (conv) => {
     setActiveConv(conv);
+    setMsgHasMore(false);
     try {
-      const m = await apiGetMessages(conv.id);
-      setMessages(m || []);
+      const r = await apiGetMessages(conv.id, {take:50});
+      setMessages(r.messages || r || []);
+      setMsgHasMore(r.hasMore || false);
       apiMarkRead(conv.id).catch(() => {}); // fire-and-forget
     } catch { /* network error — keep previous messages */ }
   };
 
-  useEffect(() => { if (msgEndRef.current) msgEndRef.current.scrollIntoView({ behavior: "smooth" }); }, [messages]);
+  const loadOlderMessages = async () => {
+    if(!activeConv || loadingOlder || !msgHasMore || messages.length===0) return;
+    setLoadingOlder(true);
+    try {
+      const oldestId = messages[0]?.id;
+      const r = await apiGetMessages(activeConv.id, {take:50, before:oldestId});
+      const older = r.messages || [];
+      if(older.length>0) {
+        setMessages(prev => {
+          const ids = new Set(prev.map(m=>m.id));
+          return [...older.filter(m=>!ids.has(m.id)), ...prev];
+        });
+      }
+      setMsgHasMore(r.hasMore || false);
+    } catch {} finally { setLoadingOlder(false); }
+  };
 
+  useEffect(() => { if (msgEndRef.current) msgEndRef.current.scrollIntoView({ behavior: "smooth" }); }, [messages.length]);
+
+  // Poll for new messages only (append new ones, don't replace all)
   useEffect(() => {
     if (!activeConv) return;
     const iv = setInterval(async () => {
-      try { const m = await apiGetMessages(activeConv.id); setMessages(m || []); } catch { /* poll — silent */ }
+      try {
+        const r = await apiGetMessages(activeConv.id, {take:50});
+        const fresh = r.messages || r || [];
+        setMessages(prev => {
+          if(prev.length===0) return fresh;
+          const lastId = prev[prev.length-1]?.id;
+          const lastIdx = fresh.findIndex(m=>m.id===lastId);
+          if(lastIdx>=0 && lastIdx<fresh.length-1) {
+            return [...prev, ...fresh.slice(lastIdx+1)];
+          }
+          return prev;
+        });
+      } catch {}
     }, 5000);
     return () => clearInterval(iv);
   }, [activeConv]);
@@ -2677,7 +2722,14 @@ function ChatsScreen({ user, openConvId, onConvOpened, isDesktop }) {
         {chatTab === "chat" ? (
           <>
             <div style={{ flex: 1, overflow: "auto", padding: 18, display: "flex", flexDirection: "column", gap: 6 }}>
-              {messages.length === 0 && <div style={{ textAlign: "center", padding: 40, color: C.t3, fontSize: 13 }}>Sin mensajes aún. Escribí el primero.</div>}
+              {msgHasMore && (
+                <div style={{textAlign:"center",padding:"8px 0 12px"}}>
+                  <button onClick={loadOlderMessages} disabled={loadingOlder} style={{padding:"5px 16px",borderRadius:8,border:`1px solid ${C.b1}`,background:C.bg,color:C.t2,fontSize:11,fontWeight:600,cursor:loadingOlder?"default":"pointer",fontFamily:"inherit",opacity:loadingOlder?0.5:1}}>
+                    {loadingOlder?"Cargando...":"Cargar mensajes anteriores"}
+                  </button>
+                </div>
+              )}
+              {messages.length === 0 && !loadingOlder && <div style={{ textAlign: "center", padding: 40, color: C.t3, fontSize: 13 }}>Sin mensajes aún. Escribí el primero.</div>}
               {messages.map(m => {
                 const mine = m.senderId === user.id || m.sender?.id === user.id;
                 const fileData = parseFileMsg(m.text);
@@ -4180,7 +4232,7 @@ export default function Tolvink() {
       } catch {}
     };
     checkUnread();
-    const iv = setInterval(checkUnread, 30000);
+    const iv = setInterval(checkUnread, 120000);
     return ()=>clearInterval(iv);
   },[auth.user]);
 
@@ -4309,7 +4361,7 @@ export default function Tolvink() {
         <div style={{flex:1,overflow:(screen==="chats"||screen==="calendar")&&isDesktop?"hidden":"auto",display:"flex",flexDirection:"column",WebkitOverflowScrolling:"touch",overscrollBehavior:"contain"}}>
         <div key={screen} className="tv-page" style={{flex:1,display:"flex",flexDirection:"column",minHeight:0}}>
         {screen==="home" && <HomeScreen user={auth.user} freights={fh.freights} perms={perms} onNav={nav} catalog={catalog} isDesktop={isDesktop} onAction={handleAction} actionLoading={actionLoading} onChat={(convId)=>{if(convId){setChatConvId(convId);setScreen("chats");}}} onRefresh={(id)=>fh.refresh(id)} onDuplicate={(f)=>{setDuplicateData(f);setScreen("new");}} onEdit={(f)=>{setEditData(f);setScreen("edit");}} goToMap={goToMap}/>}
-        {screen==="list" && <ListScreen freights={fh.freights} onNav={nav} onRefresh={fh.fetchAll} catalog={catalog} view={listView} setView={setListView} goToMap={goToMap}/>}
+        {screen==="list" && <ListScreen freights={fh.freights} onNav={nav} onRefresh={fh.fetchAll} catalog={catalog} view={listView} setView={setListView} goToMap={goToMap} hasMore={fh.hasMore} loadMore={fh.loadMore} loadingMore={fh.loadingMore} total={fh.total}/>}
         {screen==="calendar" && <CalendarScreen freights={fh.freights} perms={perms} onNav={nav} isDesktop={isDesktop} user={auth.user} onAction={handleAction} actionLoading={actionLoading} onChat={(convId)=>{if(convId){setChatConvId(convId);setScreen("chats");}}} onRefresh={(id)=>fh.refresh(id)} onDuplicate={(f)=>{setDuplicateData(f);setScreen("new");}} onEdit={(f)=>{setEditData(f);setScreen("edit");}} goToMap={goToMap}/>}
         {screen==="detail" && <DetailScreen user={curFreight ? {...auth.user, userType: _resolveType(curFreight)} : auth.user} freight={curFreight} perms={perms} onBack={()=>setScreen("list")} onAction={handleAction} actionLoading={actionLoading} onChat={(convId)=>{if(convId){setChatConvId(convId);setScreen("chats");}}} onRefresh={(id)=>fh.refresh(id)} onDuplicate={(f)=>{setDuplicateData(f);setScreen("new");}} onEdit={(f)=>{setEditData(f);setScreen("edit");}} goToMap={goToMap}/>}
         {screen==="new" && <NewScreen user={auth.user} lots={catalog.lots} plants={catalog.plants} branches={catalog.branches} fields={catalog.fields} trucks={catalog.trucks} onBack={()=>{setDuplicateData(null);setScreen("home");}} onCreate={handleCreate} submitting={submitting} duplicateFrom={duplicateData}/>}
