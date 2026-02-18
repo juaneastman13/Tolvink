@@ -4258,7 +4258,7 @@ function CompanyHeaderPicker({ user, onSwitch }) {
 
   if(!activeName) return null;
   return (
-    <div ref={ref} style={{position:"relative",display:"flex",flexDirection:"column",alignItems:"flex-end"}}>
+    <div ref={ref} style={{position:"relative",display:"flex",flexDirection:"column",alignItems:"center"}}>
       <div style={{fontSize:10,color:C.t3,textTransform:"capitalize",marginBottom:2}}>{dateLabel} · {timeLabel}</div>
       <button onClick={()=>companies.length>1&&setOpen(!open)} style={{background:"none",border:`1px solid ${C.b2}`,borderRadius:8,padding:"5px 12px",cursor:companies.length>1?"pointer":"default",display:"flex",alignItems:"center",gap:6,fontFamily:"inherit"}}>
         <span style={{width:8,height:8,borderRadius:4,background:tColor,flexShrink:0}}/>
@@ -4548,15 +4548,16 @@ export default function Tolvink() {
           </div>
         </div>
 
+        {/* Desktop company bar — static, vertically centered with sidebar logo (107px) */}
+        {isDesktop && <div className="tv-header-bar" style={{display:"flex",alignItems:"center",justifyContent:"center",padding:"0 18px",minHeight:107,background:C.w,borderBottom:`1px solid ${C.b2}`,flexShrink:0,zIndex:10}}>
+          <CompanyHeaderPicker user={auth.user} onSwitch={async(id)=>{const r=await auth.switchCompany(id);if(r.ok){fh.fetchAll();catalog.refresh();}}} />
+        </div>}
+
         {/* Offline banner */}
         {!online && <div style={{background:"#f59e0b",color:"#fff",textAlign:"center",padding:"6px 12px",fontSize:13,fontWeight:600,flexShrink:0,zIndex:10}}>{Ic.warn("#fff",14)} Sin conexión — mostrando datos guardados</div>}
 
         {/* Scrollable content area */}
         <div style={{flex:1,overflow:(screen==="chats"||screen==="calendar")&&isDesktop?"hidden":"auto",display:"flex",flexDirection:"column",WebkitOverflowScrolling:"touch",overscrollBehavior:"contain"}}>
-        {/* Desktop company bar — inside content area */}
-        {isDesktop && <div className="tv-header-bar" style={{display:"flex",alignItems:"center",justifyContent:"flex-end",padding:"8px 18px",background:C.bg,flexShrink:0,zIndex:5}}>
-          <CompanyHeaderPicker user={auth.user} onSwitch={async(id)=>{const r=await auth.switchCompany(id);if(r.ok){fh.fetchAll();catalog.refresh();}}} />
-        </div>}
         <div key={screen} className="tv-page" style={{flex:1,display:"flex",flexDirection:"column",minHeight:0}}>
         {screen==="home" && <HomeScreen user={auth.user} freights={fh.freights} perms={perms} onNav={nav} catalog={catalog} isDesktop={isDesktop} onAction={handleAction} actionLoading={actionLoading} onChat={(convId)=>{if(convId){setChatConvId(convId);navigate("/chats");}}} onRefresh={(id)=>fh.refresh(id)} onDuplicate={(f)=>{setDuplicateData(f);navigate("/new");}} onEdit={(f)=>{setEditData(f);navigate("/edit/"+f.id);}} goToMap={goToMap}/>}
         {screen==="list" && <ListScreen freights={fh.freights} onNav={nav} onRefresh={fh.fetchAll} catalog={catalog} view={listView} setView={setListView} goToMap={goToMap} hasMore={fh.hasMore} loadMore={fh.loadMore} loadingMore={fh.loadingMore} total={fh.total}/>}
