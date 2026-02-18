@@ -1,18 +1,18 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, memo } from "react";
 import { C, Ic } from "./theme";
 import { stCfg } from "./constants";
 
 // ======================== BASE COMPONENTS ============================
 
-export function Av({ letters, size=36, color=C.pri }) {
+export const Av = memo(function Av({ letters, size=36, color=C.pri }) {
   return <div style={{ width:size, height:size, borderRadius:size, display:"flex", alignItems:"center", justifyContent:"center", background:`${color}12`, color, fontSize:size*0.36, fontWeight:700, letterSpacing:0.5, flexShrink:0, border:`1.5px solid ${color}22` }}>{letters}</div>;
-}
+});
 
-export function Bd({ children, color=C.pri, bg, small }) {
+export const Bd = memo(function Bd({ children, color=C.pri, bg, small }) {
   return <span style={{ display:"inline-flex", alignItems:"center", gap:4, padding:small?"2px 7px":"4px 10px", borderRadius:6, fontSize:small?9.5:10.5, fontWeight:600, background:bg||`${color}0D`, color, whiteSpace:"nowrap", letterSpacing:0.2 }}>{children}</span>;
-}
+});
 
-export function Btn({ children, onClick, v="pri", full, sm, icon, disabled, style={} }) {
+export const Btn = memo(function Btn({ children, onClick, v="pri", full, sm, icon, disabled, style={} }) {
   const vs = {
     pri:  { bg:C.pri, c:C.w, hbg:C.priLt },
     sec:  { bg:C.w,   c:C.pri, bd:C.b1 },
@@ -22,11 +22,11 @@ export function Btn({ children, onClick, v="pri", full, sm, icon, disabled, styl
   };
   const vv = vs[v] || vs.pri;
   return <button disabled={disabled} onClick={onClick} style={{ display:"inline-flex", alignItems:"center", justifyContent:"center", gap:7, padding:sm?"8px 14px":"13px 22px", borderRadius:10, fontSize:sm?12:13.5, fontWeight:600, fontFamily:"inherit", background:disabled?"#E8ECE9":vv.bg, color:disabled?C.t3:vv.c, border:vv.bd?`1px solid ${vv.bd}`:"none", cursor:disabled?"not-allowed":"pointer", width:full?"100%":"auto", transition:"all 0.2s ease", minHeight:sm?36:44, WebkitTapHighlightColor:"transparent", touchAction:"manipulation", ...style }} onMouseEnter={e=>{if(!disabled&&vv.hbg)e.currentTarget.style.background=vv.hbg}} onMouseLeave={e=>{if(!disabled)e.currentTarget.style.background=disabled?"#E8ECE9":vv.bg}}>{icon&&<span style={{display:"flex",alignItems:"center"}}>{icon}</span>}{children}</button>;
-}
+});
 
-export function Tabs({ items, active, onChange }) {
+export const Tabs = memo(function Tabs({ items, active, onChange }) {
   return <div style={{ display:"flex", gap:2, background:C.bgInput, borderRadius:10, padding:3 }}>{items.map(t=><button key={t.k} onClick={()=>onChange(t.k)} style={{ flex:1, padding:"8px 4px", borderRadius:8, border:"none", fontFamily:"inherit", fontSize:11, fontWeight:active===t.k?700:500, cursor:"pointer", background:active===t.k?C.w:"transparent", color:active===t.k?C.pri:C.t3, boxShadow:active===t.k?C.sh:"none", transition:"all 0.15s" }}>{t.l}</button>)}</div>;
-}
+});
 
 export function Field({ label, icon, value, onChange, placeholder, type="text", children, hasError }) {
   const [showPw, setShowPw] = useState(false);
@@ -123,11 +123,11 @@ export function Toast({ msg, type="ok", onClose }) {
   return <div style={{ position:"fixed", top:"max(20px, env(safe-area-inset-top))", left:"50%", transform:"translateX(-50%)", zIndex:200, background:cfg.bg, color:C.w, padding:"11px 22px", borderRadius:12, fontSize:13, fontWeight:600, boxShadow:C.shLg, display:"flex", alignItems:"center", gap:8, animation:"fadeIn 0.3s ease", maxWidth:"calc(100vw - 40px)" }}>{cfg.ic} {msg}</div>;
 }
 
-export function Loader() {
+export const Loader = memo(function Loader() {
   return <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:32, gap:12 }}>
     <span style={{ width:14, height:14, borderRadius:7, background:C.acc, display:"inline-block", animation:"dotPulse 1.5s ease-in-out infinite" }}></span>
   </div>;
-}
+});
 
 export function LoadingOverlay({ closing=false, closingText="", onClose }) {
   const [fading, setFading] = useState(false);

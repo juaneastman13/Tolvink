@@ -5,7 +5,8 @@ import {
   apiStartFreight, apiFinishFreight, apiCancelFreight, apiConfirmLoaded, apiConfirmFinished,
   apiAuthorizeFreight, apiUpdateFreight,
   apiGetPlants, apiGetBranches, apiGetLots, apiGetTransportCompanies, apiGetTrucks, apiGetFields,
-  apiGetNotifications, apiMarkNotificationRead, apiMarkAllRead, apiSubscribePush, VAPID_PUBLIC_KEY
+  apiGetNotifications, apiMarkNotificationRead, apiMarkAllRead, apiSubscribePush, VAPID_PUBLIC_KEY,
+  API_URL,
 } from "./api";
 import { C, track } from "./theme";
 
@@ -425,6 +426,81 @@ export function useTableSort() {
     });
   }, [sortCol, sortDir]);
   return { sortCol, sortDir, toggle, sortData };
+}
+
+// ======================== SSE (Server-Sent Events) ===================
+export function useSSE(user, { onFreightUpdate, onMessageNew, onNotification, onCatalogChanged }) {
+  const [connected, setConnected] = useState(false);
+  const esRef = useRef(null);
+  const reconnectTimer = useRef(null);
+
+  useEffect(() => {
+    if (!user) {
+      if (esRef.current) { esRef.current.close(); esRef.current = null; }
+      setConnected(false);
+      return;
+    }
+
+    const token = getToken();
+    if (!token) return;
+
+    const connect = () => {
+      const url = `${API_URL}/sse/stream?token=${encodeURIComponent(token)}`;
+      const es = new EventSource(url);
+      esRef.current = es;
+
+      es.addEventListener('connected', () => {
+        setConnected(true);
+        console.log('[SSE] Connected');
+      });
+
+      es.addEventListener('freight:updated', (e) => {
+        try {
+          const data = JSON.parse(e.data);
+          if (onFreightUpdate) onFreightUpdate(data);
+        } catch {}
+      });
+
+      es.addEventListener('message:new', (e) => {
+        try {
+          const data = JSON.parse(e.data);
+          if (onMessageNew) onMessageNew(data);
+        } catch {}
+      });
+
+      es.addEventListener('notification:new', (e) => {
+        try {
+          const data = JSON.parse(e.data);
+          if (onNotification) onNotification(data);
+        } catch {}
+      });
+
+      es.addEventListener('catalog:changed', (e) => {
+        try {
+          const data = JSON.parse(e.data);
+          if (onCatalogChanged) onCatalogChanged(data);
+        } catch {}
+      });
+
+      es.onerror = () => {
+        setConnected(false);
+        es.close();
+        esRef.current = null;
+        // Reconnect after 5 seconds
+        reconnectTimer.current = setTimeout(connect, 5000);
+      };
+    };
+
+    connect();
+
+    return () => {
+      if (esRef.current) { esRef.current.close(); esRef.current = null; }
+      if (reconnectTimer.current) clearTimeout(reconnectTimer.current);
+      setConnected(false);
+    };
+  }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  return { connected };
 }
 
 // ======================== PULL TO REFRESH =============================
