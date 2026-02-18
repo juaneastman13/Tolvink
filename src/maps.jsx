@@ -449,22 +449,26 @@ export function FreightsOverviewMap({ freights, onSelect, fields, plants }) {
   const truckMarkers = useRef([]);
   const info = useRef(null);
   const [ready, setReady] = useState(false);
+  const [mapError, setMapError] = useState(null);
   const [showFreights, setShowFreights] = useState(true);
 
   // Init map once
   useEffect(() => {
     if (!mapRef.current) return;
+    if (!GMAPS_KEY) { setMapError("Falta la clave de Google Maps (VITE_GMAPS_KEY)"); return; }
     let c = false;
     (async () => {
-      const maps = await loadGMaps();
-      if (c || !mapRef.current) return;
-      mapObj.current = new maps.Map(mapRef.current, {
-        zoom: 6, center: { lat: -34.6, lng: -56.2 },
-        disableDefaultUI: true, zoomControl: true, gestureHandling: "greedy",
-        styles: [{ featureType:"poi", stylers:[{visibility:"off"}] }, { featureType:"transit", stylers:[{visibility:"off"}] }],
-      });
-      info.current = new maps.InfoWindow();
-      setReady(true);
+      try {
+        const maps = await loadGMaps();
+        if (c || !mapRef.current) return;
+        mapObj.current = new maps.Map(mapRef.current, {
+          zoom: 6, center: { lat: -34.6, lng: -56.2 },
+          disableDefaultUI: true, zoomControl: true, gestureHandling: "greedy",
+          styles: [{ featureType:"poi", stylers:[{visibility:"off"}] }, { featureType:"transit", stylers:[{visibility:"off"}] }],
+        });
+        info.current = new maps.InfoWindow();
+        setReady(true);
+      } catch(e) { if (!c) setMapError("No se pudo cargar Google Maps"); }
     })();
     return () => { c = true; };
   }, []);
@@ -603,8 +607,17 @@ export function FreightsOverviewMap({ freights, onSelect, fields, plants }) {
   // Cleanup truck markers on unmount
   useEffect(() => () => { truckMarkers.current.forEach(m => m.setMap(null)); }, []);
 
+  if (mapError) return (
+    <div style={{ background:C.w, border:`1px solid ${C.b1}`, borderRadius:12, padding:40, textAlign:"center", color:C.t3 }}>
+      <div style={{fontSize:32,marginBottom:8}}>🗺️</div>
+      <div style={{fontSize:13,fontWeight:600,color:C.t2,marginBottom:4}}>Mapa no disponible</div>
+      <div style={{fontSize:11}}>{mapError}</div>
+    </div>
+  );
+
   return (
     <div style={{ background:C.w, border:`1px solid ${C.b1}`, borderRadius:12, overflow:"hidden", boxShadow:"0 1px 4px rgba(0,0,0,0.06)", position:"relative" }}>
+      {!ready && <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",background:C.bg,zIndex:5}}><div style={{fontSize:12,color:C.t3}}>Cargando mapa...</div></div>}
       <button onClick={()=>setShowFreights(v=>!v)} style={{position:"absolute",top:12,right:12,zIndex:10,padding:"6px 12px",borderRadius:8,border:`1.5px solid ${C.pri}`,background:C.w,color:C.pri,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:5,boxShadow:C.shMd}}>
         {showFreights?Ic.eyeOff(C.pri,13):Ic.eye(C.pri,13)}
         {showFreights?"Ocultar fletes":"Ver fletes"}
