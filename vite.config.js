@@ -20,6 +20,17 @@ function swVersion() {
 
 export default defineConfig({
   plugins: [react(), swVersion()],
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: './src/test/setup.js',
+    include: ['src/**/*.test.{js,jsx}'],
+    coverage: {
+      provider: 'v8',
+      include: ['src/**/*.{js,jsx}'],
+      exclude: ['src/test/**', 'src/routes-bg.jsx', 'src/theme.js'],
+    },
+  },
   build: {
     outDir: 'dist',
     sourcemap: false,

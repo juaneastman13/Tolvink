@@ -8,6 +8,7 @@ import { MapOverlay, LocPickerFullscreen } from "./maps";
 import { RoutesBackground } from "./routes-bg";
 import { useUIStore, offlineQueue } from "./store";
 import { resolveUserTypeForFreight, getPendingActions } from "./utils/freight-helpers";
+import { setUser as setSentryUser } from "./sentry";
 
 // ======================== LAZY-LOADED SCREENS ===========================
 const LandingScreen = lazy(() => import("./screens/LandingScreen"));
@@ -126,11 +127,12 @@ export default function Tolvink() {
 
   const [unreadChats, setUnreadChats] = useState(0);
 
-  // Redirect to home when user logs in
+  // Redirect to home when user logs in + Sentry user tracking
   const prevUser = useRef(null);
   useEffect(()=>{
     if(auth.user && !prevUser.current) { navigate("/", { replace: true }); }
     prevUser.current = auth.user;
+    setSentryUser(auth.user);
   },[auth.user]);
 
   // Calculate pending actions count
