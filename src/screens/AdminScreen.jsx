@@ -116,8 +116,9 @@ export default function AdminScreen({ user, onBack, AccessScreen }) {
     if(!branchForm.name.trim()) return show("Nombre requerido","err");
     setSaving(true);
     try {
-      if(editBranchId) { await apiAdminUpdateBranch(editBranchId, branchForm); setSaving(false); setDoneMsg("Sucursal actualizada"); }
-      else { await apiAdminCreateBranch({...branchForm,companyId:selectedCompany.id}); setSaving(false); setDoneMsg("Sucursal creada"); }
+      const {locationAddress, ...branchData} = branchForm;
+      if(editBranchId) { await apiAdminUpdateBranch(editBranchId, branchData); setSaving(false); setDoneMsg("Sucursal actualizada"); }
+      else { await apiAdminCreateBranch({...branchData,companyId:selectedCompany.id}); setSaving(false); setDoneMsg("Sucursal creada"); }
       setShowBranchForm(false); const b=await apiAdminListBranches(selectedCompany.id); setBranches(b||[]); load();
     } catch(e) { show(e.message,"err"); setSaving(false); }
   };
