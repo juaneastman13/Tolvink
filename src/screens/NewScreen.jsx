@@ -128,7 +128,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
   const submit = () => {
     setTouched(true);
     const {ok,errs:e} = validate(form, SCHEMAS.freight);
-    if(form.grain==="Otros" && !form.productTypeOther.trim()) { e.productTypeOther="Descripci\u00f3n obligatoria"; }
+    if(form.grain==="Otros" && !form.productTypeOther?.trim()) { e.productTypeOther="Descripci\u00f3n obligatoria"; }
     if(originMode==="field" && !form.fieldId) { e.fieldId="Seleccion\u00e1 un campo"; }
     if(originMode==="field" && form.fieldId && !form.lotId) { e.lotId="Seleccion\u00e1 un lote del campo"; }
     if(originMode==="map" && !customOrigin.lat) { e.customOrigin="Indic\u00e1 una ubicaci\u00f3n en el mapa"; }
@@ -139,7 +139,13 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
     if(!ok || Object.keys(e).filter(k=>e[k]).length>0) {
       setShowIncomplete(true);
       const first=SEC_ORDER.find(s=>!secComplete[s]);
-      if(first){setActiveSection(first);secRefs[first]?.current?.scrollIntoView({behavior:"smooth",block:"center"});}
+      if(first){
+        setActiveSection(first);
+        // Wait for React to re-render the expanded section before scrolling
+        requestAnimationFrame(() => {
+          secRefs[first]?.current?.scrollIntoView({behavior:"smooth",block:"center"});
+        });
+      }
       return;
     }
     if(submitting) return;

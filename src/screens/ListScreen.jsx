@@ -124,16 +124,22 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
           {view==="kanban"?"Mapa":view==="mapa"?"Tabla":"Etiquetas"}
         </button>
       </div>
-      <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:12 }}>
+      <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:6 }}>
+        <select value={fPlant} onChange={e=>setFPlant(e.target.value)} style={{flex:1,padding:"6px 8px",borderRadius:8,border:`1.5px solid ${fPlant?C.pri:C.b1}`,background:fPlant?C.priPale:C.w,color:fPlant?C.pri:C.t3,fontSize:11,fontFamily:"inherit",outline:"none",cursor:"pointer",minWidth:0}}>
+          <option value="">Planta</option>
+          {plantOptions.map(p=><option key={p} value={p}>{p}</option>)}
+        </select>
         <select value={fProducer} onChange={e=>setFProducer(e.target.value)} style={{flex:1,padding:"6px 8px",borderRadius:8,border:`1.5px solid ${fProducer?C.pri:C.b1}`,background:fProducer?C.priPale:C.w,color:fProducer?C.pri:C.t3,fontSize:11,fontFamily:"inherit",outline:"none",cursor:"pointer",minWidth:0}}>
           <option value="">Productor</option>
           {producerOptions.map(p=><option key={p} value={p}>{p}</option>)}
         </select>
+        {hasFilters && <button onClick={clearAll} style={{padding:"5px 10px",borderRadius:6,border:`1px solid ${C.err}40`,background:C.errPale,color:C.err,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap",flexShrink:0}}>Limpiar</button>}
+      </div>
+      <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:12 }}>
         <select value={fTransporter} onChange={e=>setFTransporter(e.target.value)} style={{flex:1,padding:"6px 8px",borderRadius:8,border:`1.5px solid ${fTransporter?C.pri:C.b1}`,background:fTransporter?C.priPale:C.w,color:fTransporter?C.pri:C.t3,fontSize:11,fontFamily:"inherit",outline:"none",cursor:"pointer",minWidth:0}}>
           <option value="">Transportista</option>
           {transporterOptions.map(p=><option key={p} value={p}>{p}</option>)}
         </select>
-        {hasFilters && <button onClick={clearAll} style={{padding:"5px 10px",borderRadius:6,border:`1px solid ${C.err}40`,background:C.errPale,color:C.err,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap",flexShrink:0}}>Limpiar</button>}
       </div>
       </>)}
 
