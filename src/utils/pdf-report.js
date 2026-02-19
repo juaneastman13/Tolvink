@@ -143,7 +143,7 @@ export function generateFreightPDF(freight, auditLog = []) {
   if (freight.isOwnFleet) infoRows.push(['Tipo', 'Flota propia']);
   if (freight.notes) infoRows.push(['Observaciones', freight.notes]);
 
-  autoTable(doc, {
+  let tbl = autoTable(doc, {
     startY: y, head:[], body: infoRows, theme:'plain',
     margin:{left:M,right:M},
     columnStyles:{
@@ -156,7 +156,7 @@ export function generateFreightPDF(freight, auditLog = []) {
     },
     alternateRowStyles:{fillColor:BG_ALT},
   });
-  y = doc.previousAutoTable.finalY + 8;
+  y = tbl.finalY + 8;
 
   // ═══════════════════════════════════════════════════════════════════════
   // SECTION 2 — Recorrido
@@ -197,7 +197,7 @@ export function generateFreightPDF(freight, auditLog = []) {
     if(ms > 0) routeRows.push(['Duración real', fmtDuration(ms)]);
   }
 
-  autoTable(doc, {
+  tbl = autoTable(doc, {
     startY: y, head:[], body: routeRows, theme:'plain',
     margin:{left:M,right:M},
     columnStyles:{
@@ -210,7 +210,7 @@ export function generateFreightPDF(freight, auditLog = []) {
     },
     alternateRowStyles:{fillColor:[236,254,255]},
   });
-  y = doc.previousAutoTable.finalY + 8;
+  y = tbl.finalY + 8;
 
   // ═══════════════════════════════════════════════════════════════════════
   // SECTION 3 — Historial de cambios
@@ -227,7 +227,7 @@ export function generateFreightPDF(freight, auditLog = []) {
   };
 
   if (auditLog.length > 0) {
-    autoTable(doc, {
+    tbl = autoTable(doc, {
       startY: y,
       head:[['Acción','Usuario','Empresa','Fecha','Motivo']],
       body: auditLog.map(log => [
@@ -244,7 +244,7 @@ export function generateFreightPDF(freight, auditLog = []) {
       alternateRowStyles:{fillColor:[255,243,232]},
       columnStyles:{0:{fontStyle:'bold',cellWidth:28},1:{cellWidth:28},2:{cellWidth:28},3:{cellWidth:32}},
     });
-    y = doc.previousAutoTable.finalY + 8;
+    y = tbl.finalY + 8;
   } else {
     doc.setFont('helvetica','italic');
     doc.setFontSize(9);
@@ -264,7 +264,7 @@ export function generateFreightPDF(freight, auditLog = []) {
   const docs = freight.documents || [];
   if (docs.length > 0) {
     const stepLabels = {request:'Solicitud',assignment:'Asignación',load_confirmation:'Carga',delivery:'Entrega'};
-    autoTable(doc, {
+    tbl = autoTable(doc, {
       startY: y,
       head:[['Nombre','Tipo','Etapa','Fecha']],
       body: docs.map((d,i) => [
@@ -279,7 +279,7 @@ export function generateFreightPDF(freight, auditLog = []) {
       styles:{cellPadding:{top:2,bottom:2,left:3,right:3},fontSize:8,textColor:hex(T1),lineColor:hex(B1),lineWidth:0.2,font:'helvetica'},
       alternateRowStyles:{fillColor:[228,243,234]},
     });
-    y = doc.previousAutoTable.finalY + 8;
+    y = tbl.finalY + 8;
   } else {
     doc.setFont('helvetica','italic');
     doc.setFontSize(9);
