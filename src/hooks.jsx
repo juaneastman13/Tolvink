@@ -533,6 +533,8 @@ export function useSSE(user, { onFreightUpdate, onMessageNew, onNotification, on
     if (!token) return;
 
     const connect = () => {
+      // Safety: close previous EventSource before creating new one
+      if (esRef.current) { esRef.current.close(); esRef.current = null; }
       const url = `${API_URL}/sse/stream?token=${encodeURIComponent(token)}`;
       const es = new EventSource(url);
       esRef.current = es;
