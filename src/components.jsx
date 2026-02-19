@@ -51,11 +51,13 @@ export function Select({ label, icon, value, onChange, options, placeholder="Sel
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
   const listRef = useRef(null);
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
   useEffect(()=>{
     if(!open) return;
     const h = e => { if(ref.current && !ref.current.contains(e.target)) setOpen(false); };
     document.addEventListener("mousedown", h);
-    return () => document.removeEventListener("mousedown", h);
+    document.addEventListener("touchstart", h, { passive:true });
+    return () => { document.removeEventListener("mousedown", h); document.removeEventListener("touchstart", h); };
   },[open]);
   useEffect(()=>{
     if(open && listRef.current && value) {
@@ -64,6 +66,21 @@ export function Select({ label, icon, value, onChange, options, placeholder="Sel
     }
   },[open, value]);
   const sel = options.find(o=>o.value===value);
+
+  // Mobile: native <select> for best touch UX
+  if (isMobile) {
+    return (
+      <div style={{ position:"relative" }}>
+        {label && <label style={{ fontSize:10.5, fontWeight:600, color:C.t2, marginBottom:6, display:"flex", alignItems:"center", gap:4, textTransform:"uppercase", letterSpacing:0.6 }}>{icon} {label}</label>}
+        <select value={value||""} onChange={e=>onChange(e.target.value)} style={{ width:"100%", padding:"12px 14px", paddingRight:36, borderRadius:10, border:`1.5px solid ${C.b1}`, background:C.w, color:value?C.t1:C.t3, fontSize:15, fontFamily:"inherit", cursor:"pointer", boxSizing:"border-box", minHeight:44, outline:"none", WebkitAppearance:"none", appearance:"none" }}>
+          <option value="" disabled>{placeholder}</option>
+          {options.map(o=><option key={o.value} value={o.value}>{o.label}{o.sub?` — ${o.sub}`:""}</option>)}
+        </select>
+        <div style={{ position:"absolute", right:12, top:label?"calc(50% + 11px)":"50%", transform:"translateY(-50%)", pointerEvents:"none", display:"flex" }}>{Ic.down(C.t3,16)}</div>
+      </div>
+    );
+  }
+
   return (
     <div ref={ref} style={{ position:"relative" }}>
       {label && <label style={{ fontSize:10.5, fontWeight:600, color:C.t2, marginBottom:6, display:"flex", alignItems:"center", gap:4, textTransform:"uppercase", letterSpacing:0.6 }}>{icon} {label}</label>}
