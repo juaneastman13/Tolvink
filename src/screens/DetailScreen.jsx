@@ -6,6 +6,8 @@ import { FreightMap, SafeZone } from "../maps";
 import { DocsGallery, FreightFileUpload } from "../uploads";
 import { apiGetAuditLog } from "../api";
 import { useIsDesktop } from "../hooks";
+// PDF report loaded lazily to avoid bundle bloat
+const loadPdfReport = () => import("../utils/pdf-report");
 
 export default function DetailScreen({ user, freight, perms, onBack, onAction, actionLoading, onChat, onRefresh, onDuplicate, onEdit, goToMap }) {
   if(!freight) return null;
@@ -249,6 +251,16 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, a
       <button onClick={()=>onChat(freight.conversationId)} disabled={!freight.conversationId}
         style={{ width:"100%", background:C.priPale, borderRadius:10, padding:12, display:"flex", alignItems:"center", gap:10, border:`1.5px solid ${C.pri}30`, cursor:freight.conversationId?"pointer":"default", fontFamily:"inherit", marginBottom:12 }}>
         {Ic.msg(C.pri,20)}<div style={{textAlign:"left"}}><div style={{ fontSize:12, fontWeight:700, color:C.pri }}>Chat del flete</div><div style={{ fontSize:10, color:C.t2 }}>Conversá con las partes involucradas</div></div>
+      </button>
+
+      {/* PDF Report */}
+      <button onClick={async()=>{
+        let logs = auditLog;
+        if(!logs) { try { logs = await apiGetAuditLog(freight.id); setAuditLog(logs); } catch(e) { logs = []; } }
+        const { generateFreightPDF } = await loadPdfReport();
+        generateFreightPDF(freight, logs || []);
+      }} style={{ width:"100%", background:C.w, borderRadius:10, padding:12, display:"flex", alignItems:"center", gap:10, border:`1.5px solid ${C.b1}`, cursor:"pointer", fontFamily:"inherit", marginBottom:12 }}>
+        {Ic.doc(C.t2,20)}<div style={{textAlign:"left"}}><div style={{ fontSize:12, fontWeight:700, color:C.t1 }}>Descargar informe PDF</div><div style={{ fontSize:10, color:C.t3 }}>Información, recorrido, historial y documentos</div></div>
       </button>
 
       {/* Edit + Cancel — bottom actions */}

@@ -320,7 +320,9 @@ export function mapFreight(f) {
     producerLoadedConfirmedAt: f.producerLoadedConfirmedAt||null,
     transporterFinishedConfirmedAt: f.transporterFinishedConfirmedAt||null,
     plantFinishedConfirmedAt: f.plantFinishedConfirmedAt||null,
+    startedAt: f.startedAt||null,
     loadedAt: f.loadedAt||null,
+    finishedAt: f.finishedAt||null,
     documents: f.documents||[],
     conversationId: f.conversation?.id||null,
   };
