@@ -1,8 +1,10 @@
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { C, Ic, FONT, MONO } from "../theme";
 import { stCfg } from "../constants";
 import { Bd, Btn, Field, Select, exportExcel, exportPDF, FileViewer } from "../components";
 import { DocsGallery } from "../uploads";
+import { apiGetAuditLog } from "../api";
+const loadPdfReport = () => import("../utils/pdf-report");
 
 export default function ReportsScreen({ onBack, freights, isDesktop, embedded }) {
   const [expanded, setExpanded] = useState({});
@@ -12,7 +14,11 @@ export default function ReportsScreen({ onBack, freights, isDesktop, embedded })
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [viewFile, setViewFile] = useState(null);
+  const [pdfLoadingId, setPdfLoadingId] = useState(null);
   const toggle = (k) => setExpanded(p=>({...p,[k]:!p[k]}));
+
+  // Pre-load PDF module
+  useEffect(() => { loadPdfReport(); }, []);
   const toggleSel = (id, e) => { e.stopPropagation(); setSelected(p => { const n = new Set(p); if(n.has(id)) n.delete(id); else n.add(id); return n; }); };
 
   const allFreights = (freights||[]).filter(f=>{
@@ -144,6 +150,21 @@ export default function ReportsScreen({ onBack, freights, isDesktop, embedded })
 
                 {isOpen && (
                   <div style={{ borderTop:`1px solid ${C.b2}`, padding:"8px 14px" }}>
+                    {/* Individual PDF report download */}
+                    <button disabled={pdfLoadingId===f.id} onClick={async(e)=>{
+                      e.stopPropagation();
+                      if(pdfLoadingId) return;
+                      setPdfLoadingId(f.id);
+                      try {
+                        let logs = [];
+                        try { logs = await apiGetAuditLog(f.id); } catch {}
+                        const { generateFreightPDF } = await loadPdfReport();
+                        generateFreightPDF(f, logs);
+                      } catch(err) { console.error('PDF error', err); }
+                      finally { setPdfLoadingId(null); }
+                    }} style={{ width:"100%", padding:"8px 10px", marginBottom:8, borderRadius:8, border:`1.5px solid ${C.b1}`, background:C.w, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:8, opacity:pdfLoadingId===f.id?0.6:1 }}>
+                      {Ic.doc(C.pri,16)}<span style={{fontSize:11,fontWeight:600,color:C.pri}}>{pdfLoadingId===f.id?'Generando...':'Descargar informe PDF'}</span>
+                    </button>
                     {docs.length>0 ? docs.map((d,i)=>(
                       <div key={d.id||i} style={{ display:"flex", alignItems:"center", gap:10, padding:"8px 0", borderBottom:i<docs.length-1?`1px solid ${C.b2}`:"none" }}>
                         {d.type==="photo" ? (

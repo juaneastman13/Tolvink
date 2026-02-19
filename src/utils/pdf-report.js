@@ -304,6 +304,22 @@ export function generateFreightPDF(freight, auditLog = []) {
     doc.text(`Página ${i} de ${pages}`, W-M, H-8, { align:'right' });
   }
 
-  // Save file
-  doc.save(`${freight.code || 'flete'}-informe.pdf`);
+  // Save — reliable cross-platform: blob + <a download> (or window.open on iOS)
+  const filename = `${freight.code || 'flete'}-informe.pdf`;
+  const blob = doc.output('blob');
+  const url = URL.createObjectURL(blob);
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+
+  if (isIOS) {
+    // iOS doesn't support <a download>, open in new tab
+    window.open(url, '_blank');
+  } else {
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }
+  setTimeout(() => URL.revokeObjectURL(url), 30000);
 }

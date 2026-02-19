@@ -14,7 +14,11 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, a
   const [auditLog, setAuditLog] = useState(null);
   const [showAudit, setShowAudit] = useState(false);
   const [viewFile, setViewFile] = useState(null);
+  const [pdfLoading, setPdfLoading] = useState(false);
   const auditRef = useRef(null);
+
+  // Pre-load PDF module so download works synchronously on click
+  useEffect(() => { loadPdfReport(); }, []);
 
   // Auto-refresh freight detail every 10s
   useEffect(() => {
@@ -254,13 +258,18 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, a
       </button>
 
       {/* PDF Report */}
-      <button onClick={async()=>{
-        let logs = auditLog;
-        if(!logs) { try { logs = await apiGetAuditLog(freight.id); setAuditLog(logs); } catch(e) { logs = []; } }
-        const { generateFreightPDF } = await loadPdfReport();
-        generateFreightPDF(freight, logs || []);
-      }} style={{ width:"100%", background:C.w, borderRadius:10, padding:12, display:"flex", alignItems:"center", gap:10, border:`1.5px solid ${C.b1}`, cursor:"pointer", fontFamily:"inherit", marginBottom:12 }}>
-        {Ic.doc(C.t2,20)}<div style={{textAlign:"left"}}><div style={{ fontSize:12, fontWeight:700, color:C.t1 }}>Descargar informe PDF</div><div style={{ fontSize:10, color:C.t3 }}>Información, recorrido, historial y documentos</div></div>
+      <button disabled={pdfLoading} onClick={async()=>{
+        if(pdfLoading) return;
+        setPdfLoading(true);
+        try {
+          let logs = auditLog;
+          if(!logs) { try { logs = await apiGetAuditLog(freight.id); setAuditLog(logs); } catch(e) { logs = []; } }
+          const { generateFreightPDF } = await loadPdfReport();
+          generateFreightPDF(freight, logs || []);
+        } catch(e) { console.error('PDF error', e); }
+        finally { setPdfLoading(false); }
+      }} style={{ width:"100%", background:C.w, borderRadius:10, padding:12, display:"flex", alignItems:"center", gap:10, border:`1.5px solid ${C.b1}`, cursor:"pointer", fontFamily:"inherit", marginBottom:12, opacity:pdfLoading?0.6:1 }}>
+        {Ic.doc(C.t2,20)}<div style={{textAlign:"left"}}><div style={{ fontSize:12, fontWeight:700, color:C.t1 }}>{pdfLoading?'Generando...':'Descargar informe PDF'}</div><div style={{ fontSize:10, color:C.t3 }}>Información, recorrido, historial y documentos</div></div>
       </button>
 
       {/* Edit + Cancel — bottom actions */}
