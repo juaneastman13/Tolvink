@@ -159,8 +159,7 @@ export default function Tolvink() {
     return fh.freights.filter(f =>
       f.originCompanyId === cId ||
       f.destCompanyId === cId ||
-      f.transporterCompanyId === cId ||
-      (f.assignments && f.assignments.some(a => a.transportCompanyId === cId))
+      f.transporterId === cId
     );
   }, [fh.freights, auth.user, viewAll]);
 

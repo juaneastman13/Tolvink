@@ -306,7 +306,7 @@ export function mapFreight(f) {
     originLotId:f.originLotId, originName:f.originName||"", originCompanyId:f.originCompanyId||"", originCompanyName:f.originCompany?.name||"",
     originLat:f.originLat?parseFloat(f.originLat):null, originLng:f.originLng?parseFloat(f.originLng):null,
     fieldName:f.field?.name||"", isOwnFleet,
-    destPlantId:f.destPlantId, destName:f.destName||"",
+    destPlantId:f.destPlantId, destCompanyId:f.destCompanyId||null, destName:f.destName||"",
     destLat:f.destLat?parseFloat(f.destLat):null, destLng:f.destLng?parseFloat(f.destLng):null,
     loadDate:f.loadDate?.split("T")[0]||"", loadTime:f.loadTime||"",
     scheduledAt:f.scheduledAt||null,
