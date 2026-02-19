@@ -99,6 +99,7 @@ export default function Tolvink() {
   const [sseMsg, setSseMsg] = useState(null);
   const [sseTyping, setSseTyping] = useState(null);
   const [sseRead, setSseRead] = useState(null);
+  const [viewAll, setViewAll] = useState(false);
 
   // SSE — real-time sync
   const sse = useSSE(auth.user, {
@@ -152,6 +153,7 @@ export default function Tolvink() {
   // Filter freights by active company (multi-company users only see selected company's data)
   const viewFreights = useMemo(() => {
     if (!auth.user || !fh.freights) return fh.freights;
+    if (viewAll) return fh.freights;
     const cId = auth.user.activeCompanyId || auth.user.companyId;
     if (!cId || (auth.user.companies || []).length <= 1) return fh.freights;
     return fh.freights.filter(f =>
@@ -160,7 +162,7 @@ export default function Tolvink() {
       f.transporterCompanyId === cId ||
       (f.assignments && f.assignments.some(a => a.transportCompanyId === cId))
     );
-  }, [fh.freights, auth.user]);
+  }, [fh.freights, auth.user, viewAll]);
 
   // Calculate pending actions count
   const pendingCount = useMemo(() => {
@@ -235,6 +237,7 @@ export default function Tolvink() {
 
   const perms = useMemo(()=>permsFor(auth.user),[auth.user]);
   const _resolveType = useCallback((f) => resolveUserTypeForFreight(f, auth.user), [auth.user]);
+  const _activeComp = useMemo(() => { const c = (auth.user?.companies||[]).find(x => x.companyId === (auth.user?.activeCompanyId||auth.user?.companyId)); return c || null; }, [auth.user]);
 
   // Navigation — updates URL + triggers side effects
   const nav = (s, fId) => {
@@ -355,7 +358,7 @@ export default function Tolvink() {
 
       {/* Desktop Sidebar */}
       <div className="tv-sidebar" style={{position:"relative",zIndex:1}}>
-        <Sidebar active={navActive} onChange={nav} unread={unreadChats} pendingCount={pendingCount} notifCount={notif.unreadCount} canRequest={perms.canRequest} onNew={()=>nav("new")} activeCompany={auth.user ? { id: auth.user.activeCompanyId||auth.user.companyId, name: auth.user.entity, type: auth.user.userType } : null} companies={auth.user?.companies||[]} onSwitchCompany={async(id)=>{const r=await auth.switchCompany(id);if(r.ok){fh.fetchAll();catalog.refresh();}}} />
+        <Sidebar active={navActive} onChange={nav} unread={unreadChats} pendingCount={pendingCount} notifCount={notif.unreadCount} canRequest={perms.canRequest} onNew={()=>nav("new")} activeCompany={auth.user ? { id: auth.user.activeCompanyId||auth.user.companyId, name: _activeComp?.companyName||auth.user.entity, type: _activeComp?.companyType||auth.user.userType } : null} companies={auth.user?.companies||[]} onSwitchCompany={async(id)=>{if(id===null){setViewAll(true);return;}setViewAll(false);const r=await auth.switchCompany(id);if(r.ok){fh.fetchAll();catalog.refresh();}}} viewAll={viewAll} />
       </div>
 
       {/* Main content column */}
@@ -404,7 +407,7 @@ export default function Tolvink() {
         {screen==="detail" && <DetailScreen user={curFreight ? {...auth.user, userType: _resolveType(curFreight)} : auth.user} freight={curFreight} perms={perms} onBack={()=>navigate("/list")} onAction={handleAction} actionLoading={actionLoading} onChat={(convId)=>{if(convId){setChatConvId(convId);navigate("/chats");}}} onRefresh={(id)=>fh.refresh(id)} onDuplicate={(f)=>{setDuplicateData(f);navigate("/new");}} onEdit={(f)=>{setEditData(f);navigate("/edit/"+f.id);}} goToMap={goToMap}/>}
         {screen==="new" && <NewScreen user={auth.user} lots={catalog.lots} plants={catalog.plants} branches={catalog.branches} fields={catalog.fields} trucks={catalog.trucks} onBack={()=>{setDuplicateData(null);navigate("/");}} onCreate={handleCreate} submitting={submitting} duplicateFrom={duplicateData}/>}
         {screen==="edit" && editData && <EditScreen freight={editData} fields={catalog.fields} plants={catalog.plants} onBack={()=>{setEditData(null);navigate(-1);}} onSave={async(id,data)=>{const r=await fh.update(id,data);if(r.ok) return "Flete actualizado"; show(r.error,"err"); return "";}}/>}
-        {screen==="menu" && <MenuScreen user={auth.user} perms={perms} onLogout={auth.logout} onNav={nav} isDesktop={isDesktop} onSwitchCompany={auth.switchCompany} onRefresh={()=>{fh.fetchAll();catalog.refresh();}} pwa={pwa}/>}
+        {screen==="menu" && <MenuScreen user={auth.user} perms={perms} onLogout={auth.logout} onNav={nav} isDesktop={isDesktop} onSwitchCompany={async(id)=>{setViewAll(false);const r=await auth.switchCompany(id);if(r.ok){fh.fetchAll();catalog.refresh();}return r;}} onRefresh={()=>{fh.fetchAll();catalog.refresh();}} pwa={pwa}/>}
         {screen==="trucks" && <TrucksScreen onBack={()=>{catalog.refresh();navigate("/menu");}}/>}
         {screen==="fields" && <FieldsScreen onBack={()=>{catalog.refresh();navigate("/menu");}} goToMap={goToMap}/>}
         {screen==="admin" && <AdminScreen user={auth.user} onBack={()=>navigate("/menu")}/>}

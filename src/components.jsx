@@ -275,10 +275,11 @@ export function AttachMenu({ open, onClose, onCamera, onGallery, onFiles }) {
 
 // ======================== DESKTOP SIDEBAR =============================
 
-const _TYPE_COLORS = { producer:"#F59E0B", plant:"#22C55E", transporter:"#0891B2" };
 const _TYPE_LABELS = { producer:"Productor", plant:"Planta", transporter:"Transportista" };
+const _TYPE_IC_COLORS = { producer:"#F59E0B", plant:"#22C55E", transporter:"#0891B2" };
+const _typeIcon = (t,s=14) => t==='producer'?Ic.grain('#F59E0B',s):t==='plant'?Ic.plant('#22C55E',s):t==='transporter'?Ic.truck('#0891B2',s):null;
 
-export function Sidebar({ active, onChange, unread=0, pendingCount=0, notifCount=0, canRequest=false, onNew, activeCompany, companies=[], onSwitchCompany }) {
+export function Sidebar({ active, onChange, unread=0, pendingCount=0, notifCount=0, canRequest=false, onNew, activeCompany, companies=[], onSwitchCompany, viewAll=false }) {
   const hasPending = pendingCount > 0;
   const centerColor = hasPending ? C.acc : C.ok;
   const [compOpen, setCompOpen] = useState(false);
@@ -298,7 +299,6 @@ export function Sidebar({ active, onChange, unread=0, pendingCount=0, notifCount
     { k:"reports", ic:a=>Ic.doc(a?C.pri:C.t3,20),    l:"Informes" },
     { k:"menu",    ic:a=>Ic.menu3(a?C.pri:C.t3,20),   l:"Menú" },
   ];
-  const compColor = activeCompany ? (_TYPE_COLORS[activeCompany.type] || C.t2) : null;
   const compLabel = activeCompany ? (_TYPE_LABELS[activeCompany.type] || "") : null;
   const hasMultiple = companies.length > 1;
   return (
@@ -311,27 +311,32 @@ export function Sidebar({ active, onChange, unread=0, pendingCount=0, notifCount
         </div>
       </div>
 
-      {/* Active company indicator — dropdown if multiple */}
+      {/* Company selector — dropdown if multiple */}
       {activeCompany && activeCompany.name && (
         <div ref={compRef} style={{ padding:"10px 14px", borderBottom:`1px solid ${C.b2}`, position:"relative" }}>
-          <button onClick={() => hasMultiple && setCompOpen(!compOpen)} style={{ display:"flex", alignItems:"center", gap:8, padding:"8px 10px", borderRadius:8, background:`${compColor}0A`, border:`1px solid ${compColor}30`, width:"100%", cursor:hasMultiple?"pointer":"default", fontFamily:"inherit", textAlign:"left" }}>
-            <span style={{ width:8, height:8, borderRadius:4, background:compColor, flexShrink:0 }} />
+          <button onClick={() => hasMultiple && setCompOpen(!compOpen)} style={{ display:"flex", alignItems:"center", gap:8, padding:"8px 10px", borderRadius:8, background:viewAll?`${C.pri}0A`:`${(_TYPE_IC_COLORS[activeCompany.type]||C.t2)}0A`, border:`1px solid ${viewAll?C.pri+'30':(_TYPE_IC_COLORS[activeCompany.type]||C.t2)+'30'}`, width:"100%", cursor:hasMultiple?"pointer":"default", fontFamily:"inherit", textAlign:"left" }}>
+            <span style={{ display:"flex", flexShrink:0 }}>{viewAll ? Ic.home(C.pri,16) : (_typeIcon(activeCompany.type,16) || <span style={{width:8,height:8,borderRadius:4,background:C.t2}}/>)}</span>
             <div style={{ flex:1, minWidth:0 }}>
-              <div style={{ fontSize:12, fontWeight:700, color:C.t1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{activeCompany.name}</div>
-              <div style={{ fontSize:10, fontWeight:600, color:compColor }}>{compLabel}</div>
+              <div style={{ fontSize:12, fontWeight:700, color:C.t1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{viewAll ? "Todas las empresas" : activeCompany.name}</div>
+              {!viewAll && compLabel && <div style={{ fontSize:10, fontWeight:600, color:_TYPE_IC_COLORS[activeCompany.type]||C.t2 }}>{compLabel}</div>}
             </div>
             {hasMultiple && <span style={{ fontSize:10, color:C.t3, flexShrink:0 }}>{compOpen?"▲":"▼"}</span>}
           </button>
           {compOpen && hasMultiple && (
-            <div style={{ position:"absolute", left:14, right:14, top:"100%", marginTop:2, background:C.w, border:`1px solid ${C.b1}`, borderRadius:10, boxShadow:C.shMd, padding:4, zIndex:100 }}>
+            <div style={{ position:"absolute", left:14, right:14, top:"100%", marginTop:2, background:C.w, border:`1px solid ${C.b1}`, borderRadius:10, boxShadow:C.shMd, padding:4, zIndex:100, maxHeight:260, overflowY:"auto" }}>
+              <button onClick={() => { setCompOpen(false); if (onSwitchCompany) onSwitchCompany(null); }} style={{ display:"flex", alignItems:"center", gap:6, width:"100%", padding:"8px 10px", background:viewAll?`${C.pri}08`:"transparent", border:"none", borderRadius:8, cursor:viewAll?"default":"pointer", fontFamily:"inherit", textAlign:"left" }}>
+                <span style={{ display:"flex", flexShrink:0 }}>{Ic.home(viewAll?C.pri:C.t3,12)}</span>
+                <span style={{ fontSize:11, fontWeight:viewAll?700:500, color:C.t1, flex:1 }}>Todas las empresas</span>
+                {viewAll && <span style={{ fontSize:8, color:C.pri, fontWeight:700 }}>✓</span>}
+              </button>
+              <div style={{ height:1, background:C.b2, margin:"2px 6px" }} />
               {companies.map(c => {
-                const isAct = c.companyId === activeCompany.id;
-                const cCol = _TYPE_COLORS[c.companyType] || C.t2;
+                const isAct = !viewAll && c.companyId === activeCompany.id;
                 return (
                   <button key={c.companyId} onClick={() => { setCompOpen(false); if (!isAct && onSwitchCompany) onSwitchCompany(c.companyId); }} style={{ display:"flex", alignItems:"center", gap:6, width:"100%", padding:"8px 10px", background:isAct?`${C.pri}08`:"transparent", border:"none", borderRadius:8, cursor:isAct?"default":"pointer", fontFamily:"inherit", textAlign:"left" }}>
-                    <span style={{ width:6, height:6, borderRadius:3, background:cCol, flexShrink:0 }} />
+                    <span style={{ display:"flex", flexShrink:0 }}>{_typeIcon(c.companyType,12)}</span>
                     <span style={{ fontSize:11, fontWeight:isAct?700:500, color:C.t1, flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{c.companyName}</span>
-                    <span style={{ fontSize:9, color:C.t3 }}>{_TYPE_LABELS[c.companyType]||""}</span>
+                    <span style={{ fontSize:9, color:_TYPE_IC_COLORS[c.companyType]||C.t3 }}>{_TYPE_LABELS[c.companyType]||""}</span>
                     {isAct && <span style={{ fontSize:8, color:C.pri, fontWeight:700 }}>✓</span>}
                   </button>
                 );
