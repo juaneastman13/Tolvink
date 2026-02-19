@@ -146,7 +146,7 @@ export default function CalendarScreen({ freights, perms, onNav, isDesktop, user
                 const sel=calSelDay===d&&calSelMonth===mi;
                 const td=d===today.getDate()&&isTodayMonth;
                 const statuses=mo.byDay[d]?.map(f=>stCfg(f.status).color)||[];
-                return <div key={d} onClick={()=>{setCalSelDay(sel?null:d);setCalSelMonth(sel?null:mi);}} style={{padding:monthsToShow===1?"8px 4px":"4px 2px",borderRadius:monthsToShow===1?10:6,cursor:"pointer",background:sel?C.pri:td?C.priPale:"transparent",transition:"all 0.15s",minHeight:monthsToShow===1?44:30}}>
+                return <div key={d} onClick={()=>{setCalSelDay(sel?null:d);setCalSelMonth(sel?null:mi);setSelectedId(null);}} style={{padding:monthsToShow===1?"8px 4px":"4px 2px",borderRadius:monthsToShow===1?10:6,cursor:"pointer",background:sel?C.pri:td?C.priPale:"transparent",transition:"all 0.15s",minHeight:monthsToShow===1?44:30}}>
                   <div style={{fontSize:monthsToShow===1?14:11,fontWeight:sel||td?700:400,color:sel?C.w:td?C.pri:C.t1}}>{d}</div>
                   {cnt>0&&<div style={{display:"flex",gap:1,justifyContent:"center",marginTop:2,flexWrap:"wrap"}}>
                     {statuses.slice(0,monthsToShow===1?4:2).map((c,j)=><div key={j} style={{width:monthsToShow===1?6:4,height:monthsToShow===1?6:4,borderRadius:3,background:sel?"#fff":c}}/>)}
