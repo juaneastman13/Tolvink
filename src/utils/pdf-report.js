@@ -304,22 +304,28 @@ export function generateFreightPDF(freight, auditLog = []) {
     doc.text(`Página ${i} de ${pages}`, W-M, H-8, { align:'right' });
   }
 
-  // Save — reliable cross-platform: blob + <a download> (or window.open on iOS)
+  // Save — try doc.save first, fallback to blob+anchor, then window.open
   const filename = `${freight.code || 'flete'}-informe.pdf`;
-  const blob = doc.output('blob');
-  const url = URL.createObjectURL(blob);
-  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  try {
+    doc.save(filename);
+    return;
+  } catch (_) { /* fallback below */ }
 
-  if (isIOS) {
-    // iOS doesn't support <a download>, open in new tab
-    window.open(url, '_blank');
-  } else {
+  // Fallback: blob + <a download>
+  try {
+    const blob = doc.output('blob');
+    const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
     a.download = filename;
+    a.style.display = 'none';
     document.body.appendChild(a);
     a.click();
-    document.body.removeChild(a);
-  }
-  setTimeout(() => URL.revokeObjectURL(url), 30000);
+    setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 30000);
+    return;
+  } catch (_) { /* fallback below */ }
+
+  // Last resort: open in new tab
+  const blobUrl = doc.output('bloburl');
+  window.open(blobUrl, '_blank');
 }
