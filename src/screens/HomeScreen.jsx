@@ -215,7 +215,7 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
       {/* Sticky header spacer */}
       {compact && <div style={{ position: "sticky", top: 0, zIndex: 10, background:C.bg, minHeight: 8 }} />}
 
-      <div style={{ padding: compact ? "0 8px 8px" : "0 18px 18px" }}>
+      <div style={{ padding: compact ? "0 8px 8px" : "18px 18px 18px" }}>
 
       {/* Skeleton while loading */}
       {loading && freights.length === 0 && <SkeletonList count={3} />}
