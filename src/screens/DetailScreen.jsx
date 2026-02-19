@@ -49,6 +49,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, a
     if(a==="confirm_loaded" && user.userType==="producer" && freight.producerLoadedConfirmedAt) return false;
     if(a==="confirm_finished" && user.userType==="transporter" && freight.transporterFinishedConfirmedAt) return false;
     if(a==="confirm_finished" && user.userType==="plant" && freight.plantFinishedConfirmedAt) return false;
+    if(a==="confirm_finished" && user.userType==="producer" && freight.isOwnFleet && freight.transporterFinishedConfirmedAt) return false;
     return true;
   });
 

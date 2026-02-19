@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, memo, useMemo, Component } from "react";
+import { useState, useEffect, useRef, memo, useMemo, Component, useCallback } from "react";
 import { C, Ic } from "./theme";
 import { stCfg } from "./constants";
 
@@ -278,9 +278,17 @@ export function AttachMenu({ open, onClose, onCamera, onGallery, onFiles }) {
 const _TYPE_COLORS = { producer:"#F59E0B", plant:"#22C55E", transporter:"#0891B2" };
 const _TYPE_LABELS = { producer:"Productor", plant:"Planta", transporter:"Transportista" };
 
-export function Sidebar({ active, onChange, unread=0, pendingCount=0, notifCount=0, canRequest=false, onNew, activeCompany }) {
+export function Sidebar({ active, onChange, unread=0, pendingCount=0, notifCount=0, canRequest=false, onNew, activeCompany, companies=[], onSwitchCompany }) {
   const hasPending = pendingCount > 0;
   const centerColor = hasPending ? C.acc : C.ok;
+  const [compOpen, setCompOpen] = useState(false);
+  const compRef = useRef(null);
+  useEffect(() => {
+    if (!compOpen) return;
+    const h = e => { if (compRef.current && !compRef.current.contains(e.target)) setCompOpen(false); };
+    document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
+  }, [compOpen]);
   const items = [
     { k:"home",    ic:a=>Ic.home(a?C.pri:C.t3,20),  l:"Inicio" },
     { k:"list",    ic:a=>Ic.truck(a?C.pri:C.t3,20),  l:"Fletes" },
@@ -292,6 +300,7 @@ export function Sidebar({ active, onChange, unread=0, pendingCount=0, notifCount
   ];
   const compColor = activeCompany ? (_TYPE_COLORS[activeCompany.type] || C.t2) : null;
   const compLabel = activeCompany ? (_TYPE_LABELS[activeCompany.type] || "") : null;
+  const hasMultiple = companies.length > 1;
   return (
     <div style={{ width:220, minWidth:220, height:"100%", background:C.w, borderRight:`1px solid ${C.b2}`, display:"flex", flexDirection:"column", flexShrink:0, overflow:"hidden" }}>
       {/* Logo */}
@@ -302,16 +311,33 @@ export function Sidebar({ active, onChange, unread=0, pendingCount=0, notifCount
         </div>
       </div>
 
-      {/* Active company indicator */}
+      {/* Active company indicator — dropdown if multiple */}
       {activeCompany && activeCompany.name && (
-        <div style={{ padding:"10px 14px", borderBottom:`1px solid ${C.b2}` }}>
-          <div style={{ display:"flex", alignItems:"center", gap:8, padding:"8px 10px", borderRadius:8, background:`${compColor}0A`, border:`1px solid ${compColor}30` }}>
+        <div ref={compRef} style={{ padding:"10px 14px", borderBottom:`1px solid ${C.b2}`, position:"relative" }}>
+          <button onClick={() => hasMultiple && setCompOpen(!compOpen)} style={{ display:"flex", alignItems:"center", gap:8, padding:"8px 10px", borderRadius:8, background:`${compColor}0A`, border:`1px solid ${compColor}30`, width:"100%", cursor:hasMultiple?"pointer":"default", fontFamily:"inherit", textAlign:"left" }}>
             <span style={{ width:8, height:8, borderRadius:4, background:compColor, flexShrink:0 }} />
             <div style={{ flex:1, minWidth:0 }}>
               <div style={{ fontSize:12, fontWeight:700, color:C.t1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{activeCompany.name}</div>
               <div style={{ fontSize:10, fontWeight:600, color:compColor }}>{compLabel}</div>
             </div>
-          </div>
+            {hasMultiple && <span style={{ fontSize:10, color:C.t3, flexShrink:0 }}>{compOpen?"▲":"▼"}</span>}
+          </button>
+          {compOpen && hasMultiple && (
+            <div style={{ position:"absolute", left:14, right:14, top:"100%", marginTop:2, background:C.w, border:`1px solid ${C.b1}`, borderRadius:10, boxShadow:C.shMd, padding:4, zIndex:100 }}>
+              {companies.map(c => {
+                const isAct = c.companyId === activeCompany.id;
+                const cCol = _TYPE_COLORS[c.companyType] || C.t2;
+                return (
+                  <button key={c.companyId} onClick={() => { setCompOpen(false); if (!isAct && onSwitchCompany) onSwitchCompany(c.companyId); }} style={{ display:"flex", alignItems:"center", gap:6, width:"100%", padding:"8px 10px", background:isAct?`${C.pri}08`:"transparent", border:"none", borderRadius:8, cursor:isAct?"default":"pointer", fontFamily:"inherit", textAlign:"left" }}>
+                    <span style={{ width:6, height:6, borderRadius:3, background:cCol, flexShrink:0 }} />
+                    <span style={{ fontSize:11, fontWeight:isAct?700:500, color:C.t1, flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{c.companyName}</span>
+                    <span style={{ fontSize:9, color:C.t3 }}>{_TYPE_LABELS[c.companyType]||""}</span>
+                    {isAct && <span style={{ fontSize:8, color:C.pri, fontWeight:700 }}>✓</span>}
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 

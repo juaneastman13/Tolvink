@@ -36,6 +36,7 @@ export function getPendingActions(freight, userType) {
     if (s === "accepted" && own) return { action: "Iniciar viaje", color: C.pri, icon: "start", actionKey: "start" };
     if (s === "in_progress" && own && !freight.transporterLoadedConfirmedAt) return { action: "Confirmar carga", color: C.acc, icon: "confirm", actionKey: "confirm_loaded" };
     if (s === "loaded" && !freight.producerLoadedConfirmedAt) return { action: "Confirmar carga", color: C.acc, icon: "confirm", actionKey: "confirm_loaded" };
+    if (s === "loaded" && own && freight.producerLoadedConfirmedAt && !freight.transporterFinishedConfirmedAt) return { action: "Confirmar entrega", color: C.pri, icon: "confirm", actionKey: "confirm_finished" };
     return null;
   }
   return null;

@@ -23,7 +23,7 @@ export function getActions(status, userType, role, isOwnFleet) {
     assigned:           { producer: isOwnFleet ? ["cancel"] : ["cancel"], plant: isOwnFleet ? ["authorize","cancel"] : ["cancel"], transporter:["accept","reject"] },
     accepted:           { producer: isOwnFleet ? ["start","cancel"] : ["cancel"], plant:["cancel"], transporter: isOwnFleet ? [] : ["start","cancel"] },
     in_progress:        { producer: isOwnFleet ? ["confirm_loaded"] : [], plant:[], transporter: isOwnFleet ? [] : ["confirm_loaded"] },
-    loaded:             { producer:["confirm_loaded"], plant:["confirm_finished"], transporter:["confirm_finished"] },
+    loaded:             { producer: isOwnFleet ? ["confirm_loaded","confirm_finished"] : ["confirm_loaded"], plant:["confirm_finished"], transporter: isOwnFleet ? [] : ["confirm_finished"] },
     finished:           { producer:[], plant:[], transporter:[] },
     canceled:           { producer:[], plant:[], transporter:[] },
     draft:              { producer:[], plant:[], transporter:[] },

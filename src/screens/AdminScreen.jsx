@@ -432,6 +432,7 @@ export default function AdminScreen({ user, onBack }) {
     const tabs = [{k:"branches",l:"Sucursales",n:branches.length}];
     if(isProducer) tabs.push({k:"fields",l:"Campos",n:fields.length});
     if(isTransporter) tabs.push({k:"trucks",l:"Flota",n:trucks.length});
+    tabs.push({k:"access",l:"Accesos"});
     const curTab = tabs.find(t=>t.k===detailTab) ? detailTab : "branches";
 
     return (
@@ -613,6 +614,9 @@ export default function AdminScreen({ user, onBack }) {
           </div>))}
           {trucks.length===0&&!showTruckForm&&<div style={{textAlign:"center",padding:20,color:C.t3,fontSize:12}}>Sin vehículos</div>}
         </>)}
+
+        {/* ====== TAB: ACCESS ====== */}
+        {curTab==="access"&&<AccessScreen user={user} embedded defaultCompanyId={selectedCompany.id} defaultCompanyType={selectedCompany.type}/>}
 
         <MsgBar/>
       </div>

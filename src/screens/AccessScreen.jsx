@@ -3,7 +3,7 @@ import { C, Ic } from "../theme";
 import { Btn, Bd, Field, Loader, LoadingOverlay, ModalOverlay } from "../components";
 import { apiGrantAccess, apiRevokeAccess, apiListAccessProducers, apiListAccessPlants, apiSearchProducer, apiGetMyFacilities, apiAdminListCompanies } from "../api";
 
-export default function AccessScreen({ user, onBack, embedded }) {
+export default function AccessScreen({ user, onBack, embedded, defaultCompanyId, defaultCompanyType }) {
   const isAdmin = user?.role === "platform_admin";
   const [producers, setProducers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -24,8 +24,8 @@ export default function AccessScreen({ user, onBack, embedded }) {
   const [confirmRevoke, setConfirmRevoke] = useState(null);
   // Admin general: company selector (all types)
   const [allCompanies, setAllCompanies] = useState([]);
-  const [selCompanyId, setSelCompanyId] = useState("");
-  const [selCompanyType, setSelCompanyType] = useState("");
+  const [selCompanyId, setSelCompanyId] = useState(defaultCompanyId || "");
+  const [selCompanyType, setSelCompanyType] = useState(defaultCompanyType || "");
 
   const load = useCallback(async () => {
     try {
@@ -181,8 +181,8 @@ export default function AccessScreen({ user, onBack, embedded }) {
         <Btn sm onClick={() => { setShowGrant(!showGrant); setEditingAccess(null); setSelectedProducer(null); setSearchResults([]); setSearchQ(""); setMsg(null); setSelectedPlantIds([]); setGrantType("producer"); }} icon={showGrant ? Ic.cross(C.w, 14) : Ic.plus(C.w, 14)}>{showGrant ? "Cerrar" : "Habilitar"}</Btn>
       </div>
 
-      {/* Admin general: company selector (all types) */}
-      {isAdmin && allCompanies.length > 0 && (
+      {/* Admin general: company selector (all types) — hidden when defaultCompanyId is set */}
+      {isAdmin && allCompanies.length > 0 && !defaultCompanyId && (
         <div style={{ marginBottom:14, display:"flex", alignItems:"center", gap:10 }}>
           <span style={{ fontSize:12, fontWeight:600, color:C.t2, whiteSpace:"nowrap" }}>Empresa:</span>
           <select value={selCompanyId} onChange={e=>{const cId=e.target.value;const comp=allCompanies.find(c=>c.id===cId);setSelCompanyId(cId);setSelCompanyType(comp?.type||"");setLoading(true);setShowGrant(false);setEditingAccess(null);}} style={{ flex:1, padding:"8px 10px", borderRadius:8, border:`1px solid ${C.b1}`, fontSize:12, fontFamily:"inherit", background:C.w, color:C.t1 }}>
