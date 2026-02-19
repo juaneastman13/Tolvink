@@ -239,15 +239,23 @@ export default function AccessScreen({ user, onBack, embedded }) {
           {/* Search results list */}
           {searchResults.length > 0 && !selectedProducer && (
             <div style={{ marginTop:8, border:`1px solid ${C.b1}`, borderRadius:8, overflow:"hidden", maxHeight:240, overflowY:"auto" }}>
-              {searchResults.map(p => (
+              {searchResults.map(p => {
+                const pType = p.producerCompanyType || p.companyType || grantType;
+                const TYPE_L = {plant:"Planta",transporter:"Transp.",producer:"Productor"};
+                const TYPE_C = {plant:C.pri,transporter:C.info||C.sec,producer:C.acc};
+                return (
                 <button key={p.userId} onClick={() => handleSelectProducer(p)} style={{ width:"100%", display:"flex", alignItems:"center", gap:10, padding:"10px 12px", background:C.w, border:"none", borderBottom:`1px solid ${C.b2}`, cursor:"pointer", fontFamily:"inherit", textAlign:"left" }}>
                   {grantType==="producer"?Ic.user(C.pri,18):Ic.truck(C.acc,18)}
                   <div style={{ flex:1 }}>
-                    <div style={{ fontSize:13, fontWeight:600, color:C.t1 }}>{p.userName}</div>
+                    <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                      <span style={{ fontSize:13, fontWeight:600, color:C.t1 }}>{p.userName}</span>
+                      {pType && <span style={{ fontSize:9, fontWeight:700, color:TYPE_C[pType]||C.t3, background:`${TYPE_C[pType]||C.t3}15`, padding:"1px 6px", borderRadius:4, textTransform:"uppercase", letterSpacing:0.3 }}>{TYPE_L[pType]||pType}</span>}
+                    </div>
                     <div style={{ fontSize:10.5, color:C.t3 }}>{p.producerCompanyName}{p.phone ? ` · ${p.phone}` : ""}{p.email ? ` · ${p.email}` : ""}</div>
                   </div>
                 </button>
-              ))}
+                );
+              })}
             </div>
           )}
 

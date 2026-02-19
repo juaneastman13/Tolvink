@@ -14,15 +14,39 @@ let _refreshToken = localStorage.getItem('tolvink_refresh_token');
 let _onAuthFail = null;
 let _isLoggingIn = false;
 let _refreshPromise = null;
+let _refreshTimerId = null;
 
 export function setToken(t) { _token = t; if(t) localStorage.setItem('tolvink_token',t); else localStorage.removeItem('tolvink_token'); }
 export function getToken() { return _token; }
 export function setRefreshToken(t) { _refreshToken = t; if(t) localStorage.setItem('tolvink_refresh_token',t); else localStorage.removeItem('tolvink_refresh_token'); }
 export function clearAuth() {
   _token=null; _refreshToken=null;
+  if (_refreshTimerId) { clearTimeout(_refreshTimerId); _refreshTimerId = null; }
   localStorage.removeItem('tolvink_token');
   localStorage.removeItem('tolvink_refresh_token');
   localStorage.removeItem('tolvink_user');
+}
+
+// Decode JWT expiry and schedule silent refresh 2 min before expiration
+function scheduleTokenRefresh() {
+  if (_refreshTimerId) { clearTimeout(_refreshTimerId); _refreshTimerId = null; }
+  if (!_token) return;
+  try {
+    const payload = JSON.parse(atob(_token.split('.')[1]));
+    const exp = payload.exp;
+    if (!exp) return;
+    const msUntilExpiry = exp * 1000 - Date.now();
+    const refreshIn = msUntilExpiry - 2 * 60 * 1000; // 2 min before expiry
+    if (refreshIn <= 0) {
+      // Already close to expiry — refresh immediately
+      tryRefresh().then(ok => { if (ok) scheduleTokenRefresh(); });
+      return;
+    }
+    _refreshTimerId = setTimeout(async () => {
+      const ok = await tryRefresh();
+      if (ok) scheduleTokenRefresh();
+    }, refreshIn);
+  } catch { /* invalid JWT, skip scheduling */ }
 }
 export function setAuthFailHandler(fn) { _onAuthFail = fn; }
 export function saveUser(u) { localStorage.setItem('tolvink_user', JSON.stringify(u)); }
@@ -56,6 +80,7 @@ async function tryRefresh() {
       setToken(data.access_token);
       setRefreshToken(data.refresh_token);
       saveUser(data.user);
+      scheduleTokenRefresh();
       return true;
     } catch {
       return false;
@@ -65,6 +90,9 @@ async function tryRefresh() {
   })();
   return _refreshPromise;
 }
+
+// Schedule on page load if token already exists (e.g. returning user)
+if (_token) scheduleTokenRefresh();
 
 export default async function api(path, opts={}) {
   const { body, method=body?'POST':'GET', headers={} } = opts;
@@ -117,6 +145,7 @@ export async function apiLogin(identifier) {
     setToken(d.access_token);
     setRefreshToken(d.refresh_token);
     saveUser(d.user);
+    scheduleTokenRefresh();
     return d;
   } finally {
     setLoggingIn(false);
@@ -135,6 +164,7 @@ export async function apiRegister(b) {
     setToken(d.access_token);
     setRefreshToken(d.refresh_token);
     saveUser(d.user);
+    scheduleTokenRefresh();
     return d;
   } finally {
     setLoggingIn(false);
@@ -153,6 +183,7 @@ export async function apiSwitchCompany(companyId) {
     setToken(d.access_token);
     setRefreshToken(d.refresh_token);
     saveUser(d.user);
+    scheduleTokenRefresh();
   }
   return d;
 }
@@ -279,19 +310,52 @@ export async function apiUnsubscribePush(endpoint) { return api('/notifications/
 // VAPID public key for push subscription
 export const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY || '';
 
+// Image compression — resize large images and reduce quality before upload
+function compressImage(file, maxWidth = 1920, quality = 0.8) {
+  return new Promise((resolve, reject) => {
+    if (!file.type.startsWith('image/')) { resolve(file); return; }
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      // Skip if already smaller than maxWidth
+      if (img.width <= maxWidth) { resolve(file); return; }
+      const ratio = maxWidth / img.width;
+      const canvas = document.createElement('canvas');
+      canvas.width = maxWidth;
+      canvas.height = Math.round(img.height * ratio);
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      canvas.toBlob(
+        (blob) => {
+          if (!blob) { resolve(file); return; }
+          const compressed = new File([blob], file.name || 'image.jpg', { type: blob.type, lastModified: Date.now() });
+          resolve(compressed);
+        },
+        file.type === 'image/png' ? 'image/png' : 'image/jpeg',
+        quality
+      );
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); resolve(file); };
+    img.src = url;
+  });
+}
+
 // Photo Upload — direct to Supabase Storage (public bucket)
 export async function uploadPhoto(file, freightId, step) {
-  const ext = file.name?.split('.').pop() || 'jpg';
+  // Compress image before upload
+  const processed = file.type.startsWith('image/') ? await compressImage(file) : file;
+  const ext = processed.name?.split('.').pop() || 'jpg';
   const path = `${freightId}/${step}/${Date.now()}.${ext}`;
   const url = `${SUPABASE_URL}/storage/v1/object/${STORAGE_BUCKET}/${path}`;
 
-  const headers = { 'Content-Type': file.type || 'image/jpeg' };
+  const headers = { 'Content-Type': processed.type || 'image/jpeg' };
   if (SUPABASE_ANON_KEY) {
     headers['apikey'] = SUPABASE_ANON_KEY;
     headers['Authorization'] = `Bearer ${SUPABASE_ANON_KEY}`;
   }
 
-  const res = await fetch(url, { method: 'POST', headers, body: file });
+  const res = await fetch(url, { method: 'POST', headers, body: processed });
 
   if (!res.ok) {
     let errMsg = 'Error al subir foto';
@@ -304,18 +368,20 @@ export async function uploadPhoto(file, freightId, step) {
 
 // Chat file upload
 export async function uploadChatFile(file, conversationId) {
-  const ext = file.name?.split('.').pop() || 'bin';
-  const safeName = file.name?.replace(/[^a-zA-Z0-9._-]/g, '_') || `file.${ext}`;
+  // Compress image before upload (skip non-image files)
+  const processed = file.type.startsWith('image/') ? await compressImage(file) : file;
+  const ext = processed.name?.split('.').pop() || 'bin';
+  const safeName = processed.name?.replace(/[^a-zA-Z0-9._-]/g, '_') || `file.${ext}`;
   const path = `chat/${conversationId}/${Date.now()}_${safeName}`;
   const url = `${SUPABASE_URL}/storage/v1/object/${STORAGE_BUCKET}/${path}`;
 
-  const headers = { 'Content-Type': file.type || 'application/octet-stream' };
+  const headers = { 'Content-Type': processed.type || 'application/octet-stream' };
   if (SUPABASE_ANON_KEY) {
     headers['apikey'] = SUPABASE_ANON_KEY;
     headers['Authorization'] = `Bearer ${SUPABASE_ANON_KEY}`;
   }
 
-  const res = await fetch(url, { method: 'POST', headers, body: file });
+  const res = await fetch(url, { method: 'POST', headers, body: processed });
 
   if (!res.ok) {
     let errMsg = 'Error al subir archivo';

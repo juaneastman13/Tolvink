@@ -10,6 +10,7 @@ import {
 } from "./api";
 import { C, track } from "./theme";
 import { useCatalogStore } from "./store";
+import log from "./logger";
 
 // ======================== CATALOG HOOK (Real API + Zustand cache) ====
 const CATALOG_TTL = 5 * 60 * 1000; // 5 min
@@ -54,15 +55,15 @@ export function useCatalog(user) {
     setLoading(user.id, true);
 
     _loadingPromises[user.id] = Promise.all([
-      apiGetPlants().catch((e)=>{ console.warn('[Catalog] apiGetPlants failed:', e.message); return []; }),
-      apiGetBranches().catch((e)=>{ console.warn('[Catalog] apiGetBranches failed:', e.message); return []; }),
-      apiGetLots().catch((e)=>{ console.warn('[Catalog] apiGetLots failed:', e.message); return []; }),
-      apiGetTransportCompanies().catch((e)=>{ console.warn('[Catalog] apiGetTransportCompanies failed:', e.message); return []; }),
+      apiGetPlants().catch((e)=>{ log.warn('Catalog', 'apiGetPlants failed:', e.message); return []; }),
+      apiGetBranches().catch((e)=>{ log.warn('Catalog', 'apiGetBranches failed:', e.message); return []; }),
+      apiGetLots().catch((e)=>{ log.warn('Catalog', 'apiGetLots failed:', e.message); return []; }),
+      apiGetTransportCompanies().catch((e)=>{ log.warn('Catalog', 'apiGetTransportCompanies failed:', e.message); return []; }),
       (user.role==="admin"||user.role==="platform_admin"||user.userType==="transporter"||user.userType==="producer"||(user.userTypes||[]).includes("transporter")||(user.userTypes||[]).includes("producer"))
-        ? apiGetTrucks().catch((e)=>{ console.warn('[Catalog] apiGetTrucks failed:', e.message); return []; })
+        ? apiGetTrucks().catch((e)=>{ log.warn('Catalog', 'apiGetTrucks failed:', e.message); return []; })
         : Promise.resolve([]),
       (user.role==="admin"||user.role==="platform_admin"||user.userType==="producer"||(user.userTypes||[]).includes("producer"))
-        ? apiGetFields().catch((e)=>{ console.warn('[Catalog] apiGetFields failed:', e.message); return []; })
+        ? apiGetFields().catch((e)=>{ log.warn('Catalog', 'apiGetFields failed:', e.message); return []; })
         : Promise.resolve([]),
     ]).then(([p,br,l,t,tr,f])=>{
       const d = { plants:p||[], branches:br||[], lots:l||[], transporters:t||[], trucks:tr||[], fields:f||[] };
@@ -95,7 +96,7 @@ export function useAuth() {
     setAuthFailHandler(()=>{
       setUser(null);
       setError("Tu sesión expiró.");
-      console.log('[AUTH] Session expired, cleared user');
+      log.log('AUTH', 'Session expired, cleared user');
     });
   },[]);
 
@@ -103,15 +104,15 @@ export function useAuth() {
   useEffect(()=>{
     const token = getToken();
     const saved = getSavedUser();
-    console.log('[AUTH] Initializing:', { hasToken: !!token, hasSaved: !!saved });
+    log.log('AUTH', 'Initializing:', { hasToken: !!token, hasSaved: !!saved });
 
     if(token && saved) {
       try {
         const mappedUser = mapUser(saved);
         setUser(mappedUser);
-        console.log('[AUTH] User restored from localStorage:', mappedUser);
+        log.log('AUTH', 'User restored from localStorage:', mappedUser);
       } catch(e) {
-        console.error('[AUTH] Error mapping saved user:', e);
+        log.error('AUTH', 'Error mapping saved user:', e);
         clearAuth();
       }
     }
@@ -122,9 +123,9 @@ export function useAuth() {
   const login = useCallback(async (identifier) => {
     setLoading(true); setError(null);
     try {
-      console.log('[AUTH] Login attempt for:', identifier);
+      log.log('AUTH', 'Login attempt for:', identifier);
       const d = await apiLogin(identifier);
-      console.log('[AUTH] Login response:', d);
+      log.log('AUTH', 'Login response:', d);
 
       if(!d.user) {
         throw new Error('Respuesta inválida del servidor');
@@ -133,10 +134,10 @@ export function useAuth() {
       const mappedUser = mapUser(d.user);
       setUser(mappedUser);
       track("login");
-      console.log('[AUTH] Login successful, user set:', mappedUser);
+      log.log('AUTH', 'Login successful, user set:', mappedUser);
     }
     catch(e) {
-      console.error('[AUTH] Login error:', e);
+      log.error('AUTH', 'Login error:', e);
       setError(e.message||"Error al iniciar sesión");
       clearAuth();
     }
@@ -146,7 +147,7 @@ export function useAuth() {
   const signup = useCallback(async (form) => {
     setLoading(true); setError(null);
     try {
-      console.log('[AUTH] Signup attempt');
+      log.log('AUTH', 'Signup attempt');
       const typeMap = {planta:"plant",transporter:"transporter",producer:"producer"};
       const userTypes = (form.userTypes||[]).map(t=>typeMap[t]||t);
       const phone = form.phone?.replace(/[\s\-()]/g,'')||"";
@@ -159,9 +160,9 @@ export function useAuth() {
       const mappedUser = mapUser(d.user);
       setUser(mappedUser);
       track("signup");
-      console.log('[AUTH] Signup successful, user set:', mappedUser);
+      log.log('AUTH', 'Signup successful, user set:', mappedUser);
     } catch(e) {
-      console.error('[AUTH] Signup error:', e);
+      log.error('AUTH', 'Signup error:', e);
       setError(e.message||"Error al crear cuenta");
       clearAuth();
     }
@@ -179,12 +180,12 @@ export function useAuth() {
       if (d?.user) {
         const mappedUser = mapUser(d.user);
         setUser(mappedUser);
-        console.log('[AUTH] Switched to company:', companyId);
+        log.log('AUTH', 'Switched to company:', companyId);
         return { ok: true };
       }
       return { ok: false, error: "Respuesta inválida" };
     } catch (e) {
-      console.error('[AUTH] Switch company error:', e);
+      log.error('AUTH', 'Switch company error:', e);
       return { ok: false, error: e.message };
     }
   }, []);
@@ -391,16 +392,16 @@ export function useNotifications(user) {
             const key = Uint8Array.from(atob(VAPID_PUBLIC_KEY.replace(/-/g,'+').replace(/_/g,'/')), c => c.charCodeAt(0));
             sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key });
           } catch (keyError) {
-            console.warn('[PUSH] Invalid VAPID key or subscription failed:', keyError);
+            log.warn('PUSH', 'Invalid VAPID key or subscription failed:', keyError);
             return;
           }
         }
 
         const subJson = sub.toJSON();
         await apiSubscribePush({ endpoint: subJson.endpoint, keys: subJson.keys });
-        console.log('[PUSH] Subscribed');
+        log.log('PUSH', 'Subscribed');
       } catch (e) {
-        console.warn('[PUSH] Subscription failed:', e.message);
+        log.warn('PUSH', 'Subscription failed:', e.message);
       }
     })();
   }, [user]);
@@ -414,7 +415,7 @@ export function useNotifications(user) {
         const r = await apiGetNotifications();
         setNotifications(r.notifications || []);
         setUnreadCount(r.unreadCount || 0);
-      } catch (e) { console.warn('[NOTIF] Fetch failed:', e.message); }
+      } catch (e) { log.warn('NOTIF', 'Fetch failed:', e.message); }
     };
     fetchNotifications();
   }, [user]);
@@ -424,7 +425,7 @@ export function useNotifications(user) {
       await apiMarkNotificationRead(id);
       setNotifications(p => p.map(n => n.id === id ? { ...n, read: true } : n));
       setUnreadCount(p => Math.max(0, p - 1));
-    } catch (e) { console.warn('[NOTIF] Mark read failed:', e.message); }
+    } catch (e) { log.warn('NOTIF', 'Mark read failed:', e.message); }
   }, []);
 
   const markAllRead = useCallback(async () => {
@@ -432,7 +433,7 @@ export function useNotifications(user) {
       await apiMarkAllRead();
       setNotifications(p => p.map(n => ({ ...n, read: true })));
       setUnreadCount(0);
-    } catch (e) { console.warn('[NOTIF] Mark all read failed:', e.message); }
+    } catch (e) { log.warn('NOTIF', 'Mark all read failed:', e.message); }
   }, []);
 
   const refresh = useCallback(async () => {
@@ -440,7 +441,7 @@ export function useNotifications(user) {
       const r = await apiGetNotifications();
       setNotifications(r.notifications || []);
       setUnreadCount(r.unreadCount || 0);
-    } catch (e) { console.warn('[NOTIF] Refresh failed:', e.message); }
+    } catch (e) { log.warn('NOTIF', 'Refresh failed:', e.message); }
   }, []);
 
   return { notifications, unreadCount, markRead, markAllRead, refresh };
@@ -542,49 +543,49 @@ export function useSSE(user, { onFreightUpdate, onMessageNew, onNotification, on
       es.addEventListener('connected', () => {
         setConnected(true);
         failureCount.current = 0; // Reset on successful connection
-        console.log('[SSE] Connected');
+        log.log('SSE', 'Connected');
       });
 
       es.addEventListener('freight:updated', (e) => {
         try {
           const data = JSON.parse(e.data);
           if (onFreightUpdate) onFreightUpdate(data);
-        } catch (e) { console.warn('[SSE] Event parse error:', e.message); }
+        } catch (e) { log.warn('SSE', 'Event parse error:', e.message); }
       });
 
       es.addEventListener('message:new', (e) => {
         try {
           const data = JSON.parse(e.data);
           if (onMessageNew) onMessageNew(data);
-        } catch (e) { console.warn('[SSE] Event parse error:', e.message); }
+        } catch (e) { log.warn('SSE', 'Event parse error:', e.message); }
       });
 
       es.addEventListener('notification:new', (e) => {
         try {
           const data = JSON.parse(e.data);
           if (onNotification) onNotification(data);
-        } catch (e) { console.warn('[SSE] Event parse error:', e.message); }
+        } catch (e) { log.warn('SSE', 'Event parse error:', e.message); }
       });
 
       es.addEventListener('catalog:changed', (e) => {
         try {
           const data = JSON.parse(e.data);
           if (onCatalogChanged) onCatalogChanged(data);
-        } catch (e) { console.warn('[SSE] Event parse error:', e.message); }
+        } catch (e) { log.warn('SSE', 'Event parse error:', e.message); }
       });
 
       es.addEventListener('typing', (e) => {
         try {
           const data = JSON.parse(e.data);
           if (onTyping) onTyping(data);
-        } catch (e) { console.warn('[SSE] Event parse error:', e.message); }
+        } catch (e) { log.warn('SSE', 'Event parse error:', e.message); }
       });
 
       es.addEventListener('read', (e) => {
         try {
           const data = JSON.parse(e.data);
           if (onRead) onRead(data);
-        } catch (e) { console.warn('[SSE] Event parse error:', e.message); }
+        } catch (e) { log.warn('SSE', 'Event parse error:', e.message); }
       });
 
       es.onopen = () => {
@@ -598,11 +599,11 @@ export function useSSE(user, { onFreightUpdate, onMessageNew, onNotification, on
         esRef.current = null;
 
         failureCount.current += 1;
-        console.warn(`[SSE] Connection failed (${failureCount.current}/${MAX_CONSECUTIVE_FAILURES})`);
+        log.warn('SSE', `Connection failed (${failureCount.current}/${MAX_CONSECUTIVE_FAILURES})`);
 
         // If too many consecutive failures, assume auth problem and trigger logout
         if (failureCount.current >= MAX_CONSECUTIVE_FAILURES) {
-          console.error('[SSE] Max consecutive failures reached. Assuming auth failure.');
+          log.error('SSE', 'Max consecutive failures reached. Assuming auth failure.');
           // Import clearAuth at top and call logout
           clearAuth();
           window.location.reload();

@@ -275,7 +275,10 @@ export function AttachMenu({ open, onClose, onCamera, onGallery, onFiles }) {
 
 // ======================== DESKTOP SIDEBAR =============================
 
-export function Sidebar({ active, onChange, unread=0, pendingCount=0, notifCount=0, canRequest=false, onNew }) {
+const _TYPE_COLORS = { producer:"#F59E0B", plant:"#22C55E", transporter:"#0891B2" };
+const _TYPE_LABELS = { producer:"Productor", plant:"Planta", transporter:"Transportista" };
+
+export function Sidebar({ active, onChange, unread=0, pendingCount=0, notifCount=0, canRequest=false, onNew, activeCompany }) {
   const hasPending = pendingCount > 0;
   const centerColor = hasPending ? C.acc : C.ok;
   const items = [
@@ -287,6 +290,8 @@ export function Sidebar({ active, onChange, unread=0, pendingCount=0, notifCount
     { k:"reports", ic:a=>Ic.doc(a?C.pri:C.t3,20),    l:"Informes" },
     { k:"menu",    ic:a=>Ic.menu3(a?C.pri:C.t3,20),   l:"Menú" },
   ];
+  const compColor = activeCompany ? (_TYPE_COLORS[activeCompany.type] || C.t2) : null;
+  const compLabel = activeCompany ? (_TYPE_LABELS[activeCompany.type] || "") : null;
   return (
     <div style={{ width:220, minWidth:220, height:"100%", background:C.w, borderRight:`1px solid ${C.b2}`, display:"flex", flexDirection:"column", flexShrink:0, overflow:"hidden" }}>
       {/* Logo */}
@@ -296,6 +301,19 @@ export function Sidebar({ active, onChange, unread=0, pendingCount=0, notifCount
           <span style={{ width:15, height:15, borderRadius:8, background:C.acc, display:"inline-block", marginLeft:4, marginTop:3, animation:"dotPulse 1.5s ease-in-out infinite" }}></span>
         </div>
       </div>
+
+      {/* Active company indicator */}
+      {activeCompany && activeCompany.name && (
+        <div style={{ padding:"10px 14px", borderBottom:`1px solid ${C.b2}` }}>
+          <div style={{ display:"flex", alignItems:"center", gap:8, padding:"8px 10px", borderRadius:8, background:`${compColor}0A`, border:`1px solid ${compColor}30` }}>
+            <span style={{ width:8, height:8, borderRadius:4, background:compColor, flexShrink:0 }} />
+            <div style={{ flex:1, minWidth:0 }}>
+              <div style={{ fontSize:12, fontWeight:700, color:C.t1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{activeCompany.name}</div>
+              <div style={{ fontSize:10, fontWeight:600, color:compColor }}>{compLabel}</div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Solicitar */}
       {canRequest && (

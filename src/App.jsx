@@ -5,11 +5,15 @@ import { C, track, FONT, Ic } from "./theme";
 import { POLL_INTERVALS } from "./constants";
 import { Toast, LoadingOverlay, Sidebar, Nav, NotifBell, NotificationsPanel, ErrorBoundary, SkeletonList, PwaInstallCard, EmptyState } from "./components";
 import { useAuth, useCatalog, useFreights, permsFor, useIsDesktop, useOnline, useNotifications, useSSE, useInstallPrompt } from "./hooks";
-import { MapOverlay, LocPickerFullscreen } from "./maps";
 import { RoutesBackground } from "./routes-bg";
+
+// Lazy load heavy map components
+const MapOverlay = lazy(() => import("./maps").then(m => ({ default: m.MapOverlay })));
+const LocPickerFullscreen = lazy(() => import("./maps").then(m => ({ default: m.LocPickerFullscreen })));
 import { useUIStore, offlineQueue } from "./store";
 import { resolveUserTypeForFreight, getPendingActions } from "./utils/freight-helpers";
 import { setUser as setSentryUser } from "./sentry";
+import log from "./logger";
 
 // ======================== LAZY-LOADED SCREENS ===========================
 const LandingScreen = lazy(() => import("./screens/LandingScreen"));
@@ -172,7 +176,7 @@ export default function Tolvink() {
         const convs = await apiListConversations();
         const count = (convs||[]).filter(c => c.unread).length;
         setUnreadChats(count);
-      } catch (e) { console.warn('[CHAT] Unread check failed:', e.message); }
+      } catch (e) { log.warn('CHAT', 'Unread check failed:', e.message); }
     };
     checkUnread();
     const iv = setInterval(checkUnread, POLL_INTERVALS.UNREAD_CHATS);
@@ -207,9 +211,9 @@ export default function Tolvink() {
           else if (item.type === "cancel") await fh.cancel(item.payload.id, item.payload.reason);
           else if (item.type === "update") await fh.update(item.payload.id, item.payload.data);
           await offlineQueue.remove(item.id);
-          console.log("[OfflineQueue] Replayed:", item.type);
+          log.log('OfflineQueue', 'Replayed:', item.type);
         } catch (e) {
-          console.error("[OfflineQueue] Replay failed:", item.type, e);
+          log.error('OfflineQueue', 'Replay failed:', item.type, e);
           break;
         }
       }
@@ -301,7 +305,7 @@ export default function Tolvink() {
           const file = new File([blob], `foto-${Date.now()}.jpg`, {type:'image/jpeg'});
           const url = await uploadPhoto(file, r.freightId, 'request');
           await apiAddDocument(r.freightId, { name: file.name, url, type:'photo', step:'request' });
-        } catch(e) { console.error('Photo upload failed:', e); }
+        } catch(e) { log.error('FREIGHT', 'Photo upload failed:', e); }
       }
     }
     setSubmitting(false);
@@ -338,7 +342,7 @@ export default function Tolvink() {
 
       {/* Desktop Sidebar */}
       <div className="tv-sidebar" style={{position:"relative",zIndex:1}}>
-        <Sidebar active={navActive} onChange={nav} unread={unreadChats} pendingCount={pendingCount} notifCount={notif.unreadCount} canRequest={perms.canRequest} onNew={()=>nav("new")} />
+        <Sidebar active={navActive} onChange={nav} unread={unreadChats} pendingCount={pendingCount} notifCount={notif.unreadCount} canRequest={perms.canRequest} onNew={()=>nav("new")} activeCompany={auth.user?.companyId ? { name: auth.user.entity, type: auth.user.userType } : null} />
       </div>
 
       {/* Main content column */}
@@ -373,12 +377,12 @@ export default function Tolvink() {
             <a href={mapFocus.destLat&&mapFocus.destLng?`https://www.google.com/maps/dir/?api=1&origin=${mapFocus.lat},${mapFocus.lng}&destination=${mapFocus.destLat},${mapFocus.destLng}&travelmode=driving`:`https://www.google.com/maps/search/?api=1&query=${mapFocus.lat},${mapFocus.lng}`} target="_blank" rel="noopener noreferrer" style={{display:"flex",alignItems:"center",gap:5,padding:"7px 14px",borderRadius:8,background:C.pri,color:"#fff",fontSize:12,fontWeight:700,textDecoration:"none",fontFamily:"inherit",flexShrink:0}}>Google Maps ↗</a>
           </div>
           <div style={{flex:1,minHeight:0}}>
-            <MapOverlay lat={mapFocus.lat} lng={mapFocus.lng} label={mapFocus.label} destLat={mapFocus.destLat} destLng={mapFocus.destLng} destLabel={mapFocus.destLabel} onClose={()=>setMapFocus(null)}/>
+            <Suspense fallback={<SL/>}><MapOverlay lat={mapFocus.lat} lng={mapFocus.lng} label={mapFocus.label} destLat={mapFocus.destLat} destLng={mapFocus.destLng} destLabel={mapFocus.destLabel} onClose={()=>setMapFocus(null)}/></Suspense>
           </div>
         </>}
 
         {/* Location picker fullscreen */}
-        {locPicker && <LocPickerFullscreen value={locPicker.value} onChange={locPicker.onChange} defaultCenter={locPicker.defaultCenter} label={locPicker.label} onClose={()=>setLocPicker(null)}/>}
+        {locPicker && <Suspense fallback={<SL/>}><LocPickerFullscreen value={locPicker.value} onChange={locPicker.onChange} defaultCenter={locPicker.defaultCenter} label={locPicker.label} onClose={()=>setLocPicker(null)}/></Suspense>}
 
         {/* Scrollable content area */}
         <div style={{flex:1,overflow:(screen==="chats"||screen==="calendar")&&isDesktop?"hidden":"auto",display:(mapFocus||locPicker)?"none":"flex",flexDirection:"column",WebkitOverflowScrolling:"touch",overscrollBehavior:"contain"}}>
