@@ -294,9 +294,9 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
         {/* OWN FLEET (optional, between origin and destination) */}
         {showTruckSelect && (
           <Sec label="Flete propio (opcional)" complete={!!form.truckId} summary={truckOpts.find(t=>t.value===form.truckId)?.label||""} isExpanded={activeSection==="ownfleet"} onFocus={()=>setActiveSection("ownfleet")} secRef={secRefs.ownfleet} highlight={secComplete.origin&&!form.truckId&&activeSection!=="ownfleet"} disabled={!secEnabled.ownfleet}>
-            <div style={{ fontSize:11, color:C.t2, marginBottom:12 }}>Uso mi propia flota \u2014 la planta solo autoriza el viaje</div>
+            <div style={{ fontSize:11, color:C.t2, marginBottom:12 }}>Uso mi propia flota — la planta solo autoriza el viaje</div>
             <Select label="Cami\u00f3n" icon={Ic.truck(C.acc,14)} value={form.truckId} onChange={v=>u({truckId:v})} options={truckOpts} placeholder="Seleccionar cami\u00f3n..."/>
-            {form.truckId && <button type="button" onClick={()=>u({truckId:""})} style={{ marginTop:8, background:"none", border:"none", cursor:"pointer", fontSize:11, color:C.err, fontWeight:600, fontFamily:"inherit" }}>Quitar cami\u00f3n propio</button>}
+            {form.truckId && <button type="button" onClick={()=>u({truckId:""})} style={{ marginTop:8, background:"none", border:"none", cursor:"pointer", fontSize:11, color:C.err, fontWeight:600, fontFamily:"inherit" }}>Quitar camión propio</button>}
           </Sec>
         )}
 
@@ -326,7 +326,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
                 <LocationPicker label="Ubicaci\u00f3n del destino" value={customDest.lat?{lat:customDest.lat,lng:customDest.lng}:null} onChange={loc=>setCustomDest(p=>({...p,lat:loc.lat,lng:loc.lng}))}/>
               </div>}
               <div style={{marginTop:14}}>
-                <label style={{fontSize:10.5,fontWeight:600,color:C.t2,marginBottom:6,display:"flex",alignItems:"center",gap:4,textTransform:"uppercase",letterSpacing:0.6}}>{Ic.chk(C.t2,14)} \u00bfQui\u00e9n debe confirmar el viaje?</label>
+                <label style={{fontSize:10.5,fontWeight:600,color:C.t2,marginBottom:6,display:"flex",alignItems:"center",gap:4,textTransform:"uppercase",letterSpacing:0.6}}>{Ic.chk(C.t2,14)} ¿Quién debe confirmar el viaje?</label>
                 <div style={{display:"flex",gap:6,marginBottom:confirmMode==="plant"?10:0}}>
                   <button onClick={()=>setConfirmMode("plant")} style={{flex:1,padding:"10px 8px",borderRadius:8,border:`1.5px solid ${confirmMode==="plant"?C.pri:C.b1}`,background:confirmMode==="plant"?C.priPale:C.w,color:confirmMode==="plant"?C.pri:C.t2,cursor:"pointer",fontSize:12,fontWeight:600,fontFamily:"inherit"}}>Planta</button>
                   <button onClick={()=>{setConfirmMode("none");setConfirmPlantId("");}} style={{flex:1,padding:"10px 8px",borderRadius:8,border:`1.5px solid ${confirmMode==="none"?C.ok:C.b1}`,background:confirmMode==="none"?C.okPale:C.w,color:confirmMode==="none"?C.ok:C.t2,cursor:"pointer",fontSize:12,fontWeight:600,fontFamily:"inherit"}}>Nadie</button>
@@ -338,7 +338,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
                     <div style={{fontSize:10,color:C.t3,marginTop:6}}>La planta debe aceptar el flete para que se realice el viaje</div>
                   </>
                 )}
-                {confirmMode==="none" && <div style={{fontSize:10,color:C.t3,marginTop:6}}>El flete no requiere confirmaci\u00f3n externa</div>}
+                {confirmMode==="none" && <div style={{fontSize:10,color:C.t3,marginTop:6}}>El flete no requiere confirmación externa</div>}
               </div>
             </>
           )}
@@ -360,7 +360,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
                   <FreightMap freightId={null} originLat={finalOrigin.lat} originLng={finalOrigin.lng} destLat={finalDest.lat} destLng={finalDest.lng} originName={fieldLots.find(l=>l.id===form.lotId)?.name||"Origen"} destName={destDisplayName||"Destino"} status="preview" isDriver={false}/>
                 ) : (
                   <div style={{ padding:"20px 14px", textAlign:"center", fontSize:12, color:C.t3 }}>
-                    Seleccion\u00e1 {!finalOrigin?"origen (lote)":""}{!finalOrigin&&!finalDest?" y ":""}{!finalDest?"destino":""} para ver la ruta
+                    Seleccioná {!finalOrigin?"origen (lote)":""}{!finalOrigin&&!finalDest?" y ":""}{!finalDest?"destino":""} para ver la ruta
                   </div>
                 )}
                 <div style={{ padding:"6px 14px 10px", display:"flex", gap:8 }}>
@@ -392,7 +392,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
                 <FreightMap freightId={null} originLat={finalOrigin.lat} originLng={finalOrigin.lng} destLat={finalDest.lat} destLng={finalDest.lng} originName={fieldLots.find(l=>l.id===form.lotId)?.name||"Origen"} destName={destDisplayName||"Destino"} status="preview" isDriver={false}/>
               ) : (
                 <div style={{ padding:"20px 14px", textAlign:"center", fontSize:12, color:C.t3 }}>
-                  Seleccion\u00e1 {!finalOrigin?"origen (lote)":""}{!finalOrigin&&!finalDest?" y ":""}{!finalDest?"destino":""} para ver la ruta
+                  Seleccioná {!finalOrigin?"origen (lote)":""}{!finalOrigin&&!finalDest?" y ":""}{!finalDest?"destino":""} para ver la ruta
                 </div>
               )}
               <div style={{ padding:"6px 14px 10px", display:"flex", gap:8 }}>

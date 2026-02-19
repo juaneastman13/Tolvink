@@ -176,7 +176,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, a
       {/* Info + Map — side by side on desktop */}
       <div style={{ display:"flex", flexDirection:_isDesktop?"row":"column", gap:12, marginBottom:12, alignItems:_isDesktop?"stretch":undefined }}>
         <div style={{ flex:1, background:C.w, border:`1px solid ${C.b1}`, borderRadius:12, padding:16, boxShadow:C.sh }}>
-          <span style={{ fontSize:10.5, fontWeight:700, color:C.t2, textTransform:"uppercase", letterSpacing:0.5, marginBottom:12, display:"block" }}>Informaci\u00f3n del flete</span>
+          <span style={{ fontSize:10.5, fontWeight:700, color:C.t2, textTransform:"uppercase", letterSpacing:0.5, marginBottom:12, display:"block" }}>Información del flete</span>
           {[
             [Ic.user(C.pri,15),"Empresa",freight.originCompanyName||freight.originName],
             [Ic.pin(C.ok,15),"Campo",<>{[freight.fieldName,freight.originName].filter(Boolean).join(" / ")||"\u2014"}{freight.originLat&&freight.originLng&&<span onClick={()=>goToMap(freight.originLat,freight.originLng,[freight.fieldName,freight.originName].filter(Boolean).join(" / "))} style={{cursor:"pointer",opacity:0.7,marginLeft:4,fontSize:11}} title="Ver en mapa">{"\uD83D\uDCCD"}</span>}</>],
@@ -248,13 +248,13 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, a
 
       <button onClick={()=>onChat(freight.conversationId)} disabled={!freight.conversationId}
         style={{ width:"100%", background:C.priPale, borderRadius:10, padding:12, display:"flex", alignItems:"center", gap:10, border:`1.5px solid ${C.pri}30`, cursor:freight.conversationId?"pointer":"default", fontFamily:"inherit", marginBottom:12 }}>
-        {Ic.msg(C.pri,20)}<div style={{textAlign:"left"}}><div style={{ fontSize:12, fontWeight:700, color:C.pri }}>Chat del flete</div><div style={{ fontSize:10, color:C.t2 }}>Convers\u00e1 con las partes involucradas</div></div>
+        {Ic.msg(C.pri,20)}<div style={{textAlign:"left"}}><div style={{ fontSize:12, fontWeight:700, color:C.pri }}>Chat del flete</div><div style={{ fontSize:10, color:C.t2 }}>Conversá con las partes involucradas</div></div>
       </button>
 
       {/* Edit + Cancel — bottom actions */}
       {freight.status==="pending_assignment" && perms.canRequest && <div style={{ marginBottom:8 }}><Btn full sm v="sec" icon={Ic.doc(C.pri,14)} onClick={()=>onEdit(freight)}>Editar</Btn></div>}
       {filteredActions.includes("cancel") && <div style={{ marginBottom:8 }}><Btn full v="err" icon={Ic.cross(C.err,16)} disabled={actionLoading} onClick={()=>onAction(freight.id,"cancel")}>Cancelar flete</Btn></div>}
-      {filteredActions.includes("reject") && <div style={{ marginBottom:8 }}><Btn full v="err" icon={Ic.ban(C.w,16)} disabled={actionLoading} onClick={()=>onAction(freight.id,"reject")}>Rechazar asignaci\u00f3n</Btn></div>}
+      {filteredActions.includes("reject") && <div style={{ marginBottom:8 }}><Btn full v="err" icon={Ic.ban(C.w,16)} disabled={actionLoading} onClick={()=>onAction(freight.id,"reject")}>Rechazar asignación</Btn></div>}
       </div>
       <FileViewer file={viewFile} onClose={()=>setViewFile(null)}/>
     </div>

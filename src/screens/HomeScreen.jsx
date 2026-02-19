@@ -224,7 +224,7 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
       {pwa && !pwa.isInstalled && (pwa.canPrompt || pwa.isIOS) && (
         <div style={{ background:C.priPale, border:`1.5px solid ${C.pri}30`, borderRadius:12, padding:"12px 14px", marginBottom:12, display:"flex", alignItems:"center", gap:10 }}>
           <div style={{flex:1}}>
-            <div style={{ fontSize:12, fontWeight:700, color:C.pri }}>Instal\u00e1 Tolvink en tu dispositivo</div>
+            <div style={{ fontSize:12, fontWeight:700, color:C.pri }}>Instalá Tolvink en tu dispositivo</div>
             <div style={{ fontSize:10.5, color:C.t2, marginTop:2 }}>{pwa.isIOS ? "Toc\u00e1 Compartir \u2192 Agregar a inicio" : "Acceso directo desde tu pantalla de inicio"}</div>
           </div>
           {pwa.canPrompt && <button onClick={pwa.install} style={{ padding:"8px 16px", borderRadius:8, border:"none", background:C.pri, color:"#fff", fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"inherit", flexShrink:0 }}>Instalar</button>}
@@ -241,7 +241,7 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
             </div>
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: compact ? 11 : 12, fontWeight: 700, color: C.acc }}>Con pendientes de mi parte</div>
-              {!compact && <div style={{ fontSize: 10, color: C.t3 }}>{pendingCount} acci\u00f3n{pendingCount !== 1 ? "es" : ""}</div>}
+              {!compact && <div style={{ fontSize: 10, color: C.t3 }}>{pendingCount} acción{pendingCount !== 1 ? "es" : ""}</div>}
             </div>
           </div>
           <div style={{ display: "flex", gap: 4, marginTop: 6, flexWrap: "wrap" }}>
