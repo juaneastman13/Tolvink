@@ -18,7 +18,9 @@ const _loadingPromises = {}; // Singleton: prevent concurrent requests for same 
 
 export function useCatalog(user) {
   const { getCache, setCache, setLoading } = useCatalogStore();
-  const cached = user ? getCache(user.id) : null;
+  // Cache key includes activeCompanyId so switching company invalidates cache
+  const cacheKey = user ? `${user.id}:${user.activeCompanyId || user.companyId || ''}` : null;
+  const cached = cacheKey ? getCache(cacheKey) : null;
 
   const [plants, setPlants] = useState(cached?.data?.plants || []);
   const [branches, setBranches] = useState(cached?.data?.branches || []);
@@ -29,10 +31,10 @@ export function useCatalog(user) {
   const [loading, setLoadingLocal] = useState(cached?.loading || false);
 
   const load = useCallback((force)=>{
-    if(!user) return;
+    if(!user || !cacheKey) return;
 
     const now = Date.now();
-    const cache = getCache(user.id);
+    const cache = getCache(cacheKey);
 
     // Return cached data if fresh
     if(!force && cache?.data && (now - cache.ts) < CATALOG_TTL) {
@@ -42,9 +44,9 @@ export function useCatalog(user) {
       return;
     }
 
-    // Singleton: if already loading for this user, wait for that promise
-    if(_loadingPromises[user.id]) {
-      _loadingPromises[user.id].then((d) => {
+    // Singleton: if already loading for this user+company, wait for that promise
+    if(_loadingPromises[cacheKey]) {
+      _loadingPromises[cacheKey].then((d) => {
         setPlants(d.plants); setBranches(d.branches); setLots(d.lots);
         setTransporters(d.transporters); setTrucks(d.trucks); setFields(d.fields);
       });
@@ -52,9 +54,9 @@ export function useCatalog(user) {
     }
 
     setLoadingLocal(true);
-    setLoading(user.id, true);
+    setLoading(cacheKey, true);
 
-    _loadingPromises[user.id] = Promise.all([
+    _loadingPromises[cacheKey] = Promise.all([
       apiGetPlants().catch((e)=>{ log.warn('Catalog', 'apiGetPlants failed:', e.message); return []; }),
       apiGetBranches().catch((e)=>{ log.warn('Catalog', 'apiGetBranches failed:', e.message); return []; }),
       apiGetLots().catch((e)=>{ log.warn('Catalog', 'apiGetLots failed:', e.message); return []; }),
@@ -67,15 +69,15 @@ export function useCatalog(user) {
         : Promise.resolve([]),
     ]).then(([p,br,l,t,tr,f])=>{
       const d = { plants:p||[], branches:br||[], lots:l||[], transporters:t||[], trucks:tr||[], fields:f||[] };
-      setCache(user.id, d);
+      setCache(cacheKey, d);
       setPlants(d.plants); setBranches(d.branches); setLots(d.lots);
       setTransporters(d.transporters); setTrucks(d.trucks); setFields(d.fields);
       return d;
     }).finally(()=>{
       setLoadingLocal(false);
-      delete _loadingPromises[user.id];
+      delete _loadingPromises[cacheKey];
     });
-  },[user, getCache, setCache, setLoading]);
+  },[user, cacheKey, getCache, setCache, setLoading]);
 
   useEffect(()=>{ load(); },[load]);
 
