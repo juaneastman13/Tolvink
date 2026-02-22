@@ -306,6 +306,7 @@ export function mapFreight(f) {
     unit:f.items?.[0]?.unit||"toneladas", amount:f.items?.[0]?.amount||0,
     productTypeOther:f.items?.[0]?.productTypeOther||"",
     originLotId:f.originLotId, originName:f.originName||"", originCompanyId:f.originCompanyId||"", originCompanyName:f.originCompany?.name||"",
+    originHasOwnFleet: !!(f.originCompany?.hasInternalFleet || (Array.isArray(f.originCompany?.types) && f.originCompany.types.includes("transporter"))),
     originLat:f.originLat?parseFloat(f.originLat):null, originLng:f.originLng?parseFloat(f.originLng):null,
     fieldName:f.field?.name||"", isOwnFleet,
     destPlantId:f.destPlantId, destCompanyId:f.destCompanyId||null, destName:f.destName||"",

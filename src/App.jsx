@@ -411,7 +411,7 @@ export default function Tolvink() {
         {screen==="new" && <NewScreen user={auth.user} lots={catalog.lots} plants={catalog.plants} branches={catalog.branches} fields={catalog.fields} trucks={catalog.trucks} onBack={()=>{setDuplicateData(null);navigate("/");}} onCreate={handleCreate} submitting={submitting} duplicateFrom={duplicateData}/>}
         {screen==="edit" && editData && <EditScreen freight={editData} fields={catalog.fields} plants={catalog.plants} onBack={()=>{setEditData(null);navigate(-1);}} onSave={async(id,data)=>{const r=await fh.update(id,data);if(r.ok) return "Flete actualizado"; show(r.error,"err"); return "";}}/>}
         {screen==="menu" && <MenuScreen user={auth.user} perms={perms} onLogout={auth.logout} onNav={nav} isDesktop={isDesktop} onSwitchCompany={async(id)=>{setViewAll(false);const r=await auth.switchCompany(id);if(r.ok){fh.fetchAll();catalog.refresh();}return r;}} onRefresh={()=>{fh.fetchAll();catalog.refresh();}} pwa={pwa}/>}
-        {screen==="trucks" && <TrucksScreen onBack={()=>{catalog.refresh();navigate("/menu");}}/>}
+        {screen==="trucks" && <TrucksScreen user={auth.user} onBack={()=>{catalog.refresh();navigate("/menu");}}/>}
         {screen==="fields" && <FieldsScreen onBack={()=>{catalog.refresh();navigate("/menu");}} goToMap={goToMap}/>}
         {screen==="admin" && <AdminScreen user={auth.user} onBack={()=>navigate("/menu")}/>}
         {screen==="mydata" && <MyDataScreen user={auth.user} onBack={()=>navigate("/menu")}/>}

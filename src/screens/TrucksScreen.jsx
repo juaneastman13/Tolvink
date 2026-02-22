@@ -3,7 +3,8 @@ import { C, Ic } from "../theme";
 import { Btn, Field, Loader, LoadingOverlay } from "../components";
 import { apiGetTrucks, apiCreateTruck, apiDeactivateTruck } from "../api";
 
-export default function TrucksScreen({ onBack, embedded }) {
+export default function TrucksScreen({ onBack, embedded, user }) {
+  const canEdit = !user || user.role==="admin" || user.role==="platform_admin";
   const [trucks, setTrucks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -42,7 +43,7 @@ export default function TrucksScreen({ onBack, embedded }) {
       <div style={{ padding: embedded?0:"0 18px 18px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
         <div style={{ fontSize: 20, fontWeight: 800, letterSpacing: -0.3 }}>Mi Flota</div>
-        <Btn sm onClick={() => setShowForm(!showForm)} icon={showForm ? Ic.cross(C.w, 14) : Ic.plus(C.w, 14)}>{showForm ? "Cerrar" : "Agregar"}</Btn>
+        {canEdit && <Btn sm onClick={() => setShowForm(!showForm)} icon={showForm ? Ic.cross(C.w, 14) : Ic.plus(C.w, 14)}>{showForm ? "Cerrar" : "Agregar"}</Btn>}
       </div>
 
       {msg && <div style={{ padding: "10px 14px", borderRadius: 12, marginBottom: 12, fontSize: 12, fontWeight: 600, background: msg.k === "ok" ? C.okPale : C.errPale, color: msg.k === "ok" ? C.ok : C.err }}>{msg.t}</div>}
@@ -70,7 +71,7 @@ export default function TrucksScreen({ onBack, embedded }) {
                     {t.assignedUser && <div style={{ fontSize: 10, color: C.t2 }}>Chofer: {t.assignedUser.name}</div>}
                   </div>
                 </div>
-                <button disabled={saving} onClick={() => handleDeactivate(t.id)} style={{ background: "none", border: "none", cursor: saving?"not-allowed":"pointer", padding: 6, opacity:saving?0.4:1 }}>{Ic.ban(C.err, 18)}</button>
+                {canEdit && <button disabled={saving} onClick={() => handleDeactivate(t.id)} style={{ background: "none", border: "none", cursor: saving?"not-allowed":"pointer", padding: 6, opacity:saving?0.4:1 }}>{Ic.ban(C.err, 18)}</button>}
               </div>
             ))}
           </div>

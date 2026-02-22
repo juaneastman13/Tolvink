@@ -14,9 +14,8 @@ export default function AssignModal({ freight, transporters, onClose, onConfirm 
   const [closingText,setClosingText] = useState("");
   const ts = transporters||[];
 
-  // Check if origin company appears as transporter (has own fleet)
-  const originAsTransporter = ts.find(x=>x.id===freight.originCompanyId);
-  const hasOwnFleet = !!originAsTransporter;
+  // Origin company has own fleet (from backend hasInternalFleet or types includes transporter)
+  const hasOwnFleet = !!freight.originHasOwnFleet;
 
   // Load trucks when switching to own fleet mode
   useEffect(()=>{
