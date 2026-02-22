@@ -28,11 +28,14 @@ function getMultiTruckPendingAction(freight, userType, role, user) {
     return null;
   }
 
-  // Plant: check if more trucks needed
+  // Plant: check if more trucks needed, authorize own-fleet, or confirm
   if (userType === "plant") {
     if (freight.assignedTruckCount < freight.truckCount) {
       return { action: `Asignar ${freight.truckCount - freight.assignedTruckCount} camiones`, color: C.acc, icon: "assign", actionKey: "assign_multi" };
     }
+    // Own-fleet trips pending plant authorization
+    const needsAuth = aa.find(a => a.transportCompanyId === freight.originCompanyId && a.tripStatus === "pending");
+    if (needsAuth) return { action: `Autorizar viaje #${needsAuth.tripNumber}`, color: C.sec, icon: "authorize", actionKey: "respond_trip", assignmentId: needsAuth.id };
     // Check for pending confirm_finished on any trip
     const needsFinish = aa.find(a => a.tripStatus === "loaded" && !a.plantFinishedConfirmedAt);
     if (needsFinish) return { action: `Confirmar entrega #${needsFinish.tripNumber}`, color: C.pri, icon: "confirm", actionKey: "confirm_trip_finished", assignmentId: needsFinish.id };
