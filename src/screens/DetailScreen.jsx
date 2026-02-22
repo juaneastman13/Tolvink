@@ -160,6 +160,8 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
         const getStepLogs = (step) => { if(!auditLog) return []; return auditLog.filter(l=>(stepAuditActions[step]||[]).includes(l.action)); };
         const getTruckCount = (step) => { if(!isMultiTruck) return null; const ts=stepToTrip[step]; if(!ts) return null; const rank=tripRank[ts]??0; return (freight.activeAssignments||[]).filter(a=>(tripRank[a.tripStatus]??0)>=rank).length; };
         const tripLabel = (log) => { const tn = log.metadata?.tripNumber; return tn ? `Viaje #${tn}` : null; };
+        // Get assignments exactly at a given tripStatus (for showing truck details per stage)
+        const getStepAssignments = (step) => { if(!isMultiTruck) return []; const ts=stepToTrip[step]; if(!ts) return []; return (freight.activeAssignments||[]).filter(a=>a.tripStatus===ts); };
         return <div ref={auditRef} style={{ background:C.w, border:`1px solid ${C.b1}`, borderRadius:12, padding:16, marginBottom:12, boxShadow:C.sh, position:"relative" }}>
           <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:12 }}>
             <span style={{ fontSize:10.5, fontWeight:700, color:C.t2, textTransform:"uppercase", letterSpacing:0.5 }}>Progreso</span>
@@ -185,6 +187,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
                 const c = stCfg(s);
                 const logs = getStepLogs(s);
                 const tc = getTruckCount(s);
+                const stepAssigns = getStepAssignments(s);
                 const hasData = logs.length > 0 || (tc !== null && tc > 0);
                 const col = done ? C.pri : active ? (c.border||c.color) : C.t3;
                 return (
@@ -194,13 +197,13 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
                         {tc}/{freight.truckCount}
                       </div>
                     )}
-                    {logs.length > 0 ? logs.map(log => {
+                    {/* Audit log entries */}
+                    {logs.length > 0 && logs.map(log => {
                       const acCol = actionColors[log.action] || C.t2;
                       const tn = tripLabel(log);
-                      // Only show action label for exceptional actions (reject, cancel, edit)
                       const isException = ["rejected","canceled","trip_rejected","assignment_canceled","assignment_updated","updated"].includes(log.action);
                       return (
-                        <div key={log.id} style={{ display:"flex", gap:5, marginBottom:10, alignItems:"flex-start" }}>
+                        <div key={log.id} style={{ display:"flex", gap:5, marginBottom:8, alignItems:"flex-start" }}>
                           <div style={{ width:7, height:7, borderRadius:4, background:acCol, flexShrink:0, marginTop:3 }} />
                           <div style={{ minWidth:0 }}>
                             {isException && <div style={{ fontSize:10, fontWeight:700, color:acCol, lineHeight:1.3 }}>{actionLabels[log.action]||log.action}</div>}
@@ -213,7 +216,20 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
                           </div>
                         </div>
                       );
-                    }) : hasData ? <div style={{ fontSize:9, color:C.t3, textAlign:"center" }}>{"\u2014"}</div> : null}
+                    })}
+                    {/* Fallback: show assignment details when no audit entries but trucks are at this stage */}
+                    {logs.length === 0 && stepAssigns.length > 0 && stepAssigns.map(a => (
+                      <div key={a.id} style={{ display:"flex", gap:5, marginBottom:8, alignItems:"flex-start" }}>
+                        <div style={{ width:7, height:7, borderRadius:4, background:col, flexShrink:0, marginTop:3 }} />
+                        <div style={{ minWidth:0 }}>
+                          <div style={{ fontSize:9, fontWeight:700, color:C.t1 }}>Viaje #{a.tripNumber}</div>
+                          {a.plate && <div style={{ fontSize:9.5, color:C.t2, marginTop:1, lineHeight:1.3 }}>{a.plate}{a.truckModel?` \u00b7 ${a.truckModel}`:""}</div>}
+                          {a.transporterName && <div style={{ fontSize:9, color:C.t3, lineHeight:1.2 }}>{a.transporterName}</div>}
+                          {a.driverName && <div style={{ fontSize:9, color:C.t3, lineHeight:1.2 }}>{a.driverName}</div>}
+                        </div>
+                      </div>
+                    ))}
+                    {logs.length === 0 && stepAssigns.length === 0 && hasData && <div style={{ fontSize:9, color:C.t3, textAlign:"center" }}>{"\u2014"}</div>}
                   </div>
                 );
               })}
