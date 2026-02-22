@@ -318,6 +318,7 @@ export function mapFreight(f) {
     requestedBy:f.requestedById, requestedByName:f.requestedBy?.name||"",
     transporterId:a?.transportCompanyId||null, transporterName:a?.transportCompany?.name||"",
     driverId:a?.driverId||a?.driver?.id||null, driverName:a?.driver?.name||null, driverPhone:a?.driver?.phone||null,
+    queuePosition:a?.queuePosition??0,
     truckPlate:a?.truck?.plate||a?.plate||null, truckModel:a?.truck?.model||null,
     assignments:(f.assignments||[]).map(x=>({ id:x.id, status:x.status, transporterName:x.transportCompany?.name||"", reason:x.reason||null, createdAt:x.createdAt })),
     notes:f.notes||"", cancelReason:f.cancelReason||"", createdAt:f.createdAt,

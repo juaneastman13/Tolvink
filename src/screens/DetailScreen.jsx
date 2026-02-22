@@ -47,10 +47,11 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, a
 
   const _isDesktop = useIsDesktop(768);
   const st = stCfg(freight.status);
+  const isChoferQueued = user.role === "chofer" && (freight.queuePosition || 0) > 1;
   const actions = getActions(freight.status, user.userType, user.role, freight.isOwnFleet);
 
   // Filter actions based on confirmation state
-  const filteredActions = actions.filter(a=>{
+  const filteredActions = isChoferQueued ? [] : actions.filter(a=>{
     if(a==="confirm_loaded" && user.userType==="transporter" && freight.transporterLoadedConfirmedAt) return false;
     if(a==="confirm_loaded" && user.userType==="producer" && freight.producerLoadedConfirmedAt) return false;
     if(a==="confirm_finished" && user.userType==="transporter" && freight.transporterFinishedConfirmedAt) return false;
@@ -77,6 +78,15 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, a
       </div>
 
       <div style={{ padding:"0 18px 18px" }}>
+
+      {/* Queue banner for chofer */}
+      {isChoferQueued && <div style={{ background:`${C.info}10`, border:`1.5px solid ${C.info}30`, borderRadius:12, padding:"12px 16px", marginBottom:12, display:"flex", alignItems:"center", gap:10 }}>
+        <span style={{ fontSize:20 }}>{"\u23F3"}</span>
+        <div>
+          <div style={{ fontSize:13, fontWeight:700, color:C.info }}>En cola #{freight.queuePosition}</div>
+          <div style={{ fontSize:11, color:C.t2 }}>Deb\u00e9s completar los fletes anteriores primero</div>
+        </div>
+      </div>}
 
       {/* Actions */}
       {filteredActions.length > 0 && <div style={{ display:"flex", flexDirection:"column", gap:8, marginBottom:12 }}>
@@ -194,7 +204,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, a
             freight.amount>0&&[Ic.grain(C.t2,15),"Importe",`$${Number(freight.amount).toLocaleString()}`],
             freight.transporterName&&[Ic.truck(C.t2,15),"Transportista",freight.transporterName],
             freight.truckPlate&&[Ic.truck(C.acc,15),"Camión",`${freight.truckPlate}${freight.truckModel?` · ${freight.truckModel}`:""}`],
-            freight.driverName&&[Ic.user(C.pri,15),"Chofer",freight.driverName],
+            freight.driverName&&[Ic.user(C.pri,15),"Chofer",<>{freight.driverName}{perms.canApprove && freight.driverId && <button onClick={()=>onAction(freight.id,"driver_queue")} style={{marginLeft:6,fontSize:9.5,fontWeight:700,color:C.info,background:`${C.info}12`,border:`1px solid ${C.info}30`,borderRadius:6,padding:"2px 7px",cursor:"pointer",fontFamily:"inherit"}}>Ver cola</button>}</>],
             freight.driverPhone&&[Ic.msg(C.info,15),"Teléfono",freight.driverPhone],
           ].filter(Boolean).map(([ic,label,val],i,arr)=>(
             <div key={i} style={{ display:"flex", alignItems:"center", gap:10, padding:"9px 0", borderBottom:i<arr.length-1?`1px solid ${C.b2}`:"none" }}>

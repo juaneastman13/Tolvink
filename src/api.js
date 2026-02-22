@@ -227,6 +227,8 @@ export async function apiDeactivateTruck(id) { return api(`/trucks/${id}/deactiv
 
 // Drivers (choferes)
 export async function apiGetDrivers(companyId) { return api(`/freights/drivers?companyId=${companyId}`); }
+export async function apiGetDriverQueue(driverId) { return api(`/freights/drivers/${driverId}/queue`); }
+export async function apiReorderDriverQueue(driverId, orderedFreightIds) { return api(`/freights/drivers/${driverId}/reorder`,{body:{orderedFreightIds}}); }
 export async function apiListDrivers() { return api('/trucks/drivers'); }
 export async function apiCreateDriver(b) { return api('/trucks/drivers',{body:b}); }
 export async function apiDeactivateDriver(id) { return api(`/trucks/drivers/${id}/deactivate`,{body:{},method:'PATCH'}); }

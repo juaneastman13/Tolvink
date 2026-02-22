@@ -21,6 +21,8 @@ export function getPendingActions(freight, userType, role) {
   const s = freight.status;
   const own = freight.isOwnFleet;
   if (role === "chofer" || userType === "chofer") {
+    const qp = freight.queuePosition || 0;
+    if (qp > 1) return { action: `En cola #${qp}`, color: C.t3, icon: "queue", actionKey: null, isQueue: true };
     if (s === "assigned") return { action: "Aceptar o rechazar", color: C.sec, icon: "respond", actionKey: "respond" };
     if (s === "accepted") return { action: "Iniciar viaje", color: C.pri, icon: "start", actionKey: "start" };
     if (s === "in_progress") return { action: "Confirmar carga", color: C.acc, icon: "confirm", actionKey: "confirm_loaded" };

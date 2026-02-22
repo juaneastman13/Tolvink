@@ -38,6 +38,7 @@ const ConfirmActionModal = lazy(() => import("./modals/ConfirmActionModal"));
 const AssignModal = lazy(() => import("./modals/AssignModal"));
 const TruckSelectModal = lazy(() => import("./modals/TruckSelectModal"));
 const ReasonModal = lazy(() => import("./modals/ReasonModal"));
+const DriverQueueModal = lazy(() => import("./modals/DriverQueueModal"));
 
 // ======================== ROUTE MAP ===================================
 const SCREEN_TO_PATH = {
@@ -155,7 +156,7 @@ export default function Tolvink() {
   const viewFreights = useMemo(() => {
     if (!auth.user || !fh.freights) return fh.freights;
     if (auth.user.role === "chofer") {
-      return fh.freights.filter(f => f.driverId === auth.user.id);
+      return fh.freights.filter(f => f.driverId === auth.user.id).sort((a,b) => (a.queuePosition||0) - (b.queuePosition||0));
     }
     if (viewAll) return fh.freights;
     const cId = auth.user.activeCompanyId || auth.user.companyId;
@@ -279,6 +280,7 @@ export default function Tolvink() {
     else if(action==="authorize") { setModal({type:"confirm_action",freight:f,title:"Autorizar viaje",btnLabel:"Autorizar",icon:Ic.chk(C.pri,24),action:"authorize"}); }
     else if(action==="confirm_loaded") { setModal({type:"confirm_action",freight:f,title:"Confirmar carga",btnLabel:"Confirmar carga",btnVariant:"acc",icon:Ic.chk(C.acc,24),action:"confirm_loaded"}); }
     else if(action==="confirm_finished") { setModal({type:"confirm_action",freight:f,title:"Confirmar entrega",btnLabel:"Confirmar entrega",icon:Ic.chk(C.pri,24),action:"confirm_finished"}); }
+    else if(action==="driver_queue") { setModal({type:"driver_queue",driverId:f.driverId,driverName:f.driverName}); }
   };
 
   const handleAcceptWithTruck = async (fId, truckId, driverId)=>{
@@ -439,6 +441,7 @@ export default function Tolvink() {
       {modal?.type==="truck_select" && <TruckSelectModal freight={modal.freight} trucks={catalog.trucks} user={auth.user} onClose={()=>setModal(null)} onConfirm={(t,driverId)=>handleAcceptWithTruck(modal.freight.id,t,driverId)}/>}
       {modal?.type==="confirm_action" && <ConfirmActionModal freight={modal.freight} title={modal.title} btnLabel={modal.btnLabel} btnVariant={modal.btnVariant} icon={modal.icon} onClose={()=>setModal(null)} onConfirm={()=>handleConfirmAction(modal.freight.id,modal.action)}/>}
       {modal?.type==="reason" && <ReasonModal title={modal.title} freight={modal.freight} btnLabel={modal.btnLabel} onClose={()=>setModal(null)} onConfirm={r=>handleReasonAction(modal.freight.id,r,modal.action)}/>}
+      {modal?.type==="driver_queue" && <DriverQueueModal driverId={modal.driverId} driverName={modal.driverName} onClose={()=>setModal(null)}/>}
       </Suspense>
       {toast && <Toast msg={toast.msg} type={toast.type} onClose={()=>setToast(null)}/>}
     </div>
