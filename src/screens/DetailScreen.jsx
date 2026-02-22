@@ -72,6 +72,43 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
     return aa; // plant/producer see all
   }, [isMultiTruck, freight.activeAssignments, user]);
 
+  // Multi-truck: aggregate top-level actions from all visible trips
+  const multiTruckTopActions = useMemo(() => {
+    if (!isMultiTruck || isChoferQueued) return [];
+    const seen = new Map(); // key -> { label, color, icon, assignmentId, count }
+    for (const a of visibleAssignments) {
+      const ts = a.tripStatus;
+      const isOwn = a.transportCompanyId === freight.originCompanyId;
+      const entries = [];
+      if (user.userType === "plant") {
+        if (isOwn && ts === "pending") entries.push({ key:"respond_trip_accept", label:"Autorizar viaje", color:C.sec, icon:Ic.chk(C.w,16) });
+        if (ts === "loaded" && !a.plantFinishedConfirmedAt) entries.push({ key:"confirm_trip_finished", label:"Confirmar entrega", color:C.pri, icon:Ic.chk(C.w,16) });
+      } else if (user.role !== "chofer" && user.userType === "producer" && !isOwn) {
+        if (ts === "loaded" && !a.plantFinishedConfirmedAt) entries.push({ key:"confirm_trip_finished", label:"Confirmar entrega", color:C.pri, icon:Ic.chk(C.w,16) });
+      }
+      if (user.userType === "transporter" || user.role === "chofer") {
+        if (ts === "pending") entries.push({ key:"respond_trip_accept", label:"Aceptar viaje", color:C.ok, icon:Ic.chk(C.w,16) });
+        if (ts === "accepted") entries.push({ key:"start_trip", label:"Iniciar viaje", color:C.pri, icon:Ic.truck(C.w,16) });
+        if (ts === "in_progress" && !a.transporterLoadedConfirmedAt) entries.push({ key:"confirm_trip_loaded", label:"Confirmar carga", color:C.acc, icon:Ic.chk(C.w,16) });
+        if (ts === "loaded" && !a.transporterFinishedConfirmedAt) entries.push({ key:"confirm_trip_finished", label:"Confirmar entrega", color:C.pri, icon:Ic.chk(C.w,16) });
+      }
+      if (user.userType === "producer" && isOwn) {
+        if (ts === "accepted" && !entries.find(e=>e.key==="start_trip")) entries.push({ key:"start_trip", label:"Iniciar viaje", color:C.pri, icon:Ic.truck(C.w,16) });
+        if (ts === "in_progress" && !a.transporterLoadedConfirmedAt && !entries.find(e=>e.key==="confirm_trip_loaded")) entries.push({ key:"confirm_trip_loaded", label:"Confirmar carga", color:C.acc, icon:Ic.chk(C.w,16) });
+        if (ts === "loaded" && !a.transporterFinishedConfirmedAt && !entries.find(e=>e.key==="confirm_trip_finished")) entries.push({ key:"confirm_trip_finished", label:"Confirmar entrega", color:C.pri, icon:Ic.chk(C.w,16) });
+      }
+      if (user.userType === "producer") {
+        if ((ts === "loaded" || ts === "in_progress") && !a.producerLoadedConfirmedAt && !entries.find(e=>e.key==="confirm_trip_loaded"))
+          entries.push({ key:"confirm_trip_loaded", label:"Confirmar carga", color:C.acc, icon:Ic.chk(C.w,16) });
+      }
+      for (const e of entries) {
+        if (!seen.has(e.key)) seen.set(e.key, { ...e, assignmentId: a.id, tripNumber: a.tripNumber, count: 1 });
+        else seen.get(e.key).count++;
+      }
+    }
+    return [...seen.values()];
+  }, [isMultiTruck, isChoferQueued, visibleAssignments, freight, user]);
+
   // Per-trip action for a given assignment
   const getTripActions = (a) => {
     const btns = [];
@@ -138,6 +175,16 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
         {filteredActions.includes("start") && <Btn full icon={Ic.truck(C.w,16)} disabled={actionLoading} onClick={()=>onAction(freight.id,"start")}>{actionLoading?"Procesando...":"Iniciar viaje"}</Btn>}
         {filteredActions.includes("confirm_loaded") && <Btn full v="acc" icon={Ic.chk(C.w,16)} disabled={actionLoading} onClick={()=>onAction(freight.id,"confirm_loaded")}>{actionLoading?"Procesando...":"Confirmar carga"}</Btn>}
         {filteredActions.includes("confirm_finished") && <Btn full v="acc" icon={Ic.chk(C.w,16)} disabled={actionLoading} onClick={()=>onAction(freight.id,"confirm_finished")}>{actionLoading?"Procesando...":"Confirmar entrega"}</Btn>}
+      </div>}
+
+      {/* Multi-truck: top-level action buttons */}
+      {multiTruckTopActions.length > 0 && <div style={{ display:"flex", flexDirection:"column", gap:8, marginBottom:12 }}>
+        {multiTruckTopActions.map(a => (
+          <button key={a.key} disabled={actionLoading} onClick={()=>onTripAction && onTripAction(freight.id, a.assignmentId, a.key)}
+            style={{ width:"100%", padding:"14px 20px", borderRadius:12, border:"none", background:a.color, color:C.w, fontSize:15, fontWeight:700, cursor:actionLoading?"not-allowed":"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:8, opacity:actionLoading?0.6:1 }}>
+            {a.icon} {actionLoading?"Procesando...":a.label}{a.count>1?` (${a.count})`:a.count===1?` #${a.tripNumber}`:""}
+          </button>
+        ))}
       </div>}
 
       {/* Progress — click to see per-stage detail */}
