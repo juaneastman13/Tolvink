@@ -9,7 +9,7 @@ import { useIsDesktop } from "../hooks";
 // PDF report loaded lazily to avoid bundle bloat
 const loadPdfReport = () => import("../utils/pdf-report");
 
-export default function DetailScreen({ user, freight, perms, onBack, onAction, onTripAction, actionLoading, onChat, onRefresh, onDuplicate, onEdit, goToMap }) {
+export default function DetailScreen({ user, freight, perms, onBack, onAction, onTripAction, onEditTrip, actionLoading, onChat, onRefresh, onDuplicate, onEdit, goToMap }) {
   if(!freight) return null;
   const [auditLog, setAuditLog] = useState(null);
   const [showAudit, setShowAudit] = useState(false);
@@ -211,6 +211,12 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
                     {a.plate || "Sin camión"}{a.transporterName ? ` · ${a.transporterName}` : ""}{a.driverName ? ` · ${a.driverName}` : ""}
                   </span>
                   <Bd color={tst.color} bg={tst.bg} small>{tst.label}</Bd>
+                  {/* Edit button for plant on pending trips */}
+                  {user.userType === "plant" && a.tripStatus === "pending" && onEditTrip && (
+                    <button onClick={(e)=>{e.stopPropagation(); onEditTrip(freight.id, a);}} style={{ padding:"4px 8px", borderRadius:6, border:`1px solid ${C.b1}`, background:C.w, color:C.t2, fontSize:10, fontWeight:600, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:3 }}>
+                      {Ic.doc(C.t2,12)} Editar
+                    </button>
+                  )}
                   {/* Inline action buttons (visible without expanding) */}
                   {tripBtns.length > 0 && tripBtns.map(b => (
                     <button key={b.key} disabled={actionLoading} onClick={(e)=>{e.stopPropagation(); onTripAction && onTripAction(freight.id, a.id, b.key);}} style={{ padding:"5px 10px", borderRadius:6, border:"none", background:b.color, color:C.w, fontSize:10.5, fontWeight:700, cursor:actionLoading?"not-allowed":"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:4, opacity:actionLoading?0.6:1 }}>

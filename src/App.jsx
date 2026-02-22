@@ -39,6 +39,7 @@ const AssignModal = lazy(() => import("./modals/AssignModal"));
 const TruckSelectModal = lazy(() => import("./modals/TruckSelectModal"));
 const ReasonModal = lazy(() => import("./modals/ReasonModal"));
 const DriverQueueModal = lazy(() => import("./modals/DriverQueueModal"));
+const EditTripModal = lazy(() => import("./modals/EditTripModal"));
 
 // ======================== ROUTE MAP ===================================
 const SCREEN_TO_PATH = {
@@ -303,20 +304,50 @@ export default function Tolvink() {
     show(r.error,"err"); return "";
   };
 
-  const handleTripAction = async (fId, aId, actionKey)=>{
+  const handleTripAction = (fId, aId, actionKey)=>{
     if(actionLoading) return;
-    useUIStore.getState().setActionLoading(true);
-    try {
-      let r;
-      if(actionKey==="respond_trip_accept") r = await fh.respondTrip(fId, aId, {action:"accepted"});
-      else if(actionKey==="respond_trip_reject") r = await fh.respondTrip(fId, aId, {action:"rejected", reason:"Rechazado"});
-      else if(actionKey==="start_trip") r = await fh.startTrip(fId, aId);
-      else if(actionKey==="confirm_trip_loaded") r = await fh.confirmTripLoaded(fId, aId);
-      else if(actionKey==="confirm_trip_finished") r = await fh.confirmTripFinished(fId, aId);
-      if(r?.ok) { show("Acci\u00f3n realizada","ok"); fh.refresh(fId); }
-      else show(r?.error||"Error","err");
-    } catch(e) { show(e.message||"Error","err"); }
-    finally { useUIStore.getState().setActionLoading(false); }
+    const f = fh.freights.find(x=>x.id===fId);
+    if(!f) return;
+    const isPlant = auth.user?.userType === "plant" || (auth.user?.userTypes||[]).includes("plant");
+    const cfgs = {
+      respond_trip_accept: isPlant
+        ? { title:"Autorizar viaje", btnLabel:"Autorizar", icon:Ic.chk(C.pri,24), btnVariant:"pri" }
+        : { title:"Aceptar viaje", btnLabel:"Aceptar", icon:Ic.chk(C.ok,24), btnVariant:"pri" },
+      start_trip: { title:"Iniciar viaje", btnLabel:"Iniciar viaje", icon:Ic.truck(C.acc,24), btnVariant:"acc" },
+      confirm_trip_loaded: { title:"Confirmar carga", btnLabel:"Confirmar carga", icon:Ic.chk(C.acc,24), btnVariant:"acc" },
+      confirm_trip_finished: { title:"Confirmar entrega", btnLabel:"Confirmar entrega", icon:Ic.chk(C.pri,24), btnVariant:"pri" },
+    };
+    if(actionKey==="respond_trip_reject") {
+      setModal({type:"reason",freight:f,title:"Rechazar viaje",btnLabel:"Rechazar",action:"reject_trip",assignmentId:aId});
+      return;
+    }
+    const cfg = cfgs[actionKey];
+    if(!cfg) return;
+    setModal({type:"confirm_trip_action",freight:f,...cfg,actionKey,assignmentId:aId});
+  };
+
+  const handleTripConfirmAction = async (fId, aId, actionKey)=>{
+    const msgs = { respond_trip_accept:"Viaje autorizado", start_trip:"Viaje iniciado", confirm_trip_loaded:"Carga confirmada", confirm_trip_finished:"Entrega confirmada" };
+    let r;
+    if(actionKey==="respond_trip_accept") r = await fh.respondTrip(fId, aId, {action:"accepted"});
+    else if(actionKey==="start_trip") r = await fh.startTrip(fId, aId);
+    else if(actionKey==="confirm_trip_loaded") r = await fh.confirmTripLoaded(fId, aId);
+    else if(actionKey==="confirm_trip_finished") r = await fh.confirmTripFinished(fId, aId);
+    if(r?.ok) return msgs[actionKey]||"Hecho";
+    show(r?.error||"Error","err"); return "";
+  };
+
+  const handleEditTrip = (fId, assignment)=>{
+    const f = fh.freights.find(x=>x.id===fId);
+    if(!f) return;
+    setModal({type:"edit_trip",freight:f,assignment});
+  };
+
+  const handleSaveTrip = async (data)=>{
+    if(!modal?.freight || !modal?.assignment) return "";
+    const r = await fh.updateAssignment(modal.freight.id, modal.assignment.id, data);
+    if(r.ok) return "Viaje actualizado";
+    show(r.error,"err"); return "";
   };
 
   const handleConfirmAction = async (fId, action)=>{
@@ -328,11 +359,12 @@ export default function Tolvink() {
     show(r.error,"err"); return "";
   };
 
-  const handleReasonAction = async (fId,reason,action)=>{
+  const handleReasonAction = async (fId,reason,action,extra)=>{
     let r;
     if(action==="cancel") r = await fh.cancel(fId,reason);
     else if(action==="reject") r = await fh.respond(fId,"rejected",reason);
-    const msg = action==="cancel"?"Flete cancelado":"Asignación rechazada";
+    else if(action==="reject_trip" && extra?.assignmentId) { r = await fh.respondTrip(fId, extra.assignmentId, {action:"rejected",reason}); }
+    const msg = action==="cancel"?"Flete cancelado":action==="reject_trip"?"Viaje rechazado":"Asignación rechazada";
     if(r?.ok) return msg;
     show(r?.error||"Error","err"); return "";
   };
@@ -435,10 +467,10 @@ export default function Tolvink() {
         <div style={{flex:1,overflow:(screen==="chats"||screen==="calendar")&&isDesktop?"hidden":"auto",display:(mapFocus||locPicker)?"none":"flex",flexDirection:"column",WebkitOverflowScrolling:"touch",overscrollBehavior:"contain"}}>
         <div key={screen} className="tv-page" style={{flex:1,display:"flex",flexDirection:"column",minHeight:0}}>
         <Suspense fallback={<SL/>}>
-        {screen==="home" && <HomeScreen user={auth.user} freights={viewFreights} loading={fh.loading} perms={perms} onNav={nav} catalog={catalog} isDesktop={isDesktop} onAction={handleAction} onTripAction={handleTripAction} actionLoading={actionLoading} onChat={(convId)=>{if(convId){setChatConvId(convId);navigate("/chats");}}} onRefresh={(id)=>fh.refresh(id)} onDuplicate={(f)=>{setDuplicateData(f);navigate("/new");}} onEdit={(f)=>{setEditData(f);navigate("/edit/"+f.id);}} goToMap={goToMap} pwa={pwa}/>}
+        {screen==="home" && <HomeScreen user={auth.user} freights={viewFreights} loading={fh.loading} perms={perms} onNav={nav} catalog={catalog} isDesktop={isDesktop} onAction={handleAction} onTripAction={handleTripAction} onEditTrip={handleEditTrip} actionLoading={actionLoading} onChat={(convId)=>{if(convId){setChatConvId(convId);navigate("/chats");}}} onRefresh={(id)=>fh.refresh(id)} onDuplicate={(f)=>{setDuplicateData(f);navigate("/new");}} onEdit={(f)=>{setEditData(f);navigate("/edit/"+f.id);}} goToMap={goToMap} pwa={pwa}/>}
         {screen==="list" && <ListScreen freights={viewFreights} loading={fh.loading} onNav={nav} onRefresh={fh.fetchAll} catalog={catalog} view={listView} setView={setListView} goToMap={goToMap} hasMore={fh.hasMore} loadMore={fh.loadMore} loadingMore={fh.loadingMore} total={fh.total} isDesktop={isDesktop} onAction={handleAction}/>}
         {screen==="calendar" && <CalendarScreen freights={viewFreights} perms={perms} onNav={nav} isDesktop={isDesktop} user={auth.user} onAction={handleAction} actionLoading={actionLoading} onChat={(convId)=>{if(convId){setChatConvId(convId);navigate("/chats");}}} onRefresh={(id)=>fh.refresh(id)} onDuplicate={(f)=>{setDuplicateData(f);navigate("/new");}} onEdit={(f)=>{setEditData(f);navigate("/edit/"+f.id);}} goToMap={goToMap}/>}
-        {screen==="detail" && <DetailScreen user={curFreight ? {...auth.user, userType: _resolveType(curFreight)} : auth.user} freight={curFreight} perms={perms} onBack={()=>navigate("/list")} onAction={handleAction} onTripAction={handleTripAction} actionLoading={actionLoading} onChat={(convId)=>{if(convId){setChatConvId(convId);navigate("/chats");}}} onRefresh={(id)=>fh.refresh(id)} onDuplicate={(f)=>{setDuplicateData(f);navigate("/new");}} onEdit={(f)=>{setEditData(f);navigate("/edit/"+f.id);}} goToMap={goToMap}/>}
+        {screen==="detail" && <DetailScreen user={curFreight ? {...auth.user, userType: _resolveType(curFreight)} : auth.user} freight={curFreight} perms={perms} onBack={()=>navigate("/list")} onAction={handleAction} onTripAction={handleTripAction} onEditTrip={handleEditTrip} actionLoading={actionLoading} onChat={(convId)=>{if(convId){setChatConvId(convId);navigate("/chats");}}} onRefresh={(id)=>fh.refresh(id)} onDuplicate={(f)=>{setDuplicateData(f);navigate("/new");}} onEdit={(f)=>{setEditData(f);navigate("/edit/"+f.id);}} goToMap={goToMap}/>}
         {screen==="new" && <NewScreen user={auth.user} lots={catalog.lots} plants={catalog.plants} branches={catalog.branches} fields={catalog.fields} trucks={catalog.trucks} onBack={()=>{setDuplicateData(null);navigate("/");}} onCreate={handleCreate} submitting={submitting} duplicateFrom={duplicateData}/>}
         {screen==="edit" && editData && <EditScreen freight={editData} fields={catalog.fields} plants={catalog.plants} onBack={()=>{setEditData(null);navigate(-1);}} onSave={async(id,data)=>{const r=await fh.update(id,data);if(r.ok) return "Flete actualizado"; show(r.error,"err"); return "";}}/>}
         {screen==="menu" && <MenuScreen user={auth.user} perms={perms} onLogout={auth.logout} onNav={nav} isDesktop={isDesktop} onSwitchCompany={async(id)=>{setViewAll(false);const r=await auth.switchCompany(id);if(r.ok){fh.fetchAll();catalog.refresh();}return r;}} onRefresh={()=>{fh.fetchAll();catalog.refresh();}} pwa={pwa}/>}
@@ -464,7 +496,9 @@ export default function Tolvink() {
       {modal?.type==="assign" && <AssignModal freight={modal.freight} transporters={catalog.transporters} onClose={()=>setModal(null)} onConfirm={(compId,truckId,driverId)=>handleAssign(modal.freight.id,compId,truckId,driverId)} onAssignMulti={handleAssignMulti}/>}
       {modal?.type==="truck_select" && <TruckSelectModal freight={modal.freight} trucks={catalog.trucks} user={auth.user} onClose={()=>setModal(null)} onConfirm={(t,driverId)=>handleAcceptWithTruck(modal.freight.id,t,driverId)}/>}
       {modal?.type==="confirm_action" && <ConfirmActionModal freight={modal.freight} title={modal.title} btnLabel={modal.btnLabel} btnVariant={modal.btnVariant} icon={modal.icon} onClose={()=>setModal(null)} onConfirm={()=>handleConfirmAction(modal.freight.id,modal.action)}/>}
-      {modal?.type==="reason" && <ReasonModal title={modal.title} freight={modal.freight} btnLabel={modal.btnLabel} onClose={()=>setModal(null)} onConfirm={r=>handleReasonAction(modal.freight.id,r,modal.action)}/>}
+      {modal?.type==="confirm_trip_action" && <ConfirmActionModal freight={modal.freight} title={modal.title} btnLabel={modal.btnLabel} btnVariant={modal.btnVariant} icon={modal.icon} onClose={()=>setModal(null)} onConfirm={()=>handleTripConfirmAction(modal.freight.id,modal.assignmentId,modal.actionKey)}/>}
+      {modal?.type==="reason" && <ReasonModal title={modal.title} freight={modal.freight} btnLabel={modal.btnLabel} onClose={()=>setModal(null)} onConfirm={r=>handleReasonAction(modal.freight.id,r,modal.action,{assignmentId:modal.assignmentId})}/>}
+      {modal?.type==="edit_trip" && <EditTripModal freight={modal.freight} assignment={modal.assignment} transporters={catalog.transporters} onClose={()=>setModal(null)} onSave={handleSaveTrip}/>}
       {modal?.type==="driver_queue" && <DriverQueueModal driverId={modal.driverId} driverName={modal.driverName} onClose={()=>setModal(null)}/>}
       </Suspense>
       {toast && <Toast msg={toast.msg} type={toast.type} onClose={()=>setToast(null)}/>}
