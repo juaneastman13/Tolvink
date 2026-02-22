@@ -27,23 +27,15 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
     return () => clearInterval(iv);
   }, [freight?.id, onRefresh]);
 
-  const loadAudit = async () => {
-    if (auditLog) { setShowAudit(!showAudit); return; }
-    try {
-      const logs = await apiGetAuditLog(freight.id);
-      setAuditLog(logs);
-      setShowAudit(true);
-    } catch(e) { console.error("Audit load failed:", e); }
-  };
-
-  // Close audit on outside click
+  // Auto-load audit log on mount / freight change
   useEffect(() => {
-    if (!showAudit) return;
-    const handler = (e) => { if (auditRef.current && !auditRef.current.contains(e.target)) setShowAudit(false); };
-    document.addEventListener("mousedown", handler);
-    document.addEventListener("touchstart", handler);
-    return () => { document.removeEventListener("mousedown", handler); document.removeEventListener("touchstart", handler); };
-  }, [showAudit]);
+    if (!freight?.id) return;
+    let cancelled = false;
+    apiGetAuditLog(freight.id).then(logs => { if (!cancelled) setAuditLog(logs); }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [freight?.id]);
+
+  const toggleAudit = () => setShowAudit(v => !v);
 
   const [expandedTrip, setExpandedTrip] = useState(null);
 
@@ -212,7 +204,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
         return <div ref={auditRef} style={{ background:C.w, border:`1px solid ${C.b1}`, borderRadius:12, padding:16, marginBottom:12, boxShadow:C.sh, position:"relative" }}>
           <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:12 }}>
             <span style={{ fontSize:10.5, fontWeight:700, color:C.t2, textTransform:"uppercase", letterSpacing:0.5 }}>Progreso</span>
-            <button onClick={loadAudit} style={{ fontSize:11, fontWeight:700, color:C.t1, background:C.bg, border:`1.5px solid ${C.b1}`, borderRadius:8, padding:"5px 14px", cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:5 }}>
+            <button onClick={toggleAudit} style={{ fontSize:11, fontWeight:700, color:C.t1, background:C.bg, border:`1.5px solid ${C.b1}`, borderRadius:8, padding:"5px 14px", cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:5 }}>
               {showAudit?"Ocultar detalle":"Ver detalle"} <span style={{ fontSize:9, marginTop:1 }}>{showAudit?"\u25B2":"\u25BC"}</span>
             </button>
           </div>
