@@ -128,16 +128,16 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
     { key:"accepted",           label:"Confirmado camión", icon:Ic.chk,   statuses:["accepted"] },
     { key:"in_progress",        label:"En curso",          icon:Ic.nav,   statuses:["in_progress"] },
     { key:"loaded",             label:"Cargando",          icon:Ic.plant, statuses:["loaded"] },
-    { key:"finished",           label:"Finalizado",        icon:Ic.chk,   statuses:["finished"] },
   ];
+  const activeFreights = useMemo(() => filteredFreights.filter(f => f.status !== "finished" && f.status !== "canceled"), [filteredFreights]);
   const summaryGroups = useMemo(() => {
     return STATUS_GROUPS.map(g => {
       const st = stCfg(g.statuses[0]);
-      const items = filteredFreights.filter(f => g.statuses.includes(f.status) && !getPendingActions(f, effectiveType(f)) && matchDate(f.loadDate, summaryFilter))
+      const items = activeFreights.filter(f => g.statuses.includes(f.status) && !getPendingActions(f, effectiveType(f)) && matchDate(f.loadDate, summaryFilter))
         .sort((a, b) => a.loadDate && b.loadDate ? a.loadDate.localeCompare(b.loadDate) : 0);
       return { ...g, color: st.color, items };
     }).filter(g => g.items.length > 0);
-  }, [filteredFreights, effectiveType, summaryFilter]);
+  }, [activeFreights, effectiveType, summaryFilter]);
 
   // Collapsed state
   const [collapsed, setCollapsed] = useState({});

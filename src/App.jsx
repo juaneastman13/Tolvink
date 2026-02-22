@@ -256,6 +256,7 @@ export default function Tolvink() {
       if (s === "detail") { fh.refresh(fId); navigate(`/freight/${fId}`); return; }
     }
     if (s === "new" && !perms.canRequest) { show("Sin permisos para solicitar", "err"); return; }
+    if (s === "home") { setSelFreight(null); navigate("/"); return; }
     const path = SCREEN_TO_PATH[s] || "/";
     navigate(path);
   };

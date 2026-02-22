@@ -174,6 +174,7 @@ export function useAuth() {
   const logout = useCallback(()=>{
     apiLogout(); // async — revokes refresh tokens on server
     setUser(null);
+    useCatalogStore.getState().clearCache();
   },[]);
 
   const switchCompany = useCallback(async (companyId) => {
