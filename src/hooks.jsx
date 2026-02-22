@@ -61,7 +61,7 @@ export function useCatalog(user) {
       apiGetBranches().catch((e)=>{ log.warn('Catalog', 'apiGetBranches failed:', e.message); return []; }),
       apiGetLots().catch((e)=>{ log.warn('Catalog', 'apiGetLots failed:', e.message); return []; }),
       apiGetTransportCompanies().catch((e)=>{ log.warn('Catalog', 'apiGetTransportCompanies failed:', e.message); return []; }),
-      (user.role==="admin"||user.role==="platform_admin"||user.userType==="transporter"||user.userType==="producer"||(user.userTypes||[]).includes("transporter")||(user.userTypes||[]).includes("producer"))
+      (user.role==="admin"||user.role==="platform_admin"||user.userType==="transporter"||user.userType==="producer"||user.userType==="plant"||(user.userTypes||[]).includes("transporter")||(user.userTypes||[]).includes("producer")||(user.userTypes||[]).includes("plant"))
         ? apiGetTrucks().catch((e)=>{ log.warn('Catalog', 'apiGetTrucks failed:', e.message); return []; })
         : Promise.resolve([]),
       (user.role==="admin"||user.role==="platform_admin"||user.userType==="producer"||(user.userTypes||[]).includes("producer"))

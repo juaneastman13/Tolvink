@@ -24,8 +24,9 @@ export default function MenuScreen({ user, perms, onLogout, onNav, isDesktop, on
 
   const isGerente = user.role==="admin"||user.role==="platform_admin";
   const mgmtItems = [];
-  if(user.userType==="transporter"||user.userType==="producer"||isGerente) mgmtItems.push({k:"trucks",l:"Mi Flota",ic:Ic.truck(C.acc,18),c:C.acc});
-  if(user.userType==="producer"||isGerente) mgmtItems.push({k:"fields",l:"Mis Campos y Lotes",ic:Ic.pin(C.pri,18),c:C.pri});
+  const ut = user.userType; const uts = user.userTypes||[];
+  if(ut==="transporter"||ut==="producer"||ut==="plant"||uts.includes("transporter")||uts.includes("producer")||uts.includes("plant")||isGerente) mgmtItems.push({k:"trucks",l:"Mi Flota",ic:Ic.truck(C.acc,18),c:C.acc});
+  if(ut==="producer"||uts.includes("producer")||isGerente) mgmtItems.push({k:"fields",l:"Mis Campos y Lotes",ic:Ic.pin(C.pri,18),c:C.pri});
   if(user.role==="platform_admin"||user.role==="admin") mgmtItems.push({k:"admin",l:"Administración",ic:Ic.shield(C.err,18),c:C.err});
   if(!isDesktop) {
     mgmtItems.push({k:"calendar",l:"Calendario",ic:Ic.cal(C.sec,18),c:C.sec});
