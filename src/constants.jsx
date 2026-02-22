@@ -18,6 +18,16 @@ export function stCfg(s) {
 }
 
 export function getActions(status, userType, role, isOwnFleet) {
+  // Chofer: restricted actions — only can respond/start/confirm on assigned freights
+  if (role === "chofer") {
+    const choferMap = {
+      assigned:    ["accept","reject"],
+      accepted:    ["start"],
+      in_progress: ["confirm_loaded"],
+      loaded:      ["confirm_finished"],
+    };
+    return choferMap[status] || [];
+  }
   const map = {
     pending_assignment: { producer:["cancel"], plant:["assign","cancel"], transporter:[] },
     assigned:           { producer: isOwnFleet ? ["cancel"] : ["cancel"], plant: isOwnFleet ? ["authorize","cancel"] : ["cancel"], transporter:["accept","reject"] },

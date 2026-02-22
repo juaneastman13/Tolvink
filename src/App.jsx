@@ -151,8 +151,12 @@ export default function Tolvink() {
   },[auth.user]);
 
   // Filter freights by active company (multi-company users only see selected company's data)
+  // Chofer: only see freights where they are the assigned driver
   const viewFreights = useMemo(() => {
     if (!auth.user || !fh.freights) return fh.freights;
+    if (auth.user.role === "chofer") {
+      return fh.freights.filter(f => f.driverId === auth.user.id);
+    }
     if (viewAll) return fh.freights;
     const cId = auth.user.activeCompanyId || auth.user.companyId;
     if (!cId || (auth.user.companies || []).length <= 1) return fh.freights;
@@ -166,7 +170,7 @@ export default function Tolvink() {
   // Calculate pending actions count
   const pendingCount = useMemo(() => {
     if (!auth.user || !viewFreights) return 0;
-    return viewFreights.filter(f => getPendingActions(f, auth.user.userType) !== null).length;
+    return viewFreights.filter(f => getPendingActions(f, auth.user.userType, auth.user.role) !== null).length;
   }, [viewFreights, auth.user]);
 
   // Smart polling — only freight screens poll freights, auto-refresh on screen change
@@ -277,14 +281,14 @@ export default function Tolvink() {
     else if(action==="confirm_finished") { setModal({type:"confirm_action",freight:f,title:"Confirmar entrega",btnLabel:"Confirmar entrega",icon:Ic.chk(C.pri,24),action:"confirm_finished"}); }
   };
 
-  const handleAcceptWithTruck = async (fId, truckId)=>{
-    const r = await fh.respond(fId, "accepted", undefined, truckId);
+  const handleAcceptWithTruck = async (fId, truckId, driverId)=>{
+    const r = await fh.respond(fId, "accepted", undefined, truckId, driverId);
     if(r.ok){ track("freight_accept"); return "Flete aceptado"; }
     show(r.error,"err"); return "";
   };
 
-  const handleAssign = async (fId, transportCompanyId, truckId)=>{
-    const r = await fh.assign(fId, transportCompanyId, truckId);
+  const handleAssign = async (fId, transportCompanyId, truckId, driverId)=>{
+    const r = await fh.assign(fId, transportCompanyId, truckId, driverId);
     if(r.ok){ track("freight_assign"); return "Transportista asignado"; }
     show(r.error,"err"); return "";
   };
@@ -431,8 +435,8 @@ export default function Tolvink() {
 
       {(submitting||submitDone) && <LoadingOverlay closing={!!submitDone} closingText={submitDone} onClose={()=>{setSubmitDone("");navigate("/list");}}/>}
       <Suspense fallback={null}>
-      {modal?.type==="assign" && <AssignModal freight={modal.freight} transporters={catalog.transporters} onClose={()=>setModal(null)} onConfirm={(compId,truckId)=>handleAssign(modal.freight.id,compId,truckId)}/>}
-      {modal?.type==="truck_select" && <TruckSelectModal freight={modal.freight} trucks={catalog.trucks} onClose={()=>setModal(null)} onConfirm={t=>handleAcceptWithTruck(modal.freight.id,t)}/>}
+      {modal?.type==="assign" && <AssignModal freight={modal.freight} transporters={catalog.transporters} onClose={()=>setModal(null)} onConfirm={(compId,truckId,driverId)=>handleAssign(modal.freight.id,compId,truckId,driverId)}/>}
+      {modal?.type==="truck_select" && <TruckSelectModal freight={modal.freight} trucks={catalog.trucks} user={auth.user} onClose={()=>setModal(null)} onConfirm={(t,driverId)=>handleAcceptWithTruck(modal.freight.id,t,driverId)}/>}
       {modal?.type==="confirm_action" && <ConfirmActionModal freight={modal.freight} title={modal.title} btnLabel={modal.btnLabel} btnVariant={modal.btnVariant} icon={modal.icon} onClose={()=>setModal(null)} onConfirm={()=>handleConfirmAction(modal.freight.id,modal.action)}/>}
       {modal?.type==="reason" && <ReasonModal title={modal.title} freight={modal.freight} btnLabel={modal.btnLabel} onClose={()=>setModal(null)} onConfirm={r=>handleReasonAction(modal.freight.id,r,modal.action)}/>}
       </Suspense>

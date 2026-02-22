@@ -4,10 +4,11 @@ import { getActions } from "../constants";
 
 // ======================== RESOLVE USER TYPE FOR FREIGHT ================
 export function resolveUserTypeForFreight(freight, user) {
+  if (user.role === "chofer") return "chofer";
   const types = user.userTypes || [user.userType];
   if (types.length <= 1) return user.userType;
   for (const type of types) {
-    if (getPendingActions(freight, type)) return type;
+    if (getPendingActions(freight, type, user.role)) return type;
   }
   for (const type of types) {
     if (getActions(freight.status, type, user.role, freight.isOwnFleet).length > 0) return type;
@@ -16,9 +17,16 @@ export function resolveUserTypeForFreight(freight, user) {
 }
 
 // ======================== GET PENDING ACTIONS ==========================
-export function getPendingActions(freight, userType) {
+export function getPendingActions(freight, userType, role) {
   const s = freight.status;
   const own = freight.isOwnFleet;
+  if (role === "chofer" || userType === "chofer") {
+    if (s === "assigned") return { action: "Aceptar o rechazar", color: C.sec, icon: "respond", actionKey: "respond" };
+    if (s === "accepted") return { action: "Iniciar viaje", color: C.pri, icon: "start", actionKey: "start" };
+    if (s === "in_progress") return { action: "Confirmar carga", color: C.acc, icon: "confirm", actionKey: "confirm_loaded" };
+    if (s === "loaded") return { action: "Confirmar entrega", color: C.pri, icon: "confirm", actionKey: "confirm_finished" };
+    return null;
+  }
   if (userType === "plant") {
     if (s === "pending_assignment") return { action: "Asignar transporte", color: C.acc, icon: "assign", actionKey: "assign" };
     if (s === "assigned" && own) return { action: "Autorizar viaje", color: C.sec, icon: "authorize", actionKey: "authorize" };

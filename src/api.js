@@ -225,6 +225,12 @@ export async function apiGetTrucks(companyId) { return api(companyId ? `/trucks?
 export async function apiCreateTruck(b) { return api('/trucks',{body:b}); }
 export async function apiDeactivateTruck(id) { return api(`/trucks/${id}/deactivate`,{body:{},method:'PATCH'}); }
 
+// Drivers (choferes)
+export async function apiGetDrivers(companyId) { return api(`/freights/drivers?companyId=${companyId}`); }
+export async function apiListDrivers() { return api('/trucks/drivers'); }
+export async function apiCreateDriver(b) { return api('/trucks/drivers',{body:b}); }
+export async function apiDeactivateDriver(id) { return api(`/trucks/drivers/${id}/deactivate`,{body:{},method:'PATCH'}); }
+
 // Fields & Lots
 export async function apiGetFields() { return api('/fields'); }
 export async function apiCreateField(b) { return api('/fields',{body:b}); }

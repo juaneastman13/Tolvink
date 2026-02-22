@@ -52,7 +52,12 @@
       "Bash(\"C:\\\\Users\\\\Usuario\\\\Desktop\\\\tolvink-deploy\\\\tolvink-native\\\\app.json\":*)",
       "Bash(\"C:\\\\Users\\\\Usuario\\\\Desktop\\\\tolvink-deploy\\\\tolvink-native\\\\eas.json\":*)",
       "Bash(\"C:\\\\Users\\\\Usuario\\\\Desktop\\\\tolvink-deploy\\\\tolvink-native\\\\ASSETS_README.md\":*)",
-      "Bash(npm start)"
+      "Bash(npm start)",
+      "Bash(npx tsx:*)",
+      "Bash(/tmp/clear-database.sql:*)",
+      "Bash(NODE_OPTIONS=\"--max-old-space-size=4096\" npm run build:*)",
+      "Bash(NODE_OPTIONS=\"--max-old-space-size=8192\" npm run build:*)",
+      "Bash(1:*)"
     ]
   }
 }

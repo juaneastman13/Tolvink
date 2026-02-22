@@ -284,8 +284,8 @@ export function useFreights(user, isAuthInitialized) {
       const c=await apiCreateFreight(body);
       const m=mapFreight(c); setFreights(p=>[m,...p]); setTotal(t=>t+1); return {ok:true, freightId:c.id}; } catch(e) { return {ok:false,error:e.message}; }
   },[]);
-  const assign = useCallback(async (fId,compId,truckId)=>{ try { const body={transportCompanyId:compId}; if(truckId) body.truckId=truckId; await apiAssignFreight(fId,body); await refresh(fId); return {ok:true}; } catch(e) { return {ok:false,error:e.message}; } },[refresh]);
-  const respond = useCallback(async (fId,action,reason,truckId)=>{ try { await apiRespondFreight(fId,{action,reason,truckId}); await refresh(fId); return {ok:true}; } catch(e) { return {ok:false,error:e.message}; } },[refresh]);
+  const assign = useCallback(async (fId,compId,truckId,driverId)=>{ try { const body={transportCompanyId:compId}; if(truckId) body.truckId=truckId; if(driverId) body.driverId=driverId; await apiAssignFreight(fId,body); await refresh(fId); return {ok:true}; } catch(e) { return {ok:false,error:e.message}; } },[refresh]);
+  const respond = useCallback(async (fId,action,reason,truckId,driverId)=>{ try { await apiRespondFreight(fId,{action,reason,truckId,driverId}); await refresh(fId); return {ok:true}; } catch(e) { return {ok:false,error:e.message}; } },[refresh]);
   const start = useCallback(async (fId)=>{ try { await apiStartFreight(fId); await refresh(fId); return {ok:true}; } catch(e) { return {ok:false,error:e.message}; } },[refresh]);
   const finish = useCallback(async (fId)=>{ try { await apiFinishFreight(fId); await refresh(fId); return {ok:true}; } catch(e) { return {ok:false,error:e.message}; } },[refresh]);
   const cancel = useCallback(async (fId,reason)=>{ try { await apiCancelFreight(fId,reason); await refresh(fId); return {ok:true}; } catch(e) { return {ok:false,error:e.message}; } },[refresh]);
@@ -317,7 +317,7 @@ export function mapFreight(f) {
     scheduledAt:f.scheduledAt||null,
     requestedBy:f.requestedById, requestedByName:f.requestedBy?.name||"",
     transporterId:a?.transportCompanyId||null, transporterName:a?.transportCompany?.name||"",
-    driverName:a?.driver?.name||null, driverPhone:a?.driver?.phone||null,
+    driverId:a?.driverId||a?.driver?.id||null, driverName:a?.driver?.name||null, driverPhone:a?.driver?.phone||null,
     truckPlate:a?.truck?.plate||a?.plate||null, truckModel:a?.truck?.model||null,
     assignments:(f.assignments||[]).map(x=>({ id:x.id, status:x.status, transporterName:x.transportCompany?.name||"", reason:x.reason||null, createdAt:x.createdAt })),
     notes:f.notes||"", cancelReason:f.cancelReason||"", createdAt:f.createdAt,
@@ -337,6 +337,8 @@ export function mapFreight(f) {
 export function permsFor(user) {
   if (!user) return {};
   const { role, userType } = user;
+  const isChofer = role === "chofer";
+  if (isChofer) return { canRequest:false, canApprove:false, canAssignDriver:false, canCancel:false, canReject:false, isChofer:true };
   // role is already mapped: gerente→admin in mapUser, platform_admin stays
   const isManager = role === "admin" || role === "platform_admin" || role === "gerente";
   return {
@@ -345,6 +347,7 @@ export function permsFor(user) {
     canAssignDriver: userType === "transporter" && isManager,
     canCancel:       isManager,
     canReject:       userType === "transporter" && isManager,
+    isChofer:        false,
   };
 }
 

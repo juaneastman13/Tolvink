@@ -22,15 +22,18 @@ export default function MenuScreen({ user, perms, onLogout, onNav, isDesktop, on
     if (r.ok && onRefresh) onRefresh();
   };
 
+  const isChofer = user.role === "chofer";
   const isGerente = user.role==="admin"||user.role==="platform_admin";
   const mgmtItems = [];
-  const ut = user.userType; const uts = user.userTypes||[];
-  if(ut==="transporter"||ut==="producer"||ut==="plant"||uts.includes("transporter")||uts.includes("producer")||uts.includes("plant")||isGerente) mgmtItems.push({k:"trucks",l:"Mi Flota",ic:Ic.truck(C.acc,18),c:C.acc});
-  if(ut==="producer"||uts.includes("producer")||isGerente) mgmtItems.push({k:"fields",l:"Mis Campos y Lotes",ic:Ic.pin(C.pri,18),c:C.pri});
-  if(user.role==="platform_admin"||user.role==="admin") mgmtItems.push({k:"admin",l:"Administración",ic:Ic.shield(C.err,18),c:C.err});
-  if(!isDesktop) {
-    mgmtItems.push({k:"calendar",l:"Calendario",ic:Ic.cal(C.sec,18),c:C.sec});
-    mgmtItems.push({k:"reports",l:"Informes",ic:Ic.doc(C.t2,18),c:C.t2});
+  if (!isChofer) {
+    const ut = user.userType; const uts = user.userTypes||[];
+    if(ut==="transporter"||ut==="producer"||ut==="plant"||uts.includes("transporter")||uts.includes("producer")||uts.includes("plant")||isGerente) mgmtItems.push({k:"trucks",l:"Mi Flota",ic:Ic.truck(C.acc,18),c:C.acc});
+    if(ut==="producer"||uts.includes("producer")||isGerente) mgmtItems.push({k:"fields",l:"Mis Campos y Lotes",ic:Ic.pin(C.pri,18),c:C.pri});
+    if(user.role==="platform_admin"||user.role==="admin") mgmtItems.push({k:"admin",l:"Administración",ic:Ic.shield(C.err,18),c:C.err});
+    if(!isDesktop) {
+      mgmtItems.push({k:"calendar",l:"Calendario",ic:Ic.cal(C.sec,18),c:C.sec});
+      mgmtItems.push({k:"reports",l:"Informes",ic:Ic.doc(C.t2,18),c:C.t2});
+    }
   }
 
   const menuItem = (m, i, arr) => (
@@ -79,7 +82,7 @@ export default function MenuScreen({ user, perms, onLogout, onNav, isDesktop, on
               <tbody>
                 {companies.map((c,i)=>{
                   const isActive = c.companyId === user.activeCompanyId;
-                  const roleLabel = c.role === "gerente" || c.effectiveRole === "admin" ? "Gerente" : "Operario";
+                  const roleLabel = c.role === "chofer" ? "Chofer" : c.role === "gerente" || c.effectiveRole === "admin" ? "Gerente" : "Operario";
                   const isExp = switching === "exp_"+c.companyId;
                   return (<Fragment key={c.companyId||i}>
                     <tr onClick={()=>setSwitching(isExp?null:"exp_"+c.companyId)} style={{cursor:"pointer",borderTop:i>0?`1px solid ${C.b2}`:"none",background:isExp?`${C.pri}06`:"transparent",transition:"background 0.15s"}}>
