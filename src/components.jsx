@@ -252,7 +252,7 @@ export function ModalOverlay({ children, onClose, maxWidth=400, loading=false, c
       )}
       {/* Card */}
       {showCard && (
-        <div onClick={e=>e.stopPropagation()} style={{background:C.w,borderRadius:18,padding:22,width:"100%",maxWidth,boxShadow:C.shLg,animation:"moCardIn 0.3s cubic-bezier(0.34,1.56,0.64,1)"}}>
+        <div onClick={e=>e.stopPropagation()} style={{background:C.w,borderRadius:18,padding:22,width:"100%",maxWidth,maxHeight:"calc(100vh - 48px)",overflowY:"auto",boxShadow:C.shLg,animation:"moCardIn 0.3s cubic-bezier(0.34,1.56,0.64,1)",WebkitOverflowScrolling:"touch"}}>
           {children}
         </div>
       )}

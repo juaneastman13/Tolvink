@@ -27,6 +27,7 @@ export default function AssignModal({ freight, transporters, onClose, onConfirm,
   const [newDriverPhone,setNewDriverPhone] = useState("");
   const [savingDriver,setSavingDriver] = useState(false);
   const [driverErr,setDriverErr] = useState("");
+  const [tripCount, setTripCount] = useState(1);
   const ts = transporters||[];
 
   // Multi-truck: how many more needed
@@ -39,6 +40,9 @@ export default function AssignModal({ freight, transporters, onClose, onConfirm,
   // Either origin (producer) or dest (plant) can have own fleet
   const hasOwnFleet = !!freight.originHasOwnFleet || !!freight.destHasOwnFleet;
   const ownFleetCompanyId = freight.destHasOwnFleet ? freight.destCompanyId : freight.originCompanyId;
+
+  // Max trips you can still add
+  const remainingSlots = Math.max(0, needed - truckList.length);
 
   const loadTrucks = (compId)=>{
     const cid = compId || (mode==="own"?ownFleetCompanyId:t);
@@ -58,6 +62,11 @@ export default function AssignModal({ freight, transporters, onClose, onConfirm,
   useEffect(()=>{
     if(multiTruck && mode==="company" && t) { loadTrucks(t); loadDriversFn(t); }
   },[t]);
+
+  // Reset tripCount when company changes or remaining changes
+  useEffect(()=>{
+    setTripCount(1);
+  },[t, mode]);
 
   // Pre-select driver from truck's assignedUser
   useEffect(()=>{
@@ -98,7 +107,7 @@ export default function AssignModal({ freight, transporters, onClose, onConfirm,
     finally { setSavingDriver(false); }
   };
 
-  // Add truck to multi-truck list
+  // Add truck(s) to multi-truck list
   const addToList = () => {
     const compId = mode==="own" ? ownFleetCompanyId : t;
     if(!compId) return;
@@ -106,16 +115,21 @@ export default function AssignModal({ freight, transporters, onClose, onConfirm,
     const selTruck = trucks.find(x=>x.id===truckId);
     const selDriver = drivers.find(x=>x.id===driverId);
     const compName = mode==="own" ? "Flota propia" : (ts.find(x=>x.id===compId)?.name||"");
-    setTruckList(prev => [...prev, {
-      transportCompanyId: compId,
-      truckId: truckId || undefined,
-      driverId: driverId || undefined,
-      tons: parseFloat(tonsInput) || undefined,
-      _plate: selTruck?.plate || "",
-      _compName: compName,
-      _driverName: selDriver?.name || "",
-    }]);
-    setT(""); setTruckId(""); setDriverId("");
+    const count = multiTruck && mode==="company" && !truckId ? Math.min(tripCount, remainingSlots || tripCount) : 1;
+    const newEntries = [];
+    for (let i = 0; i < count; i++) {
+      newEntries.push({
+        transportCompanyId: compId,
+        truckId: (count === 1 && truckId) ? truckId : undefined,
+        driverId: (count === 1 && driverId) ? driverId : undefined,
+        tons: parseFloat(tonsInput) || undefined,
+        _plate: (count === 1 && selTruck?.plate) ? selTruck.plate : "",
+        _compName: compName,
+        _driverName: (count === 1 && selDriver?.name) ? selDriver.name : "",
+      });
+    }
+    setTruckList(prev => [...prev, ...newEntries]);
+    setT(""); setTruckId(""); setDriverId(""); setTripCount(1);
     setTonsInput(defaultTonsPerTruck.toString());
   };
 
@@ -156,6 +170,17 @@ export default function AssignModal({ freight, transporters, onClose, onConfirm,
   const externalTs = ts.filter(x=>x.id!==freight.originCompanyId);
   const canAdd = (mode==="company"&&t) || (mode==="own"&&truckId);
 
+  // Collapse repeated entries for display
+  const collapsedList = [];
+  for (const tk of truckList) {
+    const last = collapsedList[collapsedList.length - 1];
+    if (last && last._compName === tk._compName && !last._plate && !tk._plate && !last._driverName && !tk._driverName && last.tons === tk.tons) {
+      last._count++;
+    } else {
+      collapsedList.push({ ...tk, _count: 1, _startIdx: truckList.indexOf(tk) });
+    }
+  }
+
   // ======================== RENDER =====================================
 
   return (
@@ -169,24 +194,36 @@ export default function AssignModal({ freight, transporters, onClose, onConfirm,
           {Ic.truck(C.info,18)}
           <div>
             <div style={{fontSize:13,fontWeight:700,color:C.info}}>Necesita {freight.truckCount} camiones</div>
-            <div style={{fontSize:11,color:C.t2}}>{alreadyAssigned} asignados · {needed - truckList.length} pendientes</div>
+            <div style={{fontSize:11,color:C.t2}}>{alreadyAssigned} asignados · {Math.max(0, needed - truckList.length)} pendientes</div>
           </div>
         </div>
       )}
 
-      {/* Truck list (multi-truck) */}
+      {/* Truck list (multi-truck) — collapsed view */}
       {multiTruck && truckList.length > 0 && (
         <div style={{marginBottom:14}}>
-          <label style={{fontSize:10.5,fontWeight:600,color:C.t2,marginBottom:6,display:"block",textTransform:"uppercase",letterSpacing:0.6}}>Camiones a asignar</label>
-          {truckList.map((tk,i) => (
+          <label style={{fontSize:10.5,fontWeight:600,color:C.t2,marginBottom:6,display:"block",textTransform:"uppercase",letterSpacing:0.6}}>Camiones a asignar ({truckList.length})</label>
+          {collapsedList.map((tk,i) => (
             <div key={i} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 12px",borderRadius:10,border:`1px solid ${C.b1}`,background:C.w,marginBottom:6}}>
-              <span style={{fontSize:12,fontWeight:700,color:C.pri}}>#{i+1}</span>
+              <span style={{fontSize:12,fontWeight:700,color:C.pri}}>{tk._count > 1 ? `x${tk._count}` : `#${tk._startIdx+1}`}</span>
               <div style={{flex:1,minWidth:0}}>
                 <div style={{fontSize:12,fontWeight:600,color:C.t1}}>{tk._compName}{tk._plate?` · ${tk._plate}`:""}</div>
                 {tk._driverName && <div style={{fontSize:10.5,color:C.t3}}>{tk._driverName}</div>}
-                {tk.tons && <div style={{fontSize:10,color:C.t3}}>{tk.tons} tn</div>}
+                {tk.tons && <div style={{fontSize:10,color:C.t3}}>{tk.tons} tn{tk._count > 1 ? " c/u" : ""}</div>}
               </div>
-              <button onClick={()=>removeFromList(i)} style={{background:"none",border:"none",cursor:"pointer",padding:4}}>{Ic.cross(C.err,14)}</button>
+              <button onClick={()=>{
+                // Remove all entries in this collapsed group
+                const idxs = new Set();
+                let found = 0;
+                for (let j = tk._startIdx; j < truckList.length && found < tk._count; j++) {
+                  const e = truckList[j];
+                  if (e._compName === tk._compName && !e._plate && !tk._plate && !e._driverName && !tk._driverName && e.tons === tk.tons) {
+                    idxs.add(j); found++;
+                  } else if (e._plate || e._driverName) break;
+                }
+                if (idxs.size === 0) idxs.add(tk._startIdx);
+                setTruckList(prev => prev.filter((_,j) => !idxs.has(j)));
+              }} style={{background:"none",border:"none",cursor:"pointer",padding:4}}>{Ic.cross(C.err,14)}</button>
             </div>
           ))}
         </div>
@@ -211,33 +248,45 @@ export default function AssignModal({ freight, transporters, onClose, onConfirm,
           </button>)}
         </div>
 
-        {/* Multi-truck: show truck/driver for external company too */}
+        {/* Multi-truck: trip quantity + optional truck/driver */}
         {multiTruck && t && <>
-          <label style={{fontSize:10.5,fontWeight:600,color:C.t2,marginBottom:8,display:"block",textTransform:"uppercase",letterSpacing:0.6}}>Camión (opcional)</label>
-          <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:10,maxHeight:140,overflowY:"auto"}}>
-            {loadingTrucks && <div style={{fontSize:12,color:C.t3,padding:8,textAlign:"center"}}>Cargando...</div>}
-            {!loadingTrucks && trucks.map(tk=><button key={tk.id} onClick={()=>setTruckId(tk.id===truckId?"":tk.id)} style={{padding:"10px 12px",borderRadius:10,textAlign:"left",fontFamily:"inherit",border:`1.5px solid ${truckId===tk.id?C.acc:C.b1}`,background:truckId===tk.id?C.accPale:C.w,fontSize:12,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",gap:8}}>
-              {Ic.truck(truckId===tk.id?C.acc:C.t3,14)} {tk.plate}{tk.model?` · ${tk.model}`:""}
-            </button>)}
+          {/* Trip quantity selector */}
+          <label style={{fontSize:10.5,fontWeight:600,color:C.t2,marginBottom:8,display:"block",textTransform:"uppercase",letterSpacing:0.6}}>Cantidad de viajes</label>
+          <div style={{display:"flex",alignItems:"center",gap:0,marginBottom:14,borderRadius:10,overflow:"hidden",border:`1.5px solid ${C.b1}`,alignSelf:"flex-start",width:"fit-content"}}>
+            <button onClick={()=>setTripCount(c=>Math.max(1,c-1))} style={{width:40,height:38,border:"none",background:C.w,fontSize:18,fontWeight:700,color:tripCount<=1?C.t3:C.pri,cursor:tripCount<=1?"default":"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center"}}>-</button>
+            <div style={{minWidth:44,height:38,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,fontWeight:700,color:C.t1,borderLeft:`1px solid ${C.b1}`,borderRight:`1px solid ${C.b1}`,background:C.w}}>{tripCount}</div>
+            <button onClick={()=>setTripCount(c=>Math.min(remainingSlots||99,c+1))} disabled={remainingSlots>0&&tripCount>=remainingSlots} style={{width:40,height:38,border:"none",background:C.w,fontSize:18,fontWeight:700,color:(remainingSlots>0&&tripCount>=remainingSlots)?C.t3:C.pri,cursor:(remainingSlots>0&&tripCount>=remainingSlots)?"default":"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center"}}>+</button>
           </div>
-          <label style={{fontSize:10.5,fontWeight:600,color:C.t2,marginBottom:8,display:"block",textTransform:"uppercase",letterSpacing:0.6}}>Chofer (opcional)</label>
-          <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:10,maxHeight:140,overflowY:"auto"}}>
-            {loadingDrivers && <div style={{fontSize:12,color:C.t3,padding:8,textAlign:"center"}}>Cargando...</div>}
-            {!loadingDrivers && drivers.map(d=><button key={d.id} onClick={()=>setDriverId(d.id===driverId?"":d.id)} style={{padding:"10px 12px",borderRadius:10,textAlign:"left",fontFamily:"inherit",border:`1.5px solid ${driverId===d.id?C.info:C.b1}`,background:driverId===d.id?`${C.info}10`:C.w,fontSize:12,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",gap:8}}>
-              {Ic.user(driverId===d.id?C.info:C.t3,14)} {d.name}
-            </button>)}
-          </div>
+
+          {/* Only show truck/driver selection if adding exactly 1 trip */}
+          {tripCount === 1 && <>
+            <label style={{fontSize:10.5,fontWeight:600,color:C.t2,marginBottom:8,display:"block",textTransform:"uppercase",letterSpacing:0.6}}>Camion (opcional)</label>
+            <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:10,maxHeight:140,overflowY:"auto"}}>
+              {loadingTrucks && <div style={{fontSize:12,color:C.t3,padding:8,textAlign:"center"}}>Cargando...</div>}
+              {!loadingTrucks && trucks.map(tk=><button key={tk.id} onClick={()=>setTruckId(tk.id===truckId?"":tk.id)} style={{padding:"10px 12px",borderRadius:10,textAlign:"left",fontFamily:"inherit",border:`1.5px solid ${truckId===tk.id?C.acc:C.b1}`,background:truckId===tk.id?C.accPale:C.w,fontSize:12,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",gap:8}}>
+                {Ic.truck(truckId===tk.id?C.acc:C.t3,14)} {tk.plate}{tk.model?` · ${tk.model}`:""}
+              </button>)}
+            </div>
+            <label style={{fontSize:10.5,fontWeight:600,color:C.t2,marginBottom:8,display:"block",textTransform:"uppercase",letterSpacing:0.6}}>Chofer (opcional)</label>
+            <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:10,maxHeight:140,overflowY:"auto"}}>
+              {loadingDrivers && <div style={{fontSize:12,color:C.t3,padding:8,textAlign:"center"}}>Cargando...</div>}
+              {!loadingDrivers && drivers.map(d=><button key={d.id} onClick={()=>setDriverId(d.id===driverId?"":d.id)} style={{padding:"10px 12px",borderRadius:10,textAlign:"left",fontFamily:"inherit",border:`1.5px solid ${driverId===d.id?C.info:C.b1}`,background:driverId===d.id?`${C.info}10`:C.w,fontSize:12,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",gap:8}}>
+                {Ic.user(driverId===d.id?C.info:C.t3,14)} {d.name}
+              </button>)}
+            </div>
+          </>}
+
           <div style={{marginBottom:14}}>
-            <Field label="Toneladas para este camión" value={tonsInput} onChange={setTonsInput} placeholder={`${defaultTonsPerTruck}`}/>
+            <Field label={tripCount > 1 ? "Toneladas por viaje" : "Toneladas para este camion"} value={tonsInput} onChange={setTonsInput} placeholder={`${defaultTonsPerTruck}`}/>
           </div>
         </>}
       </>}
 
       {mode==="own" && <>
-        <label style={{fontSize:10.5,fontWeight:600,color:C.t2,marginBottom:8,display:"block",textTransform:"uppercase",letterSpacing:0.6}}>Seleccioná un vehículo</label>
+        <label style={{fontSize:10.5,fontWeight:600,color:C.t2,marginBottom:8,display:"block",textTransform:"uppercase",letterSpacing:0.6}}>Selecciona un vehiculo</label>
         <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:10,maxHeight:180,overflowY:"auto"}}>
-          {loadingTrucks && <div style={{fontSize:12,color:C.t3,padding:10,textAlign:"center"}}>Cargando vehículos...</div>}
-          {!loadingTrucks && trucks.length===0 && !showNewTruck && <div style={{fontSize:12,color:C.t3,padding:10,textAlign:"center"}}>No hay vehículos registrados</div>}
+          {loadingTrucks && <div style={{fontSize:12,color:C.t3,padding:10,textAlign:"center"}}>Cargando vehiculos...</div>}
+          {!loadingTrucks && trucks.length===0 && !showNewTruck && <div style={{fontSize:12,color:C.t3,padding:10,textAlign:"center"}}>No hay vehiculos registrados</div>}
           {trucks.map(tk=><button key={tk.id} onClick={()=>setTruckId(tk.id)} style={{padding:"13px 14px",borderRadius:12,textAlign:"left",fontFamily:"inherit",border:`1.5px solid ${truckId===tk.id?C.acc:C.b1}`,background:truckId===tk.id?C.accPale:C.w,color:truckId===tk.id?C.acc:C.t2,fontSize:13.5,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",gap:10}}>
             {Ic.truck(truckId===tk.id?C.acc:C.t3,18)}
             <div>
@@ -250,11 +299,11 @@ export default function AssignModal({ freight, transporters, onClose, onConfirm,
 
         {!showNewTruck ? (
           <button onClick={()=>{setShowNewTruck(true);setTruckErr("");}} style={{width:"100%",padding:"10px 0",borderRadius:10,border:`1.5px dashed ${C.acc}`,background:`${C.acc}08`,color:C.acc,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:6,marginBottom:10}}>
-            {Ic.plus(C.acc,14)} Agregar vehículo
+            {Ic.plus(C.acc,14)} Agregar vehiculo
           </button>
         ) : (
           <div style={{border:`1.5px solid ${C.acc}`,borderRadius:12,padding:12,marginBottom:10,background:`${C.acc}04`}}>
-            <div style={{fontSize:11,fontWeight:700,color:C.acc,marginBottom:8}}>Nuevo vehículo</div>
+            <div style={{fontSize:11,fontWeight:700,color:C.acc,marginBottom:8}}>Nuevo vehiculo</div>
             <Field label="Patente" value={newPlate} onChange={v=>{setNewPlate(v);setTruckErr("");}} placeholder="Ej: AB-123-CD" hasError={!!truckErr}/>
             <div style={{height:8}}/>
             <Field label="Modelo (opcional)" value={newModel} onChange={setNewModel} placeholder="Ej: Scania R500"/>
@@ -287,9 +336,9 @@ export default function AssignModal({ freight, transporters, onClose, onConfirm,
         ) : (
           <div style={{border:`1.5px solid ${C.info}`,borderRadius:12,padding:12,marginBottom:10,background:`${C.info}04`}}>
             <div style={{fontSize:11,fontWeight:700,color:C.info,marginBottom:8}}>Nuevo chofer</div>
-            <Field label="Nombre" value={newDriverName} onChange={v=>{setNewDriverName(v);setDriverErr("");}} placeholder="Ej: Juan Pérez" hasError={!!driverErr}/>
+            <Field label="Nombre" value={newDriverName} onChange={v=>{setNewDriverName(v);setDriverErr("");}} placeholder="Ej: Juan Perez" hasError={!!driverErr}/>
             <div style={{height:8}}/>
-            <Field label="Teléfono (opcional)" value={newDriverPhone} onChange={setNewDriverPhone} placeholder="Ej: 099123456"/>
+            <Field label="Telefono (opcional)" value={newDriverPhone} onChange={setNewDriverPhone} placeholder="Ej: 099123456"/>
             {driverErr && <div style={{fontSize:11,color:C.err,fontWeight:600,marginTop:6}}>{driverErr}</div>}
             <div style={{display:"flex",gap:6,marginTop:10}}>
               <button onClick={()=>{setShowNewDriver(false);setNewDriverName("");setNewDriverPhone("");setDriverErr("");}} style={{flex:1,padding:"8px 0",borderRadius:8,border:`1px solid ${C.b1}`,background:C.w,color:C.t2,fontSize:11.5,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>Cancelar</button>
@@ -300,7 +349,7 @@ export default function AssignModal({ freight, transporters, onClose, onConfirm,
 
         {multiTruck && truckId && (
           <div style={{marginBottom:14}}>
-            <Field label="Toneladas para este camión" value={tonsInput} onChange={setTonsInput} placeholder={`${defaultTonsPerTruck}`}/>
+            <Field label="Toneladas para este camion" value={tonsInput} onChange={setTonsInput} placeholder={`${defaultTonsPerTruck}`}/>
           </div>
         )}
       </>}
@@ -308,7 +357,9 @@ export default function AssignModal({ freight, transporters, onClose, onConfirm,
       <div style={{display:"flex",gap:8}}>
         <Btn full v="ghost" onClick={onClose} disabled={loading||closing}>Cancelar</Btn>
         {multiTruck ? (<>
-          <Btn full v="acc" disabled={!canAdd||loading||closing} onClick={addToList}>Agregar camión</Btn>
+          <Btn full v="acc" disabled={!canAdd||loading||closing} onClick={addToList}>
+            {mode==="company" && tripCount > 1 ? `Agregar ${tripCount} viajes` : "Agregar camion"}
+          </Btn>
         </>) : (
           <Btn full v={mode==="own"?"acc":undefined} disabled={(mode==="company"&&!t)||(mode==="own"&&!truckId)||loading||closing} onClick={doConfirm}>{loading?"Asignando...":"Asignar"}</Btn>
         )}
@@ -319,7 +370,7 @@ export default function AssignModal({ freight, transporters, onClose, onConfirm,
         <div style={{marginTop:10}}>
           <Btn full disabled={loading||closing} onClick={doConfirmMulti}>
             {loading?"Asignando...":truckList.length < needed
-              ? `Asignar ${truckList.length} camión${truckList.length>1?"es":""} (parcial)`
+              ? `Asignar ${truckList.length} camion${truckList.length>1?"es":""} (parcial)`
               : `Asignar ${truckList.length} camiones`}
           </Btn>
         </div>
