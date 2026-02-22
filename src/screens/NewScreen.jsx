@@ -106,7 +106,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
   const selectedLot = fieldLots.find(l=>l.id===form.lotId);
   const selectedPlant = (plants||[]).find(p=>p.id===form.plantId);
   const selectedBranch = (branches||[]).find(b=>b.id===form.branchId);
-  const truckOpts = (trucks||[]).map(t=>({ value:t.id, label:`${t.plate}${t.model?` \u00b7 ${t.model}`:""}` }));
+  const truckOpts = (trucks||[]).map(t=>({ value:t.id, label:`${t.plate}${t.model?` · ${t.model}`:""}` }));
   const showTruckSelect = (user.userType==="producer"||(user.userTypes||[]).includes("producer")) && truckOpts.length > 0;
 
   // Coords for map preview
@@ -123,17 +123,17 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
   const finalOrigin = overrideOrigin || originCoords;
   const finalDest = overrideDest || destCoords;
 
-  const destDisplayName = destMode==="plant" ? ((selectedPlant?.name||"")+(selectedBranch?` \u2192 ${selectedBranch.name}`:"")) : (customDest.name||"");
+  const destDisplayName = destMode==="plant" ? ((selectedPlant?.name||"")+(selectedBranch?` → ${selectedBranch.name}`:"")) : (customDest.name||"");
 
   const submit = () => {
     setTouched(true);
     const {ok,errs:e} = validate(form, SCHEMAS.freight);
-    if(form.grain==="Otros" && !form.productTypeOther?.trim()) { e.productTypeOther="Descripci\u00f3n obligatoria"; }
-    if(originMode==="field" && !form.fieldId) { e.fieldId="Seleccion\u00e1 un campo"; }
-    if(originMode==="field" && form.fieldId && !form.lotId) { e.lotId="Seleccion\u00e1 un lote del campo"; }
-    if(originMode==="map" && !customOrigin.lat) { e.customOrigin="Indic\u00e1 una ubicaci\u00f3n en el mapa"; }
+    if(form.grain==="Otros" && !form.productTypeOther?.trim()) { e.productTypeOther="Descripción obligatoria"; }
+    if(originMode==="field" && !form.fieldId) { e.fieldId="Seleccioná un campo"; }
+    if(originMode==="field" && form.fieldId && !form.lotId) { e.lotId="Seleccioná un lote del campo"; }
+    if(originMode==="map" && !customOrigin.lat) { e.customOrigin="Indicá una ubicación en el mapa"; }
     // Destination validation
-    if(destMode==="plant" && !form.plantId) { e.plantId="Seleccion\u00e1 una planta"; }
+    if(destMode==="plant" && !form.plantId) { e.plantId="Seleccioná una planta"; }
     if(destMode==="custom" && !customDest.name?.trim()) { e.customDestName="Nombre de destino obligatorio"; }
     setErrs(e);
     if(!ok || Object.keys(e).filter(k=>e[k]).length>0) {
@@ -195,9 +195,9 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
 
   const secSummary = {
     product: form.grain ? (form.grain==="Otros" ? `Otros: ${form.productTypeOther}` : form.grain) : "",
-    quantity: form.tons ? `${form.tons} ${form.unit}${form.amount?` \u00b7 $${form.amount}`:""}` : "",
-    origin: originMode==="field" ? ((fieldOpts.find(f=>f.value===form.fieldId)?.label||"")+(selectedLot?` \u2192 ${selectedLot.name}`:"")) : (customOrigin.name||"Ubicaci\u00f3n en mapa"),
-    destination: destMode==="plant" ? (destDisplayName||"") : ((customDest.name||"")+(confirmMode==="plant"&&confirmPlantId?` \u00b7 Confirma: ${(plants||[]).find(p=>p.id===confirmPlantId)?.name||""}`:" \u00b7 Sin confirmaci\u00f3n")),
+    quantity: form.tons ? `${form.tons} ${form.unit}${form.amount?` · $${form.amount}`:""}` : "",
+    origin: originMode==="field" ? ((fieldOpts.find(f=>f.value===form.fieldId)?.label||"")+(selectedLot?` → ${selectedLot.name}`:"")) : (customOrigin.name||"Ubicación en mapa"),
+    destination: destMode==="plant" ? (destDisplayName||"") : ((customDest.name||"")+(confirmMode==="plant"&&confirmPlantId?` · Confirma: ${(plants||[]).find(p=>p.id===confirmPlantId)?.name||""}`:" · Sin confirmación")),
     schedule: form.loadDate&&form.loadTime ? `${form.loadDate} a las ${form.loadTime}` : "",
   };
 
@@ -223,7 +223,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
           </div>
           {form.grain==="Otros" && (
             <div style={{ marginTop:10 }}>
-              <Field label="Descripci\u00f3n de producto" value={form.productTypeOther} onChange={v=>u({productTypeOther:v})} placeholder="Ej: Arena, Cemento, etc."/>
+              <Field label="Descripción de producto" value={form.productTypeOther} onChange={v=>u({productTypeOther:v})} placeholder="Ej: Arena, Cemento, etc."/>
               {touched&&<FieldError error={errs.productTypeOther}/>}
             </div>
           )}
@@ -261,7 +261,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
               <Select label="Campo" icon={Ic.pin(C.ok,14)} value={form.fieldId} onChange={v=>{u({fieldId:v,lotId:""});}} options={fieldOpts} placeholder="Seleccionar campo..."/>
             </div>
             <div style={{ marginTop:10 }}>
-              <Select label="Origen (lote)" icon={Ic.pin(C.pri,14)} value={form.lotId} onChange={v=>u({lotId:v})} options={lotOpts} placeholder={loadingLots?"Cargando lotes...":form.fieldId?"Seleccionar lote...":"Primero seleccion\u00e1 un campo"}/>
+              <Select label="Origen (lote)" icon={Ic.pin(C.pri,14)} value={form.lotId} onChange={v=>u({lotId:v})} options={lotOpts} placeholder={loadingLots?"Cargando lotes...":form.fieldId?"Seleccionar lote...":"Primero seleccioná un campo"}/>
               {touched&&<FieldError error={errs.lotId}/>}
               {selectedLot && selectedLot.lat && <div style={{ display:"flex", alignItems:"center", gap:6, padding:"6px 10px", background:C.priPale, borderRadius:8, marginTop:6 }}>{Ic.chk(C.pri,14)}<span style={{fontSize:10.5,color:C.pri,fontWeight:500}}>{selectedLot.lat}, {selectedLot.lng}</span></div>}
               {form.fieldId && !newLot && <button type="button" onClick={()=>setNewLot(true)} style={{marginTop:8,background:"none",border:"none",cursor:"pointer",fontSize:11,fontWeight:600,color:C.pri,padding:0,fontFamily:"inherit",display:"flex",alignItems:"center",gap:4}}>{Ic.plus(C.pri,13)} Crear lote nuevo</button>}
@@ -275,16 +275,16 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
                     <Btn sm v="ghost" onClick={()=>{setNewLot(false);setNewLotName("");setNewLotLoc(null);}}>Cancelar</Btn>
                   </div>
                   <div style={{marginTop:10}}>
-                    <SafeZone><LocationPicker label="Ubicaci\u00f3n del lote" value={newLotLoc} onChange={setNewLotLoc} defaultCenter={(() => { const sf = (fields||[]).find(f=>f.id===form.fieldId); return sf?.lat&&sf?.lng ? {lat:Number(sf.lat),lng:Number(sf.lng)} : null; })()}/></SafeZone>
+                    <SafeZone><LocationPicker label="Ubicación del lote" value={newLotLoc} onChange={setNewLotLoc} defaultCenter={(() => { const sf = (fields||[]).find(f=>f.id===form.fieldId); return sf?.lat&&sf?.lng ? {lat:Number(sf.lat),lng:Number(sf.lng)} : null; })()}/></SafeZone>
                   </div>
                   {newLotLoc && <div style={{display:"flex",alignItems:"center",gap:6,padding:"6px 10px",background:C.w,borderRadius:8,marginTop:6}}>{Ic.chk(C.pri,14)}<span style={{fontSize:10.5,color:C.pri,fontWeight:500}}>{newLotLoc.lat.toFixed(4)}, {newLotLoc.lng.toFixed(4)}</span></div>}
                 </div>
               )}
             </div>
           </>) : (<>
-            <Field label="Nombre del origen" value={customOrigin.name} onChange={v=>setCustomOrigin(p=>({...p,name:v}))} placeholder="Ej: Chacra Los \u00c1lamos"/>
+            <Field label="Nombre del origen" value={customOrigin.name} onChange={v=>setCustomOrigin(p=>({...p,name:v}))} placeholder="Ej: Chacra Los Álamos"/>
             <div style={{ marginTop:10 }}>
-              <SafeZone><LocationPicker label="Ubicaci\u00f3n en mapa" value={customOrigin.lat?{lat:customOrigin.lat,lng:customOrigin.lng}:null} onChange={loc=>setCustomOrigin(p=>({...p,lat:loc?.lat||null,lng:loc?.lng||null,name:p.name||loc?.address||""}))}/></SafeZone>
+              <SafeZone><LocationPicker label="Ubicación en mapa" value={customOrigin.lat?{lat:customOrigin.lat,lng:customOrigin.lng}:null} onChange={loc=>setCustomOrigin(p=>({...p,lat:loc?.lat||null,lng:loc?.lng||null,name:p.name||loc?.address||""}))}/></SafeZone>
             </div>
             {touched&&errs.customOrigin&&<div style={{padding:"6px 10px",borderRadius:8,marginTop:6,fontSize:11,fontWeight:600,color:C.err,background:C.errPale}}>{errs.customOrigin}</div>}
             {customOrigin.lat && <div style={{ display:"flex", alignItems:"center", gap:6, padding:"6px 10px", background:C.priPale, borderRadius:8, marginTop:6 }}>{Ic.chk(C.pri,14)}<span style={{fontSize:10.5,color:C.pri,fontWeight:500}}>{customOrigin.lat.toFixed(4)}, {customOrigin.lng.toFixed(4)}</span></div>}
@@ -295,7 +295,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
         {showTruckSelect && (
           <Sec label="Flete propio (opcional)" complete={!!form.truckId} summary={truckOpts.find(t=>t.value===form.truckId)?.label||""} isExpanded={activeSection==="ownfleet"} onFocus={()=>setActiveSection("ownfleet")} secRef={secRefs.ownfleet} highlight={secComplete.origin&&!form.truckId&&activeSection!=="ownfleet"} disabled={!secEnabled.ownfleet}>
             <div style={{ fontSize:11, color:C.t2, marginBottom:12 }}>Uso mi propia flota — la planta solo autoriza el viaje</div>
-            <Select label="Cami\u00f3n" icon={Ic.truck(C.acc,14)} value={form.truckId} onChange={v=>u({truckId:v})} options={truckOpts} placeholder="Seleccionar cami\u00f3n..."/>
+            <Select label="Camión" icon={Ic.truck(C.acc,14)} value={form.truckId} onChange={v=>u({truckId:v})} options={truckOpts} placeholder="Seleccionar camión..."/>
             {form.truckId && <button type="button" onClick={()=>u({truckId:""})} style={{ marginTop:8, background:"none", border:"none", cursor:"pointer", fontSize:11, color:C.err, fontWeight:600, fontFamily:"inherit" }}>Quitar camión propio</button>}
           </Sec>
         )}
@@ -323,7 +323,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
               <Field label="Nombre del destino" value={customDest.name} onChange={v=>setCustomDest(p=>({...p,name:v}))} placeholder="Ej: Acopio Central, Puerto Rosario..."/>
               {touched&&<FieldError error={errs.customDestName}/>}
               {!_isDesktop && <div style={{ marginTop:8 }}>
-                <LocationPicker label="Ubicaci\u00f3n del destino" value={customDest.lat?{lat:customDest.lat,lng:customDest.lng}:null} onChange={loc=>setCustomDest(p=>({...p,lat:loc.lat,lng:loc.lng}))}/>
+                <LocationPicker label="Ubicación del destino" value={customDest.lat?{lat:customDest.lat,lng:customDest.lng}:null} onChange={loc=>setCustomDest(p=>({...p,lat:loc.lat,lng:loc.lng}))}/>
               </div>}
               <div style={{marginTop:14}}>
                 <label style={{fontSize:10.5,fontWeight:600,color:C.t2,marginBottom:6,display:"flex",alignItems:"center",gap:4,textTransform:"uppercase",letterSpacing:0.6}}>{Ic.chk(C.t2,14)} ¿Quién debe confirmar el viaje?</label>
@@ -334,7 +334,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
                 {confirmMode==="plant" && (
                   <>
                     <Select value={confirmPlantId} onChange={v=>setConfirmPlantId(v)} options={plantOpts} placeholder="Seleccionar planta que confirma..."/>
-                    {touched&&!confirmPlantId&&<FieldError error="Seleccion\u00e1 una planta que confirme el viaje"/>}
+                    {touched&&!confirmPlantId&&<FieldError error="Seleccioná una planta que confirme el viaje"/>}
                     <div style={{fontSize:10,color:C.t3,marginTop:6}}>La planta debe aceptar el flete para que se realice el viaje</div>
                   </>
                 )}
@@ -348,7 +348,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
         {destMode==="custom" && _isDesktop ? (
           <div style={{ display:"flex", gap:16, alignItems:"flex-start" }}>
             <div style={{ flex:1, minWidth:0 }}>
-              <LocationPicker label="Ubicaci\u00f3n del destino" value={customDest.lat?{lat:customDest.lat,lng:customDest.lng}:null} onChange={loc=>setCustomDest(p=>({...p,lat:loc.lat,lng:loc.lng}))}/>
+              <LocationPicker label="Ubicación del destino" value={customDest.lat?{lat:customDest.lat,lng:customDest.lng}:null} onChange={loc=>setCustomDest(p=>({...p,lat:loc.lat,lng:loc.lng}))}/>
             </div>
             {(finalOrigin || finalDest) && (
               <div style={{ flex:1, minWidth:0, background:C.w, border:`1px solid ${C.b1}`, borderRadius:12, overflow:"hidden", boxShadow:C.sh }}>
@@ -375,8 +375,8 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
                     </button>
                   )}
                 </div>
-                {editingOrigin && <div style={{ padding:"0 14px 12px" }}><LocationPicker label="Corregir ubicaci\u00f3n de origen" value={overrideOrigin||originCoords} onChange={loc=>setOverrideOrigin({lat:loc.lat,lng:loc.lng})}/></div>}
-                {editingDest && <div style={{ padding:"0 14px 12px" }}><LocationPicker label="Corregir ubicaci\u00f3n de destino" value={overrideDest||destCoords} onChange={loc=>setOverrideDest({lat:loc.lat,lng:loc.lng})}/></div>}
+                {editingOrigin && <div style={{ padding:"0 14px 12px" }}><LocationPicker label="Corregir ubicación de origen" value={overrideOrigin||originCoords} onChange={loc=>setOverrideOrigin({lat:loc.lat,lng:loc.lng})}/></div>}
+                {editingDest && <div style={{ padding:"0 14px 12px" }}><LocationPicker label="Corregir ubicación de destino" value={overrideDest||destCoords} onChange={loc=>setOverrideDest({lat:loc.lat,lng:loc.lng})}/></div>}
               </div>
             )}
           </div>
@@ -407,8 +407,8 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
                   </button>
                 )}
               </div>
-              {editingOrigin && <div style={{ padding:"0 14px 12px" }}><LocationPicker label="Corregir ubicaci\u00f3n de origen" value={overrideOrigin||originCoords} onChange={loc=>setOverrideOrigin({lat:loc.lat,lng:loc.lng})}/></div>}
-              {editingDest && <div style={{ padding:"0 14px 12px" }}><LocationPicker label="Corregir ubicaci\u00f3n de destino" value={overrideDest||destCoords} onChange={loc=>setOverrideDest({lat:loc.lat,lng:loc.lng})}/></div>}
+              {editingOrigin && <div style={{ padding:"0 14px 12px" }}><LocationPicker label="Corregir ubicación de origen" value={overrideOrigin||originCoords} onChange={loc=>setOverrideOrigin({lat:loc.lat,lng:loc.lng})}/></div>}
+              {editingDest && <div style={{ padding:"0 14px 12px" }}><LocationPicker label="Corregir ubicación de destino" value={overrideDest||destCoords} onChange={loc=>setOverrideDest({lat:loc.lat,lng:loc.lng})}/></div>}
             </div>
           )
         )}

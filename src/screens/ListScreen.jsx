@@ -176,7 +176,7 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
                     </div>
                     <div style={{fontSize:14,fontWeight:700,color:C.t1,marginBottom:6}}>{f.grain==="Otros"?f.productTypeOther||"Otros":f.grain} · {f.tons} {f.unit||"tn"}</div>
                     <div style={{display:"flex",flexDirection:"column",gap:3,fontSize:11,color:C.t2}}>
-                      <div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.user(C.t3,12)} <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.originCompanyName||(f.originName||"").split("\u2014")[0].trim()}</span>{f.originLat&&f.originLng&&<span onClick={(e)=>{e.stopPropagation();goToMap(f.originLat,f.originLng,[f.originCompanyName,f.fieldName,f.originName].filter(Boolean).join(" \u2014 "));}} style={{cursor:"pointer",opacity:0.6,marginLeft:3,fontSize:10,flexShrink:0}} title="Ver en mapa">{"\uD83D\uDCCD"}</span>}</div>
+                      <div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.user(C.t3,12)} <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.originCompanyName||(f.originName||"").split("—")[0].trim()}</span>{f.originLat&&f.originLng&&<span onClick={(e)=>{e.stopPropagation();goToMap(f.originLat,f.originLng,[f.originCompanyName,f.fieldName,f.originName].filter(Boolean).join(" — "));}} style={{cursor:"pointer",opacity:0.6,marginLeft:3,fontSize:10,flexShrink:0}} title="Ver en mapa">{"\uD83D\uDCCD"}</span>}</div>
                       {f.transporterName&&<div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.truck(C.t3,12)} <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.transporterName}{f.truckPlate?` (${f.truckPlate})`:""}</span></div>}
                       <div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.plant(C.t3,12)} <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.destName}</span>{f.destLat&&f.destLng&&<span onClick={(e)=>{e.stopPropagation();goToMap(f.destLat,f.destLng,f.destName);}} style={{cursor:"pointer",opacity:0.6,marginLeft:3,fontSize:10,flexShrink:0}} title="Ver en mapa">{"\uD83D\uDCCD"}</span>}</div>
                     </div>
@@ -214,7 +214,7 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
                     </div>
                     <div style={{fontSize:14,fontWeight:700,color:C.t1,marginBottom:6}}>{f.grain==="Otros"?f.productTypeOther||"Otros":f.grain} · {f.tons} {f.unit||"tn"}</div>
                     <div style={{display:"flex",flexDirection:"column",gap:3,fontSize:11,color:C.t2}}>
-                      <div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.user(C.t3,12)} <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.originCompanyName||(f.originName||"").split("\u2014")[0].trim()}</span>{f.originLat&&f.originLng&&<span onClick={(e)=>{e.stopPropagation();goToMap(f.originLat,f.originLng,[f.originCompanyName,f.fieldName,f.originName].filter(Boolean).join(" \u2014 "));}} style={{cursor:"pointer",opacity:0.6,marginLeft:3,fontSize:10,flexShrink:0}} title="Ver en mapa">{"\uD83D\uDCCD"}</span>}</div>
+                      <div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.user(C.t3,12)} <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.originCompanyName||(f.originName||"").split("—")[0].trim()}</span>{f.originLat&&f.originLng&&<span onClick={(e)=>{e.stopPropagation();goToMap(f.originLat,f.originLng,[f.originCompanyName,f.fieldName,f.originName].filter(Boolean).join(" — "));}} style={{cursor:"pointer",opacity:0.6,marginLeft:3,fontSize:10,flexShrink:0}} title="Ver en mapa">{"\uD83D\uDCCD"}</span>}</div>
                       {f.transporterName&&<div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.truck(C.t3,12)} <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.transporterName}{f.truckPlate?` (${f.truckPlate})`:""}</span></div>}
                       <div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.plant(C.t3,12)} <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.destName}</span>{f.destLat&&f.destLng&&<span onClick={(e)=>{e.stopPropagation();goToMap(f.destLat,f.destLng,f.destName);}} style={{cursor:"pointer",opacity:0.6,marginLeft:3,fontSize:10,flexShrink:0}} title="Ver en mapa">{"\uD83D\uDCCD"}</span>}</div>
                     </div>
@@ -243,7 +243,7 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
             <table style={{ width:"100%", borderCollapse:"collapse", fontSize:12, fontFamily:"inherit" }}>
               <thead>
                 <tr style={{ background:C.bg, borderBottom:`2px solid ${C.b1}` }}>
-                  {["C\u00f3digo","Estado","Producto","Empresa","Campo / Lote","Destino","Fecha","Hora","Transportista","Matr\u00edcula","Chofer","Celular"].map(h=>(
+                  {["Código","Estado","Producto","Empresa","Campo / Lote","Destino","Fecha","Hora","Transportista","Matrícula","Chofer","Celular"].map(h=>(
                     <th key={h} style={{ padding:"10px 12px", textAlign:"left", fontSize:10, fontWeight:700, color:C.t2, textTransform:"uppercase", letterSpacing:0.5, whiteSpace:"nowrap" }}>{h}</th>
                   ))}
                 </tr>
@@ -252,7 +252,7 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
                 {filtered.length===0 && <tr><td colSpan={12} style={{ padding:24, textAlign:"center", color:C.t3, fontSize:12 }}>Sin fletes</td></tr>}
                 {filtered.map(f=>{
                   const st = stCfg(f.status);
-                  const campoLote = [f.fieldName, f.originName].filter(Boolean).join(" / ") || "\u2014";
+                  const campoLote = [f.fieldName, f.originName].filter(Boolean).join(" / ") || "—";
                   return (
                     <tr key={f.id} className="tv-row" onClick={()=>onNav("detail",f.id)} style={{ borderBottom:`1px solid ${C.b1}`, cursor:"pointer", contentVisibility:"auto", containIntrinsicSize:"0 44px" }}>
                       <td style={{ padding:"10px 12px", fontFamily:MONO, fontWeight:700, fontSize:11, color:C.t2, whiteSpace:"nowrap" }}>{f.code}</td>
@@ -262,11 +262,11 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
                       <td style={{ padding:"10px 12px", color:C.t2 }}>{campoLote}{f.originLat&&f.originLng&&<span onClick={(e)=>{e.stopPropagation();goToMap(f.originLat,f.originLng,[f.fieldName,f.originName].filter(Boolean).join(" / "));}} style={{cursor:"pointer",opacity:0.6,marginLeft:3,fontSize:10}} title="Ver en mapa">{"\uD83D\uDCCD"}</span>}</td>
                       <td style={{ padding:"10px 12px", color:C.t2 }}>{f.destName}{f.destLat&&f.destLng&&<span onClick={(e)=>{e.stopPropagation();goToMap(f.destLat,f.destLng,f.destName);}} style={{cursor:"pointer",opacity:0.6,marginLeft:3,fontSize:10}} title="Ver en mapa">{"\uD83D\uDCCD"}</span>}</td>
                       <td style={{ padding:"10px 12px", color:C.t2, whiteSpace:"nowrap" }}>{f.loadDate}</td>
-                      <td style={{ padding:"10px 12px", color:C.t3, whiteSpace:"nowrap" }}>{f.loadTime||"\u2014"}</td>
-                      <td style={{ padding:"10px 12px", color:C.t2 }}>{f.transporterName||"\u2014"}</td>
-                      <td style={{ padding:"10px 12px", fontFamily:MONO, fontSize:11, color:C.t2, whiteSpace:"nowrap" }}>{f.truckPlate||"\u2014"}</td>
-                      <td style={{ padding:"10px 12px", color:C.t2 }}>{f.driverName||"\u2014"}</td>
-                      <td style={{ padding:"10px 12px", color:C.t2, whiteSpace:"nowrap" }}>{f.driverPhone||"\u2014"}</td>
+                      <td style={{ padding:"10px 12px", color:C.t3, whiteSpace:"nowrap" }}>{f.loadTime||"—"}</td>
+                      <td style={{ padding:"10px 12px", color:C.t2 }}>{f.transporterName||"—"}</td>
+                      <td style={{ padding:"10px 12px", fontFamily:MONO, fontSize:11, color:C.t2, whiteSpace:"nowrap" }}>{f.truckPlate||"—"}</td>
+                      <td style={{ padding:"10px 12px", color:C.t2 }}>{f.driverName||"—"}</td>
+                      <td style={{ padding:"10px 12px", color:C.t2, whiteSpace:"nowrap" }}>{f.driverPhone||"—"}</td>
                     </tr>
                   );
                 })}
@@ -280,7 +280,7 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
       {hasMore && (
         <div style={{textAlign:"center",padding:"16px 0 24px"}}>
           <button onClick={loadMore} disabled={loadingMore} style={{padding:"8px 24px",borderRadius:10,border:`1.5px solid ${C.pri}`,background:C.w,color:C.pri,fontSize:12,fontWeight:700,cursor:loadingMore?"default":"pointer",fontFamily:"inherit",opacity:loadingMore?0.5:1}}>
-            {loadingMore?"Cargando...":"Cargar m\u00e1s fletes"}
+            {loadingMore?"Cargando...":"Cargar más fletes"}
           </button>
           {total>0 && <div style={{fontSize:10,color:C.t3,marginTop:6}}>Mostrando {freights.length} de {total}</div>}
         </div>

@@ -179,7 +179,7 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
         </div>
         <div style={{fontSize:14,fontWeight:700,color:C.t1,marginBottom:6}}>{f.grain==="Otros"?f.productTypeOther||"Otros":f.grain} · {f.tons} {f.unit||"tn"}</div>
         <div style={{display:"flex",flexDirection:"column",gap:3,fontSize:11,color:C.t2}}>
-          <div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.user(C.t3,12)} <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.originCompanyName||(f.originName||"").split("\u2014")[0].trim()}</span>{f.originLat&&f.originLng&&<span onClick={(e)=>{e.stopPropagation();goToMap(f.originLat,f.originLng,[f.originCompanyName,f.fieldName,f.originName].filter(Boolean).join(" \u2014 "));}} style={{cursor:"pointer",opacity:0.6,marginLeft:3,fontSize:10,flexShrink:0}} title="Ver en mapa">{"\uD83D\uDCCD"}</span>}</div>
+          <div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.user(C.t3,12)} <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.originCompanyName||(f.originName||"").split("—")[0].trim()}</span>{f.originLat&&f.originLng&&<span onClick={(e)=>{e.stopPropagation();goToMap(f.originLat,f.originLng,[f.originCompanyName,f.fieldName,f.originName].filter(Boolean).join(" — "));}} style={{cursor:"pointer",opacity:0.6,marginLeft:3,fontSize:10,flexShrink:0}} title="Ver en mapa">{"\uD83D\uDCCD"}</span>}</div>
           {f.transporterName&&<div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.truck(C.t3,12)} <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.transporterName}{f.truckPlate?` (${f.truckPlate})`:""}</span></div>}
           <div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.plant(C.t3,12)} <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.destName}</span>{f.destLat&&f.destLng&&<span onClick={(e)=>{e.stopPropagation();goToMap(f.destLat,f.destLng,f.destName);}} style={{cursor:"pointer",opacity:0.6,marginLeft:3,fontSize:10,flexShrink:0}} title="Ver en mapa">{"\uD83D\uDCCD"}</span>}</div>
         </div>
@@ -225,7 +225,7 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
         <div style={{ background:C.priPale, border:`1.5px solid ${C.pri}30`, borderRadius:12, padding:"12px 14px", marginBottom:12, display:"flex", alignItems:"center", gap:10 }}>
           <div style={{flex:1}}>
             <div style={{ fontSize:12, fontWeight:700, color:C.pri }}>Instalá Tolvink en tu dispositivo</div>
-            <div style={{ fontSize:10.5, color:C.t2, marginTop:2 }}>{pwa.isIOS ? "Toc\u00e1 Compartir \u2192 Agregar a inicio" : "Acceso directo desde tu pantalla de inicio"}</div>
+            <div style={{ fontSize:10.5, color:C.t2, marginTop:2 }}>{pwa.isIOS ? "Tocá Compartir → Agregar a inicio" : "Acceso directo desde tu pantalla de inicio"}</div>
           </div>
           {pwa.canPrompt && <button onClick={pwa.install} style={{ padding:"8px 16px", borderRadius:8, border:"none", background:C.pri, color:"#fff", fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"inherit", flexShrink:0 }}>Instalar</button>}
         </div>
@@ -245,7 +245,7 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
             </div>
           </div>
           <div style={{ display: "flex", gap: 4, marginTop: 6, flexWrap: "wrap" }}>
-            {[{k:"all",l:"Todo"},{k:"today",l:"Hoy"},{k:"tomorrow",l:"Ma\u00f1ana"},{k:"week",l:"Semana"}].map(o => (
+            {[{k:"all",l:"Todo"},{k:"today",l:"Hoy"},{k:"tomorrow",l:"Mañana"},{k:"week",l:"Semana"}].map(o => (
               <button key={o.k} onClick={() => setPendingFilter(o.k)} style={{ padding: compact ? "3px 6px" : "4px 8px", borderRadius: 6, border: `1px solid ${pendingFilter === o.k ? C.acc : C.b1}`, background: pendingFilter === o.k ? `${C.acc}15` : "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: compact ? 9 : 10, fontWeight: pendingFilter === o.k ? 700 : 500, color: pendingFilter === o.k ? C.acc : C.t3 }}>{o.l}</button>
             ))}
           </div>
@@ -267,7 +267,7 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
           <div style={{ flex: 1, fontSize: compact ? 11 : 12, fontWeight: 700, color: C.ok }}>Sin pendientes de mi parte</div>
         </div>
         <div style={{ display: "flex", gap: 4, marginTop: 6, flexWrap: "wrap" }}>
-          {[{k:"all",l:"Todo"},{k:"today",l:"Hoy"},{k:"tomorrow",l:"Ma\u00f1ana"},{k:"week",l:"Semana"}].map(o => (
+          {[{k:"all",l:"Todo"},{k:"today",l:"Hoy"},{k:"tomorrow",l:"Mañana"},{k:"week",l:"Semana"}].map(o => (
             <button key={o.k} onClick={() => setSummaryFilter(o.k)} style={{ padding: compact ? "3px 6px" : "4px 8px", borderRadius: 6, border: `1px solid ${summaryFilter === o.k ? C.ok : C.b1}`, background: summaryFilter === o.k ? `${C.ok}15` : "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: compact ? 9 : 10, fontWeight: summaryFilter === o.k ? 700 : 500, color: summaryFilter === o.k ? C.ok : C.t3 }}>{o.l}</button>
           ))}
         </div>

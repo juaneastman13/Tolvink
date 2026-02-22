@@ -122,7 +122,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, a
                     <div key={log.id} style={{ position:"relative", paddingBottom:i<auditLog.length-1?14:0 }}>
                       <div style={{ position:"absolute", left:-16, top:2, width:10, height:10, borderRadius:5, background:col, zIndex:2 }} />
                       <div style={{ fontSize:12, fontWeight:700, color:col }}>{label}</div>
-                      <div style={{ fontSize:10.5, color:C.t2, marginTop:1 }}>{log.user?.name || "Sistema"} {log.user?.company?.name ? `\u00b7 ${log.user.company.name}` : ""}</div>
+                      <div style={{ fontSize:10.5, color:C.t2, marginTop:1 }}>{log.user?.name || "Sistema"} {log.user?.company?.name ? `· ${log.user.company.name}` : ""}</div>
                       {log.reason && <div style={{ fontSize:10, color:C.t3, fontStyle:"italic", marginTop:2 }}>"{log.reason}"</div>}
                       <div style={{ fontSize:9.5, color:C.t3, marginTop:2 }}>{fmtD(log.createdAt)}</div>
                     </div>
@@ -185,28 +185,28 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, a
           <span style={{ fontSize:10.5, fontWeight:700, color:C.t2, textTransform:"uppercase", letterSpacing:0.5, marginBottom:12, display:"block" }}>Información del flete</span>
           {[
             [Ic.user(C.pri,15),"Empresa",freight.originCompanyName||freight.originName],
-            [Ic.pin(C.ok,15),"Campo",<>{[freight.fieldName,freight.originName].filter(Boolean).join(" / ")||"\u2014"}{freight.originLat&&freight.originLng&&<span onClick={()=>goToMap(freight.originLat,freight.originLng,[freight.fieldName,freight.originName].filter(Boolean).join(" / "))} style={{cursor:"pointer",opacity:0.7,marginLeft:4,fontSize:11}} title="Ver en mapa">{"\uD83D\uDCCD"}</span>}</>],
+            [Ic.pin(C.ok,15),"Campo",<>{[freight.fieldName,freight.originName].filter(Boolean).join(" / ")||"—"}{freight.originLat&&freight.originLng&&<span onClick={()=>goToMap(freight.originLat,freight.originLng,[freight.fieldName,freight.originName].filter(Boolean).join(" / "))} style={{cursor:"pointer",opacity:0.7,marginLeft:4,fontSize:11}} title="Ver en mapa">{"\uD83D\uDCCD"}</span>}</>],
             [Ic.plant(C.t2,15),"Destino",<>{freight.destName}{freight.destLat&&freight.destLng&&<span onClick={()=>goToMap(freight.destLat,freight.destLng,freight.destName)} style={{cursor:"pointer",opacity:0.7,marginLeft:4,fontSize:11}} title="Ver en mapa">{"\uD83D\uDCCD"}</span>}</>],
             [Ic.cal(C.t2,15),"Fecha carga",freight.loadDate],
             [Ic.clk(C.t2,15),"Hora carga",freight.loadTime],
             [Ic.user(C.t2,15),"Solicitado por",freight.requestedByName],
-            [Ic.grain(C.t2,15),"Producto",`${freight.grain==="Otros"?freight.productTypeOther||"Otros":freight.grain} \u00b7 ${freight.tons} ${freight.unit||"tn"}`],
+            [Ic.grain(C.t2,15),"Producto",`${freight.grain==="Otros"?freight.productTypeOther||"Otros":freight.grain} · ${freight.tons} ${freight.unit||"tn"}`],
             freight.amount>0&&[Ic.grain(C.t2,15),"Importe",`$${Number(freight.amount).toLocaleString()}`],
             freight.transporterName&&[Ic.truck(C.t2,15),"Transportista",freight.transporterName],
-            freight.truckPlate&&[Ic.truck(C.acc,15),"Cami\u00f3n",`${freight.truckPlate}${freight.truckModel?` \u00b7 ${freight.truckModel}`:""}`],
+            freight.truckPlate&&[Ic.truck(C.acc,15),"Camión",`${freight.truckPlate}${freight.truckModel?` · ${freight.truckModel}`:""}`],
             freight.driverName&&[Ic.user(C.pri,15),"Chofer",freight.driverName],
-            freight.driverPhone&&[Ic.msg(C.info,15),"Tel\u00e9fono",freight.driverPhone],
+            freight.driverPhone&&[Ic.msg(C.info,15),"Teléfono",freight.driverPhone],
           ].filter(Boolean).map(([ic,label,val],i,arr)=>(
             <div key={i} style={{ display:"flex", alignItems:"center", gap:10, padding:"9px 0", borderBottom:i<arr.length-1?`1px solid ${C.b2}`:"none" }}>
               <span style={{display:"flex",flexShrink:0}}>{ic}</span>
               <span style={{ fontSize:11.5, color:C.t2, minWidth:85 }}>{label}</span>
-              {label==="Tel\u00e9fono"?<a href={`tel:${val}`} style={{ fontSize:12, fontWeight:600, color:C.info, marginLeft:"auto", textDecoration:"none" }}>{val}</a>:
+              {label==="Teléfono"?<a href={`tel:${val}`} style={{ fontSize:12, fontWeight:600, color:C.info, marginLeft:"auto", textDecoration:"none" }}>{val}</a>:
               <span style={{ fontSize:12, fontWeight:600, color:C.t1, marginLeft:"auto", textAlign:"right" }}>{val}</span>}
             </div>
           ))}
         </div>
         <div style={{ flex:1 }}>
-          <FreightMap freightId={freight.id} originLat={freight.originLat} originLng={freight.originLng} destLat={freight.destLat} destLng={freight.destLng} originName={[freight.originCompanyName, [freight.fieldName,freight.originName].filter(Boolean).join("/")].filter(Boolean).join(" \u2014 ")} destName={freight.destName} status={freight.status} isDriver={user.userType==="transporter"||(user.userType==="producer"&&freight.isOwnFleet)}/>
+          <FreightMap freightId={freight.id} originLat={freight.originLat} originLng={freight.originLng} destLat={freight.destLat} destLng={freight.destLng} originName={[freight.originCompanyName, [freight.fieldName,freight.originName].filter(Boolean).join("/")].filter(Boolean).join(" — ")} destName={freight.destName} status={freight.status} isDriver={user.userType==="transporter"||(user.userType==="producer"&&freight.isOwnFleet)}/>
         </div>
       </div>
 
@@ -224,9 +224,9 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, a
       {/* Own fleet banners */}
       {freight.isOwnFleet && (()=>{
         const banners = {
-          assigned: { icon:Ic.truck(C.acc,20), bg:C.accPale, border:C.acc, title:"Flota propia \u2014 esperando autorizaci\u00f3n", desc: user.userType==="plant" ? "El productor asign\u00f3 su propio cami\u00f3n. Autoriz\u00e1 el viaje para continuar." : "Tu cami\u00f3n fue asignado. La planta debe autorizar el viaje." },
-          accepted: { icon:Ic.chk(C.ok,20), bg:C.okPale, border:C.ok, title:"Viaje autorizado por la planta", desc: user.userType==="producer" ? "Ya pod\u00e9s iniciar el viaje con tu cami\u00f3n." : "El productor puede iniciar el viaje con su flota propia." },
-          in_progress: { icon:Ic.truck(C.pri,20), bg:C.priPale, border:C.pri, title:"En viaje \u2014 flota propia", desc:"El productor viaja con su propio cami\u00f3n." },
+          assigned: { icon:Ic.truck(C.acc,20), bg:C.accPale, border:C.acc, title:"Flota propia — esperando autorización", desc: user.userType==="plant" ? "El productor asignó su propio camión. Autorizá el viaje para continuar." : "Tu camión fue asignado. La planta debe autorizar el viaje." },
+          accepted: { icon:Ic.chk(C.ok,20), bg:C.okPale, border:C.ok, title:"Viaje autorizado por la planta", desc: user.userType==="producer" ? "Ya podés iniciar el viaje con tu camión." : "El productor puede iniciar el viaje con su flota propia." },
+          in_progress: { icon:Ic.truck(C.pri,20), bg:C.priPale, border:C.pri, title:"En viaje — flota propia", desc:"El productor viaja con su propio camión." },
         };
         const b = banners[freight.status];
         if(!b) return null;

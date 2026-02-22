@@ -42,7 +42,7 @@ export default function AssignModal({ freight, transporters, onClose, onConfirm 
       setNewPlate(""); setNewModel(""); setShowNewTruck(false);
       loadTrucks();
       if(created?.id) setTruckId(created.id);
-    } catch(e){ setTruckErr(e.message||"Error al crear veh\u00edculo"); }
+    } catch(e){ setTruckErr(e.message||"Error al crear vehículo"); }
     finally { setSavingTruck(false); }
   };
 
@@ -63,8 +63,8 @@ export default function AssignModal({ freight, transporters, onClose, onConfirm 
 
   return (
     <ModalOverlay onClose={onClose} loading={loading} closing={closing} closingText={closingText}>
-      <div style={{fontSize:17,fontWeight:700,marginBottom:4}}>Asignar transporte \u00b7 {freight.code}</div>
-      <div style={{fontSize:12,color:C.t2,marginBottom:14}}>{freight.grain} \u00b7 {freight.tons}tn \u00b7 {freight.originName}</div>
+      <div style={{fontSize:17,fontWeight:700,marginBottom:4}}>Asignar transporte · {freight.code}</div>
+      <div style={{fontSize:12,color:C.t2,marginBottom:14}}>{freight.grain} · {freight.tons}tn · {freight.originName}</div>
 
       {/* Mode toggle — only show if origin has own fleet */}
       {hasOwnFleet && <div style={{display:"flex",gap:0,marginBottom:16,borderRadius:10,overflow:"hidden",border:`1.5px solid ${C.b1}`}}>
@@ -80,17 +80,17 @@ export default function AssignModal({ freight, transporters, onClose, onConfirm 
             {Ic.truck(t===x.id?C.pri:C.t3,16)}
             <div>
               <div>{x.name}</div>
-              {x.accessUsers?.length > 0 && x.accessUsers.map(u=><div key={u.id} style={{fontSize:10.5,fontWeight:400,color:t===x.id?C.pri:C.t3,marginTop:1}}>{Ic.user(t===x.id?C.pri:C.t3,11)} {u.name}{u.phone?` \u00b7 ${u.phone}`:""}</div>)}
+              {x.accessUsers?.length > 0 && x.accessUsers.map(u=><div key={u.id} style={{fontSize:10.5,fontWeight:400,color:t===x.id?C.pri:C.t3,marginTop:1}}>{Ic.user(t===x.id?C.pri:C.t3,11)} {u.name}{u.phone?` · ${u.phone}`:""}</div>)}
             </div>
           </button>)}
         </div>
       </>}
 
       {mode==="own" && <>
-        <label style={{fontSize:10.5,fontWeight:600,color:C.t2,marginBottom:8,display:"block",textTransform:"uppercase",letterSpacing:0.6}}>Seleccion\u00e1 un veh\u00edculo</label>
+        <label style={{fontSize:10.5,fontWeight:600,color:C.t2,marginBottom:8,display:"block",textTransform:"uppercase",letterSpacing:0.6}}>Seleccioná un vehículo</label>
         <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:10,maxHeight:220,overflowY:"auto"}}>
-          {loadingTrucks && <div style={{fontSize:12,color:C.t3,padding:10,textAlign:"center"}}>Cargando veh\u00edculos...</div>}
-          {!loadingTrucks && trucks.length===0 && !showNewTruck && <div style={{fontSize:12,color:C.t3,padding:10,textAlign:"center"}}>No hay veh\u00edculos registrados</div>}
+          {loadingTrucks && <div style={{fontSize:12,color:C.t3,padding:10,textAlign:"center"}}>Cargando vehículos...</div>}
+          {!loadingTrucks && trucks.length===0 && !showNewTruck && <div style={{fontSize:12,color:C.t3,padding:10,textAlign:"center"}}>No hay vehículos registrados</div>}
           {trucks.map(tk=><button key={tk.id} onClick={()=>setTruckId(tk.id)} style={{padding:"13px 14px",borderRadius:12,textAlign:"left",fontFamily:"inherit",border:`1.5px solid ${truckId===tk.id?C.acc:C.b1}`,background:truckId===tk.id?C.accPale:C.w,color:truckId===tk.id?C.acc:C.t2,fontSize:13.5,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",gap:10}}>
             {Ic.truck(truckId===tk.id?C.acc:C.t3,18)}
             <div>
@@ -104,11 +104,11 @@ export default function AssignModal({ freight, transporters, onClose, onConfirm 
         {/* Inline new truck form */}
         {!showNewTruck ? (
           <button onClick={()=>{setShowNewTruck(true);setTruckErr("");}} style={{width:"100%",padding:"10px 0",borderRadius:10,border:`1.5px dashed ${C.acc}`,background:`${C.acc}08`,color:C.acc,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:6,marginBottom:10}}>
-            {Ic.plus(C.acc,14)} Agregar veh\u00edculo
+            {Ic.plus(C.acc,14)} Agregar vehículo
           </button>
         ) : (
           <div style={{border:`1.5px solid ${C.acc}`,borderRadius:12,padding:12,marginBottom:10,background:`${C.acc}04`}}>
-            <div style={{fontSize:11,fontWeight:700,color:C.acc,marginBottom:8}}>Nuevo veh\u00edculo</div>
+            <div style={{fontSize:11,fontWeight:700,color:C.acc,marginBottom:8}}>Nuevo vehículo</div>
             <Field label="Patente" value={newPlate} onChange={v=>{setNewPlate(v);setTruckErr("");}} placeholder="Ej: AB-123-CD" hasError={!!truckErr}/>
             <div style={{height:8}}/>
             <Field label="Modelo (opcional)" value={newModel} onChange={setNewModel} placeholder="Ej: Scania R500"/>

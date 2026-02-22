@@ -27,7 +27,7 @@ export default function TruckSelectModal({ freight, trucks: initialTrucks, onClo
         setTruckList(prev=>[...prev, created]);
         setSel(created.id);
       }
-    } catch(e){ setTruckErr(e.message||"Error al crear veh\u00edculo"); }
+    } catch(e){ setTruckErr(e.message||"Error al crear vehículo"); }
     finally { setSavingTruck(false); }
   };
 
@@ -35,11 +35,11 @@ export default function TruckSelectModal({ freight, trucks: initialTrucks, onClo
 
   return (
     <ModalOverlay onClose={onClose} loading={loading} closing={closing} closingText={closingText}>
-      <div style={{fontSize:17,fontWeight:700,marginBottom:4}}>Aceptar flete \u00b7 {freight.code}</div>
-      <div style={{fontSize:12,color:C.t2,marginBottom:18}}>{freight.grain} \u00b7 {freight.tons}tn \u2192 {freight.destName}</div>
-      <label style={{fontSize:10.5,fontWeight:600,color:C.t2,marginBottom:8,display:"block",textTransform:"uppercase",letterSpacing:0.6}}>Seleccion\u00e1 un cami\u00f3n</label>
+      <div style={{fontSize:17,fontWeight:700,marginBottom:4}}>Aceptar flete · {freight.code}</div>
+      <div style={{fontSize:12,color:C.t2,marginBottom:18}}>{freight.grain} · {freight.tons}tn → {freight.destName}</div>
+      <label style={{fontSize:10.5,fontWeight:600,color:C.t2,marginBottom:8,display:"block",textTransform:"uppercase",letterSpacing:0.6}}>Seleccioná un camión</label>
       <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:10,maxHeight:220,overflowY:"auto"}}>
-        {truckList.length===0 && !showNewTruck && <div style={{fontSize:12,color:C.t3,padding:10,textAlign:"center"}}>No ten\u00e9s camiones registrados.</div>}
+        {truckList.length===0 && !showNewTruck && <div style={{fontSize:12,color:C.t3,padding:10,textAlign:"center"}}>No tenés camiones registrados.</div>}
         {truckList.map(t=><button key={t.id} onClick={()=>setSel(t.id)} style={{padding:"13px 14px",borderRadius:12,textAlign:"left",fontFamily:"inherit",border:`1.5px solid ${sel===t.id?C.acc:C.b1}`,background:sel===t.id?C.accPale:C.w,color:sel===t.id?C.acc:C.t2,fontSize:13.5,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",gap:10}}>
           {Ic.truck(sel===t.id?C.acc:C.t3,18)}
           <div>
@@ -53,11 +53,11 @@ export default function TruckSelectModal({ freight, trucks: initialTrucks, onClo
       {/* Inline new truck form */}
       {!showNewTruck ? (
         <button onClick={()=>{setShowNewTruck(true);setTruckErr("");}} style={{width:"100%",padding:"10px 0",borderRadius:10,border:`1.5px dashed ${C.acc}`,background:`${C.acc}08`,color:C.acc,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:6,marginBottom:10}}>
-          {Ic.plus(C.acc,14)} Agregar cami\u00f3n
+          {Ic.plus(C.acc,14)} Agregar camión
         </button>
       ) : (
         <div style={{border:`1.5px solid ${C.acc}`,borderRadius:12,padding:12,marginBottom:10,background:`${C.acc}04`}}>
-          <div style={{fontSize:11,fontWeight:700,color:C.acc,marginBottom:8}}>Nuevo cami\u00f3n</div>
+          <div style={{fontSize:11,fontWeight:700,color:C.acc,marginBottom:8}}>Nuevo camión</div>
           <Field label="Patente" value={newPlate} onChange={v=>{setNewPlate(v);setTruckErr("");}} placeholder="Ej: AB-123-CD" hasError={!!truckErr}/>
           <div style={{height:8}}/>
           <Field label="Modelo (opcional)" value={newModel} onChange={setNewModel} placeholder="Ej: Scania R500"/>
