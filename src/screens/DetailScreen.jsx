@@ -97,7 +97,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
         if (ts === "in_progress" && !a.transporterLoadedConfirmedAt && !entries.find(e=>e.key==="confirm_trip_loaded")) entries.push({ key:"confirm_trip_loaded", label:"Confirmar carga", color:C.acc, icon:Ic.chk(C.w,16) });
         if (ts === "loaded" && !a.transporterFinishedConfirmedAt && !entries.find(e=>e.key==="confirm_trip_finished")) entries.push({ key:"confirm_trip_finished", label:"Confirmar entrega", color:C.pri, icon:Ic.chk(C.w,16) });
       }
-      if (user.userType === "producer") {
+      if (user.userType === "producer" && !isOwn) {
         if ((ts === "loaded" || ts === "in_progress") && !a.producerLoadedConfirmedAt && !entries.find(e=>e.key==="confirm_trip_loaded"))
           entries.push({ key:"confirm_trip_loaded", label:"Confirmar carga", color:C.acc, icon:Ic.chk(C.w,16) });
       }
@@ -132,7 +132,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
       if (ts === "in_progress" && !a.transporterLoadedConfirmedAt) btns.push({ key:"confirm_trip_loaded", label:"Confirmar carga", color:C.acc, icon:Ic.chk(C.w,14) });
       if (ts === "loaded" && !a.transporterFinishedConfirmedAt) btns.push({ key:"confirm_trip_finished", label:"Confirmar entrega", color:C.pri, icon:Ic.chk(C.w,14) });
     }
-    if (user.userType === "producer") {
+    if (user.userType === "producer" && !isOwnFleetTrip) {
       if ((ts === "loaded" || ts === "in_progress") && !a.producerLoadedConfirmedAt && !btns.find(b=>b.key==="confirm_trip_loaded"))
         btns.push({ key:"confirm_trip_loaded", label:"Confirmar carga", color:C.acc, icon:Ic.chk(C.w,14) });
     }

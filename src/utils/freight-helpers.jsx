@@ -50,8 +50,8 @@ function getMultiTruckPendingAction(freight, userType, role, user) {
     if (accepted) return { action: `Iniciar viaje #${accepted.tripNumber}`, color: C.pri, icon: "start", actionKey: "start_trip", assignmentId: accepted.id };
     const inProgress = ownTrips.find(a => a.tripStatus === "in_progress" && !a.transporterLoadedConfirmedAt);
     if (inProgress) return { action: `Confirmar carga #${inProgress.tripNumber}`, color: C.acc, icon: "confirm", actionKey: "confirm_trip_loaded", assignmentId: inProgress.id };
-    const loaded = ownTrips.find(a => (a.tripStatus === "loaded" || a.tripStatus === "in_progress") && !a.producerLoadedConfirmedAt);
-    if (loaded) return { action: `Confirmar carga #${loaded.tripNumber}`, color: C.acc, icon: "confirm", actionKey: "confirm_trip_loaded", assignmentId: loaded.id };
+    const needsFinishOwn = ownTrips.find(a => a.tripStatus === "loaded" && !a.transporterFinishedConfirmedAt);
+    if (needsFinishOwn) return { action: `Confirmar entrega #${needsFinishOwn.tripNumber}`, color: C.pri, icon: "confirm", actionKey: "confirm_trip_finished", assignmentId: needsFinishOwn.id };
     return null;
   }
 
