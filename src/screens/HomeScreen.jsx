@@ -105,8 +105,10 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
       const pa = getPendingActions(f, effectiveType(f), user.role);
       if (!pa) return;
       if (!matchDate(f.loadDate, pendingFilter)) return;
-      if (!buckets[pa.action]) buckets[pa.action] = { label: pa.action, color: pa.color, actionKey: pa.actionKey, icon: pa.icon, items: [] };
-      buckets[pa.action].items.push({ ...f, pendingAction: pa });
+      const bk = pa.actionKey;
+      const baseLabel = pa.action.replace(/ #\d+$/, '');
+      if (!buckets[bk]) buckets[bk] = { label: baseLabel, color: pa.color, actionKey: bk, icon: pa.icon, items: [] };
+      buckets[bk].items.push({ ...f, pendingAction: pa });
     });
     return Object.values(buckets).map(b => {
       b.items.sort((a, b2) => a.loadDate && b2.loadDate ? a.loadDate.localeCompare(b2.loadDate) : 0);
