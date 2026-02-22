@@ -123,5 +123,5 @@ export const adminStyles = () => {
 };
 export const typeColors = { producer:"#F59E0B",plant:"#6366F1",transporter:"#3B82F6" };
 export const typeLabels = { producer:"Productor",plant:"Planta",transporter:"Transportista" };
-export const roleLabels = { platform_admin:"Admin Principal",admin:"Gerente",operator:"Operario" };
+export const roleLabels = { platform_admin:"Admin Principal",admin:"Gerente",operator:"Operario",chofer:"Chofer" };
 export const adminBackBtn = (onClick) => <button onClick={onClick} style={{background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",fontSize:13,fontWeight:600,color:C.pri,marginBottom:14,padding:0,display:"flex",alignItems:"center",gap:4}}>{Ic.chev(C.pri,18)} Volver</button>;

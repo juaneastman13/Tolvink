@@ -313,6 +313,7 @@ export default function AdminScreen({ user, onBack }) {
                   <select value={(editUserData.roleByType||{})[at]||"operator"} onChange={e=>setEditUserData(p=>({...p,roleByType:{...(p.roleByType||{}),[at]:e.target.value}}))} style={{...s.sel,marginBottom:8}}>
                     <option value="operator">Operario</option>
                     <option value="admin">Gerente</option>
+                    <option value="chofer">Chofer</option>
                     {isPlatform&&<option value="platform_admin">Admin Principal</option>}
                   </select>
 
@@ -410,6 +411,7 @@ export default function AdminScreen({ user, onBack }) {
                     <select value={(userForm.roleByType||{})[t]||"operator"} onChange={e=>setUserForm(p=>({...p,roleByType:{...(p.roleByType||{}),[t]:e.target.value}}))} style={s.sel}>
                       <option value="operator">Operario</option>
                       <option value="admin">Gerente</option>
+                      <option value="chofer">Chofer</option>
                       {isPlatform&&<option value="platform_admin">Admin Principal</option>}
                     </select>
                   </div>
