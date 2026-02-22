@@ -201,13 +201,11 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
                     {logs.length > 0 && logs.map(log => {
                       const acCol = actionColors[log.action] || C.t2;
                       const tn = tripLabel(log);
-                      const isException = ["rejected","canceled","trip_rejected","assignment_canceled","assignment_updated","updated"].includes(log.action);
                       return (
                         <div key={log.id} style={{ display:"flex", gap:5, marginBottom:8, alignItems:"flex-start" }}>
                           <div style={{ width:7, height:7, borderRadius:4, background:acCol, flexShrink:0, marginTop:3 }} />
                           <div style={{ minWidth:0 }}>
-                            {isException && <div style={{ fontSize:10, fontWeight:700, color:acCol, lineHeight:1.3 }}>{actionLabels[log.action]||log.action}</div>}
-                            {tn && <div style={{ fontSize:9, fontWeight:700, color:C.t1, marginTop:isException?1:0 }}>{tn}</div>}
+                            <div style={{ fontSize:9.5, fontWeight:700, color:acCol, lineHeight:1.3 }}>{actionLabels[log.action]||log.action}{tn ? ` \u00b7 ${tn}` : ""}</div>
                             <div style={{ fontSize:9.5, color:C.t2, marginTop:1, lineHeight:1.3, wordBreak:"break-word" }}>{log.user?.name||"Sistema"}</div>
                             {log.user?.company?.name && <div style={{ fontSize:9, color:C.t3, lineHeight:1.2 }}>{log.user.company.name}</div>}
                             {(log.reason || log.metadata?.reason) && <div style={{ fontSize:8.5, color:C.t3, fontStyle:"italic", marginTop:1 }}>"{log.reason||log.metadata.reason}"</div>}
