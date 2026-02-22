@@ -194,7 +194,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
                         {tc}/{freight.truckCount}
                       </div>
                     )}
-                    {hasData && logs.length > 0 ? logs.map(log => {
+                    {logs.length > 0 ? logs.map(log => {
                       const acCol = actionColors[log.action] || C.t2;
                       const tn = tripLabel(log);
                       // Only show action label for exceptional actions (reject, cancel, edit)
@@ -213,7 +213,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
                           </div>
                         </div>
                       );
-                    }) : (done || active) ? <div style={{ fontSize:9, color:C.t3, textAlign:"center" }}>{"\u2014"}</div> : null}
+                    }) : hasData ? <div style={{ fontSize:9, color:C.t3, textAlign:"center" }}>{"\u2014"}</div> : null}
                   </div>
                 );
               })}
