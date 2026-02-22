@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { C, Ic } from "../theme";
 import { Btn, Bd, Field, Loader, LoadingOverlay, ModalOverlay } from "../components";
-import { apiGrantAccess, apiRevokeAccess, apiListAccessProducers, apiListAccessPlants, apiSearchProducer, apiGetMyFacilities, apiAdminListCompanies } from "../api";
+import { apiGrantAccess, apiRevokeAccess, apiListAccessProducers, apiListAccessPlants, apiSearchProducer, apiSearchCompany, apiGetMyFacilities, apiAdminListCompanies } from "../api";
 
 export default function AccessScreen({ user, onBack, embedded, defaultCompanyId, defaultCompanyType }) {
   const isAdmin = user?.role === "platform_admin";
@@ -9,10 +9,12 @@ export default function AccessScreen({ user, onBack, embedded, defaultCompanyId,
   const [loading, setLoading] = useState(true);
   const [showGrant, setShowGrant] = useState(false);
   const [grantType, setGrantType] = useState("producer"); // "producer" | "transporter"
+  const [searchMode, setSearchMode] = useState("company"); // "company" | "user"
   const [searchQ, setSearchQ] = useState("");
   const [searching, setSearching] = useState(false);
   const [searchResults, setSearchResults] = useState([]);
-  const [selectedProducer, setSelectedProducer] = useState(null);
+  const [selectedProducer, setSelectedProducer] = useState(null); // user result
+  const [selectedCompany, setSelectedCompany] = useState(null); // company result
   const searchTimer = useRef(null);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState(null);
@@ -43,12 +45,14 @@ export default function AccessScreen({ user, onBack, embedded, defaultCompanyId,
   const handleSearchChange = (q) => {
     setSearchQ(q);
     setSelectedProducer(null);
+    setSelectedCompany(null);
     setSelectedPlantIds([]);
     clearTimeout(searchTimer.current);
     if (q.trim().length < 2) { setSearchResults([]); return; }
     setSearching(true);
+    const searchFn = searchMode === "company" ? apiSearchCompany : apiSearchProducer;
     searchTimer.current = setTimeout(() => {
-      apiSearchProducer(q.trim(), grantType).then(r => setSearchResults(r || [])).catch(() => setSearchResults([])).finally(() => setSearching(false));
+      searchFn(q.trim(), grantType).then(r => setSearchResults(r || [])).catch(() => setSearchResults([])).finally(() => setSearching(false));
     }, 400);
   };
 
@@ -58,10 +62,16 @@ export default function AccessScreen({ user, onBack, embedded, defaultCompanyId,
     setSearchQ(p.userName + (p.producerCompanyName ? ` (${p.producerCompanyName})` : ""));
   };
 
+  const handleSelectCompany = (c) => {
+    setSelectedCompany(c);
+    setSearchResults([]);
+    setSearchQ(c.companyName);
+  };
+
   const togglePlant = (id) => setSelectedPlantIds(prev => prev.includes(id) ? prev.filter(x=>x!==id) : [...prev, id]);
 
   const handleGrant = async () => {
-    if (!selectedProducer?.userId && !editingAccess) return;
+    if (!selectedProducer?.userId && !selectedCompany?.companyId && !editingAccess) return;
     if (isAdmin && !selCompanyId) {
       setMsg({ t: "Seleccioná una empresa primero", k: "err" }); return;
     }
@@ -69,13 +79,22 @@ export default function AccessScreen({ user, onBack, embedded, defaultCompanyId,
       setMsg({ t: "Seleccioná al menos una planta", k: "err" }); return;
     }
     setSaving(true);
-    const userId = editingAccess ? editingAccess.producerUserId : selectedProducer.userId;
-    const companyId = editingAccess ? editingAccess.producerCompanyId : selectedProducer.producerCompanyId;
+    let companyId, userId;
+    if (editingAccess) {
+      companyId = editingAccess.producerCompanyId;
+      userId = editingAccess.producerUserId;
+    } else if (selectedCompany) {
+      companyId = selectedCompany.companyId;
+      userId = undefined; // company-wide access
+    } else {
+      companyId = selectedProducer.producerCompanyId;
+      userId = selectedProducer.userId;
+    }
     try {
       await apiGrantAccess({ producerUserId: userId, producerCompanyId: companyId, allowedPlantIds: selectedPlantIds, ...(isAdmin && selCompanyId ? { plantCompanyId: selCompanyId } : {}) });
-      setSearchQ(""); setSelectedProducer(null); setSearchResults([]); setShowGrant(false); setEditingAccess(null);
+      setSearchQ(""); setSelectedProducer(null); setSelectedCompany(null); setSearchResults([]); setShowGrant(false); setEditingAccess(null);
       setSelectedPlantIds([]);
-      setSaving(false); setDoneMsg(editingAccess ? "Habilitación actualizada" : grantType==="producer"?"Productor habilitado":"Transportista habilitado"); load();
+      setSaving(false); setDoneMsg(editingAccess ? "Habilitación actualizada" : selectedCompany ? "Empresa habilitada" : grantType==="producer"?"Productor habilitado":"Transportista habilitado"); load();
     } catch (e) { setMsg({ t: e.message, k: "err" }); setSaving(false); }
   };
 
@@ -150,14 +169,18 @@ export default function AccessScreen({ user, onBack, embedded, defaultCompanyId,
   const ProducerRow = ({ p }) => {
     const nPlants = (p.allowedPlantIds||[]).length;
     const plantNames = (p.allowedPlantIds||[]).map(id=>plantMap.get(id)?.name).filter(Boolean).join(", ");
-    const userName = p.producerUser?.name || p.producerCompany?.name || "Productor";
-    const companyName = p.producerCompany?.name || "";
+    const isCompanyWide = !p.producerUserId;
+    const displayName = isCompanyWide ? (p.producerCompany?.name || "Empresa") : (p.producerUser?.name || p.producerCompany?.name || "Usuario");
+    const companyName = !isCompanyWide ? (p.producerCompany?.name || "") : "";
     return (
       <div style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 0" }}>
         <button onClick={()=>startEdit(p)} style={{ flex:1, display:"flex", alignItems:"center", gap:10, background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", textAlign:"left", padding:0 }}>
-          {Ic.user(C.ok,18)}
+          {isCompanyWide ? Ic.plant(C.ok,18) : Ic.user(C.ok,18)}
           <div>
-            <div style={{ fontSize:13, fontWeight:700, color:C.t1 }}>{userName}</div>
+            <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+              <span style={{ fontSize:13, fontWeight:700, color:C.t1 }}>{displayName}</span>
+              <span style={{ fontSize:9, fontWeight:700, color:isCompanyWide?C.ok:C.info, background:isCompanyWide?`${C.ok}15`:`${C.info}15`, padding:"1px 6px", borderRadius:4 }}>{isCompanyWide?"EMPRESA":"USUARIO"}</span>
+            </div>
             {companyName && <div style={{ fontSize:10, color:C.t2 }}>{companyName}</div>}
             {isAdmin && !selCompanyId && p.plantCompany?.name && <div style={{ fontSize:10, color:C.sec }}>{Ic.plant(C.sec,10)} {p.plantCompany.name}</div>}
             {plantNames && <div style={{ fontSize:10, color:C.pri }}>{plantNames}</div>}
@@ -178,7 +201,7 @@ export default function AccessScreen({ user, onBack, embedded, defaultCompanyId,
       <div style={{ padding: embedded?0:"0 18px 18px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
         <div style={{ fontSize: embedded?16:20, fontWeight: 800, letterSpacing: -0.3 }}>{isAdmin && selCompanyType === "producer" ? "Accesos del productor" : isAdmin && selCompanyType === "transporter" ? "Accesos del transportista" : "Accesos"}</div>
-        <Btn sm onClick={() => { setShowGrant(!showGrant); setEditingAccess(null); setSelectedProducer(null); setSearchResults([]); setSearchQ(""); setMsg(null); setSelectedPlantIds([]); setGrantType("producer"); }} icon={showGrant ? Ic.cross(C.w, 14) : Ic.plus(C.w, 14)}>{showGrant ? "Cerrar" : "Habilitar"}</Btn>
+        <Btn sm onClick={() => { setShowGrant(!showGrant); setEditingAccess(null); setSelectedProducer(null); setSelectedCompany(null); setSearchResults([]); setSearchQ(""); setMsg(null); setSelectedPlantIds([]); setGrantType("producer"); setSearchMode("company"); }} icon={showGrant ? Ic.cross(C.w, 14) : Ic.plus(C.w, 14)}>{showGrant ? "Cerrar" : "Habilitar"}</Btn>
       </div>
 
       {/* Admin general: company selector (all types) — hidden when defaultCompanyId is set */}
@@ -227,17 +250,38 @@ export default function AccessScreen({ user, onBack, embedded, defaultCompanyId,
       {showGrant && !editingAccess && (
         <div style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: 12, padding: 16, marginBottom: 16, boxShadow: C.sh }}>
           {/* Type toggle */}
-          <div style={{ display:"flex", gap:6, marginBottom:12 }}>
+          <div style={{ display:"flex", gap:6, marginBottom:8 }}>
             {[{k:"producer",l:"Productor"},{k:"transporter",l:"Transportista"}].map(t=>(
-              <button key={t.k} onClick={()=>{if(grantType!==t.k){setGrantType(t.k);setSearchQ("");setSearchResults([]);setSelectedProducer(null);setSelectedPlantIds([]);}}} style={{flex:1,padding:"8px 0",borderRadius:8,border:`1px solid ${grantType===t.k?C.pri:C.b1}`,background:grantType===t.k?`${C.pri}12`:C.w,color:grantType===t.k?C.pri:C.t2,fontWeight:600,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>{t.l}</button>
+              <button key={t.k} onClick={()=>{if(grantType!==t.k){setGrantType(t.k);setSearchQ("");setSearchResults([]);setSelectedProducer(null);setSelectedCompany(null);setSelectedPlantIds([]);}}} style={{flex:1,padding:"8px 0",borderRadius:8,border:`1px solid ${grantType===t.k?C.pri:C.b1}`,background:grantType===t.k?`${C.pri}12`:C.w,color:grantType===t.k?C.pri:C.t2,fontWeight:600,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>{t.l}</button>
             ))}
           </div>
-          <div style={{ fontSize:11, fontWeight:600, color:C.t2, marginBottom:4 }}>{grantType==="producer"?"Habilitar un productor para que pueda seleccionar tu planta al solicitar flete.":"Habilitar un transportista para que pueda recibir asignaciones de flete."}</div>
-          <Field label={grantType==="producer"?"Buscar productor":"Buscar transportista"} icon={Ic.srch(C.pri,14)} value={searchQ} onChange={handleSearchChange} placeholder="Nombre, email o teléfono..."/>
+          {/* Search mode toggle: company / user */}
+          <div style={{ display:"flex", gap:6, marginBottom:12 }}>
+            {[{k:"company",l:"Por empresa"},{k:"user",l:"Por usuario"}].map(m=>(
+              <button key={m.k} onClick={()=>{if(searchMode!==m.k){setSearchMode(m.k);setSearchQ("");setSearchResults([]);setSelectedProducer(null);setSelectedCompany(null);setSelectedPlantIds([]);}}} style={{flex:1,padding:"6px 0",borderRadius:6,border:`1px solid ${searchMode===m.k?C.acc:C.b2}`,background:searchMode===m.k?`${C.acc}12`:C.bg,color:searchMode===m.k?C.acc:C.t3,fontWeight:600,fontSize:11,cursor:"pointer",fontFamily:"inherit"}}>{m.l}</button>
+            ))}
+          </div>
+          <div style={{ fontSize:11, fontWeight:600, color:C.t2, marginBottom:4 }}>{searchMode==="company"?(grantType==="producer"?"Habilitar una empresa productora. Todos sus usuarios tendrán acceso.":"Habilitar una empresa transportista. Todos sus usuarios podrán recibir asignaciones."):(grantType==="producer"?"Habilitar un usuario productor específico.":"Habilitar un usuario transportista específico.")}</div>
+          <Field label={searchMode==="company"?"Buscar empresa":"Buscar usuario"} icon={Ic.srch(C.pri,14)} value={searchQ} onChange={handleSearchChange} placeholder={searchMode==="company"?"Nombre de empresa...":"Nombre, email o teléfono..."}/>
           {searching && <div style={{ fontSize:11, color:C.t3, marginTop:6 }}>Buscando...</div>}
 
-          {/* Search results list */}
-          {searchResults.length > 0 && !selectedProducer && (
+          {/* Search results — company mode */}
+          {searchMode==="company" && searchResults.length > 0 && !selectedCompany && (
+            <div style={{ marginTop:8, border:`1px solid ${C.b1}`, borderRadius:8, overflow:"hidden", maxHeight:240, overflowY:"auto" }}>
+              {searchResults.map(c => (
+                <button key={c.companyId} onClick={() => handleSelectCompany(c)} style={{ width:"100%", display:"flex", alignItems:"center", gap:10, padding:"10px 12px", background:C.w, border:"none", borderBottom:`1px solid ${C.b2}`, cursor:"pointer", fontFamily:"inherit", textAlign:"left" }}>
+                  {Ic.plant(C.pri,18)}
+                  <div style={{ flex:1 }}>
+                    <div style={{ fontSize:13, fontWeight:600, color:C.t1 }}>{c.companyName}</div>
+                    <div style={{ fontSize:10.5, color:C.t3 }}>{c.address||""}{c.phone ? ` · ${c.phone}` : ""}{c.email ? ` · ${c.email}` : ""}</div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Search results — user mode */}
+          {searchMode==="user" && searchResults.length > 0 && !selectedProducer && (
             <div style={{ marginTop:8, border:`1px solid ${C.b1}`, borderRadius:8, overflow:"hidden", maxHeight:240, overflowY:"auto" }}>
               {searchResults.map(p => {
                 const pType = p.producerCompanyType || p.companyType || grantType;
@@ -259,8 +303,26 @@ export default function AccessScreen({ user, onBack, embedded, defaultCompanyId,
             </div>
           )}
 
-          {searchQ.trim().length >= 2 && !searching && searchResults.length === 0 && !selectedProducer && (
-            <div style={{ fontSize:12, color:C.t3, marginTop:8, textAlign:"center", padding:10 }}>No se encontraron {grantType==="producer"?"productores":"transportistas"}</div>
+          {searchQ.trim().length >= 2 && !searching && searchResults.length === 0 && !selectedProducer && !selectedCompany && (
+            <div style={{ fontSize:12, color:C.t3, marginTop:8, textAlign:"center", padding:10 }}>No se encontraron {searchMode==="company"?"empresas":grantType==="producer"?"productores":"transportistas"}</div>
+          )}
+
+          {/* Selected company — show plant selector + grant button */}
+          {selectedCompany && (
+            <div style={{ marginTop:12, background:`${C.pri}08`, border:`1.5px solid ${C.pri}30`, borderRadius:10, padding:14 }}>
+              <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:8 }}>
+                {Ic.plant(C.pri,20)}
+                <div style={{ flex:1 }}>
+                  <div style={{ fontSize:14, fontWeight:700, color:C.t1 }}>{selectedCompany.companyName}</div>
+                  {selectedCompany.address && <div style={{ fontSize:11, color:C.t2 }}>{selectedCompany.address}</div>}
+                  {selectedCompany.phone && <div style={{ fontSize:10.5, color:C.t3 }}>{selectedCompany.phone}{selectedCompany.email ? ` · ${selectedCompany.email}` : ""}</div>}
+                  <div style={{ fontSize:10, color:C.ok, fontWeight:600, marginTop:2 }}>Acceso para toda la empresa</div>
+                </div>
+                <button onClick={() => { setSelectedCompany(null); setSearchQ(""); setSelectedPlantIds([]); }} style={{ background:"none", border:"none", cursor:"pointer", padding:4 }}>{Ic.cross(C.t3,16)}</button>
+              </div>
+              {facilities ? <FacilitySelector/> : <div style={{ fontSize:11, color:C.t3, marginBottom:8 }}>Cargando instalaciones...</div>}
+              <Btn full v="acc" disabled={saving || (fPlants.length > 0 && selCount === 0)} onClick={handleGrant}>{saving ? "Habilitando..." : fPlants.length > 0 ? `Habilitar empresa (${selCount} planta${selCount!==1?"s":""})` : "Habilitar empresa"}</Btn>
+            </div>
           )}
 
           {/* Selected user — show plant selector + grant button */}
@@ -272,11 +334,12 @@ export default function AccessScreen({ user, onBack, embedded, defaultCompanyId,
                   <div style={{ fontSize:14, fontWeight:700, color:C.t1 }}>{selectedProducer.userName}</div>
                   <div style={{ fontSize:11, color:C.t2 }}>{selectedProducer.producerCompanyName}</div>
                   {selectedProducer.phone && <div style={{ fontSize:10.5, color:C.t3 }}>{selectedProducer.phone}{selectedProducer.email ? ` · ${selectedProducer.email}` : ""}</div>}
+                  <div style={{ fontSize:10, color:C.info, fontWeight:600, marginTop:2 }}>Acceso solo para este usuario</div>
                 </div>
                 <button onClick={() => { setSelectedProducer(null); setSearchQ(""); setSelectedPlantIds([]); }} style={{ background:"none", border:"none", cursor:"pointer", padding:4 }}>{Ic.cross(C.t3,16)}</button>
               </div>
               {facilities ? <FacilitySelector/> : <div style={{ fontSize:11, color:C.t3, marginBottom:8 }}>Cargando instalaciones...</div>}
-              <Btn full v="acc" disabled={saving || (fPlants.length > 0 && selCount === 0)} onClick={handleGrant}>{saving ? "Habilitando..." : fPlants.length > 0 ? `Habilitar (${selCount} planta${selCount!==1?"s":""})` : grantType==="producer"?"Habilitar productor":"Habilitar transportista"}</Btn>
+              <Btn full v="acc" disabled={saving || (fPlants.length > 0 && selCount === 0)} onClick={handleGrant}>{saving ? "Habilitando..." : fPlants.length > 0 ? `Habilitar usuario (${selCount} planta${selCount!==1?"s":""})` : grantType==="producer"?"Habilitar usuario":"Habilitar usuario"}</Btn>
             </div>
           )}
         </div>

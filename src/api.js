@@ -239,6 +239,7 @@ export async function apiRevokeAccess(prodId) { return api(`/plant-access/revoke
 export async function apiListAccessProducers(plantCompanyId, producerCompanyId) { const p=new URLSearchParams(); if(plantCompanyId)p.set('plantCompanyId',plantCompanyId); if(producerCompanyId)p.set('producerCompanyId',producerCompanyId); const q=p.toString(); return api(`/plant-access/producers${q?`?${q}`:''}`); }
 export async function apiListAccessPlants() { return api('/plant-access/plants'); }
 export async function apiSearchProducer(q, type) { const p=new URLSearchParams(); p.set('q',q); if(type)p.set('type',type); return api(`/plant-access/search-producer?${p.toString()}`); }
+export async function apiSearchCompany(q, type) { const p=new URLSearchParams(); p.set('q',q); if(type)p.set('type',type); return api(`/plant-access/search-company?${p.toString()}`); }
 export async function apiGetMyFacilities(plantCompanyId) { const q=plantCompanyId?`?plantCompanyId=${plantCompanyId}`:''; return api(`/plant-access/my-facilities${q}`); }
 export async function apiListPlantCompanies() { return api('/plant-access/plant-companies'); }
 
