@@ -8,7 +8,7 @@ import { FreightsOverviewMap } from "../maps";
 
 export default function ListScreen({ freights, loading, onNav, onRefresh, catalog, view, setView, goToMap, hasMore, loadMore, loadingMore, total, isDesktop, onAction }) {
   const [searchQ, setSearchQ] = useState("");
-  const [segCollapsed, setSegCollapsed] = useState({});
+  const [segExpanded, setSegExpanded] = useState({});
   const [fPlant, setFPlant] = useState("");
   const [fProducer, setFProducer] = useState("");
   const [fTransporter, setFTransporter] = useState("");
@@ -121,10 +121,13 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
           <option value="">Transportista</option>
           {transporterOptions.map(p=><option key={p} value={p}>{p}</option>)}
         </select>
-        <button onClick={()=>setView(view==="kanban"?"mapa":view==="mapa"?"tabla":view==="tabla"?"seguimiento":"kanban")} style={{marginLeft:"auto",padding:"5px 12px",borderRadius:8,border:`1.5px solid ${C.pri}`,background:C.priPale,color:C.pri,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:5,whiteSpace:"nowrap"}}>
-          {view==="kanban"?Ic.pin(C.pri,13):view==="mapa"?Ic.doc(C.pri,13):view==="tabla"?Ic.user(C.pri,13):Ic.home(C.pri,13)}
-          {view==="kanban"?"Cambiar a mapa":view==="mapa"?"Cambiar a tabla":view==="tabla"?"Cambiar a seguimiento":"Cambiar a etiquetas"}
-        </button>
+        <div style={{marginLeft:"auto",display:"flex",gap:4}}>
+          {[{k:"kanban",l:"Etiquetas",ic:Ic.home},{k:"mapa",l:"Mapa",ic:Ic.pin},{k:"tabla",l:"Tabla",ic:Ic.doc},{k:"seguimiento",l:"Seguimiento",ic:Ic.user}].map(v=>(
+            <button key={v.k} onClick={()=>setView(v.k)} style={{padding:"5px 10px",borderRadius:8,border:`1.5px solid ${view===v.k?C.pri:C.b1}`,background:view===v.k?C.priPale:C.w,color:view===v.k?C.pri:C.t2,fontSize:11,fontWeight:view===v.k?700:500,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:4,whiteSpace:"nowrap"}}>
+              {v.ic(view===v.k?C.pri:C.t3,12)} {v.l}
+            </button>
+          ))}
+        </div>
       </div>
       </>) : (<>
       {/* Mobile: compact filters layout */}
@@ -140,10 +143,13 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
         <span style={{fontSize:10,color:C.t2,fontWeight:600}}>Hasta</span>
         <input type="date" value={dateTo} onChange={e=>{setDateTo(e.target.value);setDatePreset("custom");}} onClick={e=>e.target.showPicker?.()} style={{padding:"5px 8px",borderRadius:6,border:`1px solid ${C.b1}`,background:C.w,color:dateTo?C.t1:C.t3,fontSize:11,fontFamily:"inherit",outline:"none",boxSizing:"border-box",cursor:"pointer",flex:1,minWidth:0}}/>
         {(dateFrom||dateTo)&&<button onClick={()=>{setDateFrom("");setDateTo("");setDatePreset("");}} aria-label="Limpiar fechas" style={{background:"none",border:"none",cursor:"pointer",display:"flex",padding:2,flexShrink:0}}>{Ic.cross(C.t3,14)}</button>}
-        <button onClick={()=>setView(view==="kanban"?"mapa":view==="mapa"?"tabla":view==="tabla"?"seguimiento":"kanban")} style={{marginLeft:"auto",padding:"5px 12px",borderRadius:8,border:`1.5px solid ${C.pri}`,background:C.priPale,color:C.pri,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:5,whiteSpace:"nowrap",flexShrink:0}}>
-          {view==="kanban"?Ic.pin(C.pri,13):view==="mapa"?Ic.doc(C.pri,13):view==="tabla"?Ic.user(C.pri,13):Ic.home(C.pri,13)}
-          {view==="kanban"?"Mapa":view==="mapa"?"Tabla":view==="tabla"?"Seguimiento":"Etiquetas"}
-        </button>
+        <div style={{marginLeft:"auto",display:"flex",gap:3,flexShrink:0}}>
+          {[{k:"kanban",l:"Etiq.",ic:Ic.home},{k:"mapa",l:"Mapa",ic:Ic.pin},{k:"tabla",l:"Tabla",ic:Ic.doc},{k:"seguimiento",l:"Seg.",ic:Ic.user}].map(v=>(
+            <button key={v.k} onClick={()=>setView(v.k)} style={{padding:"5px 7px",borderRadius:7,border:`1.5px solid ${view===v.k?C.pri:C.b1}`,background:view===v.k?C.priPale:C.w,color:view===v.k?C.pri:C.t2,fontSize:10,fontWeight:view===v.k?700:500,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:3,whiteSpace:"nowrap"}}>
+              {v.ic(view===v.k?C.pri:C.t3,11)} {v.l}
+            </button>
+          ))}
+        </div>
       </div>
       <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:6 }}>
         <select value={fPlant} onChange={e=>setFPlant(e.target.value)} style={{flex:1,padding:"6px 8px",borderRadius:8,border:`1.5px solid ${fPlant?C.pri:C.b1}`,background:fPlant?C.priPale:C.w,color:fPlant?C.pri:C.t3,fontSize:11,fontFamily:"inherit",outline:"none",cursor:"pointer",minWidth:0}}>
@@ -303,11 +309,11 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
           {trackingGroups.transporters.map(t=>{
             const driverList = Object.values(t.drivers);
             const totalFreights = driverList.reduce((s,d)=>s+d.freights.length,0) + t.noDriver.length;
-            const isCollapsed = !!segCollapsed[t.id];
+            const isCollapsed = !segExpanded[t.id];
             return (
               <div key={t.id} style={{ background:C.w, border:`1px solid ${C.b1}`, borderRadius:14, overflow:"hidden", boxShadow:C.sh }}>
                 {/* Transporter header — clickable to collapse */}
-                <div onClick={()=>setSegCollapsed(p=>({...p,[t.id]:!p[t.id]}))} style={{ padding:"12px 16px", borderBottom:isCollapsed?"none":`2px solid ${C.info}`, display:"flex", alignItems:"center", gap:8, background:`${C.info}08`, cursor:"pointer", userSelect:"none" }}>
+                <div onClick={()=>setSegExpanded(p=>({...p,[t.id]:!p[t.id]}))} style={{ padding:"12px 16px", borderBottom:isCollapsed?"none":`2px solid ${C.info}`, display:"flex", alignItems:"center", gap:8, background:`${C.info}08`, cursor:"pointer", userSelect:"none" }}>
                   {Ic.truck(C.info,16)}
                   <span style={{ fontSize:13, fontWeight:700, color:C.info }}>{t.name}</span>
                   <span style={{ fontSize:10, fontWeight:600, color:C.t3, marginLeft:"auto" }}>{totalFreights} flete{totalFreights!==1?"s":""}</span>
