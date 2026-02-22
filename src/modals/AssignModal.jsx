@@ -19,16 +19,18 @@ export default function AssignModal({ freight, transporters, onClose, onConfirm 
   const [truckErr,setTruckErr] = useState("");
   const ts = transporters||[];
 
-  // Origin company has own fleet (from backend hasInternalFleet or types includes transporter)
-  const hasOwnFleet = !!freight.originHasOwnFleet;
+  // Either origin (producer) or dest (plant) can have own fleet
+  const hasOwnFleet = !!freight.originHasOwnFleet || !!freight.destHasOwnFleet;
+  // Determine which company's fleet to use (prefer dest=plant, fallback to origin=producer)
+  const ownFleetCompanyId = freight.destHasOwnFleet ? freight.destCompanyId : freight.originCompanyId;
 
   // Load trucks when switching to own fleet mode
   const loadTrucks = ()=>{
-    if(!freight.originCompanyId) return;
+    if(!ownFleetCompanyId) return;
     setLoadingTrucks(true);
-    apiGetTrucks(freight.originCompanyId).then(r=>{ setTrucks((r||[]).filter(t=>t.active!==false)); }).catch(()=>setTrucks([])).finally(()=>setLoadingTrucks(false));
+    apiGetTrucks(ownFleetCompanyId).then(r=>{ setTrucks((r||[]).filter(t=>t.active!==false)); }).catch(()=>setTrucks([])).finally(()=>setLoadingTrucks(false));
   };
-  useEffect(()=>{ if(mode==="own") loadTrucks(); },[mode,freight.originCompanyId]);
+  useEffect(()=>{ if(mode==="own") loadTrucks(); },[mode,ownFleetCompanyId]);
 
   const handleCreateTruck = async ()=>{
     if(savingTruck) return;
@@ -49,7 +51,7 @@ export default function AssignModal({ freight, transporters, onClose, onConfirm 
     if(mode==="company" && !t) return;
     if(mode==="own" && !truckId) return;
     setLoading(true);
-    const compId = mode==="own" ? freight.originCompanyId : t;
+    const compId = mode==="own" ? ownFleetCompanyId : t;
     const truck = mode==="own" ? truckId : undefined;
     const msg = await onConfirm(compId, truck);
     setLoading(false);
