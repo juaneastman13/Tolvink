@@ -76,17 +76,17 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
   const getTripActions = (a) => {
     const btns = [];
     const ts = a.tripStatus;
-    if (user.userType === "plant" || (user.role !== "chofer" && user.userType === "producer" && !freight.isOwnFleet)) {
+    const isOwnFleetTrip = a.transportCompanyId === freight.originCompanyId;
+    if (user.userType === "plant" || (user.role !== "chofer" && user.userType === "producer" && !isOwnFleetTrip)) {
       if (ts === "loaded" && !a.plantFinishedConfirmedAt) btns.push({ key:"confirm_trip_finished", label:"Confirmar entrega", color:C.pri, icon:Ic.chk(C.w,14) });
     }
-    if (user.userType === "transporter" || user.role === "chofer" || (user.userType === "producer" && freight.isOwnFleet)) {
+    if (user.userType === "transporter" || user.role === "chofer" || (user.userType === "producer" && isOwnFleetTrip)) {
       if (ts === "pending") btns.push({ key:"respond_trip_accept", label:"Aceptar", color:C.ok, icon:Ic.chk(C.w,14) }, { key:"respond_trip_reject", label:"Rechazar", color:C.err, icon:Ic.ban(C.w,14) });
       if (ts === "accepted") btns.push({ key:"start_trip", label:"Iniciar viaje", color:C.pri, icon:Ic.truck(C.w,14) });
       if (ts === "in_progress" && !a.transporterLoadedConfirmedAt) btns.push({ key:"confirm_trip_loaded", label:"Confirmar carga", color:C.acc, icon:Ic.chk(C.w,14) });
       if (ts === "loaded" && !a.transporterFinishedConfirmedAt) btns.push({ key:"confirm_trip_finished", label:"Confirmar entrega", color:C.pri, icon:Ic.chk(C.w,14) });
     }
     if (user.userType === "producer") {
-      if (ts === "in_progress" && freight.isOwnFleet && !a.transporterLoadedConfirmedAt) {} // already added above
       if ((ts === "loaded" || ts === "in_progress") && !a.producerLoadedConfirmedAt && !btns.find(b=>b.key==="confirm_trip_loaded"))
         btns.push({ key:"confirm_trip_loaded", label:"Confirmar carga", color:C.acc, icon:Ic.chk(C.w,14) });
     }

@@ -39,6 +39,19 @@ function getMultiTruckPendingAction(freight, userType, role, user) {
     return null;
   }
 
+  // Producer with own fleet: find own-fleet assignments
+  if (userType === "producer") {
+    const ownTrips = aa.filter(a => a.transportCompanyId === freight.originCompanyId);
+    if (!ownTrips.length) return null;
+    const accepted = ownTrips.find(a => a.tripStatus === "accepted");
+    if (accepted) return { action: `Iniciar viaje #${accepted.tripNumber}`, color: C.pri, icon: "start", actionKey: "start_trip", assignmentId: accepted.id };
+    const inProgress = ownTrips.find(a => a.tripStatus === "in_progress" && !a.transporterLoadedConfirmedAt);
+    if (inProgress) return { action: `Confirmar carga #${inProgress.tripNumber}`, color: C.acc, icon: "confirm", actionKey: "confirm_trip_loaded", assignmentId: inProgress.id };
+    const loaded = ownTrips.find(a => (a.tripStatus === "loaded" || a.tripStatus === "in_progress") && !a.producerLoadedConfirmedAt);
+    if (loaded) return { action: `Confirmar carga #${loaded.tripNumber}`, color: C.acc, icon: "confirm", actionKey: "confirm_trip_loaded", assignmentId: loaded.id };
+    return null;
+  }
+
   // Transporter/chofer: find most urgent among own assignments
   const myAssignments = role === "chofer"
     ? aa.filter(a => a.driverId === user?.id)
