@@ -8,6 +8,7 @@ import { FreightsOverviewMap } from "../maps";
 
 export default function ListScreen({ freights, loading, onNav, onRefresh, catalog, view, setView, goToMap, hasMore, loadMore, loadingMore, total, isDesktop, onAction }) {
   const [searchQ, setSearchQ] = useState("");
+  const [segCollapsed, setSegCollapsed] = useState({});
   const [fPlant, setFPlant] = useState("");
   const [fProducer, setFProducer] = useState("");
   const [fTransporter, setFTransporter] = useState("");
@@ -302,15 +303,17 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
           {trackingGroups.transporters.map(t=>{
             const driverList = Object.values(t.drivers);
             const totalFreights = driverList.reduce((s,d)=>s+d.freights.length,0) + t.noDriver.length;
+            const isCollapsed = !!segCollapsed[t.id];
             return (
               <div key={t.id} style={{ background:C.w, border:`1px solid ${C.b1}`, borderRadius:14, overflow:"hidden", boxShadow:C.sh }}>
-                {/* Transporter header */}
-                <div style={{ padding:"12px 16px", borderBottom:`2px solid ${C.info}`, display:"flex", alignItems:"center", gap:8, background:`${C.info}08` }}>
+                {/* Transporter header — clickable to collapse */}
+                <div onClick={()=>setSegCollapsed(p=>({...p,[t.id]:!p[t.id]}))} style={{ padding:"12px 16px", borderBottom:isCollapsed?"none":`2px solid ${C.info}`, display:"flex", alignItems:"center", gap:8, background:`${C.info}08`, cursor:"pointer", userSelect:"none" }}>
                   {Ic.truck(C.info,16)}
                   <span style={{ fontSize:13, fontWeight:700, color:C.info }}>{t.name}</span>
                   <span style={{ fontSize:10, fontWeight:600, color:C.t3, marginLeft:"auto" }}>{totalFreights} flete{totalFreights!==1?"s":""}</span>
+                  <span style={{ display:"flex", transition:"transform 0.2s", transform:isCollapsed?"rotate(0deg)":"rotate(-90deg)" }}>{Ic.chev(C.info,16)}</span>
                 </div>
-                <div style={{ padding:12, display:"flex", flexDirection:"column", gap:14 }}>
+                {!isCollapsed && <div style={{ padding:12, display:"flex", flexDirection:"column", gap:14 }}>
                   {/* Drivers */}
                   {driverList.map(d=>(
                     <div key={d.id||d.name}>
@@ -375,7 +378,7 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
                       </div>
                     </div>
                   )}
-                </div>
+                </div>}
               </div>
             );
           })}
