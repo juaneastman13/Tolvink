@@ -6,7 +6,7 @@ import { useTableSort, usePullToRefresh } from "../hooks";
 import { textMatch } from "../validation";
 import { FreightsOverviewMap } from "../maps";
 
-export default function ListScreen({ freights, loading, onNav, onRefresh, catalog, view, setView, goToMap, hasMore, loadMore, loadingMore, total, isDesktop }) {
+export default function ListScreen({ freights, loading, onNav, onRefresh, catalog, view, setView, goToMap, hasMore, loadMore, loadingMore, total, isDesktop, onAction }) {
   const [searchQ, setSearchQ] = useState("");
   const [fPlant, setFPlant] = useState("");
   const [fProducer, setFProducer] = useState("");
@@ -61,6 +61,26 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
     return map;
   },[filtered]);
 
+  // Tracking view: group by transporter → driver → queue
+  const trackingGroups = useMemo(()=>{
+    const active = filtered.filter(f=>!["finished","canceled"].includes(f.status));
+    const unassigned = active.filter(f=>!f.transporterName);
+    const byT = {};
+    active.filter(f=>f.transporterName).forEach(f=>{
+      const key = f.transporterId||f.transporterName;
+      if(!byT[key]) byT[key] = { name:f.transporterName, id:key, drivers:{}, noDriver:[] };
+      if(f.driverName){
+        const dk = f.driverId||f.driverName;
+        if(!byT[key].drivers[dk]) byT[key].drivers[dk] = { id:f.driverId, name:f.driverName, phone:f.driverPhone, freights:[] };
+        byT[key].drivers[dk].freights.push(f);
+      } else {
+        byT[key].noDriver.push(f);
+      }
+    });
+    Object.values(byT).forEach(t=>Object.values(t.drivers).forEach(d=>d.freights.sort((a,b)=>(a.queuePosition||0)-(b.queuePosition||0))));
+    return { transporters:Object.values(byT).sort((a,b)=>a.name.localeCompare(b.name)), unassigned };
+  },[filtered]);
+
   const { containerRef, indicator } = usePullToRefresh(onRefresh);
 
   return (
@@ -100,9 +120,9 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
           <option value="">Transportista</option>
           {transporterOptions.map(p=><option key={p} value={p}>{p}</option>)}
         </select>
-        <button onClick={()=>setView(view==="kanban"?"mapa":view==="mapa"?"tabla":"kanban")} style={{marginLeft:"auto",padding:"5px 12px",borderRadius:8,border:`1.5px solid ${C.pri}`,background:C.priPale,color:C.pri,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:5,whiteSpace:"nowrap"}}>
-          {view==="kanban"?Ic.pin(C.pri,13):view==="mapa"?Ic.doc(C.pri,13):Ic.home(C.pri,13)}
-          {view==="kanban"?"Cambiar a mapa":view==="mapa"?"Cambiar a tabla":"Cambiar a etiquetas"}
+        <button onClick={()=>setView(view==="kanban"?"mapa":view==="mapa"?"tabla":view==="tabla"?"seguimiento":"kanban")} style={{marginLeft:"auto",padding:"5px 12px",borderRadius:8,border:`1.5px solid ${C.pri}`,background:C.priPale,color:C.pri,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:5,whiteSpace:"nowrap"}}>
+          {view==="kanban"?Ic.pin(C.pri,13):view==="mapa"?Ic.doc(C.pri,13):view==="tabla"?Ic.user(C.pri,13):Ic.home(C.pri,13)}
+          {view==="kanban"?"Cambiar a mapa":view==="mapa"?"Cambiar a tabla":view==="tabla"?"Cambiar a seguimiento":"Cambiar a etiquetas"}
         </button>
       </div>
       </>) : (<>
@@ -119,9 +139,9 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
         <span style={{fontSize:10,color:C.t2,fontWeight:600}}>Hasta</span>
         <input type="date" value={dateTo} onChange={e=>{setDateTo(e.target.value);setDatePreset("custom");}} onClick={e=>e.target.showPicker?.()} style={{padding:"5px 8px",borderRadius:6,border:`1px solid ${C.b1}`,background:C.w,color:dateTo?C.t1:C.t3,fontSize:11,fontFamily:"inherit",outline:"none",boxSizing:"border-box",cursor:"pointer",flex:1,minWidth:0}}/>
         {(dateFrom||dateTo)&&<button onClick={()=>{setDateFrom("");setDateTo("");setDatePreset("");}} aria-label="Limpiar fechas" style={{background:"none",border:"none",cursor:"pointer",display:"flex",padding:2,flexShrink:0}}>{Ic.cross(C.t3,14)}</button>}
-        <button onClick={()=>setView(view==="kanban"?"mapa":view==="mapa"?"tabla":"kanban")} style={{marginLeft:"auto",padding:"5px 12px",borderRadius:8,border:`1.5px solid ${C.pri}`,background:C.priPale,color:C.pri,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:5,whiteSpace:"nowrap",flexShrink:0}}>
-          {view==="kanban"?Ic.pin(C.pri,13):view==="mapa"?Ic.doc(C.pri,13):Ic.home(C.pri,13)}
-          {view==="kanban"?"Mapa":view==="mapa"?"Tabla":"Etiquetas"}
+        <button onClick={()=>setView(view==="kanban"?"mapa":view==="mapa"?"tabla":view==="tabla"?"seguimiento":"kanban")} style={{marginLeft:"auto",padding:"5px 12px",borderRadius:8,border:`1.5px solid ${C.pri}`,background:C.priPale,color:C.pri,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:5,whiteSpace:"nowrap",flexShrink:0}}>
+          {view==="kanban"?Ic.pin(C.pri,13):view==="mapa"?Ic.doc(C.pri,13):view==="tabla"?Ic.user(C.pri,13):Ic.home(C.pri,13)}
+          {view==="kanban"?"Mapa":view==="mapa"?"Tabla":view==="tabla"?"Seguimiento":"Etiquetas"}
         </button>
       </div>
       <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:6 }}>
@@ -273,6 +293,125 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
               </tbody>
             </table>
           </div>
+        </div>
+      )}
+
+      {/* View: Seguimiento — by transporter → driver → queue */}
+      {view==="seguimiento" && freights.length > 0 && (
+        <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
+          {trackingGroups.transporters.map(t=>{
+            const driverList = Object.values(t.drivers);
+            const totalFreights = driverList.reduce((s,d)=>s+d.freights.length,0) + t.noDriver.length;
+            return (
+              <div key={t.id} style={{ background:C.w, border:`1px solid ${C.b1}`, borderRadius:14, overflow:"hidden", boxShadow:C.sh }}>
+                {/* Transporter header */}
+                <div style={{ padding:"12px 16px", borderBottom:`2px solid ${C.info}`, display:"flex", alignItems:"center", gap:8, background:`${C.info}08` }}>
+                  {Ic.truck(C.info,16)}
+                  <span style={{ fontSize:13, fontWeight:700, color:C.info }}>{t.name}</span>
+                  <span style={{ fontSize:10, fontWeight:600, color:C.t3, marginLeft:"auto" }}>{totalFreights} flete{totalFreights!==1?"s":""}</span>
+                </div>
+                <div style={{ padding:12, display:"flex", flexDirection:"column", gap:14 }}>
+                  {/* Drivers */}
+                  {driverList.map(d=>(
+                    <div key={d.id||d.name}>
+                      {/* Driver header */}
+                      <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
+                        {Ic.user(C.pri,14)}
+                        <span style={{ fontSize:12, fontWeight:700, color:C.t1 }}>{d.name}</span>
+                        {d.phone && <span style={{ fontSize:10.5, color:C.t3 }}>{d.phone}</span>}
+                        <span style={{ fontSize:9.5, fontWeight:600, color:C.info, background:`${C.info}12`, padding:"2px 8px", borderRadius:6 }}>{d.freights.length} en cola</span>
+                        {onAction && d.id && <button onClick={()=>onAction(d.freights[0]?.id,"driver_queue")} style={{ marginLeft:"auto", fontSize:9.5, fontWeight:700, color:C.info, background:`${C.info}12`, border:`1px solid ${C.info}30`, borderRadius:6, padding:"3px 8px", cursor:"pointer", fontFamily:"inherit" }}>Ver cola</button>}
+                      </div>
+                      {/* Freight cards */}
+                      <div style={{ display:"flex", flexDirection:"column", gap:6, paddingLeft:22 }}>
+                        {d.freights.map((f,i)=>{
+                          const st = stCfg(f.status);
+                          return (
+                            <div key={f.id} onClick={()=>onNav("detail",f.id)} style={{ display:"flex", alignItems:"center", gap:10, padding:"8px 12px", borderRadius:10, border:`1px solid ${C.b1}`, borderLeft:`3px solid ${st.color}`, background:i===0?`${C.pri}06`:C.bg, cursor:"pointer", transition:"background 0.15s" }}>
+                              <div style={{ width:22, height:22, borderRadius:11, background:i===0?C.pri:C.b1, color:i===0?C.w:C.t3, display:"flex", alignItems:"center", justifyContent:"center", fontSize:10, fontWeight:800, flexShrink:0 }}>{i+1}</div>
+                              <div style={{ flex:1, minWidth:0 }}>
+                                <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                                  <span style={{ fontSize:10, fontWeight:700, fontFamily:MONO, color:C.t2 }}>{f.code}</span>
+                                  <Bd color={st.color} bg={st.bg} small>{st.label}</Bd>
+                                </div>
+                                <div style={{ fontSize:12, fontWeight:600, color:C.t1, marginTop:2 }}>{f.grain==="Otros"?f.productTypeOther||"Otros":f.grain} · {f.tons} {f.unit||"tn"}</div>
+                              </div>
+                              <div style={{ fontSize:11, color:C.t3, textAlign:"right", flexShrink:0 }}>
+                                {f.destName && <div style={{ display:"flex", alignItems:"center", gap:3, justifyContent:"flex-end" }}>{Ic.plant(C.t3,10)} <span style={{ maxWidth:100, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{f.destName}</span></div>}
+                                {f.loadDate && <div style={{ fontSize:9.5, marginTop:2 }}>{f.loadDate}{f.loadTime?` · ${f.loadTime}`:""}</div>}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                  {/* Freights without driver */}
+                  {t.noDriver.length>0 && (
+                    <div>
+                      <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
+                        {Ic.user(C.t3,14)}
+                        <span style={{ fontSize:12, fontWeight:600, color:C.t3, fontStyle:"italic" }}>Sin chofer asignado</span>
+                        <span style={{ fontSize:9.5, fontWeight:600, color:C.t3, background:`${C.t3}12`, padding:"2px 8px", borderRadius:6 }}>{t.noDriver.length}</span>
+                      </div>
+                      <div style={{ display:"flex", flexDirection:"column", gap:6, paddingLeft:22 }}>
+                        {t.noDriver.map(f=>{
+                          const st = stCfg(f.status);
+                          return (
+                            <div key={f.id} onClick={()=>onNav("detail",f.id)} style={{ display:"flex", alignItems:"center", gap:10, padding:"8px 12px", borderRadius:10, border:`1px dashed ${C.b1}`, background:C.bg, cursor:"pointer" }}>
+                              <div style={{ flex:1, minWidth:0 }}>
+                                <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                                  <span style={{ fontSize:10, fontWeight:700, fontFamily:MONO, color:C.t2 }}>{f.code}</span>
+                                  <Bd color={st.color} bg={st.bg} small>{st.label}</Bd>
+                                </div>
+                                <div style={{ fontSize:12, fontWeight:600, color:C.t1, marginTop:2 }}>{f.grain==="Otros"?f.productTypeOther||"Otros":f.grain} · {f.tons} {f.unit||"tn"}</div>
+                              </div>
+                              <div style={{ fontSize:11, color:C.t3, textAlign:"right", flexShrink:0 }}>
+                                {f.destName && <div>{f.destName}</div>}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+          {/* Unassigned freights */}
+          {trackingGroups.unassigned.length>0 && (
+            <div style={{ background:C.w, border:`1px solid ${C.b1}`, borderRadius:14, overflow:"hidden", boxShadow:C.sh }}>
+              <div style={{ padding:"12px 16px", borderBottom:`2px solid ${C.t3}`, display:"flex", alignItems:"center", gap:8, background:`${C.t3}08` }}>
+                {Ic.warn(C.t3,16)}
+                <span style={{ fontSize:13, fontWeight:700, color:C.t2 }}>Sin asignar</span>
+                <span style={{ fontSize:10, fontWeight:600, color:C.t3, marginLeft:"auto" }}>{trackingGroups.unassigned.length}</span>
+              </div>
+              <div style={{ padding:12, display:"flex", flexDirection:"column", gap:6 }}>
+                {trackingGroups.unassigned.map(f=>{
+                  const st = stCfg(f.status);
+                  return (
+                    <div key={f.id} onClick={()=>onNav("detail",f.id)} style={{ display:"flex", alignItems:"center", gap:10, padding:"8px 12px", borderRadius:10, border:`1px dashed ${C.b1}`, borderLeft:`3px solid ${st.color}`, background:C.bg, cursor:"pointer" }}>
+                      <div style={{ flex:1, minWidth:0 }}>
+                        <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                          <span style={{ fontSize:10, fontWeight:700, fontFamily:MONO, color:C.t2 }}>{f.code}</span>
+                          <Bd color={st.color} bg={st.bg} small>{st.label}</Bd>
+                        </div>
+                        <div style={{ fontSize:12, fontWeight:600, color:C.t1, marginTop:2 }}>{f.grain==="Otros"?f.productTypeOther||"Otros":f.grain} · {f.tons} {f.unit||"tn"}</div>
+                      </div>
+                      <div style={{ fontSize:11, color:C.t3, textAlign:"right", flexShrink:0 }}>
+                        {f.originCompanyName && <div style={{ display:"flex", alignItems:"center", gap:3, justifyContent:"flex-end" }}>{Ic.user(C.t3,10)} {f.originCompanyName}</div>}
+                        {f.destName && <div style={{ display:"flex", alignItems:"center", gap:3, justifyContent:"flex-end" }}>{Ic.plant(C.t3,10)} {f.destName}</div>}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+          {trackingGroups.transporters.length===0 && trackingGroups.unassigned.length===0 && (
+            <EmptyState icon={Ic.truck(C.t3,28)} title="Sin fletes activos" subtitle="No hay fletes en curso para mostrar en seguimiento"/>
+          )}
         </div>
       )}
 
