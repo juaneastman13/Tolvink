@@ -146,14 +146,18 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
         const curIdx = steps.indexOf(freight.status);
         const fmtD = (d) => { try { const dt=new Date(d); return dt.toLocaleDateString("es-AR",{day:"2-digit",month:"short"})+" "+dt.toLocaleTimeString("es-AR",{hour:"2-digit",minute:"2-digit",hour12:false}); } catch(e){ return ""; } };
         const actionLabels = { created:"Solicitado", assigned:"Asignado", accepted:"Aceptado", rejected:"Rechazado", started:"Viaje iniciado", confirm_loaded:"Carga confirmada", confirm_finished:"Entrega confirmada", finished:"Finalizado", canceled:"Cancelado", authorized:"Autorizado", updated:"Editado" };
+        const actionColors = { created:C.pri, assigned:C.sec, accepted:C.info, rejected:C.err, started:C.acc, confirm_loaded:C.acc, confirm_finished:C.pri, finished:C.ok, canceled:C.err, authorized:C.info, updated:C.t2 };
         const stepAuditActions = { pending_assignment:["created"], assigned:["assigned"], accepted:["accepted","authorized"], in_progress:["started"], loaded:["confirm_loaded"], finished:["confirm_finished","finished"] };
         const stepToTrip = { assigned:"pending", accepted:"accepted", in_progress:"in_progress", loaded:"loaded", finished:"finished" };
         const tripRank = { pending:0, accepted:1, in_progress:2, loaded:3, finished:4 };
         const getStepLogs = (step) => { if(!auditLog) return []; return auditLog.filter(l=>(stepAuditActions[step]||[]).includes(l.action)); };
         const getTruckCount = (step) => { if(!isMultiTruck) return null; const ts=stepToTrip[step]; if(!ts) return null; const rank=tripRank[ts]??0; return (freight.activeAssignments||[]).filter(a=>(tripRank[a.tripStatus]??0)>=rank).length; };
         return <div ref={auditRef} style={{ background:C.w, border:`1px solid ${C.b1}`, borderRadius:12, padding:16, marginBottom:12, boxShadow:C.sh, position:"relative" }}>
-          <div onClick={loadAudit} style={{ fontSize:10.5, fontWeight:700, marginBottom:12, color:C.t2, textTransform:"uppercase", letterSpacing:0.5, cursor:"pointer", display:"flex", alignItems:"center", gap:6 }}>
-            Progreso <span style={{ fontSize:9, fontWeight:500, color:C.pri, textTransform:"none", letterSpacing:0 }}>{showAudit?"\u25B2 ocultar detalle":"\u25BC ver detalle"}</span>
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:12 }}>
+            <span style={{ fontSize:10.5, fontWeight:700, color:C.t2, textTransform:"uppercase", letterSpacing:0.5 }}>Progreso</span>
+            <button onClick={loadAudit} style={{ fontSize:11, fontWeight:700, color:C.t1, background:C.bg, border:`1.5px solid ${C.b1}`, borderRadius:8, padding:"5px 14px", cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:5 }}>
+              {showAudit?"Ocultar detalle":"Ver detalle"} <span style={{ fontSize:9, marginTop:1 }}>{showAudit?"\u25B2":"\u25BC"}</span>
+            </button>
           </div>
           <div style={{display:"flex",gap:3,alignItems:"flex-start"}}>
             {steps.map((s,i)=>{
@@ -167,35 +171,41 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
           </div>
           {/* Per-stage detail */}
           {showAudit && auditLog && (
-            <div style={{ display:"flex", gap:3, marginTop:14, borderTop:`1px solid ${C.b1}`, paddingTop:12 }}>
+            <div style={{ marginTop:14, borderTop:`1px solid ${C.b1}`, paddingTop:14 }}>
               {steps.map((s,i)=>{
-                const done = i < curIdx; const active = i === curIdx; const c = stCfg(s);
+                const done = i < curIdx; const active = i === curIdx;
+                if (!done && !active) return null;
+                const c = stCfg(s);
                 const logs = getStepLogs(s);
                 const tc = getTruckCount(s);
-                const col = done ? C.pri : active ? (c.border||c.color) : C.t3;
                 return (
-                  <div key={s} style={{ flex:1, minWidth:0 }}>
-                    {tc !== null && (
-                      <div style={{ textAlign:"center", fontSize:9.5, fontWeight:700, color:col, marginBottom:6, background:`${col}10`, borderRadius:6, padding:"2px 0" }}>
-                        {tc}/{freight.truckCount}
+                  <div key={s} style={{ marginBottom: i < curIdx ? 16 : 0 }}>
+                    <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
+                      <div style={{ width:10, height:10, borderRadius:5, background: done ? C.pri : c.border, flexShrink:0 }} />
+                      <span style={{ fontSize:11, fontWeight:700, color: done ? C.pri : c.color, textTransform:"uppercase", letterSpacing:0.4 }}>{c.label}</span>
+                      {tc !== null && <span style={{ fontSize:10, fontWeight:700, color:C.t2, background:C.b2, borderRadius:6, padding:"2px 8px" }}>{tc}/{freight.truckCount} camiones</span>}
+                    </div>
+                    {logs.length > 0 ? (
+                      <div style={{ position:"relative", paddingLeft:22, marginLeft:4 }}>
+                        <div style={{ position:"absolute", left:4, top:4, bottom:4, width:2, background:C.b1, borderRadius:1 }} />
+                        {logs.map((log, li) => {
+                          const col = actionColors[log.action] || C.t2;
+                          return (
+                            <div key={log.id} style={{ position:"relative", paddingBottom: li < logs.length-1 ? 14 : 0 }}>
+                              <div style={{ position:"absolute", left:-20, top:2, width:10, height:10, borderRadius:5, background:col, zIndex:2 }} />
+                              <div style={{ fontSize:12, fontWeight:700, color:col }}>{actionLabels[log.action]||log.action}</div>
+                              <div style={{ fontSize:10.5, color:C.t2, marginTop:1 }}>{log.user?.name||"Sistema"}{log.user?.company?.name ? ` \u00b7 ${log.user.company.name}` : ""}</div>
+                              {log.reason && <div style={{ fontSize:10, color:C.t3, fontStyle:"italic", marginTop:2 }}>"{log.reason}"</div>}
+                              <div style={{ fontSize:9.5, color:C.t3, marginTop:2 }}>{fmtD(log.createdAt)}</div>
+                            </div>
+                          );
+                        })}
                       </div>
-                    )}
-                    {logs.length > 0 ? logs.map(log => {
-                      const acCol = { created:C.pri, assigned:C.sec, accepted:C.info, started:C.acc, confirm_loaded:C.acc, confirm_finished:C.pri, finished:C.ok, authorized:C.info }[log.action] || C.t2;
-                      return (
-                        <div key={log.id} style={{ marginBottom:8, position:"relative", paddingLeft:10 }}>
-                          <div style={{ position:"absolute", left:0, top:3, width:6, height:6, borderRadius:3, background:acCol }} />
-                          <div style={{ fontSize:8.5, fontWeight:700, color:acCol, lineHeight:1.3 }}>{actionLabels[log.action]||log.action}</div>
-                          <div style={{ fontSize:8, color:C.t2, marginTop:1, lineHeight:1.2, wordBreak:"break-word" }}>{log.user?.name||"Sistema"}</div>
-                          {log.user?.company?.name && <div style={{ fontSize:7.5, color:C.t3, lineHeight:1.2 }}>{log.user.company.name}</div>}
-                          {log.reason && <div style={{ fontSize:7.5, color:C.t3, fontStyle:"italic", marginTop:1 }}>"{log.reason}"</div>}
-                          <div style={{ fontSize:7.5, color:C.t3, marginTop:1 }}>{fmtD(log.createdAt)}</div>
-                        </div>
-                      );
-                    }) : (done || active) ? <div style={{ fontSize:8, color:C.t3, textAlign:"center" }}>{"\u2014"}</div> : null}
+                    ) : <div style={{ fontSize:10.5, color:C.t3, marginLeft:22 }}>{"\u2014"}</div>}
                   </div>
                 );
               })}
+              {auditLog.length === 0 && <div style={{ fontSize:11, color:C.t3 }}>Sin registros</div>}
             </div>
           )}
         </div>;
