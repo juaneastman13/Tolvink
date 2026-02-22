@@ -283,7 +283,7 @@ export function useFreights(user, isAuthInitialized) {
       const c=await apiCreateFreight(body);
       const m=mapFreight(c); setFreights(p=>[m,...p]); setTotal(t=>t+1); return {ok:true, freightId:c.id}; } catch(e) { return {ok:false,error:e.message}; }
   },[]);
-  const assign = useCallback(async (fId,compId)=>{ try { await apiAssignFreight(fId,{transportCompanyId:compId}); await refresh(fId); return {ok:true}; } catch(e) { return {ok:false,error:e.message}; } },[refresh]);
+  const assign = useCallback(async (fId,compId,truckId)=>{ try { const body={transportCompanyId:compId}; if(truckId) body.truckId=truckId; await apiAssignFreight(fId,body); await refresh(fId); return {ok:true}; } catch(e) { return {ok:false,error:e.message}; } },[refresh]);
   const respond = useCallback(async (fId,action,reason,truckId)=>{ try { await apiRespondFreight(fId,{action,reason,truckId}); await refresh(fId); return {ok:true}; } catch(e) { return {ok:false,error:e.message}; } },[refresh]);
   const start = useCallback(async (fId)=>{ try { await apiStartFreight(fId); await refresh(fId); return {ok:true}; } catch(e) { return {ok:false,error:e.message}; } },[refresh]);
   const finish = useCallback(async (fId)=>{ try { await apiFinishFreight(fId); await refresh(fId); return {ok:true}; } catch(e) { return {ok:false,error:e.message}; } },[refresh]);

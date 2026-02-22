@@ -282,8 +282,8 @@ export default function Tolvink() {
     show(r.error,"err"); return "";
   };
 
-  const handleAssign = async (fId, transportCompanyId)=>{
-    const r = await fh.assign(fId, transportCompanyId);
+  const handleAssign = async (fId, transportCompanyId, truckId)=>{
+    const r = await fh.assign(fId, transportCompanyId, truckId);
     if(r.ok){ track("freight_assign"); return "Transportista asignado"; }
     show(r.error,"err"); return "";
   };
@@ -430,7 +430,7 @@ export default function Tolvink() {
 
       {(submitting||submitDone) && <LoadingOverlay closing={!!submitDone} closingText={submitDone} onClose={()=>{setSubmitDone("");navigate("/list");}}/>}
       <Suspense fallback={null}>
-      {modal?.type==="assign" && <AssignModal freight={modal.freight} transporters={catalog.transporters} onClose={()=>setModal(null)} onConfirm={t=>handleAssign(modal.freight.id,t)}/>}
+      {modal?.type==="assign" && <AssignModal freight={modal.freight} transporters={catalog.transporters} onClose={()=>setModal(null)} onConfirm={(compId,truckId)=>handleAssign(modal.freight.id,compId,truckId)}/>}
       {modal?.type==="truck_select" && <TruckSelectModal freight={modal.freight} trucks={catalog.trucks} onClose={()=>setModal(null)} onConfirm={t=>handleAcceptWithTruck(modal.freight.id,t)}/>}
       {modal?.type==="confirm_action" && <ConfirmActionModal freight={modal.freight} title={modal.title} btnLabel={modal.btnLabel} btnVariant={modal.btnVariant} icon={modal.icon} onClose={()=>setModal(null)} onConfirm={()=>handleConfirmAction(modal.freight.id,modal.action)}/>}
       {modal?.type==="reason" && <ReasonModal title={modal.title} freight={modal.freight} btnLabel={modal.btnLabel} onClose={()=>setModal(null)} onConfirm={r=>handleReasonAction(modal.freight.id,r,modal.action)}/>}

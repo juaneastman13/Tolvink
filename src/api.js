@@ -221,7 +221,7 @@ export async function apiGetLots() { return api('/catalog/lots'); }
 export async function apiGetTransportCompanies() { return api('/catalog/transport-companies'); }
 
 // Trucks
-export async function apiGetTrucks() { return api('/trucks'); }
+export async function apiGetTrucks(companyId) { return api(companyId ? `/trucks?companyId=${companyId}` : '/trucks'); }
 export async function apiCreateTruck(b) { return api('/trucks',{body:b}); }
 export async function apiDeactivateTruck(id) { return api(`/trucks/${id}/deactivate`,{body:{},method:'PATCH'}); }
 
