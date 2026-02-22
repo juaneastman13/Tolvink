@@ -4,6 +4,7 @@ import {
   apiListFreights, apiGetFreight, apiCreateFreight, apiAssignFreight, apiRespondFreight,
   apiStartFreight, apiFinishFreight, apiCancelFreight, apiConfirmLoaded, apiConfirmFinished,
   apiAuthorizeFreight, apiUpdateFreight,
+  apiAssignMultiTruck, apiAssignTruck, apiCancelAssignment, apiRespondTrip, apiStartTrip, apiConfirmTripLoaded, apiConfirmTripFinished,
   apiGetPlants, apiGetBranches, apiGetLots, apiGetTransportCompanies, apiGetTrucks, apiGetFields,
   apiGetNotifications, apiMarkNotificationRead, apiMarkAllRead, apiSubscribePush, VAPID_PUBLIC_KEY,
   API_URL,
@@ -280,6 +281,7 @@ export function useFreights(user, isAuthInitialized) {
   },[]);
   const create = useCallback(async (form)=>{
     try { const body = { originLotId:form.lotId||undefined, fieldId:form.fieldId||undefined, destPlantId:form.plantId||undefined, customOriginName:form.customOriginName||undefined, loadDate:form.loadDate, loadTime:form.loadTime, items:[{grain:form.grain,tons:parseFloat(form.tons),unit:form.unit||"toneladas",amount:form.amount?parseFloat(form.amount):0,productTypeOther:form.productTypeOther||undefined}], notes:form.notes||"", truckId:form.truckId||undefined, overrideOriginLat:form.overrideOriginLat, overrideOriginLng:form.overrideOriginLng, overrideDestLat:form.overrideDestLat, overrideDestLng:form.overrideDestLng };
+      if(form.truckCount && parseInt(form.truckCount) > 1) body.truckCount = parseInt(form.truckCount);
       if(form.customDestName) { body.customDestName=form.customDestName; body.customDestLat=form.customDestLat; body.customDestLng=form.customDestLng; if(form.destCompanyId) body.destCompanyId=form.destCompanyId; if(!form.plantId) delete body.destPlantId; }
       const c=await apiCreateFreight(body);
       const m=mapFreight(c); setFreights(p=>[m,...p]); setTotal(t=>t+1); return {ok:true, freightId:c.id}; } catch(e) { return {ok:false,error:e.message}; }
@@ -293,14 +295,24 @@ export function useFreights(user, isAuthInitialized) {
   const confirmFinished = useCallback(async (fId)=>{ try { await apiConfirmFinished(fId); await refresh(fId); return {ok:true}; } catch(e) { return {ok:false,error:e.message}; } },[refresh]);
   const authorize = useCallback(async (fId)=>{ try { await apiAuthorizeFreight(fId); await refresh(fId); return {ok:true}; } catch(e) { return {ok:false,error:e.message}; } },[refresh]);
   const update = useCallback(async (fId, data)=>{ try { await apiUpdateFreight(fId, data); await refresh(fId); return {ok:true}; } catch(e) { return {ok:false,error:e.message}; } },[refresh]);
-  return { freights, loading, loadingMore, error, hasMore, total, fetchAll, loadMore, refresh, create, assign, respond, start, finish, cancel, confirmLoaded, confirmFinished, authorize, update };
+  // Multi-truck callbacks (v6.0)
+  const assignMulti = useCallback(async (fId, trucks)=>{ try { await apiAssignMultiTruck(fId, trucks); await refresh(fId); return {ok:true}; } catch(e) { return {ok:false,error:e.message}; } },[refresh]);
+  const assignTruckCb = useCallback(async (fId, truckData)=>{ try { await apiAssignTruck(fId, truckData); await refresh(fId); return {ok:true}; } catch(e) { return {ok:false,error:e.message}; } },[refresh]);
+  const cancelAssignment = useCallback(async (fId, aId, reason)=>{ try { await apiCancelAssignment(fId, aId, reason); await refresh(fId); return {ok:true}; } catch(e) { return {ok:false,error:e.message}; } },[refresh]);
+  const respondTrip = useCallback(async (fId, aId, body)=>{ try { await apiRespondTrip(fId, aId, body); await refresh(fId); return {ok:true}; } catch(e) { return {ok:false,error:e.message}; } },[refresh]);
+  const startTrip = useCallback(async (fId, aId)=>{ try { await apiStartTrip(fId, aId); await refresh(fId); return {ok:true}; } catch(e) { return {ok:false,error:e.message}; } },[refresh]);
+  const confirmTripLoaded = useCallback(async (fId, aId)=>{ try { await apiConfirmTripLoaded(fId, aId); await refresh(fId); return {ok:true}; } catch(e) { return {ok:false,error:e.message}; } },[refresh]);
+  const confirmTripFinished = useCallback(async (fId, aId)=>{ try { await apiConfirmTripFinished(fId, aId); await refresh(fId); return {ok:true}; } catch(e) { return {ok:false,error:e.message}; } },[refresh]);
+  return { freights, loading, loadingMore, error, hasMore, total, fetchAll, loadMore, refresh, create, assign, respond, start, finish, cancel, confirmLoaded, confirmFinished, authorize, update, assignMulti, assignTruckCb, cancelAssignment, respondTrip, startTrip, confirmTripLoaded, confirmTripFinished };
 }
 
 // ======================== MAP FREIGHT =================================
 export function mapFreight(f) {
   if(!f) return null;
-  const a = f.assignments?.find(x=>x.status==="active"||x.status==="accepted");
+  const activeAssigns = (f.assignments||[]).filter(x=>x.status==="active"||x.status==="accepted");
+  const a = activeAssigns[0];
   const isOwnFleet = !!(a && a.transportCompanyId === f.originCompanyId);
+  const isMultiTruck = !!(f.isMultiTruck || f.truckCount > 1);
   return {
     id:f.id, code:f.code, status:f.status,
     grain:f.items?.[0]?.grain||"", tons:f.items?.[0]?.tons||0,
@@ -316,11 +328,39 @@ export function mapFreight(f) {
     loadDate:f.loadDate?.split("T")[0]||"", loadTime:f.loadTime||"",
     scheduledAt:f.scheduledAt||null,
     requestedBy:f.requestedById, requestedByName:f.requestedBy?.name||"",
+    // Single-truck compat (first assignment)
     transporterId:a?.transportCompanyId||null, transporterName:a?.transportCompany?.name||"",
     driverId:a?.driverId||a?.driver?.id||null, driverName:a?.driver?.name||null, driverPhone:a?.driver?.phone||null,
     queuePosition:a?.queuePosition??0,
     truckPlate:a?.truck?.plate||a?.plate||null, truckModel:a?.truck?.model||null,
+    // All assignments (includes history)
     assignments:(f.assignments||[]).map(x=>({ id:x.id, status:x.status, transporterName:x.transportCompany?.name||"", reason:x.reason||null, createdAt:x.createdAt })),
+    // Multi-truck (v6.0)
+    truckCount: f.truckCount || 1,
+    assignedTruckCount: f.assignedTruckCount || (activeAssigns.length > 0 ? activeAssigns.length : 0),
+    isMultiTruck,
+    activeAssignments: activeAssigns.map(x => ({
+      id: x.id,
+      transportCompanyId: x.transportCompanyId || null,
+      transporterName: x.transportCompany?.name || "",
+      truckId: x.truckId || null,
+      plate: x.truck?.plate || x.plate || null,
+      truckModel: x.truck?.model || null,
+      driverId: x.driverId || x.driver?.id || null,
+      driverName: x.driver?.name || x.driverName || null,
+      driverPhone: x.driver?.phone || null,
+      tripStatus: x.tripStatus || "pending",
+      tripNumber: x.tripNumber || 1,
+      tons: x.tons ? parseFloat(x.tons) : null,
+      queuePosition: x.queuePosition ?? 0,
+      transporterLoadedConfirmedAt: x.transporterLoadedConfirmedAt || null,
+      producerLoadedConfirmedAt: x.producerLoadedConfirmedAt || null,
+      transporterFinishedConfirmedAt: x.transporterFinishedConfirmedAt || null,
+      plantFinishedConfirmedAt: x.plantFinishedConfirmedAt || null,
+      startedAt: x.startedAt || null,
+      loadedAt: x.loadedAt || null,
+      finishedAt: x.finishedAt || null,
+    })),
     notes:f.notes||"", cancelReason:f.cancelReason||"", createdAt:f.createdAt,
     transporterLoadedConfirmedAt: f.transporterLoadedConfirmedAt||null,
     producerLoadedConfirmedAt: f.producerLoadedConfirmedAt||null,

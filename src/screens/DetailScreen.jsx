@@ -1,6 +1,6 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { C, Ic, FONT, MONO, track } from "../theme";
-import { stCfg, getActions, POLL_INTERVALS } from "../constants";
+import { stCfg, getActions, tripStCfg, POLL_INTERVALS } from "../constants";
 import { Bd, Btn, Loader, Sec, FileViewer } from "../components";
 import { FreightMap, SafeZone } from "../maps";
 import { DocsGallery, FreightFileUpload } from "../uploads";
@@ -9,7 +9,7 @@ import { useIsDesktop } from "../hooks";
 // PDF report loaded lazily to avoid bundle bloat
 const loadPdfReport = () => import("../utils/pdf-report");
 
-export default function DetailScreen({ user, freight, perms, onBack, onAction, actionLoading, onChat, onRefresh, onDuplicate, onEdit, goToMap }) {
+export default function DetailScreen({ user, freight, perms, onBack, onAction, onTripAction, actionLoading, onChat, onRefresh, onDuplicate, onEdit, goToMap }) {
   if(!freight) return null;
   const [auditLog, setAuditLog] = useState(null);
   const [showAudit, setShowAudit] = useState(false);
@@ -45,12 +45,15 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, a
     return () => { document.removeEventListener("mousedown", handler); document.removeEventListener("touchstart", handler); };
   }, [showAudit]);
 
+  const [expandedTrip, setExpandedTrip] = useState(null);
+
   const _isDesktop = useIsDesktop(768);
   const st = stCfg(freight.status);
+  const isMultiTruck = freight.isMultiTruck && (freight.truckCount || 1) > 1;
   const isChoferQueued = user.role === "chofer" && (freight.queuePosition || 0) > 1;
-  const actions = getActions(freight.status, user.userType, user.role, freight.isOwnFleet);
+  const actions = isMultiTruck ? [] : getActions(freight.status, user.userType, user.role, freight.isOwnFleet);
 
-  // Filter actions based on confirmation state
+  // Filter actions based on confirmation state (single-truck only)
   const filteredActions = isChoferQueued ? [] : actions.filter(a=>{
     if(a==="confirm_loaded" && user.userType==="transporter" && freight.transporterLoadedConfirmedAt) return false;
     if(a==="confirm_loaded" && user.userType==="producer" && freight.producerLoadedConfirmedAt) return false;
@@ -59,6 +62,40 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, a
     if(a==="confirm_finished" && user.userType==="producer" && freight.isOwnFleet && freight.transporterFinishedConfirmedAt) return false;
     return true;
   });
+
+  // Multi-truck: filter assignments visible to this user
+  const visibleAssignments = useMemo(() => {
+    if (!isMultiTruck) return [];
+    const aa = freight.activeAssignments || [];
+    if (user.role === "chofer") return aa.filter(a => a.driverId === user.id);
+    if (user.userType === "transporter") return aa.filter(a => a.transportCompanyId === user.companyId);
+    return aa; // plant/producer see all
+  }, [isMultiTruck, freight.activeAssignments, user]);
+
+  // Per-trip action for a given assignment
+  const getTripActions = (a) => {
+    const btns = [];
+    const ts = a.tripStatus;
+    if (user.userType === "plant" || (user.role !== "chofer" && user.userType === "producer" && !freight.isOwnFleet)) {
+      if (ts === "loaded" && !a.plantFinishedConfirmedAt) btns.push({ key:"confirm_trip_finished", label:"Confirmar entrega", color:C.pri, icon:Ic.chk(C.w,14) });
+    }
+    if (user.userType === "transporter" || user.role === "chofer" || (user.userType === "producer" && freight.isOwnFleet)) {
+      if (ts === "pending") btns.push({ key:"respond_trip_accept", label:"Aceptar", color:C.ok, icon:Ic.chk(C.w,14) }, { key:"respond_trip_reject", label:"Rechazar", color:C.err, icon:Ic.ban(C.w,14) });
+      if (ts === "accepted") btns.push({ key:"start_trip", label:"Iniciar viaje", color:C.pri, icon:Ic.truck(C.w,14) });
+      if (ts === "in_progress" && !a.transporterLoadedConfirmedAt) btns.push({ key:"confirm_trip_loaded", label:"Confirmar carga", color:C.acc, icon:Ic.chk(C.w,14) });
+      if (ts === "loaded" && !a.transporterFinishedConfirmedAt) btns.push({ key:"confirm_trip_finished", label:"Confirmar entrega", color:C.pri, icon:Ic.chk(C.w,14) });
+    }
+    if (user.userType === "producer") {
+      if (ts === "in_progress" && freight.isOwnFleet && !a.transporterLoadedConfirmedAt) {} // already added above
+      if ((ts === "loaded" || ts === "in_progress") && !a.producerLoadedConfirmedAt && !btns.find(b=>b.key==="confirm_trip_loaded"))
+        btns.push({ key:"confirm_trip_loaded", label:"Confirmar carga", color:C.acc, icon:Ic.chk(C.w,14) });
+    }
+    if (user.userType === "plant") {
+      if (btns.length === 0 && freight.assignedTruckCount < freight.truckCount)
+        ; // assign more handled at freight level
+    }
+    return btns;
+  };
 
   return (
     <div style={{ flex:1, overflow:"auto", animation:"slideUp 0.25s ease" }}>
@@ -145,8 +182,79 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, a
         </div>;
       })()}
 
-      {/* Cross-confirmations panel */}
-      {(freight.status==="loaded" || freight.status==="in_progress") && (
+      {/* Multi-truck: Camiones section */}
+      {isMultiTruck && (
+        <div style={{ background:C.w, border:`1px solid ${C.b1}`, borderRadius:12, padding:16, marginBottom:12, boxShadow:C.sh }}>
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:12 }}>
+            <div style={{ fontSize:10.5, fontWeight:700, color:C.t2, textTransform:"uppercase", letterSpacing:0.5 }}>Camiones</div>
+            <span style={{ fontSize:11, fontWeight:600, color:C.info }}>{freight.assignedTruckCount}/{freight.truckCount} asignados</span>
+          </div>
+          {/* Progress bar */}
+          <div style={{ height:6, borderRadius:3, background:C.b1, marginBottom:14, overflow:"hidden" }}>
+            <div style={{ height:"100%", borderRadius:3, background: freight.assignedTruckCount >= freight.truckCount ? C.ok : C.info, width:`${Math.min(100, (freight.assignedTruckCount / freight.truckCount) * 100)}%`, transition:"width 0.3s" }}/>
+          </div>
+          {/* Assignment list */}
+          {visibleAssignments.map(a => {
+            const tst = tripStCfg(a.tripStatus);
+            const isExpanded = expandedTrip === a.id;
+            const tripBtns = getTripActions(a);
+            return (
+              <div key={a.id} style={{ border:`1px solid ${tst.color}30`, borderLeft:`3px solid ${tst.color}`, borderRadius:10, marginBottom:8, overflow:"hidden" }}>
+                <div onClick={()=>setExpandedTrip(isExpanded?null:a.id)} style={{ display:"flex", alignItems:"center", gap:8, padding:"10px 12px", cursor:"pointer", background:isExpanded?`${tst.color}06`:"transparent" }}>
+                  <span style={{ fontSize:12, fontWeight:800, color:tst.color }}>#{a.tripNumber}</span>
+                  <span style={{ fontSize:12, fontWeight:600, color:C.t1, flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                    {a.plate || "Sin camión"}{a.transporterName ? ` · ${a.transporterName}` : ""}{a.driverName ? ` · ${a.driverName}` : ""}
+                  </span>
+                  <Bd color={tst.color} bg={tst.bg} small>{tst.label}</Bd>
+                  <span style={{ display:"flex", transform:isExpanded?"rotate(-90deg)":"rotate(0deg)", transition:"transform 0.15s" }}>{Ic.chev(C.t3,14)}</span>
+                </div>
+                {isExpanded && (
+                  <div style={{ padding:"8px 12px 12px", borderTop:`1px solid ${C.b2}` }}>
+                    <div style={{ display:"flex", flexDirection:"column", gap:4, fontSize:11.5, color:C.t2, marginBottom:tripBtns.length>0?10:0 }}>
+                      {a.transporterName && <div style={{ display:"flex", alignItems:"center", gap:6 }}>{Ic.truck(C.t3,12)} {a.transporterName}</div>}
+                      {a.plate && <div style={{ display:"flex", alignItems:"center", gap:6 }}>{Ic.truck(C.acc,12)} {a.plate}{a.truckModel?` · ${a.truckModel}`:""}</div>}
+                      {a.driverName && <div style={{ display:"flex", alignItems:"center", gap:6 }}>{Ic.user(C.pri,12)} {a.driverName}{a.driverPhone?` · ${a.driverPhone}`:""}</div>}
+                      {a.tons && <div style={{ display:"flex", alignItems:"center", gap:6 }}>{Ic.grain(C.t3,12)} {a.tons} tn</div>}
+                      {/* Cross-confirmation status */}
+                      {(a.tripStatus === "in_progress" || a.tripStatus === "loaded") && (
+                        <div style={{ display:"flex", gap:12, marginTop:6 }}>
+                          <div>
+                            <span style={{ fontSize:9, fontWeight:700, color:C.t3, textTransform:"uppercase" }}>Carga: </span>
+                            <span style={{ fontSize:10 }}>{a.transporterLoadedConfirmedAt ? "\u2705 Transp." : "\u23F3 Transp."} {a.producerLoadedConfirmedAt ? "\u2705 Prod." : "\u23F3 Prod."}</span>
+                          </div>
+                          {a.tripStatus === "loaded" && <div>
+                            <span style={{ fontSize:9, fontWeight:700, color:C.t3, textTransform:"uppercase" }}>Entrega: </span>
+                            <span style={{ fontSize:10 }}>{a.transporterFinishedConfirmedAt ? "\u2705 Transp." : "\u23F3 Transp."} {a.plantFinishedConfirmedAt ? "\u2705 Planta" : "\u23F3 Planta"}</span>
+                          </div>}
+                        </div>
+                      )}
+                    </div>
+                    {/* Per-trip action buttons */}
+                    {tripBtns.length > 0 && (
+                      <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+                        {tripBtns.map(b => (
+                          <button key={b.key} disabled={actionLoading} onClick={()=>onTripAction && onTripAction(freight.id, a.id, b.key)} style={{ flex:"1 1 auto", padding:"8px 12px", borderRadius:8, border:"none", background:b.color, color:C.w, fontSize:11.5, fontWeight:700, cursor:actionLoading?"not-allowed":"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:6, opacity:actionLoading?0.6:1 }}>
+                            {b.icon} {actionLoading?"...":b.label}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+          {/* Unassigned slots */}
+          {freight.assignedTruckCount < freight.truckCount && user.userType === "plant" && (
+            <button onClick={()=>onAction(freight.id,"assign")} style={{ width:"100%", padding:"10px 0", borderRadius:10, border:`1.5px dashed ${C.acc}`, background:`${C.acc}08`, color:C.acc, fontSize:12, fontWeight:600, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:6, marginTop:4 }}>
+              {Ic.plus(C.acc,14)} Agregar cami\u00f3n ({freight.truckCount - freight.assignedTruckCount} pendientes)
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Cross-confirmations panel (single-truck only) */}
+      {!isMultiTruck && (freight.status==="loaded" || freight.status==="in_progress") && (
         <div style={{ background:C.w, border:`1px solid ${C.acc}30`, borderLeft:`3px solid ${C.acc}`, borderRadius:12, padding:16, marginBottom:12, boxShadow:C.sh }}>
           <div style={{ fontSize:10.5, fontWeight:700, marginBottom:12, color:C.acc, textTransform:"uppercase", letterSpacing:0.5 }}>Confirmaciones</div>
           <div style={{display:"flex",gap:16}}>
@@ -202,10 +310,11 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, a
             [Ic.user(C.t2,15),"Solicitado por",freight.requestedByName],
             [Ic.grain(C.t2,15),"Producto",`${freight.grain==="Otros"?freight.productTypeOther||"Otros":freight.grain} · ${freight.tons} ${freight.unit||"tn"}`],
             freight.amount>0&&[Ic.grain(C.t2,15),"Importe",`$${Number(freight.amount).toLocaleString()}`],
-            freight.transporterName&&[Ic.truck(C.t2,15),"Transportista",freight.transporterName],
-            freight.truckPlate&&[Ic.truck(C.acc,15),"Camión",`${freight.truckPlate}${freight.truckModel?` · ${freight.truckModel}`:""}`],
-            freight.driverName&&[Ic.user(C.pri,15),"Chofer",<>{freight.driverName}{perms.canApprove && freight.driverId && <button onClick={()=>onAction(freight.id,"driver_queue")} style={{marginLeft:6,fontSize:9.5,fontWeight:700,color:C.info,background:`${C.info}12`,border:`1px solid ${C.info}30`,borderRadius:6,padding:"2px 7px",cursor:"pointer",fontFamily:"inherit"}}>Ver cola</button>}</>],
-            freight.driverPhone&&[Ic.msg(C.info,15),"Teléfono",freight.driverPhone],
+            !isMultiTruck&&freight.transporterName&&[Ic.truck(C.t2,15),"Transportista",freight.transporterName],
+            isMultiTruck&&[Ic.truck(C.t2,15),"Camiones",`${freight.assignedTruckCount}/${freight.truckCount}`],
+            !isMultiTruck&&freight.truckPlate&&[Ic.truck(C.acc,15),"Cami\u00f3n",`${freight.truckPlate}${freight.truckModel?` \u00b7 ${freight.truckModel}`:""}`],
+            !isMultiTruck&&freight.driverName&&[Ic.user(C.pri,15),"Chofer",<>{freight.driverName}{perms.canApprove && freight.driverId && <button onClick={()=>onAction(freight.id,"driver_queue")} style={{marginLeft:6,fontSize:9.5,fontWeight:700,color:C.info,background:`${C.info}12`,border:`1px solid ${C.info}30`,borderRadius:6,padding:"2px 7px",cursor:"pointer",fontFamily:"inherit"}}>Ver cola</button>}</>],
+            !isMultiTruck&&freight.driverPhone&&[Ic.msg(C.info,15),"Tel\u00e9fono",freight.driverPhone],
           ].filter(Boolean).map(([ic,label,val],i,arr)=>(
             <div key={i} style={{ display:"flex", alignItems:"center", gap:10, padding:"9px 0", borderBottom:i<arr.length-1?`1px solid ${C.b2}`:"none" }}>
               <span style={{display:"flex",flexShrink:0}}>{ic}</span>

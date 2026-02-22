@@ -30,7 +30,8 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
     unit: dup?.unit || "toneladas",
     amount: dup?.amount?.toString() || "",
     productTypeOther: dup?.productTypeOther || "",
-    truckId: ""
+    truckId: "",
+    truckCount: ""
   });
   const [errs, setErrs] = useState({});
   const [touched, setTouched] = useState(false);
@@ -246,6 +247,15 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
           <div style={{ marginTop:10 }}>
             <Field label="Importe (opcional)" value={form.amount} onChange={v=>u({amount:v})} placeholder="Ej: 150000"/>
           </div>
+          {form.unit==="toneladas" && parseFloat(form.tons)>0 && (
+            <div style={{ marginTop:10 }}>
+              <label style={{ fontSize:10.5, fontWeight:600, color:C.t2, marginBottom:6, display:"flex", alignItems:"center", gap:4, textTransform:"uppercase", letterSpacing:0.6 }}>{Ic.truck(C.acc,14)} Camiones necesarios</label>
+              <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                <input type="number" min="1" max="50" value={form.truckCount || Math.ceil(parseFloat(form.tons)/30)} onChange={e=>u({truckCount:e.target.value})} style={{ width:70, padding:"10px 12px", borderRadius:10, border:`1.5px solid ${C.b1}`, background:C.w, color:C.t1, fontSize:15, fontFamily:"inherit", outline:"none", boxSizing:"border-box", textAlign:"center" }}/>
+                <span style={{ fontSize:11, color:C.t3 }}>~30tn por camión. Podés ajustarlo.</span>
+              </div>
+            </div>
+          )}
         </Sec>
 
         {/* ORIGIN SECTION */}

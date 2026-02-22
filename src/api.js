@@ -204,6 +204,15 @@ export async function apiConfirmLoaded(id) { return api(`/freights/${id}/confirm
 export async function apiConfirmFinished(id) { return api(`/freights/${id}/confirm-finished`,{body:{}}); }
 export async function apiAuthorizeFreight(id) { return api(`/freights/${id}/authorize`,{body:{}}); }
 
+// Multi-truck (v6.0)
+export async function apiAssignMultiTruck(id, trucks) { return api(`/freights/${id}/assign-multi`,{body:{trucks}}); }
+export async function apiAssignTruck(id, truckData) { return api(`/freights/${id}/assign-truck`,{body:truckData}); }
+export async function apiCancelAssignment(freightId, assignmentId, reason) { return api(`/freights/${freightId}/assignments/${assignmentId}/cancel`,{body:{reason}}); }
+export async function apiRespondTrip(freightId, assignmentId, body) { return api(`/freights/${freightId}/assignments/${assignmentId}/respond`,{body}); }
+export async function apiStartTrip(freightId, assignmentId) { return api(`/freights/${freightId}/assignments/${assignmentId}/start`,{body:{}}); }
+export async function apiConfirmTripLoaded(freightId, assignmentId) { return api(`/freights/${freightId}/assignments/${assignmentId}/confirm-loaded`,{body:{}}); }
+export async function apiConfirmTripFinished(freightId, assignmentId) { return api(`/freights/${freightId}/assignments/${assignmentId}/confirm-finished`,{body:{}}); }
+
 // Tracking
 export async function apiSendTracking(id, data) { return api(`/freights/${id}/tracking`,{body:data}); }
 export async function apiGetTracking(id) { return api(`/freights/${id}/tracking`); }

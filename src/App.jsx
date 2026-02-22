@@ -164,14 +164,15 @@ export default function Tolvink() {
     return fh.freights.filter(f =>
       f.originCompanyId === cId ||
       f.destCompanyId === cId ||
-      f.transporterId === cId
+      f.transporterId === cId ||
+      (f.isMultiTruck && f.activeAssignments?.some(a => a.transportCompanyId === cId))
     );
   }, [fh.freights, auth.user, viewAll]);
 
   // Calculate pending actions count
   const pendingCount = useMemo(() => {
     if (!auth.user || !viewFreights) return 0;
-    return viewFreights.filter(f => getPendingActions(f, auth.user.userType, auth.user.role) !== null).length;
+    return viewFreights.filter(f => getPendingActions(f, auth.user.userType, auth.user.role, auth.user) !== null).length;
   }, [viewFreights, auth.user]);
 
   // Smart polling — only freight screens poll freights, auto-refresh on screen change
@@ -295,6 +296,29 @@ export default function Tolvink() {
     show(r.error,"err"); return "";
   };
 
+  const handleAssignMulti = async (trucks)=>{
+    if(!modal?.freight) return "";
+    const r = await fh.assignMulti(modal.freight.id, trucks);
+    if(r.ok){ track("freight_assign_multi"); return `${trucks.length} camiones asignados`; }
+    show(r.error,"err"); return "";
+  };
+
+  const handleTripAction = async (fId, aId, actionKey)=>{
+    if(actionLoading) return;
+    useUIStore.getState().setActionLoading(true);
+    try {
+      let r;
+      if(actionKey==="respond_trip_accept") r = await fh.respondTrip(fId, aId, {response:"accepted"});
+      else if(actionKey==="respond_trip_reject") r = await fh.respondTrip(fId, aId, {response:"rejected", reason:"Rechazado"});
+      else if(actionKey==="start_trip") r = await fh.startTrip(fId, aId);
+      else if(actionKey==="confirm_trip_loaded") r = await fh.confirmTripLoaded(fId, aId);
+      else if(actionKey==="confirm_trip_finished") r = await fh.confirmTripFinished(fId, aId);
+      if(r?.ok) { show("Acci\u00f3n realizada","ok"); fh.refresh(fId); }
+      else show(r?.error||"Error","err");
+    } catch(e) { show(e.message||"Error","err"); }
+    finally { useUIStore.getState().setActionLoading(false); }
+  };
+
   const handleConfirmAction = async (fId, action)=>{
     const msgs = { start:"Viaje iniciado", authorize:"Viaje autorizado", confirm_loaded:"Carga confirmada", confirm_finished:"Entrega confirmada" };
     const fn = { start:fh.start, authorize:fh.authorize, confirm_loaded:fh.confirmLoaded, confirm_finished:fh.confirmFinished }[action];
@@ -414,7 +438,7 @@ export default function Tolvink() {
         {screen==="home" && <HomeScreen user={auth.user} freights={viewFreights} loading={fh.loading} perms={perms} onNav={nav} catalog={catalog} isDesktop={isDesktop} onAction={handleAction} actionLoading={actionLoading} onChat={(convId)=>{if(convId){setChatConvId(convId);navigate("/chats");}}} onRefresh={(id)=>fh.refresh(id)} onDuplicate={(f)=>{setDuplicateData(f);navigate("/new");}} onEdit={(f)=>{setEditData(f);navigate("/edit/"+f.id);}} goToMap={goToMap} pwa={pwa}/>}
         {screen==="list" && <ListScreen freights={viewFreights} loading={fh.loading} onNav={nav} onRefresh={fh.fetchAll} catalog={catalog} view={listView} setView={setListView} goToMap={goToMap} hasMore={fh.hasMore} loadMore={fh.loadMore} loadingMore={fh.loadingMore} total={fh.total} isDesktop={isDesktop} onAction={handleAction}/>}
         {screen==="calendar" && <CalendarScreen freights={viewFreights} perms={perms} onNav={nav} isDesktop={isDesktop} user={auth.user} onAction={handleAction} actionLoading={actionLoading} onChat={(convId)=>{if(convId){setChatConvId(convId);navigate("/chats");}}} onRefresh={(id)=>fh.refresh(id)} onDuplicate={(f)=>{setDuplicateData(f);navigate("/new");}} onEdit={(f)=>{setEditData(f);navigate("/edit/"+f.id);}} goToMap={goToMap}/>}
-        {screen==="detail" && <DetailScreen user={curFreight ? {...auth.user, userType: _resolveType(curFreight)} : auth.user} freight={curFreight} perms={perms} onBack={()=>navigate("/list")} onAction={handleAction} actionLoading={actionLoading} onChat={(convId)=>{if(convId){setChatConvId(convId);navigate("/chats");}}} onRefresh={(id)=>fh.refresh(id)} onDuplicate={(f)=>{setDuplicateData(f);navigate("/new");}} onEdit={(f)=>{setEditData(f);navigate("/edit/"+f.id);}} goToMap={goToMap}/>}
+        {screen==="detail" && <DetailScreen user={curFreight ? {...auth.user, userType: _resolveType(curFreight)} : auth.user} freight={curFreight} perms={perms} onBack={()=>navigate("/list")} onAction={handleAction} onTripAction={handleTripAction} actionLoading={actionLoading} onChat={(convId)=>{if(convId){setChatConvId(convId);navigate("/chats");}}} onRefresh={(id)=>fh.refresh(id)} onDuplicate={(f)=>{setDuplicateData(f);navigate("/new");}} onEdit={(f)=>{setEditData(f);navigate("/edit/"+f.id);}} goToMap={goToMap}/>}
         {screen==="new" && <NewScreen user={auth.user} lots={catalog.lots} plants={catalog.plants} branches={catalog.branches} fields={catalog.fields} trucks={catalog.trucks} onBack={()=>{setDuplicateData(null);navigate("/");}} onCreate={handleCreate} submitting={submitting} duplicateFrom={duplicateData}/>}
         {screen==="edit" && editData && <EditScreen freight={editData} fields={catalog.fields} plants={catalog.plants} onBack={()=>{setEditData(null);navigate(-1);}} onSave={async(id,data)=>{const r=await fh.update(id,data);if(r.ok) return "Flete actualizado"; show(r.error,"err"); return "";}}/>}
         {screen==="menu" && <MenuScreen user={auth.user} perms={perms} onLogout={auth.logout} onNav={nav} isDesktop={isDesktop} onSwitchCompany={async(id)=>{setViewAll(false);const r=await auth.switchCompany(id);if(r.ok){fh.fetchAll();catalog.refresh();}return r;}} onRefresh={()=>{fh.fetchAll();catalog.refresh();}} pwa={pwa}/>}
@@ -437,7 +461,7 @@ export default function Tolvink() {
 
       {(submitting||submitDone) && <LoadingOverlay closing={!!submitDone} closingText={submitDone} onClose={()=>{setSubmitDone("");navigate("/list");}}/>}
       <Suspense fallback={null}>
-      {modal?.type==="assign" && <AssignModal freight={modal.freight} transporters={catalog.transporters} onClose={()=>setModal(null)} onConfirm={(compId,truckId,driverId)=>handleAssign(modal.freight.id,compId,truckId,driverId)}/>}
+      {modal?.type==="assign" && <AssignModal freight={modal.freight} transporters={catalog.transporters} onClose={()=>setModal(null)} onConfirm={(compId,truckId,driverId)=>handleAssign(modal.freight.id,compId,truckId,driverId)} onAssignMulti={handleAssignMulti}/>}
       {modal?.type==="truck_select" && <TruckSelectModal freight={modal.freight} trucks={catalog.trucks} user={auth.user} onClose={()=>setModal(null)} onConfirm={(t,driverId)=>handleAcceptWithTruck(modal.freight.id,t,driverId)}/>}
       {modal?.type==="confirm_action" && <ConfirmActionModal freight={modal.freight} title={modal.title} btnLabel={modal.btnLabel} btnVariant={modal.btnVariant} icon={modal.icon} onClose={()=>setModal(null)} onConfirm={()=>handleConfirmAction(modal.freight.id,modal.action)}/>}
       {modal?.type==="reason" && <ReasonModal title={modal.title} freight={modal.freight} btnLabel={modal.btnLabel} onClose={()=>setModal(null)} onConfirm={r=>handleReasonAction(modal.freight.id,r,modal.action)}/>}

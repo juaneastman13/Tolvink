@@ -200,6 +200,7 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
                         <Bd color={st.color} bg={st.bg} small>{st.label}</Bd>
                       </div>
                       {f.isOwnFleet && <span style={{ fontSize:9, color:C.acc, fontWeight:600 }}>Flota propia</span>}
+                      {f.isMultiTruck && <span style={{ fontSize:9, color:C.info, fontWeight:600 }}>{f.assignedTruckCount}/{f.truckCount} cam.</span>}
                     </div>
                     <div style={{fontSize:14,fontWeight:700,color:C.t1,marginBottom:6}}>{f.grain==="Otros"?f.productTypeOther||"Otros":f.grain} · {f.tons} {f.unit||"tn"}</div>
                     <div style={{display:"flex",flexDirection:"column",gap:3,fontSize:11,color:C.t2}}>
@@ -238,6 +239,7 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
                         <Bd color={st.color} bg={st.bg} small>{st.label}</Bd>
                       </div>
                       {f.isOwnFleet && <span style={{ fontSize:9, color:C.acc, fontWeight:600 }}>Flota propia</span>}
+                      {f.isMultiTruck && <span style={{ fontSize:9, color:C.info, fontWeight:600 }}>{f.assignedTruckCount}/{f.truckCount} cam.</span>}
                     </div>
                     <div style={{fontSize:14,fontWeight:700,color:C.t1,marginBottom:6}}>{f.grain==="Otros"?f.productTypeOther||"Otros":f.grain} · {f.tons} {f.unit||"tn"}</div>
                     <div style={{display:"flex",flexDirection:"column",gap:3,fontSize:11,color:C.t2}}>
@@ -270,13 +272,13 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
             <table style={{ width:"100%", borderCollapse:"collapse", fontSize:12, fontFamily:"inherit" }}>
               <thead>
                 <tr style={{ background:C.bg, borderBottom:`2px solid ${C.b1}` }}>
-                  {["Código","Estado","Producto","Empresa","Campo / Lote","Destino","Fecha","Hora","Transportista","Matrícula","Chofer","Celular"].map(h=>(
+                  {["C\u00f3digo","Estado","Producto","Cam.","Empresa","Campo / Lote","Destino","Fecha","Hora","Transportista","Matr\u00edcula","Chofer","Celular"].map(h=>(
                     <th key={h} style={{ padding:"10px 12px", textAlign:"left", fontSize:10, fontWeight:700, color:C.t2, textTransform:"uppercase", letterSpacing:0.5, whiteSpace:"nowrap" }}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {filtered.length===0 && <tr><td colSpan={12} style={{ padding:24, textAlign:"center", color:C.t3, fontSize:12 }}>Sin fletes</td></tr>}
+                {filtered.length===0 && <tr><td colSpan={13} style={{ padding:24, textAlign:"center", color:C.t3, fontSize:12 }}>Sin fletes</td></tr>}
                 {filtered.map(f=>{
                   const st = stCfg(f.status);
                   const campoLote = [f.fieldName, f.originName].filter(Boolean).join(" / ") || "—";
@@ -285,6 +287,7 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
                       <td style={{ padding:"10px 12px", fontFamily:MONO, fontWeight:700, fontSize:11, color:C.t2, whiteSpace:"nowrap" }}>{f.code}</td>
                       <td style={{ padding:"10px 12px" }}><Bd color={st.color} bg={st.bg} small>{st.label}</Bd></td>
                       <td style={{ padding:"10px 12px", fontWeight:600, color:C.t1 }}>{f.grain==="Otros"?f.productTypeOther||"Otros":f.grain} · {f.tons} {f.unit||"tn"}</td>
+                      <td style={{ padding:"10px 12px", color:f.isMultiTruck?C.info:C.t3, fontWeight:f.isMultiTruck?600:400, fontSize:11, whiteSpace:"nowrap" }}>{f.isMultiTruck?`${f.assignedTruckCount}/${f.truckCount}`:"1"}</td>
                       <td style={{ padding:"10px 12px", color:C.t2 }}>{f.originCompanyName||f.originName}</td>
                       <td style={{ padding:"10px 12px", color:C.t2 }}>{campoLote}{f.originLat&&f.originLng&&<span onClick={(e)=>{e.stopPropagation();goToMap(f.originLat,f.originLng,[f.fieldName,f.originName].filter(Boolean).join(" / "));}} style={{cursor:"pointer",opacity:0.6,marginLeft:3,fontSize:10}} title="Ver en mapa">{"\uD83D\uDCCD"}</span>}</td>
                       <td style={{ padding:"10px 12px", color:C.t2 }}>{f.destName}{f.destLat&&f.destLng&&<span onClick={(e)=>{e.stopPropagation();goToMap(f.destLat,f.destLng,f.destName);}} style={{cursor:"pointer",opacity:0.6,marginLeft:3,fontSize:10}} title="Ver en mapa">{"\uD83D\uDCCD"}</span>}</td>

@@ -3,7 +3,9 @@ import { C, Ic } from "../theme";
 import { Btn, Field, ModalOverlay } from "../components";
 import { apiGetTrucks, apiCreateTruck, apiGetDrivers, apiCreateDriver } from "../api";
 
-export default function AssignModal({ freight, transporters, onClose, onConfirm }) {
+export default function AssignModal({ freight, transporters, onClose, onConfirm, onAssignMulti }) {
+  const multiTruck = (freight.truckCount || 1) > 1;
+  const [truckList, setTruckList] = useState([]);
   const [mode,setMode] = useState("company"); // "company" | "own"
   const [t,setT] = useState("");
   const [truckId,setTruckId] = useState("");
@@ -27,27 +29,39 @@ export default function AssignModal({ freight, transporters, onClose, onConfirm 
   const [driverErr,setDriverErr] = useState("");
   const ts = transporters||[];
 
+  // Multi-truck: how many more needed
+  const alreadyAssigned = freight.assignedTruckCount || 0;
+  const needed = (freight.truckCount || 1) - alreadyAssigned;
+  const totalTons = freight.tons || 0;
+  const defaultTonsPerTruck = needed > 0 ? Math.round(totalTons / (freight.truckCount || 1) * 10) / 10 : totalTons;
+  const [tonsInput, setTonsInput] = useState(defaultTonsPerTruck.toString());
+
   // Either origin (producer) or dest (plant) can have own fleet
   const hasOwnFleet = !!freight.originHasOwnFleet || !!freight.destHasOwnFleet;
-  // Determine which company's fleet to use (prefer dest=plant, fallback to origin=producer)
   const ownFleetCompanyId = freight.destHasOwnFleet ? freight.destCompanyId : freight.originCompanyId;
 
-  // Load trucks when switching to own fleet mode
-  const loadTrucks = ()=>{
-    if(!ownFleetCompanyId) return;
+  const loadTrucks = (compId)=>{
+    const cid = compId || (mode==="own"?ownFleetCompanyId:t);
+    if(!cid) return;
     setLoadingTrucks(true);
-    apiGetTrucks(ownFleetCompanyId).then(r=>{ setTrucks((r||[]).filter(t=>t.active!==false)); }).catch(()=>setTrucks([])).finally(()=>setLoadingTrucks(false));
+    apiGetTrucks(cid).then(r=>{ setTrucks((r||[]).filter(t=>t.active!==false)); }).catch(()=>setTrucks([])).finally(()=>setLoadingTrucks(false));
   };
-  const loadDriversFn = ()=>{
-    if(!ownFleetCompanyId) return;
+  const loadDriversFn = (compId)=>{
+    const cid = compId || (mode==="own"?ownFleetCompanyId:t);
+    if(!cid) return;
     setLoadingDrivers(true);
-    apiGetDrivers(ownFleetCompanyId).then(r=>{ setDrivers(r||[]); }).catch(()=>setDrivers([])).finally(()=>setLoadingDrivers(false));
+    apiGetDrivers(cid).then(r=>{ setDrivers(r||[]); }).catch(()=>setDrivers([])).finally(()=>setLoadingDrivers(false));
   };
-  useEffect(()=>{ if(mode==="own"){ loadTrucks(); loadDriversFn(); } },[mode,ownFleetCompanyId]);
+  useEffect(()=>{ if(mode==="own"){ loadTrucks(ownFleetCompanyId); loadDriversFn(ownFleetCompanyId); } },[mode,ownFleetCompanyId]);
+
+  // Multi-truck: also load trucks when selecting external company
+  useEffect(()=>{
+    if(multiTruck && mode==="company" && t) { loadTrucks(t); loadDriversFn(t); }
+  },[t]);
 
   // Pre-select driver from truck's assignedUser
   useEffect(()=>{
-    if(truckId && mode==="own"){
+    if(truckId){
       const tk = trucks.find(x=>x.id===truckId);
       if(tk?.assignedUser?.id){
         const d = drivers.find(x=>x.id===tk.assignedUser.id);
@@ -84,6 +98,32 @@ export default function AssignModal({ freight, transporters, onClose, onConfirm 
     finally { setSavingDriver(false); }
   };
 
+  // Add truck to multi-truck list
+  const addToList = () => {
+    const compId = mode==="own" ? ownFleetCompanyId : t;
+    if(!compId) return;
+    if(mode==="own" && !truckId) return;
+    const selTruck = trucks.find(x=>x.id===truckId);
+    const selDriver = drivers.find(x=>x.id===driverId);
+    const compName = mode==="own" ? "Flota propia" : (ts.find(x=>x.id===compId)?.name||"");
+    setTruckList(prev => [...prev, {
+      transportCompanyId: compId,
+      truckId: truckId || undefined,
+      driverId: driverId || undefined,
+      tons: parseFloat(tonsInput) || undefined,
+      _plate: selTruck?.plate || "",
+      _compName: compName,
+      _driverName: selDriver?.name || "",
+    }]);
+    setT(""); setTruckId(""); setDriverId("");
+    setTonsInput(defaultTonsPerTruck.toString());
+  };
+
+  const removeFromList = (idx) => {
+    setTruckList(prev => prev.filter((_,i) => i !== idx));
+  };
+
+  // Single-truck confirm (existing behavior)
   const doConfirm = async ()=>{
     if(loading||closing) return;
     if(mode==="company" && !t) return;
@@ -97,15 +137,62 @@ export default function AssignModal({ freight, transporters, onClose, onConfirm 
     if(msg){ setClosingText(msg); setClosing(true); }
   };
 
-  // Filter out origin company from external transporters list
+  // Multi-truck confirm
+  const doConfirmMulti = async ()=>{
+    if(loading||closing||!onAssignMulti) return;
+    if(truckList.length===0) return;
+    setLoading(true);
+    const payload = truckList.map(t => ({
+      transportCompanyId: t.transportCompanyId,
+      truckId: t.truckId,
+      driverId: t.driverId,
+      tons: t.tons,
+    }));
+    const msg = await onAssignMulti(payload);
+    setLoading(false);
+    if(msg){ setClosingText(msg); setClosing(true); }
+  };
+
   const externalTs = ts.filter(x=>x.id!==freight.originCompanyId);
+  const canAdd = (mode==="company"&&t) || (mode==="own"&&truckId);
+
+  // ======================== RENDER =====================================
 
   return (
     <ModalOverlay onClose={onClose} loading={loading} closing={closing} closingText={closingText}>
       <div style={{fontSize:17,fontWeight:700,marginBottom:4}}>Asignar transporte · {freight.code}</div>
-      <div style={{fontSize:12,color:C.t2,marginBottom:14}}>{freight.grain} · {freight.tons}tn · {freight.originName}</div>
+      <div style={{fontSize:12,color:C.t2,marginBottom:multiTruck?8:14}}>{freight.grain} · {freight.tons}tn · {freight.originName}</div>
 
-      {/* Mode toggle — only show if origin has own fleet */}
+      {/* Multi-truck header */}
+      {multiTruck && (
+        <div style={{background:`${C.info}10`,border:`1px solid ${C.info}30`,borderRadius:10,padding:"10px 14px",marginBottom:14,display:"flex",alignItems:"center",gap:10}}>
+          {Ic.truck(C.info,18)}
+          <div>
+            <div style={{fontSize:13,fontWeight:700,color:C.info}}>Necesita {freight.truckCount} camiones</div>
+            <div style={{fontSize:11,color:C.t2}}>{alreadyAssigned} asignados · {needed - truckList.length} pendientes</div>
+          </div>
+        </div>
+      )}
+
+      {/* Truck list (multi-truck) */}
+      {multiTruck && truckList.length > 0 && (
+        <div style={{marginBottom:14}}>
+          <label style={{fontSize:10.5,fontWeight:600,color:C.t2,marginBottom:6,display:"block",textTransform:"uppercase",letterSpacing:0.6}}>Camiones a asignar</label>
+          {truckList.map((tk,i) => (
+            <div key={i} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 12px",borderRadius:10,border:`1px solid ${C.b1}`,background:C.w,marginBottom:6}}>
+              <span style={{fontSize:12,fontWeight:700,color:C.pri}}>#{i+1}</span>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontSize:12,fontWeight:600,color:C.t1}}>{tk._compName}{tk._plate?` · ${tk._plate}`:""}</div>
+                {tk._driverName && <div style={{fontSize:10.5,color:C.t3}}>{tk._driverName}</div>}
+                {tk.tons && <div style={{fontSize:10,color:C.t3}}>{tk.tons} tn</div>}
+              </div>
+              <button onClick={()=>removeFromList(i)} style={{background:"none",border:"none",cursor:"pointer",padding:4}}>{Ic.cross(C.err,14)}</button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Mode toggle */}
       {hasOwnFleet && <div style={{display:"flex",gap:0,marginBottom:16,borderRadius:10,overflow:"hidden",border:`1.5px solid ${C.b1}`}}>
         <button onClick={()=>{setMode("company");setTruckId("");setDriverId("");}} style={{flex:1,padding:"10px 0",fontFamily:"inherit",fontSize:12.5,fontWeight:mode==="company"?700:500,background:mode==="company"?C.pri:C.w,color:mode==="company"?C.w:C.t2,border:"none",cursor:"pointer"}}>Empresa</button>
         <button onClick={()=>{setMode("own");setT("");}} style={{flex:1,padding:"10px 0",fontFamily:"inherit",fontSize:12.5,fontWeight:mode==="own"?700:500,background:mode==="own"?C.acc:C.w,color:mode==="own"?C.w:C.t2,border:"none",cursor:"pointer",borderLeft:`1px solid ${C.b1}`}}>Flota propia</button>
@@ -123,10 +210,30 @@ export default function AssignModal({ freight, transporters, onClose, onConfirm 
             </div>
           </button>)}
         </div>
+
+        {/* Multi-truck: show truck/driver for external company too */}
+        {multiTruck && t && <>
+          <label style={{fontSize:10.5,fontWeight:600,color:C.t2,marginBottom:8,display:"block",textTransform:"uppercase",letterSpacing:0.6}}>Camión (opcional)</label>
+          <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:10,maxHeight:140,overflowY:"auto"}}>
+            {loadingTrucks && <div style={{fontSize:12,color:C.t3,padding:8,textAlign:"center"}}>Cargando...</div>}
+            {!loadingTrucks && trucks.map(tk=><button key={tk.id} onClick={()=>setTruckId(tk.id===truckId?"":tk.id)} style={{padding:"10px 12px",borderRadius:10,textAlign:"left",fontFamily:"inherit",border:`1.5px solid ${truckId===tk.id?C.acc:C.b1}`,background:truckId===tk.id?C.accPale:C.w,fontSize:12,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",gap:8}}>
+              {Ic.truck(truckId===tk.id?C.acc:C.t3,14)} {tk.plate}{tk.model?` · ${tk.model}`:""}
+            </button>)}
+          </div>
+          <label style={{fontSize:10.5,fontWeight:600,color:C.t2,marginBottom:8,display:"block",textTransform:"uppercase",letterSpacing:0.6}}>Chofer (opcional)</label>
+          <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:10,maxHeight:140,overflowY:"auto"}}>
+            {loadingDrivers && <div style={{fontSize:12,color:C.t3,padding:8,textAlign:"center"}}>Cargando...</div>}
+            {!loadingDrivers && drivers.map(d=><button key={d.id} onClick={()=>setDriverId(d.id===driverId?"":d.id)} style={{padding:"10px 12px",borderRadius:10,textAlign:"left",fontFamily:"inherit",border:`1.5px solid ${driverId===d.id?C.info:C.b1}`,background:driverId===d.id?`${C.info}10`:C.w,fontSize:12,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",gap:8}}>
+              {Ic.user(driverId===d.id?C.info:C.t3,14)} {d.name}
+            </button>)}
+          </div>
+          <div style={{marginBottom:14}}>
+            <Field label="Toneladas para este camión" value={tonsInput} onChange={setTonsInput} placeholder={`${defaultTonsPerTruck}`}/>
+          </div>
+        </>}
       </>}
 
       {mode==="own" && <>
-        {/* Truck selection */}
         <label style={{fontSize:10.5,fontWeight:600,color:C.t2,marginBottom:8,display:"block",textTransform:"uppercase",letterSpacing:0.6}}>Seleccioná un vehículo</label>
         <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:10,maxHeight:180,overflowY:"auto"}}>
           {loadingTrucks && <div style={{fontSize:12,color:C.t3,padding:10,textAlign:"center"}}>Cargando vehículos...</div>}
@@ -141,7 +248,6 @@ export default function AssignModal({ freight, transporters, onClose, onConfirm 
           </button>)}
         </div>
 
-        {/* Inline new truck form */}
         {!showNewTruck ? (
           <button onClick={()=>{setShowNewTruck(true);setTruckErr("");}} style={{width:"100%",padding:"10px 0",borderRadius:10,border:`1.5px dashed ${C.acc}`,background:`${C.acc}08`,color:C.acc,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:6,marginBottom:10}}>
             {Ic.plus(C.acc,14)} Agregar vehículo
@@ -160,7 +266,6 @@ export default function AssignModal({ freight, transporters, onClose, onConfirm 
           </div>
         )}
 
-        {/* Driver selection */}
         <label style={{fontSize:10.5,fontWeight:600,color:C.t2,marginBottom:8,marginTop:6,display:"block",textTransform:"uppercase",letterSpacing:0.6}}>Chofer (opcional)</label>
         <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:10,maxHeight:160,overflowY:"auto"}}>
           {loadingDrivers && <div style={{fontSize:12,color:C.t3,padding:10,textAlign:"center"}}>Cargando choferes...</div>}
@@ -175,7 +280,6 @@ export default function AssignModal({ freight, transporters, onClose, onConfirm 
           </button>})}
         </div>
 
-        {/* Inline new driver form */}
         {!showNewDriver ? (
           <button onClick={()=>{setShowNewDriver(true);setDriverErr("");}} style={{width:"100%",padding:"10px 0",borderRadius:10,border:`1.5px dashed ${C.info}`,background:`${C.info}08`,color:C.info,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:6,marginBottom:10}}>
             {Ic.plus(C.info,14)} Agregar chofer
@@ -193,12 +297,33 @@ export default function AssignModal({ freight, transporters, onClose, onConfirm 
             </div>
           </div>
         )}
+
+        {multiTruck && truckId && (
+          <div style={{marginBottom:14}}>
+            <Field label="Toneladas para este camión" value={tonsInput} onChange={setTonsInput} placeholder={`${defaultTonsPerTruck}`}/>
+          </div>
+        )}
       </>}
 
       <div style={{display:"flex",gap:8}}>
         <Btn full v="ghost" onClick={onClose} disabled={loading||closing}>Cancelar</Btn>
-        <Btn full v={mode==="own"?"acc":undefined} disabled={(mode==="company"&&!t)||(mode==="own"&&!truckId)||loading||closing} onClick={doConfirm}>{loading?"Asignando...":"Asignar"}</Btn>
+        {multiTruck ? (<>
+          <Btn full v="acc" disabled={!canAdd||loading||closing} onClick={addToList}>Agregar camión</Btn>
+        </>) : (
+          <Btn full v={mode==="own"?"acc":undefined} disabled={(mode==="company"&&!t)||(mode==="own"&&!truckId)||loading||closing} onClick={doConfirm}>{loading?"Asignando...":"Asignar"}</Btn>
+        )}
       </div>
+
+      {/* Multi-truck: final assign all button */}
+      {multiTruck && truckList.length > 0 && (
+        <div style={{marginTop:10}}>
+          <Btn full disabled={loading||closing} onClick={doConfirmMulti}>
+            {loading?"Asignando...":truckList.length < needed
+              ? `Asignar ${truckList.length} camión${truckList.length>1?"es":""} (parcial)`
+              : `Asignar ${truckList.length} camiones`}
+          </Btn>
+        </div>
+      )}
     </ModalOverlay>
   );
 }

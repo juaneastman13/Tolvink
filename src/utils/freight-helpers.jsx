@@ -17,7 +17,50 @@ export function resolveUserTypeForFreight(freight, user) {
 }
 
 // ======================== GET PENDING ACTIONS ==========================
-export function getPendingActions(freight, userType, role) {
+
+// Multi-truck: find most urgent action across user's assignments
+function getMultiTruckPendingAction(freight, userType, role, user) {
+  const aa = freight.activeAssignments || [];
+  if (!aa.length) {
+    if (userType === "plant" && freight.assignedTruckCount < freight.truckCount) {
+      return { action: `Asignar ${freight.truckCount - freight.assignedTruckCount} camiones`, color: C.acc, icon: "assign", actionKey: "assign_multi" };
+    }
+    return null;
+  }
+
+  // Plant: check if more trucks needed
+  if (userType === "plant") {
+    if (freight.assignedTruckCount < freight.truckCount) {
+      return { action: `Asignar ${freight.truckCount - freight.assignedTruckCount} camiones`, color: C.acc, icon: "assign", actionKey: "assign_multi" };
+    }
+    // Check for pending confirm_finished on any trip
+    const needsFinish = aa.find(a => a.tripStatus === "loaded" && !a.plantFinishedConfirmedAt);
+    if (needsFinish) return { action: `Confirmar entrega #${needsFinish.tripNumber}`, color: C.pri, icon: "confirm", actionKey: "confirm_trip_finished", assignmentId: needsFinish.id };
+    return null;
+  }
+
+  // Transporter/chofer: find most urgent among own assignments
+  const myAssignments = role === "chofer"
+    ? aa.filter(a => a.driverId === user?.id)
+    : aa.filter(a => a.transportCompanyId === user?.companyId);
+  if (!myAssignments.length) return null;
+
+  // Priority: pending > accepted > in_progress > loaded
+  const pending = myAssignments.find(a => a.tripStatus === "pending");
+  if (pending) return { action: `Aceptar camión #${pending.tripNumber}`, color: C.sec, icon: "respond", actionKey: "respond_trip", assignmentId: pending.id };
+  const accepted = myAssignments.find(a => a.tripStatus === "accepted");
+  if (accepted) return { action: `Iniciar viaje #${accepted.tripNumber}`, color: C.pri, icon: "start", actionKey: "start_trip", assignmentId: accepted.id };
+  const inProgress = myAssignments.find(a => a.tripStatus === "in_progress" && !a.transporterLoadedConfirmedAt);
+  if (inProgress) return { action: `Confirmar carga #${inProgress.tripNumber}`, color: C.acc, icon: "confirm", actionKey: "confirm_trip_loaded", assignmentId: inProgress.id };
+  const loaded = myAssignments.find(a => a.tripStatus === "loaded" && !a.transporterFinishedConfirmedAt);
+  if (loaded) return { action: `Confirmar entrega #${loaded.tripNumber}`, color: C.pri, icon: "confirm", actionKey: "confirm_trip_finished", assignmentId: loaded.id };
+  return null;
+}
+
+export function getPendingActions(freight, userType, role, user) {
+  // Multi-truck: delegate to specialized function
+  if (freight.isMultiTruck) return getMultiTruckPendingAction(freight, userType, role, user);
+
   const s = freight.status;
   const own = freight.isOwnFleet;
   if (role === "chofer" || userType === "chofer") {
