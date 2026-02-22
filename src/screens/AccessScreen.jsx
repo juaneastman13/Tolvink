@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { C, Ic } from "../theme";
 import { Btn, Bd, Field, Loader, LoadingOverlay, ModalOverlay } from "../components";
 import { apiGrantAccess, apiRevokeAccess, apiListAccessProducers, apiListAccessPlants, apiSearchProducer, apiSearchCompany, apiGetMyFacilities, apiAdminListCompanies } from "../api";
+import { useCatalogStore } from "../store";
 
 export default function AccessScreen({ user, onBack, embedded, defaultCompanyId, defaultCompanyType }) {
   const isAdmin = user?.role === "platform_admin";
@@ -92,6 +93,7 @@ export default function AccessScreen({ user, onBack, embedded, defaultCompanyId,
     }
     try {
       await apiGrantAccess({ producerUserId: userId, producerCompanyId: companyId, allowedPlantIds: selectedPlantIds, ...(isAdmin && selCompanyId ? { plantCompanyId: selCompanyId } : {}) });
+      useCatalogStore.getState().clearCache();
       setSearchQ(""); setSelectedProducer(null); setSelectedCompany(null); setSearchResults([]); setShowGrant(false); setEditingAccess(null);
       setSelectedPlantIds([]);
       setSaving(false); setDoneMsg(editingAccess ? "Habilitación actualizada" : selectedCompany ? "Empresa habilitada" : grantType==="producer"?"Productor habilitado":"Transportista habilitado"); load();
@@ -101,7 +103,7 @@ export default function AccessScreen({ user, onBack, embedded, defaultCompanyId,
   const handleRevoke = async (accessId) => {
     if(saving) return;
     setSaving(true);
-    try { await apiRevokeAccess(accessId); setSaving(false); setRevokeClosing("Acceso revocado"); load(); }
+    try { await apiRevokeAccess(accessId); useCatalogStore.getState().clearCache(); setSaving(false); setRevokeClosing("Acceso revocado"); load(); }
     catch (e) { setMsg({ t: e.message, k: "err" }); setSaving(false); }
   };
 
