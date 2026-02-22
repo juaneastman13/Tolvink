@@ -145,13 +145,21 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
         const steps = ["pending_assignment","assigned","accepted","in_progress","loaded","finished"];
         const curIdx = steps.indexOf(freight.status);
         const fmtD = (d) => { try { const dt=new Date(d); return dt.toLocaleDateString("es-AR",{day:"2-digit",month:"short"})+" "+dt.toLocaleTimeString("es-AR",{hour:"2-digit",minute:"2-digit",hour12:false}); } catch(e){ return ""; } };
-        const actionLabels = { created:"Solicitado", assigned:"Asignado", accepted:"Aceptado", rejected:"Rechazado", started:"Viaje iniciado", confirm_loaded:"Carga confirmada", confirm_finished:"Entrega confirmada", finished:"Finalizado", canceled:"Cancelado", authorized:"Autorizado", updated:"Editado" };
-        const actionColors = { created:C.pri, assigned:C.sec, accepted:C.info, rejected:C.err, started:C.acc, confirm_loaded:C.acc, confirm_finished:C.pri, finished:C.ok, canceled:C.err, authorized:C.info, updated:C.t2 };
-        const stepAuditActions = { pending_assignment:["created"], assigned:["assigned"], accepted:["accepted","authorized"], in_progress:["started"], loaded:["confirm_loaded"], finished:["confirm_finished","finished"] };
+        const actionLabels = { created:"Solicitado", assigned:"Asignado", assigned_multi:"Asignado", accepted:"Aceptado", rejected:"Rechazado", started:"Iniciado", confirm_loaded:"Carga OK", confirm_finished:"Entrega OK", finished:"Finalizado", canceled:"Cancelado", authorized:"Autorizado", updated:"Editado", trip_accepted:"Aceptado", trip_rejected:"Rechazado", trip_started:"Iniciado", trip_confirm_loaded:"Carga OK", trip_confirm_finished:"Entrega OK", trip_finished:"Finalizado", assignment_canceled:"Cancelado", assignment_updated:"Editado" };
+        const actionColors = { created:C.pri, assigned:C.sec, assigned_multi:C.sec, accepted:C.info, rejected:C.err, started:C.acc, confirm_loaded:C.acc, confirm_finished:C.pri, finished:C.ok, canceled:C.err, authorized:C.info, updated:C.t2, trip_accepted:C.info, trip_rejected:C.err, trip_started:C.acc, trip_confirm_loaded:C.acc, trip_confirm_finished:C.pri, trip_finished:C.ok, assignment_canceled:C.err, assignment_updated:C.t2 };
+        const stepAuditActions = {
+          pending_assignment:["created"],
+          assigned:["assigned","assigned_multi","assignment_updated","assignment_canceled"],
+          accepted:["accepted","authorized","trip_accepted","trip_rejected"],
+          in_progress:["started","trip_started"],
+          loaded:["confirm_loaded","trip_confirm_loaded"],
+          finished:["confirm_finished","finished","trip_confirm_finished","trip_finished"],
+        };
         const stepToTrip = { assigned:"pending", accepted:"accepted", in_progress:"in_progress", loaded:"loaded", finished:"finished" };
         const tripRank = { pending:0, accepted:1, in_progress:2, loaded:3, finished:4 };
         const getStepLogs = (step) => { if(!auditLog) return []; return auditLog.filter(l=>(stepAuditActions[step]||[]).includes(l.action)); };
         const getTruckCount = (step) => { if(!isMultiTruck) return null; const ts=stepToTrip[step]; if(!ts) return null; const rank=tripRank[ts]??0; return (freight.activeAssignments||[]).filter(a=>(tripRank[a.tripStatus]??0)>=rank).length; };
+        const tripLabel = (log) => { const tn = log.metadata?.tripNumber; return tn ? `Viaje #${tn}` : null; };
         return <div ref={auditRef} style={{ background:C.w, border:`1px solid ${C.b1}`, borderRadius:12, padding:16, marginBottom:12, boxShadow:C.sh, position:"relative" }}>
           <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:12 }}>
             <span style={{ fontSize:10.5, fontWeight:700, color:C.t2, textTransform:"uppercase", letterSpacing:0.5 }}>Progreso</span>
@@ -169,43 +177,40 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
               </div>;
             })}
           </div>
-          {/* Per-stage detail */}
+          {/* Per-stage detail — columnar, aligned with progress bar */}
           {showAudit && auditLog && (
-            <div style={{ marginTop:14, borderTop:`1px solid ${C.b1}`, paddingTop:14 }}>
+            <div style={{ display:"flex", gap:3, marginTop:12, borderTop:`1px solid ${C.b1}`, paddingTop:10 }}>
               {steps.map((s,i)=>{
                 const done = i < curIdx; const active = i === curIdx;
-                if (!done && !active) return null;
                 const c = stCfg(s);
                 const logs = getStepLogs(s);
                 const tc = getTruckCount(s);
+                const col = done ? C.pri : active ? (c.border||c.color) : C.t3;
                 return (
-                  <div key={s} style={{ marginBottom: i < curIdx ? 16 : 0 }}>
-                    <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
-                      <div style={{ width:10, height:10, borderRadius:5, background: done ? C.pri : c.border, flexShrink:0 }} />
-                      <span style={{ fontSize:11, fontWeight:700, color: done ? C.pri : c.color, textTransform:"uppercase", letterSpacing:0.4 }}>{c.label}</span>
-                      {tc !== null && <span style={{ fontSize:10, fontWeight:700, color:C.t2, background:C.b2, borderRadius:6, padding:"2px 8px" }}>{tc}/{freight.truckCount} camiones</span>}
-                    </div>
-                    {logs.length > 0 ? (
-                      <div style={{ position:"relative", paddingLeft:22, marginLeft:4 }}>
-                        <div style={{ position:"absolute", left:4, top:4, bottom:4, width:2, background:C.b1, borderRadius:1 }} />
-                        {logs.map((log, li) => {
-                          const col = actionColors[log.action] || C.t2;
-                          return (
-                            <div key={log.id} style={{ position:"relative", paddingBottom: li < logs.length-1 ? 14 : 0 }}>
-                              <div style={{ position:"absolute", left:-20, top:2, width:10, height:10, borderRadius:5, background:col, zIndex:2 }} />
-                              <div style={{ fontSize:12, fontWeight:700, color:col }}>{actionLabels[log.action]||log.action}</div>
-                              <div style={{ fontSize:10.5, color:C.t2, marginTop:1 }}>{log.user?.name||"Sistema"}{log.user?.company?.name ? ` \u00b7 ${log.user.company.name}` : ""}</div>
-                              {log.reason && <div style={{ fontSize:10, color:C.t3, fontStyle:"italic", marginTop:2 }}>"{log.reason}"</div>}
-                              <div style={{ fontSize:9.5, color:C.t3, marginTop:2 }}>{fmtD(log.createdAt)}</div>
-                            </div>
-                          );
-                        })}
+                  <div key={s} style={{ flex:1, minWidth:0 }}>
+                    {tc !== null && (
+                      <div style={{ textAlign:"center", fontSize:9, fontWeight:700, color:col, marginBottom:6, background:`${col}12`, borderRadius:5, padding:"2px 0" }}>
+                        {tc}/{freight.truckCount}
                       </div>
-                    ) : <div style={{ fontSize:10.5, color:C.t3, marginLeft:22 }}>{"\u2014"}</div>}
+                    )}
+                    {(done || active) && logs.length > 0 ? logs.map(log => {
+                      const acCol = actionColors[log.action] || C.t2;
+                      const tn = tripLabel(log);
+                      return (
+                        <div key={log.id} style={{ marginBottom:10, borderLeft:`2px solid ${acCol}`, paddingLeft:6 }}>
+                          <div style={{ fontSize:8.5, fontWeight:700, color:acCol, lineHeight:1.3 }}>{actionLabels[log.action]||log.action}</div>
+                          {tn && <div style={{ fontSize:7.5, fontWeight:600, color:C.t2, marginTop:1 }}>{tn}</div>}
+                          <div style={{ fontSize:8, color:C.t2, marginTop:1, lineHeight:1.2, wordBreak:"break-word" }}>{log.user?.name||"Sistema"}</div>
+                          {log.user?.company?.name && <div style={{ fontSize:7.5, color:C.t3, lineHeight:1.2 }}>{log.user.company.name}</div>}
+                          {(log.reason || log.metadata?.reason) && <div style={{ fontSize:7.5, color:C.t3, fontStyle:"italic", marginTop:1 }}>"{log.reason||log.metadata.reason}"</div>}
+                          {log.metadata?.confirmedBy && <div style={{ fontSize:7.5, color:C.t3, marginTop:1 }}>por {log.metadata.confirmedBy==="transporter"?"transportista":log.metadata.confirmedBy==="producer"?"productor":log.metadata.confirmedBy==="plant"?"planta":log.metadata.confirmedBy}</div>}
+                          <div style={{ fontSize:7.5, color:C.t3, marginTop:1 }}>{fmtD(log.createdAt)}</div>
+                        </div>
+                      );
+                    }) : (done || active) ? <div style={{ fontSize:8, color:C.t3, textAlign:"center" }}>{"\u2014"}</div> : null}
                   </div>
                 );
               })}
-              {auditLog.length === 0 && <div style={{ fontSize:11, color:C.t3 }}>Sin registros</div>}
             </div>
           )}
         </div>;
