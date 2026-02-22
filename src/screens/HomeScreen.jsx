@@ -6,7 +6,7 @@ import { useIsDesktop } from "../hooks";
 import { getPendingActions, resolveUserTypeForFreight } from "../utils/freight-helpers";
 import DetailScreen from "./DetailScreen";
 
-export default function HomeScreen({ user, freights, loading, perms, onNav, catalog, isDesktop, onAction, actionLoading, onChat, onRefresh, onDuplicate, onEdit, goToMap, pwa }) {
+export default function HomeScreen({ user, freights, loading, perms, onNav, catalog, isDesktop, onAction, onTripAction, actionLoading, onChat, onRefresh, onDuplicate, onEdit, goToMap, pwa }) {
   const [selectedId, setSelectedId] = useState(null);
   const [pendingFilter, setPendingFilter] = useState("all");
   const [summaryFilter, setSummaryFilter] = useState("all");
@@ -294,7 +294,7 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
       <div style={{ flex: 1, position: "relative" }}>
         <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, display: "flex", flexDirection: "row" }}>
           {listContent}
-          <DetailScreen user={detailUser} freight={selFreight} perms={perms} onBack={() => setSelectedId(null)} onAction={onAction} actionLoading={actionLoading} onChat={onChat} onRefresh={onRefresh} onDuplicate={onDuplicate} onEdit={onEdit} />
+          <DetailScreen user={detailUser} freight={selFreight} perms={perms} onBack={() => setSelectedId(null)} onAction={onAction} onTripAction={onTripAction} actionLoading={actionLoading} onChat={onChat} onRefresh={onRefresh} onDuplicate={onDuplicate} onEdit={onEdit} />
         </div>
       </div>
     );

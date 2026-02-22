@@ -308,8 +308,8 @@ export default function Tolvink() {
     useUIStore.getState().setActionLoading(true);
     try {
       let r;
-      if(actionKey==="respond_trip_accept") r = await fh.respondTrip(fId, aId, {response:"accepted"});
-      else if(actionKey==="respond_trip_reject") r = await fh.respondTrip(fId, aId, {response:"rejected", reason:"Rechazado"});
+      if(actionKey==="respond_trip_accept") r = await fh.respondTrip(fId, aId, {action:"accepted"});
+      else if(actionKey==="respond_trip_reject") r = await fh.respondTrip(fId, aId, {action:"rejected", reason:"Rechazado"});
       else if(actionKey==="start_trip") r = await fh.startTrip(fId, aId);
       else if(actionKey==="confirm_trip_loaded") r = await fh.confirmTripLoaded(fId, aId);
       else if(actionKey==="confirm_trip_finished") r = await fh.confirmTripFinished(fId, aId);
@@ -435,7 +435,7 @@ export default function Tolvink() {
         <div style={{flex:1,overflow:(screen==="chats"||screen==="calendar")&&isDesktop?"hidden":"auto",display:(mapFocus||locPicker)?"none":"flex",flexDirection:"column",WebkitOverflowScrolling:"touch",overscrollBehavior:"contain"}}>
         <div key={screen} className="tv-page" style={{flex:1,display:"flex",flexDirection:"column",minHeight:0}}>
         <Suspense fallback={<SL/>}>
-        {screen==="home" && <HomeScreen user={auth.user} freights={viewFreights} loading={fh.loading} perms={perms} onNav={nav} catalog={catalog} isDesktop={isDesktop} onAction={handleAction} actionLoading={actionLoading} onChat={(convId)=>{if(convId){setChatConvId(convId);navigate("/chats");}}} onRefresh={(id)=>fh.refresh(id)} onDuplicate={(f)=>{setDuplicateData(f);navigate("/new");}} onEdit={(f)=>{setEditData(f);navigate("/edit/"+f.id);}} goToMap={goToMap} pwa={pwa}/>}
+        {screen==="home" && <HomeScreen user={auth.user} freights={viewFreights} loading={fh.loading} perms={perms} onNav={nav} catalog={catalog} isDesktop={isDesktop} onAction={handleAction} onTripAction={handleTripAction} actionLoading={actionLoading} onChat={(convId)=>{if(convId){setChatConvId(convId);navigate("/chats");}}} onRefresh={(id)=>fh.refresh(id)} onDuplicate={(f)=>{setDuplicateData(f);navigate("/new");}} onEdit={(f)=>{setEditData(f);navigate("/edit/"+f.id);}} goToMap={goToMap} pwa={pwa}/>}
         {screen==="list" && <ListScreen freights={viewFreights} loading={fh.loading} onNav={nav} onRefresh={fh.fetchAll} catalog={catalog} view={listView} setView={setListView} goToMap={goToMap} hasMore={fh.hasMore} loadMore={fh.loadMore} loadingMore={fh.loadingMore} total={fh.total} isDesktop={isDesktop} onAction={handleAction}/>}
         {screen==="calendar" && <CalendarScreen freights={viewFreights} perms={perms} onNav={nav} isDesktop={isDesktop} user={auth.user} onAction={handleAction} actionLoading={actionLoading} onChat={(convId)=>{if(convId){setChatConvId(convId);navigate("/chats");}}} onRefresh={(id)=>fh.refresh(id)} onDuplicate={(f)=>{setDuplicateData(f);navigate("/new");}} onEdit={(f)=>{setEditData(f);navigate("/edit/"+f.id);}} goToMap={goToMap}/>}
         {screen==="detail" && <DetailScreen user={curFreight ? {...auth.user, userType: _resolveType(curFreight)} : auth.user} freight={curFreight} perms={perms} onBack={()=>navigate("/list")} onAction={handleAction} onTripAction={handleTripAction} actionLoading={actionLoading} onChat={(convId)=>{if(convId){setChatConvId(convId);navigate("/chats");}}} onRefresh={(id)=>fh.refresh(id)} onDuplicate={(f)=>{setDuplicateData(f);navigate("/new");}} onEdit={(f)=>{setEditData(f);navigate("/edit/"+f.id);}} goToMap={goToMap}/>}
