@@ -326,12 +326,12 @@ export default function Tolvink() {
     setModal({type:"confirm_trip_action",freight:f,...cfg,actionKey,assignmentId:aId});
   };
 
-  const handleTripConfirmAction = async (fId, aId, actionKey)=>{
+  const handleTripConfirmAction = async (fId, aId, actionKey, loadedTons)=>{
     const msgs = { respond_trip_accept:"Viaje autorizado", start_trip:"Viaje iniciado", confirm_trip_loaded:"Carga confirmada", confirm_trip_finished:"Entrega confirmada" };
     let r;
     if(actionKey==="respond_trip_accept") r = await fh.respondTrip(fId, aId, {action:"accepted"});
     else if(actionKey==="start_trip") r = await fh.startTrip(fId, aId);
-    else if(actionKey==="confirm_trip_loaded") r = await fh.confirmTripLoaded(fId, aId);
+    else if(actionKey==="confirm_trip_loaded") r = await fh.confirmTripLoaded(fId, aId, loadedTons);
     else if(actionKey==="confirm_trip_finished") r = await fh.confirmTripFinished(fId, aId);
     if(r?.ok) return msgs[actionKey]||"Hecho";
     show(r?.error||"Error","err"); return "";
@@ -350,11 +350,11 @@ export default function Tolvink() {
     show(r.error,"err"); return "";
   };
 
-  const handleConfirmAction = async (fId, action)=>{
+  const handleConfirmAction = async (fId, action, loadedTons)=>{
     const msgs = { start:"Viaje iniciado", authorize:"Viaje autorizado", confirm_loaded:"Carga confirmada", confirm_finished:"Entrega confirmada" };
     const fn = { start:fh.start, authorize:fh.authorize, confirm_loaded:fh.confirmLoaded, confirm_finished:fh.confirmFinished }[action];
     if(!fn) return "";
-    const r = await fn(fId);
+    const r = action==="confirm_loaded" ? await fn(fId, loadedTons) : await fn(fId);
     if(r.ok) return msgs[action]||"Hecho";
     show(r.error,"err"); return "";
   };
@@ -495,8 +495,8 @@ export default function Tolvink() {
       <Suspense fallback={null}>
       {modal?.type==="assign" && <AssignModal freight={modal.freight} transporters={catalog.transporters} onClose={()=>setModal(null)} onConfirm={(compId,truckId,driverId)=>handleAssign(modal.freight.id,compId,truckId,driverId)} onAssignMulti={handleAssignMulti}/>}
       {modal?.type==="truck_select" && <TruckSelectModal freight={modal.freight} trucks={catalog.trucks} user={auth.user} onClose={()=>setModal(null)} onConfirm={(t,driverId)=>handleAcceptWithTruck(modal.freight.id,t,driverId)}/>}
-      {modal?.type==="confirm_action" && <ConfirmActionModal freight={modal.freight} title={modal.title} btnLabel={modal.btnLabel} btnVariant={modal.btnVariant} icon={modal.icon} onClose={()=>setModal(null)} onConfirm={()=>handleConfirmAction(modal.freight.id,modal.action)}/>}
-      {modal?.type==="confirm_trip_action" && <ConfirmActionModal freight={modal.freight} title={modal.title} btnLabel={modal.btnLabel} btnVariant={modal.btnVariant} icon={modal.icon} onClose={()=>setModal(null)} onConfirm={()=>handleTripConfirmAction(modal.freight.id,modal.assignmentId,modal.actionKey)}/>}
+      {modal?.type==="confirm_action" && <ConfirmActionModal freight={modal.freight} title={modal.title} btnLabel={modal.btnLabel} btnVariant={modal.btnVariant} icon={modal.icon} onClose={()=>setModal(null)} onConfirm={(tons)=>handleConfirmAction(modal.freight.id,modal.action,tons)} showTonsInput={modal.action==="confirm_loaded"} defaultTons={modal.freight.tons}/>}
+      {modal?.type==="confirm_trip_action" && <ConfirmActionModal freight={modal.freight} title={modal.title} btnLabel={modal.btnLabel} btnVariant={modal.btnVariant} icon={modal.icon} onClose={()=>setModal(null)} onConfirm={(tons)=>handleTripConfirmAction(modal.freight.id,modal.assignmentId,modal.actionKey,tons)} showTonsInput={modal.actionKey==="confirm_trip_loaded"} defaultTons={modal.freight.tons}/>}
       {modal?.type==="reason" && <ReasonModal title={modal.title} freight={modal.freight} btnLabel={modal.btnLabel} onClose={()=>setModal(null)} onConfirm={r=>handleReasonAction(modal.freight.id,r,modal.action,{assignmentId:modal.assignmentId})}/>}
       {modal?.type==="edit_trip" && <EditTripModal freight={modal.freight} assignment={modal.assignment} transporters={catalog.transporters} onClose={()=>setModal(null)} onSave={handleSaveTrip}/>}
       {modal?.type==="driver_queue" && <DriverQueueModal driverId={modal.driverId} driverName={modal.driverName} onClose={()=>setModal(null)}/>}

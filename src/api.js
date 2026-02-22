@@ -200,7 +200,7 @@ export async function apiRespondFreight(id,b) { return api(`/freights/${id}/resp
 export async function apiStartFreight(id) { return api(`/freights/${id}/start`,{body:{}}); }
 export async function apiFinishFreight(id) { return api(`/freights/${id}/finish`,{body:{}}); }
 export async function apiCancelFreight(id,reason) { return api(`/freights/${id}/cancel`,{body:{reason}}); }
-export async function apiConfirmLoaded(id) { return api(`/freights/${id}/confirm-loaded`,{body:{}}); }
+export async function apiConfirmLoaded(id, loadedTons) { return api(`/freights/${id}/confirm-loaded`,{body:{loadedTons}}); }
 export async function apiConfirmFinished(id) { return api(`/freights/${id}/confirm-finished`,{body:{}}); }
 export async function apiAuthorizeFreight(id) { return api(`/freights/${id}/authorize`,{body:{}}); }
 
@@ -211,7 +211,7 @@ export async function apiCancelAssignment(freightId, assignmentId, reason) { ret
 export async function apiUpdateAssignment(freightId, assignmentId, data) { return api(`/freights/${freightId}/assignments/${assignmentId}`,{method:'PATCH',body:data}); }
 export async function apiRespondTrip(freightId, assignmentId, body) { return api(`/freights/${freightId}/assignments/${assignmentId}/respond`,{body}); }
 export async function apiStartTrip(freightId, assignmentId) { return api(`/freights/${freightId}/assignments/${assignmentId}/start`,{body:{}}); }
-export async function apiConfirmTripLoaded(freightId, assignmentId) { return api(`/freights/${freightId}/assignments/${assignmentId}/confirm-loaded`,{body:{}}); }
+export async function apiConfirmTripLoaded(freightId, assignmentId, loadedTons) { return api(`/freights/${freightId}/assignments/${assignmentId}/confirm-loaded`,{body:{loadedTons}}); }
 export async function apiConfirmTripFinished(freightId, assignmentId) { return api(`/freights/${freightId}/assignments/${assignmentId}/confirm-finished`,{body:{}}); }
 
 // Tracking
