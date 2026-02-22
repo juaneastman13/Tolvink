@@ -211,8 +211,8 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
                     {a.plate || "Sin camión"}{a.transporterName ? ` · ${a.transporterName}` : ""}{a.driverName ? ` · ${a.driverName}` : ""}
                   </span>
                   <Bd color={tst.color} bg={tst.bg} small>{tst.label}</Bd>
-                  {/* Edit button for plant on trips not yet started */}
-                  {user.userType === "plant" && (a.tripStatus === "pending" || a.tripStatus === "accepted") && onEditTrip && (
+                  {/* Edit button for plant on trips they assigned (not own-fleet), before started */}
+                  {user.userType === "plant" && (a.tripStatus === "pending" || a.tripStatus === "accepted") && a.transportCompanyId !== freight.originCompanyId && onEditTrip && (
                     <button onClick={(e)=>{e.stopPropagation(); onEditTrip(freight.id, a);}} style={{ padding:"4px 8px", borderRadius:6, border:`1px solid ${C.b1}`, background:C.w, color:C.t2, fontSize:10, fontWeight:600, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:3 }}>
                       {Ic.doc(C.t2,12)} Editar
                     </button>
