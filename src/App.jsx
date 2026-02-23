@@ -33,6 +33,7 @@ const ChatsScreen = lazy(() => import("./screens/ChatsScreen"));
 const NotificationsScreen = lazy(() => import("./screens/NotificationsScreen"));
 const PickLocationScreen = lazy(() => import("./screens/PickLocationScreen"));
 const TrackFreightScreen = lazy(() => import("./screens/TrackFreightScreen"));
+const ReportDownloadScreen = lazy(() => import("./screens/ReportDownloadScreen"));
 // CompanyHeaderPicker removed — company selector moved to Sidebar
 
 // Lazy modals
@@ -149,7 +150,7 @@ export default function Tolvink() {
   // Redirect to home when user logs in + Sentry user tracking
   const prevUser = useRef(null);
   useEffect(()=>{
-    if(auth.user && !prevUser.current && !["/pick-location","/track"].includes(location.pathname)) { navigate("/", { replace: true }); }
+    if(auth.user && !prevUser.current && !["/pick-location","/track","/report"].includes(location.pathname)) { navigate("/", { replace: true }); }
     prevUser.current = auth.user;
     setSentryUser(auth.user);
   },[auth.user]);
@@ -418,6 +419,11 @@ export default function Tolvink() {
   // Public route: Real-time freight tracking (shared via WhatsApp)
   if (location.pathname === "/track") {
     return <Suspense fallback={<SL/>}><TrackFreightScreen /></Suspense>;
+  }
+
+  // Public route: PDF report download (shared via WhatsApp)
+  if (location.pathname === "/report") {
+    return <Suspense fallback={<SL/>}><ReportDownloadScreen /></Suspense>;
   }
 
   // If no user after initialization, show landing
