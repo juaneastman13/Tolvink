@@ -31,6 +31,7 @@ const MyDataScreen = lazy(() => import("./screens/MyDataScreen"));
 const ReportsScreen = lazy(() => import("./screens/ReportsScreen"));
 const ChatsScreen = lazy(() => import("./screens/ChatsScreen"));
 const NotificationsScreen = lazy(() => import("./screens/NotificationsScreen"));
+const PickLocationScreen = lazy(() => import("./screens/PickLocationScreen"));
 // CompanyHeaderPicker removed — company selector moved to Sidebar
 
 // Lazy modals
@@ -406,6 +407,11 @@ export default function Tolvink() {
         <span style={{width:16,height:16,borderRadius:8,background:C.acc,display:"inline-block",marginLeft:5,marginTop:-34,verticalAlign:"top",animation:"dotPulse 1.5s ease-in-out infinite"}}></span>
       </div>
     </div>;
+  }
+
+  // Public route: Map picker for WhatsApp location selection (no auth needed)
+  if (location.pathname === "/pick-location") {
+    return <Suspense fallback={<SL/>}><PickLocationScreen /></Suspense>;
   }
 
   // If no user after initialization, show landing
