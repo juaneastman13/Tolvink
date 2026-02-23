@@ -148,7 +148,7 @@ export default function Tolvink() {
   // Redirect to home when user logs in + Sentry user tracking
   const prevUser = useRef(null);
   useEffect(()=>{
-    if(auth.user && !prevUser.current) { navigate("/", { replace: true }); }
+    if(auth.user && !prevUser.current && location.pathname !== "/pick-location") { navigate("/", { replace: true }); }
     prevUser.current = auth.user;
     setSentryUser(auth.user);
   },[auth.user]);
