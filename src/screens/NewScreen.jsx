@@ -44,6 +44,8 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
   const [newLotLoc, setNewLotLoc] = useState(null);
   const [newLotSaving, setNewLotSaving] = useState(false);
   const [photos, setPhotos] = useState([]);
+  const photosRef = useRef(photos);
+  photosRef.current = photos;
   const [showAttach, setShowAttach] = useState(false);
   const nfCamRef = useRef(null);
   const nfGalRef = useRef(null);
@@ -80,6 +82,11 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
     destination: secComplete.product && secComplete.quantity && secComplete.origin,
     schedule: secComplete.product && secComplete.quantity && secComplete.origin && secComplete.destination,
   };
+
+  // Revoke blob URLs on unmount
+  useEffect(()=>{
+    return ()=>{ photosRef.current.forEach(p=>{ if(p.preview) URL.revokeObjectURL(p.preview); }); };
+  },[]);
 
   // Load lots when field changes
   useEffect(()=>{
