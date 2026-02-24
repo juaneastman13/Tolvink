@@ -281,7 +281,7 @@ export default function AssignModal({ freight, transporters, user, onClose, onCo
           </>}
 
           <div style={{marginBottom:14}}>
-            <Field label={tripCount > 1 ? "Toneladas por viaje" : "Toneladas para este camion"} value={tonsInput} onChange={setTonsInput} placeholder={`${defaultTonsPerTruck}`}/>
+            <Field label={tripCount > 1 ? "Toneladas por viaje" : "Toneladas para este camión"} value={tonsInput} onChange={setTonsInput} placeholder={`${defaultTonsPerTruck}`}/>
           </div>
         </>}
       </>}
@@ -360,7 +360,7 @@ export default function AssignModal({ freight, transporters, user, onClose, onCo
 
         {multiTruck && truckId && (
           <div style={{marginBottom:14}}>
-            <Field label="Toneladas para este camion" value={tonsInput} onChange={setTonsInput} placeholder={`${defaultTonsPerTruck}`}/>
+            <Field label="Toneladas para este camión" value={tonsInput} onChange={setTonsInput} placeholder={`${defaultTonsPerTruck}`}/>
           </div>
         )}
       </>}
@@ -373,11 +373,11 @@ export default function AssignModal({ freight, transporters, user, onClose, onCo
         {multiTruck ? (
           remainingSlots > 0 ? (
             <Btn full v="acc" disabled={!canAdd||loading||closing} onClick={addToList}>
-              {mode==="company" && tripCount > 1 ? `Agregar ${tripCount} viajes` : "Agregar camion"}
+              {mode==="company" && tripCount > 1 ? `Agregar ${tripCount} viajes` : "Agregar camión"}
             </Btn>
           ) : truckList.length > 0 ? (
             <Btn full disabled={loading||closing} onClick={doConfirmMulti}>
-              {loading?"Asignando...":`Asignar ${truckList.length} camion${truckList.length>1?"es":""}`}
+              {loading?"Asignando...":`Asignar ${truckList.length} camión${truckList.length>1?"es":""}`}
             </Btn>
           ) : null
         ) : (
@@ -390,7 +390,7 @@ export default function AssignModal({ freight, transporters, user, onClose, onCo
         <div style={{marginTop:10}}>
           <Btn full disabled={loading||closing} onClick={doConfirmMulti}>
             {loading?"Asignando...":truckList.length < needed
-              ? `Asignar ${truckList.length} camion${truckList.length>1?"es":""} (parcial)`
+              ? `Asignar ${truckList.length} camión${truckList.length>1?"es":""} (parcial)`
               : `Asignar ${truckList.length} camiones`}
           </Btn>
         </div>

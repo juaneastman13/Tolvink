@@ -274,7 +274,7 @@ export default function TrackFreightScreen() {
             </div>
           )}
           {isLive && !truckPos && (
-            <div style={{ marginLeft: "auto", fontSize: 10, color: COLORS.t3 }}>Esperando posicion del camion</div>
+            <div style={{ marginLeft: "auto", fontSize: 10, color: COLORS.t3 }}>Esperando posición del camión</div>
           )}
           {freight.status === "finished" && (
             <div style={{ marginLeft: "auto", fontSize: 10, fontWeight: 600, color: COLORS.pri }}>Flete completado</div>
