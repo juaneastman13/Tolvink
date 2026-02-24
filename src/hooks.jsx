@@ -178,6 +178,8 @@ export function useAuth() {
     apiLogout(); // async — revokes refresh tokens on server
     setUser(null);
     useCatalogStore.getState().clearCache();
+    // Clear SW API cache to prevent stale data leaking between users
+    if ('caches' in window) caches.delete('tolvink-api-v2').catch(() => {});
   },[]);
 
   const switchCompany = useCallback(async (companyId) => {

@@ -261,7 +261,11 @@ export function LocPickerFullscreen({ value, onChange, defaultCenter, label, onC
       }
     })();
 
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+      if (markerRef.current && window.google?.maps) google.maps.event.clearInstanceListeners(markerRef.current);
+      if (mapObjRef.current && window.google?.maps) google.maps.event.clearInstanceListeners(mapObjRef.current);
+    };
   }, []);
 
   return <>
@@ -442,7 +446,7 @@ export function FreightMap({ freightId, originLat, originLng, destLat, destLng, 
             {routeInfo.distance} · {routeInfo.duration}
           </span>
         )}
-        <button onClick={()=>window.open(`https://www.google.com/maps/dir/?api=1&origin=${originLat},${originLng}&destination=${destLat},${destLng}&travelmode=driving`,"_blank")} style={{ marginLeft:"auto", padding:"4px 10px", borderRadius:8, border:`1px solid ${C.b1}`, background:C.w, cursor:"pointer", display:"flex", alignItems:"center", gap:4, fontSize:10, fontWeight:600, color:C.pri, fontFamily:"inherit", WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
+        <button onClick={()=>window.open(`https://www.google.com/maps/dir/?api=1&origin=${originLat},${originLng}&destination=${destLat},${destLng}&travelmode=driving`,"_blank","noopener")} style={{ marginLeft:"auto", padding:"4px 10px", borderRadius:8, border:`1px solid ${C.b1}`, background:C.w, cursor:"pointer", display:"flex", alignItems:"center", gap:4, fontSize:10, fontWeight:600, color:C.pri, fontFamily:"inherit", WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
           {Ic.nav(C.pri,11)} Abrir en Google Maps
         </button>
         <button onClick={()=>goToMap(originLat,originLng,originName,destLat,destLng,destName)} style={{ padding:6, borderRadius:8, border:`1px solid ${C.b1}`, background:C.w, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
