@@ -110,10 +110,10 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
       if (!buckets[bk]) buckets[bk] = { label: baseLabel, color: pa.color, actionKey: bk, icon: pa.icon, items: [] };
       buckets[bk].items.push({ ...f, pendingAction: pa });
     });
-    return Object.values(buckets).map(b => {
-      b.items.sort((a, b2) => a.loadDate && b2.loadDate ? a.loadDate.localeCompare(b2.loadDate) : 0);
-      return b;
-    });
+    return Object.values(buckets).map(b => ({
+      ...b,
+      items: [...b.items].sort((a, b2) => a.loadDate && b2.loadDate ? a.loadDate.localeCompare(b2.loadDate) : 0),
+    }));
   }, [filteredFreights, effectiveType, pendingFilter]);
   const pendingCount = pendingByAction.reduce((s, g) => s + g.items.length, 0);
   const hasPending = pendingCount > 0;
@@ -166,7 +166,7 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
             <Bd color={st.color} bg={st.bg} small>{st.label}</Bd>
           </div>
           <div style={{ fontSize: 12, fontWeight: 700, color: C.t1, marginTop: 3 }}>{f.grain === "Otros" ? f.productTypeOther || "Otros" : f.grain} · {f.tons} {f.unit || "tn"}</div>
-          {f.loadDate && <div style={{ fontSize: 9, color: C.t3, marginTop: 2 }}>{Ic.cal(C.t3, 8)} {f.loadDate}{f.loadTime ? ` · ${f.loadTime}` : ""}</div>}
+          {f.loadDate && <div style={{ fontSize: 9, color: C.t3, marginTop: 2 }}>{Ic.cal(C.t3, 8)} {f.loadDate}{f.loadTime?.trim() ? ` · ${f.loadTime}` : ""}</div>}
         </div>
       );
     }

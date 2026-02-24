@@ -48,6 +48,7 @@ export function useCatalog(user) {
     // Singleton: if already loading for this user+company, wait for that promise
     if(_loadingPromises[cacheKey]) {
       _loadingPromises[cacheKey].then((d) => {
+        if (!d) return;
         setPlants(d.plants); setBranches(d.branches); setLots(d.lots);
         setTransporters(d.transporters); setTrucks(d.trucks); setFields(d.fields);
       });
@@ -74,7 +75,7 @@ export function useCatalog(user) {
       setPlants(d.plants); setBranches(d.branches); setLots(d.lots);
       setTransporters(d.transporters); setTrucks(d.trucks); setFields(d.fields);
       return d;
-    }).finally(()=>{
+    }).catch(()=>null).finally(()=>{
       setLoadingLocal(false);
       delete _loadingPromises[cacheKey];
     });
@@ -101,6 +102,7 @@ export function useAuth() {
       setError("Tu sesión expiró.");
       log.log('AUTH', 'Session expired, cleared user');
     });
+    return () => setAuthFailHandler(null);
   },[]);
 
   // Initialize user from localStorage

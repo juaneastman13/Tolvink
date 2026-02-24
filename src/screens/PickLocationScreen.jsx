@@ -131,7 +131,10 @@ export default function PickLocationScreen() {
       }
     })();
 
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+      if (markerRef.current && window.google?.maps) google.maps.event.clearInstanceListeners(markerRef.current);
+    };
   }, [token]);
 
   const handleConfirm = async () => {

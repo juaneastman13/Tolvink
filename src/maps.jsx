@@ -136,7 +136,11 @@ export function LocationPicker({ label, value, onChange, defaultCenter }) {
       initMap(URUGUAY_CENTER, 7);
     }
 
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+      if (markerRef.current && window.google?.maps) google.maps.event.clearInstanceListeners(markerRef.current);
+      if (mapObjRef.current && window.google?.maps) google.maps.event.clearInstanceListeners(mapObjRef.current);
+    };
   }, [showMap]);
 
   const openFull = (e) => {
