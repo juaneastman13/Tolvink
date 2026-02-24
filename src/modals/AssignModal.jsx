@@ -3,6 +3,20 @@ import { C, Ic } from "../theme";
 import { Btn, Field, ModalOverlay } from "../components";
 import { apiGetTrucks, apiCreateTruck, apiGetDrivers, apiCreateDriver } from "../api";
 
+// Collapsed summary for a completed wizard step
+function StepDone({ label, value, sub, onEdit }) {
+  return (
+    <div style={{ display:"flex", alignItems:"center", gap:10, padding:"9px 12px", borderRadius:10, border:`1px solid ${C.b1}`, background:C.bg, marginBottom:10 }}>
+      <div style={{ flex:1, minWidth:0 }}>
+        <div style={{ fontSize:9.5, fontWeight:700, color:C.t3, textTransform:"uppercase", letterSpacing:0.4 }}>{label}</div>
+        <div style={{ fontSize:13, fontWeight:600, color:C.t1, marginTop:1 }}>{value}</div>
+        {sub && <div style={{ fontSize:10.5, color:C.t3, marginTop:1 }}>{sub}</div>}
+      </div>
+      <button onClick={onEdit} style={{ background:"none", border:`1px solid ${C.b2}`, borderRadius:6, padding:"4px 10px", fontSize:10.5, fontWeight:600, color:C.pri, cursor:"pointer", fontFamily:"inherit" }}>Cambiar</button>
+    </div>
+  );
+}
+
 export default function AssignModal({ freight, transporters, user, onClose, onConfirm, onAssignMulti }) {
   const multiTruck = (freight.truckCount || 1) > 1;
   const [truckList, setTruckList] = useState([]);
@@ -58,15 +72,8 @@ export default function AssignModal({ freight, transporters, user, onClose, onCo
   };
   useEffect(()=>{ if(mode==="own"){ loadTrucks(ownFleetCompanyId); loadDriversFn(ownFleetCompanyId); } },[mode,ownFleetCompanyId]);
 
-  // Multi-truck: also load trucks when selecting external company
-  useEffect(()=>{
-    if(multiTruck && mode==="company" && t) { loadTrucks(t); loadDriversFn(t); }
-  },[t]);
-
-  // Reset tripCount when company changes or remaining changes
-  useEffect(()=>{
-    setTripCount(1);
-  },[t, mode]);
+  // Reset tripCount when company changes
+  useEffect(()=>{ setTripCount(1); },[t, mode]);
 
   // Pre-select driver from truck's assignedUser
   useEffect(()=>{
@@ -116,7 +123,7 @@ export default function AssignModal({ freight, transporters, user, onClose, onCo
     const selTruck = trucks.find(x=>x.id===truckId);
     const selDriver = drivers.find(x=>x.id===driverId);
     const compName = mode==="own" ? "Flota propia" : (ts.find(x=>x.id===compId)?.name||"");
-    const count = multiTruck && mode==="company" && !truckId ? Math.min(tripCount, remainingSlots) : 1;
+    const count = multiTruck && mode==="company" ? Math.min(tripCount, remainingSlots) : 1;
     const newEntries = [];
     for (let i = 0; i < count; i++) {
       newEntries.push({
@@ -130,7 +137,6 @@ export default function AssignModal({ freight, transporters, user, onClose, onCo
       });
     }
     setTruckList(prev => [...prev, ...newEntries]);
-    // Keep transporter selected for convenience, only reset truck/driver
     setTruckId(""); setDriverId(""); setTripCount(1);
     setTonsInput(defaultTonsPerTruck.toString());
   };
@@ -139,7 +145,7 @@ export default function AssignModal({ freight, transporters, user, onClose, onCo
     setTruckList(prev => prev.filter((_,i) => i !== idx));
   };
 
-  // Single-truck confirm (existing behavior)
+  // Single-truck confirm
   const doConfirm = async ()=>{
     if(loading||closing) return;
     if(mode==="company" && !t) return;
@@ -172,6 +178,11 @@ export default function AssignModal({ freight, transporters, user, onClose, onCo
 
   const externalTs = ts.filter(x=>x.id!==freight.originCompanyId);
   const canAdd = remainingSlots > 0 && ((mode==="company"&&t) || (mode==="own"&&truckId));
+
+  // Helpers
+  const selTransporterName = t ? (ts.find(x=>x.id===t)?.name||"") : "";
+  const selTruckObj = truckId ? trucks.find(x=>x.id===truckId) : null;
+  const selDriverObj = driverId ? (driverId===user?.id ? { name: user.name, _isMe: true } : drivers.find(x=>x.id===driverId)) : null;
 
   // Collapse repeated entries for display
   const collapsedList = [];
@@ -215,7 +226,6 @@ export default function AssignModal({ freight, transporters, user, onClose, onCo
                 {tk.tons && <div style={{fontSize:10,color:C.t3}}>{tk.tons} tn{tk._count > 1 ? " c/u" : ""}</div>}
               </div>
               <button onClick={()=>{
-                // Remove all entries in this collapsed group
                 const idxs = new Set();
                 let found = 0;
                 for (let j = tk._startIdx; j < truckList.length && found < tk._count; j++) {
@@ -232,142 +242,146 @@ export default function AssignModal({ freight, transporters, user, onClose, onCo
         </div>
       )}
 
-      {/* Mode toggle + form — only show when there are remaining slots */}
+      {/* ============ WIZARD FORM (only when remaining slots) ============ */}
       {remainingSlots > 0 && <>
-      {hasOwnFleet && <div style={{display:"flex",gap:0,marginBottom:16,borderRadius:10,overflow:"hidden",border:`1.5px solid ${C.b1}`}}>
-        <button onClick={()=>{setMode("company");setTruckId("");setDriverId("");}} style={{flex:1,padding:"10px 0",fontFamily:"inherit",fontSize:12.5,fontWeight:mode==="company"?700:500,background:mode==="company"?C.pri:C.w,color:mode==="company"?C.w:C.t2,border:"none",cursor:"pointer"}}>Empresa</button>
-        <button onClick={()=>{setMode("own");setT("");}} style={{flex:1,padding:"10px 0",fontFamily:"inherit",fontSize:12.5,fontWeight:mode==="own"?700:500,background:mode==="own"?C.acc:C.w,color:mode==="own"?C.w:C.t2,border:"none",cursor:"pointer",borderLeft:`1px solid ${C.b1}`}}>Flota propia</button>
-      </div>}
 
-      {mode==="company" && <>
-        <label style={{fontSize:10.5,fontWeight:600,color:C.t2,marginBottom:8,display:"block",textTransform:"uppercase",letterSpacing:0.6}}>Transportista</label>
-        <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:18,maxHeight:260,overflowY:"auto"}}>
-          {externalTs.length===0 && ts.length===0 && <div style={{fontSize:12,color:C.t3,padding:10}}>No hay transportistas disponibles</div>}
-          {(hasOwnFleet ? externalTs : ts).map(x=><button key={x.id} onClick={()=>setT(x.id)} style={{padding:"13px 14px",borderRadius:12,textAlign:"left",fontFamily:"inherit",border:`1.5px solid ${t===x.id?C.pri:C.b1}`,background:t===x.id?C.priPale:C.w,color:t===x.id?C.pri:C.t2,fontSize:13.5,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",gap:10}}>
-            {Ic.truck(t===x.id?C.pri:C.t3,16)}
-            <div>
-              <div>{x.name}</div>
-              {x.accessUsers?.length > 0 && x.accessUsers.map(u=><div key={u.id} style={{fontSize:10.5,fontWeight:400,color:t===x.id?C.pri:C.t3,marginTop:1}}>{Ic.user(t===x.id?C.pri:C.t3,11)} {u.name}{u.phone?` · ${u.phone}`:""}</div>)}
-            </div>
-          </button>)}
-        </div>
+        {/* Mode toggle */}
+        {hasOwnFleet && <div style={{display:"flex",gap:0,marginBottom:16,borderRadius:10,overflow:"hidden",border:`1.5px solid ${C.b1}`}}>
+          <button onClick={()=>{setMode("company");setTruckId("");setDriverId("");}} style={{flex:1,padding:"10px 0",fontFamily:"inherit",fontSize:12.5,fontWeight:mode==="company"?700:500,background:mode==="company"?C.pri:C.w,color:mode==="company"?C.w:C.t2,border:"none",cursor:"pointer"}}>Empresa</button>
+          <button onClick={()=>{setMode("own");setT("");}} style={{flex:1,padding:"10px 0",fontFamily:"inherit",fontSize:12.5,fontWeight:mode==="own"?700:500,background:mode==="own"?C.acc:C.w,color:mode==="own"?C.w:C.t2,border:"none",cursor:"pointer",borderLeft:`1px solid ${C.b1}`}}>Flota propia</button>
+        </div>}
 
-        {/* Multi-truck: trip quantity + optional truck/driver */}
-        {multiTruck && t && <>
-          {/* Trip quantity selector */}
-          <label style={{fontSize:10.5,fontWeight:600,color:C.t2,marginBottom:8,display:"block",textTransform:"uppercase",letterSpacing:0.6}}>Cantidad de viajes</label>
-          <div style={{display:"flex",alignItems:"center",gap:0,marginBottom:14,borderRadius:10,overflow:"hidden",border:`1.5px solid ${C.b1}`,alignSelf:"flex-start",width:"fit-content"}}>
-            <button onClick={()=>setTripCount(c=>Math.max(1,c-1))} style={{width:40,height:38,border:"none",background:C.w,fontSize:18,fontWeight:700,color:tripCount<=1?C.t3:C.pri,cursor:tripCount<=1?"default":"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center"}}>-</button>
-            <div style={{minWidth:44,height:38,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,fontWeight:700,color:C.t1,borderLeft:`1px solid ${C.b1}`,borderRight:`1px solid ${C.b1}`,background:C.w}}>{tripCount}</div>
-            <button onClick={()=>setTripCount(c=>Math.min(Math.max(1,remainingSlots),c+1))} disabled={tripCount>=Math.max(1,remainingSlots)} style={{width:40,height:38,border:"none",background:C.w,fontSize:18,fontWeight:700,color:tripCount>=Math.max(1,remainingSlots)?C.t3:C.pri,cursor:tripCount>=Math.max(1,remainingSlots)?"default":"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center"}}>+</button>
-          </div>
-
-          {/* Only show truck/driver selection if adding exactly 1 trip */}
-          {tripCount === 1 && <>
-            <label style={{fontSize:10.5,fontWeight:600,color:C.t2,marginBottom:8,display:"block",textTransform:"uppercase",letterSpacing:0.6}}>Camion (opcional)</label>
-            <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:10,maxHeight:140,overflowY:"auto"}}>
-              {loadingTrucks && <div style={{fontSize:12,color:C.t3,padding:8,textAlign:"center"}}>Cargando...</div>}
-              {!loadingTrucks && trucks.map(tk=><button key={tk.id} onClick={()=>setTruckId(tk.id===truckId?"":tk.id)} style={{padding:"10px 12px",borderRadius:10,textAlign:"left",fontFamily:"inherit",border:`1.5px solid ${truckId===tk.id?C.acc:C.b1}`,background:truckId===tk.id?C.accPale:C.w,fontSize:12,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",gap:8}}>
-                {Ic.truck(truckId===tk.id?C.acc:C.t3,14)} {tk.plate}{tk.model?` · ${tk.model}`:""}
+        {/* ======== COMPANY MODE ======== */}
+        {mode==="company" && <>
+          {/* Step 1: Transporter — full list or collapsed */}
+          {!t ? (<>
+            <label style={{fontSize:10.5,fontWeight:600,color:C.t2,marginBottom:8,display:"block",textTransform:"uppercase",letterSpacing:0.6}}>Transportista</label>
+            <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:14,maxHeight:260,overflowY:"auto"}}>
+              {externalTs.length===0 && ts.length===0 && <div style={{fontSize:12,color:C.t3,padding:10}}>No hay transportistas disponibles</div>}
+              {(hasOwnFleet ? externalTs : ts).map(x=><button key={x.id} onClick={()=>setT(x.id)} style={{padding:"13px 14px",borderRadius:12,textAlign:"left",fontFamily:"inherit",border:`1.5px solid ${C.b1}`,background:C.w,color:C.t2,fontSize:13.5,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",gap:10}}>
+                {Ic.truck(C.t3,16)}
+                <div>
+                  <div>{x.name}</div>
+                  {x.accessUsers?.length > 0 && x.accessUsers.map(u=><div key={u.id} style={{fontSize:10.5,fontWeight:400,color:C.t3,marginTop:1}}>{Ic.user(C.t3,11)} {u.name}{u.phone?` · ${u.phone}`:""}</div>)}
+                </div>
               </button>)}
             </div>
-            <label style={{fontSize:10.5,fontWeight:600,color:C.t2,marginBottom:8,display:"block",textTransform:"uppercase",letterSpacing:0.6}}>Chofer (opcional)</label>
-            <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:10,maxHeight:140,overflowY:"auto"}}>
-              {loadingDrivers && <div style={{fontSize:12,color:C.t3,padding:8,textAlign:"center"}}>Cargando...</div>}
-              {!loadingDrivers && drivers.map(d=><button key={d.id} onClick={()=>setDriverId(d.id===driverId?"":d.id)} style={{padding:"10px 12px",borderRadius:10,textAlign:"left",fontFamily:"inherit",border:`1.5px solid ${driverId===d.id?C.info:C.b1}`,background:driverId===d.id?`${C.info}10`:C.w,fontSize:12,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",gap:8}}>
-                {Ic.user(driverId===d.id?C.info:C.t3,14)} {d.name}
-              </button>)}
-            </div>
-          </>}
+          </>) : (<>
+            {/* Collapsed transporter */}
+            <StepDone label="Transportista" value={selTransporterName} onEdit={()=>setT("")} />
 
-          <div style={{marginBottom:14}}>
-            <Field label={tripCount > 1 ? "Toneladas por viaje" : "Toneladas para este camión"} value={tonsInput} onChange={setTonsInput} placeholder={`${defaultTonsPerTruck}`}/>
-          </div>
+            {/* Multi-truck: trip count + tons */}
+            {multiTruck && <>
+              <label style={{fontSize:10.5,fontWeight:600,color:C.t2,marginBottom:8,display:"block",textTransform:"uppercase",letterSpacing:0.6}}>Cantidad de viajes</label>
+              <div style={{display:"flex",alignItems:"center",gap:0,marginBottom:14,borderRadius:10,overflow:"hidden",border:`1.5px solid ${C.b1}`,alignSelf:"flex-start",width:"fit-content"}}>
+                <button onClick={()=>setTripCount(c=>Math.max(1,c-1))} style={{width:40,height:38,border:"none",background:C.w,fontSize:18,fontWeight:700,color:tripCount<=1?C.t3:C.pri,cursor:tripCount<=1?"default":"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center"}}>-</button>
+                <div style={{minWidth:44,height:38,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,fontWeight:700,color:C.t1,borderLeft:`1px solid ${C.b1}`,borderRight:`1px solid ${C.b1}`,background:C.w}}>{tripCount}</div>
+                <button onClick={()=>setTripCount(c=>Math.min(Math.max(1,remainingSlots),c+1))} disabled={tripCount>=Math.max(1,remainingSlots)} style={{width:40,height:38,border:"none",background:C.w,fontSize:18,fontWeight:700,color:tripCount>=Math.max(1,remainingSlots)?C.t3:C.pri,cursor:tripCount>=Math.max(1,remainingSlots)?"default":"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center"}}>+</button>
+              </div>
+              <div style={{marginBottom:14}}>
+                <Field label={tripCount > 1 ? "Toneladas por viaje" : "Toneladas para este camión"} value={tonsInput} onChange={setTonsInput} placeholder={`${defaultTonsPerTruck}`}/>
+              </div>
+            </>}
+          </>)}
         </>}
-      </>}
 
-      {mode==="own" && <>
-        <label style={{fontSize:10.5,fontWeight:600,color:C.t2,marginBottom:8,display:"block",textTransform:"uppercase",letterSpacing:0.6}}>Selecciona un vehiculo</label>
-        <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:10,maxHeight:180,overflowY:"auto"}}>
-          {loadingTrucks && <div style={{fontSize:12,color:C.t3,padding:10,textAlign:"center"}}>Cargando vehiculos...</div>}
-          {!loadingTrucks && trucks.length===0 && !showNewTruck && <div style={{fontSize:12,color:C.t3,padding:10,textAlign:"center"}}>No hay vehiculos registrados</div>}
-          {trucks.map(tk=><button key={tk.id} onClick={()=>setTruckId(tk.id)} style={{padding:"13px 14px",borderRadius:12,textAlign:"left",fontFamily:"inherit",border:`1.5px solid ${truckId===tk.id?C.acc:C.b1}`,background:truckId===tk.id?C.accPale:C.w,color:truckId===tk.id?C.acc:C.t2,fontSize:13.5,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",gap:10}}>
-            {Ic.truck(truckId===tk.id?C.acc:C.t3,18)}
-            <div>
-              <div style={{fontSize:13,fontWeight:700,color:truckId===tk.id?C.acc:C.t1}}>{tk.plate}</div>
-              {tk.model && <div style={{fontSize:10.5,fontWeight:400,color:C.t3,marginTop:1}}>{tk.model}</div>}
-              {tk.assignedUser && <div style={{fontSize:10,color:C.t3,marginTop:1}}>Chofer: {tk.assignedUser.name}</div>}
+        {/* ======== OWN FLEET MODE ======== */}
+        {mode==="own" && <>
+          {/* Step 1: Truck — full list or collapsed */}
+          {!truckId ? (<>
+            <label style={{fontSize:10.5,fontWeight:600,color:C.t2,marginBottom:8,display:"block",textTransform:"uppercase",letterSpacing:0.6}}>Seleccioná un vehículo</label>
+            <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:10,maxHeight:180,overflowY:"auto"}}>
+              {loadingTrucks && <div style={{fontSize:12,color:C.t3,padding:10,textAlign:"center"}}>Cargando vehículos...</div>}
+              {!loadingTrucks && trucks.length===0 && !showNewTruck && <div style={{fontSize:12,color:C.t3,padding:10,textAlign:"center"}}>No hay vehículos registrados</div>}
+              {trucks.map(tk=><button key={tk.id} onClick={()=>setTruckId(tk.id)} style={{padding:"13px 14px",borderRadius:12,textAlign:"left",fontFamily:"inherit",border:`1.5px solid ${C.b1}`,background:C.w,color:C.t2,fontSize:13.5,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",gap:10}}>
+                {Ic.truck(C.t3,18)}
+                <div>
+                  <div style={{fontSize:13,fontWeight:700,color:C.t1}}>{tk.plate}</div>
+                  {tk.model && <div style={{fontSize:10.5,fontWeight:400,color:C.t3,marginTop:1}}>{tk.model}</div>}
+                  {tk.assignedUser && <div style={{fontSize:10,color:C.t3,marginTop:1}}>Chofer: {tk.assignedUser.name}</div>}
+                </div>
+              </button>)}
             </div>
-          </button>)}
-        </div>
 
-        {!showNewTruck ? (
-          <button onClick={()=>{setShowNewTruck(true);setTruckErr("");}} style={{width:"100%",padding:"10px 0",borderRadius:10,border:`1.5px dashed ${C.acc}`,background:`${C.acc}08`,color:C.acc,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:6,marginBottom:10}}>
-            {Ic.plus(C.acc,14)} Agregar vehiculo
-          </button>
-        ) : (
-          <div style={{border:`1.5px solid ${C.acc}`,borderRadius:12,padding:12,marginBottom:10,background:`${C.acc}04`}}>
-            <div style={{fontSize:11,fontWeight:700,color:C.acc,marginBottom:8}}>Nuevo vehiculo</div>
-            <Field label="Patente" value={newPlate} onChange={v=>{setNewPlate(v);setTruckErr("");}} placeholder="Ej: AB-123-CD" hasError={!!truckErr}/>
-            <div style={{height:8}}/>
-            <Field label="Modelo (opcional)" value={newModel} onChange={setNewModel} placeholder="Ej: Scania R500"/>
-            {truckErr && <div style={{fontSize:11,color:C.err,fontWeight:600,marginTop:6}}>{truckErr}</div>}
-            <div style={{display:"flex",gap:6,marginTop:10}}>
-              <button onClick={()=>{setShowNewTruck(false);setNewPlate("");setNewModel("");setTruckErr("");}} style={{flex:1,padding:"8px 0",borderRadius:8,border:`1px solid ${C.b1}`,background:C.w,color:C.t2,fontSize:11.5,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>Cancelar</button>
-              <button disabled={savingTruck} onClick={handleCreateTruck} style={{flex:1,padding:"8px 0",borderRadius:8,border:"none",background:C.acc,color:C.w,fontSize:11.5,fontWeight:600,cursor:savingTruck?"not-allowed":"pointer",fontFamily:"inherit",opacity:savingTruck?0.6:1}}>{savingTruck?"Guardando...":"Registrar"}</button>
-            </div>
-          </div>
-        )}
+            {!showNewTruck ? (
+              <button onClick={()=>{setShowNewTruck(true);setTruckErr("");}} style={{width:"100%",padding:"10px 0",borderRadius:10,border:`1.5px dashed ${C.acc}`,background:`${C.acc}08`,color:C.acc,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:6,marginBottom:10}}>
+                {Ic.plus(C.acc,14)} Agregar vehículo
+              </button>
+            ) : (
+              <div style={{border:`1.5px solid ${C.acc}`,borderRadius:12,padding:12,marginBottom:10,background:`${C.acc}04`}}>
+                <div style={{fontSize:11,fontWeight:700,color:C.acc,marginBottom:8}}>Nuevo vehículo</div>
+                <Field label="Patente" value={newPlate} onChange={v=>{setNewPlate(v);setTruckErr("");}} placeholder="Ej: AB-123-CD" hasError={!!truckErr}/>
+                <div style={{height:8}}/>
+                <Field label="Modelo (opcional)" value={newModel} onChange={setNewModel} placeholder="Ej: Scania R500"/>
+                {truckErr && <div style={{fontSize:11,color:C.err,fontWeight:600,marginTop:6}}>{truckErr}</div>}
+                <div style={{display:"flex",gap:6,marginTop:10}}>
+                  <button onClick={()=>{setShowNewTruck(false);setNewPlate("");setNewModel("");setTruckErr("");}} style={{flex:1,padding:"8px 0",borderRadius:8,border:`1px solid ${C.b1}`,background:C.w,color:C.t2,fontSize:11.5,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>Cancelar</button>
+                  <button disabled={savingTruck} onClick={handleCreateTruck} style={{flex:1,padding:"8px 0",borderRadius:8,border:"none",background:C.acc,color:C.w,fontSize:11.5,fontWeight:600,cursor:savingTruck?"not-allowed":"pointer",fontFamily:"inherit",opacity:savingTruck?0.6:1}}>{savingTruck?"Guardando...":"Registrar"}</button>
+                </div>
+              </div>
+            )}
+          </>) : (<>
+            {/* Collapsed truck */}
+            <StepDone label="Vehículo" value={selTruckObj?.plate||""} sub={selTruckObj?.model} onEdit={()=>{setTruckId("");setDriverId("");}} />
 
-        <label style={{fontSize:10.5,fontWeight:600,color:C.t2,marginBottom:8,marginTop:6,display:"block",textTransform:"uppercase",letterSpacing:0.6}}>Chofer</label>
-        {user && <button onClick={()=>{
-          const me = drivers.find(d=>d.id===user.id);
-          if(me) setDriverId(me.id===driverId?"":me.id);
-          else setDriverId(user.id===driverId?"":user.id);
-        }} style={{width:"100%",padding:"11px 14px",borderRadius:12,textAlign:"left",fontFamily:"inherit",border:`1.5px solid ${driverId===user.id?C.acc:C.acc+"60"}`,background:driverId===user.id?C.accPale:`${C.acc}08`,color:driverId===user.id?C.acc:C.t1,fontSize:13,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:10,marginBottom:6}}>
-          {Ic.user(driverId===user.id?C.acc:C.acc,16)} Yo soy el chofer
-        </button>}
-        <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:10,maxHeight:160,overflowY:"auto"}}>
-          {loadingDrivers && <div style={{fontSize:12,color:C.t3,padding:10,textAlign:"center"}}>Cargando choferes...</div>}
-          {!loadingDrivers && drivers.length===0 && !showNewDriver && !user && <div style={{fontSize:12,color:C.t3,padding:8,textAlign:"center"}}>No hay choferes registrados</div>}
-          {drivers.filter(d=>d.id!==user?.id).map(d=>{const qLen=d.activeFreights?.length||0; return <button key={d.id} onClick={()=>setDriverId(d.id===driverId?"":d.id)} style={{padding:"11px 14px",borderRadius:12,textAlign:"left",fontFamily:"inherit",border:`1.5px solid ${driverId===d.id?C.info:C.b1}`,background:driverId===d.id?`${C.info}10`:C.w,color:driverId===d.id?C.info:C.t2,fontSize:13,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",gap:10}}>
-            {Ic.user(driverId===d.id?C.info:C.t3,16)}
-            <div>
-              <div style={{fontSize:13,fontWeight:700,color:driverId===d.id?C.info:C.t1}}>{d.name}</div>
-              {d.phone && <div style={{fontSize:10.5,fontWeight:400,color:C.t3,marginTop:1}}>{d.phone}</div>}
-              {qLen>0 && <div style={{fontSize:10,color:C.info,fontWeight:600,marginTop:1}}>{qLen} flete{qLen>1?"s":""} en cola</div>}
-            </div>
-          </button>})}
-        </div>
+            {/* Step 2: Driver — full list or collapsed */}
+            {!driverId ? (<>
+              <label style={{fontSize:10.5,fontWeight:600,color:C.t2,marginBottom:8,display:"block",textTransform:"uppercase",letterSpacing:0.6}}>Chofer</label>
+              {user && <button onClick={()=>{
+                const me = drivers.find(d=>d.id===user.id);
+                if(me) setDriverId(me.id);
+                else setDriverId(user.id);
+              }} style={{width:"100%",padding:"11px 14px",borderRadius:12,textAlign:"left",fontFamily:"inherit",border:`1.5px solid ${C.b2}`,background:C.w,color:C.t2,fontSize:13,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",gap:10,marginBottom:6}}>
+                {Ic.user(C.t3,16)} Yo soy el chofer
+              </button>}
+              <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:10,maxHeight:160,overflowY:"auto"}}>
+                {loadingDrivers && <div style={{fontSize:12,color:C.t3,padding:10,textAlign:"center"}}>Cargando choferes...</div>}
+                {!loadingDrivers && drivers.length===0 && !showNewDriver && !user && <div style={{fontSize:12,color:C.t3,padding:8,textAlign:"center"}}>No hay choferes registrados</div>}
+                {drivers.filter(d=>d.id!==user?.id).map(d=>{const qLen=d.activeFreights?.length||0; return <button key={d.id} onClick={()=>setDriverId(d.id)} style={{padding:"11px 14px",borderRadius:12,textAlign:"left",fontFamily:"inherit",border:`1.5px solid ${C.b1}`,background:C.w,color:C.t2,fontSize:13,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",gap:10}}>
+                  {Ic.user(C.t3,16)}
+                  <div>
+                    <div style={{fontSize:13,fontWeight:700,color:C.t1}}>{d.name}</div>
+                    {d.phone && <div style={{fontSize:10.5,fontWeight:400,color:C.t3,marginTop:1}}>{d.phone}</div>}
+                    {qLen>0 && <div style={{fontSize:10,color:C.info,fontWeight:600,marginTop:1}}>{qLen} flete{qLen>1?"s":""} en cola</div>}
+                  </div>
+                </button>})}
+              </div>
 
-        {!showNewDriver ? (
-          <button onClick={()=>{setShowNewDriver(true);setDriverErr("");}} style={{width:"100%",padding:"10px 0",borderRadius:10,border:`1.5px dashed ${C.info}`,background:`${C.info}08`,color:C.info,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:6,marginBottom:10}}>
-            {Ic.plus(C.info,14)} Agregar chofer
-          </button>
-        ) : (
-          <div style={{border:`1.5px solid ${C.info}`,borderRadius:12,padding:12,marginBottom:10,background:`${C.info}04`}}>
-            <div style={{fontSize:11,fontWeight:700,color:C.info,marginBottom:8}}>Nuevo chofer</div>
-            <Field label="Nombre" value={newDriverName} onChange={v=>{setNewDriverName(v);setDriverErr("");}} placeholder="Ej: Juan Perez" hasError={!!driverErr}/>
-            <div style={{height:8}}/>
-            <Field label="Telefono (opcional)" value={newDriverPhone} onChange={setNewDriverPhone} placeholder="Ej: 099123456"/>
-            {driverErr && <div style={{fontSize:11,color:C.err,fontWeight:600,marginTop:6}}>{driverErr}</div>}
-            <div style={{display:"flex",gap:6,marginTop:10}}>
-              <button onClick={()=>{setShowNewDriver(false);setNewDriverName("");setNewDriverPhone("");setDriverErr("");}} style={{flex:1,padding:"8px 0",borderRadius:8,border:`1px solid ${C.b1}`,background:C.w,color:C.t2,fontSize:11.5,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>Cancelar</button>
-              <button disabled={savingDriver} onClick={handleCreateDriver} style={{flex:1,padding:"8px 0",borderRadius:8,border:"none",background:C.info,color:C.w,fontSize:11.5,fontWeight:600,cursor:savingDriver?"not-allowed":"pointer",fontFamily:"inherit",opacity:savingDriver?0.6:1}}>{savingDriver?"Guardando...":"Registrar"}</button>
-            </div>
-          </div>
-        )}
+              {!showNewDriver ? (
+                <button onClick={()=>{setShowNewDriver(true);setDriverErr("");}} style={{width:"100%",padding:"10px 0",borderRadius:10,border:`1.5px dashed ${C.info}`,background:`${C.info}08`,color:C.info,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:6,marginBottom:10}}>
+                  {Ic.plus(C.info,14)} Agregar chofer
+                </button>
+              ) : (
+                <div style={{border:`1.5px solid ${C.info}`,borderRadius:12,padding:12,marginBottom:10,background:`${C.info}04`}}>
+                  <div style={{fontSize:11,fontWeight:700,color:C.info,marginBottom:8}}>Nuevo chofer</div>
+                  <Field label="Nombre" value={newDriverName} onChange={v=>{setNewDriverName(v);setDriverErr("");}} placeholder="Ej: Juan Pérez" hasError={!!driverErr}/>
+                  <div style={{height:8}}/>
+                  <Field label="Teléfono (opcional)" value={newDriverPhone} onChange={setNewDriverPhone} placeholder="Ej: 099123456"/>
+                  {driverErr && <div style={{fontSize:11,color:C.err,fontWeight:600,marginTop:6}}>{driverErr}</div>}
+                  <div style={{display:"flex",gap:6,marginTop:10}}>
+                    <button onClick={()=>{setShowNewDriver(false);setNewDriverName("");setNewDriverPhone("");setDriverErr("");}} style={{flex:1,padding:"8px 0",borderRadius:8,border:`1px solid ${C.b1}`,background:C.w,color:C.t2,fontSize:11.5,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>Cancelar</button>
+                    <button disabled={savingDriver} onClick={handleCreateDriver} style={{flex:1,padding:"8px 0",borderRadius:8,border:"none",background:C.info,color:C.w,fontSize:11.5,fontWeight:600,cursor:savingDriver?"not-allowed":"pointer",fontFamily:"inherit",opacity:savingDriver?0.6:1}}>{savingDriver?"Guardando...":"Registrar"}</button>
+                  </div>
+                </div>
+              )}
+            </>) : (<>
+              {/* Collapsed driver */}
+              <StepDone label="Chofer" value={selDriverObj?._isMe ? `${selDriverObj.name} (yo)` : selDriverObj?.name||""} onEdit={()=>setDriverId("")} />
 
-        {multiTruck && truckId && (
-          <div style={{marginBottom:14}}>
-            <Field label="Toneladas para este camión" value={tonsInput} onChange={setTonsInput} placeholder={`${defaultTonsPerTruck}`}/>
-          </div>
-        )}
-      </>}
+              {/* Step 3: Tons (multi-truck only) */}
+              {multiTruck && (
+                <div style={{marginBottom:14}}>
+                  <Field label="Toneladas para este camión" value={tonsInput} onChange={setTonsInput} placeholder={`${defaultTonsPerTruck}`}/>
+                </div>
+              )}
+            </>)}
+          </>)}
+        </>}
 
       </>}
       {/* end remainingSlots > 0 */}
 
+      {/* ============ BUTTONS ============ */}
       <div style={{display:"flex",gap:8}}>
         <Btn full v="ghost" onClick={onClose} disabled={loading||closing}>Cancelar</Btn>
         {multiTruck ? (
@@ -385,7 +399,7 @@ export default function AssignModal({ freight, transporters, user, onClose, onCo
         )}
       </div>
 
-      {/* Multi-truck: final assign all button (when there are remaining slots + items in list) */}
+      {/* Multi-truck: final assign all button (when still adding + items in list) */}
       {multiTruck && truckList.length > 0 && remainingSlots > 0 && (
         <div style={{marginTop:10}}>
           <Btn full disabled={loading||closing} onClick={doConfirmMulti}>
