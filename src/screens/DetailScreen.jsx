@@ -3,6 +3,7 @@ import { C, Ic, FONT, MONO, track } from "../theme";
 import { stCfg, getActions, tripStCfg, POLL_INTERVALS } from "../constants";
 import { Bd, Btn, Loader, Sec, FileViewer } from "../components";
 import { FreightMap, SafeZone } from "../maps";
+import log from "../logger";
 import { DocsGallery, FreightFileUpload } from "../uploads";
 import { apiGetAuditLog } from "../api";
 import { useIsDesktop } from "../hooks";
@@ -305,8 +306,8 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
                       {Ic.doc(C.t2,12)} Editar
                     </button>
                   )}
-                  {/* Inline action buttons (visible without expanding) */}
-                  {tripBtns.length > 0 && tripBtns.map(b => (
+                  {/* Inline action buttons (visible only when NOT expanded) */}
+                  {!isExpanded && tripBtns.length > 0 && tripBtns.map(b => (
                     <button key={b.key} disabled={actionLoading} onClick={(e)=>{e.stopPropagation(); onTripAction && onTripAction(freight.id, a.id, b.key);}} style={{ padding:"5px 10px", borderRadius:6, border:"none", background:b.color, color:C.w, fontSize:10.5, fontWeight:700, cursor:actionLoading?"not-allowed":"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:4, opacity:actionLoading?0.6:1 }}>
                       {b.icon} {actionLoading?"...":b.label}
                     </button>
@@ -490,7 +491,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
           if(!logs) { try { logs = await apiGetAuditLog(freight.id); setAuditLog(logs); } catch(e) { logs = []; } }
           const { generateFreightPDF } = await loadPdfReport();
           generateFreightPDF(freight, logs || []);
-        } catch(e) { console.error('PDF error', e); alert('Error al generar PDF: ' + (e?.message || e)); }
+        } catch(e) { log.error('PDF', e); alert('Error al generar PDF: ' + (e?.message || e)); }
         finally { setPdfLoading(false); }
       }} style={{ width:"100%", background:C.w, borderRadius:10, padding:12, display:"flex", alignItems:"center", gap:10, border:`1.5px solid ${C.b1}`, cursor:"pointer", fontFamily:"inherit", marginBottom:12, opacity:pdfLoading?0.6:1 }}>
         {Ic.doc(C.t2,20)}<div style={{textAlign:"left"}}><div style={{ fontSize:12, fontWeight:700, color:C.t1 }}>{pdfLoading?'Generando...':'Descargar informe PDF'}</div><div style={{ fontSize:10, color:C.t3 }}>Información, recorrido, historial y documentos</div></div>

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { C, Ic, FONT } from "../theme";
 import { Btn, Field, Tabs, Av, Loader, AttachMenu, FileViewer } from "../components";
 import { apiSearchUsers, apiStartConversation, apiListConversations, apiGetMessages, apiSendMessage, apiMarkRead, apiTyping, apiPinConversation, apiToggleMarkUnread, uploadChatFile } from "../api";
+import log from "../logger";
 
 // Helper: format relative date
 const formatDateDivider = (dateStr) => {
@@ -229,7 +230,7 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
       await apiPinConversation(convId);
       loadConvs();
     } catch (err) {
-      console.error('Pin failed:', err);
+      log.error('Chat', 'pin failed:', err);
     }
   };
 
@@ -240,7 +241,7 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
       await apiToggleMarkUnread(convId);
       loadConvs();
     } catch (err) {
-      console.error('Mark unread failed:', err);
+      log.error('Chat', 'mark unread failed:', err);
     }
   };
 
@@ -377,7 +378,7 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
       const tag = `[FILE:${url}|${isImg ? "image" : "document"}|${file.name}]`;
       const m = await apiSendMessage(activeConv.id, tag);
       setMessages(prev => [...prev, m]);
-    } catch (err) { console.error("Upload failed:", err); }
+    } catch (err) { log.error("Chat", "upload failed:", err); }
     finally { setUploading(false); }
   };
 

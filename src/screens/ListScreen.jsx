@@ -36,7 +36,7 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
 
   const filtered = useMemo(()=>{
     return freights.filter(f=>{
-      if(searchQ && !textMatch(f.originCompanyName,searchQ) && !textMatch(f.code,searchQ) && !textMatch(f.grain,searchQ) && !textMatch(f.originName,searchQ) && !textMatch(f.destName,searchQ) && !textMatch(f.transporterName,searchQ)) return false;
+      if(searchQ && !textMatch(f.originCompanyName,searchQ) && !textMatch(f.code,searchQ) && !textMatch(f.grain,searchQ) && !textMatch(f.originName,searchQ) && !textMatch(f.destName,searchQ) && !textMatch(f.transporterName,searchQ) && !textMatch(f.driverName,searchQ) && !textMatch(f.driverPhone,searchQ)) return false;
       if(fPlant && f.destName!==fPlant) return false;
       if(fProducer && f.originCompanyName!==fProducer) return false;
       if(fTransporter && f.transporterName!==fTransporter) return false;

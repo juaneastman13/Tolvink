@@ -6,6 +6,7 @@
 import { useState, useEffect, useRef } from "react";
 import { loadGMaps } from "../maps";
 import { API_URL } from "../api";
+import log from "../logger";
 
 const URUGUAY_CENTER = { lat: -33.0, lng: -56.0 };
 
@@ -125,7 +126,7 @@ export default function PickLocationScreen() {
           );
         }
       } catch (err) {
-        console.error("Map init error:", err);
+        log.error("PickLocation", err);
         setError("No se pudo cargar el mapa. Recarga la pagina.");
       }
     })();

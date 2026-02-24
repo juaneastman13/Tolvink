@@ -3,6 +3,7 @@ import { C, Ic } from "../theme";
 import { Btn, Bd, Field, Loader, LoadingOverlay } from "../components";
 import { SafeZone, LocationPicker } from "../maps";
 import { apiGetFields, apiCreateField, apiUpdateField, apiCreateLot, apiUpdateLot, apiGetFieldLots } from "../api";
+import log from "../logger";
 
 export default function FieldsScreen({ onBack, embedded, goToMap }) {
   const [fields, setFields] = useState([]);
@@ -87,7 +88,7 @@ export default function FieldsScreen({ onBack, embedded, goToMap }) {
       const lng = l.lng != null ? Number(l.lng) : null;
       setEditLotLoc(lat && lng ? { lat, lng } : null);
     } catch (e) {
-      console.error("startEditLot error", e);
+      log.error("Fields", "startEditLot error", e);
       setEditLot({ fieldId, lotId: l.id });
       setEditLotHa("");
       setEditLotLoc(null);

@@ -57,10 +57,10 @@ export const UNITS = [{v:"toneladas",l:"Toneladas"},{v:"cantidad",l:"Cantidad"},
 
 // Polling intervals (ms)
 export const POLL_INTERVALS = {
-  FREIGHTS: 4000,       // 4s - freight list poll (active screens only)
+  FREIGHTS: 30000,      // 30s - freight list poll (SSE is the primary channel)
   UNREAD_CHATS: 30000,  // 30s - unread chat count
   CHAT_MESSAGES: 3000,  // 3s - active chat messages (adapts to 60s)
-  DETAIL_REFRESH: 4000  // 4s - freight detail auto-refresh
+  DETAIL_REFRESH: 15000 // 15s - freight detail auto-refresh (SSE pushes real-time)
 };
 
 // Dev-only logger (no-ops in production)

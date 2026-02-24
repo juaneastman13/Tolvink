@@ -7,7 +7,11 @@ export default function ConfirmActionModal({ freight, title, btnLabel, btnVarian
   const [closing,setClosing] = useState(false);
   const [closingText,setClosingText] = useState("");
   const [tons,setTons] = useState(defaultTons || freight.tons || "");
-  const doConfirm = async ()=>{ if(loading||closing) return; setLoading(true); const msg=await onConfirm(showTonsInput ? tons : undefined); setLoading(false); if(msg){ setClosingText(msg); setClosing(true); } };
+  const doConfirm = async ()=>{
+    if(loading||closing) return;
+    if(showTonsInput){ const n=parseFloat(tons); if(!n||n<=0){ alert("Ingrese toneladas válidas (mayor a 0)"); return; } }
+    setLoading(true); const msg=await onConfirm(showTonsInput ? tons : undefined); setLoading(false); if(msg){ setClosingText(msg); setClosing(true); }
+  };
   return (
     <ModalOverlay onClose={onClose} maxWidth={360} loading={loading} closing={closing} closingText={closingText}>
       {icon && <div style={{display:"flex",justifyContent:"center",marginBottom:12}}><div style={{width:48,height:48,borderRadius:24,background:`${btnVariant==="acc"?C.acc:C.pri}12`,display:"flex",alignItems:"center",justifyContent:"center"}}>{icon}</div></div>}

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, Component } from "react";
 import { apiGetLastPosition, apiSendTracking } from "./api";
 import { C, Ic } from "./theme";
 import { useUIStore } from "./store";
+import log from "./logger";
 
 // HTML escape for InfoWindow content (prevents XSS)
 const _esc = v => String(v||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
@@ -30,7 +31,7 @@ export function loadGMaps() {
 export class SafeZone extends Component {
   constructor(props) { super(props); this.state = { hasError: false, error: null }; }
   static getDerivedStateFromError(error) { return { hasError: true, error }; }
-  componentDidCatch(error, info) { console.error("SafeZone caught:", error, info); }
+  componentDidCatch(error, info) { log.error("SafeZone", error, info); }
   render() {
     if (this.state.hasError) {
       return <div style={{ padding: 12, background: "#FEE2E2", borderRadius: 8, fontSize: 12, color: "#DC2626" }}>
@@ -117,7 +118,7 @@ export function LocationPicker({ label, value, onChange, defaultCenter }) {
           });
         }
       } catch (err) {
-        console.error("LocationPicker initMap error:", err);
+        log.error("LocationPicker", err);
         setInitError(true);
       }
     };
@@ -247,7 +248,7 @@ export function LocPickerFullscreen({ value, onChange, defaultCenter, label, onC
           });
         }
       } catch (err) {
-        console.error("LocPickerFullscreen init error:", err);
+        log.error("LocPickerFullscreen", err);
       }
     })();
 

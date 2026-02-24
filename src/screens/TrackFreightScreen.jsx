@@ -6,6 +6,7 @@
 import { useState, useEffect, useRef } from "react";
 import { loadGMaps } from "../maps";
 import { API_URL } from "../api";
+import log from "../logger";
 
 const COLORS = {
   pri: "#1A6B37", acc: "#FF6A00", bg: "#F7F8F7", w: "#FFFFFF",
@@ -111,7 +112,7 @@ export default function TrackFreightScreen() {
             }
           }
         );
-      } catch (e) { console.error("Map init error:", e); }
+      } catch (e) { log.error("TrackFreight", e); }
     })();
 
     return () => { cancelled = true; };

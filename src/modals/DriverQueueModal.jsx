@@ -3,6 +3,7 @@ import { C, Ic, MONO } from "../theme";
 import { Btn, ModalOverlay } from "../components";
 import { stCfg } from "../constants";
 import { apiGetDriverQueue, apiReorderDriverQueue } from "../api";
+import log from "../logger";
 
 export default function DriverQueueModal({ driverId, driverName, onClose }) {
   const [queue, setQueue] = useState([]);
@@ -33,7 +34,7 @@ export default function DriverQueueModal({ driverId, driverName, onClose }) {
       setDirty(false);
       onClose();
     } catch (e) {
-      console.error("Reorder failed:", e);
+      log.error("DriverQueue", "reorder failed:", e);
     } finally {
       setSaving(false);
     }

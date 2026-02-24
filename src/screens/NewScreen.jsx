@@ -3,6 +3,7 @@ import { C, Ic, track } from "../theme";
 import { V, validate, SCHEMAS, textMatch, FieldError } from "../validation";
 import { stCfg, GRANOS, UNITS } from "../constants";
 import { Btn, Field, Select, Sec, AttachMenu } from "../components";
+import log from "../logger";
 import { LocationPicker, SafeZone, FreightMap } from "../maps";
 import { uploadPhoto, apiAddDocument, apiGetFieldLots, apiCreateLot } from "../api";
 import { useIsDesktop } from "../hooks";
@@ -95,7 +96,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
       setFieldLots(prev=>[...prev, lot]);
       u({ lotId: lot.id });
       setNewLot(false); setNewLotName(""); setNewLotLoc(null);
-    } catch(e) { console.error("Error creando lote:", e); alert("No se pudo crear el lote. Intente nuevamente."); }
+    } catch(e) { log.error("NewScreen", "error creando lote:", e); alert("No se pudo crear el lote. Intente nuevamente."); }
     finally { setNewLotSaving(false); }
   };
 

@@ -4,6 +4,7 @@
 // =====================================================================
 
 import { create } from "zustand";
+import log from "./logger";
 
 // ======================== UI STORE ===================================
 // Modals, toasts, map overlay, list view mode
@@ -103,7 +104,7 @@ export const offlineQueue = {
       });
       await new Promise((res, rej) => { tx.oncomplete = res; tx.onerror = rej; });
     } catch (e) {
-      console.error("[OfflineQueue] enqueue failed:", e);
+      log.error("OfflineQueue", "enqueue failed:", e);
     }
   },
 
@@ -129,7 +130,7 @@ export const offlineQueue = {
       tx.objectStore(STORE_NAME).delete(id);
       await new Promise((res, rej) => { tx.oncomplete = res; tx.onerror = rej; });
     } catch (e) {
-      console.error("[OfflineQueue] remove failed:", e);
+      log.error("OfflineQueue", "remove failed:", e);
     }
   },
 

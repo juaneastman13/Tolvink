@@ -3,6 +3,7 @@ import { uploadPhoto, apiAddDocument, apiDeleteDocument } from "./api";
 import { C, Ic } from "./theme";
 import { AttachMenu, Btn } from "./components";
 import { useUIStore } from "./store";
+import log from "./logger";
 
 // ======================== PHOTO UPLOAD ================================
 
@@ -74,7 +75,7 @@ export function DocsGallery({ documents, onViewFile, freightId, canDelete, onDel
       show("Archivo eliminado", "ok");
       if (onDeleted) onDeleted();
     } catch (e) {
-      console.error("Delete doc failed:", e);
+      log.error("Uploads", "delete doc failed:", e);
       show(e?.message || "Error al eliminar archivo", "err");
       setConfirm(null);
     } finally {

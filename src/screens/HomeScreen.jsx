@@ -102,7 +102,7 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
   const pendingByAction = useMemo(() => {
     const buckets = {};
     filteredFreights.forEach(f => {
-      const pa = getPendingActions(f, effectiveType(f), user.role);
+      const pa = getPendingActions(f, effectiveType(f), user.role, user);
       if (!pa) return;
       if (!matchDate(f.loadDate, pendingFilter)) return;
       const bk = pa.actionKey;
@@ -120,7 +120,7 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
 
   // Total pending (unfiltered) to know if section should show
   const totalPendingAll = useMemo(() =>
-    filteredFreights.filter(f => getPendingActions(f, effectiveType(f), user.role)).length
+    filteredFreights.filter(f => getPendingActions(f, effectiveType(f), user.role, user)).length
   , [filteredFreights, effectiveType]);
 
   // Summary groups — by freight status, filtered by date
@@ -135,7 +135,7 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
   const summaryGroups = useMemo(() => {
     return STATUS_GROUPS.map(g => {
       const st = stCfg(g.statuses[0]);
-      const items = activeFreights.filter(f => g.statuses.includes(f.status) && !getPendingActions(f, effectiveType(f), user.role) && matchDate(f.loadDate, summaryFilter))
+      const items = activeFreights.filter(f => g.statuses.includes(f.status) && !getPendingActions(f, effectiveType(f), user.role, user) && matchDate(f.loadDate, summaryFilter))
         .sort((a, b) => a.loadDate && b.loadDate ? a.loadDate.localeCompare(b.loadDate) : 0);
       return { ...g, color: st.color, items };
     }).filter(g => g.items.length > 0);
@@ -203,7 +203,7 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
         </button>
         {isOpen && (
           <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: "8px 0 4px 16px", borderLeft: `2px solid ${group.color}30` }}>
-            {group.items.map(f => renderCard(f, getPendingActions(f, effectiveType(f), user.role)))}
+            {group.items.map(f => renderCard(f, getPendingActions(f, effectiveType(f), user.role, user)))}
           </div>
         )}
       </div>
