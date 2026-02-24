@@ -16,7 +16,7 @@ export default function ConfirmActionModal({ freight, title, btnLabel, btnVarian
       {showTonsInput && <div style={{marginBottom:16}}>
         <label style={{fontSize:13,fontWeight:600,color:C.t1,marginBottom:4,display:"block"}}>Toneladas cargadas</label>
         <input type="number" inputMode="decimal" step="0.01" min="0" value={tons} onChange={e=>setTons(e.target.value)} placeholder="Ej: 30.5" autoFocus
-          style={{width:"100%",padding:"12px",borderRadius:10,border:`1px solid ${C.brd}`,fontSize:16,textAlign:"center",boxSizing:"border-box"}}/>
+          style={{width:"100%",padding:"12px",borderRadius:10,border:`1px solid ${C.b1}`,fontSize:16,textAlign:"center",boxSizing:"border-box"}}/>
       </div>}
       <div style={{display:"flex",gap:8}}><Btn full v="ghost" onClick={onClose} disabled={loading||closing}>Cancelar</Btn><Btn full v={btnVariant} disabled={loading||closing} onClick={doConfirm}>{loading?"Procesando...":btnLabel}</Btn></div>
     </ModalOverlay>

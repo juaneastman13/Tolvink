@@ -75,8 +75,8 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
     return () => document.removeEventListener("mousedown", handler);
   }, [showCompanyPicker]);
 
-  // Date helpers for filters
-  const dateBounds = useMemo(() => {
+  // Date helpers for filters — recomputed every render to avoid stale dates when app stays open overnight
+  const dateBounds = (() => {
     const now = new Date();
     const todayStr = now.toISOString().slice(0, 10);
     const tom = new Date(now); tom.setDate(tom.getDate() + 1);
@@ -85,7 +85,7 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
     const endWk = new Date(now); endWk.setDate(now.getDate() + (7 - day));
     const weekEndStr = endWk.toISOString().slice(0, 10);
     return { todayStr, tomorrowStr, weekEndStr };
-  }, []);
+  })();
   const matchDate = (loadDate, filter) => {
     if (filter === "all") return true;
     if (!loadDate) return false;

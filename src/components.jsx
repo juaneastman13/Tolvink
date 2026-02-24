@@ -630,7 +630,7 @@ function _reportRows(freights) {
 
 export function exportExcel(freights, filename) {
   const rows = _reportRows(freights);
-  const esc = v => String(v||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  const esc = v => String(v||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");
   const headerCells = _REPORT_HEADERS.map(h => `<Cell ss:StyleID="hdr"><Data ss:Type="String">${esc(h)}</Data></Cell>`).join("");
   const dataRows = rows.map(r => "<Row>" + r.map(v => `<Cell><Data ss:Type="String">${esc(v)}</Data></Cell>`).join("") + "</Row>").join("\n");
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
@@ -651,7 +651,7 @@ ${dataRows}
 
 export function exportPDF(freights, title) {
   const rows = _reportRows(freights);
-  const esc = v => String(v||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  const esc = v => String(v||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");
   const today = new Date().toLocaleDateString("es-UY",{day:"2-digit",month:"short",year:"numeric"});
   const headerCells = _REPORT_HEADERS.map(h => `<th>${esc(h)}</th>`).join("");
   const dataRows = rows.map(r => "<tr>" + r.map(v => `<td>${esc(v)}</td>`).join("") + "</tr>").join("");

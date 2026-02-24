@@ -3,6 +3,9 @@ import { apiGetLastPosition, apiSendTracking } from "./api";
 import { C, Ic } from "./theme";
 import { useUIStore } from "./store";
 
+// HTML escape for InfoWindow content (prevents XSS)
+const _esc = v => String(v||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+
 // ======================== GOOGLE MAPS ================================
 
 const GMAPS_KEY = import.meta.env.VITE_GMAPS_KEY || "";
@@ -534,11 +537,11 @@ export function FreightsOverviewMap({ freights, onSelect, fields, plants }) {
         mk.addListener("click", () => {
           info.current.setContent(
             `<div style="font-family:system-ui;font-size:12px;line-height:1.5;min-width:160px">` +
-            `<strong>${f.code}</strong><br/>${f.grain} · ${f.tons} ${f.unit||"tn"}<br/>` +
-            (f.originCompanyName ? `<span style="font-weight:600">${f.originCompanyName}</span><br/>` : "") +
-            ([f.fieldName, f.originName].filter(Boolean).length ? `${[f.fieldName, f.originName].filter(Boolean).join(" / ")}<br/>` : "") +
-            `→ ${f.destName}<br/>` +
-            `<span style="color:${col};font-weight:600">${_STATUS_LABEL[f.status]||f.status}</span></div>`
+            `<strong>${_esc(f.code)}</strong><br/>${_esc(f.grain)} · ${_esc(f.tons)} ${_esc(f.unit||"tn")}<br/>` +
+            (f.originCompanyName ? `<span style="font-weight:600">${_esc(f.originCompanyName)}</span><br/>` : "") +
+            ([f.fieldName, f.originName].filter(Boolean).length ? `${[f.fieldName, f.originName].filter(Boolean).map(_esc).join(" / ")}<br/>` : "") +
+            `→ ${_esc(f.destName)}<br/>` +
+            `<span style="color:${col};font-weight:600">${_esc(_STATUS_LABEL[f.status]||f.status)}</span></div>`
           );
           info.current.open(mapObj.current, mk);
         });
@@ -557,7 +560,7 @@ export function FreightsOverviewMap({ freights, onSelect, fields, plants }) {
       const mk = new maps.Marker({ position: pos, map: mapObj.current, title: f.name,
         icon: { url: _svgIcon(_FIELD_SVG), scaledSize: new maps.Size(28, 28), anchor: new maps.Point(14, 14) } });
       mk.addListener("click", () => {
-        info.current.setContent(`<div style="font-family:system-ui;font-size:12px;line-height:1.4"><strong>${f.name}</strong><br/><span style="color:#1A6B37;font-weight:600">Campo</span>${f.address ? "<br/>"+f.address : ""}${f.hectares ? "<br/>"+f.hectares+" ha" : ""}</div>`);
+        info.current.setContent(`<div style="font-family:system-ui;font-size:12px;line-height:1.4"><strong>${_esc(f.name)}</strong><br/><span style="color:#1A6B37;font-weight:600">Campo</span>${f.address ? "<br/>"+_esc(f.address) : ""}${f.hectares ? "<br/>"+_esc(f.hectares)+" ha" : ""}</div>`);
         info.current.open(mapObj.current, mk);
       });
       markers.current.push(mk);
@@ -573,7 +576,7 @@ export function FreightsOverviewMap({ freights, onSelect, fields, plants }) {
       const mk = new maps.Marker({ position: pos, map: mapObj.current, title: p.name,
         icon: { url: _svgIcon(_PLANT_SVG), scaledSize: new maps.Size(28, 28), anchor: new maps.Point(14, 14) } });
       mk.addListener("click", () => {
-        info.current.setContent(`<div style="font-family:system-ui;font-size:12px;line-height:1.4"><strong>${p.name}</strong><br/><span style="color:#003882;font-weight:600">Planta</span>${p.address ? "<br/>"+p.address : ""}</div>`);
+        info.current.setContent(`<div style="font-family:system-ui;font-size:12px;line-height:1.4"><strong>${_esc(p.name)}</strong><br/><span style="color:#003882;font-weight:600">Planta</span>${p.address ? "<br/>"+_esc(p.address) : ""}</div>`);
         info.current.open(mapObj.current, mk);
       });
       markers.current.push(mk);
@@ -620,8 +623,8 @@ export function FreightsOverviewMap({ freights, onSelect, fields, plants }) {
             mk._fid = f.id;
             mk.addListener("click", () => {
               info.current.setContent(
-                `<div style="font-family:system-ui;font-size:12px;line-height:1.5"><strong>${f.code}</strong><br/>${f.grain} · ${f.tons} ${f.unit||"tn"}<br/>` +
-                `<span style="color:#FF6A00;font-weight:600">En curso</span>${f.truckPlate ? "<br/>"+f.truckPlate : ""}${f.driverName ? " · "+f.driverName : ""}</div>`
+                `<div style="font-family:system-ui;font-size:12px;line-height:1.5"><strong>${_esc(f.code)}</strong><br/>${_esc(f.grain)} · ${_esc(f.tons)} ${_esc(f.unit||"tn")}<br/>` +
+                `<span style="color:#FF6A00;font-weight:600">En curso</span>${f.truckPlate ? "<br/>"+_esc(f.truckPlate) : ""}${f.driverName ? " · "+_esc(f.driverName) : ""}</div>`
               );
               info.current.open(mapObj.current, mk);
             });

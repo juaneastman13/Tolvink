@@ -654,12 +654,9 @@ export function useSSE(user, { onFreightUpdate, onMessageNew, onNotification, on
         failureCount.current += 1;
         log.warn('SSE', `Connection failed (${failureCount.current}/${MAX_CONSECUTIVE_FAILURES})`);
 
-        // If too many consecutive failures, assume auth problem and trigger logout
+        // If too many consecutive failures, stop retrying (don't force logout — may be transient network issue)
         if (failureCount.current >= MAX_CONSECUTIVE_FAILURES) {
-          log.error('SSE', 'Max consecutive failures reached. Assuming auth failure.');
-          // Import clearAuth at top and call logout
-          clearAuth();
-          window.location.reload();
+          log.warn('SSE', 'Max consecutive failures reached. Stopping reconnection. Will retry on next navigation.');
           return;
         }
 

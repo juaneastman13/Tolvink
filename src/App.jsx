@@ -383,6 +383,7 @@ export default function Tolvink() {
     }
 
     const r = await fh.create(form);
+    let photoFailCount = 0;
     if(r.ok && r.freightId && form.photos?.length > 0) {
       for(const photoUrl of form.photos) {
         try {
@@ -390,11 +391,15 @@ export default function Tolvink() {
           const file = new File([blob], `foto-${Date.now()}.jpg`, {type:'image/jpeg'});
           const url = await uploadPhoto(file, r.freightId, 'request');
           await apiAddDocument(r.freightId, { name: file.name, url, type:'photo', step:'request' });
-        } catch(e) { log.error('FREIGHT', 'Photo upload failed:', e); }
+        } catch(e) { log.error('FREIGHT', 'Photo upload failed:', e); photoFailCount++; }
       }
     }
     setSubmitting(false);
-    if(r.ok){ track("freight_create"); setSubmitDone("Flete solicitado"); } else show(r.error,"err");
+    if(r.ok){
+      track("freight_create");
+      if(photoFailCount > 0) show(`Flete solicitado, pero ${photoFailCount} foto(s) no se pudieron adjuntar`,"warn");
+      else setSubmitDone("Flete solicitado");
+    } else show(r.error,"err");
   };
 
   // O(1) freight lookup (must be before conditional returns — Rules of Hooks)

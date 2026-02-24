@@ -95,7 +95,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
       setFieldLots(prev=>[...prev, lot]);
       u({ lotId: lot.id });
       setNewLot(false); setNewLotName(""); setNewLotLoc(null);
-    } catch(e) { console.error("Error creando lote:", e); }
+    } catch(e) { console.error("Error creando lote:", e); alert("No se pudo crear el lote. Intente nuevamente."); }
     finally { setNewLotSaving(false); }
   };
 
