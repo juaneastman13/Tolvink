@@ -20,18 +20,19 @@ export function PhotoUpload({ freightId, step, label, onUploaded }) {
     if (!file.type.startsWith('image/')) { setError('Solo imágenes'); return; }
     if (file.size > 10 * 1024 * 1024) { setError('Máximo 10MB'); return; }
 
-    setPreview(URL.createObjectURL(file));
+    const newPreview = URL.createObjectURL(file);
+    setPreview(newPreview);
     setUploading(true);
     setError(null);
     try {
       const url = await uploadPhoto(file, freightId, step);
       await apiAddDocument(freightId, { name: file.name, url, type: 'photo', step });
-      if (preview) URL.revokeObjectURL(preview);
+      URL.revokeObjectURL(newPreview);
       setDone(true);
       if (onUploaded) onUploaded({ url, name: file.name, step });
     } catch (err) {
       setError(err.message || 'Error al subir');
-      if (preview) URL.revokeObjectURL(preview);
+      URL.revokeObjectURL(newPreview);
       setPreview(null);
     } finally {
       setUploading(false);
@@ -188,6 +189,11 @@ export function FreightFileUpload({ freightId, step, onUploaded }) {
   const [uploadDone, setUploadDone] = useState(false);
   const [currentIdx, setCurrentIdx] = useState(0);
   const [showAttach, setShowAttach] = useState(false);
+  const filesRef = useRef(files);
+  filesRef.current = files;
+  useEffect(() => {
+    return () => { filesRef.current.forEach(f => { if (f.preview) URL.revokeObjectURL(f.preview); }); };
+  }, []);
   const camRef = useRef(null);
   const galRef = useRef(null);
   const docRef = useRef(null);

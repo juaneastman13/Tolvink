@@ -188,6 +188,7 @@ export function useAuth() {
       if (d?.user) {
         const mappedUser = mapUser(d.user);
         setUser(mappedUser);
+        if ('caches' in window) caches.delete('tolvink-api-v2').catch(() => {});
         log.log('AUTH', 'Switched to company:', companyId);
         return { ok: true };
       }
