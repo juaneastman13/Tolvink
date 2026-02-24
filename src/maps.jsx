@@ -297,11 +297,14 @@ export function FreightMap({ freightId, originLat, originLng, destLat, destLng, 
   const [error, setError] = useState(null);
   const goToMap = useUIStore(s => s.goToMap);
 
-  const hasCoords = originLat && originLng && destLat && destLng;
+  const hasOrigin = originLat && originLng;
+  const hasDest = destLat && destLng;
+  const hasCoords = hasOrigin && hasDest;
+  const hasAnyCoord = hasOrigin || hasDest;
   const isLive = status === "in_progress";
 
   useEffect(() => {
-    if (!hasCoords || !mapRef.current) return;
+    if (!hasAnyCoord || !mapRef.current) return;
     let cancelled = false;
 
     (async () => {
@@ -309,12 +312,16 @@ export function FreightMap({ freightId, originLat, originLng, destLat, destLng, 
         const maps = await loadGMaps();
         if (cancelled) return;
 
-        const origin = { lat: originLat, lng: originLng };
-        const dest = { lat: destLat, lng: destLng };
+        const origin = hasOrigin ? { lat: originLat, lng: originLng } : null;
+        const dest = hasDest ? { lat: destLat, lng: destLng } : null;
+        const center = origin && dest
+          ? { lat: (originLat + destLat) / 2, lng: (originLng + destLng) / 2 }
+          : origin || dest;
+        const zoom = origin && dest ? 7 : 12;
 
         const map = new maps.Map(mapRef.current, {
-          zoom: 7,
-          center: { lat: (originLat + destLat) / 2, lng: (originLng + destLng) / 2 },
+          zoom,
+          center,
           disableDefaultUI: true,
           zoomControl: false,
           mapTypeControl: false,
@@ -328,40 +335,47 @@ export function FreightMap({ freightId, originLat, originLng, destLat, destLng, 
         });
         mapInstance.current = map;
 
-        new maps.Marker({
-          position: origin, map,
-          title: originName || "Origen",
-          icon: { path: maps.SymbolPath.CIRCLE, scale: 10, fillColor: "#1A6B37", fillOpacity: 1, strokeColor: "#fff", strokeWeight: 2 },
-        });
+        if (origin) {
+          new maps.Marker({
+            position: origin, map,
+            title: originName || "Origen",
+            icon: { path: maps.SymbolPath.CIRCLE, scale: 10, fillColor: "#1A6B37", fillOpacity: 1, strokeColor: "#fff", strokeWeight: 2 },
+          });
+        }
 
-        new maps.Marker({
-          position: dest, map,
-          title: destName || "Destino",
-          icon: { path: maps.SymbolPath.CIRCLE, scale: 10, fillColor: "#003882", fillOpacity: 1, strokeColor: "#fff", strokeWeight: 2 },
-        });
+        if (dest) {
+          new maps.Marker({
+            position: dest, map,
+            title: destName || "Destino",
+            icon: { path: maps.SymbolPath.CIRCLE, scale: 10, fillColor: "#003882", fillOpacity: 1, strokeColor: "#fff", strokeWeight: 2 },
+          });
+        }
 
-        const directionsService = new maps.DirectionsService();
-        const directionsRenderer = new maps.DirectionsRenderer({
-          map,
-          suppressMarkers: true,
-          polylineOptions: {
-            strokeColor: isLive ? "#FF6A00" : "#1A6B37",
-            strokeWeight: 4,
-            strokeOpacity: 0.8,
-          },
-        });
+        // Only draw route if both coords exist
+        if (origin && dest) {
+          const directionsService = new maps.DirectionsService();
+          const directionsRenderer = new maps.DirectionsRenderer({
+            map,
+            suppressMarkers: true,
+            polylineOptions: {
+              strokeColor: isLive ? "#FF6A00" : "#1A6B37",
+              strokeWeight: 4,
+              strokeOpacity: 0.8,
+            },
+          });
 
-        directionsService.route({
-          origin, destination: dest,
-          travelMode: maps.TravelMode.DRIVING,
-        }, (result, s) => {
-          if (cancelled) return;
-          if (s === "OK") {
-            directionsRenderer.setDirections(result);
-            const leg = result.routes[0]?.legs[0];
-            if (leg) setRouteInfo({ distance: leg.distance.text, duration: leg.duration.text });
-          }
-        });
+          directionsService.route({
+            origin, destination: dest,
+            travelMode: maps.TravelMode.DRIVING,
+          }, (result, s) => {
+            if (cancelled) return;
+            if (s === "OK") {
+              directionsRenderer.setDirections(result);
+              const leg = result.routes[0]?.legs[0];
+              if (leg) setRouteInfo({ distance: leg.distance.text, duration: leg.duration.text });
+            }
+          });
+        }
 
       } catch (e) {
         if (!cancelled) setError("No se pudo cargar el mapa");
@@ -369,7 +383,7 @@ export function FreightMap({ freightId, originLat, originLng, destLat, destLng, 
     })();
 
     return () => { cancelled = true; };
-  }, [hasCoords, originLat, originLng, destLat, destLng, status]);
+  }, [hasAnyCoord, originLat, originLng, destLat, destLng, status]);
 
   // Live tracking — poll last position
   useEffect(() => {
@@ -434,24 +448,35 @@ export function FreightMap({ freightId, originLat, originLng, destLat, destLng, 
     };
   }, [isDriver, isLive, freightId]);
 
-  if (!hasCoords) return null;
+  if (!hasAnyCoord) return (
+    <div style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: 12, padding: 32, textAlign: "center", boxShadow: C.sh }}>
+      {Ic.pin(C.t3, 28)}
+      <div style={{ fontSize: 12, color: C.t3, marginTop: 8 }}>Ubicación no disponible</div>
+    </div>
+  );
+
+  const gmapsUrl = hasCoords
+    ? `https://www.google.com/maps/dir/?api=1&origin=${originLat},${originLng}&destination=${destLat},${destLng}&travelmode=driving`
+    : hasOrigin
+      ? `https://www.google.com/maps/?q=${originLat},${originLng}`
+      : `https://www.google.com/maps/?q=${destLat},${destLng}`;
 
   return (
     <div style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: 12, overflow: "hidden", boxShadow: C.sh, display:"flex", flexDirection:"column", height:"100%" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 6, padding:"10px 14px", flexShrink:0 }}>
         {Ic.pin(C.pri, 14)}
-        <span style={{ fontSize: 10.5, fontWeight: 700, color: C.t2, textTransform: "uppercase", letterSpacing: 0.5 }}>Recorrido</span>
+        <span style={{ fontSize: 10.5, fontWeight: 700, color: C.t2, textTransform: "uppercase", letterSpacing: 0.5 }}>{hasCoords ? "Recorrido" : "Ubicación"}</span>
         {routeInfo && (
           <span style={{ fontSize: 11, color: C.t1, fontWeight: 600 }}>
             {routeInfo.distance} · {routeInfo.duration}
           </span>
         )}
-        <button onClick={()=>window.open(`https://www.google.com/maps/dir/?api=1&origin=${originLat},${originLng}&destination=${destLat},${destLng}&travelmode=driving`,"_blank","noopener")} style={{ marginLeft:"auto", padding:"4px 10px", borderRadius:8, border:`1px solid ${C.b1}`, background:C.w, cursor:"pointer", display:"flex", alignItems:"center", gap:4, fontSize:10, fontWeight:600, color:C.pri, fontFamily:"inherit", WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
+        <button onClick={()=>window.open(gmapsUrl,"_blank","noopener")} style={{ marginLeft:"auto", padding:"4px 10px", borderRadius:8, border:`1px solid ${C.b1}`, background:C.w, cursor:"pointer", display:"flex", alignItems:"center", gap:4, fontSize:10, fontWeight:600, color:C.pri, fontFamily:"inherit", WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
           {Ic.nav(C.pri,11)} Abrir en Google Maps
         </button>
-        <button onClick={()=>goToMap(originLat,originLng,originName,destLat,destLng,destName)} style={{ padding:6, borderRadius:8, border:`1px solid ${C.b1}`, background:C.w, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
+        {hasCoords && <button onClick={()=>goToMap(originLat,originLng,originName,destLat,destLng,destName)} style={{ padding:6, borderRadius:8, border:`1px solid ${C.b1}`, background:C.w, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
           {Ic.expand(C.t1,16)}
-        </button>
+        </button>}
       </div>
       {error ? (
         <div style={{ padding: 20, textAlign: "center", fontSize: 12, color: C.t3 }}>{error}</div>
@@ -459,14 +484,14 @@ export function FreightMap({ freightId, originLat, originLng, destLat, destLng, 
         <div ref={mapRef} style={{ width: "100%", flex:1, minHeight:180 }} />
       )}
       <div style={{ padding:"8px 14px", display: "flex", gap: 12, fontSize: 10.5, flexWrap: "wrap", alignItems: "center", flexShrink:0 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+        {hasOrigin && <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
           <span style={{ width: 8, height: 8, borderRadius: 4, background: "#1A6B37" }} />
           <span style={{ color: C.t2 }}>{originName}</span>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+        </div>}
+        {hasDest && <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
           <span style={{ width: 8, height: 8, borderRadius: 4, background: "#003882" }} />
           <span style={{ color: C.t2 }}>{destName}</span>
-        </div>
+        </div>}
         {isLive && truckPos && (
           <div style={{ display: "flex", alignItems: "center", gap: 4, marginLeft: "auto" }}>
             <span style={{ width: 8, height: 8, borderRadius: 4, background: "#FF6A00", animation: "ti 1.5s infinite" }} />

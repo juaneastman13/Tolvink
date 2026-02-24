@@ -105,10 +105,11 @@ export default function Tolvink() {
   const [sseTyping, setSseTyping] = useState(null);
   const [sseRead, setSseRead] = useState(null);
   const [viewAll, setViewAll] = useState(false);
+  const [compDropOpen, setCompDropOpen] = useState(false);
 
   // SSE — real-time sync
   const sse = useSSE(auth.user, {
-    onFreightUpdate: () => fh.fetchAll(),
+    onFreightUpdate: (data) => { if(data?.id) fh.refresh(data.id); else fh.fetchAll(); },
     onMessageNew: (data) => {
       // Issue #9 fix: only increment unread if message is from another user
       if (data.senderId && data.senderId !== auth.user?.id) {
@@ -459,7 +460,36 @@ export default function Tolvink() {
             <span style={{width:8,height:8,borderRadius:4,background:C.acc,display:"inline-block",marginLeft:3,marginTop:1,animation:"dotPulse 1.5s ease-in-out infinite"}}></span>
           </div>
           <div style={{flex:1}}/>
-          {auth.user?.entity && <span style={{ fontSize:11, fontWeight:600, color:C.t2, maxWidth:130, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{auth.user.entity}</span>}
+          {auth.user?.entity && (auth.user.companies?.length > 1 ? (
+            <div style={{position:"relative"}}>
+              <button onClick={()=>setCompDropOpen(v=>!v)} style={{display:"flex",alignItems:"center",gap:4,padding:"4px 8px",borderRadius:8,border:`1px solid ${C.b1}`,background:C.w,cursor:"pointer",fontFamily:"inherit",maxWidth:140,WebkitTapHighlightColor:"transparent",touchAction:"manipulation"}}>
+                <span style={{fontSize:11,fontWeight:600,color:C.t2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{auth.user.entity}</span>
+                {Ic.down(C.t3,12)}
+              </button>
+              {compDropOpen && <>
+                <div onClick={()=>setCompDropOpen(false)} style={{position:"fixed",inset:0,zIndex:99}}/>
+                <div style={{position:"absolute",top:"100%",right:0,marginTop:4,background:C.w,border:`1px solid ${C.b1}`,borderRadius:10,boxShadow:C.shMd,zIndex:100,minWidth:180,overflow:"hidden"}}>
+                  {auth.user.companies.map(c=>{
+                    const isActive = c.companyId === auth.user.activeCompanyId;
+                    return <button key={c.companyId} onClick={async()=>{
+                      setCompDropOpen(false);
+                      if(!isActive){
+                        setViewAll(false);
+                        const r = await auth.switchCompany(c.companyId);
+                        if(r.ok){ fh.fetchAll(); catalog.refresh(); }
+                      }
+                    }} style={{width:"100%",padding:"10px 14px",border:"none",borderBottom:`1px solid ${C.b2}`,background:isActive?C.priPale:"transparent",cursor:"pointer",fontFamily:"inherit",textAlign:"left",display:"flex",alignItems:"center",gap:8}}>
+                      <div style={{width:8,height:8,borderRadius:4,background:isActive?C.pri:C.b2,flexShrink:0}}/>
+                      <div>
+                        <div style={{fontSize:12,fontWeight:isActive?700:500,color:isActive?C.pri:C.t1}}>{c.companyName}</div>
+                        <div style={{fontSize:10,color:C.t3}}>{({plant:"Planta",transporter:"Transportista",producer:"Productor"})[c.companyType]||c.companyType}</div>
+                      </div>
+                    </button>;
+                  })}
+                </div>
+              </>}
+            </div>
+          ) : <span style={{ fontSize:11, fontWeight:600, color:C.t2, maxWidth:130, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{auth.user.entity}</span>)}
           <div style={{position:"relative",flexShrink:0}}>
             <NotifBell count={notif.unreadCount} onClick={()=>setNotifOpen(!notifOpen)} />
             <NotificationsPanel open={notifOpen} onClose={()=>setNotifOpen(false)} notifications={notif.notifications} onMarkRead={notif.markRead} onMarkAllRead={notif.markAllRead} onTap={handleNotifTap} />
@@ -516,7 +546,7 @@ export default function Tolvink() {
 
       {(submitting||submitDone) && <LoadingOverlay closing={!!submitDone} closingText={submitDone} onClose={()=>{setSubmitDone("");navigate("/list");}}/>}
       <Suspense fallback={null}>
-      {modal?.type==="assign" && <AssignModal freight={modal.freight} transporters={catalog.transporters} onClose={()=>setModal(null)} onConfirm={(compId,truckId,driverId)=>handleAssign(modal.freight.id,compId,truckId,driverId)} onAssignMulti={handleAssignMulti}/>}
+      {modal?.type==="assign" && <AssignModal freight={modal.freight} transporters={catalog.transporters} user={auth.user} onClose={()=>setModal(null)} onConfirm={(compId,truckId,driverId)=>handleAssign(modal.freight.id,compId,truckId,driverId)} onAssignMulti={handleAssignMulti}/>}
       {modal?.type==="truck_select" && <TruckSelectModal freight={modal.freight} trucks={catalog.trucks} user={auth.user} onClose={()=>setModal(null)} onConfirm={(t,driverId)=>handleAcceptWithTruck(modal.freight.id,t,driverId)}/>}
       {modal?.type==="confirm_action" && <ConfirmActionModal freight={modal.freight} title={modal.title} btnLabel={modal.btnLabel} btnVariant={modal.btnVariant} icon={modal.icon} onClose={()=>setModal(null)} onConfirm={(tons)=>handleConfirmAction(modal.freight.id,modal.action,tons)} showTonsInput={modal.action==="confirm_loaded"} defaultTons={modal.freight.tons}/>}
       {modal?.type==="confirm_trip_action" && <ConfirmActionModal freight={modal.freight} title={modal.title} btnLabel={modal.btnLabel} btnVariant={modal.btnVariant} icon={modal.icon} onClose={()=>setModal(null)} onConfirm={(tons)=>handleTripConfirmAction(modal.freight.id,modal.assignmentId,modal.actionKey,tons)} showTonsInput={modal.actionKey==="confirm_trip_loaded"} defaultTons={modal.freight.tons}/>}

@@ -23,7 +23,7 @@ function getMultiTruckPendingAction(freight, userType, role, user) {
   const aa = freight.activeAssignments || [];
   if (!aa.length) {
     if (userType === "plant" && freight.assignedTruckCount < freight.truckCount) {
-      return { action: `Asignar ${freight.truckCount - freight.assignedTruckCount} camiones`, color: C.acc, icon: "assign", actionKey: "assign_multi" };
+      return { action: `Asignar ${freight.truckCount - freight.assignedTruckCount} camiones`, color: C.acc, icon: "assign", actionKey: "assign_multi", groupKey: "assign" };
     }
     return null;
   }
@@ -31,14 +31,14 @@ function getMultiTruckPendingAction(freight, userType, role, user) {
   // Plant: check if more trucks needed, authorize own-fleet, or confirm
   if (userType === "plant") {
     if (freight.assignedTruckCount < freight.truckCount) {
-      return { action: `Asignar ${freight.truckCount - freight.assignedTruckCount} camiones`, color: C.acc, icon: "assign", actionKey: "assign_multi" };
+      return { action: `Asignar ${freight.truckCount - freight.assignedTruckCount} camiones`, color: C.acc, icon: "assign", actionKey: "assign_multi", groupKey: "assign" };
     }
     // Own-fleet trips pending plant authorization
     const needsAuth = aa.find(a => a.transportCompanyId === freight.originCompanyId && a.tripStatus === "pending");
-    if (needsAuth) return { action: `Autorizar viaje #${needsAuth.tripNumber}`, color: C.sec, icon: "authorize", actionKey: "respond_trip", assignmentId: needsAuth.id };
+    if (needsAuth) return { action: `Autorizar viaje #${needsAuth.tripNumber}`, color: C.sec, icon: "authorize", actionKey: "respond_trip", groupKey: "authorize", assignmentId: needsAuth.id };
     // Check for pending confirm_finished on any trip
     const needsFinish = aa.find(a => a.tripStatus === "loaded" && !a.plantFinishedConfirmedAt);
-    if (needsFinish) return { action: `Confirmar entrega #${needsFinish.tripNumber}`, color: C.pri, icon: "confirm", actionKey: "confirm_trip_finished", assignmentId: needsFinish.id };
+    if (needsFinish) return { action: `Confirmar entrega #${needsFinish.tripNumber}`, color: C.pri, icon: "confirm", actionKey: "confirm_trip_finished", groupKey: "confirm_finished", assignmentId: needsFinish.id };
     return null;
   }
 
@@ -47,11 +47,11 @@ function getMultiTruckPendingAction(freight, userType, role, user) {
     const ownTrips = aa.filter(a => a.transportCompanyId === freight.originCompanyId);
     if (!ownTrips.length) return null;
     const accepted = ownTrips.find(a => a.tripStatus === "accepted");
-    if (accepted) return { action: `Iniciar viaje #${accepted.tripNumber}`, color: C.pri, icon: "start", actionKey: "start_trip", assignmentId: accepted.id };
+    if (accepted) return { action: `Iniciar viaje #${accepted.tripNumber}`, color: C.pri, icon: "start", actionKey: "start_trip", groupKey: "start", assignmentId: accepted.id };
     const inProgress = ownTrips.find(a => a.tripStatus === "in_progress" && !a.transporterLoadedConfirmedAt);
-    if (inProgress) return { action: `Confirmar carga #${inProgress.tripNumber}`, color: C.acc, icon: "confirm", actionKey: "confirm_trip_loaded", assignmentId: inProgress.id };
+    if (inProgress) return { action: `Confirmar carga #${inProgress.tripNumber}`, color: C.acc, icon: "confirm", actionKey: "confirm_trip_loaded", groupKey: "confirm_loaded", assignmentId: inProgress.id };
     const needsFinishOwn = ownTrips.find(a => a.tripStatus === "loaded" && !a.transporterFinishedConfirmedAt);
-    if (needsFinishOwn) return { action: `Confirmar entrega #${needsFinishOwn.tripNumber}`, color: C.pri, icon: "confirm", actionKey: "confirm_trip_finished", assignmentId: needsFinishOwn.id };
+    if (needsFinishOwn) return { action: `Confirmar entrega #${needsFinishOwn.tripNumber}`, color: C.pri, icon: "confirm", actionKey: "confirm_trip_finished", groupKey: "confirm_finished", assignmentId: needsFinishOwn.id };
     return null;
   }
 
@@ -63,13 +63,13 @@ function getMultiTruckPendingAction(freight, userType, role, user) {
 
   // Priority: pending > accepted > in_progress > loaded
   const pending = myAssignments.find(a => a.tripStatus === "pending");
-  if (pending) return { action: `Aceptar camión #${pending.tripNumber}`, color: C.sec, icon: "respond", actionKey: "respond_trip", assignmentId: pending.id };
+  if (pending) return { action: `Aceptar camión #${pending.tripNumber}`, color: C.sec, icon: "respond", actionKey: "respond_trip", groupKey: "respond", assignmentId: pending.id };
   const accepted = myAssignments.find(a => a.tripStatus === "accepted");
-  if (accepted) return { action: `Iniciar viaje #${accepted.tripNumber}`, color: C.pri, icon: "start", actionKey: "start_trip", assignmentId: accepted.id };
+  if (accepted) return { action: `Iniciar viaje #${accepted.tripNumber}`, color: C.pri, icon: "start", actionKey: "start_trip", groupKey: "start", assignmentId: accepted.id };
   const inProgress = myAssignments.find(a => a.tripStatus === "in_progress" && !a.transporterLoadedConfirmedAt);
-  if (inProgress) return { action: `Confirmar carga #${inProgress.tripNumber}`, color: C.acc, icon: "confirm", actionKey: "confirm_trip_loaded", assignmentId: inProgress.id };
+  if (inProgress) return { action: `Confirmar carga #${inProgress.tripNumber}`, color: C.acc, icon: "confirm", actionKey: "confirm_trip_loaded", groupKey: "confirm_loaded", assignmentId: inProgress.id };
   const loaded = myAssignments.find(a => a.tripStatus === "loaded" && !a.transporterFinishedConfirmedAt);
-  if (loaded) return { action: `Confirmar entrega #${loaded.tripNumber}`, color: C.pri, icon: "confirm", actionKey: "confirm_trip_finished", assignmentId: loaded.id };
+  if (loaded) return { action: `Confirmar entrega #${loaded.tripNumber}`, color: C.pri, icon: "confirm", actionKey: "confirm_trip_finished", groupKey: "confirm_finished", assignmentId: loaded.id };
   return null;
 }
 

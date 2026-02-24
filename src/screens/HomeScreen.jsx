@@ -105,8 +105,8 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
       const pa = getPendingActions(f, effectiveType(f), user.role, user);
       if (!pa) return;
       if (!matchDate(f.loadDate, pendingFilter)) return;
-      const bk = pa.actionKey;
-      const baseLabel = pa.action.replace(/ #\d+$/, '');
+      const bk = pa.groupKey || pa.actionKey;
+      const baseLabel = pa.action.replace(/ #\d+$/, '').replace(/ \d+ camiones$/, ' transporte');
       if (!buckets[bk]) buckets[bk] = { label: baseLabel, color: pa.color, actionKey: bk, icon: pa.icon, items: [] };
       buckets[bk].items.push({ ...f, pendingAction: pa });
     });

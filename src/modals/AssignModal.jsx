@@ -3,7 +3,7 @@ import { C, Ic } from "../theme";
 import { Btn, Field, ModalOverlay } from "../components";
 import { apiGetTrucks, apiCreateTruck, apiGetDrivers, apiCreateDriver } from "../api";
 
-export default function AssignModal({ freight, transporters, onClose, onConfirm, onAssignMulti }) {
+export default function AssignModal({ freight, transporters, user, onClose, onConfirm, onAssignMulti }) {
   const multiTruck = (freight.truckCount || 1) > 1;
   const [truckList, setTruckList] = useState([]);
   const [mode,setMode] = useState("company"); // "company" | "own"
@@ -142,10 +142,11 @@ export default function AssignModal({ freight, transporters, onClose, onConfirm,
     if(loading||closing) return;
     if(mode==="company" && !t) return;
     if(mode==="own" && !truckId) return;
+    if(mode==="own" && !driverId) return;
     setLoading(true);
     const compId = mode==="own" ? ownFleetCompanyId : t;
     const truck = mode==="own" ? truckId : undefined;
-    const driver = mode==="own" ? (driverId||undefined) : undefined;
+    const driver = mode==="own" ? driverId : undefined;
     const msg = await onConfirm(compId, truck, driver);
     setLoading(false);
     if(msg){ setClosingText(msg); setClosing(true); }
@@ -267,7 +268,7 @@ export default function AssignModal({ freight, transporters, onClose, onConfirm,
                 {Ic.truck(truckId===tk.id?C.acc:C.t3,14)} {tk.plate}{tk.model?` · ${tk.model}`:""}
               </button>)}
             </div>
-            <label style={{fontSize:10.5,fontWeight:600,color:C.t2,marginBottom:8,display:"block",textTransform:"uppercase",letterSpacing:0.6}}>Chofer (opcional)</label>
+            <label style={{fontSize:10.5,fontWeight:600,color:C.t2,marginBottom:8,display:"block",textTransform:"uppercase",letterSpacing:0.6}}>Chofer</label>
             <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:10,maxHeight:140,overflowY:"auto"}}>
               {loadingDrivers && <div style={{fontSize:12,color:C.t3,padding:8,textAlign:"center"}}>Cargando...</div>}
               {!loadingDrivers && drivers.map(d=><button key={d.id} onClick={()=>setDriverId(d.id===driverId?"":d.id)} style={{padding:"10px 12px",borderRadius:10,textAlign:"left",fontFamily:"inherit",border:`1.5px solid ${driverId===d.id?C.info:C.b1}`,background:driverId===d.id?`${C.info}10`:C.w,fontSize:12,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",gap:8}}>
@@ -315,11 +316,18 @@ export default function AssignModal({ freight, transporters, onClose, onConfirm,
           </div>
         )}
 
-        <label style={{fontSize:10.5,fontWeight:600,color:C.t2,marginBottom:8,marginTop:6,display:"block",textTransform:"uppercase",letterSpacing:0.6}}>Chofer (opcional)</label>
+        <label style={{fontSize:10.5,fontWeight:600,color:C.t2,marginBottom:8,marginTop:6,display:"block",textTransform:"uppercase",letterSpacing:0.6}}>Chofer</label>
+        {user && <button onClick={()=>{
+          const me = drivers.find(d=>d.id===user.id);
+          if(me) setDriverId(me.id===driverId?"":me.id);
+          else setDriverId(user.id===driverId?"":user.id);
+        }} style={{width:"100%",padding:"11px 14px",borderRadius:12,textAlign:"left",fontFamily:"inherit",border:`1.5px solid ${driverId===user.id?C.acc:C.acc+"60"}`,background:driverId===user.id?C.accPale:`${C.acc}08`,color:driverId===user.id?C.acc:C.t1,fontSize:13,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:10,marginBottom:6}}>
+          {Ic.user(driverId===user.id?C.acc:C.acc,16)} Yo soy el chofer
+        </button>}
         <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:10,maxHeight:160,overflowY:"auto"}}>
           {loadingDrivers && <div style={{fontSize:12,color:C.t3,padding:10,textAlign:"center"}}>Cargando choferes...</div>}
-          {!loadingDrivers && drivers.length===0 && !showNewDriver && <div style={{fontSize:12,color:C.t3,padding:8,textAlign:"center"}}>No hay choferes registrados</div>}
-          {drivers.map(d=>{const qLen=d.activeFreights?.length||0; return <button key={d.id} onClick={()=>setDriverId(d.id===driverId?"":d.id)} style={{padding:"11px 14px",borderRadius:12,textAlign:"left",fontFamily:"inherit",border:`1.5px solid ${driverId===d.id?C.info:C.b1}`,background:driverId===d.id?`${C.info}10`:C.w,color:driverId===d.id?C.info:C.t2,fontSize:13,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",gap:10}}>
+          {!loadingDrivers && drivers.length===0 && !showNewDriver && !user && <div style={{fontSize:12,color:C.t3,padding:8,textAlign:"center"}}>No hay choferes registrados</div>}
+          {drivers.filter(d=>d.id!==user?.id).map(d=>{const qLen=d.activeFreights?.length||0; return <button key={d.id} onClick={()=>setDriverId(d.id===driverId?"":d.id)} style={{padding:"11px 14px",borderRadius:12,textAlign:"left",fontFamily:"inherit",border:`1.5px solid ${driverId===d.id?C.info:C.b1}`,background:driverId===d.id?`${C.info}10`:C.w,color:driverId===d.id?C.info:C.t2,fontSize:13,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",gap:10}}>
             {Ic.user(driverId===d.id?C.info:C.t3,16)}
             <div>
               <div style={{fontSize:13,fontWeight:700,color:driverId===d.id?C.info:C.t1}}>{d.name}</div>
@@ -361,7 +369,7 @@ export default function AssignModal({ freight, transporters, onClose, onConfirm,
             {mode==="company" && tripCount > 1 ? `Agregar ${tripCount} viajes` : "Agregar camion"}
           </Btn>
         </>) : (
-          <Btn full v={mode==="own"?"acc":undefined} disabled={(mode==="company"&&!t)||(mode==="own"&&!truckId)||loading||closing} onClick={doConfirm}>{loading?"Asignando...":"Asignar"}</Btn>
+          <Btn full v={mode==="own"?"acc":undefined} disabled={(mode==="company"&&!t)||(mode==="own"&&(!truckId||!driverId))||loading||closing} onClick={doConfirm}>{loading?"Asignando...":"Asignar"}</Btn>
         )}
       </div>
 

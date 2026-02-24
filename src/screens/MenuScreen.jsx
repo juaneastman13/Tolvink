@@ -47,12 +47,7 @@ export default function MenuScreen({ user, perms, onLogout, onNav, isDesktop, on
   return (
     <div style={{flex:1,overflow:"auto",padding:18}}>
 
-      {/* Management items */}
-      {mgmtItems.length>0 && (
-        <div style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius:12,padding:4,marginBottom:12,boxShadow:C.sh}}>
-          {mgmtItems.map((m,i)=>menuItem(m,i,mgmtItems))}
-        </div>
-      )}
+      <Btn full v="err" onClick={onLogout} icon={Ic.out(C.err,16)} style={{marginBottom:12}}>Cerrar sesión</Btn>
 
       {/* Profile section */}
       <div style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius:12,padding:16,marginBottom:12,boxShadow:C.sh}}>
@@ -119,9 +114,14 @@ export default function MenuScreen({ user, perms, onLogout, onNav, isDesktop, on
         </button>
       </div>
 
-      <PwaInstallCard pwa={pwa} />
+      {/* Management items */}
+      {mgmtItems.length>0 && (
+        <div style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius:12,padding:4,marginBottom:12,boxShadow:C.sh}}>
+          {mgmtItems.map((m,i)=>menuItem(m,i,mgmtItems))}
+        </div>
+      )}
 
-      <Btn full v="err" onClick={onLogout} icon={Ic.out(C.err,16)}>Cerrar sesión</Btn>
+      <PwaInstallCard pwa={pwa} />
     </div>
   );
 }
