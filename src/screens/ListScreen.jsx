@@ -272,7 +272,7 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
             <table style={{ width:"100%", borderCollapse:"collapse", fontSize:12, fontFamily:"inherit" }}>
               <thead>
                 <tr style={{ background:C.bg, borderBottom:`2px solid ${C.b1}` }}>
-                  {["C\u00f3digo","Estado","Producto","Cam.","Empresa","Campo / Lote","Destino","Fecha","Hora","Transportista","Matr\u00edcula","Chofer","Celular"].map(h=>(
+                  {["Código","Estado","Producto","Cam.","Empresa","Campo / Lote","Destino","Fecha","Hora","Transportista","Matrícula","Chofer","Celular"].map(h=>(
                     <th key={h} style={{ padding:"10px 12px", textAlign:"left", fontSize:10, fontWeight:700, color:C.t2, textTransform:"uppercase", letterSpacing:0.5, whiteSpace:"nowrap" }}>{h}</th>
                   ))}
                 </tr>

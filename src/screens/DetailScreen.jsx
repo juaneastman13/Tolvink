@@ -156,7 +156,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
         <span style={{ fontSize:20 }}>{"\u23F3"}</span>
         <div>
           <div style={{ fontSize:13, fontWeight:700, color:C.info }}>En cola #{freight.queuePosition}</div>
-          <div style={{ fontSize:11, color:C.t2 }}>Deb\u00e9s completar los fletes anteriores primero</div>
+          <div style={{ fontSize:11, color:C.t2 }}>Debés completar los fletes anteriores primero</div>
         </div>
       </div>}
 
@@ -245,7 +245,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
                         <div key={log.id} style={{ display:"flex", gap:5, marginBottom:8, alignItems:"flex-start" }}>
                           <div style={{ width:7, height:7, borderRadius:4, background:acCol, flexShrink:0, marginTop:3 }} />
                           <div style={{ minWidth:0 }}>
-                            <div style={{ fontSize:9.5, fontWeight:700, color:acCol, lineHeight:1.3 }}>{actionLabels[log.action]||log.action}{tn ? ` \u00b7 ${tn}` : ""}</div>
+                            <div style={{ fontSize:9.5, fontWeight:700, color:acCol, lineHeight:1.3 }}>{actionLabels[log.action]||log.action}{tn ? ` · ${tn}` : ""}</div>
                             <div style={{ fontSize:9.5, color:C.t2, marginTop:1, lineHeight:1.3, wordBreak:"break-word" }}>{log.user?.name||"Sistema"}</div>
                             {log.user?.company?.name && <div style={{ fontSize:9, color:C.t3, lineHeight:1.2 }}>{log.user.company.name}</div>}
                             {(log.reason || log.metadata?.reason) && <div style={{ fontSize:8.5, color:C.t3, fontStyle:"italic", marginTop:1 }}>"{log.reason||log.metadata.reason}"</div>}
@@ -261,7 +261,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
                         <div style={{ width:7, height:7, borderRadius:4, background:col, flexShrink:0, marginTop:3 }} />
                         <div style={{ minWidth:0 }}>
                           <div style={{ fontSize:9, fontWeight:700, color:C.t1 }}>Viaje #{a.tripNumber}</div>
-                          {a.plate && <div style={{ fontSize:9.5, color:C.t2, marginTop:1, lineHeight:1.3 }}>{a.plate}{a.truckModel?` \u00b7 ${a.truckModel}`:""}</div>}
+                          {a.plate && <div style={{ fontSize:9.5, color:C.t2, marginTop:1, lineHeight:1.3 }}>{a.plate}{a.truckModel?` · ${a.truckModel}`:""}</div>}
                           {a.transporterName && <div style={{ fontSize:9, color:C.t3, lineHeight:1.2 }}>{a.transporterName}</div>}
                           {a.driverName && <div style={{ fontSize:9, color:C.t3, lineHeight:1.2 }}>{a.driverName}</div>}
                         </div>
@@ -353,7 +353,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
           {/* Unassigned slots */}
           {freight.assignedTruckCount < freight.truckCount && user.userType === "plant" && (
             <button onClick={()=>onAction(freight.id,"assign")} style={{ width:"100%", padding:"10px 0", borderRadius:10, border:`1.5px dashed ${C.acc}`, background:`${C.acc}08`, color:C.acc, fontSize:12, fontWeight:600, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:6, marginTop:4 }}>
-              {Ic.plus(C.acc,14)} Agregar cami\u00f3n ({freight.truckCount - freight.assignedTruckCount} pendientes)
+              {Ic.plus(C.acc,14)} Agregar camión ({freight.truckCount - freight.assignedTruckCount} pendientes)
             </button>
           )}
         </div>
@@ -418,9 +418,9 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
             freight.amount>0&&[Ic.grain(C.t2,15),"Importe",`$${Number(freight.amount).toLocaleString()}`],
             !isMultiTruck&&freight.transporterName&&[Ic.truck(C.t2,15),"Transportista",freight.transporterName],
             isMultiTruck&&[Ic.truck(C.t2,15),"Camiones",`${freight.assignedTruckCount}/${freight.truckCount}`],
-            !isMultiTruck&&freight.truckPlate&&[Ic.truck(C.acc,15),"Cami\u00f3n",`${freight.truckPlate}${freight.truckModel?` \u00b7 ${freight.truckModel}`:""}`],
+            !isMultiTruck&&freight.truckPlate&&[Ic.truck(C.acc,15),"Camión",`${freight.truckPlate}${freight.truckModel?` · ${freight.truckModel}`:""}`],
             !isMultiTruck&&freight.driverName&&[Ic.user(C.pri,15),"Chofer",<>{freight.driverName}{perms.canApprove && freight.driverId && <button onClick={()=>onAction(freight.id,"driver_queue")} style={{marginLeft:6,fontSize:9.5,fontWeight:700,color:C.info,background:`${C.info}12`,border:`1px solid ${C.info}30`,borderRadius:6,padding:"2px 7px",cursor:"pointer",fontFamily:"inherit"}}>Ver cola</button>}</>],
-            !isMultiTruck&&freight.driverPhone&&[Ic.msg(C.info,15),"Tel\u00e9fono",freight.driverPhone],
+            !isMultiTruck&&freight.driverPhone&&[Ic.msg(C.info,15),"Teléfono",freight.driverPhone],
           ].filter(Boolean).map(([ic,label,val],i,arr)=>(
             <div key={i} style={{ display:"flex", alignItems:"center", gap:10, padding:"9px 0", borderBottom:i<arr.length-1?`1px solid ${C.b2}`:"none" }}>
               <span style={{display:"flex",flexShrink:0}}>{ic}</span>
