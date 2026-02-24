@@ -151,7 +151,15 @@ export default function TrackFreightScreen() {
 
     poll();
     const iv = setInterval(poll, 10000);
-    return () => { cancelled = true; clearInterval(iv); };
+    return () => {
+      cancelled = true;
+      clearInterval(iv);
+      if (truckMarker.current) {
+        if (window.google?.maps) google.maps.event.clearInstanceListeners(truckMarker.current);
+        truckMarker.current.setMap(null);
+        truckMarker.current = null;
+      }
+    };
   }, [freight, token]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Re-fetch freight status every 30s
