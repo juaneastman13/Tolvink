@@ -327,5 +327,5 @@ export function generateFreightPDF(freight, auditLog = []) {
 
   // Last resort: open in new tab
   const blobUrl = doc.output('bloburl');
-  window.open(blobUrl, '_blank');
+  window.open(blobUrl, '_blank', 'noopener');
 }

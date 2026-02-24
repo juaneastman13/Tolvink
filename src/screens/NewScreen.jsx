@@ -192,7 +192,11 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
   };
 
   const removePhoto = (idx) => {
-    setPhotos(prev=>prev.filter((_,i)=>i!==idx));
+    setPhotos(prev=>{
+      const removed = prev[idx];
+      if (removed?.preview) URL.revokeObjectURL(removed.preview);
+      return prev.filter((_,i)=>i!==idx);
+    });
   };
 
   const secSummary = {
