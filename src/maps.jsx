@@ -15,7 +15,12 @@ export function loadGMaps() {
   return new Promise((resolve, reject) => {
     if (window.google?.maps) { resolve(window.google.maps); return; }
     if (document.querySelector('script[src*="maps.googleapis.com"]')) {
-      const check = setInterval(() => { if (window.google?.maps) { clearInterval(check); resolve(window.google.maps); } }, 100);
+      let elapsed = 0;
+      const check = setInterval(() => {
+        if (window.google?.maps) { clearInterval(check); resolve(window.google.maps); return; }
+        elapsed += 100;
+        if (elapsed > 15000) { clearInterval(check); reject(new Error('Google Maps load timeout')); }
+      }, 100);
       return;
     }
     const s = document.createElement("script");
@@ -369,6 +374,7 @@ export function FreightMap({ freightId, originLat, originLng, destLat, destLng, 
         if (cancelled || !pos) return;
         const lat = parseFloat(pos.lat);
         const lng = parseFloat(pos.lng);
+        if (isNaN(lat) || isNaN(lng)) return;
         setTruckPos({ lat, lng, speed: pos.speed, updatedAt: pos.createdAt });
 
         const maps = window.google.maps;
@@ -389,7 +395,7 @@ export function FreightMap({ freightId, originLat, originLng, destLat, destLng, 
     poll();
     const iv = setInterval(poll, 10000);
     return () => { cancelled = true; clearInterval(iv); };
-  }, [isLive, freightId, mapInstance.current]);
+  }, [isLive, freightId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Driver sends position
   useEffect(() => {
@@ -677,7 +683,7 @@ export function MapOverlay({ lat, lng, label, destLat, destLng, destLabel, onClo
     const dirUrl = isOrigin && destLat && destLng
       ? `https://www.google.com/maps/dir/?api=1&origin=${lt},${ln}&destination=${destLat},${destLng}&travelmode=driving`
       : `https://www.google.com/maps/dir/?api=1&destination=${lt},${ln}&travelmode=driving`;
-    return `<div style="font-family:sans-serif;padding:4px 2px"><div style="font-weight:700;font-size:13px;color:#1a1a1a">${name||"Ubicación"}</div><div style="font-size:11px;color:#888;margin-top:3px">${Number(lt).toFixed(5)}, ${Number(ln).toFixed(5)}</div><a href="${dirUrl}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:4px;margin-top:6px;padding:5px 10px;background:#1A6B37;color:#fff;border-radius:6px;font-size:11px;font-weight:700;text-decoration:none">▶ Cómo llegar</a></div>`;
+    return `<div style="font-family:sans-serif;padding:4px 2px"><div style="font-weight:700;font-size:13px;color:#1a1a1a">${_esc(name)||"Ubicación"}</div><div style="font-size:11px;color:#888;margin-top:3px">${Number(lt).toFixed(5)}, ${Number(ln).toFixed(5)}</div><a href="${dirUrl}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:4px;margin-top:6px;padding:5px 10px;background:#1A6B37;color:#fff;border-radius:6px;font-size:11px;font-weight:700;text-decoration:none">▶ Cómo llegar</a></div>`;
   };
   useEffect(() => {
     if (!mapRef.current || !lat || !lng) return;

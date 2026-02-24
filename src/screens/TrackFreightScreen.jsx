@@ -152,7 +152,7 @@ export default function TrackFreightScreen() {
     poll();
     const iv = setInterval(poll, 10000);
     return () => { cancelled = true; clearInterval(iv); };
-  }, [freight, token, mapInstance.current]);
+  }, [freight, token]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Re-fetch freight status every 30s
   useEffect(() => {

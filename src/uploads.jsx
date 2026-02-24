@@ -26,6 +26,7 @@ export function PhotoUpload({ freightId, step, label, onUploaded }) {
     try {
       const url = await uploadPhoto(file, freightId, step);
       await apiAddDocument(freightId, { name: file.name, url, type: 'photo', step });
+      if (preview) URL.revokeObjectURL(preview);
       setDone(true);
       if (onUploaded) onUploaded({ url, name: file.name, step });
     } catch (err) {
@@ -221,7 +222,8 @@ export function FreightFileUpload({ freightId, step, onUploaded }) {
       try {
         const url = await uploadPhoto(files[i].file, freightId, step);
         await apiAddDocument(freightId, { name: files[i].name, url, type: files[i].file.type.startsWith("image/") ? "photo" : "document", step });
-        setFiles(prev => prev.map((f, j) => j === i ? { ...f, uploading: false, done: true } : f));
+        if (files[i].preview) URL.revokeObjectURL(files[i].preview);
+        setFiles(prev => prev.map((f, j) => j === i ? { ...f, uploading: false, done: true, preview: null } : f));
       } catch (err) {
         setFiles(prev => prev.map((f, j) => j === i ? { ...f, uploading: false, error: err.message || "Error" } : f));
         allOk = false;

@@ -6,6 +6,10 @@ import { captureError } from "./sentry";
 
 export const API_URL = import.meta.env.VITE_API_URL || 'https://tolvink-api-production.up.railway.app/api';
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'https://mlmecljidioymujsazrs.supabase.co';
+
+if (import.meta.env.DEV && !import.meta.env.VITE_API_URL) {
+  console.warn('[Tolvink] VITE_API_URL no definida — usando API de producción. Crea .env.local con VITE_API_URL para apuntar al backend local.');
+}
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 const STORAGE_BUCKET = 'freight-docs';
 
