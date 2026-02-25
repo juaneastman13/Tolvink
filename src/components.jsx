@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, memo, useMemo, Component, useCallback } from "react";
 import { C, Ic } from "./theme";
 import { stCfg } from "./constants";
+import { captureError } from "./sentry";
 
 // ======================== BASE COMPONENTS ============================
 
@@ -756,7 +757,7 @@ export class ErrorBoundary extends Component {
   }
   componentDidCatch(error, info) {
     try {
-      import("./sentry").then(m => m.captureError(error, { componentStack: info?.componentStack }));
+      captureError(error, { componentStack: info?.componentStack });
     } catch {}
   }
   render() {
