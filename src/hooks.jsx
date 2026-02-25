@@ -207,7 +207,7 @@ export function mapUser(u) {
   if(!u) return null;
   const co = u.company;
   const userTypes = u.userTypes || (co?.type ? [co.type] : ["producer"]);
-  const userType = u.activeType || userTypes[0] || co?.type || "producer";
+  const userType = u.activeType || co?.type || userTypes[0] || "producer";
   // Map gerente → admin for backward compat in frontend logic
   const rawRole = u.role || "operario";
   const role = rawRole === "gerente" ? "admin" : rawRole;
