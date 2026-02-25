@@ -334,7 +334,7 @@ export function mapFreight(f) {
     destLat:f.destLat?parseFloat(f.destLat):null, destLng:f.destLng?parseFloat(f.destLng):null,
     loadDate:f.loadDate?.split("T")[0]||"", loadTime:f.loadTime||"",
     scheduledAt:f.scheduledAt||null,
-    requestedBy:f.requestedById, requestedByName:f.requestedBy?.name||"",
+    requestedBy:f.requestedById, requestedByName:f.originCompany?.name ? `${({producer:"Productor",plant:"Planta",transporter:"Transportista"})[f.originCompany.type]||""} ${f.originCompany.name}`.trim() : f.requestedBy?.name||"",
     // Single-truck compat (first assignment)
     transporterId:a?.transportCompanyId||null, transporterName:a?.transportCompany?.name||"",
     driverId:a?.driverId||a?.driver?.id||null, driverName:a?.driver?.name||null, driverPhone:a?.driver?.phone||null,
