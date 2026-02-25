@@ -599,7 +599,6 @@ export function useSSE(user, { onFreightUpdate, onMessageNew, onNotification, on
   const reconnectTimer = useRef(null);
   const reconnectDelay = useRef(5000);
   const failureCount = useRef(0);
-  const MAX_CONSECUTIVE_FAILURES = 5;
 
   // Keep latest callbacks in refs to avoid stale closures in EventSource handlers
   const cbRefs = useRef({ onFreightUpdate, onMessageNew, onNotification, onCatalogChanged, onTyping, onRead });

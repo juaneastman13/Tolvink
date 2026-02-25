@@ -54,6 +54,8 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
   const [newMsgIndicator, setNewMsgIndicator] = useState(false);
   const [chatTab, setChatTab] = useState("chat"); // Moved up from line 338 (Issue #2)
   const prevMessagesLengthRef = useRef(0); // Issue #10 fix: track previous length
+  const messagesRef = useRef(messages);
+  messagesRef.current = messages;
 
   // SSE: incoming message → instant refresh
   useEffect(() => {
@@ -162,10 +164,10 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
   }, [searchQ, loadConvs]); // Issue #6 fix: added loadConvs dependency
 
   const loadOlderMessages = useCallback(async () => {
-    if(!activeConv || loadingOlder || !msgHasMore || messages.length===0) return;
+    if(!activeConv || loadingOlder || !msgHasMore || messagesRef.current.length===0) return;
     setLoadingOlder(true);
     try {
-      const oldestId = messages[0]?.id;
+      const oldestId = messagesRef.current[0]?.id;
       const r = await apiGetMessages(activeConv.id, {take:50, before:oldestId});
       const older = r.messages || [];
       if(older.length>0) {
@@ -176,7 +178,7 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
       }
       setMsgHasMore(r.hasMore || false);
     } catch {} finally { setLoadingOlder(false); }
-  }, [activeConv, loadingOlder, msgHasMore, messages]);
+  }, [activeConv, loadingOlder, msgHasMore]);
 
   // Smart scroll: only auto-scroll when at bottom (new messages), NOT when loading older
   useEffect(() => {
@@ -250,10 +252,10 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
 
     // Auto-load older messages when scrolling near top (infinite scroll)
     const atTop = scrollTop < 100;
-    if (atTop && msgHasMore && !loadingOlder && messages.length > 0) {
+    if (atTop && msgHasMore && !loadingOlder && messagesRef.current.length > 0) {
       loadOlderMessages();
     }
-  }, [msgHasMore, loadingOlder, messages.length, loadOlderMessages]);
+  }, [msgHasMore, loadingOlder, loadOlderMessages]);
 
   // Mobile keyboard handling: adjust layout when keyboard shows
   useEffect(() => {

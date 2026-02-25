@@ -178,17 +178,25 @@ export default function Tolvink() {
     return viewFreights.filter(f => getPendingActions(f, auth.user.userType, auth.user.role, auth.user) !== null).length;
   }, [viewFreights, auth.user]);
 
+  // Refs for polling callbacks — avoids stale closures in setInterval/event listeners
+  const fhRef = useRef(fh);
+  fhRef.current = fh;
+  const notifRef = useRef(notif);
+  notifRef.current = notif;
+  const catalogRef = useRef(catalog);
+  catalogRef.current = catalog;
+
   // Smart polling — only freight screens poll freights, auto-refresh on screen change
   const FREIGHT_SCREENS = useMemo(() => new Set(["home","list","calendar","detail","reports","notifs"]), []);
   useEffect(()=>{
     if(!auth.user) return;
     // Immediate refresh when entering a freight screen
-    if (FREIGHT_SCREENS.has(screen) && navigator.onLine) fh.fetchAll();
-    notif.refresh();
+    if (FREIGHT_SCREENS.has(screen) && navigator.onLine) fhRef.current.fetchAll();
+    notifRef.current.refresh();
     const poll = () => {
       if (document.hidden || !navigator.onLine) return;
-      if (FREIGHT_SCREENS.has(screen)) fh.fetchAll();
-      notif.refresh();
+      if (FREIGHT_SCREENS.has(screen)) fhRef.current.fetchAll();
+      notifRef.current.refresh();
     };
     const iv = setInterval(poll, POLL_INTERVALS.FREIGHTS);
     return ()=>clearInterval(iv);
@@ -215,9 +223,9 @@ export default function Tolvink() {
     if(!auth.user) return;
     const onVisible = () => {
       if (document.hidden || !navigator.onLine) return;
-      fh.fetchAll();
-      notif.refresh();
-      catalog.refresh(false); // false = respect TTL, don't force
+      fhRef.current.fetchAll();
+      notifRef.current.refresh();
+      catalogRef.current.refresh(false); // false = respect TTL, don't force
     };
     document.addEventListener("visibilitychange", onVisible);
     window.addEventListener("focus", onVisible);
