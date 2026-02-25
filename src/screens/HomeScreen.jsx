@@ -123,21 +123,22 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
     filteredFreights.filter(f => getPendingActions(f, effectiveType(f), user.role, user)).length
   , [filteredFreights, effectiveType]);
 
-  // Summary groups — by freight status, filtered by date
+  // Summary groups — by freight type/status, filtered by date. Priority: pending confirmation → active → rest
   const STATUS_GROUPS = [
-    { key:"pending_assignment", label:"Solicitado",        icon:Ic.warn,  statuses:["pending_assignment"] },
-    { key:"assigned",           label:"Asignado a flota",  icon:Ic.truck, statuses:["assigned"] },
-    { key:"accepted",           label:"Confirmado camión", icon:Ic.chk,   statuses:["accepted"] },
-    { key:"in_progress",        label:"En curso",          icon:Ic.nav,   statuses:["in_progress"] },
-    { key:"loaded",             label:"Cargando",          icon:Ic.plant, statuses:["loaded"] },
+    { key:"own_fleet_pending",   label:"Esperando confirmación de planta", icon:Ic.warn,  color:"#CA8A04", filter:(f) => f.status === "assigned" && f.isOwnFleet },
+    { key:"in_progress",         label:"En curso",                         icon:Ic.nav,   color:"#4ADE80", filter:(f) => f.status === "in_progress" },
+    { key:"loaded",              label:"Cargando",                         icon:Ic.plant, color:"#22C55E", filter:(f) => f.status === "loaded" },
+    { key:"own_fleet_confirmed", label:"Flota propia confirmada",          icon:Ic.chk,   color:"#2563EB", filter:(f) => f.status === "accepted" && f.isOwnFleet },
+    { key:"external_assigned",   label:"Transporte asignado",              icon:Ic.truck, color:"#0891B2", filter:(f) => (f.status === "assigned" || f.status === "accepted") && !f.isOwnFleet },
+    { key:"pending_assignment",  label:"Solicitado",                       icon:Ic.warn,  color:"#FF6A00", filter:(f) => f.status === "pending_assignment" },
   ];
   const activeFreights = useMemo(() => filteredFreights.filter(f => f.status !== "finished" && f.status !== "canceled"), [filteredFreights]);
   const summaryGroups = useMemo(() => {
     return STATUS_GROUPS.map(g => {
-      const st = stCfg(g.statuses[0]);
-      const items = activeFreights.filter(f => g.statuses.includes(f.status) && !getPendingActions(f, effectiveType(f), user.role, user) && matchDate(f.loadDate, summaryFilter))
+      const items = activeFreights
+        .filter(f => g.filter(f) && !getPendingActions(f, effectiveType(f), user.role, user) && matchDate(f.loadDate, summaryFilter))
         .sort((a, b) => a.loadDate && b.loadDate ? a.loadDate.localeCompare(b.loadDate) : 0);
-      return { ...g, color: st.color, items };
+      return { ...g, items };
     }).filter(g => g.items.length > 0);
   }, [activeFreights, effectiveType, summaryFilter]);
 
