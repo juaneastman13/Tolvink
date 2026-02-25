@@ -7,10 +7,13 @@ export function resolveUserTypeForFreight(freight, user) {
   if (user.role === "chofer") return "chofer";
   const types = user.userTypes || [user.userType];
   if (types.length <= 1) return user.userType;
-  for (const type of types) {
-    if (getPendingActions(freight, type, user.role)) return type;
+  // Prioritize the user's active/current type first
+  const active = user.userType;
+  const sorted = [active, ...types.filter(t => t !== active)];
+  for (const type of sorted) {
+    if (getPendingActions(freight, type, user.role, user)) return type;
   }
-  for (const type of types) {
+  for (const type of sorted) {
     if (getActions(freight.status, type, user.role, freight.isOwnFleet).length > 0) return type;
   }
   return user.userType;
