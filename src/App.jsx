@@ -68,6 +68,7 @@ const SL = () => <div style={{flex:1,display:"flex",flexDirection:"column",align
 export default function Tolvink() {
 
   const auth = useAuth();
+  const [viewAll, setViewAll] = useState(false);
   const fh = useFreights(auth.user, auth.isInitialized, viewAll ? null : undefined);
   const catalog = useCatalog(auth.user);
   const online = useOnline();
@@ -106,7 +107,6 @@ export default function Tolvink() {
   const [sseMsg, setSseMsg] = useState(null);
   const [sseTyping, setSseTyping] = useState(null);
   const [sseRead, setSseRead] = useState(null);
-  const [viewAll, setViewAll] = useState(false);
   const [compDropOpen, setCompDropOpen] = useState(false);
 
   // SSE — real-time sync
