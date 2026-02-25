@@ -134,7 +134,7 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
       const r = await apiGetMessages(conv.id, {take:50});
       const msgs = Array.isArray(r) ? r : (r?.messages || []); // Issue #21 fix
       setMessages(msgs);
-      setMsgHasMore(r.hasMore || false);
+      setMsgHasMore(Array.isArray(r) ? false : (r?.hasMore || false));
       // Issue #13 fix: log mark-read failures
       apiMarkRead(conv.id).catch((e) => console.warn('[CHATS] Mark read failed:', e));
     } catch (err) {
@@ -161,7 +161,7 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
     return () => clearTimeout(t);
   }, [searchQ, loadConvs]); // Issue #6 fix: added loadConvs dependency
 
-  const loadOlderMessages = async () => {
+  const loadOlderMessages = useCallback(async () => {
     if(!activeConv || loadingOlder || !msgHasMore || messages.length===0) return;
     setLoadingOlder(true);
     try {
@@ -176,7 +176,7 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
       }
       setMsgHasMore(r.hasMore || false);
     } catch {} finally { setLoadingOlder(false); }
-  };
+  }, [activeConv, loadingOlder, msgHasMore, messages]);
 
   // Smart scroll: only auto-scroll when at bottom (new messages), NOT when loading older
   useEffect(() => {
@@ -253,7 +253,7 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
     if (atTop && msgHasMore && !loadingOlder && messages.length > 0) {
       loadOlderMessages();
     }
-  }, [msgHasMore, loadingOlder, messages.length]);
+  }, [msgHasMore, loadingOlder, messages.length, loadOlderMessages]);
 
   // Mobile keyboard handling: adjust layout when keyboard shows
   useEffect(() => {
@@ -282,7 +282,7 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
       if (cancelled || document.hidden) { if(!cancelled) timer = setTimeout(poll, pollDelayRef.current); return; }
       try {
         const r = await apiGetMessages(activeConv.id, {take:50});
-        const fresh = r.messages || r || [];
+        const fresh = Array.isArray(r) ? r : (r?.messages || []);
         setMessages(prev => {
           if(prev.length===0) return fresh;
           const lastId = prev[prev.length-1]?.id;

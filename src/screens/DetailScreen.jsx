@@ -11,12 +11,12 @@ import { useIsDesktop } from "../hooks";
 const loadPdfReport = () => import("../utils/pdf-report");
 
 export default function DetailScreen({ user, freight, perms, onBack, onAction, onTripAction, onEditTrip, actionLoading, onChat, onRefresh, onDuplicate, onEdit, goToMap }) {
-  if(!freight) return null;
   const [auditLog, setAuditLog] = useState(null);
   const [showAudit, setShowAudit] = useState(false);
   const [viewFile, setViewFile] = useState(null);
   const [pdfLoading, setPdfLoading] = useState(false);
   const auditRef = useRef(null);
+  if(!freight) return null;
 
   // Pre-load PDF module so download works synchronously on click
   useEffect(() => { loadPdfReport(); }, []);

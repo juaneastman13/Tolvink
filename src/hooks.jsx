@@ -613,10 +613,11 @@ export function useSSE(user, { onFreightUpdate, onMessageNew, onNotification, on
       return;
     }
 
-    const token = getToken();
-    if (!token) return;
+    if (!getToken()) return;
 
     const connect = () => {
+      const token = getToken(); // Fresh token on every reconnect
+      if (!token) return;
       // Safety: close previous EventSource before creating new one
       if (esRef.current) { esRef.current.close(); esRef.current = null; }
       const url = `${API_URL}/sse/stream?token=${encodeURIComponent(token)}`;
@@ -633,42 +634,42 @@ export function useSSE(user, { onFreightUpdate, onMessageNew, onNotification, on
         try {
           const data = JSON.parse(e.data);
           cbRefs.current.onFreightUpdate?.(data);
-        } catch (e) { log.warn('SSE', 'Event parse error:', e.message); }
+        } catch (err) { log.warn('SSE', 'Event parse error:', err.message); }
       });
 
       es.addEventListener('message:new', (e) => {
         try {
           const data = JSON.parse(e.data);
           cbRefs.current.onMessageNew?.(data);
-        } catch (e) { log.warn('SSE', 'Event parse error:', e.message); }
+        } catch (err) { log.warn('SSE', 'Event parse error:', err.message); }
       });
 
       es.addEventListener('notification:new', (e) => {
         try {
           const data = JSON.parse(e.data);
           cbRefs.current.onNotification?.(data);
-        } catch (e) { log.warn('SSE', 'Event parse error:', e.message); }
+        } catch (err) { log.warn('SSE', 'Event parse error:', err.message); }
       });
 
       es.addEventListener('catalog:changed', (e) => {
         try {
           const data = JSON.parse(e.data);
           cbRefs.current.onCatalogChanged?.(data);
-        } catch (e) { log.warn('SSE', 'Event parse error:', e.message); }
+        } catch (err) { log.warn('SSE', 'Event parse error:', err.message); }
       });
 
       es.addEventListener('typing', (e) => {
         try {
           const data = JSON.parse(e.data);
           cbRefs.current.onTyping?.(data);
-        } catch (e) { log.warn('SSE', 'Event parse error:', e.message); }
+        } catch (err) { log.warn('SSE', 'Event parse error:', err.message); }
       });
 
       es.addEventListener('read', (e) => {
         try {
           const data = JSON.parse(e.data);
           cbRefs.current.onRead?.(data);
-        } catch (e) { log.warn('SSE', 'Event parse error:', e.message); }
+        } catch (err) { log.warn('SSE', 'Event parse error:', err.message); }
       });
 
       es.onopen = () => {

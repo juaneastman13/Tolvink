@@ -144,7 +144,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
 
   const destDisplayName = destMode==="plant" ? ((selectedPlant?.name||"")+(selectedBranch?` → ${selectedBranch.name}`:"")) : (customDest.name||"");
 
-  const submit = () => {
+  const submit = async () => {
     setTouched(true);
     const {ok,errs:e} = validate(form, SCHEMAS.freight);
     if(form.grain==="Otros" && !form.productTypeOther?.trim()) { e.productTypeOther="Descripción obligatoria"; }
@@ -198,7 +198,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
       payload.lotId = undefined;
       payload.fieldId = undefined;
     }
-    onCreate(payload);
+    try { await onCreate(payload); } finally { setSubmitting(false); }
   };
 
   const addPhoto = (e) => {

@@ -145,7 +145,7 @@ export default function Tolvink() {
     const p = location.pathname;
     if (p.startsWith("/freight/")) {
       const id = p.replace("/freight/", "");
-      if (id && id !== selFreight) { setSelFreight(id); fh.refresh(id); }
+      if (id) { setSelFreight(id); fh.refresh(id); }
     }
   }, [location.pathname]);
 
@@ -161,7 +161,7 @@ export default function Tolvink() {
     if(auth.user && !prevUser.current && !isPublicPath) { navigate("/", { replace: true }); }
     prevUser.current = auth.user;
     setSentryUser(auth.user);
-  },[auth.user]);
+  },[auth.user, navigate, location.pathname]);
 
   // Server-side company filter handles multi-company. Chofer: client-side driver filter + queue sort
   const viewFreights = useMemo(() => {
@@ -385,13 +385,13 @@ export default function Tolvink() {
     let photoFailCount = 0;
     if(r.ok && r.freightId && form.photos?.length > 0) {
       const results = await Promise.allSettled(form.photos.map(async (photoUrl, i) => {
-        const blob = await fetch(photoUrl).then(r=>r.blob());
+        const blob = await fetch(photoUrl).then(res=>res.blob());
         const file = new File([blob], `foto-${Date.now()}-${i}.jpg`, {type:'image/jpeg'});
         const url = await uploadPhoto(file, r.freightId, 'request');
         await apiAddDocument(r.freightId, { name: file.name, url, type:'photo', step:'request' });
       }));
-      photoFailCount = results.filter(r => r.status === 'rejected').length;
-      results.filter(r => r.status === 'rejected').forEach(r => log.error('FREIGHT', 'Photo upload failed:', r.reason));
+      photoFailCount = results.filter(res => res.status === 'rejected').length;
+      results.filter(res => res.status === 'rejected').forEach(res => log.error('FREIGHT', 'Photo upload failed:', res.reason));
     }
     setSubmitting(false);
     if(r.ok){
