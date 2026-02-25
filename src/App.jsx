@@ -37,6 +37,7 @@ const TrackFreightScreen = lazy(() => import("./screens/TrackFreightScreen"));
 const ReportDownloadScreen = lazy(() => import("./screens/ReportDownloadScreen"));
 const DailyMapScreen = lazy(() => import("./screens/DailyMapScreen"));
 const LiveFreightScreen = lazy(() => import("./screens/LiveFreightScreen"));
+const ViewMapScreen = lazy(() => import("./screens/ViewMapScreen"));
 // CompanyHeaderPicker removed — company selector moved to Sidebar
 
 // Lazy modals
@@ -435,6 +436,9 @@ export default function Tolvink() {
   const campoMatch = location.pathname.match(/^\/campo\/([a-z0-9-]+)\/ubicacion$/i);
   if (campoMatch) {
     return <Suspense fallback={<SL/>}><PickLocationScreen slug={campoMatch[1]} /></Suspense>;
+  }
+  if (location.pathname === "/ver-mapa") {
+    return <Suspense fallback={<SL/>}><ViewMapScreen /></Suspense>;
   }
 
   // Legacy public routes (backward compatibility)
