@@ -1,9 +1,9 @@
 // =====================================================================
-// TOLVINK — Service Worker v5.0
+// TOLVINK — Service Worker v5.1
 // Cache-first shell, stale-while-revalidate API, navigation preload
 // =====================================================================
 
-const CACHE_NAME = 'tolvink-v5.0';
+const CACHE_NAME = 'tolvink-v5.1';
 const API_CACHE = 'tolvink-api-v2';
 const FONT_CACHE = 'tolvink-fonts-v1';
 const IMG_CACHE = 'tolvink-img-v1';
