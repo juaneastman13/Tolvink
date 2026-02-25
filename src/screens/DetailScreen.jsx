@@ -160,6 +160,16 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
         </div>
       </div>}
 
+      {freight.status === "pending_assignment" && user.userType === "producer" && !freight.isOwnFleet && (
+        <div style={{ background:`${C.info}10`, border:`1.5px solid ${C.info}30`, borderRadius:12, padding:"12px 16px", marginBottom:12, display:"flex", alignItems:"center", gap:10 }}>
+          <span style={{ fontSize:20 }}>{"\u23F3"}</span>
+          <div>
+            <div style={{ fontSize:13, fontWeight:700, color:C.info }}>Pendiente de asignación por planta</div>
+            <div style={{ fontSize:11, color:C.t2 }}>La planta de destino asignará el transportista</div>
+          </div>
+        </div>
+      )}
+
       {/* Actions */}
       {filteredActions.length > 0 && <div style={{ display:"flex", flexDirection:"column", gap:8, marginBottom:12 }}>
         {filteredActions.includes("authorize") && <Btn full icon={Ic.chk(C.w,16)} disabled={actionLoading} onClick={()=>onAction(freight.id,"authorize")}>{actionLoading?"Procesando...":"Autorizar viaje"}</Btn>}

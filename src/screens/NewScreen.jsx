@@ -83,6 +83,13 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
     schedule: secComplete.product && secComplete.quantity && secComplete.origin && secComplete.destination,
   };
 
+  // Auto-select truck when producer has exactly 1 in fleet
+  useEffect(()=>{
+    if (showTruckSelect && truckOpts.length === 1 && !form.truckId) {
+      u({ truckId: truckOpts[0].value });
+    }
+  },[showTruckSelect, truckOpts.length]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Revoke blob URLs on unmount
   useEffect(()=>{
     return ()=>{ photosRef.current.forEach(p=>{ if(p.preview) URL.revokeObjectURL(p.preview); }); };
@@ -315,10 +322,11 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
 
         {/* OWN FLEET (optional, between origin and destination) */}
         {showTruckSelect && (
-          <Sec label="Flete propio (opcional)" complete={!!form.truckId} summary={truckOpts.find(t=>t.value===form.truckId)?.label||""} isExpanded={activeSection==="ownfleet"} onFocus={()=>setActiveSection("ownfleet")} secRef={secRefs.ownfleet} highlight={secComplete.origin&&!form.truckId&&activeSection!=="ownfleet"} disabled={!secEnabled.ownfleet}>
-            <div style={{ fontSize:11, color:C.t2, marginBottom:12 }}>Uso mi propia flota — la planta solo autoriza el viaje</div>
+          <Sec label={form.truckId ? "Camión propio seleccionado" : "Camión propio (opcional)"} complete={!!form.truckId} summary={truckOpts.find(t=>t.value===form.truckId)?.label||""} isExpanded={activeSection==="ownfleet"} onFocus={()=>setActiveSection("ownfleet")} secRef={secRefs.ownfleet} highlight={secComplete.origin&&!form.truckId&&activeSection!=="ownfleet"} disabled={!secEnabled.ownfleet}>
+            <div style={{ fontSize:11, color:C.t2, marginBottom:12 }}>{form.truckId ? "Flota propia — la planta solo autoriza el viaje" : "Seleccione un camión o deje vacío para que la planta asigne transportista"}</div>
             <Select label="Camión" icon={Ic.truck(C.acc,14)} value={form.truckId} onChange={v=>u({truckId:v})} options={truckOpts} placeholder="Seleccionar camión..."/>
-            {form.truckId && <button type="button" onClick={()=>u({truckId:""})} style={{ marginTop:8, background:"none", border:"none", cursor:"pointer", fontSize:11, color:C.err, fontWeight:600, fontFamily:"inherit" }}>Quitar camión propio</button>}
+            {form.truckId && <button type="button" onClick={()=>u({truckId:""})} style={{ marginTop:8, background:"none", border:"none", cursor:"pointer", fontSize:11, color:C.err, fontWeight:600, fontFamily:"inherit" }}>No usar flota propia</button>}
+            {!form.truckId && <div style={{ marginTop:8, padding:"8px 12px", background:`${C.info}10`, borderRadius:8, fontSize:11, color:C.info, fontWeight:500 }}>Sin camión propio, la planta de destino asignará transportista</div>}
           </Sec>
         )}
 

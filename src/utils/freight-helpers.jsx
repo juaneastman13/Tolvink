@@ -102,6 +102,7 @@ export function getPendingActions(freight, userType, role, user) {
     return null;
   }
   if (userType === "producer") {
+    if (s === "pending_assignment" && !own) return { action: "Pendiente de asignación", color: C.t3, icon: "queue", actionKey: null };
     if (s === "accepted" && own) return { action: "Iniciar viaje", color: C.pri, icon: "start", actionKey: "start" };
     if (s === "in_progress" && own && !freight.transporterLoadedConfirmedAt) return { action: "Confirmar carga", color: C.acc, icon: "confirm", actionKey: "confirm_loaded" };
     if (s === "loaded" && !freight.producerLoadedConfirmedAt) return { action: "Confirmar carga", color: C.acc, icon: "confirm", actionKey: "confirm_loaded" };
