@@ -152,6 +152,8 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
     // Destination validation
     if(destMode==="plant" && !form.plantId) { e.plantId="Seleccioná una planta"; }
     if(destMode==="custom" && !customDest.name?.trim()) { e.customDestName="Nombre de destino obligatorio"; }
+    // Own fleet validation: if chose "own fleet", truck is required
+    if(showTruckSelect && form.fleetChoice==="own" && !form.truckId) { e.truckId="Seleccioná un camión de tu flota"; }
     setErrs(e);
     if(!ok || Object.keys(e).filter(k=>e[k]).length>0) {
       setShowIncomplete(true);
@@ -167,7 +169,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
     }
     if(submitting) return;
     setSubmitting(true);
-    const payload = {...form, amount:form.amount?parseFloat(form.amount):0, photos: photos.map(p=>p.preview), useOwnFleet: showTruckSelect ? (form.fleetChoice==="own"?true:false) : undefined,
+    const payload = {...form, amount:form.amount?parseFloat(form.amount):0, photos: photos.map(p=>p.preview), useOwnFleet: showTruckSelect && form.fleetChoice ? (form.fleetChoice==="own") : undefined,
       overrideOriginLat: originMode==="map" ? customOrigin.lat : (overrideOrigin?.lat || undefined),
       overrideOriginLng: originMode==="map" ? customOrigin.lng : (overrideOrigin?.lng || undefined),
       customOriginName: originMode==="map" ? (customOrigin.name || "Origen personalizado") : undefined,
