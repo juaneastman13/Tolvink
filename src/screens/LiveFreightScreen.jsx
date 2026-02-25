@@ -33,6 +33,13 @@ const esc = (s) => String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").
 const MAX_SHARE_MS = 4 * 60 * 60 * 1000; // 4h
 const SEND_INTERVAL_MS = 20000; // 20s
 const POLL_INTERVAL_MS = 10000; // 10s
+const GPS_TIMEOUT_MS = 12000; // 12s — if no GPS fix, show error
+
+// Detect WhatsApp / Instagram / Facebook in-app browsers
+const isInAppBrowser = () => {
+  const ua = navigator.userAgent || "";
+  return /FBAN|FBAV|Instagram|WhatsApp|Line\/|Snapchat/i.test(ua);
+};
 
 export default function LiveFreightScreen() {
   const mapRef = useRef(null);
@@ -41,12 +48,16 @@ export default function LiveFreightScreen() {
   const infoRef = useRef(null);
   const watchIdRef = useRef(null);
   const sendTimerRef = useRef(null);
+  const countdownRef = useRef(null);
   const startTimeRef = useRef(null);
   const lastPosRef = useRef(null);
+  const gpsTimeoutRef = useRef(null);
+  const gotFirstFixRef = useRef(false);
 
   const [freight, setFreight] = useState(null);
   const [locations, setLocations] = useState([]);
-  const [sharing, setSharing] = useState(false);
+  // shareState: "idle" | "activating" | "sharing" | "error"
+  const [shareState, setShareState] = useState("idle");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [geoError, setGeoError] = useState(null);
@@ -214,23 +225,42 @@ export default function LiveFreightScreen() {
     }
   }, [freight, locations]);
 
-  // GPS sharing logic
+  // Clean up all GPS resources
+  const cleanupGps = useCallback(() => {
+    if (watchIdRef.current != null) {
+      navigator.geolocation.clearWatch(watchIdRef.current);
+      watchIdRef.current = null;
+    }
+    if (sendTimerRef.current) { clearInterval(sendTimerRef.current); sendTimerRef.current = null; }
+    if (countdownRef.current) { clearInterval(countdownRef.current); countdownRef.current = null; }
+    if (gpsTimeoutRef.current) { clearTimeout(gpsTimeoutRef.current); gpsTimeoutRef.current = null; }
+  }, []);
+
+  // GPS sharing logic — state machine: idle → activating → sharing (or error)
   const startSharing = useCallback(() => {
-    if (!navigator.geolocation) { setGeoError("Geolocalizacion no disponible en este dispositivo."); return; }
+    if (!navigator.geolocation) {
+      setGeoError("Geolocalizacion no disponible en este dispositivo.");
+      setShareState("error");
+      return;
+    }
 
-    startTimeRef.current = Date.now();
-    setSharing(true);
+    gotFirstFixRef.current = false;
+    lastPosRef.current = null;
+    setGeoError(null);
+    setShareState("activating"); // Show "Activando GPS..."
 
-    // Timer countdown
-    const countdownIv = setInterval(() => {
-      const elapsed = Date.now() - startTimeRef.current;
-      const left = MAX_SHARE_MS - elapsed;
-      if (left <= 0) {
-        stopSharing();
-        return;
+    // Timeout: if no GPS fix within GPS_TIMEOUT_MS, show error with help
+    gpsTimeoutRef.current = setTimeout(() => {
+      if (!gotFirstFixRef.current) {
+        setShareState("error");
+        if (isInAppBrowser()) {
+          setGeoError("in_app_browser");
+        } else {
+          setGeoError("No se pudo obtener la ubicacion. Verifique que los permisos de ubicacion esten activados.");
+        }
+        cleanupGps();
       }
-      setTimeLeft(left);
-    }, 10000);
+    }, GPS_TIMEOUT_MS);
 
     // Watch position
     watchIdRef.current = navigator.geolocation.watchPosition(
@@ -241,51 +271,70 @@ export default function LiveFreightScreen() {
           speed: pos.coords.speed != null ? Math.round(pos.coords.speed * 3.6) : null,
           heading: pos.coords.heading,
         };
-        setGeoError(null);
+
+        // First fix: transition to "sharing" state, start send timer + countdown
+        if (!gotFirstFixRef.current) {
+          gotFirstFixRef.current = true;
+          if (gpsTimeoutRef.current) { clearTimeout(gpsTimeoutRef.current); gpsTimeoutRef.current = null; }
+          setShareState("sharing");
+          setGeoError(null);
+          startTimeRef.current = Date.now();
+
+          // Countdown timer
+          countdownRef.current = setInterval(() => {
+            const elapsed = Date.now() - startTimeRef.current;
+            const left = MAX_SHARE_MS - elapsed;
+            if (left <= 0) { stopSharing(); return; }
+            setTimeLeft(left);
+          }, 10000);
+
+          // Send immediately on first fix
+          sendPosition();
+          // Then every 20s
+          sendTimerRef.current = setInterval(sendPosition, SEND_INTERVAL_MS);
+        }
       },
       (err) => {
         log.error("LiveFreight geo error", err);
-        setGeoError("No se pudo obtener la ubicacion. Verifique los permisos.");
+        // Only handle if we never got a fix (timeout will handle it)
+        if (!gotFirstFixRef.current) {
+          if (gpsTimeoutRef.current) { clearTimeout(gpsTimeoutRef.current); gpsTimeoutRef.current = null; }
+          setShareState("error");
+          if (err.code === 1) { // PERMISSION_DENIED
+            setGeoError("Permiso de ubicacion denegado. Active los permisos en la configuracion del navegador.");
+          } else if (isInAppBrowser()) {
+            setGeoError("in_app_browser");
+          } else {
+            setGeoError("No se pudo obtener la ubicacion. Verifique los permisos de ubicacion.");
+          }
+          cleanupGps();
+        }
       },
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 5000 },
     );
+  }, [token, cleanupGps]); // eslint-disable-line react-hooks/exhaustive-deps
 
-    // Send position every 20s
-    const sendPos = async () => {
-      const p = lastPosRef.current;
-      if (!p || !token) return;
-      try {
-        await fetch(`${API_URL}/whatsapp/live-location`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ t: token, lat: p.lat, lng: p.lng, speed: p.speed, heading: p.heading }),
-        });
-      } catch (e) {
-        log.error("LiveFreight send", e);
-      }
-    };
-    // Send first position after 2s (wait for GPS fix)
-    setTimeout(sendPos, 2000);
-    sendTimerRef.current = setInterval(sendPos, SEND_INTERVAL_MS);
-
-    return () => {
-      clearInterval(countdownIv);
-      clearInterval(sendTimerRef.current);
-      if (watchIdRef.current != null) navigator.geolocation.clearWatch(watchIdRef.current);
-    };
-  }, [token]);
+  const sendPosition = async () => {
+    const p = lastPosRef.current;
+    if (!p) return;
+    const t = new URLSearchParams(window.location.search).get("t");
+    if (!t) return;
+    try {
+      await fetch(`${API_URL}/whatsapp/live-location`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ t, lat: p.lat, lng: p.lng, speed: p.speed, heading: p.heading }),
+      });
+    } catch (e) {
+      log.error("LiveFreight send", e);
+    }
+  };
 
   const stopSharing = useCallback(async () => {
-    setSharing(false);
+    setShareState("idle");
     setTimeLeft(null);
-    if (watchIdRef.current != null) {
-      navigator.geolocation.clearWatch(watchIdRef.current);
-      watchIdRef.current = null;
-    }
-    if (sendTimerRef.current) {
-      clearInterval(sendTimerRef.current);
-      sendTimerRef.current = null;
-    }
+    gotFirstFixRef.current = false;
+    cleanupGps();
     // Notify server
     if (token) {
       try {
@@ -298,18 +347,33 @@ export default function LiveFreightScreen() {
         log.error("LiveFreight stop", e);
       }
     }
-  }, [token]);
+  }, [token, cleanupGps]);
+
+  // Open current URL in system browser (for in-app browser escape)
+  const openInBrowser = () => {
+    const url = window.location.href;
+    // Android: intent:// opens in Chrome/default browser
+    // iOS: just try window.open — Safari may catch it
+    const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+    if (isIOS) {
+      // On iOS, try to open in Safari via a workaround
+      window.location.href = url;
+    } else {
+      // On Android, use intent to force system browser
+      const intentUrl = `intent:${url}#Intent;end`;
+      window.location.href = intentUrl;
+    }
+  };
 
   // Cleanup on unmount
   useEffect(() => {
-    const handleUnload = () => { if (sharing) stopSharing(); };
+    const handleUnload = () => { if (shareState === "sharing") stopSharing(); };
     window.addEventListener("beforeunload", handleUnload);
     return () => {
       window.removeEventListener("beforeunload", handleUnload);
-      if (watchIdRef.current != null) navigator.geolocation.clearWatch(watchIdRef.current);
-      if (sendTimerRef.current) clearInterval(sendTimerRef.current);
+      cleanupGps();
     };
-  }, [sharing, stopSharing]);
+  }, [shareState, stopSharing, cleanupGps]);
 
   const formatTimeLeft = (ms) => {
     if (!ms) return "";
@@ -381,14 +445,14 @@ export default function LiveFreightScreen() {
       {isShareMode && (
         <div style={{
           padding: "8px 16px",
-          background: sharing ? "#F0FDF4" : COLORS.w,
+          background: shareState === "sharing" ? "#F0FDF4" : shareState === "activating" ? "#FFFBEB" : COLORS.w,
           borderBottom: `1px solid ${COLORS.b2}`,
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
           flexShrink: 0,
         }}>
-          {sharing ? (
+          {shareState === "sharing" ? (
             <>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <span style={{ width: 10, height: 10, borderRadius: 5, background: "#22C55E", display: "inline-block", animation: "pulse 2s infinite" }}></span>
@@ -397,6 +461,11 @@ export default function LiveFreightScreen() {
               </div>
               <button onClick={stopSharing} style={styles.stopBtn}>Detener</button>
             </>
+          ) : shareState === "activating" ? (
+            <div style={{ display: "flex", alignItems: "center", gap: 8, width: "100%" }}>
+              <span style={{ width: 10, height: 10, borderRadius: 5, background: "#F59E0B", display: "inline-block", animation: "pulse 1s infinite" }}></span>
+              <span style={{ fontSize: 13, fontWeight: 600, color: "#92400E" }}>Activando GPS... Permita el acceso a la ubicacion</span>
+            </div>
           ) : (
             <button onClick={startSharing} style={styles.shareBtn}>Compartir mi ubicacion</button>
           )}
@@ -404,16 +473,44 @@ export default function LiveFreightScreen() {
       )}
 
       {/* Geo error */}
-      {geoError && (
-        <div style={{ padding: "8px 16px", background: "#FEE2E2", fontSize: 12, color: COLORS.err, flexShrink: 0 }}>
+      {geoError && geoError !== "in_app_browser" && (
+        <div style={{ padding: "10px 16px", background: "#FEE2E2", fontSize: 13, color: COLORS.err, flexShrink: 0, lineHeight: 1.4 }}>
           {geoError}
+          <div style={{ marginTop: 8 }}>
+            <button onClick={() => { setGeoError(null); setShareState("idle"); }} style={styles.retryBtn}>
+              Reintentar
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* In-app browser error — prominent card with "Open in browser" */}
+      {geoError === "in_app_browser" && (
+        <div style={{ padding: "16px", background: "#FEF3C7", flexShrink: 0, borderBottom: `1px solid ${COLORS.b1}` }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: "#92400E", marginBottom: 6 }}>
+            El navegador de WhatsApp no soporta GPS
+          </div>
+          <div style={{ fontSize: 13, color: "#78350F", lineHeight: 1.4, marginBottom: 12 }}>
+            Para compartir tu ubicacion, abri este link en el navegador del celular (Chrome, Safari, etc.)
+          </div>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button onClick={openInBrowser} style={styles.openBrowserBtn}>
+              Abrir en navegador
+            </button>
+            <button onClick={() => { setGeoError(null); setShareState("idle"); }} style={styles.retryBtnSmall}>
+              Reintentar
+            </button>
+          </div>
+          <div style={{ fontSize: 11, color: "#92400E", marginTop: 8, lineHeight: 1.4 }}>
+            Tambien podes copiar el link y pegarlo en el navegador manualmente.
+          </div>
         </div>
       )}
 
       {/* Map */}
       <div style={{ flex: 1, minHeight: 0, position: "relative" }}>
         <div ref={mapRef} style={{ position: "absolute", inset: 0 }} />
-        {locations.length === 0 && !sharing && (
+        {locations.length === 0 && shareState !== "sharing" && shareState !== "activating" && (
           <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none" }}>
             <div style={{ background: COLORS.w, padding: "16px 24px", borderRadius: 12, boxShadow: "0 2px 8px rgba(0,0,0,0.1)", fontSize: 14, color: COLORS.t3 }}>
               Nadie esta compartiendo ubicacion
@@ -494,6 +591,40 @@ const styles = {
     border: `1.5px solid ${COLORS.err}`,
     background: "transparent",
     color: COLORS.err,
+    fontSize: 13,
+    fontWeight: 600,
+    fontFamily: "inherit",
+    cursor: "pointer",
+  },
+  retryBtn: {
+    padding: "8px 20px",
+    borderRadius: 8,
+    border: "none",
+    background: COLORS.err,
+    color: "#fff",
+    fontSize: 13,
+    fontWeight: 600,
+    fontFamily: "inherit",
+    cursor: "pointer",
+  },
+  openBrowserBtn: {
+    flex: 1,
+    padding: "10px 16px",
+    borderRadius: 8,
+    border: "none",
+    background: "#92400E",
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: 700,
+    fontFamily: "inherit",
+    cursor: "pointer",
+  },
+  retryBtnSmall: {
+    padding: "10px 16px",
+    borderRadius: 8,
+    border: "1.5px solid #92400E",
+    background: "transparent",
+    color: "#92400E",
     fontSize: 13,
     fontWeight: 600,
     fontFamily: "inherit",
