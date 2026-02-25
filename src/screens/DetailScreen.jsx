@@ -160,7 +160,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
         </div>
       </div>}
 
-      {freight.status === "pending_assignment" && user.userType === "producer" && !freight.isOwnFleet && (
+      {freight.status === "pending_assignment" && user.userType === "producer" && freight.useOwnFleet === false && (
         <div style={{ background:`${C.info}10`, border:`1.5px solid ${C.info}30`, borderRadius:12, padding:"12px 16px", marginBottom:12, display:"flex", alignItems:"center", gap:10 }}>
           <span style={{ fontSize:20 }}>{"\u23F3"}</span>
           <div>
@@ -457,7 +457,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
       )}
 
       {/* Own fleet banners */}
-      {freight.isOwnFleet && (()=>{
+      {(freight.useOwnFleet === true || (freight.useOwnFleet == null && freight.isOwnFleet)) && (()=>{
         const banners = {
           assigned: { icon:Ic.truck(C.acc,20), bg:C.accPale, border:C.acc, title:"Flota propia — esperando autorización", desc: user.userType==="plant" ? "El productor asignó su propio camión. Autorizá el viaje para continuar." : "Tu camión fue asignado. La planta debe autorizar el viaje." },
           accepted: { icon:Ic.chk(C.ok,20), bg:C.okPale, border:C.ok, title:"Viaje autorizado por la planta", desc: user.userType==="producer" ? "Ya podés iniciar el viaje con tu camión." : "El productor puede iniciar el viaje con su flota propia." },

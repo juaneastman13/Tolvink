@@ -285,7 +285,7 @@ export function useFreights(user, isAuthInitialized) {
     catch(e) { setError(e.message); return null; }
   },[]);
   const create = useCallback(async (form)=>{
-    try { const body = { originLotId:form.lotId||undefined, fieldId:form.fieldId||undefined, destPlantId:form.plantId||undefined, customOriginName:form.customOriginName||undefined, loadDate:form.loadDate, loadTime:form.loadTime, items:[{grain:form.grain,tons:parseFloat(form.tons),unit:form.unit||"toneladas",amount:form.amount?parseFloat(form.amount):0,productTypeOther:form.productTypeOther||undefined}], notes:form.notes||"", truckId:form.truckId||undefined, overrideOriginLat:form.overrideOriginLat, overrideOriginLng:form.overrideOriginLng, overrideDestLat:form.overrideDestLat, overrideDestLng:form.overrideDestLng };
+    try { const body = { originLotId:form.lotId||undefined, fieldId:form.fieldId||undefined, destPlantId:form.plantId||undefined, customOriginName:form.customOriginName||undefined, loadDate:form.loadDate, loadTime:form.loadTime, items:[{grain:form.grain,tons:parseFloat(form.tons),unit:form.unit||"toneladas",amount:form.amount?parseFloat(form.amount):0,productTypeOther:form.productTypeOther||undefined}], notes:form.notes||"", truckId:form.truckId||undefined, useOwnFleet:form.useOwnFleet, overrideOriginLat:form.overrideOriginLat, overrideOriginLng:form.overrideOriginLng, overrideDestLat:form.overrideDestLat, overrideDestLng:form.overrideDestLng };
       const computedTruckCount = form.truckCount ? parseInt(form.truckCount) : (parseFloat(form.tons) > 0 ? Math.ceil(parseFloat(form.tons) / 30) : 1);
       if(computedTruckCount > 1) body.truckCount = computedTruckCount;
       if(form.customDestName) { body.customDestName=form.customDestName; body.customDestLat=form.customDestLat; body.customDestLng=form.customDestLng; if(form.destCompanyId) body.destCompanyId=form.destCompanyId; if(!form.plantId) delete body.destPlantId; }
@@ -329,7 +329,7 @@ export function mapFreight(f) {
     originHasOwnFleet: !!(f.originCompany?.hasInternalFleet || (Array.isArray(f.originCompany?.types) && f.originCompany.types.includes("transporter"))),
     destHasOwnFleet: !!(f.destCompany?.hasInternalFleet || (Array.isArray(f.destCompany?.types) && f.destCompany.types.includes("transporter"))),
     originLat:f.originLat?parseFloat(f.originLat):null, originLng:f.originLng?parseFloat(f.originLng):null,
-    fieldName:f.field?.name||"", isOwnFleet,
+    fieldName:f.field?.name||"", useOwnFleet:f.useOwnFleet??null, isOwnFleet: f.useOwnFleet!=null ? f.useOwnFleet : isOwnFleet,
     destPlantId:f.destPlantId, destCompanyId:f.destCompanyId||null, destName:f.destName||"",
     destLat:f.destLat?parseFloat(f.destLat):null, destLng:f.destLng?parseFloat(f.destLng):null,
     loadDate:f.loadDate?.split("T")[0]||"", loadTime:f.loadTime||"",

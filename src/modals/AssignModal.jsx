@@ -20,7 +20,7 @@ function StepDone({ label, value, sub, onEdit }) {
 export default function AssignModal({ freight, transporters, user, onClose, onConfirm, onAssignMulti }) {
   const multiTruck = (freight.truckCount || 1) > 1;
   const [truckList, setTruckList] = useState([]);
-  const [mode,setMode] = useState("company"); // "company" | "own"
+  const [mode,setMode] = useState(()=> freight.useOwnFleet===true ? "own" : "company"); // "company" | "own"
   const [t,setT] = useState("");
   const [truckId,setTruckId] = useState("");
   const [driverId,setDriverId] = useState("");
@@ -54,6 +54,9 @@ export default function AssignModal({ freight, transporters, user, onClose, onCo
   // Either origin (producer) or dest (plant) can have own fleet
   const hasOwnFleet = !!freight.originHasOwnFleet || !!freight.destHasOwnFleet;
   const ownFleetCompanyId = freight.destHasOwnFleet ? freight.destCompanyId : freight.originCompanyId;
+
+  // Respect explicit useOwnFleet decision: force mode when set
+  const forceMode = freight.useOwnFleet === true ? "own" : freight.useOwnFleet === false ? "company" : null;
 
   // Max trips you can still add
   const remainingSlots = Math.max(0, needed - truckList.length);
@@ -245,11 +248,12 @@ export default function AssignModal({ freight, transporters, user, onClose, onCo
       {/* ============ WIZARD FORM (only when remaining slots) ============ */}
       {remainingSlots > 0 && <>
 
-        {/* Mode toggle */}
-        {hasOwnFleet && <div style={{display:"flex",gap:0,marginBottom:16,borderRadius:10,overflow:"hidden",border:`1.5px solid ${C.b1}`}}>
+        {/* Mode toggle — hidden when useOwnFleet explicitly set */}
+        {hasOwnFleet && !forceMode && <div style={{display:"flex",gap:0,marginBottom:16,borderRadius:10,overflow:"hidden",border:`1.5px solid ${C.b1}`}}>
           <button onClick={()=>{setMode("company");setTruckId("");setDriverId("");}} style={{flex:1,padding:"10px 0",fontFamily:"inherit",fontSize:12.5,fontWeight:mode==="company"?700:500,background:mode==="company"?C.pri:C.w,color:mode==="company"?C.w:C.t2,border:"none",cursor:"pointer"}}>Empresa</button>
           <button onClick={()=>{setMode("own");setT("");}} style={{flex:1,padding:"10px 0",fontFamily:"inherit",fontSize:12.5,fontWeight:mode==="own"?700:500,background:mode==="own"?C.acc:C.w,color:mode==="own"?C.w:C.t2,border:"none",cursor:"pointer",borderLeft:`1px solid ${C.b1}`}}>Flota propia</button>
         </div>}
+        {forceMode && <div style={{padding:"8px 12px",background:forceMode==="own"?C.accPale:`${C.info}10`,borderRadius:8,fontSize:11,fontWeight:500,color:forceMode==="own"?C.acc:C.info,marginBottom:12}}>{forceMode==="own"?"El productor eligió usar flota propia":"El productor delegó el transporte"}</div>}
 
         {/* ======== COMPANY MODE ======== */}
         {mode==="company" && <>

@@ -27,7 +27,7 @@ const STATUS_CFG = {
 
 const TRUCK_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="#FF6A00" stroke="#fff" stroke-width="1.5"><rect x="1" y="3" width="15" height="13" rx="2"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>';
 
-export default function TrackFreightScreen() {
+export default function TrackFreightScreen({ code: codeProp } = {}) {
   const mapRef = useRef(null);
   const mapInstance = useRef(null);
   const truckMarker = useRef(null);
@@ -41,18 +41,22 @@ export default function TrackFreightScreen() {
   const params = new URLSearchParams(window.location.search);
   const token = params.get("token");
 
+  // Determine API base: clean URL (/f/:code) or legacy (/track/:token)
+  const apiBase = codeProp ? `${API_URL}/f/${codeProp}` : token ? `${API_URL}/track/${token}` : null;
+  const hasIdentifier = !!(codeProp || token);
+
   // Fetch freight data
   useEffect(() => {
-    if (!token) { setLoading(false); return; }
+    if (!apiBase) { setLoading(false); return; }
     (async () => {
       try {
-        const res = await fetch(`${API_URL}/track/${token}`);
+        const res = await fetch(apiBase);
         if (!res.ok) throw new Error("Flete no encontrado");
         setFreight(await res.json());
       } catch (e) { setError(e.message); }
       finally { setLoading(false); }
     })();
-  }, [token]);
+  }, [apiBase]);
 
   // Initialize map
   useEffect(() => {
@@ -120,13 +124,13 @@ export default function TrackFreightScreen() {
 
   // Poll last position every 10s
   useEffect(() => {
-    if (!freight || !token || !mapInstance.current) return;
+    if (!freight || !apiBase || !mapInstance.current) return;
     if (!["in_progress", "loaded"].includes(freight.status)) return;
     let cancelled = false;
 
     const poll = async () => {
       try {
-        const res = await fetch(`${API_URL}/track/${token}/position`);
+        const res = await fetch(`${apiBase}/position`);
         if (!res.ok || cancelled) return;
         const pos = await res.json();
         if (!pos || cancelled) return;
@@ -160,25 +164,25 @@ export default function TrackFreightScreen() {
         truckMarker.current = null;
       }
     };
-  }, [freight, token]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [freight, apiBase]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Re-fetch freight status every 30s
   useEffect(() => {
-    if (!token || !freight || ["finished", "canceled"].includes(freight.status)) return;
+    if (!apiBase || !freight || ["finished", "canceled"].includes(freight.status)) return;
     let cancelled = false;
     const iv = setInterval(async () => {
       try {
-        const res = await fetch(`${API_URL}/track/${token}`);
+        const res = await fetch(apiBase);
         if (!res.ok || cancelled) return;
         setFreight(await res.json());
       } catch {}
     }, 30000);
     return () => { cancelled = true; clearInterval(iv); };
-  }, [token, freight?.status]);
+  }, [apiBase, freight?.status]);
 
   // === RENDER ===
 
-  if (!token) return (
+  if (!hasIdentifier) return (
     <div style={S.center}>
       <div style={S.card}>
         <div style={{ fontSize: 48, marginBottom: 12 }}>🔗</div>

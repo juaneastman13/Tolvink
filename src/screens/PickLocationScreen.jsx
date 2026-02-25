@@ -25,7 +25,7 @@ const COLORS = {
   errPale: "#FEE2E2",
 };
 
-export default function PickLocationScreen() {
+export default function PickLocationScreen({ slug: slugProp } = {}) {
   const mapRef = useRef(null);
   const searchRef = useRef(null);
   const markerRef = useRef(null);
@@ -37,13 +37,14 @@ export default function PickLocationScreen() {
   const [done, setDone] = useState(false);
   const [error, setError] = useState(null);
 
-  // Extract token from URL
+  // Extract token from URL (legacy) or use slug prop (clean URL)
   const params = new URLSearchParams(window.location.search);
   const token = params.get("token");
+  const hasIdentifier = !!(slugProp || token);
 
   // Initialize map
   useEffect(() => {
-    if (!mapRef.current || !token) return;
+    if (!mapRef.current || !hasIdentifier) return;
     let cancelled = false;
 
     (async () => {
@@ -135,24 +136,26 @@ export default function PickLocationScreen() {
       cancelled = true;
       if (markerRef.current && window.google?.maps) google.maps.event.clearInstanceListeners(markerRef.current);
     };
-  }, [token]);
+  }, [hasIdentifier]);
 
   const handleConfirm = async () => {
-    if (!location || !token) return;
+    if (!location || !hasIdentifier) return;
     setSaving(true);
     setError(null);
 
     try {
-      const res = await fetch(`${API_URL}/whatsapp/save-location`, {
+      // Use slug endpoint or legacy token endpoint
+      const endpoint = slugProp
+        ? `${API_URL}/whatsapp/save-location-by-slug`
+        : `${API_URL}/whatsapp/save-location`;
+      const payload = slugProp
+        ? { slug: slugProp, lat: location.lat, lng: location.lng, name: address.split(",")[0] || "", address }
+        : { token, lat: location.lat, lng: location.lng, name: address.split(",")[0] || "", address };
+
+      const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          token,
-          lat: location.lat,
-          lng: location.lng,
-          name: address.split(",")[0] || "",
-          address: address,
-        }),
+        body: JSON.stringify(payload),
       });
 
       if (!res.ok) {
@@ -168,8 +171,8 @@ export default function PickLocationScreen() {
     }
   };
 
-  // No token
-  if (!token) {
+  // No token/slug
+  if (!hasIdentifier) {
     return (
       <div style={styles.container}>
         <div style={styles.errorBox}>

@@ -32,7 +32,8 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
     amount: dup?.amount?.toString() || "",
     productTypeOther: dup?.productTypeOther || "",
     truckId: "",
-    truckCount: ""
+    truckCount: "",
+    fleetChoice: ""
   });
   const [errs, setErrs] = useState({});
   const [touched, setTouched] = useState(false);
@@ -83,10 +84,10 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
     schedule: secComplete.product && secComplete.quantity && secComplete.origin && secComplete.destination,
   };
 
-  // Auto-select truck when producer has exactly 1 in fleet
+  // Auto-select own fleet + truck when producer has exactly 1 in fleet
   useEffect(()=>{
-    if (showTruckSelect && truckOpts.length === 1 && !form.truckId) {
-      u({ truckId: truckOpts[0].value });
+    if (showTruckSelect && truckOpts.length === 1 && !form.truckId && !form.fleetChoice) {
+      u({ fleetChoice: "own", truckId: truckOpts[0].value });
     }
   },[showTruckSelect, truckOpts.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -166,7 +167,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
     }
     if(submitting) return;
     setSubmitting(true);
-    const payload = {...form, amount:form.amount?parseFloat(form.amount):0, photos: photos.map(p=>p.preview),
+    const payload = {...form, amount:form.amount?parseFloat(form.amount):0, photos: photos.map(p=>p.preview), useOwnFleet: showTruckSelect ? (form.fleetChoice==="own"?true:false) : undefined,
       overrideOriginLat: originMode==="map" ? customOrigin.lat : (overrideOrigin?.lat || undefined),
       overrideOriginLng: originMode==="map" ? customOrigin.lng : (overrideOrigin?.lng || undefined),
       customOriginName: originMode==="map" ? (customOrigin.name || "Origen personalizado") : undefined,
@@ -320,13 +321,19 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
           </>)}
         </Sec>
 
-        {/* OWN FLEET (optional, between origin and destination) */}
+        {/* OWN FLEET — explicit binary choice */}
         {showTruckSelect && (
-          <Sec label={form.truckId ? "Camión propio seleccionado" : "Camión propio (opcional)"} complete={!!form.truckId} summary={truckOpts.find(t=>t.value===form.truckId)?.label||""} isExpanded={activeSection==="ownfleet"} onFocus={()=>setActiveSection("ownfleet")} secRef={secRefs.ownfleet} highlight={secComplete.origin&&!form.truckId&&activeSection!=="ownfleet"} disabled={!secEnabled.ownfleet}>
-            <div style={{ fontSize:11, color:C.t2, marginBottom:12 }}>{form.truckId ? "Flota propia — la planta solo autoriza el viaje" : "Seleccione un camión o deje vacío para que la planta asigne transportista"}</div>
-            <Select label="Camión" icon={Ic.truck(C.acc,14)} value={form.truckId} onChange={v=>u({truckId:v})} options={truckOpts} placeholder="Seleccionar camión..."/>
-            {form.truckId && <button type="button" onClick={()=>u({truckId:""})} style={{ marginTop:8, background:"none", border:"none", cursor:"pointer", fontSize:11, color:C.err, fontWeight:600, fontFamily:"inherit" }}>No usar flota propia</button>}
-            {!form.truckId && <div style={{ marginTop:8, padding:"8px 12px", background:`${C.info}10`, borderRadius:8, fontSize:11, color:C.info, fontWeight:500 }}>Sin camión propio, la planta de destino asignará transportista</div>}
+          <Sec label={form.fleetChoice==="own"?"Flota propia":form.fleetChoice==="delegate"?"Delegar a planta":"Transporte"} complete={!!form.fleetChoice} summary={form.fleetChoice==="own"?(truckOpts.find(t=>t.value===form.truckId)?.label||"Elegir camión"):form.fleetChoice==="delegate"?"Planta asigna":""} isExpanded={activeSection==="ownfleet"} onFocus={()=>setActiveSection("ownfleet")} secRef={secRefs.ownfleet} highlight={secComplete.origin&&!form.fleetChoice&&activeSection!=="ownfleet"} disabled={!secEnabled.ownfleet}>
+            <div style={{ fontSize:12, color:C.t2, marginBottom:12 }}>¿Cómo desea transportar este flete?</div>
+            <div style={{ display:"flex", gap:8, marginBottom:14 }}>
+              <button type="button" onClick={()=>u({fleetChoice:"own"})} style={{ flex:1, padding:"12px 8px", borderRadius:10, border:`1.5px solid ${form.fleetChoice==="own"?C.acc:C.b1}`, background:form.fleetChoice==="own"?C.accPale:C.w, color:form.fleetChoice==="own"?C.acc:C.t2, cursor:"pointer", fontSize:13, fontWeight:form.fleetChoice==="own"?700:500, fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>{Ic.truck(form.fleetChoice==="own"?C.acc:C.t3,16)} Flota propia</button>
+              <button type="button" onClick={()=>u({fleetChoice:"delegate",truckId:""})} style={{ flex:1, padding:"12px 8px", borderRadius:10, border:`1.5px solid ${form.fleetChoice==="delegate"?C.pri:C.b1}`, background:form.fleetChoice==="delegate"?C.priPale:C.w, color:form.fleetChoice==="delegate"?C.pri:C.t2, cursor:"pointer", fontSize:13, fontWeight:form.fleetChoice==="delegate"?700:500, fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>{Ic.plant(form.fleetChoice==="delegate"?C.pri:C.t3,16)} Delegar a planta</button>
+            </div>
+            {form.fleetChoice==="own" && <>
+              <Select label="Camión" icon={Ic.truck(C.acc,14)} value={form.truckId} onChange={v=>u({truckId:v})} options={truckOpts} placeholder="Seleccionar camión..."/>
+              {!form.truckId && <div style={{ marginTop:8, padding:"8px 12px", background:`${C.acc}10`, borderRadius:8, fontSize:11, color:C.acc, fontWeight:500 }}>Seleccioná un camión de tu flota</div>}
+            </>}
+            {form.fleetChoice==="delegate" && <div style={{ padding:"10px 14px", background:`${C.info}10`, borderRadius:8, fontSize:12, color:C.info, fontWeight:500 }}>La planta de destino asignará el transportista</div>}
           </Sec>
         )}
 

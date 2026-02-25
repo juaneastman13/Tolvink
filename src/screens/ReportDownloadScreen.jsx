@@ -13,7 +13,7 @@ const COLORS = {
   b1: "#DEE4E0", b2: "#ECF0ED", err: "#DC2626",
 };
 
-export default function ReportDownloadScreen() {
+export default function ReportDownloadScreen({ code: codeProp } = {}) {
   const [status, setStatus] = useState("loading"); // loading | generating | done | error
   const [error, setError] = useState(null);
   const [freightCode, setFreightCode] = useState(null);
@@ -22,14 +22,18 @@ export default function ReportDownloadScreen() {
   const params = new URLSearchParams(window.location.search);
   const token = params.get("token");
 
+  // Determine API URL: clean URL (/f/:code/report) or legacy (/track/:token/report-data)
+  const reportUrl = codeProp ? `${API_URL}/f/${codeProp}/report` : token ? `${API_URL}/track/${token}/report-data` : null;
+  const hasIdentifier = !!(codeProp || token);
+
   useEffect(() => {
-    if (!token || attempted.current) return;
+    if (!reportUrl || attempted.current) return;
     attempted.current = true;
 
     (async () => {
       try {
         // 1. Fetch report data from public endpoint
-        const res = await fetch(`${API_URL}/track/${token}/report-data`);
+        const res = await fetch(reportUrl);
         if (!res.ok) throw new Error("Flete no encontrado o link invalido");
         const data = await res.json();
         setFreightCode(data.code);
@@ -46,11 +50,11 @@ export default function ReportDownloadScreen() {
         setStatus("error");
       }
     })();
-  }, [token]);
+  }, [reportUrl]);
 
   const retry = () => { window.location.reload(); };
 
-  if (!token) return (
+  if (!hasIdentifier) return (
     <div style={S.center}>
       <div style={S.card}>
         <div style={{ fontSize: 48, marginBottom: 12 }}>🔗</div>

@@ -153,7 +153,11 @@ export default function Tolvink() {
   // Redirect to home when user logs in + Sentry user tracking
   const prevUser = useRef(null);
   useEffect(()=>{
-    if(auth.user && !prevUser.current && !["/pick-location","/track","/report","/daily-map","/live-freight"].includes(location.pathname)) { navigate("/", { replace: true }); }
+    const p = location.pathname;
+    const isPublicPath = ["/pick-location","/track","/report","/daily-map","/live-freight"].includes(p)
+      || /^\/FLT-\d{4,}\/(ubicacion|informe)$/i.test(p)
+      || /^\/campo\/[a-z0-9-]+\/ubicacion$/i.test(p);
+    if(auth.user && !prevUser.current && !isPublicPath) { navigate("/", { replace: true }); }
     prevUser.current = auth.user;
     setSentryUser(auth.user);
   },[auth.user]);
@@ -419,7 +423,21 @@ export default function Tolvink() {
     </div>;
   }
 
-  // Public route: Map picker for WhatsApp location selection (no auth needed)
+  // Clean URL routes (new)
+  const trackMatch = location.pathname.match(/^\/(FLT-\d{4,})\/ubicacion$/i);
+  if (trackMatch) {
+    return <Suspense fallback={<SL/>}><TrackFreightScreen code={trackMatch[1].toUpperCase()} /></Suspense>;
+  }
+  const reportMatch = location.pathname.match(/^\/(FLT-\d{4,})\/informe$/i);
+  if (reportMatch) {
+    return <Suspense fallback={<SL/>}><ReportDownloadScreen code={reportMatch[1].toUpperCase()} /></Suspense>;
+  }
+  const campoMatch = location.pathname.match(/^\/campo\/([a-z0-9-]+)\/ubicacion$/i);
+  if (campoMatch) {
+    return <Suspense fallback={<SL/>}><PickLocationScreen slug={campoMatch[1]} /></Suspense>;
+  }
+
+  // Legacy public routes (backward compatibility)
   if (location.pathname === "/pick-location") {
     return <Suspense fallback={<SL/>}><PickLocationScreen /></Suspense>;
   }
