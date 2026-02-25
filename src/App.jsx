@@ -156,7 +156,7 @@ export default function Tolvink() {
   const prevUser = useRef(null);
   useEffect(()=>{
     const p = location.pathname;
-    const isPublicPath = ["/pick-location","/track","/report","/daily-map","/live-freight"].includes(p)
+    const isPublicPath = ["/pick-location","/track","/report","/daily-map","/live-freight","/ver-mapa"].includes(p)
       || /^\/FLT-\d{4,}\/(ubicacion|informe)$/i.test(p)
       || /^\/campo\/[a-z0-9-]+\/ubicacion$/i.test(p);
     if(auth.user && !prevUser.current && !isPublicPath) { navigate("/", { replace: true }); }
