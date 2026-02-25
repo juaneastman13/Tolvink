@@ -7,16 +7,29 @@ export function resolveUserTypeForFreight(freight, user) {
   if (user.role === "chofer") return "chofer";
   const types = user.userTypes || [user.userType];
   if (types.length <= 1) return user.userType;
-  // Prioritize the user's active/current type first
+
+  // Only consider types where the user's active company matches the freight role:
+  // producer → originCompanyId, plant → destCompanyId, transporter → assignment transportCompanyId
+  const cId = user.activeCompanyId || user.companyId;
+  const eligible = types.filter(t => {
+    if (t === "producer") return freight.originCompanyId === cId;
+    if (t === "plant") return freight.destCompanyId === cId;
+    if (t === "transporter") return freight.transporterId === cId || (freight.activeAssignments || []).some(a => a.transportCompanyId === cId);
+    return false;
+  });
+  if (eligible.length === 0) return user.userType;
+  if (eligible.length === 1) return eligible[0];
+
+  // Multiple eligible: pick the one with pending actions, prioritizing active type
   const active = user.userType;
-  const sorted = [active, ...types.filter(t => t !== active)];
+  const sorted = eligible.includes(active) ? [active, ...eligible.filter(t => t !== active)] : eligible;
   for (const type of sorted) {
     if (getPendingActions(freight, type, user.role, user)) return type;
   }
   for (const type of sorted) {
     if (getActions(freight.status, type, user.role, freight.isOwnFleet).length > 0) return type;
   }
-  return user.userType;
+  return eligible[0];
 }
 
 // ======================== GET PENDING ACTIONS ==========================
