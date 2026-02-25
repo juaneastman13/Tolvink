@@ -68,7 +68,7 @@ const SL = () => <div style={{flex:1,display:"flex",flexDirection:"column",align
 export default function Tolvink() {
 
   const auth = useAuth();
-  const fh = useFreights(auth.user, auth.isInitialized);
+  const fh = useFreights(auth.user, auth.isInitialized, viewAll ? null : undefined);
   const catalog = useCatalog(auth.user);
   const online = useOnline();
   const notif = useNotifications(auth.user);
@@ -162,23 +162,14 @@ export default function Tolvink() {
     setSentryUser(auth.user);
   },[auth.user]);
 
-  // Filter freights by active company (multi-company users only see selected company's data)
-  // Chofer: only see freights where they are the assigned driver
+  // Server-side company filter handles multi-company. Chofer: client-side driver filter + queue sort
   const viewFreights = useMemo(() => {
     if (!auth.user || !fh.freights) return fh.freights;
     if (auth.user.role === "chofer") {
       return fh.freights.filter(f => f.driverId === auth.user.id).sort((a,b) => (a.queuePosition||0) - (b.queuePosition||0));
     }
-    if (viewAll) return fh.freights;
-    const cId = auth.user.activeCompanyId || auth.user.companyId;
-    if (!cId || (auth.user.companies || []).length <= 1) return fh.freights;
-    return fh.freights.filter(f =>
-      f.originCompanyId === cId ||
-      f.destCompanyId === cId ||
-      f.transporterId === cId ||
-      (f.isMultiTruck && f.activeAssignments?.some(a => a.transportCompanyId === cId))
-    );
-  }, [fh.freights, auth.user, viewAll]);
+    return fh.freights;
+  }, [fh.freights, auth.user]);
 
   // Calculate pending actions count
   const pendingCount = useMemo(() => {

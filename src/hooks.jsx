@@ -234,7 +234,7 @@ export function mapUser(u) {
 // ======================== FREIGHTS HOOK (Real API) ====================
 const FREIGHTS_PAGE_SIZE = 25;
 
-export function useFreights(user, isAuthInitialized) {
+export function useFreights(user, isAuthInitialized, companyOverride) {
   const [freights, setFreights] = useState([]);
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -243,12 +243,16 @@ export function useFreights(user, isAuthInitialized) {
   const [total, setTotal] = useState(0);
   const pageRef = useRef(1);
 
+  // Multi-company: pass activeCompanyId to server-side filter
+  // companyOverride=null means "view all" (no filter), undefined means use activeCompanyId
+  const companyFilter = companyOverride === null ? undefined : (companyOverride || user?.activeCompanyId || user?.companyId || undefined);
+
   const fetchAll = useCallback(async ()=>{
     if(!user || !isAuthInitialized) return;
     setLoading(true);
     pageRef.current = 1;
     try {
-      const r = await apiListFreights({page:1, limit:FREIGHTS_PAGE_SIZE});
+      const r = await apiListFreights({page:1, limit:FREIGHTS_PAGE_SIZE, company:companyFilter});
       const mapped = (r.data||[]).map(mapFreight);
       setFreights(mapped);
       setTotal(r.total||0);
@@ -256,14 +260,14 @@ export function useFreights(user, isAuthInitialized) {
     }
     catch(e) { setError(e.message); }
     finally { setLoading(false); }
-  },[user, isAuthInitialized]);
+  },[user, isAuthInitialized, companyFilter]);
 
   const loadMore = useCallback(async ()=>{
     if(!user || loadingMore || !hasMore) return;
     setLoadingMore(true);
     const nextPage = pageRef.current + 1;
     try {
-      const r = await apiListFreights({page:nextPage, limit:FREIGHTS_PAGE_SIZE});
+      const r = await apiListFreights({page:nextPage, limit:FREIGHTS_PAGE_SIZE, company:companyFilter});
       const mapped = (r.data||[]).map(mapFreight);
       pageRef.current = nextPage;
       setFreights(p=>{
@@ -274,7 +278,7 @@ export function useFreights(user, isAuthInitialized) {
     }
     catch(e) { setError(e.message); }
     finally { setLoadingMore(false); }
-  },[user, loadingMore, hasMore]);
+  },[user, loadingMore, hasMore, companyFilter]);
 
   useEffect(()=>{
     if(isAuthInitialized && user) { fetchAll(); }
