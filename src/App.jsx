@@ -34,6 +34,8 @@ const NotificationsScreen = lazy(() => import("./screens/NotificationsScreen"));
 const PickLocationScreen = lazy(() => import("./screens/PickLocationScreen"));
 const TrackFreightScreen = lazy(() => import("./screens/TrackFreightScreen"));
 const ReportDownloadScreen = lazy(() => import("./screens/ReportDownloadScreen"));
+const DailyMapScreen = lazy(() => import("./screens/DailyMapScreen"));
+const LiveFreightScreen = lazy(() => import("./screens/LiveFreightScreen"));
 // CompanyHeaderPicker removed — company selector moved to Sidebar
 
 // Lazy modals
@@ -151,7 +153,7 @@ export default function Tolvink() {
   // Redirect to home when user logs in + Sentry user tracking
   const prevUser = useRef(null);
   useEffect(()=>{
-    if(auth.user && !prevUser.current && !["/pick-location","/track","/report"].includes(location.pathname)) { navigate("/", { replace: true }); }
+    if(auth.user && !prevUser.current && !["/pick-location","/track","/report","/daily-map","/live-freight"].includes(location.pathname)) { navigate("/", { replace: true }); }
     prevUser.current = auth.user;
     setSentryUser(auth.user);
   },[auth.user]);
@@ -430,6 +432,16 @@ export default function Tolvink() {
   // Public route: PDF report download (shared via WhatsApp)
   if (location.pathname === "/report") {
     return <Suspense fallback={<SL/>}><ReportDownloadScreen /></Suspense>;
+  }
+
+  // Public route: Daily freight map (WhatsApp signed token)
+  if (location.pathname === "/daily-map") {
+    return <Suspense fallback={<SL/>}><DailyMapScreen /></Suspense>;
+  }
+
+  // Public route: Live freight location sharing (WhatsApp signed token)
+  if (location.pathname === "/live-freight") {
+    return <Suspense fallback={<SL/>}><LiveFreightScreen /></Suspense>;
   }
 
   // If no user after initialization, show landing
