@@ -576,7 +576,7 @@ export default function Tolvink() {
       {modal?.type==="edit_trip" && <EditTripModal freight={modal.freight} assignment={modal.assignment} transporters={catalog.transporters} onClose={()=>setModal(null)} onSave={handleSaveTrip}/>}
       {modal?.type==="driver_queue" && <DriverQueueModal driverId={modal.driverId} driverName={modal.driverName} onClose={()=>setModal(null)}/>}
       </Suspense>
-      {toast && <Toast msg={toast.msg} type={toast.type} onClose={()=>setToast(null)}/>}
+      {toast && <Toast key={toast._ts||toast.msg} msg={toast.msg} type={toast.type} onClose={()=>setToast(null)}/>}
     </div>
   );
 }

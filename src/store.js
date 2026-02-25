@@ -24,7 +24,7 @@ export const useUIStore = create((set) => ({
 
   setModal: (modal) => set({ modal }),
   setToast: (toast) => set({ toast }),
-  show: (msg, type = "ok") => set({ toast: { msg, type } }),
+  show: (msg, type = "ok") => set({ toast: { msg, type, _ts: Date.now() } }),
   setMapFocus: (mapFocus) => set({ mapFocus }),
   setListView: (listView) => set({ listView }),
   setSubmitting: (submitting) => set({ submitting }),

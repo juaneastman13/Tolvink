@@ -304,7 +304,7 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
   const handleSend = async () => {
     if (!msgText.trim() || !activeConv || sending) return;
     const textToSend = msgText.trim();
-    const optimisticId = `temp-${Date.now()}`;
+    const optimisticId = `temp-${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
 
     // Optimistic update: show message immediately
     const optimisticMsg = {

@@ -1,7 +1,7 @@
 import { useState, useMemo, lazy, Suspense } from "react";
 import { C, Ic, FONT, MONO } from "../theme";
 import { stCfg } from "../constants";
-import { Bd, Btn, Select, SortTh, Tabs, exportExcel, SkeletonList, EmptyState } from "../components";
+import { Bd, Btn, Select, SortTh, Tabs, exportExcel, SkeletonList, EmptyState, ErrorBoundary } from "../components";
 import { useTableSort, usePullToRefresh } from "../hooks";
 import { textMatch } from "../validation";
 const FreightsOverviewMap = lazy(() => import("../maps").then(m => ({ default: m.FreightsOverviewMap })));
@@ -260,7 +260,7 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
 
       {/* View: Mapa */}
       {view==="mapa" && (
-        <Suspense fallback={<SkeletonList count={3}/>}><FreightsOverviewMap freights={filtered} onSelect={(id)=>onNav("detail",id)} fields={catalog?.fields} plants={catalog?.plants} /></Suspense>
+        <ErrorBoundary><Suspense fallback={<SkeletonList count={3}/>}><FreightsOverviewMap freights={filtered} onSelect={(id)=>onNav("detail",id)} fields={catalog?.fields} plants={catalog?.plants} /></Suspense></ErrorBoundary>
       )}
 
       {/* View: Tabla */}
