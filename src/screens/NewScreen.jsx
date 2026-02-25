@@ -84,13 +84,6 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
     schedule: secComplete.product && secComplete.quantity && secComplete.origin && secComplete.destination,
   };
 
-  // Auto-select own fleet + truck when producer has exactly 1 in fleet
-  useEffect(()=>{
-    if (showTruckSelect && truckOpts.length === 1 && !form.truckId && !form.fleetChoice) {
-      u({ fleetChoice: "own", truckId: truckOpts[0].value });
-    }
-  },[showTruckSelect, truckOpts.length]); // eslint-disable-line react-hooks/exhaustive-deps
-
   // Revoke blob URLs on unmount
   useEffect(()=>{
     return ()=>{ photosRef.current.forEach(p=>{ if(p.preview) URL.revokeObjectURL(p.preview); }); };
@@ -125,6 +118,13 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
   const selectedBranch = (branches||[]).find(b=>b.id===form.branchId);
   const truckOpts = (trucks||[]).map(t=>({ value:t.id, label:`${t.plate}${t.model?` · ${t.model}`:""}` }));
   const showTruckSelect = (user.userType==="producer"||(user.userTypes||[]).includes("producer")) && truckOpts.length > 0;
+
+  // Auto-select own fleet + truck when producer has exactly 1 in fleet
+  useEffect(()=>{
+    if (showTruckSelect && truckOpts.length === 1 && !form.truckId && !form.fleetChoice) {
+      u({ fleetChoice: "own", truckId: truckOpts[0].value });
+    }
+  },[showTruckSelect, truckOpts.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Coords for map preview
   const originCoords = originMode==="field"
