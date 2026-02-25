@@ -1,10 +1,17 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, lazy, Suspense } from "react";
 import { C, Ic, FONT, MONO } from "../theme";
 import { stCfg } from "../constants";
 import { Bd, Btn, Select, SortTh, Tabs, exportExcel, SkeletonList, EmptyState } from "../components";
 import { useTableSort, usePullToRefresh } from "../hooks";
 import { textMatch } from "../validation";
-import { FreightsOverviewMap } from "../maps";
+const FreightsOverviewMap = lazy(() => import("../maps").then(m => ({ default: m.FreightsOverviewMap })));
+
+const GROUPS = [
+  { key:"solicitado", label:"Solicitado", color:"#FF6A00", icon:Ic.warn, statuses:["pending_assignment"] },
+  { key:"en_curso", label:"En curso", color:"#2563EB", icon:Ic.nav, statuses:["assigned","accepted","in_progress","loaded"] },
+  { key:"finalizados", label:"Finalizados", color:"#1A6B37", icon:Ic.chk, statuses:["finished"] },
+  { key:"cancelados", label:"Cancelados", color:"#DC2626", icon:Ic.ban, statuses:["canceled"] },
+];
 
 export default function ListScreen({ freights, loading, onNav, onRefresh, catalog, view, setView, goToMap, hasMore, loadMore, loadingMore, total, isDesktop, onAction }) {
   const [searchQ, setSearchQ] = useState("");
@@ -46,12 +53,6 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
     });
   },[freights,searchQ,fPlant,fProducer,fTransporter,dateFrom,dateTo]);
 
-  const GROUPS = [
-    { key:"solicitado", label:"Solicitado", color:"#FF6A00", icon:Ic.warn, statuses:["pending_assignment"] },
-    { key:"en_curso", label:"En curso", color:"#2563EB", icon:Ic.nav, statuses:["assigned","accepted","in_progress","loaded"] },
-    { key:"finalizados", label:"Finalizados", color:"#1A6B37", icon:Ic.chk, statuses:["finished"] },
-    { key:"cancelados", label:"Cancelados", color:"#DC2626", icon:Ic.ban, statuses:["canceled"] },
-  ];
   const grouped = useMemo(()=>{
     const map = {};
     GROUPS.forEach(g => map[g.key] = []);
@@ -259,7 +260,7 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
 
       {/* View: Mapa */}
       {view==="mapa" && (
-        <FreightsOverviewMap freights={filtered} onSelect={(id)=>onNav("detail",id)} fields={catalog?.fields} plants={catalog?.plants} />
+        <Suspense fallback={<SkeletonList count={3}/>}><FreightsOverviewMap freights={filtered} onSelect={(id)=>onNav("detail",id)} fields={catalog?.fields} plants={catalog?.plants} /></Suspense>
       )}
 
       {/* View: Tabla */}

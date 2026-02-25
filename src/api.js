@@ -116,8 +116,8 @@ export default async function api(path, opts={}) {
       res = await doFetch(); // Retry with new token
     }
     if (res.status===401) {
-      clearAuth();
-      if(_onAuthFail) _onAuthFail();
+      // Only force logout if online — offline failures should not clear session
+      if (navigator.onLine) { clearAuth(); if(_onAuthFail) _onAuthFail(); }
       throw new ApiError(401,{message:'Sesión expirada'});
     }
   }
@@ -387,6 +387,12 @@ export async function uploadPhoto(file, freightId, step) {
   }
 
   return `${SUPABASE_URL}/storage/v1/object/public/${STORAGE_BUCKET}/${path}`;
+}
+
+// Supabase Image Transform — returns thumbnail URL for storage images
+export function thumb(url, size = 96) {
+  if (!url || !url.includes('/storage/v1/object/public/')) return url;
+  return url.replace('/storage/v1/object/public/', `/storage/v1/render/image/public/`) + `?width=${size}&height=${size}&resize=cover`;
 }
 
 // Chat file upload

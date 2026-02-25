@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { C, Ic, FONT } from "../theme";
 import { Btn, Field, Tabs, Av, Loader, AttachMenu, FileViewer } from "../components";
-import { apiSearchUsers, apiStartConversation, apiListConversations, apiGetMessages, apiSendMessage, apiMarkRead, apiTyping, apiPinConversation, apiToggleMarkUnread, uploadChatFile } from "../api";
+import { apiSearchUsers, apiStartConversation, apiListConversations, apiGetMessages, apiSendMessage, apiMarkRead, apiTyping, apiPinConversation, apiToggleMarkUnread, uploadChatFile, thumb } from "../api";
 import log from "../logger";
 
 // Helper: format relative date
@@ -59,17 +59,13 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
   useEffect(() => {
     if (!sseMsg || !sseMsg.conversationId) return;
     if (activeConv && sseMsg.conversationId === activeConv.id) {
-      // Refresh messages for active conversation
-      apiGetMessages(activeConv.id, {take:50}).then(r => {
-        const fresh = Array.isArray(r) ? r : (r?.messages || []); // Issue #21 fix
+      // Append SSE message directly (avoid reloading 50 messages)
+      if (sseMsg.id) {
         setMessages(prev => {
-          if(prev.length===0) return fresh;
-          // Issue #15 fix: deduplicate by ID instead of position
-          const idSet = new Set(prev.map(m => m.id));
-          const newMsgs = fresh.filter(m => !idSet.has(m.id));
-          return [...prev, ...newMsgs];
+          if (prev.some(m => m.id === sseMsg.id)) return prev;
+          return [...prev, sseMsg];
         });
-      }).catch(()=>{});
+      }
       // Issue #1 fix: removed pollDelayRef.current (undefined in this scope)
     } else {
       // Different conversation — refresh list to update unread badges
@@ -596,7 +592,7 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
                         {fileData ? (
                           fileData.type === "image" ? (
                             <button onClick={()=>setViewFile({url:fileData.url,name:fileData.name,type:"image"})} style={{ background:"none", border:"none", cursor:"pointer", padding:0 }}>
-                              <img src={fileData.url} alt={fileData.name} style={{ maxWidth: 220, maxHeight: 200, borderRadius: 10, display: "block" }} />
+                              <img src={fileData.url} alt={fileData.name} loading="lazy" style={{ maxWidth: 220, maxHeight: 200, borderRadius: 10, display: "block" }} />
                             </button>
                           ) : (
                             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -691,7 +687,7 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
                 {chatFiles.map(f => (
                   <button key={f.id} onClick={()=>setViewFile({url:f.url,name:f.name,type:f.type})} style={{ display: "flex", alignItems: "center", gap: 12, padding: 12, background: C.w, border: `1px solid ${C.b1}`, borderRadius: 10, cursor:"pointer", fontFamily:"inherit", textAlign:"left", boxShadow: C.sh, width:"100%" }}>
                     {f.type === "image" ? (
-                      <img src={f.url} alt="" style={{ width: 48, height: 48, borderRadius: 8, objectFit: "cover", flexShrink: 0 }} />
+                      <img src={thumb(f.url)} alt="" loading="lazy" style={{ width: 48, height: 48, borderRadius: 8, objectFit: "cover", flexShrink: 0 }} />
                     ) : (
                       <div style={{ width: 48, height: 48, borderRadius: 8, background: C.priPale, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{Ic.doc(C.pri, 22)}</div>
                     )}

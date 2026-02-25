@@ -136,7 +136,8 @@ export function Sec({ label, complete, summary, children, isExpanded, onFocus, s
 }
 
 export function Toast({ msg, type="ok", onClose }) {
-  useEffect(()=>{ const t=setTimeout(onClose,3500); return()=>clearTimeout(t); },[onClose]);
+  const onCloseRef = useRef(onClose); onCloseRef.current = onClose;
+  useEffect(()=>{ const t=setTimeout(()=>onCloseRef.current?.(),3500); return()=>clearTimeout(t); },[msg]);
   const cfg = { ok:{bg:C.pri,ic:Ic.chk(C.w,16)}, err:{bg:C.err,ic:Ic.warn(C.w,16)}, info:{bg:C.info,ic:Ic.bell(C.w,16)} }[type]||{bg:C.pri,ic:Ic.chk(C.w,16)};
   return <div style={{ position:"fixed", top:"max(20px, env(safe-area-inset-top))", left:"50%", transform:"translateX(-50%)", zIndex:200, background:cfg.bg, color:C.w, padding:"11px 22px", borderRadius:12, fontSize:13, fontWeight:600, boxShadow:C.shLg, display:"flex", alignItems:"center", gap:8, animation:"fadeIn 0.3s ease", maxWidth:"calc(100vw - 40px)" }}>{cfg.ic} {msg}</div>;
 }
@@ -151,8 +152,8 @@ export function LoadingOverlay({ closing=false, closingText="", onClose }) {
   const [fading, setFading] = useState(false);
   useEffect(() => {
     if (!closing) return;
-    const t1 = setTimeout(() => setFading(true), 1600);
-    const t2 = setTimeout(() => { if (onClose) onClose(); }, 2000);
+    const t1 = setTimeout(() => setFading(true), 200);
+    const t2 = setTimeout(() => { if (onClose) onClose(); }, 500);
     return () => { clearTimeout(t1); clearTimeout(t2); };
   }, [closing]);
   return (
@@ -195,9 +196,9 @@ export function ModalOverlay({ children, onClose, maxWidth=400, loading=false, c
   // Intro stages (logo → text collapse → dot grow → card)
   useEffect(() => {
     if (loading || closing) return;
-    const t1 = setTimeout(() => setStage(1), 500);
-    const t2 = setTimeout(() => setStage(2), 1050);
-    const t3 = setTimeout(() => setStage(3), 1750);
+    const t1 = setTimeout(() => setStage(1), 100);
+    const t2 = setTimeout(() => setStage(2), 200);
+    const t3 = setTimeout(() => setStage(3), 300);
     return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
   }, [loading, closing]);
 
@@ -206,8 +207,8 @@ export function ModalOverlay({ children, onClose, maxWidth=400, loading=false, c
   // Outro: show result circle → hold 0.5s → fade → close
   useEffect(() => {
     if (!closing) return;
-    const t1 = setTimeout(() => setFading(true), 1600);
-    const t2 = setTimeout(() => { if (onClose) onClose(); }, 2000);
+    const t1 = setTimeout(() => setFading(true), 200);
+    const t2 = setTimeout(() => { if (onClose) onClose(); }, 500);
     return () => { clearTimeout(t1); clearTimeout(t2); };
   }, [closing]);
 
@@ -584,7 +585,7 @@ export function FileViewer({ file, onClose }) {
         {/* Content */}
         <div style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", overflow:"auto", padding:12, minHeight:200 }}>
           {isImg ? (
-            <img src={file.url} alt={file.name||""} style={{ maxWidth:"100%", maxHeight:"75vh", objectFit:"contain", borderRadius:6 }} />
+            <img src={file.url} alt={file.name||""} loading="lazy" style={{ maxWidth:"100%", maxHeight:"75vh", objectFit:"contain", borderRadius:6 }} />
           ) : isPdf ? (
             <iframe src={file.url} title={file.name||"PDF"} sandbox="allow-same-origin" style={{ width:"100%", height:"75vh", border:"none", borderRadius:6, background:"#fff" }} />
           ) : (

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { uploadPhoto, apiAddDocument, apiDeleteDocument } from "./api";
+import { uploadPhoto, apiAddDocument, apiDeleteDocument, thumb } from "./api";
 import { C, Ic } from "./theme";
 import { AttachMenu, Btn } from "./components";
 import { useUIStore } from "./store";
@@ -96,7 +96,7 @@ export function DocsGallery({ documents, onViewFile, freightId, canDelete, onDel
               <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 8, background: C.bg, border: `1px solid ${C.b2}`, borderRadius: 8, width:"100%" }}>
                 <button onClick={()=>onViewFile?onViewFile({url:d.url,name:d.name||"Archivo",type:d.type}):null} style={{ display: "flex", alignItems: "center", gap: 10, flex:1, minWidth:0, background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", textAlign:"left", padding:0 }}>
                   {isImg ? (
-                    <img src={d.url} alt={d.name} style={{ width: 48, height: 48, borderRadius: 6, objectFit: "cover", flexShrink: 0 }} onError={e => { e.target.style.display = "none"; }} />
+                    <img src={thumb(d.url)} alt={d.name} loading="lazy" style={{ width: 48, height: 48, borderRadius: 6, objectFit: "cover", flexShrink: 0 }} onError={e => { e.target.style.display = "none"; }} />
                   ) : (
                     <div style={{ width: 48, height: 48, borderRadius: 6, background: C.priPale, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{Ic.doc(C.pri, 20)}</div>
                   )}
@@ -257,7 +257,7 @@ export function FreightFileUpload({ freightId, step, onUploaded }) {
           {files.map((f, i) => (
             <div key={i} style={{ position: "relative", width: 72, height: 72, borderRadius: 10, overflow: "hidden", border: `1px solid ${f.done ? C.ok : f.error ? C.err : C.b1}` }}>
               {f.preview ? (
-                <img src={f.preview} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                <img src={f.preview} alt="" loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
               ) : (
                 <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: C.bg, padding: 4 }}>
                   {Ic.doc(C.pri, 20)}

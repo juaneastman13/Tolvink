@@ -4,7 +4,7 @@ import { stCfg } from "../constants";
 import { Bd, Btn, Field, Select, exportExcel, exportPDF, FileViewer } from "../components";
 import { DocsGallery } from "../uploads";
 import log from "../logger";
-import { apiGetAuditLog } from "../api";
+import { apiGetAuditLog, thumb } from "../api";
 const loadPdfReport = () => import("../utils/pdf-report");
 
 export default function ReportsScreen({ onBack, freights, isDesktop, embedded }) {
@@ -170,7 +170,7 @@ export default function ReportsScreen({ onBack, freights, isDesktop, embedded })
                       <div key={d.id||i} style={{ display:"flex", alignItems:"center", gap:10, padding:"8px 0", borderBottom:i<docs.length-1?`1px solid ${C.b2}`:"none" }}>
                         {d.type==="photo" ? (
                           <button onClick={()=>setViewFile({url:d.url,name:d.name||"Foto",type:"photo"})} style={{ width:48, height:48, borderRadius:8, overflow:"hidden", flexShrink:0, border:`1px solid ${C.b1}`, padding:0, background:"none", cursor:"pointer" }}>
-                            <img src={d.url} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }}/>
+                            <img src={thumb(d.url)} alt="" loading="lazy" style={{ width:"100%", height:"100%", objectFit:"cover" }}/>
                           </button>
                         ) : (
                           <div style={{ width:48, height:48, borderRadius:8, background:C.secPale, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>

@@ -18,7 +18,9 @@ const CATALOG_TTL = 5 * 60 * 1000; // 5 min
 const _loadingPromises = {}; // Singleton: prevent concurrent requests for same user
 
 export function useCatalog(user) {
-  const { getCache, setCache, setLoading } = useCatalogStore();
+  const getCache = useCatalogStore(s => s.getCache);
+  const setCache = useCatalogStore(s => s.setCache);
+  const setLoading = useCatalogStore(s => s.setLoading);
   // Cache key includes activeCompanyId so switching company invalidates cache
   const cacheKey = user ? `${user.id}:${user.activeCompanyId || user.companyId || ''}` : null;
   const cached = cacheKey ? getCache(cacheKey) : null;
@@ -83,7 +85,7 @@ export function useCatalog(user) {
 
   useEffect(()=>{ load(); },[load]);
 
-  const refresh = useCallback(()=>{ load(true); },[load]);
+  const refresh = useCallback((force = true)=>{ load(force); },[load]);
 
   return { plants, branches, lots, fields, transporters, trucks, loading, refresh };
 }
@@ -297,13 +299,25 @@ export function useFreights(user, isAuthInitialized, companyOverride) {
       const m=mapFreight(c); setFreights(p=>[m,...p]); setTotal(t=>t+1); return {ok:true, freightId:c.id}; } catch(e) { return {ok:false,error:e.message}; }
   },[]);
   const assign = useCallback(async (fId,compId,truckId,driverId)=>{ try { const body={transportCompanyId:compId}; if(truckId) body.truckId=truckId; if(driverId) body.driverId=driverId; await apiAssignFreight(fId,body); await refresh(fId); return {ok:true}; } catch(e) { return {ok:false,error:e.message}; } },[refresh]);
-  const respond = useCallback(async (fId,action,reason,truckId,driverId)=>{ try { await apiRespondFreight(fId,{action,reason,truckId,driverId}); await refresh(fId); return {ok:true}; } catch(e) { return {ok:false,error:e.message}; } },[refresh]);
-  const start = useCallback(async (fId)=>{ try { await apiStartFreight(fId); await refresh(fId); return {ok:true}; } catch(e) { return {ok:false,error:e.message}; } },[refresh]);
+  const respond = useCallback(async (fId,action,reason,truckId,driverId)=>{
+    if(action==="accepted") setFreights(p=>p.map(f=>f.id===fId?{...f,status:"accepted"}:f));
+    try { await apiRespondFreight(fId,{action,reason,truckId,driverId}); await refresh(fId); return {ok:true}; }
+    catch(e) { refresh(fId); return {ok:false,error:e.message}; }
+  },[refresh]);
+  const start = useCallback(async (fId)=>{
+    setFreights(p=>p.map(f=>f.id===fId?{...f,status:"in_progress"}:f));
+    try { await apiStartFreight(fId); await refresh(fId); return {ok:true}; }
+    catch(e) { refresh(fId); return {ok:false,error:e.message}; }
+  },[refresh]);
   const finish = useCallback(async (fId)=>{ try { await apiFinishFreight(fId); await refresh(fId); return {ok:true}; } catch(e) { return {ok:false,error:e.message}; } },[refresh]);
   const cancel = useCallback(async (fId,reason)=>{ try { await apiCancelFreight(fId,reason); await refresh(fId); return {ok:true}; } catch(e) { return {ok:false,error:e.message}; } },[refresh]);
   const confirmLoaded = useCallback(async (fId, loadedTons)=>{ try { await apiConfirmLoaded(fId, loadedTons); await refresh(fId); return {ok:true}; } catch(e) { return {ok:false,error:e.message}; } },[refresh]);
   const confirmFinished = useCallback(async (fId)=>{ try { await apiConfirmFinished(fId); await refresh(fId); return {ok:true}; } catch(e) { return {ok:false,error:e.message}; } },[refresh]);
-  const authorize = useCallback(async (fId)=>{ try { await apiAuthorizeFreight(fId); await refresh(fId); return {ok:true}; } catch(e) { return {ok:false,error:e.message}; } },[refresh]);
+  const authorize = useCallback(async (fId)=>{
+    setFreights(p=>p.map(f=>f.id===fId?{...f,status:"accepted"}:f));
+    try { await apiAuthorizeFreight(fId); await refresh(fId); return {ok:true}; }
+    catch(e) { refresh(fId); return {ok:false,error:e.message}; }
+  },[refresh]);
   const update = useCallback(async (fId, data)=>{ try { await apiUpdateFreight(fId, data); await refresh(fId); return {ok:true}; } catch(e) { return {ok:false,error:e.message}; } },[refresh]);
   // Multi-truck callbacks (v6.0)
   const assignMulti = useCallback(async (fId, trucks)=>{ try { await apiAssignMultiTruck(fId, trucks); await refresh(fId); return {ok:true}; } catch(e) { return {ok:false,error:e.message}; } },[refresh]);
@@ -665,16 +679,11 @@ export function useSSE(user, { onFreightUpdate, onMessageNew, onNotification, on
         esRef.current = null;
 
         failureCount.current += 1;
-        log.warn('SSE', `Connection failed (${failureCount.current}/${MAX_CONSECUTIVE_FAILURES})`);
+        log.warn('SSE', `Connection failed (${failureCount.current})`);
 
-        // If too many consecutive failures, stop retrying (don't force logout — may be transient network issue)
-        if (failureCount.current >= MAX_CONSECUTIVE_FAILURES) {
-          log.warn('SSE', 'Max consecutive failures reached. Stopping reconnection. Will retry on next navigation.');
-          return;
-        }
-
+        // Always retry with exponential backoff capped at 2 minutes (resilient for rural connectivity)
         reconnectTimer.current = setTimeout(connect, reconnectDelay.current);
-        reconnectDelay.current = Math.min(reconnectDelay.current * 2, 60000);
+        reconnectDelay.current = Math.min(reconnectDelay.current * 2, 120000);
       };
     };
 
@@ -697,6 +706,10 @@ export function usePullToRefresh(onRefresh) {
   const [refreshing, setRefreshing] = useState(false);
   const startY = useRef(0);
   const pullDist = useRef(0);
+  const pullingRef = useRef(false);
+  const refreshingRef = useRef(false);
+  const onRefreshRef = useRef(onRefresh);
+  onRefreshRef.current = onRefresh;
 
   useEffect(() => {
     const el = containerRef.current;
@@ -707,23 +720,24 @@ export function usePullToRefresh(onRefresh) {
       else startY.current = 0;
     };
     const onTouchMove = (e) => {
-      if (!startY.current || refreshing) return;
+      if (!startY.current || refreshingRef.current) return;
       const diff = e.touches[0].clientY - startY.current;
       if (diff > 10 && el.scrollTop <= 0) {
         pullDist.current = Math.min(diff, 100);
-        setPulling(pullDist.current > 50);
+        const isPulling = pullDist.current > 50;
+        if (isPulling !== pullingRef.current) { pullingRef.current = isPulling; setPulling(isPulling); }
       }
     };
     const onTouchEnd = async () => {
-      if (pulling && !refreshing) {
-        setRefreshing(true);
-        setPulling(false);
-        try { await onRefresh(); } catch {}
-        setRefreshing(false);
+      if (pullingRef.current && !refreshingRef.current) {
+        refreshingRef.current = true; setRefreshing(true);
+        pullingRef.current = false; setPulling(false);
+        try { await onRefreshRef.current(); } catch {}
+        refreshingRef.current = false; setRefreshing(false);
       }
       startY.current = 0;
       pullDist.current = 0;
-      setPulling(false);
+      pullingRef.current = false; setPulling(false);
     };
 
     el.addEventListener("touchstart", onTouchStart, { passive: true });
@@ -734,7 +748,7 @@ export function usePullToRefresh(onRefresh) {
       el.removeEventListener("touchmove", onTouchMove);
       el.removeEventListener("touchend", onTouchEnd);
     };
-  }, [onRefresh, pulling, refreshing]);
+  }, []);
 
   const indicator = (refreshing || pulling) ? (
     <div style={{ textAlign: "center", padding: "8px 0", fontSize: 11, fontWeight: 600, color: refreshing ? C.pri : C.t3 }}>

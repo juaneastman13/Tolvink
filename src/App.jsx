@@ -6,6 +6,7 @@ import { POLL_INTERVALS } from "./constants";
 import { Toast, LoadingOverlay, Sidebar, Nav, NotifBell, NotificationsPanel, ErrorBoundary, SkeletonList, PwaInstallCard, EmptyState } from "./components";
 import { useAuth, useCatalog, useFreights, permsFor, useIsDesktop, useOnline, useNotifications, useSSE, useInstallPrompt } from "./hooks";
 import { RoutesBackground } from "./routes-bg";
+import "./app.css";
 
 // Lazy load heavy map components
 const MapOverlay = lazy(() => import("./maps").then(m => ({ default: m.MapOverlay })));
@@ -193,11 +194,11 @@ export default function Tolvink() {
     return ()=>clearInterval(iv);
   },[auth.user, screen]);
 
-  // Poll for unread chats
+  // Poll for unread chats — skip if SSE is connected (SSE handles real-time updates)
   useEffect(()=>{
     if(!auth.user) return;
     const checkUnread = async ()=>{
-      if (document.hidden || !navigator.onLine) return;
+      if (document.hidden || !navigator.onLine || sse.connected) return;
       try {
         const convs = await apiListConversations();
         const count = (convs||[]).filter(c => c.unread).length;
@@ -207,16 +208,16 @@ export default function Tolvink() {
     checkUnread();
     const iv = setInterval(checkUnread, POLL_INTERVALS.UNREAD_CHATS);
     return ()=>clearInterval(iv);
-  },[auth.user]);
+  },[auth.user, sse.connected]);
 
-  // Visibility refresh — immediate refetch when user returns to tab
+  // Visibility refresh — immediate refetch when user returns to tab (catalog only if TTL expired)
   useEffect(()=>{
     if(!auth.user) return;
     const onVisible = () => {
       if (document.hidden || !navigator.onLine) return;
       fh.fetchAll();
       notif.refresh();
-      catalog.refresh();
+      catalog.refresh(false); // false = respect TTL, don't force
     };
     document.addEventListener("visibilitychange", onVisible);
     window.addEventListener("focus", onVisible);
@@ -383,14 +384,14 @@ export default function Tolvink() {
     const r = await fh.create(form);
     let photoFailCount = 0;
     if(r.ok && r.freightId && form.photos?.length > 0) {
-      for(const photoUrl of form.photos) {
-        try {
-          const blob = await fetch(photoUrl).then(r=>r.blob());
-          const file = new File([blob], `foto-${Date.now()}.jpg`, {type:'image/jpeg'});
-          const url = await uploadPhoto(file, r.freightId, 'request');
-          await apiAddDocument(r.freightId, { name: file.name, url, type:'photo', step:'request' });
-        } catch(e) { log.error('FREIGHT', 'Photo upload failed:', e); photoFailCount++; }
-      }
+      const results = await Promise.allSettled(form.photos.map(async (photoUrl, i) => {
+        const blob = await fetch(photoUrl).then(r=>r.blob());
+        const file = new File([blob], `foto-${Date.now()}-${i}.jpg`, {type:'image/jpeg'});
+        const url = await uploadPhoto(file, r.freightId, 'request');
+        await apiAddDocument(r.freightId, { name: file.name, url, type:'photo', step:'request' });
+      }));
+      photoFailCount = results.filter(r => r.status === 'rejected').length;
+      results.filter(r => r.status === 'rejected').forEach(r => log.error('FREIGHT', 'Photo upload failed:', r.reason));
     }
     setSubmitting(false);
     if(r.ok){
@@ -406,7 +407,7 @@ export default function Tolvink() {
   // Show loading splash only during initial auth check
   if (!auth.isInitialized) {
     return <div style={{minHeight:"100dvh",background:C.bg,fontFamily:"'DM Sans',system-ui,-apple-system,sans-serif",display:"flex",alignItems:"center",justifyContent:"center"}}>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,800&display=swap');@keyframes splashIn{0%{opacity:0;transform:scale(0.7)}50%{opacity:1;transform:scale(1.05)}100%{opacity:1;transform:scale(1)}}@keyframes dotPulse{0%,100%{opacity:0.3;transform:scale(0.8)}50%{opacity:1;transform:scale(1.2)}}*{margin:0;padding:0;box-sizing:border-box}html,body,#root{background:${C.bg};margin:0;height:auto!important;overflow:visible!important}`}</style>
+      <style>{`@keyframes splashIn{0%{opacity:0;transform:scale(0.7)}50%{opacity:1;transform:scale(1.05)}100%{opacity:1;transform:scale(1)}}@keyframes dotPulse{0%,100%{opacity:0.3;transform:scale(0.8)}50%{opacity:1;transform:scale(1.2)}}*{margin:0;padding:0;box-sizing:border-box}html,body,#root{background:${C.bg};margin:0;height:auto!important;overflow:visible!important}`}</style>
       <div style={{textAlign:"center",animation:"splashIn 0.8s ease-out forwards"}}>
         <span style={{fontSize:83,fontWeight:800,color:C.pri,letterSpacing:-3.5,display:"inline-block"}}>tolvink</span>
         <span style={{width:16,height:16,borderRadius:8,background:C.acc,display:"inline-block",marginLeft:5,marginTop:-34,verticalAlign:"top",animation:"dotPulse 1.5s ease-in-out infinite"}}></span>
@@ -463,7 +464,7 @@ export default function Tolvink() {
 
   return (
     <div className="tv-shell" style={{height:"100dvh",background:C.bg,color:C.t1,fontFamily:FONT,display:"flex",flexDirection:isDesktop?"row":"column",width:"100%",position:"relative",overflow:"hidden"}}>
-      <style>{`*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}html,body{height:100%;margin:0;overflow-x:hidden;max-width:100vw}body{background:${C.bg};overflow-y:hidden;overscroll-behavior:none}input,textarea,select,button{font-size:16px}input::placeholder,textarea::placeholder{color:${C.t3}}::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:${C.b1};border-radius:4px}@keyframes ti{0%,100%{opacity:1}50%{opacity:.4}}@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}@keyframes cardIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}@keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}@keyframes dotPulse{0%,100%{opacity:0.3;transform:scale(0.8)}50%{opacity:1;transform:scale(1.2)}}@keyframes pageIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}.tv-page{animation:pageIn 0.25s ease-out}.tv-card{transition:transform 0.15s ease,box-shadow 0.15s ease}.tv-row{transition:background 0.1s ease}@media(hover:hover){.tv-card:hover{transform:translateY(-2px);box-shadow:${C.shMd}!important}.tv-row:hover{background:${C.priGhost}!important}}@media(min-width:640px){.tv-grid{display:grid!important;grid-template-columns:1fr 1fr!important;gap:12px!important}.tv-grid3{display:grid!important;grid-template-columns:1fr 1fr 1fr!important;gap:12px!important}.tv-pad{padding:24px 32px!important}.tv-detail-grid{display:grid!important;grid-template-columns:1fr 1fr!important;gap:16px!important}.tv-table th,.tv-table td{padding:10px 12px!important;font-size:12px!important}.tv-stats{gap:12px!important}.tv-stats>div{padding:14px 12px!important;border-radius:12px!important}.tv-stats .tv-stat-num{font-size:28px!important}.tv-header-bar{padding:10px 32px 0 32px!important}}@media(min-width:768px){.tv-mobile-header{display:none!important}.tv-mobile-nav{display:none!important}.tv-kanban{flex-direction:row!important;gap:12px!important}.tv-kanban-col{max-height:calc(100vh - 280px)!important;overflow-y:auto!important}}@media(max-width:767px){.tv-sidebar{display:none!important}.tv-shell{max-width:100vw!important;width:100%!important}}@media(min-width:900px){.tv-grid{grid-template-columns:1fr 1fr 1fr!important}}@media(min-width:1100px){.tv-grid{grid-template-columns:repeat(4,1fr)!important}}`}</style>
+      <style>{`body{background:${C.bg}}input::placeholder,textarea::placeholder{color:${C.t3}}::-webkit-scrollbar-thumb{background:${C.b1}}@media(hover:hover){.tv-card:hover{box-shadow:${C.shMd}!important}.tv-row:hover{background:${C.priGhost}!important}}`}</style>
 
       <RoutesBackground trucks={false} opacityMul={0.4} centerFade={false} />
 

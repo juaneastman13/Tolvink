@@ -1,10 +1,12 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, lazy, Suspense } from "react";
 import { C, Ic, track } from "../theme";
 import { V, validate, SCHEMAS, textMatch, FieldError } from "../validation";
 import { stCfg, GRANOS, UNITS } from "../constants";
 import { Btn, Field, Select, Sec, AttachMenu } from "../components";
 import log from "../logger";
-import { LocationPicker, SafeZone, FreightMap } from "../maps";
+const LocationPicker = lazy(() => import("../maps").then(m => ({ default: m.LocationPicker })));
+const SafeZone = lazy(() => import("../maps").then(m => ({ default: m.SafeZone })));
+const FreightMap = lazy(() => import("../maps").then(m => ({ default: m.FreightMap })));
 import { uploadPhoto, apiAddDocument, apiGetFieldLots, apiCreateLot } from "../api";
 import { useIsDesktop } from "../hooks";
 
@@ -225,6 +227,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
   };
 
   return (
+    <Suspense fallback={<div style={{padding:40,textAlign:"center",color:C.t3}}>Cargando...</div>}>
     <div style={{ flex:1, overflow:"auto", animation:"slideUp 0.25s ease" }}>
       <div style={{ position:"sticky", top:0, zIndex:10, background:C.bg, padding:"18px 18px 8px" }}>
         <button onClick={onBack} style={{ background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", fontSize:13, fontWeight:600, color:C.pri, marginBottom:14, padding:0, display:"flex", alignItems:"center", gap:4 }}>{Ic.chev(C.pri,18)} Volver</button>
@@ -488,7 +491,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
               <div style={{ display:"flex", gap:8, flexWrap:"wrap", marginBottom:8 }}>
                 {photos.map((p,i)=>(
                   <div key={i} style={{ position:"relative", width:72, height:72, borderRadius:10, overflow:"hidden", border:`1px solid ${C.b1}` }}>
-                    {p.preview ? <img src={p.preview} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }}/> : <div style={{ width:"100%", height:"100%", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", background:C.bg, padding:4 }}>{Ic.doc(C.pri,18)}<span style={{fontSize:7,color:C.t3,textAlign:"center",marginTop:2,wordBreak:"break-all"}}>{(p.name||"").slice(-12)}</span></div>}
+                    {p.preview ? <img src={p.preview} alt="" loading="lazy" style={{ width:"100%", height:"100%", objectFit:"cover" }}/> : <div style={{ width:"100%", height:"100%", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", background:C.bg, padding:4 }}>{Ic.doc(C.pri,18)}<span style={{fontSize:7,color:C.t3,textAlign:"center",marginTop:2,wordBreak:"break-all"}}>{(p.name||"").slice(-12)}</span></div>}
                     <button onClick={()=>removePhoto(i)} aria-label="Eliminar foto" style={{ position:"absolute", top:2, right:2, width:20, height:20, borderRadius:10, background:C.err, border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>{Ic.cross(C.w,12)}</button>
                   </div>
                 ))}
@@ -511,5 +514,6 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
       </div>
       </div>
     </div>
+    </Suspense>
   );
 }

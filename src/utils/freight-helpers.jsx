@@ -127,6 +127,32 @@ export function getPendingActions(freight, userType, role, user) {
   return null;
 }
 
+// ======================== WAITING ON (CROSS-CONFIRMATION) ===============
+export function getWaitingOnText(freight, userType) {
+  const s = freight.status;
+  const own = freight.isOwnFleet;
+  if (userType === "plant") {
+    if (s === "assigned" && !own) return "Esperando transporte";
+    if (s === "accepted") return own ? "Esperando inicio" : "Esperando inicio transporte";
+    if (s === "in_progress") return "En tránsito";
+    return null;
+  }
+  if (userType === "transporter" || userType === "chofer") {
+    if (s === "assigned" && own) return "Esperando autorización planta";
+    if (s === "in_progress" && freight.transporterLoadedConfirmedAt && !freight.producerLoadedConfirmedAt) return "Esperando confirmación productor";
+    if (s === "loaded" && freight.transporterFinishedConfirmedAt) return "Esperando confirmación planta";
+    return null;
+  }
+  if (userType === "producer") {
+    if (s === "pending_assignment") return "Esperando asignación planta";
+    if (s === "assigned") return own ? "Esperando autorización planta" : "Esperando transporte";
+    if (s === "accepted") return "Esperando inicio";
+    if (s === "in_progress") return "En tránsito";
+    return null;
+  }
+  return null;
+}
+
 // ======================== NOTIFICATION HELPERS =========================
 export const NOTIF_ICONS = {
   freight_created: (s) => Ic.truck(C.pri, s),

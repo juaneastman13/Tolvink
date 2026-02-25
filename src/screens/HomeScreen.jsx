@@ -3,8 +3,18 @@ import { C, Ic, MONO } from "../theme";
 import { stCfg, getActions } from "../constants";
 import { Bd, Btn, SkeletonList, EmptyState } from "../components";
 import { useIsDesktop } from "../hooks";
-import { getPendingActions, resolveUserTypeForFreight } from "../utils/freight-helpers";
+import { getPendingActions, resolveUserTypeForFreight, getWaitingOnText } from "../utils/freight-helpers";
 import DetailScreen from "./DetailScreen";
+
+// Summary groups — by freight type/status, filtered by date. Priority: pending confirmation → active → rest
+const STATUS_GROUPS = [
+  { key:"own_fleet_pending",   label:"Esperando confirmación de planta", icon:Ic.warn,  color:"#CA8A04", filter:(f) => f.status === "assigned" && f.isOwnFleet },
+  { key:"in_progress",         label:"En curso",                         icon:Ic.nav,   color:"#4ADE80", filter:(f) => f.status === "in_progress" },
+  { key:"loaded",              label:"Cargando",                         icon:Ic.plant, color:"#22C55E", filter:(f) => f.status === "loaded" },
+  { key:"own_fleet_confirmed", label:"Flota propia confirmada",          icon:Ic.chk,   color:"#2563EB", filter:(f) => f.status === "accepted" && f.isOwnFleet },
+  { key:"external_assigned",   label:"Transporte asignado",              icon:Ic.truck, color:"#0891B2", filter:(f) => (f.status === "assigned" || f.status === "accepted") && !f.isOwnFleet },
+  { key:"pending_assignment",  label:"Solicitado",                       icon:Ic.warn,  color:"#FF6A00", filter:(f) => f.status === "pending_assignment" },
+];
 
 export default function HomeScreen({ user, freights, loading, perms, onNav, catalog, isDesktop, onAction, onTripAction, onEditTrip, actionLoading, onChat, onRefresh, onDuplicate, onEdit, goToMap, pwa }) {
   const [selectedId, setSelectedId] = useState(null);
@@ -98,11 +108,18 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
   // Helper: resolve effective userType per freight for multi-type users
   const effectiveType = useCallback((f) => resolveUserTypeForFreight(f, user), [user]);
 
+  // I4: Compute pending actions ONCE per freight, reuse everywhere
+  const pendingMap = useMemo(() => {
+    const map = new Map();
+    filteredFreights.forEach(f => { map.set(f.id, getPendingActions(f, effectiveType(f), user.role, user)); });
+    return map;
+  }, [filteredFreights, effectiveType, user]);
+
   // Pending groups — grouped by ACTION type, filtered by date
   const pendingByAction = useMemo(() => {
     const buckets = {};
     filteredFreights.forEach(f => {
-      const pa = getPendingActions(f, effectiveType(f), user.role, user);
+      const pa = pendingMap.get(f.id);
       if (!pa) return;
       if (!matchDate(f.loadDate, pendingFilter)) return;
       const bk = pa.groupKey || pa.actionKey;
@@ -114,33 +131,26 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
       ...b,
       items: [...b.items].sort((a, b2) => a.loadDate && b2.loadDate ? a.loadDate.localeCompare(b2.loadDate) : 0),
     }));
-  }, [filteredFreights, effectiveType, pendingFilter]);
+  }, [filteredFreights, pendingMap, pendingFilter]);
   const pendingCount = pendingByAction.reduce((s, g) => s + g.items.length, 0);
   const hasPending = pendingCount > 0;
 
   // Total pending (unfiltered) to know if section should show
-  const totalPendingAll = useMemo(() =>
-    filteredFreights.filter(f => getPendingActions(f, effectiveType(f), user.role, user)).length
-  , [filteredFreights, effectiveType]);
+  const totalPendingAll = useMemo(() => {
+    let count = 0;
+    for (const pa of pendingMap.values()) { if (pa) count++; }
+    return count;
+  }, [pendingMap]);
 
-  // Summary groups — by freight type/status, filtered by date. Priority: pending confirmation → active → rest
-  const STATUS_GROUPS = [
-    { key:"own_fleet_pending",   label:"Esperando confirmación de planta", icon:Ic.warn,  color:"#CA8A04", filter:(f) => f.status === "assigned" && f.isOwnFleet },
-    { key:"in_progress",         label:"En curso",                         icon:Ic.nav,   color:"#4ADE80", filter:(f) => f.status === "in_progress" },
-    { key:"loaded",              label:"Cargando",                         icon:Ic.plant, color:"#22C55E", filter:(f) => f.status === "loaded" },
-    { key:"own_fleet_confirmed", label:"Flota propia confirmada",          icon:Ic.chk,   color:"#2563EB", filter:(f) => f.status === "accepted" && f.isOwnFleet },
-    { key:"external_assigned",   label:"Transporte asignado",              icon:Ic.truck, color:"#0891B2", filter:(f) => (f.status === "assigned" || f.status === "accepted") && !f.isOwnFleet },
-    { key:"pending_assignment",  label:"Solicitado",                       icon:Ic.warn,  color:"#FF6A00", filter:(f) => f.status === "pending_assignment" },
-  ];
   const activeFreights = useMemo(() => filteredFreights.filter(f => f.status !== "finished" && f.status !== "canceled"), [filteredFreights]);
   const summaryGroups = useMemo(() => {
     return STATUS_GROUPS.map(g => {
       const items = activeFreights
-        .filter(f => g.filter(f) && !getPendingActions(f, effectiveType(f), user.role, user) && matchDate(f.loadDate, summaryFilter))
+        .filter(f => g.filter(f) && !pendingMap.get(f.id) && matchDate(f.loadDate, summaryFilter))
         .sort((a, b) => a.loadDate && b.loadDate ? a.loadDate.localeCompare(b.loadDate) : 0);
       return { ...g, items };
     }).filter(g => g.items.length > 0);
-  }, [activeFreights, effectiveType, summaryFilter]);
+  }, [activeFreights, pendingMap, summaryFilter]);
 
   // Collapsed state
   const [collapsed, setCollapsed] = useState({});
@@ -186,6 +196,7 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
           {f.transporterName&&<div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.truck(C.t3,12)} <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.transporterName}{f.truckPlate?` (${f.truckPlate})`:""}</span></div>}
           <div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.plant(C.t3,12)} <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.destName}</span>{f.destLat&&f.destLng&&<span onClick={(e)=>{e.stopPropagation();goToMap(f.destLat,f.destLng,f.destName);}} style={{cursor:"pointer",opacity:0.6,marginLeft:3,fontSize:10,flexShrink:0}} title="Ver en mapa">{"\uD83D\uDCCD"}</span>}</div>
         </div>
+        {!pa && (() => { const wt = getWaitingOnText(f, effectiveType(f)); return wt ? <div style={{marginTop:4,fontSize:9.5,color:C.t3,fontStyle:"italic"}}>{wt}</div> : null; })()}
       </div>
     );
   };
@@ -204,7 +215,7 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
         </button>
         {isOpen && (
           <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: "8px 0 4px 16px", borderLeft: `2px solid ${group.color}30` }}>
-            {group.items.map(f => renderCard(f, getPendingActions(f, effectiveType(f), user.role, user)))}
+            {group.items.map(f => renderCard(f, pendingMap.get(f.id)))}
           </div>
         )}
       </div>
