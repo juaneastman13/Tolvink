@@ -455,12 +455,6 @@ export function FreightMap({ freightId, originLat, originLng, destLat, destLng, 
     </div>
   );
 
-  const gmapsUrl = hasCoords
-    ? `https://www.google.com/maps/dir/?api=1&origin=${originLat},${originLng}&destination=${destLat},${destLng}&travelmode=driving`
-    : hasOrigin
-      ? `https://www.google.com/maps/?q=${originLat},${originLng}`
-      : `https://www.google.com/maps/?q=${destLat},${destLng}`;
-
   return (
     <div style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: 12, overflow: "hidden", boxShadow: C.sh, display:"flex", flexDirection:"column", height:"100%" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 6, padding:"10px 14px", flexShrink:0 }}>
@@ -471,12 +465,9 @@ export function FreightMap({ freightId, originLat, originLng, destLat, destLng, 
             {routeInfo.distance} · {routeInfo.duration}
           </span>
         )}
-        <button onClick={()=>window.open(gmapsUrl,"_blank","noopener")} style={{ marginLeft:"auto", padding:"4px 10px", borderRadius:8, border:`1px solid ${C.b1}`, background:C.w, cursor:"pointer", display:"flex", alignItems:"center", gap:4, fontSize:10, fontWeight:600, color:C.pri, fontFamily:"inherit", WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
-          {Ic.nav(C.pri,11)} Abrir en Google Maps
+        <button onClick={()=>goToMap(hasOrigin?originLat:(destLat),hasOrigin?originLng:(destLng),hasOrigin?originName:(destName),hasCoords?destLat:undefined,hasCoords?destLng:undefined,hasCoords?destName:undefined)} style={{ marginLeft:"auto", padding:"4px 10px", borderRadius:8, border:`1px solid ${C.b1}`, background:C.w, cursor:"pointer", display:"flex", alignItems:"center", gap:4, fontSize:10, fontWeight:600, color:C.pri, fontFamily:"inherit", WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
+          {Ic.expand(C.pri,11)} Ver mapa
         </button>
-        {hasCoords && <button onClick={()=>goToMap(originLat,originLng,originName,destLat,destLng,destName)} style={{ padding:6, borderRadius:8, border:`1px solid ${C.b1}`, background:C.w, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
-          {Ic.expand(C.t1,16)}
-        </button>}
       </div>
       {error ? (
         <div style={{ padding: 20, textAlign: "center", fontSize: 12, color: C.t3 }}>{error}</div>
@@ -712,11 +703,9 @@ export function FreightsOverviewMap({ freights, onSelect, fields, plants }) {
 
 export function MapOverlay({ lat, lng, label, destLat, destLng, destLabel, onClose }) {
   const mapRef = useRef(null);
-  const mkInfoContent = (name, lt, ln, isOrigin) => {
-    const dirUrl = isOrigin && destLat && destLng
-      ? `https://www.google.com/maps/dir/?api=1&origin=${lt},${ln}&destination=${destLat},${destLng}&travelmode=driving`
-      : `https://www.google.com/maps/dir/?api=1&destination=${lt},${ln}&travelmode=driving`;
-    return `<div style="font-family:sans-serif;padding:4px 2px"><div style="font-weight:700;font-size:13px;color:#1a1a1a">${_esc(name)||"Ubicación"}</div><div style="font-size:11px;color:#888;margin-top:3px">${Number(lt).toFixed(5)}, ${Number(ln).toFixed(5)}</div><a href="${dirUrl}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:4px;margin-top:6px;padding:5px 10px;background:#1A6B37;color:#fff;border-radius:6px;font-size:11px;font-weight:700;text-decoration:none">▶ Cómo llegar</a></div>`;
+  const mkInfoContent = (name, lt, ln) => {
+    const navUrl = `geo:${lt},${ln}?q=${lt},${ln}`;
+    return `<div style="font-family:sans-serif;padding:4px 2px"><div style="font-weight:700;font-size:13px;color:#1a1a1a">${_esc(name)||"Ubicación"}</div><div style="font-size:11px;color:#888;margin-top:3px">${Number(lt).toFixed(5)}, ${Number(ln).toFixed(5)}</div><a href="${navUrl}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:4px;margin-top:6px;padding:5px 10px;background:#1A6B37;color:#fff;border-radius:6px;font-size:11px;font-weight:700;text-decoration:none">▶ Navegar</a></div>`;
   };
   useEffect(() => {
     if (!mapRef.current || !lat || !lng) return;
@@ -732,14 +721,14 @@ export function MapOverlay({ lat, lng, label, destLat, destLng, destLabel, onClo
       });
       const marker = new maps.Marker({ position: pos, map, animation: maps.Animation.DROP,
         icon: { path: maps.SymbolPath.CIRCLE, scale: 12, fillColor: C.pri, fillOpacity: 0.8, strokeColor: "#fff", strokeWeight: 3 } });
-      const iw = new maps.InfoWindow({ content: mkInfoContent(label, lat, lng, true) });
+      const iw = new maps.InfoWindow({ content: mkInfoContent(label, lat, lng) });
       iw.open(map, marker);
       marker.addListener("click", () => iw.open(map, marker));
       if (destLat && destLng) {
         const dpos = { lat: Number(destLat), lng: Number(destLng) };
         const dm = new maps.Marker({ position: dpos, map, animation: maps.Animation.DROP,
           icon: { path: maps.SymbolPath.CIRCLE, scale: 12, fillColor: "#0891B2", fillOpacity: 0.8, strokeColor: "#fff", strokeWeight: 3 } });
-        const iw2 = new maps.InfoWindow({ content: mkInfoContent(destLabel, destLat, destLng, false) });
+        const iw2 = new maps.InfoWindow({ content: mkInfoContent(destLabel, destLat, destLng) });
         dm.addListener("click", () => iw2.open(map, dm));
         const bounds = new maps.LatLngBounds();
         bounds.extend(pos);
