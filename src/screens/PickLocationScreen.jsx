@@ -176,7 +176,7 @@ export default function PickLocationScreen() {
           <div style={{ fontSize: 48, marginBottom: 12 }}>🔗</div>
           <div style={{ fontSize: 18, fontWeight: 700, color: COLORS.t1 }}>Link invalido</div>
           <div style={{ fontSize: 14, color: COLORS.t3, marginTop: 8 }}>
-            Este link fue generado desde WhatsApp. Si expiro, pedi uno nuevo en el chat.
+            Este link fue generado desde WhatsApp. Si expiro, solicite uno nuevo en el chat.
           </div>
         </div>
       </div>
@@ -191,7 +191,7 @@ export default function PickLocationScreen() {
           <div style={{ fontSize: 56, marginBottom: 12 }}>✅</div>
           <div style={{ fontSize: 20, fontWeight: 700, color: COLORS.pri }}>Ubicacion guardada</div>
           <div style={{ fontSize: 14, color: COLORS.t2, marginTop: 8, lineHeight: 1.5 }}>
-            Volve a WhatsApp y decile al asistente que ya elegiste la ubicacion.
+            Puede volver a WhatsApp. El asistente continuara automaticamente.
           </div>
           {address && (
             <div style={{ fontSize: 12, color: COLORS.t3, marginTop: 12, padding: "8px 12px", background: COLORS.bg, borderRadius: 8 }}>
