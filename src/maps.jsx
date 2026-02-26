@@ -301,7 +301,7 @@ export function FreightMap({ freightId, originLat, originLng, destLat, destLng, 
   const hasDest = destLat && destLng;
   const hasCoords = hasOrigin && hasDest;
   const hasAnyCoord = hasOrigin || hasDest;
-  const isLive = status === "in_progress";
+  const isLive = status === "in_progress" || status === "loaded";
 
   useEffect(() => {
     if (!hasAnyCoord || !mapRef.current) return;
@@ -486,7 +486,7 @@ export function FreightMap({ freightId, originLat, originLng, destLat, destLng, 
         {isLive && truckPos && (
           <div style={{ display: "flex", alignItems: "center", gap: 4, marginLeft: "auto" }}>
             <span style={{ width: 8, height: 8, borderRadius: 4, background: "#FF6A00", animation: "ti 1.5s infinite" }} />
-            <span style={{ color: C.acc, fontWeight: 600, fontSize: 10 }}>En vivo{truckPos.speed>0?` · ${Math.round(parseFloat(truckPos.speed))} km/h`:""}</span>
+            <span style={{ color: C.acc, fontWeight: 600, fontSize: 10 }}>En vivo{truckPos.speed>0?` \u00b7 ${Math.round(parseFloat(truckPos.speed))} km/h`:""}{truckPos.updatedAt && ` \u00b7 ${new Date(truckPos.updatedAt).toLocaleTimeString("es-UY",{hour:"2-digit",minute:"2-digit"})}`}</span>
           </div>
         )}
         {isLive && tracking && (
@@ -620,7 +620,7 @@ export function FreightsOverviewMap({ freights, onSelect, fields, plants }) {
   useEffect(() => {
     if (!ready || !mapObj.current || !showFreights) return;
     const maps = window.google.maps;
-    const liveFreights = freights.filter(f => f.status === "in_progress" && f.id);
+    const liveFreights = freights.filter(f => (f.status === "in_progress" || f.status === "loaded") && f.id);
     if (!liveFreights.length) {
       truckMarkers.current.forEach(m => m.setMap(null));
       truckMarkers.current = [];
