@@ -552,7 +552,7 @@ export default function Tolvink() {
             <a href={`geo:${mapFocus.lat},${mapFocus.lng}?q=${mapFocus.destLat!=null&&mapFocus.destLng!=null?`${mapFocus.destLat},${mapFocus.destLng}`:``}${mapFocus.lat},${mapFocus.lng}`} target="_blank" rel="noopener noreferrer" style={{display:"flex",alignItems:"center",gap:5,padding:"7px 14px",borderRadius:8,background:C.pri,color:"#fff",fontSize:12,fontWeight:700,textDecoration:"none",fontFamily:"inherit",flexShrink:0}}>Navegar ↗</a>
           </div>
           <div style={{flex:1,minHeight:0}}>
-            <Suspense fallback={<SL/>}><MapOverlay lat={mapFocus.lat} lng={mapFocus.lng} label={mapFocus.label} destLat={mapFocus.destLat} destLng={mapFocus.destLng} destLabel={mapFocus.destLabel} onClose={()=>setMapFocus(null)}/></Suspense>
+            <Suspense fallback={<SL/>}><MapOverlay lat={mapFocus.lat} lng={mapFocus.lng} label={mapFocus.label} destLat={mapFocus.destLat} destLng={mapFocus.destLng} destLabel={mapFocus.destLabel} freightId={mapFocus.freightId} onClose={()=>setMapFocus(null)}/></Suspense>
           </div>
         </>}
 

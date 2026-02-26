@@ -36,7 +36,7 @@ export const useUIStore = create((set) => ({
   setEditData: (editData) => set({ editData }),
   setLocPicker: (locPicker) => set({ locPicker }),
 
-  goToMap: (lat, lng, label, destLat, destLng, destLabel) => {
+  goToMap: (lat, lng, label, destLat, destLng, destLabel, freightId) => {
     if (!lat || !lng) return;
     set({
       mapFocus: {
@@ -44,6 +44,7 @@ export const useUIStore = create((set) => ({
         destLat: destLat ? Number(destLat) : null,
         destLng: destLng ? Number(destLng) : null,
         destLabel: destLabel || "",
+        freightId: freightId || null,
       },
     });
   },

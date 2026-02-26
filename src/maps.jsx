@@ -287,18 +287,53 @@ export function LocPickerFullscreen({ value, onChange, defaultCenter, label, onC
 
 // ======================== PARTICIPANT PIN ICONS ========================
 
-const _ROLE_LABEL = { chofer: "Chofer", operator: "Operador", admin: "Admin" };
-const _participantSvg = (color, letter) => `<svg xmlns="http://www.w3.org/2000/svg" width="36" height="44" viewBox="0 0 36 44"><path d="M18 0C8.06 0 0 8.06 0 18c0 13.5 18 26 18 26s18-12.5 18-26C36 8.06 27.94 0 18 0z" fill="${color}" stroke="#fff" stroke-width="2"/><circle cx="18" cy="17" r="11" fill="#fff" fill-opacity="0.3"/><text x="18" y="22" text-anchor="middle" font-size="14" font-weight="bold" fill="#fff" font-family="Arial">${letter}</text></svg>`;
-const _PARTICIPANT_COLORS = { chofer: "#FF6A00", producer: "#1A6B37", plant: "#003882", transporter: "#8B5CF6", default: "#6B7280" };
-const _roleInitial = (role, name) => {
-  if (role === "chofer") return "C";
-  if (name) return name.charAt(0).toUpperCase();
-  return "?";
+const _TYPE_LABEL = { chofer: "Chofer", producer: "Productor", plant: "Planta", transporter: "Transportista", other: "Participante" };
+const _TYPE_COLORS = { chofer: "#FF6A00", producer: "#1A6B37", plant: "#003882", transporter: "#8B5CF6", other: "#6B7280" };
+const _pinSvg = (color) => `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="40" viewBox="0 0 28 40"><path d="M14 0C6.27 0 0 6.27 0 14c0 10.5 14 26 14 26s14-15.5 14-26C28 6.27 21.73 0 14 0z" fill="${color}" stroke="#fff" stroke-width="2"/><circle cx="14" cy="13" r="5" fill="#fff"/></svg>`;
+const _participantIcon = (type, maps) => {
+  const color = _TYPE_COLORS[type] || _TYPE_COLORS.other;
+  return { url: "data:image/svg+xml," + encodeURIComponent(_pinSvg(color)), scaledSize: new maps.Size(28, 40), anchor: new maps.Point(14, 40) };
 };
-const _participantIcon = (role, name, maps) => {
-  const type = role === "chofer" ? "chofer" : "default";
-  const color = _PARTICIPANT_COLORS[type] || _PARTICIPANT_COLORS.default;
-  return { url: "data:image/svg+xml," + encodeURIComponent(_participantSvg(color, _roleInitial(role, name))), scaledSize: new maps.Size(32, 40), anchor: new maps.Point(16, 40) };
+const _renderParticipantMarkers = (participants, mapInst, markersRef, iwRef) => {
+  const maps = window.google?.maps;
+  if (!maps || !mapInst) return;
+  if (!iwRef.current) iwRef.current = new maps.InfoWindow();
+  const activeIds = new Set();
+  participants.forEach(p => {
+    const lat = parseFloat(p.lat);
+    const lng = parseFloat(p.lng);
+    if (isNaN(lat) || isNaN(lng)) return;
+    const uid = p.userId || p.id;
+    activeIds.add(uid);
+    const name = _esc(p.userName || "Desconocido");
+    const type = p.participantType || "other";
+    const typeLabel = _TYPE_LABEL[type] || "Participante";
+    const time = p.createdAt ? new Date(p.createdAt).toLocaleTimeString("es-UY", { hour: "2-digit", minute: "2-digit" }) : "";
+    if (markersRef.current[uid]) {
+      markersRef.current[uid].setPosition({ lat, lng });
+    } else {
+      const marker = new maps.Marker({
+        position: { lat, lng }, map: mapInst,
+        title: `${p.userName || "Desconocido"} (${typeLabel})`,
+        icon: _participantIcon(type, maps),
+        zIndex: type === "chofer" ? 999 : 900,
+      });
+      marker.addListener("click", () => {
+        const dot = `<span style="display:inline-block;width:8px;height:8px;border-radius:4px;background:${_esc(_TYPE_COLORS[type]||_TYPE_COLORS.other)};margin-right:4px"></span>`;
+        iwRef.current.setContent(
+          `<div style="font-family:system-ui;font-size:12px;line-height:1.5;min-width:100px">` +
+          `<strong>${name}</strong><br/>${dot}<span style="color:#666">${_esc(typeLabel)}</span>` +
+          (time ? `<br/><span style="color:#999;font-size:11px">${_esc(time)}</span>` : "") +
+          `</div>`
+        );
+        iwRef.current.open(mapInst, marker);
+      });
+      markersRef.current[uid] = marker;
+    }
+  });
+  Object.keys(markersRef.current).forEach(uid => {
+    if (!activeIds.has(uid)) { markersRef.current[uid].setMap(null); delete markersRef.current[uid]; }
+  });
 };
 
 // ======================== FREIGHT MAP =================================
@@ -405,92 +440,36 @@ export function FreightMap({ freightId, originLat, originLng, destLat, destLng, 
     return () => { cancelled = true; };
   }, [hasAnyCoord, originLat, originLng, destLat, destLng, status]);
 
-  // Load participant positions (poll if live, single fetch if finished)
+  // Fetch participant positions — starts immediately (parallel with map init)
   useEffect(() => {
-    if (!freightId || !mapReady) return;
+    if (!freightId) return;
     let cancelled = false;
 
     const fetchPositions = async () => {
       try {
-        const [lastPos, parts] = await Promise.all([
-          apiGetLastPosition(freightId).catch(() => null),
-          apiGetParticipantPositions(freightId).catch(() => []),
-        ]);
-        if (cancelled) return;
-
-        if (lastPos) {
-          const lat = parseFloat(lastPos.lat);
-          const lng = parseFloat(lastPos.lng);
-          if (!isNaN(lat) && !isNaN(lng)) {
-            setTruckPos({ lat, lng, speed: lastPos.speed, updatedAt: lastPos.createdAt });
-          }
+        const parts = await apiGetParticipantPositions(freightId);
+        if (cancelled || !Array.isArray(parts)) return;
+        setParticipants(parts);
+        // Derive truckPos from chofer participant
+        const driver = parts.find(p => p.participantType === "chofer");
+        if (driver) {
+          const lat = parseFloat(driver.lat);
+          const lng = parseFloat(driver.lng);
+          if (!isNaN(lat) && !isNaN(lng)) setTruckPos({ lat, lng, speed: driver.speed, updatedAt: driver.createdAt });
         }
-
-        if (Array.isArray(parts)) setParticipants(parts);
       } catch {}
     };
 
     fetchPositions();
-    // Only poll when freight is live
     const iv = isLive ? setInterval(fetchPositions, 10000) : null;
     return () => { cancelled = true; if (iv) clearInterval(iv); };
-  }, [isLive, freightId, mapReady]);
+  }, [isLive, freightId]);
 
-  // Render participant markers on map
+  // Render participant markers when data + map are both ready
   useEffect(() => {
-    if (!mapInstance.current || !participants.length) return;
-    const maps = window.google?.maps;
-    if (!maps) return;
-
-    if (!participantInfoWindow.current) {
-      participantInfoWindow.current = new maps.InfoWindow();
-    }
-
-    const activeIds = new Set();
-    participants.forEach(p => {
-      const lat = parseFloat(p.lat);
-      const lng = parseFloat(p.lng);
-      if (isNaN(lat) || isNaN(lng)) return;
-      const uid = p.userId || p.id;
-      activeIds.add(uid);
-
-      const name = _esc(p.userName || "Desconocido");
-      const role = p.userRole || "operator";
-      const time = p.createdAt ? new Date(p.createdAt).toLocaleTimeString("es-UY", { hour: "2-digit", minute: "2-digit" }) : "";
-      const roleLabel = _ROLE_LABEL[role] || "Participante";
-
-      if (participantMarkers.current[uid]) {
-        participantMarkers.current[uid].setPosition({ lat, lng });
-      } else {
-        const marker = new maps.Marker({
-          position: { lat, lng },
-          map: mapInstance.current,
-          title: `${name} (${roleLabel})`,
-          icon: _participantIcon(role, p.userName, maps),
-          zIndex: role === "chofer" ? 999 : 900,
-        });
-        marker.addListener("click", () => {
-          participantInfoWindow.current.setContent(
-            `<div style="font-family:system-ui;font-size:12px;line-height:1.4;min-width:100px">` +
-            `<strong>${name}</strong><br/>` +
-            `<span style="color:#666">${_esc(roleLabel)}</span>` +
-            (time ? `<br/><span style="color:#999;font-size:11px">${_esc(time)}</span>` : "") +
-            `</div>`
-          );
-          participantInfoWindow.current.open(mapInstance.current, marker);
-        });
-        participantMarkers.current[uid] = marker;
-      }
-    });
-
-    // Remove markers for users no longer in the list
-    Object.keys(participantMarkers.current).forEach(uid => {
-      if (!activeIds.has(uid)) {
-        participantMarkers.current[uid].setMap(null);
-        delete participantMarkers.current[uid];
-      }
-    });
-  }, [participants]);
+    if (!mapReady || !participants.length) return;
+    _renderParticipantMarkers(participants, mapInstance.current, participantMarkers, participantInfoWindow);
+  }, [participants, mapReady]);
 
   // Driver sends position
   useEffect(() => {
@@ -538,7 +517,7 @@ export function FreightMap({ freightId, originLat, originLng, destLat, destLng, 
             {routeInfo.distance} · {routeInfo.duration}
           </span>
         )}
-        <button onClick={()=>goToMap(hasOrigin?originLat:(destLat),hasOrigin?originLng:(destLng),hasOrigin?originName:(destName),hasCoords?destLat:undefined,hasCoords?destLng:undefined,hasCoords?destName:undefined)} style={{ marginLeft:"auto", padding:"4px 10px", borderRadius:8, border:`1px solid ${C.b1}`, background:C.w, cursor:"pointer", display:"flex", alignItems:"center", gap:4, fontSize:10, fontWeight:600, color:C.pri, fontFamily:"inherit", WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
+        <button onClick={()=>goToMap(hasOrigin?originLat:(destLat),hasOrigin?originLng:(destLng),hasOrigin?originName:(destName),hasCoords?destLat:undefined,hasCoords?destLng:undefined,hasCoords?destName:undefined,freightId)} style={{ marginLeft:"auto", padding:"4px 10px", borderRadius:8, border:`1px solid ${C.b1}`, background:C.w, cursor:"pointer", display:"flex", alignItems:"center", gap:4, fontSize:10, fontWeight:600, color:C.pri, fontFamily:"inherit", WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
           {Ic.expand(C.pri,11)} Ver mapa
         </button>
       </div>
@@ -556,10 +535,16 @@ export function FreightMap({ freightId, originLat, originLng, destLat, destLng, 
           <span style={{ width: 8, height: 8, borderRadius: 4, background: "#003882" }} />
           <span style={{ color: C.t2 }}>{destName}</span>
         </div>}
+        {participants.length > 0 && participants.map(p => (
+          <div key={p.userId||p.id} style={{ display: "flex", alignItems: "center", gap: 4 }}>
+            <span style={{ width: 8, height: 8, borderRadius: 4, background: _TYPE_COLORS[p.participantType] || _TYPE_COLORS.other }} />
+            <span style={{ color: C.t2, fontSize: 10 }}>{p.userName || "?"}</span>
+          </div>
+        ))}
         {isLive && (truckPos || participants.length > 0) && (
           <div style={{ display: "flex", alignItems: "center", gap: 4, marginLeft: "auto" }}>
             <span style={{ width: 8, height: 8, borderRadius: 4, background: "#FF6A00", animation: "ti 1.5s infinite" }} />
-            <span style={{ color: C.acc, fontWeight: 600, fontSize: 10 }}>En vivo{participants.length > 0 ? ` \u00b7 ${participants.length} ubicacion${participants.length>1?"es":""}` : ""}{truckPos?.speed>0?` \u00b7 ${Math.round(parseFloat(truckPos.speed))} km/h`:""}{truckPos?.updatedAt && ` \u00b7 ${new Date(truckPos.updatedAt).toLocaleTimeString("es-UY",{hour:"2-digit",minute:"2-digit"})}`}</span>
+            <span style={{ color: C.acc, fontWeight: 600, fontSize: 10 }}>En vivo{truckPos?.speed>0?` \u00b7 ${Math.round(parseFloat(truckPos.speed))} km/h`:""}{truckPos?.updatedAt && ` \u00b7 ${new Date(truckPos.updatedAt).toLocaleTimeString("es-UY",{hour:"2-digit",minute:"2-digit"})}`}</span>
           </div>
         )}
         {isLive && tracking && (
@@ -774,12 +759,27 @@ export function FreightsOverviewMap({ freights, onSelect, fields, plants }) {
 
 // ======================== MAP OVERLAY (pin click) ===========================
 
-export function MapOverlay({ lat, lng, label, destLat, destLng, destLabel, onClose }) {
+export function MapOverlay({ lat, lng, label, destLat, destLng, destLabel, freightId, onClose }) {
   const mapRef = useRef(null);
+  const mapInst = useRef(null);
+  const pMarkers = useRef({});
+  const pIw = useRef(null);
+  const [participants, setParticipants] = useState([]);
   const mkInfoContent = (name, lt, ln) => {
     const navUrl = `geo:${lt},${ln}?q=${lt},${ln}`;
     return `<div style="font-family:sans-serif;padding:4px 2px"><div style="font-weight:700;font-size:13px;color:#1a1a1a">${_esc(name)||"Ubicación"}</div><div style="font-size:11px;color:#888;margin-top:3px">${Number(lt).toFixed(5)}, ${Number(ln).toFixed(5)}</div><a href="${navUrl}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:4px;margin-top:6px;padding:5px 10px;background:#1A6B37;color:#fff;border-radius:6px;font-size:11px;font-weight:700;text-decoration:none">▶ Navegar</a></div>`;
   };
+
+  // Fetch participant positions in parallel with map init
+  useEffect(() => {
+    if (!freightId) return;
+    let cancelled = false;
+    apiGetParticipantPositions(freightId).then(parts => {
+      if (!cancelled && Array.isArray(parts)) setParticipants(parts);
+    }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [freightId]);
+
   useEffect(() => {
     if (!mapRef.current || !lat || !lng) return;
     let c = false;
@@ -792,6 +792,7 @@ export function MapOverlay({ lat, lng, label, destLat, destLng, destLabel, onClo
         disableDefaultUI: true, zoomControl: true, gestureHandling: "greedy",
         styles: [{ featureType:"poi", stylers:[{visibility:"off"}] }, { featureType:"transit", stylers:[{visibility:"off"}] }],
       });
+      mapInst.current = map;
       const marker = new maps.Marker({ position: pos, map, animation: maps.Animation.DROP,
         icon: { path: maps.SymbolPath.CIRCLE, scale: 12, fillColor: C.pri, fillOpacity: 0.8, strokeColor: "#fff", strokeWeight: 3 } });
       const iw = new maps.InfoWindow({ content: mkInfoContent(label, lat, lng) });
@@ -808,9 +809,17 @@ export function MapOverlay({ lat, lng, label, destLat, destLng, destLabel, onClo
         bounds.extend(dpos);
         map.fitBounds(bounds, 60);
       }
+      // Render participant pins if data already loaded
+      if (participants.length) _renderParticipantMarkers(participants, map, pMarkers, pIw);
     })();
     return () => { c = true; };
   }, [lat, lng, label, destLat, destLng]);
+
+  // Render participant pins when data arrives after map
+  useEffect(() => {
+    if (!mapInst.current || !participants.length) return;
+    _renderParticipantMarkers(participants, mapInst.current, pMarkers, pIw);
+  }, [participants]);
 
   return <div ref={mapRef} style={{width:"100%",height:"100%"}} />;
 }
