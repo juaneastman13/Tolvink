@@ -311,6 +311,7 @@ export function FreightMap({ freightId, originLat, originLng, destLat, destLng, 
   const [routeInfo, setRouteInfo] = useState(null);
   const [truckPos, setTruckPos] = useState(null);
   const [participants, setParticipants] = useState([]);
+  const [mapReady, setMapReady] = useState(false);
   const [tracking, setTracking] = useState(false);
   const [error, setError] = useState(null);
   const goToMap = useUIStore(s => s.goToMap);
@@ -352,6 +353,7 @@ export function FreightMap({ freightId, originLat, originLng, destLat, destLng, 
           ],
         });
         mapInstance.current = map;
+        setMapReady(true);
 
         if (origin) {
           new maps.Marker({
@@ -405,7 +407,7 @@ export function FreightMap({ freightId, originLat, originLng, destLat, destLng, 
 
   // Load participant positions (poll if live, single fetch if finished)
   useEffect(() => {
-    if (!freightId || !mapInstance.current) return;
+    if (!freightId || !mapReady) return;
     let cancelled = false;
 
     const fetchPositions = async () => {
@@ -432,7 +434,7 @@ export function FreightMap({ freightId, originLat, originLng, destLat, destLng, 
     // Only poll when freight is live
     const iv = isLive ? setInterval(fetchPositions, 10000) : null;
     return () => { cancelled = true; if (iv) clearInterval(iv); };
-  }, [isLive, freightId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isLive, freightId, mapReady]);
 
   // Render participant markers on map
   useEffect(() => {
