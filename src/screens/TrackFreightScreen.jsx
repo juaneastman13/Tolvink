@@ -276,7 +276,8 @@ export default function TrackFreightScreen({ code: codeProp } = {}) {
               <span style={{ width: 8, height: 8, borderRadius: 4, background: "#FF6A00",
                              display: "inline-block", animation: "pulse 1.5s infinite" }} />
               <span style={{ color: COLORS.acc, fontWeight: 600, fontSize: 10 }}>
-                En vivo{truckPos.speed > 0 ? ` · ${Math.round(parseFloat(truckPos.speed))} km/h` : ""}
+                En vivo{truckPos.speed > 0 ? ` \u00b7 ${Math.round(parseFloat(truckPos.speed))} km/h` : ""}
+                {truckPos.updatedAt && ` \u00b7 ${new Date(truckPos.updatedAt).toLocaleTimeString("es-UY", { hour: "2-digit", minute: "2-digit" })}`}
               </span>
             </div>
           )}
