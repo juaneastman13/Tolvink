@@ -5,7 +5,7 @@ import { Bd, Btn, Loader, Sec, FileViewer } from "../components";
 import { FreightMap, SafeZone } from "../maps";
 import log from "../logger";
 import { DocsGallery, FreightFileUpload } from "../uploads";
-import { apiGetAuditLog } from "../api";
+import { apiGetAuditLog, apiSendTracking } from "../api";
 import { useIsDesktop } from "../hooks";
 // PDF report loaded lazily to avoid bundle bloat
 const loadPdfReport = () => import("../utils/pdf-report");
@@ -39,6 +39,24 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
   const toggleAudit = () => setShowAudit(v => !v);
 
   const [expandedTrip, setExpandedTrip] = useState(null);
+  const [locSending, setLocSending] = useState(false);
+  const [locSent, setLocSent] = useState(false);
+  const handleShareLocation = () => {
+    if (locSending || locSent || !navigator.geolocation) return;
+    setLocSending(true);
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        try {
+          await apiSendTracking(freight.id, { lat: pos.coords.latitude, lng: pos.coords.longitude, speed: pos.coords.speed || 0, heading: pos.coords.heading || 0 });
+          setLocSent(true);
+          setTimeout(() => setLocSent(false), 5000);
+        } catch { /* ignore */ }
+        setLocSending(false);
+      },
+      () => { setLocSending(false); },
+      { enableHighAccuracy: true, timeout: 10000 },
+    );
+  };
 
   const _isDesktop = useIsDesktop(768);
   const st = stCfg(freight.status);
@@ -179,6 +197,13 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
         {filteredActions.includes("confirm_loaded") && <Btn full v="acc" icon={Ic.chk(C.w,16)} disabled={actionLoading} onClick={()=>onAction(freight.id,"confirm_loaded")}>{actionLoading?"Procesando...":"Confirmar carga"}</Btn>}
         {filteredActions.includes("confirm_finished") && <Btn full v="acc" icon={Ic.chk(C.w,16)} disabled={actionLoading} onClick={()=>onAction(freight.id,"confirm_finished")}>{actionLoading?"Procesando...":"Confirmar entrega"}</Btn>}
       </div>}
+      {["in_progress","loaded"].includes(freight.status) && navigator.geolocation && (
+        <div style={{ marginBottom:12 }}>
+          <Btn full v="sec" sm icon={Ic.pin(locSent?C.ok:C.pri,14)} disabled={locSending} onClick={handleShareLocation}>
+            {locSending ? "Enviando..." : locSent ? "Ubicaci\u00f3n enviada" : "Compartir mi ubicaci\u00f3n"}
+          </Btn>
+        </div>
+      )}
 
       {/* Multi-truck: top-level action buttons */}
       {multiTruckTopActions.length > 0 && <div style={{ display:"flex", flexDirection:"column", gap:8, marginBottom:12 }}>
