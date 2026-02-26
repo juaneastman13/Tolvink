@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, Component } from "react";
-import { apiGetLastPosition, apiSendTracking } from "./api";
+import { apiGetLastPosition, apiSendTracking, apiGetParticipantPositions } from "./api";
 import { C, Ic } from "./theme";
 import { useUIStore } from "./store";
 import log from "./logger";
@@ -285,14 +285,32 @@ export function LocPickerFullscreen({ value, onChange, defaultCenter, label, onC
   </>;
 }
 
+// ======================== PARTICIPANT PIN ICONS ========================
+
+const _ROLE_LABEL = { chofer: "Chofer", operator: "Operador", admin: "Admin" };
+const _participantSvg = (color, letter) => `<svg xmlns="http://www.w3.org/2000/svg" width="36" height="44" viewBox="0 0 36 44"><path d="M18 0C8.06 0 0 8.06 0 18c0 13.5 18 26 18 26s18-12.5 18-26C36 8.06 27.94 0 18 0z" fill="${color}" stroke="#fff" stroke-width="2"/><circle cx="18" cy="17" r="11" fill="#fff" fill-opacity="0.3"/><text x="18" y="22" text-anchor="middle" font-size="14" font-weight="bold" fill="#fff" font-family="Arial">${letter}</text></svg>`;
+const _PARTICIPANT_COLORS = { chofer: "#FF6A00", producer: "#1A6B37", plant: "#003882", transporter: "#8B5CF6", default: "#6B7280" };
+const _roleInitial = (role, name) => {
+  if (role === "chofer") return "C";
+  if (name) return name.charAt(0).toUpperCase();
+  return "?";
+};
+const _participantIcon = (role, name, maps) => {
+  const type = role === "chofer" ? "chofer" : "default";
+  const color = _PARTICIPANT_COLORS[type] || _PARTICIPANT_COLORS.default;
+  return { url: "data:image/svg+xml," + encodeURIComponent(_participantSvg(color, _roleInitial(role, name))), scaledSize: new maps.Size(32, 40), anchor: new maps.Point(16, 40) };
+};
+
 // ======================== FREIGHT MAP =================================
 
-export function FreightMap({ freightId, originLat, originLng, destLat, destLng, originName, destName, status, isDriver }) {
+export function FreightMap({ freightId, originLat, originLng, destLat, destLng, originName, destName, status, isDriver, originCompanyType, destCompanyType }) {
   const mapRef = useRef(null);
   const mapInstance = useRef(null);
-  const truckMarker = useRef(null);
+  const participantMarkers = useRef({});
+  const participantInfoWindow = useRef(null);
   const [routeInfo, setRouteInfo] = useState(null);
   const [truckPos, setTruckPos] = useState(null);
+  const [participants, setParticipants] = useState([]);
   const [tracking, setTracking] = useState(false);
   const [error, setError] = useState(null);
   const goToMap = useUIStore(s => s.goToMap);
@@ -385,39 +403,92 @@ export function FreightMap({ freightId, originLat, originLng, destLat, destLng, 
     return () => { cancelled = true; };
   }, [hasAnyCoord, originLat, originLng, destLat, destLng, status]);
 
-  // Live tracking — poll last position
+  // Load participant positions (poll if live, single fetch if finished)
   useEffect(() => {
-    if (!isLive || !freightId || !mapInstance.current) return;
+    if (!freightId || !mapInstance.current) return;
     let cancelled = false;
 
-    const poll = async () => {
+    const fetchPositions = async () => {
       try {
-        const pos = await apiGetLastPosition(freightId);
-        if (cancelled || !pos) return;
-        const lat = parseFloat(pos.lat);
-        const lng = parseFloat(pos.lng);
-        if (isNaN(lat) || isNaN(lng)) return;
-        setTruckPos({ lat, lng, speed: pos.speed, updatedAt: pos.createdAt });
+        const [lastPos, parts] = await Promise.all([
+          apiGetLastPosition(freightId).catch(() => null),
+          apiGetParticipantPositions(freightId).catch(() => []),
+        ]);
+        if (cancelled) return;
 
-        const maps = window.google.maps;
-        if (!truckMarker.current) {
-          truckMarker.current = new maps.Marker({
-            position: { lat, lng },
-            map: mapInstance.current,
-            title: "Camión",
-            icon: { url: "data:image/svg+xml," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="#FF6A00" stroke="#fff" stroke-width="1.5"><rect x="1" y="3" width="15" height="13" rx="2"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>'), scaledSize: new maps.Size(36, 36), anchor: new maps.Point(18, 18) },
-            zIndex: 999,
-          });
-        } else {
-          truckMarker.current.setPosition({ lat, lng });
+        if (lastPos) {
+          const lat = parseFloat(lastPos.lat);
+          const lng = parseFloat(lastPos.lng);
+          if (!isNaN(lat) && !isNaN(lng)) {
+            setTruckPos({ lat, lng, speed: lastPos.speed, updatedAt: lastPos.createdAt });
+          }
         }
+
+        if (Array.isArray(parts)) setParticipants(parts);
       } catch {}
     };
 
-    poll();
-    const iv = setInterval(poll, 10000);
-    return () => { cancelled = true; clearInterval(iv); };
+    fetchPositions();
+    // Only poll when freight is live
+    const iv = isLive ? setInterval(fetchPositions, 10000) : null;
+    return () => { cancelled = true; if (iv) clearInterval(iv); };
   }, [isLive, freightId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Render participant markers on map
+  useEffect(() => {
+    if (!mapInstance.current || !participants.length) return;
+    const maps = window.google?.maps;
+    if (!maps) return;
+
+    if (!participantInfoWindow.current) {
+      participantInfoWindow.current = new maps.InfoWindow();
+    }
+
+    const activeIds = new Set();
+    participants.forEach(p => {
+      const lat = parseFloat(p.lat);
+      const lng = parseFloat(p.lng);
+      if (isNaN(lat) || isNaN(lng)) return;
+      const uid = p.userId || p.id;
+      activeIds.add(uid);
+
+      const name = _esc(p.userName || "Desconocido");
+      const role = p.userRole || "operator";
+      const time = p.createdAt ? new Date(p.createdAt).toLocaleTimeString("es-UY", { hour: "2-digit", minute: "2-digit" }) : "";
+      const roleLabel = _ROLE_LABEL[role] || "Participante";
+
+      if (participantMarkers.current[uid]) {
+        participantMarkers.current[uid].setPosition({ lat, lng });
+      } else {
+        const marker = new maps.Marker({
+          position: { lat, lng },
+          map: mapInstance.current,
+          title: `${name} (${roleLabel})`,
+          icon: _participantIcon(role, p.userName, maps),
+          zIndex: role === "chofer" ? 999 : 900,
+        });
+        marker.addListener("click", () => {
+          participantInfoWindow.current.setContent(
+            `<div style="font-family:system-ui;font-size:12px;line-height:1.4;min-width:100px">` +
+            `<strong>${name}</strong><br/>` +
+            `<span style="color:#666">${_esc(roleLabel)}</span>` +
+            (time ? `<br/><span style="color:#999;font-size:11px">${_esc(time)}</span>` : "") +
+            `</div>`
+          );
+          participantInfoWindow.current.open(mapInstance.current, marker);
+        });
+        participantMarkers.current[uid] = marker;
+      }
+    });
+
+    // Remove markers for users no longer in the list
+    Object.keys(participantMarkers.current).forEach(uid => {
+      if (!activeIds.has(uid)) {
+        participantMarkers.current[uid].setMap(null);
+        delete participantMarkers.current[uid];
+      }
+    });
+  }, [participants]);
 
   // Driver sends position
   useEffect(() => {
@@ -483,10 +554,10 @@ export function FreightMap({ freightId, originLat, originLng, destLat, destLng, 
           <span style={{ width: 8, height: 8, borderRadius: 4, background: "#003882" }} />
           <span style={{ color: C.t2 }}>{destName}</span>
         </div>}
-        {isLive && truckPos && (
+        {isLive && (truckPos || participants.length > 0) && (
           <div style={{ display: "flex", alignItems: "center", gap: 4, marginLeft: "auto" }}>
             <span style={{ width: 8, height: 8, borderRadius: 4, background: "#FF6A00", animation: "ti 1.5s infinite" }} />
-            <span style={{ color: C.acc, fontWeight: 600, fontSize: 10 }}>En vivo{truckPos.speed>0?` \u00b7 ${Math.round(parseFloat(truckPos.speed))} km/h`:""}{truckPos.updatedAt && ` \u00b7 ${new Date(truckPos.updatedAt).toLocaleTimeString("es-UY",{hour:"2-digit",minute:"2-digit"})}`}</span>
+            <span style={{ color: C.acc, fontWeight: 600, fontSize: 10 }}>En vivo{participants.length > 0 ? ` \u00b7 ${participants.length} ubicacion${participants.length>1?"es":""}` : ""}{truckPos?.speed>0?` \u00b7 ${Math.round(parseFloat(truckPos.speed))} km/h`:""}{truckPos?.updatedAt && ` \u00b7 ${new Date(truckPos.updatedAt).toLocaleTimeString("es-UY",{hour:"2-digit",minute:"2-digit"})}`}</span>
           </div>
         )}
         {isLive && tracking && (

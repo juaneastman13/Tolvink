@@ -228,6 +228,7 @@ export async function apiConfirmTripFinished(freightId, assignmentId) { return a
 export async function apiSendTracking(id, data) { return api(`/freights/${id}/tracking`,{body:data}); }
 export async function apiGetTracking(id) { return api(`/freights/${id}/tracking`); }
 export async function apiGetLastPosition(id) { return api(`/freights/${id}/tracking/last`); }
+export async function apiGetParticipantPositions(id) { return api(`/freights/${id}/tracking/participants`); }
 
 // Audit
 export async function apiGetAuditLog(id) { return api(`/freights/${id}/audit`); }
