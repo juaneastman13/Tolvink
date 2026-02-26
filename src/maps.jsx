@@ -7,6 +7,31 @@ import log from "./logger";
 // HTML escape for InfoWindow content (prevents XSS)
 const _esc = v => String(v||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
 
+// Haversine distance in km (straight line)
+const _haversine = (lat1, lng1, lat2, lng2) => {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+};
+
+// Hook: get user's current position (non-blocking, one-shot)
+function _useUserPos() {
+  const ref = useRef(null);
+  const [pos, setPos] = useState(null);
+  useEffect(() => {
+    if (ref.current !== null || !navigator.geolocation) return;
+    ref.current = "pending";
+    navigator.geolocation.getCurrentPosition(
+      (p) => { ref.current = "done"; setPos({ lat: p.coords.latitude, lng: p.coords.longitude }); },
+      () => { ref.current = "denied"; },
+      { enableHighAccuracy: false, timeout: 8000, maximumAge: 60000 }
+    );
+  }, []);
+  return pos;
+}
+
 // ======================== GOOGLE MAPS ================================
 
 const GMAPS_KEY = import.meta.env.VITE_GMAPS_KEY || "";
@@ -294,7 +319,7 @@ const _participantIcon = (type, maps) => {
   const color = _TYPE_COLORS[type] || _TYPE_COLORS.other;
   return { url: "data:image/svg+xml," + encodeURIComponent(_pinSvg(color)), scaledSize: new maps.Size(28, 40), anchor: new maps.Point(14, 40) };
 };
-const _renderParticipantMarkers = (participants, mapInst, markersRef, iwRef) => {
+const _renderParticipantMarkers = (participants, mapInst, markersRef, iwRef, userPos) => {
   const maps = window.google?.maps;
   if (!maps || !mapInst) return;
   if (!iwRef.current) iwRef.current = new maps.InfoWindow();
@@ -309,8 +334,23 @@ const _renderParticipantMarkers = (participants, mapInst, markersRef, iwRef) => 
     const type = p.participantType || "other";
     const typeLabel = _TYPE_LABEL[type] || "Participante";
     const time = p.createdAt ? new Date(p.createdAt).toLocaleTimeString("es-UY", { hour: "2-digit", minute: "2-digit" }) : "";
+    const distKm = userPos ? _haversine(userPos.lat, userPos.lng, lat, lng) : null;
+    const distText = distKm !== null ? `${distKm.toFixed(1)} km` : "";
+    const gmapsUrl = `https://www.google.com/maps?q=${lat},${lng}`;
+
+    const buildContent = () => {
+      const dot = `<span style="display:inline-block;width:8px;height:8px;border-radius:4px;background:${_esc(_TYPE_COLORS[type]||_TYPE_COLORS.other)};margin-right:4px;vertical-align:middle"></span>`;
+      return `<div style="font-family:system-ui;font-size:12px;line-height:1.5;min-width:120px">` +
+        `<strong>${name}</strong><br/>${dot}<span style="color:#666">${_esc(typeLabel)}</span>` +
+        (time ? ` <span style="color:#999;font-size:10px">\u00b7 ${_esc(time)}</span>` : "") +
+        (distText ? `<br/><span style="color:#333;font-weight:600;font-size:11px">${_esc(distText)}</span>` : "") +
+        `<br/><a href="${_esc(gmapsUrl)}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:3px;margin-top:4px;padding:4px 8px;background:#4285F4;color:#fff;border-radius:5px;font-size:10px;font-weight:700;text-decoration:none">Abrir en Google Maps</a>` +
+        `</div>`;
+    };
+
     if (markersRef.current[uid]) {
       markersRef.current[uid].setPosition({ lat, lng });
+      markersRef.current[uid]._iwContent = buildContent;
     } else {
       const marker = new maps.Marker({
         position: { lat, lng }, map: mapInst,
@@ -318,14 +358,9 @@ const _renderParticipantMarkers = (participants, mapInst, markersRef, iwRef) => 
         icon: _participantIcon(type, maps),
         zIndex: type === "chofer" ? 999 : 900,
       });
+      marker._iwContent = buildContent;
       marker.addListener("click", () => {
-        const dot = `<span style="display:inline-block;width:8px;height:8px;border-radius:4px;background:${_esc(_TYPE_COLORS[type]||_TYPE_COLORS.other)};margin-right:4px"></span>`;
-        iwRef.current.setContent(
-          `<div style="font-family:system-ui;font-size:12px;line-height:1.5;min-width:100px">` +
-          `<strong>${name}</strong><br/>${dot}<span style="color:#666">${_esc(typeLabel)}</span>` +
-          (time ? `<br/><span style="color:#999;font-size:11px">${_esc(time)}</span>` : "") +
-          `</div>`
-        );
+        iwRef.current.setContent(marker._iwContent());
         iwRef.current.open(mapInst, marker);
       });
       markersRef.current[uid] = marker;
@@ -350,6 +385,7 @@ export function FreightMap({ freightId, originLat, originLng, destLat, destLng, 
   const [tracking, setTracking] = useState(false);
   const [error, setError] = useState(null);
   const goToMap = useUIStore(s => s.goToMap);
+  const userPos = _useUserPos();
 
   const hasOrigin = originLat && originLng;
   const hasDest = destLat && destLng;
@@ -468,8 +504,8 @@ export function FreightMap({ freightId, originLat, originLng, destLat, destLng, 
   // Render participant markers when data + map are both ready
   useEffect(() => {
     if (!mapReady || !participants.length) return;
-    _renderParticipantMarkers(participants, mapInstance.current, participantMarkers, participantInfoWindow);
-  }, [participants, mapReady]);
+    _renderParticipantMarkers(participants, mapInstance.current, participantMarkers, participantInfoWindow, userPos);
+  }, [participants, mapReady, userPos]);
 
   // Driver sends position
   useEffect(() => {
@@ -535,12 +571,17 @@ export function FreightMap({ freightId, originLat, originLng, destLat, destLng, 
           <span style={{ width: 8, height: 8, borderRadius: 4, background: "#003882" }} />
           <span style={{ color: C.t2 }}>{destName}</span>
         </div>}
-        {participants.length > 0 && participants.map(p => (
-          <div key={p.userId||p.id} style={{ display: "flex", alignItems: "center", gap: 4 }}>
-            <span style={{ width: 8, height: 8, borderRadius: 4, background: _TYPE_COLORS[p.participantType] || _TYPE_COLORS.other }} />
-            <span style={{ color: C.t2, fontSize: 10 }}>{p.userName || "?"}</span>
-          </div>
-        ))}
+        {participants.length > 0 && participants.map(p => {
+          const pLat = parseFloat(p.lat);
+          const pLng = parseFloat(p.lng);
+          const dist = userPos && !isNaN(pLat) && !isNaN(pLng) ? _haversine(userPos.lat, userPos.lng, pLat, pLng) : null;
+          return (
+            <div key={p.userId||p.id} style={{ display: "flex", alignItems: "center", gap: 4 }}>
+              <span style={{ width: 8, height: 8, borderRadius: 4, background: _TYPE_COLORS[p.participantType] || _TYPE_COLORS.other }} />
+              <span style={{ color: C.t2, fontSize: 10 }}>{p.userName || "?"}{dist !== null ? ` \u00b7 ${dist.toFixed(1)} km` : ""}</span>
+            </div>
+          );
+        })}
         {isLive && (truckPos || participants.length > 0) && (
           <div style={{ display: "flex", alignItems: "center", gap: 4, marginLeft: "auto" }}>
             <span style={{ width: 8, height: 8, borderRadius: 4, background: "#FF6A00", animation: "ti 1.5s infinite" }} />
@@ -765,6 +806,7 @@ export function MapOverlay({ lat, lng, label, destLat, destLng, destLabel, freig
   const pMarkers = useRef({});
   const pIw = useRef(null);
   const [participants, setParticipants] = useState([]);
+  const userPos = _useUserPos();
   const mkInfoContent = (name, lt, ln) => {
     const navUrl = `geo:${lt},${ln}?q=${lt},${ln}`;
     return `<div style="font-family:sans-serif;padding:4px 2px"><div style="font-weight:700;font-size:13px;color:#1a1a1a">${_esc(name)||"Ubicación"}</div><div style="font-size:11px;color:#888;margin-top:3px">${Number(lt).toFixed(5)}, ${Number(ln).toFixed(5)}</div><a href="${navUrl}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:4px;margin-top:6px;padding:5px 10px;background:#1A6B37;color:#fff;border-radius:6px;font-size:11px;font-weight:700;text-decoration:none">▶ Navegar</a></div>`;
@@ -810,16 +852,16 @@ export function MapOverlay({ lat, lng, label, destLat, destLng, destLabel, freig
         map.fitBounds(bounds, 60);
       }
       // Render participant pins if data already loaded
-      if (participants.length) _renderParticipantMarkers(participants, map, pMarkers, pIw);
+      if (participants.length) _renderParticipantMarkers(participants, map, pMarkers, pIw, userPos);
     })();
     return () => { c = true; };
   }, [lat, lng, label, destLat, destLng]);
 
-  // Render participant pins when data arrives after map
+  // Render participant pins when data or userPos changes
   useEffect(() => {
     if (!mapInst.current || !participants.length) return;
-    _renderParticipantMarkers(participants, mapInst.current, pMarkers, pIw);
-  }, [participants]);
+    _renderParticipantMarkers(participants, mapInst.current, pMarkers, pIw, userPos);
+  }, [participants, userPos]);
 
   return <div ref={mapRef} style={{width:"100%",height:"100%"}} />;
 }
