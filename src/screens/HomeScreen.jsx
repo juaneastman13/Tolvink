@@ -309,15 +309,7 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
         <div style={{ paddingLeft: compact ? 12 : 16, borderLeft: `2px solid ${C.ok}30` }}>
           {summaryGroups.map(g => renderGroup(g, "sm"))}
         </div>
-      ) : (
-        !compact && (() => {
-          const ct = user.company?.types?.[0] || user.company?.type || user.userTypes?.[0] || "producer";
-          if (ct === "producer") return <EmptyState icon={Ic.truck(C.t3,28)} title="Sin fletes todav\u00eda" subtitle="Cre\u00e1 tu primer flete para empezar a operar" action={perms.canRequest ? <Btn v="pri" sm onClick={()=>onNav("new")}>Solicitar flete</Btn> : null}/>;
-          if (ct === "plant") return <EmptyState icon={Ic.plant(C.t3,28)} title="Sin fletes recibidos" subtitle="Cuando un productor solicite un flete, aparece ac\u00e1"/>;
-          if (ct === "transporter") return <EmptyState icon={Ic.truck(C.t3,28)} title="Sin asignaciones" subtitle="Cuando una planta te asigne un flete, aparece ac\u00e1"/>;
-          return <EmptyState icon={Ic.truck(C.t3,28)} title="Sin fletes en este per\u00edodo"/>;
-        })()
-      )}
+      ) : null}
       </div>
     </div>
   );
