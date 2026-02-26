@@ -41,6 +41,8 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
   const [expandedTrip, setExpandedTrip] = useState(null);
   const [locSending, setLocSending] = useState(false);
   const [locSent, setLocSent] = useState(false);
+  const locTimerRef = useRef(null);
+  useEffect(() => () => clearTimeout(locTimerRef.current), []);
   const handleShareLocation = () => {
     if (locSending || locSent || !navigator.geolocation) return;
     setLocSending(true);
@@ -49,7 +51,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
         try {
           await apiSendTracking(freight.id, { lat: pos.coords.latitude, lng: pos.coords.longitude, speed: pos.coords.speed || 0, heading: pos.coords.heading || 0 });
           setLocSent(true);
-          setTimeout(() => setLocSent(false), 5000);
+          locTimerRef.current = setTimeout(() => setLocSent(false), 5000);
         } catch { /* ignore */ }
         setLocSending(false);
       },
