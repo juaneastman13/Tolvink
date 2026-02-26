@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from "react";
 import { C, Ic } from "../theme";
-import { Btn, Field, Loader, LoadingOverlay } from "../components";
+import { Btn, Field, Loader, LoadingOverlay, EmptyState } from "../components";
 import { apiGetTrucks, apiCreateTruck, apiDeactivateTruck, apiListDrivers, apiCreateDriver, apiDeactivateDriver } from "../api";
 
 export default function TrucksScreen({ onBack, embedded, user }) {
@@ -93,7 +93,7 @@ export default function TrucksScreen({ onBack, embedded, user }) {
           </div>
         )}
         {loading ? <Loader/> :
-          trucks.length === 0 ? <div style={{ textAlign: "center", padding: 32, color: C.t3, fontSize: 13 }}>No tenés vehículos registrados.</div> :
+          trucks.length === 0 ? <EmptyState icon={Ic.truck(C.t3,28)} title="Sin vehículos registrados" subtitle="Registrá tu primer camión para recibir asignaciones de flete" action={canEdit && <Btn sm onClick={()=>setShowForm(true)}>Registrar camión</Btn>}/> :
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {trucks.map(t => (
                 <div key={t.id} style={{ background: C.w, border: `1px solid ${C.b1}`, borderLeft: `3px solid ${C.acc}`, borderRadius: 12, padding: 14, boxShadow: C.sh, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -124,7 +124,7 @@ export default function TrucksScreen({ onBack, embedded, user }) {
           </div>
         )}
         {loading ? <Loader/> :
-          drivers.length === 0 ? <div style={{ textAlign: "center", padding: 32, color: C.t3, fontSize: 13 }}>No tenés choferes registrados.</div> :
+          drivers.length === 0 ? <EmptyState icon={Ic.user(C.t3,28)} title="Sin choferes registrados" subtitle="Agregá choferes para asignarles viajes" action={canEdit && <Btn sm onClick={()=>{switchTab("drivers");setShowForm(true);}}>Registrar chofer</Btn>}/> :
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {drivers.map(d => (
                 <div key={d.id} style={{ background: C.w, border: `1px solid ${C.b1}`, borderLeft: `3px solid ${C.info||C.sec}`, borderRadius: 12, padding: 14, boxShadow: C.sh, display: "flex", justifyContent: "space-between", alignItems: "center" }}>

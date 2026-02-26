@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo, lazy, Suspense } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { uploadPhoto, apiAddDocument, apiListConversations } from "./api";
+import { uploadPhoto, apiAddDocument, apiListConversations, getOnboardingState, setOnboardingState, apiCompleteOnboarding } from "./api";
 import { C, track, FONT, Ic } from "./theme";
 import { POLL_INTERVALS } from "./constants";
 import { Toast, LoadingOverlay, Sidebar, Nav, NotifBell, NotificationsPanel, ErrorBoundary, SkeletonList, PwaInstallCard, EmptyState } from "./components";
@@ -47,6 +47,7 @@ const TruckSelectModal = lazy(() => import("./modals/TruckSelectModal"));
 const ReasonModal = lazy(() => import("./modals/ReasonModal"));
 const DriverQueueModal = lazy(() => import("./modals/DriverQueueModal"));
 const EditTripModal = lazy(() => import("./modals/EditTripModal"));
+const OnboardingWelcomeModal = lazy(() => import("./modals/OnboardingWelcomeModal"));
 
 // ======================== ROUTE MAP ===================================
 const SCREEN_TO_PATH = {
@@ -159,7 +160,13 @@ export default function Tolvink() {
     const isPublicPath = ["/pick-location","/track","/report","/daily-map","/live-freight","/ver-mapa"].includes(p)
       || /^\/FLT-\d{4,}\/(ubicacion|informe)$/i.test(p)
       || /^\/campo\/[a-z0-9-]+\/ubicacion$/i.test(p);
-    if(auth.user && !prevUser.current && !isPublicPath) { navigate("/", { replace: true }); }
+    if(auth.user && !prevUser.current && !isPublicPath) {
+      navigate("/", { replace: true });
+      // Show welcome modal for new users
+      if (auth.user.isNew && !getOnboardingState(auth.user.id).welcomeDismissed) {
+        setTimeout(() => setModal({ type: "onboarding_welcome" }), 400);
+      }
+    }
     prevUser.current = auth.user;
     setSentryUser(auth.user);
   },[auth.user, navigate, location.pathname]);
@@ -540,7 +547,7 @@ export default function Tolvink() {
           <div style={{display:"flex",alignItems:"center",gap:10,padding:"8px 18px",background:C.w,borderBottom:`1px solid ${C.b2}`,flexShrink:0,zIndex:10}}>
             <button onClick={()=>setMapFocus(null)} style={{display:"flex",alignItems:"center",gap:6,padding:"7px 14px",borderRadius:8,border:`1.5px solid ${C.b1}`,background:C.bg,cursor:"pointer",fontSize:13,fontWeight:700,color:C.pri,fontFamily:"inherit"}}>{Ic.chev(C.pri,14)} Cerrar mapa</button>
             <span style={{flex:1,fontSize:12,color:C.t2,fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{mapFocus.label||"Ubicación"}</span>
-            <a href={`geo:${mapFocus.lat},${mapFocus.lng}?q=${mapFocus.destLat&&mapFocus.destLng?`${mapFocus.destLat},${mapFocus.destLng}`:``}${mapFocus.lat},${mapFocus.lng}`} target="_blank" rel="noopener noreferrer" style={{display:"flex",alignItems:"center",gap:5,padding:"7px 14px",borderRadius:8,background:C.pri,color:"#fff",fontSize:12,fontWeight:700,textDecoration:"none",fontFamily:"inherit",flexShrink:0}}>Navegar ↗</a>
+            <a href={`geo:${mapFocus.lat},${mapFocus.lng}?q=${mapFocus.destLat!=null&&mapFocus.destLng!=null?`${mapFocus.destLat},${mapFocus.destLng}`:``}${mapFocus.lat},${mapFocus.lng}`} target="_blank" rel="noopener noreferrer" style={{display:"flex",alignItems:"center",gap:5,padding:"7px 14px",borderRadius:8,background:C.pri,color:"#fff",fontSize:12,fontWeight:700,textDecoration:"none",fontFamily:"inherit",flexShrink:0}}>Navegar ↗</a>
           </div>
           <div style={{flex:1,minHeight:0}}>
             <Suspense fallback={<SL/>}><MapOverlay lat={mapFocus.lat} lng={mapFocus.lng} label={mapFocus.label} destLat={mapFocus.destLat} destLng={mapFocus.destLng} destLabel={mapFocus.destLabel} onClose={()=>setMapFocus(null)}/></Suspense>
@@ -587,6 +594,7 @@ export default function Tolvink() {
       {modal?.type==="reason" && <ReasonModal title={modal.title} freight={modal.freight} btnLabel={modal.btnLabel} onClose={()=>setModal(null)} onConfirm={r=>handleReasonAction(modal.freight.id,r,modal.action,{assignmentId:modal.assignmentId})}/>}
       {modal?.type==="edit_trip" && <EditTripModal freight={modal.freight} assignment={modal.assignment} transporters={catalog.transporters} onClose={()=>setModal(null)} onSave={handleSaveTrip}/>}
       {modal?.type==="driver_queue" && <DriverQueueModal driverId={modal.driverId} driverName={modal.driverName} onClose={()=>setModal(null)}/>}
+      {modal?.type==="onboarding_welcome" && <OnboardingWelcomeModal user={auth.user} onClose={()=>{setModal(null);if(auth.user)setOnboardingState(auth.user.id,{welcomeDismissed:true});}} onNavigate={(r)=>navigate(SCREEN_TO_PATH[r]||"/")}/>}
       </Suspense>
       {toast && <Toast key={toast._ts||toast.msg} msg={toast.msg} type={toast.type} onClose={()=>setToast(null)}/>}
     </div>

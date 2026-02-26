@@ -21,9 +21,11 @@ export default function ReportDownloadScreen({ code: codeProp } = {}) {
 
   const params = new URLSearchParams(window.location.search);
   const token = params.get("token");
+  const shareToken = params.get("s");
 
-  // Determine API URL: clean URL (/f/:code/report) or legacy (/track/:token/report-data)
-  const reportUrl = codeProp ? `${API_URL}/f/${codeProp}/report` : token ? `${API_URL}/track/${token}/report-data` : null;
+  // Determine API URL: clean URL (/f/:code/report?s=shareToken) or legacy (/track/:token/report-data)
+  const qs = codeProp && shareToken ? `?s=${encodeURIComponent(shareToken)}` : '';
+  const reportUrl = codeProp ? `${API_URL}/f/${codeProp}/report${qs}` : token ? `${API_URL}/track/${token}/report-data` : null;
   const hasIdentifier = !!(codeProp || token);
 
   useEffect(() => {

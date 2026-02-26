@@ -4,6 +4,8 @@ import { stCfg, getActions } from "../constants";
 import { Bd, Btn, SkeletonList, EmptyState } from "../components";
 import { useIsDesktop } from "../hooks";
 import { getPendingActions, resolveUserTypeForFreight, getWaitingOnText } from "../utils/freight-helpers";
+import { getOnboardingState, setOnboardingState, apiCompleteOnboarding } from "../api";
+import OnboardingChecklist from "../components/OnboardingChecklist";
 import DetailScreen from "./DetailScreen";
 
 // Summary groups — by freight type/status, filtered by date. Priority: pending confirmation → active → rest
@@ -245,6 +247,21 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
         </div>
       )}
 
+      {/* Onboarding checklist for new users */}
+      {user.isNew && !getOnboardingState(user.id).checklistDismissed && (
+        <OnboardingChecklist
+          user={user}
+          catalog={catalog}
+          freights={freights}
+          compact={compact}
+          onNavigate={onNav}
+          onDismiss={() => {
+            setOnboardingState(user.id, { checklistDismissed: true });
+            apiCompleteOnboarding().catch(() => {});
+          }}
+        />
+      )}
+
       {/* Pendientes — top aligned with Solicitar flete button (~14px padding in sidebar) */}
       {totalPendingAll > 0 && (<>
         <div style={{ padding: compact ? "8px 10px" : "10px 12px", borderRadius: 12, background: `${C.acc}0D`, marginBottom: 8 }}>
@@ -293,7 +310,13 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
           {summaryGroups.map(g => renderGroup(g, "sm"))}
         </div>
       ) : (
-        !compact && <div style={{ padding:"12px 16px", fontSize:12, color:C.t3, display:"flex", alignItems:"center", gap:8 }}>{Ic.truck(C.t3,14)} Sin fletes en este período</div>
+        !compact && (() => {
+          const ct = user.company?.types?.[0] || user.company?.type || user.userTypes?.[0] || "producer";
+          if (ct === "producer") return <EmptyState icon={Ic.truck(C.t3,28)} title="Sin fletes todav\u00eda" subtitle="Cre\u00e1 tu primer flete para empezar a operar" action={perms.canRequest ? <Btn v="pri" sm onClick={()=>onNav("new")}>Solicitar flete</Btn> : null}/>;
+          if (ct === "plant") return <EmptyState icon={Ic.plant(C.t3,28)} title="Sin fletes recibidos" subtitle="Cuando un productor solicite un flete, aparece ac\u00e1"/>;
+          if (ct === "transporter") return <EmptyState icon={Ic.truck(C.t3,28)} title="Sin asignaciones" subtitle="Cuando una planta te asigne un flete, aparece ac\u00e1"/>;
+          return <EmptyState icon={Ic.truck(C.t3,28)} title="Sin fletes en este per\u00edodo"/>;
+        })()
       )}
       </div>
     </div>

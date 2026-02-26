@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { C, Ic } from "../theme";
-import { Btn, Bd, Field, Loader, LoadingOverlay } from "../components";
+import { Btn, Bd, Field, Loader, LoadingOverlay, EmptyState } from "../components";
 import { SafeZone, LocationPicker } from "../maps";
 import { apiGetFields, apiCreateField, apiUpdateField, apiCreateLot, apiUpdateLot, apiGetFieldLots } from "../api";
 import log from "../logger";
@@ -131,7 +131,7 @@ export default function FieldsScreen({ onBack, embedded, goToMap }) {
       )}
 
       {loading ? <Loader/> :
-        fields.length === 0 ? <div style={{ textAlign: "center", padding: 40, color: C.t3, fontSize: 13 }}>No tenés campos registrados.</div> :
+        fields.length === 0 ? <EmptyState icon={Ic.pin(C.t3,28)} title="Sin campos registrados" subtitle="Agregá tu primer campo para poder solicitar fletes" action={<Btn sm onClick={()=>setShowFieldForm(true)}>Agregar campo</Btn>}/> :
           (() => {
             // Group fields by company
             const companyMap = new Map();

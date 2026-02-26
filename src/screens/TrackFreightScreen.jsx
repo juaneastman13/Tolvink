@@ -40,9 +40,12 @@ export default function TrackFreightScreen({ code: codeProp } = {}) {
 
   const params = new URLSearchParams(window.location.search);
   const token = params.get("token");
+  const shareToken = params.get("s");
 
   // Determine API base: clean URL (/f/:code) or legacy (/track/:token)
   const apiBase = codeProp ? `${API_URL}/f/${codeProp}` : token ? `${API_URL}/track/${token}` : null;
+  // Query string for shareToken (appended to all clean URL requests)
+  const qs = codeProp && shareToken ? `?s=${encodeURIComponent(shareToken)}` : '';
   const hasIdentifier = !!(codeProp || token);
 
   // Fetch freight data
@@ -50,7 +53,7 @@ export default function TrackFreightScreen({ code: codeProp } = {}) {
     if (!apiBase) { setLoading(false); return; }
     (async () => {
       try {
-        const res = await fetch(apiBase);
+        const res = await fetch(`${apiBase}${qs}`);
         if (!res.ok) throw new Error("Flete no encontrado");
         setFreight(await res.json());
       } catch (e) { setError(e.message); }
@@ -130,7 +133,7 @@ export default function TrackFreightScreen({ code: codeProp } = {}) {
 
     const poll = async () => {
       try {
-        const res = await fetch(`${apiBase}/position`);
+        const res = await fetch(`${apiBase}/position${qs}`);
         if (!res.ok || cancelled) return;
         const pos = await res.json();
         if (!pos || cancelled) return;
@@ -150,7 +153,7 @@ export default function TrackFreightScreen({ code: codeProp } = {}) {
         } else {
           truckMarker.current.setPosition({ lat, lng });
         }
-      } catch {}
+      } catch (e) { log.warn('TrackFreight', 'Position poll failed:', e.message); }
     };
 
     poll();
@@ -172,10 +175,10 @@ export default function TrackFreightScreen({ code: codeProp } = {}) {
     let cancelled = false;
     const iv = setInterval(async () => {
       try {
-        const res = await fetch(apiBase);
+        const res = await fetch(`${apiBase}${qs}`);
         if (!res.ok || cancelled) return;
         setFreight(await res.json());
-      } catch {}
+      } catch (e) { log.warn('TrackFreight', 'Status poll failed:', e.message); }
     }, 30000);
     return () => { cancelled = true; clearInterval(iv); };
   }, [apiBase, freight?.status]);
