@@ -195,6 +195,7 @@ export default function Tolvink() {
   catalogRef.current = catalog;
 
   // Smart polling — only freight screens poll freights, auto-refresh on screen change
+  // When SSE is disconnected, poll faster (10s) to compensate
   const FREIGHT_SCREENS = useMemo(() => new Set(["home","list","calendar","detail","reports","notifs"]), []);
   useEffect(()=>{
     if(!auth.user) return;
@@ -206,9 +207,10 @@ export default function Tolvink() {
       if (FREIGHT_SCREENS.has(screen)) fhRef.current.fetchAll();
       notifRef.current.refresh();
     };
-    const iv = setInterval(poll, POLL_INTERVALS.FREIGHTS);
+    const interval = sse.connected ? POLL_INTERVALS.FREIGHTS : 10000;
+    const iv = setInterval(poll, interval);
     return ()=>clearInterval(iv);
-  },[auth.user, screen]);
+  },[auth.user, screen, sse.connected]);
 
   // Poll for unread chats — skip if SSE is connected (SSE handles real-time updates)
   useEffect(()=>{

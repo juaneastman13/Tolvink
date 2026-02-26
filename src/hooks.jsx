@@ -287,7 +287,15 @@ export function useFreights(user, isAuthInitialized, companyOverride) {
   },[fetchAll, isAuthInitialized, user]);
 
   const refresh = useCallback(async (id)=>{
-    try { const u=await apiGetFreight(id); const m=mapFreight(u); setFreights(p=>p.map(f=>f.id===id?m:f)); return m; }
+    try {
+      const u=await apiGetFreight(id); const m=mapFreight(u);
+      setFreights(p=>{
+        const idx = p.findIndex(f=>f.id===id);
+        if (idx >= 0) { const next=[...p]; next[idx]=m; return next; }
+        return [m, ...p]; // New freight — prepend to list
+      });
+      return m;
+    }
     catch(e) { setError(e.message); return null; }
   },[]);
   const create = useCallback(async (form)=>{
@@ -676,7 +684,7 @@ export function useSSE(user, { onFreightUpdate, onMessageNew, onNotification, on
         failureCount.current = 0;
       };
 
-      es.onerror = (event) => {
+      es.onerror = () => {
         setConnected(false);
         es.close();
         esRef.current = null;
@@ -684,24 +692,18 @@ export function useSSE(user, { onFreightUpdate, onMessageNew, onNotification, on
         failureCount.current += 1;
         log.warn('SSE', `Connection failed (${failureCount.current})`);
 
-        // Stop retrying after 50 consecutive failures (server likely down)
-        if (failureCount.current > 50) {
-          log.warn('SSE', 'Too many failures, stopping reconnect');
-          return;
-        }
-
-        // Retry with exponential backoff capped at 2 minutes (resilient for rural connectivity)
+        // Never stop retrying — cap backoff at 30s so reconnection is fast after deploys
         reconnectTimer.current = setTimeout(connect, reconnectDelay.current);
-        reconnectDelay.current = Math.min(reconnectDelay.current * 2, 120000);
+        reconnectDelay.current = Math.min(reconnectDelay.current * 1.5, 30000);
       };
     };
 
     connect();
 
-    // Recovery: when user returns to tab after 50 failures, reset and reconnect
+    // Recovery: when user returns to tab, reset backoff and reconnect immediately if disconnected
     const handleVisibility = () => {
-      if (document.visibilityState === 'visible' && failureCount.current > 50) {
-        log.log('SSE', 'Tab visible — resetting failure count and reconnecting');
+      if (document.visibilityState === 'visible' && !esRef.current) {
+        log.log('SSE', 'Tab visible — reconnecting');
         failureCount.current = 0;
         reconnectDelay.current = 5000;
         connect();
