@@ -148,7 +148,7 @@ export function useAuth() {
       // Special case: user has no password set
       if (e.data?.code === 'NO_PASSWORD') {
         setLoading(false);
-        return { noPassword: true, maskedPhone: e.data.maskedPhone };
+        return { noPassword: true };
       }
       setError(e.message||"Error al iniciar sesión");
       clearAuth();
