@@ -229,6 +229,7 @@ export function mapUser(u) {
     companies,
     hasInternalFleet: co?.hasInternalFleet||false,
     isSuperAdmin: u.isSuperAdmin||false,
+    isNew: !!u.isNew,
     av
   };
 }

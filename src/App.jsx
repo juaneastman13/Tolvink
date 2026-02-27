@@ -393,7 +393,7 @@ export default function Tolvink() {
     setSubmitting(true);
 
     if (!navigator.onLine) {
-      await offlineQueue.enqueue({ type: "create", payload: form });
+      await offlineQueue.enqueue({ type: "create", payload: { ...form, _idempotencyKey: crypto.randomUUID() } });
       setSubmitting(false);
       setSubmitDone("Flete guardado — se enviará cuando vuelvas a estar en línea");
       return;

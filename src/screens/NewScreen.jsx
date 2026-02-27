@@ -40,6 +40,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
   const [errs, setErrs] = useState({});
   const [touched, setTouched] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const submitGuard = useRef(false);
   const [fieldLots, setFieldLots] = useState([]);
   const [loadingLots, setLoadingLots] = useState(false);
   const [newLot, setNewLot] = useState(false);
@@ -169,7 +170,8 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
       }
       return;
     }
-    if(submitting) return;
+    if(submitting || submitGuard.current) return;
+    submitGuard.current = true;
     setSubmitting(true);
     const payload = {...form, amount:form.amount?parseFloat(form.amount):0, photos: photos.map(p=>p.preview), useOwnFleet: showTruckSelect && form.fleetChoice ? (form.fleetChoice==="own") : undefined,
       overrideOriginLat: originMode==="map" ? customOrigin.lat : (overrideOrigin?.lat || undefined),
@@ -198,7 +200,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
       payload.lotId = undefined;
       payload.fieldId = undefined;
     }
-    try { await onCreate(payload); } finally { setSubmitting(false); }
+    try { await onCreate(payload); } finally { setSubmitting(false); submitGuard.current = false; }
   };
 
   const addPhoto = (e) => {
