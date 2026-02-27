@@ -906,7 +906,7 @@ export function MapOverlay({ lat, lng, label, destLat, destLng, destLabel, freig
     <div ref={mapRef} style={{width:"100%",height:"100%"}} />
     {/* List toggle button */}
     {items.length > 0 && <button onClick={() => setListOpen(v => !v)} style={{position:"absolute",top:12,right:12,zIndex:20,padding:"8px 14px",borderRadius:10,border:`1.5px solid ${C.pri}`,background:C.w,color:C.pri,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:5,boxShadow:"0 2px 8px rgba(0,0,0,0.15)"}}>
-      {Ic.pin(C.pri, 13)} {items.length} punto{items.length !== 1 ? "s" : ""}
+      {Ic.pin(C.pri, 13)} Ver ubicaciones compartidas
     </button>}
     {/* Scrollable item list */}
     {listOpen && items.length > 0 && <div style={{position:"absolute",bottom:0,left:0,right:0,maxHeight:"45%",background:"rgba(255,255,255,0.97)",borderTop:`2px solid ${C.pri}`,overflowY:"auto",zIndex:15,WebkitOverflowScrolling:"touch",backdropFilter:"blur(6px)"}}>
