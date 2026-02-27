@@ -22,12 +22,14 @@ function _useUserPos() {
   const [pos, setPos] = useState(null);
   useEffect(() => {
     if (ref.current !== null || !navigator.geolocation) return;
+    let mounted = true;
     ref.current = "pending";
     navigator.geolocation.getCurrentPosition(
-      (p) => { ref.current = "done"; setPos({ lat: p.coords.latitude, lng: p.coords.longitude }); },
+      (p) => { ref.current = "done"; if (mounted) setPos({ lat: p.coords.latitude, lng: p.coords.longitude }); },
       () => { ref.current = "denied"; },
       { enableHighAccuracy: false, timeout: 8000, maximumAge: 60000 }
     );
+    return () => { mounted = false; };
   }, []);
   return pos;
 }
@@ -329,6 +331,7 @@ const _renderParticipantMarkers = (participants, mapInst, markersRef, iwRef, use
     const lng = parseFloat(p.lng);
     if (isNaN(lat) || isNaN(lng)) return;
     const uid = p.userId || p.id;
+    if (!uid) return;
     activeIds.add(uid);
     const name = _esc(p.userName || "Desconocido");
     const type = p.participantType || "other";
@@ -473,7 +476,12 @@ export function FreightMap({ freightId, originLat, originLng, destLat, destLng, 
       }
     })();
 
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+      Object.values(participantMarkers.current).forEach(m => m.setMap(null));
+      participantMarkers.current = {};
+      setMapReady(false);
+    };
   }, [hasAnyCoord, originLat, originLng, destLat, destLng, status]);
 
   // Fetch participant positions — starts immediately (parallel with map init)
@@ -507,22 +515,25 @@ export function FreightMap({ freightId, originLat, originLng, destLat, destLng, 
     _renderParticipantMarkers(participants, mapInstance.current, participantMarkers, participantInfoWindow, userPos);
   }, [participants, mapReady, userPos]);
 
-  // Driver sends position
+  // Driver sends position (throttled: max 1 send per 15s)
   useEffect(() => {
     if (!isDriver || !isLive || !freightId) return;
     let watchId = null;
+    let lastSent = 0;
 
     if (navigator.geolocation) {
       setTracking(true);
       watchId = navigator.geolocation.watchPosition(
         async (pos) => {
+          if (Date.now() - lastSent < 15000) return;
           try {
             await apiSendTracking(freightId, {
               lat: pos.coords.latitude,
               lng: pos.coords.longitude,
-              speed: pos.coords.speed || 0,
-              heading: pos.coords.heading || 0,
+              speed: pos.coords.speed ?? 0,
+              heading: pos.coords.heading ?? 0,
             });
+            lastSent = Date.now();
           } catch {}
         },
         () => {},
@@ -862,6 +873,12 @@ export function MapOverlay({ lat, lng, label, destLat, destLng, destLabel, freig
     if (!mapInst.current || !participants.length) return;
     _renderParticipantMarkers(participants, mapInst.current, pMarkers, pIw, userPos);
   }, [participants, userPos]);
+
+  // Cleanup participant markers on unmount
+  useEffect(() => () => {
+    Object.values(pMarkers.current).forEach(m => m.setMap(null));
+    pMarkers.current = {};
+  }, []);
 
   return <div ref={mapRef} style={{width:"100%",height:"100%"}} />;
 }
