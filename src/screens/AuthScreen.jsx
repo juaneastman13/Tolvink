@@ -1,12 +1,23 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { C, FONT, Ic } from "../theme";
 import { V, validate, SCHEMAS, FieldError } from "../validation";
 import { Btn, Field } from "../components";
 import { RoutesBackground } from "../routes-bg";
 import { apiRequestCode, apiVerifyCode, apiResetPassword } from "../api";
 
+// Compact summary chip for a completed signup field
+function CompletedField({ icon, value, onClick }) {
+  return (
+    <button onClick={onClick} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", borderRadius: 8, border: `1px solid ${C.b2}`, background: C.bg, cursor: "pointer", fontFamily: "inherit", textAlign: "left", width: "100%", transition: "all 0.15s" }}>
+      {icon}
+      <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: C.t1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{value}</span>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.t3} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+    </button>
+  );
+}
+
 export default function AuthScreen({ onLogin, onSignup, onPasswordReset, loading, error, clearError, onBackToLanding }) {
-  const [mode, setMode] = useState("login"); // login | signup | reset_phone | reset_code | reset_password
+  const [mode, setMode] = useState("login");
   const [loginId, setLoginId] = useState("");
   const [password, setPassword] = useState("");
   const [email, setEmail] = useState("");
@@ -16,6 +27,8 @@ export default function AuthScreen({ onLogin, onSignup, onPasswordReset, loading
   const [userTypes, setUserTypes] = useState([]);
   const [errs, setErrs] = useState({});
   const [touched, setTouched] = useState(false);
+  // Which signup field is being edited (for collapsing)
+  const [editingField, setEditingField] = useState("name");
 
   // Reset flow state
   const [resetPhone, setResetPhone] = useState("");
@@ -26,6 +39,8 @@ export default function AuthScreen({ onLogin, onSignup, onPasswordReset, loading
   const [resetLoading, setResetLoading] = useState(false);
   const [resetError, setResetError] = useState(null);
   const [codeSent, setCodeSent] = useState(false);
+
+  const bottomRef = useRef(null);
 
   const isResetMode = mode.startsWith("reset_");
   const anyLoading = loading || resetLoading;
@@ -41,6 +56,17 @@ export default function AuthScreen({ onLogin, onSignup, onPasswordReset, loading
     return digits.slice(0, 3) + ' ' + digits.slice(3, 6) + ' ' + digits.slice(6);
   };
   const handlePhone = (v) => setPhone(formatPhone(v));
+
+  // Auto-advance editing field when current one is complete
+  useEffect(() => {
+    if (mode !== "signup") return;
+    if (editingField === "name" && name.trim().length >= 3) { setEditingField("email"); scrollBottom(); }
+    else if (editingField === "email" && email.trim().length >= 5 && email.includes("@")) { setEditingField("phone"); scrollBottom(); }
+    else if (editingField === "phone" && phone.replace(/\D/g, "").length >= 9) { setEditingField("password"); scrollBottom(); }
+    else if (editingField === "password" && signupPassword.length >= 8) { setEditingField("types"); scrollBottom(); }
+  }, [name, email, phone, signupPassword, editingField, mode]);
+
+  const scrollBottom = () => setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" }), 100);
 
   const submit = async () => {
     setTouched(true);
@@ -63,7 +89,6 @@ export default function AuthScreen({ onLogin, onSignup, onPasswordReset, loading
         password,
       );
       if (result?.noPassword) {
-        // Pre-fill phone if user logged in with phone
         const cleanLogin = loginId.replace(/[\s\-()]/g, '');
         if (/^09[1-9]\d{6}$/.test(cleanLogin)) {
           setResetPhone(formatPhone(cleanLogin));
@@ -74,6 +99,7 @@ export default function AuthScreen({ onLogin, onSignup, onPasswordReset, loading
 
     } else if (mode === "signup") {
       if (!signupPassword || signupPassword.length < 8) {
+        setEditingField("password");
         setErrs(prev => ({ ...prev, password: "Mínimo 8 caracteres" })); return;
       }
       const vals = { name, email, phone: phone.replace(/[\s\-()]/g, ''), userTypes };
@@ -156,8 +182,12 @@ export default function AuthScreen({ onLogin, onSignup, onPasswordReset, loading
 
   const displayError = resetError || error;
 
+  // Signup field order for collapsing logic
+  const signupFields = ["name", "email", "phone", "password", "types"];
+  const fieldIdx = signupFields.indexOf(editingField);
+
   return (
-    <div style={{ minHeight: "100dvh", background: C.bg, fontFamily: FONT, position: "relative", overflow: "hidden" }}>
+    <div style={{ minHeight: "100dvh", background: C.bg, fontFamily: FONT, position: "relative", overflowX: "hidden", overflowY: "auto", WebkitOverflowScrolling: "touch" }}>
       <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&family=JetBrains+Mono:wght@400;500&display=swap');*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}html,body,#root{margin:0;padding:0;background:${C.bg};height:auto!important;min-height:0!important;overflow:visible!important;overflow-x:hidden!important;-webkit-overflow-scrolling:touch;position:static!important}input::placeholder,textarea::placeholder{color:${C.t3}}.tv-sel-opt:hover{background:${C.priGhost}!important}input[type="date"],input[type="time"]{color-scheme:light}input[type="date"]::-webkit-calendar-picker-indicator,input[type="time"]::-webkit-calendar-picker-indicator{opacity:0;position:absolute;inset:0;width:100%;height:100%;cursor:pointer}@keyframes dotPulse{0%,100%{opacity:0.3;transform:scale(0.8)}50%{opacity:1;transform:scale(1.2)}}@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}`}</style>
 
       <RoutesBackground trucks centerFade />
@@ -174,7 +204,7 @@ export default function AuthScreen({ onLogin, onSignup, onPasswordReset, loading
           <div style={{ background: C.w, borderRadius: 16, padding: 22, boxShadow: C.shMd, border: `1px solid ${C.b2}` }}>
             <div style={{ fontSize: 17, fontWeight: 700, marginBottom: 3, color: C.t1 }}>{titles[mode]}</div>
             <div style={{ fontSize: 12.5, color: C.t2, marginBottom: 18 }}>{subtitles[mode]}</div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
 
               {/* === LOGIN MODE === */}
               {mode === "login" && <>
@@ -186,35 +216,56 @@ export default function AuthScreen({ onLogin, onSignup, onPasswordReset, loading
                   <Field label="Contraseña" icon={Ic.lock(errs.password ? C.err : C.t2, 14)} value={password} onChange={setPassword} placeholder="Tu contraseña" type="password" hasError={!!errs.password} onKeyDown={e => { if (e.key === 'Enter') submit(); }} />
                   {touched && <FieldError error={errs.password} />}
                 </div>
-                <button onClick={() => { switchMode("reset_phone"); }} style={{ background: "none", border: "none", color: C.pri, fontSize: 12.5, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", textAlign: "right", padding: 0, marginTop: -6 }}>
+                <button onClick={() => { switchMode("reset_phone"); }} style={{ background: "none", border: "none", color: C.pri, fontSize: 12.5, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", textAlign: "right", padding: 0, marginTop: -4 }}>
                   ¿Olvidaste tu contraseña?
                 </button>
               </>}
 
               {/* === SIGNUP MODE === */}
               {mode === "signup" && (() => {
-                const showEmail = name.trim().length >= 3;
-                const showPhone = showEmail && email.trim().length >= 5 && email.includes("@");
-                const showPassword = showPhone && phone.replace(/\D/g, "").length >= 9;
-                const showTypes = showPassword && signupPassword.length >= 8;
                 return <>
-                  <div style={{ animation: "fadeUp 0.3s ease-out" }}>
-                    <Field label="Nombre completo" icon={Ic.user(C.t2, 14)} value={name} onChange={setName} placeholder="Tu nombre completo" />
-                    {touched && <FieldError error={errs.name} />}
-                  </div>
-                  {showEmail && <div style={{ animation: "fadeUp 0.3s ease-out" }}>
-                    <Field label="Email" icon={Ic.mail(C.t2, 14)} value={email} onChange={setEmail} placeholder="tu@email.com" type="email" />
-                    {touched && <FieldError error={errs.email} />}
-                  </div>}
-                  {showPhone && <div style={{ animation: "fadeUp 0.3s ease-out" }}>
-                    <Field label="Celular" icon={Ic.phone(C.t2, 14)} value={phone} onChange={handlePhone} placeholder="09X XXX XXX" type="tel" />
-                    {touched && <FieldError error={errs.phone} />}
-                  </div>}
-                  {showPassword && <div style={{ animation: "fadeUp 0.3s ease-out" }}>
-                    <Field label="Contraseña" icon={Ic.lock(C.t2, 14)} value={signupPassword} onChange={setSignupPassword} placeholder="Mínimo 8 caracteres" type="password" />
-                    {touched && <FieldError error={errs.password} />}
-                  </div>}
-                  {showTypes && <div style={{ animation: "fadeUp 0.3s ease-out" }}>
+                  {/* NAME */}
+                  {editingField === "name" ? (
+                    <div style={{ animation: "fadeUp 0.3s ease-out" }}>
+                      <Field label="Nombre completo" icon={Ic.user(C.t2, 14)} value={name} onChange={setName} placeholder="Tu nombre completo" autoFocus />
+                      {touched && <FieldError error={errs.name} />}
+                    </div>
+                  ) : name && (
+                    <CompletedField icon={Ic.user(C.pri, 14)} value={name} onClick={() => setEditingField("name")} />
+                  )}
+
+                  {/* EMAIL */}
+                  {fieldIdx >= 1 && (editingField === "email" ? (
+                    <div style={{ animation: "fadeUp 0.3s ease-out" }}>
+                      <Field label="Email" icon={Ic.mail(C.t2, 14)} value={email} onChange={setEmail} placeholder="tu@email.com" type="email" autoFocus />
+                      {touched && <FieldError error={errs.email} />}
+                    </div>
+                  ) : email && (
+                    <CompletedField icon={Ic.mail(C.pri, 14)} value={email} onClick={() => setEditingField("email")} />
+                  ))}
+
+                  {/* PHONE */}
+                  {fieldIdx >= 2 && (editingField === "phone" ? (
+                    <div style={{ animation: "fadeUp 0.3s ease-out" }}>
+                      <Field label="Celular" icon={Ic.phone(C.t2, 14)} value={phone} onChange={handlePhone} placeholder="09X XXX XXX" type="tel" autoFocus />
+                      {touched && <FieldError error={errs.phone} />}
+                    </div>
+                  ) : phone && (
+                    <CompletedField icon={Ic.phone(C.pri, 14)} value={phone} onClick={() => setEditingField("phone")} />
+                  ))}
+
+                  {/* PASSWORD */}
+                  {fieldIdx >= 3 && (editingField === "password" ? (
+                    <div style={{ animation: "fadeUp 0.3s ease-out" }}>
+                      <Field label="Contraseña" icon={Ic.lock(C.t2, 14)} value={signupPassword} onChange={setSignupPassword} placeholder="Mínimo 8 caracteres" type="password" autoFocus />
+                      {touched && <FieldError error={errs.password} />}
+                    </div>
+                  ) : signupPassword && (
+                    <CompletedField icon={Ic.lock(C.pri, 14)} value={"•".repeat(signupPassword.length)} onClick={() => setEditingField("password")} />
+                  ))}
+
+                  {/* USER TYPES */}
+                  {fieldIdx >= 4 && <div style={{ animation: "fadeUp 0.3s ease-out" }}>
                     <div style={{ fontSize: 12, fontWeight: 600, color: C.t2, marginBottom: 8 }}>¿Qué tipo de usuario sos?</div>
                     <div style={{ fontSize: 10.5, color: C.t3, marginBottom: 10 }}>Podés seleccionar más de uno</div>
                     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -274,6 +325,7 @@ export default function AuthScreen({ onLogin, onSignup, onPasswordReset, loading
 
               {displayError && <div style={{ padding: "10px 14px", background: C.errPale, borderRadius: 8, fontSize: 12.5, color: C.err, fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.err} strokeWidth="2.5"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>{displayError}</div>}
               <Btn full onClick={submit} disabled={anyLoading}>{anyLoading ? "Cargando..." : btnLabels[mode]}</Btn>
+              <div ref={bottomRef} />
             </div>
           </div>
           <div style={{ textAlign: "center", marginTop: 16 }}>
