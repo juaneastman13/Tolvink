@@ -4,8 +4,6 @@ import { stCfg, getActions } from "../constants";
 import { Bd, Btn, SkeletonList, EmptyState } from "../components";
 import { useIsDesktop } from "../hooks";
 import { getPendingActions, resolveUserTypeForFreight, getWaitingOnText } from "../utils/freight-helpers";
-import { getOnboardingState, setOnboardingState, apiCompleteOnboarding } from "../api";
-import OnboardingChecklist from "../components/OnboardingChecklist";
 import DetailScreen from "./DetailScreen";
 
 // Summary groups — by freight type/status, filtered by date. Priority: pending confirmation → active → rest
@@ -247,20 +245,6 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
         </div>
       )}
 
-      {/* Onboarding checklist for new users */}
-      {user.isNew && !getOnboardingState(user.id).checklistDismissed && (
-        <OnboardingChecklist
-          user={user}
-          catalog={catalog}
-          freights={freights}
-          compact={compact}
-          onNavigate={onNav}
-          onDismiss={() => {
-            setOnboardingState(user.id, { checklistDismissed: true });
-            apiCompleteOnboarding().catch(() => {});
-          }}
-        />
-      )}
 
       {/* Pendientes — top aligned with Solicitar flete button (~14px padding in sidebar) */}
       {totalPendingAll > 0 && (<>
