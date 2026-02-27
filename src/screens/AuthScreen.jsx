@@ -3,7 +3,7 @@ import { C, FONT, Ic } from "../theme";
 import { V, validate, SCHEMAS, FieldError } from "../validation";
 import { Btn, Field } from "../components";
 import { RoutesBackground } from "../routes-bg";
-import { apiRequestCode, apiVerifyCode, apiResetPassword } from "../api";
+import { apiIdentifyForReset, apiRequestCode, apiVerifyCode, apiResetPassword } from "../api";
 
 // Compact summary chip for a completed signup field
 function CompletedField({ icon, value, onClick }) {
@@ -31,6 +31,8 @@ export default function AuthScreen({ onLogin, onSignup, onPasswordReset, loading
   const [editingField, setEditingField] = useState("name");
 
   // Reset flow state
+  const [resetIdentifier, setResetIdentifier] = useState("");
+  const [maskedPhone, setMaskedPhone] = useState("");
   const [resetPhone, setResetPhone] = useState("");
   const [resetCode, setResetCode] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -95,11 +97,10 @@ export default function AuthScreen({ onLogin, onSignup, onPasswordReset, loading
       );
       if (result?.noPassword) {
         const cleanLogin = loginId.replace(/[\s\-()]/g, '');
-        if (/^09[1-9]\d{6}$/.test(cleanLogin)) {
-          setResetPhone(formatPhone(cleanLogin));
-        }
-        setResetError(`Tu cuenta no tiene contraseña configurada.${result.maskedPhone ? ` Enviá un código al ${result.maskedPhone}.` : ''}`);
-        switchMode("reset_phone");
+        setResetIdentifier(/^09/.test(cleanLogin) ? cleanLogin : cleanLogin.toLowerCase());
+        if (result.maskedPhone) setMaskedPhone(result.maskedPhone);
+        setResetError(`Tu cuenta no tiene contraseña configurada. Confirmá tu teléfono para recibir un código.`);
+        switchMode(result.maskedPhone ? "reset_confirm" : "reset_identify");
       }
 
     } else if (mode === "signup") {
@@ -113,13 +114,24 @@ export default function AuthScreen({ onLogin, onSignup, onPasswordReset, loading
       if (!ok) return;
       onSignup({ name, email, phone, password: signupPassword, userTypes });
 
-    } else if (mode === "reset_phone") {
+    } else if (mode === "reset_identify") {
+      if (!resetIdentifier.trim()) { setErrs({ identifier: "Ingresá tu email o teléfono" }); return; }
+      setErrs({});
+      setResetLoading(true);
+      try {
+        const result = await apiIdentifyForReset(resetIdentifier.trim());
+        setMaskedPhone(result.maskedPhone);
+        setMode("reset_confirm");
+      } catch (e) { setResetError(e.message || "No se encontró la cuenta"); }
+      finally { setResetLoading(false); }
+
+    } else if (mode === "reset_confirm") {
       const cleanPhone = resetPhone.replace(/[\s\-()]/g, '');
       if (!/^09[1-9]\d{6}$/.test(cleanPhone)) { setErrs({ phone: "Formato: 09X XXX XXX" }); return; }
       setErrs({});
       setResetLoading(true);
       try {
-        await apiRequestCode(cleanPhone);
+        await apiRequestCode(resetIdentifier.trim(), cleanPhone);
         setCodeSent(true);
         setMode("reset_code");
       } catch (e) { setResetError(e.message || "Error al enviar código"); }
@@ -166,21 +178,24 @@ export default function AuthScreen({ onLogin, onSignup, onPasswordReset, loading
   const titles = {
     login: "Iniciar sesión",
     signup: "Crear cuenta",
-    reset_phone: "Recuperar contraseña",
+    reset_identify: "Recuperar contraseña",
+    reset_confirm: "Confirmá tu teléfono",
     reset_code: "Verificar código",
     reset_password: "Nueva contraseña",
   };
   const subtitles = {
     login: "Ingresá con email o teléfono",
     signup: "Completá tus datos para registrarte",
-    reset_phone: "Ingresá tu número de celular y te enviaremos un código por WhatsApp.",
+    reset_identify: "Ingresá tu email o teléfono para identificarte.",
+    reset_confirm: `Tu teléfono registrado es ${maskedPhone || "09*****XX"}. Ingresá el número completo para recibir el código.`,
     reset_code: "Ingresá el código de 6 dígitos que te enviamos por WhatsApp.",
     reset_password: "Elegí tu nueva contraseña.",
   };
   const btnLabels = {
     login: "Ingresar",
     signup: "Crear cuenta",
-    reset_phone: codeSent ? "Reenviar código" : "Enviar código",
+    reset_identify: "Continuar",
+    reset_confirm: codeSent ? "Reenviar código" : "Enviar código",
     reset_code: "Verificar",
     reset_password: "Guardar contraseña",
   };
@@ -221,7 +236,7 @@ export default function AuthScreen({ onLogin, onSignup, onPasswordReset, loading
                   <Field label="Contraseña" icon={Ic.lock(errs.password ? C.err : C.t2, 14)} value={password} onChange={setPassword} placeholder="Tu contraseña" type="password" hasError={!!errs.password} onKeyDown={e => { if (e.key === 'Enter') submit(); }} />
                   {touched && <FieldError error={errs.password} />}
                 </div>
-                <button onClick={() => { switchMode("reset_phone"); }} style={{ background: "none", border: "none", color: C.pri, fontSize: 12.5, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", textAlign: "right", padding: 0, marginTop: -4 }}>
+                <button onClick={() => { switchMode("reset_identify"); }} style={{ background: "none", border: "none", color: C.pri, fontSize: 12.5, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", textAlign: "right", padding: 0, marginTop: -4 }}>
                   ¿Olvidaste tu contraseña?
                 </button>
               </>}
@@ -307,10 +322,18 @@ export default function AuthScreen({ onLogin, onSignup, onPasswordReset, loading
                 </>;
               })()}
 
-              {/* === RESET: PHONE === */}
-              {mode === "reset_phone" && <>
+              {/* === RESET: IDENTIFY === */}
+              {mode === "reset_identify" && <>
                 <div>
-                  <Field label="Celular" icon={Ic.phone(C.t2, 14)} value={resetPhone} onChange={v => setResetPhone(formatPhone(v))} placeholder="09X XXX XXX" type="tel" hasError={!!errs.phone} onKeyDown={e => { if (e.key === 'Enter') submit(); }} />
+                  <Field label="Email o teléfono" icon={Ic.mail(C.t2, 14)} value={resetIdentifier} onChange={setResetIdentifier} placeholder="tu@email.com o 09X XXX XXX" hasError={!!errs.identifier} onKeyDown={e => { if (e.key === 'Enter') submit(); }} />
+                  {touched && <FieldError error={errs.identifier} />}
+                </div>
+              </>}
+
+              {/* === RESET: CONFIRM PHONE === */}
+              {mode === "reset_confirm" && <>
+                <div>
+                  <Field label="Teléfono registrado" icon={Ic.phone(errs.phone ? C.err : C.t2, 14)} value={resetPhone} onChange={v => setResetPhone(formatPhone(v))} placeholder="09X XXX XXX" type="tel" hasError={!!errs.phone} onKeyDown={e => { if (e.key === 'Enter') submit(); }} />
                   {touched && <FieldError error={errs.phone} />}
                 </div>
               </>}
@@ -321,7 +344,7 @@ export default function AuthScreen({ onLogin, onSignup, onPasswordReset, loading
                   <Field label="Código de verificación" value={resetCode} onChange={v => setResetCode(v.replace(/\D/g, '').slice(0, 6))} placeholder="000000" hasError={!!errs.code} onKeyDown={e => { if (e.key === 'Enter') submit(); }} style={{ letterSpacing: 8, textAlign: "center", fontSize: 22, fontWeight: 700 }} />
                   {touched && <FieldError error={errs.code} />}
                 </div>
-                <button onClick={() => { setResetCode(""); switchMode("reset_phone"); }} style={{ background: "none", border: "none", color: C.pri, fontSize: 12.5, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", textAlign: "center", padding: 0 }}>
+                <button onClick={() => { setResetCode(""); switchMode("reset_confirm"); }} style={{ background: "none", border: "none", color: C.pri, fontSize: 12.5, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", textAlign: "center", padding: 0 }}>
                   Reenviar código
                 </button>
               </>}

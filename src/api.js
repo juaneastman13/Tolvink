@@ -181,8 +181,11 @@ export async function apiLogout() {
 }
 
 // Password reset via WhatsApp
-export async function apiRequestCode(phone) {
-  return api('/auth/request-code', { body: { phone } });
+export async function apiIdentifyForReset(identifier) {
+  return api('/auth/identify-for-reset', { body: { identifier } });
+}
+export async function apiRequestCode(identifier, phone) {
+  return api('/auth/request-code', { body: { identifier, phone } });
 }
 export async function apiVerifyCode(phone, code) {
   return api('/auth/verify-code', { body: { phone, code } });
