@@ -3,10 +3,10 @@ import { C, FONT, Ic } from "../theme";
 import { RoutesBackground } from "../routes-bg";
 import AuthScreen from "./AuthScreen";
 
-export default function LandingScreen({ onLogin, onSignup, loading, error, clearError }) {
+export default function LandingScreen({ onLogin, onSignup, onPasswordReset, loading, error, clearError }) {
   const [showAuth, setShowAuth] = useState(false);
 
-  if (showAuth) return <AuthScreen onLogin={onLogin} onSignup={onSignup} loading={loading} error={error} clearError={clearError} onBackToLanding={()=>setShowAuth(false)} />;
+  if (showAuth) return <AuthScreen onLogin={onLogin} onSignup={onSignup} onPasswordReset={onPasswordReset} loading={loading} error={error} clearError={clearError} onBackToLanding={()=>setShowAuth(false)} />;
 
   return (
     <div style={{ minHeight:"100dvh", background:C.bg, fontFamily:FONT, display:"flex", flexDirection:"column", overflow:"hidden", WebkitOverflowScrolling:"touch", position:"relative" }}>

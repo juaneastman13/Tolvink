@@ -127,11 +127,11 @@ export function useAuth() {
     setIsInitialized(true);
   },[]);
 
-  const login = useCallback(async (identifier) => {
+  const login = useCallback(async (identifier, password) => {
     setLoading(true); setError(null);
     try {
       log.log('AUTH', 'Login attempt for:', identifier);
-      const d = await apiLogin(identifier);
+      const d = await apiLogin(identifier, password);
       log.log('AUTH', 'Login response:', d);
 
       if(!d.user) {
@@ -145,10 +145,16 @@ export function useAuth() {
     }
     catch(e) {
       log.error('AUTH', 'Login error:', e);
+      // Special case: user has no password set
+      if (e.data?.code === 'NO_PASSWORD') {
+        setLoading(false);
+        return { noPassword: true, maskedPhone: e.data.maskedPhone };
+      }
       setError(e.message||"Error al iniciar sesión");
       clearAuth();
     }
     finally { setLoading(false); }
+    return null;
   },[]);
 
   const signup = useCallback(async (form) => {
@@ -158,7 +164,7 @@ export function useAuth() {
       const typeMap = {planta:"plant",transporter:"transporter",producer:"producer"};
       const userTypes = (form.userTypes||[]).map(t=>typeMap[t]||t);
       const phone = form.phone?.replace(/[\s\-()]/g,'')||"";
-      const d = await apiRegister({ name:form.name, email:form.email, phone, userTypes });
+      const d = await apiRegister({ name:form.name, email:form.email, phone, password:form.password, userTypes });
 
       if(!d.user) {
         throw new Error('Respuesta inválida del servidor');
@@ -201,7 +207,15 @@ export function useAuth() {
     }
   }, []);
 
-  return { user, loading, error, isInitialized, login, signup, logout, switchCompany, clearError:()=>setError(null) };
+  const handlePasswordReset = useCallback((result) => {
+    if (result?.user) {
+      const mappedUser = mapUser(result.user);
+      setUser(mappedUser);
+      track("password_reset");
+    }
+  }, []);
+
+  return { user, loading, error, isInitialized, login, signup, logout, switchCompany, handlePasswordReset, clearError:()=>setError(null) };
 }
 
 // ======================== MAP USER ====================================

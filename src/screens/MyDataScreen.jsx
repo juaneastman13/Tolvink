@@ -1,7 +1,7 @@
 import { useState, Fragment } from "react";
 import { C, Ic } from "../theme";
 import { Btn, Bd, LoadingOverlay } from "../components";
-import { apiUpdateMe } from "../api";
+import { apiUpdateMe, apiChangePassword } from "../api";
 import { adminStyles, typeColors, typeLabels, adminBackBtn } from "../utils/freight-helpers";
 
 export default function MyDataScreen({ user, onBack }) {
@@ -11,6 +11,8 @@ export default function MyDataScreen({ user, onBack }) {
   const [msg, setMsg] = useState(null);
   const [doneMsg, setDoneMsg] = useState("");
   const [expandedCo, setExpandedCo] = useState(null);
+  const [pwForm, setPwForm] = useState({ current:"", next:"" });
+  const [pwSaving, setPwSaving] = useState(false);
   const show = (t,k="ok") => { setMsg({t,k}); setTimeout(()=>setMsg(null),3000); };
   const handleSave = async () => {
     if(!form.name.trim()||!form.email.trim()) return show("Nombre y email obligatorios","err");
@@ -79,6 +81,20 @@ export default function MyDataScreen({ user, onBack }) {
         </table>
       </div>
       </>}
+
+      <div style={{fontSize:15,fontWeight:700,color:C.t1,marginBottom:8,marginTop:16}}>Cambiar contraseña</div>
+      <div style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius:10,padding:14,boxShadow:C.sh}}>
+        <div style={s.lbl}>Contraseña actual:</div>
+        <input value={pwForm.current} onChange={e=>setPwForm(p=>({...p,current:e.target.value}))} placeholder="Contraseña actual" type="password" style={{...s.inp,marginBottom:10}} />
+        <div style={s.lbl}>Nueva contraseña:</div>
+        <input value={pwForm.next} onChange={e=>setPwForm(p=>({...p,next:e.target.value}))} placeholder="Mínimo 8 caracteres" type="password" style={{...s.inp,marginBottom:10}} />
+        <button onClick={async()=>{
+          if(!pwForm.next||pwForm.next.length<8) return show("Mínimo 8 caracteres","err");
+          setPwSaving(true);
+          try { await apiChangePassword(pwForm.current,pwForm.next); setPwForm({current:"",next:""}); show("Contraseña actualizada"); } catch(e) { show(e.message||"Error","err"); }
+          finally { setPwSaving(false); }
+        }} disabled={pwSaving} style={s.btnP(C.pri,pwSaving)}>{pwSaving?"Guardando...":"Cambiar contraseña"}</button>
+      </div>
 
       {msg&&<div style={{padding:"8px 12px",borderRadius:8,background:msg.k==="ok"?C.okPale:`${C.err}15`,color:msg.k==="ok"?C.ok:C.err,fontSize:12,marginTop:10}}>{msg.t}</div>}
       </div>

@@ -135,11 +135,11 @@ export default async function api(path, opts={}) {
 }
 
 // Auth
-export async function apiLogin(identifier) {
+export async function apiLogin(identifier, password) {
   setLoggingIn(true);
   try {
     const isPhone = /^09[1-9]\d{6}$/.test(identifier.replace(/[\s\-()]/g,''));
-    const body = isPhone ? { phone:identifier.replace(/[\s\-()]/g,'') } : { email:identifier };
+    const body = isPhone ? { phone:identifier.replace(/[\s\-()]/g,''), password } : { email:identifier, password };
     const d=await api('/auth/login',{body});
 
     if(!d || !d.access_token || !d.user) {
@@ -178,6 +178,27 @@ export async function apiRegister(b) {
 export async function apiLogout() {
   try { await api('/auth/logout', { body: {}, method: 'POST' }); } catch {}
   clearAuth();
+}
+
+// Password reset via WhatsApp
+export async function apiRequestCode(phone) {
+  return api('/auth/request-code', { body: { phone } });
+}
+export async function apiVerifyCode(phone, code) {
+  return api('/auth/verify-code', { body: { phone, code } });
+}
+export async function apiResetPassword(resetToken, newPassword) {
+  const d = await api('/auth/reset-password', { body: { resetToken, newPassword } });
+  if (d?.access_token) {
+    setToken(d.access_token);
+    setRefreshToken(d.refresh_token);
+    saveUser(d.user);
+    scheduleTokenRefresh();
+  }
+  return d;
+}
+export async function apiChangePassword(currentPassword, newPassword) {
+  return api('/auth/password', { method: 'PATCH', body: { currentPassword, newPassword } });
 }
 
 // Switch active company

@@ -477,7 +477,7 @@ export default function Tolvink() {
 
   // If no user after initialization, show landing
   if(!auth.user) {
-    return <Suspense fallback={<SL/>}><LandingScreen onLogin={auth.login} onSignup={auth.signup} loading={auth.loading} error={auth.error} clearError={auth.clearError}/></Suspense>;
+    return <Suspense fallback={<SL/>}><LandingScreen onLogin={auth.login} onSignup={auth.signup} onPasswordReset={auth.handlePasswordReset} loading={auth.loading} error={auth.error} clearError={auth.clearError}/></Suspense>;
   }
 
   const curFreight = freightMap.get(selFreight) || null;
