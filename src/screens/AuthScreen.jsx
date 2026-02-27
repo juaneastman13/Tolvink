@@ -57,16 +57,21 @@ export default function AuthScreen({ onLogin, onSignup, onPasswordReset, loading
   };
   const handlePhone = (v) => setPhone(formatPhone(v));
 
-  // Auto-advance editing field when current one is complete
-  useEffect(() => {
-    if (mode !== "signup") return;
-    if (editingField === "name" && name.trim().length >= 3) { setEditingField("email"); scrollBottom(); }
-    else if (editingField === "email" && email.trim().length >= 5 && email.includes("@")) { setEditingField("phone"); scrollBottom(); }
-    else if (editingField === "phone" && phone.replace(/\D/g, "").length >= 9) { setEditingField("password"); scrollBottom(); }
-    else if (editingField === "password" && signupPassword.length >= 8) { setEditingField("types"); scrollBottom(); }
-  }, [name, email, phone, signupPassword, editingField, mode]);
-
   const scrollBottom = () => setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" }), 100);
+
+  // Check if the current editing field meets minimum criteria to advance
+  const canAdvance = (field) => {
+    if (field === "name") return name.trim().length >= 3;
+    if (field === "email") return email.trim().length >= 5 && email.includes("@");
+    if (field === "phone") return phone.replace(/\D/g, "").length >= 9;
+    if (field === "password") return signupPassword.length >= 8;
+    return false;
+  };
+
+  const advanceField = () => {
+    const next = { name: "email", email: "phone", phone: "password", password: "types" };
+    if (next[editingField]) { setEditingField(next[editingField]); scrollBottom(); }
+  };
 
   const submit = async () => {
     setTouched(true);
@@ -223,12 +228,19 @@ export default function AuthScreen({ onLogin, onSignup, onPasswordReset, loading
 
               {/* === SIGNUP MODE === */}
               {mode === "signup" && (() => {
+                const nextBtn = (field) => canAdvance(field) && editingField === field && (
+                  <button onClick={advanceField} style={{ alignSelf: "flex-end", display: "inline-flex", alignItems: "center", gap: 4, padding: "6px 14px", borderRadius: 8, border: "none", background: C.pri, color: C.w, fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", marginTop: 4, transition: "opacity 0.15s", animation: "fadeUp 0.2s ease-out" }}>
+                    Siguiente <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                  </button>
+                );
+                const fieldKeyDown = (e) => { if (e.key === "Enter" && canAdvance(editingField)) advanceField(); };
                 return <>
                   {/* NAME */}
                   {editingField === "name" ? (
                     <div style={{ animation: "fadeUp 0.3s ease-out" }}>
-                      <Field label="Nombre completo" icon={Ic.user(C.t2, 14)} value={name} onChange={setName} placeholder="Tu nombre completo" autoFocus />
+                      <Field label="Nombre completo" icon={Ic.user(C.t2, 14)} value={name} onChange={setName} placeholder="Tu nombre completo" autoFocus onKeyDown={fieldKeyDown} />
                       {touched && <FieldError error={errs.name} />}
+                      {nextBtn("name")}
                     </div>
                   ) : name && (
                     <CompletedField icon={Ic.user(C.pri, 14)} value={name} onClick={() => setEditingField("name")} />
@@ -237,8 +249,9 @@ export default function AuthScreen({ onLogin, onSignup, onPasswordReset, loading
                   {/* EMAIL */}
                   {fieldIdx >= 1 && (editingField === "email" ? (
                     <div style={{ animation: "fadeUp 0.3s ease-out" }}>
-                      <Field label="Email" icon={Ic.mail(C.t2, 14)} value={email} onChange={setEmail} placeholder="tu@email.com" type="email" autoFocus />
+                      <Field label="Email" icon={Ic.mail(C.t2, 14)} value={email} onChange={setEmail} placeholder="tu@email.com" type="email" autoFocus onKeyDown={fieldKeyDown} />
                       {touched && <FieldError error={errs.email} />}
+                      {nextBtn("email")}
                     </div>
                   ) : email && (
                     <CompletedField icon={Ic.mail(C.pri, 14)} value={email} onClick={() => setEditingField("email")} />
@@ -247,8 +260,9 @@ export default function AuthScreen({ onLogin, onSignup, onPasswordReset, loading
                   {/* PHONE */}
                   {fieldIdx >= 2 && (editingField === "phone" ? (
                     <div style={{ animation: "fadeUp 0.3s ease-out" }}>
-                      <Field label="Celular" icon={Ic.phone(C.t2, 14)} value={phone} onChange={handlePhone} placeholder="09X XXX XXX" type="tel" autoFocus />
+                      <Field label="Celular" icon={Ic.phone(C.t2, 14)} value={phone} onChange={handlePhone} placeholder="09X XXX XXX" type="tel" autoFocus onKeyDown={fieldKeyDown} />
                       {touched && <FieldError error={errs.phone} />}
+                      {nextBtn("phone")}
                     </div>
                   ) : phone && (
                     <CompletedField icon={Ic.phone(C.pri, 14)} value={phone} onClick={() => setEditingField("phone")} />
@@ -257,8 +271,9 @@ export default function AuthScreen({ onLogin, onSignup, onPasswordReset, loading
                   {/* PASSWORD */}
                   {fieldIdx >= 3 && (editingField === "password" ? (
                     <div style={{ animation: "fadeUp 0.3s ease-out" }}>
-                      <Field label="Contraseña" icon={Ic.lock(C.t2, 14)} value={signupPassword} onChange={setSignupPassword} placeholder="Mínimo 8 caracteres" type="password" autoFocus />
+                      <Field label="Contraseña" icon={Ic.lock(C.t2, 14)} value={signupPassword} onChange={setSignupPassword} placeholder="Mínimo 8 caracteres" type="password" autoFocus onKeyDown={fieldKeyDown} />
                       {touched && <FieldError error={errs.password} />}
+                      {nextBtn("password")}
                     </div>
                   ) : signupPassword && (
                     <CompletedField icon={Ic.lock(C.pri, 14)} value={"•".repeat(signupPassword.length)} onClick={() => setEditingField("password")} />
