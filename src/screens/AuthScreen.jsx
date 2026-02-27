@@ -47,7 +47,11 @@ export default function AuthScreen({ onLogin, onSignup, onPasswordReset, loading
   const isResetMode = mode.startsWith("reset_");
   const anyLoading = loading || resetLoading;
 
-  const switchMode = (m) => { setMode(m); clearError(); setErrs({}); setTouched(false); setResetError(null); };
+  const switchMode = (m) => {
+    setMode(m); clearError(); setErrs({}); setTouched(false); setResetError(null);
+    // Clear stale reset state when going back to login/signup
+    if (m === "login" || m === "signup") { setResetIdentifier(""); setMaskedPhone(""); setResetPhone(""); setResetCode(""); setNewPassword(""); setConfirmPassword(""); setResetToken(""); setCodeSent(false); }
+  };
   const toggle = () => switchMode(mode === "login" ? "signup" : "login");
   const toggleType = (t) => setUserTypes(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t]);
 
