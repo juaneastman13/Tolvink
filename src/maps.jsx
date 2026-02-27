@@ -816,11 +816,27 @@ export function MapOverlay({ lat, lng, label, destLat, destLng, destLabel, freig
   const mapInst = useRef(null);
   const pMarkers = useRef({});
   const pIw = useRef(null);
+  const originMk = useRef(null);
+  const destMk = useRef(null);
   const [participants, setParticipants] = useState([]);
+  const [listOpen, setListOpen] = useState(false);
   const userPos = _useUserPos();
   const mkInfoContent = (name, lt, ln) => {
     const navUrl = `geo:${lt},${ln}?q=${lt},${ln}`;
     return `<div style="font-family:sans-serif;padding:4px 2px"><div style="font-weight:700;font-size:13px;color:#1a1a1a">${_esc(name)||"Ubicación"}</div><div style="font-size:11px;color:#888;margin-top:3px">${Number(lt).toFixed(5)}, ${Number(ln).toFixed(5)}</div><a href="${navUrl}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:4px;margin-top:6px;padding:5px 10px;background:#1A6B37;color:#fff;border-radius:6px;font-size:11px;font-weight:700;text-decoration:none">▶ Navegar</a></div>`;
+  };
+
+  const focusPoint = (lt, ln, markerRef) => {
+    const map = mapInst.current;
+    if (!map) return;
+    map.panTo({ lat: Number(lt), lng: Number(ln) });
+    map.setZoom(15);
+    if (markerRef && pIw.current) {
+      const mk = markerRef.current || markerRef;
+      if (mk && mk._iwContent) { pIw.current.setContent(mk._iwContent()); pIw.current.open(map, mk); }
+      else if (mk) { const iw = new (window.google.maps.InfoWindow)({ content: mkInfoContent(mk.getTitle?.() || "", lt, ln) }); iw.open(map, mk); }
+    }
+    setListOpen(false);
   };
 
   // Fetch participant positions in parallel with map init
@@ -846,8 +862,10 @@ export function MapOverlay({ lat, lng, label, destLat, destLng, destLabel, freig
         styles: [{ featureType:"poi", stylers:[{visibility:"off"}] }, { featureType:"transit", stylers:[{visibility:"off"}] }],
       });
       mapInst.current = map;
+      if (!pIw.current) pIw.current = new maps.InfoWindow();
       const marker = new maps.Marker({ position: pos, map, animation: maps.Animation.DROP,
         icon: { path: maps.SymbolPath.CIRCLE, scale: 12, fillColor: C.pri, fillOpacity: 0.8, strokeColor: "#fff", strokeWeight: 3 } });
+      originMk.current = marker;
       const iw = new maps.InfoWindow({ content: mkInfoContent(label, lat, lng) });
       iw.open(map, marker);
       marker.addListener("click", () => iw.open(map, marker));
@@ -855,6 +873,7 @@ export function MapOverlay({ lat, lng, label, destLat, destLng, destLabel, freig
         const dpos = { lat: Number(destLat), lng: Number(destLng) };
         const dm = new maps.Marker({ position: dpos, map, animation: maps.Animation.DROP,
           icon: { path: maps.SymbolPath.CIRCLE, scale: 12, fillColor: "#0891B2", fillOpacity: 0.8, strokeColor: "#fff", strokeWeight: 3 } });
+        destMk.current = dm;
         const iw2 = new maps.InfoWindow({ content: mkInfoContent(destLabel, destLat, destLng) });
         dm.addListener("click", () => iw2.open(map, dm));
         const bounds = new maps.LatLngBounds();
@@ -880,5 +899,40 @@ export function MapOverlay({ lat, lng, label, destLat, destLng, destLabel, freig
     pMarkers.current = {};
   }, []);
 
-  return <div ref={mapRef} style={{width:"100%",height:"100%"}} />;
+  // Build list items
+  const items = [];
+  if (lat && lng) items.push({ key: "origin", label: label || "Origen", color: "#1A6B37", type: "Origen", lat: Number(lat), lng: Number(lng), mk: originMk });
+  if (destLat && destLng) items.push({ key: "dest", label: destLabel || "Destino", color: "#0891B2", type: "Destino", lat: Number(destLat), lng: Number(destLng), mk: destMk });
+  participants.forEach(p => {
+    const pLat = parseFloat(p.lat); const pLng = parseFloat(p.lng);
+    if (isNaN(pLat) || isNaN(pLng)) return;
+    const uid = p.userId || p.id;
+    if (!uid) return;
+    const type = p.participantType || "other";
+    const dist = userPos ? _haversine(userPos.lat, userPos.lng, pLat, pLng) : null;
+    items.push({ key: uid, label: p.userName || "Desconocido", color: _TYPE_COLORS[type] || _TYPE_COLORS.other, type: _TYPE_LABEL[type] || "Participante", lat: pLat, lng: pLng, mk: pMarkers.current[uid] ? { current: pMarkers.current[uid] } : null, dist, time: p.createdAt ? new Date(p.createdAt).toLocaleTimeString("es-UY", { hour: "2-digit", minute: "2-digit" }) : null });
+  });
+
+  return <div style={{width:"100%",height:"100%",position:"relative"}}>
+    <div ref={mapRef} style={{width:"100%",height:"100%"}} />
+    {/* List toggle button */}
+    {items.length > 0 && <button onClick={() => setListOpen(v => !v)} style={{position:"absolute",bottom: listOpen ? undefined : 16,top: listOpen ? 12 : undefined,right:12,zIndex:20,padding:"8px 14px",borderRadius:10,border:`1.5px solid ${C.pri}`,background:C.w,color:C.pri,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:5,boxShadow:"0 2px 8px rgba(0,0,0,0.15)"}}>
+      {Ic.pin(C.pri, 13)} {items.length} punto{items.length !== 1 ? "s" : ""}
+    </button>}
+    {/* Scrollable item list */}
+    {listOpen && items.length > 0 && <div style={{position:"absolute",bottom:0,left:0,right:0,maxHeight:"45%",background:"rgba(255,255,255,0.97)",borderTop:`2px solid ${C.pri}`,overflowY:"auto",zIndex:15,WebkitOverflowScrolling:"touch",backdropFilter:"blur(6px)"}}>
+      {items.map(it => (
+        <button key={it.key} onClick={() => focusPoint(it.lat, it.lng, it.mk)} style={{display:"flex",alignItems:"center",gap:10,width:"100%",padding:"12px 16px",border:"none",borderBottom:`1px solid ${C.b1}`,background:"transparent",cursor:"pointer",fontFamily:"inherit",textAlign:"left"}}>
+          <span style={{width:10,height:10,borderRadius:5,background:it.color,flexShrink:0}} />
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{fontSize:13,fontWeight:600,color:C.t1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{it.label}</div>
+            <div style={{fontSize:10.5,color:C.t3,marginTop:1}}>
+              {it.type}{it.time ? ` \u00b7 ${it.time}` : ""}{it.dist != null ? ` \u00b7 ${it.dist.toFixed(1)} km` : ""}
+            </div>
+          </div>
+          <span style={{fontSize:11,color:C.pri,fontWeight:600,flexShrink:0}}>{Ic.chev(C.pri, 10)}</span>
+        </button>
+      ))}
+    </div>}
+  </div>;
 }
