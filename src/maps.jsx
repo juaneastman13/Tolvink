@@ -582,17 +582,6 @@ export function FreightMap({ freightId, originLat, originLng, destLat, destLng, 
           <span style={{ width: 8, height: 8, borderRadius: 4, background: "#003882" }} />
           <span style={{ color: C.t2 }}>{destName}</span>
         </div>}
-        {participants.length > 0 && participants.map(p => {
-          const pLat = parseFloat(p.lat);
-          const pLng = parseFloat(p.lng);
-          const dist = userPos && !isNaN(pLat) && !isNaN(pLng) ? _haversine(userPos.lat, userPos.lng, pLat, pLng) : null;
-          return (
-            <div key={p.userId||p.id} style={{ display: "flex", alignItems: "center", gap: 4 }}>
-              <span style={{ width: 8, height: 8, borderRadius: 4, background: _TYPE_COLORS[p.participantType] || _TYPE_COLORS.other }} />
-              <span style={{ color: C.t2, fontSize: 10 }}>{p.userName || "?"}{dist !== null ? ` \u00b7 ${dist.toFixed(1)} km` : ""}</span>
-            </div>
-          );
-        })}
         {isLive && (truckPos || participants.length > 0) && (
           <div style={{ display: "flex", alignItems: "center", gap: 4, marginLeft: "auto" }}>
             <span style={{ width: 8, height: 8, borderRadius: 4, background: "#FF6A00", animation: "ti 1.5s infinite" }} />
@@ -916,7 +905,7 @@ export function MapOverlay({ lat, lng, label, destLat, destLng, destLabel, freig
   return <div style={{width:"100%",height:"100%",position:"relative"}}>
     <div ref={mapRef} style={{width:"100%",height:"100%"}} />
     {/* List toggle button */}
-    {items.length > 0 && <button onClick={() => setListOpen(v => !v)} style={{position:"absolute",bottom: listOpen ? undefined : 16,top: listOpen ? 12 : undefined,right:12,zIndex:20,padding:"8px 14px",borderRadius:10,border:`1.5px solid ${C.pri}`,background:C.w,color:C.pri,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:5,boxShadow:"0 2px 8px rgba(0,0,0,0.15)"}}>
+    {items.length > 0 && <button onClick={() => setListOpen(v => !v)} style={{position:"absolute",top:12,right:12,zIndex:20,padding:"8px 14px",borderRadius:10,border:`1.5px solid ${C.pri}`,background:C.w,color:C.pri,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:5,boxShadow:"0 2px 8px rgba(0,0,0,0.15)"}}>
       {Ic.pin(C.pri, 13)} {items.length} punto{items.length !== 1 ? "s" : ""}
     </button>}
     {/* Scrollable item list */}
