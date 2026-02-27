@@ -201,7 +201,9 @@ export async function apiResetPassword(resetToken, newPassword) {
   return d;
 }
 export async function apiChangePassword(currentPassword, newPassword) {
-  return api('/auth/password', { method: 'PATCH', body: { currentPassword, newPassword } });
+  const d = await api('/auth/password', { method: 'PATCH', body: { currentPassword, newPassword } });
+  if (d?.refresh_token) setRefreshToken(d.refresh_token);
+  return d;
 }
 
 // Switch active company

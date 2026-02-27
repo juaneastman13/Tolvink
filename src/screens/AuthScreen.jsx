@@ -102,9 +102,8 @@ export default function AuthScreen({ onLogin, onSignup, onPasswordReset, loading
       if (result?.noPassword) {
         const cleanLogin = loginId.replace(/[\s\-()]/g, '');
         setResetIdentifier(/^09/.test(cleanLogin) ? cleanLogin : cleanLogin.toLowerCase());
-        if (result.maskedPhone) setMaskedPhone(result.maskedPhone);
-        setResetError(`Tu cuenta no tiene contraseña configurada. Confirmá tu teléfono para recibir un código.`);
-        switchMode(result.maskedPhone ? "reset_confirm" : "reset_identify");
+        setResetError("Tu cuenta no tiene contraseña configurada. Seguí los pasos para establecerla.");
+        switchMode("reset_identify");
       }
 
     } else if (mode === "signup") {
