@@ -14,6 +14,7 @@ const GROUPS = [
 ];
 
 export default function ListScreen({ freights, loading, onNav, onRefresh, catalog, view, setView, goToMap, hasMore, loadMore, loadingMore, total, isDesktop, onAction }) {
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [searchQ, setSearchQ] = useState("");
   const [segExpanded, setSegExpanded] = useState({});
   const [fPlant, setFPlant] = useState("");
@@ -131,7 +132,24 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
         </div>
       </div>
       </>) : (<>
-      {/* Mobile: compact filters layout */}
+      {/* Mobile: collapsible filters layout */}
+      {/* Toggle button */}
+      <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
+        <button onClick={()=>setFiltersOpen(p=>!p)} style={{padding:"6px 12px",borderRadius:8,border:`1.5px solid ${hasFilters?C.pri:C.b1}`,background:hasFilters?C.priPale:C.w,color:hasFilters?C.pri:C.t2,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:5}}>
+          {Ic.srch(hasFilters?C.pri:C.t3,12)} {filtersOpen?"Ocultar filtros":"Ver filtros"}{hasFilters?" (activos)":""}
+        </button>
+        {hasFilters && <button onClick={clearAll} style={{padding:"5px 10px",borderRadius:6,border:`1px solid ${C.err}40`,background:C.errPale,color:C.err,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap",flexShrink:0}}>Limpiar</button>}
+      </div>
+      {/* View mode buttons */}
+      <div style={{ display:"flex", gap:4, marginBottom:10 }}>
+        {[{k:"kanban",l:"Estados",ic:Ic.home},{k:"seguimiento",l:"Seg.",ic:Ic.user},{k:"tabla",l:"Tabla",ic:Ic.doc},{k:"mapa",l:"Mapa",ic:Ic.pin}].map(v=>(
+          <button key={v.k} onClick={()=>setView(v.k)} style={{padding:"5px 7px",borderRadius:7,border:`1.5px solid ${view===v.k?C.pri:C.b1}`,background:view===v.k?C.priPale:C.w,color:view===v.k?C.pri:C.t2,fontSize:10,fontWeight:view===v.k?700:500,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:3,whiteSpace:"nowrap"}}>
+            {v.ic(view===v.k?C.pri:C.t3,11)} {v.l}
+          </button>
+        ))}
+      </div>
+      {/* Collapsible filter block */}
+      {filtersOpen && <>
       <div style={{ position:"relative", marginBottom:6 }}>
         <div style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",display:"flex"}}>{Ic.srch(C.t3,14)}</div>
         <input value={searchQ} onChange={e=>setSearchQ(e.target.value)} placeholder="Buscar..."
@@ -144,13 +162,6 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
         <span style={{fontSize:10,color:C.t2,fontWeight:600}}>Hasta</span>
         <input type="date" value={dateTo} onChange={e=>{setDateTo(e.target.value);setDatePreset("custom");}} onClick={e=>e.target.showPicker?.()} style={{padding:"5px 8px",borderRadius:6,border:`1px solid ${C.b1}`,background:C.w,color:dateTo?C.t1:C.t3,fontSize:11,fontFamily:"inherit",outline:"none",boxSizing:"border-box",cursor:"pointer",flex:1,minWidth:0}}/>
         {(dateFrom||dateTo)&&<button onClick={()=>{setDateFrom("");setDateTo("");setDatePreset("");}} aria-label="Limpiar fechas" style={{background:"none",border:"none",cursor:"pointer",display:"flex",padding:2,flexShrink:0}}>{Ic.cross(C.t3,14)}</button>}
-        <div style={{marginLeft:"auto",display:"flex",gap:3,flexShrink:0}}>
-          {[{k:"kanban",l:"Estados",ic:Ic.home},{k:"seguimiento",l:"Seg.",ic:Ic.user},{k:"tabla",l:"Tabla",ic:Ic.doc},{k:"mapa",l:"Mapa",ic:Ic.pin}].map(v=>(
-            <button key={v.k} onClick={()=>setView(v.k)} style={{padding:"5px 7px",borderRadius:7,border:`1.5px solid ${view===v.k?C.pri:C.b1}`,background:view===v.k?C.priPale:C.w,color:view===v.k?C.pri:C.t2,fontSize:10,fontWeight:view===v.k?700:500,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:3,whiteSpace:"nowrap"}}>
-              {v.ic(view===v.k?C.pri:C.t3,11)} {v.l}
-            </button>
-          ))}
-        </div>
       </div>
       <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:6 }}>
         <select value={fPlant} onChange={e=>setFPlant(e.target.value)} style={{flex:1,padding:"6px 8px",borderRadius:8,border:`1.5px solid ${fPlant?C.pri:C.b1}`,background:fPlant?C.priPale:C.w,color:fPlant?C.pri:C.t3,fontSize:11,fontFamily:"inherit",outline:"none",cursor:"pointer",minWidth:0}}>
@@ -161,7 +172,6 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
           <option value="">Productor</option>
           {producerOptions.map(p=><option key={p} value={p}>{p}</option>)}
         </select>
-        {hasFilters && <button onClick={clearAll} style={{padding:"5px 10px",borderRadius:6,border:`1px solid ${C.err}40`,background:C.errPale,color:C.err,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap",flexShrink:0}}>Limpiar</button>}
       </div>
       <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:12 }}>
         <select value={fTransporter} onChange={e=>setFTransporter(e.target.value)} style={{flex:1,padding:"6px 8px",borderRadius:8,border:`1.5px solid ${fTransporter?C.pri:C.b1}`,background:fTransporter?C.priPale:C.w,color:fTransporter?C.pri:C.t3,fontSize:11,fontFamily:"inherit",outline:"none",cursor:"pointer",minWidth:0}}>
@@ -169,6 +179,7 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
           {transporterOptions.map(p=><option key={p} value={p}>{p}</option>)}
         </select>
       </div>
+      </>}
       </>)}
 
       {/* Skeleton while loading */}
