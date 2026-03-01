@@ -1,4 +1,4 @@
-import { useState, useMemo, lazy, Suspense } from "react";
+import { useState, useEffect, useMemo, lazy, Suspense } from "react";
 import { C, Ic, FONT, MONO } from "../theme";
 import { stCfg } from "../constants";
 import { Bd, Btn, Select, SortTh, Tabs, exportExcel, SkeletonList, EmptyState, ErrorBoundary } from "../components";
@@ -23,6 +23,7 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [datePreset, setDatePreset] = useState("");
+  const [mapShown, setMapShown] = useState(false);
 
   const plantOptions = useMemo(()=>[...new Set(freights.map(f=>f.destName).filter(Boolean))].sort(),[freights]);
   const producerOptions = useMemo(()=>[...new Set(freights.map(f=>f.originCompanyName).filter(Boolean))].sort(),[freights]);
@@ -85,6 +86,11 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
   },[filtered]);
 
   const { containerRef, indicator } = usePullToRefresh(onRefresh);
+
+  // Preload Google Maps API + chunk while user browses the list
+  useEffect(() => { import("../maps").then(m => m.loadGMaps()).catch(() => {}); }, []);
+  // Keep map mounted after first show to avoid reinit on view switch
+  useEffect(() => { if (view === "mapa") setMapShown(true); }, [view]);
 
   return (
     <div ref={containerRef} style={{ flex:1, overflow:"auto", padding:18, WebkitOverflowScrolling:"touch" }}>
@@ -269,9 +275,11 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
       </div>
       ))}
 
-      {/* View: Mapa */}
-      {view==="mapa" && (
-        <ErrorBoundary><Suspense fallback={<SkeletonList count={3}/>}><FreightsOverviewMap freights={filtered} onSelect={(id)=>onNav("detail",id)} fields={catalog?.fields} plants={catalog?.plants} /></Suspense></ErrorBoundary>
+      {/* View: Mapa — stays mounted after first show to avoid reinit */}
+      {(view==="mapa" || mapShown) && (
+        <div style={{ display: view === "mapa" ? undefined : "none" }}>
+          <ErrorBoundary><Suspense fallback={<SkeletonList count={3}/>}><FreightsOverviewMap freights={filtered} onSelect={(id)=>onNav("detail",id)} fields={catalog?.fields} plants={catalog?.plants} /></Suspense></ErrorBoundary>
+        </div>
       )}
 
       {/* View: Tabla */}

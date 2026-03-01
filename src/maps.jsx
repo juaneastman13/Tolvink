@@ -381,6 +381,8 @@ export function FreightMap({ freightId, originLat, originLng, destLat, destLng, 
   const mapInstance = useRef(null);
   const participantMarkers = useRef({});
   const participantInfoWindow = useRef(null);
+  const directionsRef = useRef(null);
+  const isLiveRef = useRef(false);
   const [routeInfo, setRouteInfo] = useState(null);
   const [truckPos, setTruckPos] = useState(null);
   const [participants, setParticipants] = useState([]);
@@ -395,6 +397,7 @@ export function FreightMap({ freightId, originLat, originLng, destLat, destLng, 
   const hasCoords = hasOrigin && hasDest;
   const hasAnyCoord = hasOrigin || hasDest;
   const isLive = status === "in_progress" || status === "loaded";
+  isLiveRef.current = isLive;
 
   useEffect(() => {
     if (!hasAnyCoord || !mapRef.current) return;
@@ -448,15 +451,16 @@ export function FreightMap({ freightId, originLat, originLng, destLat, destLng, 
         // Only draw route if both coords exist
         if (origin && dest) {
           const directionsService = new maps.DirectionsService();
-          const directionsRenderer = new maps.DirectionsRenderer({
+          const dr = new maps.DirectionsRenderer({
             map,
             suppressMarkers: true,
             polylineOptions: {
-              strokeColor: isLive ? "#FF6A00" : "#1A6B37",
+              strokeColor: isLiveRef.current ? "#FF6A00" : "#1A6B37",
               strokeWeight: 4,
               strokeOpacity: 0.8,
             },
           });
+          directionsRef.current = dr;
 
           directionsService.route({
             origin, destination: dest,
@@ -464,7 +468,7 @@ export function FreightMap({ freightId, originLat, originLng, destLat, destLng, 
           }, (result, s) => {
             if (cancelled) return;
             if (s === "OK") {
-              directionsRenderer.setDirections(result);
+              dr.setDirections(result);
               const leg = result.routes[0]?.legs[0];
               if (leg) setRouteInfo({ distance: leg.distance.text, duration: leg.duration.text });
             }
@@ -480,9 +484,18 @@ export function FreightMap({ freightId, originLat, originLng, destLat, destLng, 
       cancelled = true;
       Object.values(participantMarkers.current).forEach(m => m.setMap(null));
       participantMarkers.current = {};
+      directionsRef.current = null;
       setMapReady(false);
     };
-  }, [hasAnyCoord, originLat, originLng, destLat, destLng, status]);
+  }, [hasAnyCoord, originLat, originLng, destLat, destLng]);
+
+  // Update route color when live status changes (without full map reinit)
+  useEffect(() => {
+    if (!directionsRef.current) return;
+    directionsRef.current.setOptions({
+      polylineOptions: { strokeColor: isLive ? "#FF6A00" : "#1A6B37", strokeWeight: 4, strokeOpacity: 0.8 },
+    });
+  }, [isLive]);
 
   // Fetch participant positions — starts immediately (parallel with map init)
   useEffect(() => {
@@ -615,12 +628,16 @@ const _TRUCK_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="3
 export function FreightsOverviewMap({ freights, onSelect, fields, plants }) {
   const mapRef = useRef(null);
   const mapObj = useRef(null);
-  const markers = useRef([]);
+  const freightMk = useRef({});
+  const entityMk = useRef([]);
   const truckMarkers = useRef([]);
   const info = useRef(null);
+  const boundsSet = useRef(false);
+  const onSelectRef = useRef(onSelect);
   const [ready, setReady] = useState(false);
   const [mapError, setMapError] = useState(null);
   const [showFreights, setShowFreights] = useState(true);
+  onSelectRef.current = onSelect;
 
   // Init map once
   useEffect(() => {
@@ -644,43 +661,58 @@ export function FreightsOverviewMap({ freights, onSelect, fields, plants }) {
     return () => { c = true; };
   }, []);
 
-  // Freight + field + plant markers
+  // Freight + field + plant markers (diff-based for freights, avoids destroy/recreate)
   useEffect(() => {
     if (!ready || !mapObj.current) return;
     const maps = window.google.maps;
-    markers.current.forEach(m => m.setMap(null));
-    markers.current = [];
-    if (info.current) info.current.close();
     const bounds = new maps.LatLngBounds();
     let has = false;
 
-    // Freight origin markers (conditional on showFreights)
+    // --- Freight origin markers (diff-based: reuse existing, add new, remove stale) ---
     if (showFreights) {
+      const seen = new Set();
       freights.forEach(f => {
         if (!f.originLat || !f.originLng) return;
         const col = _STATUS_COLOR(f.status);
         const pos = { lat: f.originLat, lng: f.originLng };
         bounds.extend(pos); has = true;
         if (f.destLat && f.destLng) bounds.extend({ lat: f.destLat, lng: f.destLng });
-        const mk = new maps.Marker({ position: pos, map: mapObj.current, title: f.code,
-          icon: { path: maps.SymbolPath.CIRCLE, scale: 8, fillColor: col, fillOpacity: 1, strokeColor: "#fff", strokeWeight: 2 } });
-        mk.addListener("click", () => {
-          info.current.setContent(
-            `<div style="font-family:system-ui;font-size:12px;line-height:1.5;min-width:160px">` +
-            `<strong>${_esc(f.code)}</strong><br/>${_esc(f.grain)} · ${_esc(f.tons)} ${_esc(f.unit||"tn")}<br/>` +
-            (f.originCompanyName ? `<span style="font-weight:600">${_esc(f.originCompanyName)}</span><br/>` : "") +
-            ([f.fieldName, f.originName].filter(Boolean).length ? `${[f.fieldName, f.originName].filter(Boolean).map(_esc).join(" / ")}<br/>` : "") +
-            `→ ${_esc(f.destName)}<br/>` +
-            `<span style="color:${col};font-weight:600">${_esc(_STATUS_LABEL[f.status]||f.status)}</span></div>`
-          );
-          info.current.open(mapObj.current, mk);
-        });
-        if (onSelect) mk.addListener("dblclick", () => onSelect(f.id));
-        markers.current.push(mk);
+        seen.add(f.id);
+
+        const buildInfo = () =>
+          `<div style="font-family:system-ui;font-size:12px;line-height:1.5;min-width:160px">` +
+          `<strong>${_esc(f.code)}</strong><br/>${_esc(f.grain)} · ${_esc(f.tons)} ${_esc(f.unit||"tn")}<br/>` +
+          (f.originCompanyName ? `<span style="font-weight:600">${_esc(f.originCompanyName)}</span><br/>` : "") +
+          ([f.fieldName, f.originName].filter(Boolean).length ? `${[f.fieldName, f.originName].filter(Boolean).map(_esc).join(" / ")}<br/>` : "") +
+          `\u2192 ${_esc(f.destName)}<br/>` +
+          `<span style="color:${col};font-weight:600">${_esc(_STATUS_LABEL[f.status]||f.status)}</span></div>`;
+
+        const existing = freightMk.current[f.id];
+        if (existing) {
+          existing.setPosition(pos);
+          existing.setIcon({ path: maps.SymbolPath.CIRCLE, scale: 8, fillColor: col, fillOpacity: 1, strokeColor: "#fff", strokeWeight: 2 });
+          existing._info = buildInfo;
+        } else {
+          const mk = new maps.Marker({ position: pos, map: mapObj.current, title: f.code,
+            icon: { path: maps.SymbolPath.CIRCLE, scale: 8, fillColor: col, fillOpacity: 1, strokeColor: "#fff", strokeWeight: 2 } });
+          mk._info = buildInfo;
+          mk.addListener("click", () => { info.current.setContent(mk._info()); info.current.open(mapObj.current, mk); });
+          mk.addListener("dblclick", () => { if (onSelectRef.current) onSelectRef.current(f.id); });
+          freightMk.current[f.id] = mk;
+        }
       });
+      Object.keys(freightMk.current).forEach(id => {
+        if (!seen.has(id)) { freightMk.current[id].setMap(null); delete freightMk.current[id]; }
+      });
+    } else {
+      Object.values(freightMk.current).forEach(m => m.setMap(null));
+      freightMk.current = {};
     }
 
-    // Field markers (seedling icon)
+    // --- Field & plant markers (recreated — change rarely) ---
+    entityMk.current.forEach(m => m.setMap(null));
+    entityMk.current = [];
+
     (fields||[]).forEach(f => {
       const lat = f.lat ? parseFloat(f.lat) : null;
       const lng = f.lng ? parseFloat(f.lng) : null;
@@ -693,10 +725,9 @@ export function FreightsOverviewMap({ freights, onSelect, fields, plants }) {
         info.current.setContent(`<div style="font-family:system-ui;font-size:12px;line-height:1.4"><strong>${_esc(f.name)}</strong><br/><span style="color:#1A6B37;font-weight:600">Campo</span>${f.address ? "<br/>"+_esc(f.address) : ""}${f.hectares ? "<br/>"+_esc(f.hectares)+" ha" : ""}</div>`);
         info.current.open(mapObj.current, mk);
       });
-      markers.current.push(mk);
+      entityMk.current.push(mk);
     });
 
-    // Plant markers (plant icon)
     (plants||[]).forEach(p => {
       const lat = p.lat ? parseFloat(p.lat) : null;
       const lng = p.lng ? parseFloat(p.lng) : null;
@@ -709,13 +740,14 @@ export function FreightsOverviewMap({ freights, onSelect, fields, plants }) {
         info.current.setContent(`<div style="font-family:system-ui;font-size:12px;line-height:1.4"><strong>${_esc(p.name)}</strong><br/><span style="color:#003882;font-weight:600">Planta</span>${p.address ? "<br/>"+_esc(p.address) : ""}</div>`);
         info.current.open(mapObj.current, mk);
       });
-      markers.current.push(mk);
+      entityMk.current.push(mk);
     });
 
-    if (has) mapObj.current.fitBounds(bounds, 40);
-  }, [ready, freights, fields, plants, onSelect, showFreights]);
+    // Fit bounds only on first render (prevents jarring map jumps on data updates)
+    if (has && !boundsSet.current) { mapObj.current.fitBounds(bounds, 40); boundsSet.current = true; }
+  }, [ready, freights, fields, plants, showFreights]);
 
-  // Live truck tracking for in_progress freights
+  // Live truck tracking for in_progress freights (parallel fetching)
   useEffect(() => {
     if (!ready || !mapObj.current || !showFreights) return;
     const maps = window.google.maps;
@@ -732,37 +764,40 @@ export function FreightsOverviewMap({ freights, onSelect, fields, plants }) {
       const existingMap = {};
       truckMarkers.current.forEach(m => { existingMap[m._fid] = m; });
 
-      const activeIds = new Set();
-      for (const f of liveFreights) {
-        activeIds.add(f.id);
-        try {
-          const pos = await apiGetLastPosition(f.id);
-          if (cancelled || !pos) continue;
-          const lat = parseFloat(pos.lat);
-          const lng = parseFloat(pos.lng);
-          if (isNaN(lat) || isNaN(lng)) continue;
+      const results = await Promise.allSettled(liveFreights.map(f =>
+        apiGetLastPosition(f.id).then(pos => ({ f, pos }))
+      ));
+      if (cancelled) return;
 
-          if (existingMap[f.id]) {
-            existingMap[f.id].setPosition({ lat, lng });
-          } else {
-            const mk = new maps.Marker({
-              position: { lat, lng }, map: mapObj.current, title: `${f.code} — En curso`,
-              icon: { url: _svgIcon(_TRUCK_SVG), scaledSize: new maps.Size(36, 36), anchor: new maps.Point(18, 18) },
-              zIndex: 999,
-            });
-            mk._fid = f.id;
-            mk.addListener("click", () => {
-              info.current.setContent(
-                `<div style="font-family:system-ui;font-size:12px;line-height:1.5"><strong>${_esc(f.code)}</strong><br/>${_esc(f.grain)} · ${_esc(f.tons)} ${_esc(f.unit||"tn")}<br/>` +
-                `<span style="color:#FF6A00;font-weight:600">En curso</span>${f.truckPlate ? "<br/>"+_esc(f.truckPlate) : ""}${f.driverName ? " · "+_esc(f.driverName) : ""}</div>`
-              );
-              info.current.open(mapObj.current, mk);
-            });
-            if (onSelect) mk.addListener("dblclick", () => onSelect(f.id));
-            truckMarkers.current.push(mk);
-          }
-        } catch {}
-      }
+      const activeIds = new Set();
+      results.forEach(r => {
+        if (r.status !== "fulfilled" || !r.value.pos) return;
+        const { f, pos } = r.value;
+        activeIds.add(f.id);
+        const lat = parseFloat(pos.lat);
+        const lng = parseFloat(pos.lng);
+        if (isNaN(lat) || isNaN(lng)) return;
+
+        if (existingMap[f.id]) {
+          existingMap[f.id].setPosition({ lat, lng });
+        } else {
+          const mk = new maps.Marker({
+            position: { lat, lng }, map: mapObj.current, title: `${f.code} \u2014 En curso`,
+            icon: { url: _svgIcon(_TRUCK_SVG), scaledSize: new maps.Size(36, 36), anchor: new maps.Point(18, 18) },
+            zIndex: 999,
+          });
+          mk._fid = f.id;
+          mk.addListener("click", () => {
+            info.current.setContent(
+              `<div style="font-family:system-ui;font-size:12px;line-height:1.5"><strong>${_esc(f.code)}</strong><br/>${_esc(f.grain)} · ${_esc(f.tons)} ${_esc(f.unit||"tn")}<br/>` +
+              `<span style="color:#FF6A00;font-weight:600">En curso</span>${f.truckPlate ? "<br/>"+_esc(f.truckPlate) : ""}${f.driverName ? " · "+_esc(f.driverName) : ""}</div>`
+            );
+            info.current.open(mapObj.current, mk);
+          });
+          mk.addListener("dblclick", () => { if (onSelectRef.current) onSelectRef.current(f.id); });
+          truckMarkers.current.push(mk);
+        }
+      });
       // Remove markers for freights no longer in_progress
       truckMarkers.current = truckMarkers.current.filter(m => {
         if (!activeIds.has(m._fid)) { m.setMap(null); return false; }
@@ -773,10 +808,15 @@ export function FreightsOverviewMap({ freights, onSelect, fields, plants }) {
     poll();
     const iv = setInterval(poll, 10000);
     return () => { cancelled = true; clearInterval(iv); };
-  }, [ready, freights, onSelect, showFreights]);
+  }, [ready, freights, showFreights]);
 
-  // Cleanup truck markers on unmount
-  useEffect(() => () => { truckMarkers.current.forEach(m => m.setMap(null)); }, []);
+  // Cleanup all markers on unmount
+  useEffect(() => () => {
+    truckMarkers.current.forEach(m => m.setMap(null));
+    Object.values(freightMk.current).forEach(m => m.setMap(null));
+    entityMk.current.forEach(m => m.setMap(null));
+    freightMk.current = {}; entityMk.current = [];
+  }, []);
 
   if (mapError) return (
     <div style={{ background:C.w, border:`1px solid ${C.b1}`, borderRadius:12, padding:40, textAlign:"center", color:C.t3 }}>
