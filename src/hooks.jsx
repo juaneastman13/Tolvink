@@ -190,7 +190,10 @@ export function useAuth() {
     if ('caches' in window) caches.delete('tolvink-api-v2').catch(() => {});
   },[]);
 
+  const switchingRef = useRef(false);
   const switchCompany = useCallback(async (companyId) => {
+    if (switchingRef.current) return { ok: false, error: "Cambio en curso" };
+    switchingRef.current = true;
     try {
       const d = await apiSwitchCompany(companyId);
       if (d?.user) {
@@ -204,6 +207,8 @@ export function useAuth() {
     } catch (e) {
       log.error('AUTH', 'Switch company error:', e);
       return { ok: false, error: e.message };
+    } finally {
+      switchingRef.current = false;
     }
   }, []);
 

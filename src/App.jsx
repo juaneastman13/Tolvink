@@ -491,7 +491,7 @@ export default function Tolvink() {
 
       {/* Desktop Sidebar */}
       <div className="tv-sidebar" style={{position:"relative",zIndex:1}}>
-        <Sidebar active={navActive} onChange={nav} unread={unreadChats} pendingCount={pendingCount} notifCount={notif.unreadCount} canRequest={perms.canRequest} onNew={()=>nav("new")} activeCompany={auth.user ? { id: auth.user.activeCompanyId||auth.user.companyId, name: _activeComp?.companyName||auth.user.entity, type: _activeComp?.companyType||auth.user.userType } : null} companies={auth.user?.companies||[]} onSwitchCompany={async(id)=>{if(id===null){setViewAll(true);return;}setViewAll(false);const r=await auth.switchCompany(id);if(r.ok){fh.fetchAll();catalog.refresh();}}} viewAll={viewAll} />
+        <Sidebar active={navActive} onChange={nav} unread={unreadChats} pendingCount={pendingCount} notifCount={notif.unreadCount} canRequest={perms.canRequest} onNew={()=>nav("new")} activeCompany={auth.user ? { id: auth.user.activeCompanyId||auth.user.companyId, name: _activeComp?.companyName||auth.user.entity, type: _activeComp?.companyType||auth.user.userType } : null} companies={auth.user?.companies||[]} onSwitchCompany={async(id)=>{if(id===null){setViewAll(true);return;}setViewAll(false);await auth.switchCompany(id);}} viewAll={viewAll} />
       </div>
 
       {/* Main content column */}
@@ -518,8 +518,7 @@ export default function Tolvink() {
                       setCompDropOpen(false);
                       if(!isActive){
                         setViewAll(false);
-                        const r = await auth.switchCompany(c.companyId);
-                        if(r.ok){ fh.fetchAll(); catalog.refresh(); }
+                        await auth.switchCompany(c.companyId);
                       }
                     }} style={{width:"100%",padding:"10px 14px",border:"none",borderBottom:`1px solid ${C.b2}`,background:isActive?C.priPale:"transparent",cursor:"pointer",fontFamily:"inherit",textAlign:"left",display:"flex",alignItems:"center",gap:8}}>
                       <div style={{width:8,height:8,borderRadius:4,background:isActive?C.pri:C.b2,flexShrink:0}}/>
@@ -569,7 +568,7 @@ export default function Tolvink() {
         {screen==="detail" && <DetailScreen user={curFreight ? {...auth.user, userType: _resolveType(curFreight)} : auth.user} freight={curFreight} perms={perms} onBack={()=>navigate("/list")} onAction={handleAction} onTripAction={handleTripAction} onEditTrip={handleEditTrip} actionLoading={actionLoading} onChat={(convId)=>{if(convId){setChatConvId(convId);navigate("/chats");}}} onRefresh={(id)=>fh.refresh(id)} onDuplicate={(f)=>{setDuplicateData(f);navigate("/new");}} onEdit={(f)=>{setEditData(f);navigate("/edit/"+f.id);}} goToMap={goToMap}/>}
         {screen==="new" && <NewScreen user={auth.user} lots={catalog.lots} plants={catalog.plants} branches={catalog.branches} fields={catalog.fields} trucks={catalog.trucks} onBack={()=>{setDuplicateData(null);navigate("/");}} onCreate={handleCreate} submitting={submitting} duplicateFrom={duplicateData}/>}
         {screen==="edit" && editData && <EditScreen freight={editData} fields={catalog.fields} plants={catalog.plants} onBack={()=>{setEditData(null);navigate(-1);}} onSave={async(id,data)=>{const r=await fh.update(id,data);if(r.ok) return "Flete actualizado"; show(r.error,"err"); return "";}}/>}
-        {screen==="menu" && <MenuScreen user={auth.user} perms={perms} onLogout={auth.logout} onNav={nav} isDesktop={isDesktop} onSwitchCompany={async(id)=>{setViewAll(false);const r=await auth.switchCompany(id);if(r.ok){fh.fetchAll();catalog.refresh();}return r;}} onRefresh={()=>{fh.fetchAll();catalog.refresh();}} pwa={pwa}/>}
+        {screen==="menu" && <MenuScreen user={auth.user} perms={perms} onLogout={auth.logout} onNav={nav} isDesktop={isDesktop} onSwitchCompany={async(id)=>{setViewAll(false);return await auth.switchCompany(id);}} onRefresh={()=>{fh.fetchAll();catalog.refresh();}} pwa={pwa}/>}
         {screen==="trucks" && <TrucksScreen user={auth.user} onBack={()=>{catalog.refresh();navigate("/menu");}}/>}
         {screen==="fields" && <FieldsScreen onBack={()=>{catalog.refresh();navigate("/menu");}} goToMap={goToMap}/>}
         {screen==="admin" && <AdminScreen user={auth.user} onBack={()=>navigate("/menu")}/>}
