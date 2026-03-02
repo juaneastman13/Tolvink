@@ -38,13 +38,13 @@ function SummaryCard({ secSummary, secComplete, form, showTruckSelect, isDesktop
       ) : (
         <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
           {rows.map((r, i) => (
-            <div key={i} onClick={() => onEdit?.(r.section)} style={{ display:"flex", alignItems:"flex-start", gap:8, cursor:onEdit?"pointer":"default", padding:"4px 6px", margin:"0 -6px", borderRadius:6 }}>
-              <div style={{ width:6, height:6, borderRadius:3, background:C.pri, marginTop:5, flexShrink:0 }}/>
-              <div style={{ flex:1 }}>
+            <div key={i} onClick={() => onEdit?.(r.section)} style={{ display:"flex", alignItems:"center", gap:8, cursor:onEdit?"pointer":"default", padding:"7px 10px", margin:"0 -10px", borderRadius:8, transition:"background 0.15s" }} onMouseEnter={e=>{if(onEdit)e.currentTarget.style.background=C.bgCardAlt}} onMouseLeave={e=>{e.currentTarget.style.background="transparent"}}>
+              <div style={{ width:6, height:6, borderRadius:3, background:C.pri, flexShrink:0 }}/>
+              <div style={{ flex:1, minWidth:0 }}>
                 <div style={{ fontSize:10, fontWeight:600, color:C.t3, textTransform:"uppercase", letterSpacing:0.5 }}>{r.label}</div>
                 <div style={{ fontSize:12.5, fontWeight:500, color:C.t1, marginTop:1 }}>{r.value}</div>
               </div>
-              {onEdit && <div style={{ color:C.t3, opacity:0.4, marginTop:3 }}>{Ic.chev(C.t3,12)}</div>}
+              {onEdit && <div style={{ fontSize:10, fontWeight:600, color:C.pri, flexShrink:0, padding:"3px 8px", borderRadius:6, background:C.priPale }}>Editar</div>}
             </div>
           ))}
         </div>
@@ -58,6 +58,16 @@ function SummaryCard({ secSummary, secComplete, form, showTruckSelect, isDesktop
           <div style={{ height:"100%", width:`${pct}%`, background:filled===total?C.ok:C.pri, borderRadius:2, transition:"width 0.3s ease" }}/>
         </div>
       </div>
+    </div>
+  );
+}
+
+function NextStepBtn({ complete, onClick }) {
+  return (
+    <div style={{ marginTop:16, display:"flex", justifyContent:"flex-end" }}>
+      <button type="button" disabled={!complete} onClick={onClick} style={{ padding:"11px 28px", borderRadius:10, border:"none", background:complete?C.pri:C.b1, color:complete?C.w:C.t3, cursor:complete?"pointer":"default", fontSize:13, fontWeight:700, fontFamily:"inherit", display:"flex", alignItems:"center", gap:8, opacity:complete?1:0.5, transition:"all 0.2s ease" }}>
+        Siguiente <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
     </div>
   );
 }
@@ -147,6 +157,14 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
       }
     }
   }); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const advanceToNext = () => {
+    const flow = ["product", "quantity", "origin"];
+    if (showTruckSelect) flow.push("ownfleet");
+    flow.push("destination", "schedule", "extras");
+    const idx = flow.indexOf(activeSection);
+    if (idx >= 0 && idx < flow.length - 1) setActiveSection(flow[idx + 1]);
+  };
 
   // Sections are locked if previous required sections are incomplete
   const secEnabled = {
@@ -328,6 +346,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
               {touched&&<FieldError error={errs.productTypeOther}/>}
             </div>
           )}
+          <NextStepBtn complete={secComplete.product} onClick={advanceToNext}/>
         </Sec>}
 
         {/* QUANTITY SECTION */}
@@ -356,6 +375,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
               </div>
             </div>
           )}
+          <NextStepBtn complete={secComplete.quantity} onClick={advanceToNext}/>
         </Sec>}
 
         {/* ORIGIN SECTION */}
@@ -399,6 +419,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
             {touched&&errs.customOrigin&&<div style={{padding:"6px 10px",borderRadius:8,marginTop:6,fontSize:11,fontWeight:600,color:C.err,background:C.errPale}}>{errs.customOrigin}</div>}
             {customOrigin.lat && <div style={{ display:"flex", alignItems:"center", gap:6, padding:"6px 10px", background:C.priPale, borderRadius:8, marginTop:6 }}>{Ic.chk(C.pri,14)}<span style={{fontSize:10.5,color:C.pri,fontWeight:500}}>{customOrigin.lat.toFixed(4)}, {customOrigin.lng.toFixed(4)}</span></div>}
           </>)}
+          <NextStepBtn complete={secComplete.origin} onClick={advanceToNext}/>
         </Sec>}
 
         {/* OWN FLEET — explicit binary choice */}
@@ -414,6 +435,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
               {!form.truckId && <div style={{ marginTop:8, padding:"8px 12px", background:`${C.acc}10`, borderRadius:8, fontSize:11, color:C.acc, fontWeight:500 }}>Seleccioná un camión de tu flota</div>}
             </>}
             {form.fleetChoice==="delegate" && <div style={{ padding:"10px 14px", background:`${C.info}10`, borderRadius:8, fontSize:12, color:C.info, fontWeight:500 }}>La planta de destino asignará el transportista</div>}
+            <NextStepBtn complete={!!form.fleetChoice} onClick={advanceToNext}/>
           </Sec>
         )}
 
@@ -459,6 +481,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
               </div>
             </>
           )}
+          <NextStepBtn complete={secComplete.destination} onClick={advanceToNext}/>
         </Sec>}
 
         {/* Route preview + custom dest map — side by side on desktop when custom */}
@@ -550,6 +573,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
               {touched&&<FieldError error={errs.loadTime}/>}
             </div>
           </div>
+          <NextStepBtn complete={secComplete.schedule} onClick={advanceToNext}/>
         </Sec>}
 
         {/* EXTRAS */}
