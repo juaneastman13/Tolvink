@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { C, Ic } from "../theme";
-import { Btn, ModalOverlay } from "../components";
+import { Btn, ModalOverlay, NumericStepper } from "../components";
 
 export default function ConfirmActionModal({ freight, title, btnLabel, btnVariant="pri", icon, onClose, onConfirm, showTonsInput, defaultTons }) {
   const [loading,setLoading] = useState(false);
@@ -18,9 +18,7 @@ export default function ConfirmActionModal({ freight, title, btnLabel, btnVarian
       <div style={{fontSize:17,fontWeight:700,marginBottom:6,textAlign:"center"}}>{title}</div>
       <div style={{fontSize:12,color:C.t2,marginBottom:showTonsInput?12:20,textAlign:"center"}}>{freight.code} · {freight.grain} · {freight.tons}{freight.unit||"tn"}</div>
       {showTonsInput && <div style={{marginBottom:16}}>
-        <label style={{fontSize:13,fontWeight:600,color:C.t1,marginBottom:4,display:"block"}}>Toneladas cargadas</label>
-        <input type="number" inputMode="decimal" step="0.01" min="0" value={tons} onChange={e=>setTons(e.target.value)} placeholder="Ej: 30.5" autoFocus
-          style={{width:"100%",padding:"12px",borderRadius:10,border:`1px solid ${C.b1}`,fontSize:16,textAlign:"center",boxSizing:"border-box"}}/>
+        <NumericStepper label="Toneladas cargadas" value={tons} onChange={setTons} min={0} step={0.01} placeholder="Ej: 30.5" />
       </div>}
       <div style={{display:"flex",gap:8}}><Btn full v="ghost" onClick={onClose} disabled={loading||closing}>Cancelar</Btn><Btn full v={btnVariant} disabled={loading||closing} onClick={doConfirm}>{loading?"Procesando...":btnLabel}</Btn></div>
     </ModalOverlay>

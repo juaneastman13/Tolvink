@@ -62,6 +62,7 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
       const g = GROUPS.find(g => g.statuses.includes(f.status));
       if(g) map[g.key].push(f);
     });
+    GROUPS.forEach(g => map[g.key].sort((a,b) => (a.destName||'').localeCompare(b.destName||'') || (a.originName||'').localeCompare(b.originName||'')));
     return map;
   },[filtered]);
 

@@ -129,7 +129,7 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
     });
     return Object.values(buckets).map(b => ({
       ...b,
-      items: [...b.items].sort((a, b2) => a.loadDate && b2.loadDate ? a.loadDate.localeCompare(b2.loadDate) : 0),
+      items: [...b.items].sort((a, b2) => (a.destName||'').localeCompare(b2.destName||'') || (a.originName||'').localeCompare(b2.originName||'')),
     }));
   }, [filteredFreights, pendingMap, pendingFilter]);
   const pendingCount = pendingByAction.reduce((s, g) => s + g.items.length, 0);
@@ -147,7 +147,7 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
     return STATUS_GROUPS.map(g => {
       const items = activeFreights
         .filter(f => g.filter(f) && !pendingMap.get(f.id) && matchDate(f.loadDate, summaryFilter))
-        .sort((a, b) => a.loadDate && b.loadDate ? a.loadDate.localeCompare(b.loadDate) : 0);
+        .sort((a, b) => (a.destName||'').localeCompare(b.destName||'') || (a.originName||'').localeCompare(b.originName||''));
       return { ...g, items };
     }).filter(g => g.items.length > 0);
   }, [activeFreights, pendingMap, summaryFilter]);

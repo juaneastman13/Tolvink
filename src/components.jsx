@@ -48,6 +48,30 @@ export function Field({ label, icon, value, onChange, placeholder, type="text", 
   );
 }
 
+export function NumericStepper({ value, onChange, min, max, step=1, placeholder, label, icon }) {
+  const num = parseFloat(value) || 0;
+  const dec = step < 1 ? String(step).split('.')[1]?.length || 2 : 0;
+  const adjust = (delta) => {
+    let next = +(num + delta).toFixed(dec);
+    if (min != null && next < min) next = min;
+    if (max != null && next > max) next = max;
+    onChange(String(next));
+  };
+  const btnS = { width:38, height:38, borderRadius:19, border:`1.5px solid ${C.b1}`, background:C.w, color:C.pri, fontSize:20, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"inherit", flexShrink:0, transition:"background 0.15s", WebkitTapHighlightColor:"transparent", touchAction:"manipulation" };
+  return (
+    <div>
+      {label && <label style={{ fontSize:10.5, fontWeight:600, color:C.t2, marginBottom:6, display:"flex", alignItems:"center", gap:4, textTransform:"uppercase", letterSpacing:0.6 }}>{icon} {label}</label>}
+      <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+        <button type="button" onClick={()=>adjust(-step)} style={btnS} onMouseEnter={e=>e.currentTarget.style.background=C.priPale} onMouseLeave={e=>e.currentTarget.style.background=C.w}>−</button>
+        <input type="number" inputMode="decimal" value={value} onChange={e=>onChange(e.target.value)} placeholder={placeholder} min={min} max={max} step={step}
+          style={{ width:80, padding:"10px 4px", borderRadius:10, border:`1.5px solid ${C.b1}`, background:C.w, color:C.t1, fontSize:16, fontFamily:"inherit", outline:"none", boxSizing:"border-box", textAlign:"center" }}
+          onFocus={e=>e.target.style.borderColor=C.bFocus} onBlur={e=>e.target.style.borderColor=C.b1} />
+        <button type="button" onClick={()=>adjust(step)} style={btnS} onMouseEnter={e=>e.currentTarget.style.background=C.priPale} onMouseLeave={e=>e.currentTarget.style.background=C.w}>+</button>
+      </div>
+    </div>
+  );
+}
+
 export function Select({ label, icon, value, onChange, options, placeholder="Seleccionar..." }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);

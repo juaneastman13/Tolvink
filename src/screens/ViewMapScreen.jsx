@@ -70,7 +70,7 @@ export default function ViewMapScreen() {
         const originInfo = new maps.InfoWindow({
           content: `<div style="font-family:system-ui;padding:4px 0">
             <strong style="color:${C.t1}">${esc(name)}</strong>
-            <div style="margin-top:4px"><a href="geo:${lat},${lng}?q=${lat},${lng}" target="_blank" rel="noopener" style="color:${C.pri};text-decoration:none;font-weight:600">▶ Navegar</a></div>
+            <div style="margin-top:4px"><a href="https://www.google.com/maps/search/?api=1&query=${lat},${lng}" target="_blank" rel="noopener" style="color:${C.pri};text-decoration:none;font-weight:600">▶ Navegar</a></div>
           </div>`,
         });
         originMarker.addListener("click", () => originInfo.open(map, originMarker));
@@ -96,7 +96,7 @@ export default function ViewMapScreen() {
           const destInfo = new maps.InfoWindow({
             content: `<div style="font-family:system-ui;padding:4px 0">
               <strong style="color:${C.t1}">${esc(dname)}</strong>
-              <div style="margin-top:4px"><a href="geo:${dlat},${dlng}?q=${dlat},${dlng}" target="_blank" rel="noopener" style="color:#2563EB;text-decoration:none;font-weight:600">▶ Navegar</a></div>
+              <div style="margin-top:4px"><a href="https://www.google.com/maps/search/?api=1&query=${dlat},${dlng}" target="_blank" rel="noopener" style="color:#2563EB;text-decoration:none;font-weight:600">▶ Navegar</a></div>
             </div>`,
           });
           destMarker.addListener("click", () => destInfo.open(map, destMarker));
@@ -151,7 +151,7 @@ export default function ViewMapScreen() {
       {/* Bottom nav button */}
       <div style={{ position: "absolute", bottom: 24, left: 16, right: 16, zIndex: 10 }}>
         <a
-          href={hasDest ? `geo:${dlat},${dlng}?q=${dlat},${dlng}` : `geo:${lat},${lng}?q=${lat},${lng}`}
+          href={hasDest ? `https://www.google.com/maps/dir/?api=1&origin=${lat},${lng}&destination=${dlat},${dlng}` : `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`}
           target="_blank"
           rel="noopener noreferrer"
           style={{ display: "block", textAlign: "center", background: C.pri, color: "#fff", padding: "14px 0", borderRadius: 12, fontSize: 16, fontWeight: 700, textDecoration: "none", boxShadow: "0 4px 12px rgba(26,107,55,0.3)" }}

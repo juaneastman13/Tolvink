@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useMemo, lazy, Suspense } from "react";
 import { C, Ic, track } from "../theme";
 import { V, validate, SCHEMAS, textMatch, FieldError } from "../validation";
 import { stCfg, GRANOS, UNITS } from "../constants";
-import { Btn, Field, Select, Sec, AttachMenu } from "../components";
+import { Btn, Field, Select, Sec, AttachMenu, NumericStepper } from "../components";
 import log from "../logger";
 const LocationPicker = lazy(() => import("../maps").then(m => ({ default: m.LocationPicker })));
 const SafeZone = lazy(() => import("../maps").then(m => ({ default: m.SafeZone })));
@@ -353,11 +353,8 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
           </div>
           {form.unit==="toneladas" && parseFloat(form.tons)>0 && (
             <div style={{ marginTop:10 }}>
-              <label style={{ fontSize:10.5, fontWeight:600, color:C.t2, marginBottom:6, display:"flex", alignItems:"center", gap:4, textTransform:"uppercase", letterSpacing:0.6 }}>{Ic.truck(C.acc,14)} Camiones necesarios</label>
-              <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-                <input type="number" min="1" max="50" value={form.truckCount || Math.ceil(parseFloat(form.tons)/30)} onChange={e=>u({truckCount:e.target.value})} style={{ width:70, padding:"10px 12px", borderRadius:10, border:`1.5px solid ${C.b1}`, background:C.w, color:C.t1, fontSize:15, fontFamily:"inherit", outline:"none", boxSizing:"border-box", textAlign:"center" }}/>
-                <span style={{ fontSize:11, color:C.t3 }}>~30tn por camión. Podés ajustarlo.</span>
-              </div>
+              <NumericStepper label="Camiones necesarios" icon={Ic.truck(C.acc,14)} value={form.truckCount || String(Math.ceil(parseFloat(form.tons)/30))} onChange={v=>u({truckCount:v})} min={1} max={50} step={1} />
+              <span style={{ fontSize:11, color:C.t3, marginTop:4, display:"block" }}>~30tn por camión. Podés ajustarlo.</span>
             </div>
           )}
           <NextStepBtn complete={secComplete.quantity} onClick={isEditing?confirmEdit:advanceToNext} label={isEditing?"Confirmar edición":undefined}/>

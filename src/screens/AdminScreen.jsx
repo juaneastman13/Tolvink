@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { C, Ic, FONT, MONO } from "../theme";
-import { Btn, Field, Tabs, Select, Loader, Av, Bd, LoadingOverlay } from "../components";
+import { Btn, Field, Tabs, Select, Loader, Av, Bd, LoadingOverlay, NumericStepper } from "../components";
 import { apiAdminStats, apiAdminListCompanies, apiAdminGetCompany, apiAdminCreateCompany, apiAdminUpdateCompany, apiAdminListBranches, apiAdminCreateBranch, apiAdminUpdateBranch, apiAdminDeleteBranch, apiAdminListUsers, apiAdminCreateUser, apiAdminUpdateUser, apiAdminListFields, apiAdminCreateField, apiAdminUpdateField, apiAdminDeleteField, apiAdminListLots, apiAdminCreateLot, apiAdminUpdateLot, apiAdminDeleteLot, apiAdminListTrucks, apiAdminCreateTruck, apiAdminUpdateTruck, apiAdminDeleteTruck } from "../api";
 import { adminStyles, typeColors, typeLabels, roleLabels, adminBackBtn } from "../utils/freight-helpers";
 import { LocationPicker } from "../maps";
@@ -508,7 +508,7 @@ export default function AdminScreen({ user, onBack }) {
               <input value={fieldForm.name} onChange={e=>setFieldForm(p=>({...p,name:e.target.value}))} placeholder="Nombre del campo" style={{...s.inp,marginBottom:10}} />
               <LocationPicker label="Ubicación *" value={fieldForm.lat?{lat:fieldForm.lat,lng:fieldForm.lng,address:fieldForm.address}:null} onChange={(loc)=>setFieldForm(p=>({...p,lat:loc?.lat||null,lng:loc?.lng||null,address:loc?.address||""}))} />
               <div style={{display:"flex",gap:8,marginBottom:10}}>
-                <div style={{flex:1}}><div style={s.lbl}>Hectáreas</div><input value={fieldForm.hectares} onChange={e=>setFieldForm(p=>({...p,hectares:e.target.value}))} placeholder="Ej: 150" type="number" style={s.inp} /></div>
+                <div style={{flex:1}}><NumericStepper label="Hectáreas" value={fieldForm.hectares} onChange={v=>setFieldForm(p=>({...p,hectares:v}))} min={0} step={1} placeholder="Ej: 150" /></div>
               </div>
               <div style={s.lbl}>Comentarios</div>
               <textarea value={fieldForm.comments} onChange={e=>setFieldForm(p=>({...p,comments:e.target.value}))} placeholder="Notas opcionales..." rows={2} style={{...s.inp,resize:"vertical",marginBottom:10}} />
@@ -548,7 +548,7 @@ export default function AdminScreen({ user, onBack }) {
                     <input value={lotForm.name} onChange={e=>setLotForm(p=>({...p,name:e.target.value}))} placeholder="Nombre del lote" style={{...s.inp,marginBottom:8}} />
                     <LocationPicker label="Ubicación *" value={lotForm.lat?{lat:lotForm.lat,lng:lotForm.lng,address:lotForm.address}:null} onChange={(loc)=>setLotForm(p=>({...p,lat:loc?.lat||null,lng:loc?.lng||null,address:loc?.address||""}))} defaultCenter={f.lat&&f.lng?{lat:f.lat,lng:f.lng}:null} />
                     <div style={{display:"flex",gap:8,marginBottom:8}}>
-                      <div style={{flex:1}}><div style={s.lbl}>Hectáreas</div><input value={lotForm.hectares} onChange={e=>setLotForm(p=>({...p,hectares:e.target.value}))} placeholder="Ej: 50" type="number" style={s.inp} /></div>
+                      <div style={{flex:1}}><NumericStepper label="Hectáreas" value={lotForm.hectares} onChange={v=>setLotForm(p=>({...p,hectares:v}))} min={0} step={1} placeholder="Ej: 50" /></div>
                     </div>
                     <div style={s.lbl}>Comentarios</div>
                     <textarea value={lotForm.comments} onChange={e=>setLotForm(p=>({...p,comments:e.target.value}))} placeholder="Notas..." rows={2} style={{...s.inp,resize:"vertical",marginBottom:8}} />

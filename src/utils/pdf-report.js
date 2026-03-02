@@ -1,5 +1,6 @@
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import QRCode from 'qrcode';
 
 // ─── Brand colors ───
 const PRI = '#1A6B37';
@@ -56,7 +57,7 @@ function sectionHeader(doc, y, _W, M, CW, color, text) {
 }
 
 // ─── Main export ───
-export function generateFreightPDF(freight, auditLog = []) {
+export async function generateFreightPDF(freight, auditLog = []) {
   const doc = new jsPDF({ unit:'mm', format:'a4' });
   const W = doc.internal.pageSize.getWidth();
   const H = doc.internal.pageSize.getHeight();
@@ -211,6 +212,35 @@ export function generateFreightPDF(freight, auditLog = []) {
     alternateRowStyles:{fillColor:[236,254,255]},
   });
   y = doc.lastAutoTable.finalY + 8;
+
+  // ── Static map image + QR code ──
+  const GMAPS_KEY = import.meta.env.VITE_GMAPS_KEY || '';
+  if (hasCoords && GMAPS_KEY) {
+    try {
+      const oLat = Number(freight.originLat).toFixed(6);
+      const oLng = Number(freight.originLng).toFixed(6);
+      const dLat = Number(freight.destLat).toFixed(6);
+      const dLng = Number(freight.destLng).toFixed(6);
+      const mapUrl = `https://maps.googleapis.com/maps/api/staticmap?size=600x300&markers=color:green|label:O|${oLat},${oLng}&markers=color:red|label:D|${dLat},${dLng}&path=color:0x1A6B37|weight:3|${oLat},${oLng}|${dLat},${dLng}&key=${GMAPS_KEY}`;
+      const mapResp = await fetch(mapUrl);
+      if (mapResp.ok) {
+        const mapBlob = await mapResp.blob();
+        const mapDataUrl = await new Promise(r => { const rd = new FileReader(); rd.onload = () => r(rd.result); rd.readAsDataURL(mapBlob); });
+        if (y + 90 > H - 20) { doc.addPage(); y = M; }
+        doc.addImage(mapDataUrl, 'PNG', M, y, 140, 70);
+        // QR code next to map
+        const qrUrl = `https://tolvink.com/freight/${freight.id}`;
+        const qrDataUrl = await QRCode.toDataURL(qrUrl, { width: 200, margin: 1 });
+        doc.addImage(qrDataUrl, 'PNG', M + 145, y + 5, 30, 30);
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(6.5);
+        doc.setTextColor(...hex(T3));
+        doc.text('Escanear para abrir', M + 145, y + 38, { maxWidth: 30 });
+        doc.text('en Tolvink', M + 145, y + 41, { maxWidth: 30 });
+        y += 75;
+      }
+    } catch (_) { /* skip map/QR on error */ }
+  }
 
   // ═══════════════════════════════════════════════════════════════════════
   // SECTION 3 — Historial de cambios
