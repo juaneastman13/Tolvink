@@ -67,24 +67,20 @@ export async function generateFreightPDF(freight, auditLog = []) {
   // ═══════════════════════════════════════════════════════════════════════
   // HEADER — Logo + title + code/status
   // ═══════════════════════════════════════════════════════════════════════
-  // Logo recreation: green rounded rect with white "t" + orange dot
-  doc.setFillColor(...hex(PRI));
-  doc.roundedRect(M, y, 14, 14, 3, 3, 'F');
+  // Logo: "tolvink" text + orange dot (same as app)
   doc.setFont('helvetica','bold');
-  doc.setFontSize(24);
-  doc.setTextColor(255,255,255);
-  doc.text('t', M+3.5, y+11.5);
+  doc.setFontSize(28);
+  doc.setTextColor(...hex(PRI));
+  doc.text('tolvink', M, y+10);
+  const twW = doc.getTextWidth('tolvink');
   doc.setFillColor(...hex(ACC));
-  doc.circle(M+11.5, y+3.5, 2, 'F');
+  doc.circle(M + twW + 3, y + 3, 2.5, 'F');
 
-  // Brand name + subtitle
-  doc.setTextColor(...hex(T1));
-  doc.setFontSize(18);
-  doc.text('TOLVINK', M+18, y+6);
+  // Subtitle
   doc.setFontSize(10);
   doc.setTextColor(...hex(T2));
   doc.setFont('helvetica','normal');
-  doc.text('Informe de Flete', M+18, y+11);
+  doc.text('Informe de Flete', M, y+15);
 
   // Right: code + status badge
   doc.setFont('helvetica','bold');
@@ -236,17 +232,8 @@ export async function generateFreightPDF(freight, auditLog = []) {
       if (mapResp.ok) {
         const mapBlob = await mapResp.blob();
         const mapDataUrl = await new Promise(r => { const rd = new FileReader(); rd.onload = () => r(rd.result); rd.readAsDataURL(mapBlob); });
-        if (y + 90 > H - 20) { doc.addPage(); y = M; }
-        doc.addImage(mapDataUrl, 'PNG', M, y, 140, 70);
-        // QR code next to map
-        const qrUrl = `https://tolvink.com/freight/${freight.id}`;
-        const qrDataUrl = await QRCode.toDataURL(qrUrl, { width: 200, margin: 1 });
-        doc.addImage(qrDataUrl, 'PNG', M + 145, y + 5, 30, 30);
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(6.5);
-        doc.setTextColor(...hex(T3));
-        doc.text('Escanear para abrir', M + 145, y + 38, { maxWidth: 30 });
-        doc.text('en Tolvink', M + 145, y + 41, { maxWidth: 30 });
+        if (y + 80 > H - 20) { doc.addPage(); y = M; }
+        doc.addImage(mapDataUrl, 'PNG', M, y, CW, 70);
         y += 75;
       }
     } catch (_) { /* skip map/QR on error */ }
@@ -327,6 +314,22 @@ export async function generateFreightPDF(freight, auditLog = []) {
     doc.text('Sin documentos adjuntos', M+4, y+2);
     y += 8;
   }
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // QR CODE — at the end
+  // ═══════════════════════════════════════════════════════════════════════
+  try {
+    const shareParam = freight.shareToken ? `?s=${freight.shareToken}` : '';
+    const qrUrl = `https://tolvink.com/${freight.code}/informe${shareParam}`;
+    const qrDataUrl = await QRCode.toDataURL(qrUrl, { width: 200, margin: 1 });
+    if (y + 50 > H - 20) { doc.addPage(); y = M; }
+    doc.addImage(qrDataUrl, 'PNG', W/2 - 15, y, 30, 30);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7.5);
+    doc.setTextColor(...hex(T3));
+    doc.text('Escanear para ver este informe en Tolvink', W/2, y + 34, { align: 'center' });
+    y += 40;
+  } catch (_) { /* skip QR on error */ }
 
   // ═══════════════════════════════════════════════════════════════════════
   // FOOTER — all pages
