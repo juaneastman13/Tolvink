@@ -470,8 +470,8 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
           <NextStepBtn complete={secComplete.destination} onClick={isEditing?confirmEdit:advanceToNext} label={isEditing?"Confirmar edición":undefined}/>
         </Sec>}
 
-        {/* Route preview + custom dest map — side by side on desktop when custom */}
-        {destMode==="custom" && _isDesktop ? (
+        {/* Route preview + custom dest map — only visible in destination & extras sections */}
+        {(activeSection === "destination" || activeSection === "extras") && (destMode==="custom" && _isDesktop ? (
           <div style={{ display:"flex", gap:16, alignItems:"flex-start" }}>
             <div style={{ flex:1, minWidth:0 }}>
               <LocationPicker label="Ubicación del destino" value={customDest.lat?{lat:customDest.lat,lng:customDest.lng}:null} onChange={loc=>setCustomDest(p=>({...p,lat:loc.lat,lng:loc.lng}))}/>
@@ -537,7 +537,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
               {editingDest && <div style={{ padding:"0 14px 12px" }}><LocationPicker label="Corregir ubicación de destino" value={overrideDest||destCoords} onChange={loc=>setOverrideDest({lat:loc.lat,lng:loc.lng})}/></div>}
             </div>
           )
-        )}
+        ))}
 
         {/* SCHEDULE SECTION */}
         {activeSection === "schedule" && <Sec label="Fecha y hora" complete={secComplete.schedule} isExpanded={true} onFocus={()=>{}} secRef={secRefs.schedule}>
