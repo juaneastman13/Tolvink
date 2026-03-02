@@ -67,20 +67,18 @@ export async function generateFreightPDF(freight, auditLog = []) {
   // ═══════════════════════════════════════════════════════════════════════
   // HEADER — Logo + title + code/status
   // ═══════════════════════════════════════════════════════════════════════
-  // Logo: "tolvink" text + orange dot (same as app)
+  // Logo: "tolvink" + orange dot (matches app header)
   doc.setFont('helvetica','bold');
-  doc.setFontSize(28);
+  doc.setFontSize(30);
   doc.setTextColor(...hex(PRI));
-  doc.text('tolvink', M, y+10);
+  doc.text('tolvink', M, y+11);
   const twW = doc.getTextWidth('tolvink');
   doc.setFillColor(...hex(ACC));
-  doc.circle(M + twW + 3, y + 3, 2.5, 'F');
-
-  // Subtitle
-  doc.setFontSize(10);
+  doc.circle(M + twW + 2.5, y + 2.5, 2.2, 'F');
+  doc.setFontSize(9);
   doc.setTextColor(...hex(T2));
   doc.setFont('helvetica','normal');
-  doc.text('Informe de Flete', M, y+15);
+  doc.text('Informe de Flete', M, y+15.5);
 
   // Right: code + status badge
   doc.setFont('helvetica','bold');
@@ -319,15 +317,14 @@ export async function generateFreightPDF(freight, auditLog = []) {
   // QR CODE — at the end
   // ═══════════════════════════════════════════════════════════════════════
   try {
-    const shareParam = freight.shareToken ? `?s=${freight.shareToken}` : '';
-    const qrUrl = `https://tolvink.com/${freight.code}/informe${shareParam}`;
+    const qrUrl = `https://tolvink.com/freight/${freight.id}`;
     const qrDataUrl = await QRCode.toDataURL(qrUrl, { width: 200, margin: 1 });
     if (y + 50 > H - 20) { doc.addPage(); y = M; }
     doc.addImage(qrDataUrl, 'PNG', W/2 - 15, y, 30, 30);
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(7.5);
     doc.setTextColor(...hex(T3));
-    doc.text('Escanear para ver este informe en Tolvink', W/2, y + 34, { align: 'center' });
+    doc.text('Escanear para ver este flete en Tolvink', W/2, y + 34, { align: 'center' });
     y += 40;
   } catch (_) { /* skip QR on error */ }
 
