@@ -12,17 +12,17 @@ import { useIsDesktop } from "../hooks";
 
 // ======================== SUMMARY CARD ==============================
 
-function SummaryCard({ secSummary, secComplete, form, showTruckSelect, isDesktop }) {
+function SummaryCard({ secSummary, secComplete, form, showTruckSelect, isDesktop, onEdit }) {
   const rows = [];
-  if (secSummary.product) rows.push({ label: "Producto", value: secSummary.product });
-  if (secSummary.quantity) rows.push({ label: "Cantidad", value: secSummary.quantity });
-  if (secSummary.origin) rows.push({ label: "Origen", value: secSummary.origin });
-  if (showTruckSelect && form.fleetChoice) rows.push({ label: "Transporte", value: form.fleetChoice === "own" ? "Flota propia" : "Delegar a planta" });
-  if (secSummary.destination) rows.push({ label: "Destino", value: secSummary.destination });
-  if (secSummary.schedule) rows.push({ label: "Fecha/hora", value: secSummary.schedule });
-  if (form.notes?.trim()) rows.push({ label: "Notas", value: form.notes.trim().length > 60 ? form.notes.trim().slice(0, 57) + "..." : form.notes.trim() });
+  if (secSummary.product) rows.push({ label: "Producto", value: secSummary.product, section: "product" });
+  if (secSummary.quantity) rows.push({ label: "Cantidad", value: secSummary.quantity, section: "quantity" });
+  if (secSummary.origin) rows.push({ label: "Origen", value: secSummary.origin, section: "origin" });
+  if (showTruckSelect && form.fleetChoice) rows.push({ label: "Transporte", value: form.fleetChoice === "own" ? "Flota propia" : "Delegar a planta", section: "ownfleet" });
+  if (secSummary.destination) rows.push({ label: "Destino", value: secSummary.destination, section: "destination" });
+  if (secSummary.schedule) rows.push({ label: "Fecha/hora", value: secSummary.schedule, section: "schedule" });
+  if (form.notes?.trim()) rows.push({ label: "Notas", value: form.notes.trim().length > 60 ? form.notes.trim().slice(0, 57) + "..." : form.notes.trim(), section: "extras" });
   const tc = parseInt(form.truckCount) || (parseFloat(form.tons) > 0 ? Math.ceil(parseFloat(form.tons) / 30) : 0);
-  if (tc > 1) rows.push({ label: "Camiones", value: `${tc} camiones` });
+  if (tc > 1) rows.push({ label: "Camiones", value: `${tc} camiones`, section: "quantity" });
   const secKeys = ["product", "quantity", "origin", "destination", "schedule"];
   const filled = secKeys.filter(k => secComplete[k]).length;
   const total = secKeys.length;
@@ -38,12 +38,13 @@ function SummaryCard({ secSummary, secComplete, form, showTruckSelect, isDesktop
       ) : (
         <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
           {rows.map((r, i) => (
-            <div key={i} style={{ display:"flex", alignItems:"flex-start", gap:8 }}>
+            <div key={i} onClick={() => onEdit?.(r.section)} style={{ display:"flex", alignItems:"flex-start", gap:8, cursor:onEdit?"pointer":"default", padding:"4px 6px", margin:"0 -6px", borderRadius:6 }}>
               <div style={{ width:6, height:6, borderRadius:3, background:C.pri, marginTop:5, flexShrink:0 }}/>
-              <div>
+              <div style={{ flex:1 }}>
                 <div style={{ fontSize:10, fontWeight:600, color:C.t3, textTransform:"uppercase", letterSpacing:0.5 }}>{r.label}</div>
                 <div style={{ fontSize:12.5, fontWeight:500, color:C.t1, marginTop:1 }}>{r.value}</div>
               </div>
+              {onEdit && <div style={{ color:C.t3, opacity:0.4, marginTop:3 }}>{Ic.chev(C.t3,12)}</div>}
             </div>
           ))}
         </div>
@@ -127,6 +128,25 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
 
   // Next section to fill (highlight it when collapsed)
   const nextToFill = SEC_ORDER.find(s => !secComplete[s]);
+
+  // Auto-advance to next section when current completes
+  const prevCompleteRef = useRef(null);
+  useEffect(() => {
+    const current = { ...secComplete, ownfleet: !!form.fleetChoice };
+    if (!prevCompleteRef.current) { prevCompleteRef.current = current; return; }
+    const prev = prevCompleteRef.current;
+    prevCompleteRef.current = current;
+    if (current[activeSection] && !prev[activeSection]) {
+      const flow = ["product", "quantity", "origin"];
+      if (showTruckSelect) flow.push("ownfleet");
+      flow.push("destination", "schedule", "extras");
+      const idx = flow.indexOf(activeSection);
+      if (idx >= 0 && idx < flow.length - 1) {
+        const timer = setTimeout(() => setActiveSection(flow[idx + 1]), 400);
+        return () => clearTimeout(timer);
+      }
+    }
+  }); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Sections are locked if previous required sections are incomplete
   const secEnabled = {
@@ -293,7 +313,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
       <div style={{ flex:"1 1 0", minWidth:0 }}>
       <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
         {/* PRODUCT SECTION */}
-        <Sec label="Producto" complete={secComplete.product} summary={secSummary.product} isExpanded={activeSection==="product"} onFocus={()=>setActiveSection("product")} secRef={secRefs.product} incomplete={showIncomplete&&!secComplete.product} highlight={nextToFill==="product"&&activeSection!=="product"}>
+        {activeSection === "product" && <Sec label="Producto" complete={secComplete.product} isExpanded={true} onFocus={()=>{}} secRef={secRefs.product}>
           <div>
             <Field label="Tipo de producto" icon={Ic.grain(C.pri,14)}>
               <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:6 }}>
@@ -308,10 +328,10 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
               {touched&&<FieldError error={errs.productTypeOther}/>}
             </div>
           )}
-        </Sec>
+        </Sec>}
 
         {/* QUANTITY SECTION */}
-        <Sec label="Cantidad" complete={secComplete.quantity} summary={secSummary.quantity} isExpanded={activeSection==="quantity"} onFocus={()=>setActiveSection("quantity")} secRef={secRefs.quantity} incomplete={showIncomplete&&!secComplete.quantity} highlight={nextToFill==="quantity"&&activeSection!=="quantity"} disabled={!secEnabled.quantity}>
+        {activeSection === "quantity" && <Sec label="Cantidad" complete={secComplete.quantity} isExpanded={true} onFocus={()=>{}} secRef={secRefs.quantity}>
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
             <div>
               <Field label="Cantidad" icon={Ic.grain(C.t2,14)} value={form.tons} onChange={v=>u({tons:v})} placeholder="Ej: 30"/>
@@ -336,10 +356,10 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
               </div>
             </div>
           )}
-        </Sec>
+        </Sec>}
 
         {/* ORIGIN SECTION */}
-        <Sec label="Origen" complete={secComplete.origin} summary={secSummary.origin} isExpanded={activeSection==="origin"} onFocus={()=>setActiveSection("origin")} secRef={secRefs.origin} incomplete={showIncomplete&&!secComplete.origin} highlight={nextToFill==="origin"&&activeSection!=="origin"} disabled={!secEnabled.origin}>
+        {activeSection === "origin" && <Sec label="Origen" complete={secComplete.origin} isExpanded={true} onFocus={()=>{}} secRef={secRefs.origin}>
           {/* Toggle: Campo / Mapa */}
           <div style={{ display:"flex", gap:0, marginBottom:14, borderRadius:10, overflow:"hidden", border:`1.5px solid ${C.b1}` }}>
             {[{k:"field",l:"Seleccionar campo"},{k:"map",l:"Indicar en mapa"}].map(m=>(
@@ -379,11 +399,11 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
             {touched&&errs.customOrigin&&<div style={{padding:"6px 10px",borderRadius:8,marginTop:6,fontSize:11,fontWeight:600,color:C.err,background:C.errPale}}>{errs.customOrigin}</div>}
             {customOrigin.lat && <div style={{ display:"flex", alignItems:"center", gap:6, padding:"6px 10px", background:C.priPale, borderRadius:8, marginTop:6 }}>{Ic.chk(C.pri,14)}<span style={{fontSize:10.5,color:C.pri,fontWeight:500}}>{customOrigin.lat.toFixed(4)}, {customOrigin.lng.toFixed(4)}</span></div>}
           </>)}
-        </Sec>
+        </Sec>}
 
         {/* OWN FLEET — explicit binary choice */}
-        {showTruckSelect && (
-          <Sec label={form.fleetChoice==="own"?"Flota propia":form.fleetChoice==="delegate"?"Delegar a planta":"Transporte"} complete={!!form.fleetChoice} summary={form.fleetChoice==="own"?(truckOpts.find(t=>t.value===form.truckId)?.label||"Elegir camión"):form.fleetChoice==="delegate"?"Planta asigna":""} isExpanded={activeSection==="ownfleet"} onFocus={()=>setActiveSection("ownfleet")} secRef={secRefs.ownfleet} highlight={secComplete.origin&&!form.fleetChoice&&activeSection!=="ownfleet"} disabled={!secEnabled.ownfleet}>
+        {activeSection === "ownfleet" && showTruckSelect && (
+          <Sec label={form.fleetChoice==="own"?"Flota propia":form.fleetChoice==="delegate"?"Delegar a planta":"Transporte"} complete={!!form.fleetChoice} isExpanded={true} onFocus={()=>{}} secRef={secRefs.ownfleet}>
             <div style={{ fontSize:12, color:C.t2, marginBottom:12 }}>¿Cómo desea transportar este flete?</div>
             <div style={{ display:"flex", gap:8, marginBottom:14 }}>
               <button type="button" onClick={()=>u({fleetChoice:"own"})} style={{ flex:1, padding:"12px 8px", borderRadius:10, border:`1.5px solid ${form.fleetChoice==="own"?C.acc:C.b1}`, background:form.fleetChoice==="own"?C.accPale:C.w, color:form.fleetChoice==="own"?C.acc:C.t2, cursor:"pointer", fontSize:13, fontWeight:form.fleetChoice==="own"?700:500, fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>{Ic.truck(form.fleetChoice==="own"?C.acc:C.t3,16)} Flota propia</button>
@@ -398,7 +418,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
         )}
 
         {/* DESTINATION SECTION */}
-        <Sec label="Destino" complete={secComplete.destination} summary={secSummary.destination} isExpanded={activeSection==="destination"} onFocus={()=>setActiveSection("destination")} secRef={secRefs.destination} incomplete={showIncomplete&&!secComplete.destination} highlight={nextToFill==="destination"&&activeSection!=="destination"} disabled={!secEnabled.destination}>
+        {activeSection === "destination" && <Sec label="Destino" complete={secComplete.destination} isExpanded={true} onFocus={()=>{}} secRef={secRefs.destination}>
           <label style={{ fontSize:10.5, fontWeight:600, color:C.t2, marginBottom:6, display:"flex", alignItems:"center", gap:4, textTransform:"uppercase", letterSpacing:0.6 }}>{Ic.plant(C.t2,14)} Destino</label>
           <div style={{ display:"flex", gap:6, marginBottom:10 }}>
             <button onClick={()=>{setDestMode("plant"); setCustomDest({name:"",lat:null,lng:null}); setConfirmMode("none"); setConfirmPlantId("");}} style={{ flex:1, padding:"10px 8px", borderRadius:8, border:`1.5px solid ${destMode==="plant"?C.pri:C.b1}`, background:destMode==="plant"?C.priPale:C.w, color:destMode==="plant"?C.pri:C.t2, cursor:"pointer", fontSize:12, fontWeight:600, fontFamily:"inherit" }}>Planta</button>
@@ -439,7 +459,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
               </div>
             </>
           )}
-        </Sec>
+        </Sec>}
 
         {/* Route preview + custom dest map — side by side on desktop when custom */}
         {destMode==="custom" && _isDesktop ? (
@@ -511,7 +531,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
         )}
 
         {/* SCHEDULE SECTION */}
-        <Sec label="Fecha y hora" complete={secComplete.schedule} summary={secSummary.schedule} isExpanded={activeSection==="schedule"} onFocus={()=>setActiveSection("schedule")} secRef={secRefs.schedule} incomplete={showIncomplete&&!secComplete.schedule} highlight={nextToFill==="schedule"&&activeSection!=="schedule"} disabled={!secEnabled.schedule}>
+        {activeSection === "schedule" && <Sec label="Fecha y hora" complete={secComplete.schedule} isExpanded={true} onFocus={()=>{}} secRef={secRefs.schedule}>
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
             <div>
               <label style={{ fontSize:10.5, fontWeight:600, color:C.t2, marginBottom:6, display:"flex", alignItems:"center", gap:4, textTransform:"uppercase", letterSpacing:0.6 }}>{Ic.cal(C.pri,14)} Fecha carga</label>
@@ -530,10 +550,10 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
               {touched&&<FieldError error={errs.loadTime}/>}
             </div>
           </div>
-        </Sec>
+        </Sec>}
 
         {/* EXTRAS */}
-        <div ref={secRefs.extras}>
+        {activeSection === "extras" && <div ref={secRefs.extras}>
           <div>
             <label style={{ fontSize:10.5, fontWeight:600, color:C.t2, marginBottom:6, display:"block", textTransform:"uppercase", letterSpacing:0.6 }}>Notas</label>
             <textarea value={form.notes} onChange={e=>u({notes:e.target.value})} placeholder="Indicaciones, horarios especiales..." rows={3} style={{ width:"100%", padding:"12px 14px", borderRadius:10, border:`1.5px solid ${C.b1}`, background:C.w, color:C.t1, fontSize:13, fontFamily:"inherit", outline:"none", resize:"none", boxSizing:"border-box" }}/>
@@ -561,12 +581,12 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
             </button>
             <AttachMenu open={showAttach} onClose={()=>setShowAttach(false)} onCamera={()=>nfCamRef.current?.click()} onGallery={()=>nfGalRef.current?.click()} onFiles={()=>nfDocRef.current?.click()} />
           </div>
-        </div>
+        </div>}
 
       </div>
       </div>
       <div style={{ width:_isDesktop?340:"auto", flexShrink:0, position:_isDesktop?"sticky":"static", top:_isDesktop?70:"auto", alignSelf:_isDesktop?"flex-start":"auto" }}>
-        <SummaryCard secSummary={secSummary} secComplete={secComplete} form={form} showTruckSelect={showTruckSelect} isDesktop={_isDesktop}/>
+        <SummaryCard secSummary={secSummary} secComplete={secComplete} form={form} showTruckSelect={showTruckSelect} isDesktop={_isDesktop} onEdit={setActiveSection}/>
         <div ref={secRefs.submit} style={{ marginTop:14 }}>
           <Btn full icon={Ic.chk(C.w,16)} disabled={submitting} onClick={submit}>{submitting?"Enviando...":"Solicitar Flete"}</Btn>
         </div>
