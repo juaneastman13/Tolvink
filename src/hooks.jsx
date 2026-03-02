@@ -191,10 +191,20 @@ export function useAuth() {
   },[]);
 
   const switchingRef = useRef(false);
+  const [companySwitching, setCompanySwitching] = useState(false);
   const switchCompany = useCallback(async (companyId) => {
     if (switchingRef.current) return { ok: false, error: "Cambio en curso" };
     switchingRef.current = true;
+    setCompanySwitching(true);
     try {
+      // Optimistic: update company name immediately from local data
+      setUser(prev => {
+        if (!prev) return prev;
+        const target = prev.companies?.find(c => c.companyId === companyId);
+        if (!target) return prev;
+        return { ...prev, activeCompanyId: companyId, companyId, entity: target.companyName, userType: target.companyType };
+      });
+
       const d = await apiSwitchCompany(companyId);
       if (d?.user) {
         const mappedUser = mapUser(d.user);
@@ -209,6 +219,7 @@ export function useAuth() {
       return { ok: false, error: e.message };
     } finally {
       switchingRef.current = false;
+      setCompanySwitching(false);
     }
   }, []);
 
@@ -220,7 +231,7 @@ export function useAuth() {
     }
   }, []);
 
-  return { user, loading, error, isInitialized, login, signup, logout, switchCompany, handlePasswordReset, clearError:()=>setError(null) };
+  return { user, loading, error, isInitialized, login, signup, logout, switchCompany, companySwitching, handlePasswordReset, clearError:()=>setError(null) };
 }
 
 // ======================== MAP USER ====================================
