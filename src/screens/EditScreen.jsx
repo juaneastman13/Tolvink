@@ -1,6 +1,7 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { C, Ic } from "../theme";
-import { Btn, Field, LoadingOverlay } from "../components";
+import { Btn, LoadingOverlay } from "../components";
+import { apiListDrivers } from "../api";
 
 export default function EditScreen({ freight, fields, plants, branches, trucks, user, onBack, onSave }) {
   const isPending = freight.status === "pending_assignment";
@@ -17,11 +18,12 @@ export default function EditScreen({ freight, fields, plants, branches, trucks, 
   }, [plants, freight.destPlantId, freight.destCompanyId]);
 
   // Check if user's company has trucks (own fleet)
-  const showTruckSelect = useMemo(() => {
-    if (!user) return false;
-    const ut = user.userType;
-    return (ut === "producer" || (user.userTypes || []).includes("producer")) && (trucks || []).length > 0;
-  }, [user, trucks]);
+  const hasTrucks = (trucks || []).length > 0;
+  const isProducer = user?.userType === "producer" || (user?.userTypes || []).includes("producer");
+
+  // Load drivers when own fleet is enabled
+  const [drivers, setDrivers] = useState([]);
+  const [driversLoaded, setDriversLoaded] = useState(false);
 
   const [form, setForm] = useState({
     loadDate: freight.loadDate || "",
@@ -29,16 +31,24 @@ export default function EditScreen({ freight, fields, plants, branches, trucks, 
     notes: freight.notes || "",
     ...(canEditFleet ? { useOwnFleet: freight.useOwnFleet ?? freight.isOwnFleet ?? false } : {}),
     ...(canEditDest ? { destPlantId: currentDestId, branchId: "" } : {}),
-    ...(canEditFleet && showTruckSelect ? { truckId: "" } : {}),
+    truckId: "",
+    driverId: "",
   });
   const [saving, setSaving] = useState(false);
   const [doneMsg, setDoneMsg] = useState("");
   const u = f => setForm(p=>({...p,...f}));
 
+  // Fetch drivers when own fleet is toggled on
+  useEffect(() => {
+    if (form.useOwnFleet && !driversLoaded) {
+      apiListDrivers().then(d => { setDrivers(d || []); setDriversLoaded(true); }).catch(() => setDriversLoaded(true));
+    }
+  }, [form.useOwnFleet, driversLoaded]);
+
   // Branches filtered by selected plant company
   const selectedPlantCompanyId = (plants||[]).find(p=>p.id===form.destPlantId)?.companyId;
   const branchOpts = (branches||[]).filter(b=>b.companyId===selectedPlantCompanyId);
-  const truckOpts = (trucks||[]).map(t=>({ id: t.id, label:`${t.plate}${t.model?` · ${t.model}`:""}` }));
+  const truckOpts = (trucks||[]).map(t=>({ id: t.id, label:`${t.plate}${t.model?` · ${t.model}`:""}`, driver: t.assignedUser }));
 
   const save = async () => {
     setSaving(true);
@@ -53,10 +63,10 @@ export default function EditScreen({ freight, fields, plants, branches, trucks, 
     }
     if (canEditFleet && form.useOwnFleet && form.truckId) {
       data.truckId = form.truckId;
+      if (form.driverId) data.driverId = form.driverId;
     }
     if (canEditDest && form.destPlantId && form.destPlantId !== currentDestId) {
       data.destPlantId = form.destPlantId;
-      // If a branch is selected, pass its coords as customDest overrides
       if (form.branchId) {
         const branch = (branches||[]).find(b=>b.id===form.branchId);
         if (branch) {
@@ -74,6 +84,12 @@ export default function EditScreen({ freight, fields, plants, branches, trucks, 
 
   const inputSt = {width:"100%",padding:"12px 14px",borderRadius:10,border:`1.5px solid ${C.b1}`,background:C.w,color:C.t1,fontSize:16,fontFamily:"inherit",outline:"none",boxSizing:"border-box",cursor:"pointer"};
   const labelSt = {fontSize:10.5,fontWeight:600,color:C.t2,marginBottom:6,display:"flex",alignItems:"center",gap:4,textTransform:"uppercase",letterSpacing:0.6};
+
+  // Auto-select driver from truck's assigned user
+  const handleTruckChange = (truckId) => {
+    const truck = truckOpts.find(t=>t.id===truckId);
+    u({ truckId, driverId: truck?.driver?.id || "" });
+  };
 
   return (
     <div style={{ flex:1, overflow:"auto" }}>
@@ -107,7 +123,7 @@ export default function EditScreen({ freight, fields, plants, branches, trucks, 
         {/* useOwnFleet toggle */}
         {canEditFleet && <div style={{marginBottom:16}}>
           <label style={labelSt}>{Ic.truck(C.pri,14)} Flota propia</label>
-          <button onClick={()=>u({useOwnFleet:!form.useOwnFleet, truckId:""})} style={{ display:"flex", alignItems:"center", gap:10, width:"100%", padding:"12px 14px", borderRadius:10, border:`1.5px solid ${form.useOwnFleet?C.ok:C.b1}`, background:form.useOwnFleet?(C.okPale||"#e6f9ec"):C.w, cursor:"pointer", fontFamily:"inherit", fontSize:14, color:C.t1 }}>
+          <button onClick={()=>u({useOwnFleet:!form.useOwnFleet, truckId:"", driverId:""})} style={{ display:"flex", alignItems:"center", gap:10, width:"100%", padding:"12px 14px", borderRadius:10, border:`1.5px solid ${form.useOwnFleet?C.ok:C.b1}`, background:form.useOwnFleet?(C.okPale||"#e6f9ec"):C.w, cursor:"pointer", fontFamily:"inherit", fontSize:14, color:C.t1 }}>
             <span style={{ width:36, height:20, borderRadius:10, background:form.useOwnFleet?C.ok:C.b1, position:"relative", display:"inline-block", transition:"background 0.2s" }}>
               <span style={{ width:16, height:16, borderRadius:8, background:C.w, position:"absolute", top:2, left:form.useOwnFleet?18:2, transition:"left 0.2s", boxShadow:"0 1px 3px #0002" }}/>
             </span>
@@ -116,21 +132,42 @@ export default function EditScreen({ freight, fields, plants, branches, trucks, 
         </div>}
 
         {/* Truck selector — only when useOwnFleet=true and has trucks */}
-        {canEditFleet && form.useOwnFleet && showTruckSelect && <div style={{marginBottom:16}}>
+        {canEditFleet && form.useOwnFleet && hasTrucks && <div style={{marginBottom:16}}>
           <label style={labelSt}>{Ic.truck(C.pri,14)} Vehículo</label>
-          <select value={form.truckId||""} onChange={e=>u({truckId:e.target.value})} style={{...inputSt,appearance:"auto"}}>
+          <select value={form.truckId||""} onChange={e=>handleTruckChange(e.target.value)} style={{...inputSt,appearance:"auto"}}>
             <option value="">— Seleccionar camión —</option>
-            {truckOpts.map(t => <option key={t.id} value={t.id}>{t.label}</option>)}
+            {truckOpts.map(t => <option key={t.id} value={t.id}>{t.label}{t.driver ? ` (${t.driver.name})` : ""}</option>)}
           </select>
         </div>}
 
-        {/* Dest plant selector */}
-        {canEditDest && plants?.length > 0 && <div style={{marginBottom:16}}>
-          <label style={labelSt}>{Ic.plant(C.pri,14)} Planta destino</label>
-          <select value={form.destPlantId} onChange={e=>u({destPlantId:e.target.value, branchId:""})} style={{...inputSt,appearance:"auto"}}>
-            <option value="">— Seleccionar planta —</option>
-            {plants.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+        {/* Driver selector — when own fleet + truck selected */}
+        {canEditFleet && form.useOwnFleet && form.truckId && <div style={{marginBottom:16}}>
+          <label style={labelSt}>{Ic.user(C.pri,14)} Chofer</label>
+          {/* "Yo soy el chofer" shortcut */}
+          <button onClick={()=>u({driverId:user.id})} style={{ display:"flex", alignItems:"center", gap:8, width:"100%", padding:"10px 14px", borderRadius:10, border:`1.5px solid ${form.driverId===user.id?C.pri:C.b1}`, background:form.driverId===user.id?(C.priPale||"#eef0ff"):C.w, cursor:"pointer", fontFamily:"inherit", fontSize:13, color:form.driverId===user.id?C.pri:C.t1, marginBottom:8 }}>
+            {Ic.user(form.driverId===user.id?C.pri:C.t2,16)}
+            Yo soy el chofer
+          </button>
+          {/* Driver list */}
+          <select value={form.driverId===user.id?"":form.driverId||""} onChange={e=>u({driverId:e.target.value})} style={{...inputSt,appearance:"auto"}}>
+            <option value="">— Seleccionar chofer —</option>
+            {drivers.map(d => <option key={d.id} value={d.id}>{d.name}{d.phone ? ` (${d.phone})` : ""}</option>)}
           </select>
+        </div>}
+
+        {/* Dest plant selector — always show if canEditDest */}
+        {canEditDest && <div style={{marginBottom:16}}>
+          <label style={labelSt}>{Ic.plant(C.pri,14)} Planta destino</label>
+          {plants?.length > 0 ? (
+            <select value={form.destPlantId||""} onChange={e=>u({destPlantId:e.target.value, branchId:""})} style={{...inputSt,appearance:"auto"}}>
+              <option value="">— Seleccionar planta —</option>
+              {plants.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
+          ) : (
+            <div style={{ padding:"12px 14px", borderRadius:10, border:`1.5px solid ${C.b1}`, background:C.bgInput, color:C.t2, fontSize:14 }}>
+              {freight.destName || "Sin destino"}
+            </div>
+          )}
         </div>}
 
         {/* Branch selector — filtered by selected plant company */}
