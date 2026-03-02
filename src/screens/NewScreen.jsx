@@ -62,11 +62,12 @@ function SummaryCard({ secSummary, secComplete, form, showTruckSelect, isDesktop
   );
 }
 
-function NextStepBtn({ complete, onClick }) {
+function NextStepBtn({ complete, onClick, label }) {
+  const isConfirm = !!label;
   return (
     <div style={{ marginTop:16, display:"flex", justifyContent:"flex-end" }}>
-      <button type="button" disabled={!complete} onClick={onClick} style={{ padding:"11px 28px", borderRadius:10, border:"none", background:complete?C.pri:C.b1, color:complete?C.w:C.t3, cursor:complete?"pointer":"default", fontSize:13, fontWeight:700, fontFamily:"inherit", display:"flex", alignItems:"center", gap:8, opacity:complete?1:0.5, transition:"all 0.2s ease" }}>
-        Siguiente <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      <button type="button" disabled={!complete} onClick={onClick} style={{ padding:"11px 28px", borderRadius:10, border:"none", background:complete?(isConfirm?C.ok:C.pri):C.b1, color:complete?C.w:C.t3, cursor:complete?"pointer":"default", fontSize:13, fontWeight:700, fontFamily:"inherit", display:"flex", alignItems:"center", gap:8, opacity:complete?1:0.5, transition:"all 0.2s ease" }}>
+        {label || "Siguiente"} {isConfirm ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg> : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>}
       </button>
     </div>
   );
@@ -126,18 +127,22 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
     if(!g)return"product";if(!q)return"quantity";if(!o)return"origin";if(!d)return"destination";return"schedule";
   });
   const [showIncomplete, setShowIncomplete] = useState(false);
+  const [editingFrom, setEditingFrom] = useState(null);
+  const isEditing = editingFrom !== null;
+  const _hasBranches = (branches||[]).some(b => b.companyId === (plants||[]).find(p => p.id === form.plantId)?.companyId);
 
   // Section completeness
   const secComplete = useMemo(()=>({
     product: !!form.grain && (form.grain!=="Otros" || !!form.productTypeOther.trim()),
     quantity: !!form.tons && parseFloat(form.tons) > 0,
     origin: originMode==="field" ? (!!form.fieldId && !!form.lotId) : (!!customOrigin.lat && !!customOrigin.name?.trim()),
-    destination: destMode==="plant" ? !!form.plantId : (!!customDest.name?.trim() && (confirmMode==="none" || !!confirmPlantId)),
+    destination: destMode==="plant" ? (!!form.plantId && (!_hasBranches || !!form.branchId)) : (!!customDest.name?.trim() && (confirmMode==="none" || !!confirmPlantId)),
     schedule: !!form.loadDate && /^\d{2}:\d{2}$/.test(form.loadTime),
-  }),[form, originMode, customOrigin, destMode, customDest, confirmMode, confirmPlantId]);
+  }),[form, originMode, customOrigin, destMode, customDest, confirmMode, confirmPlantId, _hasBranches]);
 
   // Next section to fill (highlight it when collapsed)
   const nextToFill = SEC_ORDER.find(s => !secComplete[s]);
+  const allComplete = !nextToFill;
 
   // Auto-advance to next section when current completes
   const prevCompleteRef = useRef(null);
@@ -146,7 +151,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
     if (!prevCompleteRef.current) { prevCompleteRef.current = current; return; }
     const prev = prevCompleteRef.current;
     prevCompleteRef.current = current;
-    if (current[activeSection] && !prev[activeSection]) {
+    if (current[activeSection] && !prev[activeSection] && !editingFrom) {
       const flow = ["product", "quantity", "origin"];
       if (showTruckSelect) flow.push("ownfleet");
       flow.push("destination", "schedule", "extras");
@@ -165,6 +170,8 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
     const idx = flow.indexOf(activeSection);
     if (idx >= 0 && idx < flow.length - 1) setActiveSection(flow[idx + 1]);
   };
+
+  const confirmEdit = () => { setActiveSection(editingFrom || "extras"); setEditingFrom(null); };
 
   // Sections are locked if previous required sections are incomplete
   const secEnabled = {
@@ -243,6 +250,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
     if(originMode==="map" && !customOrigin.lat) { e.customOrigin="Indicá una ubicación en el mapa"; }
     // Destination validation
     if(destMode==="plant" && !form.plantId) { e.plantId="Seleccioná una planta"; }
+    if(destMode==="plant" && form.plantId && branchOpts.length > 0 && !form.branchId) { e.branchId="Seleccioná una sucursal"; }
     if(destMode==="custom" && !customDest.name?.trim()) { e.customDestName="Nombre de destino obligatorio"; }
     // Own fleet validation: if chose "own fleet", truck is required
     if(showTruckSelect && form.fleetChoice==="own" && !form.truckId) { e.truckId="Seleccioná un camión de tu flota"; }
@@ -346,7 +354,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
               {touched&&<FieldError error={errs.productTypeOther}/>}
             </div>
           )}
-          <NextStepBtn complete={secComplete.product} onClick={advanceToNext}/>
+          <NextStepBtn complete={secComplete.product} onClick={isEditing?confirmEdit:advanceToNext} label={isEditing?"Confirmar edición":undefined}/>
         </Sec>}
 
         {/* QUANTITY SECTION */}
@@ -375,7 +383,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
               </div>
             </div>
           )}
-          <NextStepBtn complete={secComplete.quantity} onClick={advanceToNext}/>
+          <NextStepBtn complete={secComplete.quantity} onClick={isEditing?confirmEdit:advanceToNext} label={isEditing?"Confirmar edición":undefined}/>
         </Sec>}
 
         {/* ORIGIN SECTION */}
@@ -419,7 +427,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
             {touched&&errs.customOrigin&&<div style={{padding:"6px 10px",borderRadius:8,marginTop:6,fontSize:11,fontWeight:600,color:C.err,background:C.errPale}}>{errs.customOrigin}</div>}
             {customOrigin.lat && <div style={{ display:"flex", alignItems:"center", gap:6, padding:"6px 10px", background:C.priPale, borderRadius:8, marginTop:6 }}>{Ic.chk(C.pri,14)}<span style={{fontSize:10.5,color:C.pri,fontWeight:500}}>{customOrigin.lat.toFixed(4)}, {customOrigin.lng.toFixed(4)}</span></div>}
           </>)}
-          <NextStepBtn complete={secComplete.origin} onClick={advanceToNext}/>
+          <NextStepBtn complete={secComplete.origin} onClick={isEditing?confirmEdit:advanceToNext} label={isEditing?"Confirmar edición":undefined}/>
         </Sec>}
 
         {/* OWN FLEET — explicit binary choice */}
@@ -435,7 +443,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
               {!form.truckId && <div style={{ marginTop:8, padding:"8px 12px", background:`${C.acc}10`, borderRadius:8, fontSize:11, color:C.acc, fontWeight:500 }}>Seleccioná un camión de tu flota</div>}
             </>}
             {form.fleetChoice==="delegate" && <div style={{ padding:"10px 14px", background:`${C.info}10`, borderRadius:8, fontSize:12, color:C.info, fontWeight:500 }}>La planta de destino asignará el transportista</div>}
-            <NextStepBtn complete={!!form.fleetChoice} onClick={advanceToNext}/>
+            <NextStepBtn complete={!!form.fleetChoice} onClick={isEditing?confirmEdit:advanceToNext} label={isEditing?"Confirmar edición":undefined}/>
           </Sec>
         )}
 
@@ -452,7 +460,8 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
               {touched&&<FieldError error={errs.plantId}/>}
               {form.plantId && branchOpts.length > 0 && (
                 <div style={{ marginTop:10 }}>
-                  <Select label="Sucursal (opcional)" icon={Ic.pin(C.sec,14)} value={form.branchId} onChange={v=>u({branchId:v})} options={branchOpts} placeholder="Seleccionar sucursal..."/>
+                  <Select label="Sucursal" icon={Ic.pin(C.sec,14)} value={form.branchId} onChange={v=>u({branchId:v})} options={branchOpts} placeholder="Seleccionar sucursal..."/>
+                  {touched&&<FieldError error={errs.branchId}/>}
                 </div>
               )}
             </>
@@ -481,7 +490,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
               </div>
             </>
           )}
-          <NextStepBtn complete={secComplete.destination} onClick={advanceToNext}/>
+          <NextStepBtn complete={secComplete.destination} onClick={isEditing?confirmEdit:advanceToNext} label={isEditing?"Confirmar edición":undefined}/>
         </Sec>}
 
         {/* Route preview + custom dest map — side by side on desktop when custom */}
@@ -573,7 +582,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
               {touched&&<FieldError error={errs.loadTime}/>}
             </div>
           </div>
-          <NextStepBtn complete={secComplete.schedule} onClick={advanceToNext}/>
+          <NextStepBtn complete={secComplete.schedule} onClick={isEditing?confirmEdit:advanceToNext} label={isEditing?"Confirmar edición":undefined}/>
         </Sec>}
 
         {/* EXTRAS */}
@@ -605,14 +614,21 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
             </button>
             <AttachMenu open={showAttach} onClose={()=>setShowAttach(false)} onCamera={()=>nfCamRef.current?.click()} onGallery={()=>nfGalRef.current?.click()} onFiles={()=>nfDocRef.current?.click()} />
           </div>
+          {isEditing && <NextStepBtn complete={true} onClick={confirmEdit} label="Confirmar edición"/>}
         </div>}
 
       </div>
       </div>
       <div style={{ width:_isDesktop?340:"auto", flexShrink:0, position:_isDesktop?"sticky":"static", top:_isDesktop?70:"auto", alignSelf:_isDesktop?"flex-start":"auto" }}>
-        <SummaryCard secSummary={secSummary} secComplete={secComplete} form={form} showTruckSelect={showTruckSelect} isDesktop={_isDesktop} onEdit={setActiveSection}/>
+        <SummaryCard secSummary={secSummary} secComplete={secComplete} form={form} showTruckSelect={showTruckSelect} isDesktop={_isDesktop} onEdit={(sec)=>{if(!editingFrom)setEditingFrom(activeSection);setActiveSection(sec);}}/>
         <div ref={secRefs.submit} style={{ marginTop:14 }}>
-          <Btn full icon={Ic.chk(C.w,16)} disabled={submitting} onClick={submit}>{submitting?"Enviando...":"Solicitar Flete"}</Btn>
+          {allComplete ? (
+            <Btn full icon={Ic.chk(C.w,16)} disabled={submitting} onClick={submit}>{submitting?"Enviando...":"Solicitar Flete"}</Btn>
+          ) : (
+            <button type="button" onClick={submit} style={{ width:"100%", padding:"14px 20px", borderRadius:12, border:`1.5px solid ${C.b1}`, background:C.bgInput, color:C.t3, fontSize:14, fontWeight:700, fontFamily:"inherit", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
+              {Ic.chk(C.t3,16)} Solicitar Flete
+            </button>
+          )}
         </div>
       </div>
       </div>
