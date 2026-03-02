@@ -159,7 +159,7 @@ export default function Tolvink() {
   useEffect(()=>{
     const p = location.pathname;
     const isPublicPath = ["/pick-location","/track","/report","/daily-map","/live-freight","/ver-mapa"].includes(p)
-      || /^\/(FLT-\d{4,}|F\d{2}[A-Z]{3}\d{4})\/(ubicacion|informe)$/i.test(p)
+      || /^\/(FLT-\d{4,}|F\d{2}-[A-Z]{3}\.\d{4})\/(ubicacion|informe)$/i.test(p)
       || /^\/campo\/[a-z0-9-]+\/ubicacion$/i.test(p);
     if(auth.user && !prevUser.current && !isPublicPath) {
       navigate("/", { replace: true });
@@ -447,11 +447,11 @@ export default function Tolvink() {
   }
 
   // Clean URL routes (new)
-  const trackMatch = location.pathname.match(/^\/(FLT-\d{4,}|F\d{2}[A-Z]{3}\d{4})\/ubicacion$/i);
+  const trackMatch = location.pathname.match(/^\/(FLT-\d{4,}|F\d{2}-[A-Z]{3}\.\d{4})\/ubicacion$/i);
   if (trackMatch) {
     return <Suspense fallback={<SL/>}><TrackFreightScreen code={trackMatch[1].toUpperCase()} /></Suspense>;
   }
-  const reportMatch = location.pathname.match(/^\/(FLT-\d{4,}|F\d{2}[A-Z]{3}\d{4})\/informe$/i);
+  const reportMatch = location.pathname.match(/^\/(FLT-\d{4,}|F\d{2}-[A-Z]{3}\.\d{4})\/informe$/i);
   if (reportMatch) {
     return <Suspense fallback={<SL/>}><ReportDownloadScreen code={reportMatch[1].toUpperCase()} /></Suspense>;
   }
