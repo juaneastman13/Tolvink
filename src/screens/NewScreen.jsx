@@ -94,7 +94,6 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
     loadDate: dup?.loadDate?.split("T")[0] || dup?.preDate || "", loadTime: dup?.loadTime || "",
     notes: dup?.notes || "",
     unit: dup?.unit || "toneladas",
-    amount: dup?.amount?.toString() || "",
     productTypeOther: dup?.productTypeOther || "",
     truckId: "",
     truckCount: "",
@@ -143,25 +142,6 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
   // Next section to fill (highlight it when collapsed)
   const nextToFill = SEC_ORDER.find(s => !secComplete[s]);
   const allComplete = !nextToFill;
-
-  // Auto-advance to next section when current completes
-  const prevCompleteRef = useRef(null);
-  useEffect(() => {
-    const current = { ...secComplete, ownfleet: !!form.fleetChoice };
-    if (!prevCompleteRef.current) { prevCompleteRef.current = current; return; }
-    const prev = prevCompleteRef.current;
-    prevCompleteRef.current = current;
-    if (current[activeSection] && !prev[activeSection] && !editingFrom) {
-      const flow = ["product", "quantity", "origin"];
-      if (showTruckSelect) flow.push("ownfleet");
-      flow.push("destination", "schedule", "extras");
-      const idx = flow.indexOf(activeSection);
-      if (idx >= 0 && idx < flow.length - 1) {
-        const timer = setTimeout(() => setActiveSection(flow[idx + 1]), 400);
-        return () => clearTimeout(timer);
-      }
-    }
-  }); // eslint-disable-line react-hooks/exhaustive-deps
 
   const advanceToNext = () => {
     const flow = ["product", "quantity", "origin"];
@@ -270,7 +250,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
     if(submitting || submitGuard.current) return;
     submitGuard.current = true;
     setSubmitting(true);
-    const payload = {...form, amount:form.amount?parseFloat(form.amount):0, photos: photos.map(p=>p.preview), useOwnFleet: showTruckSelect && form.fleetChoice ? (form.fleetChoice==="own") : undefined,
+    const payload = {...form, photos: photos.map(p=>p.preview), useOwnFleet: showTruckSelect && form.fleetChoice ? (form.fleetChoice==="own") : undefined,
       overrideOriginLat: originMode==="map" ? customOrigin.lat : (overrideOrigin?.lat || undefined),
       overrideOriginLng: originMode==="map" ? customOrigin.lng : (overrideOrigin?.lng || undefined),
       customOriginName: originMode==="map" ? (customOrigin.name || "Origen personalizado") : undefined,
@@ -319,7 +299,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
 
   const secSummary = {
     product: form.grain ? (form.grain==="Otros" ? `Otros: ${form.productTypeOther}` : form.grain) : "",
-    quantity: form.tons ? `${form.tons} ${form.unit}${form.amount?` · $${form.amount}`:""}` : "",
+    quantity: form.tons ? `${form.tons} ${form.unit}` : "",
     origin: originMode==="field" ? ((fieldOpts.find(f=>f.value===form.fieldId)?.label||"")+(selectedLot?` → ${selectedLot.name}`:"")) : (customOrigin.lat ? (customOrigin.name||"Ubicación en mapa") : ""),
     destination: destMode==="plant" ? (destDisplayName||"") : (customDest.name?.trim() ? (customDest.name+(confirmMode==="plant"&&confirmPlantId?` · Confirma: ${(plants||[]).find(p=>p.id===confirmPlantId)?.name||""}`:"")) : ""),
     schedule: form.loadDate&&form.loadTime ? `${form.loadDate} a las ${form.loadTime}` : "",
@@ -370,9 +350,6 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
                 {UNITS.map(uu=><button key={uu.v} onClick={()=>u({unit:uu.v})} style={{ flex:1, padding:"10px 4px", borderRadius:8, border:`1.5px solid ${form.unit===uu.v?C.pri:C.b1}`, background:form.unit===uu.v?C.priPale:C.w, color:form.unit===uu.v?C.pri:C.t2, cursor:"pointer", fontSize:10, fontWeight:600, fontFamily:"inherit" }}>{uu.l}</button>)}
               </div>
             </div>
-          </div>
-          <div style={{ marginTop:10 }}>
-            <Field label="Importe (opcional)" value={form.amount} onChange={v=>u({amount:v})} placeholder="Ej: 150000"/>
           </div>
           {form.unit==="toneladas" && parseFloat(form.tons)>0 && (
             <div style={{ marginTop:10 }}>
@@ -588,7 +565,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
         {/* EXTRAS */}
         {activeSection === "extras" && <div ref={secRefs.extras}>
           <div>
-            <label style={{ fontSize:10.5, fontWeight:600, color:C.t2, marginBottom:6, display:"block", textTransform:"uppercase", letterSpacing:0.6 }}>Notas</label>
+            <label style={{ fontSize:10.5, fontWeight:600, color:C.t2, marginBottom:6, display:"block", textTransform:"uppercase", letterSpacing:0.6 }}>Notas (opcional)</label>
             <textarea value={form.notes} onChange={e=>u({notes:e.target.value})} placeholder="Indicaciones, horarios especiales..." rows={3} style={{ width:"100%", padding:"12px 14px", borderRadius:10, border:`1.5px solid ${C.b1}`, background:C.w, color:C.t1, fontSize:13, fontFamily:"inherit", outline:"none", resize:"none", boxSizing:"border-box" }}/>
           </div>
 
