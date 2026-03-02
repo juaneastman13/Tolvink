@@ -5,7 +5,7 @@ import { Bd, Btn, Loader, Sec, FileViewer } from "../components";
 import { FreightMap, SafeZone } from "../maps";
 import log from "../logger";
 import { DocsGallery, FreightFileUpload } from "../uploads";
-import { apiGetAuditLog, apiSendTracking } from "../api";
+import { apiGetAuditLog, apiSendTracking, apiApprovePendingChange, apiRejectPendingChange } from "../api";
 import { useIsDesktop } from "../hooks";
 // PDF report loaded lazily to avoid bundle bloat
 const loadPdfReport = () => import("../utils/pdf-report");
@@ -15,6 +15,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
   const [showAudit, setShowAudit] = useState(false);
   const [viewFile, setViewFile] = useState(null);
   const [pdfLoading, setPdfLoading] = useState(false);
+  const [pcLoading, setPcLoading] = useState(null);
   const auditRef = useRef(null);
   if(!freight) return null;
 
@@ -446,8 +447,8 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
           <span style={{ fontSize:10.5, fontWeight:700, color:C.t2, textTransform:"uppercase", letterSpacing:0.5, marginBottom:12, display:"block" }}>Información del flete</span>
           {[
             [Ic.user(C.pri,15),"Empresa",freight.originCompanyName||freight.originName],
-            [Ic.pin(C.ok,15),"Campo",<>{[freight.fieldName,freight.originName].filter(Boolean).join(" / ")||"—"}{freight.originLat&&freight.originLng&&<span onClick={()=>goToMap(freight.originLat,freight.originLng,[freight.fieldName,freight.originName].filter(Boolean).join(" / "))} style={{cursor:"pointer",opacity:0.7,marginLeft:4,fontSize:11}} title="Ver en mapa">{"\uD83D\uDCCD"}</span>}</>],
-            [Ic.plant(C.t2,15),"Destino",<>{freight.destName}{freight.destLat&&freight.destLng&&<span onClick={()=>goToMap(freight.destLat,freight.destLng,freight.destName)} style={{cursor:"pointer",opacity:0.7,marginLeft:4,fontSize:11}} title="Ver en mapa">{"\uD83D\uDCCD"}</span>}</>],
+            [Ic.grain(C.ok,15),"Campo",[freight.fieldName,freight.originName].filter(Boolean).join(" / ")||"—"],
+            [Ic.plant(C.t2,15),"Destino",freight.destName],
             [Ic.cal(C.t2,15),"Fecha carga",freight.loadDate],
             [Ic.clk(C.t2,15),"Hora carga",freight.loadTime],
             [Ic.user(C.t2,15),"Solicitado por",freight.requestedByName],
@@ -482,6 +483,31 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
           <div style={{ fontSize:12.5, color:C.t1, lineHeight:1.5, whiteSpace:"pre-wrap" }}>{freight.notes}</div>
         </div>
       )}
+
+      {/* Pending changes banner */}
+      {freight.pendingChanges?.length > 0 && (()=>{
+        const myCompanyId = user.activeCompanyId || user.companyId;
+        return freight.pendingChanges.map(pc => {
+          const isApprover = pc.approverCompanyId === myCompanyId;
+          const label = pc.changeType === "useOwnFleet"
+            ? `Cambio de flota propia: ${pc.fromValue?.useOwnFleet ? "Sí" : "No"} → ${pc.toValue?.useOwnFleet ? "Sí" : "No"}`
+            : pc.changeType === "destPlant"
+              ? `Cambio de destino: ${pc.fromValue?.destName || "—"} → ${pc.toValue?.destName || "—"}`
+              : "Cambio pendiente";
+          return <div key={pc.id} style={{ background:C.infoPale||"#e8f4fd", border:`1.5px solid ${C.info}30`, borderLeft:`3px solid ${C.info}`, borderRadius:12, padding:14, marginBottom:12 }}>
+            <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:6 }}>
+              {Ic.doc(C.info, 14)}
+              <span style={{ fontSize:10.5, fontWeight:700, color:C.info, textTransform:"uppercase", letterSpacing:0.5 }}>Cambio pendiente de aprobación</span>
+            </div>
+            <div style={{ fontSize:12, color:C.t1, marginBottom:isApprover?10:0 }}>{label}{pc.requestedBy?.name ? ` — solicitado por ${pc.requestedBy.name}` : ""}</div>
+            {isApprover && <div style={{ display:"flex", gap:8 }}>
+              <Btn sm disabled={pcLoading===pc.id} onClick={async()=>{ setPcLoading(pc.id); try { await apiApprovePendingChange(freight.id, pc.id); onRefresh(freight.id); } catch(e) { log.error("approve-pc",e); } finally { setPcLoading(null); } }}>Aprobar</Btn>
+              <Btn sm v="err" disabled={pcLoading===pc.id} onClick={async()=>{ setPcLoading(pc.id); try { await apiRejectPendingChange(freight.id, pc.id); onRefresh(freight.id); } catch(e) { log.error("reject-pc",e); } finally { setPcLoading(null); } }}>Rechazar</Btn>
+            </div>}
+            {!isApprover && <div style={{ fontSize:10.5, color:C.t3, marginTop:4 }}>Esperando aprobación de la otra parte</div>}
+          </div>;
+        });
+      })()}
 
       {/* Own fleet banners */}
       {(freight.useOwnFleet === true || (freight.useOwnFleet == null && freight.isOwnFleet)) && (()=>{
@@ -535,7 +561,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
       </button>
 
       {/* Edit + Cancel — bottom actions */}
-      {freight.status==="pending_assignment" && perms.canRequest && <div style={{ marginBottom:8 }}><Btn full sm v="sec" icon={Ic.doc(C.pri,14)} onClick={()=>onEdit(freight)}>Editar</Btn></div>}
+      {["pending_assignment","assigned","accepted","in_progress","loaded"].includes(freight.status) && (perms.canRequest || perms.canApprove) && <div style={{ marginBottom:8 }}><Btn full sm v="sec" icon={Ic.doc(C.pri,14)} onClick={()=>onEdit(freight)}>Editar</Btn></div>}
       {filteredActions.includes("cancel") && <div style={{ marginBottom:8 }}><Btn full v="err" icon={Ic.cross(C.err,16)} disabled={actionLoading} onClick={()=>onAction(freight.id,"cancel")}>Cancelar flete</Btn></div>}
       {filteredActions.includes("reject") && <div style={{ marginBottom:8 }}><Btn full v="err" icon={Ic.ban(C.w,16)} disabled={actionLoading} onClick={()=>onAction(freight.id,"reject")}>Rechazar asignación</Btn></div>}
       </div>

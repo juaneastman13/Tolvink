@@ -259,8 +259,10 @@ export async function apiGetParticipantPositions(id) { return api(`/freights/${i
 // Audit
 export async function apiGetAuditLog(id) { return api(`/freights/${id}/audit`); }
 
-// Update freight (pending only)
+// Update freight
 export async function apiUpdateFreight(id, data) { return api(`/freights/${id}`,{method:"PATCH",body:data}); }
+export async function apiApprovePendingChange(freightId, changeId) { return api(`/freights/${freightId}/pending-changes/${changeId}/approve`,{body:{}}); }
+export async function apiRejectPendingChange(freightId, changeId) { return api(`/freights/${freightId}/pending-changes/${changeId}/reject`,{body:{}}); }
 
 // Catalog
 export async function apiGetPlants() { return api('/catalog/plants'); }

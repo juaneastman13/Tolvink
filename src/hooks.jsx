@@ -360,7 +360,7 @@ export function useFreights(user, isAuthInitialized, companyOverride) {
     try { await apiAuthorizeFreight(fId); await refresh(fId); return {ok:true}; }
     catch(e) { if(prev) setFreights(p=>p.map(f=>f.id===fId?{...f,status:prev}:f)); refresh(fId); return {ok:false,error:e.message}; }
   },[refresh]);
-  const update = useCallback(async (fId, data)=>{ try { await apiUpdateFreight(fId, data); await refresh(fId); return {ok:true}; } catch(e) { return {ok:false,error:e.message}; } },[refresh]);
+  const update = useCallback(async (fId, data)=>{ try { const res = await apiUpdateFreight(fId, data); await refresh(fId); return {ok:true, pending: !!res?.pendingChangeCreated}; } catch(e) { return {ok:false,error:e.message}; } },[refresh]);
   // Multi-truck callbacks (v6.0)
   const assignMulti = useCallback(async (fId, trucks)=>{ try { await apiAssignMultiTruck(fId, trucks); await refresh(fId); return {ok:true}; } catch(e) { return {ok:false,error:e.message}; } },[refresh]);
   const assignTruckCb = useCallback(async (fId, truckData)=>{ try { await apiAssignTruck(fId, truckData); await refresh(fId); return {ok:true}; } catch(e) { return {ok:false,error:e.message}; } },[refresh]);
