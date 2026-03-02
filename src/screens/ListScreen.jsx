@@ -440,13 +440,16 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
       )}
 
       {/* Load more / pagination indicator */}
-      {hasMore && (
+      {hasMore && !hasFilters && (
         <div style={{textAlign:"center",padding:"16px 0 24px"}}>
           <button onClick={loadMore} disabled={loadingMore} style={{padding:"8px 24px",borderRadius:10,border:`1.5px solid ${C.pri}`,background:C.w,color:C.pri,fontSize:12,fontWeight:700,cursor:loadingMore?"default":"pointer",fontFamily:"inherit",opacity:loadingMore?0.5:1}}>
             {loadingMore?"Cargando...":"Cargar más fletes"}
           </button>
           {total>0 && <div style={{fontSize:10,color:C.t3,marginTop:6}}>Mostrando {freights.length} de {total}</div>}
         </div>
+      )}
+      {hasFilters && filtered.length>0 && (
+        <div style={{textAlign:"center",padding:"8px 0 16px",fontSize:10,color:C.t3}}>{filtered.length} resultado{filtered.length!==1?"s":""} con filtros aplicados</div>
       )}
     </div>
   );

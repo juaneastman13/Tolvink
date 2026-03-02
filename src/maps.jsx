@@ -851,8 +851,8 @@ export function MapOverlay({ lat, lng, label, destLat, destLng, destLabel, freig
   const [listOpen, setListOpen] = useState(false);
   const userPos = _useUserPos();
   const mkInfoContent = (name, lt, ln) => {
-    const navUrl = `geo:${lt},${ln}?q=${lt},${ln}`;
-    return `<div style="font-family:sans-serif;padding:4px 2px"><div style="font-weight:700;font-size:13px;color:#1a1a1a">${_esc(name)||"Ubicación"}</div><div style="font-size:11px;color:#888;margin-top:3px">${Number(lt).toFixed(5)}, ${Number(ln).toFixed(5)}</div><a href="${navUrl}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:4px;margin-top:6px;padding:5px 10px;background:#1A6B37;color:#fff;border-radius:6px;font-size:11px;font-weight:700;text-decoration:none">▶ Navegar</a></div>`;
+    const gmapsUrl = `https://www.google.com/maps?q=${Number(lt)},${Number(ln)}`;
+    return `<div style="font-family:sans-serif;padding:4px 2px"><div style="font-weight:700;font-size:13px;color:#1a1a1a">${_esc(name)||"Ubicación"}</div><div style="font-size:11px;color:#888;margin-top:3px">${Number(lt).toFixed(5)}, ${Number(ln).toFixed(5)}</div><a href="${_esc(gmapsUrl)}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:4px;margin-top:6px;padding:5px 10px;background:#4285F4;color:#fff;border-radius:6px;font-size:11px;font-weight:700;text-decoration:none">Abrir en Google Maps</a></div>`;
   };
 
   const focusPoint = (lt, ln, markerRef) => {
