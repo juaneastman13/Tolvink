@@ -10,6 +10,57 @@ const FreightMap = lazy(() => import("../maps").then(m => ({ default: m.FreightM
 import { uploadPhoto, apiAddDocument, apiGetFieldLots, apiCreateLot } from "../api";
 import { useIsDesktop } from "../hooks";
 
+// ======================== SUMMARY CARD ==============================
+
+function SummaryCard({ secSummary, secComplete, form, showTruckSelect, isDesktop }) {
+  const rows = [];
+  if (secSummary.product) rows.push({ label: "Producto", value: secSummary.product });
+  if (secSummary.quantity) rows.push({ label: "Cantidad", value: secSummary.quantity });
+  if (secSummary.origin) rows.push({ label: "Origen", value: secSummary.origin });
+  if (showTruckSelect && form.fleetChoice) rows.push({ label: "Transporte", value: form.fleetChoice === "own" ? "Flota propia" : "Delegar a planta" });
+  if (secSummary.destination) rows.push({ label: "Destino", value: secSummary.destination });
+  if (secSummary.schedule) rows.push({ label: "Fecha/hora", value: secSummary.schedule });
+  if (form.notes?.trim()) rows.push({ label: "Notas", value: form.notes.trim().length > 60 ? form.notes.trim().slice(0, 57) + "..." : form.notes.trim() });
+  const tc = parseInt(form.truckCount) || (parseFloat(form.tons) > 0 ? Math.ceil(parseFloat(form.tons) / 30) : 0);
+  if (tc > 1) rows.push({ label: "Camiones", value: `${tc} camiones` });
+  const secKeys = ["product", "quantity", "origin", "destination", "schedule"];
+  const filled = secKeys.filter(k => secComplete[k]).length;
+  const total = secKeys.length;
+  const pct = total > 0 ? (filled / total) * 100 : 0;
+  return (
+    <div style={{ background:C.w, border:`1px solid ${C.b2}`, borderRadius:14, boxShadow:C.sh, padding:"18px 16px", ...(isDesktop ? {} : { marginTop:16 }) }}>
+      <div style={{ fontSize:13, fontWeight:700, color:C.t1, marginBottom:rows.length?14:10 }}>Resumen del flete</div>
+      {rows.length === 0 ? (
+        <div style={{ textAlign:"center", padding:"12px 0", color:C.t3, fontSize:12 }}>
+          <div style={{ marginBottom:8, opacity:0.5 }}>{Ic.doc(C.t3,24)}</div>
+          <div>Completá los campos para ver el resumen</div>
+        </div>
+      ) : (
+        <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+          {rows.map((r, i) => (
+            <div key={i} style={{ display:"flex", alignItems:"flex-start", gap:8 }}>
+              <div style={{ width:6, height:6, borderRadius:3, background:C.pri, marginTop:5, flexShrink:0 }}/>
+              <div>
+                <div style={{ fontSize:10, fontWeight:600, color:C.t3, textTransform:"uppercase", letterSpacing:0.5 }}>{r.label}</div>
+                <div style={{ fontSize:12.5, fontWeight:500, color:C.t1, marginTop:1 }}>{r.value}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+      <div style={{ marginTop:14, paddingTop:12, borderTop:`1px solid ${C.b1}` }}>
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:6 }}>
+          <span style={{ fontSize:10.5, fontWeight:600, color:C.t3 }}>{filled} de {total} campos</span>
+          {filled === total && <span style={{ fontSize:10, fontWeight:700, color:C.ok }}>Completo</span>}
+        </div>
+        <div style={{ height:4, borderRadius:2, background:C.b1, overflow:"hidden" }}>
+          <div style={{ height:"100%", width:`${pct}%`, background:filled===total?C.ok:C.pri, borderRadius:2, transition:"width 0.3s ease" }}/>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ======================== NEW FREIGHT ================================
 
 export default function NewScreen({ user, lots, plants, branches, fields, trucks, onBack, onCreate, duplicateFrom }) {
@@ -223,8 +274,8 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
   const secSummary = {
     product: form.grain ? (form.grain==="Otros" ? `Otros: ${form.productTypeOther}` : form.grain) : "",
     quantity: form.tons ? `${form.tons} ${form.unit}${form.amount?` · $${form.amount}`:""}` : "",
-    origin: originMode==="field" ? ((fieldOpts.find(f=>f.value===form.fieldId)?.label||"")+(selectedLot?` → ${selectedLot.name}`:"")) : (customOrigin.name||"Ubicación en mapa"),
-    destination: destMode==="plant" ? (destDisplayName||"") : ((customDest.name||"")+(confirmMode==="plant"&&confirmPlantId?` · Confirma: ${(plants||[]).find(p=>p.id===confirmPlantId)?.name||""}`:" · Sin confirmación")),
+    origin: originMode==="field" ? ((fieldOpts.find(f=>f.value===form.fieldId)?.label||"")+(selectedLot?` → ${selectedLot.name}`:"")) : (customOrigin.lat ? (customOrigin.name||"Ubicación en mapa") : ""),
+    destination: destMode==="plant" ? (destDisplayName||"") : (customDest.name?.trim() ? (customDest.name+(confirmMode==="plant"&&confirmPlantId?` · Confirma: ${(plants||[]).find(p=>p.id===confirmPlantId)?.name||""}`:"")) : ""),
     schedule: form.loadDate&&form.loadTime ? `${form.loadDate} a las ${form.loadTime}` : "",
   };
 
@@ -238,6 +289,8 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
       <div style={{ padding:"0 18px 18px" }}>
       <div style={{ fontSize:12, color:C.t2, marginBottom:22 }}>Solicitando como: <span style={{fontWeight:600,color:C.t1}}>{user.name}</span></div>
 
+      <div style={{ display:"flex", flexDirection:_isDesktop?"row":"column", gap:_isDesktop?24:0, maxWidth:_isDesktop?1100:"none", margin:"0 auto" }}>
+      <div style={{ flex:"1 1 0", minWidth:0 }}>
       <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
         {/* PRODUCT SECTION */}
         <Sec label="Producto" complete={secComplete.product} summary={secSummary.product} isExpanded={activeSection==="product"} onFocus={()=>setActiveSection("product")} secRef={secRefs.product} incomplete={showIncomplete&&!secComplete.product} highlight={nextToFill==="product"&&activeSection!=="product"}>
@@ -510,9 +563,14 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
           </div>
         </div>
 
-        <div ref={secRefs.submit}>
+      </div>
+      </div>
+      <div style={{ width:_isDesktop?340:"auto", flexShrink:0, position:_isDesktop?"sticky":"static", top:_isDesktop?70:"auto", alignSelf:_isDesktop?"flex-start":"auto" }}>
+        <SummaryCard secSummary={secSummary} secComplete={secComplete} form={form} showTruckSelect={showTruckSelect} isDesktop={_isDesktop}/>
+        <div ref={secRefs.submit} style={{ marginTop:14 }}>
           <Btn full icon={Ic.chk(C.w,16)} disabled={submitting} onClick={submit}>{submitting?"Enviando...":"Solicitar Flete"}</Btn>
         </div>
+      </div>
       </div>
       </div>
     </div>
