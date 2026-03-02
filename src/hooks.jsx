@@ -7,7 +7,7 @@ import {
   apiAssignMultiTruck, apiAssignTruck, apiCancelAssignment, apiUpdateAssignment, apiRespondTrip, apiStartTrip, apiConfirmTripLoaded, apiConfirmTripFinished,
   apiGetPlants, apiGetBranches, apiGetLots, apiGetTransportCompanies, apiGetTrucks, apiGetFields,
   apiGetNotifications, apiMarkNotificationRead, apiMarkAllRead, apiSubscribePush, VAPID_PUBLIC_KEY,
-  API_URL,
+  API_URL, apiGetSseTicket,
 } from "./api";
 import { C, track } from "./theme";
 import { useCatalogStore } from "./store";
@@ -231,7 +231,16 @@ export function useAuth() {
     }
   }, []);
 
-  return { user, loading, error, isInitialized, login, signup, logout, switchCompany, companySwitching, handlePasswordReset, clearError:()=>setError(null) };
+  const patchUser = useCallback((updates) => {
+    setUser(prev => {
+      if (!prev) return prev;
+      const patched = { ...prev, ...updates };
+      localStorage.setItem('tolvink_user', JSON.stringify(patched));
+      return patched;
+    });
+  }, []);
+
+  return { user, loading, error, isInitialized, login, signup, logout, switchCompany, companySwitching, handlePasswordReset, patchUser, clearError:()=>setError(null) };
 }
 
 // ======================== MAP USER ====================================
@@ -448,7 +457,7 @@ export function permsFor(user) {
   const isChofer = role === "chofer";
   if (isChofer) return { canRequest:false, canApprove:false, canAssignDriver:false, canCancel:false, canReject:false, isChofer:true };
   // role is already mapped: gerente→admin in mapUser, platform_admin stays
-  const isManager = role === "admin" || role === "platform_admin" || role === "gerente";
+  const isManager = role === "admin" || role === "platform_admin";
   return {
     canRequest:      ["plant","producer"].includes(userType),
     canApprove:      userType === "plant" && isManager,
@@ -653,12 +662,19 @@ export function useSSE(user, { onFreightUpdate, onMessageNew, onNotification, on
 
     if (!getToken()) return;
 
-    const connect = () => {
-      const token = getToken(); // Fresh token on every reconnect
-      if (!token) return;
+    const connect = async () => {
+      if (!getToken()) return;
       // Safety: close previous EventSource before creating new one
       if (esRef.current) { esRef.current.close(); esRef.current = null; }
-      const url = `${API_URL}/sse/stream?token=${encodeURIComponent(token)}`;
+      // Use short-lived ticket instead of JWT in URL
+      let url;
+      try {
+        const { ticket } = await apiGetSseTicket();
+        url = `${API_URL}/sse/stream?ticket=${encodeURIComponent(ticket)}`;
+      } catch {
+        // Fallback to legacy token-in-URL if ticket endpoint fails
+        url = `${API_URL}/sse/stream?token=${encodeURIComponent(getToken())}`;
+      }
       const es = new EventSource(url);
       esRef.current = es;
 

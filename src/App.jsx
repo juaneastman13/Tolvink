@@ -87,6 +87,7 @@ export default function Tolvink() {
   const submitting = useUIStore(s => s.submitting);
   const submitDone = useUIStore(s => s.submitDone);
   const actionLoading = useUIStore(s => s.actionLoading);
+  const setActionLoading = useUIStore(s => s.setActionLoading);
   const notifOpen = useUIStore(s => s.notifOpen);
   const chatConvId = useUIStore(s => s.chatConvId);
   const duplicateData = useUIStore(s => s.duplicateData);
@@ -306,9 +307,12 @@ export default function Tolvink() {
   };
 
   const handleAcceptWithTruck = async (fId, truckId, driverId)=>{
-    const r = await fh.respond(fId, "accepted", undefined, truckId, driverId);
-    if(r.ok){ track("freight_accept"); return "Flete aceptado"; }
-    show(r.error,"err"); return "";
+    setActionLoading(true);
+    try {
+      const r = await fh.respond(fId, "accepted", undefined, truckId, driverId);
+      if(r.ok){ track("freight_accept"); return "Flete aceptado"; }
+      show(r.error,"err"); return "";
+    } finally { setActionLoading(false); }
   };
 
   const handleAssign = async (fId, transportCompanyId, truckId, driverId)=>{
@@ -347,14 +351,17 @@ export default function Tolvink() {
   };
 
   const handleTripConfirmAction = async (fId, aId, actionKey, loadedTons)=>{
-    const msgs = { respond_trip_accept:"Viaje autorizado", start_trip:"Viaje iniciado", confirm_trip_loaded:"Carga confirmada", confirm_trip_finished:"Entrega confirmada" };
-    let r;
-    if(actionKey==="respond_trip_accept") r = await fh.respondTrip(fId, aId, {action:"accepted"});
-    else if(actionKey==="start_trip") r = await fh.startTrip(fId, aId);
-    else if(actionKey==="confirm_trip_loaded") r = await fh.confirmTripLoaded(fId, aId, loadedTons);
-    else if(actionKey==="confirm_trip_finished") r = await fh.confirmTripFinished(fId, aId);
-    if(r?.ok) return msgs[actionKey]||"Hecho";
-    show(r?.error||"Error","err"); return "";
+    setActionLoading(true);
+    try {
+      const msgs = { respond_trip_accept:"Viaje autorizado", start_trip:"Viaje iniciado", confirm_trip_loaded:"Carga confirmada", confirm_trip_finished:"Entrega confirmada" };
+      let r;
+      if(actionKey==="respond_trip_accept") r = await fh.respondTrip(fId, aId, {action:"accepted"});
+      else if(actionKey==="start_trip") r = await fh.startTrip(fId, aId);
+      else if(actionKey==="confirm_trip_loaded") r = await fh.confirmTripLoaded(fId, aId, loadedTons);
+      else if(actionKey==="confirm_trip_finished") r = await fh.confirmTripFinished(fId, aId);
+      if(r?.ok) return msgs[actionKey]||"Hecho";
+      show(r?.error||"Error","err"); return "";
+    } finally { setActionLoading(false); }
   };
 
   const handleEditTrip = (fId, assignment)=>{
@@ -371,22 +378,28 @@ export default function Tolvink() {
   };
 
   const handleConfirmAction = async (fId, action, loadedTons)=>{
-    const msgs = { start:"Viaje iniciado", authorize:"Viaje autorizado", confirm_loaded:"Carga confirmada", confirm_finished:"Entrega confirmada" };
-    const fn = { start:fh.start, authorize:fh.authorize, confirm_loaded:fh.confirmLoaded, confirm_finished:fh.confirmFinished }[action];
-    if(!fn) return "";
-    const r = action==="confirm_loaded" ? await fn(fId, loadedTons) : await fn(fId);
-    if(r.ok) return msgs[action]||"Hecho";
-    show(r.error,"err"); return "";
+    setActionLoading(true);
+    try {
+      const msgs = { start:"Viaje iniciado", authorize:"Viaje autorizado", confirm_loaded:"Carga confirmada", confirm_finished:"Entrega confirmada" };
+      const fn = { start:fh.start, authorize:fh.authorize, confirm_loaded:fh.confirmLoaded, confirm_finished:fh.confirmFinished }[action];
+      if(!fn) return "";
+      const r = action==="confirm_loaded" ? await fn(fId, loadedTons) : await fn(fId);
+      if(r.ok) return msgs[action]||"Hecho";
+      show(r.error,"err"); return "";
+    } finally { setActionLoading(false); }
   };
 
   const handleReasonAction = async (fId,reason,action,extra)=>{
-    let r;
-    if(action==="cancel") r = await fh.cancel(fId,reason);
-    else if(action==="reject") r = await fh.respond(fId,"rejected",reason);
-    else if(action==="reject_trip" && extra?.assignmentId) { r = await fh.respondTrip(fId, extra.assignmentId, {action:"rejected",reason}); }
-    const msg = action==="cancel"?"Flete cancelado":action==="reject_trip"?"Viaje rechazado":"Asignación rechazada";
-    if(r?.ok) return msg;
-    show(r?.error||"Error","err"); return "";
+    setActionLoading(true);
+    try {
+      let r;
+      if(action==="cancel") r = await fh.cancel(fId,reason);
+      else if(action==="reject") r = await fh.respond(fId,"rejected",reason);
+      else if(action==="reject_trip" && extra?.assignmentId) { r = await fh.respondTrip(fId, extra.assignmentId, {action:"rejected",reason}); }
+      const msg = action==="cancel"?"Flete cancelado":action==="reject_trip"?"Viaje rechazado":"Asignación rechazada";
+      if(r?.ok) return msg;
+      show(r?.error||"Error","err"); return "";
+    } finally { setActionLoading(false); }
   };
 
   const handleCreate = async (form)=>{
@@ -575,7 +588,7 @@ export default function Tolvink() {
         {screen==="trucks" && <TrucksScreen user={auth.user} onBack={()=>{catalog.refresh();navigate("/menu");}}/>}
         {screen==="fields" && <FieldsScreen onBack={()=>{catalog.refresh();navigate("/menu");}} goToMap={goToMap}/>}
         {screen==="admin" && <AdminScreen user={auth.user} onBack={()=>navigate("/menu")}/>}
-        {screen==="mydata" && <MyDataScreen user={auth.user} onBack={()=>navigate("/menu")}/>}
+        {screen==="mydata" && <MyDataScreen user={auth.user} onBack={()=>navigate("/menu")} onUserUpdate={auth.patchUser}/>}
         {screen==="reports" && <ReportsScreen onBack={()=>navigate(isDesktop?"/reports":"/menu")} freights={viewFreights} isDesktop={isDesktop}/>}
         {screen==="chats" && <ChatsScreen user={auth.user} openConvId={chatConvId} onConvOpened={()=>setChatConvId(null)} isDesktop={isDesktop} sseMsg={sseMsg} onSseMsgHandled={()=>setSseMsg(null)} sseTyping={sseTyping} sseRead={sseRead} sseConnected={sse.connected}/>}
         {screen==="notifs" && <NotificationsScreen notifications={notif.notifications} freights={viewFreights} onMarkRead={notif.markRead} onMarkAllRead={notif.markAllRead} onTap={handleNotifTap} />}

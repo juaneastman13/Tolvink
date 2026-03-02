@@ -17,7 +17,6 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
   const [pdfLoading, setPdfLoading] = useState(false);
   const [pcLoading, setPcLoading] = useState(null);
   const auditRef = useRef(null);
-  if(!freight) return null;
 
   // Pre-load PDF module so download works synchronously on click
   useEffect(() => { loadPdfReport(); }, []);
@@ -62,18 +61,18 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
   };
 
   const _isDesktop = useIsDesktop(768);
-  const st = stCfg(freight.status);
-  const isMultiTruck = freight.isMultiTruck && (freight.truckCount || 1) > 1;
-  const isChoferQueued = user.role === "chofer" && (freight.queuePosition || 0) > 1;
-  const actions = isMultiTruck ? [] : getActions(freight.status, user.userType, user.role, freight.isOwnFleet);
+  const st = stCfg(freight?.status);
+  const isMultiTruck = freight?.isMultiTruck && (freight?.truckCount || 1) > 1;
+  const isChoferQueued = user.role === "chofer" && (freight?.queuePosition || 0) > 1;
+  const actions = isMultiTruck ? [] : getActions(freight?.status, user.userType, user.role, freight?.isOwnFleet);
 
   // Filter actions based on confirmation state (single-truck only)
   const filteredActions = isChoferQueued ? [] : actions.filter(a=>{
-    if(a==="confirm_loaded" && user.userType==="transporter" && freight.transporterLoadedConfirmedAt) return false;
-    if(a==="confirm_loaded" && user.userType==="producer" && freight.producerLoadedConfirmedAt) return false;
-    if(a==="confirm_finished" && user.userType==="transporter" && freight.transporterFinishedConfirmedAt) return false;
-    if(a==="confirm_finished" && user.userType==="plant" && freight.plantFinishedConfirmedAt) return false;
-    if(a==="confirm_finished" && user.userType==="producer" && freight.isOwnFleet && freight.transporterFinishedConfirmedAt) return false;
+    if(a==="confirm_loaded" && user.userType==="transporter" && freight?.transporterLoadedConfirmedAt) return false;
+    if(a==="confirm_loaded" && user.userType==="producer" && freight?.producerLoadedConfirmedAt) return false;
+    if(a==="confirm_finished" && user.userType==="transporter" && freight?.transporterFinishedConfirmedAt) return false;
+    if(a==="confirm_finished" && user.userType==="plant" && freight?.plantFinishedConfirmedAt) return false;
+    if(a==="confirm_finished" && user.userType==="producer" && freight?.isOwnFleet && freight?.transporterFinishedConfirmedAt) return false;
     return true;
   });
 
@@ -122,6 +121,8 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
     }
     return [...seen.values()];
   }, [isMultiTruck, isChoferQueued, visibleAssignments, freight, user]);
+
+  if(!freight) return null;
 
   // Per-trip action for a given assignment
   const getTripActions = (a) => {

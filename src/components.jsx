@@ -676,8 +676,10 @@ tr:nth-child(even){background:#f8f9fa}
 <div class="footer">tolvink.app</div>
 <script>window.onload=()=>setTimeout(()=>window.print(),300)</script>
 </body></html>`;
-  const w = window.open("","_blank","noopener");
-  if(w) { w.document.write(html); w.document.close(); }
+  const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+  const blobUrl = URL.createObjectURL(blob);
+  window.open(blobUrl, "_blank", "noopener");
+  setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
 }
 
 // ======================== SKELETON LOADERS ============================

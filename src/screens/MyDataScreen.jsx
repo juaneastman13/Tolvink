@@ -4,7 +4,7 @@ import { Btn, Bd, LoadingOverlay } from "../components";
 import { apiUpdateMe, apiChangePassword } from "../api";
 import { adminStyles, typeColors, typeLabels, adminBackBtn } from "../utils/freight-helpers";
 
-export default function MyDataScreen({ user, onBack }) {
+export default function MyDataScreen({ user, onBack, onUserUpdate }) {
   const s = adminStyles();
   const [form, setForm] = useState({ name:user.name||"", email:user.email||"", phone:user.phone||"" });
   const [saving, setSaving] = useState(false);
@@ -17,7 +17,7 @@ export default function MyDataScreen({ user, onBack }) {
   const handleSave = async () => {
     if(!form.name.trim()||!form.email.trim()) return show("Nombre y email obligatorios","err");
     setSaving(true);
-    try { await apiUpdateMe(form); setSaving(false); setDoneMsg("Datos actualizados"); } catch(e) { show(e.message,"err"); setSaving(false); }
+    try { await apiUpdateMe(form); onUserUpdate?.(form); setSaving(false); setDoneMsg("Datos actualizados"); } catch(e) { show(e.message,"err"); setSaving(false); }
   };
   const companies = (user.companies && user.companies.length > 0) ? user.companies : (user.companyId ? [{ companyId:user.companyId, companyName:user.entity||user.company?.name||"", companyType:user.userType||user.company?.type||"", role:user.role==="admin"?"gerente":"operario" }] : []);
   const permsByRole = (role) => {
