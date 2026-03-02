@@ -27,14 +27,22 @@ const STATUS_CFG = {
 
 const TRUCK_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="#FF6A00" stroke="#fff" stroke-width="1.5"><rect x="1" y="3" width="15" height="13" rx="2"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>';
 
+const P_TYPE_LABEL = { chofer: "Chofer", producer: "Productor", plant: "Planta", transporter: "Transportista", other: "Participante" };
+const P_TYPE_COLORS = { chofer: "#FF6A00", producer: "#1A6B37", plant: "#003882", transporter: "#8B5CF6", other: "#6B7280" };
+const pinSvg = (color) => `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="40" viewBox="0 0 28 40"><path d="M14 0C6.27 0 0 6.27 0 14c0 10.5 14 26 14 26s14-15.5 14-26C28 6.27 21.73 0 14 0z" fill="${color}" stroke="#fff" stroke-width="2"/><circle cx="14" cy="13" r="5" fill="#fff"/></svg>`;
+const esc = (s) => String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+
 export default function TrackFreightScreen({ code: codeProp } = {}) {
   const mapRef = useRef(null);
   const mapInstance = useRef(null);
   const truckMarker = useRef(null);
+  const participantMarkersRef = useRef({});
+  const infoWindowRef = useRef(null);
 
   const [freight, setFreight] = useState(null);
   const [truckPos, setTruckPos] = useState(null);
   const [routeInfo, setRouteInfo] = useState(null);
+  const [participants, setParticipants] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -183,6 +191,90 @@ export default function TrackFreightScreen({ code: codeProp } = {}) {
     return () => { cancelled = true; clearInterval(iv); };
   }, [apiBase, freight?.status]);
 
+  // Poll participant positions every 15s
+  useEffect(() => {
+    if (!freight || !apiBase || !mapInstance.current) return;
+    if (["canceled"].includes(freight.status)) return;
+    let cancelled = false;
+
+    const fetchParticipants = async () => {
+      try {
+        const res = await fetch(`${apiBase}/participants${qs}`);
+        if (!res.ok || cancelled) return;
+        const data = await res.json();
+        if (cancelled || !Array.isArray(data)) return;
+        setParticipants(data);
+
+        const maps = window.google?.maps;
+        if (!maps || !mapInstance.current) return;
+        if (!infoWindowRef.current) infoWindowRef.current = new maps.InfoWindow();
+        const activeIds = new Set();
+
+        data.forEach(p => {
+          const lat = parseFloat(p.lat);
+          const lng = parseFloat(p.lng);
+          if (isNaN(lat) || isNaN(lng)) return;
+          const uid = p.userId || p.id;
+          if (!uid) return;
+          activeIds.add(uid);
+          const name = esc(p.userName || "Desconocido");
+          const type = p.participantType || "other";
+          const typeLabel = P_TYPE_LABEL[type] || "Participante";
+          const color = P_TYPE_COLORS[type] || P_TYPE_COLORS.other;
+          const time = p.createdAt ? new Date(p.createdAt).toLocaleTimeString("es-UY", { hour: "2-digit", minute: "2-digit" }) : "";
+          const gmapsUrl = `https://www.google.com/maps?q=${lat},${lng}`;
+
+          const buildContent = () => {
+            const dot = `<span style="display:inline-block;width:8px;height:8px;border-radius:4px;background:${esc(color)};margin-right:4px;vertical-align:middle"></span>`;
+            return `<div style="font-family:system-ui;font-size:12px;line-height:1.5;min-width:120px">` +
+              `<strong>${name}</strong><br/>${dot}<span style="color:#666">${esc(typeLabel)}</span>` +
+              (time ? ` <span style="color:#999;font-size:10px">\u00b7 ${esc(time)}</span>` : "") +
+              `<br/><a href="${esc(gmapsUrl)}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:3px;margin-top:4px;padding:4px 8px;background:#4285F4;color:#fff;border-radius:5px;font-size:10px;font-weight:700;text-decoration:none">Abrir en Google Maps</a>` +
+              `</div>`;
+          };
+
+          if (participantMarkersRef.current[uid]) {
+            participantMarkersRef.current[uid].setPosition({ lat, lng });
+            participantMarkersRef.current[uid]._iwContent = buildContent;
+          } else {
+            const icon = { url: "data:image/svg+xml," + encodeURIComponent(pinSvg(color)), scaledSize: new maps.Size(28, 40), anchor: new maps.Point(14, 40) };
+            const marker = new maps.Marker({
+              position: { lat, lng }, map: mapInstance.current,
+              title: `${p.userName || "Desconocido"} (${typeLabel})`,
+              icon, zIndex: type === "chofer" ? 999 : 900,
+            });
+            marker._iwContent = buildContent;
+            marker.addListener("click", () => {
+              infoWindowRef.current.setContent(marker._iwContent());
+              infoWindowRef.current.open(mapInstance.current, marker);
+            });
+            participantMarkersRef.current[uid] = marker;
+          }
+        });
+
+        // Remove stale markers
+        Object.keys(participantMarkersRef.current).forEach(uid => {
+          if (!activeIds.has(uid)) {
+            participantMarkersRef.current[uid].setMap(null);
+            delete participantMarkersRef.current[uid];
+          }
+        });
+      } catch (e) { log.warn('TrackFreight', 'Participants poll failed:', e.message); }
+    };
+
+    fetchParticipants();
+    const iv = setInterval(fetchParticipants, 15000);
+    return () => {
+      cancelled = true;
+      clearInterval(iv);
+      Object.values(participantMarkersRef.current).forEach(m => {
+        if (window.google?.maps) google.maps.event.clearInstanceListeners(m);
+        m.setMap(null);
+      });
+      participantMarkersRef.current = {};
+    };
+  }, [freight, apiBase]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // === RENDER ===
 
   if (!hasIdentifier) return (
@@ -294,6 +386,23 @@ export default function TrackFreightScreen({ code: codeProp } = {}) {
             <div style={{ marginLeft: "auto", fontSize: 10, color: COLORS.t3 }}>Esperando inicio del viaje</div>
           )}
         </div>
+        {participants.length > 0 && (
+          <div style={{ display: "flex", gap: 10, fontSize: 10, flexWrap: "wrap", marginTop: 6, paddingTop: 6,
+                        borderTop: `1px solid ${COLORS.b2}` }}>
+            {participants.map(p => {
+              const type = p.participantType || "other";
+              const color = P_TYPE_COLORS[type] || P_TYPE_COLORS.other;
+              const time = p.createdAt ? new Date(p.createdAt).toLocaleTimeString("es-UY", { hour: "2-digit", minute: "2-digit" }) : "";
+              return (
+                <div key={p.userId} style={{ display: "flex", alignItems: "center", gap: 3 }}>
+                  <span style={{ width: 7, height: 7, borderRadius: 4, background: color, display: "inline-block" }} />
+                  <span style={{ color: COLORS.t2 }}>{p.userName || "Desconocido"}</span>
+                  {time && <span style={{ color: COLORS.t3 }}>{time}</span>}
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );
