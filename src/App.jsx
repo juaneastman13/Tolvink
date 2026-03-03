@@ -287,6 +287,7 @@ export default function Tolvink() {
 
   const handleAction = (fId,action)=>{
     if(actionLoading) return;
+    if(!fh.freights) return;
     const f = fh.freights.find(x=>x.id===fId);
     if(!f) return;
     if(action==="assign") { setModal({type:"assign",freight:f}); }
@@ -320,13 +321,17 @@ export default function Tolvink() {
 
   const handleAssignMulti = async (trucks)=>{
     if(!modal?.freight) return "";
-    const r = await fh.assignMulti(modal.freight.id, trucks);
-    if(r.ok){ track("freight_assign_multi"); return `${trucks.length} camiones asignados`; }
-    show(r.error,"err"); return "";
+    setActionLoading(true);
+    try {
+      const r = await fh.assignMulti(modal.freight.id, trucks);
+      if(r.ok){ track("freight_assign_multi"); return `${trucks.length} camiones asignados`; }
+      show(r.error,"err"); return "";
+    } finally { setActionLoading(false); }
   };
 
   const handleTripAction = (fId, aId, actionKey)=>{
     if(actionLoading) return;
+    if(!fh.freights) return;
     const f = fh.freights.find(x=>x.id===fId);
     if(!f) return;
     const isPlant = auth.user?.userType === "plant" || (auth.user?.userTypes||[]).includes("plant");
@@ -362,6 +367,7 @@ export default function Tolvink() {
   };
 
   const handleEditTrip = (fId, assignment)=>{
+    if(!fh.freights) return;
     const f = fh.freights.find(x=>x.id===fId);
     if(!f) return;
     setModal({type:"edit_trip",freight:f,assignment});

@@ -276,11 +276,13 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
         const fresh = Array.isArray(r) ? r : (r?.messages || []);
         setMessages(prev => {
           if(prev.length===0) return fresh;
+          const ids = new Set(prev.map(m => m.id));
           const lastId = prev[prev.length-1]?.id;
           const lastIdx = fresh.findIndex(m=>m.id===lastId);
           if(lastIdx>=0 && lastIdx<fresh.length-1) {
             pollDelayRef.current = sseConnected ? 60000 : 3000;
-            return [...prev, ...fresh.slice(lastIdx+1)];
+            const newMsgs = fresh.slice(lastIdx+1).filter(m => !ids.has(m.id));
+            return newMsgs.length > 0 ? [...prev, ...newMsgs] : prev;
           }
           if (!sseConnected) pollDelayRef.current = Math.min(pollDelayRef.current * 1.5, 60000);
           return prev;
@@ -373,7 +375,8 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
   const parseFileMsg = (text) => {
     const match = text?.match(/^\[FILE:(.*?)\|(.*?)\|(.*?)\]$/);
     if (!match) return null;
-    return { url: match[1], type: match[2], name: match[3] };
+    const url = match[1]?.startsWith('https://') ? match[1] : null;
+    return { url, type: match[2], name: match[3] };
   };
 
   // Collect all files from messages
@@ -594,22 +597,22 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
                       {!mine && <div style={{ fontSize: 9.5, color: C.t3, marginBottom: 2, marginLeft: 4 }}>{m.sender?.name?.split(" ")[0]}</div>}
                       <div style={{ position: "relative", padding: fileData ? "6px" : "10px 14px", borderRadius: 14, borderBottomRightRadius: mine ? 4 : 14, borderBottomLeftRadius: mine ? 14 : 4, background: mine ? C.pri : C.w, color: mine ? C.w : C.t1, fontSize: 13, border: mine ? "none" : `1px solid ${C.b1}`, boxShadow: C.sh, overflow: "hidden", opacity: m.status === 'pending' ? 0.6 : 1 }}>
                         {fileData ? (
-                          fileData.type === "image" ? (
+                          fileData.type === "image" && fileData.url ? (
                             <button onClick={()=>setViewFile({url:fileData.url,name:fileData.name,type:"image"})} style={{ background:"none", border:"none", cursor:"pointer", padding:0 }}>
                               <img src={fileData.url} alt={fileData.name} loading="lazy" style={{ maxWidth: 220, maxHeight: 200, borderRadius: 10, display: "block" }} />
                             </button>
                           ) : (
                             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                              <button onClick={()=>setViewFile({url:fileData.url,name:fileData.name})} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", color: mine ? "#fff" : C.t1, flex: 1 }}>
+                              <button onClick={()=>{ if(fileData.url) setViewFile({url:fileData.url,name:fileData.name}); }} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", color: mine ? "#fff" : C.t1, flex: 1 }}>
                                 {Ic.doc(mine ? "#fff" : C.pri, 20)}
                                 <div style={{ textAlign:"left" }}>
                                   <div style={{ fontSize: 12, fontWeight: 600, wordBreak: "break-all" }}>{fileData.name}</div>
-                                  <div style={{ fontSize: 10, opacity: 0.7 }}>Ver archivo</div>
+                                  <div style={{ fontSize: 10, opacity: 0.7 }}>{fileData.url ? "Ver archivo" : "Archivo no disponible"}</div>
                                 </div>
                               </button>
-                              <a href={fileData.url} download={fileData.name} style={{ background: mine ? "rgba(255,255,255,0.2)" : C.priPale, border: "none", borderRadius: 6, padding: 6, display: "flex", alignItems: "center", justifyContent: "center", textDecoration: "none" }} title="Descargar">
+                              {fileData.url && <a href={fileData.url} download={fileData.name} style={{ background: mine ? "rgba(255,255,255,0.2)" : C.priPale, border: "none", borderRadius: 6, padding: 6, display: "flex", alignItems: "center", justifyContent: "center", textDecoration: "none" }} title="Descargar">
                                 {Ic.download(mine ? "#fff" : C.pri, 16)}
-                              </a>
+                              </a>}
                             </div>
                           )
                         ) : (

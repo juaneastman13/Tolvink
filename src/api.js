@@ -139,8 +139,22 @@ export async function apiLogin(identifier, password) {
   setLoggingIn(true);
   try {
     const isPhone = /^09[1-9]\d{6}$/.test(identifier.replace(/[\s\-()]/g,''));
-    const body = isPhone ? { phone:identifier.replace(/[\s\-()]/g,''), password } : { email:identifier, password };
-    const d=await api('/auth/login',{body});
+    const reqBody = isPhone ? { phone:identifier.replace(/[\s\-()]/g,''), password } : { email:identifier, password };
+    const res = await fetch(`${API_URL}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(reqBody),
+    });
+    const d = await res.json().catch(() => null);
+    if (!res.ok) {
+      // Check header hint for no-password (replaces old code:'NO_PASSWORD' in body)
+      if (res.headers.get('X-Auth-Hint') === 'no-password') {
+        const err = new ApiError(res.status, d || { message: 'Credenciales inválidas' });
+        err._noPassword = true;
+        throw err;
+      }
+      throw new ApiError(res.status, d || { message: 'Error del servidor' });
+    }
 
     if(!d || !d.access_token || !d.user) {
       throw new Error('Respuesta inválida del servidor');

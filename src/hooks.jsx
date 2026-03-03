@@ -145,8 +145,8 @@ export function useAuth() {
     }
     catch(e) {
       log.error('AUTH', 'Login error:', e);
-      // Special case: user has no password set
-      if (e.data?.code === 'NO_PASSWORD') {
+      // Special case: user has no password set (header hint, not in body)
+      if (e._noPassword) {
         setLoading(false);
         return { noPassword: true };
       }

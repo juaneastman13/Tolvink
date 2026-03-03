@@ -61,13 +61,14 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
   };
 
   const _isDesktop = useIsDesktop(768);
-  const st = stCfg(freight?.status);
+
+  const st = freight ? stCfg(freight.status) : null;
   const isMultiTruck = freight?.isMultiTruck && (freight?.truckCount || 1) > 1;
   const isChoferQueued = user.role === "chofer" && (freight?.queuePosition || 0) > 1;
-  const actions = isMultiTruck ? [] : getActions(freight?.status, user.userType, user.role, freight?.isOwnFleet);
+  const actions = !freight ? [] : isMultiTruck ? [] : getActions(freight.status, user.userType, user.role, freight.isOwnFleet);
 
   // Filter actions based on confirmation state (single-truck only)
-  const filteredActions = isChoferQueued ? [] : actions.filter(a=>{
+  const filteredActions = !freight ? [] : isChoferQueued ? [] : actions.filter(a=>{
     if(a==="confirm_loaded" && user.userType==="transporter" && freight?.transporterLoadedConfirmedAt) return false;
     if(a==="confirm_loaded" && user.userType==="producer" && freight?.producerLoadedConfirmedAt) return false;
     if(a==="confirm_finished" && user.userType==="transporter" && freight?.transporterFinishedConfirmedAt) return false;
