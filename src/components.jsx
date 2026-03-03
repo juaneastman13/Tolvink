@@ -612,7 +612,7 @@ export function FileViewer({ file, onClose }) {
           {isImg ? (
             <img src={file.url} alt={file.name||""} loading="lazy" style={{ maxWidth:"100%", maxHeight:"75vh", objectFit:"contain", borderRadius:6 }} />
           ) : isPdf ? (
-            <iframe src={file.url} title={file.name||"PDF"} sandbox="allow-same-origin" style={{ width:"100%", height:"75vh", border:"none", borderRadius:6, background:"#fff" }} />
+            <iframe src={file.url} title={file.name||"PDF"} sandbox="" style={{ width:"100%", height:"75vh", border:"none", borderRadius:6, background:"#fff" }} />
           ) : (
             <div style={{ textAlign:"center", padding:20 }}>
               <div style={{ marginBottom:16 }}>{Ic.doc(C.t3,48)}</div>

@@ -215,17 +215,8 @@ export async function generateFreightPDF(freight, auditLog = []) {
       const oLng = Number(freight.originLng).toFixed(6);
       const dLat = Number(freight.destLat).toFixed(6);
       const dLng = Number(freight.destLng).toFixed(6);
-      // Get driving route polyline from Directions API
-      let routePath = `color:0x1A6B37|weight:3|${oLat},${oLng}|${dLat},${dLng}`;
-      try {
-        const dirResp = await fetch(`https://maps.googleapis.com/maps/api/directions/json?origin=${oLat},${oLng}&destination=${dLat},${dLng}&key=${GMAPS_KEY}`);
-        if (dirResp.ok) {
-          const dirData = await dirResp.json();
-          const poly = dirData.routes?.[0]?.overview_polyline?.points;
-          if (poly) routePath = `color:0x1A6B37|weight:3|enc:${poly}`;
-        }
-      } catch (_) { /* fallback to straight line */ }
-      const mapUrl = `https://maps.googleapis.com/maps/api/staticmap?size=600x300&markers=color:green|label:O|${oLat},${oLng}&markers=color:red|label:D|${dLat},${dLng}&path=${encodeURIComponent(routePath)}&key=${GMAPS_KEY}`;
+      // Static map with origin/destination markers (no route polyline — Directions API is server-side only)
+      const mapUrl = `https://maps.googleapis.com/maps/api/staticmap?size=600x300&markers=color:green|label:O|${oLat},${oLng}&markers=color:red|label:D|${dLat},${dLng}&key=${GMAPS_KEY}`;
       const mapResp = await fetch(mapUrl);
       if (mapResp.ok) {
         const mapBlob = await mapResp.blob();
