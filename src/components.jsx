@@ -593,8 +593,9 @@ export function NotifBell({ count=0, onClick }) {
 
 export function FileViewer({ file, onClose }) {
   if (!file) return null;
-  const isImg = file.type === "image" || file.type === "photo" || file.url?.match(/\.(jpg|jpeg|png|webp|gif|svg)$/i);
-  const isPdf = file.url?.match(/\.pdf$/i);
+  const safeUrl = file.url && /^https:\/\//i.test(file.url) ? file.url : null;
+  const isImg = file.type === "image" || file.type === "photo" || safeUrl?.match(/\.(jpg|jpeg|png|webp|gif|svg)$/i);
+  const isPdf = safeUrl?.match(/\.pdf$/i);
   return (
     <div onClick={onClose} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.6)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:250, animation:"fvFadeIn 0.2s ease", padding:16 }}>
       <style>{`@keyframes fvFadeIn{from{opacity:0}to{opacity:1}}`}</style>
@@ -603,21 +604,21 @@ export function FileViewer({ file, onClose }) {
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"10px 14px", borderBottom:`1px solid ${C.b2}`, flexShrink:0 }}>
           <div style={{ fontSize:13, fontWeight:600, color:C.t1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", flex:1, marginRight:10 }}>{file.name||"Archivo"}</div>
           <div style={{ display:"flex", gap:6, flexShrink:0 }}>
-            <a href={file.url} download style={{ display:"flex", alignItems:"center", gap:4, padding:"5px 10px", borderRadius:8, border:`1px solid ${C.b1}`, background:C.bg, color:C.t1, textDecoration:"none", fontSize:11, fontWeight:600, fontFamily:"inherit" }} onClick={e=>e.stopPropagation()}>{Ic.down(C.t2,13)} Descargar</a>
+            {safeUrl && <a href={safeUrl} download style={{ display:"flex", alignItems:"center", gap:4, padding:"5px 10px", borderRadius:8, border:`1px solid ${C.b1}`, background:C.bg, color:C.t1, textDecoration:"none", fontSize:11, fontWeight:600, fontFamily:"inherit" }} onClick={e=>e.stopPropagation()}>{Ic.down(C.t2,13)} Descargar</a>}
             <button onClick={onClose} style={{ display:"flex", alignItems:"center", gap:4, padding:"5px 12px", borderRadius:8, background:C.err, border:"none", cursor:"pointer", color:"#fff", fontSize:11, fontWeight:700, fontFamily:"inherit" }}>{Ic.cross("#fff",14)} Cerrar</button>
           </div>
         </div>
         {/* Content */}
         <div style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", overflow:"auto", padding:12, minHeight:200 }}>
           {isImg ? (
-            <img src={file.url} alt={file.name||""} loading="lazy" style={{ maxWidth:"100%", maxHeight:"75vh", objectFit:"contain", borderRadius:6 }} />
+            <img src={safeUrl} alt={file.name||""} loading="lazy" style={{ maxWidth:"100%", maxHeight:"75vh", objectFit:"contain", borderRadius:6 }} />
           ) : isPdf ? (
-            <iframe src={file.url} title={file.name||"PDF"} sandbox="" style={{ width:"100%", height:"75vh", border:"none", borderRadius:6, background:"#fff" }} />
+            <iframe src={safeUrl} title={file.name||"PDF"} sandbox="" style={{ width:"100%", height:"75vh", border:"none", borderRadius:6, background:"#fff" }} />
           ) : (
             <div style={{ textAlign:"center", padding:20 }}>
               <div style={{ marginBottom:16 }}>{Ic.doc(C.t3,48)}</div>
               <div style={{ fontSize:16, fontWeight:700, color:C.t1, marginBottom:8 }}>{file.name||"Archivo"}</div>
-              <a href={file.url} download style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"10px 20px", borderRadius:10, background:C.pri, color:"#fff", textDecoration:"none", fontSize:14, fontWeight:600 }} onClick={e=>e.stopPropagation()}>{Ic.down("#fff",16)} Descargar archivo</a>
+              {safeUrl && <a href={safeUrl} download style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"10px 20px", borderRadius:10, background:C.pri, color:"#fff", textDecoration:"none", fontSize:14, fontWeight:600 }} onClick={e=>e.stopPropagation()}>{Ic.down("#fff",16)} Descargar archivo</a>}
             </div>
           )}
         </div>
