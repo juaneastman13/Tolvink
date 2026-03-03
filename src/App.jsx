@@ -157,7 +157,8 @@ export default function Tolvink() {
     const p = location.pathname;
     const isPublicPath = ["/pick-location","/track","/report","/daily-map","/live-freight","/ver-mapa"].includes(p)
       || /^\/(FLT-\d{4,}|F\d{2}-[A-Z]{3}\.\d{4})\/(ubicacion|informe)$/i.test(p)
-      || /^\/campo\/[a-z0-9-]+\/ubicacion$/i.test(p);
+      || /^\/campo\/[a-z0-9-]+\/ubicacion$/i.test(p)
+      || /^\/ubicacion\/[a-z0-9-]+$/i.test(p);
     if(auth.user && !prevUser.current && !isPublicPath) {
       navigate("/", { replace: true });
     }
@@ -454,6 +455,10 @@ export default function Tolvink() {
   const campoMatch = location.pathname.match(/^\/campo\/([a-z0-9-]+)\/ubicacion$/i);
   if (campoMatch) {
     return <Suspense fallback={<SL/>}><PickLocationScreen slug={campoMatch[1]} /></Suspense>;
+  }
+  const ubicacionMatch = location.pathname.match(/^\/ubicacion\/([a-z0-9-]+)$/i);
+  if (ubicacionMatch) {
+    return <Suspense fallback={<SL/>}><PickLocationScreen slug={ubicacionMatch[1]} /></Suspense>;
   }
   if (location.pathname === "/ver-mapa") {
     return <Suspense fallback={<SL/>}><ViewMapScreen /></Suspense>;
