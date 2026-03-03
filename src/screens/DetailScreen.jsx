@@ -79,11 +79,11 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
   // Multi-truck: filter assignments visible to this user
   const visibleAssignments = useMemo(() => {
     if (!isMultiTruck) return [];
-    const aa = freight.activeAssignments || [];
+    const aa = freight?.activeAssignments || [];
     if (user.role === "chofer") return aa.filter(a => a.driverId === user.id);
     if (user.userType === "transporter") return aa.filter(a => a.transportCompanyId === user.companyId);
     return aa; // plant/producer see all
-  }, [isMultiTruck, freight.activeAssignments, user]);
+  }, [isMultiTruck, freight?.activeAssignments, user]);
 
   // Multi-truck: aggregate top-level actions from all visible trips
   const multiTruckTopActions = useMemo(() => {
@@ -91,7 +91,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
     const seen = new Map(); // key -> { label, color, icon, assignmentId, count }
     for (const a of visibleAssignments) {
       const ts = a.tripStatus;
-      const isOwn = a.transportCompanyId === freight.originCompanyId;
+      const isOwn = a.transportCompanyId === freight?.originCompanyId;
       const entries = [];
       if (user.userType === "plant") {
         if (isOwn && ts === "pending") entries.push({ key:"respond_trip_accept", label:"Autorizar viaje", color:C.sec, icon:Ic.chk(C.w,16) });

@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef, useCallback, useMemo, lazy, Suspense } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { uploadPhoto, apiAddDocument, apiListConversations, getOnboardingState, setOnboardingState, apiCompleteOnboarding } from "./api";
+import { uploadPhoto, apiAddDocument, apiListConversations } from "./api";
 import { C, track, FONT, Ic } from "./theme";
 import { POLL_INTERVALS } from "./constants";
-import { Toast, LoadingOverlay, Sidebar, Nav, NotifBell, NotificationsPanel, ErrorBoundary, SkeletonList, PwaInstallCard, EmptyState } from "./components";
-import { useAuth, useCatalog, useFreights, permsFor, useIsDesktop, useOnline, useNotifications, useSSE, useInstallPrompt } from "./hooks";
+import { Toast, LoadingOverlay, Sidebar, Nav, NotifBell, NotificationsPanel, ErrorBoundary, SkeletonList, EmptyState } from "./components";
+import { useAuth, useCatalog, useFreights, permsFor, useIsDesktop, useOnline, useNotifications, useSSE } from "./hooks";
 import { RoutesBackground } from "./routes-bg";
 import "./app.css";
 
@@ -47,7 +47,6 @@ const TruckSelectModal = lazy(() => import("./modals/TruckSelectModal"));
 const ReasonModal = lazy(() => import("./modals/ReasonModal"));
 const DriverQueueModal = lazy(() => import("./modals/DriverQueueModal"));
 const EditTripModal = lazy(() => import("./modals/EditTripModal"));
-const OnboardingWelcomeModal = lazy(() => import("./modals/OnboardingWelcomeModal"));
 
 // ======================== ROUTE MAP ===================================
 const SCREEN_TO_PATH = {
@@ -76,7 +75,6 @@ export default function Tolvink() {
   const catalog = useCatalog(auth.user);
   const online = useOnline();
   const notif = useNotifications(auth.user);
-  const pwa = useInstallPrompt();
   const isDesktop = useIsDesktop(768);
 
   // Zustand UI store — individual selectors prevent re-renders
@@ -112,6 +110,7 @@ export default function Tolvink() {
   const [sseTyping, setSseTyping] = useState(null);
   const [sseRead, setSseRead] = useState(null);
   const [compDropOpen, setCompDropOpen] = useState(false);
+  const [unreadChats, setUnreadChats] = useState(0);
 
   // SSE — real-time sync
   const sse = useSSE(auth.user, {
@@ -150,9 +149,7 @@ export default function Tolvink() {
       const id = p.replace("/freight/", "");
       if (id) { setSelFreight(id); fh.refresh(id); }
     }
-  }, [location.pathname]);
-
-  const [unreadChats, setUnreadChats] = useState(0);
+  }, [location.pathname, fh.refresh]);
 
   // Redirect to home when user logs in + Sentry user tracking
   const prevUser = useRef(null);
@@ -163,10 +160,6 @@ export default function Tolvink() {
       || /^\/campo\/[a-z0-9-]+\/ubicacion$/i.test(p);
     if(auth.user && !prevUser.current && !isPublicPath) {
       navigate("/", { replace: true });
-      // Show welcome modal for new users
-      if (auth.user.isNew && !getOnboardingState(auth.user.id).welcomeDismissed) {
-        setTimeout(() => setModal({ type: "onboarding_welcome" }), 400);
-      }
     }
     prevUser.current = auth.user;
     setSentryUser(auth.user);
@@ -316,9 +309,12 @@ export default function Tolvink() {
   };
 
   const handleAssign = async (fId, transportCompanyId, truckId, driverId)=>{
-    const r = await fh.assign(fId, transportCompanyId, truckId, driverId);
-    if(r.ok){ track("freight_assign"); return "Transportista asignado"; }
-    show(r.error,"err"); return "";
+    setActionLoading(true);
+    try {
+      const r = await fh.assign(fId, transportCompanyId, truckId, driverId);
+      if(r.ok){ track("freight_assign"); return "Transportista asignado"; }
+      show(r.error,"err"); return "";
+    } finally { setActionLoading(false); }
   };
 
   const handleAssignMulti = async (trucks)=>{
@@ -578,13 +574,13 @@ export default function Tolvink() {
         <div style={{flex:1,overflow:(screen==="chats"||screen==="calendar")&&isDesktop?"hidden":"auto",display:(mapFocus||locPicker)?"none":"flex",flexDirection:"column",WebkitOverflowScrolling:"touch",overscrollBehavior:"contain"}}>
         <div key={screen} className="tv-page" style={{flex:1,display:"flex",flexDirection:"column",minHeight:0}}>
         <Suspense fallback={<SL/>}>
-        {screen==="home" && <HomeScreen user={auth.user} freights={viewFreights} loading={fh.loading} perms={perms} onNav={nav} catalog={catalog} isDesktop={isDesktop} onAction={handleAction} onTripAction={handleTripAction} onEditTrip={handleEditTrip} actionLoading={actionLoading} onChat={(convId)=>{if(convId){setChatConvId(convId);navigate("/chats");}}} onRefresh={(id)=>fh.refresh(id)} onDuplicate={(f)=>{setDuplicateData(f);navigate("/new");}} onEdit={(f)=>{setEditData(f);navigate("/edit/"+f.id);}} goToMap={goToMap} pwa={pwa}/>}
+        {screen==="home" && <HomeScreen user={auth.user} freights={viewFreights} loading={fh.loading} perms={perms} onNav={nav} catalog={catalog} isDesktop={isDesktop} onAction={handleAction} onTripAction={handleTripAction} onEditTrip={handleEditTrip} actionLoading={actionLoading} onChat={(convId)=>{if(convId){setChatConvId(convId);navigate("/chats");}}} onRefresh={(id)=>fh.refresh(id)} onDuplicate={(f)=>{setDuplicateData(f);navigate("/new");}} onEdit={(f)=>{setEditData(f);navigate("/edit/"+f.id);}} goToMap={goToMap}/>}
         {screen==="list" && <ListScreen freights={viewFreights} loading={fh.loading} onNav={nav} onRefresh={fh.fetchAll} catalog={catalog} view={listView} setView={setListView} goToMap={goToMap} hasMore={fh.hasMore} loadMore={fh.loadMore} loadingMore={fh.loadingMore} total={fh.total} isDesktop={isDesktop} onAction={handleAction}/>}
         {screen==="calendar" && <CalendarScreen freights={viewFreights} perms={perms} onNav={nav} isDesktop={isDesktop} user={auth.user} onAction={handleAction} actionLoading={actionLoading} onChat={(convId)=>{if(convId){setChatConvId(convId);navigate("/chats");}}} onRefresh={(id)=>fh.refresh(id)} onDuplicate={(f)=>{setDuplicateData(f);navigate("/new");}} onEdit={(f)=>{setEditData(f);navigate("/edit/"+f.id);}} goToMap={goToMap}/>}
         {screen==="detail" && <DetailScreen user={curFreight ? {...auth.user, userType: _resolveType(curFreight)} : auth.user} freight={curFreight} perms={perms} onBack={()=>navigate("/list")} onAction={handleAction} onTripAction={handleTripAction} onEditTrip={handleEditTrip} actionLoading={actionLoading} onChat={(convId)=>{if(convId){setChatConvId(convId);navigate("/chats");}}} onRefresh={(id)=>fh.refresh(id)} onDuplicate={(f)=>{setDuplicateData(f);navigate("/new");}} onEdit={(f)=>{setEditData(f);navigate("/edit/"+f.id);}} goToMap={goToMap}/>}
         {screen==="new" && <NewScreen user={auth.user} lots={catalog.lots} plants={catalog.plants} branches={catalog.branches} fields={catalog.fields} trucks={catalog.trucks} onBack={()=>{setDuplicateData(null);navigate("/");}} onCreate={handleCreate} submitting={submitting} duplicateFrom={duplicateData}/>}
         {screen==="edit" && editData && <EditScreen freight={editData} fields={catalog.fields} plants={catalog.plants} branches={catalog.branches} trucks={catalog.trucks} user={auth.user} onBack={()=>{setEditData(null);navigate(-1);}} onSave={async(id,data)=>{const r=await fh.update(id,data);if(r.ok) return r.pending?"Cambio enviado a aprobación":"Flete actualizado"; show(r.error,"err"); return "";}}/>}
-        {screen==="menu" && <MenuScreen user={auth.user} perms={perms} onLogout={auth.logout} onNav={nav} isDesktop={isDesktop} onSwitchCompany={async(id)=>{setViewAll(false);return await auth.switchCompany(id);}} onRefresh={()=>{fh.fetchAll();catalog.refresh();}} pwa={pwa}/>}
+        {screen==="menu" && <MenuScreen user={auth.user} perms={perms} onLogout={auth.logout} onNav={nav} isDesktop={isDesktop} onSwitchCompany={async(id)=>{setViewAll(false);return await auth.switchCompany(id);}} onRefresh={()=>{fh.fetchAll();catalog.refresh();}}/>}
         {screen==="trucks" && <TrucksScreen user={auth.user} onBack={()=>{catalog.refresh();navigate("/menu");}}/>}
         {screen==="fields" && <FieldsScreen onBack={()=>{catalog.refresh();navigate("/menu");}} goToMap={goToMap}/>}
         {screen==="admin" && <AdminScreen user={auth.user} onBack={()=>navigate("/menu")}/>}
@@ -611,7 +607,6 @@ export default function Tolvink() {
       {modal?.type==="reason" && <ReasonModal title={modal.title} freight={modal.freight} btnLabel={modal.btnLabel} onClose={()=>setModal(null)} onConfirm={r=>handleReasonAction(modal.freight.id,r,modal.action,{assignmentId:modal.assignmentId})}/>}
       {modal?.type==="edit_trip" && <EditTripModal freight={modal.freight} assignment={modal.assignment} transporters={catalog.transporters} onClose={()=>setModal(null)} onSave={handleSaveTrip}/>}
       {modal?.type==="driver_queue" && <DriverQueueModal driverId={modal.driverId} driverName={modal.driverName} onClose={()=>setModal(null)}/>}
-      {modal?.type==="onboarding_welcome" && <OnboardingWelcomeModal user={auth.user} onClose={()=>{setModal(null);if(auth.user)setOnboardingState(auth.user.id,{welcomeDismissed:true});}} onNavigate={(r)=>navigate(SCREEN_TO_PATH[r]||"/")}/>}
       </Suspense>
       {toast && <Toast key={toast._ts||toast.msg} msg={toast.msg} type={toast.type} onClose={()=>setToast(null)}/>}
     </div>

@@ -86,8 +86,7 @@ export function Select({ label, icon, value, onChange, options, placeholder="Sel
   },[open]);
   useEffect(()=>{
     if(open && listRef.current && value) {
-      const el = listRef.current.querySelector(`[data-val="${value}"]`);
-      if(el) el.scrollIntoView({ block:"nearest" });
+      Array.from(listRef.current.children).find(el => el.dataset.val === value)?.scrollIntoView({ block:"nearest" });
     }
   },[open, value]);
   const sel = options.find(o=>o.value===value);
@@ -174,10 +173,12 @@ export const Loader = memo(function Loader() {
 
 export function LoadingOverlay({ closing=false, closingText="", onClose }) {
   const [fading, setFading] = useState(false);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
   useEffect(() => {
     if (!closing) return;
     const t1 = setTimeout(() => setFading(true), 200);
-    const t2 = setTimeout(() => { if (onClose) onClose(); }, 500);
+    const t2 = setTimeout(() => { onCloseRef.current?.(); }, 500);
     return () => { clearTimeout(t1); clearTimeout(t2); };
   }, [closing]);
   return (
@@ -431,7 +432,7 @@ export function Nav({ active, onChange, unread=0, pendingCount=0, notifCount=0, 
   const items = [
     { k:"home",     ic:a=>Ic.home(a?C.pri:C.t3,20),  l:"Inicio" },
     { k:"list",     ic:a=>Ic.truck(a?C.pri:C.t3,20),  l:"Fletes" },
-    { k:"home",  sp:true, bd:pendingCount },
+    { k:"center",  sp:true, bd:pendingCount },
     { k:"chats",    ic:a=>Ic.msg(a?C.pri:C.t3,20),    l:"Chat", bd:unread },
     { k:"menu",     ic:a=>Ic.menu3(a?C.pri:C.t3,20),  l:"Menú", bd:notifCount },
   ];
@@ -697,7 +698,7 @@ tr:nth-child(even){background:#f8f9fa}
 <h1>${esc(title||"Informe de Fletes")} — Tolvink</h1>
 <div class="sub">${rows.length} flete${rows.length!==1?"s":""} · Generado el ${today}</div>
 <table><thead><tr>${headerCells}</tr></thead><tbody>${dataRows}</tbody></table>
-<div class="footer">tolvink.app</div>
+<div class="footer">tolvink.com</div>
 <script>window.onload=()=>setTimeout(()=>window.print(),300)</script>
 </body></html>`;
   const blob = new Blob([html], { type: "text/html;charset=utf-8" });
@@ -801,26 +802,4 @@ export class ErrorBoundary extends Component {
     }
     return this.props.children;
   }
-}
-
-// ======================== PWA INSTALL CARD ============================
-
-export function PwaInstallCard({ pwa }) {
-  if (!pwa || pwa.isInstalled) return null;
-  if (!pwa.canPrompt && !pwa.isIOS) return null;
-
-  return <div style={{ background:`linear-gradient(135deg, ${C.pri}08, ${C.acc}08)`, border:`1px solid ${C.b1}`, borderRadius:14, padding:16, marginBottom:12, boxShadow:C.sh }}>
-    <div style={{ display:"flex", alignItems:"center", gap:12 }}>
-      <div style={{ width:44, height:44, borderRadius:12, background:C.pri, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-      </div>
-      <div style={{ flex:1 }}>
-        <div style={{ fontSize:13, fontWeight:700, color:C.t1, marginBottom:2 }}>Instalar Tolvink</div>
-        <div style={{ fontSize:11, color:C.t3, lineHeight:1.4 }}>
-          {pwa.isIOS ? "Tocá Compartir → Agregar a pantalla de inicio" : "Accedé más rápido desde tu dispositivo"}
-        </div>
-      </div>
-      {pwa.canPrompt && <button onClick={pwa.install} style={{ padding:"8px 16px", borderRadius:8, background:C.pri, color:C.w, border:"none", fontSize:12, fontWeight:600, cursor:"pointer", fontFamily:"inherit", flexShrink:0 }}>Instalar</button>}
-    </div>
-  </div>;
 }

@@ -278,6 +278,7 @@ const FREIGHTS_PAGE_SIZE = 25;
 
 export function useFreights(user, isAuthInitialized, companyOverride) {
   const [freights, setFreights] = useState([]);
+  const freightsRef = useRef([]); // Mirror of freights state for synchronous reads in optimistic updates
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState(null);
@@ -296,6 +297,7 @@ export function useFreights(user, isAuthInitialized, companyOverride) {
     try {
       const r = await apiListFreights({page:1, limit:FREIGHTS_PAGE_SIZE, company:companyFilter});
       const mapped = (r.data||[]).map(mapFreight);
+      freightsRef.current = mapped;
       setFreights(mapped);
       setTotal(r.total||0);
       setHasMore((r.page||1) < (r.pages||1));
@@ -331,8 +333,11 @@ export function useFreights(user, isAuthInitialized, companyOverride) {
       const u=await apiGetFreight(id); const m=mapFreight(u);
       setFreights(p=>{
         const idx = p.findIndex(f=>f.id===id);
-        if (idx >= 0) { const next=[...p]; next[idx]=m; return next; }
-        return [m, ...p]; // New freight — prepend to list
+        let next;
+        if (idx >= 0) { next=[...p]; next[idx]=m; }
+        else { next=[m, ...p]; } // New freight — prepend to list
+        freightsRef.current = next;
+        return next;
       });
       return m;
     }
@@ -349,25 +354,28 @@ export function useFreights(user, isAuthInitialized, companyOverride) {
   const assign = useCallback(async (fId,compId,truckId,driverId)=>{ try { const body={transportCompanyId:compId}; if(truckId) body.truckId=truckId; if(driverId) body.driverId=driverId; await apiAssignFreight(fId,body); await refresh(fId); return {ok:true}; } catch(e) { return {ok:false,error:e.message}; } },[refresh]);
   const respond = useCallback(async (fId,action,reason,truckId,driverId)=>{
     let prev = null;
-    if(action==="accepted") setFreights(p=>{ prev=p.find(f=>f.id===fId)?.status; return p.map(f=>f.id===fId?{...f,status:"accepted"}:f); });
+    if(action==="accepted") {
+      prev = freightsRef.current.find(f=>f.id===fId)?.status || null;
+      setFreights(p=>{ const next=p.map(f=>f.id===fId?{...f,status:"accepted"}:f); freightsRef.current=next; return next; });
+    }
     try { await apiRespondFreight(fId,{action,reason,truckId,driverId}); await refresh(fId); return {ok:true}; }
-    catch(e) { if(prev) setFreights(p=>p.map(f=>f.id===fId?{...f,status:prev}:f)); refresh(fId); return {ok:false,error:e.message}; }
+    catch(e) { if(prev) setFreights(p=>{ const next=p.map(f=>f.id===fId?{...f,status:prev}:f); freightsRef.current=next; return next; }); refresh(fId); return {ok:false,error:e.message}; }
   },[refresh]);
   const start = useCallback(async (fId)=>{
-    let prev = null;
-    setFreights(p=>{ prev=p.find(f=>f.id===fId)?.status; return p.map(f=>f.id===fId?{...f,status:"in_progress"}:f); });
+    const prev = freightsRef.current.find(f=>f.id===fId)?.status || null;
+    setFreights(p=>{ const next=p.map(f=>f.id===fId?{...f,status:"in_progress"}:f); freightsRef.current=next; return next; });
     try { await apiStartFreight(fId); await refresh(fId); return {ok:true}; }
-    catch(e) { if(prev) setFreights(p=>p.map(f=>f.id===fId?{...f,status:prev}:f)); refresh(fId); return {ok:false,error:e.message}; }
+    catch(e) { if(prev) setFreights(p=>{ const next=p.map(f=>f.id===fId?{...f,status:prev}:f); freightsRef.current=next; return next; }); refresh(fId); return {ok:false,error:e.message}; }
   },[refresh]);
   const finish = useCallback(async (fId)=>{ try { await apiFinishFreight(fId); await refresh(fId); return {ok:true}; } catch(e) { return {ok:false,error:e.message}; } },[refresh]);
   const cancel = useCallback(async (fId,reason)=>{ try { await apiCancelFreight(fId,reason); await refresh(fId); return {ok:true}; } catch(e) { return {ok:false,error:e.message}; } },[refresh]);
   const confirmLoaded = useCallback(async (fId, loadedTons)=>{ try { await apiConfirmLoaded(fId, loadedTons); await refresh(fId); return {ok:true}; } catch(e) { return {ok:false,error:e.message}; } },[refresh]);
   const confirmFinished = useCallback(async (fId)=>{ try { await apiConfirmFinished(fId); await refresh(fId); return {ok:true}; } catch(e) { return {ok:false,error:e.message}; } },[refresh]);
   const authorize = useCallback(async (fId)=>{
-    let prev = null;
-    setFreights(p=>{ prev=p.find(f=>f.id===fId)?.status; return p.map(f=>f.id===fId?{...f,status:"accepted"}:f); });
+    const prev = freightsRef.current.find(f=>f.id===fId)?.status || null;
+    setFreights(p=>{ const next=p.map(f=>f.id===fId?{...f,status:"accepted"}:f); freightsRef.current=next; return next; });
     try { await apiAuthorizeFreight(fId); await refresh(fId); return {ok:true}; }
-    catch(e) { if(prev) setFreights(p=>p.map(f=>f.id===fId?{...f,status:prev}:f)); refresh(fId); return {ok:false,error:e.message}; }
+    catch(e) { if(prev) setFreights(p=>{ const next=p.map(f=>f.id===fId?{...f,status:prev}:f); freightsRef.current=next; return next; }); refresh(fId); return {ok:false,error:e.message}; }
   },[refresh]);
   const update = useCallback(async (fId, data)=>{ try { const res = await apiUpdateFreight(fId, data); await refresh(fId); return {ok:true, pending: !!res?.pendingChangeCreated}; } catch(e) { return {ok:false,error:e.message}; } },[refresh]);
   // Multi-truck callbacks (v6.0)
@@ -574,44 +582,6 @@ export function useNotifications(user) {
   return { notifications, unreadCount, markRead, markAllRead, refresh };
 }
 
-// ======================== INSTALL PROMPT HOOK =========================
-export function useInstallPrompt() {
-  const [deferredPrompt, setDeferredPrompt] = useState(null);
-  const [isInstalled, setIsInstalled] = useState(false);
-
-  useEffect(() => {
-    // Check if already installed
-    if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
-      setIsInstalled(true);
-      return;
-    }
-
-    const handler = (e) => { e.preventDefault(); setDeferredPrompt(e); };
-    window.addEventListener('beforeinstallprompt', handler);
-
-    const installed = () => setIsInstalled(true);
-    window.addEventListener('appinstalled', installed);
-
-    return () => {
-      window.removeEventListener('beforeinstallprompt', handler);
-      window.removeEventListener('appinstalled', installed);
-    };
-  }, []);
-
-  const install = useCallback(async () => {
-    if (!deferredPrompt) return false;
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    setDeferredPrompt(null);
-    return outcome === 'accepted';
-  }, [deferredPrompt]);
-
-  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-  const canPrompt = !!deferredPrompt;
-
-  return { canPrompt, isInstalled, install, isIOS };
-}
-
 // ======================== TABLE SORT HOOK =============================
 export function useTableSort() {
   const [sortCol, setSortCol] = useState(null);
@@ -672,8 +642,10 @@ export function useSSE(user, { onFreightUpdate, onMessageNew, onNotification, on
         const { ticket } = await apiGetSseTicket();
         url = `${API_URL}/sse/stream?ticket=${encodeURIComponent(ticket)}`;
       } catch {
-        // Fallback to legacy token-in-URL if ticket endpoint fails
-        url = `${API_URL}/sse/stream?token=${encodeURIComponent(getToken())}`;
+        // Ticket fetch failed — schedule retry with backoff instead of exposing JWT in URL
+        reconnectTimer.current = setTimeout(connect, reconnectDelay.current);
+        reconnectDelay.current = Math.min(reconnectDelay.current * 1.5, 30000);
+        return;
       }
       const es = new EventSource(url);
       esRef.current = es;

@@ -1,8 +1,8 @@
 import { useState, Fragment } from "react";
 import { C, Ic } from "../theme";
-import { Av, Bd, Btn, PwaInstallCard } from "../components";
+import { Av, Bd, Btn } from "../components";
 
-export default function MenuScreen({ user, perms, onLogout, onNav, isDesktop, onSwitchCompany, onRefresh, pwa }) {
+export default function MenuScreen({ user, perms, onLogout, onNav, isDesktop, onSwitchCompany, onRefresh }) {
   const TYPE_LABELS = {plant:"Planta de Acopio",transporter:"Transportista",producer:"Productor"};
   const TYPE_COLORS = {plant:C.pri,transporter:C.info||C.sec,producer:C.acc};
   const tc = TYPE_COLORS[user.userType]||C.pri;
@@ -121,7 +121,6 @@ export default function MenuScreen({ user, perms, onLogout, onNav, isDesktop, on
         </div>
       )}
 
-      <PwaInstallCard pwa={pwa} />
     </div>
   );
 }

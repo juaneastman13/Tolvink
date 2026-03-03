@@ -340,7 +340,7 @@ export async function generateFreightPDF(freight, auditLog = []) {
     doc.setFontSize(7);
     doc.setTextColor(...hex(T3));
     doc.setFont('helvetica','normal');
-    doc.text('Generado por Tolvink · tolvink.app', M, H-8);
+    doc.text('Generado por Tolvink · tolvink.com', M, H-8);
     doc.text(`Página ${i} de ${pages}`, W-M, H-8, { align:'right' });
   }
 

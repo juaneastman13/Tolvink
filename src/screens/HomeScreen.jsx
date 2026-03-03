@@ -16,7 +16,7 @@ const STATUS_GROUPS = [
   { key:"pending_assignment",  label:"Solicitado",                       icon:Ic.warn,  color:"#FF6A00", filter:(f) => f.status === "pending_assignment" },
 ];
 
-export default function HomeScreen({ user, freights, loading, perms, onNav, catalog, isDesktop, onAction, onTripAction, onEditTrip, actionLoading, onChat, onRefresh, onDuplicate, onEdit, goToMap, pwa }) {
+export default function HomeScreen({ user, freights, loading, perms, onNav, catalog, isDesktop, onAction, onTripAction, onEditTrip, actionLoading, onChat, onRefresh, onDuplicate, onEdit, goToMap }) {
   const [selectedId, setSelectedId] = useState(null);
   const [pendingFilter, setPendingFilter] = useState("all");
   const [summaryFilter, setSummaryFilter] = useState("all");
@@ -113,7 +113,7 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
     const map = new Map();
     filteredFreights.forEach(f => { map.set(f.id, getPendingActions(f, effectiveType(f), user.role, user)); });
     return map;
-  }, [filteredFreights, effectiveType, user.id, user.role, user.companyId]);
+  }, [filteredFreights, effectiveType, user.id, user.role, user.companyId, user.userType]);
 
   // Pending groups — grouped by ACTION type, filtered by date
   const pendingByAction = useMemo(() => {
@@ -231,17 +231,6 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
       {/* Skeleton while loading */}
       {loading && freights.length === 0 && <SkeletonList count={3} />}
 
-      {/* PWA install prompt */}
-      {pwa && !pwa.isInstalled && (pwa.canPrompt || pwa.isIOS) && (
-        <div style={{ background:C.priPale, border:`1.5px solid ${C.pri}30`, borderRadius:12, padding:"12px 14px", marginBottom:12, display:"flex", alignItems:"center", gap:10 }}>
-          <div style={{flex:1}}>
-            <div style={{ fontSize:12, fontWeight:700, color:C.pri }}>Instalá Tolvink en tu dispositivo</div>
-            <div style={{ fontSize:10.5, color:C.t2, marginTop:2 }}>{pwa.isIOS ? "Tocá Compartir → Agregar a inicio" : "Acceso directo desde tu pantalla de inicio"}</div>
-          </div>
-          {pwa.canPrompt && <button onClick={pwa.install} style={{ padding:"8px 16px", borderRadius:8, border:"none", background:C.pri, color:"#fff", fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"inherit", flexShrink:0 }}>Instalar</button>}
-        </div>
-      )}
-
 
       {/* Pendientes — top aligned with Solicitar flete button (~14px padding in sidebar) */}
       {totalPendingAll > 0 && (<>
@@ -304,7 +293,7 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
       <div style={{ flex: 1, position: "relative" }}>
         <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, display: "flex", flexDirection: "row" }}>
           {listContent}
-          <DetailScreen user={detailUser} freight={selFreight} perms={perms} onBack={() => setSelectedId(null)} onAction={onAction} onTripAction={onTripAction} onEditTrip={onEditTrip} actionLoading={actionLoading} onChat={onChat} onRefresh={onRefresh} onDuplicate={onDuplicate} onEdit={onEdit} />
+          <DetailScreen user={detailUser} freight={selFreight} perms={perms} onBack={() => setSelectedId(null)} onAction={onAction} onTripAction={onTripAction} onEditTrip={onEditTrip} actionLoading={actionLoading} onChat={onChat} onRefresh={onRefresh} onDuplicate={onDuplicate} onEdit={onEdit} goToMap={goToMap} />
         </div>
       </div>
     );
@@ -312,7 +301,7 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
 
   // Mobile: fullscreen detail or list
   if (!isDesktop && hasDetail) {
-    return <DetailScreen user={detailUser} freight={selFreight} perms={perms} onBack={() => setSelectedId(null)} onAction={onAction} onTripAction={onTripAction} onEditTrip={onEditTrip} actionLoading={actionLoading} onChat={onChat} onRefresh={onRefresh} onDuplicate={onDuplicate} onEdit={onEdit} />;
+    return <DetailScreen user={detailUser} freight={selFreight} perms={perms} onBack={() => setSelectedId(null)} onAction={onAction} onTripAction={onTripAction} onEditTrip={onEditTrip} actionLoading={actionLoading} onChat={onChat} onRefresh={onRefresh} onDuplicate={onDuplicate} onEdit={onEdit} goToMap={goToMap} />;
   }
 
   return listContent;

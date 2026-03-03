@@ -220,12 +220,6 @@ export async function apiSwitchCompany(companyId) {
 
 // Get my companies
 export async function apiGetMyCompanies() { return api('/auth/me/companies'); }
-export async function apiCompleteOnboarding() { return api('/auth/me/onboarding-complete',{method:'PATCH',body:{}}); }
-
-// Onboarding state (localStorage, per-user)
-const OB_KEY = (uid) => `tolvink_onboarding_${uid}`;
-export function getOnboardingState(uid) { try { return JSON.parse(localStorage.getItem(OB_KEY(uid))) || {}; } catch { return {}; } }
-export function setOnboardingState(uid, patch) { const prev = getOnboardingState(uid); localStorage.setItem(OB_KEY(uid), JSON.stringify({ ...prev, ...patch })); }
 
 // Freights
 export async function apiListFreights(q={}) { const p=new URLSearchParams(); if(q.status)p.set('status',q.status); if(q.page)p.set('page',String(q.page)); if(q.limit)p.set('limit',String(q.limit)); if(q.company)p.set('company',q.company); const qs=p.toString(); return api(`/freights${qs?`?${qs}`:''}`); }

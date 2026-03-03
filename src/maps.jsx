@@ -487,7 +487,7 @@ export function FreightMap({ freightId, originLat, originLng, destLat, destLng, 
       directionsRef.current = null;
       setMapReady(false);
     };
-  }, [hasAnyCoord, originLat, originLng, destLat, destLng]);
+  }, [hasAnyCoord, originLat, originLng, originName, destLat, destLng, destName]);
 
   // Update route color when live status changes (without full map reinit)
   useEffect(() => {
@@ -620,7 +620,7 @@ const _STATUS_COLOR = s => {
 };
 const _STATUS_LABEL = { pending_assignment:"Solicitado", assigned:"Asignado a flota", accepted:"Camión confirmado", in_progress:"En curso", loaded:"Cargando", finished:"Finalizado", canceled:"Cancelado" };
 
-const _svgIcon = (svg, size=32) => "data:image/svg+xml," + encodeURIComponent(svg);
+const _svgIcon = (svg) => "data:image/svg+xml," + encodeURIComponent(svg);
 const _FIELD_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#1A6B37" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 22L12 12l10 10"/><path d="M2 16l5-5 3 3 4-4 3 3 5-5"/><line x1="2" y1="22" x2="22" y2="22"/></svg>';
 const _PLANT_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#003882" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20h20"/><path d="M5 20V8l5 4V8l5 4V4h3v16"/></svg>';
 const _TRUCK_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="#FF6A00" stroke="#fff" stroke-width="1.5"><rect x="1" y="3" width="15" height="13" rx="2"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>';
