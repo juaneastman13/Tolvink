@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { C, Ic, FONT } from "../theme";
 import { Btn, Field, Tabs, Av, Loader, AttachMenu, FileViewer } from "../components";
-import { apiSearchUsers, apiStartConversation, apiListConversations, apiGetMessages, apiSendMessage, apiMarkRead, apiTyping, apiPinConversation, apiToggleMarkUnread, uploadChatFile, thumb } from "../api";
+import { apiSearchUsers, apiStartConversation, apiListConversations, apiGetMessages, apiSendMessage, apiMarkRead, apiTyping, apiToggleMarkUnread, uploadChatFile, thumb } from "../api";
 import log from "../logger";
 
 // Helper: format relative date
@@ -219,17 +219,6 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
       }
       return <span key={i}>{part}</span>;
     });
-  };
-
-  // Pin/unpin conversation
-  const handlePinConversation = async (convId, e) => {
-    e?.stopPropagation();
-    try {
-      await apiPinConversation(convId);
-      loadConvs();
-    } catch (err) {
-      log.error('Chat', 'pin failed:', err);
-    }
   };
 
   // Toggle mark unread
@@ -471,7 +460,7 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
 
   const [expandedGroups, setExpandedGroups] = useState({});
   const toggleGroup = (key) => setExpandedGroups(prev=>({...prev,[key]:!prev[key]}));
-  const [groupBy, setGroupBy] = useState("auto"); // auto | planta | transportista | productor
+  const [groupBy, setGroupBy] = useState("planta"); // planta | transportista | productor
 
   // Helper: freight chat title — "Producto - Cantidad / Campo - Lote"
   const freightTitle = (f) => {
@@ -491,17 +480,14 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
   // Helper: get group key for a freight conversation based on groupBy mode
   const getGroupKey = useCallback((c) => {
     const f = c.freight;
-    if (groupBy === "planta") return f?.destName || f?.destCompany?.name || "Sin planta";
     if (groupBy === "transportista") {
       const tc = f?.assignments?.[0]?.transportCompany?.name;
       return tc || "Sin transportista";
     }
     if (groupBy === "productor") return f?.originCompany?.name || "Sin productor";
-    // auto: group by other party's company (original behavior)
-    const activeCompanyId = user.activeCompanyId || user.companyId;
-    const others = (c.participants || []).filter(p => p.userId !== user.id && p.companyId !== activeCompanyId);
-    return others.map(o => o.company?.name || "").filter(Boolean).sort().join(", ") || "Otros";
-  }, [groupBy, user.activeCompanyId, user.companyId, user.id]);
+    // planta (default)
+    return f?.destName || f?.destCompany?.name || "Sin planta";
+  }, [groupBy]);
 
   // Group conversations
   const grouped = useMemo(() => {
@@ -527,8 +513,6 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
 
     Object.values(byCompany).forEach(group => {
       group.freightConvs.sort((a, b) => {
-        if (a.pinnedAt && !b.pinnedAt) return -1;
-        if (!a.pinnedAt && b.pinnedAt) return 1;
         const sa = statusOrder[a.freight?.status] ?? 99;
         const sb = statusOrder[b.freight?.status] ?? 99;
         if (sa !== sb) return sa - sb;
@@ -539,8 +523,6 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
     });
 
     directConvs.sort((a, b) => {
-      if (a.pinnedAt && !b.pinnedAt) return -1;
-      if (!a.pinnedAt && b.pinnedAt) return 1;
       return (b.messages?.[0]?.createdAt||"").localeCompare(a.messages?.[0]?.createdAt||"");
     });
 
@@ -752,7 +734,7 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
       {/* Group by selector */}
       <div style={{ display:"flex", alignItems:"center", gap:4, marginBottom:8, flexWrap:"wrap" }}>
         <span style={{ fontSize:10, fontWeight:600, color:C.t3 }}>Agrupar por</span>
-        {[{k:"auto",l:"Auto"},{k:"planta",l:"Planta"},{k:"transportista",l:"Transportista"},{k:"productor",l:"Productor"}].map(o=>(
+        {[{k:"planta",l:"Planta"},{k:"transportista",l:"Transportista"},{k:"productor",l:"Productor"}].map(o=>(
           <button key={o.k} onClick={()=>{setGroupBy(o.k);setExpandedGroups({});}} style={{ padding:"4px 10px", borderRadius:6, border:`1px solid ${groupBy===o.k?C.pri:C.b1}`, background:groupBy===o.k?C.priPale:C.w, color:groupBy===o.k?C.pri:C.t2, fontSize:10, fontWeight:groupBy===o.k?700:500, cursor:"pointer", fontFamily:"inherit" }}>{o.l}</button>
         ))}
       </div>
@@ -795,7 +777,6 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
                   <div style={{ flex:1, minWidth:0 }}>
                     <div style={{ display:"flex", alignItems:"center", gap:6 }}>
                       <span style={{ fontSize:13, fontWeight:c.unread||c.markedUnread?800:700, color:C.t1 }}>{c._userName}</span>
-                      {c.pinnedAt && <span style={{ fontSize: 10 }} title="Fijada">📌</span>}
                     </div>
                     {c._companyName && <div style={{ fontSize:10, color:C.t3, marginTop:1 }}>{c._companyName}</div>}
                     <div style={{ fontSize:11, color:c.unread||c.markedUnread?C.t1:C.t3, fontWeight:c.unread||c.markedUnread?600:400, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis", marginTop:2 }}>{getLastMsg(c)}</div>
@@ -805,9 +786,6 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
                 </button>
                 {/* Action buttons */}
                 <div style={{ position: "absolute", top: 8, right: 8, display: "flex", gap: 4 }}>
-                  <button onClick={(e) => handlePinConversation(c.id, e)} title={c.pinnedAt ? "Desfijar" : "Fijar"} style={{ background: c.pinnedAt ? C.accPale : C.bg, border: `1px solid ${c.pinnedAt ? C.acc : C.b1}`, borderRadius: 6, padding: "4px 6px", cursor: "pointer", fontSize: 11, display: "flex", alignItems: "center", opacity: 0.8 }}>
-                    {c.pinnedAt ? "📌" : "📍"}
-                  </button>
                   <button onClick={(e) => handleToggleMarkUnread(c.id, e)} title={c.markedUnread ? "Marcar como leída" : "Marcar como no leída"} style={{ background: c.markedUnread ? C.accPale : C.bg, border: `1px solid ${c.markedUnread ? C.acc : C.b1}`, borderRadius: 6, padding: "4px 6px", cursor: "pointer", fontSize: 10, display: "flex", alignItems: "center", opacity: 0.8 }}>
                     {c.markedUnread ? "✉️" : "📧"}
                   </button>

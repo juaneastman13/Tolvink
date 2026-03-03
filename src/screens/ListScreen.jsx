@@ -31,10 +31,10 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
   const plantOptions = useMemo(()=>[...new Set(freights.map(f=>f.destName).filter(Boolean))].sort(),[freights]);
   const secondFilterLabel = isProducerUser ? "Campo" : isTransporterUser ? "Planta" : "Productor";
   const secondFilterOptions = useMemo(()=>{
-    if (isProducerUser) return [...new Set(freights.map(f=>f.fieldName).filter(Boolean))].sort();
+    if (isProducerUser) return (catalog?.fields || []).map(f=>f.name).filter(Boolean).sort();
     if (isTransporterUser) return [...new Set(freights.map(f=>f.destName).filter(Boolean))].sort();
     return [...new Set(freights.map(f=>f.originCompanyName).filter(Boolean))].sort();
-  },[freights, isProducerUser, isTransporterUser]);
+  },[freights, isProducerUser, isTransporterUser, catalog?.fields]);
   const transporterOptions = useMemo(()=>[...new Set(freights.map(f=>f.transporterName).filter(Boolean))].sort(),[freights]);
 
   const applyDatePreset = (preset) => {
