@@ -142,6 +142,7 @@ export function useAuth() {
       setUser(mappedUser);
       track("login");
       log.log('AUTH', 'Login successful, user set:', mappedUser);
+      return { success: true };
     }
     catch(e) {
       log.error('AUTH', 'Login error:', e);
@@ -152,9 +153,9 @@ export function useAuth() {
       }
       setError(e.message||"Error al iniciar sesión");
       clearAuth();
+      return null;
     }
     finally { setLoading(false); }
-    return null;
   },[]);
 
   const signup = useCallback(async (form) => {
