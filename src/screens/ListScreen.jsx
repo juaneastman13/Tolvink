@@ -13,7 +13,7 @@ const GROUPS = [
   { key:"cancelados", label:"Cancelados", color:"#DC2626", icon:Ic.ban, statuses:["canceled"] },
 ];
 
-export default function ListScreen({ freights, loading, onNav, onRefresh, catalog, view, setView, goToMap, hasMore, loadMore, loadingMore, total, isDesktop, onAction }) {
+export default function ListScreen({ freights, loading, onNav, onRefresh, catalog, view, setView, goToMap, hasMore, loadMore, loadingMore, total, isDesktop, onAction, user }) {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [searchQ, setSearchQ] = useState("");
   const [segExpanded, setSegExpanded] = useState({});
@@ -25,8 +25,16 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
   const [datePreset, setDatePreset] = useState("");
   const [mapShown, setMapShown] = useState(false);
 
+  const userTypes = user?.userTypes || [];
+  const isProducerUser = userTypes.includes("producer");
+  const isTransporterUser = userTypes.includes("transporter");
   const plantOptions = useMemo(()=>[...new Set(freights.map(f=>f.destName).filter(Boolean))].sort(),[freights]);
-  const producerOptions = useMemo(()=>[...new Set(freights.map(f=>f.originCompanyName).filter(Boolean))].sort(),[freights]);
+  const secondFilterLabel = isProducerUser ? "Campo" : isTransporterUser ? "Planta" : "Productor";
+  const secondFilterOptions = useMemo(()=>{
+    if (isProducerUser) return [...new Set(freights.map(f=>f.fieldName).filter(Boolean))].sort();
+    if (isTransporterUser) return [...new Set(freights.map(f=>f.destName).filter(Boolean))].sort();
+    return [...new Set(freights.map(f=>f.originCompanyName).filter(Boolean))].sort();
+  },[freights, isProducerUser, isTransporterUser]);
   const transporterOptions = useMemo(()=>[...new Set(freights.map(f=>f.transporterName).filter(Boolean))].sort(),[freights]);
 
   const applyDatePreset = (preset) => {
@@ -47,7 +55,7 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
     return freights.filter(f=>{
       if(searchQ && !textMatch(f.originCompanyName,searchQ) && !textMatch(f.code,searchQ) && !textMatch(f.grain,searchQ) && !textMatch(f.originName,searchQ) && !textMatch(f.destName,searchQ) && !textMatch(f.transporterName,searchQ) && !textMatch(f.driverName,searchQ) && !textMatch(f.driverPhone,searchQ)) return false;
       if(fPlant && f.destName!==fPlant) return false;
-      if(fProducer && f.originCompanyName!==fProducer) return false;
+      if(fProducer && (isProducerUser ? f.fieldName!==fProducer : isTransporterUser ? f.destName!==fProducer : f.originCompanyName!==fProducer)) return false;
       if(fTransporter && f.transporterName!==fTransporter) return false;
       if(dateFrom && f.loadDate < dateFrom) return false;
       if(dateTo && f.loadDate > dateTo) return false;
@@ -123,8 +131,8 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
           {plantOptions.map(p=><option key={p} value={p}>{p}</option>)}
         </select>
         <select value={fProducer} onChange={e=>setFProducer(e.target.value)} style={{padding:"6px 8px",borderRadius:8,border:`1.5px solid ${fProducer?C.pri:C.b1}`,background:fProducer?C.priPale:C.w,color:fProducer?C.pri:C.t3,fontSize:11,fontFamily:"inherit",outline:"none",cursor:"pointer"}}>
-          <option value="">Productor</option>
-          {producerOptions.map(p=><option key={p} value={p}>{p}</option>)}
+          <option value="">{secondFilterLabel}</option>
+          {secondFilterOptions.map(p=><option key={p} value={p}>{p}</option>)}
         </select>
         <select value={fTransporter} onChange={e=>setFTransporter(e.target.value)} style={{padding:"6px 8px",borderRadius:8,border:`1.5px solid ${fTransporter?C.pri:C.b1}`,background:fTransporter?C.priPale:C.w,color:fTransporter?C.pri:C.t3,fontSize:11,fontFamily:"inherit",outline:"none",cursor:"pointer"}}>
           <option value="">Transportista</option>
@@ -149,7 +157,7 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
       </div>
       {/* View mode buttons */}
       <div style={{ display:"flex", gap:4, marginBottom:10 }}>
-        {[{k:"kanban",l:"Estados",ic:Ic.home},{k:"seguimiento",l:"Seg.",ic:Ic.user},{k:"tabla",l:"Tabla",ic:Ic.doc},{k:"mapa",l:"Mapa",ic:Ic.pin}].map(v=>(
+        {[{k:"kanban",l:"Estados",ic:Ic.home},{k:"seguimiento",l:"Transportistas",ic:Ic.user},{k:"tabla",l:"Tabla",ic:Ic.doc},{k:"mapa",l:"Mapa",ic:Ic.pin}].map(v=>(
           <button key={v.k} onClick={()=>setView(v.k)} style={{padding:"5px 7px",borderRadius:7,border:`1.5px solid ${view===v.k?C.pri:C.b1}`,background:view===v.k?C.priPale:C.w,color:view===v.k?C.pri:C.t2,fontSize:10,fontWeight:view===v.k?700:500,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:3,whiteSpace:"nowrap"}}>
             {v.ic(view===v.k?C.pri:C.t3,11)} {v.l}
           </button>
@@ -176,8 +184,8 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
           {plantOptions.map(p=><option key={p} value={p}>{p}</option>)}
         </select>
         <select value={fProducer} onChange={e=>setFProducer(e.target.value)} style={{flex:1,padding:"6px 8px",borderRadius:8,border:`1.5px solid ${fProducer?C.pri:C.b1}`,background:fProducer?C.priPale:C.w,color:fProducer?C.pri:C.t3,fontSize:11,fontFamily:"inherit",outline:"none",cursor:"pointer",minWidth:0}}>
-          <option value="">Productor</option>
-          {producerOptions.map(p=><option key={p} value={p}>{p}</option>)}
+          <option value="">{secondFilterLabel}</option>
+          {secondFilterOptions.map(p=><option key={p} value={p}>{p}</option>)}
         </select>
       </div>
       <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:12 }}>

@@ -12,7 +12,7 @@ import { useIsDesktop } from "../hooks";
 
 // ======================== SUMMARY CARD ==============================
 
-function SummaryCard({ secSummary, secComplete, form, showTruckSelect, isDesktop, onEdit }) {
+function SummaryCard({ secSummary, secComplete, form, showTruckSelect, isDesktop, compact, onEdit }) {
   const rows = [];
   if (secSummary.product) rows.push({ label: "Producto", value: secSummary.product, section: "product" });
   if (secSummary.quantity) rows.push({ label: "Cantidad", value: secSummary.quantity, section: "quantity" });
@@ -27,13 +27,25 @@ function SummaryCard({ secSummary, secComplete, form, showTruckSelect, isDesktop
   const filled = secKeys.filter(k => secComplete[k]).length;
   const total = secKeys.length;
   const pct = total > 0 ? (filled / total) * 100 : 0;
+
+  if (compact && rows.length === 0) return null;
+
   return (
-    <div style={{ background:C.w, border:`1px solid ${C.b2}`, borderRadius:14, boxShadow:C.sh, padding:"18px 16px", ...(isDesktop ? {} : { marginTop:16 }) }}>
-      <div style={{ fontSize:13, fontWeight:700, color:C.t1, marginBottom:rows.length?14:10 }}>Resumen del flete</div>
+    <div style={{ background:C.w, border:`1px solid ${C.b2}`, borderRadius:compact?10:14, boxShadow:C.sh, padding:compact?"12px 14px":"18px 16px", marginBottom:compact?12:0, ...(isDesktop ? {} : compact ? {} : { marginTop:16 }) }}>
+      <div style={{ fontSize:compact?12:13, fontWeight:700, color:C.t1, marginBottom:rows.length?(compact?8:14):10 }}>Resumen del flete</div>
       {rows.length === 0 ? (
         <div style={{ textAlign:"center", padding:"12px 0", color:C.t3, fontSize:12 }}>
           <div style={{ marginBottom:8, opacity:0.5 }}>{Ic.doc(C.t3,24)}</div>
           <div>Completá los campos para ver el resumen</div>
+        </div>
+      ) : compact ? (
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"4px 12px" }}>
+          {rows.map((r, i) => (
+            <div key={i} onClick={() => onEdit?.(r.section)} style={{ cursor:onEdit?"pointer":"default", padding:"4px 0", borderBottom:`1px solid ${C.b2}` }}>
+              <div style={{ fontSize:9, fontWeight:600, color:C.t3, textTransform:"uppercase", letterSpacing:0.4 }}>{r.label}</div>
+              <div style={{ fontSize:11, fontWeight:500, color:C.t1, marginTop:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{r.value}</div>
+            </div>
+          ))}
         </div>
       ) : (
         <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
@@ -49,8 +61,8 @@ function SummaryCard({ secSummary, secComplete, form, showTruckSelect, isDesktop
           ))}
         </div>
       )}
-      <div style={{ marginTop:14, paddingTop:12, borderTop:`1px solid ${C.b1}` }}>
-        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:6 }}>
+      <div style={{ marginTop:compact?8:14, paddingTop:compact?8:12, borderTop:`1px solid ${C.b1}` }}>
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:compact?4:6 }}>
           <span style={{ fontSize:10.5, fontWeight:600, color:C.t3 }}>{filled} de {total} campos</span>
           {filled === total && <span style={{ fontSize:10, fontWeight:700, color:C.ok }}>Completo</span>}
         </div>
@@ -316,6 +328,8 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
       <div style={{ fontSize:12, color:C.t2, marginBottom:22 }}>Solicitando como: <span style={{fontWeight:600,color:C.t1}}>{user.name}</span></div>
 
       <div style={{ display:"flex", flexDirection:_isDesktop?"row":"column", gap:_isDesktop?24:0, maxWidth:_isDesktop?1100:"none", margin:"0 auto" }}>
+      {/* Mobile: compact summary at top */}
+      {!_isDesktop && <SummaryCard secSummary={secSummary} secComplete={secComplete} form={form} showTruckSelect={showTruckSelect} isDesktop={false} compact onEdit={(sec)=>{if(!editingFrom)setEditingFrom(activeSection);setActiveSection(sec);}}/>}
       <div style={{ flex:"1 1 0", minWidth:0 }}>
       <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
         {/* PRODUCT SECTION */}
@@ -467,8 +481,8 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
           <NextStepBtn complete={secComplete.destination} onClick={isEditing?confirmEdit:advanceToNext} label={isEditing?"Confirmar edición":undefined}/>
         </Sec>}
 
-        {/* Route preview + custom dest map — only visible in destination & extras sections */}
-        {(activeSection === "destination" || activeSection === "extras") && (destMode==="custom" && _isDesktop ? (
+        {/* Route preview + custom dest map — desktop only */}
+        {(activeSection === "destination" || activeSection === "extras") && _isDesktop && (destMode==="custom" ? (
           <div style={{ display:"flex", gap:16, alignItems:"flex-start" }}>
             <div style={{ flex:1, minWidth:0 }}>
               <LocationPicker label="Ubicación del destino" value={customDest.lat?{lat:customDest.lat,lng:customDest.lng}:null} onChange={loc=>setCustomDest(p=>({...p,lat:loc.lat,lng:loc.lng}))}/>
@@ -504,7 +518,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
             )}
           </div>
         ) : (
-          /* Standard stacked layout (mobile or plant mode) */
+          /* Standard stacked layout — desktop only */
           (finalOrigin || finalDest) && (
             <div style={{ background:C.w, border:`1px solid ${C.b1}`, borderRadius:12, overflow:"hidden", boxShadow:C.sh }}>
               <div style={{ display:"flex", alignItems:"center", gap:6, padding:"10px 14px" }}>
@@ -594,7 +608,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
       </div>
       </div>
       <div style={{ width:_isDesktop?340:"auto", flexShrink:0, position:_isDesktop?"sticky":"static", top:_isDesktop?70:"auto", alignSelf:_isDesktop?"flex-start":"auto" }}>
-        <SummaryCard secSummary={secSummary} secComplete={secComplete} form={form} showTruckSelect={showTruckSelect} isDesktop={_isDesktop} onEdit={(sec)=>{if(!editingFrom)setEditingFrom(activeSection);setActiveSection(sec);}}/>
+        {_isDesktop && <SummaryCard secSummary={secSummary} secComplete={secComplete} form={form} showTruckSelect={showTruckSelect} isDesktop={true} onEdit={(sec)=>{if(!editingFrom)setEditingFrom(activeSection);setActiveSection(sec);}}/>}
         <div ref={secRefs.submit} style={{ marginTop:14 }}>
           {allComplete ? (
             <Btn full icon={Ic.chk(C.w,16)} disabled={submitting} onClick={submit}>{submitting?"Enviando...":"Solicitar Flete"}</Btn>

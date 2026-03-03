@@ -435,7 +435,7 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
 
   const getConvName = (conv) => {
     if (!conv) return "Chat";
-    if (conv.freight) return `Flete ${conv.freight.code}`;
+    if (conv.freight) return `#${conv.freight.code} — ${conv.freight.destName || ""}`;
     // For direct conversations, find the other user by userId
     const otherP = (conv.participants || []).find(p => p.userId && p.userId !== user.id);
     if (otherP?.user?.name) return otherP.user.name;
@@ -471,8 +471,39 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
 
   const [expandedGroups, setExpandedGroups] = useState({});
   const toggleGroup = (key) => setExpandedGroups(prev=>({...prev,[key]:!prev[key]}));
+  const [groupBy, setGroupBy] = useState("auto"); // auto | planta | transportista | productor
 
-  // Group conversations: company → user (nested folders)
+  // Helper: freight chat title — "Producto - Cantidad / Campo - Lote"
+  const freightTitle = (f) => {
+    const item = f?.items?.[0];
+    const grain = item?.grain || "";
+    const tons = item?.tons ? `${Number(item.tons)}t` : "";
+    const fieldName = f?.field?.name || "";
+    const lotName = f?.originLot?.name || "";
+    const left = [grain, tons].filter(Boolean).join(" - ");
+    const right = [fieldName, lotName].filter(Boolean).join(" - ");
+    if (left && right) return `${left} / ${right}`;
+    if (left) return left;
+    if (right) return right;
+    return `Flete ${f?.code || ""}`;
+  };
+
+  // Helper: get group key for a freight conversation based on groupBy mode
+  const getGroupKey = useCallback((c) => {
+    const f = c.freight;
+    if (groupBy === "planta") return f?.destName || f?.destCompany?.name || "Sin planta";
+    if (groupBy === "transportista") {
+      const tc = f?.assignments?.[0]?.transportCompany?.name;
+      return tc || "Sin transportista";
+    }
+    if (groupBy === "productor") return f?.originCompany?.name || "Sin productor";
+    // auto: group by other party's company (original behavior)
+    const activeCompanyId = user.activeCompanyId || user.companyId;
+    const others = (c.participants || []).filter(p => p.userId !== user.id && p.companyId !== activeCompanyId);
+    return others.map(o => o.company?.name || "").filter(Boolean).sort().join(", ") || "Otros";
+  }, [groupBy, user.activeCompanyId, user.companyId, user.id]);
+
+  // Group conversations
   const grouped = useMemo(() => {
     const byCompany = {};
     const directConvs = [];
@@ -480,18 +511,12 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
 
     convs.forEach(c => {
       if (c.freight) {
-        // Issue #14 fix: use activeCompanyId instead of deprecated user.companyId
-        const activeCompanyId = user.activeCompanyId || user.companyId;
-        const others = (c.participants || []).filter(p => p.userId !== user.id && p.companyId !== activeCompanyId);
-        const companyName = others.map(o => o.company?.name || "").filter(Boolean).sort().join(", ") || "Otros";
-        const companyType = others[0]?.company?.type || "";
-        if (!byCompany[companyName]) byCompany[companyName] = { companyType, freightConvs: [] };
-        byCompany[companyName].freightConvs.push(c);
+        const key = getGroupKey(c);
+        if (!byCompany[key]) byCompany[key] = { freightConvs: [] };
+        byCompany[key].freightConvs.push(c);
       } else {
-        // For direct conversations, find the OTHER person by userId only
         const others = (c.participants || []).filter(p => p.userId && p.userId !== user.id);
         const otherUser = others.find(o => o.user?.name) || others[0];
-        // Fallback: get name from last message sender
         const lastMsg = c.messages?.[0];
         const msgSenderName = (lastMsg?.sender?.id && lastMsg.sender.id !== user.id) ? lastMsg.sender.name : null;
         const userName = otherUser?.user?.name || msgSenderName || "Chat";
@@ -502,22 +527,17 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
 
     Object.values(byCompany).forEach(group => {
       group.freightConvs.sort((a, b) => {
-        // Issue #16 fix: sort by pinnedAt first
         if (a.pinnedAt && !b.pinnedAt) return -1;
         if (!a.pinnedAt && b.pinnedAt) return 1;
-
         const sa = statusOrder[a.freight?.status] ?? 99;
         const sb = statusOrder[b.freight?.status] ?? 99;
         if (sa !== sb) return sa - sb;
-
-        // Issue #24 fix: proper date comparison instead of localeCompare
         const dateA = new Date(b.messages?.[0]?.createdAt || 0).getTime();
         const dateB = new Date(a.messages?.[0]?.createdAt || 0).getTime();
         return dateA - dateB;
       });
     });
 
-    // Sort: pinned first, then by last message date
     directConvs.sort((a, b) => {
       if (a.pinnedAt && !b.pinnedAt) return -1;
       if (!a.pinnedAt && b.pinnedAt) return 1;
@@ -532,7 +552,7 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
     const companyKeys = Object.keys(byCompany).sort((a, b) => getLatest(byCompany[b]).localeCompare(getLatest(byCompany[a])));
 
     return { companyKeys, byCompany, directConvs };
-  }, [convs, user.companyId, user.id]);
+  }, [convs, user.id, getGroupKey]);
 
   // Chat detail view
   const chatDetailPanel = activeConv ? (
@@ -541,7 +561,7 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
           {!isDesktop && <button onClick={() => { setActiveConv(null); setChatTab("chat"); }} style={{ background: C.priPale, border: `1px solid ${C.pri}20`, borderRadius: 8, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, padding: "6px 10px", fontFamily:"inherit", fontSize:11, fontWeight:600, color:C.pri }}>{Ic.chev(C.pri, 16)} Chats</button>}
           {isDesktop && <button onClick={() => { setActiveConv(null); setChatTab("chat"); }} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", padding: 0 }}>{Ic.chev(C.pri, 20)}</button>}
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 14, fontWeight: 700, color: C.t1 }}>{activeConv.freight?.code ? `Flete ${activeConv.freight.code}` : "Mensaje directo"}</div>
+            <div style={{ fontSize: 14, fontWeight: 700, color: C.t1 }}>{activeConv.freight ? freightTitle(activeConv.freight) : "Mensaje directo"}</div>
             <div style={{ fontSize: 10, color: C.t3 }}>{getConvName(activeConv)} · {messages.length} mensaje{messages.length !== 1 ? "s" : ""}</div>
           </div>
           {/* Chat / Files tabs */}
@@ -625,7 +645,7 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
                         <span title={new Date(m.createdAt).toLocaleString("es")}>
                           {new Date(m.createdAt).toLocaleTimeString("es", { hour: "2-digit", minute: "2-digit" })}
                         </span>
-                        {mine && m.status === 'pending' && <span style={{ fontSize: 10 }}>⏱</span>}
+                        {mine && m.status === 'pending' && <span style={{ fontSize: 9, opacity: 0.5 }}>⏱</span>}
                         {mine && m.status === 'failed' && (
                           <button onClick={() => retryFailedMessage(m)} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 2, padding: 0, color: C.err, fontSize: 9, fontWeight: 600 }}>
                             ❌ Reintentar
@@ -729,6 +749,14 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
         {searchQ && <button onClick={()=>setSearchQ("")} style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",display:"flex"}}>{Ic.cross(C.t3,16)}</button>}
       </div>
 
+      {/* Group by selector */}
+      <div style={{ display:"flex", alignItems:"center", gap:4, marginBottom:8, flexWrap:"wrap" }}>
+        <span style={{ fontSize:10, fontWeight:600, color:C.t3 }}>Agrupar por</span>
+        {[{k:"auto",l:"Auto"},{k:"planta",l:"Planta"},{k:"transportista",l:"Transportista"},{k:"productor",l:"Productor"}].map(o=>(
+          <button key={o.k} onClick={()=>{setGroupBy(o.k);setExpandedGroups({});}} style={{ padding:"4px 10px", borderRadius:6, border:`1px solid ${groupBy===o.k?C.pri:C.b1}`, background:groupBy===o.k?C.priPale:C.w, color:groupBy===o.k?C.pri:C.t2, fontSize:10, fontWeight:groupBy===o.k?700:500, cursor:"pointer", fontFamily:"inherit" }}>{o.l}</button>
+        ))}
+      </div>
+
       {showNew && (
         <div style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: 12, padding: 16, marginBottom: 14, boxShadow: C.sh }}>
           <Field label="Buscar usuario" value={compSearchQ} onChange={handleCompSearch} placeholder="Escribí el nombre de la persona..."/>
@@ -814,7 +842,7 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
                           <div style={{ width: 8, height: 8, borderRadius: 4, background: stColor(c.freight?.status), flexShrink: 0 }} />
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                              <span style={{ fontSize: 12, fontWeight: c.unread ? 800 : 700, color: C.t1 }}>Flete {c.freight.code}</span>
+                              <span style={{ fontSize: 12, fontWeight: c.unread ? 800 : 700, color: C.t1 }}>{freightTitle(c.freight)}</span>
                               <span style={{ fontSize: 9, fontWeight: 600, color: stColor(c.freight?.status), textTransform: "uppercase" }}>{stLabel(c.freight?.status)}</span>
                             </div>
                             <div style={{ fontSize: 11, color: c.unread ? C.t1 : C.t3, fontWeight: c.unread ? 600 : 400, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", marginTop: 2 }}>{getLastMsg(c)}</div>

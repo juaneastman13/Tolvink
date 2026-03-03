@@ -402,7 +402,7 @@ export default function LiveFreightScreen() {
     return (
       <div style={styles.center}>
         <div style={styles.card}>
-          <div style={{ fontSize: 48, marginBottom: 12 }}>⏳</div>
+          <div style={{ fontSize: 28, marginBottom: 12, opacity: 0.5 }}>⏳</div>
           <div style={{ fontSize: 18, fontWeight: 700, color: COLORS.t1 }}>Link expirado</div>
           <div style={{ fontSize: 14, color: COLORS.t3, marginTop: 8 }}>
             Solicite un nuevo link en WhatsApp.

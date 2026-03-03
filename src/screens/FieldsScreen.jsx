@@ -211,7 +211,7 @@ export default function FieldsScreen({ onBack, embedded, goToMap }) {
                 ))}
 
                 {showLotForm === f.id ? (
-                  <div style={{ marginTop: 8, padding: "10px 0 0 28px", borderTop: `1px solid ${C.b2}` }}>
+                  <div style={{ marginTop: 8, padding: "10px 0 0 12px", borderTop: `1px solid ${C.b2}` }}>
                     <Field label="Nombre del lote" value={lotName} onChange={setLotName} placeholder="Ej: Lote 1A" />
                     <div style={{ height: 8 }} />
                     <Field label="Hectáreas (opcional)" value={lotHa} onChange={setLotHa} placeholder="Ej: 150" />
@@ -223,7 +223,7 @@ export default function FieldsScreen({ onBack, embedded, goToMap }) {
                     </div>
                   </div>
                 ) : (
-                  <button onClick={() => setShowLotForm(f.id)} style={{ marginTop: 6, marginLeft: 28, background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", fontSize: 11, fontWeight: 600, color: C.acc, padding: 0, display: "flex", alignItems: "center", gap: 4 }}>{Ic.plus(C.acc, 12)} Agregar lote</button>
+                  <button onClick={() => setShowLotForm(f.id)} style={{ marginTop: 8, marginLeft: 28, background: `${C.acc}10`, border: `1px solid ${C.acc}40`, borderRadius: 8, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 600, color: C.acc, padding: "10px 16px", display: "flex", alignItems: "center", gap: 6 }}>{Ic.plus(C.acc, 14)} Agregar lote</button>
                 )}
               </div>
             ))}
