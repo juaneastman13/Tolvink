@@ -117,7 +117,7 @@ export function useAuth() {
       try {
         const mappedUser = mapUser(saved);
         setUser(mappedUser);
-        log.log('AUTH', 'User restored from localStorage:', mappedUser);
+        log.log('AUTH', 'User restored, id:', mappedUser?.id);
       } catch(e) {
         log.error('AUTH', 'Error mapping saved user:', e);
         clearAuth();
@@ -130,9 +130,9 @@ export function useAuth() {
   const login = useCallback(async (identifier, password) => {
     setLoading(true); setError(null);
     try {
-      log.log('AUTH', 'Login attempt for:', identifier);
+      log.log('AUTH', 'Login attempt');
       const d = await apiLogin(identifier, password);
-      log.log('AUTH', 'Login response:', d);
+      log.log('AUTH', 'Login response received');
 
       if(!d.user) {
         throw new Error('Respuesta inválida del servidor');
@@ -141,7 +141,7 @@ export function useAuth() {
       const mappedUser = mapUser(d.user);
       setUser(mappedUser);
       track("login");
-      log.log('AUTH', 'Login successful, user set:', mappedUser);
+      log.log('AUTH', 'Login successful, user id:', mappedUser?.id);
       return { success: true };
     }
     catch(e) {

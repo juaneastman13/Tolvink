@@ -40,7 +40,7 @@ export function captureError(err, extra) {
 
 export function setUser(user) {
   if (_initialized && user) {
-    Sentry.setUser({ id: user.id, email: user.email });
+    Sentry.setUser({ id: user.id });
   } else if (_initialized) {
     Sentry.setUser(null);
   }

@@ -803,7 +803,7 @@ export class ErrorBoundary extends Component {
         <div style={{ fontSize:18, fontWeight:700, color:C.t1, marginBottom:8 }}>Algo salió mal</div>
         <div style={{ fontSize:13, color:C.t3, marginBottom:20, maxWidth:320, lineHeight:1.5 }}>Ocurrió un error inesperado. Podés intentar recargar la página.</div>
         <button onClick={() => window.location.reload()} style={{ padding:"12px 28px", borderRadius:10, background:C.pri, color:C.w, border:"none", fontSize:14, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>Recargar página</button>
-        {this.state.error && <div style={{ marginTop:16, fontSize:10, color:C.t3, fontFamily:"monospace", maxWidth:400, wordBreak:"break-all" }}>{String(this.state.error.message || this.state.error).slice(0, 200)}</div>}
+        {import.meta.env.DEV && this.state.error && <div style={{ marginTop:16, fontSize:10, color:C.t3, fontFamily:"monospace", maxWidth:400, wordBreak:"break-all" }}>{String(this.state.error.message || this.state.error).slice(0, 200)}</div>}
       </div>;
     }
     return this.props.children;

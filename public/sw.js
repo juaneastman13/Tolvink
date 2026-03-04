@@ -120,8 +120,8 @@ self.addEventListener('fetch', (event) => {
           );
         });
 
-        // Return cached immediately if available, update in background
-        return cached || networkFetch;
+        // Network-first to avoid cross-user data leakage; cache is offline fallback only
+        return networkFetch;
       })
     );
     return;
@@ -193,7 +193,7 @@ self.addEventListener('push', (event) => {
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   const rawUrl = event.notification.data?.url || '/';
-  const url = rawUrl.startsWith('/') ? rawUrl : '/';
+  const url = (rawUrl.startsWith('/') && !rawUrl.startsWith('//')) ? rawUrl : '/';
 
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {

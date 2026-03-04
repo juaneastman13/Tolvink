@@ -294,12 +294,12 @@ export async function apiGetLots() { return api('/catalog/lots'); }
 export async function apiGetTransportCompanies() { return api('/catalog/transport-companies'); }
 
 // Trucks
-export async function apiGetTrucks(companyId) { return api(companyId ? `/trucks?companyId=${companyId}` : '/trucks'); }
+export async function apiGetTrucks(companyId) { return api(companyId ? `/trucks?companyId=${encodeURIComponent(companyId)}` : '/trucks'); }
 export async function apiCreateTruck(b) { return api('/trucks',{body:b}); }
 export async function apiDeactivateTruck(id) { return api(`/trucks/${id}/deactivate`,{body:{},method:'PATCH'}); }
 
 // Drivers (choferes)
-export async function apiGetDrivers(companyId) { return api(`/freights/drivers?companyId=${companyId}`); }
+export async function apiGetDrivers(companyId) { return api(`/freights/drivers?companyId=${encodeURIComponent(companyId)}`); }
 export async function apiGetDriverQueue(driverId) { return api(`/freights/drivers/${driverId}/queue`); }
 export async function apiReorderDriverQueue(driverId, orderedFreightIds) { return api(`/freights/drivers/${driverId}/reorder`,{body:{orderedFreightIds}}); }
 export async function apiListDrivers() { return api('/trucks/drivers'); }
@@ -321,7 +321,7 @@ export async function apiListAccessProducers(plantCompanyId, producerCompanyId) 
 export async function apiListAccessPlants() { return api('/plant-access/plants'); }
 export async function apiSearchProducer(q, type) { const p=new URLSearchParams(); p.set('q',q); if(type)p.set('type',type); return api(`/plant-access/search-producer?${p.toString()}`); }
 export async function apiSearchCompany(q, type) { const p=new URLSearchParams(); p.set('q',q); if(type)p.set('type',type); return api(`/plant-access/search-company?${p.toString()}`); }
-export async function apiGetMyFacilities(plantCompanyId) { const q=plantCompanyId?`?plantCompanyId=${plantCompanyId}`:''; return api(`/plant-access/my-facilities${q}`); }
+export async function apiGetMyFacilities(plantCompanyId) { const q=plantCompanyId?`?plantCompanyId=${encodeURIComponent(plantCompanyId)}`:''; return api(`/plant-access/my-facilities${q}`); }
 export async function apiListPlantCompanies() { return api('/plant-access/plant-companies'); }
 
 // Catalog - Branches
