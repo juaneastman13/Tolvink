@@ -65,7 +65,7 @@ export default function LandingScreen({ onLogin, onSignup, onPasswordReset, load
 
   return (
     <div style={{ background:C.bg, fontFamily:FONT, display:"flex", flexDirection:"column", WebkitOverflowScrolling:"touch", position:"relative" }}>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&display=swap');*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}html,body,#root{margin:0;padding:0;background:${C.bg};height:auto!important;overflow-y:auto!important;overflow-x:hidden!important;position:static!important;overscroll-behavior:auto!important}@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}@keyframes dotPulse{0%,100%{opacity:0.3;transform:scale(0.8)}50%{opacity:1;transform:scale(1.2)}}@keyframes splashIn{0%{opacity:0;transform:scale(0.85)}100%{opacity:1;transform:scale(1)}}@keyframes truckPulse{0%,100%{box-shadow:0 2px 8px rgba(8,145,178,0.3)}50%{box-shadow:0 2px 16px rgba(8,145,178,0.5)}}@media(max-width:767px){.tv-ld-tag{font-size:10px!important;letter-spacing:1.6px!important}.tv-ld-h1{font-size:15px!important}.tv-ld-feat{gap:16px!important}.tv-ld-feat svg{width:16px!important;height:16px!important}.tv-ld-feat span{font-size:9px!important}.tv-ld-logo{font-size:125px!important;letter-spacing:-5.9px!important}.tv-ld-dot{width:22px!important;height:22px!important}.tv-ld-btn{font-size:14.5px!important;padding:12px 38px!important}}`}</style>
+      <style>{`*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}@keyframes dotPulse{0%,100%{opacity:0.3;transform:scale(0.8)}50%{opacity:1;transform:scale(1.2)}}@keyframes splashIn{0%{opacity:0;transform:scale(0.85)}100%{opacity:1;transform:scale(1)}}@keyframes truckPulse{0%,100%{box-shadow:0 2px 8px rgba(8,145,178,0.3)}50%{box-shadow:0 2px 16px rgba(8,145,178,0.5)}}@keyframes bounceDown{0%,100%{transform:translateY(0)}50%{transform:translateY(4px)}}@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}@media(max-width:767px){.tv-ld-tag{font-size:10px!important;letter-spacing:1.6px!important}.tv-ld-h1{font-size:15px!important}.tv-ld-feat{gap:16px!important}.tv-ld-feat svg{width:16px!important;height:16px!important}.tv-ld-feat span{font-size:9px!important}.tv-ld-logo{font-size:125px!important;letter-spacing:-5.9px!important}.tv-ld-dot{width:22px!important;height:22px!important}.tv-ld-btn{font-size:14.5px!important;padding:12px 38px!important}.tv-ld-section{padding:48px 20px!important}.tv-ld-section h2{font-size:24px!important}.tv-ld-section p{font-size:13px!important}.tv-ld-phone{width:290px!important;max-width:calc(100vw - 40px)!important}.tv-ld-steps{flex-direction:column!important;gap:24px!important}.tv-ld-steps>div{flex-basis:auto!important}.tv-ld-cards{gap:12px!important}.tv-ld-cards>div{flex-basis:100%!important;min-width:0!important}.tv-ld-caps{flex-direction:column!important;gap:24px!important;align-items:center!important}.tv-ld-sec11{flex-direction:column!important;gap:20px!important;align-items:center!important}}`}</style>
 
       {/* ═══ HERO ═══ */}
       <div style={{ flex:"none", minHeight:"100dvh", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"40px 24px", textAlign:"center", paddingTop:"max(40px, env(safe-area-inset-top))", position:"relative", zIndex:1 }}>
@@ -106,33 +106,33 @@ export default function LandingScreen({ onLogin, onSignup, onPasswordReset, load
 
         {/* Ingresar + WhatsApp contact */}
         <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:20 }}>
-          <a href="#ingresar" onClick={function(ev){ ev.preventDefault(); setShowAuth(true); }} className="tv-ld-btn" style={{ display:"inline-block", padding:"14px 42px", borderRadius:12, background:C.pri, color:C.w, fontSize:16, fontWeight:700, textDecoration:"none", fontFamily:"inherit", boxShadow:"0 4px 20px rgba(0,0,0,0.15)", minWidth:200, textAlign:"center", cursor:"pointer", WebkitTapHighlightColor:"rgba(0,0,0,0.1)" }}>Ingresar</a>
+          <button onClick={()=>setShowAuth(true)} className="tv-ld-btn" style={{ display:"inline-block", padding:"14px 42px", borderRadius:12, background:C.pri, color:C.w, fontSize:16, fontWeight:700, border:"none", fontFamily:"inherit", boxShadow:"0 4px 20px rgba(0,0,0,0.15)", minWidth:200, textAlign:"center", cursor:"pointer", WebkitTapHighlightColor:"rgba(0,0,0,0.1)" }}>Ingresar</button>
 
-          <a href="https://wa.me/59898247552?text=Hola%2C%20quiero%20información%20sobre%20Tolvink" target="_blank" rel="noopener noreferrer" style={{ display:"inline-flex", flexDirection:"column", alignItems:"center", gap:4, opacity:0.7, textDecoration:"none" }}>
+          <a href="https://wa.me/59898247552?text=Hola%2C%20quiero%20información%20sobre%20Tolvink" target="_blank" rel="noopener noreferrer" aria-label="Contáctanos por WhatsApp" style={{ display:"inline-flex", flexDirection:"column", alignItems:"center", gap:4, opacity:0.7, textDecoration:"none" }}>
             <svg width="22" height="22" viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
             <span style={{ fontSize:10, color:C.t3 }}>Contáctanos</span>
           </a>
 
           {/* Scroll hint */}
-          <div style={{ marginTop:12, display:"flex", flexDirection:"column", alignItems:"center", gap:4, opacity:0.5, animation:"fadeUp 1.2s ease-out" }}>
+          <button onClick={()=>document.getElementById("tv-details")?.scrollIntoView({behavior:"smooth"})} style={{ marginTop:12, display:"flex", flexDirection:"column", alignItems:"center", gap:4, opacity:0.5, animation:"fadeUp 1.2s ease-out, bounceDown 2s ease-in-out 2s infinite", background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", padding:0 }}>
             <span style={{ fontSize:11, color:C.t3 }}>Bajá para ver detalles</span>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={C.t3} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-          </div>
+          </button>
         </div>
       </div>
 
 
       {/* ═══ SECTION 2 · WhatsApp + AI Agent ═══ */}
-      <div style={_slide(C.w)}>
+      <div id="tv-details" className="tv-ld-section" style={_slide(C.w)}>
         <div style={_cnt}>
           <span style={_tag}>Operación por WhatsApp</span>
           <h2 style={{ ..._h2, marginBottom:12 }}>Un agente inteligente como interfaz</h2>
           <p style={{ ..._p, maxWidth:520, margin:"0 auto 40px" }}>
             Todo el sistema puede operarse desde WhatsApp mediante un agente de inteligencia artificial que interpreta texto y audio, ejecuta acciones y responde con precisión. Sin descargar ninguna app.
           </p>
-          <div style={{ display:"flex", gap:48, alignItems:"flex-start", justifyContent:"center", flexWrap:"wrap" }}>
+          <div className="tv-ld-caps" style={{ display:"flex", gap:48, alignItems:"flex-start", justifyContent:"center", flexWrap:"wrap" }}>
             {/* Chat mock */}
-            <div style={{ ..._pf, width:310 }}>
+            <div className="tv-ld-phone" style={{ ..._pf, width:310 }}>
               <div style={_bar}><span style={{ fontSize:11, color:C.t3 }}>9:41</span></div>
               <div style={{ padding:"10px 16px", background:C.w, borderBottom:`1px solid ${C.b2}`, display:"flex", alignItems:"center", gap:10 }}>
                 <div style={{ width:34, height:34, borderRadius:17, background:C.pri, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
@@ -211,7 +211,7 @@ export default function LandingScreen({ onLogin, onSignup, onPasswordReset, load
 
 
       {/* ═══ SECTION 3 · Three Actors ═══ */}
-      <div style={_slide(C.bg)}>
+      <div className="tv-ld-section" style={_slide(C.bg)}>
         <div style={_cnt}>
           <span style={_tag}>Tres actores, una plataforma</span>
           <h2 style={{ ..._h2, marginBottom:16 }}>Cada rol opera como necesita</h2>
@@ -219,7 +219,7 @@ export default function LandingScreen({ onLogin, onSignup, onPasswordReset, load
           <p style={{ ..._p, maxWidth:560, margin:"0 auto 44px" }}>
             Tolvink se adapta a cada actor de la cadena. Todos pueden operar desde WhatsApp, la app o desde la plataforma web, según lo que les resulte más cómodo.
           </p>
-          <div style={{ display:"flex", flexWrap:"wrap", gap:16, textAlign:"left" }}>
+          <div className="tv-ld-cards" style={{ display:"flex", flexWrap:"wrap", gap:16, textAlign:"left" }}>
             {[
               { bg:C.priPale, icon:SvgProducer(C.pri,22), title:"Productor", desc:"Creá fletes por WhatsApp, la app o desde la web. Definí grano, volumen, origen y destino. Seguí el estado en tiempo real y recibí confirmaciones automáticas sin hacer una sola llamada." },
               { bg:C.accPale, icon:Ic.plant("#FF6A00",22), title:"Planta acopiadora", desc:"Recibí solicitudes, asigná flota y confirmá recepción de mercadería. Todo desde un mensaje de WhatsApp, la app o desde el panel web con vista consolidada de operaciones." },
@@ -237,15 +237,15 @@ export default function LandingScreen({ onLogin, onSignup, onPasswordReset, load
 
 
       {/* ═══ SECTION 4 · The Problem ═══ */}
-      <div style={_slide(C.w)}>
+      <div className="tv-ld-section" style={_slide(C.w)}>
         <div style={_cnt}>
-          <span style={_tag}>El problema actual</span>
-          <h2 style={{ ..._h2, marginBottom:16 }}>Un sistema que depende de la improvisación</h2>
+          <span style={_tag}>La solución al problema actual</span>
+          <h2 style={{ ..._h2, marginBottom:16 }}>Eliminando la improvisación</h2>
           <div style={{ ..._hr, marginBottom:28 }} />
           <p style={{ ..._p, maxWidth:540, margin:"0 auto 44px" }}>
-            La coordinación de fletes agrícolas en Uruguay sigue operando con herramientas fragmentadas, llamadas, mensajes, planillas de Excel, etc.
+            La coordinación de fletes agrícolas en Uruguay sigue operando con herramientas fragmentadas: llamadas, mensajes sueltos y planillas sin actualización.
           </p>
-          <div style={{ display:"flex", flexWrap:"wrap", gap:16, maxWidth:720, margin:"0 auto", textAlign:"left" }}>
+          <div className="tv-ld-cards" style={{ display:"flex", flexWrap:"wrap", gap:16, maxWidth:720, margin:"0 auto", textAlign:"left" }}>
             {[
               { icon:Ic.phone("#DC2626",18), title:"Coordinación telefónica", desc:"Decenas de llamadas diarias entre productores, plantas y choferes para confirmar horarios, disponibilidad y estado de cada viaje." },
               { icon:Ic.doc("#DC2626",18), title:"Registros manuales", desc:"Planillas en papel o Excel sin actualización en tiempo real. Información duplicada, inconsistente o directamente perdida." },
@@ -266,12 +266,12 @@ export default function LandingScreen({ onLogin, onSignup, onPasswordReset, load
 
 
       {/* ═══ SECTION 5 · How It Works ═══ */}
-      <div style={_slide(C.bg)}>
+      <div className="tv-ld-section" style={_slide(C.bg)}>
         <div style={_cnt}>
           <span style={_tag}>Cómo funciona</span>
           <h2 style={{ ..._h2, marginBottom:16 }}>Del campo a la planta en un flujo continuo</h2>
           <div style={{ ..._hr, marginBottom:44 }} />
-          <div style={{ display:"flex", flexWrap:"wrap", alignItems:"flex-start", width:"100%", maxWidth:820, margin:"0 auto", justifyContent:"center" }}>
+          <div className="tv-ld-steps" style={{ display:"flex", flexWrap:"wrap", alignItems:"flex-start", width:"100%", maxWidth:820, margin:"0 auto", justifyContent:"center" }}>
             {[
               { bg:C.priPale, color:C.pri, num:"1", title:"Solicitud", desc:"El productor crea el flete indicando grano, volumen, origen y destino.", badgeBg:C.accPale, badgeC:C.acc, badge:"Pendiente" },
               { bg:C.secPale, color:C.sec, num:"2", title:"Asignación", desc:"La planta recibe la solicitud y asigna un transportista con flota disponible.", badgeBg:C.secPale, badgeC:C.sec, badge:"Asignando flota" },
@@ -293,7 +293,7 @@ export default function LandingScreen({ onLogin, onSignup, onPasswordReset, load
 
 
       {/* ═══ SECTION 6 · Trip Request ═══ */}
-      <div style={_slide(C.w)}>
+      <div className="tv-ld-section" style={_slide(C.w)}>
         <div style={_cnt}>
           <span style={_tag}>La aplicación</span>
           <h2 style={{ ..._h2, marginBottom:12 }}>Solicitud de viaje</h2>
@@ -301,7 +301,7 @@ export default function LandingScreen({ onLogin, onSignup, onPasswordReset, load
             El productor completa el formulario con datos del grano, cantidades, origen y destino. El sistema valida cada sección antes de habilitar la siguiente.
           </p>
           <div style={{ display:"flex", alignItems:"center", justifyContent:"center" }}>
-            <div style={_pf}>
+            <div className="tv-ld-phone" style={_pf}>
               <div style={_bar}><span style={{ fontSize:11, color:C.t3 }}>9:41</span></div>
               <div style={_nav}>
                 {Ic.chev(C.pri,18)}
@@ -367,7 +367,7 @@ export default function LandingScreen({ onLogin, onSignup, onPasswordReset, load
 
 
       {/* ═══ SECTION 7 · Freight Detail ═══ */}
-      <div style={_slide(C.bg)}>
+      <div className="tv-ld-section" style={_slide(C.bg)}>
         <div style={_cnt}>
           <span style={_tag}>La aplicación</span>
           <h2 style={{ ..._h2, marginBottom:12 }}>Detalle y gestión del flete</h2>
@@ -375,7 +375,7 @@ export default function LandingScreen({ onLogin, onSignup, onPasswordReset, load
             Cada flete cuenta con una vista completa de su estado, actores involucrados, datos logísticos y acciones disponibles según el rol del usuario.
           </p>
           <div style={{ display:"flex", alignItems:"center", justifyContent:"center" }}>
-            <div style={_pf}>
+            <div className="tv-ld-phone" style={_pf}>
               <div style={_bar}><span style={{ fontSize:11, color:C.t3 }}>9:41</span></div>
               <div style={_nav}>
                 {Ic.chev(C.pri,18)}
@@ -448,7 +448,7 @@ export default function LandingScreen({ onLogin, onSignup, onPasswordReset, load
 
 
       {/* ═══ SECTION 8 · Live Tracking ═══ */}
-      <div style={_slide(C.w)}>
+      <div className="tv-ld-section" style={_slide(C.w)}>
         <div style={_cnt}>
           <span style={_tag}>Seguimiento en tiempo real</span>
           <h2 style={{ ..._h2, marginBottom:12 }}>Sabé dónde está cada camión, siempre</h2>
@@ -456,7 +456,7 @@ export default function LandingScreen({ onLogin, onSignup, onPasswordReset, load
             GPS en vivo con ubicación del chofer actualizada automáticamente. Sin llamadas, sin preguntar "¿dónde estás?". El mapa muestra todos los fletes activos del día.
           </p>
           <div style={{ display:"flex", alignItems:"center", justifyContent:"center" }}>
-            <div style={_pf}>
+            <div className="tv-ld-phone" style={_pf}>
               <div style={_bar}><span style={{ fontSize:11, color:C.t3 }}>9:41</span></div>
               <div style={_nav}>
                 {Ic.chev(C.pri,18)}
@@ -518,7 +518,7 @@ export default function LandingScreen({ onLogin, onSignup, onPasswordReset, load
 
 
       {/* ═══ SECTION 9 · Operations Panel ═══ */}
-      <div style={_slide(C.bg)}>
+      <div className="tv-ld-section" style={_slide(C.bg)}>
         <div style={_cnt}>
           <span style={_tag}>La aplicación</span>
           <h2 style={{ ..._h2, marginBottom:12 }}>Panel de operaciones</h2>
@@ -526,7 +526,7 @@ export default function LandingScreen({ onLogin, onSignup, onPasswordReset, load
             Vista consolidada para plantas y empresas. Fletes agrupados por estado con acceso directo a cada operación y filtros por fecha, productor y transportista.
           </p>
           <div style={{ display:"flex", alignItems:"center", justifyContent:"center" }}>
-            <div style={_pf}>
+            <div className="tv-ld-phone" style={_pf}>
               <div style={_bar}><span style={{ fontSize:11, color:C.t3 }}>9:41</span></div>
               <div style={{ padding:"14px 16px 8px", background:C.w, borderBottom:`1px solid ${C.b2}` }}>
                 <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:10 }}>
@@ -616,12 +616,12 @@ export default function LandingScreen({ onLogin, onSignup, onPasswordReset, load
 
 
       {/* ═══ SECTION 10 · Plant Benefits ═══ */}
-      <div style={_slide(C.w)}>
+      <div className="tv-ld-section" style={_slide(C.w)}>
         <div style={_cnt}>
           <span style={_tag}>Beneficios para la planta</span>
           <h2 style={{ ..._h2, marginBottom:16 }}>Control total de la operativa de ingreso</h2>
           <div style={{ ..._hr, marginBottom:44 }} />
-          <div style={{ display:"flex", flexWrap:"wrap", gap:16, maxWidth:740, margin:"0 auto", textAlign:"left" }}>
+          <div className="tv-ld-cards" style={{ display:"flex", flexWrap:"wrap", gap:16, maxWidth:740, margin:"0 auto", textAlign:"left" }}>
             {[
               { bg:C.priPale, icon:Ic.cal("#1A6B37",18), title:"Agenda de ingresos digital", desc:"Visualización clara de todos los fletes programados por día, con filtros por estado, origen y tipo de grano." },
               { bg:C.secPale, icon:Ic.truck("#0891B2",18), title:"Asignación directa de flota", desc:"Selección de transportista desde la plataforma con notificación inmediata. Sin intermediarios ni demoras." },
@@ -642,9 +642,9 @@ export default function LandingScreen({ onLogin, onSignup, onPasswordReset, load
 
 
       {/* ═══ SECTION 11 · Security ═══ */}
-      <div style={{ ..._slide(C.bg), padding:"48px 32px" }}>
+      <div className="tv-ld-section" style={{ ..._slide(C.bg), padding:"48px 32px" }}>
         <div style={_cnt}>
-          <div style={{ display:"flex", gap:40, justifyContent:"center", flexWrap:"wrap", maxWidth:800, margin:"0 auto" }}>
+          <div className="tv-ld-sec11" style={{ display:"flex", gap:40, justifyContent:"center", flexWrap:"wrap", maxWidth:800, margin:"0 auto" }}>
             {[
               { bg:C.priPale, icon:Ic.shield(C.pri,18), title:"Autenticación segura", sub:"JWT con tokens firmados" },
               { bg:C.secPale, icon:Ic.lock(C.sec,18), title:"Datos protegidos", sub:"Comunicación cifrada" },
@@ -664,12 +664,12 @@ export default function LandingScreen({ onLogin, onSignup, onPasswordReset, load
 
 
       {/* ═══ SECTION 12 · Benefits + Closing ═══ */}
-      <div style={_slide(C.w)}>
+      <div className="tv-ld-section" style={_slide(C.w)}>
         <div style={_cnt}>
           <span style={_tag}>Beneficios operativos y económicos</span>
           <h2 style={{ ..._h2, marginBottom:16 }}>Menos fricción, más eficiencia</h2>
           <div style={{ ..._hr, marginBottom:44 }} />
-          <div style={{ display:"flex", flexWrap:"wrap", gap:16, maxWidth:820, margin:"0 auto" }}>
+          <div className="tv-ld-cards" style={{ display:"flex", flexWrap:"wrap", gap:16, maxWidth:820, margin:"0 auto" }}>
             {[
               { bg:C.priPale, icon:Ic.clk("#1A6B37",22), color:C.pri, stat:"\u221270%", label:"Tiempo de coordinación", desc:"Eliminación de llamadas repetitivas y confirmaciones manuales entre actores." },
               { bg:C.accPale, icon:Ic.shield("#FF6A00",22), color:C.acc, stat:"100%", label:"Trazabilidad", desc:"Registro completo de cada flete con estados, timestamps y responsables identificados." },
