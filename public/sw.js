@@ -39,6 +39,13 @@ self.addEventListener('install', (event) => {
   );
 });
 
+// ======================== MESSAGE ====================================
+self.addEventListener('message', (event) => {
+  if (event.data?.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+});
+
 // ======================== ACTIVATE ===================================
 self.addEventListener('activate', (event) => {
   const keepCaches = [CACHE_NAME, API_CACHE, FONT_CACHE, IMG_CACHE];
