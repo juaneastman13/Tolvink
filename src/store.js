@@ -96,8 +96,9 @@ function openDB() {
 
 export const offlineQueue = {
   async enqueue(action) {
+    let db;
     try {
-      const db = await openDB();
+      db = await openDB();
       const tx = db.transaction(STORE_NAME, "readwrite");
       tx.objectStore(STORE_NAME).add({
         ...action,
@@ -106,32 +107,40 @@ export const offlineQueue = {
       await new Promise((res, rej) => { tx.oncomplete = res; tx.onerror = rej; });
     } catch (e) {
       log.error("OfflineQueue", "enqueue failed:", e);
+    } finally {
+      db?.close();
     }
   },
 
   async getAll() {
+    let db;
     try {
-      const db = await openDB();
+      db = await openDB();
       const tx = db.transaction(STORE_NAME, "readonly");
       const store = tx.objectStore(STORE_NAME);
-      return new Promise((resolve, reject) => {
+      return await new Promise((resolve, reject) => {
         const req = store.getAll();
         req.onsuccess = () => resolve(req.result || []);
         req.onerror = () => reject(req.error);
       });
     } catch {
       return [];
+    } finally {
+      db?.close();
     }
   },
 
   async remove(id) {
+    let db;
     try {
-      const db = await openDB();
+      db = await openDB();
       const tx = db.transaction(STORE_NAME, "readwrite");
       tx.objectStore(STORE_NAME).delete(id);
       await new Promise((res, rej) => { tx.oncomplete = res; tx.onerror = rej; });
     } catch (e) {
       log.error("OfflineQueue", "remove failed:", e);
+    } finally {
+      db?.close();
     }
   },
 
