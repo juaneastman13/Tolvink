@@ -1,7 +1,28 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { C, FONT, MONO, Ic } from "../theme";
 import { RoutesBackground } from "../routes-bg";
 import AuthScreen from "./AuthScreen";
+
+/* Force-enable scrolling on mount by applying inline !important styles
+   directly on html/body/#root — overrides index.html + app.css locks */
+function useUnlockScroll() {
+  useEffect(() => {
+    const el = document.documentElement;
+    const bd = document.body;
+    const rt = document.getElementById("root");
+    const set = (n, p, v) => n && n.style.setProperty(p, v, "important");
+    set(el, "height", "auto"); set(el, "overflow-y", "auto"); set(el, "overflow-x", "hidden");
+    set(bd, "height", "auto"); set(bd, "overflow-y", "auto"); set(bd, "overflow-x", "hidden");
+    set(bd, "position", "static"); set(bd, "overscroll-behavior", "auto");
+    set(rt, "height", "auto"); set(rt, "overflow", "visible");
+    return () => {
+      const rem = (n, p) => n && n.style.removeProperty(p);
+      ["height","overflow-y","overflow-x"].forEach(p => { rem(el,p); rem(bd,p); });
+      rem(bd,"position"); rem(bd,"overscroll-behavior");
+      if (rt) { rem(rt,"height"); rem(rt,"overflow"); }
+    };
+  }, []);
+}
 
 /* ── shared inline-style patterns ─────────────────────────── */
 const _slide = bg => ({ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"72px 32px", position:"relative", overflow:"hidden", background:bg });
@@ -38,6 +59,7 @@ const SvgMic = (c,s) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none
 
 export default function LandingScreen({ onLogin, onSignup, onPasswordReset, loading, error, clearError }) {
   const [showAuth, setShowAuth] = useState(false);
+  useUnlockScroll();
 
   if (showAuth) return <AuthScreen onLogin={onLogin} onSignup={onSignup} onPasswordReset={onPasswordReset} loading={loading} error={error} clearError={clearError} onBackToLanding={()=>setShowAuth(false)} />;
 
