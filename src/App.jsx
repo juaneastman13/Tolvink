@@ -240,6 +240,13 @@ export default function Tolvink() {
     };
   },[auth.user]);
 
+  // Fallback timeout for submitDone overlay — auto-clear after 5s
+  useEffect(() => {
+    if (!submitDone) return;
+    const t = setTimeout(() => { setSubmitDone(""); navigate("/list"); }, 5000);
+    return () => clearTimeout(t);
+  }, [submitDone]);
+
   // Replay offline queue when back online
   useEffect(() => {
     if (!online || !auth.user) return;
@@ -440,7 +447,7 @@ export default function Tolvink() {
 
   // Show loading splash only during initial auth check
   if (!auth.isInitialized) {
-    return <div style={{minHeight:"100dvh",background:C.bg,fontFamily:"'DM Sans',system-ui,-apple-system,sans-serif",display:"flex",alignItems:"center",justifyContent:"center"}}>
+    return <div role="status" aria-label="Cargando Tolvink" style={{minHeight:"100dvh",background:C.bg,fontFamily:"'DM Sans',system-ui,-apple-system,sans-serif",display:"flex",alignItems:"center",justifyContent:"center"}}>
       <style>{`@keyframes splashIn{0%{opacity:0;transform:scale(0.7)}50%{opacity:1;transform:scale(1.05)}100%{opacity:1;transform:scale(1)}}@keyframes dotPulse{0%,100%{opacity:0.3;transform:scale(0.8)}50%{opacity:1;transform:scale(1.2)}}*{margin:0;padding:0;box-sizing:border-box}html,body,#root{background:${C.bg};margin:0;height:auto!important;overflow:visible!important}`}</style>
       <div style={{textAlign:"center",animation:"splashIn 0.8s ease-out forwards"}}>
         <span style={{fontSize:83,fontWeight:800,color:C.pri,letterSpacing:-3.5,display:"inline-block"}}>tolvink</span>

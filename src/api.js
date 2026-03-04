@@ -40,6 +40,11 @@ function scheduleTokenRefresh() {
     const exp = payload.exp;
     if (!exp) return;
     const msUntilExpiry = exp * 1000 - Date.now();
+    // Sanity: if token is expired or unreasonably far in the future, refresh now
+    if (msUntilExpiry < 0 || msUntilExpiry > 24 * 60 * 60 * 1000) {
+      tryRefresh().then(ok => { if (ok) scheduleTokenRefresh(); });
+      return;
+    }
     const refreshIn = msUntilExpiry - 2 * 60 * 1000; // 2 min before expiry
     if (refreshIn <= 0) {
       // Already close to expiry — refresh immediately
@@ -126,8 +131,7 @@ export default async function api(path, opts={}) {
   try {
     data = await res.json();
   } catch {
-    if(!res.ok) throw new ApiError(res.status,{message:'Error del servidor'});
-    return null;
+    throw new ApiError(res.status,{message: res.ok ? 'Respuesta inesperada del servidor' : 'Error del servidor'});
   }
 
   if(!res.ok) throw new ApiError(res.status, data);
@@ -414,8 +418,10 @@ function compressImage(file, maxWidth = 1920, quality = 0.8) {
 export async function uploadPhoto(file, freightId, step) {
   // Compress image before upload
   const processed = file.type.startsWith('image/') ? await compressImage(file) : file;
-  const ext = processed.name?.split('.').pop() || 'jpg';
-  const path = `${freightId}/${step}/${Date.now()}.${ext}`;
+  const ext = (processed.name?.split('.').pop() || 'jpg').replace(/[^a-zA-Z0-9]/g, '');
+  const safeId = String(freightId).replace(/[^a-zA-Z0-9_-]/g, '');
+  const safeStep = String(step).replace(/[^a-zA-Z0-9_-]/g, '');
+  const path = `${safeId}/${safeStep}/${Date.now()}.${ext}`;
   const url = `${SUPABASE_URL}/storage/v1/object/${STORAGE_BUCKET}/${path}`;
 
   const headers = { 'Content-Type': processed.type || 'image/jpeg' };

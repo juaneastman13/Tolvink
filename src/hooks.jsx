@@ -308,7 +308,7 @@ export function useFreights(user, isAuthInitialized, companyOverride) {
   },[user, isAuthInitialized, companyFilter]);
 
   const loadMore = useCallback(async ()=>{
-    if(!user || loadingMore || !hasMore) return;
+    if(!user || loadingMore || !hasMore || loading) return;
     setLoadingMore(true);
     const nextPage = pageRef.current + 1;
     try {
@@ -633,8 +633,11 @@ export function useSSE(user, { onFreightUpdate, onMessageNew, onNotification, on
 
     if (!getToken()) return;
 
+    let connecting = false;
     const connect = async () => {
-      if (!getToken()) return;
+      if (!getToken() || connecting) return;
+      connecting = true;
+      try {
       // Safety: close previous EventSource before creating new one
       if (esRef.current) { esRef.current.close(); esRef.current = null; }
       // Use short-lived ticket instead of JWT in URL
@@ -716,6 +719,7 @@ export function useSSE(user, { onFreightUpdate, onMessageNew, onNotification, on
         reconnectTimer.current = setTimeout(connect, reconnectDelay.current);
         reconnectDelay.current = Math.min(reconnectDelay.current * 1.5, 30000);
       };
+      } finally { connecting = false; }
     };
 
     connect();
