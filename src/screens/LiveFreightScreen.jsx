@@ -72,7 +72,7 @@ export default function LiveFreightScreen() {
   const fetchLocations = useCallback(async () => {
     if (!token) return;
     try {
-      const res = await fetch(`${API_URL}/whatsapp/live-locations?t=${token}`);
+      const res = await fetch(`${API_URL}/whatsapp/live-locations?t=${encodeURIComponent(token)}`);
       if (!res.ok) {
         if (res.status === 400) { setError("expired"); return; }
         throw new Error("Error al cargar datos");

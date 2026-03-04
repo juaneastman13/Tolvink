@@ -233,9 +233,12 @@ export function useAuth() {
   }, []);
 
   const patchUser = useCallback((updates) => {
+    const ALLOWED = new Set(['name', 'email', 'phone', 'company', 'activeCompanyId', 'companies', 'isNew']);
     setUser(prev => {
       if (!prev) return prev;
-      const patched = { ...prev, ...updates };
+      const safe = {};
+      for (const k of Object.keys(updates)) { if (ALLOWED.has(k)) safe[k] = updates[k]; }
+      const patched = { ...prev, ...safe };
       localStorage.setItem('tolvink_user', JSON.stringify(patched));
       return patched;
     });

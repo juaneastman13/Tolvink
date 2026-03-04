@@ -19,7 +19,7 @@ if (SENTRY_DSN && typeof window !== 'undefined' && !import.meta.env.DEV) {
           if (b.data?.url) {
             try {
               const u = new URL(b.data.url);
-              u.searchParams.delete('token');
+              ['token', 't', 's', 'ticket'].forEach(k => u.searchParams.delete(k));
               b.data.url = u.toString();
             } catch {}
           }

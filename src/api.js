@@ -36,7 +36,9 @@ function scheduleTokenRefresh() {
   if (_refreshTimerId) { clearTimeout(_refreshTimerId); _refreshTimerId = null; }
   if (!_token) return;
   try {
-    const payload = JSON.parse(atob(_token.split('.')[1]));
+    const parts = _token.split('.');
+    if (parts.length !== 3) return;
+    const payload = JSON.parse(atob(parts[1]));
     const exp = payload.exp;
     if (!exp) return;
     const msUntilExpiry = exp * 1000 - Date.now();
@@ -84,7 +86,14 @@ async function tryRefresh() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ refreshToken: _refreshToken }),
       });
-      if (!res.ok) return false;
+      if (!res.ok) {
+        // Force logout on auth errors from refresh endpoint
+        if (res.status === 401 || res.status === 403) {
+          clearAuth();
+          if (_onAuthFail) _onAuthFail();
+        }
+        return false;
+      }
       const data = await res.json();
       setToken(data.access_token);
       setRefreshToken(data.refresh_token);

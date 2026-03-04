@@ -46,7 +46,7 @@ export default function DailyMapScreen() {
   const fetchData = useCallback(async () => {
     if (!token) return;
     try {
-      const res = await fetch(`${API_URL}/whatsapp/daily-map-data?t=${token}`);
+      const res = await fetch(`${API_URL}/whatsapp/daily-map-data?t=${encodeURIComponent(token)}`);
       if (!res.ok) {
         if (res.status === 400) throw new Error("expired");
         throw new Error("Error al cargar datos");

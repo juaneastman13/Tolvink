@@ -789,6 +789,11 @@ export class ErrorBoundary extends Component {
       captureError(error, { componentStack: info?.componentStack });
     } catch {}
   }
+  componentDidUpdate(prevProps) {
+    if (this.state.hasError && prevProps.children !== this.props.children) {
+      this.setState({ hasError: false, error: null });
+    }
+  }
   render() {
     if (this.state.hasError) {
       return <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", minHeight:"100vh", padding:32, textAlign:"center", background:C.bg, fontFamily:"'DM Sans',sans-serif" }}>

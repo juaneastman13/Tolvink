@@ -51,7 +51,7 @@ export default function TrackFreightScreen({ code: codeProp } = {}) {
   const shareToken = params.get("s");
 
   // Determine API base: clean URL (/f/:code) or legacy (/track/:token)
-  const apiBase = codeProp ? `${API_URL}/f/${codeProp}` : token ? `${API_URL}/track/${token}` : null;
+  const apiBase = codeProp ? `${API_URL}/f/${codeProp}` : token ? `${API_URL}/track/${encodeURIComponent(token)}` : null;
   // Query string for shareToken (appended to all clean URL requests)
   const qs = codeProp && shareToken ? `?s=${encodeURIComponent(shareToken)}` : '';
   const hasIdentifier = !!(codeProp || token);
