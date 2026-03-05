@@ -342,6 +342,9 @@ export async function apiToggleMarkUnread(convId) { return api(`/conversations/$
 export async function apiAddDocument(freightId, body) { return api(`/freights/${freightId}/documents`,{body}); }
 export async function apiDeleteDocument(freightId, docId) { return api(`/freights/${freightId}/documents/${docId}`,{method:'DELETE'}); }
 
+// OCR
+export async function apiOcrAnalyze(url, docType) { return api('/ocr/analyze', { body: { url, ...(docType ? { docType } : {}) } }); }
+
 // ======================== ADMIN ======================================
 // Stats
 export async function apiAdminStats() { return api('/admin/stats'); }

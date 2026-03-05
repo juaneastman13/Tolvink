@@ -325,7 +325,7 @@ export function useFreights(user, isAuthInitialized) {
     }
     catch(e) { setError(e.message); }
     finally { setLoadingMore(false); }
-  },[user, loadingMore, hasMore, companyFilter]);
+  },[user, loadingMore, hasMore, loading, companyFilter]);
 
   useEffect(()=>{
     if(isAuthInitialized && user) { fetchAll(); }
@@ -472,10 +472,12 @@ export function permsFor(user) {
   return {
     canRequest:      ["plant","producer"].includes(userType),
     canApprove:      userType === "plant" && isManager,
+    canAssign:       userType === "plant" && isManager,
     canAssignDriver: userType === "transporter" && isManager,
     canCancel:       isManager,
     canReject:       userType === "transporter" && isManager,
     isChofer:        false,
+    isManager,
   };
 }
 

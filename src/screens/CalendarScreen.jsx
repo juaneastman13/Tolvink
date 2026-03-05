@@ -5,7 +5,7 @@ import { Bd, Btn } from "../components";
 import { resolveUserTypeForFreight } from "../utils/freight-helpers";
 import DetailScreen from "./DetailScreen";
 
-export default function CalendarScreen({ freights, perms, onNav, isDesktop, user, onAction, actionLoading, onChat, onRefresh, onDuplicate, onEdit, goToMap }) {
+export default function CalendarScreen({ freights, perms, onNav, isDesktop, user, onAction, onTripAction, onEditTrip, actionLoading, onChat, onRefresh, onDuplicate, onEdit, goToMap }) {
   const [selectedId, setSelectedId] = useState(null);
   const selFreightObj = selectedId ? freights.find(f => f.id === selectedId) : null;
   const calDetailUser = selFreightObj ? { ...user, userType: resolveUserTypeForFreight(selFreightObj, user) } : user;
@@ -178,7 +178,7 @@ export default function CalendarScreen({ freights, perms, onNav, isDesktop, user
             <div style={{overflow:"auto",minWidth:380}}>
               {calendarPanel}
             </div>
-            <DetailScreen user={calDetailUser} freight={selFreightObj} perms={perms} onBack={()=>setSelectedId(null)} onAction={onAction} actionLoading={actionLoading} onChat={onChat} onRefresh={onRefresh} onDuplicate={onDuplicate} onEdit={onEdit} />
+            <DetailScreen user={calDetailUser} freight={selFreightObj} perms={perms} onBack={()=>setSelectedId(null)} onAction={onAction} onTripAction={onTripAction} onEditTrip={onEditTrip} actionLoading={actionLoading} onChat={onChat} onRefresh={onRefresh} onDuplicate={onDuplicate} onEdit={onEdit} goToMap={goToMap} />
           </div>
         </div>
       );
@@ -200,7 +200,7 @@ export default function CalendarScreen({ freights, perms, onNav, isDesktop, user
 
   // --- Mobile: fullscreen detail or calendar ---
   if (selFreightObj) {
-    return <DetailScreen user={calDetailUser} freight={selFreightObj} perms={perms} onBack={()=>setSelectedId(null)} onAction={onAction} actionLoading={actionLoading} onChat={onChat} onRefresh={onRefresh} onDuplicate={onDuplicate} onEdit={onEdit} />;
+    return <DetailScreen user={calDetailUser} freight={selFreightObj} perms={perms} onBack={()=>setSelectedId(null)} onAction={onAction} onTripAction={onTripAction} onEditTrip={onEditTrip} actionLoading={actionLoading} onChat={onChat} onRefresh={onRefresh} onDuplicate={onDuplicate} onEdit={onEdit} goToMap={goToMap} />;
   }
   return calendarPanel;
 }

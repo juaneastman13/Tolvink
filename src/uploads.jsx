@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { uploadPhoto, apiAddDocument, apiDeleteDocument, thumb } from "./api";
+import { uploadPhoto, apiAddDocument, apiDeleteDocument, apiOcrAnalyze, thumb } from "./api";
 import { C, Ic } from "./theme";
 import { AttachMenu, Btn } from "./components";
 import { useUIStore } from "./store";
@@ -65,6 +65,8 @@ export function PhotoUpload({ freightId, step, label, onUploaded }) {
 export function DocsGallery({ documents, onViewFile, freightId, canDelete, onDeleted }) {
   const [deleting, setDeleting] = useState(null);
   const [confirm, setConfirm] = useState(null);
+  const [ocrLoading, setOcrLoading] = useState(null);
+  const [ocrResult, setOcrResult] = useState(null);
   const show = useUIStore(s => s.show);
   if (!documents || documents.length === 0) return null;
   const stepLabels = { request: "Solicitud", assignment: "Asignación", load_confirmation: "Carga", delivery_confirmation: "Entrega", cancellation: "Cancelación" };
@@ -82,6 +84,20 @@ export function DocsGallery({ documents, onViewFile, freightId, canDelete, onDel
       setConfirm(null);
     } finally {
       setDeleting(null);
+    }
+  };
+
+  const handleOcr = async (doc) => {
+    setOcrLoading(doc.id);
+    try {
+      const res = await apiOcrAnalyze(doc.url);
+      if (res.error) { show(res.error, "err"); return; }
+      setOcrResult(res);
+    } catch (e) {
+      log.error("Uploads", "OCR failed:", e);
+      show(e?.message || "Error al analizar documento", "err");
+    } finally {
+      setOcrLoading(null);
     }
   };
 
@@ -110,6 +126,7 @@ export function DocsGallery({ documents, onViewFile, freightId, canDelete, onDel
                   </div>
                   {Ic.eye(C.pri, 14)}
                 </button>
+                {isImg && <button onClick={()=>handleOcr(d)} disabled={!!ocrLoading} title="Extraer datos (OCR)" style={{ padding:6, borderRadius:6, border:`1px solid ${C.pri}40`, background:C.priPale, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, opacity:ocrLoading===d.id?0.5:1 }}>{ocrLoading===d.id ? Ic.spin?.(C.pri,14) || "..." : Ic.doc(C.pri,14)}</button>}
                 {canDelete && <button onClick={()=>setConfirm(d.id)} disabled={!!deleting} style={{ padding:6, borderRadius:6, border:`1px solid ${C.err}40`, background:C.errPale||"#fef2f2", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{Ic.cross(C.err,14)}</button>}
               </div>
               {confirm===d.id && (
@@ -124,6 +141,45 @@ export function DocsGallery({ documents, onViewFile, freightId, canDelete, onDel
             </div>
           );
         })}
+      </div>
+      {ocrResult && <OcrResultPanel result={ocrResult} onClose={()=>setOcrResult(null)} />}
+    </div>
+  );
+}
+
+// ======================== OCR RESULT PANEL ==============================
+
+function OcrResultPanel({ result, onClose }) {
+  const show = useUIStore(s => s.show);
+  const datos = result.datos || {};
+  const entries = Object.entries(datos).filter(([,v]) => v != null && v !== "");
+
+  const copyAll = () => {
+    const text = entries.map(([k,v]) => `${k}: ${typeof v === "object" ? JSON.stringify(v) : v}`).join("\n");
+    navigator.clipboard?.writeText(text).then(() => show("Datos copiados", "ok")).catch(() => {});
+  };
+
+  return (
+    <div style={{ marginTop:10, background:C.bg, border:`1px solid ${C.pri}40`, borderRadius:10, padding:14 }}>
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
+        <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+          {Ic.doc(C.pri,16)}
+          <span style={{ fontSize:12, fontWeight:700, color:C.t1 }}>Datos extraídos</span>
+          <span style={{ fontSize:9, color:C.t3, fontWeight:500 }}>{result.tipoDocumento} · {Math.round((result.confianza||0)*100)}% conf.</span>
+        </div>
+        <div style={{ display:"flex", gap:6 }}>
+          <button onClick={copyAll} style={{ padding:"4px 10px", borderRadius:6, border:`1px solid ${C.pri}30`, background:C.priPale, cursor:"pointer", fontSize:10, fontWeight:600, color:C.pri, fontFamily:"inherit" }}>Copiar</button>
+          <button onClick={onClose} style={{ background:"none", border:"none", cursor:"pointer", padding:2 }}>{Ic.cross(C.t3,14)}</button>
+        </div>
+      </div>
+      <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
+        {entries.map(([key, val]) => (
+          <div key={key} style={{ display:"flex", gap:8, fontSize:11, lineHeight:1.4 }}>
+            <span style={{ fontWeight:600, color:C.t2, minWidth:80, flexShrink:0 }}>{key}</span>
+            <span style={{ color:C.t1, wordBreak:"break-word" }}>{typeof val === "object" ? JSON.stringify(val) : String(val)}</span>
+          </div>
+        ))}
+        {entries.length === 0 && <div style={{ fontSize:11, color:C.t3, textAlign:"center", padding:10 }}>No se pudieron extraer datos</div>}
       </div>
     </div>
   );

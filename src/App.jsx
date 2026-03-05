@@ -169,7 +169,10 @@ export default function Tolvink() {
   const viewFreights = useMemo(() => {
     if (!auth.user || !fh.freights) return fh.freights;
     if (auth.user.role === "chofer") {
-      return fh.freights.filter(f => f.driverId === auth.user.id).sort((a,b) => (a.queuePosition||0) - (b.queuePosition||0));
+      return fh.freights.filter(f =>
+        f.driverId === auth.user.id ||
+        (f.activeAssignments || []).some(a => a.driverId === auth.user.id)
+      ).sort((a,b) => (a.queuePosition||0) - (b.queuePosition||0));
     }
     return fh.freights;
   }, [fh.freights, auth.user]);
@@ -592,14 +595,14 @@ export default function Tolvink() {
         <Suspense fallback={<SL/>}>
         {screen==="home" && <HomeScreen user={auth.user} freights={viewFreights} loading={fh.loading} perms={perms} onNav={nav} catalog={catalog} isDesktop={isDesktop} onAction={handleAction} onTripAction={handleTripAction} onEditTrip={handleEditTrip} actionLoading={actionLoading} onChat={(convId)=>{if(convId){setChatConvId(convId);navigate("/chats");}}} onRefresh={(id)=>fh.refresh(id)} onDuplicate={(f)=>{setDuplicateData(f);navigate("/new");}} onEdit={(f)=>{setEditData(f);navigate("/edit/"+f.id);}} goToMap={goToMap}/>}
         {screen==="list" && <ListScreen freights={viewFreights} loading={fh.loading} onNav={nav} onRefresh={fh.fetchAll} catalog={catalog} view={listView} setView={setListView} goToMap={goToMap} hasMore={fh.hasMore} loadMore={fh.loadMore} loadingMore={fh.loadingMore} total={fh.total} isDesktop={isDesktop} onAction={handleAction} user={auth.user}/>}
-        {screen==="calendar" && <CalendarScreen freights={viewFreights} perms={perms} onNav={nav} isDesktop={isDesktop} user={auth.user} onAction={handleAction} actionLoading={actionLoading} onChat={(convId)=>{if(convId){setChatConvId(convId);navigate("/chats");}}} onRefresh={(id)=>fh.refresh(id)} onDuplicate={(f)=>{setDuplicateData(f);navigate("/new");}} onEdit={(f)=>{setEditData(f);navigate("/edit/"+f.id);}} goToMap={goToMap}/>}
+        {screen==="calendar" && <CalendarScreen freights={viewFreights} perms={perms} onNav={nav} isDesktop={isDesktop} user={auth.user} onAction={handleAction} onTripAction={handleTripAction} actionLoading={actionLoading} onChat={(convId)=>{if(convId){setChatConvId(convId);navigate("/chats");}}} onRefresh={(id)=>fh.refresh(id)} onDuplicate={(f)=>{setDuplicateData(f);navigate("/new");}} onEdit={(f)=>{setEditData(f);navigate("/edit/"+f.id);}} goToMap={goToMap}/>}
         {screen==="detail" && <DetailScreen user={curFreight ? {...auth.user, userType: _resolveType(curFreight)} : auth.user} freight={curFreight} perms={perms} onBack={()=>navigate("/list")} onAction={handleAction} onTripAction={handleTripAction} onEditTrip={handleEditTrip} actionLoading={actionLoading} onChat={(convId)=>{if(convId){setChatConvId(convId);navigate("/chats");}}} onRefresh={(id)=>fh.refresh(id)} onDuplicate={(f)=>{setDuplicateData(f);navigate("/new");}} onEdit={(f)=>{setEditData(f);navigate("/edit/"+f.id);}} goToMap={goToMap}/>}
         {screen==="new" && <NewScreen user={auth.user} lots={catalog.lots} plants={catalog.plants} branches={catalog.branches} fields={catalog.fields} trucks={catalog.trucks} onBack={()=>{setDuplicateData(null);navigate("/");}} onCreate={handleCreate} submitting={submitting} duplicateFrom={duplicateData}/>}
         {screen==="edit" && editData && <EditScreen freight={editData} fields={catalog.fields} plants={catalog.plants} branches={catalog.branches} trucks={catalog.trucks} user={auth.user} onBack={()=>{setEditData(null);navigate(-1);}} onSave={async(id,data)=>{const r=await fh.update(id,data);if(r.ok) return r.pending?"Cambio enviado a aprobación":"Flete actualizado"; show(r.error,"err"); return "";}}/>}
         {screen==="menu" && <MenuScreen user={auth.user} perms={perms} onLogout={auth.logout} onNav={nav} isDesktop={isDesktop} onSwitchCompany={async(id)=>{return await auth.switchCompany(id);}} onRefresh={()=>{fh.fetchAll();catalog.refresh();}}/>}
         {screen==="trucks" && <TrucksScreen user={auth.user} onBack={()=>{catalog.refresh();navigate("/menu");}}/>}
         {screen==="fields" && <FieldsScreen onBack={()=>{catalog.refresh();navigate("/menu");}} goToMap={goToMap}/>}
-        {screen==="admin" && <AdminScreen user={auth.user} onBack={()=>navigate("/menu")}/>}
+        {screen==="admin" && (auth.user?.role==="admin"||auth.user?.role==="platform_admin") && <AdminScreen user={auth.user} onBack={()=>navigate("/menu")}/>}
         {screen==="mydata" && <MyDataScreen user={auth.user} onBack={()=>navigate("/menu")} onUserUpdate={auth.patchUser}/>}
         {screen==="reports" && <ReportsScreen onBack={()=>navigate(isDesktop?"/reports":"/menu")} freights={viewFreights} isDesktop={isDesktop}/>}
         {screen==="chats" && <ChatsScreen user={auth.user} openConvId={chatConvId} onConvOpened={()=>setChatConvId(null)} isDesktop={isDesktop} sseMsg={sseMsg} onSseMsgHandled={()=>setSseMsg(null)} sseTyping={sseTyping} sseRead={sseRead} sseConnected={sse.connected}/>}
