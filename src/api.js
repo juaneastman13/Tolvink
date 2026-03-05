@@ -1,5 +1,5 @@
 // =====================================================================
-// TOLVINK — API Client v7 (with Refresh Token)
+// TOLVINK — API Client v8 (HttpOnly Cookies)
 // =====================================================================
 
 import { captureError } from "./sentry";
@@ -13,56 +13,26 @@ if (import.meta.env.DEV && !import.meta.env.VITE_API_URL) {
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 const STORAGE_BUCKET = 'freight-docs';
 
-let _token = localStorage.getItem('tolvink_token');
-let _refreshToken = localStorage.getItem('tolvink_refresh_token');
 let _onAuthFail = null;
 let _isLoggingIn = false;
 let _refreshPromise = null;
-let _refreshTimerId = null;
 
-export function setToken(t) { _token = t; if(t) localStorage.setItem('tolvink_token',t); else localStorage.removeItem('tolvink_token'); }
-export function getToken() { return _token; }
-export function setRefreshToken(t) { _refreshToken = t; if(t) localStorage.setItem('tolvink_refresh_token',t); else localStorage.removeItem('tolvink_refresh_token'); }
+// User object stays in localStorage (not sensitive)
 export function clearAuth() {
-  _token=null; _refreshToken=null;
-  if (_refreshTimerId) { clearTimeout(_refreshTimerId); _refreshTimerId = null; }
+  localStorage.removeItem('tolvink_user');
+  // Clean up legacy token storage if present
   localStorage.removeItem('tolvink_token');
   localStorage.removeItem('tolvink_refresh_token');
-  localStorage.removeItem('tolvink_user');
-}
-
-// Decode JWT expiry and schedule silent refresh 2 min before expiration
-function scheduleTokenRefresh() {
-  if (_refreshTimerId) { clearTimeout(_refreshTimerId); _refreshTimerId = null; }
-  if (!_token) return;
-  try {
-    const parts = _token.split('.');
-    if (parts.length !== 3) return;
-    const payload = JSON.parse(atob(parts[1]));
-    const exp = payload.exp;
-    if (!exp) return;
-    const msUntilExpiry = exp * 1000 - Date.now();
-    // Sanity: if token is expired or unreasonably far in the future, refresh now
-    if (msUntilExpiry < 0 || msUntilExpiry > 24 * 60 * 60 * 1000) {
-      tryRefresh().then(ok => { if (ok) scheduleTokenRefresh(); });
-      return;
-    }
-    const refreshIn = msUntilExpiry - 2 * 60 * 1000; // 2 min before expiry
-    if (refreshIn <= 0) {
-      // Already close to expiry — refresh immediately
-      tryRefresh().then(ok => { if (ok) scheduleTokenRefresh(); });
-      return;
-    }
-    _refreshTimerId = setTimeout(async () => {
-      const ok = await tryRefresh();
-      if (ok) scheduleTokenRefresh();
-    }, refreshIn);
-  } catch { /* invalid JWT, skip scheduling */ }
 }
 export function setAuthFailHandler(fn) { _onAuthFail = fn; }
 export function saveUser(u) { localStorage.setItem('tolvink_user', JSON.stringify(u)); }
 export function getSavedUser() { try { const r=localStorage.getItem('tolvink_user'); return r?JSON.parse(r):null; } catch { return null; } }
 export function setLoggingIn(val) { _isLoggingIn = val; }
+
+// Legacy exports — no-ops for backward compat during transition
+export function setToken() {}
+export function getToken() { return null; }
+export function setRefreshToken() {}
 
 class ApiError extends Error {
   constructor(s,d) {
@@ -74,20 +44,19 @@ class ApiError extends Error {
   }
 }
 
-// Silent token refresh — returns true if refreshed, false otherwise
+// Silent token refresh via HttpOnly cookie (sent automatically)
 async function tryRefresh() {
-  if (!_refreshToken) return false;
   if (_refreshPromise) return _refreshPromise;
 
   _refreshPromise = (async () => {
     try {
       const res = await fetch(`${API_URL}/auth/refresh`, {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ refreshToken: _refreshToken }),
+        body: '{}',
       });
       if (!res.ok) {
-        // Force logout on auth errors from refresh endpoint
         if (res.status === 401 || res.status === 403) {
           clearAuth();
           if (_onAuthFail) _onAuthFail();
@@ -95,10 +64,7 @@ async function tryRefresh() {
         return false;
       }
       const data = await res.json();
-      setToken(data.access_token);
-      setRefreshToken(data.refresh_token);
       saveUser(data.user);
-      scheduleTokenRefresh();
       return true;
     } catch {
       return false;
@@ -109,14 +75,11 @@ async function tryRefresh() {
   return _refreshPromise;
 }
 
-// Schedule on page load if token already exists (e.g. returning user)
-if (_token) scheduleTokenRefresh();
-
 export default async function api(path, opts={}) {
   const { body, method=body?'POST':'GET', headers={} } = opts;
 
   const doFetch = () => {
-    const cfg = { method, headers: { 'Content-Type':'application/json', ...(_token?{Authorization:`Bearer ${_token}`}:{}), ...headers } };
+    const cfg = { method, credentials: 'include', headers: { 'Content-Type':'application/json', ...headers } };
     if(body) cfg.body = JSON.stringify(body);
     return fetch(`${API_URL}${path}`, cfg);
   };
@@ -127,7 +90,7 @@ export default async function api(path, opts={}) {
   if(res.status===401 && !_isLoggingIn) {
     const refreshed = await tryRefresh();
     if (refreshed) {
-      res = await doFetch(); // Retry with new token
+      res = await doFetch(); // Retry with new cookie
     }
     if (res.status===401) {
       // Only force logout if online — offline failures should not clear session
@@ -155,12 +118,12 @@ export async function apiLogin(identifier, password) {
     const reqBody = isPhone ? { phone:identifier.replace(/[\s\-()]/g,''), password } : { email:identifier, password };
     const res = await fetch(`${API_URL}/auth/login`, {
       method: 'POST',
+      credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(reqBody),
     });
     const d = await res.json().catch(() => null);
     if (!res.ok) {
-      // Check header hint for no-password (replaces old code:'NO_PASSWORD' in body)
       if (res.headers.get('X-Auth-Hint') === 'no-password') {
         const err = new ApiError(res.status, d || { message: 'Credenciales inválidas' });
         err._noPassword = true;
@@ -169,14 +132,11 @@ export async function apiLogin(identifier, password) {
       throw new ApiError(res.status, d || { message: 'Error del servidor' });
     }
 
-    if(!d || !d.access_token || !d.user) {
+    if(!d || !d.user) {
       throw new Error('Respuesta inválida del servidor');
     }
 
-    setToken(d.access_token);
-    setRefreshToken(d.refresh_token);
     saveUser(d.user);
-    scheduleTokenRefresh();
     return d;
   } finally {
     setLoggingIn(false);
@@ -188,14 +148,11 @@ export async function apiRegister(b) {
   try {
     const d=await api('/auth/register',{body:b});
 
-    if(!d || !d.access_token || !d.user) {
+    if(!d || !d.user) {
       throw new Error('Respuesta inválida del servidor');
     }
 
-    setToken(d.access_token);
-    setRefreshToken(d.refresh_token);
     saveUser(d.user);
-    scheduleTokenRefresh();
     return d;
   } finally {
     setLoggingIn(false);
@@ -219,29 +176,17 @@ export async function apiVerifyCode(phone, code) {
 }
 export async function apiResetPassword(resetToken, newPassword) {
   const d = await api('/auth/reset-password', { body: { resetToken, newPassword } });
-  if (d?.access_token) {
-    setToken(d.access_token);
-    setRefreshToken(d.refresh_token);
-    saveUser(d.user);
-    scheduleTokenRefresh();
-  }
+  if (d?.user) saveUser(d.user);
   return d;
 }
 export async function apiChangePassword(currentPassword, newPassword) {
-  const d = await api('/auth/password', { method: 'PATCH', body: { currentPassword, newPassword } });
-  if (d?.refresh_token) setRefreshToken(d.refresh_token);
-  return d;
+  return api('/auth/password', { method: 'PATCH', body: { currentPassword, newPassword } });
 }
 
 // Switch active company
 export async function apiSwitchCompany(companyId) {
   const d = await api('/auth/switch-company', { body: { companyId } });
-  if (d?.access_token) {
-    setToken(d.access_token);
-    setRefreshToken(d.refresh_token);
-    saveUser(d.user);
-    scheduleTokenRefresh();
-  }
+  if (d?.user) saveUser(d.user);
   return d;
 }
 

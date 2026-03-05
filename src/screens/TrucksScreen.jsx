@@ -105,7 +105,7 @@ export default function TrucksScreen({ onBack, embedded, user }) {
                       {t.assignedUser && <div style={{ fontSize: 10, color: C.t2 }}>Chofer: {t.assignedUser.name}</div>}
                     </div>
                   </div>
-                  {canEdit && <button disabled={saving} onClick={() => handleDeactivateTruck(t.id)} style={{ background: "none", border: "none", cursor: saving?"not-allowed":"pointer", padding: 6, opacity:saving?0.4:1 }}>{Ic.ban(C.err, 18)}</button>}
+                  {canEdit && <button aria-label="Desactivar camión" disabled={saving} onClick={() => handleDeactivateTruck(t.id)} style={{ background: "none", border: "none", cursor: saving?"not-allowed":"pointer", padding: 6, opacity:saving?0.4:1 }}>{Ic.ban(C.err, 18)}</button>}
                 </div>
               ))}
             </div>
@@ -135,7 +135,7 @@ export default function TrucksScreen({ onBack, embedded, user }) {
                       {d.phone && <div style={{ fontSize: 11, color: C.t3 }}>{d.phone}</div>}
                     </div>
                   </div>
-                  {canEdit && <button disabled={saving} onClick={() => handleDeactivateDriver(d.id)} style={{ background: "none", border: "none", cursor: saving?"not-allowed":"pointer", padding: 6, opacity:saving?0.4:1 }}>{Ic.ban(C.err, 18)}</button>}
+                  {canEdit && <button aria-label="Desactivar chofer" disabled={saving} onClick={() => handleDeactivateDriver(d.id)} style={{ background: "none", border: "none", cursor: saving?"not-allowed":"pointer", padding: 6, opacity:saving?0.4:1 }}>{Ic.ban(C.err, 18)}</button>}
                 </div>
               ))}
             </div>

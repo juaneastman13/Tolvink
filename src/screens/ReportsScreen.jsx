@@ -4,10 +4,12 @@ import { stCfg } from "../constants";
 import { Bd, Btn, Field, Select, exportExcel, exportPDF, FileViewer } from "../components";
 import { OcrResultModal, UploadOverlay } from "../uploads";
 import log from "../logger";
+import { useUIStore } from "../store";
 import { apiGetAuditLog, apiOcrAnalyze, apiSaveOcrData, thumb } from "../api";
 const loadPdfReport = () => import("../utils/pdf-report");
 
 export default function ReportsScreen({ onBack, freights, isDesktop, embedded, onRefresh }) {
+  const show = useUIStore(s => s.show);
   const [expanded, setExpanded] = useState({});
   const [filterStatus, setFilterStatus] = useState("all");
   const [searchQ, setSearchQ] = useState("");
@@ -31,25 +33,26 @@ export default function ReportsScreen({ onBack, freights, isDesktop, embedded, o
       if (res.error) { log.error("OCR", res.error); return; }
       setOcrResult(res);
       if (file.id && freightId) {
-        apiSaveOcrData(freightId, file.id, res).then(() => { if (onRefresh) onRefresh(); }).catch(e => log.error("OCR", "save failed:", e));
+        apiSaveOcrData(freightId, file.id, res).then(() => { if (onRefresh) onRefresh(); }).catch(e => { log.error("OCR", "save failed:", e); show("No se pudieron guardar los datos OCR", "err"); });
       }
     } catch (e) {
       log.error("OCR", "failed:", e);
+      show("Error al extraer datos del documento", "err");
     } finally {
       setOcrLoading(false);
     }
   };
 
-  const allFreights = (freights||[]).filter(f=>{
+  const allFreights = useMemo(() => (freights||[]).filter(f=>{
     if(dateFrom && f.loadDate < dateFrom) return false;
     if(dateTo && f.loadDate > dateTo) return false;
     if(!searchQ) return true;
     const q = searchQ.toLowerCase();
     return (f.code||"").toLowerCase().includes(q) || (f.originName||"").toLowerCase().includes(q) || (f.destName||"").toLowerCase().includes(q) || (f.grain||"").toLowerCase().includes(q) || (f.transporterName||"").toLowerCase().includes(q) || (f.requestedByName||"").toLowerCase().includes(q);
-  });
+  }), [freights, dateFrom, dateTo, searchQ]);
 
   const STATUS_GROUPS_RPT = { solicitado:["pending_assignment"], en_curso:["assigned","accepted","in_progress","loaded"], finalizados:["finished"], cancelados:["canceled"] };
-  const filtered = filterStatus==="all" ? allFreights : allFreights.filter(f=>(STATUS_GROUPS_RPT[filterStatus]||[]).includes(f.status));
+  const filtered = useMemo(() => filterStatus==="all" ? allFreights : allFreights.filter(f=>(STATUS_GROUPS_RPT[filterStatus]||[]).includes(f.status)), [allFreights, filterStatus]);
 
   const groups = useMemo(()=>{
     const solicitado = filtered.filter(f=>f.status==="pending_assignment");
@@ -193,7 +196,7 @@ export default function ReportsScreen({ onBack, freights, isDesktop, embedded, o
                       return (
                       <div key={d.id||i} style={{ display:"flex", alignItems:"center", gap:10, padding:"8px 0", borderBottom:i<docs.length-1?`1px solid ${C.b2}`:"none" }}>
                         {d.type==="photo" ? (
-                          <button onClick={()=>setViewFile({url:d.url,name:d.name||"Foto",type:"photo",id:d.id,ocrData:d.ocrData})} style={{ width:48, height:48, borderRadius:8, overflow:"hidden", flexShrink:0, border:`1px solid ${C.b1}`, padding:0, background:"none", cursor:"pointer" }}>
+                          <button onClick={()=>setViewFile({url:d.url,name:d.name||"Foto",type:"photo",id:d.id,ocrData:d.ocrData,freightId:f.id})} style={{ width:48, height:48, borderRadius:8, overflow:"hidden", flexShrink:0, border:`1px solid ${C.b1}`, padding:0, background:"none", cursor:"pointer" }}>
                             <img src={thumb(d.url)} alt="" loading="lazy" style={{ width:"100%", height:"100%", objectFit:"cover" }}/>
                           </button>
                         ) : (
@@ -210,7 +213,7 @@ export default function ReportsScreen({ onBack, freights, isDesktop, embedded, o
                         </div>
                         {d.ocrData && <button onClick={()=>setOcrResult(d.ocrData)} title="Ver datos extraídos" style={{ display:"flex", padding:6, borderRadius:8, border:"1px solid #1A6B37", background:"#E6F4EA", cursor:"pointer" }}>{Ic.eye("#1A6B37",14)}</button>}
                         {isImg && !d.ocrData && <button onClick={()=>handleOcr({url:d.url,name:d.name,type:d.type,id:d.id},f.id)} disabled={ocrLoading} title="Extraer datos (OCR)" style={{ display:"flex", padding:6, borderRadius:8, border:`1px solid ${C.pri}40`, background:C.priPale, cursor:"pointer", opacity:ocrLoading?0.5:1 }}>{Ic.doc(C.pri,14)}</button>}
-                        <button onClick={()=>setViewFile({url:d.url,name:d.name||"Documento",type:d.type,id:d.id,ocrData:d.ocrData})} style={{ display:"flex", padding:6, borderRadius:8, background:C.secPale, border:"none", cursor:"pointer" }}>
+                        <button onClick={()=>setViewFile({url:d.url,name:d.name||"Documento",type:d.type,id:d.id,ocrData:d.ocrData,freightId:f.id})} style={{ display:"flex", padding:6, borderRadius:8, background:C.secPale, border:"none", cursor:"pointer" }}>
                           {Ic.eye(C.sec,16)}
                         </button>
                       </div>
@@ -255,7 +258,7 @@ export default function ReportsScreen({ onBack, freights, isDesktop, embedded, o
           })}
         </div>
       ))}
-      <FileViewer file={viewFile} onClose={()=>setViewFile(null)} onOcr={(file)=>handleOcr(file, null)} ocrLoading={ocrLoading} onViewOcr={(data)=>setOcrResult(data)}/>
+      <FileViewer file={viewFile} onClose={()=>setViewFile(null)} onOcr={(file)=>handleOcr(file, viewFile?.freightId)} ocrLoading={ocrLoading} onViewOcr={(data)=>setOcrResult(data)}/>
       {ocrLoading && <div style={{ position:"fixed", inset:0, zIndex:250 }}><UploadOverlay uploading={ocrLoading} done={false} total={1} current={1} label="Extrayendo datos"/></div>}
       <OcrResultModal result={ocrResult} onClose={()=>setOcrResult(null)}/>
       </div>

@@ -31,7 +31,7 @@ export default function EditTripModal({ freight, assignment, transporters, onClo
   // Load trucks/drivers for current company on mount
   useEffect(() => {
     if (companyId) { loadTrucks(companyId); loadDriversFn(companyId); }
-  }, []);
+  }, [companyId]);
 
   // When company changes, reload trucks/drivers and reset selection
   const handleCompanyChange = (newId) => {
@@ -51,7 +51,7 @@ export default function EditTripModal({ freight, assignment, transporters, onClo
         if (d) setDriverId(tk.assignedUser.id);
       }
     }
-  }, [truckId]);
+  }, [truckId, trucks, drivers]);
 
   const hasChanges = companyId !== (assignment.transportCompanyId || "") || truckId !== (assignment.truckId || "") || driverId !== (assignment.driverId || "");
 

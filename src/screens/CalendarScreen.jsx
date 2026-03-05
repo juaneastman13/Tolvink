@@ -65,7 +65,7 @@ export default function CalendarScreen({ freights, perms, onNav, isDesktop, user
           <div style={{fontSize:16,fontWeight:800,color:C.t1}}>{calSelDay} de {monNames[activeMonth?.m??calMonth.m]}</div>
           <div style={{fontSize:11,color:C.t2,marginTop:2}}>{selFreights.length} flete{selFreights.length!==1?"s":""}</div>
         </div>
-        {isDesktop&&<button onClick={()=>setCalSelDay(null)} style={{background:"none",border:"none",cursor:"pointer",display:"flex",padding:4}}>{Ic.cross(C.t3,18)}</button>}
+        {isDesktop&&<button aria-label="Cerrar" onClick={()=>setCalSelDay(null)} style={{background:"none",border:"none",cursor:"pointer",display:"flex",padding:4}}>{Ic.cross(C.t3,18)}</button>}
       </div>
       <div style={{display:"flex",flexDirection:"column",gap:10}}>
         {selFreights.length===0&&<div style={{textAlign:"center",padding:30,color:C.t3,fontSize:12,background:C.w,borderRadius:10,border:`1px solid ${C.b1}`}}>Sin fletes programados este día</div>}
@@ -125,11 +125,11 @@ export default function CalendarScreen({ freights, perms, onNav, isDesktop, user
 
       {/* Navigation + months toggle */}
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-        <button onClick={()=>{setCalMonth(p=>p.m===0?{y:p.y-1,m:11}:{y:p.y,m:p.m-1});setCalSelDay(null);setCalSelMonth(null);}} style={{background:C.priPale,border:`1px solid ${C.pri}20`,borderRadius:8,cursor:"pointer",padding:"6px 10px",display:"flex",alignItems:"center",gap:4,fontSize:11,fontWeight:600,color:C.pri,fontFamily:"inherit"}}>{Ic.chev(C.pri,16)} Anterior</button>
+        <button aria-label="Mes anterior" onClick={()=>{setCalMonth(p=>p.m===0?{y:p.y-1,m:11}:{y:p.y,m:p.m-1});setCalSelDay(null);setCalSelMonth(null);}} style={{background:C.priPale,border:`1px solid ${C.pri}20`,borderRadius:8,cursor:"pointer",padding:"6px 10px",display:"flex",alignItems:"center",gap:4,fontSize:11,fontWeight:600,color:C.pri,fontFamily:"inherit"}}>{Ic.chev(C.pri,16)} Anterior</button>
         {isDesktop && <div style={{display:"flex",gap:4}}>
           {[1,3,6].map(n=><button key={n} onClick={()=>setMonthsToShow(n)} style={{padding:"5px 10px",borderRadius:6,border:`1px solid ${monthsToShow===n?C.pri:C.b1}`,background:monthsToShow===n?C.priPale:C.w,color:monthsToShow===n?C.pri:C.t2,fontSize:10,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>{n} mes{n>1?"es":""}</button>)}
         </div>}
-        <button onClick={()=>{setCalMonth(p=>p.m===11?{y:p.y+1,m:0}:{y:p.y,m:p.m+1});setCalSelDay(null);setCalSelMonth(null);}} style={{background:C.priPale,border:`1px solid ${C.pri}20`,borderRadius:8,cursor:"pointer",padding:"6px 10px",display:"flex",alignItems:"center",gap:4,fontSize:11,fontWeight:600,color:C.pri,fontFamily:"inherit"}}>Siguiente <span style={{display:"inline-flex",transform:"rotate(180deg)"}}>{Ic.chev(C.pri,16)}</span></button>
+        <button aria-label="Mes siguiente" onClick={()=>{setCalMonth(p=>p.m===11?{y:p.y+1,m:0}:{y:p.y,m:p.m+1});setCalSelDay(null);setCalSelMonth(null);}} style={{background:C.priPale,border:`1px solid ${C.pri}20`,borderRadius:8,cursor:"pointer",padding:"6px 10px",display:"flex",alignItems:"center",gap:4,fontSize:11,fontWeight:600,color:C.pri,fontFamily:"inherit"}}>Siguiente <span style={{display:"inline-flex",transform:"rotate(180deg)"}}>{Ic.chev(C.pri,16)}</span></button>
       </div>
 
       {/* Calendar grids */}

@@ -57,7 +57,9 @@ export default function AdminScreen({ user, onBack }) {
   // Detail tab: branches | fields | trucks
   const [detailTab, setDetailTab] = useState("branches");
 
-  const show = (t,k="ok") => { setMsg({t,k}); setTimeout(()=>setMsg(null),3000); };
+  const msgTimer = useRef(null);
+  const show = (t,k="ok") => { setMsg({t,k}); clearTimeout(msgTimer.current); msgTimer.current = setTimeout(()=>setMsg(null),3000); };
+  useEffect(() => () => clearTimeout(msgTimer.current), []);
 
   const load = useCallback(async () => {
     setLoading(true);

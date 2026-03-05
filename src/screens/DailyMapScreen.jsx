@@ -56,7 +56,7 @@ export default function DailyMapScreen() {
       setError(null);
     } catch (e) {
       if (e.message === "expired") setError("expired");
-      else log.error("DailyMap fetch", e);
+      else { log.error("DailyMap fetch", e); setError("Error al cargar datos"); }
     } finally {
       setLoading(false);
     }

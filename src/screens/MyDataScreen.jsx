@@ -1,4 +1,4 @@
-import { useState, Fragment } from "react";
+import { useState, useRef, useEffect, Fragment } from "react";
 import { C, Ic } from "../theme";
 import { Btn, Bd, LoadingOverlay } from "../components";
 import { apiUpdateMe, apiChangePassword } from "../api";
@@ -13,7 +13,9 @@ export default function MyDataScreen({ user, onBack, onUserUpdate }) {
   const [expandedCo, setExpandedCo] = useState(null);
   const [pwForm, setPwForm] = useState({ current:"", next:"" });
   const [pwSaving, setPwSaving] = useState(false);
-  const show = (t,k="ok") => { setMsg({t,k}); setTimeout(()=>setMsg(null),3000); };
+  const msgTimer = useRef(null);
+  const show = (t,k="ok") => { setMsg({t,k}); clearTimeout(msgTimer.current); msgTimer.current = setTimeout(()=>setMsg(null),3000); };
+  useEffect(() => () => clearTimeout(msgTimer.current), []);
   const handleSave = async () => {
     if(!form.name.trim()||!form.email.trim()) return show("Nombre y email obligatorios","err");
     setSaving(true);

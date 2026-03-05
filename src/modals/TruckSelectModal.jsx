@@ -42,7 +42,7 @@ export default function TruckSelectModal({ freight, trucks: initialTrucks, onClo
         if(d) setDriverId(tk.assignedUser.id);
       }
     }
-  },[sel]);
+  },[sel, truckList, drivers]);
 
   const handleCreateTruck = async ()=>{
     if(savingTruck) return;

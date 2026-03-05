@@ -162,7 +162,7 @@ export function Toast({ msg, type="ok", onClose }) {
   const onCloseRef = useRef(onClose); onCloseRef.current = onClose;
   useEffect(()=>{ const t=setTimeout(()=>onCloseRef.current?.(),3500); return()=>clearTimeout(t); },[msg]);
   const cfg = { ok:{bg:C.pri,ic:Ic.chk(C.w,16)}, err:{bg:C.err,ic:Ic.warn(C.w,16)}, info:{bg:C.info,ic:Ic.bell(C.w,16)} }[type]||{bg:C.pri,ic:Ic.chk(C.w,16)};
-  return <div style={{ position:"fixed", top:"max(20px, env(safe-area-inset-top))", left:"50%", transform:"translateX(-50%)", zIndex:200, background:cfg.bg, color:C.w, padding:"11px 22px", borderRadius:12, fontSize:13, fontWeight:600, boxShadow:C.shLg, display:"flex", alignItems:"center", gap:8, animation:"fadeIn 0.3s ease", maxWidth:"calc(100vw - 40px)" }}>{cfg.ic} {msg}</div>;
+  return <div role="alert" style={{ position:"fixed", top:"max(20px, env(safe-area-inset-top))", left:"50%", transform:"translateX(-50%)", zIndex:200, background:cfg.bg, color:C.w, padding:"11px 22px", borderRadius:12, fontSize:13, fontWeight:600, boxShadow:C.shLg, display:"flex", alignItems:"center", gap:8, animation:"fadeIn 0.3s ease", maxWidth:"calc(100vw - 40px)" }}>{cfg.ic} {msg}</div>;
 }
 
 export const Loader = memo(function Loader() {
@@ -218,6 +218,13 @@ export function ModalOverlay({ children, onClose, maxWidth=400, loading=false, c
   const [stage, setStage] = useState(0);
   const [fading, setFading] = useState(false);
 
+  // Escape key to close
+  useEffect(() => {
+    const h = (e) => { if (e.key === "Escape" && onClose) onClose(); };
+    window.addEventListener("keydown", h);
+    return () => window.removeEventListener("keydown", h);
+  }, [onClose]);
+
   // Intro stages (logo → text collapse → dot grow → card)
   useEffect(() => {
     if (loading || closing) return;
@@ -242,7 +249,7 @@ export function ModalOverlay({ children, onClose, maxWidth=400, loading=false, c
   const showLoading = loading && !closing;
 
   return (
-    <div onClick={showCard ? onClose : undefined} style={{position:"fixed",inset:0,background:C.bgOverlay,display:"flex",alignItems:"center",justifyContent:"center",zIndex:200,padding:24,animation:fading ? "moOutroFade 0.4s ease forwards" : "moFadeIn 0.25s ease"}}>
+    <div role="dialog" aria-modal="true" onClick={showCard ? onClose : undefined} style={{position:"fixed",inset:0,background:C.bgOverlay,display:"flex",alignItems:"center",justifyContent:"center",zIndex:200,padding:24,animation:fading ? "moOutroFade 0.4s ease forwards" : "moFadeIn 0.25s ease"}}>
       <style>{`
 @keyframes moFadeIn{from{opacity:0}to{opacity:1}}
 @keyframes moLogoIn{from{opacity:0;transform:scale(0.7)}to{opacity:1;transform:scale(1)}}
@@ -290,11 +297,17 @@ export function ModalOverlay({ children, onClose, maxWidth=400, loading=false, c
 // ======================== ATTACH MENU (action sheet) ==================
 
 export function AttachMenu({ open, onClose, onCamera, onGallery, onFiles }) {
+  useEffect(() => {
+    if (!open) return;
+    const h = (e) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", h);
+    return () => window.removeEventListener("keydown", h);
+  }, [open, onClose]);
   if (!open) return null;
   return (
     <>
       <div onClick={onClose} style={{ position:"fixed", inset:0, background:C.bgOverlay, zIndex:200, animation:"fadeIn 0.15s ease" }} />
-      <div style={{ position:"fixed", bottom:0, left:0, right:0, zIndex:201, background:C.w, borderRadius:"18px 18px 0 0", padding:"8px 16px max(16px, env(safe-area-inset-bottom))", boxShadow:"0 -4px 24px rgba(0,0,0,0.12)", animation:"sheetUp 0.2s ease" }}>
+      <div role="dialog" aria-modal="true" style={{ position:"fixed", bottom:0, left:0, right:0, zIndex:201, background:C.w, borderRadius:"18px 18px 0 0", padding:"8px 16px max(16px, env(safe-area-inset-bottom))", boxShadow:"0 -4px 24px rgba(0,0,0,0.12)", animation:"sheetUp 0.2s ease" }}>
         <style>{`@keyframes sheetUp{from{transform:translateY(100%)}to{transform:translateY(0)}}@keyframes fadeIn{from{opacity:0}to{opacity:1}}`}</style>
         <div style={{ width:36, height:4, borderRadius:2, background:C.b1, margin:"0 auto 12px" }} />
         <div style={{ fontSize:13, fontWeight:700, color:C.t1, marginBottom:12, textAlign:"center" }}>Adjuntar</div>
@@ -489,8 +502,10 @@ export function NotificationsPanel({ open, onClose, notifications=[], onMarkRead
   useEffect(() => {
     if (!open) return;
     const handleClick = (e) => { if (panelRef.current && !panelRef.current.contains(e.target)) onClose(); };
+    const handleKey = (e) => { if (e.key === "Escape") onClose(); };
     const tid = setTimeout(() => document.addEventListener("click", handleClick), 10);
-    return () => { clearTimeout(tid); document.removeEventListener("click", handleClick); };
+    window.addEventListener("keydown", handleKey);
+    return () => { clearTimeout(tid); document.removeEventListener("click", handleClick); window.removeEventListener("keydown", handleKey); };
   }, [open, onClose]);
 
   const { unread, read } = useMemo(() => {
@@ -502,7 +517,7 @@ export function NotificationsPanel({ open, onClose, notifications=[], onMarkRead
   if (!open) return null;
 
   return (
-    <div ref={panelRef} style={{
+    <div ref={panelRef} role="dialog" aria-modal="true" aria-label="Notificaciones" style={{
       position:"absolute", top:"100%", right:0, marginTop:8, width:360, maxWidth:"calc(100vw - 24px)",
       background:C.w, borderRadius:16, boxShadow:C.shLg, border:`1px solid ${C.b2}`,
       zIndex:150, overflow:"hidden", animation:"fadeIn 0.2s ease"
@@ -571,7 +586,7 @@ export function NotificationsPanel({ open, onClose, notifications=[], onMarkRead
 
 export function NotifBell({ count=0, onClick }) {
   return (
-    <button onClick={onClick} style={{ position:"relative", border:"none", background:"none", cursor:"pointer", padding:6, borderRadius:8, display:"flex", alignItems:"center", justifyContent:"center", WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}
+    <button onClick={onClick} aria-label={count > 0 ? `Notificaciones (${count} sin leer)` : "Notificaciones"} style={{ position:"relative", border:"none", background:"none", cursor:"pointer", padding:6, borderRadius:8, display:"flex", alignItems:"center", justifyContent:"center", WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}
       onMouseEnter={e=>e.currentTarget.style.background=C.priGhost} onMouseLeave={e=>e.currentTarget.style.background="none"}>
       {Ic.bell(C.t2, 22)}
       {count > 0 && (
@@ -586,12 +601,18 @@ export function NotifBell({ count=0, onClick }) {
 // ======================== FILE VIEWER (in-app) =======================
 
 export function FileViewer({ file, onClose, onOcr, ocrLoading, onViewOcr }) {
+  useEffect(() => {
+    if (!file) return;
+    const h = (e) => { if (e.key === "Escape") onClose?.(); };
+    window.addEventListener("keydown", h);
+    return () => window.removeEventListener("keydown", h);
+  }, [file, onClose]);
   if (!file) return null;
   const safeUrl = file.url && /^https:\/\//i.test(file.url) ? file.url : null;
   const isImg = file.type === "image" || file.type === "photo" || safeUrl?.match(/\.(jpg|jpeg|png|webp|gif|svg)$/i);
   const isPdf = safeUrl?.match(/\.pdf$/i);
   return (
-    <div onClick={onClose} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.6)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:250, animation:"fvFadeIn 0.2s ease", padding:16 }}>
+    <div onClick={onClose} role="dialog" aria-modal="true" style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.6)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:250, animation:"fvFadeIn 0.2s ease", padding:16 }}>
       <style>{`@keyframes fvFadeIn{from{opacity:0}to{opacity:1}}`}</style>
       <div onClick={e=>e.stopPropagation()} style={{ background:C.w, borderRadius:14, boxShadow:"0 8px 32px rgba(0,0,0,0.3)", display:"flex", flexDirection:"column", maxWidth:"92vw", maxHeight:"90vh", width: isImg ? "auto" : "90vw", overflow:"hidden" }}>
         {/* Header with close */}
@@ -609,7 +630,7 @@ export function FileViewer({ file, onClose, onOcr, ocrLoading, onViewOcr }) {
           {isImg ? (
             <img src={safeUrl} alt={file.name||""} loading="lazy" style={{ maxWidth:"100%", maxHeight:"75vh", objectFit:"contain", borderRadius:6 }} />
           ) : isPdf ? (
-            <iframe src={safeUrl} title={file.name||"PDF"} sandbox="" style={{ width:"100%", height:"75vh", border:"none", borderRadius:6, background:"#fff" }} />
+            <iframe src={safeUrl} title={file.name||"PDF"} sandbox="allow-scripts allow-same-origin" style={{ width:"100%", height:"75vh", border:"none", borderRadius:6, background:"#fff" }} />
           ) : (
             <div style={{ textAlign:"center", padding:20 }}>
               <div style={{ marginBottom:16 }}>{Ic.doc(C.t3,48)}</div>

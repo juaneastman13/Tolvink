@@ -359,4 +359,5 @@ export async function generateFreightPDF(freight, auditLog = []) {
   // Last resort: open in new tab
   const blobUrl = doc.output('bloburl');
   window.open(blobUrl, '_blank', 'noopener');
+  setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
 }

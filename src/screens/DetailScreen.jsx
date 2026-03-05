@@ -7,6 +7,7 @@ import log from "../logger";
 import { DocsGallery, FreightFileUpload, OcrResultModal, UploadOverlay } from "../uploads";
 import { apiGetAuditLog, apiSendTracking, apiApprovePendingChange, apiRejectPendingChange, apiOcrAnalyze, apiSaveOcrData } from "../api";
 import { useIsDesktop } from "../hooks";
+import { useUIStore } from "../store";
 // PDF report loaded lazily to avoid bundle bloat
 const loadPdfReport = () => import("../utils/pdf-report");
 
@@ -19,6 +20,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
   const [pdfLoading, setPdfLoading] = useState(false);
   const [pcLoading, setPcLoading] = useState(null);
   const auditRef = useRef(null);
+  const show = useUIStore(s => s.show);
 
   const handleOcr = async (file) => {
     setOcrLoading(true);
@@ -28,10 +30,11 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
       setOcrResult(res);
       // Auto-save OCR data to document
       if (file.id && freight?.id) {
-        apiSaveOcrData(freight.id, file.id, res).then(() => { if (onRefresh) onRefresh(freight.id); }).catch(e => log.error("OCR", "save failed:", e));
+        apiSaveOcrData(freight.id, file.id, res).then(() => { if (onRefresh) onRefresh(freight.id); }).catch(e => { log.error('ocr-save', e); show('No se pudieron guardar los datos OCR', 'err'); });
       }
     } catch (e) {
       log.error("OCR", "failed:", e);
+      show("Error al extraer datos del documento", "err");
     } finally {
       setOcrLoading(false);
     }
@@ -53,7 +56,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
   useEffect(() => {
     if (!freight?.id) return;
     let cancelled = false;
-    apiGetAuditLog(freight.id).then(logs => { if (!cancelled) setAuditLog(logs); }).catch(() => {});
+    apiGetAuditLog(freight.id).then(logs => { if (!cancelled) setAuditLog(logs); }).catch(() => { if (!cancelled) setAuditLog([]); });
     return () => { cancelled = true; };
   }, [freight?.id]);
 
@@ -73,7 +76,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
           await apiSendTracking(freight.id, { lat: pos.coords.latitude, lng: pos.coords.longitude, speed: pos.coords.speed || 0, heading: pos.coords.heading || 0 });
           setLocSent(true);
           locTimerRef.current = setTimeout(() => setLocSent(false), 5000);
-        } catch { /* ignore */ }
+        } catch { show("Error al enviar ubicación", "err"); }
         setLocSending(false);
       },
       () => { setLocSending(false); },

@@ -878,7 +878,7 @@ export function MapOverlay({ lat, lng, label, destLat, destLng, destLabel, freig
     let cancelled = false;
     apiGetParticipantPositions(freightId).then(parts => {
       if (!cancelled && Array.isArray(parts)) setParticipants(parts);
-    }).catch(() => {});
+    }).catch(() => { if (!cancelled) setParticipants([]); });
     return () => { cancelled = true; };
   }, [freightId]);
 

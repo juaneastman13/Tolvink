@@ -115,9 +115,9 @@ export function DocsGallery({ documents, onViewFile, freightId, canDelete, onDel
                     </div>
                   </div>
                 </button>
-                {d.ocrData && onViewOcr && <button onClick={()=>onViewOcr(d.ocrData)} title="Ver datos extraídos" style={{ padding:6, borderRadius:6, border:`1px solid #1A6B37`, background:"#E6F4EA", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{Ic.eye("#1A6B37",14)}</button>}
-                {isImg && onOcr && !d.ocrData && <button onClick={()=>onOcr({url:d.url,name:d.name||"Archivo",type:d.type,id:d.id})} disabled={ocrLoading} title="Extraer datos (OCR)" style={{ padding:6, borderRadius:6, border:`1px solid ${C.pri}40`, background:C.priPale, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, opacity:ocrLoading?0.5:1 }}>{Ic.doc(C.pri,14)}</button>}
-                {canDelete && <button onClick={()=>setConfirm(d.id)} disabled={!!deleting} style={{ padding:6, borderRadius:6, border:`1px solid ${C.err}40`, background:C.errPale||"#fef2f2", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{Ic.cross(C.err,14)}</button>}
+                {d.ocrData && onViewOcr && <button onClick={()=>onViewOcr(d.ocrData)} title="Ver datos extraídos" aria-label="Ver datos extraídos" style={{ padding:6, borderRadius:6, border:`1px solid #1A6B37`, background:"#E6F4EA", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{Ic.eye("#1A6B37",14)}</button>}
+                {isImg && onOcr && !d.ocrData && <button onClick={()=>onOcr({url:d.url,name:d.name||"Archivo",type:d.type,id:d.id})} disabled={ocrLoading} title="Extraer datos (OCR)" aria-label="Extraer datos (OCR)" style={{ padding:6, borderRadius:6, border:`1px solid ${C.pri}40`, background:C.priPale, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, opacity:ocrLoading?0.5:1 }}>{Ic.doc(C.pri,14)}</button>}
+                {canDelete && <button onClick={()=>setConfirm(d.id)} disabled={!!deleting} aria-label="Eliminar archivo" style={{ padding:6, borderRadius:6, border:`1px solid ${C.err}40`, background:C.errPale||"#fef2f2", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{Ic.cross(C.err,14)}</button>}
               </div>
               {confirm===d.id && (
                 <div style={{ position:"absolute", right:0, top:"100%", zIndex:20, background:C.w, border:`1px solid ${C.b1}`, borderRadius:10, padding:12, boxShadow:C.shMd, minWidth:180, marginTop:4 }}>
@@ -146,17 +146,22 @@ export function OcrResultModal({ result, onClose }) {
     window.addEventListener("resize", h);
     return () => window.removeEventListener("resize", h);
   }, []);
+  useEffect(() => {
+    const h = (e) => { if (e.key === 'Escape') onClose?.(); };
+    window.addEventListener('keydown', h);
+    return () => window.removeEventListener('keydown', h);
+  }, [onClose]);
   if (!result) return null;
   const datos = result.datos || {};
   const entries = Object.entries(datos).filter(([,v]) => v != null && v !== "");
 
   const copyAll = () => {
     const text = entries.map(([k,v]) => `${k}\t${typeof v === "object" ? JSON.stringify(v) : v}`).join("\n");
-    navigator.clipboard?.writeText(text).then(() => show("Datos copiados", "ok")).catch(() => {});
+    navigator.clipboard?.writeText(text).then(() => show("Datos copiados", "ok")).catch(() => show("No se pudo copiar", "err"));
   };
 
   return (
-    <div onClick={onClose} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", display:"flex", alignItems:mobile?"flex-end":"center", justifyContent:"center", zIndex:260, animation:"fvFadeIn 0.2s ease", padding:mobile?0:20 }}>
+    <div role="dialog" aria-modal="true" onClick={onClose} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", display:"flex", alignItems:mobile?"flex-end":"center", justifyContent:"center", zIndex:260, animation:"fvFadeIn 0.2s ease", padding:mobile?0:20 }}>
       <div onClick={e=>e.stopPropagation()} style={{ background:C.w, borderRadius:mobile?"14px 14px 0 0":14, boxShadow:mobile?"0 -4px 32px rgba(0,0,0,0.3)":"0 8px 40px rgba(0,0,0,0.25)", maxWidth:480, width:"100%", maxHeight:mobile?"80vh":"70vh", display:"flex", flexDirection:"column", overflow:"hidden" }}>
         {/* Drag handle — mobile only */}
         {mobile && <div onClick={onClose} style={{ display:"flex", justifyContent:"center", padding:"10px 0 4px", cursor:"pointer", flexShrink:0 }}>
@@ -258,7 +263,10 @@ export function FreightFileUpload({ freightId, step, onUploaded }) {
   const galRef = useRef(null);
   const docRef = useRef(null);
 
+  const show = useUIStore(s => s.show);
   const addFiles = (fileList) => {
+    const rejected = Array.from(fileList).filter(f => f.size > 15 * 1024 * 1024);
+    if (rejected.length > 0) show(`${rejected.length} archivo(s) exceden 15MB`, 'err');
     const newFiles = Array.from(fileList).filter(f => f.size <= 15 * 1024 * 1024).map(f => ({
       file: f,
       preview: f.type.startsWith("image/") ? URL.createObjectURL(f) : null,
@@ -286,9 +294,9 @@ export function FreightFileUpload({ freightId, step, onUploaded }) {
       setCurrentIdx(pi + 1);
       setFiles(prev => prev.map((f, j) => j === i ? { ...f, uploading: true, error: null } : f));
       try {
-        const url = await uploadPhoto(files[i].file, freightId, step);
-        await apiAddDocument(freightId, { name: files[i].name, url, type: files[i].file.type.startsWith("image/") ? "photo" : "document", step });
-        if (files[i].preview) URL.revokeObjectURL(files[i].preview);
+        const url = await uploadPhoto(filesRef.current[i].file, freightId, step);
+        await apiAddDocument(freightId, { name: filesRef.current[i].name, url, type: filesRef.current[i].file.type.startsWith("image/") ? "photo" : "document", step });
+        if (filesRef.current[i].preview) URL.revokeObjectURL(filesRef.current[i].preview);
         setFiles(prev => prev.map((f, j) => j === i ? { ...f, uploading: false, done: true, preview: null } : f));
       } catch (err) {
         setFiles(prev => prev.map((f, j) => j === i ? { ...f, uploading: false, error: err.message || "Error" } : f));

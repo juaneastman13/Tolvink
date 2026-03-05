@@ -83,6 +83,7 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
     setTypingUser(sseTyping.userName || "Alguien");
     clearTimeout(typingTimer.current);
     typingTimer.current = setTimeout(() => setTypingUser(null), 3000);
+    return () => clearTimeout(typingTimer.current);
   }, [sseTyping, user.id, activeConv?.id]); // Issue #4 fix: added user.id, activeConv?.id
 
   // SSE: read receipt

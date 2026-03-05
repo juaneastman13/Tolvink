@@ -3,6 +3,7 @@ import { C, Ic, MONO } from "../theme";
 import { Btn, ModalOverlay } from "../components";
 import { stCfg } from "../constants";
 import { apiGetDriverQueue, apiReorderDriverQueue } from "../api";
+import { useUIStore } from "../store";
 import log from "../logger";
 
 export default function DriverQueueModal({ driverId, driverName, onClose }) {
@@ -10,6 +11,7 @@ export default function DriverQueueModal({ driverId, driverName, onClose }) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
+  const show = useUIStore(s => s.show);
 
   useEffect(() => {
     if (!driverId) return;
@@ -35,6 +37,7 @@ export default function DriverQueueModal({ driverId, driverName, onClose }) {
       onClose();
     } catch (e) {
       log.error("DriverQueue", "reorder failed:", e);
+      show("Error al guardar el orden", "err");
     } finally {
       setSaving(false);
     }
@@ -65,8 +68,8 @@ export default function DriverQueueModal({ driverId, driverName, onClose }) {
                   {q.destName && <div style={{ fontSize: 10.5, color: C.t3, marginTop: 1 }}>{q.destName}</div>}
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 2, flexShrink: 0 }}>
-                  <button disabled={i === 0} onClick={() => move(i, -1)} style={{ width: 28, height: 24, borderRadius: 6, border: `1px solid ${C.b1}`, background: i === 0 ? C.bg : C.w, cursor: i === 0 ? "default" : "pointer", fontSize: 14, fontFamily: "inherit", color: i === 0 ? C.t3 : C.t1, display: "flex", alignItems: "center", justifyContent: "center" }}>{"\u25B2"}</button>
-                  <button disabled={i === queue.length - 1} onClick={() => move(i, 1)} style={{ width: 28, height: 24, borderRadius: 6, border: `1px solid ${C.b1}`, background: i === queue.length - 1 ? C.bg : C.w, cursor: i === queue.length - 1 ? "default" : "pointer", fontSize: 14, fontFamily: "inherit", color: i === queue.length - 1 ? C.t3 : C.t1, display: "flex", alignItems: "center", justifyContent: "center" }}>{"\u25BC"}</button>
+                  <button aria-label="Subir" disabled={i === 0} onClick={() => move(i, -1)} style={{ width: 28, height: 24, borderRadius: 6, border: `1px solid ${C.b1}`, background: i === 0 ? C.bg : C.w, cursor: i === 0 ? "default" : "pointer", fontSize: 14, fontFamily: "inherit", color: i === 0 ? C.t3 : C.t1, display: "flex", alignItems: "center", justifyContent: "center" }}>{"\u25B2"}</button>
+                  <button aria-label="Bajar" disabled={i === queue.length - 1} onClick={() => move(i, 1)} style={{ width: 28, height: 24, borderRadius: 6, border: `1px solid ${C.b1}`, background: i === queue.length - 1 ? C.bg : C.w, cursor: i === queue.length - 1 ? "default" : "pointer", fontSize: 14, fontFamily: "inherit", color: i === queue.length - 1 ? C.t3 : C.t1, display: "flex", alignItems: "center", justifyContent: "center" }}>{"\u25BC"}</button>
                 </div>
               </div>
             );

@@ -38,10 +38,10 @@ export default function AccessScreen({ user, onBack, embedded, defaultCompanyId,
       const [p, f] = await Promise.all([apiListAccessProducers(plantFilter, producerFilter), apiGetMyFacilities(facilityPcId).catch(()=>({plants:[],branches:[]}))]);
       setProducers(p || []);
       setFacilities(f);
-    } catch {} finally { setLoading(false); }
+    } catch (e) { setMsg({ t: e.message || "Error al cargar accesos", k: "err" }); } finally { setLoading(false); }
   }, [isAdmin, selCompanyId, selCompanyType]);
   useEffect(() => { load(); }, [load]);
-  useEffect(() => { if (isAdmin) apiAdminListCompanies().then(c => setAllCompanies(c||[])).catch(()=>{}); }, [isAdmin]);
+  useEffect(() => { if (isAdmin) apiAdminListCompanies().then(c => setAllCompanies(c||[])).catch(() => setMsg({ t: "Error al cargar empresas", k: "err" })); }, [isAdmin]);
 
   const handleSearchChange = (q) => {
     setSearchQ(q);

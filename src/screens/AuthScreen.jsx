@@ -43,6 +43,8 @@ export default function AuthScreen({ onLogin, onSignup, onPasswordReset, loading
   const [codeSent, setCodeSent] = useState(false);
 
   const bottomRef = useRef(null);
+  const scrollTimer = useRef(null);
+  useEffect(() => () => clearTimeout(scrollTimer.current), []);
 
   const isResetMode = mode.startsWith("reset_");
   const anyLoading = loading || resetLoading;
@@ -63,7 +65,7 @@ export default function AuthScreen({ onLogin, onSignup, onPasswordReset, loading
   };
   const handlePhone = (v) => setPhone(formatPhone(v));
 
-  const scrollBottom = () => setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" }), 100);
+  const scrollBottom = () => { clearTimeout(scrollTimer.current); scrollTimer.current = setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" }), 100); };
 
   // Check if the current editing field meets minimum criteria to advance
   const canAdvance = (field) => {

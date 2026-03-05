@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import {
-  apiLogin, apiRegister, apiLogout, apiSwitchCompany, getToken, getSavedUser, clearAuth, setAuthFailHandler,
+  apiLogin, apiRegister, apiLogout, apiSwitchCompany, getSavedUser, clearAuth, setAuthFailHandler,
   apiListFreights, apiGetFreight, apiCreateFreight, apiAssignFreight, apiRespondFreight,
   apiStartFreight, apiFinishFreight, apiCancelFreight, apiConfirmLoaded, apiConfirmFinished,
   apiAuthorizeFreight, apiUpdateFreight,
@@ -107,13 +107,12 @@ export function useAuth() {
     return () => setAuthFailHandler(null);
   },[]);
 
-  // Initialize user from localStorage
+  // Initialize user from localStorage (cookies handle auth — just need user object)
   useEffect(()=>{
-    const token = getToken();
     const saved = getSavedUser();
-    log.log('AUTH', 'Initializing:', { hasToken: !!token, hasSaved: !!saved });
+    log.log('AUTH', 'Initializing:', { hasSaved: !!saved });
 
-    if(token && saved) {
+    if(saved) {
       try {
         const mappedUser = mapUser(saved);
         setUser(mappedUser);
@@ -635,11 +634,9 @@ export function useSSE(user, { onFreightUpdate, onMessageNew, onNotification, on
       return;
     }
 
-    if (!getToken()) return;
-
     let connecting = false;
     const connect = async () => {
-      if (!getToken() || connecting) return;
+      if (connecting) return;
       connecting = true;
       try {
       // Safety: close previous EventSource before creating new one
