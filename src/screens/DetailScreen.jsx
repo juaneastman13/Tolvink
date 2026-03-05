@@ -552,7 +552,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
         if (!canUpload && !hasDocs) return null;
         return (
           <div style={{ display: _isDesktop && canUpload && hasDocs ? "flex" : "block", gap: 12, marginBottom: 0 }}>
-            {hasDocs && <div style={{ flex: 1, minWidth: 0 }}><DocsGallery documents={freight.documents} onViewFile={setViewFile} freightId={freight.id} canDelete={canUpload} onDeleted={()=>{ if(onRefresh) onRefresh(freight.id); }}/></div>}
+            {hasDocs && <div style={{ flex: 1, minWidth: 0 }}><DocsGallery documents={freight.documents} onViewFile={setViewFile} freightId={freight.id} canDelete={canUpload} onDeleted={()=>{ if(onRefresh) onRefresh(freight.id); }} onOcr={handleOcr} ocrLoading={ocrLoading}/></div>}
             {canUpload && <div style={{ flex: 1, minWidth: 0 }}><FreightFileUpload freightId={freight.id} step={freight.status==="pending_assignment"?"request":freight.status==="in_progress"||freight.status==="loaded"?"load_confirmation":"assignment"} onUploaded={()=>{ if(onRefresh) onRefresh(freight.id); }} /></div>}
           </div>
         );
