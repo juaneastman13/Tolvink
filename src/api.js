@@ -160,7 +160,9 @@ export async function apiRegister(b) {
 }
 
 export async function apiLogout() {
-  try { await api('/auth/logout', { body: {}, method: 'POST' }); } catch {}
+  try { await api('/auth/logout', { body: {}, method: 'POST' }); } catch (e) {
+    console.warn("Logout API failed:", e?.message || e);
+  }
   clearAuth();
 }
 

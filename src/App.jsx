@@ -146,7 +146,7 @@ export default function Tolvink() {
     const p = location.pathname;
     if (p.startsWith("/freight/")) {
       const id = p.replace("/freight/", "");
-      if (id && /^[a-f0-9-]{36}$/i.test(id)) { setSelFreight(id); fh.refresh(id); }
+      if (id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) { setSelFreight(id); fh.refresh(id); }
     }
   }, [location.pathname, fh.refresh]);
 

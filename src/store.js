@@ -123,7 +123,8 @@ export const offlineQueue = {
         req.onsuccess = () => resolve(req.result || []);
         req.onerror = () => reject(req.error);
       });
-    } catch {
+    } catch (e) {
+      console.warn('OfflineQueue.getAll failed:', e?.message || e);
       return [];
     } finally {
       db?.close();

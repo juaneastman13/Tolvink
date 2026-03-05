@@ -74,6 +74,7 @@ export default function PickLocationScreen({ slug: slugProp } = {}) {
 
         const geocodeAndUpdate = (lat, lng) => {
           geocoderRef.current.geocode({ location: { lat, lng } }, (results, status) => {
+            if (cancelled) return;
             const a = status === "OK" && results[0] ? results[0].formatted_address : "";
             setAddress(a);
             setLocation({ lat, lng });
