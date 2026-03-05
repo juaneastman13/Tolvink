@@ -144,16 +144,16 @@ export function OcrResultModal({ result, onClose }) {
   };
 
   return (
-    <div onClick={onClose} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:260, animation:"fvFadeIn 0.2s ease", padding:16 }}>
-      <div onClick={e=>e.stopPropagation()} style={{ background:C.w, borderRadius:14, boxShadow:"0 8px 32px rgba(0,0,0,0.3)", maxWidth:480, width:"100%", maxHeight:"80vh", display:"flex", flexDirection:"column", overflow:"hidden" }}>
+    <div onClick={onClose} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", display:"flex", alignItems:"flex-end", justifyContent:"center", zIndex:260, animation:"fvFadeIn 0.2s ease", padding:0 }}>
+      <div onClick={e=>e.stopPropagation()} style={{ background:C.w, borderRadius:"14px 14px 0 0", boxShadow:"0 -4px 32px rgba(0,0,0,0.3)", maxWidth:480, width:"100%", maxHeight:"85vh", display:"flex", flexDirection:"column", overflow:"hidden" }}>
         {/* Header */}
-        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"14px 18px", borderBottom:`1px solid ${C.b2}`, flexShrink:0 }}>
-          <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-            {Ic.doc(C.pri,18)}
-            <span style={{ fontSize:14, fontWeight:700, color:C.t1 }}>Datos extraídos</span>
-            <span style={{ fontSize:10, color:C.t3, fontWeight:500, background:C.bg, padding:"2px 8px", borderRadius:10 }}>{result.tipoDocumento} · {Math.round((result.confianza||0)*100)}%</span>
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"12px 16px", borderBottom:`1px solid ${C.b2}`, flexShrink:0, gap:8 }}>
+          <div style={{ display:"flex", alignItems:"center", gap:6, flex:1, minWidth:0 }}>
+            {Ic.doc(C.pri,16)}
+            <span style={{ fontSize:13, fontWeight:700, color:C.t1 }}>Datos extraídos</span>
+            <span style={{ fontSize:9, color:C.t3, fontWeight:500, background:C.bg, padding:"2px 6px", borderRadius:8, whiteSpace:"nowrap" }}>{result.tipoDocumento} · {Math.round((result.confianza||0)*100)}%</span>
           </div>
-          <button onClick={onClose} style={{ display:"flex", alignItems:"center", gap:4, padding:"5px 12px", borderRadius:8, background:C.err, border:"none", cursor:"pointer", color:"#fff", fontSize:11, fontWeight:700, fontFamily:"inherit" }}>{Ic.cross("#fff",14)} Cerrar</button>
+          <button onClick={onClose} style={{ display:"flex", alignItems:"center", justifyContent:"center", width:32, height:32, borderRadius:8, background:C.err, border:"none", cursor:"pointer", flexShrink:0 }}>{Ic.cross("#fff",16)}</button>
         </div>
         {/* Content */}
         <div style={{ flex:1, overflow:"auto", padding:"14px 18px" }}>
