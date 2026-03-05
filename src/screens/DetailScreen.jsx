@@ -4,8 +4,8 @@ import { stCfg, getActions, tripStCfg, POLL_INTERVALS, formatFreightDate } from 
 import { Bd, Btn, Loader, Sec, FileViewer } from "../components";
 import { FreightMap, SafeZone } from "../maps";
 import log from "../logger";
-import { DocsGallery, FreightFileUpload } from "../uploads";
-import { apiGetAuditLog, apiSendTracking, apiApprovePendingChange, apiRejectPendingChange } from "../api";
+import { DocsGallery, FreightFileUpload, OcrResultModal } from "../uploads";
+import { apiGetAuditLog, apiSendTracking, apiApprovePendingChange, apiRejectPendingChange, apiOcrAnalyze } from "../api";
 import { useIsDesktop } from "../hooks";
 // PDF report loaded lazily to avoid bundle bloat
 const loadPdfReport = () => import("../utils/pdf-report");
@@ -14,9 +14,24 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
   const [auditLog, setAuditLog] = useState(null);
   const [showAudit, setShowAudit] = useState(false);
   const [viewFile, setViewFile] = useState(null);
+  const [ocrLoading, setOcrLoading] = useState(false);
+  const [ocrResult, setOcrResult] = useState(null);
   const [pdfLoading, setPdfLoading] = useState(false);
   const [pcLoading, setPcLoading] = useState(null);
   const auditRef = useRef(null);
+
+  const handleOcr = async (file) => {
+    setOcrLoading(true);
+    try {
+      const res = await apiOcrAnalyze(file.url);
+      if (res.error) { log.error("OCR", res.error); return; }
+      setOcrResult(res);
+    } catch (e) {
+      log.error("OCR", "failed:", e);
+    } finally {
+      setOcrLoading(false);
+    }
+  };
 
   // Pre-load PDF module so download works synchronously on click
   useEffect(() => { loadPdfReport(); }, []);
@@ -568,7 +583,8 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
       {filteredActions.includes("cancel") && <div style={{ marginBottom:8 }}><Btn full v="err" icon={Ic.cross(C.err,16)} disabled={actionLoading} onClick={()=>onAction(freight.id,"cancel")}>Cancelar flete</Btn></div>}
       {filteredActions.includes("reject") && <div style={{ marginBottom:8 }}><Btn full v="err" icon={Ic.ban(C.w,16)} disabled={actionLoading} onClick={()=>onAction(freight.id,"reject")}>Rechazar asignación</Btn></div>}
       </div>
-      <FileViewer file={viewFile} onClose={()=>setViewFile(null)}/>
+      <FileViewer file={viewFile} onClose={()=>setViewFile(null)} onOcr={handleOcr} ocrLoading={ocrLoading}/>
+      <OcrResultModal result={ocrResult} onClose={()=>setOcrResult(null)}/>
     </div>
   );
 }

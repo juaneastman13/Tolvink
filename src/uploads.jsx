@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { uploadPhoto, apiAddDocument, apiDeleteDocument, apiOcrAnalyze, thumb } from "./api";
+import { uploadPhoto, apiAddDocument, apiDeleteDocument, thumb } from "./api";
 import { C, Ic } from "./theme";
 import { AttachMenu, Btn } from "./components";
 import { useUIStore } from "./store";
@@ -65,8 +65,6 @@ export function PhotoUpload({ freightId, step, label, onUploaded }) {
 export function DocsGallery({ documents, onViewFile, freightId, canDelete, onDeleted }) {
   const [deleting, setDeleting] = useState(null);
   const [confirm, setConfirm] = useState(null);
-  const [ocrLoading, setOcrLoading] = useState(null);
-  const [ocrResult, setOcrResult] = useState(null);
   const show = useUIStore(s => s.show);
   if (!documents || documents.length === 0) return null;
   const stepLabels = { request: "Solicitud", assignment: "Asignación", load_confirmation: "Carga", delivery_confirmation: "Entrega", cancellation: "Cancelación" };
@@ -84,20 +82,6 @@ export function DocsGallery({ documents, onViewFile, freightId, canDelete, onDel
       setConfirm(null);
     } finally {
       setDeleting(null);
-    }
-  };
-
-  const handleOcr = async (doc) => {
-    setOcrLoading(doc.id);
-    try {
-      const res = await apiOcrAnalyze(doc.url);
-      if (res.error) { show(res.error, "err"); return; }
-      setOcrResult(res);
-    } catch (e) {
-      log.error("Uploads", "OCR failed:", e);
-      show(e?.message || "Error al analizar documento", "err");
-    } finally {
-      setOcrLoading(null);
     }
   };
 
@@ -126,7 +110,6 @@ export function DocsGallery({ documents, onViewFile, freightId, canDelete, onDel
                   </div>
                   {Ic.eye(C.pri, 14)}
                 </button>
-                {isImg && <button onClick={()=>handleOcr(d)} disabled={!!ocrLoading} title="Extraer datos (OCR)" style={{ padding:6, borderRadius:6, border:`1px solid ${C.pri}40`, background:C.priPale, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, opacity:ocrLoading===d.id?0.5:1 }}>{ocrLoading===d.id ? Ic.spin?.(C.pri,14) || "..." : Ic.doc(C.pri,14)}</button>}
                 {canDelete && <button onClick={()=>setConfirm(d.id)} disabled={!!deleting} style={{ padding:6, borderRadius:6, border:`1px solid ${C.err}40`, background:C.errPale||"#fef2f2", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{Ic.cross(C.err,14)}</button>}
               </div>
               {confirm===d.id && (
@@ -142,15 +125,15 @@ export function DocsGallery({ documents, onViewFile, freightId, canDelete, onDel
           );
         })}
       </div>
-      {ocrResult && <OcrResultPanel result={ocrResult} onClose={()=>setOcrResult(null)} />}
     </div>
   );
 }
 
-// ======================== OCR RESULT PANEL ==============================
+// ======================== OCR RESULT MODAL (floating) ====================
 
-function OcrResultPanel({ result, onClose }) {
+export function OcrResultModal({ result, onClose }) {
   const show = useUIStore(s => s.show);
+  if (!result) return null;
   const datos = result.datos || {};
   const entries = Object.entries(datos).filter(([,v]) => v != null && v !== "");
 
@@ -160,26 +143,35 @@ function OcrResultPanel({ result, onClose }) {
   };
 
   return (
-    <div style={{ marginTop:10, background:C.bg, border:`1px solid ${C.pri}40`, borderRadius:10, padding:14 }}>
-      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
-        <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-          {Ic.doc(C.pri,16)}
-          <span style={{ fontSize:12, fontWeight:700, color:C.t1 }}>Datos extraídos</span>
-          <span style={{ fontSize:9, color:C.t3, fontWeight:500 }}>{result.tipoDocumento} · {Math.round((result.confianza||0)*100)}% conf.</span>
-        </div>
-        <div style={{ display:"flex", gap:6 }}>
-          <button onClick={copyAll} style={{ padding:"4px 10px", borderRadius:6, border:`1px solid ${C.pri}30`, background:C.priPale, cursor:"pointer", fontSize:10, fontWeight:600, color:C.pri, fontFamily:"inherit" }}>Copiar</button>
-          <button onClick={onClose} style={{ background:"none", border:"none", cursor:"pointer", padding:2 }}>{Ic.cross(C.t3,14)}</button>
-        </div>
-      </div>
-      <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
-        {entries.map(([key, val]) => (
-          <div key={key} style={{ display:"flex", gap:8, fontSize:11, lineHeight:1.4 }}>
-            <span style={{ fontWeight:600, color:C.t2, minWidth:80, flexShrink:0 }}>{key}</span>
-            <span style={{ color:C.t1, wordBreak:"break-word" }}>{typeof val === "object" ? JSON.stringify(val) : String(val)}</span>
+    <div onClick={onClose} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:260, animation:"fvFadeIn 0.2s ease", padding:16 }}>
+      <div onClick={e=>e.stopPropagation()} style={{ background:C.w, borderRadius:14, boxShadow:"0 8px 32px rgba(0,0,0,0.3)", maxWidth:480, width:"100%", maxHeight:"80vh", display:"flex", flexDirection:"column", overflow:"hidden" }}>
+        {/* Header */}
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"14px 18px", borderBottom:`1px solid ${C.b2}`, flexShrink:0 }}>
+          <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+            {Ic.doc(C.pri,18)}
+            <span style={{ fontSize:14, fontWeight:700, color:C.t1 }}>Datos extraídos</span>
+            <span style={{ fontSize:10, color:C.t3, fontWeight:500, background:C.bg, padding:"2px 8px", borderRadius:10 }}>{result.tipoDocumento} · {Math.round((result.confianza||0)*100)}%</span>
           </div>
-        ))}
-        {entries.length === 0 && <div style={{ fontSize:11, color:C.t3, textAlign:"center", padding:10 }}>No se pudieron extraer datos</div>}
+          <button onClick={onClose} style={{ display:"flex", alignItems:"center", gap:4, padding:"5px 12px", borderRadius:8, background:C.err, border:"none", cursor:"pointer", color:"#fff", fontSize:11, fontWeight:700, fontFamily:"inherit" }}>{Ic.cross("#fff",14)} Cerrar</button>
+        </div>
+        {/* Content */}
+        <div style={{ flex:1, overflow:"auto", padding:"14px 18px" }}>
+          <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+            {entries.map(([key, val]) => (
+              <div key={key} style={{ display:"flex", gap:10, fontSize:12, lineHeight:1.5, padding:"6px 0", borderBottom:`1px solid ${C.b2}` }}>
+                <span style={{ fontWeight:700, color:C.t2, minWidth:100, flexShrink:0, textTransform:"capitalize" }}>{key.replace(/([A-Z])/g, ' $1').trim()}</span>
+                <span style={{ color:C.t1, wordBreak:"break-word" }}>{typeof val === "object" ? JSON.stringify(val, null, 2) : String(val)}</span>
+              </div>
+            ))}
+            {entries.length === 0 && <div style={{ fontSize:12, color:C.t3, textAlign:"center", padding:20 }}>No se pudieron extraer datos del documento</div>}
+          </div>
+        </div>
+        {/* Footer */}
+        {entries.length > 0 && (
+          <div style={{ padding:"12px 18px", borderTop:`1px solid ${C.b2}`, flexShrink:0, display:"flex", justifyContent:"flex-end" }}>
+            <button onClick={copyAll} style={{ padding:"8px 20px", borderRadius:8, border:"none", background:C.pri, cursor:"pointer", fontSize:12, fontWeight:700, color:"#fff", fontFamily:"inherit", display:"flex", alignItems:"center", gap:6 }}>{Ic.doc("#fff",14)} Copiar todo</button>
+          </div>
+        )}
       </div>
     </div>
   );
