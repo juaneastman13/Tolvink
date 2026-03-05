@@ -280,7 +280,7 @@ export function mapUser(u) {
 // ======================== FREIGHTS HOOK (Real API) ====================
 const FREIGHTS_PAGE_SIZE = 25;
 
-export function useFreights(user, isAuthInitialized, companyOverride) {
+export function useFreights(user, isAuthInitialized) {
   const [freights, setFreights] = useState([]);
   const freightsRef = useRef([]); // Mirror of freights state for synchronous reads in optimistic updates
   const [loading, setLoading] = useState(false);
@@ -291,8 +291,7 @@ export function useFreights(user, isAuthInitialized, companyOverride) {
   const pageRef = useRef(1);
 
   // Multi-company: pass activeCompanyId to server-side filter
-  // companyOverride=null means "view all" (no filter), undefined means use activeCompanyId
-  const companyFilter = companyOverride === null ? undefined : (companyOverride || user?.activeCompanyId || user?.companyId || undefined);
+  const companyFilter = user?.activeCompanyId || user?.companyId || undefined;
 
   const fetchAll = useCallback(async ()=>{
     if(!user || !isAuthInitialized) return;
