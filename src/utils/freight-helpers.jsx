@@ -8,13 +8,17 @@ export function resolveUserTypeForFreight(freight, user) {
   const types = user.userTypes || [user.userType];
   if (types.length <= 1) return user.userType;
 
-  // Only consider types where the user's active company matches the freight role:
-  // producer → originCompanyId, plant → destCompanyId, transporter → assignment transportCompanyId
-  const cId = user.activeCompanyId || user.companyId;
+  // Build set of ALL company IDs the user belongs to (handles "Todas las empresas" mode)
+  const allIds = new Set();
+  allIds.add(user.activeCompanyId || user.companyId);
+  if (user.companyByType) Object.values(user.companyByType).forEach(id => { if (id) allIds.add(id); });
+  if (user.companies) user.companies.forEach(c => { if (c.companyId) allIds.add(c.companyId); });
+
+  // Consider types where ANY of the user's companies matches the freight role
   const eligible = types.filter(t => {
-    if (t === "producer") return freight.originCompanyId === cId;
-    if (t === "plant") return freight.destCompanyId === cId;
-    if (t === "transporter") return freight.transporterId === cId || (freight.activeAssignments || []).some(a => a.transportCompanyId === cId);
+    if (t === "producer") return allIds.has(freight.originCompanyId);
+    if (t === "plant") return allIds.has(freight.destCompanyId);
+    if (t === "transporter") return allIds.has(freight.transporterId) || (freight.activeAssignments || []).some(a => allIds.has(a.transportCompanyId));
     return false;
   });
   if (eligible.length === 0) return user.userType;
