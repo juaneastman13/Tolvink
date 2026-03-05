@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { C, Ic, FONT, MONO, track } from "../theme";
-import { stCfg, getActions, tripStCfg, POLL_INTERVALS } from "../constants";
+import { stCfg, getActions, tripStCfg, POLL_INTERVALS, formatFreightDate } from "../constants";
 import { Bd, Btn, Loader, Sec, FileViewer } from "../components";
 import { FreightMap, SafeZone } from "../maps";
 import log from "../logger";
@@ -166,6 +166,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
               <span style={{ fontSize:11, color:C.t3, fontWeight:600, fontFamily:MONO }}>{freight.code}</span>
               {user.userType && <span style={{ fontSize:9, fontWeight:700, color:({producer:C.acc,plant:C.pri,transporter:C.info||C.sec})[user.userType]||C.t3, background:`${({producer:C.acc,plant:C.pri,transporter:C.info||C.sec})[user.userType]||C.t3}15`, padding:"1px 6px", borderRadius:4, textTransform:"uppercase", letterSpacing:0.3 }}>{({producer:"Productor",plant:"Planta",transporter:"Transportista"})[user.userType]||user.userType}</span>}
             </div>
+            {freight.loadDate && <div style={{ fontSize:11, color:C.t3, fontWeight:500, marginTop:2 }}>{formatFreightDate(freight.loadDate)}</div>}
             <div style={{ fontSize:22, fontWeight:800, marginTop:2, letterSpacing:-0.3 }}>{freight.grain==="Otros"?freight.productTypeOther||"Otros":freight.grain} · {freight.tons} {freight.unit||"tn"}</div>
           </div>
           <Bd color={st.color} bg={st.bg}>{st.label}</Bd>
@@ -451,7 +452,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
             [Ic.user(C.pri,15),"Empresa",freight.originCompanyName||freight.originName],
             [Ic.grain(C.ok,15),"Campo",[freight.fieldName,freight.originName].filter(Boolean).join(" / ")||"—"],
             [Ic.plant(C.t2,15),"Destino",freight.destName],
-            [Ic.cal(C.t2,15),"Fecha carga",freight.loadDate],
+            [Ic.cal(C.t2,15),"Fecha carga",formatFreightDate(freight.loadDate)],
             [Ic.clk(C.t2,15),"Hora carga",freight.loadTime],
             [Ic.user(C.t2,15),"Solicitado por",freight.requestedByName],
             [Ic.grain(C.t2,15),"Producto",`${freight.grain==="Otros"?freight.productTypeOther||"Otros":freight.grain} · ${freight.tons} ${freight.unit||"tn"}`],

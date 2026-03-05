@@ -63,6 +63,17 @@ export const POLL_INTERVALS = {
   DETAIL_REFRESH: 15000 // 15s - freight detail auto-refresh (SSE pushes real-time)
 };
 
+// Date format: "25/marzo", "03/febrero"
+const MESES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+export function formatFreightDate(dateStr) {
+  if (!dateStr) return "";
+  const parts = dateStr.split("-");
+  if (parts.length < 3) return dateStr;
+  const day = parts[2].padStart(2, "0");
+  const monthIdx = parseInt(parts[1], 10) - 1;
+  return `${day}/${MESES[monthIdx] || parts[1]}`;
+}
+
 // Dev-only logger (no-ops in production)
 const isDev = import.meta.env.DEV;
 export const logger = {
