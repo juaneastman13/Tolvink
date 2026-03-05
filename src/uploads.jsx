@@ -180,7 +180,7 @@ export function OcrResultModal({ result, onClose }) {
 
 // ======================== UPLOAD OVERLAY (Tolvink dot animation) =======
 
-function UploadOverlay({ uploading, done, total, current }) {
+export function UploadOverlay({ uploading, done, total, current, label }) {
   const [stage, setStage] = useState("idle"); // idle | uploading | success | fadeout
   const [opacity, setOpacity] = useState(0);
 
@@ -217,8 +217,8 @@ function UploadOverlay({ uploading, done, total, current }) {
             <span style={{ fontSize: 28, fontWeight: 800, color: C.pri, letterSpacing: -1.5, lineHeight: 1 }}>tolvink</span>
             <span style={{ width: 10, height: 10, borderRadius: 5, background: C.acc, marginLeft: 3, marginTop: 2, display: "inline-block", animation: "uplPulse 1.2s ease-in-out infinite" }} />
           </div>
-          {total > 1 && <div style={{ fontSize: 11, color: C.t2, fontWeight: 600 }}>Subiendo {current}/{total}...</div>}
-          {total <= 1 && <div style={{ fontSize: 11, color: C.t2, fontWeight: 600 }}>Subiendo...</div>}
+          {total > 1 && <div style={{ fontSize: 11, color: C.t2, fontWeight: 600 }}>{label || "Subiendo"} {current}/{total}...</div>}
+          {total <= 1 && <div style={{ fontSize: 11, color: C.t2, fontWeight: 600 }}>{label || "Subiendo"}...</div>}
         </>
       )}
       {(stage === "success" || stage === "fadeout") && (

@@ -4,7 +4,7 @@ import { stCfg, getActions, tripStCfg, POLL_INTERVALS, formatFreightDate } from 
 import { Bd, Btn, Loader, Sec, FileViewer } from "../components";
 import { FreightMap, SafeZone } from "../maps";
 import log from "../logger";
-import { DocsGallery, FreightFileUpload, OcrResultModal } from "../uploads";
+import { DocsGallery, FreightFileUpload, OcrResultModal, UploadOverlay } from "../uploads";
 import { apiGetAuditLog, apiSendTracking, apiApprovePendingChange, apiRejectPendingChange, apiOcrAnalyze } from "../api";
 import { useIsDesktop } from "../hooks";
 // PDF report loaded lazily to avoid bundle bloat
@@ -584,6 +584,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
       {filteredActions.includes("reject") && <div style={{ marginBottom:8 }}><Btn full v="err" icon={Ic.ban(C.w,16)} disabled={actionLoading} onClick={()=>onAction(freight.id,"reject")}>Rechazar asignación</Btn></div>}
       </div>
       <FileViewer file={viewFile} onClose={()=>setViewFile(null)} onOcr={handleOcr} ocrLoading={ocrLoading}/>
+      {ocrLoading && <div style={{ position:"fixed", inset:0, zIndex:250 }}><UploadOverlay uploading={ocrLoading} done={false} total={1} current={1} label="Extrayendo datos"/></div>}
       <OcrResultModal result={ocrResult} onClose={()=>setOcrResult(null)}/>
     </div>
   );
