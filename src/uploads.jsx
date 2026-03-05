@@ -139,7 +139,7 @@ export function OcrResultModal({ result, onClose }) {
   const entries = Object.entries(datos).filter(([,v]) => v != null && v !== "");
 
   const copyAll = () => {
-    const text = entries.map(([k,v]) => `${k}: ${typeof v === "object" ? JSON.stringify(v) : v}`).join("\n");
+    const text = entries.map(([k,v]) => `${k}\t${typeof v === "object" ? JSON.stringify(v) : v}`).join("\n");
     navigator.clipboard?.writeText(text).then(() => show("Datos copiados", "ok")).catch(() => {});
   };
 
