@@ -3,7 +3,7 @@
 // Cache-first shell, stale-while-revalidate API, navigation preload
 // =====================================================================
 
-const CACHE_NAME = 'tolvink-v5.1';
+const CACHE_NAME = 'tolvink-v5.2';
 const API_CACHE = 'tolvink-api-v2';
 const FONT_CACHE = 'tolvink-fonts-v1';
 const IMG_CACHE = 'tolvink-img-v1';
@@ -160,18 +160,43 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // --- Other static assets: cache-first ---
+  // --- Other static assets: network-first for hashed assets, cache-first for rest ---
+  const isHashedAsset = url.pathname.startsWith('/assets/') && /[-.][\da-f]{6,}\./.test(url.pathname);
   event.respondWith(
-    caches.match(request).then((cached) => {
-      if (cached) return cached;
-      return fetch(request).then((r) => {
-        if (url.origin === location.origin && r.ok) {
-          const clone = r.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+    (async () => {
+      if (isHashedAsset) {
+        // Network-first for Vite hashed chunks — avoids stale chunk MIME errors
+        try {
+          const r = await fetch(request);
+          // If Vercel returns HTML for a missing .js chunk, don't cache — trigger reload
+          const ct = r.headers.get('content-type') || '';
+          if (url.pathname.endsWith('.js') && ct.includes('text/html')) {
+            // Stale chunk — purge cache and let client reload
+            const c = await caches.open(CACHE_NAME);
+            await c.delete(request);
+            return r;
+          }
+          if (r.ok && url.origin === location.origin) {
+            const c = await caches.open(CACHE_NAME);
+            c.put(request, r.clone());
+          }
+          return r;
+        } catch {
+          const cached = await caches.match(request);
+          if (cached) return cached;
+          throw new Error('offline');
         }
-        return r;
-      });
-    }).catch(() => {})
+      }
+      // Non-hashed static: cache-first
+      const cached = await caches.match(request);
+      if (cached) return cached;
+      const r = await fetch(request);
+      if (url.origin === location.origin && r.ok) {
+        const c = await caches.open(CACHE_NAME);
+        c.put(request, r.clone());
+      }
+      return r;
+    })().catch(() => {})
   );
 });
 
