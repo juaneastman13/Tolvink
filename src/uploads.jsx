@@ -134,6 +134,12 @@ export function DocsGallery({ documents, onViewFile, freightId, canDelete, onDel
 
 export function OcrResultModal({ result, onClose }) {
   const show = useUIStore(s => s.show);
+  const [mobile, setMobile] = useState(() => window.innerWidth < 600);
+  useEffect(() => {
+    const h = () => setMobile(window.innerWidth < 600);
+    window.addEventListener("resize", h);
+    return () => window.removeEventListener("resize", h);
+  }, []);
   if (!result) return null;
   const datos = result.datos || {};
   const entries = Object.entries(datos).filter(([,v]) => v != null && v !== "");
@@ -144,14 +150,14 @@ export function OcrResultModal({ result, onClose }) {
   };
 
   return (
-    <div onClick={onClose} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", display:"flex", alignItems:"flex-end", justifyContent:"center", zIndex:260, animation:"fvFadeIn 0.2s ease", padding:0 }}>
-      <div onClick={e=>e.stopPropagation()} style={{ background:C.w, borderRadius:"14px 14px 0 0", boxShadow:"0 -4px 32px rgba(0,0,0,0.3)", maxWidth:480, width:"100%", maxHeight:"80vh", display:"flex", flexDirection:"column", overflow:"hidden" }}>
-        {/* Drag handle */}
-        <div onClick={onClose} style={{ display:"flex", justifyContent:"center", padding:"10px 0 4px", cursor:"pointer", flexShrink:0 }}>
+    <div onClick={onClose} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", display:"flex", alignItems:mobile?"flex-end":"center", justifyContent:"center", zIndex:260, animation:"fvFadeIn 0.2s ease", padding:mobile?0:20 }}>
+      <div onClick={e=>e.stopPropagation()} style={{ background:C.w, borderRadius:mobile?"14px 14px 0 0":14, boxShadow:mobile?"0 -4px 32px rgba(0,0,0,0.3)":"0 8px 40px rgba(0,0,0,0.25)", maxWidth:480, width:"100%", maxHeight:mobile?"80vh":"70vh", display:"flex", flexDirection:"column", overflow:"hidden" }}>
+        {/* Drag handle — mobile only */}
+        {mobile && <div onClick={onClose} style={{ display:"flex", justifyContent:"center", padding:"10px 0 4px", cursor:"pointer", flexShrink:0 }}>
           <div style={{ width:36, height:4, borderRadius:2, background:C.b1 }}/>
-        </div>
+        </div>}
         {/* Header */}
-        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"4px 16px 10px", borderBottom:`1px solid ${C.b2}`, flexShrink:0, gap:8 }}>
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:mobile?"4px 16px 10px":"12px 16px", borderBottom:`1px solid ${C.b2}`, flexShrink:0, gap:8 }}>
           <div style={{ display:"flex", alignItems:"center", gap:6, flex:1, minWidth:0 }}>
             {Ic.doc(C.pri,16)}
             <span style={{ fontSize:13, fontWeight:700, color:C.t1 }}>Datos extraídos</span>
