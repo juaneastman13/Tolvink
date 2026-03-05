@@ -557,9 +557,9 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
         const hasDocs = freight.documents && freight.documents.length > 0;
         if (!canUpload && !hasDocs) return null;
         return (
-          <div style={{ display:"flex", flexDirection: _isDesktop && canUpload && hasDocs ? "row" : "column", gap: 12, marginBottom: 12, alignItems:_isDesktop && canUpload && hasDocs?"stretch":undefined }}>
-            {hasDocs && <div style={{ flex: 1, minWidth: 0, display:"flex" }}><DocsGallery documents={freight.documents} onViewFile={setViewFile} freightId={freight.id} canDelete={canUpload} onDeleted={()=>{ if(onRefresh) onRefresh(freight.id); }} onOcr={handleOcr} ocrLoading={ocrLoading} onViewOcr={handleViewOcr}/></div>}
-            {canUpload && <div style={{ flex: 1, minWidth: 0 }}><FreightFileUpload freightId={freight.id} step={freight.status==="pending_assignment"?"request":freight.status==="in_progress"||freight.status==="loaded"?"load_confirmation":"assignment"} onUploaded={()=>{ if(onRefresh) onRefresh(freight.id); }} /></div>}
+          <div style={{ display:"flex", flexDirection:_isDesktop && canUpload && hasDocs?"row":"column", gap:12, marginBottom:12, alignItems:_isDesktop && canUpload && hasDocs?"stretch":undefined }}>
+            {hasDocs && <div style={{ flex:1, minWidth:0, display:"flex" }}><DocsGallery documents={freight.documents} onViewFile={setViewFile} freightId={freight.id} canDelete={canUpload} onDeleted={()=>{ if(onRefresh) onRefresh(freight.id); }} onOcr={handleOcr} ocrLoading={ocrLoading} onViewOcr={handleViewOcr}/></div>}
+            {canUpload && <div style={{ flex:1, minWidth:0, display:"flex" }}><FreightFileUpload freightId={freight.id} step={freight.status==="pending_assignment"?"request":freight.status==="in_progress"||freight.status==="loaded"?"load_confirmation":"assignment"} onUploaded={()=>{ if(onRefresh) onRefresh(freight.id); }} /></div>}
           </div>
         );
       })()}

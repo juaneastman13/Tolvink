@@ -304,7 +304,7 @@ export function FreightFileUpload({ freightId, step, onUploaded }) {
   const pendingCount = pending.length;
 
   return (
-    <div style={{ position: "relative", background: C.w, border: `1px solid ${C.b1}`, borderRadius: 12, padding: 14, marginBottom: 12, boxShadow: C.sh, overflow: "hidden" }}>
+    <div style={{ position: "relative", background: C.w, border: `1px solid ${C.b1}`, borderRadius: 12, padding: 14, boxShadow: C.sh, overflow: "hidden", width:"100%", boxSizing:"border-box" }}>
       <UploadOverlay uploading={uploadingAll} done={uploadDone} total={pendingCount || 1} current={currentIdx} />
 
       <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
