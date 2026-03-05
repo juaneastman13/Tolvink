@@ -344,6 +344,7 @@ export async function apiDeleteDocument(freightId, docId) { return api(`/freight
 
 // OCR
 export async function apiOcrAnalyze(url, docType) { return api('/ocr/analyze', { body: { url, ...(docType ? { docType } : {}) } }); }
+export async function apiSaveOcrData(freightId, docId, ocrData) { return api(`/freights/${freightId}/documents/${docId}/ocr`, { method:'PATCH', body: { ocrData } }); }
 
 // ======================== ADMIN ======================================
 // Stats

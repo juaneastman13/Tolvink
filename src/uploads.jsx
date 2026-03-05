@@ -62,7 +62,7 @@ export function PhotoUpload({ freightId, step, label, onUploaded }) {
 
 // ======================== DOCUMENTS GALLERY ============================
 
-export function DocsGallery({ documents, onViewFile, freightId, canDelete, onDeleted, onOcr, ocrLoading }) {
+export function DocsGallery({ documents, onViewFile, freightId, canDelete, onDeleted, onOcr, ocrLoading, onViewOcr }) {
   const [deleting, setDeleting] = useState(null);
   const [confirm, setConfirm] = useState(null);
   const show = useUIStore(s => s.show);
@@ -94,7 +94,7 @@ export function DocsGallery({ documents, onViewFile, freightId, canDelete, onDel
           return (
             <div key={d.id} style={{ position:"relative" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 8, background: C.bg, border: `1px solid ${C.b2}`, borderRadius: 8, width:"100%" }}>
-                <button onClick={()=>onViewFile?onViewFile({url:d.url,name:d.name||"Archivo",type:d.type}):null} style={{ display: "flex", alignItems: "center", gap: 10, flex:1, minWidth:0, background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", textAlign:"left", padding:0 }}>
+                <button onClick={()=>onViewFile?onViewFile({url:d.url,name:d.name||"Archivo",type:d.type,id:d.id,ocrData:d.ocrData}):null} style={{ display: "flex", alignItems: "center", gap: 10, flex:1, minWidth:0, background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", textAlign:"left", padding:0 }}>
                   {isImg ? (
                     <img src={thumb(d.url)} alt={d.name} loading="lazy" style={{ width: 48, height: 48, borderRadius: 6, objectFit: "cover", flexShrink: 0 }} onError={e => { e.target.style.display = "none"; }} />
                   ) : (
@@ -110,7 +110,8 @@ export function DocsGallery({ documents, onViewFile, freightId, canDelete, onDel
                   </div>
                   {Ic.eye(C.pri, 14)}
                 </button>
-                {isImg && onOcr && <button onClick={()=>onOcr({url:d.url,name:d.name||"Archivo",type:d.type})} disabled={ocrLoading} title="Extraer datos (OCR)" style={{ padding:6, borderRadius:6, border:`1px solid ${C.pri}40`, background:C.priPale, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, opacity:ocrLoading?0.5:1 }}>{Ic.doc(C.pri,14)}</button>}
+                {d.ocrData && onViewOcr && <button onClick={()=>onViewOcr(d.ocrData)} title="Ver datos extraídos" style={{ padding:6, borderRadius:6, border:`1px solid #1A6B37`, background:"#E6F4EA", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{Ic.eye("#1A6B37",14)}</button>}
+                {isImg && onOcr && !d.ocrData && <button onClick={()=>onOcr({url:d.url,name:d.name||"Archivo",type:d.type,id:d.id})} disabled={ocrLoading} title="Extraer datos (OCR)" style={{ padding:6, borderRadius:6, border:`1px solid ${C.pri}40`, background:C.priPale, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, opacity:ocrLoading?0.5:1 }}>{Ic.doc(C.pri,14)}</button>}
                 {canDelete && <button onClick={()=>setConfirm(d.id)} disabled={!!deleting} style={{ padding:6, borderRadius:6, border:`1px solid ${C.err}40`, background:C.errPale||"#fef2f2", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{Ic.cross(C.err,14)}</button>}
               </div>
               {confirm===d.id && (

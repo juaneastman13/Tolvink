@@ -5,7 +5,7 @@ import { Bd, Btn, Loader, Sec, FileViewer } from "../components";
 import { FreightMap, SafeZone } from "../maps";
 import log from "../logger";
 import { DocsGallery, FreightFileUpload, OcrResultModal, UploadOverlay } from "../uploads";
-import { apiGetAuditLog, apiSendTracking, apiApprovePendingChange, apiRejectPendingChange, apiOcrAnalyze } from "../api";
+import { apiGetAuditLog, apiSendTracking, apiApprovePendingChange, apiRejectPendingChange, apiOcrAnalyze, apiSaveOcrData } from "../api";
 import { useIsDesktop } from "../hooks";
 // PDF report loaded lazily to avoid bundle bloat
 const loadPdfReport = () => import("../utils/pdf-report");
@@ -26,12 +26,18 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
       const res = await apiOcrAnalyze(file.url);
       if (res.error) { log.error("OCR", res.error); return; }
       setOcrResult(res);
+      // Auto-save OCR data to document
+      if (file.id && freight?.id) {
+        apiSaveOcrData(freight.id, file.id, res).then(() => { if (onRefresh) onRefresh(freight.id); }).catch(e => log.error("OCR", "save failed:", e));
+      }
     } catch (e) {
       log.error("OCR", "failed:", e);
     } finally {
       setOcrLoading(false);
     }
   };
+
+  const handleViewOcr = (ocrData) => setOcrResult(ocrData);
 
   // Pre-load PDF module so download works synchronously on click
   useEffect(() => { loadPdfReport(); }, []);
@@ -552,7 +558,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
         if (!canUpload && !hasDocs) return null;
         return (
           <div style={{ display: _isDesktop && canUpload && hasDocs ? "flex" : "block", gap: 12, marginBottom: 0 }}>
-            {hasDocs && <div style={{ flex: 1, minWidth: 0 }}><DocsGallery documents={freight.documents} onViewFile={setViewFile} freightId={freight.id} canDelete={canUpload} onDeleted={()=>{ if(onRefresh) onRefresh(freight.id); }} onOcr={handleOcr} ocrLoading={ocrLoading}/></div>}
+            {hasDocs && <div style={{ flex: 1, minWidth: 0 }}><DocsGallery documents={freight.documents} onViewFile={setViewFile} freightId={freight.id} canDelete={canUpload} onDeleted={()=>{ if(onRefresh) onRefresh(freight.id); }} onOcr={handleOcr} ocrLoading={ocrLoading} onViewOcr={handleViewOcr}/></div>}
             {canUpload && <div style={{ flex: 1, minWidth: 0 }}><FreightFileUpload freightId={freight.id} step={freight.status==="pending_assignment"?"request":freight.status==="in_progress"||freight.status==="loaded"?"load_confirmation":"assignment"} onUploaded={()=>{ if(onRefresh) onRefresh(freight.id); }} /></div>}
           </div>
         );
@@ -583,7 +589,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
       {filteredActions.includes("cancel") && <div style={{ marginBottom:8 }}><Btn full v="err" icon={Ic.cross(C.err,16)} disabled={actionLoading} onClick={()=>onAction(freight.id,"cancel")}>Cancelar flete</Btn></div>}
       {filteredActions.includes("reject") && <div style={{ marginBottom:8 }}><Btn full v="err" icon={Ic.ban(C.w,16)} disabled={actionLoading} onClick={()=>onAction(freight.id,"reject")}>Rechazar asignación</Btn></div>}
       </div>
-      <FileViewer file={viewFile} onClose={()=>setViewFile(null)} onOcr={handleOcr} ocrLoading={ocrLoading}/>
+      <FileViewer file={viewFile} onClose={()=>setViewFile(null)} onOcr={handleOcr} ocrLoading={ocrLoading} onViewOcr={handleViewOcr}/>
       {ocrLoading && <div style={{ position:"fixed", inset:0, zIndex:250 }}><UploadOverlay uploading={ocrLoading} done={false} total={1} current={1} label="Extrayendo datos"/></div>}
       <OcrResultModal result={ocrResult} onClose={()=>setOcrResult(null)}/>
     </div>

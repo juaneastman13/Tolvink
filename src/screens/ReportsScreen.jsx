@@ -2,12 +2,12 @@ import { useState, useMemo, useRef, useEffect } from "react";
 import { C, Ic, FONT, MONO } from "../theme";
 import { stCfg } from "../constants";
 import { Bd, Btn, Field, Select, exportExcel, exportPDF, FileViewer } from "../components";
-import { DocsGallery } from "../uploads";
+import { OcrResultModal, UploadOverlay } from "../uploads";
 import log from "../logger";
-import { apiGetAuditLog, thumb } from "../api";
+import { apiGetAuditLog, apiOcrAnalyze, apiSaveOcrData, thumb } from "../api";
 const loadPdfReport = () => import("../utils/pdf-report");
 
-export default function ReportsScreen({ onBack, freights, isDesktop, embedded }) {
+export default function ReportsScreen({ onBack, freights, isDesktop, embedded, onRefresh }) {
   const [expanded, setExpanded] = useState({});
   const [filterStatus, setFilterStatus] = useState("all");
   const [searchQ, setSearchQ] = useState("");
@@ -16,11 +16,29 @@ export default function ReportsScreen({ onBack, freights, isDesktop, embedded })
   const [dateTo, setDateTo] = useState("");
   const [viewFile, setViewFile] = useState(null);
   const [pdfLoadingId, setPdfLoadingId] = useState(null);
+  const [ocrLoading, setOcrLoading] = useState(false);
+  const [ocrResult, setOcrResult] = useState(null);
   const toggle = (k) => setExpanded(p=>({...p,[k]:!p[k]}));
 
   // Pre-load PDF module
   useEffect(() => { loadPdfReport(); }, []);
   const toggleSel = (id, e) => { e.stopPropagation(); setSelected(p => { const n = new Set(p); if(n.has(id)) n.delete(id); else n.add(id); return n; }); };
+
+  const handleOcr = async (file, freightId) => {
+    setOcrLoading(true);
+    try {
+      const res = await apiOcrAnalyze(file.url);
+      if (res.error) { log.error("OCR", res.error); return; }
+      setOcrResult(res);
+      if (file.id && freightId) {
+        apiSaveOcrData(freightId, file.id, res).then(() => { if (onRefresh) onRefresh(); }).catch(e => log.error("OCR", "save failed:", e));
+      }
+    } catch (e) {
+      log.error("OCR", "failed:", e);
+    } finally {
+      setOcrLoading(false);
+    }
+  };
 
   const allFreights = (freights||[]).filter(f=>{
     if(dateFrom && f.loadDate < dateFrom) return false;
@@ -128,6 +146,8 @@ export default function ReportsScreen({ onBack, freights, isDesktop, embedded })
             const isOpen = expanded[f.id];
             const isSel = selected.has(f.id);
             const docs = f.documents||[];
+            const ocrDocs = docs.filter(d => d.ocrData);
+            const imgDocs = docs.filter(d => d.type === "photo" || d.url?.match(/\.(jpg|jpeg|png|webp|gif)$/i));
             return (
               <div key={f.id} style={{ background:isSel?C.priPale:C.w, border:`1px solid ${isSel?C.pri:C.b1}`, borderRadius:12, overflow:"hidden", marginBottom:8, boxShadow:C.sh, transition:"all 0.15s" }}>
                 <button onClick={()=>toggle(f.id)} style={{ width:"100%", padding:"12px 14px", background:"transparent", border:"none", cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:10, textAlign:"left" }}>
@@ -143,7 +163,7 @@ export default function ReportsScreen({ onBack, freights, isDesktop, embedded })
                     <div style={{display:"flex",flexDirection:"column",gap:2,fontSize:11,color:C.t2,marginTop:2}}>
                       <div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.user(C.t3,12)} <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.originCompanyName||(f.originName||"").split("—")[0].trim()}</span></div>
                       {f.transporterName&&<div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.truck(C.t3,12)} <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.transporterName}{f.truckPlate?` (${f.truckPlate})`:""}</span></div>}
-                      <div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.plant(C.t3,12)} <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.destName}</span> <span style={{color:C.t3,marginLeft:4,fontSize:10}}>{docs.length} doc{docs.length!==1?"s":""}</span></div>
+                      <div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.plant(C.t3,12)} <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.destName}</span> <span style={{color:C.t3,marginLeft:4,fontSize:10}}>{docs.length} doc{docs.length!==1?"s":""}{ocrDocs.length>0 && ` · ${ocrDocs.length} OCR`}</span></div>
                     </div>
                   </div>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.t3} strokeWidth="2.5" style={{transform:isOpen?"rotate(180deg)":"rotate(0deg)",transition:"transform 0.2s"}}><polyline points="6 9 12 15 18 9"/></svg>
@@ -166,10 +186,14 @@ export default function ReportsScreen({ onBack, freights, isDesktop, embedded })
                     }} style={{ width:"100%", padding:"8px 10px", marginBottom:8, borderRadius:8, border:`1.5px solid ${C.b1}`, background:C.w, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:8, opacity:pdfLoadingId===f.id?0.6:1 }}>
                       {Ic.doc(C.pri,16)}<span style={{fontSize:11,fontWeight:600,color:C.pri}}>{pdfLoadingId===f.id?'Generando...':'Descargar informe PDF'}</span>
                     </button>
-                    {docs.length>0 ? docs.map((d,i)=>(
+
+                    {/* Documents list */}
+                    {docs.length>0 ? docs.map((d,i)=>{
+                      const isImg = d.type==="photo" || d.url?.match(/\.(jpg|jpeg|png|webp|gif)$/i);
+                      return (
                       <div key={d.id||i} style={{ display:"flex", alignItems:"center", gap:10, padding:"8px 0", borderBottom:i<docs.length-1?`1px solid ${C.b2}`:"none" }}>
                         {d.type==="photo" ? (
-                          <button onClick={()=>setViewFile({url:d.url,name:d.name||"Foto",type:"photo"})} style={{ width:48, height:48, borderRadius:8, overflow:"hidden", flexShrink:0, border:`1px solid ${C.b1}`, padding:0, background:"none", cursor:"pointer" }}>
+                          <button onClick={()=>setViewFile({url:d.url,name:d.name||"Foto",type:"photo",id:d.id,ocrData:d.ocrData})} style={{ width:48, height:48, borderRadius:8, overflow:"hidden", flexShrink:0, border:`1px solid ${C.b1}`, padding:0, background:"none", cursor:"pointer" }}>
                             <img src={thumb(d.url)} alt="" loading="lazy" style={{ width:"100%", height:"100%", objectFit:"cover" }}/>
                           </button>
                         ) : (
@@ -178,14 +202,52 @@ export default function ReportsScreen({ onBack, freights, isDesktop, embedded })
                           </div>
                         )}
                         <div style={{ flex:1, minWidth:0 }}>
-                          <div style={{ fontSize:12, fontWeight:600, color:C.t1, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{d.name||"Documento"}</div>
+                          <div style={{ fontSize:12, fontWeight:600, color:C.t1, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis", display:"flex", alignItems:"center", gap:4 }}>
+                            {d.name||"Documento"}
+                            {d.ocrData && <span style={{width:7,height:7,borderRadius:4,background:"#1A6B37",flexShrink:0}} title="Datos OCR disponibles"/>}
+                          </div>
                           <div style={{ fontSize:10, color:C.t3 }}>{d.step==="request"?"Solicitud":d.step==="load_confirmation"?"Carga":d.step==="assignment"?"Asignación":"Otro"} · {d.createdAt?new Date(d.createdAt).toLocaleDateString("es",{day:"2-digit",month:"short"}):""}</div>
                         </div>
-                        <button onClick={()=>setViewFile({url:d.url,name:d.name||"Documento",type:d.type})} style={{ display:"flex", padding:6, borderRadius:8, background:C.secPale, border:"none", cursor:"pointer" }}>
+                        {d.ocrData && <button onClick={()=>setOcrResult(d.ocrData)} title="Ver datos extraídos" style={{ display:"flex", padding:6, borderRadius:8, border:"1px solid #1A6B37", background:"#E6F4EA", cursor:"pointer" }}>{Ic.eye("#1A6B37",14)}</button>}
+                        {isImg && !d.ocrData && <button onClick={()=>handleOcr({url:d.url,name:d.name,type:d.type,id:d.id},f.id)} disabled={ocrLoading} title="Extraer datos (OCR)" style={{ display:"flex", padding:6, borderRadius:8, border:`1px solid ${C.pri}40`, background:C.priPale, cursor:"pointer", opacity:ocrLoading?0.5:1 }}>{Ic.doc(C.pri,14)}</button>}
+                        <button onClick={()=>setViewFile({url:d.url,name:d.name||"Documento",type:d.type,id:d.id,ocrData:d.ocrData})} style={{ display:"flex", padding:6, borderRadius:8, background:C.secPale, border:"none", cursor:"pointer" }}>
                           {Ic.eye(C.sec,16)}
                         </button>
                       </div>
-                    )) : <div style={{ fontSize:11, color:C.t3, padding:"8px 0" }}>Sin documentos adjuntos</div>}
+                      );
+                    }) : <div style={{ fontSize:11, color:C.t3, padding:"8px 0" }}>Sin documentos adjuntos</div>}
+
+                    {/* Centralized OCR data section */}
+                    {ocrDocs.length > 0 && (
+                      <div style={{ marginTop:10, padding:10, background:"#F0FDF4", border:"1px solid #BBF7D0", borderRadius:10 }}>
+                        <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:8 }}>
+                          {Ic.doc("#1A6B37",14)}
+                          <span style={{ fontSize:10.5, fontWeight:700, color:"#1A6B37", textTransform:"uppercase", letterSpacing:0.5 }}>Datos extraídos ({ocrDocs.length})</span>
+                        </div>
+                        {ocrDocs.map(d => {
+                          const ocr = d.ocrData;
+                          const tipo = ocr?.tipoDocumento || "documento";
+                          const conf = ocr?.confianza != null ? Math.round(ocr.confianza * 100) : null;
+                          const datos = ocr?.datos || {};
+                          const preview = Object.entries(datos).filter(([,v]) => v != null && v !== "" && typeof v !== "object").slice(0, 3);
+                          return (
+                            <button key={d.id} onClick={() => setOcrResult(ocr)} style={{ width:"100%", display:"flex", alignItems:"center", gap:10, padding:"8px 10px", marginBottom:4, background:C.w, border:`1px solid ${C.b2}`, borderRadius:8, cursor:"pointer", fontFamily:"inherit", textAlign:"left" }}>
+                              <div style={{ flex:1, minWidth:0 }}>
+                                <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:2 }}>
+                                  <span style={{ fontSize:11, fontWeight:700, color:C.t1, textTransform:"capitalize" }}>{tipo}</span>
+                                  {conf != null && <span style={{ fontSize:9, color:"#1A6B37", fontWeight:600, background:"#DCFCE7", padding:"1px 6px", borderRadius:8 }}>{conf}%</span>}
+                                  <span style={{ fontSize:9, color:C.t3 }}>{d.name}</span>
+                                </div>
+                                <div style={{ fontSize:10, color:C.t2, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                                  {preview.map(([k,v]) => `${k}: ${v}`).join(" · ") || "Sin datos"}
+                                </div>
+                              </div>
+                              {Ic.eye("#1A6B37",14)}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -193,7 +255,9 @@ export default function ReportsScreen({ onBack, freights, isDesktop, embedded })
           })}
         </div>
       ))}
-      <FileViewer file={viewFile} onClose={()=>setViewFile(null)}/>
+      <FileViewer file={viewFile} onClose={()=>setViewFile(null)} onOcr={(file)=>handleOcr(file, null)} ocrLoading={ocrLoading} onViewOcr={(data)=>setOcrResult(data)}/>
+      {ocrLoading && <div style={{ position:"fixed", inset:0, zIndex:250 }}><UploadOverlay uploading={ocrLoading} done={false} total={1} current={1} label="Extrayendo datos"/></div>}
+      <OcrResultModal result={ocrResult} onClose={()=>setOcrResult(null)}/>
       </div>
     </div>
   );

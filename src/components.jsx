@@ -585,7 +585,7 @@ export function NotifBell({ count=0, onClick }) {
 
 // ======================== FILE VIEWER (in-app) =======================
 
-export function FileViewer({ file, onClose, onOcr, ocrLoading }) {
+export function FileViewer({ file, onClose, onOcr, ocrLoading, onViewOcr }) {
   if (!file) return null;
   const safeUrl = file.url && /^https:\/\//i.test(file.url) ? file.url : null;
   const isImg = file.type === "image" || file.type === "photo" || safeUrl?.match(/\.(jpg|jpeg|png|webp|gif|svg)$/i);
@@ -598,7 +598,8 @@ export function FileViewer({ file, onClose, onOcr, ocrLoading }) {
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"10px 14px", borderBottom:`1px solid ${C.b2}`, flexShrink:0 }}>
           <div style={{ fontSize:13, fontWeight:600, color:C.t1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", flex:1, marginRight:10 }}>{file.name||"Archivo"}</div>
           <div style={{ display:"flex", gap:6, flexShrink:0 }}>
-            {isImg && onOcr && <button onClick={()=>onOcr(file)} disabled={ocrLoading} style={{ display:"flex", alignItems:"center", gap:4, padding:"5px 10px", borderRadius:8, border:`1px solid ${C.pri}`, background:C.priPale, color:C.pri, fontSize:11, fontWeight:700, fontFamily:"inherit", cursor:"pointer", opacity:ocrLoading?0.6:1 }}>{Ic.doc(C.pri,13)} {ocrLoading ? "Analizando..." : "Extraer datos"}</button>}
+            {file.ocrData && onViewOcr && <button onClick={()=>onViewOcr(file.ocrData)} style={{ display:"flex", alignItems:"center", gap:4, padding:"5px 10px", borderRadius:8, border:"1px solid #1A6B37", background:"#E6F4EA", color:"#1A6B37", fontSize:11, fontWeight:700, fontFamily:"inherit", cursor:"pointer" }}>{Ic.eye("#1A6B37",13)} Ver datos</button>}
+            {isImg && onOcr && !file.ocrData && <button onClick={()=>onOcr(file)} disabled={ocrLoading} style={{ display:"flex", alignItems:"center", gap:4, padding:"5px 10px", borderRadius:8, border:`1px solid ${C.pri}`, background:C.priPale, color:C.pri, fontSize:11, fontWeight:700, fontFamily:"inherit", cursor:"pointer", opacity:ocrLoading?0.6:1 }}>{Ic.doc(C.pri,13)} {ocrLoading ? "Analizando..." : "Extraer datos"}</button>}
             {safeUrl && <a href={safeUrl} download style={{ display:"flex", alignItems:"center", gap:4, padding:"5px 10px", borderRadius:8, border:`1px solid ${C.b1}`, background:C.bg, color:C.t1, textDecoration:"none", fontSize:11, fontWeight:600, fontFamily:"inherit" }} onClick={e=>e.stopPropagation()}>{Ic.down(C.t2,13)} Descargar</a>}
             <button onClick={onClose} style={{ display:"flex", alignItems:"center", gap:4, padding:"5px 12px", borderRadius:8, background:C.err, border:"none", cursor:"pointer", color:"#fff", fontSize:11, fontWeight:700, fontFamily:"inherit" }}>{Ic.cross("#fff",14)} Cerrar</button>
           </div>
