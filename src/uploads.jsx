@@ -108,7 +108,6 @@ export function DocsGallery({ documents, onViewFile, freightId, canDelete, onDel
                       {d.uploadedBy?.name && ` · ${d.uploadedBy.name.split(" ")[0]}`}
                     </div>
                   </div>
-                  {Ic.eye(C.pri, 14)}
                 </button>
                 {d.ocrData && onViewOcr && <button onClick={()=>onViewOcr(d.ocrData)} title="Ver datos extraídos" style={{ padding:6, borderRadius:6, border:`1px solid #1A6B37`, background:"#E6F4EA", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{Ic.eye("#1A6B37",14)}</button>}
                 {isImg && onOcr && !d.ocrData && <button onClick={()=>onOcr({url:d.url,name:d.name||"Archivo",type:d.type,id:d.id})} disabled={ocrLoading} title="Extraer datos (OCR)" style={{ padding:6, borderRadius:6, border:`1px solid ${C.pri}40`, background:C.priPale, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, opacity:ocrLoading?0.5:1 }}>{Ic.doc(C.pri,14)}</button>}
