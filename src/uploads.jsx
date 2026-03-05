@@ -157,6 +157,7 @@ export function OcrResultModal({ result, onClose }) {
             <span style={{ fontSize:13, fontWeight:700, color:C.t1 }}>Datos extraídos</span>
             <span style={{ fontSize:9, color:C.t3, fontWeight:500, background:C.bg, padding:"2px 6px", borderRadius:8, whiteSpace:"nowrap" }}>{result.tipoDocumento} · {Math.round((result.confianza||0)*100)}%</span>
           </div>
+          {entries.length > 0 && <button onClick={copyAll} style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:4, padding:"6px 12px", borderRadius:8, border:"none", background:C.pri, cursor:"pointer", fontSize:11, fontWeight:700, color:"#fff", fontFamily:"inherit", flexShrink:0, whiteSpace:"nowrap" }}>{Ic.doc("#fff",13)} Copiar</button>}
           <button onClick={onClose} style={{ display:"flex", alignItems:"center", justifyContent:"center", width:32, height:32, borderRadius:8, background:C.err, border:"none", cursor:"pointer", flexShrink:0 }}>{Ic.cross("#fff",16)}</button>
         </div>
         {/* Content */}
@@ -170,11 +171,6 @@ export function OcrResultModal({ result, onClose }) {
             ))}
             {entries.length === 0 && <div style={{ fontSize:12, color:C.t3, textAlign:"center", padding:20 }}>No se pudieron extraer datos del documento</div>}
           </div>
-        </div>
-        {/* Footer — always visible */}
-        <div style={{ padding:"10px 16px", borderTop:`1px solid ${C.b2}`, flexShrink:0, display:"flex", gap:8 }}>
-          <button onClick={onClose} style={{ padding:"8px 16px", borderRadius:8, border:`1.5px solid ${C.b1}`, background:C.bg, cursor:"pointer", fontSize:12, fontWeight:700, color:C.t2, fontFamily:"inherit" }}>Cerrar</button>
-          {entries.length > 0 && <button onClick={copyAll} style={{ flex:1, padding:"8px 16px", borderRadius:8, border:"none", background:C.pri, cursor:"pointer", fontSize:12, fontWeight:700, color:"#fff", fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>{Ic.doc("#fff",14)} Copiar info</button>}
         </div>
       </div>
     </div>
