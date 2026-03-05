@@ -557,8 +557,8 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
         const hasDocs = freight.documents && freight.documents.length > 0;
         if (!canUpload && !hasDocs) return null;
         return (
-          <div style={{ display: _isDesktop && canUpload && hasDocs ? "flex" : "block", gap: 12, marginBottom: 0 }}>
-            {hasDocs && <div style={{ flex: 1, minWidth: 0 }}><DocsGallery documents={freight.documents} onViewFile={setViewFile} freightId={freight.id} canDelete={canUpload} onDeleted={()=>{ if(onRefresh) onRefresh(freight.id); }} onOcr={handleOcr} ocrLoading={ocrLoading} onViewOcr={handleViewOcr}/></div>}
+          <div style={{ display: _isDesktop && canUpload && hasDocs ? "flex" : "block", gap: 12, marginBottom: 0, alignItems:"stretch" }}>
+            {hasDocs && <div style={{ flex: 1, minWidth: 0, display:"flex" }}><DocsGallery documents={freight.documents} onViewFile={setViewFile} freightId={freight.id} canDelete={canUpload} onDeleted={()=>{ if(onRefresh) onRefresh(freight.id); }} onOcr={handleOcr} ocrLoading={ocrLoading} onViewOcr={handleViewOcr}/></div>}
             {canUpload && <div style={{ flex: 1, minWidth: 0 }}><FreightFileUpload freightId={freight.id} step={freight.status==="pending_assignment"?"request":freight.status==="in_progress"||freight.status==="loaded"?"load_confirmation":"assignment"} onUploaded={()=>{ if(onRefresh) onRefresh(freight.id); }} /></div>}
           </div>
         );
