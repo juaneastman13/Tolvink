@@ -91,6 +91,7 @@ export function DocsGallery({ documents, onViewFile, freightId, canDelete, onDel
       <button onClick={()=>setOpen(v=>!v)} style={{ display:"flex", alignItems:"center", gap:6, width:"100%", background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", padding:0, marginBottom:open?10:0 }}>
         {Ic.img(C.pri, 16)}
         <span style={{ fontSize: 10.5, fontWeight: 700, color: C.t2, textTransform: "uppercase", letterSpacing: 0.5, flex:1, textAlign:"left" }}>Archivos del flete ({documents.length})</span>
+        <span style={{ fontSize:10, fontWeight:600, color:C.t3 }}>{open?"Ocultar":"Ver archivos"}</span>
         <span style={{ fontSize:14, color:C.t3, transition:"transform 0.2s", transform:open?"rotate(180deg)":"rotate(0deg)" }}>▾</span>
       </button>
       {open && <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
