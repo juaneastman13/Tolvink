@@ -145,9 +145,13 @@ export function OcrResultModal({ result, onClose }) {
 
   return (
     <div onClick={onClose} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", display:"flex", alignItems:"flex-end", justifyContent:"center", zIndex:260, animation:"fvFadeIn 0.2s ease", padding:0 }}>
-      <div onClick={e=>e.stopPropagation()} style={{ background:C.w, borderRadius:"14px 14px 0 0", boxShadow:"0 -4px 32px rgba(0,0,0,0.3)", maxWidth:480, width:"100%", maxHeight:"85vh", display:"flex", flexDirection:"column", overflow:"hidden" }}>
+      <div onClick={e=>e.stopPropagation()} style={{ background:C.w, borderRadius:"14px 14px 0 0", boxShadow:"0 -4px 32px rgba(0,0,0,0.3)", maxWidth:480, width:"100%", maxHeight:"80vh", display:"flex", flexDirection:"column", overflow:"hidden" }}>
+        {/* Drag handle */}
+        <div onClick={onClose} style={{ display:"flex", justifyContent:"center", padding:"10px 0 4px", cursor:"pointer", flexShrink:0 }}>
+          <div style={{ width:36, height:4, borderRadius:2, background:C.b1 }}/>
+        </div>
         {/* Header */}
-        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"12px 16px", borderBottom:`1px solid ${C.b2}`, flexShrink:0, gap:8 }}>
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"4px 16px 10px", borderBottom:`1px solid ${C.b2}`, flexShrink:0, gap:8 }}>
           <div style={{ display:"flex", alignItems:"center", gap:6, flex:1, minWidth:0 }}>
             {Ic.doc(C.pri,16)}
             <span style={{ fontSize:13, fontWeight:700, color:C.t1 }}>Datos extraídos</span>
@@ -167,12 +171,11 @@ export function OcrResultModal({ result, onClose }) {
             {entries.length === 0 && <div style={{ fontSize:12, color:C.t3, textAlign:"center", padding:20 }}>No se pudieron extraer datos del documento</div>}
           </div>
         </div>
-        {/* Footer */}
-        {entries.length > 0 && (
-          <div style={{ padding:"12px 18px", borderTop:`1px solid ${C.b2}`, flexShrink:0, display:"flex", justifyContent:"flex-end" }}>
-            <button onClick={copyAll} style={{ padding:"8px 20px", borderRadius:8, border:"none", background:C.pri, cursor:"pointer", fontSize:12, fontWeight:700, color:"#fff", fontFamily:"inherit", display:"flex", alignItems:"center", gap:6 }}>{Ic.doc("#fff",14)} Copiar todo</button>
-          </div>
-        )}
+        {/* Footer — always visible */}
+        <div style={{ padding:"10px 16px", borderTop:`1px solid ${C.b2}`, flexShrink:0, display:"flex", gap:8, justifyContent:"flex-end" }}>
+          <button onClick={onClose} style={{ padding:"8px 16px", borderRadius:8, border:`1.5px solid ${C.b1}`, background:C.bg, cursor:"pointer", fontSize:12, fontWeight:700, color:C.t2, fontFamily:"inherit" }}>Cerrar</button>
+          {entries.length > 0 && <button onClick={copyAll} style={{ padding:"8px 16px", borderRadius:8, border:"none", background:C.pri, cursor:"pointer", fontSize:12, fontWeight:700, color:"#fff", fontFamily:"inherit", display:"flex", alignItems:"center", gap:6 }}>{Ic.doc("#fff",14)} Copiar todo</button>}
+        </div>
       </div>
     </div>
   );
