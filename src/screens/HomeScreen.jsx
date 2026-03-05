@@ -186,7 +186,7 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
         {/* Two-column layout with vertical divider */}
         <div style={{ display: "flex" }}>
           {/* Left column */}
-          <div style={{ flex: "1 1 0%", display: "flex", flexDirection: "column", gap: 3, padding: "8px 12px", borderRight: `1px solid ${C.b2}`, minWidth: 0, overflow: "hidden" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 3, padding: "8px 12px", borderRight: `1px solid ${C.b2}`, minWidth: 0 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
               <span style={{ fontSize: 10.5, fontWeight: 700, fontFamily: MONO, color: C.t2 }}>{f.code}</span>
               <Bd color={st.color} bg={st.bg} small>{st.label}</Bd>
@@ -195,7 +195,7 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
             {f.loadDate && <div style={{ fontSize: 11, color: C.t3, fontWeight: 500 }}>{formatFreightDate(f.loadDate)}{f.loadTime?.trim() ? ` · ${f.loadTime}` : ""}</div>}
           </div>
           {/* Right column */}
-          <div style={{ flex: "1 1 0%", display: "flex", flexDirection: "column", gap: 3, padding: "8px 12px", fontSize: 11, color: C.t2, minWidth: 0, overflow: "hidden" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 3, padding: "8px 12px", fontSize: 11, color: C.t2, minWidth: 0 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 4 }}>{Ic.user(C.t3, 12)} <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.originCompanyName || (f.originName || "").split("—")[0].trim()}</span>{f.originLat&&f.originLng&&<span onClick={(e)=>{e.stopPropagation();goToMap(f.originLat,f.originLng,[f.originCompanyName,f.fieldName,f.originName].filter(Boolean).join(" — "));}} style={{cursor:"pointer",opacity:0.6,marginLeft:3,fontSize:10,flexShrink:0}} title="Ver en mapa">{"\uD83D\uDCCD"}</span>}</div>
             <div style={{ display: "flex", alignItems: "center", gap: 4 }}>{Ic.plant(C.t3, 12)} <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.destName}</span>{f.destLat&&f.destLng&&<span onClick={(e)=>{e.stopPropagation();goToMap(f.destLat,f.destLng,f.destName);}} style={{cursor:"pointer",opacity:0.6,marginLeft:3,fontSize:10,flexShrink:0}} title="Ver en mapa">{"\uD83D\uDCCD"}</span>}</div>
             <div style={{ display: "flex", alignItems: "center", gap: 4 }}>{Ic.truck(C.t3, 12)} <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.transporterName || "Sin asignar"}{f.truckPlate ? ` (${f.truckPlate})` : ""}</span>{f.isOwnFleet && <span style={{ fontSize: 8.5, color: C.acc, fontWeight: 600, marginLeft: 4, flexShrink: 0 }}>Flota propia</span>}{f.isMultiTruck && <span style={{ fontSize: 9, color: C.info, fontWeight: 600, marginLeft: 4, flexShrink: 0 }}>{f.assignedTruckCount}/{f.truckCount} cam.</span>}</div>
