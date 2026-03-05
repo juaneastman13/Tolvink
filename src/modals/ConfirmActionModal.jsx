@@ -1,3 +1,4 @@
+import { useUIStore } from "../store";
 import { useState } from "react";
 import { C, Ic } from "../theme";
 import { Btn, ModalOverlay, NumericStepper } from "../components";
@@ -9,7 +10,7 @@ export default function ConfirmActionModal({ freight, title, btnLabel, btnVarian
   const [tons,setTons] = useState(defaultTons || freight.tons || "");
   const doConfirm = async ()=>{
     if(loading||closing) return;
-    if(showTonsInput){ const n=parseFloat(tons); if(!n||n<=0){ alert("Ingrese toneladas válidas (mayor a 0)"); return; } }
+    if(showTonsInput){ const n=parseFloat(tons); if(!n||n<=0){ useUIStore.getState().show("Ingrese toneladas válidas (mayor a 0)", "error"); return; } }
     setLoading(true); const msg=await onConfirm(showTonsInput ? tons : undefined); setLoading(false); if(msg){ setClosingText(msg); setClosing(true); }
   };
   return (

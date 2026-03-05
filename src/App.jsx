@@ -59,7 +59,7 @@ const PATH_TO_SCREEN = {};
 Object.entries(SCREEN_TO_PATH).forEach(([s, p]) => { PATH_TO_SCREEN[p] = s; });
 
 // ======================== SCREEN LOADER ===============================
-const SL = () => <div style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:40,gap:14,animation:"fadeIn 0.3s ease"}}>
+const SL = () => <div role="status" aria-label="Cargando" style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:40,gap:14,animation:"fadeIn 0.3s ease"}}>
   <div style={{display:"flex",gap:6}}>
     {[0,1,2].map(i=><div key={i} style={{width:8,height:8,borderRadius:4,background:C.pri,opacity:0.3,animation:`tvDots 1.2s ${i*0.15}s ease-in-out infinite`}}/>)}
   </div>
@@ -429,6 +429,7 @@ export default function Tolvink() {
     if(r.ok && r.freightId && form.photos?.length > 0) {
       const results = await Promise.allSettled(form.photos.map(async (photoUrl, i) => {
         const blob = await fetch(photoUrl).then(res=>res.blob());
+        URL.revokeObjectURL(photoUrl);
         const file = new File([blob], `foto-${Date.now()}-${i}.jpg`, {type:'image/jpeg'});
         const url = await uploadPhoto(file, r.freightId, 'request');
         await apiAddDocument(r.freightId, { name: file.name, url, type:'photo', step:'request' });

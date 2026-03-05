@@ -14,7 +14,7 @@ export const LIGHT = {
   warn:"#CA8A04", warnPale:"#FEF9C3",
   err:"#DC2626", errPale:"#FEE2E2",
   muted:"#71717A", mutedPale:"#F4F4F5",
-  t1:"#18251C", t2:"#4A6352", t3:"#8A9C90", tOn:"#FFFFFF",
+  t1:"#18251C", t2:"#4A6352", t3:"#6B7D72", tOn:"#FFFFFF",
   b1:"#DEE4E0", b2:"#ECF0ED", bFocus:"#1A6B37",
   w:"#FFFFFF",
   sh:"0 1px 3px rgba(0,0,0,0.05),0 1px 2px rgba(0,0,0,0.03)",
@@ -30,7 +30,7 @@ const _API = import.meta.env.VITE_API_URL || 'https://tolvink-api-production.up.
 let _sid = sessionStorage.getItem('tv_sid');
 if (!_sid) { _sid = Math.random().toString(36).slice(2); sessionStorage.setItem('tv_sid', _sid); }
 export function track(event, data = {}) {
-  const token = localStorage.getItem('tolvink_token');
+  
   fetch(`${_API}/analytics/track`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },

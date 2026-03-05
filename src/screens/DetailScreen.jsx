@@ -581,7 +581,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
           if(!logs) { try { logs = await apiGetAuditLog(freight.id); setAuditLog(logs); } catch(e) { logs = []; } }
           const { generateFreightPDF } = await loadPdfReport();
           generateFreightPDF(freight, logs || []);
-        } catch(e) { log.error('PDF', e); alert('Error al generar PDF: ' + (e?.message || e)); }
+        } catch(e) { log.error('PDF', e); useUIStore.getState().show('Error al generar PDF: ' + (e?.message || e), 'error'); }
         finally { setPdfLoading(false); }
       }} style={{ width:"100%", background:C.w, borderRadius:10, padding:12, display:"flex", alignItems:"center", gap:10, border:`1.5px solid ${C.b1}`, cursor:"pointer", fontFamily:"inherit", marginBottom:12, opacity:pdfLoading?0.6:1 }}>
         {Ic.doc(C.t2,20)}<div style={{textAlign:"left"}}><div style={{ fontSize:12, fontWeight:700, color:C.t1 }}>{pdfLoading?'Generando...':'Descargar informe PDF'}</div><div style={{ fontSize:10, color:C.t3 }}>Información, recorrido, historial y documentos</div></div>

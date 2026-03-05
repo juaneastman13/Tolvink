@@ -184,7 +184,7 @@ export default function ReportsScreen({ onBack, freights, isDesktop, embedded, o
                         try { logs = await apiGetAuditLog(f.id); } catch {}
                         const { generateFreightPDF } = await loadPdfReport();
                         generateFreightPDF(f, logs);
-                      } catch(err) { log.error('PDF', err); alert('Error al generar PDF: ' + (err?.message || err)); }
+                      } catch(err) { log.error('PDF', err); useUIStore.getState().show('Error al generar PDF: ' + (err?.message || err), 'error'); }
                       finally { setPdfLoadingId(null); }
                     }} style={{ width:"100%", padding:"8px 10px", marginBottom:8, borderRadius:8, border:`1.5px solid ${C.b1}`, background:C.w, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:8, opacity:pdfLoadingId===f.id?0.6:1 }}>
                       {Ic.doc(C.pri,16)}<span style={{fontSize:11,fontWeight:600,color:C.pri}}>{pdfLoadingId===f.id?'Generando...':'Descargar informe PDF'}</span>

@@ -359,7 +359,7 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
   const handleFileUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file || !activeConv) return;
-    if (file.size > 15 * 1024 * 1024) { alert("Máximo 15MB"); return; }
+    if (file.size > 15 * 1024 * 1024) { useUIStore.getState().show("Máximo 15MB", "error"); return; }
     e.target.value = "";
     setUploading(true);
     try {

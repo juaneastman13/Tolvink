@@ -217,10 +217,20 @@ export function SortTh({ label, colKey, sortCol, sortDir, onSort }) {
 export function ModalOverlay({ children, onClose, maxWidth=400, loading=false, closing=false, closingText="" }) {
   const [stage, setStage] = useState(0);
   const [fading, setFading] = useState(false);
+  const dialogRef = useRef(null);
 
-  // Escape key to close
+  // Escape key + focus trap
   useEffect(() => {
-    const h = (e) => { if (e.key === "Escape" && onClose) onClose(); };
+    const h = (e) => {
+      if (e.key === "Escape" && onClose) { onClose(); return; }
+      if (e.key === "Tab" && dialogRef.current) {
+        const focusable = dialogRef.current.querySelectorAll('button,input,select,textarea,a[href],[tabindex]:not([tabindex="-1"])');
+        if (!focusable.length) return;
+        const first = focusable[0], last = focusable[focusable.length - 1];
+        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+      }
+    };
     window.addEventListener("keydown", h);
     return () => window.removeEventListener("keydown", h);
   }, [onClose]);
@@ -249,7 +259,7 @@ export function ModalOverlay({ children, onClose, maxWidth=400, loading=false, c
   const showLoading = loading && !closing;
 
   return (
-    <div role="dialog" aria-modal="true" onClick={showCard ? onClose : undefined} style={{position:"fixed",inset:0,background:C.bgOverlay,display:"flex",alignItems:"center",justifyContent:"center",zIndex:200,padding:24,animation:fading ? "moOutroFade 0.4s ease forwards" : "moFadeIn 0.25s ease"}}>
+    <div ref={dialogRef} role="dialog" aria-modal="true" onClick={showCard ? onClose : undefined} style={{position:"fixed",inset:0,background:C.bgOverlay,display:"flex",alignItems:"center",justifyContent:"center",zIndex:200,padding:24,animation:fading ? "moOutroFade 0.4s ease forwards" : "moFadeIn 0.25s ease"}}>
       <style>{`
 @keyframes moFadeIn{from{opacity:0}to{opacity:1}}
 @keyframes moLogoIn{from{opacity:0;transform:scale(0.7)}to{opacity:1;transform:scale(1)}}
@@ -409,7 +419,7 @@ export function Sidebar({ active, onChange, unread=0, pendingCount=0, notifCount
       )}
 
       {/* Nav items */}
-      <div style={{ flex:1, padding:"4px 8px", display:"flex", flexDirection:"column", gap:2 }}>
+      <nav aria-label="Menú principal" style={{ flex:1, padding:"4px 8px", display:"flex", flexDirection:"column", gap:2 }}>
         {items.map(it => {
           const isActive = active === it.k;
           return (
@@ -421,7 +431,7 @@ export function Sidebar({ active, onChange, unread=0, pendingCount=0, notifCount
             </button>
           );
         })}
-      </div>
+      </nav>
 
       {/* Bottom brand */}
       <div style={{ padding:"12px 16px", borderTop:`1px solid ${C.b2}`, fontSize:10, fontWeight:500, letterSpacing:0.3, color:C.t3, textAlign:"center" }}>
@@ -444,7 +454,7 @@ export function Nav({ active, onChange, unread=0, pendingCount=0, notifCount=0, 
     { k:"menu",     ic:a=>Ic.menu3(a?C.pri:C.t3,20),  l:"Menú", bd:notifCount },
   ];
   return (
-    <div style={{ display:"flex", borderTop:`1px solid ${C.b1}`, background:C.nav, paddingTop:2, paddingBottom:"max(4px, env(safe-area-inset-bottom))", flexShrink:0 }}>
+    <nav aria-label="Navegación" style={{ display:"flex", borderTop:`1px solid ${C.b1}`, background:C.nav, paddingTop:2, paddingBottom:"max(4px, env(safe-area-inset-bottom))", flexShrink:0 }}>
       <style>{`@keyframes truckDrive{0%,100%{transform:translateX(0)}50%{transform:translateX(3px)}}`}</style>
       {items.map(it=>(
         <button key={it.k} onClick={()=>onChange(it.k)} style={{ flex:it.sp&&canRequest?1.6:1, display:"flex", flexDirection:"column", alignItems:"center", gap:1, border:"none", background:"none", cursor:"pointer", fontFamily:"inherit", position:"relative", padding:it.sp?"0":"5px 0", minHeight:42, WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
@@ -467,7 +477,7 @@ export function Nav({ active, onChange, unread=0, pendingCount=0, notifCount=0, 
           </>}
         </button>
       ))}
-    </div>
+    </nav>
   );
 }
 

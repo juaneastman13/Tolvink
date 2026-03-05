@@ -195,7 +195,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
       setFieldLots(prev=>[...prev, lot]);
       u({ lotId: lot.id });
       setNewLot(false); setNewLotName(""); setNewLotLoc(null);
-    } catch(e) { log.error("NewScreen", "error creando lote:", e); alert("No se pudo crear el lote. Intente nuevamente."); }
+    } catch(e) { log.error("NewScreen", "error creando lote:", e); useUIStore.getState().show("No se pudo crear el lote. Intente nuevamente.", "error"); }
     finally { setNewLotSaving(false); }
   };
 
