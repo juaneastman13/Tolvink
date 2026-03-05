@@ -65,6 +65,7 @@ export function PhotoUpload({ freightId, step, label, onUploaded }) {
 export function DocsGallery({ documents, onViewFile, freightId, canDelete, onDeleted, onOcr, ocrLoading, onViewOcr }) {
   const [deleting, setDeleting] = useState(null);
   const [confirm, setConfirm] = useState(null);
+  const [open, setOpen] = useState(false);
   const show = useUIStore(s => s.show);
   if (!documents || documents.length === 0) return null;
   const stepLabels = { request: "Solicitud", assignment: "Asignación", load_confirmation: "Carga", delivery_confirmation: "Entrega", cancellation: "Cancelación" };
@@ -87,8 +88,12 @@ export function DocsGallery({ documents, onViewFile, freightId, canDelete, onDel
 
   return (
     <div style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: 12, padding: 14, marginBottom: 12, boxShadow: C.sh }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>{Ic.img(C.pri, 16)}<span style={{ fontSize: 10.5, fontWeight: 700, color: C.t2, textTransform: "uppercase", letterSpacing: 0.5 }}>Archivos del flete ({documents.length})</span></div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+      <button onClick={()=>setOpen(v=>!v)} style={{ display:"flex", alignItems:"center", gap:6, width:"100%", background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", padding:0, marginBottom:open?10:0 }}>
+        {Ic.img(C.pri, 16)}
+        <span style={{ fontSize: 10.5, fontWeight: 700, color: C.t2, textTransform: "uppercase", letterSpacing: 0.5, flex:1, textAlign:"left" }}>Archivos del flete ({documents.length})</span>
+        <span style={{ fontSize:14, color:C.t3, transition:"transform 0.2s", transform:open?"rotate(180deg)":"rotate(0deg)" }}>▾</span>
+      </button>
+      {open && <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
         {documents.map(d => {
           const isImg = d.type === "photo" || d.url?.match(/\.(jpg|jpeg|png|webp|gif)$/i);
           return (
@@ -125,7 +130,7 @@ export function DocsGallery({ documents, onViewFile, freightId, canDelete, onDel
             </div>
           );
         })}
-      </div>
+      </div>}
     </div>
   );
 }
