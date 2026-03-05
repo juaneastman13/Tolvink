@@ -292,16 +292,14 @@ export function useFreights(user, isAuthInitialized, companyOverride) {
 
   // Multi-company: pass activeCompanyId to server-side filter
   // companyOverride=null means "view all" (no filter), undefined means use activeCompanyId
-  const isViewAll = companyOverride === null;
-  const companyFilter = isViewAll ? undefined : (companyOverride || user?.activeCompanyId || user?.companyId || undefined);
-  const pageSize = isViewAll ? 100 : FREIGHTS_PAGE_SIZE;
+  const companyFilter = companyOverride === null ? undefined : (companyOverride || user?.activeCompanyId || user?.companyId || undefined);
 
   const fetchAll = useCallback(async ()=>{
     if(!user || !isAuthInitialized) return;
     setLoading(true);
     pageRef.current = 1;
     try {
-      const r = await apiListFreights({page:1, limit:pageSize, company:companyFilter});
+      const r = await apiListFreights({page:1, limit:FREIGHTS_PAGE_SIZE, company:companyFilter});
       const mapped = (r.data||[]).map(mapFreight);
       freightsRef.current = mapped;
       setFreights(mapped);
@@ -310,14 +308,14 @@ export function useFreights(user, isAuthInitialized, companyOverride) {
     }
     catch(e) { setError(e.message); }
     finally { setLoading(false); }
-  },[user, isAuthInitialized, companyFilter, pageSize]);
+  },[user, isAuthInitialized, companyFilter]);
 
   const loadMore = useCallback(async ()=>{
     if(!user || loadingMore || !hasMore || loading) return;
     setLoadingMore(true);
     const nextPage = pageRef.current + 1;
     try {
-      const r = await apiListFreights({page:nextPage, limit:pageSize, company:companyFilter});
+      const r = await apiListFreights({page:nextPage, limit:FREIGHTS_PAGE_SIZE, company:companyFilter});
       const mapped = (r.data||[]).map(mapFreight);
       pageRef.current = nextPage;
       setFreights(p=>{
@@ -328,7 +326,7 @@ export function useFreights(user, isAuthInitialized, companyOverride) {
     }
     catch(e) { setError(e.message); }
     finally { setLoadingMore(false); }
-  },[user, loadingMore, hasMore, companyFilter, pageSize]);
+  },[user, loadingMore, hasMore, companyFilter]);
 
   useEffect(()=>{
     if(isAuthInitialized && user) { fetchAll(); }
