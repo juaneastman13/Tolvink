@@ -109,6 +109,7 @@ export default function Tolvink() {
   const [sseTyping, setSseTyping] = useState(null);
   const [sseRead, setSseRead] = useState(null);
   const [compDropOpen, setCompDropOpen] = useState(false);
+  const [modeDropOpen, setModeDropOpen] = useState(false);
   const [unreadChats, setUnreadChats] = useState(0);
 
   // SSE — real-time sync
@@ -533,11 +534,6 @@ export default function Tolvink() {
             <span style={{width:8,height:8,borderRadius:4,background:C.acc,display:"inline-block",marginLeft:3,marginTop:1,animation:"dotPulse 1.5s ease-in-out infinite"}}></span>
           </div>
           <div style={{flex:1}}/>
-          {auth.user && <div style={{position:"relative",display:"flex",borderRadius:6,background:C.b1,padding:2,cursor:"pointer",flexShrink:0}} onClick={auth.toggleSimpleMode}>
-            <div style={{position:"absolute",top:2,left:auth.simpleMode?"50%":2,width:"calc(50% - 2px)",height:"calc(100% - 4px)",borderRadius:4,background:C.t2,transition:"left 0.25s ease",boxShadow:"0 1px 3px rgba(0,0,0,0.15)"}} />
-            <span style={{padding:"3px 8px",fontSize:9,fontWeight:700,position:"relative",zIndex:1,color:auth.simpleMode?C.t3:C.w,transition:"color 0.2s",userSelect:"none",whiteSpace:"nowrap"}}>Completo</span>
-            <span style={{padding:"3px 8px",fontSize:9,fontWeight:700,position:"relative",zIndex:1,color:auth.simpleMode?C.w:C.t3,transition:"color 0.2s",userSelect:"none",whiteSpace:"nowrap"}}>Simple</span>
-          </div>}
           {auth.user?.entity && (auth.user.companies?.length > 1 ? (
             <div style={{position:"relative"}}>
               <button onClick={()=>setCompDropOpen(v=>!v)} style={{display:"flex",alignItems:"center",gap:4,padding:"4px 8px",borderRadius:8,border:`1px solid ${C.b1}`,background:C.w,cursor:"pointer",fontFamily:"inherit",maxWidth:140,WebkitTapHighlightColor:"transparent",touchAction:"manipulation"}}>
@@ -566,6 +562,27 @@ export default function Tolvink() {
               </>}
             </div>
           ) : <span style={{ fontSize:11, fontWeight:600, color:C.t2, maxWidth:130, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{auth.user.entity}</span>)}
+          {auth.user && <div style={{position:"relative"}}>
+            <button onClick={()=>setModeDropOpen(v=>!v)} style={{display:"flex",alignItems:"center",gap:4,padding:"4px 8px",borderRadius:8,border:`1px solid ${C.b1}`,background:C.w,cursor:"pointer",fontFamily:"inherit",WebkitTapHighlightColor:"transparent",touchAction:"manipulation"}}>
+              <span style={{fontSize:11,fontWeight:600,color:C.t2,whiteSpace:"nowrap"}}>Cambiar visual</span>
+              {Ic.down(C.t3,12)}
+            </button>
+            {modeDropOpen && <>
+              <div onClick={()=>setModeDropOpen(false)} style={{position:"fixed",inset:0,zIndex:99}}/>
+              <div style={{position:"absolute",top:"100%",right:0,marginTop:4,background:C.w,border:`1px solid ${C.b1}`,borderRadius:10,boxShadow:C.shMd,zIndex:100,minWidth:160,overflow:"hidden"}}>
+                {[{k:false,l:"Completo",sub:"Todas las funciones"},{k:true,l:"Simple",sub:"Vista simplificada"}].map(o=>{
+                  const isActive = auth.simpleMode === o.k;
+                  return <button key={String(o.k)} onClick={()=>{setModeDropOpen(false);if(!isActive) auth.toggleSimpleMode();}} style={{width:"100%",padding:"10px 14px",border:"none",borderBottom:`1px solid ${C.b2}`,background:isActive?C.priPale:"transparent",cursor:"pointer",fontFamily:"inherit",textAlign:"left",display:"flex",alignItems:"center",gap:8}}>
+                    <div style={{width:8,height:8,borderRadius:4,background:isActive?C.pri:C.b2,flexShrink:0}}/>
+                    <div>
+                      <div style={{fontSize:12,fontWeight:isActive?700:500,color:isActive?C.pri:C.t1}}>{o.l}</div>
+                      <div style={{fontSize:10,color:C.t3}}>{o.sub}</div>
+                    </div>
+                  </button>;
+                })}
+              </div>
+            </>}
+          </div>}
           <div style={{position:"relative",flexShrink:0}}>
             <NotifBell count={notif.unreadCount} onClick={()=>setNotifOpen(!notifOpen)} />
             <NotificationsPanel open={notifOpen} onClose={()=>setNotifOpen(false)} notifications={notif.notifications} onMarkRead={notif.markRead} onMarkAllRead={notif.markAllRead} onTap={handleNotifTap} />

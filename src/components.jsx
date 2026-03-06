@@ -459,7 +459,7 @@ export function Nav({ active, onChange, unread=0, pendingCount=0, notifCount=0, 
     { k:"chats",    ic:a=>Ic.msg(a?C.pri:C.t3,20),    l:"Chat", bd:unread },
     { k:"menu",     ic:a=>Ic.menu3(a?C.pri:C.t3,20),  l:"Menú", bd:notifCount },
   ];
-  const items = simpleMode ? allNavItems.filter(it => it.k !== "chats") : allNavItems;
+  const items = allNavItems;
   return (
     <nav aria-label="Navegación" style={{ display:"flex", borderTop:`1px solid ${C.b1}`, background:C.nav, paddingTop:2, paddingBottom:"max(4px, env(safe-area-inset-bottom))", flexShrink:0 }}>
       <style>{`@keyframes truckDrive{0%,100%{transform:translateX(0)}50%{transform:translateX(3px)}}`}</style>

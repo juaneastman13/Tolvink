@@ -540,12 +540,12 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
       );
     }
 
-    // Mobile: fletes then resumen diario below
+    // Mobile: resumen diario first, then fletes below
     return (
       <div style={{ flex: 1, overflow: "auto", padding: 18 }}>
-        {simpleFreightList(false)}
+        {simpleDailyPanel}
         <div style={{ marginTop: 24 }}>
-          {simpleDailyPanel}
+          {simpleFreightList(false)}
         </div>
       </div>
     );

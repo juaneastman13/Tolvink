@@ -276,7 +276,7 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
                     <span style={{ fontSize:11, fontWeight:600, color:C.t3 }}>({items.length})</span>
                   </div>
                   <div style={{ display:"flex", flexWrap:"wrap", gap:8 }}>
-                    {enriched.map(f => <div key={f.id} style={{ flex:"1 1 calc(33.333% - 6px)", minWidth:240, maxWidth:"100%" }}>{renderSimpleCard(f)}</div>)}
+                    {enriched.map(f => <div key={f.id} style={{ flex:"1 1 calc(50% - 4px)", minWidth:240, maxWidth:"100%" }}>{renderSimpleCard(f)}</div>)}
                   </div>
                 </div>
               );
