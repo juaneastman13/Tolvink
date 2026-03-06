@@ -390,19 +390,94 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
 
   // ======================== SIMPLE MODE ========================
   if (simpleMode) {
-    // Simple mode: just the pending panel, no daily summary, no tabs
+    // Flat list: active freights sorted by pending-from-me first, then loadDate
+    const simpleFreights = filteredFreights
+      .filter(f => f.status !== "finished" && f.status !== "canceled")
+      .map(f => ({ ...f, _pending: pendingMap.get(f.id) || null }))
+      .sort((a, b) => {
+        // Pending from me first
+        if (a._pending && !b._pending) return -1;
+        if (!a._pending && b._pending) return 1;
+        // Then by loadDate ascending
+        return (a.loadDate || "").localeCompare(b.loadDate || "") || (a.loadTime || "").localeCompare(b.loadTime || "");
+      });
+
+    const renderSimpleCard = (f) => {
+      const st = stCfg(f.status);
+      const pa = f._pending;
+      const isSel = selectedId === f.id;
+      return (
+        <div key={f.id} onClick={() => selectFreight(f.id, "pending")} style={{ background: isSel ? C.priPale : C.w, border: `1px solid ${isSel ? C.pri : pa ? "#FF6A00" + "40" : C.b1}`, borderLeft: `4px solid ${pa ? "#FF6A00" : st.color}`, borderRadius: 10, padding: "10px 14px", cursor: "pointer", boxShadow: C.sh, transition: "background 0.15s, border-color 0.15s", position: "relative" }}>
+          {/* Pending indicator — pulsing dot */}
+          {pa && <div style={{ position: "absolute", top: 10, right: 12, display: "flex", alignItems: "center", gap: 5 }}>
+            <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#FF6A00", display: "inline-block", animation: "dotPulse 1.5s ease-in-out infinite", flexShrink: 0 }} />
+            <span style={{ fontSize: 9.5, fontWeight: 700, color: "#FF6A00", whiteSpace: "nowrap" }}>{pa.action}</span>
+          </div>}
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
+            <span style={{ fontSize: 10.5, fontWeight: 700, fontFamily: MONO, color: C.t2 }}>{f.code}</span>
+            <Bd color={st.color} bg={st.bg} small>{st.label}</Bd>
+          </div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: C.t1, marginBottom: 3 }}>{f.grain === "Otros" ? f.productTypeOther || "Otros" : f.grain} · {f.tons} {f.unit || "tn"}</div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 4, fontSize: 11, color: C.t2 }}>
+            {f.loadDate && <span style={{ display: "flex", alignItems: "center", gap: 3 }}>{Ic.cal(C.t3, 10)} {formatFreightDate(f.loadDate)}{f.loadTime ? ` · ${f.loadTime}` : ""}</span>}
+            <span style={{ display: "flex", alignItems: "center", gap: 3 }}>{Ic.plant(C.t3, 10)} {f.destName || "Sin destino"}</span>
+            <span style={{ display: "flex", alignItems: "center", gap: 3 }}>{Ic.truck(C.t3, 10)} {f.transporterName || "Sin asignar"}</span>
+          </div>
+        </div>
+      );
+    };
+
     if (hasDetail && !isDesktop) return detailScreen;
     if (hasDetail && isDesktop) {
       return (
         <div style={{ flex: 1, position: "relative" }}>
           <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, display: "flex", flexDirection: "row" }}>
-            {renderPendingPanel(true)}
+            <div style={{ width: 320, flexShrink: 0, overflow: "auto", borderRight: `1px solid ${C.b1}`, padding: "12px 8px" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {simpleFreights.map(renderSimpleCard)}
+              </div>
+            </div>
             {detailScreen}
           </div>
         </div>
       );
     }
-    return <div style={{ flex: 1, overflow: "auto" }}>{renderPendingPanel(false)}</div>;
+
+    const pendingSimple = simpleFreights.filter(f => f._pending);
+    const restSimple = simpleFreights.filter(f => !f._pending);
+
+    return (
+      <div style={{ flex: 1, overflow: "auto", padding: 18 }}>
+        {loading && freights.length === 0 && <SkeletonList count={4} />}
+        {!loading && simpleFreights.length === 0 && <EmptyState icon={Ic.truck(C.t3, 28)} title="Sin fletes en curso" subtitle="No hay fletes activos en este momento" />}
+        {pendingSimple.length > 0 && (
+          <>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+              <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#FF6A00", animation: "dotPulse 1.5s ease-in-out infinite" }} />
+              <span style={{ fontSize: 13, fontWeight: 700, color: "#FF6A00" }}>Pendientes de mi parte</span>
+              <span style={{ fontSize: 11, fontWeight: 600, color: C.t3 }}>({pendingSimple.length})</span>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 20 }}>
+              {pendingSimple.map(renderSimpleCard)}
+            </div>
+          </>
+        )}
+        {restSimple.length > 0 && (
+          <>
+            {pendingSimple.length > 0 && (
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+                <div style={{ width: 8, height: 8, borderRadius: "50%", background: C.ok }} />
+                <span style={{ fontSize: 13, fontWeight: 700, color: C.ok }}>En curso</span>
+                <span style={{ fontSize: 11, fontWeight: 600, color: C.t3 }}>({restSimple.length})</span>
+              </div>
+            )}
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {restSimple.map(renderSimpleCard)}
+            </div>
+          </>
+        )}
+      </div>
+    );
   }
 
   // Desktop with detail selected
