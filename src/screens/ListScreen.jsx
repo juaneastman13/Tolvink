@@ -16,9 +16,9 @@ const GROUPS = [
 
 // Entity grouping configs per user type
 const ENTITY_GROUPS = {
-  producer:     [{ key:"transportista", label:"Por transportista", field:"transporterName", fallback:"Sin asignar" }, { key:"planta", label:"Por planta", field:"destName", fallback:"Sin destino" }],
-  plant:        [{ key:"transportista", label:"Por transportista", field:"transporterName", fallback:"Sin asignar" }, { key:"productor", label:"Por productor", field:"originCompanyName", fallback:"Sin productor" }],
-  transporter:  [{ key:"planta", label:"Por planta", field:"destName", fallback:"Sin destino" }],
+  producer:     [{ key:"transportista", label:"Transportista", field:"transporterName", fallback:"Sin asignar", icon:"truck", clr:"info" }, { key:"planta", label:"Planta", field:"destName", fallback:"Sin destino", icon:"plant", clr:"ok" }],
+  plant:        [{ key:"transportista", label:"Transportista", field:"transporterName", fallback:"Sin asignar", icon:"truck", clr:"info" }, { key:"productor", label:"Productor", field:"originCompanyName", fallback:"Sin productor", icon:"user", clr:"pri" }],
+  transporter:  [{ key:"planta", label:"Planta", field:"destName", fallback:"Sin destino", icon:"plant", clr:"ok" }],
 };
 
 // Table sort column getters
@@ -48,7 +48,7 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
   const [datePreset, setDatePreset] = useState("");
   const [mapShown, setMapShown] = useState(false);
   // Kanban grouping: "status" (default) or entity key
-  const [kanbanGroup, setKanbanGroup] = useState("status");
+  const [kanbanGroup, setKanbanGroup] = useState(null);
   // Table status filter
   const [tableStatusFilter, setTableStatusFilter] = useState("all");
 
@@ -106,7 +106,7 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
 
   // Entity grouping for kanban
   const entityGrouped = useMemo(() => {
-    if (kanbanGroup === "status") return null;
+    if (!kanbanGroup) return null;
     const entityCfg = (ENTITY_GROUPS[userType] || []).find(e => e.key === kanbanGroup);
     if (!entityCfg) return null;
     const buckets = {};
@@ -189,8 +189,9 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
   };
 
   // Kanban grouping toggle pills
-  const groupingPills = kanbanGroupOptions.length > 1 && (
-    <div style={{ display:"flex", gap:4, marginBottom:10 }}>
+  const groupingPills = kanbanGroupOptions.length > 0 && (
+    <div style={{ display:"flex", gap:6, marginBottom:10, alignItems:"center" }}>
+      <span style={{ fontSize:11, fontWeight:600, color:C.t3, whiteSpace:"nowrap" }}>Agrupar por:</span>
       {kanbanGroupOptions.map(o => (
         <button key={o.key} onClick={() => setKanbanGroup(o.key)} style={{ padding:"5px 10px", borderRadius:7, border:`1.5px solid ${kanbanGroup === o.key ? C.pri : C.b1}`, background: kanbanGroup === o.key ? C.priPale : C.w, color: kanbanGroup === o.key ? C.pri : C.t2, fontSize:11, fontWeight: kanbanGroup === o.key ? 700 : 500, cursor:"pointer", fontFamily:"inherit", whiteSpace:"nowrap" }}>{o.label}</button>
       ))}
@@ -392,7 +393,7 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
 
       {/* View: Kanban */}
       {view==="kanban" && freights.length > 0 && (<>
-      {kanbanGroup === "status" || !entityGrouped ? (
+      {!kanbanGroup || !entityGrouped ? (
         /* Status grouping (original) */
         isDesktop ? (
         <div style={{ display:"flex", gap:12, overflowX:"auto", alignItems:"flex-start", paddingBottom:8 }}>
@@ -541,6 +542,47 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
       {/* View: Seguimiento -- by transporter -> driver -> queue */}
       {view==="seguimiento" && freights.length > 0 && (<>
       {groupingPills}
+      {entityGrouped ? (
+        <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
+          {entityGrouped.map(g => {
+            const entityCfg = (ENTITY_GROUPS[userType] || []).find(e => e.key === kanbanGroup);
+            const groupColor = entityCfg ? C[entityCfg.clr] || C.info : C.info;
+            const groupIcon = entityCfg?.icon === "plant" ? Ic.plant : entityCfg?.icon === "user" ? Ic.user : Ic.truck;
+            const isCollapsed = !segExpanded[g.name];
+            return (
+              <div key={g.name} style={{ background:C.w, border:`1px solid ${C.b1}`, borderRadius:14, overflow:"hidden", boxShadow:C.sh }}>
+                <div onClick={() => setSegExpanded(p => ({...p, [g.name]: !p[g.name]}))} style={{ padding:"12px 16px", borderBottom:isCollapsed?"none":`2px solid ${groupColor}`, display:"flex", alignItems:"center", gap:8, background:`${groupColor}08`, cursor:"pointer", userSelect:"none" }}>
+                  {g.isFallback ? Ic.warn(C.t3,16) : groupIcon(groupColor,16)}
+                  <span style={{ fontSize:13, fontWeight:700, color:g.isFallback ? C.t2 : groupColor }}>{g.name}</span>
+                  <span style={{ fontSize:10, fontWeight:600, color:C.t3, marginLeft:"auto" }}>{g.items.length} flete{g.items.length!==1?"s":""}</span>
+                  <span style={{ display:"flex", transition:"transform 0.2s", transform:isCollapsed?"rotate(0deg)":"rotate(-90deg)" }}>{Ic.chev(groupColor,16)}</span>
+                </div>
+                {!isCollapsed && <div style={{ padding:12, display:"flex", flexDirection:"column", gap:6 }}>
+                  {g.items.map(f => {
+                    const st = stCfg(f.status);
+                    return (
+                      <div key={f.id} onClick={() => onNav("detail",f.id)} style={{ display:"flex", alignItems:"center", gap:10, padding:"8px 12px", borderRadius:10, border:`1px solid ${C.b1}`, borderLeft:`3px solid ${st.color}`, background:C.bg, cursor:"pointer", transition:"background 0.15s" }}>
+                        <div style={{ flex:1, minWidth:0 }}>
+                          <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                            <span style={{ fontSize:10, fontWeight:700, fontFamily:MONO, color:C.t2 }}>{f.code}</span>
+                            <Bd color={st.color} bg={st.bg} small>{st.label}</Bd>
+                          </div>
+                          <div style={{ fontSize:12, fontWeight:600, color:C.t1, marginTop:2 }}>{f.grain==="Otros"?f.productTypeOther||"Otros":f.grain} · {f.tons} {f.unit||"tn"}</div>
+                          {f.loadDate && <div style={{ fontSize:10, color:C.t3, fontWeight:500, marginTop:2 }}>{Ic.cal(C.t3,9)} {formatFreightDate(f.loadDate)}{f.loadTime?` · ${f.loadTime}`:""}</div>}
+                        </div>
+                        <div style={{ fontSize:11, color:C.t3, textAlign:"right", flexShrink:0 }}>
+                          {f.originCompanyName && <div style={{ display:"flex", alignItems:"center", gap:3, justifyContent:"flex-end" }}>{Ic.user(C.t3,10)} <span style={{ maxWidth:100, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{f.originCompanyName}</span></div>}
+                          {f.destName && <div style={{ display:"flex", alignItems:"center", gap:3, justifyContent:"flex-end", marginTop:2 }}>{Ic.plant(C.t3,10)} <span style={{ maxWidth:100, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{f.destName}</span></div>}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>}
+              </div>
+            );
+          })}
+        </div>
+      ) : (
         <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
           {trackingGroups.transporters.map(t=>{
             const driverList = Object.values(t.drivers);
@@ -659,6 +701,7 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
             <EmptyState icon={Ic.truck(C.t3,28)} title="Sin fletes activos" subtitle="No hay fletes en curso para mostrar en seguimiento"/>
           )}
         </div>
+      )}
       </>)}
 
       {/* Load more / pagination indicator */}
