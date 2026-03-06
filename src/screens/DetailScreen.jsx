@@ -246,9 +246,18 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
       </div>}
 
       {/* Progress — click to see per-stage detail */}
-      {freight.status !== "canceled" && (()=>{
+      {(()=>{
         const steps = ["pending_assignment","assigned","accepted","in_progress","loaded","finished"];
         const curIdx = steps.indexOf(freight.status);
+        const isCanceled = freight.status === "canceled";
+        // Visual stepper: 3 steps
+        const subLabels = { assigned:"Asignando flota", accepted:"Confirmando camiones", in_progress:"En camino", loaded:"Cargando" };
+        const visualIdx = isCanceled ? (curIdx >= 1 ? (curIdx >= 3 ? 2 : 1) : 0) : curIdx === 0 ? 0 : curIdx <= 4 ? 1 : 2;
+        const visualSteps = [
+          { label:"Pendiente", color:C.acc },
+          { label:"En curso", color:C.pri, sub: [1,2,3,4].includes(curIdx) || isCanceled ? subLabels[freight.status] || subLabels[steps[curIdx]] : null },
+          { label: isCanceled ? "Cancelado" : "Finalizado", color: isCanceled ? C.err : C.ok },
+        ];
         const fmtD = (d) => { try { const dt=new Date(d); return dt.toLocaleDateString("es-AR",{day:"2-digit",month:"short"})+" "+dt.toLocaleTimeString("es-AR",{hour:"2-digit",minute:"2-digit",hour12:false}); } catch(e){ return ""; } };
         const actionLabels = { created:"Solicitado", assigned:"Asignado", assigned_multi:"Asignado", accepted:"Aceptado", rejected:"Rechazado", started:"Iniciado", confirm_loaded:"Carga OK", confirm_finished:"Entrega OK", finished:"Finalizado", canceled:"Cancelado", authorized:"Autorizado", updated:"Editado", trip_accepted:"Aceptado", trip_rejected:"Rechazado", trip_started:"Iniciado", trip_confirm_loaded:"Carga OK", trip_confirm_finished:"Entrega OK", trip_finished:"Finalizado", assignment_canceled:"Cancelado", assignment_updated:"Editado" };
         const actionColors = { created:C.pri, assigned:C.sec, assigned_multi:C.sec, accepted:C.info, rejected:C.err, started:C.acc, confirm_loaded:C.acc, confirm_finished:C.pri, finished:C.ok, canceled:C.err, authorized:C.info, updated:C.t2, trip_accepted:C.info, trip_rejected:C.err, trip_started:C.acc, trip_confirm_loaded:C.acc, trip_confirm_finished:C.pri, trip_finished:C.ok, assignment_canceled:C.err, assignment_updated:C.t2 };
@@ -258,7 +267,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
           accepted:["accepted","authorized","trip_accepted","trip_rejected"],
           in_progress:["started","trip_started"],
           loaded:["confirm_loaded","trip_confirm_loaded"],
-          finished:["confirm_finished","finished","trip_confirm_finished","trip_finished"],
+          finished:["confirm_finished","finished","trip_confirm_finished","trip_finished","canceled"],
         };
         const stepToTrip = { assigned:"pending", accepted:"accepted", in_progress:"in_progress", loaded:"loaded", finished:"finished" };
         const tripRank = { pending:0, accepted:1, in_progress:2, loaded:3, finished:4 };
@@ -275,12 +284,14 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
             </button>
           </div>
           <div style={{display:"flex",gap:3,alignItems:"flex-start"}}>
-            {steps.map((s,i)=>{
-              const done = i < curIdx; const active = i === curIdx; const c = stCfg(s);
-              return <div key={s} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4,minWidth:0}}>
-                <div style={{width:"100%",height:active?5:4,borderRadius:3,background:done?C.pri:active?c.border:C.b1,transition:"all 0.2s"}}/>
-                {active && <div style={{width:6,height:6,borderRadius:3,background:c.border,marginTop:-2}}/>}
-                <span style={{fontSize:7.5,fontWeight:active?700:500,color:active?c.color:done?C.t2:C.t3,textAlign:"center",lineHeight:1.2,wordBreak:"break-word",maxWidth:"100%"}}>{c.label}</span>
+            {visualSteps.map((vs,i)=>{
+              const done = i < visualIdx; const active = i === visualIdx && !isCanceled; const isCancelStep = i === 2 && isCanceled;
+              const barColor = done ? C.pri : active ? vs.color : isCancelStep ? C.err : C.b1;
+              return <div key={i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4,minWidth:0}}>
+                <div style={{width:"100%",height:active?5:4,borderRadius:3,background:barColor,transition:"all 0.2s"}}/>
+                {(active || isCancelStep) && <div style={{width:6,height:6,borderRadius:3,background:vs.color,marginTop:-2}}/>}
+                <span style={{fontSize:8.5,fontWeight:(active||isCancelStep)?700:500,color:(active||isCancelStep)?vs.color:done?C.t2:C.t3,textAlign:"center",lineHeight:1.2}}>{vs.label}</span>
+                {active && vs.sub && <span style={{fontSize:8,color:C.t3,fontStyle:"italic",textAlign:"center",lineHeight:1.2,marginTop:-2}}>({vs.sub})</span>}
               </div>;
             })}
           </div>
