@@ -140,9 +140,9 @@ export function DocsGallery({ documents, onViewFile, freightId, canDelete, onDel
 
 export function OcrResultModal({ result, onClose }) {
   const show = useUIStore(s => s.show);
-  const [mobile, setMobile] = useState(() => window.innerWidth < 600);
+  const [mobile, setMobile] = useState(() => window.innerWidth < 768);
   useEffect(() => {
-    const h = () => setMobile(window.innerWidth < 600);
+    const h = () => setMobile(window.innerWidth < 768);
     window.addEventListener("resize", h);
     return () => window.removeEventListener("resize", h);
   }, []);

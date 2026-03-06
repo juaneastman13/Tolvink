@@ -68,8 +68,8 @@ export default function DriverQueueModal({ driverId, driverName, onClose }) {
                   {q.destName && <div style={{ fontSize: 10.5, color: C.t3, marginTop: 1 }}>{q.destName}</div>}
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 2, flexShrink: 0 }}>
-                  <button aria-label="Subir" disabled={i === 0} onClick={() => move(i, -1)} style={{ width: 28, height: 24, borderRadius: 6, border: `1px solid ${C.b1}`, background: i === 0 ? C.bg : C.w, cursor: i === 0 ? "default" : "pointer", fontSize: 14, fontFamily: "inherit", color: i === 0 ? C.t3 : C.t1, display: "flex", alignItems: "center", justifyContent: "center" }}>{"\u25B2"}</button>
-                  <button aria-label="Bajar" disabled={i === queue.length - 1} onClick={() => move(i, 1)} style={{ width: 28, height: 24, borderRadius: 6, border: `1px solid ${C.b1}`, background: i === queue.length - 1 ? C.bg : C.w, cursor: i === queue.length - 1 ? "default" : "pointer", fontSize: 14, fontFamily: "inherit", color: i === queue.length - 1 ? C.t3 : C.t1, display: "flex", alignItems: "center", justifyContent: "center" }}>{"\u25BC"}</button>
+                  <button aria-label="Subir" disabled={i === 0} onClick={() => move(i, -1)} style={{ width: 44, height: 44, borderRadius: 8, border: `1px solid ${C.b1}`, background: i === 0 ? C.bg : C.w, cursor: i === 0 ? "default" : "pointer", fontSize: 16, fontFamily: "inherit", color: i === 0 ? C.t3 : C.t1, display: "flex", alignItems: "center", justifyContent: "center" }}>{"\u25B2"}</button>
+                  <button aria-label="Bajar" disabled={i === queue.length - 1} onClick={() => move(i, 1)} style={{ width: 44, height: 44, borderRadius: 8, border: `1px solid ${C.b1}`, background: i === queue.length - 1 ? C.bg : C.w, cursor: i === queue.length - 1 ? "default" : "pointer", fontSize: 16, fontFamily: "inherit", color: i === queue.length - 1 ? C.t3 : C.t1, display: "flex", alignItems: "center", justifyContent: "center" }}>{"\u25BC"}</button>
                 </div>
               </div>
             );

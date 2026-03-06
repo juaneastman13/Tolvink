@@ -22,7 +22,7 @@ export const Btn = memo(function Btn({ children, onClick, v="pri", full, sm, ico
     acc:  { bg:C.acc, c:C.w, hbg:C.accLt },
   };
   const vv = vs[v] || vs.pri;
-  return <button type={type} disabled={disabled} onClick={onClick} style={{ display:"inline-flex", alignItems:"center", justifyContent:"center", gap:7, padding:sm?"8px 14px":"13px 22px", borderRadius:10, fontSize:sm?12:13.5, fontWeight:600, fontFamily:"inherit", background:disabled?"#E8ECE9":vv.bg, color:disabled?C.t3:vv.c, border:vv.bd?`1px solid ${vv.bd}`:"none", cursor:disabled?"not-allowed":"pointer", width:full?"100%":"auto", transition:"all 0.2s ease", minHeight:sm?36:44, WebkitTapHighlightColor:"transparent", touchAction:"manipulation", ...style }} onMouseEnter={e=>{if(!disabled&&vv.hbg)e.currentTarget.style.background=vv.hbg}} onMouseLeave={e=>{if(!disabled)e.currentTarget.style.background=disabled?"#E8ECE9":vv.bg}}>{icon&&<span style={{display:"flex",alignItems:"center"}}>{icon}</span>}{children}</button>;
+  return <button type={type} disabled={disabled} onClick={onClick} style={{ display:"inline-flex", alignItems:"center", justifyContent:"center", gap:7, padding:sm?"8px 14px":"13px 22px", borderRadius:10, fontSize:sm?12:13.5, fontWeight:600, fontFamily:"inherit", background:disabled?"#E8ECE9":vv.bg, color:disabled?C.t2:vv.c, border:vv.bd?`1px solid ${vv.bd}`:"none", cursor:disabled?"not-allowed":"pointer", width:full?"100%":"auto", transition:"all 0.2s ease", minHeight:sm?36:44, WebkitTapHighlightColor:"transparent", touchAction:"manipulation", ...style }} onMouseEnter={e=>{if(!disabled&&vv.hbg)e.currentTarget.style.background=vv.hbg}} onMouseLeave={e=>{if(!disabled)e.currentTarget.style.background=disabled?"#E8ECE9":vv.bg}}>{icon&&<span style={{display:"flex",alignItems:"center"}}>{icon}</span>}{children}</button>;
 });
 
 export const Tabs = memo(function Tabs({ items, active, onChange }) {
@@ -43,7 +43,7 @@ export function Field({ label, icon, value, onChange, placeholder, type="text", 
         <input id={fieldId} value={value} onChange={e=>onChange(e.target.value)} placeholder={placeholder} type={isPw&&!showPw?"password":"text"} onKeyDown={onKeyDown} inputMode={inputMode}
           style={{ width:"100%", padding:"12px 14px", paddingRight:isPw?42:14, borderRadius:10, border:`1.5px solid ${borderColor}`, background:hasError?C.errPale+"40":C.w, color:C.t1, fontSize:16, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }}
           onFocus={e=>{e.target.style.borderColor=hasError?C.err:C.bFocus;}} onBlur={e=>{e.target.style.borderColor=borderColor;}} />
-        {isPw && <button onClick={()=>setShowPw(!showPw)} style={{ position:"absolute", right:10, top:"50%", transform:"translateY(-50%)", background:"none", border:"none", cursor:"pointer", display:"flex", padding:4 }}>{showPw?Ic.eye(C.t3,18):Ic.eyeOff(C.t3,18)}</button>}
+        {isPw && <button aria-label={showPw?"Ocultar contraseña":"Mostrar contraseña"} onClick={()=>setShowPw(!showPw)} style={{ position:"absolute", right:10, top:"50%", transform:"translateY(-50%)", background:"none", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", minWidth:44, minHeight:44, padding:4 }}>{showPw?Ic.eye(C.t3,18):Ic.eyeOff(C.t3,18)}</button>}
       </div>
     </div>
   );
@@ -75,6 +75,7 @@ export function NumericStepper({ value, onChange, min, max, step=1, placeholder,
 
 export function Select({ label, icon, value, onChange, options, placeholder="Seleccionar..." }) {
   const [open, setOpen] = useState(false);
+  const [hlIdx, setHlIdx] = useState(-1);
   const ref = useRef(null);
   const listRef = useRef(null);
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
@@ -87,10 +88,25 @@ export function Select({ label, icon, value, onChange, options, placeholder="Sel
   },[open]);
   useEffect(()=>{
     if(open && listRef.current && value) {
+      const idx = options.findIndex(o=>o.value===value);
+      setHlIdx(idx>=0?idx:0);
       Array.from(listRef.current.children).find(el => el.dataset.val === value)?.scrollIntoView({ block:"nearest" });
     }
   },[open, value]);
   const sel = options.find(o=>o.value===value);
+  const handleKeyDown = (e) => {
+    if (!open) { if (e.key==="ArrowDown"||e.key==="ArrowUp"||e.key===" ") { e.preventDefault(); setOpen(true); } return; }
+    if (e.key==="ArrowDown") { e.preventDefault(); setHlIdx(i=>Math.min(options.length-1,(i<0?0:i+1))); }
+    else if (e.key==="ArrowUp") { e.preventDefault(); setHlIdx(i=>Math.max(0,i-1)); }
+    else if (e.key==="Enter"||e.key===" ") { e.preventDefault(); if(hlIdx>=0&&options[hlIdx]) { onChange(options[hlIdx].value); setOpen(false); } }
+    else if (e.key==="Escape") { e.preventDefault(); setOpen(false); }
+  };
+  useEffect(()=>{
+    if(open&&listRef.current&&hlIdx>=0) {
+      const el = listRef.current.children[hlIdx];
+      if(el) el.scrollIntoView({ block:"nearest" });
+    }
+  },[hlIdx, open]);
 
   // Mobile: native <select> for best touch UX
   if (isMobile) {
@@ -109,15 +125,16 @@ export function Select({ label, icon, value, onChange, options, placeholder="Sel
   return (
     <div ref={ref} style={{ position:"relative" }}>
       {label && <label style={{ fontSize:10.5, fontWeight:600, color:C.t2, marginBottom:6, display:"flex", alignItems:"center", gap:4, textTransform:"uppercase", letterSpacing:0.6 }}>{icon} {label}</label>}
-      <button type="button" onClick={()=>setOpen(!open)} style={{ width:"100%", padding:"12px 14px", paddingRight:36, borderRadius:10, border:`1.5px solid ${open?C.bFocus:C.b1}`, background:C.w, color:sel?C.t1:C.t3, fontSize:15, fontFamily:"inherit", cursor:"pointer", boxSizing:"border-box", minHeight:44, outline:"none", textAlign:"left", display:"flex", alignItems:"center", transition:"border-color 0.15s" }}>
+      <button type="button" onClick={()=>setOpen(!open)} onKeyDown={handleKeyDown} style={{ width:"100%", padding:"12px 14px", paddingRight:36, borderRadius:10, border:`1.5px solid ${open?C.bFocus:C.b1}`, background:C.w, color:sel?C.t1:C.t3, fontSize:15, fontFamily:"inherit", cursor:"pointer", boxSizing:"border-box", minHeight:44, outline:"none", textAlign:"left", display:"flex", alignItems:"center", transition:"border-color 0.15s" }}>
         {sel ? <>{sel.label}{sel.sub && <span style={{ color:C.t3, fontWeight:400 }}>&nbsp;— {sel.sub}</span>}</> : placeholder}
       </button>
       <div style={{ position:"absolute", right:12, top:label?`calc(50% + 11px)`:"50%", transform:`translateY(-50%) rotate(${open?180:0}deg)`, pointerEvents:"none", display:"flex", transition:"transform 0.2s" }}>{Ic.down(open?C.bFocus:C.t3,16)}</div>
-      {open && <div ref={listRef} style={{ position:"absolute", top:"100%", left:0, right:0, marginTop:4, background:C.w, border:`1.5px solid ${C.b1}`, borderRadius:12, boxShadow:C.shMd, maxHeight:240, overflowY:"auto", zIndex:50, padding:4 }}>
+      {open && <div ref={listRef} role="listbox" style={{ position:"absolute", top:"100%", left:0, right:0, marginTop:4, background:C.w, border:`1.5px solid ${C.b1}`, borderRadius:12, boxShadow:C.shMd, maxHeight:240, overflowY:"auto", zIndex:50, padding:4 }}>
         {options.length===0 && <div style={{ padding:"14px 12px", fontSize:13, color:C.t3, textAlign:"center" }}>Sin opciones</div>}
         {options.map((o,i)=>{
           const active = o.value===value;
-          return <button key={o.value} data-val={o.value} type="button" onClick={()=>{onChange(o.value);setOpen(false);}} className="tv-sel-opt" style={{ width:"100%", padding:"11px 14px", background:active?C.priPale:"transparent", border:"none", borderRadius:8, cursor:"pointer", fontFamily:"inherit", fontSize:14, fontWeight:active?600:400, color:active?C.pri:C.t1, textAlign:"left", display:"flex", alignItems:"center", gap:8, transition:"background 0.12s", marginBottom:i<options.length-1?2:0 }}>
+          const highlighted = i===hlIdx;
+          return <button key={o.value} data-val={o.value} type="button" role="option" aria-selected={active} onClick={()=>{onChange(o.value);setOpen(false);}} className="tv-sel-opt" style={{ width:"100%", padding:"11px 14px", background:highlighted?C.priPale:active?`${C.pri}08`:"transparent", border:"none", borderRadius:8, cursor:"pointer", fontFamily:"inherit", fontSize:14, fontWeight:active?600:400, color:active?C.pri:C.t1, textAlign:"left", display:"flex", alignItems:"center", gap:8, transition:"background 0.12s", marginBottom:i<options.length-1?2:0 }}>
             <span style={{ flex:1 }}>{o.label}{o.sub && <span style={{ fontSize:12, color:active?C.pri:C.t3, fontWeight:400 }}> — {o.sub}</span>}</span>
             {active && Ic.chk(C.pri,15)}
           </button>;
@@ -297,7 +314,7 @@ export function ModalOverlay({ children, onClose, maxWidth=400, loading=false, c
       )}
       {/* Card */}
       {showCard && (
-        <div onClick={e=>e.stopPropagation()} style={{background:C.w,borderRadius:18,padding:22,width:"100%",maxWidth,maxHeight:"calc(100vh - 48px)",overflowY:"auto",boxShadow:C.shLg,animation:"moCardIn 0.3s cubic-bezier(0.34,1.56,0.64,1)",WebkitOverflowScrolling:"touch"}}>
+        <div onClick={e=>e.stopPropagation()} style={{background:C.w,borderRadius:18,padding:"22px 22px max(22px, env(safe-area-inset-bottom))",width:"100%",maxWidth,maxHeight:"calc(100vh - 48px)",overflowY:"auto",boxShadow:C.shLg,animation:"moCardIn 0.3s cubic-bezier(0.34,1.56,0.64,1)",WebkitOverflowScrolling:"touch"}}>
           {children}
         </div>
       )}

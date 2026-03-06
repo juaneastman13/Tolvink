@@ -21,7 +21,7 @@ export default function ConfirmActionModal({ freight, title, btnLabel, btnVarian
       {showTonsInput && <div style={{marginBottom:16}}>
         <NumericStepper label="Toneladas cargadas" value={tons} onChange={setTons} min={0} step={0.01} placeholder="Ej: 30.5" />
       </div>}
-      <div style={{display:"flex",gap:8}}><Btn full v="ghost" onClick={onClose} disabled={loading||closing}>Cancelar</Btn><Btn full v={btnVariant} disabled={loading||closing} onClick={doConfirm}>{loading?"Procesando...":btnLabel}</Btn></div>
+      <div style={{display:"flex",gap:8}}><Btn full v="ghost" onClick={onClose} disabled={loading||closing}>Cancelar</Btn><Btn full v={btnVariant} disabled={loading||closing} onClick={doConfirm}>{loading?<><span style={{width:14,height:14,border:"2px solid rgba(255,255,255,0.3)",borderTopColor:"#fff",borderRadius:"50%",display:"inline-block",animation:"spin 0.6s linear infinite",marginRight:6,verticalAlign:"middle"}}/><style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>Procesando...</>:btnLabel}</Btn></div>
     </ModalOverlay>
   );
 }

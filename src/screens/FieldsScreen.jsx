@@ -167,7 +167,7 @@ export default function FieldsScreen({ onBack, embedded, goToMap }) {
                     </div>
                   </div>
                   <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                    <button aria-label="Editar campo" onClick={(e) => { e.stopPropagation(); editField === f.id ? setEditField(null) : startEditField(f); }} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }}>{Ic.edit(editField === f.id ? C.pri : C.t3, 16)}</button>
+                    <button aria-label="Editar campo" onClick={(e) => { e.stopPropagation(); editField === f.id ? setEditField(null) : startEditField(f); }} style={{ background: "none", border: "none", cursor: "pointer", padding: 4, minWidth: 44, minHeight: 44, display: "flex", alignItems: "center", justifyContent: "center" }}>{Ic.edit(editField === f.id ? C.pri : C.t3, 16)}</button>
                     <Bd color={C.pri} small>{(f.lots || []).length} lote{(f.lots || []).length !== 1 ? "s" : ""}</Bd>
                     <span style={{ display: "flex", transition: "transform 0.2s", transform: expandedField === f.id ? "rotate(-90deg)" : "rotate(0deg)", marginLeft: 2 }}>{Ic.chev(C.t3, 16)}</span>
                   </div>
@@ -194,7 +194,7 @@ export default function FieldsScreen({ onBack, embedded, goToMap }) {
                         {l.hectares && <span style={{ fontSize: 10, color: C.t3 }}>{l.hectares} ha</span>}
                         {l.lat&&l.lng&&goToMap?<span onClick={(e)=>{e.stopPropagation();goToMap(l.lat,l.lng,f.name+" — "+l.name);}} style={{cursor:"pointer",opacity:0.6,fontSize:10}} title="Ver en mapa">📍</span>:l.lat&&<span style={{ fontSize: 9, color: C.ok }}>📍</span>}
                       </div>
-                      <button aria-label="Editar lote" onClick={() => editLot?.lotId === l.id ? setEditLot(null) : startEditLot(f.id, l)} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }}>{Ic.edit(editLot?.lotId === l.id ? C.pri : C.t3, 14)}</button>
+                      <button aria-label="Editar lote" onClick={() => editLot?.lotId === l.id ? setEditLot(null) : startEditLot(f.id, l)} style={{ background: "none", border: "none", cursor: "pointer", padding: 4, minWidth: 44, minHeight: 44, display: "flex", alignItems: "center", justifyContent: "center" }}>{Ic.edit(editLot?.lotId === l.id ? C.pri : C.t3, 14)}</button>
                     </div>
                     {/* Edit lot form */}
                     {editLot?.lotId === l.id && (
@@ -225,7 +225,7 @@ export default function FieldsScreen({ onBack, embedded, goToMap }) {
                     </div>
                   </div>
                 ) : (
-                  <button onClick={() => setShowLotForm(f.id)} style={{ margin: "8px 14px 14px 28px", background: `${C.acc}10`, border: `1px solid ${C.acc}40`, borderRadius: 8, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 600, color: C.acc, padding: "10px 16px", display: "flex", alignItems: "center", gap: 6 }}>{Ic.plus(C.acc, 14)} Agregar lote</button>
+                  <button onClick={() => setShowLotForm(f.id)} style={{ margin: "8px 14px 14px 28px", background: `${C.acc}10`, border: `1px solid ${C.acc}40`, borderRadius: 8, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 600, color: C.acc, padding: "10px 16px", minHeight: 44, display: "flex", alignItems: "center", gap: 6 }}>{Ic.plus(C.acc, 14)} Agregar lote</button>
                 ))}
               </div>
             ))}

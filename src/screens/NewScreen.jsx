@@ -78,12 +78,12 @@ function SummaryCard({ secSummary, secComplete, form, showTruckSelect, isDesktop
 function MobileStepModal({ open, title, summary, children, onClose }) {
   if (!open) return null;
   return (
-    <div style={{ position:"fixed", inset:0, zIndex:1000, display:"flex", flexDirection:"column", justifyContent:"flex-end" }}>
+    <div role="dialog" aria-modal="true" aria-label={title} style={{ position:"fixed", inset:0, zIndex:1000, display:"flex", flexDirection:"column", justifyContent:"flex-end" }}>
       <div onClick={onClose} style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.4)" }}/>
       <div style={{ position:"relative", background:C.bg, borderRadius:"20px 20px 0 0", maxHeight:"90vh", overflow:"auto", padding:"0 0 env(safe-area-inset-bottom, 0)", animation:"slideUp 0.25s ease" }}>
         <div style={{ position:"sticky", top:0, zIndex:2, background:C.bg, padding:"16px 20px 8px", borderBottom:`1px solid ${C.b2}`, display:"flex", alignItems:"center", justifyContent:"space-between" }}>
           <span style={{ fontSize:16, fontWeight:800, color:C.t1 }}>{title}</span>
-          <button onClick={onClose} style={{ background:"none", border:"none", cursor:"pointer", padding:4 }}>{Ic.cross(C.t3, 20)}</button>
+          <button aria-label="Cerrar" onClick={onClose} style={{ background:"none", border:"none", cursor:"pointer", padding:4, minWidth:44, minHeight:44, display:"flex", alignItems:"center", justifyContent:"center" }}>{Ic.cross(C.t3, 20)}</button>
         </div>
         {summary && <div style={{ padding:"10px 20px", background:C.priPale, fontSize:11, color:C.pri, fontWeight:600 }}>{summary}</div>}
         <div style={{ padding:"16px 20px 24px" }}>

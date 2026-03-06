@@ -181,6 +181,13 @@ export default function AssignModal({ freight, transporters, user, onClose, onCo
 
   const externalTs = ts.filter(x=>x.id!==freight.originCompanyId);
   const canAdd = remainingSlots > 0 && ((mode==="company"&&t) || (mode==="own"&&truckId));
+  const hasDirtyData = !!(t || truckId || driverId || truckList.length > 0 || showNewTruck || showNewDriver);
+  const safeClose = () => {
+    if (hasDirtyData && !loading && !closing) {
+      if (!window.confirm("¿Descartar los cambios sin guardar?")) return;
+    }
+    onClose();
+  };
 
   // Helpers
   const selTransporterName = t ? (ts.find(x=>x.id===t)?.name||"") : "";
@@ -201,7 +208,7 @@ export default function AssignModal({ freight, transporters, user, onClose, onCo
   // ======================== RENDER =====================================
 
   return (
-    <ModalOverlay onClose={onClose} loading={loading} closing={closing} closingText={closingText}>
+    <ModalOverlay onClose={safeClose} loading={loading} closing={closing} closingText={closingText}>
       <div style={{fontSize:17,fontWeight:700,marginBottom:4}}>Asignar transporte · {freight.code}</div>
       <div style={{fontSize:12,color:C.t2,marginBottom:multiTruck?8:14}}>{freight.grain} · {freight.tons}tn · {freight.originName}</div>
 
@@ -387,7 +394,7 @@ export default function AssignModal({ freight, transporters, user, onClose, onCo
 
       {/* ============ BUTTONS ============ */}
       <div style={{display:"flex",gap:8}}>
-        <Btn full v="ghost" onClick={onClose} disabled={loading||closing}>Cancelar</Btn>
+        <Btn full v="ghost" onClick={safeClose} disabled={loading||closing}>Cancelar</Btn>
         {multiTruck ? (
           remainingSlots > 0 ? (
             <Btn full v="acc" disabled={!canAdd||loading||closing} onClick={addToList}>

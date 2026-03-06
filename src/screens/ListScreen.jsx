@@ -181,7 +181,7 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
         {f.loadDate && <div style={{ fontSize:13, color:C.t3, fontWeight:500, marginBottom:6 }}>{Ic.cal(C.t3,10)} {formatFreightDate(f.loadDate)}{f.loadTime?` · ${f.loadTime}`:""}</div>}
         <div style={{display:"flex",flexDirection:"column",gap:3,fontSize:11,color:C.t2}}>
           <div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.plant(C.t3,12)} <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.destName}</span>{f.destLat&&f.destLng&&<span onClick={(e)=>{e.stopPropagation();goToMap(f.destLat,f.destLng,f.destName);}} style={{cursor:"pointer",opacity:0.6,marginLeft:3,fontSize:10,flexShrink:0}} title="Ver en mapa">{"\uD83D\uDCCD"}</span>}</div>
-          <div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.truck(C.t3,12)} <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.transporterName||"Sin asignar"}{f.truckPlate?` (${f.truckPlate})`:""}</span>{f.isOwnFleet&&<span style={{fontSize:9,color:C.acc,fontWeight:600,marginLeft:4}}>Flota propia</span>}{f.isMultiTruck&&<span style={{fontSize:9,color:C.info,fontWeight:600,marginLeft:4}}>{f.assignedTruckCount}/{f.truckCount} cam.</span>}</div>
+          <div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.truck(C.t3,12)} <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.transporterName||"Sin asignar"}{f.truckPlate?` (${f.truckPlate})`:""}</span>{f.isOwnFleet&&<span style={{fontSize:10,color:C.acc,fontWeight:600,marginLeft:4}}>Flota propia</span>}{f.isMultiTruck&&<span style={{fontSize:10,color:C.info,fontWeight:600,marginLeft:4}}>{f.assignedTruckCount}/{f.truckCount} cam.</span>}</div>
         </div>
       </div>
     );
@@ -224,7 +224,7 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
         <div key={f.id} onClick={() => onNav("detail", f.id)} style={{ background: C.w, border: `1px solid ${pa ? st.color + "40" : C.b1}`, borderLeft: `4px solid ${st.color}`, borderRadius: 10, padding: "8px 12px", cursor: "pointer", boxShadow: C.sh, transition: "background 0.15s, border-color 0.15s", position: "relative", overflow: "hidden", boxSizing: "border-box" }}>
           {pa && <div style={{ position: "absolute", top: 8, right: 10, display: "flex", alignItems: "center", gap: 4 }}>
             <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#FF6A00", display: "inline-block", animation: "dotPulse 1.5s ease-in-out infinite", flexShrink: 0 }} />
-            <span style={{ fontSize: 9, fontWeight: 700, color: "#FF6A00", whiteSpace: "nowrap" }}>{pa.action}</span>
+            <span style={{ fontSize: 10, fontWeight: 700, color: "#FF6A00", whiteSpace: "nowrap" }}>{pa.action}</span>
           </div>}
           <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 3, fontSize: 11, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>
             <span style={{ fontWeight: 700, fontFamily: MONO, color: C.t2, fontSize: 12 }}>{f.code}</span>
@@ -340,15 +340,15 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
       {/* Mobile: collapsible filters layout */}
       {/* Toggle button */}
       <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
-        <button onClick={()=>setFiltersOpen(p=>!p)} style={{padding:"6px 12px",borderRadius:8,border:`1.5px solid ${hasFilters?C.pri:C.b1}`,background:hasFilters?C.priPale:C.w,color:hasFilters?C.pri:C.t2,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:5}}>
+        <button onClick={()=>setFiltersOpen(p=>!p)} style={{padding:"8px 14px",borderRadius:8,border:`1.5px solid ${hasFilters?C.pri:C.b1}`,background:hasFilters?C.priPale:C.w,color:hasFilters?C.pri:C.t2,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:5,minHeight:44}}>
           {Ic.srch(hasFilters?C.pri:C.t3,12)} {filtersOpen?"Ocultar filtros":"Ver filtros"}{hasFilters?" (activos)":""}
         </button>
-        {hasFilters && <button onClick={clearAll} style={{padding:"5px 10px",borderRadius:6,border:`1px solid ${C.err}40`,background:C.errPale,color:C.err,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap",flexShrink:0}}>Limpiar</button>}
+        {hasFilters && <button onClick={clearAll} style={{padding:"8px 12px",borderRadius:6,border:`1px solid ${C.err}40`,background:C.errPale,color:C.err,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap",flexShrink:0,minHeight:44}}>Limpiar</button>}
       </div>
       {/* View mode buttons */}
-      <div style={{ display:"flex", gap:4, marginBottom:10 }}>
+      <div style={{ display:"flex", gap:4, marginBottom:10, overflowX:"auto", WebkitOverflowScrolling:"touch", paddingBottom:2 }}>
         {[{k:"kanban",l:"Estados",ic:Ic.home},{k:"seguimiento",l:"Transportistas",ic:Ic.user},{k:"tabla",l:"Tabla",ic:Ic.doc},{k:"mapa",l:"Mapa",ic:Ic.pin}].map(v=>(
-          <button key={v.k} onClick={()=>setView(v.k)} style={{padding:"5px 7px",borderRadius:7,border:`1.5px solid ${view===v.k?C.pri:C.b1}`,background:view===v.k?C.priPale:C.w,color:view===v.k?C.pri:C.t2,fontSize:10,fontWeight:view===v.k?700:500,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:3,whiteSpace:"nowrap"}}>
+          <button key={v.k} onClick={()=>setView(v.k)} style={{padding:"8px 10px",borderRadius:7,border:`1.5px solid ${view===v.k?C.pri:C.b1}`,background:view===v.k?C.priPale:C.w,color:view===v.k?C.pri:C.t2,fontSize:11,fontWeight:view===v.k?700:500,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:3,whiteSpace:"nowrap",minHeight:36,flexShrink:0}}>
             {v.ic(view===v.k?C.pri:C.t3,11)} {v.l}
           </button>
         ))}
@@ -607,8 +607,8 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
                         {Ic.user(C.pri,14)}
                         <span style={{ fontSize:12, fontWeight:700, color:C.t1 }}>{d.name}</span>
                         {d.phone && <span style={{ fontSize:10.5, color:C.t3 }}>{d.phone}</span>}
-                        <span style={{ fontSize:9.5, fontWeight:600, color:C.info, background:`${C.info}12`, padding:"2px 8px", borderRadius:6 }}>{d.freights.length} en cola</span>
-                        {onAction && d.id && <button onClick={()=>onAction(d.freights[0]?.id,"driver_queue")} style={{ marginLeft:"auto", fontSize:9.5, fontWeight:700, color:C.info, background:`${C.info}12`, border:`1px solid ${C.info}30`, borderRadius:6, padding:"3px 8px", cursor:"pointer", fontFamily:"inherit" }}>Ver cola</button>}
+                        <span style={{ fontSize:10, fontWeight:600, color:C.info, background:`${C.info}12`, padding:"2px 8px", borderRadius:6 }}>{d.freights.length} en cola</span>
+                        {onAction && d.id && <button onClick={()=>onAction(d.freights[0]?.id,"driver_queue")} style={{ marginLeft:"auto", fontSize:10, fontWeight:700, color:C.info, background:`${C.info}12`, border:`1px solid ${C.info}30`, borderRadius:6, padding:"8px 12px", cursor:"pointer", fontFamily:"inherit", minHeight:36 }}>Ver cola</button>}
                       </div>
                       {/* Freight cards */}
                       <div style={{ display:"flex", flexDirection:"column", gap:6, paddingLeft:22 }}>
@@ -640,7 +640,7 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
                       <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
                         {Ic.user(C.t3,14)}
                         <span style={{ fontSize:12, fontWeight:600, color:C.t3, fontStyle:"italic" }}>Sin chofer asignado</span>
-                        <span style={{ fontSize:9.5, fontWeight:600, color:C.t3, background:`${C.t3}12`, padding:"2px 8px", borderRadius:6 }}>{t.noDriver.length}</span>
+                        <span style={{ fontSize:10, fontWeight:600, color:C.t3, background:`${C.t3}12`, padding:"2px 8px", borderRadius:6 }}>{t.noDriver.length}</span>
                       </div>
                       <div style={{ display:"flex", flexDirection:"column", gap:6, paddingLeft:22 }}>
                         {t.noDriver.map(f=>{
