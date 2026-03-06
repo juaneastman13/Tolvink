@@ -407,7 +407,7 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
       const pa = f._pending;
       const isSel = selectedId === f.id;
       return (
-        <div key={f.id} onClick={() => selectFreight(f.id, "pending")} style={{ background: isSel ? C.priPale : C.w, border: `1px solid ${isSel ? C.pri : pa ? "#FF6A00" + "40" : C.b1}`, borderLeft: `4px solid ${pa ? "#FF6A00" : st.color}`, borderRadius: 10, padding: "10px 14px", cursor: "pointer", boxShadow: C.sh, transition: "background 0.15s, border-color 0.15s", position: "relative" }}>
+        <div key={f.id} onClick={() => selectFreight(f.id, "pending")} style={{ background: isSel ? C.priPale : C.w, border: `1px solid ${isSel ? C.pri : pa ? st.color + "40" : C.b1}`, borderLeft: `4px solid ${st.color}`, borderRadius: 10, padding: "10px 14px", cursor: "pointer", boxShadow: C.sh, transition: "background 0.15s, border-color 0.15s", position: "relative" }}>
           {/* Pending indicator — pulsing dot */}
           {pa && <div style={{ position: "absolute", top: 10, right: 12, display: "flex", alignItems: "center", gap: 5 }}>
             <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#FF6A00", display: "inline-block", animation: "dotPulse 1.5s ease-in-out infinite", flexShrink: 0 }} />
@@ -456,10 +456,16 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
               {g.items.map(f => {
                 const st = stCfg(f.status);
                 return (
-                  <div key={f.id} onClick={() => selectFreight(f.id, "daily")} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 10px", borderRadius: 8, background: C.w, border: `1px solid ${C.b1}`, cursor: "pointer", transition: "background 0.15s" }}>
-                    <span style={{ fontSize: 10, fontWeight: 700, fontFamily: MONO, color: C.t2 }}>{f.code}</span>
-                    <span style={{ fontSize: 11, fontWeight: 600, color: C.t1, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.grain === "Otros" ? f.productTypeOther || "Otros" : f.grain} · {f.tons} tn</span>
-                    {f.loadTime && <span style={{ fontSize: 10, color: C.t3 }}>{f.loadTime}</span>}
+                  <div key={f.id} onClick={() => selectFreight(f.id, "daily")} style={{ padding: "7px 10px", borderRadius: 8, background: C.w, border: `1px solid ${C.b1}`, cursor: "pointer", transition: "background 0.15s" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <span style={{ fontSize: 10, fontWeight: 700, fontFamily: MONO, color: C.t2 }}>{f.code}</span>
+                      <span style={{ fontSize: 11, fontWeight: 600, color: C.t1, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.grain === "Otros" ? f.productTypeOther || "Otros" : f.grain} · {f.tons} tn</span>
+                      {f.loadTime && <span style={{ fontSize: 10, color: C.t3 }}>{f.loadTime}</span>}
+                    </div>
+                    <div style={{ display: "flex", gap: 10, marginTop: 3, fontSize: 10, color: C.t3 }}>
+                      {(f.fieldName || f.originName) && <span style={{ display: "flex", alignItems: "center", gap: 3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{Ic.pin(C.t3, 9)} {f.fieldName || f.originName}</span>}
+                      {f.destName && <span style={{ display: "flex", alignItems: "center", gap: 3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{Ic.plant(C.t3, 9)} {f.destName}</span>}
+                    </div>
                   </div>
                 );
               })}
