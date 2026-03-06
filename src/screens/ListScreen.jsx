@@ -4,6 +4,7 @@ import { stCfg, formatFreightDate } from "../constants";
 import { Bd, Btn, Select, SortTh, Tabs, exportExcel, SkeletonList, EmptyState, ErrorBoundary } from "../components";
 import { useTableSort, usePullToRefresh } from "../hooks";
 import { textMatch } from "../validation";
+import { getPendingActions, resolveUserTypeForFreight } from "../utils/freight-helpers";
 const FreightsOverviewMap = lazy(() => import("../maps").then(m => ({ default: m.FreightsOverviewMap })));
 
 const GROUPS = [
@@ -63,6 +64,7 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
     return [...new Set(freights.map(f=>f.originCompanyName).filter(Boolean))].sort();
   },[freights, isProducerUser, isTransporterUser, catalog?.fields]);
   const transporterOptions = useMemo(()=>[...new Set(freights.map(f=>f.transporterName).filter(Boolean))].sort(),[freights]);
+  const producerOptions = useMemo(()=>[...new Set(freights.map(f=>f.originCompanyName).filter(Boolean))].sort(),[freights]);
 
   const applyDatePreset = (preset) => {
     setDatePreset(preset);
@@ -197,41 +199,99 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
 
   // ======================== SIMPLE MODE ========================
   if (simpleMode) {
+    // Determine filters based on user type
+    const isPlantUser = userType === "plant" || userTypes.includes("plant");
+    const simpleFilter1 = isProducerUser ? { value: fPlant, set: setFPlant, label: "Planta", options: plantOptions }
+      : isPlantUser ? { value: fProducer, set: setFProducer, label: "Productor", options: producerOptions }
+      : { value: fProducer, set: setFProducer, label: "Productor", options: producerOptions };
+    const simpleFilter2 = isProducerUser ? { value: fTransporter, set: setFTransporter, label: "Transportista", options: transporterOptions }
+      : isPlantUser ? { value: fTransporter, set: setFTransporter, label: "Transportista", options: transporterOptions }
+      : { value: fPlant, set: setFPlant, label: "Planta", options: plantOptions };
+    const simpleHasFilters = searchQ || simpleFilter1.value || simpleFilter2.value;
+
+    // Pending actions map for simple cards
+    const effectiveType = (f) => resolveUserTypeForFreight ? resolveUserTypeForFreight(f, user) : userType;
+    const simplePendingMap = new Map();
+    filtered.forEach(f => { simplePendingMap.set(f.id, getPendingActions(f, effectiveType(f), user?.role, user)); });
+
+    const simpleFiltered = filtered
+      .map(f => ({ ...f, _pending: simplePendingMap.get(f.id) || null }))
+      .sort((a, b) => {
+        if (a._pending && !b._pending) return -1;
+        if (!a._pending && b._pending) return 1;
+        return (a.loadDate || "").localeCompare(b.loadDate || "") || (a.loadTime || "").localeCompare(b.loadTime || "");
+      });
+
+    const renderSimpleCard = (f) => {
+      const st = stCfg(f.status);
+      const pa = f._pending;
+      return (
+        <div key={f.id} onClick={() => onNav("detail", f.id)} style={{ background: C.w, border: `1px solid ${pa ? st.color + "40" : C.b1}`, borderLeft: `4px solid ${st.color}`, borderRadius: 10, padding: "10px 14px", cursor: "pointer", boxShadow: C.sh, transition: "background 0.15s, border-color 0.15s", position: "relative" }}>
+          {pa && <div style={{ position: "absolute", top: 10, right: 12, display: "flex", alignItems: "center", gap: 5 }}>
+            <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#FF6A00", display: "inline-block", animation: "dotPulse 1.5s ease-in-out infinite", flexShrink: 0 }} />
+            <span style={{ fontSize: 9.5, fontWeight: 700, color: "#FF6A00", whiteSpace: "nowrap" }}>{pa.action}</span>
+          </div>}
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
+            <span style={{ fontSize: 10.5, fontWeight: 700, fontFamily: MONO, color: C.t2 }}>{f.code}</span>
+            <Bd color={st.color} bg={st.bg} small>{st.label}</Bd>
+          </div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: C.t1, marginBottom: 3 }}>{f.grain === "Otros" ? f.productTypeOther || "Otros" : f.grain} {"\u00b7"} {f.tons} {f.unit || "tn"}</div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 4, fontSize: 11, color: C.t2 }}>
+            {f.loadDate && <span style={{ display: "flex", alignItems: "center", gap: 3 }}>{Ic.cal(C.t3, 10)} {formatFreightDate(f.loadDate)}{f.loadTime ? ` \u00b7 ${f.loadTime}` : ""}</span>}
+            <span style={{ display: "flex", alignItems: "center", gap: 3 }}>{Ic.plant(C.t3, 10)} {f.destName || "Sin destino"}</span>
+            <span style={{ display: "flex", alignItems: "center", gap: 3 }}>{Ic.truck(C.t3, 10)} {f.transporterName || "Sin asignar"}</span>
+          </div>
+        </div>
+      );
+    };
+
+    const pendingSimple = simpleFiltered.filter(f => f._pending);
+    const restSimple = simpleFiltered.filter(f => !f._pending);
+
     return (
       <div ref={containerRef} style={{ flex:1, overflow:"auto", padding:18, WebkitOverflowScrolling:"touch" }}>
         {indicator}
-        {/* Simple: search only */}
-        <div style={{ position:"relative", marginBottom:12 }}>
+        {/* Search bar */}
+        <div style={{ position:"relative", marginBottom:8 }}>
           <div style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",display:"flex"}}>{Ic.srch(C.t3,14)}</div>
           <input value={searchQ} onChange={e=>setSearchQ(e.target.value)} placeholder="Buscar flete..."
             style={{width:"100%",padding:"8px 12px 8px 32px",borderRadius:10,border:`1.5px solid ${C.b1}`,background:C.w,color:C.t1,fontSize:13,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}/>
           {searchQ && <button onClick={()=>setSearchQ("")} aria-label="Limpiar busqueda" style={{position:"absolute",right:8,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",display:"flex"}}>{Ic.cross(C.t3,14)}</button>}
         </div>
+        {/* Filters */}
+        <div style={{ display:"flex", gap:6, marginBottom:12, flexWrap:"wrap", alignItems:"center" }}>
+          <select value={simpleFilter1.value} onChange={e=>simpleFilter1.set(e.target.value)} style={{padding:"7px 10px",borderRadius:8,border:`1.5px solid ${simpleFilter1.value?C.pri:C.b1}`,background:simpleFilter1.value?C.priPale:C.w,color:simpleFilter1.value?C.pri:C.t3,fontSize:12,fontFamily:"inherit",outline:"none",cursor:"pointer",minWidth:0,flex:"1 1 120px",maxWidth:200}}>
+            <option value="">{simpleFilter1.label}</option>
+            {simpleFilter1.options.map(o=><option key={o} value={o}>{o}</option>)}
+          </select>
+          <select value={simpleFilter2.value} onChange={e=>simpleFilter2.set(e.target.value)} style={{padding:"7px 10px",borderRadius:8,border:`1.5px solid ${simpleFilter2.value?C.pri:C.b1}`,background:simpleFilter2.value?C.priPale:C.w,color:simpleFilter2.value?C.pri:C.t3,fontSize:12,fontFamily:"inherit",outline:"none",cursor:"pointer",minWidth:0,flex:"1 1 120px",maxWidth:200}}>
+            <option value="">{simpleFilter2.label}</option>
+            {simpleFilter2.options.map(o=><option key={o} value={o}>{o}</option>)}
+          </select>
+          {simpleHasFilters && <button onClick={()=>{setSearchQ("");simpleFilter1.set("");simpleFilter2.set("");}} style={{padding:"6px 10px",borderRadius:7,border:`1px solid ${C.err}40`,background:C.errPale,color:C.err,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap",flexShrink:0}}>Limpiar</button>}
+        </div>
         {loading && freights.length === 0 && <SkeletonList count={5} />}
         {!loading && freights.length === 0 && <EmptyState icon={Ic.truck(C.t3, 28)} title="Sin fletes todavia" subtitle="Los fletes que solicites o te asignen apareceran aca" />}
-        {/* Simple kanban: status grouping only, vertical on all screen sizes */}
-        {freights.length > 0 && (
-          <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
-            {GROUPS.map(group => {
-              const items = grouped[group.key];
-              if(items.length===0) return null;
-              return (
-                <div key={group.key}>
-                  <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8, padding:"6px 0", borderBottom:`2px solid ${group.color}` }}>
-                    <span style={{ display:"flex", flexShrink:0 }}>{group.icon(group.color, 15)}</span>
-                    <span style={{ fontSize:12, fontWeight:700, color:group.color }}>{group.label}</span>
-                    <span style={{ fontSize:11, fontWeight:600, color:C.t3 }}>({items.length})</span>
-                  </div>
-                  <div style={{ display:"flex", flexWrap:"wrap", gap:10 }}>
-                    {items.map(f => (
-                      <div key={f.id} style={{ flex:"1 1 280px", maxWidth:420, minWidth:240 }}>{renderKanbanCard(f)}</div>
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
+        {simpleFiltered.length > 0 && (
+          <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+            {pendingSimple.length > 0 && <>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2 }}>
+                <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#FF6A00", animation: "dotPulse 1.5s ease-in-out infinite" }} />
+                <span style={{ fontSize: 13, fontWeight: 700, color: "#FF6A00" }}>Pendientes de mi parte</span>
+                <span style={{ fontSize: 11, fontWeight: 600, color: C.t3 }}>({pendingSimple.length})</span>
+              </div>
+              {pendingSimple.map(renderSimpleCard)}
+            </>}
+            {restSimple.length > 0 && <>
+              {pendingSimple.length > 0 && <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 6, marginBottom: 2 }}>
+                <span style={{ fontSize: 13, fontWeight: 700, color: C.t2 }}>En curso</span>
+                <span style={{ fontSize: 11, fontWeight: 600, color: C.t3 }}>({restSimple.length})</span>
+              </div>}
+              {restSimple.map(renderSimpleCard)}
+            </>}
           </div>
         )}
+        {simpleFiltered.length === 0 && freights.length > 0 && !loading && <EmptyState icon={Ic.srch(C.t3, 28)} title="Sin resultados" subtitle="Proba cambiando los filtros" />}
         {hasMore && <div style={{ textAlign:"center", padding:12 }}><Btn v="ghost" onClick={loadMore} loading={loadingMore}>Cargar mas</Btn></div>}
       </div>
     );
