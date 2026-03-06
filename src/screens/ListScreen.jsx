@@ -35,7 +35,7 @@ const SORT_GETTERS = {
   phone:       f => f.driverPhone || "",
 };
 
-export default function ListScreen({ freights, loading, onNav, onRefresh, catalog, view, setView, goToMap, hasMore, loadMore, loadingMore, total, isDesktop, onAction, user }) {
+export default function ListScreen({ freights, loading, onNav, onRefresh, catalog, view, setView, goToMap, hasMore, loadMore, loadingMore, total, isDesktop, onAction, user, simpleMode }) {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [searchQ, setSearchQ] = useState("");
   const [segExpanded, setSegExpanded] = useState({});
@@ -194,6 +194,48 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
       ))}
     </div>
   );
+
+  // ======================== SIMPLE MODE ========================
+  if (simpleMode) {
+    return (
+      <div ref={containerRef} style={{ flex:1, overflow:"auto", padding:18, WebkitOverflowScrolling:"touch" }}>
+        {indicator}
+        {/* Simple: search only */}
+        <div style={{ position:"relative", marginBottom:12 }}>
+          <div style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",display:"flex"}}>{Ic.srch(C.t3,14)}</div>
+          <input value={searchQ} onChange={e=>setSearchQ(e.target.value)} placeholder="Buscar flete..."
+            style={{width:"100%",padding:"8px 12px 8px 32px",borderRadius:10,border:`1.5px solid ${C.b1}`,background:C.w,color:C.t1,fontSize:13,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}/>
+          {searchQ && <button onClick={()=>setSearchQ("")} aria-label="Limpiar busqueda" style={{position:"absolute",right:8,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",display:"flex"}}>{Ic.cross(C.t3,14)}</button>}
+        </div>
+        {loading && freights.length === 0 && <SkeletonList count={5} />}
+        {!loading && freights.length === 0 && <EmptyState icon={Ic.truck(C.t3, 28)} title="Sin fletes todavia" subtitle="Los fletes que solicites o te asignen apareceran aca" />}
+        {/* Simple kanban: status grouping only, vertical on all screen sizes */}
+        {freights.length > 0 && (
+          <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
+            {GROUPS.map(group => {
+              const items = grouped[group.key];
+              if(items.length===0) return null;
+              return (
+                <div key={group.key}>
+                  <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8, padding:"6px 0", borderBottom:`2px solid ${group.color}` }}>
+                    <span style={{ display:"flex", flexShrink:0 }}>{group.icon(group.color, 15)}</span>
+                    <span style={{ fontSize:12, fontWeight:700, color:group.color }}>{group.label}</span>
+                    <span style={{ fontSize:11, fontWeight:600, color:C.t3 }}>({items.length})</span>
+                  </div>
+                  <div style={{ display:"flex", flexWrap:"wrap", gap:10 }}>
+                    {items.map(f => (
+                      <div key={f.id} style={{ flex:"1 1 280px", maxWidth:420, minWidth:240 }}>{renderKanbanCard(f)}</div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+        {hasMore && <div style={{ textAlign:"center", padding:12 }}><Btn v="ghost" onClick={loadMore} loading={loadingMore}>Cargar mas</Btn></div>}
+      </div>
+    );
+  }
 
   return (
     <div ref={containerRef} style={{ flex:1, overflow:"auto", padding:18, WebkitOverflowScrolling:"touch" }}>
