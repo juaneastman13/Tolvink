@@ -476,6 +476,43 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
             </div>
           </>
         )}
+
+        {/* Resumen diario */}
+        <div style={{ marginTop: 24, padding: "14px 16px", borderRadius: 12, background: `${C.pri}08`, border: `1px solid ${C.pri}20` }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+            <div style={{ width: 28, height: 28, borderRadius: "50%", background: C.pri, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              {Ic.cal(C.w, 14)}
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: C.pri }}>{formatTodayHeader()}</div>
+              <div style={{ fontSize: 10, color: C.t3 }}>{todayFreights.length} flete{todayFreights.length !== 1 ? "s" : ""} · {Math.round(todayTons)} tn totales</div>
+            </div>
+          </div>
+          {todayFreights.length === 0 && !loading && (
+            <div style={{ fontSize: 11, color: C.t3, textAlign: "center", padding: "8px 0" }}>Sin fletes programados para hoy</div>
+          )}
+          {dailyGroups.map(g => (
+            <div key={g.key} style={{ marginBottom: 8 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
+                <div style={{ width: 7, height: 7, borderRadius: "50%", background: g.color, flexShrink: 0 }} />
+                <span style={{ fontSize: 11, fontWeight: 700, color: g.color }}>{g.label}</span>
+                <span style={{ fontSize: 10, fontWeight: 600, color: C.t3 }}>({g.items.length})</span>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6, paddingLeft: 14, borderLeft: `2px solid ${g.color}30` }}>
+                {g.items.map(f => {
+                  const st = stCfg(f.status);
+                  return (
+                    <div key={f.id} onClick={() => selectFreight(f.id, "daily")} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 10px", borderRadius: 8, background: C.w, border: `1px solid ${C.b1}`, cursor: "pointer", transition: "background 0.15s" }}>
+                      <span style={{ fontSize: 10, fontWeight: 700, fontFamily: MONO, color: C.t2 }}>{f.code}</span>
+                      <span style={{ fontSize: 11, fontWeight: 600, color: C.t1, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.grain === "Otros" ? f.productTypeOther || "Otros" : f.grain} · {f.tons} tn</span>
+                      {f.loadTime && <span style={{ fontSize: 10, color: C.t3 }}>{f.loadTime}</span>}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
