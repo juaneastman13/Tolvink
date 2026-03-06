@@ -231,8 +231,11 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
           <div style={{ fontSize: 13, fontWeight: 700, color: C.t1, marginBottom: 3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.grain === "Otros" ? f.productTypeOther || "Otros" : f.grain} {"\u00b7"} {f.tons} {f.unit || "tn"}</div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 4, fontSize: 11, color: C.t2 }}>
             {f.loadDate && <span style={{ display: "flex", alignItems: "center", gap: 3 }}>{Ic.cal(C.t3, 10)} {formatFreightDate(f.loadDate)}{f.loadTime ? ` \u00b7 ${f.loadTime}` : ""}</span>}
-            <span style={{ display: "flex", alignItems: "center", gap: 3 }}>{Ic.plant(C.t3, 10)} {f.destName || "Sin destino"}</span>
-            <span style={{ display: "flex", alignItems: "center", gap: 3 }}>{Ic.truck(C.t3, 10)} {f.transporterName || "Sin asignar"}</span>
+            {(f.fieldName || f.originName) && <span style={{ display: "flex", alignItems: "center", gap: 3 }}>{Ic.pin(C.t3, 10)} {f.fieldName || f.originName}</span>}
+            <span style={{ display: "flex", alignItems: "center", gap: 4, flexBasis: "100%", flexShrink: 0 }}>
+              <span style={{ display: "flex", alignItems: "center", gap: 3 }}>{Ic.plant(C.t3, 10)} {f.destName || "Sin destino"}</span>
+              <span style={{ display: "flex", alignItems: "center", gap: 3 }}>{Ic.truck(C.t3, 10)} {f.transporterName || "Sin asignar"}</span>
+            </span>
           </div>
         </div>
       );
