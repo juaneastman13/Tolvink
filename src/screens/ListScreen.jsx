@@ -126,7 +126,7 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
 
   // Available kanban grouping options
   const kanbanGroupOptions = useMemo(() => {
-    const opts = [{ key: "status", label: "Por estado" }];
+    const opts = [];
     (ENTITY_GROUPS[userType] || []).forEach(e => opts.push({ key: e.key, label: e.label }));
     return opts;
   }, [userType]);
@@ -392,7 +392,6 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
 
       {/* View: Kanban */}
       {view==="kanban" && freights.length > 0 && (<>
-      {groupingPills}
       {kanbanGroup === "status" || !entityGrouped ? (
         /* Status grouping (original) */
         isDesktop ? (
@@ -540,7 +539,8 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
       )}
 
       {/* View: Seguimiento -- by transporter -> driver -> queue */}
-      {view==="seguimiento" && freights.length > 0 && (
+      {view==="seguimiento" && freights.length > 0 && (<>
+      {groupingPills}
         <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
           {trackingGroups.transporters.map(t=>{
             const driverList = Object.values(t.drivers);
@@ -659,7 +659,7 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
             <EmptyState icon={Ic.truck(C.t3,28)} title="Sin fletes activos" subtitle="No hay fletes en curso para mostrar en seguimiento"/>
           )}
         </div>
-      )}
+      </>)}
 
       {/* Load more / pagination indicator */}
       {(()=>{
