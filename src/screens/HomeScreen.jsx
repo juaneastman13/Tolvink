@@ -428,6 +428,9 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
     };
 
 
+    const pendingSimple = simpleFreights.filter(f => f._pending);
+    const restSimple = simpleFreights.filter(f => !f._pending);
+
     const simpleDailyPanel = (
       <div style={{ padding: "14px 16px", borderRadius: 12, background: `${C.pri}08`, border: `1px solid ${C.pri}20` }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
