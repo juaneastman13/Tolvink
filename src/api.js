@@ -378,7 +378,9 @@ function compressImage(file, maxWidth = 1920, quality = 0.8) {
 export async function uploadPhoto(file, freightId, step) {
   // Compress image before upload
   const processed = file.type.startsWith('image/') ? await compressImage(file) : file;
-  const ext = (processed.name?.split('.').pop() || 'jpg').replace(/[^a-zA-Z0-9]/g, '');
+  const ext = (processed.name?.split('.').pop() || 'jpg').replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+  const SAFE_EXTS = new Set(['jpg','jpeg','png','webp','gif','pdf','doc','docx','xlsx','heic','heif']);
+  if (!SAFE_EXTS.has(ext)) throw new Error('Tipo de archivo no permitido');
   const safeId = String(freightId).replace(/[^a-zA-Z0-9_-]/g, '');
   const safeStep = String(step).replace(/[^a-zA-Z0-9_-]/g, '');
   const path = `${safeId}/${safeStep}/${Date.now()}.${ext}`;
@@ -411,7 +413,9 @@ export function thumb(url, size = 96) {
 export async function uploadChatFile(file, conversationId) {
   // Compress image before upload (skip non-image files)
   const processed = file.type.startsWith('image/') ? await compressImage(file) : file;
-  const ext = processed.name?.split('.').pop() || 'bin';
+  const ext = (processed.name?.split('.').pop() || 'bin').toLowerCase();
+  const SAFE_CHAT_EXTS = new Set(['jpg','jpeg','png','webp','gif','pdf','doc','docx','xlsx','heic','heif','mp4','mp3','ogg','wav']);
+  if (!SAFE_CHAT_EXTS.has(ext)) throw new Error('Tipo de archivo no permitido');
   const safeName = processed.name?.replace(/[^a-zA-Z0-9._-]/g, '_') || `file.${ext}`;
   const path = `chat/${conversationId}/${Date.now()}_${safeName}`;
   const url = `${SUPABASE_URL}/storage/v1/object/${STORAGE_BUCKET}/${path}`;
