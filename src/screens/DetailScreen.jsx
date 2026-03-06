@@ -290,30 +290,33 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
               return <div key={i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4,minWidth:0}}>
                 <div style={{width:"100%",height:active?5:4,borderRadius:3,background:barColor,transition:"all 0.2s"}}/>
                 {(active || isCancelStep) && <div style={{width:6,height:6,borderRadius:3,background:vs.color,marginTop:-2}}/>}
-                <span style={{fontSize:8.5,fontWeight:(active||isCancelStep)?700:500,color:(active||isCancelStep)?vs.color:done?C.t2:C.t3,textAlign:"center",lineHeight:1.2}}>{vs.label}</span>
-                {active && vs.sub && <span style={{fontSize:8,color:C.t3,fontStyle:"italic",textAlign:"center",lineHeight:1.2,marginTop:-2}}>({vs.sub})</span>}
+                <span style={{fontSize:10,fontWeight:(active||isCancelStep)?700:500,color:(active||isCancelStep)?vs.color:done?C.t2:C.t3,textAlign:"center",lineHeight:1.2}}>{vs.label}</span>
+                {active && vs.sub && <span style={{fontSize:9,color:C.t3,fontStyle:"italic",textAlign:"center",lineHeight:1.2,marginTop:-2}}>({vs.sub})</span>}
               </div>;
             })}
           </div>
-          {/* Per-stage detail — columnar, aligned with progress bar */}
-          {showAudit && auditLog && (
-            <div style={{ display:"flex", gap:3, marginTop:12, borderTop:`1px solid ${C.b1}`, paddingTop:10 }}>
-              {steps.map((s,i)=>{
-                const done = i < curIdx; const active = i === curIdx;
-                const c = stCfg(s);
-                const logs = getStepLogs(s);
-                const tc = getTruckCount(s);
-                const stepAssigns = getStepAssignments(s);
+          {/* Per-stage detail — 3 columns matching visual stepper */}
+          {showAudit && auditLog && (()=>{
+            const visualAuditSteps = [
+              { label:"Pendiente", backendSteps:["pending_assignment"], color:C.acc },
+              { label:"En curso", backendSteps:["assigned","accepted","in_progress","loaded"], color:C.pri },
+              { label: isCanceled ? "Cancelado" : "Finalizado", backendSteps:["finished"], color: isCanceled ? C.err : C.ok },
+            ];
+            return <div style={{ display:"flex", gap:3, marginTop:12, borderTop:`1px solid ${C.b1}`, paddingTop:10 }}>
+              {visualAuditSteps.map((vas,vi)=>{
+                const done = vi < visualIdx; const active = vi === visualIdx && !isCanceled; const isCancelStep = vi === 2 && isCanceled;
+                const col = done ? C.pri : (active || isCancelStep) ? vas.color : C.t3;
+                const logs = vas.backendSteps.flatMap(s => getStepLogs(s));
+                const stepAssigns = vas.backendSteps.flatMap(s => getStepAssignments(s));
+                const tc = isMultiTruck && vi === 1 ? (()=>{ const counts = vas.backendSteps.map(s => getTruckCount(s)).filter(v=>v!==null); return counts.length > 0 ? Math.max(...counts) : null; })() : null;
                 const hasData = logs.length > 0 || (tc !== null && tc > 0);
-                const col = done ? C.pri : active ? (c.border||c.color) : C.t3;
                 return (
-                  <div key={s} style={{ flex:1, minWidth:0 }}>
+                  <div key={vi} style={{ flex:1, minWidth:0 }}>
                     {tc !== null && (
                       <div style={{ textAlign:"center", fontSize:10, fontWeight:700, color:col, marginBottom:8, background:`${col}12`, borderRadius:5, padding:"3px 0" }}>
                         {tc}/{freight.truckCount}
                       </div>
                     )}
-                    {/* Audit log entries */}
                     {logs.length > 0 && logs.map(log => {
                       const acCol = actionColors[log.action] || C.t2;
                       const tn = tripLabel(log);
@@ -331,7 +334,6 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
                         </div>
                       );
                     })}
-                    {/* Fallback: show assignment details when no audit entries but trucks are at this stage */}
                     {logs.length === 0 && stepAssigns.length > 0 && stepAssigns.map(a => (
                       <div key={a.id} style={{ display:"flex", gap:5, marginBottom:8, alignItems:"flex-start" }}>
                         <div style={{ width:7, height:7, borderRadius:4, background:col, flexShrink:0, marginTop:3 }} />
@@ -347,8 +349,8 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
                   </div>
                 );
               })}
-            </div>
-          )}
+            </div>;
+          })()}
         </div>;
       })()}
 
