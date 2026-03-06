@@ -16,6 +16,7 @@ export default function FieldsScreen({ onBack, embedded, goToMap }) {
   const [lotName, setLotName] = useState("");
   const [lotHa, setLotHa] = useState("");
   const [lotLoc, setLotLoc] = useState(null);
+  const [expandedField, setExpandedField] = useState(null);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState(null);
   const [doneMsg, setDoneMsg] = useState("");
@@ -155,8 +156,8 @@ export default function FieldsScreen({ onBack, embedded, goToMap }) {
                     )}
                     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                     {group.fields.map(f => (
-              <div key={f.id} style={{ background: C.w, border: `1px solid ${C.b1}`, borderLeft: `3px solid ${C.pri}`, borderRadius: 12, padding: 14, boxShadow: C.sh }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+              <div key={f.id} style={{ background: C.w, border: `1px solid ${expandedField === f.id ? C.pri : C.b1}`, borderLeft: `3px solid ${C.pri}`, borderRadius: 12, boxShadow: C.sh, overflow: "hidden" }}>
+                <div onClick={() => setExpandedField(expandedField === f.id ? null : f.id)} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: 14, cursor: "pointer", userSelect: "none" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                     {Ic.pin(C.pri, 18)}
                     <div>
@@ -166,14 +167,15 @@ export default function FieldsScreen({ onBack, embedded, goToMap }) {
                     </div>
                   </div>
                   <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                    <button aria-label="Editar campo" onClick={() => editField === f.id ? setEditField(null) : startEditField(f)} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }}>{Ic.edit(editField === f.id ? C.pri : C.t3, 16)}</button>
+                    <button aria-label="Editar campo" onClick={(e) => { e.stopPropagation(); editField === f.id ? setEditField(null) : startEditField(f); }} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }}>{Ic.edit(editField === f.id ? C.pri : C.t3, 16)}</button>
                     <Bd color={C.pri} small>{(f.lots || []).length} lote{(f.lots || []).length !== 1 ? "s" : ""}</Bd>
+                    <span style={{ display: "flex", transition: "transform 0.2s", transform: expandedField === f.id ? "rotate(-90deg)" : "rotate(0deg)", marginLeft: 2 }}>{Ic.chev(C.t3, 16)}</span>
                   </div>
                 </div>
 
                 {/* Edit field form */}
                 {editField === f.id && (
-                  <div style={{ background: C.priPale, borderRadius: 10, padding: 12, marginBottom: 8 }}>
+                  <div style={{ background: C.priPale, borderRadius: 10, padding: 12, margin: "0 14px 8px" }}>
                     <div style={{ fontSize: 11, fontWeight: 700, color: C.pri, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>Editar campo</div>
                     <SafeZone><LocationPicker label="Ubicación" value={editFieldLoc} onChange={setEditFieldLoc} /></SafeZone>
                     <div style={{ display: "flex", gap: 6, marginTop: 10 }}>
@@ -183,9 +185,9 @@ export default function FieldsScreen({ onBack, embedded, goToMap }) {
                   </div>
                 )}
 
-                {(f.lots || []).map(l => (
+                {expandedField === f.id && (f.lots || []).map(l => (
                   <div key={l.id}>
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 0 6px 28px", borderTop: `1px solid ${C.b2}` }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 14px 6px 28px", borderTop: `1px solid ${C.b2}` }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                         {Ic.grain(C.ok, 14)}
                         <span style={{ fontSize: 12, fontWeight: 500 }}>{l.name}</span>
@@ -210,8 +212,8 @@ export default function FieldsScreen({ onBack, embedded, goToMap }) {
                   </div>
                 ))}
 
-                {showLotForm === f.id ? (
-                  <div style={{ marginTop: 8, padding: "10px 0 0 12px", borderTop: `1px solid ${C.b2}` }}>
+                {expandedField === f.id && (showLotForm === f.id ? (
+                  <div style={{ marginTop: 8, padding: "10px 14px 14px", borderTop: `1px solid ${C.b2}` }}>
                     <Field label="Nombre del lote" value={lotName} onChange={setLotName} placeholder="Ej: Lote 1A" />
                     <div style={{ height: 8 }} />
                     <Field label="Hectáreas (opcional)" value={lotHa} onChange={setLotHa} placeholder="Ej: 150" />
@@ -223,8 +225,8 @@ export default function FieldsScreen({ onBack, embedded, goToMap }) {
                     </div>
                   </div>
                 ) : (
-                  <button onClick={() => setShowLotForm(f.id)} style={{ marginTop: 8, marginLeft: 28, background: `${C.acc}10`, border: `1px solid ${C.acc}40`, borderRadius: 8, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 600, color: C.acc, padding: "10px 16px", display: "flex", alignItems: "center", gap: 6 }}>{Ic.plus(C.acc, 14)} Agregar lote</button>
-                )}
+                  <button onClick={() => setShowLotForm(f.id)} style={{ margin: "8px 14px 14px 28px", background: `${C.acc}10`, border: `1px solid ${C.acc}40`, borderRadius: 8, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 600, color: C.acc, padding: "10px 16px", display: "flex", alignItems: "center", gap: 6 }}>{Ic.plus(C.acc, 14)} Agregar lote</button>
+                ))}
               </div>
             ))}
                     </div>
