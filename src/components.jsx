@@ -437,13 +437,11 @@ export function Sidebar({ active, onChange, unread=0, pendingCount=0, notifCount
 
       {/* Mode toggle */}
       {onToggleSimple && <div style={{ padding:"10px 12px", borderTop:`1px solid ${C.b2}` }}>
-        <button onClick={onToggleSimple} style={{ width:"100%", display:"flex", alignItems:"center", justifyContent:"center", gap:8, padding:"6px 8px", borderRadius:8, border:`1px solid ${C.b2}`, background:"transparent", cursor:"pointer", fontFamily:"inherit" }}>
-          <span style={{ fontSize:10, fontWeight:simpleMode?500:700, color:simpleMode?C.t3:C.pri, whiteSpace:"nowrap" }}>Completo</span>
-          <div style={{ width:34, height:18, borderRadius:9, background:simpleMode?C.pri:C.b1, position:"relative", transition:"background 0.2s", flexShrink:0 }}>
-            <div style={{ width:14, height:14, borderRadius:7, background:C.w, position:"absolute", top:2, left:simpleMode?18:2, transition:"left 0.2s", boxShadow:"0 1px 3px rgba(0,0,0,0.2)" }} />
-          </div>
-          <span style={{ fontSize:10, fontWeight:simpleMode?700:500, color:simpleMode?C.pri:C.t3, whiteSpace:"nowrap" }}>Simple</span>
-        </button>
+        <div style={{ position:"relative", display:"flex", borderRadius:8, background:C.b1, padding:2, cursor:"pointer" }} onClick={onToggleSimple}>
+          <div style={{ position:"absolute", top:2, left:simpleMode?"50%":2, width:"calc(50% - 2px)", height:"calc(100% - 4px)", borderRadius:6, background:C.pri, transition:"left 0.25s ease", boxShadow:"0 1px 3px rgba(0,0,0,0.15)" }} />
+          <span style={{ flex:1, textAlign:"center", fontSize:10, fontWeight:700, padding:"5px 0", position:"relative", zIndex:1, color:simpleMode?C.t3:C.w, transition:"color 0.2s", userSelect:"none" }}>Completo</span>
+          <span style={{ flex:1, textAlign:"center", fontSize:10, fontWeight:700, padding:"5px 0", position:"relative", zIndex:1, color:simpleMode?C.w:C.t3, transition:"color 0.2s", userSelect:"none" }}>Simple</span>
+        </div>
       </div>}
     </div>
   );
