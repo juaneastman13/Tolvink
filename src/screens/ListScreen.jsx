@@ -13,6 +13,28 @@ const GROUPS = [
   { key:"cancelados", label:"Cancelados", color:"#DC2626", icon:Ic.ban, statuses:["canceled"] },
 ];
 
+// Entity grouping configs per user type
+const ENTITY_GROUPS = {
+  producer:     [{ key:"transportista", label:"Por transportista", field:"transporterName", fallback:"Sin asignar" }, { key:"planta", label:"Por planta", field:"destName", fallback:"Sin destino" }],
+  plant:        [{ key:"transportista", label:"Por transportista", field:"transporterName", fallback:"Sin asignar" }, { key:"productor", label:"Por productor", field:"originCompanyName", fallback:"Sin productor" }],
+  transporter:  [{ key:"planta", label:"Por planta", field:"destName", fallback:"Sin destino" }],
+};
+
+// Table sort column getters
+const SORT_GETTERS = {
+  code:        f => f.code,
+  status:      f => f.status,
+  product:     f => (f.grain === "Otros" ? f.productTypeOther || "Otros" : f.grain),
+  company:     f => f.originCompanyName || f.originName || "",
+  dest:        f => f.destName || "",
+  date:        f => f.loadDate || "",
+  time:        f => f.loadTime || "",
+  transporter: f => f.transporterName || "",
+  plate:       f => f.truckPlate || "",
+  driver:      f => f.driverName || "",
+  phone:       f => f.driverPhone || "",
+};
+
 export default function ListScreen({ freights, loading, onNav, onRefresh, catalog, view, setView, goToMap, hasMore, loadMore, loadingMore, total, isDesktop, onAction, user }) {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [searchQ, setSearchQ] = useState("");
@@ -24,8 +46,13 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
   const [dateTo, setDateTo] = useState("");
   const [datePreset, setDatePreset] = useState("");
   const [mapShown, setMapShown] = useState(false);
+  // Kanban grouping: "status" (default) or entity key
+  const [kanbanGroup, setKanbanGroup] = useState("status");
+  // Table status filter
+  const [tableStatusFilter, setTableStatusFilter] = useState("all");
 
   const userTypes = user?.userTypes || [];
+  const userType = user?.userType || userTypes[0] || "producer";
   const isProducerUser = userTypes.includes("producer");
   const isTransporterUser = userTypes.includes("transporter");
   const plantOptions = useMemo(()=>[...new Set(freights.map(f=>f.destName).filter(Boolean))].sort(),[freights]);
@@ -63,6 +90,7 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
     });
   },[freights,searchQ,fPlant,fProducer,fTransporter,dateFrom,dateTo]);
 
+  // Status grouping (default kanban)
   const grouped = useMemo(()=>{
     const map = {};
     GROUPS.forEach(g => map[g.key] = []);
@@ -74,7 +102,44 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
     return map;
   },[filtered]);
 
-  // Tracking view: group by transporter → driver → queue
+  // Entity grouping for kanban
+  const entityGrouped = useMemo(() => {
+    if (kanbanGroup === "status") return null;
+    const entityCfg = (ENTITY_GROUPS[userType] || []).find(e => e.key === kanbanGroup);
+    if (!entityCfg) return null;
+    const buckets = {};
+    filtered.forEach(f => {
+      const val = f[entityCfg.field] || entityCfg.fallback;
+      if (!buckets[val]) buckets[val] = [];
+      buckets[val].push(f);
+    });
+    // Sort buckets: named first (alphabetical), fallback last
+    const keys = Object.keys(buckets).sort((a, b) => {
+      if (a === entityCfg.fallback) return 1;
+      if (b === entityCfg.fallback) return -1;
+      return a.localeCompare(b, "es");
+    });
+    return keys.map(k => ({ name: k, items: buckets[k], isFallback: k === entityCfg.fallback }));
+  }, [filtered, kanbanGroup, userType]);
+
+  // Available kanban grouping options
+  const kanbanGroupOptions = useMemo(() => {
+    const opts = [{ key: "status", label: "Por estado" }];
+    (ENTITY_GROUPS[userType] || []).forEach(e => opts.push({ key: e.key, label: e.label }));
+    return opts;
+  }, [userType]);
+
+  // Table: status-filtered + sorted
+  const { sortCol, sortDir, toggle: toggleSort, sortData } = useTableSort();
+  const tableFiltered = useMemo(() => {
+    if (tableStatusFilter === "all") return filtered;
+    const group = GROUPS.find(g => g.key === tableStatusFilter);
+    if (!group) return filtered;
+    return filtered.filter(f => group.statuses.includes(f.status));
+  }, [filtered, tableStatusFilter]);
+  const tableSorted = useMemo(() => sortData(tableFiltered, SORT_GETTERS), [tableFiltered, sortCol, sortDir]);
+
+  // Tracking view: group by transporter -> driver -> queue
   const trackingGroups = useMemo(()=>{
     const active = filtered.filter(f=>!["finished","canceled"].includes(f.status));
     const unassigned = active.filter(f=>!f.transporterName);
@@ -101,12 +166,41 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
   // Keep map mounted after first show to avoid reinit on view switch
   useEffect(() => { if (view === "mapa") setMapShown(true); }, [view]);
 
+  // Kanban card renderer (shared between status and entity grouping)
+  const renderKanbanCard = (f) => {
+    const st = stCfg(f.status);
+    return (
+      <div key={f.id} onClick={()=>onNav("detail",f.id)} style={{ background:C.w, border:`1px solid ${C.b1}`, borderLeft:`4px solid ${st.color}`, borderRadius:12, padding:14, cursor:"pointer", boxShadow:C.sh, transition:"background 0.15s", contentVisibility:"auto", containIntrinsicSize:"0 120px" }}>
+        <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:6 }}>
+          <span style={{ fontSize:11, fontWeight:700, fontFamily:MONO, color:C.t2 }}>{f.code}</span>
+          <Bd color={st.color} bg={st.bg} small>{st.label}</Bd>
+        </div>
+        <div style={{fontSize:14,fontWeight:700,color:C.t1,marginBottom:4}}>{f.grain==="Otros"?f.productTypeOther||"Otros":f.grain} · {f.tons} {f.unit||"tn"}</div>
+        {f.loadDate && <div style={{ fontSize:11, color:C.t3, fontWeight:500, marginBottom:6 }}>{Ic.cal(C.t3,10)} {formatFreightDate(f.loadDate)}{f.loadTime?` · ${f.loadTime}`:""}</div>}
+        <div style={{display:"flex",flexDirection:"column",gap:3,fontSize:11,color:C.t2}}>
+          <div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.user(C.t3,12)} <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.originCompanyName||(f.originName||"").split("\u2014")[0].trim()}</span>{f.originLat&&f.originLng&&<span onClick={(e)=>{e.stopPropagation();goToMap(f.originLat,f.originLng,[f.originCompanyName,f.fieldName,f.originName].filter(Boolean).join(" \u2014 "));}} style={{cursor:"pointer",opacity:0.6,marginLeft:3,fontSize:10,flexShrink:0}} title="Ver en mapa">{"\uD83D\uDCCD"}</span>}</div>
+          <div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.plant(C.t3,12)} <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.destName}</span>{f.destLat&&f.destLng&&<span onClick={(e)=>{e.stopPropagation();goToMap(f.destLat,f.destLng,f.destName);}} style={{cursor:"pointer",opacity:0.6,marginLeft:3,fontSize:10,flexShrink:0}} title="Ver en mapa">{"\uD83D\uDCCD"}</span>}</div>
+          <div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.truck(C.t3,12)} <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.transporterName||"Sin asignar"}{f.truckPlate?` (${f.truckPlate})`:""}</span>{f.isOwnFleet&&<span style={{fontSize:9,color:C.acc,fontWeight:600,marginLeft:4}}>Flota propia</span>}{f.isMultiTruck&&<span style={{fontSize:9,color:C.info,fontWeight:600,marginLeft:4}}>{f.assignedTruckCount}/{f.truckCount} cam.</span>}</div>
+        </div>
+      </div>
+    );
+  };
+
+  // Kanban grouping toggle pills
+  const groupingPills = kanbanGroupOptions.length > 1 && (
+    <div style={{ display:"flex", gap:4, marginBottom:10 }}>
+      {kanbanGroupOptions.map(o => (
+        <button key={o.key} onClick={() => setKanbanGroup(o.key)} style={{ padding:"5px 10px", borderRadius:7, border:`1.5px solid ${kanbanGroup === o.key ? C.pri : C.b1}`, background: kanbanGroup === o.key ? C.priPale : C.w, color: kanbanGroup === o.key ? C.pri : C.t2, fontSize:11, fontWeight: kanbanGroup === o.key ? 700 : 500, cursor:"pointer", fontFamily:"inherit", whiteSpace:"nowrap" }}>{o.label}</button>
+      ))}
+    </div>
+  );
+
   return (
     <div ref={containerRef} style={{ flex:1, overflow:"auto", padding:18, WebkitOverflowScrolling:"touch" }}>
       {indicator}
       {/* Desktop: original filters layout */}
       {isDesktop ? (<>
-      {/* Date filters — line 1 */}
+      {/* Date filters -- line 1 */}
       <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:6 }}>
         <span style={{fontSize:10,color:C.t2,fontWeight:600}}>Desde</span>
         <input type="date" value={dateFrom} onChange={e=>{setDateFrom(e.target.value);setDatePreset("custom");}} onClick={e=>e.target.showPicker?.()} style={{padding:"5px 8px",borderRadius:6,border:`1px solid ${C.b1}`,background:C.w,color:dateFrom?C.t1:C.t3,fontSize:11,fontFamily:"inherit",outline:"none",boxSizing:"border-box",cursor:"pointer"}}/>
@@ -118,13 +212,13 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
         ))}
         {hasFilters && <button onClick={clearAll} style={{marginLeft:"auto",padding:"5px 10px",borderRadius:6,border:`1px solid ${C.err}40`,background:C.errPale,color:C.err,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>Limpiar</button>}
       </div>
-      {/* Search + entity filters — line 2 */}
+      {/* Search + entity filters -- line 2 */}
       <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:12 }}>
         <div style={{ position:"relative", minWidth:140, flex:"0 1 200px" }}>
           <div style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",display:"flex"}}>{Ic.srch(C.t3,14)}</div>
           <input value={searchQ} onChange={e=>setSearchQ(e.target.value)} placeholder="Buscar..."
             style={{width:"100%",padding:"6px 12px 6px 30px",borderRadius:8,border:`1.5px solid ${C.b1}`,background:C.w,color:C.t1,fontSize:11,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}/>
-          {searchQ && <button onClick={()=>setSearchQ("")} aria-label="Limpiar búsqueda" style={{position:"absolute",right:6,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",display:"flex"}}>{Ic.cross(C.t3,12)}</button>}
+          {searchQ && <button onClick={()=>setSearchQ("")} aria-label="Limpiar busqueda" style={{position:"absolute",right:6,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",display:"flex"}}>{Ic.cross(C.t3,12)}</button>}
         </div>
         <select value={fPlant} onChange={e=>setFPlant(e.target.value)} style={{padding:"6px 8px",borderRadius:8,border:`1.5px solid ${fPlant?C.pri:C.b1}`,background:fPlant?C.priPale:C.w,color:fPlant?C.pri:C.t3,fontSize:11,fontFamily:"inherit",outline:"none",cursor:"pointer"}}>
           <option value="">Planta</option>
@@ -169,7 +263,7 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
         <div style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",display:"flex"}}>{Ic.srch(C.t3,14)}</div>
         <input value={searchQ} onChange={e=>setSearchQ(e.target.value)} placeholder="Buscar..."
           style={{width:"100%",padding:"7px 12px 7px 30px",borderRadius:8,border:`1.5px solid ${C.b1}`,background:C.w,color:C.t1,fontSize:12,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}/>
-        {searchQ && <button onClick={()=>setSearchQ("")} aria-label="Limpiar búsqueda" style={{position:"absolute",right:8,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",display:"flex"}}>{Ic.cross(C.t3,12)}</button>}
+        {searchQ && <button onClick={()=>setSearchQ("")} aria-label="Limpiar busqueda" style={{position:"absolute",right:8,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",display:"flex"}}>{Ic.cross(C.t3,12)}</button>}
       </div>
       <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:6 }}>
         <span style={{fontSize:10,color:C.t2,fontWeight:600}}>Desde</span>
@@ -201,84 +295,91 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
       {loading && freights.length === 0 && <SkeletonList count={5} />}
 
       {/* Empty state */}
-      {!loading && freights.length === 0 && <EmptyState icon={Ic.truck(C.t3, 28)} title="Sin fletes todavía" subtitle="Los fletes que solicites o te asignen aparecerán acá" />}
+      {!loading && freights.length === 0 && <EmptyState icon={Ic.truck(C.t3, 28)} title="Sin fletes todavia" subtitle="Los fletes que solicites o te asignen apareceran aca" />}
 
-      {/* View: Kanban — desktop: horizontal columns, mobile: stacked */}
-      {view==="kanban" && freights.length > 0 && (isDesktop ? (
-      <div style={{ display:"flex", gap:12, overflowX:"auto", alignItems:"flex-start", paddingBottom:8 }}>
-        {GROUPS.map(group => {
-          const items = grouped[group.key];
-          return (
-            <div key={group.key} style={{ minWidth:220, flex:"1 1 0", background:C.bg, borderRadius:12, border:`1px solid ${C.b1}`, overflow:"hidden" }}>
-              <div style={{ padding:"10px 12px", borderBottom:`2px solid ${group.color}`, display:"flex", alignItems:"center", gap:6 }}>
-                <span style={{ display:"flex", flexShrink:0 }}>{group.icon(group.color, 14)}</span>
-                <span style={{ fontSize:11, fontWeight:700, color:group.color }}>{group.label}</span>
-                <span style={{ fontSize:10, fontWeight:600, color:C.t3, marginLeft:"auto" }}>{items.length}</span>
+      {/* View: Kanban */}
+      {view==="kanban" && freights.length > 0 && (<>
+      {groupingPills}
+      {kanbanGroup === "status" || !entityGrouped ? (
+        /* Status grouping (original) */
+        isDesktop ? (
+        <div style={{ display:"flex", gap:12, overflowX:"auto", alignItems:"flex-start", paddingBottom:8 }}>
+          {GROUPS.map(group => {
+            const items = grouped[group.key];
+            return (
+              <div key={group.key} style={{ minWidth:220, flex:"1 1 0", background:C.bg, borderRadius:12, border:`1px solid ${C.b1}`, overflow:"hidden" }}>
+                <div style={{ padding:"10px 12px", borderBottom:`2px solid ${group.color}`, display:"flex", alignItems:"center", gap:6 }}>
+                  <span style={{ display:"flex", flexShrink:0 }}>{group.icon(group.color, 14)}</span>
+                  <span style={{ fontSize:11, fontWeight:700, color:group.color }}>{group.label}</span>
+                  <span style={{ fontSize:10, fontWeight:600, color:C.t3, marginLeft:"auto" }}>{items.length}</span>
+                </div>
+                <div style={{ padding:8, display:"flex", flexDirection:"column", gap:8, maxHeight:"calc(100vh - 180px)", overflowY:"auto" }}>
+                  {items.length===0 && <div style={{ fontSize:11, color:C.t3, textAlign:"center", padding:16 }}>Sin fletes</div>}
+                  {items.map(renderKanbanCard)}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        ) : (
+        <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
+          {GROUPS.map(group => {
+            const items = grouped[group.key];
+            if(items.length===0) return null;
+            return (
+              <div key={group.key}>
+                <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8, padding:"6px 0", borderBottom:`2px solid ${group.color}` }}>
+                  <span style={{ display:"flex", flexShrink:0 }}>{group.icon(group.color, 15)}</span>
+                  <span style={{ fontSize:12, fontWeight:700, color:group.color }}>{group.label}</span>
+                  <span style={{ fontSize:11, fontWeight:600, color:C.t3 }}>({items.length})</span>
+                </div>
+                <div style={{ display:"flex", flexWrap:"wrap", gap:10 }}>
+                  {items.map(f => (
+                    <div key={f.id} style={{ flex:"1 1 280px", maxWidth:420, minWidth:240 }}>{renderKanbanCard(f)}</div>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        )
+      ) : (
+        /* Entity grouping */
+        isDesktop ? (
+        <div style={{ display:"flex", gap:12, overflowX:"auto", alignItems:"flex-start", paddingBottom:8 }}>
+          {entityGrouped.map(col => (
+            <div key={col.name} style={{ minWidth:220, flex:"1 1 0", background:C.bg, borderRadius:12, border:`1px solid ${C.b1}`, overflow:"hidden" }}>
+              <div style={{ padding:"10px 12px", borderBottom:`2px solid ${col.isFallback ? C.t3 : C.pri}`, display:"flex", alignItems:"center", gap:6 }}>
+                <span style={{ fontSize:11, fontWeight:700, color: col.isFallback ? C.t3 : C.t1 }}>{col.name}</span>
+                <span style={{ fontSize:10, fontWeight:600, color:C.t3, marginLeft:"auto" }}>{col.items.length}</span>
               </div>
               <div style={{ padding:8, display:"flex", flexDirection:"column", gap:8, maxHeight:"calc(100vh - 180px)", overflowY:"auto" }}>
-                {items.length===0 && <div style={{ fontSize:11, color:C.t3, textAlign:"center", padding:16 }}>Sin fletes</div>}
-                {items.map(f => {
-                  const st = stCfg(f.status);
-                  return (
-                  <div key={f.id} onClick={()=>onNav("detail",f.id)} style={{ background:C.w, border:`1px solid ${C.b1}`, borderLeft:`4px solid ${st.color}`, borderRadius:12, padding:14, cursor:"pointer", boxShadow:C.sh, transition:"background 0.15s", contentVisibility:"auto", containIntrinsicSize:"0 120px" }}>
-                    <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:6 }}>
-                      <span style={{ fontSize:11, fontWeight:700, fontFamily:MONO, color:C.t2 }}>{f.code}</span>
-                      <Bd color={st.color} bg={st.bg} small>{st.label}</Bd>
-                    </div>
-                    <div style={{fontSize:14,fontWeight:700,color:C.t1,marginBottom:4}}>{f.grain==="Otros"?f.productTypeOther||"Otros":f.grain} · {f.tons} {f.unit||"tn"}</div>
-                    {f.loadDate && <div style={{ fontSize:11, color:C.t3, fontWeight:500, marginBottom:6 }}>{Ic.cal(C.t3,10)} {formatFreightDate(f.loadDate)}{f.loadTime?` · ${f.loadTime}`:""}</div>}
-                    <div style={{display:"flex",flexDirection:"column",gap:3,fontSize:11,color:C.t2}}>
-                      <div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.user(C.t3,12)} <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.originCompanyName||(f.originName||"").split("—")[0].trim()}</span>{f.originLat&&f.originLng&&<span onClick={(e)=>{e.stopPropagation();goToMap(f.originLat,f.originLng,[f.originCompanyName,f.fieldName,f.originName].filter(Boolean).join(" — "));}} style={{cursor:"pointer",opacity:0.6,marginLeft:3,fontSize:10,flexShrink:0}} title="Ver en mapa">{"\uD83D\uDCCD"}</span>}</div>
-                      <div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.plant(C.t3,12)} <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.destName}</span>{f.destLat&&f.destLng&&<span onClick={(e)=>{e.stopPropagation();goToMap(f.destLat,f.destLng,f.destName);}} style={{cursor:"pointer",opacity:0.6,marginLeft:3,fontSize:10,flexShrink:0}} title="Ver en mapa">{"\uD83D\uDCCD"}</span>}</div>
-                      <div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.truck(C.t3,12)} <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.transporterName||"Sin asignar"}{f.truckPlate?` (${f.truckPlate})`:""}</span>{f.isOwnFleet&&<span style={{fontSize:9,color:C.acc,fontWeight:600,marginLeft:4}}>Flota propia</span>}{f.isMultiTruck&&<span style={{fontSize:9,color:C.info,fontWeight:600,marginLeft:4}}>{f.assignedTruckCount}/{f.truckCount} cam.</span>}</div>
-                    </div>
-                  </div>
-                  );
-                })}
+                {col.items.map(renderKanbanCard)}
               </div>
             </div>
-          );
-        })}
-      </div>
-      ) : (
-      <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
-        {GROUPS.map(group => {
-          const items = grouped[group.key];
-          if(items.length===0) return null;
-          return (
-            <div key={group.key}>
-              <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8, padding:"6px 0", borderBottom:`2px solid ${group.color}` }}>
-                <span style={{ display:"flex", flexShrink:0 }}>{group.icon(group.color, 15)}</span>
-                <span style={{ fontSize:12, fontWeight:700, color:group.color }}>{group.label}</span>
-                <span style={{ fontSize:11, fontWeight:600, color:C.t3 }}>({items.length})</span>
+          ))}
+        </div>
+        ) : (
+        <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
+          {entityGrouped.map(col => (
+            <div key={col.name}>
+              <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8, padding:"6px 0", borderBottom:`2px solid ${col.isFallback ? C.t3 : C.pri}` }}>
+                <span style={{ fontSize:12, fontWeight:700, color: col.isFallback ? C.t3 : C.t1 }}>{col.name}</span>
+                <span style={{ fontSize:11, fontWeight:600, color:C.t3 }}>({col.items.length})</span>
               </div>
               <div style={{ display:"flex", flexWrap:"wrap", gap:10 }}>
-                {items.map(f => {
-                  const st = stCfg(f.status);
-                  return (
-                  <div key={f.id} onClick={()=>onNav("detail",f.id)} style={{ background:C.w, border:`1px solid ${C.b1}`, borderLeft:`4px solid ${st.color}`, borderRadius:12, padding:14, cursor:"pointer", boxShadow:C.sh, transition:"background 0.15s", flex:"1 1 280px", maxWidth:420, minWidth:240, contentVisibility:"auto", containIntrinsicSize:"0 120px" }}>
-                    <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:6 }}>
-                      <span style={{ fontSize:11, fontWeight:700, fontFamily:MONO, color:C.t2 }}>{f.code}</span>
-                      <Bd color={st.color} bg={st.bg} small>{st.label}</Bd>
-                    </div>
-                    <div style={{fontSize:14,fontWeight:700,color:C.t1,marginBottom:4}}>{f.grain==="Otros"?f.productTypeOther||"Otros":f.grain} · {f.tons} {f.unit||"tn"}</div>
-                    {f.loadDate && <div style={{ fontSize:11, color:C.t3, fontWeight:500, marginBottom:6 }}>{Ic.cal(C.t3,10)} {formatFreightDate(f.loadDate)}{f.loadTime?` · ${f.loadTime}`:""}</div>}
-                    <div style={{display:"flex",flexDirection:"column",gap:3,fontSize:11,color:C.t2}}>
-                      <div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.user(C.t3,12)} <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.originCompanyName||(f.originName||"").split("—")[0].trim()}</span>{f.originLat&&f.originLng&&<span onClick={(e)=>{e.stopPropagation();goToMap(f.originLat,f.originLng,[f.originCompanyName,f.fieldName,f.originName].filter(Boolean).join(" — "));}} style={{cursor:"pointer",opacity:0.6,marginLeft:3,fontSize:10,flexShrink:0}} title="Ver en mapa">{"\uD83D\uDCCD"}</span>}</div>
-                      <div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.plant(C.t3,12)} <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.destName}</span>{f.destLat&&f.destLng&&<span onClick={(e)=>{e.stopPropagation();goToMap(f.destLat,f.destLng,f.destName);}} style={{cursor:"pointer",opacity:0.6,marginLeft:3,fontSize:10,flexShrink:0}} title="Ver en mapa">{"\uD83D\uDCCD"}</span>}</div>
-                      <div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.truck(C.t3,12)} <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.transporterName||"Sin asignar"}{f.truckPlate?` (${f.truckPlate})`:""}</span>{f.isOwnFleet&&<span style={{fontSize:9,color:C.acc,fontWeight:600,marginLeft:4}}>Flota propia</span>}{f.isMultiTruck&&<span style={{fontSize:9,color:C.info,fontWeight:600,marginLeft:4}}>{f.assignedTruckCount}/{f.truckCount} cam.</span>}</div>
-                    </div>
-                  </div>
-                  );
-                })}
+                {col.items.map(f => (
+                  <div key={f.id} style={{ flex:"1 1 280px", maxWidth:420, minWidth:240 }}>{renderKanbanCard(f)}</div>
+                ))}
               </div>
             </div>
-          );
-        })}
-      </div>
-      ))}
+          ))}
+        </div>
+        )
+      )}
+      </>)}
 
-      {/* View: Mapa — stays mounted after first show to avoid reinit */}
+      {/* View: Mapa -- stays mounted after first show to avoid reinit */}
       {(view==="mapa" || mapShown) && (
         <div style={{ display: view === "mapa" ? undefined : "none" }}>
           <ErrorBoundary><Suspense fallback={<SkeletonList count={3}/>}><FreightsOverviewMap freights={filtered} onSelect={(id)=>onNav("detail",id)} fields={catalog?.fields} plants={catalog?.plants} /></Suspense></ErrorBoundary>
@@ -288,23 +389,39 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
       {/* View: Tabla */}
       {view==="tabla" && (
         <div style={{ background:C.w, border:`1px solid ${C.b1}`, borderRadius:12, overflow:"hidden", boxShadow:"0 1px 4px rgba(0,0,0,0.06)" }}>
-          <div style={{ display:"flex", justifyContent:"flex-end", padding:"10px 12px 0" }}>
-            <button onClick={()=>exportExcel(filtered,"tolvink-fletes.xls")} style={{padding:"5px 12px",borderRadius:8,border:`1.5px solid #1A6B37`,background:"#E6F4EA",color:"#1A6B37",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:5}}>{Ic.doc("#1A6B37",13)} Exportar Excel</button>
+          <div style={{ display:"flex", alignItems:"center", gap:6, padding:"10px 12px", flexWrap:"wrap" }}>
+            {/* Status filter pills */}
+            {[{k:"all",label:"Todos",color:C.t2},...GROUPS.map(g=>({k:g.key,label:g.label,color:g.color}))].map(s => (
+              <button key={s.k} onClick={() => setTableStatusFilter(s.k)} style={{ padding:"4px 10px", borderRadius:6, border:`1px solid ${tableStatusFilter === s.k ? s.color : C.b1}`, background: tableStatusFilter === s.k ? `${s.color}15` : "transparent", color: tableStatusFilter === s.k ? s.color : C.t3, fontSize:10, fontWeight: tableStatusFilter === s.k ? 700 : 500, cursor:"pointer", fontFamily:"inherit", whiteSpace:"nowrap" }}>{s.label}</button>
+            ))}
+            <div style={{ marginLeft:"auto" }}>
+              <button onClick={()=>exportExcel(tableFiltered,"tolvink-fletes.xls")} style={{padding:"5px 12px",borderRadius:8,border:`1.5px solid #1A6B37`,background:"#E6F4EA",color:"#1A6B37",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:5}}>{Ic.doc("#1A6B37",13)} Exportar Excel</button>
+            </div>
           </div>
           <div style={{ overflowX:"auto" }}>
             <table style={{ width:"100%", borderCollapse:"collapse", fontSize:12, fontFamily:"inherit" }}>
               <thead>
                 <tr style={{ background:C.bg, borderBottom:`2px solid ${C.b1}` }}>
-                  {["Código","Estado","Producto","Cam.","Empresa","Campo / Lote","Destino","Fecha","Hora","Transportista","Matrícula","Chofer","Celular"].map(h=>(
-                    <th key={h} style={{ padding:"10px 12px", textAlign:"left", fontSize:10, fontWeight:700, color:C.t2, textTransform:"uppercase", letterSpacing:0.5, whiteSpace:"nowrap" }}>{h}</th>
-                  ))}
+                  <SortTh label="Codigo" colKey="code" sortCol={sortCol} sortDir={sortDir} onSort={toggleSort} />
+                  <SortTh label="Estado" colKey="status" sortCol={sortCol} sortDir={sortDir} onSort={toggleSort} />
+                  <SortTh label="Producto" colKey="product" sortCol={sortCol} sortDir={sortDir} onSort={toggleSort} />
+                  <th style={{ padding:"10px 12px", textAlign:"left", fontSize:10, fontWeight:700, color:C.t2, textTransform:"uppercase", letterSpacing:0.5, whiteSpace:"nowrap" }}>Cam.</th>
+                  <SortTh label="Empresa" colKey="company" sortCol={sortCol} sortDir={sortDir} onSort={toggleSort} />
+                  <th style={{ padding:"10px 12px", textAlign:"left", fontSize:10, fontWeight:700, color:C.t2, textTransform:"uppercase", letterSpacing:0.5, whiteSpace:"nowrap" }}>Campo / Lote</th>
+                  <SortTh label="Destino" colKey="dest" sortCol={sortCol} sortDir={sortDir} onSort={toggleSort} />
+                  <SortTh label="Fecha" colKey="date" sortCol={sortCol} sortDir={sortDir} onSort={toggleSort} />
+                  <SortTh label="Hora" colKey="time" sortCol={sortCol} sortDir={sortDir} onSort={toggleSort} />
+                  <SortTh label="Transportista" colKey="transporter" sortCol={sortCol} sortDir={sortDir} onSort={toggleSort} />
+                  <SortTh label="Matricula" colKey="plate" sortCol={sortCol} sortDir={sortDir} onSort={toggleSort} />
+                  <SortTh label="Chofer" colKey="driver" sortCol={sortCol} sortDir={sortDir} onSort={toggleSort} />
+                  <SortTh label="Celular" colKey="phone" sortCol={sortCol} sortDir={sortDir} onSort={toggleSort} />
                 </tr>
               </thead>
               <tbody>
-                {filtered.length===0 && <tr><td colSpan={13} style={{ padding:24, textAlign:"center", color:C.t3, fontSize:12 }}>Sin fletes</td></tr>}
-                {filtered.map(f=>{
+                {tableSorted.length===0 && <tr><td colSpan={13} style={{ padding:24, textAlign:"center", color:C.t3, fontSize:12 }}>Sin fletes</td></tr>}
+                {tableSorted.map(f=>{
                   const st = stCfg(f.status);
-                  const campoLote = [f.fieldName, f.originName].filter(Boolean).join(" / ") || "—";
+                  const campoLote = [f.fieldName, f.originName].filter(Boolean).join(" / ") || "\u2014";
                   return (
                     <tr key={f.id} className="tv-row" onClick={()=>onNav("detail",f.id)} style={{ borderBottom:`1px solid ${C.b1}`, cursor:"pointer", contentVisibility:"auto", containIntrinsicSize:"0 44px" }}>
                       <td style={{ padding:"10px 12px", fontFamily:MONO, fontWeight:700, fontSize:11, color:C.t2, whiteSpace:"nowrap" }}>{f.code}</td>
@@ -315,11 +432,11 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
                       <td style={{ padding:"10px 12px", color:C.t2 }}>{campoLote}{f.originLat&&f.originLng&&<span onClick={(e)=>{e.stopPropagation();goToMap(f.originLat,f.originLng,[f.fieldName,f.originName].filter(Boolean).join(" / "));}} style={{cursor:"pointer",opacity:0.6,marginLeft:3,fontSize:10}} title="Ver en mapa">{"\uD83D\uDCCD"}</span>}</td>
                       <td style={{ padding:"10px 12px", color:C.t2 }}>{f.destName}{f.destLat&&f.destLng&&<span onClick={(e)=>{e.stopPropagation();goToMap(f.destLat,f.destLng,f.destName);}} style={{cursor:"pointer",opacity:0.6,marginLeft:3,fontSize:10}} title="Ver en mapa">{"\uD83D\uDCCD"}</span>}</td>
                       <td style={{ padding:"10px 12px", color:C.t2, whiteSpace:"nowrap" }}>{formatFreightDate(f.loadDate)}</td>
-                      <td style={{ padding:"10px 12px", color:C.t3, whiteSpace:"nowrap" }}>{f.loadTime||"—"}</td>
-                      <td style={{ padding:"10px 12px", color:C.t2 }}>{f.transporterName||"—"}</td>
-                      <td style={{ padding:"10px 12px", fontFamily:MONO, fontSize:11, color:C.t2, whiteSpace:"nowrap" }}>{f.truckPlate||"—"}</td>
-                      <td style={{ padding:"10px 12px", color:C.t2 }}>{f.driverName||"—"}</td>
-                      <td style={{ padding:"10px 12px", color:C.t2, whiteSpace:"nowrap" }}>{f.driverPhone||"—"}</td>
+                      <td style={{ padding:"10px 12px", color:C.t3, whiteSpace:"nowrap" }}>{f.loadTime||"\u2014"}</td>
+                      <td style={{ padding:"10px 12px", color:C.t2 }}>{f.transporterName||"\u2014"}</td>
+                      <td style={{ padding:"10px 12px", fontFamily:MONO, fontSize:11, color:C.t2, whiteSpace:"nowrap" }}>{f.truckPlate||"\u2014"}</td>
+                      <td style={{ padding:"10px 12px", color:C.t2 }}>{f.driverName||"\u2014"}</td>
+                      <td style={{ padding:"10px 12px", color:C.t2, whiteSpace:"nowrap" }}>{f.driverPhone||"\u2014"}</td>
                     </tr>
                   );
                 })}
@@ -329,7 +446,7 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
         </div>
       )}
 
-      {/* View: Seguimiento — by transporter → driver → queue */}
+      {/* View: Seguimiento -- by transporter -> driver -> queue */}
       {view==="seguimiento" && freights.length > 0 && (
         <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
           {trackingGroups.transporters.map(t=>{
@@ -338,7 +455,7 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
             const isCollapsed = !segExpanded[t.id];
             return (
               <div key={t.id} style={{ background:C.w, border:`1px solid ${C.b1}`, borderRadius:14, overflow:"hidden", boxShadow:C.sh }}>
-                {/* Transporter header — clickable to collapse */}
+                {/* Transporter header -- clickable to collapse */}
                 <div onClick={()=>setSegExpanded(p=>({...p,[t.id]:!p[t.id]}))} style={{ padding:"12px 16px", borderBottom:isCollapsed?"none":`2px solid ${C.info}`, display:"flex", alignItems:"center", gap:8, background:`${C.info}08`, cursor:"pointer", userSelect:"none" }}>
                   {Ic.truck(C.info,16)}
                   <span style={{ fontSize:13, fontWeight:700, color:C.info }}>{t.name}</span>
@@ -458,7 +575,7 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
           {hasMore && !hasFilters && (
             <div style={{textAlign:"center",padding:"16px 0 24px"}}>
               <button onClick={loadMore} disabled={loadingMore} style={{padding:"8px 24px",borderRadius:10,border:`1.5px solid ${C.pri}`,background:C.w,color:C.pri,fontSize:12,fontWeight:700,cursor:loadingMore?"default":"pointer",fontFamily:"inherit",opacity:loadingMore?0.5:1}}>
-                {loadingMore?"Cargando...":"Cargar más fletes"}
+                {loadingMore?"Cargando...":"Cargar mas fletes"}
               </button>
             </div>
           )}
