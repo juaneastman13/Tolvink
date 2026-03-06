@@ -1,14 +1,14 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { C, Ic, MONO } from "../theme";
 import { stCfg, getActions, formatFreightDate } from "../constants";
-import { Bd, Btn, SkeletonList, EmptyState } from "../components";
+import { Bd, Btn, SkeletonList, EmptyState, Tabs } from "../components";
 import { useIsDesktop } from "../hooks";
 import { getPendingActions, resolveUserTypeForFreight, getWaitingOnText } from "../utils/freight-helpers";
 import DetailScreen from "./DetailScreen";
 
 // Summary groups — by freight type/status, filtered by date. Priority: pending confirmation → active → rest
 const STATUS_GROUPS = [
-  { key:"own_fleet_pending",   label:"Esperando confirmación de planta", icon:Ic.warn,  color:"#CA8A04", filter:(f) => f.status === "assigned" && f.isOwnFleet },
+  { key:"own_fleet_pending",   label:"Esperando confirmacion de planta", icon:Ic.warn,  color:"#CA8A04", filter:(f) => f.status === "assigned" && f.isOwnFleet },
   { key:"in_progress",         label:"En curso",                         icon:Ic.nav,   color:"#4ADE80", filter:(f) => f.status === "in_progress" },
   { key:"loaded",              label:"Cargando",                         icon:Ic.plant, color:"#22C55E", filter:(f) => f.status === "loaded" },
   { key:"own_fleet_confirmed", label:"Flota propia confirmada",          icon:Ic.chk,   color:"#2563EB", filter:(f) => f.status === "accepted" && f.isOwnFleet },
@@ -16,12 +16,44 @@ const STATUS_GROUPS = [
   { key:"pending_assignment",  label:"Solicitado",                       icon:Ic.warn,  color:"#FF6A00", filter:(f) => f.status === "pending_assignment" },
 ];
 
+// Status order for daily summary grouping
+const DAILY_STATUS_ORDER = [
+  { key: "in_progress",        label: "En curso",              color: "#4ADE80" },
+  { key: "loaded",             label: "Cargando",              color: "#22C55E" },
+  { key: "accepted",           label: "Confirmado",            color: "#2563EB" },
+  { key: "assigned",           label: "Asignado",              color: "#0891B2" },
+  { key: "pending_assignment", label: "Solicitado",            color: "#FF6A00" },
+  { key: "finished",           label: "Finalizado",            color: "#6B7280" },
+];
+
+const DAY_NAMES = ["Domingo","Lunes","Martes","Miercoles","Jueves","Viernes","Sabado"];
+const MONTH_NAMES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+
+function formatTodayHeader() {
+  const d = new Date();
+  return `Fletes de hoy \u2014 ${DAY_NAMES[d.getDay()]} ${d.getDate()} de ${MONTH_NAMES[d.getMonth()]}`;
+}
+
 export default function HomeScreen({ user, freights, loading, perms, onNav, catalog, isDesktop, onAction, onTripAction, onEditTrip, actionLoading, onChat, onRefresh, onDuplicate, onEdit, goToMap }) {
   const [selectedId, setSelectedId] = useState(null);
+  // Track which panel originated the selection: "pending" (left) or "daily" (right)
+  const [selectionSource, setSelectionSource] = useState(null);
   const [pendingFilter, setPendingFilter] = useState("all");
   const [summaryFilter, setSummaryFilter] = useState("all");
   const [showCompanyPicker, setShowCompanyPicker] = useState(false);
   const companyPickerRef = useRef(null);
+  // Mobile tab: "pending" or "daily"
+  const [mobileTab, setMobileTab] = useState("pending");
+
+  const selectFreight = useCallback((id, source) => {
+    setSelectedId(id);
+    setSelectionSource(source);
+  }, []);
+
+  const deselectFreight = useCallback(() => {
+    setSelectedId(null);
+    setSelectionSource(null);
+  }, []);
 
   // Build company list from user types + freight data (works even if companyByType is empty)
   const typeLabels = { producer: "Productor", plant: "Planta", transporter: "Transportista" };
@@ -163,15 +195,34 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
   const selFreight = selectedId ? filteredFreights.find(f => f.id === selectedId) || freights.find(f => f.id === selectedId) : null;
   const hasDetail = selectedId && selFreight;
 
+  // ======================== DAILY SUMMARY ========================
+
+  const todayFreights = useMemo(() => {
+    return filteredFreights
+      .filter(f => f.loadDate === dateBounds.todayStr)
+      .sort((a, b) => (a.loadTime || "").localeCompare(b.loadTime || "") || (a.code || "").localeCompare(b.code || ""));
+  }, [filteredFreights, dateBounds.todayStr]);
+
+  const todayTons = useMemo(() => todayFreights.reduce((s, f) => s + (parseFloat(f.tons) || 0), 0), [todayFreights]);
+
+  const dailyGroups = useMemo(() => {
+    return DAILY_STATUS_ORDER.map(g => {
+      const items = todayFreights.filter(f => f.status === g.key);
+      return { ...g, items };
+    }).filter(g => g.items.length > 0);
+  }, [todayFreights]);
+
+  // ======================== RENDER HELPERS ========================
+
   // Render a freight card — compact when detail is open on desktop
-  const compact = hasDetail && isDesktop;
-  const renderCard = (f, pa) => {
+  const renderCard = (f, pa, source) => {
     const st = stCfg(f.status);
     const isSel = selectedId === f.id;
+    const compact = hasDetail && isDesktop;
     if (compact) {
       // Mini card: just code + status color bar + product
       return (
-        <div key={f.id} onClick={() => setSelectedId(f.id)} style={{ background: isSel ? C.priPale : C.w, border: `1px solid ${isSel ? C.pri : C.b1}`, borderLeft: `4px solid ${st.color}`, borderRadius: 8, padding: "8px 10px", cursor: "pointer", transition: "background 0.15s" }}>
+        <div key={f.id} onClick={() => selectFreight(f.id, source)} style={{ background: isSel ? C.priPale : C.w, border: `1px solid ${isSel ? C.pri : C.b1}`, borderLeft: `4px solid ${st.color}`, borderRadius: 8, padding: "8px 10px", cursor: "pointer", transition: "background 0.15s" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
             <span style={{ fontSize: 10, fontWeight: 700, fontFamily: MONO, color: C.t2 }}>{f.code}</span>
             <Bd color={st.color} bg={st.bg} small>{st.label}</Bd>
@@ -182,7 +233,7 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
       );
     }
     return (
-      <div key={f.id} onClick={() => setSelectedId(f.id)} style={{ background: C.w, border: `1px solid ${C.b1}`, borderLeft: `4px solid ${st.color}`, borderRadius: 10, boxShadow: C.sh, cursor: "pointer", overflow: "hidden", transition: "background 0.15s, border-color 0.15s" }}>
+      <div key={f.id} onClick={() => selectFreight(f.id, source)} style={{ background: C.w, border: `1px solid ${C.b1}`, borderLeft: `4px solid ${st.color}`, borderRadius: 10, boxShadow: C.sh, cursor: "pointer", overflow: "hidden", transition: "background 0.15s, border-color 0.15s" }}>
         {/* Two-column layout with vertical divider */}
         <div style={{ display: "flex" }}>
           {/* Left column */}
@@ -196,7 +247,7 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
           </div>
           {/* Right column */}
           <div style={{ display: "flex", flexDirection: "column", gap: 3, padding: "8px 12px", fontSize: 11, color: C.t2, minWidth: 0 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>{Ic.user(C.t3, 12)} <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.originCompanyName || (f.originName || "").split("—")[0].trim()}</span>{f.originLat&&f.originLng&&<span onClick={(e)=>{e.stopPropagation();goToMap(f.originLat,f.originLng,[f.originCompanyName,f.fieldName,f.originName].filter(Boolean).join(" — "));}} style={{cursor:"pointer",opacity:0.6,marginLeft:3,fontSize:10,flexShrink:0}} title="Ver en mapa">{"\uD83D\uDCCD"}</span>}</div>
+            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>{Ic.user(C.t3, 12)} <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.originCompanyName || (f.originName || "").split("\u2014")[0].trim()}</span>{f.originLat&&f.originLng&&<span onClick={(e)=>{e.stopPropagation();goToMap(f.originLat,f.originLng,[f.originCompanyName,f.fieldName,f.originName].filter(Boolean).join(" \u2014 "));}} style={{cursor:"pointer",opacity:0.6,marginLeft:3,fontSize:10,flexShrink:0}} title="Ver en mapa">{"\uD83D\uDCCD"}</span>}</div>
             <div style={{ display: "flex", alignItems: "center", gap: 4 }}>{Ic.plant(C.t3, 12)} <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.destName}</span>{f.destLat&&f.destLng&&<span onClick={(e)=>{e.stopPropagation();goToMap(f.destLat,f.destLng,f.destName);}} style={{cursor:"pointer",opacity:0.6,marginLeft:3,fontSize:10,flexShrink:0}} title="Ver en mapa">{"\uD83D\uDCCD"}</span>}</div>
             <div style={{ display: "flex", alignItems: "center", gap: 4 }}>{Ic.truck(C.t3, 12)} <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.transporterName || "Sin asignar"}{f.truckPlate ? ` (${f.truckPlate})` : ""}</span>{f.isOwnFleet && <span style={{ fontSize: 8.5, color: C.acc, fontWeight: 600, marginLeft: 4, flexShrink: 0 }}>Flota propia</span>}{f.isMultiTruck && <span style={{ fontSize: 9, color: C.info, fontWeight: 600, marginLeft: 4, flexShrink: 0 }}>{f.assignedTruckCount}/{f.truckCount} cam.</span>}</div>
           </div>
@@ -206,7 +257,7 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
   };
 
   // Render a collapsible group (pending or summary)
-  const renderGroup = (group, keyPrefix) => {
+  const renderGroup = (group, keyPrefix, source) => {
     const gKey = keyPrefix + "_" + group.key;
     const isOpen = !!collapsed[gKey];
     return (
@@ -219,18 +270,17 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
         </button>
         {isOpen && (
           <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: "8px 0 4px 16px", borderLeft: `2px solid ${group.color}30` }}>
-            {group.items.map(f => renderCard(f, pendingMap.get(f.id)))}
+            {group.items.map(f => renderCard(f, pendingMap.get(f.id), source))}
           </div>
         )}
       </div>
     );
   };
 
-  // List panel content
-  // Sidebar logo area: padTop24 + font63 + padBot20 = 107px → midline ~55px. Solicitar btn top ~122px.
-  const listContent = (
+  // ======================== PANEL: PENDING/AL DIA ========================
+
+  const renderPendingPanel = (compact) => (
     <div style={{ flex: compact ? undefined : 1, width: compact ? 300 : undefined, flexShrink: 0, overflow: compact ? "auto" : undefined, boxSizing: "border-box", borderRight: compact ? `1px solid ${C.b1}` : "none" }}>
-      {/* Sticky header spacer */}
       {compact && <div style={{ position: "sticky", top: 0, zIndex: 10, background:C.bg, minHeight: 8 }} />}
 
       <div style={{ padding: compact ? "0 8px 8px" : "18px 18px 18px" }}>
@@ -238,8 +288,7 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
       {/* Skeleton while loading */}
       {loading && freights.length === 0 && <SkeletonList count={3} />}
 
-
-      {/* Pendientes — top aligned with Solicitar flete button (~14px padding in sidebar) */}
+      {/* Pendientes */}
       {totalPendingAll > 0 && (<>
         <div style={{ padding: compact ? "8px 10px" : "10px 12px", borderRadius: 12, background: `${C.acc}0D`, marginBottom: 8 }}>
           <div style={{ display: "flex", alignItems: "center", gap: compact ? 8 : 10 }}>
@@ -249,21 +298,21 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
             </div>
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: compact ? 11 : 12, fontWeight: 700, color: C.acc }}>Con pendientes de mi parte</div>
-              {!compact && <div style={{ fontSize: 10, color: C.t3 }}>{pendingCount} acción{pendingCount !== 1 ? "es" : ""}</div>}
+              {!compact && <div style={{ fontSize: 10, color: C.t3 }}>{pendingCount} accion{pendingCount !== 1 ? "es" : ""}</div>}
             </div>
           </div>
           <div style={{ display: "flex", gap: 4, marginTop: 6, flexWrap: "wrap" }}>
-            {[{k:"all",l:"Todo"},{k:"today",l:"Hoy"},{k:"tomorrow",l:"Mañana"},{k:"week",l:"Semana"}].map(o => (
+            {[{k:"all",l:"Todo"},{k:"today",l:"Hoy"},{k:"tomorrow",l:"Manana"},{k:"week",l:"Semana"}].map(o => (
               <button key={o.k} onClick={() => setPendingFilter(o.k)} style={{ padding: compact ? "3px 6px" : "4px 8px", borderRadius: 6, border: `1px solid ${pendingFilter === o.k ? C.acc : C.b1}`, background: pendingFilter === o.k ? `${C.acc}15` : "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: compact ? 9 : 10, fontWeight: pendingFilter === o.k ? 700 : 500, color: pendingFilter === o.k ? C.acc : C.t3 }}>{o.l}</button>
             ))}
           </div>
         </div>
         {pendingByAction.length > 0 && (
           <div style={{ paddingLeft: compact ? 12 : 16, borderLeft: `2px solid ${C.acc}30`, marginBottom: 16 }}>
-            {pendingByAction.map(g => renderGroup({ key: g.actionKey, label: g.label, icon: actionIcon(g.icon), color: g.color, items: g.items }, "pa"))}
+            {pendingByAction.map(g => renderGroup({ key: g.actionKey, label: g.label, icon: actionIcon(g.icon), color: g.color, items: g.items }, "pa", "pending"))}
           </div>
         )}
-        {!compact && pendingByAction.length === 0 && <div style={{ padding:"12px 16px", fontSize:12, color:C.t3, display:"flex", alignItems:"center", gap:8 }}>{Ic.chk(C.ok,14)} Sin pendientes en este período</div>}
+        {!compact && pendingByAction.length === 0 && <div style={{ padding:"12px 16px", fontSize:12, color:C.t3, display:"flex", alignItems:"center", gap:8 }}>{Ic.chk(C.ok,14)} Sin pendientes en este periodo</div>}
       </>)}
 
       {/* Sin pendientes de mi parte */}
@@ -275,7 +324,7 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
           <div style={{ flex: 1, fontSize: compact ? 11 : 12, fontWeight: 700, color: C.ok }}>Sin pendientes de mi parte</div>
         </div>
         <div style={{ display: "flex", gap: 4, marginTop: 6, flexWrap: "wrap" }}>
-          {[{k:"all",l:"Todo"},{k:"today",l:"Hoy"},{k:"tomorrow",l:"Mañana"},{k:"week",l:"Semana"}].map(o => (
+          {[{k:"all",l:"Todo"},{k:"today",l:"Hoy"},{k:"tomorrow",l:"Manana"},{k:"week",l:"Semana"}].map(o => (
             <button key={o.k} onClick={() => setSummaryFilter(o.k)} style={{ padding: compact ? "3px 6px" : "4px 8px", borderRadius: 6, border: `1px solid ${summaryFilter === o.k ? C.ok : C.b1}`, background: summaryFilter === o.k ? `${C.ok}15` : "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: compact ? 9 : 10, fontWeight: summaryFilter === o.k ? 700 : 500, color: summaryFilter === o.k ? C.ok : C.t3 }}>{o.l}</button>
           ))}
         </div>
@@ -284,32 +333,101 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
       {/* Summary groups — by status */}
       {summaryGroups.length > 0 ? (
         <div style={{ paddingLeft: compact ? 12 : 16, borderLeft: `2px solid ${C.ok}30` }}>
-          {summaryGroups.map(g => renderGroup(g, "sm"))}
+          {summaryGroups.map(g => renderGroup(g, "sm", "pending"))}
         </div>
       ) : null}
       </div>
     </div>
   );
 
-  // Desktop: split layout — collapsed list left + DetailScreen right
+  // ======================== PANEL: DAILY SUMMARY ========================
+
+  const renderDailyPanel = (compact) => (
+    <div style={{ flex: compact ? undefined : 1, width: compact ? 300 : undefined, flexShrink: 0, overflow: compact ? "auto" : undefined, boxSizing: "border-box", borderRight: compact ? `1px solid ${C.b1}` : "none" }}>
+      {compact && <div style={{ position: "sticky", top: 0, zIndex: 10, background:C.bg, minHeight: 8 }} />}
+
+      <div style={{ padding: compact ? "0 8px 8px" : "18px 18px 18px" }}>
+        {/* Header */}
+        <div style={{ padding: compact ? "8px 10px" : "10px 12px", borderRadius: 12, background: `${C.pri}0D`, marginBottom: 8 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: compact ? 8 : 10 }}>
+            <div style={{ width: compact ? 26 : 32, height: compact ? 26 : 32, borderRadius: "50%", background: C.pri, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              {Ic.cal(C.w, compact ? 13 : 16)}
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: compact ? 11 : 12, fontWeight: 700, color: C.pri }}>{compact ? `Hoy (${todayFreights.length})` : formatTodayHeader()}</div>
+              {!compact && <div style={{ fontSize: 10, color: C.t3 }}>{todayFreights.length} flete{todayFreights.length !== 1 ? "s" : ""} · {Math.round(todayTons)} tn totales</div>}
+            </div>
+          </div>
+        </div>
+
+        {/* Empty state */}
+        {todayFreights.length === 0 && !loading && (
+          <EmptyState icon={Ic.cal(C.t3, 28)} title="Sin fletes para hoy" subtitle="No hay fletes programados para la fecha de hoy" />
+        )}
+
+        {/* Groups by status */}
+        {dailyGroups.map(g => (
+          <div key={g.key} style={{ marginBottom: 12 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 0", borderBottom: `1px solid ${C.b2}`, marginBottom: 8 }}>
+              <div style={{ width: 8, height: 8, borderRadius: "50%", background: g.color, flexShrink: 0 }} />
+              <span style={{ fontSize: 11, fontWeight: 700, color: g.color, textTransform: "uppercase", letterSpacing: 0.5 }}>{g.label}</span>
+              <span style={{ fontSize: 11, fontWeight: 600, color: C.t3 }}>({g.items.length})</span>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, paddingLeft: compact ? 12 : 16, borderLeft: `2px solid ${g.color}30` }}>
+              {g.items.map(f => renderCard(f, pendingMap.get(f.id), "daily"))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
+  // ======================== LAYOUT ========================
+
   // Resolve effective userType for selected freight so DetailScreen shows correct actions
   const detailUser = selFreight ? { ...user, userType: effectiveType(selFreight) } : user;
+  const detailScreen = <DetailScreen user={detailUser} freight={selFreight} perms={perms} onBack={deselectFreight} onAction={onAction} onTripAction={onTripAction} onEditTrip={onEditTrip} actionLoading={actionLoading} onChat={onChat} onRefresh={onRefresh} onDuplicate={onDuplicate} onEdit={onEdit} goToMap={goToMap} />;
 
+  // Desktop with detail selected
   if (isDesktop && hasDetail) {
     return (
       <div style={{ flex: 1, position: "relative" }}>
         <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, display: "flex", flexDirection: "row" }}>
-          {listContent}
-          <DetailScreen user={detailUser} freight={selFreight} perms={perms} onBack={() => setSelectedId(null)} onAction={onAction} onTripAction={onTripAction} onEditTrip={onEditTrip} actionLoading={actionLoading} onChat={onChat} onRefresh={onRefresh} onDuplicate={onDuplicate} onEdit={onEdit} goToMap={goToMap} />
+          {selectionSource === "daily" ? renderDailyPanel(true) : renderPendingPanel(true)}
+          {detailScreen}
         </div>
       </div>
     );
   }
 
-  // Mobile: fullscreen detail or list
+  // Mobile with detail selected
   if (!isDesktop && hasDetail) {
-    return <DetailScreen user={detailUser} freight={selFreight} perms={perms} onBack={() => setSelectedId(null)} onAction={onAction} onTripAction={onTripAction} onEditTrip={onEditTrip} actionLoading={actionLoading} onChat={onChat} onRefresh={onRefresh} onDuplicate={onDuplicate} onEdit={onEdit} goToMap={goToMap} />;
+    return detailScreen;
   }
 
-  return listContent;
+  // Desktop: two panels side by side (50/50)
+  if (isDesktop) {
+    return (
+      <div style={{ flex: 1, position: "relative" }}>
+        <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, display: "flex", flexDirection: "row" }}>
+          <div style={{ flex: 1, overflow: "auto", borderRight: `1px solid ${C.b1}` }}>
+            {renderPendingPanel(false)}
+          </div>
+          <div style={{ flex: 1, overflow: "auto" }}>
+            {renderDailyPanel(false)}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Mobile: tabs between Pendientes and Hoy
+  return (
+    <div style={{ display: "flex", flexDirection: "column", flex: 1 }}>
+      <div style={{ padding: "8px 12px 0" }}>
+        <Tabs items={[{ k: "pending", l: "Pendientes" }, { k: "daily", l: `Hoy (${todayFreights.length})` }]} active={mobileTab} onChange={setMobileTab} />
+      </div>
+      {mobileTab === "pending" ? renderPendingPanel(false) : renderDailyPanel(false)}
+    </div>
+  );
 }
