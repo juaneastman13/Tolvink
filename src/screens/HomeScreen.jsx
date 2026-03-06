@@ -34,7 +34,7 @@ function formatTodayHeader() {
   return `Fletes de hoy \u2014 ${DAY_NAMES[d.getDay()]} ${d.getDate()} de ${MONTH_NAMES[d.getMonth()]}`;
 }
 
-export default function HomeScreen({ user, freights, loading, perms, onNav, catalog, isDesktop, onAction, onTripAction, onEditTrip, actionLoading, onChat, onRefresh, onDuplicate, onEdit, goToMap }) {
+export default function HomeScreen({ user, freights, loading, perms, onNav, catalog, isDesktop, onAction, onTripAction, onEditTrip, actionLoading, onChat, onRefresh, onDuplicate, onEdit, goToMap, simpleMode }) {
   const [selectedId, setSelectedId] = useState(null);
   // Track which panel originated the selection: "pending" (left) or "daily" (right)
   const [selectionSource, setSelectionSource] = useState(null);
@@ -387,6 +387,23 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
   // Resolve effective userType for selected freight so DetailScreen shows correct actions
   const detailUser = selFreight ? { ...user, userType: effectiveType(selFreight) } : user;
   const detailScreen = <DetailScreen user={detailUser} freight={selFreight} perms={perms} onBack={deselectFreight} onAction={onAction} onTripAction={onTripAction} onEditTrip={onEditTrip} actionLoading={actionLoading} onChat={onChat} onRefresh={onRefresh} onDuplicate={onDuplicate} onEdit={onEdit} goToMap={goToMap} />;
+
+  // ======================== SIMPLE MODE ========================
+  if (simpleMode) {
+    // Simple mode: just the pending panel, no daily summary, no tabs
+    if (hasDetail && !isDesktop) return detailScreen;
+    if (hasDetail && isDesktop) {
+      return (
+        <div style={{ flex: 1, position: "relative" }}>
+          <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, display: "flex", flexDirection: "row" }}>
+            {renderPendingPanel(true)}
+            {detailScreen}
+          </div>
+        </div>
+      );
+    }
+    return <div style={{ flex: 1, overflow: "auto" }}>{renderPendingPanel(false)}</div>;
+  }
 
   // Desktop with detail selected
   if (isDesktop && hasDetail) {
