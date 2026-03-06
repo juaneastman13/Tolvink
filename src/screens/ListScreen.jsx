@@ -225,15 +225,14 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
             <span style={{ fontSize: 9, fontWeight: 700, color: "#FF6A00", whiteSpace: "nowrap" }}>{pa.action}</span>
           </div>}
           <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 3, fontSize: 11, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>
-            <Bd color={st.color} bg={st.bg} small>{st.label}</Bd>
             <span style={{ fontWeight: 700, fontFamily: MONO, color: C.t2, fontSize: 10.5 }}>{f.code}</span>
+            <Bd color={st.color} bg={st.bg} small>{st.label}</Bd>
             {f.loadDate && <span style={{ display: "flex", alignItems: "center", gap: 3, color: C.t2 }}>{Ic.cal(C.t3, 10)} {formatFreightDate(f.loadDate)}{f.loadTime ? ` \u00b7 ${f.loadTime}` : ""}</span>}
-            {(f.fieldName || f.originName) && <span style={{ display: "flex", alignItems: "center", gap: 3, color: C.t2 }}>{Ic.pin(C.t3, 10)} {f.fieldName || f.originName}</span>}
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>
             <span style={{ fontWeight: 700, color: C.t1, fontSize: 12 }}>{f.grain === "Otros" ? f.productTypeOther || "Otros" : f.grain} {"\u00b7"} {f.tons} {f.unit || "tn"}</span>
+            {(f.fieldName || f.originName) && <span style={{ display: "flex", alignItems: "center", gap: 3, color: C.t2 }}>{Ic.pin(C.t3, 10)} {f.fieldName || f.originName}</span>}
             <span style={{ display: "flex", alignItems: "center", gap: 3, color: C.t2 }}>{Ic.plant(C.t3, 10)} {f.destName || "Sin destino"}</span>
-            <span style={{ display: "flex", alignItems: "center", gap: 3, color: C.t2 }}>{Ic.truck(C.t3, 10)} {f.transporterName || "Sin asignar"}</span>
           </div>
         </div>
       );
