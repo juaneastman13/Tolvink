@@ -214,14 +214,6 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
     const simplePendingMap = new Map();
     filtered.forEach(f => { simplePendingMap.set(f.id, getPendingActions(f, effectiveType(f), user?.role, user)); });
 
-    const simpleFiltered = filtered
-      .map(f => ({ ...f, _pending: simplePendingMap.get(f.id) || null }))
-      .sort((a, b) => {
-        if (a._pending && !b._pending) return -1;
-        if (!a._pending && b._pending) return 1;
-        return (a.loadDate || "").localeCompare(b.loadDate || "") || (a.loadTime || "").localeCompare(b.loadTime || "");
-      });
-
     const renderSimpleCard = (f) => {
       const st = stCfg(f.status);
       const pa = f._pending;
@@ -244,9 +236,6 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
         </div>
       );
     };
-
-    const pendingSimple = simpleFiltered.filter(f => f._pending);
-    const restSimple = simpleFiltered.filter(f => !f._pending);
 
     return (
       <div ref={containerRef} style={{ flex:1, overflow:"auto", padding:18, WebkitOverflowScrolling:"touch" }}>
@@ -272,26 +261,28 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
         </div>
         {loading && freights.length === 0 && <SkeletonList count={5} />}
         {!loading && freights.length === 0 && <EmptyState icon={Ic.truck(C.t3, 28)} title="Sin fletes todavia" subtitle="Los fletes que solicites o te asignen apareceran aca" />}
-        {simpleFiltered.length > 0 && (
-          <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
-            {pendingSimple.length > 0 && <>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2 }}>
-                <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#FF6A00", animation: "dotPulse 1.5s ease-in-out infinite" }} />
-                <span style={{ fontSize: 13, fontWeight: 700, color: "#FF6A00" }}>Pendientes de mi parte</span>
-                <span style={{ fontSize: 11, fontWeight: 600, color: C.t3 }}>({pendingSimple.length})</span>
-              </div>
-              {pendingSimple.map(renderSimpleCard)}
-            </>}
-            {restSimple.length > 0 && <>
-              {pendingSimple.length > 0 && <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 6, marginBottom: 2 }}>
-                <span style={{ fontSize: 13, fontWeight: 700, color: C.t2 }}>En curso</span>
-                <span style={{ fontSize: 11, fontWeight: 600, color: C.t3 }}>({restSimple.length})</span>
-              </div>}
-              {restSimple.map(renderSimpleCard)}
-            </>}
+        {filtered.length > 0 && (
+          <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
+            {GROUPS.map(group => {
+              const items = grouped[group.key];
+              if(items.length===0) return null;
+              const enriched = items.map(f => ({ ...f, _pending: simplePendingMap.get(f.id) || null }));
+              return (
+                <div key={group.key}>
+                  <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8, padding:"6px 0", borderBottom:`2px solid ${group.color}` }}>
+                    <span style={{ display:"flex", flexShrink:0 }}>{group.icon(group.color, 15)}</span>
+                    <span style={{ fontSize:12, fontWeight:700, color:group.color }}>{group.label}</span>
+                    <span style={{ fontSize:11, fontWeight:600, color:C.t3 }}>({items.length})</span>
+                  </div>
+                  <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                    {enriched.map(renderSimpleCard)}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
-        {simpleFiltered.length === 0 && freights.length > 0 && !loading && <EmptyState icon={Ic.srch(C.t3, 28)} title="Sin resultados" subtitle="Proba cambiando los filtros" />}
+        {filtered.length === 0 && freights.length > 0 && !loading && <EmptyState icon={Ic.srch(C.t3, 28)} title="Sin resultados" subtitle="Proba cambiando los filtros" />}
         {hasMore && <div style={{ textAlign:"center", padding:12 }}><Btn v="ghost" onClick={loadMore} loading={loadingMore}>Cargar mas</Btn></div>}
       </div>
     );
