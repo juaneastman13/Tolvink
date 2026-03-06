@@ -646,7 +646,7 @@ export default function LandingScreen({ onLogin, onSignup, onPasswordReset, load
         <div style={_cnt}>
           <div className="tv-ld-sec11" style={{ display:"flex", gap:40, justifyContent:"center", flexWrap:"wrap", maxWidth:800, margin:"0 auto" }}>
             {[
-              { bg:C.priPale, icon:Ic.shield(C.pri,18), title:"Autenticación segura", sub:"JWT con tokens firmados" },
+              { bg:C.priPale, icon:Ic.shield(C.pri,18), title:"Autenticación segura", sub:"Sesiones seguras con cookies HttpOnly" },
               { bg:C.secPale, icon:Ic.lock(C.sec,18), title:"Datos protegidos", sub:"Comunicación cifrada" },
               { bg:C.accPale, icon:Ic.eye(C.acc,18), title:"Trazabilidad completa", sub:"Registro de cada acción" },
             ].map((c,i) => (

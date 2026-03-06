@@ -3,6 +3,7 @@ import { C, Ic, FONT } from "../theme";
 import { Btn, Field, Tabs, Av, Loader, AttachMenu, FileViewer } from "../components";
 import { apiSearchUsers, apiStartConversation, apiListConversations, apiGetMessages, apiSendMessage, apiMarkRead, apiTyping, apiToggleMarkUnread, uploadChatFile, thumb } from "../api";
 import log from "../logger";
+import { useUIStore } from "../store";
 
 // Helper: format relative date
 const formatDateDivider = (dateStr) => {
@@ -208,7 +209,7 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
     navigator.clipboard.writeText(text).then(() => {
       setCopiedMsgId(msgId);
       setTimeout(() => setCopiedMsgId(null), 2000);
-    }).catch(() => {});
+    }).catch(() => useUIStore.getState().show("No se pudo copiar", "err"));
   };
 
   // Parse @ mentions in text
@@ -275,19 +276,24 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
       try {
         const r = await apiGetMessages(activeConv.id, {take:50});
         const fresh = Array.isArray(r) ? r : (r?.messages || []);
+        let hadNewMessages = false;
         setMessages(prev => {
           if(prev.length===0) return fresh;
           const ids = new Set(prev.map(m => m.id));
           const lastId = prev[prev.length-1]?.id;
           const lastIdx = fresh.findIndex(m=>m.id===lastId);
           if(lastIdx>=0 && lastIdx<fresh.length-1) {
-            pollDelayRef.current = sseConnected ? 60000 : 3000;
+            hadNewMessages = true;
             const newMsgs = fresh.slice(lastIdx+1).filter(m => !ids.has(m.id));
             return newMsgs.length > 0 ? [...prev, ...newMsgs] : prev;
           }
-          if (!sseConnected) pollDelayRef.current = Math.min(pollDelayRef.current * 1.5, 60000);
           return prev;
         });
+        if (hadNewMessages) {
+          pollDelayRef.current = sseConnected ? 60000 : 3000;
+        } else if (!sseConnected) {
+          pollDelayRef.current = Math.min(pollDelayRef.current * 1.5, 60000);
+        }
       } catch {}
       if (!cancelled) timer = setTimeout(poll, pollDelayRef.current);
     };
@@ -368,7 +374,7 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
       const tag = `[FILE:${url}|${isImg ? "image" : "document"}|${file.name}]`;
       const m = await apiSendMessage(activeConv.id, tag);
       setMessages(prev => [...prev, m]);
-    } catch (err) { log.error("Chat", "upload failed:", err); }
+    } catch (err) { log.error("Chat", "upload failed:", err); useUIStore.getState().show("Error al subir archivo", "err"); }
     finally { setUploading(false); }
   };
 
@@ -520,9 +526,7 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
         const sa = statusOrder[a.freight?.status] ?? 99;
         const sb = statusOrder[b.freight?.status] ?? 99;
         if (sa !== sb) return sa - sb;
-        const dateA = new Date(b.messages?.[0]?.createdAt || 0).getTime();
-        const dateB = new Date(a.messages?.[0]?.createdAt || 0).getTime();
-        return dateA - dateB;
+        return new Date(b.messages?.[0]?.createdAt || 0).getTime() - new Date(a.messages?.[0]?.createdAt || 0).getTime();
       });
     });
 

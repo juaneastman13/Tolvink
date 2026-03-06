@@ -251,8 +251,10 @@ export default function Tolvink() {
   }, [submitDone]);
 
   // Replay offline queue when back online
+  const replayingRef = useRef(false);
   useEffect(() => {
-    if (!online || !auth.user) return;
+    if (!online || !auth.user || replayingRef.current) return;
+    replayingRef.current = true;
     (async () => {
       const items = await offlineQueue.getAll();
       for (const item of items) {
@@ -267,7 +269,7 @@ export default function Tolvink() {
           break;
         }
       }
-    })();
+    })().finally(() => { replayingRef.current = false; });
   }, [online, auth.user]);
 
   const perms = useMemo(()=>permsFor(auth.user),[auth.user]);
@@ -275,7 +277,7 @@ export default function Tolvink() {
   const _activeComp = useMemo(() => { const c = (auth.user?.companies||[]).find(x => x.companyId === (auth.user?.activeCompanyId||auth.user?.companyId)); return c || null; }, [auth.user]);
 
   // Navigation — updates URL + triggers side effects
-  const nav = (s, fId) => {
+  const nav = useCallback((s, fId) => {
     track("screen_view", { screen: s });
     if (s === "new_date" && fId) {
       if (!perms.canRequest) { show("Sin permisos para solicitar", "err"); return; }
@@ -291,11 +293,11 @@ export default function Tolvink() {
     if (s === "home") { setSelFreight(null); navigate("/"); return; }
     const path = SCREEN_TO_PATH[s] || "/";
     navigate(path);
-  };
+  }, [perms.canRequest, navigate, show, setDuplicateData, fh.refresh]);
 
-  const handleNotifTap = (freightId) => { setSelFreight(freightId); fh.refresh(freightId); navigate(`/freight/${freightId}`); };
+  const handleNotifTap = useCallback((freightId) => { setSelFreight(freightId); fh.refresh(freightId); navigate(`/freight/${freightId}`); }, [navigate, fh.refresh]);
 
-  const handleAction = (fId,action)=>{
+  const handleAction = useCallback((fId,action)=>{
     if(actionLoading) return;
     if(!fh.freights) return;
     const f = fh.freights.find(x=>x.id===fId);
@@ -309,7 +311,7 @@ export default function Tolvink() {
     else if(action==="confirm_loaded") { setModal({type:"confirm_action",freight:f,title:"Confirmar carga",btnLabel:"Confirmar carga",btnVariant:"acc",icon:Ic.chk(C.acc,24),action:"confirm_loaded"}); }
     else if(action==="confirm_finished") { setModal({type:"confirm_action",freight:f,title:"Confirmar entrega",btnLabel:"Confirmar entrega",icon:Ic.chk(C.pri,24),action:"confirm_finished"}); }
     else if(action==="driver_queue") { setModal({type:"driver_queue",driverId:f.driverId,driverName:f.driverName}); }
-  };
+  }, [actionLoading, fh.freights, setModal]);
 
   const handleAcceptWithTruck = async (fId, truckId, driverId)=>{
     setActionLoading(true);
@@ -339,7 +341,7 @@ export default function Tolvink() {
     } finally { setActionLoading(false); }
   };
 
-  const handleTripAction = (fId, aId, actionKey)=>{
+  const handleTripAction = useCallback((fId, aId, actionKey)=>{
     if(actionLoading) return;
     if(!fh.freights) return;
     const f = fh.freights.find(x=>x.id===fId);
@@ -360,7 +362,7 @@ export default function Tolvink() {
     const cfg = cfgs[actionKey];
     if(!cfg) return;
     setModal({type:"confirm_trip_action",freight:f,...cfg,actionKey,assignmentId:aId});
-  };
+  }, [actionLoading, fh.freights, auth.user, setModal]);
 
   const handleTripConfirmAction = async (fId, aId, actionKey, loadedTons)=>{
     setActionLoading(true);
@@ -376,12 +378,12 @@ export default function Tolvink() {
     } finally { setActionLoading(false); }
   };
 
-  const handleEditTrip = (fId, assignment)=>{
+  const handleEditTrip = useCallback((fId, assignment)=>{
     if(!fh.freights) return;
     const f = fh.freights.find(x=>x.id===fId);
     if(!f) return;
     setModal({type:"edit_trip",freight:f,assignment});
-  };
+  }, [fh.freights, setModal]);
 
   const handleSaveTrip = async (data)=>{
     if(!modal?.freight || !modal?.assignment) return "";

@@ -212,8 +212,11 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
 
     // Pending actions map for simple cards
     const effectiveType = (f) => resolveUserTypeForFreight ? resolveUserTypeForFreight(f, user) : userType;
-    const simplePendingMap = new Map();
-    filtered.forEach(f => { simplePendingMap.set(f.id, getPendingActions(f, effectiveType(f), user?.role, user)); });
+    const simplePendingMap = useMemo(() => {
+      const m = new Map();
+      filtered.forEach(f => { m.set(f.id, getPendingActions(f, effectiveType(f), user?.role, user)); });
+      return m;
+    }, [filtered, user?.role, user?.id, userType]);
 
     const renderSimpleCard = (f) => {
       const st = stCfg(f.status);

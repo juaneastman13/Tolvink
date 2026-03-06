@@ -30,7 +30,7 @@ export default function ReportsScreen({ onBack, freights, isDesktop, embedded, o
     setOcrLoading(true);
     try {
       const res = await apiOcrAnalyze(file.url);
-      if (res.error) { log.error("OCR", res.error); return; }
+      if (res.error) { log.error("OCR", res.error); show("Error en OCR", "err"); return; }
       setOcrResult(res);
       if (file.id && freightId) {
         apiSaveOcrData(freightId, file.id, res).then(() => { if (onRefresh) onRefresh(); }).catch(e => { log.error("OCR", "save failed:", e); show("No se pudieron guardar los datos OCR", "err"); });
@@ -60,10 +60,10 @@ export default function ReportsScreen({ onBack, freights, isDesktop, embedded, o
     const finished = filtered.filter(f=>f.status==="finished");
     const canceled = filtered.filter(f=>f.status==="canceled");
     return [
-      {key:"solicitado", label:"Solicitado", items:solicitado, color:"#FF6A00"},
-      {key:"en_curso", label:"En curso", items:enCurso, color:"#2563EB"},
-      {key:"finished", label:"Finalizados", items:finished, color:"#1A6B37"},
-      {key:"canceled", label:"Cancelados", items:canceled, color:"#DC2626"},
+      {key:"solicitado", label:"Solicitado", items:solicitado, color:C.acc},
+      {key:"en_curso", label:"En curso", items:enCurso, color:C.info},
+      {key:"finished", label:"Finalizados", items:finished, color:C.ok},
+      {key:"canceled", label:"Cancelados", items:canceled, color:C.err},
     ].filter(g=>g.items.length>0);
   },[filtered]);
 
@@ -98,11 +98,11 @@ export default function ReportsScreen({ onBack, freights, isDesktop, embedded, o
           {selected.size>0 && <button onClick={()=>setSelected(new Set())} style={{padding:"5px 10px",borderRadius:8,border:`1.5px solid ${C.pri}`,background:C.priPale,color:C.pri,fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:4}}>
             {selected.size} seleccionado{selected.size!==1?"s":""} {Ic.cross(C.pri,10)}
           </button>}
-          <button onClick={()=>exportExcel(exportData,"tolvink-fletes.xls")} style={{padding:"5px 10px",borderRadius:8,border:`1.5px solid #1A6B37`,background:"#E6F4EA",color:"#1A6B37",fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:4}}>
-            {Ic.doc("#1A6B37",12)} Excel
+          <button onClick={()=>exportExcel(exportData,"tolvink-fletes.xls")} style={{padding:"5px 10px",borderRadius:8,border:`1.5px solid ${C.ok}`,background:"#E6F4EA",color:C.ok,fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:4}}>
+            {Ic.doc(C.ok,12)} Excel
           </button>
-          <button onClick={()=>exportPDF(exportData,"Informe de Fletes")} style={{padding:"5px 10px",borderRadius:8,border:`1.5px solid #DC2626`,background:"#FEE2E2",color:"#DC2626",fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:4}}>
-            {Ic.doc("#DC2626",12)} PDF
+          <button onClick={()=>exportPDF(exportData,"Informe de Fletes")} style={{padding:"5px 10px",borderRadius:8,border:`1.5px solid ${C.err}`,background:"#FEE2E2",color:C.err,fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:4}}>
+            {Ic.doc(C.err,12)} PDF
           </button>
         </div>
       </div>
@@ -119,11 +119,11 @@ export default function ReportsScreen({ onBack, freights, isDesktop, embedded, o
           {selected.size>0 && <button onClick={()=>setSelected(new Set())} style={{padding:"5px 10px",borderRadius:8,border:`1.5px solid ${C.pri}`,background:C.priPale,color:C.pri,fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:4}}>
             {selected.size} seleccionado{selected.size!==1?"s":""} {Ic.cross(C.pri,10)}
           </button>}
-          <button onClick={()=>exportExcel(exportData,"tolvink-fletes.xls")} style={{padding:"5px 10px",borderRadius:8,border:`1.5px solid #1A6B37`,background:"#E6F4EA",color:"#1A6B37",fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:4}}>
-            {Ic.doc("#1A6B37",12)} Excel
+          <button onClick={()=>exportExcel(exportData,"tolvink-fletes.xls")} style={{padding:"5px 10px",borderRadius:8,border:`1.5px solid ${C.ok}`,background:"#E6F4EA",color:C.ok,fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:4}}>
+            {Ic.doc(C.ok,12)} Excel
           </button>
-          <button onClick={()=>exportPDF(exportData,"Informe de Fletes")} style={{padding:"5px 10px",borderRadius:8,border:`1.5px solid #DC2626`,background:"#FEE2E2",color:"#DC2626",fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:4}}>
-            {Ic.doc("#DC2626",12)} PDF
+          <button onClick={()=>exportPDF(exportData,"Informe de Fletes")} style={{padding:"5px 10px",borderRadius:8,border:`1.5px solid ${C.err}`,background:"#FEE2E2",color:C.err,fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:4}}>
+            {Ic.doc(C.err,12)} PDF
           </button>
         </div>
       </div>
@@ -181,10 +181,10 @@ export default function ReportsScreen({ onBack, freights, isDesktop, embedded, o
                       setPdfLoadingId(f.id);
                       try {
                         let logs = [];
-                        try { logs = await apiGetAuditLog(f.id); } catch {}
+                        try { logs = await apiGetAuditLog(f.id); } catch(e) { console.warn("Audit logs unavailable:", e?.message); }
                         const { generateFreightPDF } = await loadPdfReport();
                         generateFreightPDF(f, logs);
-                      } catch(err) { log.error('PDF', err); useUIStore.getState().show('Error al generar PDF', 'error'); }
+                      } catch(err) { log.error('PDF', err); useUIStore.getState().show('Error al generar PDF', 'err'); }
                       finally { setPdfLoadingId(null); }
                     }} style={{ width:"100%", padding:"8px 10px", marginBottom:8, borderRadius:8, border:`1.5px solid ${C.b1}`, background:C.w, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:8, opacity:pdfLoadingId===f.id?0.6:1 }}>
                       {Ic.doc(C.pri,16)}<span style={{fontSize:11,fontWeight:600,color:C.pri}}>{pdfLoadingId===f.id?'Generando...':'Descargar informe PDF'}</span>
@@ -207,11 +207,11 @@ export default function ReportsScreen({ onBack, freights, isDesktop, embedded, o
                         <div style={{ flex:1, minWidth:0 }}>
                           <div style={{ fontSize:12, fontWeight:600, color:C.t1, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis", display:"flex", alignItems:"center", gap:4 }}>
                             {d.name||"Documento"}
-                            {d.ocrData && <span style={{width:7,height:7,borderRadius:4,background:"#1A6B37",flexShrink:0}} title="Datos OCR disponibles"/>}
+                            {d.ocrData && <span style={{width:7,height:7,borderRadius:4,background:C.ok,flexShrink:0}} title="Datos OCR disponibles"/>}
                           </div>
                           <div style={{ fontSize:10, color:C.t3 }}>{d.step==="request"?"Solicitud":d.step==="load_confirmation"?"Carga":d.step==="assignment"?"Asignación":"Otro"} · {d.createdAt?new Date(d.createdAt).toLocaleDateString("es",{day:"2-digit",month:"short"}):""}</div>
                         </div>
-                        {d.ocrData && <button onClick={()=>setOcrResult(d.ocrData)} title="Ver datos extraídos" style={{ display:"flex", padding:6, borderRadius:8, border:"1px solid #1A6B37", background:"#E6F4EA", cursor:"pointer" }}>{Ic.eye("#1A6B37",14)}</button>}
+                        {d.ocrData && <button onClick={()=>setOcrResult(d.ocrData)} title="Ver datos extraídos" style={{ display:"flex", padding:6, borderRadius:8, border:`1px solid ${C.ok}`, background:"#E6F4EA", cursor:"pointer" }}>{Ic.eye(C.ok,14)}</button>}
                         {isImg && !d.ocrData && <button onClick={()=>handleOcr({url:d.url,name:d.name,type:d.type,id:d.id},f.id)} disabled={ocrLoading} title="Extraer datos (OCR)" style={{ display:"flex", padding:6, borderRadius:8, border:`1px solid ${C.pri}40`, background:C.priPale, cursor:"pointer", opacity:ocrLoading?0.5:1 }}>{Ic.doc(C.pri,14)}</button>}
                         <button onClick={()=>setViewFile({url:d.url,name:d.name||"Documento",type:d.type,id:d.id,ocrData:d.ocrData,freightId:f.id})} style={{ display:"flex", padding:6, borderRadius:8, background:C.secPale, border:"none", cursor:"pointer" }}>
                           {Ic.eye(C.sec,16)}
@@ -224,8 +224,8 @@ export default function ReportsScreen({ onBack, freights, isDesktop, embedded, o
                     {ocrDocs.length > 0 && (
                       <div style={{ marginTop:10, padding:10, background:"#F0FDF4", border:"1px solid #BBF7D0", borderRadius:10 }}>
                         <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:8 }}>
-                          {Ic.doc("#1A6B37",14)}
-                          <span style={{ fontSize:10.5, fontWeight:700, color:"#1A6B37", textTransform:"uppercase", letterSpacing:0.5 }}>Datos extraídos ({ocrDocs.length})</span>
+                          {Ic.doc(C.ok,14)}
+                          <span style={{ fontSize:10.5, fontWeight:700, color:C.ok, textTransform:"uppercase", letterSpacing:0.5 }}>Datos extraídos ({ocrDocs.length})</span>
                         </div>
                         {ocrDocs.map(d => {
                           const ocr = d.ocrData;
@@ -238,14 +238,14 @@ export default function ReportsScreen({ onBack, freights, isDesktop, embedded, o
                               <div style={{ flex:1, minWidth:0 }}>
                                 <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:2 }}>
                                   <span style={{ fontSize:11, fontWeight:700, color:C.t1, textTransform:"capitalize" }}>{tipo}</span>
-                                  {conf != null && <span style={{ fontSize:9, color:"#1A6B37", fontWeight:600, background:"#DCFCE7", padding:"1px 6px", borderRadius:8 }}>{conf}%</span>}
+                                  {conf != null && <span style={{ fontSize:9, color:C.ok, fontWeight:600, background:"#DCFCE7", padding:"1px 6px", borderRadius:8 }}>{conf}%</span>}
                                   <span style={{ fontSize:9, color:C.t3 }}>{d.name}</span>
                                 </div>
                                 <div style={{ fontSize:10, color:C.t2, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
                                   {preview.map(([k,v]) => `${k}: ${v}`).join(" · ") || "Sin datos"}
                                 </div>
                               </div>
-                              {Ic.eye("#1A6B37",14)}
+                              {Ic.eye(C.ok,14)}
                             </button>
                           );
                         })}

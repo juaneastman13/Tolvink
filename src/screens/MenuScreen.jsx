@@ -17,9 +17,14 @@ export default function MenuScreen({ user, perms, onLogout, onNav, isDesktop, on
   const handleSwitch = async (companyId) => {
     if (!onSwitchCompany || companyId === user.activeCompanyId) return;
     setSwitching(companyId);
-    const r = await onSwitchCompany(companyId);
-    setSwitching(null);
-    if (r.ok && onRefresh) onRefresh();
+    try {
+      const r = await onSwitchCompany(companyId);
+      if (r?.ok && onRefresh) onRefresh();
+    } catch (e) {
+      console.warn("switchCompany failed:", e?.message);
+    } finally {
+      setSwitching(null);
+    }
   };
 
   const isChofer = user.role === "chofer";

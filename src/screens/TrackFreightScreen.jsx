@@ -59,14 +59,17 @@ export default function TrackFreightScreen({ code: codeProp } = {}) {
   // Fetch freight data
   useEffect(() => {
     if (!apiBase) { setLoading(false); return; }
+    let cancelled = false;
     (async () => {
       try {
         const res = await fetch(`${apiBase}${qs}`);
         if (!res.ok) throw new Error("Flete no encontrado");
-        setFreight(await res.json());
-      } catch (e) { setError(e.message); }
-      finally { setLoading(false); }
+        const data = await res.json();
+        if (!cancelled) setFreight(data);
+      } catch (e) { if (!cancelled) setError(e.message); }
+      finally { if (!cancelled) setLoading(false); }
     })();
+    return () => { cancelled = true; };
   }, [apiBase]);
 
   // Initialize map
@@ -150,7 +153,8 @@ export default function TrackFreightScreen({ code: codeProp } = {}) {
 
         setTruckPos({ lat, lng, speed: pos.speed, updatedAt: pos.createdAt });
 
-        const maps = window.google.maps;
+        const maps = window.google?.maps;
+        if (!maps) return;
         if (!truckMarker.current) {
           truckMarker.current = new maps.Marker({
             position: { lat, lng }, map: mapInstance.current, title: "Camion",
@@ -216,7 +220,7 @@ export default function TrackFreightScreen({ code: codeProp } = {}) {
           if (isNaN(lat) || isNaN(lng)) return;
           const uid = p.userId || p.id;
           if (!uid) return;
-          activeIds.add(uid);
+          activeIds.add(String(uid));
           const name = esc(p.userName || "Desconocido");
           const type = p.participantType || "other";
           const typeLabel = P_TYPE_LABEL[type] || "Participante";

@@ -9,6 +9,7 @@ const SafeZone = lazy(() => import("../maps").then(m => ({ default: m.SafeZone }
 const FreightMap = lazy(() => import("../maps").then(m => ({ default: m.FreightMap })));
 import { uploadPhoto, apiAddDocument, apiGetFieldLots, apiCreateLot } from "../api";
 import { useIsDesktop } from "../hooks";
+import { useUIStore } from "../store";
 
 // ======================== SUMMARY CARD ==============================
 
@@ -503,12 +504,12 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
                 <div style={{ padding:"6px 14px 10px", display:"flex", gap:8 }}>
                   {finalOrigin && (
                     <button onClick={()=>setEditingOrigin(!editingOrigin)} style={{ flex:1, padding:"7px 10px", borderRadius:8, border:`1px solid ${editingOrigin?C.pri:C.b1}`, background:editingOrigin?C.priPale:C.w, cursor:"pointer", fontFamily:"inherit", fontSize:10.5, fontWeight:600, color:editingOrigin?C.pri:C.t2, display:"flex", alignItems:"center", justifyContent:"center", gap:4 }}>
-                      {Ic.pin("#1A6B37",12)} {editingOrigin?"Editando origen":"Editar origen"}
+                      {Ic.pin(C.ok,12)} {editingOrigin?"Editando origen":"Editar origen"}
                     </button>
                   )}
                   {finalDest && (
                     <button onClick={()=>setEditingDest(!editingDest)} style={{ flex:1, padding:"7px 10px", borderRadius:8, border:`1px solid ${editingDest?C.sec:C.b1}`, background:editingDest?C.secPale:C.w, cursor:"pointer", fontFamily:"inherit", fontSize:10.5, fontWeight:600, color:editingDest?C.sec:C.t2, display:"flex", alignItems:"center", justifyContent:"center", gap:4 }}>
-                      {Ic.pin("#003882",12)} {editingDest?"Editando destino":"Editar destino"}
+                      {Ic.pin(C.sec,12)} {editingDest?"Editando destino":"Editar destino"}
                     </button>
                   )}
                 </div>
@@ -535,12 +536,12 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
               <div style={{ padding:"6px 14px 10px", display:"flex", gap:8 }}>
                 {finalOrigin && (
                   <button onClick={()=>setEditingOrigin(!editingOrigin)} style={{ flex:1, padding:"7px 10px", borderRadius:8, border:`1px solid ${editingOrigin?C.pri:C.b1}`, background:editingOrigin?C.priPale:C.w, cursor:"pointer", fontFamily:"inherit", fontSize:10.5, fontWeight:600, color:editingOrigin?C.pri:C.t2, display:"flex", alignItems:"center", justifyContent:"center", gap:4 }}>
-                    {Ic.pin("#1A6B37",12)} {editingOrigin?"Editando origen":"Editar origen"}
+                    {Ic.pin(C.ok,12)} {editingOrigin?"Editando origen":"Editar origen"}
                   </button>
                 )}
                 {finalDest && (
                   <button onClick={()=>setEditingDest(!editingDest)} style={{ flex:1, padding:"7px 10px", borderRadius:8, border:`1px solid ${editingDest?C.sec:C.b1}`, background:editingDest?C.secPale:C.w, cursor:"pointer", fontFamily:"inherit", fontSize:10.5, fontWeight:600, color:editingDest?C.sec:C.t2, display:"flex", alignItems:"center", justifyContent:"center", gap:4 }}>
-                    {Ic.pin("#003882",12)} {editingDest?"Editando destino":"Editar destino"}
+                    {Ic.pin(C.sec,12)} {editingDest?"Editando destino":"Editar destino"}
                   </button>
                 )}
               </div>

@@ -38,8 +38,11 @@ function _useUserPos() {
 
 const GMAPS_KEY = import.meta.env.VITE_GMAPS_KEY || "";
 
+let _loadPromise = null;
+
 export function loadGMaps() {
-  return new Promise((resolve, reject) => {
+  if (_loadPromise) return _loadPromise;
+  _loadPromise = new Promise((resolve, reject) => {
     if (window.google?.maps) { resolve(window.google.maps); return; }
     if (document.querySelector('script[src*="maps.googleapis.com"]')) {
       let elapsed = 0;

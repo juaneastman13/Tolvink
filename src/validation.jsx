@@ -8,7 +8,7 @@ export const V = {
   posNum: (v, f) => { if(!v&&v!==0) return `${f} es obligatorio`; return Number(v)>0?null:`${f} debe ser mayor a 0`; },
   sel: (v, f) => !v ? `Seleccioná ${f}` : null,
   time: (v, f) => { if(!v) return `${f} es obligatorio`; return /^\d{2}:\d{2}$/.test(v)?null:`${f} inválido`; },
-  phone: (v) => { if(!v) return 'Teléfono es obligatorio'; const clean=v.replace(/[\s\-()]/g,''); return /^09[1-9]\d{6}$/.test(clean)?null:'Formato: 09X XXX XXX'; },
+  phone: (v) => { if(!v) return 'Teléfono es obligatorio'; const clean=v.replace(/[\s\-()]/g,''); return /^09\d{7}$/.test(clean)?null:'Formato: 09X XXX XXX'; },
   userTypes: (v) => { if(!v||!Array.isArray(v)||v.length===0) return 'Seleccioná al menos un tipo'; return null; },
 };
 

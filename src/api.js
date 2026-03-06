@@ -29,7 +29,7 @@ export function saveUser(u) { localStorage.setItem('tolvink_user', JSON.stringif
 export function getSavedUser() { try { const r=localStorage.getItem('tolvink_user'); return r?JSON.parse(r):null; } catch { return null; } }
 export function setLoggingIn(val) { _isLoggingIn = val; }
 
-// Legacy exports — no-ops for backward compat during transition
+// legacy no-op — kept for backward compat (imported by tests)
 export function setToken() {}
 export function getToken() { return null; }
 export function setRefreshToken() {}
@@ -76,11 +76,12 @@ async function tryRefresh() {
 }
 
 export default async function api(path, opts={}) {
-  const { body, method=body?'POST':'GET', headers={} } = opts;
+  const { body, method=body?'POST':'GET', headers={}, signal } = opts;
 
   const doFetch = () => {
     const cfg = { method, credentials: 'include', headers: { 'Content-Type':'application/json', ...headers } };
     if(body) cfg.body = JSON.stringify(body);
+    if(signal) cfg.signal = signal;
     return fetch(`${API_URL}${path}`, cfg);
   };
 
@@ -90,7 +91,13 @@ export default async function api(path, opts={}) {
   if(res.status===401 && !_isLoggingIn) {
     const refreshed = await tryRefresh();
     if (refreshed) {
-      res = await doFetch(); // Retry with new cookie
+      try {
+        res = await doFetch(); // Retry with new cookie
+      } catch (retryErr) {
+        // Network error on retry — force logout if online
+        if (navigator.onLine) { clearAuth(); if(_onAuthFail) _onAuthFail(); }
+        throw retryErr;
+      }
     }
     if (res.status===401) {
       // Only force logout if online — offline failures should not clear session
@@ -114,7 +121,7 @@ export default async function api(path, opts={}) {
 export async function apiLogin(identifier, password) {
   setLoggingIn(true);
   try {
-    const isPhone = /^09[1-9]\d{6}$/.test(identifier.replace(/[\s\-()]/g,''));
+    const isPhone = /^09\d{7}$/.test(identifier.replace(/[\s\-()]/g,''));
     const reqBody = isPhone ? { phone:identifier.replace(/[\s\-()]/g,''), password } : { email:identifier, password };
     const res = await fetch(`${API_URL}/auth/login`, {
       method: 'POST',
@@ -417,7 +424,8 @@ export async function uploadChatFile(file, conversationId) {
   const SAFE_CHAT_EXTS = new Set(['jpg','jpeg','png','webp','gif','pdf','doc','docx','xlsx','heic','heif','mp4','mp3','ogg','wav']);
   if (!SAFE_CHAT_EXTS.has(ext)) throw new Error('Tipo de archivo no permitido');
   const safeName = processed.name?.replace(/[^a-zA-Z0-9._-]/g, '_') || `file.${ext}`;
-  const path = `chat/${conversationId}/${Date.now()}_${safeName}`;
+  const safeConvId = String(conversationId).replace(/[^a-zA-Z0-9_-]/g, '');
+  const path = `chat/${safeConvId}/${Date.now()}_${safeName}`;
   const url = `${SUPABASE_URL}/storage/v1/object/${STORAGE_BUCKET}/${path}`;
 
   const headers = { 'Content-Type': processed.type || 'application/octet-stream' };

@@ -79,6 +79,7 @@ export function useCatalog(user) {
       return d;
     }).catch(()=>null).finally(()=>{
       setLoadingLocal(false);
+      setLoading(cacheKey, false);
       delete _loadingPromises[cacheKey];
     });
   },[user, cacheKey, getCache, setCache, setLoading]);
@@ -196,7 +197,7 @@ export function useAuth() {
   },[]);
 
   const logout = useCallback(()=>{
-    apiLogout(); // async — revokes refresh tokens on server
+    apiLogout().catch(() => {}); // async — revokes refresh tokens on server
     setUser(null);
     useCatalogStore.getState().clearCache();
     // Clear SW API cache to prevent stale data leaking between users
@@ -527,7 +528,6 @@ export function useNotifications(user) {
   // Subscribe to push notifications on first load
   useEffect(() => {
     if (!user || subscribedRef.current || !VAPID_PUBLIC_KEY) return;
-    subscribedRef.current = true;
 
     (async () => {
       try {
@@ -551,8 +551,10 @@ export function useNotifications(user) {
 
         const subJson = sub.toJSON();
         await apiSubscribePush({ endpoint: subJson.endpoint, keys: subJson.keys });
+        subscribedRef.current = true;
         log.log('PUSH', 'Subscribed');
       } catch (e) {
+        subscribedRef.current = false;
         log.warn('PUSH', 'Subscription failed:', e.message);
       }
     })();
@@ -755,7 +757,7 @@ export function useSSE(user, { onFreightUpdate, onMessageNew, onNotification, on
       if (reconnectTimer.current) clearTimeout(reconnectTimer.current);
       setConnected(false);
     };
-  }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [user?.id]);
 
   return { connected };
 }
@@ -793,7 +795,7 @@ export function usePullToRefresh(onRefresh) {
       if (pullingRef.current && !refreshingRef.current) {
         refreshingRef.current = true; setRefreshing(true);
         pullingRef.current = false; setPulling(false);
-        try { await onRefreshRef.current(); } catch {}
+        try { await onRefreshRef.current(); } catch(e) { console.warn('Refresh failed:', e?.message); }
         refreshingRef.current = false; setRefreshing(false);
       }
       startY.current = 0;

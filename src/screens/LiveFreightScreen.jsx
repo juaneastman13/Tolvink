@@ -54,6 +54,9 @@ export default function LiveFreightScreen() {
   const gpsTimeoutRef = useRef(null);
   const gotFirstFixRef = useRef(false);
 
+  const shareStateRef = useRef("idle");
+  const stopSharingRef = useRef(null);
+
   const [freight, setFreight] = useState(null);
   const [locations, setLocations] = useState([]);
   // shareState: "idle" | "activating" | "sharing" | "error"
@@ -67,6 +70,9 @@ export default function LiveFreightScreen() {
   const token = params.get("t");
   const mode = params.get("mode") || "view";
   const isShareMode = mode === "share";
+
+  // Keep refs in sync
+  shareStateRef.current = shareState;
 
   // Fetch live locations
   const fetchLocations = useCallback(async () => {
@@ -185,6 +191,14 @@ export default function LiveFreightScreen() {
       const ago = Math.round((Date.now() - new Date(loc.updatedAt).getTime()) / 60000);
       const agoText = ago < 1 ? "ahora" : `hace ${ago} min`;
 
+      const buildContent = () =>
+        `<div style="font-family:system-ui;font-size:13px;line-height:1.4;max-width:200px">` +
+        `<div style="font-weight:700">${esc(loc.userName)}</div>` +
+        `<div style="color:${cfg.color};font-size:12px">${esc(cfg.label)}</div>` +
+        `<div style="color:#666;font-size:12px;margin-top:4px">${esc(agoText)}</div>` +
+        (loc.speed ? `<div style="color:#666;font-size:12px">${loc.speed} km/h</div>` : "") +
+        `</div>`;
+
       if (!markersRef.current[key]) {
         const marker = new maps.Marker({
           position: pos,
@@ -193,19 +207,15 @@ export default function LiveFreightScreen() {
           title: loc.userName,
           label: { text: loc.userName?.charAt(0)?.toUpperCase() || "?", color: "#fff", fontSize: "11px", fontWeight: "bold" },
         });
+        marker._iwContent = buildContent;
         marker.addListener("click", () => {
-          const content = `<div style="font-family:system-ui;font-size:13px;line-height:1.4;max-width:200px">` +
-            `<div style="font-weight:700">${esc(loc.userName)}</div>` +
-            `<div style="color:${cfg.color};font-size:12px">${esc(cfg.label)}</div>` +
-            `<div style="color:#666;font-size:12px;margin-top:4px">${esc(agoText)}</div>` +
-            (loc.speed ? `<div style="color:#666;font-size:12px">${loc.speed} km/h</div>` : "") +
-            `</div>`;
-          infoRef.current.setContent(content);
+          infoRef.current.setContent(marker._iwContent());
           infoRef.current.open(map, marker);
         });
         markersRef.current[key] = marker;
       } else {
         markersRef.current[key].setPosition(pos);
+        markersRef.current[key]._iwContent = buildContent;
       }
 
       bounds.extend(pos);
@@ -284,7 +294,7 @@ export default function LiveFreightScreen() {
           countdownRef.current = setInterval(() => {
             const elapsed = Date.now() - startTimeRef.current;
             const left = MAX_SHARE_MS - elapsed;
-            if (left <= 0) { stopSharing(); return; }
+            if (left <= 0) { stopSharingRef.current(); return; }
             setTimeLeft(left);
           }, 10000);
 
@@ -348,6 +358,7 @@ export default function LiveFreightScreen() {
       }
     }
   }, [token, cleanupGps]);
+  stopSharingRef.current = stopSharing;
 
   // Open current URL in system browser (for in-app browser escape)
   const openInBrowser = () => {
@@ -367,13 +378,13 @@ export default function LiveFreightScreen() {
 
   // Cleanup on unmount
   useEffect(() => {
-    const handleUnload = () => { if (shareState === "sharing") stopSharing(); };
+    const handleUnload = () => { if (shareStateRef.current === "sharing") stopSharingRef.current(); };
     window.addEventListener("beforeunload", handleUnload);
     return () => {
       window.removeEventListener("beforeunload", handleUnload);
       cleanupGps();
     };
-  }, [shareState, stopSharing, cleanupGps]);
+  }, [cleanupGps]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const formatTimeLeft = (ms) => {
     if (!ms) return "";

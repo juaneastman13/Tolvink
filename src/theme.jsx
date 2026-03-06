@@ -22,8 +22,7 @@ export const LIGHT = {
   shLg:"0 12px 32px rgba(0,0,0,0.10)",
 };
 
-export let _theme = "light";
-export let C = { ...LIGHT };
+export const C = { ...LIGHT };
 
 // Analytics — fire-and-forget to backend
 const _API = import.meta.env.VITE_API_URL || 'https://tolvink-api-production.up.railway.app/api';

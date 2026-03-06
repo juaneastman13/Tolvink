@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { C, Ic } from "../theme";
 import { getActions } from "../constants";
 

@@ -410,8 +410,8 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
         <div key={f.id} onClick={() => selectFreight(f.id, "pending")} style={{ background: isSel ? C.priPale : C.w, border: `1px solid ${isSel ? C.pri : pa ? st.color + "40" : C.b1}`, borderLeft: `4px solid ${st.color}`, borderRadius: 10, padding: "10px 14px", cursor: "pointer", boxShadow: C.sh, transition: "background 0.15s, border-color 0.15s", position: "relative" }}>
           {/* Pending indicator — pulsing dot */}
           {pa && <div style={{ position: "absolute", top: 10, right: 12, display: "flex", alignItems: "center", gap: 5 }}>
-            <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#FF6A00", display: "inline-block", animation: "dotPulse 1.5s ease-in-out infinite", flexShrink: 0 }} />
-            <span style={{ fontSize: 9.5, fontWeight: 700, color: "#FF6A00", whiteSpace: "nowrap" }}>{pa.action}</span>
+            <span style={{ width: 7, height: 7, borderRadius: "50%", background: C.acc, display: "inline-block", animation: "dotPulse 1.5s ease-in-out infinite", flexShrink: 0 }} />
+            <span style={{ fontSize: 9.5, fontWeight: 700, color: C.acc, whiteSpace: "nowrap" }}>{pa.action}</span>
           </div>}
           <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
             <span style={{ fontSize: 10.5, fontWeight: 700, fontFamily: MONO, color: C.t2 }}>{f.code}</span>
@@ -482,8 +482,8 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
         {pendingSimple.length > 0 && (
           <>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-              <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#FF6A00", animation: "dotPulse 1.5s ease-in-out infinite" }} />
-              <span style={{ fontSize: 13, fontWeight: 700, color: "#FF6A00" }}>Pendientes de mi parte</span>
+              <div style={{ width: 8, height: 8, borderRadius: "50%", background: C.acc, animation: "dotPulse 1.5s ease-in-out infinite" }} />
+              <span style={{ fontSize: 13, fontWeight: 700, color: C.acc }}>Pendientes de mi parte</span>
               <span style={{ fontSize: 11, fontWeight: 600, color: C.t3 }}>({pendingSimple.length})</span>
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 20 }}>

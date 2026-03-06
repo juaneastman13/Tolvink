@@ -317,19 +317,19 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
                         {tc}/{freight.truckCount}
                       </div>
                     )}
-                    {logs.length > 0 && logs.map(log => {
-                      const acCol = actionColors[log.action] || C.t2;
-                      const tn = tripLabel(log);
+                    {logs.length > 0 && logs.map(entry => {
+                      const acCol = actionColors[entry.action] || C.t2;
+                      const tn = tripLabel(entry);
                       return (
-                        <div key={log.id} style={{ display:"flex", gap:5, marginBottom:8, alignItems:"flex-start" }}>
+                        <div key={entry.id} style={{ display:"flex", gap:5, marginBottom:8, alignItems:"flex-start" }}>
                           <div style={{ width:7, height:7, borderRadius:4, background:acCol, flexShrink:0, marginTop:3 }} />
                           <div style={{ minWidth:0 }}>
-                            <div style={{ fontSize:9.5, fontWeight:700, color:acCol, lineHeight:1.3 }}>{actionLabels[log.action]||log.action}{tn ? ` · ${tn}` : ""}</div>
-                            <div style={{ fontSize:9.5, color:C.t2, marginTop:1, lineHeight:1.3, wordBreak:"break-word" }}>{log.user?.name||"Sistema"}</div>
-                            {log.user?.company?.name && <div style={{ fontSize:9, color:C.t3, lineHeight:1.2 }}>{log.user.company.name}</div>}
-                            {(log.reason || log.metadata?.reason) && <div style={{ fontSize:8.5, color:C.t3, fontStyle:"italic", marginTop:1 }}>"{log.reason||log.metadata.reason}"</div>}
-                            {log.metadata?.confirmedBy && <div style={{ fontSize:8.5, color:C.t3, marginTop:1 }}>por {log.metadata.confirmedBy==="transporter"?"transportista":log.metadata.confirmedBy==="producer"?"productor":log.metadata.confirmedBy==="plant"?"planta":log.metadata.confirmedBy}</div>}
-                            <div style={{ fontSize:8.5, color:C.t3, marginTop:1 }}>{fmtD(log.createdAt)}</div>
+                            <div style={{ fontSize:9.5, fontWeight:700, color:acCol, lineHeight:1.3 }}>{actionLabels[entry.action]||entry.action}{tn ? ` · ${tn}` : ""}</div>
+                            <div style={{ fontSize:9.5, color:C.t2, marginTop:1, lineHeight:1.3, wordBreak:"break-word" }}>{entry.user?.name||"Sistema"}</div>
+                            {entry.user?.company?.name && <div style={{ fontSize:9, color:C.t3, lineHeight:1.2 }}>{entry.user.company.name}</div>}
+                            {(entry.reason || entry.metadata?.reason) && <div style={{ fontSize:8.5, color:C.t3, fontStyle:"italic", marginTop:1 }}>"{entry.reason||entry.metadata.reason}"</div>}
+                            {entry.metadata?.confirmedBy && <div style={{ fontSize:8.5, color:C.t3, marginTop:1 }}>por {entry.metadata.confirmedBy==="transporter"?"transportista":entry.metadata.confirmedBy==="producer"?"productor":entry.metadata.confirmedBy==="plant"?"planta":entry.metadata.confirmedBy}</div>}
+                            <div style={{ fontSize:8.5, color:C.t3, marginTop:1 }}>{fmtD(entry.createdAt)}</div>
                           </div>
                         </div>
                       );
@@ -541,8 +541,8 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
             </div>
             <div style={{ fontSize:12, color:C.t1, marginBottom:isApprover?10:0 }}>{label}{pc.requestedBy?.name ? ` — solicitado por ${pc.requestedBy.name}` : ""}</div>
             {isApprover && <div style={{ display:"flex", gap:8 }}>
-              <Btn sm disabled={pcLoading===pc.id} onClick={async()=>{ setPcLoading(pc.id); try { await apiApprovePendingChange(freight.id, pc.id); onRefresh(freight.id); } catch(e) { log.error("approve-pc",e); } finally { setPcLoading(null); } }}>Aprobar</Btn>
-              <Btn sm v="err" disabled={pcLoading===pc.id} onClick={async()=>{ setPcLoading(pc.id); try { await apiRejectPendingChange(freight.id, pc.id); onRefresh(freight.id); } catch(e) { log.error("reject-pc",e); } finally { setPcLoading(null); } }}>Rechazar</Btn>
+              <Btn sm disabled={pcLoading===pc.id} onClick={async()=>{ setPcLoading(pc.id); try { await apiApprovePendingChange(freight.id, pc.id); onRefresh(freight.id); } catch(e) { log.error("approve-pc",e); show("Error al procesar el cambio", "err"); } finally { setPcLoading(null); } }}>Aprobar</Btn>
+              <Btn sm v="err" disabled={pcLoading===pc.id} onClick={async()=>{ setPcLoading(pc.id); try { await apiRejectPendingChange(freight.id, pc.id); onRefresh(freight.id); } catch(e) { log.error("reject-pc",e); show("Error al procesar el cambio", "err"); } finally { setPcLoading(null); } }}>Rechazar</Btn>
             </div>}
             {!isApprover && <div style={{ fontSize:10.5, color:C.t3, marginTop:4 }}>Esperando aprobación de la otra parte</div>}
           </div>;
@@ -594,7 +594,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
           if(!logs) { try { logs = await apiGetAuditLog(freight.id); setAuditLog(logs); } catch(e) { logs = []; } }
           const { generateFreightPDF } = await loadPdfReport();
           generateFreightPDF(freight, logs || []);
-        } catch(e) { log.error('PDF', e); useUIStore.getState().show('Error al generar PDF: ' + (e?.message || e), 'error'); }
+        } catch(e) { log.error('PDF', e); useUIStore.getState().show('Error al generar PDF: ' + (e?.message || e), 'err'); }
         finally { setPdfLoading(false); }
       }} style={{ width:"100%", background:C.w, borderRadius:10, padding:12, display:"flex", alignItems:"center", gap:10, border:`1.5px solid ${C.b1}`, cursor:"pointer", fontFamily:"inherit", marginBottom:12, opacity:pdfLoading?0.6:1 }}>
         {Ic.doc(C.t2,20)}<div style={{textAlign:"left"}}><div style={{ fontSize:12, fontWeight:700, color:C.t1 }}>{pdfLoading?'Generando...':'Descargar informe PDF'}</div><div style={{ fontSize:10, color:C.t3 }}>Información, recorrido, historial y documentos</div></div>

@@ -216,7 +216,7 @@ export function UploadOverlay({ uploading, done, total, current, label }) {
         setOpacity(0);
       }
     }
-  }, [uploading, done]);
+  }, [uploading, done, stage]);
 
   if (stage === "idle") return null;
 

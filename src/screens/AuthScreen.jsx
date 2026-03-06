@@ -89,7 +89,7 @@ export default function AuthScreen({ onLogin, onSignup, onPasswordReset, loading
       const isPhone = /^09/.test(loginId.replace(/[\s\-()]/g, ''));
       if (isPhone) {
         const cleanPhone = loginId.replace(/[\s\-()]/g, '');
-        if (!/^09[1-9]\d{6}$/.test(cleanPhone)) { setErrs({ email: "Formato: 09X XXX XXX" }); return; }
+        if (!/^09\d{7}$/.test(cleanPhone)) { setErrs({ email: "Formato: 09X XXX XXX" }); return; }
       } else {
         const { ok, errs: e } = validate({ email: loginId }, SCHEMAS.login);
         if (!ok) { setErrs(e); return; }
@@ -97,15 +97,19 @@ export default function AuthScreen({ onLogin, onSignup, onPasswordReset, loading
       if (!password) { setErrs({ password: "Contraseña requerida" }); return; }
       setErrs({});
       const cleanId = loginId.replace(/[\s\-()]/g, '');
-      const result = await onLogin(
-        /^09/.test(cleanId) ? cleanId : cleanId.toLowerCase(),
-        password,
-      );
-      if (result?.noPassword) {
-        const cleanLogin = loginId.replace(/[\s\-()]/g, '');
-        setResetIdentifier(/^09/.test(cleanLogin) ? cleanLogin : cleanLogin.toLowerCase());
-        setResetError("Tu cuenta no tiene contraseña configurada. Seguí los pasos para establecerla.");
-        switchMode("reset_identify");
+      try {
+        const result = await onLogin(
+          /^09/.test(cleanId) ? cleanId : cleanId.toLowerCase(),
+          password,
+        );
+        if (result?.noPassword) {
+          const cleanLogin = loginId.replace(/[\s\-()]/g, '');
+          setResetIdentifier(/^09/.test(cleanLogin) ? cleanLogin : cleanLogin.toLowerCase());
+          setResetError("Tu cuenta no tiene contraseña configurada. Seguí los pasos para establecerla.");
+          switchMode("reset_identify");
+        }
+      } catch (e) {
+        setErrs({ email: "Error inesperado. Intenta de nuevo." });
       }
 
     } else if (mode === "signup") {
@@ -117,7 +121,11 @@ export default function AuthScreen({ onLogin, onSignup, onPasswordReset, loading
       const { ok, errs: e } = validate(vals, SCHEMAS.signup);
       setErrs(e);
       if (!ok) return;
-      onSignup({ name, email, phone, password: signupPassword, userTypes });
+      try {
+        await onSignup({ name, email, phone, password: signupPassword, userTypes });
+      } catch (e) {
+        setErrs({ email: "Error inesperado. Intenta de nuevo." });
+      }
 
     } else if (mode === "reset_identify") {
       if (!resetIdentifier.trim()) { setErrs({ identifier: "Ingresá tu email o teléfono" }); return; }
@@ -132,7 +140,7 @@ export default function AuthScreen({ onLogin, onSignup, onPasswordReset, loading
 
     } else if (mode === "reset_confirm") {
       const cleanPhone = resetPhone.replace(/[\s\-()]/g, '');
-      if (!/^09[1-9]\d{6}$/.test(cleanPhone)) { setErrs({ phone: "Formato: 09X XXX XXX" }); return; }
+      if (!/^09\d{7}$/.test(cleanPhone)) { setErrs({ phone: "Formato: 09X XXX XXX" }); return; }
       setErrs({});
       setResetLoading(true);
       try {
