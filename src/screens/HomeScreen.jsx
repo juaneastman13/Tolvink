@@ -427,27 +427,47 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
       );
     };
 
-    if (hasDetail && !isDesktop) return detailScreen;
-    if (hasDetail && isDesktop) {
-      return (
-        <div style={{ flex: 1, position: "relative" }}>
-          <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, display: "flex", flexDirection: "row" }}>
-            <div style={{ width: 320, flexShrink: 0, overflow: "auto", borderRight: `1px solid ${C.b1}`, padding: "12px 8px" }}>
-              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                {simpleFreights.map(renderSimpleCard)}
-              </div>
-            </div>
-            {detailScreen}
+
+    const simpleDailyPanel = (
+      <div style={{ padding: "14px 16px", borderRadius: 12, background: `${C.pri}08`, border: `1px solid ${C.pri}20` }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+          <div style={{ width: 28, height: 28, borderRadius: "50%", background: C.pri, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            {Ic.cal(C.w, 14)}
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: C.pri }}>{formatTodayHeader()}</div>
+            <div style={{ fontSize: 10, color: C.t3 }}>{todayFreights.length} flete{todayFreights.length !== 1 ? "s" : ""} · {Math.round(todayTons)} tn totales</div>
           </div>
         </div>
-      );
-    }
+        {todayFreights.length === 0 && !loading && (
+          <div style={{ fontSize: 11, color: C.t3, textAlign: "center", padding: "8px 0" }}>Sin fletes programados para hoy</div>
+        )}
+        {dailyGroups.map(g => (
+          <div key={g.key} style={{ marginBottom: 8 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
+              <div style={{ width: 7, height: 7, borderRadius: "50%", background: g.color, flexShrink: 0 }} />
+              <span style={{ fontSize: 11, fontWeight: 700, color: g.color }}>{g.label}</span>
+              <span style={{ fontSize: 10, fontWeight: 600, color: C.t3 }}>({g.items.length})</span>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6, paddingLeft: 14, borderLeft: `2px solid ${g.color}30` }}>
+              {g.items.map(f => {
+                const st = stCfg(f.status);
+                return (
+                  <div key={f.id} onClick={() => selectFreight(f.id, "daily")} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 10px", borderRadius: 8, background: C.w, border: `1px solid ${C.b1}`, cursor: "pointer", transition: "background 0.15s" }}>
+                    <span style={{ fontSize: 10, fontWeight: 700, fontFamily: MONO, color: C.t2 }}>{f.code}</span>
+                    <span style={{ fontSize: 11, fontWeight: 600, color: C.t1, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.grain === "Otros" ? f.productTypeOther || "Otros" : f.grain} · {f.tons} tn</span>
+                    {f.loadTime && <span style={{ fontSize: 10, color: C.t3 }}>{f.loadTime}</span>}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+    );
 
-    const pendingSimple = simpleFreights.filter(f => f._pending);
-    const restSimple = simpleFreights.filter(f => !f._pending);
-
-    return (
-      <div style={{ flex: 1, overflow: "auto", padding: 18 }}>
+    const simpleFreightList = (scrollable) => (
+      <div style={scrollable ? { flex: 1, overflow: "auto", padding: 18 } : {}}>
         {loading && freights.length === 0 && <SkeletonList count={4} />}
         {!loading && simpleFreights.length === 0 && <EmptyState icon={Ic.truck(C.t3, 28)} title="Sin fletes en curso" subtitle="No hay fletes activos en este momento" />}
         {pendingSimple.length > 0 && (
@@ -476,48 +496,53 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
             </div>
           </>
         )}
+      </div>
+    );
 
-        {/* Resumen diario */}
-        <div style={{ marginTop: 24, padding: "14px 16px", borderRadius: 12, background: `${C.pri}08`, border: `1px solid ${C.pri}20` }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
-            <div style={{ width: 28, height: 28, borderRadius: "50%", background: C.pri, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-              {Ic.cal(C.w, 14)}
+    if (hasDetail && !isDesktop) return detailScreen;
+    if (hasDetail && isDesktop) {
+      return (
+        <div style={{ flex: 1, position: "relative" }}>
+          <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, display: "flex", flexDirection: "row" }}>
+            <div style={{ width: 320, flexShrink: 0, overflow: "auto", borderRight: `1px solid ${C.b1}`, padding: "12px 8px" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {simpleFreights.map(renderSimpleCard)}
+              </div>
             </div>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: C.pri }}>{formatTodayHeader()}</div>
-              <div style={{ fontSize: 10, color: C.t3 }}>{todayFreights.length} flete{todayFreights.length !== 1 ? "s" : ""} · {Math.round(todayTons)} tn totales</div>
+            {detailScreen}
+          </div>
+        </div>
+      );
+    }
+
+    // Desktop: fletes left, resumen diario right (50/50)
+    if (isDesktop) {
+      return (
+        <div style={{ flex: 1, position: "relative" }}>
+          <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, display: "flex", flexDirection: "row" }}>
+            <div style={{ flex: 1, overflow: "auto", padding: 18, borderRight: `1px solid ${C.b1}` }}>
+              {simpleFreightList(false)}
+            </div>
+            <div style={{ flex: 1, overflow: "auto", padding: 18 }}>
+              {simpleDailyPanel}
             </div>
           </div>
-          {todayFreights.length === 0 && !loading && (
-            <div style={{ fontSize: 11, color: C.t3, textAlign: "center", padding: "8px 0" }}>Sin fletes programados para hoy</div>
-          )}
-          {dailyGroups.map(g => (
-            <div key={g.key} style={{ marginBottom: 8 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
-                <div style={{ width: 7, height: 7, borderRadius: "50%", background: g.color, flexShrink: 0 }} />
-                <span style={{ fontSize: 11, fontWeight: 700, color: g.color }}>{g.label}</span>
-                <span style={{ fontSize: 10, fontWeight: 600, color: C.t3 }}>({g.items.length})</span>
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 6, paddingLeft: 14, borderLeft: `2px solid ${g.color}30` }}>
-                {g.items.map(f => {
-                  const st = stCfg(f.status);
-                  return (
-                    <div key={f.id} onClick={() => selectFreight(f.id, "daily")} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 10px", borderRadius: 8, background: C.w, border: `1px solid ${C.b1}`, cursor: "pointer", transition: "background 0.15s" }}>
-                      <span style={{ fontSize: 10, fontWeight: 700, fontFamily: MONO, color: C.t2 }}>{f.code}</span>
-                      <span style={{ fontSize: 11, fontWeight: 600, color: C.t1, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.grain === "Otros" ? f.productTypeOther || "Otros" : f.grain} · {f.tons} tn</span>
-                      {f.loadTime && <span style={{ fontSize: 10, color: C.t3 }}>{f.loadTime}</span>}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
+        </div>
+      );
+    }
+
+    // Mobile: fletes then resumen diario below
+    return (
+      <div style={{ flex: 1, overflow: "auto", padding: 18 }}>
+        {simpleFreightList(false)}
+        <div style={{ marginTop: 24 }}>
+          {simpleDailyPanel}
         </div>
       </div>
     );
   }
 
-  // Desktop with detail selected
+    // Desktop with detail selected
   if (isDesktop && hasDetail) {
     return (
       <div style={{ flex: 1, position: "relative" }}>
