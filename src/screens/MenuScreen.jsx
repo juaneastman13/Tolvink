@@ -113,16 +113,7 @@ export default function MenuScreen({ user, perms, onLogout, onNav, isDesktop, on
           {Ic.edit(C.pri,14)} Administrar mis datos
         </button>
 
-        {/* Simple mode toggle */}
-        <button onClick={onToggleSimple} style={{width:"100%",marginTop:12,padding:"12px 14px",borderRadius:8,border:`1px solid ${simpleMode?C.pri:C.b2}`,background:simpleMode?`${C.pri}08`:"transparent",cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:10,transition:"all 0.2s"}}>
-          <div style={{width:40,height:22,borderRadius:11,background:simpleMode?C.pri:C.b1,position:"relative",transition:"background 0.2s",flexShrink:0}}>
-            <div style={{width:18,height:18,borderRadius:9,background:C.w,position:"absolute",top:2,left:simpleMode?20:2,transition:"left 0.2s",boxShadow:"0 1px 3px rgba(0,0,0,0.2)"}}/>
-          </div>
-          <div>
-            <div style={{fontSize:13,fontWeight:600,color:C.t1}}>{simpleMode?"Modo Simple":"Modo Completo"}</div>
-            <div style={{fontSize:10,color:C.t3,marginTop:1}}>{simpleMode?"Interfaz simplificada":"Todas las funciones visibles"}</div>
-          </div>
-        </button>
+
       </div>
 
       {/* Management items */}

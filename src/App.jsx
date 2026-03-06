@@ -521,7 +521,7 @@ export default function Tolvink() {
 
       {/* Desktop Sidebar */}
       <div className="tv-sidebar" style={{position:"relative",zIndex:1}}>
-        <Sidebar active={navActive} onChange={nav} unread={unreadChats} pendingCount={pendingCount} notifCount={notif.unreadCount} canRequest={perms.canRequest} onNew={()=>nav("new")} activeCompany={auth.user ? { id: auth.user.activeCompanyId||auth.user.companyId, name: _activeComp?.companyName||auth.user.entity, type: _activeComp?.companyType||auth.user.userType } : null} companies={auth.user?.companies||[]} onSwitchCompany={async(id)=>{await auth.switchCompany(id);}} simpleMode={auth.simpleMode} />
+        <Sidebar active={navActive} onChange={nav} unread={unreadChats} pendingCount={pendingCount} notifCount={notif.unreadCount} canRequest={perms.canRequest} onNew={()=>nav("new")} activeCompany={auth.user ? { id: auth.user.activeCompanyId||auth.user.companyId, name: _activeComp?.companyName||auth.user.entity, type: _activeComp?.companyType||auth.user.userType } : null} companies={auth.user?.companies||[]} onSwitchCompany={async(id)=>{await auth.switchCompany(id);}} simpleMode={auth.simpleMode} onToggleSimple={auth.toggleSimpleMode} />
       </div>
 
       {/* Main content column */}

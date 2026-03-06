@@ -346,7 +346,7 @@ const _TYPE_LABELS = { producer:"Productor", plant:"Planta", transporter:"Transp
 const _TYPE_IC_COLORS = { producer:"#F59E0B", plant:"#22C55E", transporter:"#0891B2" };
 const _typeIcon = (t,s=14) => t==='producer'?Ic.grain('#F59E0B',s):t==='plant'?Ic.plant('#22C55E',s):t==='transporter'?Ic.truck('#0891B2',s):null;
 
-export function Sidebar({ active, onChange, unread=0, pendingCount=0, notifCount=0, canRequest=false, onNew, activeCompany, companies=[], onSwitchCompany, simpleMode=false }) {
+export function Sidebar({ active, onChange, unread=0, pendingCount=0, notifCount=0, canRequest=false, onNew, activeCompany, companies=[], onSwitchCompany, simpleMode=false, onToggleSimple }) {
   const hasPending = pendingCount > 0;
   const centerColor = hasPending ? C.acc : C.ok;
   const [compOpen, setCompOpen] = useState(false);
@@ -435,10 +435,16 @@ export function Sidebar({ active, onChange, unread=0, pendingCount=0, notifCount
         })}
       </nav>
 
-      {/* Bottom brand */}
-      <div style={{ padding:"12px 16px", borderTop:`1px solid ${C.b2}`, fontSize:10, fontWeight:500, letterSpacing:0.3, color:C.t3, textAlign:"center" }}>
-        Gestión de Fletes · v4.1
-      </div>
+      {/* Mode toggle */}
+      {onToggleSimple && <div style={{ padding:"10px 12px", borderTop:`1px solid ${C.b2}` }}>
+        <button onClick={onToggleSimple} style={{ width:"100%", display:"flex", alignItems:"center", justifyContent:"center", gap:8, padding:"6px 8px", borderRadius:8, border:`1px solid ${C.b2}`, background:"transparent", cursor:"pointer", fontFamily:"inherit" }}>
+          <span style={{ fontSize:10, fontWeight:simpleMode?500:700, color:simpleMode?C.t3:C.pri, whiteSpace:"nowrap" }}>Completo</span>
+          <div style={{ width:34, height:18, borderRadius:9, background:simpleMode?C.pri:C.b1, position:"relative", transition:"background 0.2s", flexShrink:0 }}>
+            <div style={{ width:14, height:14, borderRadius:7, background:C.w, position:"absolute", top:2, left:simpleMode?18:2, transition:"left 0.2s", boxShadow:"0 1px 3px rgba(0,0,0,0.2)" }} />
+          </div>
+          <span style={{ fontSize:10, fontWeight:simpleMode?700:500, color:simpleMode?C.pri:C.t3, whiteSpace:"nowrap" }}>Simple</span>
+        </button>
+      </div>}
     </div>
   );
 }

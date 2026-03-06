@@ -495,8 +495,8 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
           <>
             {pendingSimple.length > 0 && (
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-                <div style={{ width: 8, height: 8, borderRadius: "50%", background: C.ok }} />
-                <span style={{ fontSize: 13, fontWeight: 700, color: C.ok }}>En curso</span>
+                <div style={{ width: 8, height: 8, borderRadius: "50%", background: C.t2 }} />
+                <span style={{ fontSize: 13, fontWeight: 700, color: C.t2 }}>Sin pendientes de mi parte</span>
                 <span style={{ fontSize: 11, fontWeight: 600, color: C.t3 }}>({restSimple.length})</span>
               </div>
             )}

@@ -218,7 +218,7 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
       const st = stCfg(f.status);
       const pa = f._pending;
       return (
-        <div key={f.id} onClick={() => onNav("detail", f.id)} style={{ background: C.w, border: `1px solid ${pa ? st.color + "40" : C.b1}`, borderLeft: `4px solid ${st.color}`, borderRadius: 10, padding: "10px 14px", cursor: "pointer", boxShadow: C.sh, transition: "background 0.15s, border-color 0.15s", position: "relative" }}>
+        <div key={f.id} onClick={() => onNav("detail", f.id)} style={{ background: C.w, border: `1px solid ${pa ? st.color + "40" : C.b1}`, borderLeft: `4px solid ${st.color}`, borderRadius: 10, padding: "10px 14px", cursor: "pointer", boxShadow: C.sh, transition: "background 0.15s, border-color 0.15s", position: "relative", height: 90, overflow: "hidden", boxSizing: "border-box" }}>
           {pa && <div style={{ position: "absolute", top: 10, right: 12, display: "flex", alignItems: "center", gap: 5 }}>
             <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#FF6A00", display: "inline-block", animation: "dotPulse 1.5s ease-in-out infinite", flexShrink: 0 }} />
             <span style={{ fontSize: 9.5, fontWeight: 700, color: "#FF6A00", whiteSpace: "nowrap" }}>{pa.action}</span>
@@ -227,7 +227,7 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
             <span style={{ fontSize: 10.5, fontWeight: 700, fontFamily: MONO, color: C.t2 }}>{f.code}</span>
             <Bd color={st.color} bg={st.bg} small>{st.label}</Bd>
           </div>
-          <div style={{ fontSize: 13, fontWeight: 700, color: C.t1, marginBottom: 3 }}>{f.grain === "Otros" ? f.productTypeOther || "Otros" : f.grain} {"\u00b7"} {f.tons} {f.unit || "tn"}</div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: C.t1, marginBottom: 3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.grain === "Otros" ? f.productTypeOther || "Otros" : f.grain} {"\u00b7"} {f.tons} {f.unit || "tn"}</div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 4, fontSize: 11, color: C.t2 }}>
             {f.loadDate && <span style={{ display: "flex", alignItems: "center", gap: 3 }}>{Ic.cal(C.t3, 10)} {formatFreightDate(f.loadDate)}{f.loadTime ? ` \u00b7 ${f.loadTime}` : ""}</span>}
             <span style={{ display: "flex", alignItems: "center", gap: 3 }}>{Ic.plant(C.t3, 10)} {f.destName || "Sin destino"}</span>
