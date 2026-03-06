@@ -97,19 +97,6 @@ export function useAuth() {
   const [error, setError] = useState(null);
   const [isInitialized, setIsInitialized] = useState(false);
 
-  // Simple mode — default for choferes/operarios, persisted in localStorage
-  const [simpleMode, setSimpleMode] = useState(() => {
-    const saved = localStorage.getItem('tolvink_simple_mode');
-    if (saved !== null) return saved === 'true';
-    // Default: simple for choferes/operarios
-    const u = getSavedUser();
-    const r = u?.role === 'gerente' ? 'admin' : (u?.role || 'operario');
-    return r === 'chofer' || r === 'operario';
-  });
-  const toggleSimpleMode = useCallback(() => {
-    setSimpleMode(prev => { const next = !prev; localStorage.setItem('tolvink_simple_mode', String(next)); return next; });
-  }, []);
-
   // Setup auth fail handler ONCE
   useEffect(()=>{
     setAuthFailHandler(()=>{
@@ -256,7 +243,7 @@ export function useAuth() {
     });
   }, []);
 
-  return { user, loading, error, isInitialized, login, signup, logout, switchCompany, companySwitching, handlePasswordReset, patchUser, clearError:()=>setError(null), simpleMode, toggleSimpleMode };
+  return { user, loading, error, isInitialized, login, signup, logout, switchCompany, companySwitching, handlePasswordReset, patchUser, clearError:()=>setError(null) };
 }
 
 // ======================== MAP USER ====================================

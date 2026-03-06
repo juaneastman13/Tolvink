@@ -346,7 +346,7 @@ const _TYPE_LABELS = { producer:"Productor", plant:"Planta", transporter:"Transp
 const _TYPE_IC_COLORS = { producer:"#F59E0B", plant:"#22C55E", transporter:"#0891B2" };
 const _typeIcon = (t,s=14) => t==='producer'?Ic.grain('#F59E0B',s):t==='plant'?Ic.plant('#22C55E',s):t==='transporter'?Ic.truck('#0891B2',s):null;
 
-export function Sidebar({ active, onChange, unread=0, pendingCount=0, notifCount=0, canRequest=false, onNew, activeCompany, companies=[], onSwitchCompany, simpleMode=false }) {
+export function Sidebar({ active, onChange, unread=0, pendingCount=0, notifCount=0, canRequest=false, onNew, activeCompany, companies=[], onSwitchCompany }) {
   const hasPending = pendingCount > 0;
   const centerColor = hasPending ? C.acc : C.ok;
   const [compOpen, setCompOpen] = useState(false);
@@ -357,7 +357,7 @@ export function Sidebar({ active, onChange, unread=0, pendingCount=0, notifCount
     document.addEventListener("mousedown", h);
     return () => document.removeEventListener("mousedown", h);
   }, [compOpen]);
-  const allItems = [
+  const items = [
     { k:"home",    ic:a=>Ic.home(a?C.pri:C.t3,20),  l:"Inicio" },
     { k:"list",    ic:a=>Ic.truck(a?C.pri:C.t3,20),  l:"Fletes" },
     { k:"chats",   ic:a=>Ic.msg(a?C.pri:C.t3,20),    l:"Chat", bd:unread },
@@ -366,8 +366,6 @@ export function Sidebar({ active, onChange, unread=0, pendingCount=0, notifCount
     { k:"reports", ic:a=>Ic.doc(a?C.pri:C.t3,20),    l:"Informes" },
     { k:"menu",    ic:a=>Ic.menu3(a?C.pri:C.t3,20),   l:"Menú" },
   ];
-  const simpleKeys = new Set(["home","list","chats","menu"]);
-  const items = simpleMode ? allItems.filter(it => simpleKeys.has(it.k)) : allItems;
   const compLabel = activeCompany ? (_TYPE_LABELS[activeCompany.type] || "") : null;
   const hasMultiple = companies.length > 1;
   return (
@@ -445,17 +443,16 @@ export function Sidebar({ active, onChange, unread=0, pendingCount=0, notifCount
 
 // ======================== BOTTOM NAV =================================
 
-export function Nav({ active, onChange, unread=0, pendingCount=0, notifCount=0, canRequest=false, onNew, simpleMode=false }) {
+export function Nav({ active, onChange, unread=0, pendingCount=0, notifCount=0, canRequest=false, onNew }) {
   const hasPending = pendingCount > 0;
   const centerColor = hasPending ? C.acc : C.ok;
-  const allNavItems = [
+  const items = [
     { k:"home",     ic:a=>Ic.home(a?C.pri:C.t3,20),  l:"Inicio" },
     { k:"list",     ic:a=>Ic.truck(a?C.pri:C.t3,20),  l:"Fletes" },
     { k:"center",  sp:true, bd:pendingCount },
     { k:"chats",    ic:a=>Ic.msg(a?C.pri:C.t3,20),    l:"Chat", bd:unread },
     { k:"menu",     ic:a=>Ic.menu3(a?C.pri:C.t3,20),  l:"Menú", bd:notifCount },
   ];
-  const items = simpleMode ? allNavItems.filter(it => it.k !== "chats") : allNavItems;
   return (
     <nav aria-label="Navegación" style={{ display:"flex", borderTop:`1px solid ${C.b1}`, background:C.nav, paddingTop:2, paddingBottom:"max(4px, env(safe-area-inset-bottom))", flexShrink:0 }}>
       <style>{`@keyframes truckDrive{0%,100%{transform:translateX(0)}50%{transform:translateX(3px)}}`}</style>
