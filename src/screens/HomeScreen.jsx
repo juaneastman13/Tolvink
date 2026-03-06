@@ -289,15 +289,16 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
 
       {/* Pendientes */}
       {totalPendingAll > 0 && (<>
-        <div style={{ padding: compact ? "8px 10px" : "10px 12px", borderRadius: 12, background: `${C.acc}0D`, marginBottom: 8 }}>
+        <div style={{ padding: compact ? "8px 10px" : "12px 14px", borderRadius: 12, background: `${C.acc}0D`, borderLeft: `3px solid ${C.acc}`, marginBottom: 8 }}>
           <div style={{ display: "flex", alignItems: "center", gap: compact ? 8 : 10 }}>
-            <div style={{ width: compact ? 26 : 32, height: compact ? 26 : 32, borderRadius: "50%", background: C.acc, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, position: "relative" }}>
-              {Ic.bell(C.w, compact ? 13 : 16)}
+            {!compact && <span style={{ fontSize: 22, fontWeight: 800, color: C.acc, lineHeight: 1, minWidth: 28, textAlign: "center" }}>{pendingCount}</span>}
+            {compact && <div style={{ width: 26, height: 26, borderRadius: "50%", background: C.acc, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, position: "relative" }}>
+              {Ic.bell(C.w, 13)}
               <div style={{ position: "absolute", top: -3, right: -3, minWidth: 15, height: 15, borderRadius: 8, background: C.err, color: C.w, fontSize: 8, fontWeight: 700, padding: "0 3px", display: "flex", alignItems: "center", justifyContent: "center", border: `2px solid ${C.w}` }}>{pendingCount}</div>
-            </div>
+            </div>}
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: compact ? 11 : 12, fontWeight: 700, color: C.acc }}>Con pendientes de mi parte</div>
-              {!compact && <div style={{ fontSize: 10, color: C.t3 }}>{pendingCount} accion{pendingCount !== 1 ? "es" : ""}</div>}
+              <div style={{ fontSize: compact ? 11 : 13, fontWeight: 700, color: C.acc }}>{compact ? "Con pendientes de mi parte" : `Accion${pendingCount !== 1 ? "es" : ""} pendiente${pendingCount !== 1 ? "s" : ""}`}</div>
+              {!compact && <div style={{ fontSize: 10.5, color: C.t3 }}>Requieren tu atención</div>}
             </div>
           </div>
           <div style={{ display: "flex", gap: 4, marginTop: 6, flexWrap: "wrap" }}>

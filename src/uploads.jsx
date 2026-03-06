@@ -47,6 +47,7 @@ export function PhotoUpload({ freightId, step, label, onUploaded }) {
           <img src={preview} alt="foto" style={{ width: "100%", height: 120, objectFit: "cover", display: "block" }} />
           {uploading && <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center", color: C.w, fontSize: 12, fontWeight: 600 }}>Subiendo...</div>}
           {done && <div style={{ position: "absolute", top: 6, right: 6, background: C.ok, borderRadius: 12, padding: "2px 8px", fontSize: 10, color: C.w, fontWeight: 600 }}>Guardada</div>}
+
         </div>
       ) : (
         <button onClick={() => inputRef.current?.click()} disabled={uploading}
@@ -115,7 +116,7 @@ export function DocsGallery({ documents, onViewFile, freightId, canDelete, onDel
                     </div>
                   </div>
                 </button>
-                {d.ocrData && onViewOcr && <button onClick={()=>onViewOcr(d.ocrData)} title="Ver datos extraídos" aria-label="Ver datos extraídos" style={{ padding:6, borderRadius:6, border:`1px solid #1A6B37`, background:"#E6F4EA", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{Ic.eye("#1A6B37",14)}</button>}
+                {d.ocrData && onViewOcr && <button onClick={()=>onViewOcr(d.ocrData)} title="Ver datos extraídos" aria-label="Ver datos extraídos" style={{ padding:6, borderRadius:6, border:`1px solid ${C.pri}`, background:C.okPale, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{Ic.eye(C.pri,14)}</button>}
                 {isImg && onOcr && !d.ocrData && <button onClick={()=>onOcr({url:d.url,name:d.name||"Archivo",type:d.type,id:d.id})} disabled={ocrLoading} title="Extraer datos (OCR)" aria-label="Extraer datos (OCR)" style={{ padding:6, borderRadius:6, border:`1px solid ${C.pri}40`, background:C.priPale, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, opacity:ocrLoading?0.5:1 }}>{Ic.doc(C.pri,14)}</button>}
                 {canDelete && <button onClick={()=>setConfirm(d.id)} disabled={!!deleting} aria-label="Eliminar archivo" style={{ padding:6, borderRadius:6, border:`1px solid ${C.err}40`, background:C.errPale||"#fef2f2", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{Ic.cross(C.err,14)}</button>}
               </div>
@@ -329,12 +330,12 @@ export function FreightFileUpload({ freightId, step, onUploaded }) {
               ) : (
                 <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: C.bg, padding: 4 }}>
                   {Ic.doc(C.pri, 20)}
-                  <span style={{ fontSize: 7, color: C.t3, textAlign: "center", marginTop: 2, wordBreak: "break-all", lineHeight: 1.1 }}>{f.name?.slice(-12)}</span>
+                  <span style={{ fontSize: 8, color: C.t3, textAlign: "center", marginTop: 2, wordBreak: "break-all", lineHeight: 1.1 }}>{f.name?.slice(-12)}</span>
                 </div>
               )}
               {f.done && <div style={{ position: "absolute", top: 3, right: 3, width: 18, height: 18, borderRadius: 9, background: C.ok, display: "flex", alignItems: "center", justifyContent: "center" }}>{Ic.chk("#fff", 12)}</div>}
               {!f.done && !f.uploading && <button onClick={() => removeFile(i)} style={{ position: "absolute", top: 2, right: 2, width: 18, height: 18, borderRadius: 9, background: C.err, border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>{Ic.cross("#fff", 10)}</button>}
-              {f.error && <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: C.err, color: "#fff", fontSize: 7, textAlign: "center", padding: 2 }}>Error</div>}
+              {f.error && <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: C.err, color: C.w, fontSize: 8, textAlign: "center", padding: 2 }}>Error</div>}
             </div>
           ))}
         </div>

@@ -150,10 +150,14 @@ export default function CalendarScreen({ freights, perms, onNav, isDesktop, user
                 const sel=calSelDay===d&&calSelMonth===mi;
                 const td=d===today.getDate()&&isTodayMonth;
                 const statuses=mo.byDay[d]?.map(f=>stCfg(f.status).color)||[];
-                return <div key={d} onClick={()=>{setCalSelDay(sel?null:d);setCalSelMonth(sel?null:mi);setSelectedId(null);}} style={{padding:monthsToShow===1?"8px 4px":"4px 2px",borderRadius:monthsToShow===1?10:6,cursor:"pointer",background:sel?C.pri:td?C.priPale:"transparent",transition:"all 0.15s",minHeight:monthsToShow===1?44:30}}>
+                const hasPending=mo.byDay[d]?.some(f=>f.status==="pending_assignment");
+                const densityAlpha=cnt===0?0:Math.min(0.15,0.04*cnt);
+                const densityBg=sel?C.pri:td?C.priPale:cnt>0?`rgba(26,107,55,${densityAlpha})`:"transparent";
+                return <div key={d} onClick={()=>{setCalSelDay(sel?null:d);setCalSelMonth(sel?null:mi);setSelectedId(null);}} style={{padding:monthsToShow===1?"8px 4px":"4px 2px",borderRadius:monthsToShow===1?10:6,cursor:"pointer",background:densityBg,transition:"all 0.15s",minHeight:monthsToShow===1?44:30,position:"relative"}}>
                   <div style={{fontSize:monthsToShow===1?14:11,fontWeight:sel||td?700:400,color:sel?C.w:td?C.pri:C.t1}}>{d}</div>
+                  {hasPending&&!sel&&<div style={{position:"absolute",top:monthsToShow===1?4:2,right:monthsToShow===1?4:2,width:5,height:5,borderRadius:3,background:C.acc}}/>}
                   {cnt>0&&<div style={{display:"flex",gap:1,justifyContent:"center",marginTop:2,flexWrap:"wrap"}}>
-                    {statuses.slice(0,monthsToShow===1?4:2).map((c,j)=><div key={j} style={{width:monthsToShow===1?6:4,height:monthsToShow===1?6:4,borderRadius:3,background:sel?"#fff":c}}/>)}
+                    {statuses.slice(0,monthsToShow===1?4:2).map((c,j)=><div key={j} style={{width:monthsToShow===1?6:4,height:monthsToShow===1?6:4,borderRadius:3,background:sel?C.w:c}}/>)}
                     {cnt>(monthsToShow===1?4:2)&&<div style={{fontSize:7,color:sel?C.w:C.t3,lineHeight:1}}>+{cnt-(monthsToShow===1?4:2)}</div>}
                   </div>}
                 </div>;

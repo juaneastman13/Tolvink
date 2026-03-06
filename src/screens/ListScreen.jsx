@@ -10,8 +10,8 @@ const FreightsOverviewMap = lazy(() => import("../maps").then(m => ({ default: m
 const GROUPS = [
   { key:"solicitado", label:"Solicitado", color:"#FF6A00", icon:Ic.warn, statuses:["pending_assignment"] },
   { key:"en_curso", label:"En curso", color:"#2563EB", icon:Ic.nav, statuses:["assigned","accepted","in_progress","loaded"] },
-  { key:"finalizados", label:"Finalizados", color:"#1A6B37", icon:Ic.chk, statuses:["finished"] },
-  { key:"cancelados", label:"Cancelados", color:"#DC2626", icon:Ic.ban, statuses:["canceled"] },
+  { key:"finalizados", label:"Finalizados", color:C.pri, icon:Ic.chk, statuses:["finished"] },
+  { key:"cancelados", label:"Cancelados", color:C.err, icon:Ic.ban, statuses:["canceled"] },
 ];
 
 // Entity grouping configs per user type
@@ -347,7 +347,7 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
       </div>
       {/* View mode buttons */}
       <div style={{ display:"flex", gap:4, marginBottom:10, overflowX:"auto", WebkitOverflowScrolling:"touch", paddingBottom:2 }}>
-        {[{k:"kanban",l:"Estados",ic:Ic.home},{k:"seguimiento",l:"Transportistas",ic:Ic.user},{k:"tabla",l:"Tabla",ic:Ic.doc},{k:"mapa",l:"Mapa",ic:Ic.pin}].map(v=>(
+        {[{k:"kanban",l:"Estados",ic:Ic.home},{k:"seguimiento",l:"Transportistas",ic:Ic.user},{k:"mapa",l:"Mapa",ic:Ic.pin}].map(v=>(
           <button key={v.k} onClick={()=>setView(v.k)} style={{padding:"8px 10px",borderRadius:7,border:`1.5px solid ${view===v.k?C.pri:C.b1}`,background:view===v.k?C.priPale:C.w,color:view===v.k?C.pri:C.t2,fontSize:11,fontWeight:view===v.k?700:500,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:3,whiteSpace:"nowrap",minHeight:36,flexShrink:0}}>
             {v.ic(view===v.k?C.pri:C.t3,11)} {v.l}
           </button>
@@ -386,6 +386,10 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
       </div>
       </>}
       </>)}
+
+      {/* Search result count */}
+      {hasFilters && filtered.length > 0 && <div style={{ fontSize:11, fontWeight:600, color:C.t3, marginBottom:8 }}>{filtered.length} flete{filtered.length!==1?"s":""} encontrado{filtered.length!==1?"s":""}</div>}
+      {hasFilters && filtered.length === 0 && freights.length > 0 && !loading && <EmptyState icon={Ic.srch(C.t3, 28)} title="Sin resultados" subtitle={`No hay fletes para "${searchQ || "los filtros seleccionados"}"`} />}
 
       {/* Skeleton while loading */}
       {loading && freights.length === 0 && <SkeletonList count={5} />}
@@ -490,7 +494,7 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
               <button key={s.k} onClick={() => setTableStatusFilter(s.k)} style={{ padding:"4px 10px", borderRadius:6, border:`1px solid ${tableStatusFilter === s.k ? s.color : C.b1}`, background: tableStatusFilter === s.k ? `${s.color}15` : "transparent", color: tableStatusFilter === s.k ? s.color : C.t3, fontSize:10, fontWeight: tableStatusFilter === s.k ? 700 : 500, cursor:"pointer", fontFamily:"inherit", whiteSpace:"nowrap" }}>{s.label}</button>
             ))}
             <div style={{ marginLeft:"auto" }}>
-              <button onClick={()=>exportExcel(tableFiltered,"tolvink-fletes.xls")} style={{padding:"5px 12px",borderRadius:8,border:`1.5px solid #1A6B37`,background:"#E6F4EA",color:"#1A6B37",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:5}}>{Ic.doc("#1A6B37",13)} Exportar Excel</button>
+              <button onClick={()=>exportExcel(tableFiltered,"tolvink-fletes.xls")} style={{padding:"5px 12px",borderRadius:8,border:`1.5px solid ${C.pri}`,background:C.okPale,color:C.pri,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:5}}>{Ic.doc(C.pri,13)} Exportar Excel</button>
             </div>
           </div>
           <div style={{ overflowX:"auto" }}>

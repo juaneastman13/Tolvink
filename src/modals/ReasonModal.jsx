@@ -9,7 +9,7 @@ export default function ReasonModal({ title, freight, btnLabel, btnType="err", o
   const [closingText,setClosingText] = useState("");
   const doConfirm = async ()=>{ if(loading||closing||!reason) return; setLoading(true); const msg=await onConfirm(reason); setLoading(false); if(msg){ setClosingText(msg); setClosing(true); } };
   return (
-    <ModalOverlay onClose={onClose} loading={loading} closing={closing} closingText={closingText}>
+    <ModalOverlay onClose={onClose} loading={loading} closing={closing} closingText={closingText} quick>
       <div style={{fontSize:17,fontWeight:700,marginBottom:4,color:btnType==="err"?C.err:C.t1}}>{title} · {freight.code}</div>
       <div style={{fontSize:12,color:C.t2,marginBottom:18}}>{freight.grain} · {freight.tons}tn</div>
       <label style={{fontSize:10.5,fontWeight:600,color:C.t2,marginBottom:6,display:"block",textTransform:"uppercase",letterSpacing:0.6}}>Motivo</label>

@@ -210,7 +210,29 @@ export default function AssignModal({ freight, transporters, user, onClose, onCo
   return (
     <ModalOverlay onClose={safeClose} loading={loading} closing={closing} closingText={closingText}>
       <div style={{fontSize:17,fontWeight:700,marginBottom:4}}>Asignar transporte · {freight.code}</div>
-      <div style={{fontSize:12,color:C.t2,marginBottom:multiTruck?8:14}}>{freight.grain} · {freight.tons}tn · {freight.originName}</div>
+      <div style={{fontSize:12,color:C.t2,marginBottom:8}}>{freight.grain} · {freight.tons}tn · {freight.originName}</div>
+
+      {/* Progress stepper */}
+      {remainingSlots > 0 && (() => {
+        const steps = mode === "own"
+          ? [{ l: "Vehículo", done: !!truckId }, { l: "Chofer", done: !!driverId }, ...(multiTruck ? [{ l: "Toneladas", done: !!tonsInput }] : [])]
+          : [{ l: "Transportista", done: !!t }, ...(multiTruck ? [{ l: "Viajes", done: tripCount > 0 }, { l: "Toneladas", done: !!tonsInput }] : [])];
+        return (
+          <div style={{ display:"flex", alignItems:"center", gap:0, marginBottom:14 }}>
+            {steps.map((s, i) => (
+              <div key={i} style={{ display:"flex", alignItems:"center", flex:i < steps.length-1 ? 1 : undefined }}>
+                <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:2 }}>
+                  <div style={{ width:20, height:20, borderRadius:10, background:s.done?C.pri:C.b1, display:"flex", alignItems:"center", justifyContent:"center", transition:"background 0.2s" }}>
+                    {s.done ? Ic.chk(C.w, 12) : <span style={{ fontSize:10, fontWeight:700, color:C.t3 }}>{i+1}</span>}
+                  </div>
+                  <span style={{ fontSize:8.5, fontWeight:600, color:s.done?C.pri:C.t3, whiteSpace:"nowrap" }}>{s.l}</span>
+                </div>
+                {i < steps.length-1 && <div style={{ flex:1, height:2, background:s.done?C.pri:C.b1, margin:"0 4px", marginBottom:14, transition:"background 0.2s" }}/>}
+              </div>
+            ))}
+          </div>
+        );
+      })()}
 
       {/* Multi-truck header */}
       {multiTruck && (

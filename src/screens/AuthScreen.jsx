@@ -388,7 +388,7 @@ export default function AuthScreen({ onLogin, onSignup, onPasswordReset, loading
               <button onClick={() => switchMode("login")} style={{ background: "none", border: "none", color: C.pri, fontWeight: 700, fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}>Volver a iniciar sesión</button>
             </>}
           </div>
-          {canInstall && <button onClick={() => window.installPWA?.()} style={{ marginTop: 14, width: "100%", padding: "12px", borderRadius: 10, border: `1.5px solid ${C.pri}`, background: C.priPale, color: C.pri, fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>{Ic.plus(C.pri, 16)} Instalar Tolvink en tu dispositivo</button>}
+          {canInstall && <button onClick={() => window.installPWA?.()} style={{ marginTop: 10, background: "none", border: "none", color: C.t3, fontSize: 11, fontWeight: 500, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 4, width: "100%" }}>{Ic.plus(C.t3, 12)} Instalar app</button>}
         </div>
       </div>
     </div>

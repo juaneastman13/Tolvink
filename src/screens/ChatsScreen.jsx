@@ -635,7 +635,8 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
                         <span title={new Date(m.createdAt).toLocaleString("es")}>
                           {new Date(m.createdAt).toLocaleTimeString("es", { hour: "2-digit", minute: "2-digit" })}
                         </span>
-                        {mine && m.status === 'pending' && <span style={{ fontSize: 9, opacity: 0.5 }}>⏱</span>}
+                        {mine && m.status === 'pending' && <span style={{ fontSize: 9, opacity: 0.5 }} title="Enviando">⏱</span>}
+                        {mine && (!m.status || m.status === 'sent') && <span style={{ fontSize: 9, color: C.t3 }} title="Enviado">✓</span>}
                         {mine && m.status === 'failed' && (
                           <button onClick={() => retryFailedMessage(m)} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 2, padding: 0, color: C.err, fontSize: 9, fontWeight: 600 }}>
                             ❌ Reintentar

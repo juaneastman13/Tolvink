@@ -1,4 +1,4 @@
-import { useState, Fragment } from "react";
+import { useState, useEffect, Fragment } from "react";
 import { C, Ic } from "../theme";
 import { Av, Bd, Btn } from "../components";
 
@@ -8,6 +8,12 @@ export default function MenuScreen({ user, perms, onLogout, onNav, isDesktop, on
   const tc = TYPE_COLORS[user.userType]||C.pri;
   const pl = []; if(perms.canRequest)pl.push("Solicitar fletes"); if(perms.canApprove)pl.push("Aprobar fletes"); if(perms.canAssignDriver)pl.push("Asignar choferes"); if(perms.canCancel)pl.push("Cancelar fletes"); if(perms.canReject)pl.push("Rechazar viajes");
   const [switching, setSwitching] = useState(null);
+  const [canInstall, setCanInstall] = useState(false);
+  useEffect(() => {
+    const h = () => setCanInstall(true);
+    window.addEventListener('pwa-install-available', h);
+    return () => window.removeEventListener('pwa-install-available', h);
+  }, []);
 
   // Use new companies array from backend memberships
   const companies = (user.companies && user.companies.length > 0) ? user.companies.map(c => ({
@@ -126,6 +132,13 @@ export default function MenuScreen({ user, perms, onLogout, onNav, isDesktop, on
         <div style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius:12,padding:4,marginBottom:12,boxShadow:C.sh}}>
           {mgmtItems.map((m,i)=>menuItem(m,i,mgmtItems))}
         </div>
+      )}
+
+      {/* PWA install banner */}
+      {canInstall && (
+        <button onClick={() => window.installPWA?.()} style={{ width:"100%", padding:"14px 16px", borderRadius:12, border:`1.5px solid ${C.pri}`, background:C.priPale, color:C.pri, fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:8, marginBottom:12, boxShadow:C.sh }}>
+          {Ic.plus(C.pri, 16)} Instalar Tolvink en tu dispositivo
+        </button>
       )}
 
     </div>

@@ -43,8 +43,8 @@ function SummaryCard({ secSummary, secComplete, form, showTruckSelect, isDesktop
         <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"4px 12px" }}>
           {rows.map((r, i) => (
             <div key={i} onClick={() => onEdit?.(r.section)} style={{ cursor:onEdit?"pointer":"default", padding:"4px 0", borderBottom:`1px solid ${C.b2}` }}>
-              <div style={{ fontSize:9, fontWeight:600, color:C.t3, textTransform:"uppercase", letterSpacing:0.4 }}>{r.label}</div>
-              <div style={{ fontSize:11, fontWeight:500, color:C.t1, marginTop:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{r.value}</div>
+              <div style={{ fontSize:10, fontWeight:600, color:C.t3, textTransform:"uppercase", letterSpacing:0.4 }}>{r.label}</div>
+              <div style={{ fontSize:12, fontWeight:500, color:C.t1, marginTop:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{r.value}</div>
             </div>
           ))}
         </div>
@@ -54,8 +54,8 @@ function SummaryCard({ secSummary, secComplete, form, showTruckSelect, isDesktop
             <div key={i} onClick={() => onEdit?.(r.section)} style={{ display:"flex", alignItems:"center", gap:8, cursor:onEdit?"pointer":"default", padding:"7px 10px", margin:"0 -10px", borderRadius:8, transition:"background 0.15s" }} onMouseEnter={e=>{if(onEdit)e.currentTarget.style.background=C.bgCardAlt}} onMouseLeave={e=>{e.currentTarget.style.background="transparent"}}>
               <div style={{ width:6, height:6, borderRadius:3, background:C.pri, flexShrink:0 }}/>
               <div style={{ flex:1, minWidth:0 }}>
-                <div style={{ fontSize:10, fontWeight:600, color:C.t3, textTransform:"uppercase", letterSpacing:0.5 }}>{r.label}</div>
-                <div style={{ fontSize:12.5, fontWeight:500, color:C.t1, marginTop:1 }}>{r.value}</div>
+                <div style={{ fontSize:11, fontWeight:600, color:C.t3, textTransform:"uppercase", letterSpacing:0.5 }}>{r.label}</div>
+                <div style={{ fontSize:13, fontWeight:500, color:C.t1, marginTop:1 }}>{r.value}</div>
               </div>
               {onEdit && <div style={{ fontSize:10, fontWeight:600, color:C.pri, flexShrink:0, padding:"3px 8px", borderRadius:6, background:C.priPale }}>Editar</div>}
             </div>
@@ -75,15 +75,25 @@ function SummaryCard({ secSummary, secComplete, form, showTruckSelect, isDesktop
   );
 }
 
-function MobileStepModal({ open, title, summary, children, onClose }) {
+function MobileStepModal({ open, title, summary, children, onClose, stepIndex, totalSteps }) {
   if (!open) return null;
   return (
     <div role="dialog" aria-modal="true" aria-label={title} style={{ position:"fixed", inset:0, zIndex:1000, display:"flex", flexDirection:"column", justifyContent:"flex-end" }}>
       <div onClick={onClose} style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.4)" }}/>
       <div style={{ position:"relative", background:C.bg, borderRadius:"20px 20px 0 0", maxHeight:"90vh", overflow:"auto", padding:"0 0 env(safe-area-inset-bottom, 0)", animation:"slideUp 0.25s ease" }}>
-        <div style={{ position:"sticky", top:0, zIndex:2, background:C.bg, padding:"16px 20px 8px", borderBottom:`1px solid ${C.b2}`, display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-          <span style={{ fontSize:16, fontWeight:800, color:C.t1 }}>{title}</span>
-          <button aria-label="Cerrar" onClick={onClose} style={{ background:"none", border:"none", cursor:"pointer", padding:4, minWidth:44, minHeight:44, display:"flex", alignItems:"center", justifyContent:"center" }}>{Ic.cross(C.t3, 20)}</button>
+        <div style={{ position:"sticky", top:0, zIndex:2, background:C.bg, padding:"16px 20px 8px", borderBottom:`1px solid ${C.b2}` }}>
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+            <span style={{ fontSize:16, fontWeight:800, color:C.t1 }}>{title}</span>
+            <button aria-label="Cerrar" onClick={onClose} style={{ background:"none", border:"none", cursor:"pointer", padding:4, minWidth:44, minHeight:44, display:"flex", alignItems:"center", justifyContent:"center" }}>{Ic.cross(C.t3, 20)}</button>
+          </div>
+          {stepIndex != null && totalSteps > 0 && (
+            <div style={{ display:"flex", alignItems:"center", gap:8, marginTop:6 }}>
+              <span style={{ fontSize:11, fontWeight:600, color:C.t3 }}>Paso {stepIndex} de {totalSteps}</span>
+              <div style={{ flex:1, height:3, borderRadius:2, background:C.b1, overflow:"hidden" }}>
+                <div style={{ height:"100%", width:`${(stepIndex/totalSteps)*100}%`, background:C.pri, borderRadius:2, transition:"width 0.3s ease" }}/>
+              </div>
+            </div>
+          )}
         </div>
         {summary && <div style={{ padding:"10px 20px", background:C.priPale, fontSize:11, color:C.pri, fontWeight:600 }}>{summary}</div>}
         <div style={{ padding:"16px 20px 24px" }}>
@@ -364,6 +374,8 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
           title={{product:"Producto",quantity:"Cantidad",origin:"Origen",ownfleet:"Transporte",destination:"Destino",schedule:"Fecha y hora"}[activeSection]||""}
           summary={secSummary[activeSection]||undefined}
           onClose={()=>{ const idx=SEC_ORDER.indexOf(activeSection); if(idx>0)setActiveSection(SEC_ORDER[idx-1]); }}
+          stepIndex={(()=>{ const flow=["product","quantity","origin"]; if(showTruckSelect)flow.push("ownfleet"); flow.push("destination","schedule"); return flow.indexOf(activeSection)+1; })()}
+          totalSteps={showTruckSelect?6:5}
         >
           {activeSection === "product" && <>
             <div>

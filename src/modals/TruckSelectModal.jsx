@@ -12,6 +12,7 @@ export default function TruckSelectModal({ freight, trucks: initialTrucks, onClo
   const [closing,setClosing] = useState(false);
   const [closingText,setClosingText] = useState("");
   const [truckList,setTruckList] = useState((initialTrucks||[]).filter(t=>t.active!==false));
+  const [truckSearch,setTruckSearch] = useState("");
   const [showNewTruck,setShowNewTruck] = useState(false);
   const [newPlate,setNewPlate] = useState("");
   const [newModel,setNewModel] = useState("");
@@ -77,15 +78,21 @@ export default function TruckSelectModal({ freight, trucks: initialTrucks, onClo
   const doConfirm = async ()=>{ if(loading||closing||!sel) return; setLoading(true); const msg=await onConfirm(sel, driverId||undefined); setLoading(false); if(msg){ setClosingText(msg); setClosing(true); } };
 
   return (
-    <ModalOverlay onClose={onClose} loading={loading} closing={closing} closingText={closingText}>
+    <ModalOverlay onClose={onClose} loading={loading} closing={closing} closingText={closingText} quick>
       <div style={{fontSize:17,fontWeight:700,marginBottom:4}}>Aceptar flete · {freight.code}</div>
       <div style={{fontSize:12,color:C.t2,marginBottom:18}}>{freight.grain} · {freight.tons}tn → {freight.destName}</div>
 
       {/* Truck selection */}
       <label style={{fontSize:10.5,fontWeight:600,color:C.t2,marginBottom:8,display:"block",textTransform:"uppercase",letterSpacing:0.6}}>Seleccioná un camión</label>
+      {truckList.length > 6 && (
+        <div style={{ position:"relative", marginBottom:8 }}>
+          <div style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",display:"flex"}}>{Ic.srch(C.t3,14)}</div>
+          <input value={truckSearch} onChange={e=>setTruckSearch(e.target.value)} placeholder="Buscar por patente o modelo..." style={{width:"100%",padding:"8px 12px 8px 30px",borderRadius:8,border:`1px solid ${C.b1}`,background:C.w,color:C.t1,fontSize:12,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}/>
+        </div>
+      )}
       <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:10,maxHeight:180,overflowY:"auto"}}>
         {truckList.length===0 && !showNewTruck && <div style={{fontSize:12,color:C.t3,padding:10,textAlign:"center"}}>No tenés camiones registrados.</div>}
-        {truckList.map(t=><button key={t.id} onClick={()=>setSel(t.id)} style={{padding:"13px 14px",borderRadius:12,textAlign:"left",fontFamily:"inherit",border:`1.5px solid ${sel===t.id?C.acc:C.b1}`,background:sel===t.id?C.accPale:C.w,color:sel===t.id?C.acc:C.t2,fontSize:13.5,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",gap:10}}>
+        {truckList.filter(t=>!truckSearch || t.plate?.toLowerCase().includes(truckSearch.toLowerCase()) || t.model?.toLowerCase().includes(truckSearch.toLowerCase())).map(t=><button key={t.id} onClick={()=>setSel(t.id)} style={{padding:"13px 14px",borderRadius:12,textAlign:"left",fontFamily:"inherit",border:`1.5px solid ${sel===t.id?C.acc:C.b1}`,background:sel===t.id?C.accPale:C.w,color:sel===t.id?C.acc:C.t2,fontSize:13.5,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",gap:10}}>
           {Ic.truck(sel===t.id?C.acc:C.t3,18)}
           <div>
             <div style={{fontSize:13,fontWeight:700,color:sel===t.id?C.acc:C.t1}}>{t.plate}</div>

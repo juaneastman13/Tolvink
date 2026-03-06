@@ -218,15 +218,23 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
         </div>
       )}
 
-      {/* Actions */}
-      {filteredActions.length > 0 && <div style={{ display:"flex", flexDirection:"column", gap:8, marginBottom:12 }}>
-        {filteredActions.includes("authorize") && <Btn full icon={Ic.chk(C.w,16)} disabled={actionLoading} onClick={()=>onAction(freight.id,"authorize")}>{actionLoading?"Procesando...":"Autorizar viaje"}</Btn>}
-        {filteredActions.includes("assign") && <Btn full v="acc" icon={Ic.chk(C.w,16)} disabled={actionLoading} onClick={()=>onAction(freight.id,"assign")}>Asignar transportista</Btn>}
-        {filteredActions.includes("accept") && <Btn full icon={Ic.chk(C.w,16)} disabled={actionLoading} onClick={()=>onAction(freight.id,"accept")}>Aceptar flete</Btn>}
-        {filteredActions.includes("start") && <Btn full icon={Ic.truck(C.w,16)} disabled={actionLoading} onClick={()=>onAction(freight.id,"start")}>{actionLoading?"Procesando...":"Iniciar viaje"}</Btn>}
-        {filteredActions.includes("confirm_loaded") && <Btn full v="acc" icon={Ic.chk(C.w,16)} disabled={actionLoading} onClick={()=>onAction(freight.id,"confirm_loaded")}>{actionLoading?"Procesando...":"Confirmar carga"}</Btn>}
-        {filteredActions.includes("confirm_finished") && <Btn full v="acc" icon={Ic.chk(C.w,16)} disabled={actionLoading} onClick={()=>onAction(freight.id,"confirm_finished")}>{actionLoading?"Procesando...":"Confirmar entrega"}</Btn>}
-      </div>}
+      {/* Primary actions — flow-advancing (sticky on mobile) */}
+      {(()=>{
+        const primary = [];
+        if(filteredActions.includes("authorize")) primary.push(<Btn key="auth" full icon={Ic.chk(C.w,16)} disabled={actionLoading} onClick={()=>onAction(freight.id,"authorize")}>{actionLoading?"Procesando...":"Autorizar viaje"}</Btn>);
+        if(filteredActions.includes("assign")) primary.push(<Btn key="assign" full v="acc" icon={Ic.chk(C.w,16)} disabled={actionLoading} onClick={()=>onAction(freight.id,"assign")}>Asignar transportista</Btn>);
+        if(filteredActions.includes("accept")) primary.push(<Btn key="accept" full icon={Ic.chk(C.w,16)} disabled={actionLoading} onClick={()=>onAction(freight.id,"accept")}>Aceptar flete</Btn>);
+        if(filteredActions.includes("start")) primary.push(<Btn key="start" full icon={Ic.truck(C.w,16)} disabled={actionLoading} onClick={()=>onAction(freight.id,"start")}>{actionLoading?"Procesando...":"Iniciar viaje"}</Btn>);
+        if(filteredActions.includes("confirm_loaded")) primary.push(<Btn key="loaded" full v="acc" icon={Ic.chk(C.w,16)} disabled={actionLoading} onClick={()=>onAction(freight.id,"confirm_loaded")}>{actionLoading?"Procesando...":"Confirmar carga"}</Btn>);
+        if(filteredActions.includes("confirm_finished")) primary.push(<Btn key="finished" full v="acc" icon={Ic.chk(C.w,16)} disabled={actionLoading} onClick={()=>onAction(freight.id,"confirm_finished")}>{actionLoading?"Procesando...":"Confirmar entrega"}</Btn>);
+        if(primary.length===0) return null;
+        // Desktop: inline; Mobile: sticky bottom bar
+        return _isDesktop
+          ? <div style={{ display:"flex", flexDirection:"column", gap:8, marginBottom:12 }}>{primary}</div>
+          : <div style={{ position:"sticky", bottom:0, zIndex:10, background:C.w, padding:"10px 0 max(10px, env(safe-area-inset-bottom))", borderTop:`1px solid ${C.b2}`, marginLeft:-18, marginRight:-18, paddingLeft:18, paddingRight:18, boxShadow:"0 -2px 8px rgba(0,0,0,0.06)" }}>
+              <div style={{ display:"flex", flexDirection:"column", gap:8 }}>{primary}</div>
+            </div>;
+      })()}
       {["in_progress","loaded"].includes(freight.status) && navigator.geolocation && (
         <div style={{ marginBottom:12 }}>
           <Btn full v="sec" sm icon={Ic.pin(locSent?C.ok:C.pri,14)} disabled={locSending} onClick={handleShareLocation}>
@@ -484,29 +492,44 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
       {/* Info + Map — side by side on desktop */}
       <div style={{ display:"flex", flexDirection:_isDesktop?"row":"column", gap:12, marginBottom:12, alignItems:_isDesktop?"stretch":undefined }}>
         <div style={{ flex:1, background:C.w, border:`1px solid ${C.b1}`, borderRadius:12, padding:16, boxShadow:C.sh }}>
-          <span style={{ fontSize:10.5, fontWeight:700, color:C.t2, textTransform:"uppercase", letterSpacing:0.5, marginBottom:12, display:"block" }}>Información del flete</span>
-          {[
-            [Ic.user(C.pri,15),"Empresa",freight.originCompanyName||freight.originName],
-            [Ic.grain(C.ok,15),"Campo",[freight.fieldName,freight.originName].filter(Boolean).join(" / ")||"—"],
-            [Ic.plant(C.t2,15),"Destino",freight.destName],
-            [Ic.cal(C.t2,15),"Fecha carga",formatFreightDate(freight.loadDate)],
-            [Ic.clk(C.t2,15),"Hora carga",freight.loadTime],
-            [Ic.user(C.t2,15),"Solicitado por",freight.requestedByName],
-            [Ic.grain(C.t2,15),"Producto",`${freight.grain==="Otros"?freight.productTypeOther||"Otros":freight.grain} · ${freight.tons} ${freight.unit||"tn"}`],
-            freight.amount>0&&[Ic.grain(C.t2,15),"Importe",`$${Number(freight.amount).toLocaleString()}`],
-            !isMultiTruck&&freight.transporterName&&[Ic.truck(C.t2,15),"Transportista",freight.transporterName],
-            isMultiTruck&&[Ic.truck(C.t2,15),"Camiones",`${freight.assignedTruckCount}/${freight.truckCount}`],
-            !isMultiTruck&&freight.truckPlate&&[Ic.truck(C.acc,15),"Camión",`${freight.truckPlate}${freight.truckModel?` · ${freight.truckModel}`:""}`],
-            !isMultiTruck&&freight.driverName&&[Ic.user(C.pri,15),"Chofer",<>{freight.driverName}{perms.canApprove && freight.driverId && <button onClick={()=>onAction(freight.id,"driver_queue")} style={{marginLeft:6,fontSize:9.5,fontWeight:700,color:C.info,background:`${C.info}12`,border:`1px solid ${C.info}30`,borderRadius:6,padding:"2px 7px",cursor:"pointer",fontFamily:"inherit"}}>Ver cola</button>}</>],
-            !isMultiTruck&&freight.driverPhone&&[Ic.msg(C.info,15),"Teléfono",freight.driverPhone],
-          ].filter(Boolean).map(([ic,label,val],i,arr)=>(
-            <div key={i} style={{ display:"flex", alignItems:"center", gap:10, padding:"9px 0", borderBottom:i<arr.length-1?`1px solid ${C.b2}`:"none" }}>
-              <span style={{display:"flex",flexShrink:0}}>{ic}</span>
-              <span style={{ fontSize:11.5, color:C.t2, minWidth:85 }}>{label}</span>
-              {label==="Teléfono"?<a href={`tel:${val}`} style={{ fontSize:12, fontWeight:600, color:C.info, marginLeft:"auto", textDecoration:"none" }}>{val}</a>:
-              <span style={{ fontSize:12, fontWeight:600, color:C.t1, marginLeft:"auto", textAlign:"right" }}>{val}</span>}
-            </div>
-          ))}
+          {(()=>{
+            const InfoRow = ({ic,label,val,isLast}) => (
+              <div style={{ display:"flex", alignItems:"center", gap:10, padding:"9px 0", borderBottom:isLast?"none":`1px solid ${C.b2}` }}>
+                <span style={{display:"flex",flexShrink:0}}>{ic}</span>
+                <span style={{ fontSize:11.5, color:C.t2, minWidth:85 }}>{label}</span>
+                {label==="Teléfono"?<a href={`tel:${val}`} style={{ fontSize:12, fontWeight:600, color:C.info, marginLeft:"auto", textDecoration:"none" }}>{val}</a>:
+                <span style={{ fontSize:12, fontWeight:600, color:C.t1, marginLeft:"auto", textAlign:"right" }}>{val}</span>}
+              </div>
+            );
+            const SectionLabel = ({text}) => <div style={{ fontSize:9.5, fontWeight:700, color:C.t3, textTransform:"uppercase", letterSpacing:0.5, padding:"10px 0 4px" }}>{text}</div>;
+            const carga = [
+              [Ic.grain(C.t2,15),"Producto",`${freight.grain==="Otros"?freight.productTypeOther||"Otros":freight.grain} · ${freight.tons} ${freight.unit||"tn"}`],
+              freight.amount>0&&[Ic.grain(C.t2,15),"Importe",`$${Number(freight.amount).toLocaleString()}`],
+            ].filter(Boolean);
+            const ruta = [
+              [Ic.user(C.pri,15),"Empresa",freight.originCompanyName||freight.originName],
+              [Ic.grain(C.ok,15),"Campo",[freight.fieldName,freight.originName].filter(Boolean).join(" / ")||"—"],
+              [Ic.plant(C.t2,15),"Destino",freight.destName],
+              [Ic.cal(C.t2,15),"Fecha carga",formatFreightDate(freight.loadDate)],
+              [Ic.clk(C.t2,15),"Hora carga",freight.loadTime],
+              [Ic.user(C.t2,15),"Solicitado por",freight.requestedByName],
+            ].filter(Boolean);
+            const transporte = [
+              !isMultiTruck&&freight.transporterName&&[Ic.truck(C.t2,15),"Transportista",freight.transporterName],
+              isMultiTruck&&[Ic.truck(C.t2,15),"Camiones",`${freight.assignedTruckCount}/${freight.truckCount}`],
+              !isMultiTruck&&freight.truckPlate&&[Ic.truck(C.acc,15),"Camión",`${freight.truckPlate}${freight.truckModel?` · ${freight.truckModel}`:""}`],
+              !isMultiTruck&&freight.driverName&&[Ic.user(C.pri,15),"Chofer",<>{freight.driverName}{perms.canApprove && freight.driverId && <button onClick={()=>onAction(freight.id,"driver_queue")} style={{marginLeft:6,fontSize:9.5,fontWeight:700,color:C.info,background:`${C.info}12`,border:`1px solid ${C.info}30`,borderRadius:6,padding:"2px 7px",cursor:"pointer",fontFamily:"inherit"}}>Ver cola</button>}</>],
+              !isMultiTruck&&freight.driverPhone&&[Ic.msg(C.info,15),"Teléfono",freight.driverPhone],
+            ].filter(Boolean);
+            return <>
+              <SectionLabel text="Carga"/>
+              {carga.map(([ic,label,val],i)=><InfoRow key={"c"+i} ic={ic} label={label} val={val} isLast={i===carga.length-1}/>)}
+              <SectionLabel text="Ruta"/>
+              {ruta.map(([ic,label,val],i)=><InfoRow key={"r"+i} ic={ic} label={label} val={val} isLast={i===ruta.length-1}/>)}
+              {transporte.length>0 && <><SectionLabel text="Transporte"/>
+              {transporte.map(([ic,label,val],i)=><InfoRow key={"t"+i} ic={ic} label={label} val={val} isLast={i===transporte.length-1}/>)}</>}
+            </>;
+          })()}
         </div>
         <div style={{ flex:1 }}>
           <FreightMap freightId={freight.id} originLat={freight.originLat} originLng={freight.originLng} destLat={freight.destLat} destLng={freight.destLng} originName={[freight.originCompanyName, [freight.fieldName,freight.originName].filter(Boolean).join("/")].filter(Boolean).join(" — ")} destName={freight.destName} status={freight.status} isDriver={user.userType==="transporter"||(user.userType==="producer"&&freight.isOwnFleet)}/>
@@ -600,10 +623,18 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
         {Ic.doc(C.t2,20)}<div style={{textAlign:"left"}}><div style={{ fontSize:12, fontWeight:700, color:C.t1 }}>{pdfLoading?'Generando...':'Descargar informe PDF'}</div><div style={{ fontSize:10, color:C.t3 }}>Información, recorrido, historial y documentos</div></div>
       </button>
 
-      {/* Edit + Cancel — bottom actions */}
-      {["pending_assignment","assigned","accepted","in_progress","loaded"].includes(freight.status) && (perms.canRequest || perms.canApprove) && <div style={{ marginBottom:8 }}><Btn full sm v="sec" icon={Ic.doc(C.pri,14)} onClick={()=>onEdit(freight)}>Editar</Btn></div>}
-      {filteredActions.includes("cancel") && <div style={{ marginBottom:8 }}><Btn full v="err" icon={Ic.cross(C.err,16)} disabled={actionLoading} onClick={()=>onAction(freight.id,"cancel")}>Cancelar flete</Btn></div>}
-      {filteredActions.includes("reject") && <div style={{ marginBottom:8 }}><Btn full v="err" icon={Ic.ban(C.w,16)} disabled={actionLoading} onClick={()=>onAction(freight.id,"reject")}>Rechazar asignación</Btn></div>}
+      {/* Secondary actions — edit, cancel, reject (horizontal, smaller) */}
+      {(()=>{
+        const sec = [];
+        if(["pending_assignment","assigned","accepted","in_progress","loaded"].includes(freight.status) && (perms.canRequest || perms.canApprove))
+          sec.push(<Btn key="edit" sm v="ghost" icon={Ic.edit(C.t2,14)} onClick={()=>onEdit(freight)} style={{flex:1}}>Editar</Btn>);
+        if(filteredActions.includes("cancel"))
+          sec.push(<Btn key="cancel" sm v="err" icon={Ic.cross(C.err,14)} disabled={actionLoading} onClick={()=>onAction(freight.id,"cancel")} style={{flex:1}}>Cancelar</Btn>);
+        if(filteredActions.includes("reject"))
+          sec.push(<Btn key="reject" sm v="err" icon={Ic.ban(C.err,14)} disabled={actionLoading} onClick={()=>onAction(freight.id,"reject")} style={{flex:1}}>Rechazar</Btn>);
+        if(sec.length===0) return null;
+        return <div style={{ display:"flex", gap:8, marginBottom:8 }}>{sec}</div>;
+      })()}
       </div>
       <FileViewer file={viewFile} onClose={()=>setViewFile(null)} onOcr={handleOcr} ocrLoading={ocrLoading} onViewOcr={handleViewOcr}/>
       {ocrLoading && <div style={{ position:"fixed", inset:0, zIndex:250 }}><UploadOverlay uploading={ocrLoading} done={false} total={1} current={1} label="Extrayendo datos"/></div>}

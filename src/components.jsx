@@ -10,19 +10,19 @@ export const Av = memo(function Av({ letters, size=36, color=C.pri }) {
 });
 
 export const Bd = memo(function Bd({ children, color=C.pri, bg, small }) {
-  return <span style={{ display:"inline-flex", alignItems:"center", gap:4, padding:small?"2px 7px":"4px 10px", borderRadius:6, fontSize:small?9.5:10.5, fontWeight:600, background:bg||`${color}0D`, color, whiteSpace:"nowrap", letterSpacing:0.2 }}>{children}</span>;
+  return <span style={{ display:"inline-flex", alignItems:"center", gap:4, padding:small?"2px 7px":"4px 10px", borderRadius:6, fontSize:small?10:10.5, fontWeight:600, background:bg||`${color}0D`, color, whiteSpace:"nowrap", letterSpacing:0.2 }}>{children}</span>;
 });
 
 export const Btn = memo(function Btn({ children, onClick, v="pri", full, sm, icon, disabled, style={}, type="button" }) {
   const vs = {
-    pri:  { bg:C.pri, c:C.w, hbg:C.priLt },
-    sec:  { bg:C.w,   c:C.pri, bd:C.b1 },
-    err:  { bg:C.errPale, c:C.err },
-    ghost:{ bg:"transparent", c:C.t2 },
-    acc:  { bg:C.acc, c:C.w, hbg:C.accLt },
+    pri:  { bg:C.pri, c:C.w, hbg:C.priLt, dbg:C.priPale, dc:C.t3 },
+    sec:  { bg:C.w,   c:C.pri, bd:C.b1, dbg:"#E8ECE9", dc:C.t3 },
+    err:  { bg:C.errPale, c:C.err, dbg:"#F5E8E8", dc:C.t3 },
+    ghost:{ bg:"transparent", c:C.t2, dbg:"transparent", dc:C.t3 },
+    acc:  { bg:C.acc, c:C.w, hbg:C.accLt, dbg:C.accPale, dc:C.t3 },
   };
   const vv = vs[v] || vs.pri;
-  return <button type={type} disabled={disabled} onClick={onClick} style={{ display:"inline-flex", alignItems:"center", justifyContent:"center", gap:7, padding:sm?"8px 14px":"13px 22px", borderRadius:10, fontSize:sm?12:13.5, fontWeight:600, fontFamily:"inherit", background:disabled?"#E8ECE9":vv.bg, color:disabled?C.t2:vv.c, border:vv.bd?`1px solid ${vv.bd}`:"none", cursor:disabled?"not-allowed":"pointer", width:full?"100%":"auto", transition:"all 0.2s ease", minHeight:sm?36:44, WebkitTapHighlightColor:"transparent", touchAction:"manipulation", ...style }} onMouseEnter={e=>{if(!disabled&&vv.hbg)e.currentTarget.style.background=vv.hbg}} onMouseLeave={e=>{if(!disabled)e.currentTarget.style.background=disabled?"#E8ECE9":vv.bg}}>{icon&&<span style={{display:"flex",alignItems:"center"}}>{icon}</span>}{children}</button>;
+  return <button type={type} disabled={disabled} onClick={onClick} style={{ display:"inline-flex", alignItems:"center", justifyContent:"center", gap:7, padding:sm?"8px 14px":"13px 22px", borderRadius:10, fontSize:sm?12:13.5, fontWeight:600, fontFamily:"inherit", background:disabled?(vv.dbg||"#E8ECE9"):vv.bg, color:disabled?(vv.dc||C.t3):vv.c, border:vv.bd?`1px solid ${disabled?C.b1:vv.bd}`:"none", cursor:disabled?"not-allowed":"pointer", width:full?"100%":"auto", transition:"all 0.15s ease", minHeight:sm?36:44, WebkitTapHighlightColor:"transparent", touchAction:"manipulation", ...style }} onMouseEnter={e=>{if(!disabled&&vv.hbg)e.currentTarget.style.background=vv.hbg}} onMouseLeave={e=>{if(!disabled)e.currentTarget.style.background=disabled?(vv.dbg||"#E8ECE9"):vv.bg}} onPointerDown={e=>{if(!disabled)e.currentTarget.style.transform="scale(0.97)"}} onPointerUp={e=>{e.currentTarget.style.transform="none"}} onPointerLeave={e=>{e.currentTarget.style.transform="none"}}>{icon&&<span style={{display:"flex",alignItems:"center"}}>{icon}</span>}{children}</button>;
 });
 
 export const Tabs = memo(function Tabs({ items, active, onChange }) {
@@ -78,7 +78,13 @@ export function Select({ label, icon, value, onChange, options, placeholder="Sel
   const [hlIdx, setHlIdx] = useState(-1);
   const ref = useRef(null);
   const listRef = useRef(null);
-  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth < 768);
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 767px)');
+    const h = (e) => setIsMobile(e.matches);
+    mq.addEventListener('change', h);
+    return () => mq.removeEventListener('change', h);
+  }, []);
   useEffect(()=>{
     if(!open) return;
     const h = e => { if(ref.current && !ref.current.contains(e.target)) setOpen(false); };
@@ -232,8 +238,8 @@ export function SortTh({ label, colKey, sortCol, sortDir, onSort }) {
 
 // ======================== MODAL OVERLAY (animated logo → card) ========
 
-export function ModalOverlay({ children, onClose, maxWidth=400, loading=false, closing=false, closingText="" }) {
-  const [stage, setStage] = useState(0);
+export function ModalOverlay({ children, onClose, maxWidth=400, loading=false, closing=false, closingText="", quick=false }) {
+  const [stage, setStage] = useState(quick ? 3 : 0);
   const [fading, setFading] = useState(false);
   const dialogRef = useRef(null);
 
@@ -255,12 +261,12 @@ export function ModalOverlay({ children, onClose, maxWidth=400, loading=false, c
 
   // Intro stages (logo → text collapse → dot grow → card)
   useEffect(() => {
-    if (loading || closing) return;
-    const t1 = setTimeout(() => setStage(1), 100);
-    const t2 = setTimeout(() => setStage(2), 200);
-    const t3 = setTimeout(() => setStage(3), 300);
+    if (loading || closing || quick) return;
+    const t1 = setTimeout(() => setStage(1), 60);
+    const t2 = setTimeout(() => setStage(2), 120);
+    const t3 = setTimeout(() => setStage(3), 180);
     return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
-  }, [loading, closing]);
+  }, [loading, closing, quick]);
 
   useEffect(() => { if (loading) setStage(0); }, [loading]);
 
@@ -488,7 +494,7 @@ export function Nav({ active, onChange, unread=0, pendingCount=0, notifCount=0, 
               {hasPending ? Ic.clk(C.w,18) : Ic.chk(C.w,18)}
               {it.bd>0 && <div style={{ position:"absolute", top:-4, right:-4, minWidth:16, height:16, borderRadius:8, background:C.err, color:C.w, fontSize:8, fontWeight:700, padding:"0 4px", display:"flex", alignItems:"center", justifyContent:"center", border:`2px solid ${C.nav}` }}>{it.bd}</div>}
             </div>
-            <span style={{ fontSize:7.5, fontWeight:700, color:centerColor, marginTop:1, transition:"color 0.5s ease" }}>{hasPending?"Pendientes":"Al día"}</span>
+            <span style={{ fontSize:9, fontWeight:700, color:centerColor, marginTop:1, transition:"color 0.5s ease" }}>{hasPending?"Pendientes":"Al día"}</span>
             {canRequest && (
               <div onClick={e=>{e.stopPropagation();onNew();}} style={{ display:"flex", alignItems:"center", gap:5, marginTop:2, padding:"6px 14px", borderRadius:20, background:C.acc, cursor:"pointer", boxShadow:`0 2px 8px ${C.acc}40` }}>
                 <span style={{ display:"inline-flex", animation:"truckDrive 1.5s ease-in-out infinite" }}>{Ic.truck("#fff",15)}</span>
@@ -497,7 +503,7 @@ export function Nav({ active, onChange, unread=0, pendingCount=0, notifCount=0, 
             )}
           </> : <>
             <span style={{display:"flex"}}>{it.ic(active===it.k)}</span>
-            <span style={{ fontSize:9, fontWeight:active===it.k?700:500, color:active===it.k?C.pri:C.t3 }}>{it.l}</span>
+            <span style={{ fontSize:10, fontWeight:active===it.k?700:500, color:active===it.k?C.pri:C.t3 }}>{it.l}</span>
             {it.bd>0 && <div style={{ position:"absolute", top:1, right:"20%", minWidth:14, height:14, borderRadius:7, background:C.err, color:C.w, fontSize:8, fontWeight:700, padding:"0 3px", display:"flex", alignItems:"center", justifyContent:"center" }}>{it.bd}</div>}
           </>}
         </button>
@@ -654,7 +660,7 @@ export function FileViewer({ file, onClose, onOcr, ocrLoading, onViewOcr }) {
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"10px 14px", borderBottom:`1px solid ${C.b2}`, flexShrink:0 }}>
           <div style={{ fontSize:13, fontWeight:600, color:C.t1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", flex:1, marginRight:10 }}>{file.name||"Archivo"}</div>
           <div style={{ display:"flex", gap:6, flexShrink:0 }}>
-            {file.ocrData && onViewOcr && <button onClick={()=>onViewOcr(file.ocrData)} style={{ display:"flex", alignItems:"center", gap:4, padding:"5px 10px", borderRadius:8, border:"1px solid #1A6B37", background:"#E6F4EA", color:"#1A6B37", fontSize:11, fontWeight:700, fontFamily:"inherit", cursor:"pointer" }}>{Ic.eye("#1A6B37",13)} Ver datos</button>}
+            {file.ocrData && onViewOcr && <button onClick={()=>onViewOcr(file.ocrData)} style={{ display:"flex", alignItems:"center", gap:4, padding:"5px 10px", borderRadius:8, border:`1px solid ${C.pri}`, background:C.okPale, color:C.pri, fontSize:11, fontWeight:700, fontFamily:"inherit", cursor:"pointer" }}>{Ic.eye(C.pri,13)} Ver datos</button>}
             {isImg && onOcr && !file.ocrData && <button onClick={()=>onOcr(file)} disabled={ocrLoading} style={{ display:"flex", alignItems:"center", gap:4, padding:"5px 10px", borderRadius:8, border:`1px solid ${C.pri}`, background:C.priPale, color:C.pri, fontSize:11, fontWeight:700, fontFamily:"inherit", cursor:"pointer", opacity:ocrLoading?0.6:1 }}>{Ic.doc(C.pri,13)} {ocrLoading ? "Analizando..." : "Extraer datos"}</button>}
             {safeUrl && <a href={safeUrl} download style={{ display:"flex", alignItems:"center", gap:4, padding:"5px 10px", borderRadius:8, border:`1px solid ${C.b1}`, background:C.bg, color:C.t1, textDecoration:"none", fontSize:11, fontWeight:600, fontFamily:"inherit" }} onClick={e=>e.stopPropagation()}>{Ic.down(C.t2,13)} Descargar</a>}
             <button onClick={onClose} style={{ display:"flex", alignItems:"center", gap:4, padding:"5px 12px", borderRadius:8, background:C.err, border:"none", cursor:"pointer", color:"#fff", fontSize:11, fontWeight:700, fontFamily:"inherit" }}>{Ic.cross("#fff",14)} Cerrar</button>
