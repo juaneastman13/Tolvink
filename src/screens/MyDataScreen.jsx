@@ -31,8 +31,8 @@ export default function MyDataScreen({ user, onBack, onUserUpdate }) {
       {(saving||doneMsg) && <LoadingOverlay closing={!!doneMsg} closingText={doneMsg} onClose={()=>setDoneMsg("")}/>}
       <div style={{position:"sticky",top:0,zIndex:10,background:C.bg,padding:"18px 18px 8px"}}>{adminBackBtn(onBack)}</div>
       <div style={{padding:"0 18px 18px"}}>
-      <div style={{fontSize:18,fontWeight:800,color:C.t1,marginBottom:4}}>Mis datos</div>
-      <div style={{fontSize:11,color:C.t3,marginBottom:14}}>Editá tu información personal</div>
+      <div style={{fontSize:19.8,fontWeight:800,color:C.t1,marginBottom:4}}>Mis datos</div>
+      <div style={{fontSize:12.1,color:C.t3,marginBottom:14}}>Editá tu información personal</div>
       <div style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius:10,padding:14,boxShadow:C.sh,marginBottom:16}}>
         <div style={s.lbl}>Nombre:</div>
         <input value={form.name} onChange={e=>setForm(p=>({...p,name:e.target.value}))} placeholder="Nombre completo" style={{...s.inp,marginBottom:10}} />
@@ -44,14 +44,14 @@ export default function MyDataScreen({ user, onBack, onUserUpdate }) {
       </div>
 
       {companies.length>0 && <>
-      <div style={{fontSize:15,fontWeight:700,color:C.t1,marginBottom:8}}>Mis empresas</div>
+      <div style={{fontSize:16.5,fontWeight:700,color:C.t1,marginBottom:8}}>Mis empresas</div>
       <div style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius:10,overflow:"hidden",boxShadow:C.sh}}>
-        <table style={{width:"100%",borderCollapse:"collapse",fontSize:12,fontFamily:"inherit"}}>
+        <table style={{width:"100%",borderCollapse:"collapse",fontSize:13.2,fontFamily:"inherit"}}>
           <thead>
             <tr style={{background:C.bg,borderBottom:`2px solid ${C.b1}`}}>
-              <th style={{padding:"9px 12px",textAlign:"left",fontSize:10,fontWeight:700,color:C.t2,textTransform:"uppercase",letterSpacing:0.5}}>Empresa</th>
-              <th style={{padding:"9px 12px",textAlign:"left",fontSize:10,fontWeight:700,color:C.t2,textTransform:"uppercase",letterSpacing:0.5}}>Tipo empresa</th>
-              <th style={{padding:"9px 12px",textAlign:"left",fontSize:10,fontWeight:700,color:C.t2,textTransform:"uppercase",letterSpacing:0.5}}>Tipo usuario</th>
+              <th style={{padding:"9px 12px",textAlign:"left",fontSize:11,fontWeight:700,color:C.t2,textTransform:"uppercase",letterSpacing:0.5}}>Empresa</th>
+              <th style={{padding:"9px 12px",textAlign:"left",fontSize:11,fontWeight:700,color:C.t2,textTransform:"uppercase",letterSpacing:0.5}}>Tipo empresa</th>
+              <th style={{padding:"9px 12px",textAlign:"left",fontSize:11,fontWeight:700,color:C.t2,textTransform:"uppercase",letterSpacing:0.5}}>Tipo usuario</th>
             </tr>
           </thead>
           <tbody>
@@ -65,16 +65,16 @@ export default function MyDataScreen({ user, onBack, onUserUpdate }) {
                   <td style={{padding:"10px 12px",fontWeight:600,color:C.t1}}>
                     <div style={{display:"flex",alignItems:"center",gap:6}}>
                       {c.companyName||user.entity}
-                      {isActive && <span style={{fontSize:8,background:C.pri,color:C.w,borderRadius:4,padding:"1px 5px",fontWeight:700}}>Activa</span>}
+                      {isActive && <span style={{fontSize:8.8,background:C.pri,color:C.w,borderRadius:4,padding:"1px 5px",fontWeight:700}}>Activa</span>}
                     </div>
                   </td>
                   <td style={{padding:"10px 12px"}}><Bd color={tColor}>{typeLabels[c.companyType]||c.companyType}</Bd></td>
                   <td style={{padding:"10px 12px"}}><Bd color={C.t2} bg={C.bgInput}>{rLabel}</Bd></td>
                 </tr>
                 {isExp && <tr><td colSpan={3} style={{padding:"8px 12px 12px",background:`${C.pri}04`,borderTop:`1px dashed ${C.b2}`}}>
-                  <div style={{fontSize:10,fontWeight:700,color:C.t3,textTransform:"uppercase",marginBottom:6}}>Permisos</div>
+                  <div style={{fontSize:11,fontWeight:700,color:C.t3,textTransform:"uppercase",marginBottom:6}}>Permisos</div>
                   <div style={{display:"flex",flexWrap:"wrap",gap:4}}>
-                    {permsByRole(c.role).map((p,j)=><div key={j} style={{display:"flex",alignItems:"center",gap:4,fontSize:11,color:C.t1,padding:"3px 8px",background:C.w,borderRadius:6,border:`1px solid ${C.b2}`}}>{Ic.chk(C.pri,11)} {p}</div>)}
+                    {permsByRole(c.role).map((p,j)=><div key={j} style={{display:"flex",alignItems:"center",gap:4,fontSize:12.1,color:C.t1,padding:"3px 8px",background:C.w,borderRadius:6,border:`1px solid ${C.b2}`}}>{Ic.chk(C.pri,11)} {p}</div>)}
                   </div>
                 </td></tr>}
               </Fragment>);
@@ -84,7 +84,7 @@ export default function MyDataScreen({ user, onBack, onUserUpdate }) {
       </div>
       </>}
 
-      <div style={{fontSize:15,fontWeight:700,color:C.t1,marginBottom:8,marginTop:16}}>Cambiar contraseña</div>
+      <div style={{fontSize:16.5,fontWeight:700,color:C.t1,marginBottom:8,marginTop:16}}>Cambiar contraseña</div>
       <div style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius:10,padding:14,boxShadow:C.sh}}>
         <div style={s.lbl}>Contraseña actual:</div>
         <input value={pwForm.current} onChange={e=>setPwForm(p=>({...p,current:e.target.value}))} placeholder="Contraseña actual" type="password" style={{...s.inp,marginBottom:10}} />
@@ -98,7 +98,7 @@ export default function MyDataScreen({ user, onBack, onUserUpdate }) {
         }} disabled={pwSaving} style={s.btnP(C.pri,pwSaving)}>{pwSaving?"Guardando...":"Cambiar contraseña"}</button>
       </div>
 
-      {msg&&<div style={{padding:"8px 12px",borderRadius:8,background:msg.k==="ok"?C.okPale:`${C.err}15`,color:msg.k==="ok"?C.ok:C.err,fontSize:12,marginTop:10}}>{msg.t}</div>}
+      {msg&&<div style={{padding:"8px 12px",borderRadius:8,background:msg.k==="ok"?C.okPale:`${C.err}15`,color:msg.k==="ok"?C.ok:C.err,fontSize:13.2,marginTop:10}}>{msg.t}</div>}
       </div>
     </div>
   );

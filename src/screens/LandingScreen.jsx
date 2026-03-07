@@ -27,30 +27,30 @@ function useUnlockScroll() {
 /* ── shared inline-style patterns ─────────────────────────── */
 const _slide = bg => ({ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"72px 32px", position:"relative", overflow:"hidden", background:bg });
 const _cnt = { maxWidth:900, width:"100%", textAlign:"center" };
-const _tag = { display:"block", fontSize:12, fontWeight:700, color:C.acc, textTransform:"uppercase", letterSpacing:2.5, marginBottom:14 };
-const _h2 = { fontSize:32, fontWeight:800, color:C.t1, letterSpacing:-0.5, lineHeight:1.15 };
-const _p = { fontSize:15, color:C.t2, lineHeight:1.65, margin:0 };
-const _sm = { fontSize:13, color:C.t3, lineHeight:1.6, margin:0 };
+const _tag = { display:"block", fontSize:13.2, fontWeight:700, color:C.acc, textTransform:"uppercase", letterSpacing:2.5, marginBottom:14 };
+const _h2 = { fontSize:35.2, fontWeight:800, color:C.t1, letterSpacing:-0.5, lineHeight:1.15 };
+const _p = { fontSize:16.5, color:C.t2, lineHeight:1.65, margin:0 };
+const _sm = { fontSize:14.3, color:C.t3, lineHeight:1.6, margin:0 };
 const _hr = { width:40, height:3, borderRadius:2, background:C.acc, margin:"0 auto" };
 const _card = { background:C.w, borderRadius:14, border:`1px solid ${C.b2}`, padding:24, boxShadow:C.sh };
-const _badge = { display:"inline-flex", alignItems:"center", gap:5, padding:"4px 10px", borderRadius:6, fontSize:10.5, fontWeight:600, whiteSpace:"nowrap", letterSpacing:0.2 };
+const _badge = { display:"inline-flex", alignItems:"center", gap:5, padding:"4px 10px", borderRadius:6, fontSize:11.6, fontWeight:600, whiteSpace:"nowrap", letterSpacing:0.2 };
 const _ib = { width:48, height:48, borderRadius:14, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 };
 const _ibs = { width:40, height:40, borderRadius:12, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 };
 const _pf = { width:320, background:C.bg, borderRadius:32, overflow:"hidden", border:`1px solid ${C.b1}`, boxShadow:C.shMd };
 const _bar = { height:44, background:C.w, display:"flex", alignItems:"center", justifyContent:"center", borderBottom:`1px solid ${C.b2}`, padding:"0 16px" };
 const _nav = { display:"flex", alignItems:"center", gap:8, padding:"10px 16px", background:C.w, borderBottom:`1px solid ${C.b2}` };
-const _navT = { fontSize:16, fontWeight:700, color:C.t1, flex:1 };
+const _navT = { fontSize:17.6, fontWeight:700, color:C.t1, flex:1 };
 const _pbody = { padding:"12px 14px", minHeight:380 };
 const _msec = { background:C.w, borderRadius:12, border:`1px solid ${C.b2}`, padding:14, marginBottom:10, boxShadow:C.sh };
 const _msh = { display:"flex", alignItems:"center", gap:8, marginBottom:10 };
-const _msl = { fontSize:10.5, fontWeight:700, color:C.t2, textTransform:"uppercase", letterSpacing:0.5 };
-const _sel = { width:"100%", padding:"11px 14px", borderRadius:10, border:`1.5px solid ${C.b1}`, background:C.w, fontSize:14, display:"flex", alignItems:"center", justifyContent:"space-between" };
-const _lbl = { fontSize:10.5, fontWeight:600, color:C.t2, textTransform:"uppercase", letterSpacing:0.6, marginBottom:6, display:"flex", alignItems:"center", gap:4 };
+const _msl = { fontSize:11.6, fontWeight:700, color:C.t2, textTransform:"uppercase", letterSpacing:0.5 };
+const _sel = { width:"100%", padding:"11px 14px", borderRadius:10, border:`1.5px solid ${C.b1}`, background:C.w, fontSize:15.4, display:"flex", alignItems:"center", justifyContent:"space-between" };
+const _lbl = { fontSize:11.6, fontWeight:600, color:C.t2, textTransform:"uppercase", letterSpacing:0.6, marginBottom:6, display:"flex", alignItems:"center", gap:4 };
 const _fc = { background:C.w, borderRadius:14, padding:14, border:`1px solid ${C.b2}`, boxShadow:C.sh, marginBottom:10 };
 const _fh = { display:"flex", alignItems:"center", gap:10, marginBottom:10 };
 const _cr = sent => ({ display:"flex", marginBottom:12, justifyContent:sent?"flex-end":"flex-start" });
-const _cb = sent => ({ maxWidth:"78%", padding:"10px 14px", borderRadius:14, fontSize:13, lineHeight:1.5, ...(sent ? { background:C.priPale, color:C.t1, borderBottomRightRadius:4 } : { background:C.w, color:C.t1, border:`1px solid ${C.b2}`, borderBottomLeftRadius:4 }) });
-const _ct = { fontSize:9, color:C.t3, marginTop:4 };
+const _cb = sent => ({ maxWidth:"78%", padding:"10px 14px", borderRadius:14, fontSize:14.3, lineHeight:1.5, ...(sent ? { background:C.priPale, color:C.t1, borderBottomRightRadius:4 } : { background:C.w, color:C.t1, border:`1px solid ${C.b2}`, borderBottomLeftRadius:4 }) });
+const _ct = { fontSize:9.9, color:C.t3, marginTop:4 };
 
 /* ── custom inline SVGs (no matching Ic function) ─────────── */
 const SvgProducer = (c,s) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22V8"/><path d="M8 12l4-4 4 4"/><path d="M6 16l6-6 6 6"/><path d="M9 20l3-3 3 3"/></svg>;
@@ -74,17 +74,17 @@ export default function LandingScreen({ onLogin, onSignup, onPasswordReset, load
         {/* Big logo */}
         <div style={{ animation:"splashIn 0.8s ease-out", marginBottom:30 }}>
           <div style={{ display:"inline-flex", alignItems:"flex-start" }}>
-            <span className="tv-ld-logo" style={{ fontSize:139, fontWeight:800, color:C.pri, letterSpacing:-6.6, lineHeight:1 }}>tolvink</span>
+            <span className="tv-ld-logo" style={{ fontSize:152.9, fontWeight:800, color:C.pri, letterSpacing:-6.6, lineHeight:1 }}>tolvink</span>
             <span className="tv-ld-dot" style={{ width:25, height:25, borderRadius:13, background:C.acc, marginLeft:9, marginTop:7, display:"inline-block", animation:"dotPulse 1.5s ease-in-out infinite" }} />
           </div>
         </div>
 
         {/* Tagline */}
         <div style={{ animation:"fadeUp 0.8s ease-out", marginBottom:34 }}>
-          <div className="tv-ld-tag" style={{ fontSize:14, fontWeight:700, color:C.acc, textTransform:"uppercase", letterSpacing:2.5, marginBottom:14 }}>
+          <div className="tv-ld-tag" style={{ fontSize:15.4, fontWeight:700, color:C.acc, textTransform:"uppercase", letterSpacing:2.5, marginBottom:14 }}>
             Logística agrícola simplificada
           </div>
-          <h1 className="tv-ld-h1" style={{ fontSize:22, fontWeight:700, color:C.t2, lineHeight:1.2, letterSpacing:-0.3 }}>
+          <h1 className="tv-ld-h1" style={{ fontSize:24.2, fontWeight:700, color:C.t2, lineHeight:1.2, letterSpacing:-0.3 }}>
             Gestioná tus fletes desde WhatsApp con inteligencia artificial
           </h1>
         </div>
@@ -99,23 +99,23 @@ export default function LandingScreen({ onLogin, onSignup, onPasswordReset, load
           ].map((f,i) => (
             <div key={i} style={{ display:"flex", alignItems:"center", gap:6 }}>
               {f.icon}
-              <span style={{ fontSize:11, fontWeight:600, color:C.t2 }}>{f.label}</span>
+              <span style={{ fontSize:12.1, fontWeight:600, color:C.t2 }}>{f.label}</span>
             </div>
           ))}
         </div>
 
         {/* Ingresar + WhatsApp contact */}
         <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:20 }}>
-          <button onClick={()=>setShowAuth(true)} className="tv-ld-btn" style={{ display:"inline-block", padding:"14px 42px", borderRadius:12, background:C.pri, color:C.w, fontSize:16, fontWeight:700, border:"none", fontFamily:"inherit", boxShadow:"0 4px 20px rgba(0,0,0,0.15)", minWidth:200, textAlign:"center", cursor:"pointer", WebkitTapHighlightColor:"rgba(0,0,0,0.1)" }}>Ingresar</button>
+          <button onClick={()=>setShowAuth(true)} className="tv-ld-btn" style={{ display:"inline-block", padding:"14px 42px", borderRadius:12, background:C.pri, color:C.w, fontSize:17.6, fontWeight:700, border:"none", fontFamily:"inherit", boxShadow:"0 4px 20px rgba(0,0,0,0.15)", minWidth:200, textAlign:"center", cursor:"pointer", WebkitTapHighlightColor:"rgba(0,0,0,0.1)" }}>Ingresar</button>
 
           <a href="https://wa.me/59898247552?text=Hola%2C%20quiero%20información%20sobre%20Tolvink" target="_blank" rel="noopener noreferrer" aria-label="Contáctanos por WhatsApp" style={{ display:"inline-flex", flexDirection:"column", alignItems:"center", gap:4, opacity:0.7, textDecoration:"none" }}>
             <svg width="22" height="22" viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-            <span style={{ fontSize:10, color:C.t3 }}>Contáctanos</span>
+            <span style={{ fontSize:11, color:C.t3 }}>Contáctanos</span>
           </a>
 
           {/* Scroll hint */}
           <button onClick={()=>document.getElementById("tv-details")?.scrollIntoView({behavior:"smooth"})} style={{ marginTop:12, display:"flex", flexDirection:"column", alignItems:"center", gap:4, opacity:0.5, animation:"fadeUp 1.2s ease-out, bounceDown 2s ease-in-out 2s infinite", background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", padding:0 }}>
-            <span style={{ fontSize:11, color:C.t3 }}>Bajá para ver detalles</span>
+            <span style={{ fontSize:12.1, color:C.t3 }}>Bajá para ver detalles</span>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={C.t3} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
           </button>
         </div>
@@ -133,15 +133,15 @@ export default function LandingScreen({ onLogin, onSignup, onPasswordReset, load
           <div className="tv-ld-caps" style={{ display:"flex", gap:48, alignItems:"flex-start", justifyContent:"center", flexWrap:"wrap" }}>
             {/* Chat mock */}
             <div className="tv-ld-phone" style={{ ..._pf, width:310 }}>
-              <div style={_bar}><span style={{ fontSize:11, color:C.t3 }}>9:41</span></div>
+              <div style={_bar}><span style={{ fontSize:12.1, color:C.t3 }}>9:41</span></div>
               <div style={{ padding:"10px 16px", background:C.w, borderBottom:`1px solid ${C.b2}`, display:"flex", alignItems:"center", gap:10 }}>
                 <div style={{ width:34, height:34, borderRadius:17, background:C.pri, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
-                  <span style={{ fontSize:13, fontWeight:800, color:C.w, lineHeight:1 }}>t</span>
+                  <span style={{ fontSize:14.3, fontWeight:800, color:C.w, lineHeight:1 }}>t</span>
                   <span style={{ width:5, height:5, borderRadius:3, background:C.acc, marginLeft:1, marginTop:-8 }} />
                 </div>
                 <div>
-                  <div style={{ fontSize:14, fontWeight:700, color:C.t1 }}>Tolvink</div>
-                  <div style={{ fontSize:10, color:C.pri, fontWeight:500 }}>en línea</div>
+                  <div style={{ fontSize:15.4, fontWeight:700, color:C.t1 }}>Tolvink</div>
+                  <div style={{ fontSize:11, color:C.pri, fontWeight:500 }}>en línea</div>
                 </div>
               </div>
               <div style={{ padding:"16px 14px", background:C.bg, minHeight:360, display:"flex", flexDirection:"column", justifyContent:"flex-end" }}>
@@ -153,22 +153,22 @@ export default function LandingScreen({ onLogin, onSignup, onPasswordReset, load
                       <div style={{ flex:1, height:4, background:C.b1, borderRadius:2, position:"relative" }}>
                         <div style={{ position:"absolute", left:0, top:0, width:"75%", height:"100%", background:C.pri, borderRadius:2 }} />
                       </div>
-                      <span style={{ fontSize:10, color:C.t2, fontWeight:500 }}>0:08</span>
+                      <span style={{ fontSize:11, color:C.t2, fontWeight:500 }}>0:08</span>
                     </div>
-                    <span style={{ fontSize:11, color:C.t2, fontStyle:"italic" }}>Necesito mandar 30 toneladas de soja mañana desde La Rinconada a Dolores</span>
+                    <span style={{ fontSize:12.1, color:C.t2, fontStyle:"italic" }}>Necesito mandar 30 toneladas de soja mañana desde La Rinconada a Dolores</span>
                     <div style={{ ..._ct, textAlign:"right" }}>09:13</div>
                   </div>
                 </div>
                 <div style={_cr(false)}>
                   <div style={_cb(false)}>
                     <div style={{ fontWeight:600, marginBottom:6 }}>Solicitud creada</div>
-                    <div style={{ fontSize:12, lineHeight:1.6 }}>
+                    <div style={{ fontSize:13.2, lineHeight:1.6 }}>
                       <div style={{ display:"flex", gap:6, marginBottom:2 }}><span style={{ color:C.t3 }}>Grano:</span><span style={{ fontWeight:600 }}>Soja · 30 t</span></div>
                       <div style={{ display:"flex", gap:6, marginBottom:2 }}><span style={{ color:C.t3 }}>Origen:</span><span style={{ fontWeight:600 }}>Est. La Rinconada</span></div>
                       <div style={{ display:"flex", gap:6, marginBottom:2 }}><span style={{ color:C.t3 }}>Destino:</span><span style={{ fontWeight:600 }}>Planta Dolores</span></div>
                       <div style={{ display:"flex", gap:6 }}><span style={{ color:C.t3 }}>Fecha:</span><span style={{ fontWeight:600 }}>26/02 · 08:00</span></div>
                     </div>
-                    <div style={{ marginTop:8, paddingTop:8, borderTop:`1px solid ${C.b2}`, fontSize:12, color:C.t2 }}>
+                    <div style={{ marginTop:8, paddingTop:8, borderTop:`1px solid ${C.b2}`, fontSize:13.2, color:C.t2 }}>
                       Transporte Pérez fue notificado y tiene disponibilidad. ¿Confirmo la asignación?
                     </div>
                     <div style={_ct}>09:13</div>
@@ -181,7 +181,7 @@ export default function LandingScreen({ onLogin, onSignup, onPasswordReset, load
                       {Ic.chk(C.pri,14)}
                       <span style={{ fontWeight:600, color:C.pri }}>Flete asignado</span>
                     </div>
-                    <div style={{ fontSize:12, color:C.t2, marginTop:4 }}>Transporte Pérez confirmado. El chofer recibirá los datos del viaje.</div>
+                    <div style={{ fontSize:13.2, color:C.t2, marginTop:4 }}>Transporte Pérez confirmado. El chofer recibirá los datos del viaje.</div>
                     <div style={_ct}>09:14</div>
                   </div>
                 </div>
@@ -189,7 +189,7 @@ export default function LandingScreen({ onLogin, onSignup, onPasswordReset, load
             </div>
             {/* Capabilities */}
             <div style={{ maxWidth:320, textAlign:"left" }}>
-              <div style={{ fontSize:14, fontWeight:700, color:C.t1, marginBottom:20 }}>Capacidades del agente</div>
+              <div style={{ fontSize:15.4, fontWeight:700, color:C.t1, marginBottom:20 }}>Capacidades del agente</div>
               <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
                 {[
                   { bg:C.priPale, icon:Ic.msg(C.pri,16), title:"Texto y audio", desc:"Interpreta mensajes escritos y notas de voz con la misma precisión." },
@@ -200,7 +200,7 @@ export default function LandingScreen({ onLogin, onSignup, onPasswordReset, load
                 ].map((c,i) => (
                   <div key={i} style={{ display:"flex", gap:12, alignItems:"flex-start" }}>
                     <div style={{ width:36, height:36, borderRadius:10, background:c.bg, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{c.icon}</div>
-                    <div><div style={{ fontSize:13, fontWeight:600, color:C.t1, marginBottom:2 }}>{c.title}</div><p style={{ ..._sm, fontSize:12 }}>{c.desc}</p></div>
+                    <div><div style={{ fontSize:14.3, fontWeight:600, color:C.t1, marginBottom:2 }}>{c.title}</div><p style={{ ..._sm, fontSize:13.2 }}>{c.desc}</p></div>
                   </div>
                 ))}
               </div>
@@ -227,7 +227,7 @@ export default function LandingScreen({ onLogin, onSignup, onPasswordReset, load
             ].map((c,i) => (
               <div key={i} style={{ ..._card, flex:"1 1 250px", minWidth:250 }}>
                 <div style={{ ..._ib, background:c.bg, marginBottom:16 }}>{c.icon}</div>
-                <div style={{ fontSize:16, fontWeight:700, color:C.t1, marginBottom:6 }}>{c.title}</div>
+                <div style={{ fontSize:17.6, fontWeight:700, color:C.t1, marginBottom:6 }}>{c.title}</div>
                 <p style={_sm}>{c.desc}</p>
               </div>
             ))}
@@ -255,7 +255,7 @@ export default function LandingScreen({ onLogin, onSignup, onPasswordReset, load
               <div key={i} style={{ ..._card, display:"flex", gap:14, alignItems:"flex-start", flex:"1 1 calc(50% - 8px)", minWidth:280 }}>
                 <div style={{ ..._ibs, background:"#FEE2E2" }}>{c.icon}</div>
                 <div>
-                  <div style={{ fontSize:14, fontWeight:700, color:C.t1, marginBottom:4 }}>{c.title}</div>
+                  <div style={{ fontSize:15.4, fontWeight:700, color:C.t1, marginBottom:4 }}>{c.title}</div>
                   <p style={_sm}>{c.desc}</p>
                 </div>
               </div>
@@ -281,8 +281,8 @@ export default function LandingScreen({ onLogin, onSignup, onPasswordReset, load
             ].map((s,i) => (
               <div key={i} style={{ flex:"1 1 140px", minWidth:140, display:"flex", flexDirection:"column", alignItems:"center", position:"relative", padding:"0 8px" }}>
                 {i < 4 && <div style={{ position:"absolute", top:24, left:"calc(50% + 28px)", width:"calc(100% - 56px)", height:2, background:C.b1 }} />}
-                <div style={{ width:48, height:48, borderRadius:14, display:"flex", alignItems:"center", justifyContent:"center", fontSize:16, fontWeight:800, marginBottom:14, position:"relative", zIndex:1, background:s.bg, color:s.color }}>{s.num}</div>
-                <div style={{ fontSize:14, fontWeight:700, color:C.t1, marginBottom:6 }}>{s.title}</div>
+                <div style={{ width:48, height:48, borderRadius:14, display:"flex", alignItems:"center", justifyContent:"center", fontSize:17.6, fontWeight:800, marginBottom:14, position:"relative", zIndex:1, background:s.bg, color:s.color }}>{s.num}</div>
+                <div style={{ fontSize:15.4, fontWeight:700, color:C.t1, marginBottom:6 }}>{s.title}</div>
                 <p style={{ ..._sm, textAlign:"center", maxWidth:160 }}>{s.desc}</p>
                 <div style={{ ..._badge, background:s.badgeBg, color:s.badgeC, marginTop:10 }}>{s.badge}</div>
               </div>
@@ -302,7 +302,7 @@ export default function LandingScreen({ onLogin, onSignup, onPasswordReset, load
           </p>
           <div style={{ display:"flex", alignItems:"center", justifyContent:"center" }}>
             <div className="tv-ld-phone" style={_pf}>
-              <div style={_bar}><span style={{ fontSize:11, color:C.t3 }}>9:41</span></div>
+              <div style={_bar}><span style={{ fontSize:12.1, color:C.t3 }}>9:41</span></div>
               <div style={_nav}>
                 {Ic.chev(C.pri,18)}
                 <span style={_navT}>Nuevo flete</span>
@@ -313,7 +313,7 @@ export default function LandingScreen({ onLogin, onSignup, onPasswordReset, load
                   <div style={{ ..._msh, marginBottom:0 }}>
                     {Ic.chk("#1A6B37",14)}
                     <span style={_msl}>Producto</span>
-                    <span style={{ ..._badge, background:C.priPale, color:C.pri, marginLeft:"auto", fontSize:9, padding:"2px 7px" }}>Soja</span>
+                    <span style={{ ..._badge, background:C.priPale, color:C.pri, marginLeft:"auto", fontSize:9.9, padding:"2px 7px" }}>Soja</span>
                   </div>
                 </div>
                 {/* Cantidad — completed */}
@@ -321,7 +321,7 @@ export default function LandingScreen({ onLogin, onSignup, onPasswordReset, load
                   <div style={{ ..._msh, marginBottom:0 }}>
                     {Ic.chk("#1A6B37",14)}
                     <span style={_msl}>Cantidad</span>
-                    <span style={{ marginLeft:"auto", fontSize:12, fontWeight:600, color:C.t1 }}>30 t</span>
+                    <span style={{ marginLeft:"auto", fontSize:13.2, fontWeight:600, color:C.t1 }}>30 t</span>
                   </div>
                 </div>
                 {/* Origen — active */}
@@ -333,14 +333,14 @@ export default function LandingScreen({ onLogin, onSignup, onPasswordReset, load
                   <div style={{ marginBottom:10 }}>
                     <div style={_lbl}>{SvgGrid(C.t2,12)} Campo</div>
                     <div style={_sel}>
-                      <span style={{ color:C.t1, fontSize:13 }}>Est. La Rinconada</span>
+                      <span style={{ color:C.t1, fontSize:14.3 }}>Est. La Rinconada</span>
                       {Ic.down(C.t3,14)}
                     </div>
                   </div>
                   <div>
                     <div style={_lbl}>{Ic.pin(C.t2,12)} Lote</div>
                     <div style={_sel}>
-                      <span style={{ color:C.t3, fontSize:13 }}>Seleccionar...</span>
+                      <span style={{ color:C.t3, fontSize:14.3 }}>Seleccionar...</span>
                       {Ic.down(C.t3,14)}
                     </div>
                   </div>
@@ -376,7 +376,7 @@ export default function LandingScreen({ onLogin, onSignup, onPasswordReset, load
           </p>
           <div style={{ display:"flex", alignItems:"center", justifyContent:"center" }}>
             <div className="tv-ld-phone" style={_pf}>
-              <div style={_bar}><span style={{ fontSize:11, color:C.t3 }}>9:41</span></div>
+              <div style={_bar}><span style={{ fontSize:12.1, color:C.t3 }}>9:41</span></div>
               <div style={_nav}>
                 {Ic.chev(C.pri,18)}
                 <span style={_navT}>Detalle</span>
@@ -385,10 +385,10 @@ export default function LandingScreen({ onLogin, onSignup, onPasswordReset, load
               <div style={_pbody}>
                 {/* Freight header */}
                 <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:16 }}>
-                  <div style={{ width:42, height:42, borderRadius:12, display:"flex", alignItems:"center", justifyContent:"center", fontSize:15, fontWeight:700, letterSpacing:0.5, flexShrink:0, background:"rgba(26,107,55,0.07)", color:C.pri, border:"1.5px solid rgba(26,107,55,0.13)" }}>GR</div>
+                  <div style={{ width:42, height:42, borderRadius:12, display:"flex", alignItems:"center", justifyContent:"center", fontSize:16.5, fontWeight:700, letterSpacing:0.5, flexShrink:0, background:"rgba(26,107,55,0.07)", color:C.pri, border:"1.5px solid rgba(26,107,55,0.13)" }}>GR</div>
                   <div style={{ flex:1 }}>
-                    <div style={{ fontSize:15, fontWeight:700, color:C.t1 }}>Graneros del Sur</div>
-                    <div style={{ fontSize:11, color:C.t3, fontFamily:MONO }}>FL-2025-0847</div>
+                    <div style={{ fontSize:16.5, fontWeight:700, color:C.t1 }}>Graneros del Sur</div>
+                    <div style={{ fontSize:12.1, color:C.t3, fontFamily:MONO }}>FL-2025-0847</div>
                   </div>
                   <div style={{ ..._badge, background:"#ECFDF5", color:"#4ADE80" }}>En curso</div>
                 </div>
@@ -399,9 +399,9 @@ export default function LandingScreen({ onLogin, onSignup, onPasswordReset, load
                     <span style={_msl}>Carga</span>
                   </div>
                   <div style={{ display:"flex", gap:12 }}>
-                    <div style={{ flex:1 }}><div style={{ fontSize:10, color:C.t3, textTransform:"uppercase", letterSpacing:0.5, marginBottom:2 }}>Grano</div><div style={{ fontSize:13, fontWeight:600, color:C.t1 }}>Soja</div></div>
-                    <div style={{ flex:1 }}><div style={{ fontSize:10, color:C.t3, textTransform:"uppercase", letterSpacing:0.5, marginBottom:2 }}>Cantidad</div><div style={{ fontSize:13, fontWeight:600, color:C.t1 }}>30 t</div></div>
-                    <div style={{ flex:1 }}><div style={{ fontSize:10, color:C.t3, textTransform:"uppercase", letterSpacing:0.5, marginBottom:2 }}>Fecha</div><div style={{ fontSize:13, fontWeight:600, color:C.t1 }}>25/02</div></div>
+                    <div style={{ flex:1 }}><div style={{ fontSize:11, color:C.t3, textTransform:"uppercase", letterSpacing:0.5, marginBottom:2 }}>Grano</div><div style={{ fontSize:14.3, fontWeight:600, color:C.t1 }}>Soja</div></div>
+                    <div style={{ flex:1 }}><div style={{ fontSize:11, color:C.t3, textTransform:"uppercase", letterSpacing:0.5, marginBottom:2 }}>Cantidad</div><div style={{ fontSize:14.3, fontWeight:600, color:C.t1 }}>30 t</div></div>
+                    <div style={{ flex:1 }}><div style={{ fontSize:11, color:C.t3, textTransform:"uppercase", letterSpacing:0.5, marginBottom:2 }}>Fecha</div><div style={{ fontSize:14.3, fontWeight:600, color:C.t1 }}>25/02</div></div>
                   </div>
                 </div>
                 {/* Recorrido */}
@@ -417,8 +417,8 @@ export default function LandingScreen({ onLogin, onSignup, onPasswordReset, load
                       <div style={{ width:8, height:8, borderRadius:4, background:C.acc }} />
                     </div>
                     <div style={{ flex:1 }}>
-                      <div style={{ marginBottom:14 }}><div style={{ fontSize:10, color:C.t3, textTransform:"uppercase", letterSpacing:0.5, marginBottom:1 }}>Origen</div><div style={{ fontSize:13, fontWeight:600, color:C.t1 }}>Est. La Rinconada · Lote 4</div></div>
-                      <div><div style={{ fontSize:10, color:C.t3, textTransform:"uppercase", letterSpacing:0.5, marginBottom:1 }}>Destino</div><div style={{ fontSize:13, fontWeight:600, color:C.t1 }}>Planta Dolores · Suc. 1</div></div>
+                      <div style={{ marginBottom:14 }}><div style={{ fontSize:11, color:C.t3, textTransform:"uppercase", letterSpacing:0.5, marginBottom:1 }}>Origen</div><div style={{ fontSize:14.3, fontWeight:600, color:C.t1 }}>Est. La Rinconada · Lote 4</div></div>
+                      <div><div style={{ fontSize:11, color:C.t3, textTransform:"uppercase", letterSpacing:0.5, marginBottom:1 }}>Destino</div><div style={{ fontSize:14.3, fontWeight:600, color:C.t1 }}>Planta Dolores · Suc. 1</div></div>
                     </div>
                   </div>
                 </div>
@@ -429,13 +429,13 @@ export default function LandingScreen({ onLogin, onSignup, onPasswordReset, load
                     <span style={_msl}>Transporte</span>
                   </div>
                   <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-                    <div style={{ width:32, height:32, borderRadius:9, background:"rgba(8,145,178,0.08)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:12, fontWeight:700, color:C.sec, border:"1px solid rgba(8,145,178,0.13)" }}>ML</div>
-                    <div style={{ flex:1 }}><div style={{ fontSize:13, fontWeight:600, color:C.t1 }}>Mario López</div><div style={{ fontSize:11, color:C.t3 }}>SCO 1234 · Transporte Pérez</div></div>
+                    <div style={{ width:32, height:32, borderRadius:9, background:"rgba(8,145,178,0.08)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:13.2, fontWeight:700, color:C.sec, border:"1px solid rgba(8,145,178,0.13)" }}>ML</div>
+                    <div style={{ flex:1 }}><div style={{ fontSize:14.3, fontWeight:600, color:C.t1 }}>Mario López</div><div style={{ fontSize:12.1, color:C.t3 }}>SCO 1234 · Transporte Pérez</div></div>
                   </div>
                 </div>
                 {/* Action button */}
                 <div style={{ marginTop:14 }}>
-                  <div style={{ width:"100%", padding:"13px 22px", borderRadius:10, background:C.acc, color:C.w, fontSize:13.5, fontWeight:600, border:"none", display:"flex", alignItems:"center", justifyContent:"center", gap:7, minHeight:44 }}>
+                  <div style={{ width:"100%", padding:"13px 22px", borderRadius:10, background:C.acc, color:C.w, fontSize:14.9, fontWeight:600, border:"none", display:"flex", alignItems:"center", justifyContent:"center", gap:7, minHeight:44 }}>
                     {Ic.chk(C.w,16)}
                     Confirmar carga
                   </div>
@@ -457,7 +457,7 @@ export default function LandingScreen({ onLogin, onSignup, onPasswordReset, load
           </p>
           <div style={{ display:"flex", alignItems:"center", justifyContent:"center" }}>
             <div className="tv-ld-phone" style={_pf}>
-              <div style={_bar}><span style={{ fontSize:11, color:C.t3 }}>9:41</span></div>
+              <div style={_bar}><span style={{ fontSize:12.1, color:C.t3 }}>9:41</span></div>
               <div style={_nav}>
                 {Ic.chev(C.pri,18)}
                 <span style={_navT}>Mapa del día</span>
@@ -472,12 +472,12 @@ export default function LandingScreen({ onLogin, onSignup, onPasswordReset, load
                   {/* Origin pin */}
                   <div style={{ position:"absolute", display:"flex", flexDirection:"column", alignItems:"center", transform:"translate(-50%, -100%)", zIndex:2, left:"20%", top:"38%" }}>
                     <div style={{ width:12, height:12, borderRadius:6, background:C.pri, border:`2px solid ${C.w}`, boxShadow:"0 1px 4px rgba(0,0,0,0.2)" }} />
-                    <div style={{ fontSize:8, fontWeight:700, padding:"2px 5px", borderRadius:4, background:C.w, boxShadow:"0 1px 3px rgba(0,0,0,0.1)", marginTop:2, whiteSpace:"nowrap", color:C.pri }}>La Rinconada</div>
+                    <div style={{ fontSize:8.8, fontWeight:700, padding:"2px 5px", borderRadius:4, background:C.w, boxShadow:"0 1px 3px rgba(0,0,0,0.1)", marginTop:2, whiteSpace:"nowrap", color:C.pri }}>La Rinconada</div>
                   </div>
                   {/* Destination pin */}
                   <div style={{ position:"absolute", display:"flex", flexDirection:"column", alignItems:"center", transform:"translate(-50%, -100%)", zIndex:2, left:"78%", top:"38%" }}>
                     <div style={{ width:12, height:12, borderRadius:6, background:C.acc, border:`2px solid ${C.w}`, boxShadow:"0 1px 4px rgba(0,0,0,0.2)" }} />
-                    <div style={{ fontSize:8, fontWeight:700, padding:"2px 5px", borderRadius:4, background:C.w, boxShadow:"0 1px 3px rgba(0,0,0,0.1)", marginTop:2, whiteSpace:"nowrap", color:C.acc }}>Planta Dolores</div>
+                    <div style={{ fontSize:8.8, fontWeight:700, padding:"2px 5px", borderRadius:4, background:C.w, boxShadow:"0 1px 3px rgba(0,0,0,0.1)", marginTop:2, whiteSpace:"nowrap", color:C.acc }}>Planta Dolores</div>
                   </div>
                   {/* Truck 1 */}
                   <div style={{ position:"absolute", zIndex:3, transform:"translate(-50%, -50%)", width:28, height:28, borderRadius:8, background:C.sec, display:"flex", alignItems:"center", justifyContent:"center", animation:"truckPulse 2s ease-in-out infinite", left:"52%", top:"42%" }}>
@@ -493,10 +493,10 @@ export default function LandingScreen({ onLogin, onSignup, onPasswordReset, load
                   <div style={{ display:"flex", alignItems:"center", gap:10 }}>
                     <div style={{ width:10, height:10, borderRadius:5, background:C.sec, animation:"truckPulse 2s ease-in-out infinite" }} />
                     <div style={{ flex:1 }}>
-                      <div style={{ fontSize:12, fontWeight:600, color:C.t1 }}>SCO 1234 · Mario López</div>
-                      <div style={{ fontSize:10, color:C.t3 }}>En camino · Llegada est. 12:40</div>
+                      <div style={{ fontSize:13.2, fontWeight:600, color:C.t1 }}>SCO 1234 · Mario López</div>
+                      <div style={{ fontSize:11, color:C.t3 }}>En camino · Llegada est. 12:40</div>
                     </div>
-                    <div style={{ ..._badge, background:"#ECFDF5", color:"#22C55E", fontSize:9, padding:"2px 7px" }}>En viaje</div>
+                    <div style={{ ..._badge, background:"#ECFDF5", color:"#22C55E", fontSize:9.9, padding:"2px 7px" }}>En viaje</div>
                   </div>
                 </div>
                 {/* Info bar 2 */}
@@ -504,10 +504,10 @@ export default function LandingScreen({ onLogin, onSignup, onPasswordReset, load
                   <div style={{ display:"flex", alignItems:"center", gap:10 }}>
                     <div style={{ width:10, height:10, borderRadius:5, background:C.sec, animation:"truckPulse 2s ease-in-out infinite 0.5s" }} />
                     <div style={{ flex:1 }}>
-                      <div style={{ fontSize:12, fontWeight:600, color:C.t1 }}>SBY 5678 · Juan Martínez</div>
-                      <div style={{ fontSize:10, color:C.t3 }}>Cargando en origen</div>
+                      <div style={{ fontSize:13.2, fontWeight:600, color:C.t1 }}>SBY 5678 · Juan Martínez</div>
+                      <div style={{ fontSize:11, color:C.t3 }}>Cargando en origen</div>
                     </div>
-                    <div style={{ ..._badge, background:"#DCFCE7", color:"#22C55E", fontSize:9, padding:"2px 7px" }}>Cargando</div>
+                    <div style={{ ..._badge, background:"#DCFCE7", color:"#22C55E", fontSize:9.9, padding:"2px 7px" }}>Cargando</div>
                   </div>
                 </div>
               </div>
@@ -527,12 +527,12 @@ export default function LandingScreen({ onLogin, onSignup, onPasswordReset, load
           </p>
           <div style={{ display:"flex", alignItems:"center", justifyContent:"center" }}>
             <div className="tv-ld-phone" style={_pf}>
-              <div style={_bar}><span style={{ fontSize:11, color:C.t3 }}>9:41</span></div>
+              <div style={_bar}><span style={{ fontSize:12.1, color:C.t3 }}>9:41</span></div>
               <div style={{ padding:"14px 16px 8px", background:C.w, borderBottom:`1px solid ${C.b2}` }}>
                 <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:10 }}>
                   <div>
-                    <div style={{ fontSize:11, color:C.t3, marginBottom:1 }}>Planta Dolores</div>
-                    <div style={{ fontSize:17, fontWeight:800, color:C.t1 }}>Hoy</div>
+                    <div style={{ fontSize:12.1, color:C.t3, marginBottom:1 }}>Planta Dolores</div>
+                    <div style={{ fontSize:18.7, fontWeight:800, color:C.t1 }}>Hoy</div>
                   </div>
                   <div style={{ display:"flex", gap:8 }}>
                     <div style={{ width:32, height:32, borderRadius:10, background:C.bg, display:"flex", alignItems:"center", justifyContent:"center" }}>{Ic.bell(C.t3,16)}</div>
@@ -541,7 +541,7 @@ export default function LandingScreen({ onLogin, onSignup, onPasswordReset, load
                 </div>
                 <div style={{ display:"flex", gap:2, background:C.bgInput, borderRadius:10, padding:3, marginBottom:12 }}>
                   {["Resumen","Listado","Mapa"].map((t,i) => (
-                    <div key={i} style={{ flex:1, padding:"8px 4px", borderRadius:8, border:"none", fontSize:11, fontWeight:i===0?700:500, textAlign:"center", color:i===0?C.pri:C.t3, background:i===0?C.w:"transparent", boxShadow:i===0?C.sh:"none" }}>{t}</div>
+                    <div key={i} style={{ flex:1, padding:"8px 4px", borderRadius:8, border:"none", fontSize:12.1, fontWeight:i===0?700:500, textAlign:"center", color:i===0?C.pri:C.t3, background:i===0?C.w:"transparent", boxShadow:i===0?C.sh:"none" }}>{t}</div>
                   ))}
                 </div>
               </div>
@@ -550,43 +550,43 @@ export default function LandingScreen({ onLogin, onSignup, onPasswordReset, load
                 <div style={{ marginBottom:14 }}>
                   <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:8, padding:"0 2px" }}>
                     <div style={{ width:6, height:6, borderRadius:3, background:"#4ADE80" }} />
-                    <span style={{ fontSize:11, fontWeight:700, color:C.t2 }}>En curso</span>
-                    <span style={{ fontSize:10, color:C.t3, marginLeft:2 }}>3</span>
+                    <span style={{ fontSize:12.1, fontWeight:700, color:C.t2 }}>En curso</span>
+                    <span style={{ fontSize:11, color:C.t3, marginLeft:2 }}>3</span>
                   </div>
                   {/* Card 1 */}
                   <div style={_fc}>
                     <div style={_fh}>
-                      <div style={{ width:42, height:42, borderRadius:12, display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, fontWeight:700, letterSpacing:0.5, flexShrink:0, background:"rgba(26,107,55,0.07)", color:C.pri, border:"1.5px solid rgba(26,107,55,0.13)" }}>GR</div>
+                      <div style={{ width:42, height:42, borderRadius:12, display:"flex", alignItems:"center", justifyContent:"center", fontSize:14.3, fontWeight:700, letterSpacing:0.5, flexShrink:0, background:"rgba(26,107,55,0.07)", color:C.pri, border:"1.5px solid rgba(26,107,55,0.13)" }}>GR</div>
                       <div style={{ flex:1 }}>
-                        <div style={{ fontSize:14, fontWeight:700, color:C.t1, marginBottom:2 }}>Graneros del Sur</div>
-                        <div style={{ fontSize:11, color:C.t3 }}>Soja · 30 t · 25/02 08:00</div>
+                        <div style={{ fontSize:15.4, fontWeight:700, color:C.t1, marginBottom:2 }}>Graneros del Sur</div>
+                        <div style={{ fontSize:12.1, color:C.t3 }}>Soja · 30 t · 25/02 08:00</div>
                       </div>
-                      <div style={{ ..._badge, background:"#ECFDF5", color:"#4ADE80", fontSize:9, padding:"2px 7px" }}>En curso</div>
+                      <div style={{ ..._badge, background:"#ECFDF5", color:"#4ADE80", fontSize:9.9, padding:"2px 7px" }}>En curso</div>
                     </div>
                     <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
-                      <span style={{ display:"inline-flex", alignItems:"center", gap:4, padding:"3px 8px", borderRadius:6, fontSize:10, fontWeight:600, background:C.secPale, color:C.sec }}>
+                      <span style={{ display:"inline-flex", alignItems:"center", gap:4, padding:"3px 8px", borderRadius:6, fontSize:11, fontWeight:600, background:C.secPale, color:C.sec }}>
                         {Ic.truck(C.sec,10)}
                         Transp. Pérez
                       </span>
-                      <span style={{ display:"inline-flex", alignItems:"center", gap:4, padding:"3px 8px", borderRadius:6, fontSize:10, fontWeight:600, background:C.bgInput, color:C.t2 }}>SCO 1234</span>
+                      <span style={{ display:"inline-flex", alignItems:"center", gap:4, padding:"3px 8px", borderRadius:6, fontSize:11, fontWeight:600, background:C.bgInput, color:C.t2 }}>SCO 1234</span>
                     </div>
                   </div>
                   {/* Card 2 */}
                   <div style={_fc}>
                     <div style={_fh}>
-                      <div style={{ width:42, height:42, borderRadius:12, display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, fontWeight:700, letterSpacing:0.5, flexShrink:0, background:"rgba(255,106,0,0.08)", color:C.acc, border:"1.5px solid rgba(255,106,0,0.13)" }}>CA</div>
+                      <div style={{ width:42, height:42, borderRadius:12, display:"flex", alignItems:"center", justifyContent:"center", fontSize:14.3, fontWeight:700, letterSpacing:0.5, flexShrink:0, background:"rgba(255,106,0,0.08)", color:C.acc, border:"1.5px solid rgba(255,106,0,0.13)" }}>CA</div>
                       <div style={{ flex:1 }}>
-                        <div style={{ fontSize:14, fontWeight:700, color:C.t1, marginBottom:2 }}>Campos del Litoral</div>
-                        <div style={{ fontSize:11, color:C.t3 }}>Trigo · 28 t · 25/02 10:30</div>
+                        <div style={{ fontSize:15.4, fontWeight:700, color:C.t1, marginBottom:2 }}>Campos del Litoral</div>
+                        <div style={{ fontSize:12.1, color:C.t3 }}>Trigo · 28 t · 25/02 10:30</div>
                       </div>
-                      <div style={{ ..._badge, background:"#DCFCE7", color:"#22C55E", fontSize:9, padding:"2px 7px" }}>Cargando</div>
+                      <div style={{ ..._badge, background:"#DCFCE7", color:"#22C55E", fontSize:9.9, padding:"2px 7px" }}>Cargando</div>
                     </div>
                     <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
-                      <span style={{ display:"inline-flex", alignItems:"center", gap:4, padding:"3px 8px", borderRadius:6, fontSize:10, fontWeight:600, background:C.secPale, color:C.sec }}>
+                      <span style={{ display:"inline-flex", alignItems:"center", gap:4, padding:"3px 8px", borderRadius:6, fontSize:11, fontWeight:600, background:C.secPale, color:C.sec }}>
                         {Ic.truck(C.sec,10)}
                         Logística Martínez
                       </span>
-                      <span style={{ display:"inline-flex", alignItems:"center", gap:4, padding:"3px 8px", borderRadius:6, fontSize:10, fontWeight:600, background:C.bgInput, color:C.t2 }}>SBY 5678</span>
+                      <span style={{ display:"inline-flex", alignItems:"center", gap:4, padding:"3px 8px", borderRadius:6, fontSize:11, fontWeight:600, background:C.bgInput, color:C.t2 }}>SBY 5678</span>
                     </div>
                   </div>
                 </div>
@@ -594,17 +594,17 @@ export default function LandingScreen({ onLogin, onSignup, onPasswordReset, load
                 <div>
                   <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:8, padding:"0 2px" }}>
                     <div style={{ width:6, height:6, borderRadius:3, background:C.acc }} />
-                    <span style={{ fontSize:11, fontWeight:700, color:C.t2 }}>Solicitado</span>
-                    <span style={{ fontSize:10, color:C.t3, marginLeft:2 }}>1</span>
+                    <span style={{ fontSize:12.1, fontWeight:700, color:C.t2 }}>Solicitado</span>
+                    <span style={{ fontSize:11, color:C.t3, marginLeft:2 }}>1</span>
                   </div>
                   <div style={_fc}>
                     <div style={{ ..._fh, marginBottom:0 }}>
-                      <div style={{ width:42, height:42, borderRadius:12, display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, fontWeight:700, letterSpacing:0.5, flexShrink:0, background:"rgba(202,138,4,0.08)", color:C.warn, border:"1.5px solid rgba(202,138,4,0.13)" }}>AG</div>
+                      <div style={{ width:42, height:42, borderRadius:12, display:"flex", alignItems:"center", justifyContent:"center", fontSize:14.3, fontWeight:700, letterSpacing:0.5, flexShrink:0, background:"rgba(202,138,4,0.08)", color:C.warn, border:"1.5px solid rgba(202,138,4,0.13)" }}>AG</div>
                       <div style={{ flex:1 }}>
-                        <div style={{ fontSize:14, fontWeight:700, color:C.t1, marginBottom:2 }}>Agro San José</div>
-                        <div style={{ fontSize:11, color:C.t3 }}>Maíz · 25 t · 26/02 07:00</div>
+                        <div style={{ fontSize:15.4, fontWeight:700, color:C.t1, marginBottom:2 }}>Agro San José</div>
+                        <div style={{ fontSize:12.1, color:C.t3 }}>Maíz · 25 t · 26/02 07:00</div>
                       </div>
-                      <div style={{ ..._badge, background:C.accPale, color:C.acc, fontSize:9, padding:"2px 7px" }}>Pendiente</div>
+                      <div style={{ ..._badge, background:C.accPale, color:C.acc, fontSize:9.9, padding:"2px 7px" }}>Pendiente</div>
                     </div>
                   </div>
                 </div>
@@ -631,7 +631,7 @@ export default function LandingScreen({ onLogin, onSignup, onPasswordReset, load
               <div key={i} style={{ ..._card, display:"flex", gap:14, alignItems:"flex-start", flex:"1 1 calc(50% - 8px)", minWidth:280 }}>
                 <div style={{ ..._ibs, background:c.bg }}>{c.icon}</div>
                 <div>
-                  <div style={{ fontSize:14, fontWeight:700, color:C.t1, marginBottom:4 }}>{c.title}</div>
+                  <div style={{ fontSize:15.4, fontWeight:700, color:C.t1, marginBottom:4 }}>{c.title}</div>
                   <p style={_sm}>{c.desc}</p>
                 </div>
               </div>
@@ -653,8 +653,8 @@ export default function LandingScreen({ onLogin, onSignup, onPasswordReset, load
               <div key={i} style={{ display:"flex", alignItems:"center", gap:10 }}>
                 <div style={{ width:36, height:36, borderRadius:10, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, background:c.bg }}>{c.icon}</div>
                 <div style={{ textAlign:"left" }}>
-                  <div style={{ fontSize:13, fontWeight:700, color:C.t1 }}>{c.title}</div>
-                  <div style={{ fontSize:11, color:C.t3 }}>{c.sub}</div>
+                  <div style={{ fontSize:14.3, fontWeight:700, color:C.t1 }}>{c.title}</div>
+                  <div style={{ fontSize:12.1, color:C.t3 }}>{c.sub}</div>
                 </div>
               </div>
             ))}
@@ -677,8 +677,8 @@ export default function LandingScreen({ onLogin, onSignup, onPasswordReset, load
             ].map((c,i) => (
               <div key={i} style={{ ..._card, textAlign:"center", padding:"28px 20px", flex:"1 1 250px", minWidth:250 }}>
                 <div style={{ ..._ib, background:c.bg, margin:"0 auto 16px" }}>{c.icon}</div>
-                <div style={{ fontSize:28, fontWeight:800, color:c.color, marginBottom:4, letterSpacing:-1 }}>{c.stat}</div>
-                <div style={{ fontSize:13, fontWeight:600, color:C.t1, marginBottom:4 }}>{c.label}</div>
+                <div style={{ fontSize:30.8, fontWeight:800, color:c.color, marginBottom:4, letterSpacing:-1 }}>{c.stat}</div>
+                <div style={{ fontSize:14.3, fontWeight:600, color:C.t1, marginBottom:4 }}>{c.label}</div>
                 <p style={_sm}>{c.desc}</p>
               </div>
             ))}
@@ -689,7 +689,7 @@ export default function LandingScreen({ onLogin, onSignup, onPasswordReset, load
               Sin hardware adicional. Sin capacitación compleja. Funciona desde el celular.
             </p>
             <div style={{ display:"inline-flex", alignItems:"flex-start" }}>
-              <span style={{ fontSize:32, fontWeight:800, color:C.pri, letterSpacing:-1.5, lineHeight:1 }}>tolvink</span>
+              <span style={{ fontSize:35.2, fontWeight:800, color:C.pri, letterSpacing:-1.5, lineHeight:1 }}>tolvink</span>
               <span style={{ width:6, height:6, borderRadius:3, background:C.acc, marginLeft:2, marginTop:2, display:"inline-block" }} />
             </div>
           </div>

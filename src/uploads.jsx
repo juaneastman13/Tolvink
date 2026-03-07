@@ -45,18 +45,18 @@ export function PhotoUpload({ freightId, step, label, onUploaded }) {
       {preview ? (
         <div style={{ position: "relative", borderRadius: 10, overflow: "hidden", border: `1px solid ${C.b1}` }}>
           <img src={preview} alt="foto" style={{ width: "100%", height: 120, objectFit: "cover", display: "block" }} />
-          {uploading && <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center", color: C.w, fontSize: 12, fontWeight: 600 }}>Subiendo...</div>}
-          {done && <div style={{ position: "absolute", top: 6, right: 6, background: C.ok, borderRadius: 12, padding: "2px 8px", fontSize: 10, color: C.w, fontWeight: 600 }}>Guardada</div>}
+          {uploading && <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center", color: C.w, fontSize: 13.2, fontWeight: 600 }}>Subiendo...</div>}
+          {done && <div style={{ position: "absolute", top: 6, right: 6, background: C.ok, borderRadius: 12, padding: "2px 8px", fontSize: 11, color: C.w, fontWeight: 600 }}>Guardada</div>}
 
         </div>
       ) : (
         <button onClick={() => inputRef.current?.click()} disabled={uploading}
           style={{ width: "100%", padding: "16px 14px", borderRadius: 10, border: `1.5px dashed ${C.b1}`, background: C.bg, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
           {Ic.cam(C.acc, 20)}
-          <span style={{ fontSize: 12, fontWeight: 600, color: C.t2 }}>{label || "Adjuntar foto"}</span>
+          <span style={{ fontSize: 13.2, fontWeight: 600, color: C.t2 }}>{label || "Adjuntar foto"}</span>
         </button>
       )}
-      {error && <div style={{ fontSize: 11, color: C.err, marginTop: 4 }}>{error}</div>}
+      {error && <div style={{ fontSize: 12.1, color: C.err, marginTop: 4 }}>{error}</div>}
     </div>
   );
 }
@@ -91,9 +91,9 @@ export function DocsGallery({ documents, onViewFile, freightId, canDelete, onDel
     <div style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: 12, padding: 14, boxShadow: C.sh, width:"100%", boxSizing:"border-box" }}>
       <button onClick={()=>setOpen(v=>!v)} style={{ display:"flex", alignItems:"center", gap:6, width:"100%", background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", padding:0, marginBottom:open?10:0 }}>
         {Ic.img(C.pri, 16)}
-        <span style={{ fontSize: 10.5, fontWeight: 700, color: C.t2, textTransform: "uppercase", letterSpacing: 0.5, flex:1, textAlign:"left" }}>Archivos del flete ({documents.length})</span>
-        <span style={{ fontSize:10, fontWeight:600, color:C.t3 }}>{open?"Ocultar":"Ver archivos"}</span>
-        <span style={{ fontSize:14, color:C.t3, transition:"transform 0.2s", transform:open?"rotate(180deg)":"rotate(0deg)" }}>▾</span>
+        <span style={{ fontSize: 11.6, fontWeight: 700, color: C.t2, textTransform: "uppercase", letterSpacing: 0.5, flex:1, textAlign:"left" }}>Archivos del flete ({documents.length})</span>
+        <span style={{ fontSize:11, fontWeight:600, color:C.t3 }}>{open?"Ocultar":"Ver archivos"}</span>
+        <span style={{ fontSize:15.4, color:C.t3, transition:"transform 0.2s", transform:open?"rotate(180deg)":"rotate(0deg)" }}>▾</span>
       </button>
       {open && <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
         {documents.map(d => {
@@ -108,8 +108,8 @@ export function DocsGallery({ documents, onViewFile, freightId, canDelete, onDel
                     <div style={{ width: 48, height: 48, borderRadius: 6, background: C.priPale, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{Ic.doc(C.pri, 20)}</div>
                   )}
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 11, fontWeight: 600, color: C.t1, wordBreak: "break-all" }}>{d.name || "Archivo"}</div>
-                    <div style={{ fontSize: 10, color: C.t3, marginTop: 2 }}>
+                    <div style={{ fontSize: 12.1, fontWeight: 600, color: C.t1, wordBreak: "break-all" }}>{d.name || "Archivo"}</div>
+                    <div style={{ fontSize: 11, color: C.t3, marginTop: 2 }}>
                       {stepLabels[d.step] || d.type || "Doc"}
                       {d.createdAt && ` · ${new Date(d.createdAt).toLocaleDateString("es", { day: "2-digit", month: "short" })}`}
                       {d.uploadedBy?.name && ` · ${d.uploadedBy.name.split(" ")[0]}`}
@@ -122,10 +122,10 @@ export function DocsGallery({ documents, onViewFile, freightId, canDelete, onDel
               </div>
               {confirm===d.id && (
                 <div style={{ position:"absolute", right:0, top:"100%", zIndex:20, background:C.w, border:`1px solid ${C.b1}`, borderRadius:10, padding:12, boxShadow:C.shMd, minWidth:180, marginTop:4 }}>
-                  <div style={{ fontSize:11, color:C.t1, fontWeight:600, marginBottom:8 }}>Eliminar este archivo?</div>
+                  <div style={{ fontSize:12.1, color:C.t1, fontWeight:600, marginBottom:8 }}>Eliminar este archivo?</div>
                   <div style={{ display:"flex", gap:8 }}>
-                    <button onClick={()=>setConfirm(null)} style={{ flex:1, padding:"6px 0", borderRadius:6, border:`1px solid ${C.b1}`, background:C.bg, cursor:"pointer", fontSize:11, fontWeight:600, color:C.t2, fontFamily:"inherit" }}>No</button>
-                    <button onClick={()=>handleDelete(d.id)} disabled={deleting===d.id} style={{ flex:1, padding:"6px 0", borderRadius:6, border:"none", background:C.err, color:"#fff", cursor:"pointer", fontSize:11, fontWeight:600, fontFamily:"inherit", opacity:deleting===d.id?0.6:1 }}>{deleting===d.id?"...":"Sí, eliminar"}</button>
+                    <button onClick={()=>setConfirm(null)} style={{ flex:1, padding:"6px 0", borderRadius:6, border:`1px solid ${C.b1}`, background:C.bg, cursor:"pointer", fontSize:12.1, fontWeight:600, color:C.t2, fontFamily:"inherit" }}>No</button>
+                    <button onClick={()=>handleDelete(d.id)} disabled={deleting===d.id} style={{ flex:1, padding:"6px 0", borderRadius:6, border:"none", background:C.err, color:"#fff", cursor:"pointer", fontSize:12.1, fontWeight:600, fontFamily:"inherit", opacity:deleting===d.id?0.6:1 }}>{deleting===d.id?"...":"Sí, eliminar"}</button>
                   </div>
                 </div>
               )}
@@ -172,22 +172,22 @@ export function OcrResultModal({ result, onClose }) {
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:mobile?"4px 16px 10px":"12px 16px", borderBottom:`1px solid ${C.b2}`, flexShrink:0, gap:8 }}>
           <div style={{ display:"flex", alignItems:"center", gap:6, flex:1, minWidth:0 }}>
             {Ic.doc(C.pri,16)}
-            <span style={{ fontSize:13, fontWeight:700, color:C.t1 }}>Datos extraídos</span>
-            <span style={{ fontSize:9, color:C.t3, fontWeight:500, background:C.bg, padding:"2px 6px", borderRadius:8, whiteSpace:"nowrap" }}>{result.tipoDocumento} · {Math.round((result.confianza||0)*100)}%</span>
+            <span style={{ fontSize:14.3, fontWeight:700, color:C.t1 }}>Datos extraídos</span>
+            <span style={{ fontSize:9.9, color:C.t3, fontWeight:500, background:C.bg, padding:"2px 6px", borderRadius:8, whiteSpace:"nowrap" }}>{result.tipoDocumento} · {Math.round((result.confianza||0)*100)}%</span>
           </div>
-          {entries.length > 0 && <button onClick={copyAll} style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:4, padding:"6px 12px", borderRadius:8, border:"none", background:C.pri, cursor:"pointer", fontSize:11, fontWeight:700, color:"#fff", fontFamily:"inherit", flexShrink:0, whiteSpace:"nowrap" }}>{Ic.doc("#fff",13)} Copiar</button>}
+          {entries.length > 0 && <button onClick={copyAll} style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:4, padding:"6px 12px", borderRadius:8, border:"none", background:C.pri, cursor:"pointer", fontSize:12.1, fontWeight:700, color:"#fff", fontFamily:"inherit", flexShrink:0, whiteSpace:"nowrap" }}>{Ic.doc("#fff",13)} Copiar</button>}
           <button onClick={onClose} style={{ display:"flex", alignItems:"center", justifyContent:"center", width:36, height:36, borderRadius:8, background:C.err, border:"none", cursor:"pointer", flexShrink:0 }}>{Ic.cross("#fff",16)}</button>
         </div>
         {/* Content */}
         <div style={{ flex:1, overflow:"auto", padding:"14px 18px" }}>
           <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
             {entries.map(([key, val]) => (
-              <div key={key} style={{ display:"flex", gap:10, fontSize:12, lineHeight:1.5, padding:"6px 0", borderBottom:`1px solid ${C.b2}` }}>
+              <div key={key} style={{ display:"flex", gap:10, fontSize:13.2, lineHeight:1.5, padding:"6px 0", borderBottom:`1px solid ${C.b2}` }}>
                 <span style={{ fontWeight:700, color:C.t2, minWidth:100, flexShrink:0, textTransform:"capitalize" }}>{key.replace(/([A-Z])/g, ' $1').trim()}</span>
                 <span style={{ color:C.t1, wordBreak:"break-word" }}>{typeof val === "object" ? JSON.stringify(val, null, 2) : String(val)}</span>
               </div>
             ))}
-            {entries.length === 0 && <div style={{ fontSize:12, color:C.t3, textAlign:"center", padding:20 }}>No se pudieron extraer datos del documento</div>}
+            {entries.length === 0 && <div style={{ fontSize:13.2, color:C.t3, textAlign:"center", padding:20 }}>No se pudieron extraer datos del documento</div>}
           </div>
         </div>
       </div>
@@ -231,11 +231,11 @@ export function UploadOverlay({ uploading, done, total, current, label }) {
       {stage === "uploading" && (
         <>
           <div style={{ display: "flex", alignItems: "flex-start", marginBottom: 12 }}>
-            <span style={{ fontSize: 28, fontWeight: 800, color: C.pri, letterSpacing: -1.5, lineHeight: 1 }}>tolvink</span>
+            <span style={{ fontSize: 30.8, fontWeight: 800, color: C.pri, letterSpacing: -1.5, lineHeight: 1 }}>tolvink</span>
             <span style={{ width: 10, height: 10, borderRadius: 5, background: C.acc, marginLeft: 3, marginTop: 2, display: "inline-block", animation: "uplPulse 1.2s ease-in-out infinite" }} />
           </div>
-          {total > 1 && <div style={{ fontSize: 11, color: C.t2, fontWeight: 600 }}>{label || "Subiendo"} {current}/{total}...</div>}
-          {total <= 1 && <div style={{ fontSize: 11, color: C.t2, fontWeight: 600 }}>{label || "Subiendo"}...</div>}
+          {total > 1 && <div style={{ fontSize: 12.1, color: C.t2, fontWeight: 600 }}>{label || "Subiendo"} {current}/{total}...</div>}
+          {total <= 1 && <div style={{ fontSize: 12.1, color: C.t2, fontWeight: 600 }}>{label || "Subiendo"}...</div>}
         </>
       )}
       {(stage === "success" || stage === "fadeout") && (
@@ -318,7 +318,7 @@ export function FreightFileUpload({ freightId, step, onUploaded }) {
 
       <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
         {Ic.clip(C.acc, 16)}
-        <span style={{ fontSize: 10.5, fontWeight: 700, color: C.t2, textTransform: "uppercase", letterSpacing: 0.5 }}>Adjuntar archivos</span>
+        <span style={{ fontSize: 11.6, fontWeight: 700, color: C.t2, textTransform: "uppercase", letterSpacing: 0.5 }}>Adjuntar archivos</span>
       </div>
 
       {files.length > 0 && (
@@ -330,12 +330,12 @@ export function FreightFileUpload({ freightId, step, onUploaded }) {
               ) : (
                 <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: C.bg, padding: 4 }}>
                   {Ic.doc(C.pri, 20)}
-                  <span style={{ fontSize: 8, color: C.t3, textAlign: "center", marginTop: 2, wordBreak: "break-all", lineHeight: 1.1 }}>{f.name?.slice(-12)}</span>
+                  <span style={{ fontSize: 8.8, color: C.t3, textAlign: "center", marginTop: 2, wordBreak: "break-all", lineHeight: 1.1 }}>{f.name?.slice(-12)}</span>
                 </div>
               )}
               {f.done && <div style={{ position: "absolute", top: 3, right: 3, width: 18, height: 18, borderRadius: 9, background: C.ok, display: "flex", alignItems: "center", justifyContent: "center" }}>{Ic.chk("#fff", 12)}</div>}
               {!f.done && !f.uploading && <button onClick={() => removeFile(i)} style={{ position: "absolute", top: -2, right: -2, width: 26, height: 26, borderRadius: 13, background: C.err, border: "2px solid #fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>{Ic.cross("#fff", 11)}</button>}
-              {f.error && <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: C.err, color: C.w, fontSize: 8, textAlign: "center", padding: 2 }}>Error</div>}
+              {f.error && <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: C.err, color: C.w, fontSize: 8.8, textAlign: "center", padding: 2 }}>Error</div>}
             </div>
           ))}
         </div>
@@ -347,7 +347,7 @@ export function FreightFileUpload({ freightId, step, onUploaded }) {
       <input ref={docRef} type="file" accept="image/*,.pdf,.doc,.docx,.xlsx" multiple onChange={e => { if (e.target.files?.length) addFiles(e.target.files); e.target.value = ""; }} style={{ display: "none" }} />
 
       <div style={{ marginBottom: pendingCount > 0 ? 10 : 0 }}>
-        <button onClick={() => setShowAttach(true)} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "10px 16px", borderRadius: 10, border: `1.5px dashed ${C.b1}`, background: C.bg, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 600, color: C.t2 }}>
+        <button onClick={() => setShowAttach(true)} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "10px 16px", borderRadius: 10, border: `1.5px dashed ${C.b1}`, background: C.bg, cursor: "pointer", fontFamily: "inherit", fontSize: 13.2, fontWeight: 600, color: C.t2 }}>
           {Ic.clip(C.t2, 16)} Adjuntar archivo
         </button>
       </div>

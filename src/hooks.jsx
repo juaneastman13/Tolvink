@@ -72,7 +72,9 @@ export function useCatalog(user) {
         ? apiGetFields().catch((e)=>{ log.warn('Catalog', 'apiGetFields failed:', e.message); return []; })
         : Promise.resolve([]),
     ]).then(([p,br,l,t,tr,f])=>{
-      const d = { plants:p||[], branches:br||[], lots:l||[], transporters:t||[], trucks:tr||[], fields:f||[] };
+      const activeCoId = user.activeCompanyId || user.companyId;
+      const filteredFields = activeCoId ? (f||[]).filter(fd => fd.companyId === activeCoId || fd.company?.id === activeCoId) : (f||[]);
+      const d = { plants:p||[], branches:br||[], lots:l||[], transporters:t||[], trucks:tr||[], fields:filteredFields };
       setCache(cacheKey, d);
       setPlants(d.plants); setBranches(d.branches); setLots(d.lots);
       setTransporters(d.transporters); setTrucks(d.trucks); setFields(d.fields);
@@ -814,7 +816,7 @@ export function usePullToRefresh(onRefresh) {
   }, []);
 
   const indicator = (refreshing || pulling) ? (
-    <div style={{ textAlign: "center", padding: "8px 0", fontSize: 11, fontWeight: 600, color: refreshing ? C.pri : C.t3 }}>
+    <div style={{ textAlign: "center", padding: "8px 0", fontSize: 12.1, fontWeight: 600, color: refreshing ? C.pri : C.t3 }}>
       {refreshing ? "Actualizando..." : "Soltar para actualizar"}
     </div>
   ) : null;

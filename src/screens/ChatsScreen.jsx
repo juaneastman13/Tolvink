@@ -548,18 +548,18 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
   const chatDetailPanel = activeConv ? (
       <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", animation: isDesktop ? undefined : "fadeIn 0.2s ease" }}>
         <div style={{ padding: "12px 18px", borderBottom: `1px solid ${C.b1}`, background: C.w, display: "flex", alignItems: "center", gap: 10, paddingTop: isDesktop ? 12 : "max(12px, env(safe-area-inset-top))" }}>
-          {!isDesktop && <button onClick={() => { setActiveConv(null); setChatTab("chat"); }} style={{ background: C.priPale, border: `1px solid ${C.pri}20`, borderRadius: 8, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, padding: "6px 10px", fontFamily:"inherit", fontSize:11, fontWeight:600, color:C.pri }}>{Ic.chev(C.pri, 16)} Chats</button>}
+          {!isDesktop && <button onClick={() => { setActiveConv(null); setChatTab("chat"); }} style={{ background: C.priPale, border: `1px solid ${C.pri}20`, borderRadius: 8, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, padding: "6px 10px", fontFamily:"inherit", fontSize:12.1, fontWeight:600, color:C.pri }}>{Ic.chev(C.pri, 16)} Chats</button>}
           {isDesktop && <button onClick={() => { setActiveConv(null); setChatTab("chat"); }} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", padding: 0 }}>{Ic.chev(C.pri, 20)}</button>}
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 14, fontWeight: 700, color: C.t1 }}>{activeConv.freight ? freightTitle(activeConv.freight) : "Mensaje directo"}</div>
-            <div style={{ fontSize: 10, color: C.t3 }}>{getConvName(activeConv)} · {messages.length} mensaje{messages.length !== 1 ? "s" : ""}</div>
+            <div style={{ fontSize: 15.4, fontWeight: 700, color: C.t1 }}>{activeConv.freight ? freightTitle(activeConv.freight) : "Mensaje directo"}</div>
+            <div style={{ fontSize: 11, color: C.t3 }}>{getConvName(activeConv)} · {messages.length} mensaje{messages.length !== 1 ? "s" : ""}</div>
           </div>
           {/* Chat / Files tabs */}
           <div style={{ display: "flex", gap: 4 }}>
-            <button onClick={() => setChatTab("chat")} style={{ padding: "5px 10px", borderRadius: 8, border: "none", background: chatTab === "chat" ? C.priPale : "none", color: chatTab === "chat" ? C.pri : C.t3, fontSize: 10, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>Chat</button>
-            <button onClick={() => setChatTab("files")} style={{ padding: "5px 10px", borderRadius: 8, border: "none", background: chatTab === "files" ? C.priPale : "none", color: chatTab === "files" ? C.pri : C.t3, fontSize: 10, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", position: "relative" }}>
+            <button onClick={() => setChatTab("chat")} style={{ padding: "5px 10px", borderRadius: 8, border: "none", background: chatTab === "chat" ? C.priPale : "none", color: chatTab === "chat" ? C.pri : C.t3, fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>Chat</button>
+            <button onClick={() => setChatTab("files")} style={{ padding: "5px 10px", borderRadius: 8, border: "none", background: chatTab === "files" ? C.priPale : "none", color: chatTab === "files" ? C.pri : C.t3, fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", position: "relative" }}>
               Archivos
-              {chatFiles.length > 0 && <span style={{ position: "absolute", top: -2, right: -2, minWidth: 14, height: 14, borderRadius: 7, background: C.acc, color: "#fff", fontSize: 8, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 3px" }}>{chatFiles.length}</span>}
+              {chatFiles.length > 0 && <span style={{ position: "absolute", top: -2, right: -2, minWidth: 14, height: 14, borderRadius: 7, background: C.acc, color: "#fff", fontSize: 8.8, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 3px" }}>{chatFiles.length}</span>}
             </button>
           </div>
         </div>
@@ -568,18 +568,18 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
           <div style={{ flex: 1, display: "flex", flexDirection: "column", position: "relative", overflow: "hidden" }}>
             {sendError && (
               <div style={{ padding: "10px 18px", background: C.errPale, borderBottom: `1px solid ${C.err}40`, display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ fontSize: 11, color: C.err, fontWeight: 600 }}>{sendError}</span>
+                <span style={{ fontSize: 12.1, color: C.err, fontWeight: 600 }}>{sendError}</span>
               </div>
             )}
             <div ref={messagesContainerRef} onScroll={handleScroll} style={{ flex: 1, overflow: "auto", padding: 18, display: "flex", flexDirection: "column", gap: 6 }}>
               {msgHasMore && (
                 <div style={{textAlign:"center",padding:"8px 0 12px"}}>
-                  <button onClick={loadOlderMessages} disabled={loadingOlder} style={{padding:"5px 16px",borderRadius:8,border:`1px solid ${C.b1}`,background:C.bg,color:C.t2,fontSize:11,fontWeight:600,cursor:loadingOlder?"default":"pointer",fontFamily:"inherit",opacity:loadingOlder?0.5:1}}>
+                  <button onClick={loadOlderMessages} disabled={loadingOlder} style={{padding:"5px 16px",borderRadius:8,border:`1px solid ${C.b1}`,background:C.bg,color:C.t2,fontSize:12.1,fontWeight:600,cursor:loadingOlder?"default":"pointer",fontFamily:"inherit",opacity:loadingOlder?0.5:1}}>
                     {loadingOlder?"Cargando...":"Cargar mensajes anteriores"}
                   </button>
                 </div>
               )}
-              {messages.length === 0 && !loadingOlder && <div style={{ textAlign: "center", padding: 40, color: C.t3, fontSize: 13 }}>Sin mensajes aún. Escribí el primero.</div>}
+              {messages.length === 0 && !loadingOlder && <div style={{ textAlign: "center", padding: 40, color: C.t3, fontSize: 14.3 }}>Sin mensajes aún. Escribí el primero.</div>}
               {messages.map((m, idx) => {
                 // Issue #25 fix: explicit null safety on senderId
                 const mine = !!(m.senderId && m.senderId === user.id) || !!(m.sender?.id && m.sender.id === user.id);
@@ -592,15 +592,15 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
                     {/* Date divider */}
                     {showDateDivider && (
                       <div style={{ textAlign: "center", margin: "12px 0", position: "relative" }}>
-                        <div style={{ display: "inline-block", padding: "4px 12px", background: C.bg, borderRadius: 12, fontSize: 10, fontWeight: 600, color: C.t3, border: `1px solid ${C.b1}` }}>
+                        <div style={{ display: "inline-block", padding: "4px 12px", background: C.bg, borderRadius: 12, fontSize: 11, fontWeight: 600, color: C.t3, border: `1px solid ${C.b1}` }}>
                           {formatDateDivider(m.createdAt)}
                         </div>
                       </div>
                     )}
 
                     <div style={{ alignSelf: mine ? "flex-end" : "flex-start", maxWidth: "80%" }}>
-                      {!mine && <div style={{ fontSize: 9.5, color: C.t3, marginBottom: 2, marginLeft: 4 }}>{m.sender?.name?.split(" ")[0]}</div>}
-                      <div style={{ position: "relative", padding: fileData ? "6px" : "10px 14px", borderRadius: 14, borderBottomRightRadius: mine ? 4 : 14, borderBottomLeftRadius: mine ? 14 : 4, background: mine ? C.pri : C.w, color: mine ? C.w : C.t1, fontSize: 13, border: mine ? "none" : `1px solid ${C.b1}`, boxShadow: C.sh, overflow: "hidden", opacity: m.status === 'pending' ? 0.6 : 1 }}>
+                      {!mine && <div style={{ fontSize: 10.5, color: C.t3, marginBottom: 2, marginLeft: 4 }}>{m.sender?.name?.split(" ")[0]}</div>}
+                      <div style={{ position: "relative", padding: fileData ? "6px" : "10px 14px", borderRadius: 14, borderBottomRightRadius: mine ? 4 : 14, borderBottomLeftRadius: mine ? 14 : 4, background: mine ? C.pri : C.w, color: mine ? C.w : C.t1, fontSize: 14.3, border: mine ? "none" : `1px solid ${C.b1}`, boxShadow: C.sh, overflow: "hidden", opacity: m.status === 'pending' ? 0.6 : 1 }}>
                         {fileData ? (
                           fileData.type === "image" && fileData.url ? (
                             <button onClick={()=>setViewFile({url:fileData.url,name:fileData.name,type:"image"})} style={{ background:"none", border:"none", cursor:"pointer", padding:0 }}>
@@ -611,8 +611,8 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
                               <button onClick={()=>{ if(fileData.url) setViewFile({url:fileData.url,name:fileData.name}); }} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", color: mine ? "#fff" : C.t1, flex: 1 }}>
                                 {Ic.doc(mine ? "#fff" : C.pri, 20)}
                                 <div style={{ textAlign:"left" }}>
-                                  <div style={{ fontSize: 12, fontWeight: 600, wordBreak: "break-all" }}>{fileData.name}</div>
-                                  <div style={{ fontSize: 10, opacity: 0.7 }}>{fileData.url ? "Ver archivo" : "Archivo no disponible"}</div>
+                                  <div style={{ fontSize: 13.2, fontWeight: 600, wordBreak: "break-all" }}>{fileData.name}</div>
+                                  <div style={{ fontSize: 11, opacity: 0.7 }}>{fileData.url ? "Ver archivo" : "Archivo no disponible"}</div>
                                 </div>
                               </button>
                               {fileData.url && <a href={fileData.url} download={fileData.name} style={{ background: mine ? "rgba(255,255,255,0.2)" : C.priPale, border: "none", borderRadius: 6, padding: 6, display: "flex", alignItems: "center", justifyContent: "center", textDecoration: "none" }} title="Descargar">
@@ -624,21 +624,21 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
                           <div style={{ display: "flex", alignItems: "flex-start", gap: 6 }}>
                             <div style={{ flex: 1 }}>{renderTextWithMentions(m.text, mine)}</div>
                             {!fileData && (
-                              <button onClick={() => copyMessageText(m.text, m.id)} title="Copiar" style={{ background: mine ? "rgba(255,255,255,0.2)" : C.bg, border: "none", borderRadius: 4, padding: "2px 4px", cursor: "pointer", fontSize: 9, color: mine ? "#fff" : C.t2, opacity: copiedMsgId === m.id ? 1 : 0.5, transition: "opacity 0.2s" }}>
+                              <button onClick={() => copyMessageText(m.text, m.id)} title="Copiar" style={{ background: mine ? "rgba(255,255,255,0.2)" : C.bg, border: "none", borderRadius: 4, padding: "2px 4px", cursor: "pointer", fontSize: 9.9, color: mine ? "#fff" : C.t2, opacity: copiedMsgId === m.id ? 1 : 0.5, transition: "opacity 0.2s" }}>
                               {copiedMsgId === m.id ? Ic.chk(mine ? "#fff" : C.pri, 10) : Ic.doc(mine ? "#fff" : C.t2, 10)}
                             </button>
                             )}
                           </div>
                         )}
                       </div>
-                      <div style={{ fontSize: 9, color: C.t3, marginTop: 2, textAlign: mine ? "right" : "left", marginRight: mine ? 4 : 0, marginLeft: mine ? 0 : 4, display: "flex", alignItems: "center", gap: 4, justifyContent: mine ? "flex-end" : "flex-start" }}>
+                      <div style={{ fontSize: 9.9, color: C.t3, marginTop: 2, textAlign: mine ? "right" : "left", marginRight: mine ? 4 : 0, marginLeft: mine ? 0 : 4, display: "flex", alignItems: "center", gap: 4, justifyContent: mine ? "flex-end" : "flex-start" }}>
                         <span title={new Date(m.createdAt).toLocaleString("es")}>
                           {new Date(m.createdAt).toLocaleTimeString("es", { hour: "2-digit", minute: "2-digit" })}
                         </span>
                         {mine && m.status === 'pending' && <span style={{ display: "inline-flex", opacity: 0.5 }} title="Enviando">{Ic.clk(C.t3, 10)}</span>}
                         {mine && (!m.status || m.status === 'sent') && <span style={{ display: "inline-flex", color: C.t3 }} title="Enviado">{Ic.chk(C.t3, 10)}</span>}
                         {mine && m.status === 'failed' && (
-                          <button onClick={() => retryFailedMessage(m)} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 2, padding: 0, color: C.err, fontSize: 9, fontWeight: 600 }}>
+                          <button onClick={() => retryFailedMessage(m)} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 2, padding: 0, color: C.err, fontSize: 9.9, fontWeight: 600 }}>
                             {Ic.cross(C.err, 10)} Reintentar
                           </button>
                         )}
@@ -650,10 +650,10 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
               {/* Read receipt: double check on last own message */}
               {peerReadAt && messages.length > 0 && (() => {
                 const lastOwn = [...messages].reverse().find(m => m.senderId === user.id || m.sender?.id === user.id);
-                return lastOwn ? <div style={{ textAlign:"right", fontSize:9.5, color:C.pri, fontWeight:600, marginRight:4, marginTop:-2 }}>✓✓ Leído</div> : null;
+                return lastOwn ? <div style={{ textAlign:"right", fontSize:10.5, color:C.pri, fontWeight:600, marginRight:4, marginTop:-2 }}>✓✓ Leído</div> : null;
               })()}
               {/* Typing indicator */}
-              {typingUser && <div style={{ alignSelf:"flex-start", padding:"8px 14px", borderRadius:14, background:C.w, border:`1px solid ${C.b1}`, fontSize:12, color:C.t3, fontStyle:"italic", animation:"fadeIn 0.2s ease" }}>{typingUser} está escribiendo...</div>}
+              {typingUser && <div style={{ alignSelf:"flex-start", padding:"8px 14px", borderRadius:14, background:C.w, border:`1px solid ${C.b1}`, fontSize:13.2, color:C.t3, fontStyle:"italic", animation:"fadeIn 0.2s ease" }}>{typingUser} está escribiendo...</div>}
               <div ref={msgEndRef} />
             </div>
 
@@ -661,7 +661,7 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
             {uploading && (
               <div style={{ padding: "8px 18px", background: C.accPale, borderTop: `1px solid ${C.acc}20`, display: "flex", alignItems: "center", gap: 8 }}>
                 <div style={{ width: 16, height: 16, border: `2px solid ${C.acc}`, borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
-                <span style={{ fontSize: 11, color: C.acc, fontWeight: 600 }}>Subiendo archivo...</span>
+                <span style={{ fontSize: 12.1, color: C.acc, fontWeight: 600 }}>Subiendo archivo...</span>
                 <style>{`@keyframes spin{to{transform:rotate(360deg)}}@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}`}</style>
               </div>
             )}
@@ -669,7 +669,7 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
             {/* Nuevo mensaje indicator - floating button */}
             {newMsgIndicator && (
               <div style={{ position: "absolute", bottom: keyboardHeight > 0 ? keyboardHeight + 70 : 70, left: "50%", transform: "translateX(-50%)", zIndex: 10, animation: "fadeIn 0.2s ease" }}>
-                <button onClick={scrollToBottom} style={{ padding: "8px 16px", borderRadius: 20, background: C.pri, color: "#fff", border: "none", cursor: "pointer", fontSize: 12, fontWeight: 600, display: "flex", alignItems: "center", gap: 6, boxShadow: "0 4px 12px rgba(0,0,0,0.15)", fontFamily: "inherit", transition: "all 0.2s ease" }}>
+                <button onClick={scrollToBottom} style={{ padding: "8px 16px", borderRadius: 20, background: C.pri, color: "#fff", border: "none", cursor: "pointer", fontSize: 13.2, fontWeight: 600, display: "flex", alignItems: "center", gap: 6, boxShadow: "0 4px 12px rgba(0,0,0,0.15)", fontFamily: "inherit", transition: "all 0.2s ease" }}>
                   Nuevo mensaje {Ic.down("#fff", 14)}
                 </button>
               </div>
@@ -684,7 +684,7 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
               </button>
               <AttachMenu open={showChatAttach} onClose={() => setShowChatAttach(false)} onCamera={() => chatCamRef.current?.click()} onGallery={() => chatGalRef.current?.click()} onFiles={() => chatFileRef.current?.click()} />
               <input ref={inputRef} value={msgText} onChange={e => { setMsgText(e.target.value); sendTyping(); }} onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-                placeholder="Escribí un mensaje..." style={{ flex: 1, padding: "10px 14px", borderRadius: 20, border: `1.5px solid ${C.b1}`, background: C.bg, color: C.t1, fontSize: 13, fontFamily: "inherit", outline: "none" }} />
+                placeholder="Escribí un mensaje..." style={{ flex: 1, padding: "10px 14px", borderRadius: 20, border: `1.5px solid ${C.b1}`, background: C.bg, color: C.t1, fontSize: 14.3, fontFamily: "inherit", outline: "none" }} />
               <button onClick={handleSend} disabled={sending || !msgText.trim()} style={{ width: 40, height: 40, borderRadius: 20, background: msgText.trim() ? C.pri : C.b1, border: "none", cursor: msgText.trim() ? "pointer" : "default", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                 {Ic.send(C.w, 16)}
               </button>
@@ -694,7 +694,7 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
           /* Files tab */
           <div style={{ flex: 1, overflow: "auto", padding: 18 }}>
             {chatFiles.length === 0 ? (
-              <div style={{ textAlign: "center", padding: 40, color: C.t3, fontSize: 13 }}>Sin archivos compartidos</div>
+              <div style={{ textAlign: "center", padding: 40, color: C.t3, fontSize: 14.3 }}>Sin archivos compartidos</div>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 {chatFiles.map(f => (
@@ -705,8 +705,8 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
                       <div style={{ width: 48, height: 48, borderRadius: 8, background: C.priPale, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{Ic.doc(C.pri, 22)}</div>
                     )}
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 12, fontWeight: 600, color: C.t1, wordBreak: "break-all" }}>{f.name}</div>
-                      <div style={{ fontSize: 10, color: C.t3, marginTop: 2 }}>{f.sender} · {new Date(f.date).toLocaleDateString("es", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}</div>
+                      <div style={{ fontSize: 13.2, fontWeight: 600, color: C.t1, wordBreak: "break-all" }}>{f.name}</div>
+                      <div style={{ fontSize: 11, color: C.t3, marginTop: 2 }}>{f.sender} · {new Date(f.date).toLocaleDateString("es", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}</div>
                     </div>
                     {Ic.eye(C.pri, 16)}
                   </button>
@@ -717,7 +717,7 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
         )}
       </div>
     ) : isDesktop ? (
-      <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: C.t3, fontSize: 13 }}>Seleccioná una conversación</div>
+      <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: C.t3, fontSize: 14.3 }}>Seleccioná una conversación</div>
     ) : null;
 
   // Mobile: show detail fullscreen if activeConv
@@ -736,45 +736,45 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
       <div style={{ position:"relative", marginBottom:8 }}>
         <div style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",display:"flex"}}>{Ic.srch(C.t3,16)}</div>
         <input value={searchQ} onChange={e=>{setSearchQ(e.target.value);}} placeholder="Buscar conversación..."
-          style={{width:"100%",padding:"10px 14px 10px 36px",borderRadius:10,border:`1.5px solid ${C.b1}`,background:C.w,color:C.t1,fontSize:13,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}/>
+          style={{width:"100%",padding:"10px 14px 10px 36px",borderRadius:10,border:`1.5px solid ${C.b1}`,background:C.w,color:C.t1,fontSize:14.3,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}/>
         {searchQ && <button onClick={()=>setSearchQ("")} style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",display:"flex"}}>{Ic.cross(C.t3,16)}</button>}
       </div>
 
       {/* Group by selector */}
       <div style={{ display:"flex", alignItems:"center", gap:4, marginBottom:8, flexWrap:"wrap" }}>
-        <span style={{ fontSize:10, fontWeight:600, color:C.t3 }}>Agrupar por</span>
+        <span style={{ fontSize:11, fontWeight:600, color:C.t3 }}>Agrupar por</span>
         {[{k:"planta",l:"Planta"},{k:"transportista",l:"Transportista"},{k:"productor",l:"Productor"}].map(o=>(
-          <button key={o.k} onClick={()=>{setGroupBy(o.k);setExpandedGroups({});}} style={{ padding:"4px 10px", borderRadius:6, border:`1px solid ${groupBy===o.k?C.pri:C.b1}`, background:groupBy===o.k?C.priPale:C.w, color:groupBy===o.k?C.pri:C.t2, fontSize:10, fontWeight:groupBy===o.k?700:500, cursor:"pointer", fontFamily:"inherit" }}>{o.l}</button>
+          <button key={o.k} onClick={()=>{setGroupBy(o.k);setExpandedGroups({});}} style={{ padding:"4px 10px", borderRadius:6, border:`1px solid ${groupBy===o.k?C.pri:C.b1}`, background:groupBy===o.k?C.priPale:C.w, color:groupBy===o.k?C.pri:C.t2, fontSize:11, fontWeight:groupBy===o.k?700:500, cursor:"pointer", fontFamily:"inherit" }}>{o.l}</button>
         ))}
       </div>
 
       {showNew && (
         <div style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: 12, padding: 16, marginBottom: 14, boxShadow: C.sh }}>
           <Field label="Buscar usuario" value={compSearchQ} onChange={handleCompSearch} placeholder="Escribí el nombre de la persona..."/>
-          {compSearching && <div style={{ fontSize:10, color:C.t3, marginTop:4 }}>Buscando...</div>}
+          {compSearching && <div style={{ fontSize:11, color:C.t3, marginTop:4 }}>Buscando...</div>}
           {compResults.length > 0 && (
             <div style={{ marginTop:6, border:`1px solid ${C.b1}`, borderRadius:8, maxHeight:200, overflow:"auto" }}>
               {compResults.map(u=>(
                 <button key={u.id} onClick={()=>handleSelectUser(u)} style={{ width:"100%", display:"flex", alignItems:"center", gap:8, padding:"10px 12px", background:newUserId===u.id?C.priPale:C.w, border:"none", borderBottom:`1px solid ${C.b2}`, cursor:"pointer", fontFamily:"inherit", textAlign:"left" }}>
                   {Ic.user(C.pri,16)}
                   <div style={{ flex:1 }}>
-                    <div style={{ fontSize:13, fontWeight:600, color:C.t1 }}>{u.name}</div>
-                    <div style={{ fontSize:10, color:C.t3 }}>{u.company?.name || "Sin empresa"} · {({plant:"Planta",transporter:"Transportista",producer:"Productor"})[u.company?.type]||u.company?.type||""}</div>
+                    <div style={{ fontSize:14.3, fontWeight:600, color:C.t1 }}>{u.name}</div>
+                    <div style={{ fontSize:11, color:C.t3 }}>{u.company?.name || "Sin empresa"} · {({plant:"Planta",transporter:"Transportista",producer:"Productor"})[u.company?.type]||u.company?.type||""}</div>
                   </div>
                   {newUserId===u.id && Ic.chk(C.pri,14)}
                 </button>
               ))}
             </div>
           )}
-          {compSearchQ.length>=2 && !compSearching && compResults.length===0 && !newUserId && <div style={{ fontSize:11, color:C.t3, marginTop:6 }}>Sin resultados</div>}
-          {newUserId && <div style={{ fontSize:11, color:C.ok, marginTop:6, fontWeight:600 }}>Usuario seleccionado: {compSearchQ}</div>}
-          {newErr && <div style={{ fontSize: 11, color: C.err, marginTop:6, marginBottom: 4 }}>{newErr}</div>}
+          {compSearchQ.length>=2 && !compSearching && compResults.length===0 && !newUserId && <div style={{ fontSize:12.1, color:C.t3, marginTop:6 }}>Sin resultados</div>}
+          {newUserId && <div style={{ fontSize:12.1, color:C.ok, marginTop:6, fontWeight:600 }}>Usuario seleccionado: {compSearchQ}</div>}
+          {newErr && <div style={{ fontSize: 12.1, color: C.err, marginTop:6, marginBottom: 4 }}>{newErr}</div>}
           <div style={{ marginTop:10 }}><Btn full v="acc" disabled={!newUserId||startingConv} onClick={handleStartConv}>{startingConv?"Iniciando...":"Iniciar conversación"}</Btn></div>
         </div>
       )}
 
       {loading ? <Loader/> :
-        convs.length === 0 ? <div style={{ textAlign: "center", padding: 40, color: C.t3, fontSize: 13 }}>Sin conversaciones aún.{!showNew && <><br/><button onClick={()=>setShowNew(true)} style={{background:"none",border:"none",color:C.acc,fontWeight:600,cursor:"pointer",fontFamily:"inherit",fontSize:13,marginTop:8}}>Iniciar una nueva</button></>}</div> :
+        convs.length === 0 ? <div style={{ textAlign: "center", padding: 40, color: C.t3, fontSize: 14.3 }}>Sin conversaciones aún.{!showNew && <><br/><button onClick={()=>setShowNew(true)} style={{background:"none",border:"none",color:C.acc,fontWeight:600,cursor:"pointer",fontFamily:"inherit",fontSize:14.3,marginTop:8}}>Iniciar una nueva</button></>}</div> :
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {/* Direct conversations (flat, no nesting) */}
             {grouped.directConvs.map(c => (
@@ -785,17 +785,17 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
                   </div>
                   <div style={{ flex:1, minWidth:0 }}>
                     <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-                      <span style={{ fontSize:13, fontWeight:c.unread||c.markedUnread?800:700, color:C.t1 }}>{c._userName}</span>
+                      <span style={{ fontSize:14.3, fontWeight:c.unread||c.markedUnread?800:700, color:C.t1 }}>{c._userName}</span>
                     </div>
-                    {c._companyName && <div style={{ fontSize:10, color:C.t3, marginTop:1 }}>{c._companyName}</div>}
-                    <div style={{ fontSize:11, color:c.unread||c.markedUnread?C.t1:C.t3, fontWeight:c.unread||c.markedUnread?600:400, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis", marginTop:2 }}>{getLastMsg(c)}</div>
+                    {c._companyName && <div style={{ fontSize:11, color:C.t3, marginTop:1 }}>{c._companyName}</div>}
+                    <div style={{ fontSize:12.1, color:c.unread||c.markedUnread?C.t1:C.t3, fontWeight:c.unread||c.markedUnread?600:400, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis", marginTop:2 }}>{getLastMsg(c)}</div>
                   </div>
                   {(c.unread || c.markedUnread) && <div style={{ width:8, height:8, borderRadius:4, background:C.acc, flexShrink:0 }} />}
-                  <span style={{ fontSize:9.5, color:C.t3, flexShrink:0 }}>{getLastMsgTime(c)}</span>
+                  <span style={{ fontSize:10.5, color:C.t3, flexShrink:0 }}>{getLastMsgTime(c)}</span>
                 </button>
                 {/* Action buttons */}
                 <div style={{ position: "absolute", top: 8, right: 8, display: "flex", gap: 4 }}>
-                  <button onClick={(e) => handleToggleMarkUnread(c.id, e)} title={c.markedUnread ? "Marcar como leída" : "Marcar como no leída"} style={{ background: c.markedUnread ? C.accPale : C.bg, border: `1px solid ${c.markedUnread ? C.acc : C.b1}`, borderRadius: 6, padding: "4px 6px", cursor: "pointer", fontSize: 10, display: "flex", alignItems: "center", opacity: 0.8 }}>
+                  <button onClick={(e) => handleToggleMarkUnread(c.id, e)} title={c.markedUnread ? "Marcar como leída" : "Marcar como no leída"} style={{ background: c.markedUnread ? C.accPale : C.bg, border: `1px solid ${c.markedUnread ? C.acc : C.b1}`, borderRadius: 6, padding: "4px 6px", cursor: "pointer", fontSize: 11, display: "flex", alignItems: "center", opacity: 0.8 }}>
                     {c.markedUnread ? Ic.mail(C.acc, 12) : Ic.mail(C.t3, 12)}
                   </button>
                 </div>
@@ -815,10 +815,10 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
                       {Ic.truck(C.pri, 16)}
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 13, fontWeight: 700, color: C.t1 }}>{companyName}</div>
-                      <div style={{ fontSize: 10.5, color: C.t3 }}>{freightCount} flete{freightCount !== 1 ? "s" : ""}</div>
+                      <div style={{ fontSize: 14.3, fontWeight: 700, color: C.t1 }}>{companyName}</div>
+                      <div style={{ fontSize: 11.6, color: C.t3 }}>{freightCount} flete{freightCount !== 1 ? "s" : ""}</div>
                     </div>
-                    {unreadCount > 0 && <span style={{ minWidth: 18, height: 18, borderRadius: 9, background: C.acc, color: "#fff", fontSize: 10, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 4px", flexShrink: 0 }}>{unreadCount}</span>}
+                    {unreadCount > 0 && <span style={{ minWidth: 18, height: 18, borderRadius: 9, background: C.acc, color: "#fff", fontSize: 11, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 4px", flexShrink: 0 }}>{unreadCount}</span>}
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={C.t3} strokeWidth="2.5" style={{ transform: isOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }}><polyline points="6 9 12 15 18 9"/></svg>
                   </button>
 
@@ -829,13 +829,13 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
                           <div style={{ width: 8, height: 8, borderRadius: 4, background: stColor(c.freight?.status), flexShrink: 0 }} />
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                              <span style={{ fontSize: 12, fontWeight: c.unread ? 800 : 700, color: C.t1 }}>{freightTitle(c.freight)}</span>
-                              <span style={{ fontSize: 9, fontWeight: 600, color: stColor(c.freight?.status), textTransform: "uppercase" }}>{stLabel(c.freight?.status)}</span>
+                              <span style={{ fontSize: 13.2, fontWeight: c.unread ? 800 : 700, color: C.t1 }}>{freightTitle(c.freight)}</span>
+                              <span style={{ fontSize: 9.9, fontWeight: 600, color: stColor(c.freight?.status), textTransform: "uppercase" }}>{stLabel(c.freight?.status)}</span>
                             </div>
-                            <div style={{ fontSize: 11, color: c.unread ? C.t1 : C.t3, fontWeight: c.unread ? 600 : 400, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", marginTop: 2 }}>{getLastMsg(c)}</div>
+                            <div style={{ fontSize: 12.1, color: c.unread ? C.t1 : C.t3, fontWeight: c.unread ? 600 : 400, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", marginTop: 2 }}>{getLastMsg(c)}</div>
                           </div>
                           {c.unread && <div style={{ width: 8, height: 8, borderRadius: 4, background: C.acc, flexShrink: 0 }} />}
-                          <span style={{ fontSize: 9.5, color: C.t3, flexShrink: 0 }}>{getLastMsgTime(c)}</span>
+                          <span style={{ fontSize: 10.5, color: C.t3, flexShrink: 0 }}>{getLastMsgTime(c)}</span>
                         </button>
                       ))}
                     </div>

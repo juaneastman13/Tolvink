@@ -456,7 +456,7 @@ export default function Tolvink() {
     return <div role="status" aria-label="Cargando Tolvink" style={{minHeight:"100dvh",background:C.bg,fontFamily:"'DM Sans',system-ui,-apple-system,sans-serif",display:"flex",alignItems:"center",justifyContent:"center"}}>
       <style>{`@keyframes splashIn{0%{opacity:0;transform:scale(0.7)}50%{opacity:1;transform:scale(1.05)}100%{opacity:1;transform:scale(1)}}@keyframes dotPulse{0%,100%{opacity:0.3;transform:scale(0.8)}50%{opacity:1;transform:scale(1.2)}}*{margin:0;padding:0;box-sizing:border-box}html,body,#root{background:${C.bg};margin:0;height:auto!important;overflow:visible!important}`}</style>
       <div style={{textAlign:"center",animation:"splashIn 0.8s ease-out forwards"}}>
-        <span style={{fontSize:83,fontWeight:800,color:C.pri,letterSpacing:-3.5,display:"inline-block"}}>tolvink</span>
+        <span style={{fontSize:91.3,fontWeight:800,color:C.pri,letterSpacing:-3.5,display:"inline-block"}}>tolvink</span>
         <span style={{width:16,height:16,borderRadius:8,background:C.acc,display:"inline-block",marginLeft:5,marginTop:-34,verticalAlign:"top",animation:"dotPulse 1.5s ease-in-out infinite"}}></span>
       </div>
     </div>;
@@ -532,14 +532,14 @@ export default function Tolvink() {
         {/* Mobile-only header */}
         <div className="tv-mobile-header" style={{paddingTop:"max(12px, env(safe-area-inset-top))",paddingBottom:12,paddingLeft:18,paddingRight:18,display:"flex",alignItems:"center",gap:10,borderBottom:`1px solid ${C.b2}`,background:C.w,flexShrink:0,zIndex:10,position:"relative"}}>
           <div style={{display:"inline-flex",alignItems:"flex-start",flexShrink:0}}>
-            <span style={{fontSize:30,fontWeight:800,color:C.pri,letterSpacing:-0.9,lineHeight:1}}>tolvink</span>
+            <span style={{fontSize:33,fontWeight:800,color:C.pri,letterSpacing:-0.9,lineHeight:1}}>tolvink</span>
             <span style={{width:8,height:8,borderRadius:4,background:C.acc,display:"inline-block",marginLeft:3,marginTop:1,animation:"dotPulse 1.5s ease-in-out infinite"}}></span>
           </div>
           <div style={{flex:1}}/>
           {auth.user?.entity && (auth.user.companies?.length > 1 ? (
             <div style={{position:"relative"}}>
               <button onClick={()=>setCompDropOpen(v=>!v)} style={{display:"flex",alignItems:"center",gap:4,padding:"4px 8px",borderRadius:8,border:`1px solid ${C.b1}`,background:C.w,cursor:"pointer",fontFamily:"inherit",maxWidth:140,WebkitTapHighlightColor:"transparent",touchAction:"manipulation"}}>
-                <span style={{fontSize:11,fontWeight:600,color:C.t2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{auth.user.entity}</span>
+                <span style={{fontSize:12.1,fontWeight:600,color:C.t2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{auth.user.entity}</span>
                 {Ic.down(C.t3,12)}
               </button>
               {compDropOpen && <>
@@ -555,18 +555,18 @@ export default function Tolvink() {
                     }} style={{width:"100%",padding:"10px 14px",border:"none",borderBottom:`1px solid ${C.b2}`,background:isActive?C.priPale:"transparent",cursor:"pointer",fontFamily:"inherit",textAlign:"left",display:"flex",alignItems:"center",gap:8}}>
                       <div style={{width:8,height:8,borderRadius:4,background:isActive?C.pri:C.b2,flexShrink:0}}/>
                       <div>
-                        <div style={{fontSize:12,fontWeight:isActive?700:500,color:isActive?C.pri:C.t1}}>{c.companyName}</div>
-                        <div style={{fontSize:10,color:C.t3}}>{({plant:"Planta",transporter:"Transportista",producer:"Productor"})[c.companyType]||c.companyType}</div>
+                        <div style={{fontSize:13.2,fontWeight:isActive?700:500,color:isActive?C.pri:C.t1}}>{c.companyName}</div>
+                        <div style={{fontSize:11,color:C.t3}}>{({plant:"Planta",transporter:"Transportista",producer:"Productor"})[c.companyType]||c.companyType}</div>
                       </div>
                     </button>;
                   })}
                 </div>
               </>}
             </div>
-          ) : <span style={{ fontSize:11, fontWeight:600, color:C.t2, maxWidth:130, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{auth.user.entity}</span>)}
+          ) : <span style={{ fontSize:12.1, fontWeight:600, color:C.t2, maxWidth:130, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{auth.user.entity}</span>)}
           {auth.user && <div style={{position:"relative"}}>
             <button onClick={()=>setModeDropOpen(v=>!v)} style={{display:"flex",alignItems:"center",gap:4,padding:"4px 8px",borderRadius:8,border:`1px solid ${C.b1}`,background:C.w,cursor:"pointer",fontFamily:"inherit",WebkitTapHighlightColor:"transparent",touchAction:"manipulation"}}>
-              <span style={{fontSize:11,fontWeight:600,color:C.t2,whiteSpace:"nowrap"}}>Cambiar visual</span>
+              <span style={{fontSize:12.1,fontWeight:600,color:C.t2,whiteSpace:"nowrap"}}>Cambiar visual</span>
               {Ic.down(C.t3,12)}
             </button>
             {modeDropOpen && <>
@@ -577,8 +577,8 @@ export default function Tolvink() {
                   return <button key={String(o.k)} onClick={()=>{setModeDropOpen(false);if(!isActive) auth.toggleSimpleMode();}} style={{width:"100%",padding:"10px 14px",border:"none",borderBottom:`1px solid ${C.b2}`,background:isActive?C.priPale:"transparent",cursor:"pointer",fontFamily:"inherit",textAlign:"left",display:"flex",alignItems:"center",gap:8}}>
                     <div style={{width:8,height:8,borderRadius:4,background:isActive?C.pri:C.b2,flexShrink:0}}/>
                     <div>
-                      <div style={{fontSize:12,fontWeight:isActive?700:500,color:isActive?C.pri:C.t1}}>{o.l}</div>
-                      <div style={{fontSize:10,color:C.t3}}>{o.sub}</div>
+                      <div style={{fontSize:13.2,fontWeight:isActive?700:500,color:isActive?C.pri:C.t1}}>{o.l}</div>
+                      <div style={{fontSize:11,color:C.t3}}>{o.sub}</div>
                     </div>
                   </button>;
                 })}
@@ -594,14 +594,14 @@ export default function Tolvink() {
         {/* Desktop: no header bar — company selector is in Sidebar */}
 
         {/* Offline banner */}
-        {!online && <div style={{background:"#f59e0b",color:"#fff",textAlign:"center",padding:"6px 12px",fontSize:13,fontWeight:600,flexShrink:0,zIndex:10}}>{Ic.warn("#fff",14)} Sin conexión — mostrando datos guardados</div>}
+        {!online && <div style={{background:"#f59e0b",color:"#fff",textAlign:"center",padding:"6px 12px",fontSize:14.3,fontWeight:600,flexShrink:0,zIndex:10}}>{Ic.warn("#fff",14)} Sin conexión — mostrando datos guardados</div>}
 
         {/* Map bar + fullscreen map when mapFocus is active */}
         {mapFocus && <>
           <div style={{display:"flex",alignItems:"center",gap:10,padding:"8px 18px",background:C.w,borderBottom:`1px solid ${C.b2}`,flexShrink:0,zIndex:10}}>
-            <button onClick={()=>setMapFocus(null)} style={{display:"flex",alignItems:"center",gap:6,padding:"7px 14px",borderRadius:8,border:`1.5px solid ${C.b1}`,background:C.bg,cursor:"pointer",fontSize:13,fontWeight:700,color:C.pri,fontFamily:"inherit"}}>{Ic.chev(C.pri,14)} Cerrar mapa</button>
-            <span style={{flex:1,fontSize:12,color:C.t2,fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{mapFocus.label||"Ubicación"}</span>
-            <a href={mapFocus.destLat!=null&&mapFocus.destLng!=null?`https://www.google.com/maps/dir/?api=1&origin=${mapFocus.lat},${mapFocus.lng}&destination=${mapFocus.destLat},${mapFocus.destLng}`:`https://www.google.com/maps/search/?api=1&query=${mapFocus.lat},${mapFocus.lng}`} target="_blank" rel="noopener noreferrer" style={{display:"flex",alignItems:"center",gap:5,padding:"7px 14px",borderRadius:8,background:C.pri,color:"#fff",fontSize:12,fontWeight:700,textDecoration:"none",fontFamily:"inherit",flexShrink:0}}>Navegar ↗</a>
+            <button onClick={()=>setMapFocus(null)} style={{display:"flex",alignItems:"center",gap:6,padding:"7px 14px",borderRadius:8,border:`1.5px solid ${C.b1}`,background:C.bg,cursor:"pointer",fontSize:14.3,fontWeight:700,color:C.pri,fontFamily:"inherit"}}>{Ic.chev(C.pri,14)} Cerrar mapa</button>
+            <span style={{flex:1,fontSize:13.2,color:C.t2,fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{mapFocus.label||"Ubicación"}</span>
+            <a href={mapFocus.destLat!=null&&mapFocus.destLng!=null?`https://www.google.com/maps/dir/?api=1&origin=${mapFocus.lat},${mapFocus.lng}&destination=${mapFocus.destLat},${mapFocus.destLng}`:`https://www.google.com/maps/search/?api=1&query=${mapFocus.lat},${mapFocus.lng}`} target="_blank" rel="noopener noreferrer" style={{display:"flex",alignItems:"center",gap:5,padding:"7px 14px",borderRadius:8,background:C.pri,color:"#fff",fontSize:13.2,fontWeight:700,textDecoration:"none",fontFamily:"inherit",flexShrink:0}}>Navegar ↗</a>
           </div>
           <div style={{flex:1,minHeight:0}}>
             <Suspense fallback={<SL/>}><MapOverlay lat={mapFocus.lat} lng={mapFocus.lng} label={mapFocus.label} destLat={mapFocus.destLat} destLng={mapFocus.destLng} destLabel={mapFocus.destLabel} freightId={mapFocus.freightId} onClose={()=>setMapFocus(null)}/></Suspense>
@@ -612,7 +612,7 @@ export default function Tolvink() {
         {locPicker && <Suspense fallback={<SL/>}><LocPickerFullscreen value={locPicker.value} onChange={locPicker.onChange} defaultCenter={locPicker.defaultCenter} label={locPicker.label} onClose={()=>setLocPicker(null)}/></Suspense>}
 
         {/* Company switch transition overlay */}
-        {auth.companySwitching && <div style={{position:"absolute",inset:0,background:"rgba(255,255,255,0.7)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:50,backdropFilter:"blur(2px)"}}><div style={{display:"flex",alignItems:"center",gap:10,padding:"12px 24px",borderRadius:12,background:C.w,boxShadow:C.shMd}}><div style={{width:18,height:18,border:`3px solid ${C.b2}`,borderTopColor:C.pri,borderRadius:"50%",animation:"spin 0.6s linear infinite"}}/><span style={{fontSize:13,fontWeight:600,color:C.t2}}>Cambiando empresa...</span></div></div>}
+        {auth.companySwitching && <div style={{position:"absolute",inset:0,background:"rgba(255,255,255,0.7)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:50,backdropFilter:"blur(2px)"}}><div style={{display:"flex",alignItems:"center",gap:10,padding:"12px 24px",borderRadius:12,background:C.w,boxShadow:C.shMd}}><div style={{width:18,height:18,border:`3px solid ${C.b2}`,borderTopColor:C.pri,borderRadius:"50%",animation:"spin 0.6s linear infinite"}}/><span style={{fontSize:14.3,fontWeight:600,color:C.t2}}>Cambiando empresa...</span></div></div>}
 
         {/* Scrollable content area */}
         <div style={{flex:1,overflow:(screen==="chats"||screen==="calendar")&&isDesktop?"hidden":"auto",display:(mapFocus||locPicker)?"none":"flex",flexDirection:"column",WebkitOverflowScrolling:"touch",overscrollBehavior:"contain"}}>

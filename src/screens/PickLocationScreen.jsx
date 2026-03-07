@@ -177,9 +177,9 @@ export default function PickLocationScreen({ slug: slugProp } = {}) {
     return (
       <div style={styles.container}>
         <div style={styles.errorBox}>
-          <div style={{ fontSize: 48, marginBottom: 12 }}>🔗</div>
-          <div style={{ fontSize: 18, fontWeight: 700, color: COLORS.t1 }}>Link invalido</div>
-          <div style={{ fontSize: 14, color: COLORS.t3, marginTop: 8 }}>
+          <div style={{ fontSize: 52.8, marginBottom: 12 }}>🔗</div>
+          <div style={{ fontSize: 19.8, fontWeight: 700, color: COLORS.t1 }}>Link invalido</div>
+          <div style={{ fontSize: 15.4, color: COLORS.t3, marginTop: 8 }}>
             Este link fue generado desde WhatsApp. Si expiro, solicite uno nuevo en el chat.
           </div>
         </div>
@@ -192,13 +192,13 @@ export default function PickLocationScreen({ slug: slugProp } = {}) {
     return (
       <div style={styles.container}>
         <div style={styles.successBox}>
-          <div style={{ fontSize: 56, marginBottom: 12 }}>✅</div>
-          <div style={{ fontSize: 20, fontWeight: 700, color: COLORS.pri }}>Ubicacion guardada</div>
-          <div style={{ fontSize: 14, color: COLORS.t2, marginTop: 8, lineHeight: 1.5 }}>
+          <div style={{ fontSize: 61.6, marginBottom: 12 }}>✅</div>
+          <div style={{ fontSize: 22, fontWeight: 700, color: COLORS.pri }}>Ubicacion guardada</div>
+          <div style={{ fontSize: 15.4, color: COLORS.t2, marginTop: 8, lineHeight: 1.5 }}>
             Puede volver a WhatsApp. El asistente continuara automaticamente.
           </div>
           {address && (
-            <div style={{ fontSize: 12, color: COLORS.t3, marginTop: 12, padding: "8px 12px", background: COLORS.bg, borderRadius: 8 }}>
+            <div style={{ fontSize: 13.2, color: COLORS.t3, marginTop: 12, padding: "8px 12px", background: COLORS.bg, borderRadius: 8 }}>
               📍 {address}
             </div>
           )}
@@ -212,10 +212,10 @@ export default function PickLocationScreen({ slug: slugProp } = {}) {
       {/* Header */}
       <div style={styles.header}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ fontSize: 24, fontWeight: 800, color: COLORS.pri, letterSpacing: -1 }}>tolvink</span>
+          <span style={{ fontSize: 26.4, fontWeight: 800, color: COLORS.pri, letterSpacing: -1 }}>tolvink</span>
           <span style={{ width: 8, height: 8, borderRadius: 4, background: COLORS.acc, display: "inline-block" }}></span>
         </div>
-        <div style={{ fontSize: 13, color: COLORS.t3, fontWeight: 500 }}>Elegir ubicacion</div>
+        <div style={{ fontSize: 14.3, color: COLORS.t3, fontWeight: 500 }}>Elegir ubicacion</div>
       </div>
 
       {/* Search bar */}
@@ -237,12 +237,12 @@ export default function PickLocationScreen({ slug: slugProp } = {}) {
       {/* Footer */}
       <div style={styles.footer}>
         {error && (
-          <div style={{ padding: "8px 12px", background: COLORS.errPale, borderRadius: 8, fontSize: 12, color: COLORS.err, marginBottom: 8, textAlign: "center" }}>
+          <div style={{ padding: "8px 12px", background: COLORS.errPale, borderRadius: 8, fontSize: 13.2, color: COLORS.err, marginBottom: 8, textAlign: "center" }}>
             {error}
           </div>
         )}
         {location && (
-          <div style={{ fontSize: 11, color: COLORS.t3, textAlign: "center", marginBottom: 8 }}>
+          <div style={{ fontSize: 12.1, color: COLORS.t3, textAlign: "center", marginBottom: 8 }}>
             {location.lat.toFixed(5)}, {location.lng.toFixed(5)}
           </div>
         )}
@@ -258,7 +258,7 @@ export default function PickLocationScreen({ slug: slugProp } = {}) {
           {saving ? "Guardando..." : "Confirmar ubicacion"}
         </button>
         {!location && (
-          <div style={{ fontSize: 12, color: COLORS.t3, textAlign: "center", marginTop: 8 }}>
+          <div style={{ fontSize: 13.2, color: COLORS.t3, textAlign: "center", marginTop: 8 }}>
             Busca una direccion o toca el mapa para marcar la ubicacion
           </div>
         )}
@@ -313,7 +313,7 @@ const styles = {
     padding: "12px 14px",
     borderRadius: 10,
     border: `1.5px solid ${COLORS.b1}`,
-    fontSize: 14,
+    fontSize: 15.4,
     fontFamily: "inherit",
     outline: "none",
     color: COLORS.t1,
@@ -334,7 +334,7 @@ const styles = {
     border: "none",
     background: COLORS.pri,
     color: "#FFFFFF",
-    fontSize: 15,
+    fontSize: 16.5,
     fontWeight: 700,
     fontFamily: "inherit",
     letterSpacing: -0.3,

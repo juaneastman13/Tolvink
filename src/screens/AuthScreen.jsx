@@ -10,7 +10,7 @@ function CompletedField({ icon, value, onClick }) {
   return (
     <button onClick={onClick} style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 12px", minHeight: 44, borderRadius: 8, border: `1px solid ${C.b2}`, background: C.bg, cursor: "pointer", fontFamily: "inherit", textAlign: "left", width: "100%", transition: "all 0.15s" }}>
       {icon}
-      <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: C.t1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{value}</span>
+      <span style={{ flex: 1, fontSize: 14.3, fontWeight: 600, color: C.t1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{value}</span>
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.t3} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
     </button>
   );
@@ -228,15 +228,15 @@ export default function AuthScreen({ onLogin, onSignup, onPasswordReset, loading
       <div style={{ maxWidth: 430, margin: "0 auto", padding: "0 28px", boxSizing: "border-box", position: "relative", zIndex: 1 }}>
         <div style={{ paddingTop: mode === "signup" ? "max(24px, env(safe-area-inset-top))" : "28px", paddingBottom: "max(40px, env(safe-area-inset-bottom))", minHeight: mode === "login" ? "100svh" : "auto", display: "flex", flexDirection: "column", justifyContent: mode === "login" ? "center" : "flex-start" }}>
           <div style={{ textAlign: "center", marginBottom: mode === "login" ? 32 : 20 }}>
-            {onBackToLanding && <button onClick={onBackToLanding} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 600, color: C.pri, marginBottom: 14, padding: 0, display: "flex", alignItems: "center", gap: 4, margin: "0 auto 14px" }}>{Ic.chev(C.pri, 18)} Volver</button>}
+            {onBackToLanding && <button onClick={onBackToLanding} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", fontSize: 14.3, fontWeight: 600, color: C.pri, marginBottom: 14, padding: 0, display: "flex", alignItems: "center", gap: 4, margin: "0 auto 14px" }}>{Ic.chev(C.pri, 18)} Volver</button>}
             <div style={{ display: "inline-flex", alignItems: "flex-start", animation: "fadeUp 0.6s ease-out" }}>
-              <span style={{ fontSize: 55, fontWeight: 800, color: C.pri, letterSpacing: -2.9, lineHeight: 1 }}>tolvink</span>
+              <span style={{ fontSize: 60.5, fontWeight: 800, color: C.pri, letterSpacing: -2.9, lineHeight: 1 }}>tolvink</span>
               <span style={{ width: 12, height: 12, borderRadius: 6, background: C.acc, marginLeft: 3, marginTop: 2, display: "inline-block", animation: "dotPulse 1.5s ease-in-out infinite" }} />
             </div>
           </div>
           <div style={{ background: C.w, borderRadius: 16, padding: 22, boxShadow: C.shMd, border: `1px solid ${C.b2}` }}>
-            <div style={{ fontSize: 17, fontWeight: 700, marginBottom: 3, color: C.t1 }}>{titles[mode]}</div>
-            <div style={{ fontSize: 12.5, color: C.t2, marginBottom: 18 }}>{subtitles[mode]}</div>
+            <div style={{ fontSize: 18.7, fontWeight: 700, marginBottom: 3, color: C.t1 }}>{titles[mode]}</div>
+            <div style={{ fontSize: 13.8, color: C.t2, marginBottom: 18 }}>{subtitles[mode]}</div>
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
 
               {/* === LOGIN MODE === */}
@@ -249,7 +249,7 @@ export default function AuthScreen({ onLogin, onSignup, onPasswordReset, loading
                   <Field label="Contraseña" icon={Ic.lock(errs.password ? C.err : C.t2, 14)} value={password} onChange={setPassword} placeholder="Tu contraseña" type="password" hasError={!!errs.password} onKeyDown={e => { if (e.key === 'Enter') submit(); }} />
                   {touched && <FieldError error={errs.password} />}
                 </div>
-                <button aria-label="Recuperar contraseña" onClick={() => { switchMode("reset_identify"); }} style={{ background: "none", border: "none", color: C.pri, fontSize: 12.5, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", textAlign: "right", padding: "10px 0", marginTop: -4 }}>
+                <button aria-label="Recuperar contraseña" onClick={() => { switchMode("reset_identify"); }} style={{ background: "none", border: "none", color: C.pri, fontSize: 13.8, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", textAlign: "right", padding: "10px 0", marginTop: -4 }}>
                   ¿Olvidaste tu contraseña?
                 </button>
               </>}
@@ -257,7 +257,7 @@ export default function AuthScreen({ onLogin, onSignup, onPasswordReset, loading
               {/* === SIGNUP MODE === */}
               {mode === "signup" && (() => {
                 const nextBtn = (field) => canAdvance(field) && editingField === field && (
-                  <button onClick={advanceField} style={{ alignSelf: "flex-end", display: "inline-flex", alignItems: "center", gap: 4, padding: "6px 14px", borderRadius: 8, border: "none", background: C.pri, color: C.w, fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", marginTop: 4, transition: "opacity 0.15s", animation: "fadeUp 0.2s ease-out" }}>
+                  <button onClick={advanceField} style={{ alignSelf: "flex-end", display: "inline-flex", alignItems: "center", gap: 4, padding: "6px 14px", borderRadius: 8, border: "none", background: C.pri, color: C.w, fontSize: 13.2, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", marginTop: 4, transition: "opacity 0.15s", animation: "fadeUp 0.2s ease-out" }}>
                     Siguiente <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
                   </button>
                 );
@@ -309,8 +309,8 @@ export default function AuthScreen({ onLogin, onSignup, onPasswordReset, loading
 
                   {/* USER TYPES */}
                   {fieldIdx >= 4 && <div style={{ animation: "fadeUp 0.3s ease-out" }}>
-                    <div style={{ fontSize: 12, fontWeight: 600, color: C.t2, marginBottom: 8 }}>¿Qué tipo de usuario sos?</div>
-                    <div style={{ fontSize: 10.5, color: C.t3, marginBottom: 10 }}>Podés seleccionar más de uno</div>
+                    <div style={{ fontSize: 13.2, fontWeight: 600, color: C.t2, marginBottom: 8 }}>¿Qué tipo de usuario sos?</div>
+                    <div style={{ fontSize: 11.6, color: C.t3, marginBottom: 10 }}>Podés seleccionar más de uno</div>
                     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                       {typeOptions.map(t => {
                         const sel = userTypes.includes(t.k);
@@ -320,8 +320,8 @@ export default function AuthScreen({ onLogin, onSignup, onPasswordReset, loading
                               {t.ic(sel ? t.c : C.t3, 18)}
                             </div>
                             <div style={{ flex: 1 }}>
-                              <div style={{ fontSize: 13, fontWeight: sel ? 700 : 600, color: sel ? t.c : C.t1 }}>{t.l}</div>
-                              <div style={{ fontSize: 10.5, color: C.t3, marginTop: 1 }}>{t.desc}</div>
+                              <div style={{ fontSize: 14.3, fontWeight: sel ? 700 : 600, color: sel ? t.c : C.t1 }}>{t.l}</div>
+                              <div style={{ fontSize: 11.6, color: C.t3, marginTop: 1 }}>{t.desc}</div>
                             </div>
                             <div style={{ width: 20, height: 20, borderRadius: 6, border: `2px solid ${sel ? t.c : C.b1}`, background: sel ? t.c : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "all 0.15s" }}>
                               {sel && <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={C.w} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>}
@@ -354,10 +354,10 @@ export default function AuthScreen({ onLogin, onSignup, onPasswordReset, loading
               {/* === RESET: CODE === */}
               {mode === "reset_code" && <>
                 <div>
-                  <Field label="Código de verificación" value={resetCode} onChange={v => setResetCode(v.replace(/\D/g, '').slice(0, 6))} placeholder="000000" hasError={!!errs.code} onKeyDown={e => { if (e.key === 'Enter') submit(); }} style={{ letterSpacing: 6, textAlign: "center", fontSize: 22, fontWeight: 700 }} />
+                  <Field label="Código de verificación" value={resetCode} onChange={v => setResetCode(v.replace(/\D/g, '').slice(0, 6))} placeholder="000000" hasError={!!errs.code} onKeyDown={e => { if (e.key === 'Enter') submit(); }} style={{ letterSpacing: 6, textAlign: "center", fontSize: 24.2, fontWeight: 700 }} />
                   {touched && <FieldError error={errs.code} />}
                 </div>
-                <button onClick={() => { setResetCode(""); switchMode("reset_confirm"); }} style={{ background: "none", border: "none", color: C.pri, fontSize: 12.5, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", textAlign: "center", padding: 0 }}>
+                <button onClick={() => { setResetCode(""); switchMode("reset_confirm"); }} style={{ background: "none", border: "none", color: C.pri, fontSize: 13.8, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", textAlign: "center", padding: 0 }}>
                   Reenviar código
                 </button>
               </>}
@@ -374,21 +374,21 @@ export default function AuthScreen({ onLogin, onSignup, onPasswordReset, loading
                 </div>
               </>}
 
-              {displayError && <div style={{ padding: "10px 14px", background: C.errPale, borderRadius: 8, fontSize: 12.5, color: C.err, fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.err} strokeWidth="2.5"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>{displayError}</div>}
+              {displayError && <div style={{ padding: "10px 14px", background: C.errPale, borderRadius: 8, fontSize: 13.8, color: C.err, fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.err} strokeWidth="2.5"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>{displayError}</div>}
               <Btn full onClick={submit} disabled={anyLoading}>{anyLoading ? "Cargando..." : btnLabels[mode]}</Btn>
               <div ref={bottomRef} />
             </div>
           </div>
           <div style={{ textAlign: "center", marginTop: 16 }}>
             {!isResetMode && <>
-              <span style={{ fontSize: 13, color: C.t2 }}>{mode === "login" ? "¿No tenés cuenta? " : "¿Ya tenés cuenta? "}</span>
-              <button onClick={toggle} style={{ background: "none", border: "none", color: C.pri, fontWeight: 700, fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}>{mode === "login" ? "Registrate" : "Iniciá sesión"}</button>
+              <span style={{ fontSize: 14.3, color: C.t2 }}>{mode === "login" ? "¿No tenés cuenta? " : "¿Ya tenés cuenta? "}</span>
+              <button onClick={toggle} style={{ background: "none", border: "none", color: C.pri, fontWeight: 700, fontSize: 14.3, cursor: "pointer", fontFamily: "inherit" }}>{mode === "login" ? "Registrate" : "Iniciá sesión"}</button>
             </>}
             {isResetMode && <>
-              <button onClick={() => switchMode("login")} style={{ background: "none", border: "none", color: C.pri, fontWeight: 700, fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}>Volver a iniciar sesión</button>
+              <button onClick={() => switchMode("login")} style={{ background: "none", border: "none", color: C.pri, fontWeight: 700, fontSize: 14.3, cursor: "pointer", fontFamily: "inherit" }}>Volver a iniciar sesión</button>
             </>}
           </div>
-          {canInstall && <button onClick={() => window.installPWA?.()} style={{ marginTop: 10, background: "none", border: "none", color: C.t3, fontSize: 11, fontWeight: 500, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 4, width: "100%" }}>{Ic.plus(C.t3, 12)} Instalar app</button>}
+          {canInstall && <button onClick={() => window.installPWA?.()} style={{ marginTop: 10, background: "none", border: "none", color: C.t3, fontSize: 12.1, fontWeight: 500, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 4, width: "100%" }}>{Ic.plus(C.t3, 12)} Instalar app</button>}
         </div>
       </div>
     </div>

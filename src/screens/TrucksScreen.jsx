@@ -66,20 +66,20 @@ export default function TrucksScreen({ onBack, embedded, user }) {
   return (
     <div style={{ flex: embedded?undefined:1, overflow: embedded?"visible":"auto", padding: embedded?0:undefined }}>
       {(saving||doneMsg) && <LoadingOverlay closing={!!doneMsg} closingText={doneMsg} onClose={()=>setDoneMsg("")}/>}
-      {!embedded && <div style={{ position:"sticky", top:0, zIndex:10, background:C.bg, padding:"18px 18px 8px" }}><button onClick={onBack} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 600, color: C.pri, marginBottom: 14, padding: 0, display: "flex", alignItems: "center", gap: 4 }}>{Ic.chev(C.pri, 18)} Menú</button></div>}
+      {!embedded && <div style={{ position:"sticky", top:0, zIndex:10, background:C.bg, padding:"18px 18px 8px" }}><button onClick={onBack} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", fontSize: 14.3, fontWeight: 600, color: C.pri, marginBottom: 14, padding: 0, display: "flex", alignItems: "center", gap: 4 }}>{Ic.chev(C.pri, 18)} Menú</button></div>}
       <div style={{ padding: embedded?0:"0 18px 18px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-        <div style={{ fontSize: 20, fontWeight: 800, letterSpacing: -0.3 }}>Mi Flota</div>
+        <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: -0.3 }}>Mi Flota</div>
         {canEdit && <Btn sm onClick={() => { setShowForm(!showForm); setMsg(null); }} icon={showForm ? Ic.cross(C.w, 14) : Ic.plus(C.w, 14)}>{showForm ? "Cerrar" : "Agregar"}</Btn>}
       </div>
 
       {/* Tabs */}
       <div style={{ display:"flex", gap:0, marginBottom:16, borderRadius:10, overflow:"hidden", border:`1.5px solid ${C.b1}` }}>
-        <button onClick={()=>switchTab("trucks")} style={{ flex:1, padding:"9px 0", fontFamily:"inherit", fontSize:12.5, fontWeight:tab==="trucks"?700:500, background:tab==="trucks"?C.acc:C.w, color:tab==="trucks"?C.w:C.t2, border:"none", cursor:"pointer" }}>Vehículos</button>
-        <button onClick={()=>switchTab("drivers")} style={{ flex:1, padding:"9px 0", fontFamily:"inherit", fontSize:12.5, fontWeight:tab==="drivers"?700:500, background:tab==="drivers"?C.acc:C.w, color:tab==="drivers"?C.w:C.t2, border:"none", cursor:"pointer", borderLeft:`1px solid ${C.b1}` }}>Choferes</button>
+        <button onClick={()=>switchTab("trucks")} style={{ flex:1, padding:"9px 0", fontFamily:"inherit", fontSize:13.8, fontWeight:tab==="trucks"?700:500, background:tab==="trucks"?C.acc:C.w, color:tab==="trucks"?C.w:C.t2, border:"none", cursor:"pointer" }}>Vehículos</button>
+        <button onClick={()=>switchTab("drivers")} style={{ flex:1, padding:"9px 0", fontFamily:"inherit", fontSize:13.8, fontWeight:tab==="drivers"?700:500, background:tab==="drivers"?C.acc:C.w, color:tab==="drivers"?C.w:C.t2, border:"none", cursor:"pointer", borderLeft:`1px solid ${C.b1}` }}>Choferes</button>
       </div>
 
-      {msg && <div style={{ padding: "10px 14px", borderRadius: 12, marginBottom: 12, fontSize: 12, fontWeight: 600, background: msg.k === "ok" ? C.okPale : C.errPale, color: msg.k === "ok" ? C.ok : C.err }}>{msg.t}</div>}
+      {msg && <div style={{ padding: "10px 14px", borderRadius: 12, marginBottom: 12, fontSize: 13.2, fontWeight: 600, background: msg.k === "ok" ? C.okPale : C.errPale, color: msg.k === "ok" ? C.ok : C.err }}>{msg.t}</div>}
 
       {/* ========== TRUCKS TAB ========== */}
       {tab === "trucks" && <>
@@ -100,9 +100,9 @@ export default function TrucksScreen({ onBack, embedded, user }) {
                   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                     {Ic.truck(C.acc, 20)}
                     <div>
-                      <div style={{ fontSize: 14, fontWeight: 700 }}>{t.plate}</div>
-                      {t.model && <div style={{ fontSize: 11, color: C.t3 }}>{t.model}</div>}
-                      {t.assignedUser && <div style={{ fontSize: 10, color: C.t2 }}>Chofer: {t.assignedUser.name}</div>}
+                      <div style={{ fontSize: 15.4, fontWeight: 700 }}>{t.plate}</div>
+                      {t.model && <div style={{ fontSize: 12.1, color: C.t3 }}>{t.model}</div>}
+                      {t.assignedUser && <div style={{ fontSize: 11, color: C.t2 }}>Chofer: {t.assignedUser.name}</div>}
                     </div>
                   </div>
                   {canEdit && <button aria-label="Desactivar camión" disabled={saving} onClick={() => handleDeactivateTruck(t.id)} style={{ background: "none", border: "none", cursor: saving?"not-allowed":"pointer", padding: 6, opacity:saving?0.4:1 }}>{Ic.ban(C.err, 18)}</button>}
@@ -131,8 +131,8 @@ export default function TrucksScreen({ onBack, embedded, user }) {
                   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                     {Ic.user(C.info||C.sec, 20)}
                     <div>
-                      <div style={{ fontSize: 14, fontWeight: 700 }}>{d.name}</div>
-                      {d.phone && <div style={{ fontSize: 11, color: C.t3 }}>{d.phone}</div>}
+                      <div style={{ fontSize: 15.4, fontWeight: 700 }}>{d.name}</div>
+                      {d.phone && <div style={{ fontSize: 12.1, color: C.t3 }}>{d.phone}</div>}
                     </div>
                   </div>
                   {canEdit && <button aria-label="Desactivar chofer" disabled={saving} onClick={() => handleDeactivateDriver(d.id)} style={{ background: "none", border: "none", cursor: saving?"not-allowed":"pointer", padding: 6, opacity:saving?0.4:1 }}>{Ic.ban(C.err, 18)}</button>}

@@ -16,8 +16,8 @@ export default function ConfirmActionModal({ freight, title, btnLabel, btnVarian
   return (
     <ModalOverlay onClose={onClose} maxWidth={360} loading={loading} closing={closing} closingText={closingText} quick>
       {icon && <div style={{display:"flex",justifyContent:"center",marginBottom:12}}><div style={{width:48,height:48,borderRadius:24,background:`${btnVariant==="acc"?C.acc:C.pri}12`,display:"flex",alignItems:"center",justifyContent:"center"}}>{icon}</div></div>}
-      <div style={{fontSize:17,fontWeight:700,marginBottom:6,textAlign:"center"}}>{title}</div>
-      <div style={{fontSize:12,color:C.t2,marginBottom:showTonsInput?12:20,textAlign:"center"}}>{freight.code} · {freight.grain} · {freight.tons}{freight.unit||"tn"}</div>
+      <div style={{fontSize:18.7,fontWeight:700,marginBottom:6,textAlign:"center"}}>{title}</div>
+      <div style={{fontSize:13.2,color:C.t2,marginBottom:showTonsInput?12:20,textAlign:"center"}}>{freight.code} · {freight.grain} · {freight.tons}{freight.unit||"tn"}</div>
       {showTonsInput && <div style={{marginBottom:16}}>
         <NumericStepper label="Toneladas cargadas" value={tons} onChange={setTons} min={0} step={0.01} placeholder="Ej: 30.5" />
       </div>}

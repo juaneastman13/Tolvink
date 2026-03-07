@@ -142,8 +142,8 @@ export async function generateFreightPDF(freight, auditLog = []) {
     startY: y, head:[], body: infoRows, theme:'plain',
     margin:{left:M,right:M},
     columnStyles:{
-      0:{cellWidth:35,fontStyle:'bold',textColor:hex(T2),fontSize:9},
-      1:{textColor:hex(T1),fontSize:9},
+      0:{cellWidth:35,fontStyle:'bold',textColor:hex(T2),fontSize:9.9},
+      1:{textColor:hex(T1),fontSize:9.9},
     },
     styles:{
       cellPadding:{top:2,bottom:2,left:4,right:4},
@@ -196,8 +196,8 @@ export async function generateFreightPDF(freight, auditLog = []) {
     startY: y, head:[], body: routeRows, theme:'plain',
     margin:{left:M,right:M},
     columnStyles:{
-      0:{cellWidth:35,fontStyle:'bold',textColor:hex(T2),fontSize:9},
-      1:{textColor:hex(T1),fontSize:9},
+      0:{cellWidth:35,fontStyle:'bold',textColor:hex(T2),fontSize:9.9},
+      1:{textColor:hex(T1),fontSize:9.9},
     },
     styles:{
       cellPadding:{top:2,bottom:2,left:4,right:4},
@@ -255,8 +255,8 @@ export async function generateFreightPDF(freight, auditLog = []) {
       ]),
       theme:'grid',
       margin:{left:M,right:M},
-      headStyles:{fillColor:hex(ACC),textColor:[255,255,255],fontStyle:'bold',fontSize:8,font:'helvetica'},
-      styles:{cellPadding:{top:2,bottom:2,left:3,right:3},fontSize:8,textColor:hex(T1),lineColor:hex(B1),lineWidth:0.2,font:'helvetica'},
+      headStyles:{fillColor:hex(ACC),textColor:[255,255,255],fontStyle:'bold',fontSize:8.8,font:'helvetica'},
+      styles:{cellPadding:{top:2,bottom:2,left:3,right:3},fontSize:8.8,textColor:hex(T1),lineColor:hex(B1),lineWidth:0.2,font:'helvetica'},
       alternateRowStyles:{fillColor:[255,243,232]},
       columnStyles:{0:{fontStyle:'bold',cellWidth:28},1:{cellWidth:28},2:{cellWidth:28},3:{cellWidth:32}},
     });
@@ -291,8 +291,8 @@ export async function generateFreightPDF(freight, auditLog = []) {
       ]),
       theme:'grid',
       margin:{left:M,right:M},
-      headStyles:{fillColor:hex(PRI),textColor:[255,255,255],fontStyle:'bold',fontSize:8,font:'helvetica'},
-      styles:{cellPadding:{top:2,bottom:2,left:3,right:3},fontSize:8,textColor:hex(T1),lineColor:hex(B1),lineWidth:0.2,font:'helvetica'},
+      headStyles:{fillColor:hex(PRI),textColor:[255,255,255],fontStyle:'bold',fontSize:8.8,font:'helvetica'},
+      styles:{cellPadding:{top:2,bottom:2,left:3,right:3},fontSize:8.8,textColor:hex(T1),lineColor:hex(B1),lineWidth:0.2,font:'helvetica'},
       alternateRowStyles:{fillColor:[228,243,234]},
     });
     y = doc.lastAutoTable.finalY + 8;

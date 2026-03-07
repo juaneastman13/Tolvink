@@ -224,11 +224,11 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
       return (
         <div key={f.id} onClick={() => selectFreight(f.id, source)} style={{ background: isSel ? C.priPale : C.w, border: `1px solid ${isSel ? C.pri : C.b1}`, borderLeft: `4px solid ${st.color}`, borderRadius: 8, padding: "8px 10px", cursor: "pointer", transition: "background 0.15s" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <span style={{ fontSize: 10, fontWeight: 700, fontFamily: MONO, color: C.t2 }}>{f.code}</span>
+            <span style={{ fontSize: 11, fontWeight: 700, fontFamily: MONO, color: C.t2 }}>{f.code}</span>
             <Bd color={st.color} bg={st.bg} small>{st.label}</Bd>
           </div>
-          <div style={{ fontSize: 12, fontWeight: 700, color: C.t1, marginTop: 3 }}>{f.grain === "Otros" ? f.productTypeOther || "Otros" : f.grain} · {f.tons} {f.unit || "tn"}</div>
-          {f.loadDate && <div style={{ fontSize: 10, color: C.t3, marginTop: 2 }}>{Ic.cal(C.t3, 9)} {formatFreightDate(f.loadDate)}{f.loadTime?.trim() ? ` · ${f.loadTime}` : ""}</div>}
+          <div style={{ fontSize: 13.2, fontWeight: 700, color: C.t1, marginTop: 3 }}>{f.grain === "Otros" ? f.productTypeOther || "Otros" : f.grain} · {f.tons} {f.unit || "tn"}</div>
+          {f.loadDate && <div style={{ fontSize: 11, color: C.t3, marginTop: 2 }}>{Ic.cal(C.t3, 9)} {formatFreightDate(f.loadDate)}{f.loadTime?.trim() ? ` · ${f.loadTime}` : ""}</div>}
         </div>
       );
     }
@@ -239,16 +239,16 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
           {/* Left column */}
           <div style={{ display: "flex", flexDirection: "column", gap: 3, padding: "8px 12px", borderRight: `1px solid ${C.b2}`, minWidth: 0 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <span style={{ fontSize: 12, fontWeight: 700, fontFamily: MONO, color: C.t2 }}>{f.code}</span>
+              <span style={{ fontSize: 13.2, fontWeight: 700, fontFamily: MONO, color: C.t2 }}>{f.code}</span>
               <Bd color={st.color} bg={st.bg} small>{st.label}</Bd>
             </div>
-            <div style={{ fontSize: 12, fontWeight: 700, color: C.t1 }}>{f.grain === "Otros" ? f.productTypeOther || "Otros" : f.grain} · {f.tons} {f.unit || "tn"}</div>
-            {f.loadDate && <div style={{ fontSize: 13, color: C.t3, fontWeight: 500 }}>{formatFreightDate(f.loadDate)}{f.loadTime?.trim() ? ` · ${f.loadTime}` : ""}</div>}
+            <div style={{ fontSize: 13.2, fontWeight: 700, color: C.t1 }}>{f.grain === "Otros" ? f.productTypeOther || "Otros" : f.grain} · {f.tons} {f.unit || "tn"}</div>
+            {f.loadDate && <div style={{ fontSize: 14.3, color: C.t3, fontWeight: 500 }}>{formatFreightDate(f.loadDate)}{f.loadTime?.trim() ? ` · ${f.loadTime}` : ""}</div>}
           </div>
           {/* Right column */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 3, padding: "8px 12px", fontSize: 11, color: C.t2, minWidth: 0 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 3, padding: "8px 12px", fontSize: 12.1, color: C.t2, minWidth: 0 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 4 }}>{Ic.plant(C.t3, 12)} <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.destName}</span>{f.destLat&&f.destLng&&<span onClick={(e)=>{e.stopPropagation();goToMap(f.destLat,f.destLng,f.destName);}} style={{cursor:"pointer",opacity:0.6,marginLeft:3,flexShrink:0,display:"inline-flex"}} title="Ver en mapa">{Ic.pin(C.t3,12)}</span>}</div>
-            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>{Ic.truck(C.t3, 12)} <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.transporterName || "Sin asignar"}{f.truckPlate ? ` (${f.truckPlate})` : ""}</span>{f.isOwnFleet && <span style={{ fontSize: 10, color: C.acc, fontWeight: 600, marginLeft: 4, flexShrink: 0 }}>Flota propia</span>}{f.isMultiTruck && <span style={{ fontSize: 10, color: C.info, fontWeight: 600, marginLeft: 4, flexShrink: 0 }}>{f.assignedTruckCount}/{f.truckCount} cam.</span>}</div>
+            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>{Ic.truck(C.t3, 12)} <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.transporterName || "Sin asignar"}{f.truckPlate ? ` (${f.truckPlate})` : ""}</span>{f.isOwnFleet && <span style={{ fontSize: 11, color: C.acc, fontWeight: 600, marginLeft: 4, flexShrink: 0 }}>Flota propia</span>}{f.isMultiTruck && <span style={{ fontSize: 11, color: C.info, fontWeight: 600, marginLeft: 4, flexShrink: 0 }}>{f.assignedTruckCount}/{f.truckCount} cam.</span>}</div>
           </div>
         </div>
       </div>
@@ -263,8 +263,8 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
       <div key={gKey}>
         <button onClick={() => toggleGroup(gKey)} style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, padding: "8px 0", background: "none", border: "none", borderBottom: `1px solid ${C.b2}`, cursor: "pointer", fontFamily: "inherit", textAlign: "left" }}>
           {group.icon(group.color, 14)}
-          <span style={{ fontSize: 14, fontWeight: 800, color: group.color }}>{group.items.length}</span>
-          <div style={{ flex: 1, fontSize: 13, fontWeight: 600, color: C.t1 }}>{group.label}</div>
+          <span style={{ fontSize: 15.4, fontWeight: 800, color: group.color }}>{group.items.length}</span>
+          <div style={{ flex: 1, fontSize: 14.3, fontWeight: 600, color: C.t1 }}>{group.label}</div>
           <span style={{ display: "flex", transform: isOpen ? "rotate(270deg)" : "rotate(90deg)", transition: "transform 0.15s ease" }}>{Ic.chev(C.t3, 14)}</span>
         </button>
         {isOpen && (
@@ -291,19 +291,19 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
       {totalPendingAll > 0 && (<>
         <div style={{ padding: compact ? "8px 10px" : "12px 14px", borderRadius: 12, background: `${C.acc}0D`, borderLeft: `3px solid ${C.acc}`, marginBottom: 8 }}>
           <div style={{ display: "flex", alignItems: "center", gap: compact ? 8 : 10 }}>
-            {!compact && <span style={{ fontSize: 22, fontWeight: 800, color: C.acc, lineHeight: 1, minWidth: 28, textAlign: "center" }}>{pendingCount}</span>}
+            {!compact && <span style={{ fontSize: 24.2, fontWeight: 800, color: C.acc, lineHeight: 1, minWidth: 28, textAlign: "center" }}>{pendingCount}</span>}
             {compact && <div style={{ width: 26, height: 26, borderRadius: "50%", background: C.acc, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, position: "relative" }}>
               {Ic.bell(C.w, 13)}
-              <div style={{ position: "absolute", top: -3, right: -3, minWidth: 15, height: 15, borderRadius: 8, background: C.err, color: C.w, fontSize: 8, fontWeight: 700, padding: "0 3px", display: "flex", alignItems: "center", justifyContent: "center", border: `2px solid ${C.w}` }}>{pendingCount}</div>
+              <div style={{ position: "absolute", top: -3, right: -3, minWidth: 15, height: 15, borderRadius: 8, background: C.err, color: C.w, fontSize: 8.8, fontWeight: 700, padding: "0 3px", display: "flex", alignItems: "center", justifyContent: "center", border: `2px solid ${C.w}` }}>{pendingCount}</div>
             </div>}
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: compact ? 11 : 13, fontWeight: 700, color: C.acc }}>{compact ? "Con pendientes de mi parte" : `Accion${pendingCount !== 1 ? "es" : ""} pendiente${pendingCount !== 1 ? "s" : ""}`}</div>
-              {!compact && <div style={{ fontSize: 10.5, color: C.t3 }}>Requieren tu atención</div>}
+              <div style={{ fontSize: compact ? 12.1 : 14.3, fontWeight: 700, color: C.acc }}>{compact ? "Con pendientes de mi parte" : `Accion${pendingCount !== 1 ? "es" : ""} pendiente${pendingCount !== 1 ? "s" : ""}`}</div>
+              {!compact && <div style={{ fontSize: 11.6, color: C.t3 }}>Requieren tu atención</div>}
             </div>
           </div>
           <div style={{ display: "flex", gap: 4, marginTop: 6, flexWrap: "wrap" }}>
             {[{k:"all",l:"Todo"},{k:"today",l:"Hoy"},{k:"tomorrow",l:"Manana"},{k:"week",l:"Semana"}].map(o => (
-              <button key={o.k} onClick={() => setPendingFilter(o.k)} style={{ padding: compact ? "3px 6px" : "4px 8px", borderRadius: 6, border: `1px solid ${pendingFilter === o.k ? C.acc : C.b1}`, background: pendingFilter === o.k ? `${C.acc}15` : "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: compact ? 9 : 10, fontWeight: pendingFilter === o.k ? 700 : 500, color: pendingFilter === o.k ? C.acc : C.t3 }}>{o.l}</button>
+              <button key={o.k} onClick={() => setPendingFilter(o.k)} style={{ padding: compact ? "3px 6px" : "4px 8px", borderRadius: 6, border: `1px solid ${pendingFilter === o.k ? C.acc : C.b1}`, background: pendingFilter === o.k ? `${C.acc}15` : "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: compact ? 9.9 : 11, fontWeight: pendingFilter === o.k ? 700 : 500, color: pendingFilter === o.k ? C.acc : C.t3 }}>{o.l}</button>
             ))}
           </div>
         </div>
@@ -312,7 +312,7 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
             {pendingByAction.map(g => renderGroup({ key: g.actionKey, label: g.label, icon: actionIcon(g.icon), color: g.color, items: g.items }, "pa", "pending"))}
           </div>
         )}
-        {!compact && pendingByAction.length === 0 && <div style={{ padding:"12px 16px", fontSize:12, color:C.t3, display:"flex", alignItems:"center", gap:8 }}>{Ic.chk(C.ok,14)} Sin pendientes en este periodo</div>}
+        {!compact && pendingByAction.length === 0 && <div style={{ padding:"12px 16px", fontSize:13.2, color:C.t3, display:"flex", alignItems:"center", gap:8 }}>{Ic.chk(C.ok,14)} Sin pendientes en este periodo</div>}
       </>)}
 
       {/* Sin pendientes de mi parte */}
@@ -321,11 +321,11 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
           <div style={{ width: compact ? 22 : 28, height: compact ? 22 : 28, borderRadius: "50%", background: C.ok, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
             {Ic.chk(C.w, compact ? 11 : 14)}
           </div>
-          <div style={{ flex: 1, fontSize: compact ? 11 : 12, fontWeight: 700, color: C.ok }}>Sin pendientes de mi parte</div>
+          <div style={{ flex: 1, fontSize: compact ? 12.1 : 13.2, fontWeight: 700, color: C.ok }}>Sin pendientes de mi parte</div>
         </div>
         <div style={{ display: "flex", gap: 4, marginTop: 6, flexWrap: "wrap" }}>
           {[{k:"all",l:"Todo"},{k:"today",l:"Hoy"},{k:"tomorrow",l:"Manana"},{k:"week",l:"Semana"}].map(o => (
-            <button key={o.k} onClick={() => setSummaryFilter(o.k)} style={{ padding: compact ? "3px 6px" : "4px 8px", borderRadius: 6, border: `1px solid ${summaryFilter === o.k ? C.ok : C.b1}`, background: summaryFilter === o.k ? `${C.ok}15` : "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: compact ? 9 : 10, fontWeight: summaryFilter === o.k ? 700 : 500, color: summaryFilter === o.k ? C.ok : C.t3 }}>{o.l}</button>
+            <button key={o.k} onClick={() => setSummaryFilter(o.k)} style={{ padding: compact ? "3px 6px" : "4px 8px", borderRadius: 6, border: `1px solid ${summaryFilter === o.k ? C.ok : C.b1}`, background: summaryFilter === o.k ? `${C.ok}15` : "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: compact ? 9.9 : 11, fontWeight: summaryFilter === o.k ? 700 : 500, color: summaryFilter === o.k ? C.ok : C.t3 }}>{o.l}</button>
           ))}
         </div>
       </div>
@@ -354,8 +354,8 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
               {Ic.cal(C.w, compact ? 13 : 16)}
             </div>
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: compact ? 11 : 12, fontWeight: 700, color: C.pri }}>{compact ? `Hoy (${todayFreights.length})` : formatTodayHeader()}</div>
-              {!compact && <div style={{ fontSize: 10, color: C.t3 }}>{todayFreights.length} flete{todayFreights.length !== 1 ? "s" : ""} · {Math.round(todayTons)} tn totales</div>}
+              <div style={{ fontSize: compact ? 12.1 : 13.2, fontWeight: 700, color: C.pri }}>{compact ? `Hoy (${todayFreights.length})` : formatTodayHeader()}</div>
+              {!compact && <div style={{ fontSize: 11, color: C.t3 }}>{todayFreights.length} flete{todayFreights.length !== 1 ? "s" : ""} · {Math.round(todayTons)} tn totales</div>}
             </div>
           </div>
         </div>
@@ -370,8 +370,8 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
           <div key={g.key} style={{ marginBottom: 12 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 0", borderBottom: `1px solid ${C.b2}`, marginBottom: 8 }}>
               <div style={{ width: 8, height: 8, borderRadius: "50%", background: g.color, flexShrink: 0 }} />
-              <span style={{ fontSize: 11, fontWeight: 700, color: g.color, textTransform: "uppercase", letterSpacing: 0.5 }}>{g.label}</span>
-              <span style={{ fontSize: 11, fontWeight: 600, color: C.t3 }}>({g.items.length})</span>
+              <span style={{ fontSize: 12.1, fontWeight: 700, color: g.color, textTransform: "uppercase", letterSpacing: 0.5 }}>{g.label}</span>
+              <span style={{ fontSize: 12.1, fontWeight: 600, color: C.t3 }}>({g.items.length})</span>
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 8, paddingLeft: compact ? 12 : 16, borderLeft: `2px solid ${g.color}30` }}>
               {g.items.map(f => renderCard(f, pendingMap.get(f.id), "daily"))}
@@ -411,14 +411,14 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
           {/* Pending indicator — pulsing dot */}
           {pa && <div style={{ position: "absolute", top: 10, right: 12, display: "flex", alignItems: "center", gap: 5 }}>
             <span style={{ width: 7, height: 7, borderRadius: "50%", background: C.acc, display: "inline-block", animation: "dotPulse 1.5s ease-in-out infinite", flexShrink: 0 }} />
-            <span style={{ fontSize: 10, fontWeight: 700, color: C.acc, whiteSpace: "nowrap" }}>{pa.action}</span>
+            <span style={{ fontSize: 11, fontWeight: 700, color: C.acc, whiteSpace: "nowrap" }}>{pa.action}</span>
           </div>}
           <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
-            <span style={{ fontSize: 11, fontWeight: 700, fontFamily: MONO, color: C.t2 }}>{f.code}</span>
+            <span style={{ fontSize: 12.1, fontWeight: 700, fontFamily: MONO, color: C.t2 }}>{f.code}</span>
             <Bd color={st.color} bg={st.bg} small>{st.label}</Bd>
           </div>
-          <div style={{ fontSize: 13, fontWeight: 700, color: C.t1, marginBottom: 3 }}>{f.grain === "Otros" ? f.productTypeOther || "Otros" : f.grain} · {f.tons} {f.unit || "tn"}</div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 4, fontSize: 11, color: C.t2 }}>
+          <div style={{ fontSize: 14.3, fontWeight: 700, color: C.t1, marginBottom: 3 }}>{f.grain === "Otros" ? f.productTypeOther || "Otros" : f.grain} · {f.tons} {f.unit || "tn"}</div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 4, fontSize: 12.1, color: C.t2 }}>
             {f.loadDate && <span style={{ display: "flex", alignItems: "center", gap: 3 }}>{Ic.cal(C.t3, 10)} {formatFreightDate(f.loadDate)}{f.loadTime ? ` · ${f.loadTime}` : ""}</span>}
             <span style={{ display: "flex", alignItems: "center", gap: 3 }}>{Ic.plant(C.t3, 10)} {f.destName || "Sin destino"}</span>
             <span style={{ display: "flex", alignItems: "center", gap: 3 }}>{Ic.truck(C.t3, 10)} {f.transporterName || "Sin asignar"}</span>
@@ -438,19 +438,19 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
             {Ic.cal(C.w, 14)}
           </div>
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: C.pri }}>{formatTodayHeader()}</div>
-            <div style={{ fontSize: 10, color: C.t3 }}>{todayFreights.length} flete{todayFreights.length !== 1 ? "s" : ""} · {Math.round(todayTons)} tn totales</div>
+            <div style={{ fontSize: 14.3, fontWeight: 700, color: C.pri }}>{formatTodayHeader()}</div>
+            <div style={{ fontSize: 11, color: C.t3 }}>{todayFreights.length} flete{todayFreights.length !== 1 ? "s" : ""} · {Math.round(todayTons)} tn totales</div>
           </div>
         </div>
         {todayFreights.length === 0 && !loading && (
-          <div style={{ fontSize: 11, color: C.t3, textAlign: "center", padding: "8px 0" }}>Sin fletes programados para hoy</div>
+          <div style={{ fontSize: 12.1, color: C.t3, textAlign: "center", padding: "8px 0" }}>Sin fletes programados para hoy</div>
         )}
         {dailyGroups.map(g => (
           <div key={g.key} style={{ marginBottom: 8 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
               <div style={{ width: 7, height: 7, borderRadius: "50%", background: g.color, flexShrink: 0 }} />
-              <span style={{ fontSize: 11, fontWeight: 700, color: g.color }}>{g.label}</span>
-              <span style={{ fontSize: 10, fontWeight: 600, color: C.t3 }}>({g.items.length})</span>
+              <span style={{ fontSize: 12.1, fontWeight: 700, color: g.color }}>{g.label}</span>
+              <span style={{ fontSize: 11, fontWeight: 600, color: C.t3 }}>({g.items.length})</span>
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 6, paddingLeft: 14, borderLeft: `2px solid ${g.color}30` }}>
               {g.items.map(f => {
@@ -458,11 +458,11 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
                 return (
                   <div key={f.id} onClick={() => selectFreight(f.id, "daily")} style={{ padding: "7px 10px", borderRadius: 8, background: C.w, border: `1px solid ${C.b1}`, cursor: "pointer", transition: "background 0.15s" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <span style={{ fontSize: 10, fontWeight: 700, fontFamily: MONO, color: C.t2 }}>{f.code}</span>
-                      <span style={{ fontSize: 11, fontWeight: 600, color: C.t1, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.grain === "Otros" ? f.productTypeOther || "Otros" : f.grain} · {f.tons} tn</span>
-                      {f.loadTime && <span style={{ fontSize: 10, color: C.t3 }}>{f.loadTime}</span>}
+                      <span style={{ fontSize: 11, fontWeight: 700, fontFamily: MONO, color: C.t2 }}>{f.code}</span>
+                      <span style={{ fontSize: 12.1, fontWeight: 600, color: C.t1, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.grain === "Otros" ? f.productTypeOther || "Otros" : f.grain} · {f.tons} tn</span>
+                      {f.loadTime && <span style={{ fontSize: 11, color: C.t3 }}>{f.loadTime}</span>}
                     </div>
-                    <div style={{ display: "flex", gap: 10, marginTop: 3, fontSize: 10, color: C.t3 }}>
+                    <div style={{ display: "flex", gap: 10, marginTop: 3, fontSize: 11, color: C.t3 }}>
                       {(f.fieldName || f.originName) && <span style={{ display: "flex", alignItems: "center", gap: 3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{Ic.pin(C.t3, 9)} {f.fieldName || f.originName}</span>}
                       {f.destName && <span style={{ display: "flex", alignItems: "center", gap: 3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{Ic.plant(C.t3, 9)} {f.destName}</span>}
                     </div>
@@ -483,8 +483,8 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
           <>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
               <div style={{ width: 8, height: 8, borderRadius: "50%", background: C.acc, animation: "dotPulse 1.5s ease-in-out infinite" }} />
-              <span style={{ fontSize: 13, fontWeight: 700, color: C.acc }}>Pendientes de mi parte</span>
-              <span style={{ fontSize: 11, fontWeight: 600, color: C.t3 }}>({pendingSimple.length})</span>
+              <span style={{ fontSize: 14.3, fontWeight: 700, color: C.acc }}>Pendientes de mi parte</span>
+              <span style={{ fontSize: 12.1, fontWeight: 600, color: C.t3 }}>({pendingSimple.length})</span>
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 20 }}>
               {pendingSimple.map(renderSimpleCard)}
@@ -496,8 +496,8 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
             {pendingSimple.length > 0 && (
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
                 <div style={{ width: 8, height: 8, borderRadius: "50%", background: C.t2 }} />
-                <span style={{ fontSize: 13, fontWeight: 700, color: C.t2 }}>Sin pendientes de mi parte</span>
-                <span style={{ fontSize: 11, fontWeight: 600, color: C.t3 }}>({restSimple.length})</span>
+                <span style={{ fontSize: 14.3, fontWeight: 700, color: C.t2 }}>Sin pendientes de mi parte</span>
+                <span style={{ fontSize: 12.1, fontWeight: 600, color: C.t3 }}>({restSimple.length})</span>
               </div>
             )}
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>

@@ -67,17 +67,17 @@ export default function EditTripModal({ freight, assignment, transporters, onClo
     if (msg) { setClosingText(msg); setClosing(true); }
   };
 
-  const sel = { width: "100%", padding: "9px 12px", borderRadius: 8, border: `1px solid ${C.b1}`, fontSize: 13, fontFamily: "inherit", background: C.w, color: C.t1, boxSizing: "border-box", appearance: "none", WebkitAppearance: "none", backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`, backgroundRepeat: "no-repeat", backgroundPosition: "right 10px center", paddingRight: 30, cursor: "pointer" };
-  const lbl = { fontSize: 10.5, fontWeight: 600, color: C.t3, marginBottom: 4, display: "block", textTransform: "uppercase", letterSpacing: 0.5 };
+  const sel = { width: "100%", padding: "9px 12px", borderRadius: 8, border: `1px solid ${C.b1}`, fontSize: 14.3, fontFamily: "inherit", background: C.w, color: C.t1, boxSizing: "border-box", appearance: "none", WebkitAppearance: "none", backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`, backgroundRepeat: "no-repeat", backgroundPosition: "right 10px center", paddingRight: 30, cursor: "pointer" };
+  const lbl = { fontSize: 11.6, fontWeight: 600, color: C.t3, marginBottom: 4, display: "block", textTransform: "uppercase", letterSpacing: 0.5 };
   const externalTs = (transporters || []).filter(x => x.id !== freight.originCompanyId);
 
   return (
     <ModalOverlay onClose={onClose} maxWidth={400} loading={loading} closing={closing} closingText={closingText}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
         {Ic.doc(C.pri, 20)}
-        <span style={{ fontSize: 17, fontWeight: 700 }}>Editar viaje #{assignment.tripNumber}</span>
+        <span style={{ fontSize: 18.7, fontWeight: 700 }}>Editar viaje #{assignment.tripNumber}</span>
       </div>
-      <div style={{ fontSize: 12, color: C.t2, marginBottom: 18 }}>{freight.code} · {freight.grain} · {freight.tons}tn</div>
+      <div style={{ fontSize: 13.2, color: C.t2, marginBottom: 18 }}>{freight.code} · {freight.grain} · {freight.tons}tn</div>
 
       {/* Transporter selector (skip for own-fleet) */}
       {!isOwnFleet && <>

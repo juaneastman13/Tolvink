@@ -69,10 +69,10 @@ export class SafeZone extends Component {
   componentDidCatch(error, info) { log.error("SafeZone", error, info); }
   render() {
     if (this.state.hasError) {
-      return <div style={{ padding: 12, background: "#FEE2E2", borderRadius: 8, fontSize: 12, color: "#DC2626" }}>
+      return <div style={{ padding: 12, background: "#FEE2E2", borderRadius: 8, fontSize: 13.2, color: "#DC2626" }}>
         <div style={{ fontWeight: 700, marginBottom: 4 }}>Error en este componente</div>
         <div>{this.state.error?.message || "Error desconocido"}</div>
-        <button onClick={() => this.setState({ hasError: false, error: null })} style={{ marginTop: 8, padding: "4px 12px", borderRadius: 6, border: "1px solid #DC2626", background: "white", color: "#DC2626", fontSize: 11, fontWeight: 600, cursor: "pointer" }}>Reintentar</button>
+        <button onClick={() => this.setState({ hasError: false, error: null })} style={{ marginTop: 8, padding: "4px 12px", borderRadius: 6, border: "1px solid #DC2626", background: "white", color: "#DC2626", fontSize: 12.1, fontWeight: 600, cursor: "pointer" }}>Reintentar</button>
       </div>;
     }
     return this.props.children;
@@ -182,14 +182,14 @@ export function LocationPicker({ label, value, onChange, defaultCenter }) {
 
   return (
     <div style={{ marginBottom: 6 }}>
-      <div style={{ fontSize: 11, fontWeight: 600, color: C.t2, marginBottom: 4 }}>{label || "Ubicación"}</div>
-      {initError && <div style={{ fontSize: 11, color: C.err, marginBottom: 4 }}>Error al cargar el mapa. Intentá recargar la página.</div>}
+      <div style={{ fontSize: 12.1, fontWeight: 600, color: C.t2, marginBottom: 4 }}>{label || "Ubicación"}</div>
+      {initError && <div style={{ fontSize: 12.1, color: C.err, marginBottom: 4 }}>Error al cargar el mapa. Intentá recargar la página.</div>}
       <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
         <input ref={inputRef} value={addr} onChange={e => setAddr(e.target.value)}
           placeholder="Buscar dirección o tocar en el mapa..."
-          style={{ flex: 1, padding: "10px 12px", borderRadius: 8, border: `1.5px solid ${C.b1}`, fontSize: 12.5, fontFamily: "inherit", outline: "none", color: C.t1, background: C.w, boxSizing: "border-box" }}
+          style={{ flex: 1, padding: "10px 12px", borderRadius: 8, border: `1.5px solid ${C.b1}`, fontSize: 13.8, fontFamily: "inherit", outline: "none", color: C.t1, background: C.w, boxSizing: "border-box" }}
           onFocus={() => setShowMap(true)} />
-        <button onClick={() => { if(!showMap) setShowMap(true); else openFull(); }} style={{ padding: "9px 12px", borderRadius: 8, border: `1.5px solid ${value?.lat ? C.ok : C.b1}`, background: value?.lat ? C.okPale : C.w, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 4, fontSize: 11, fontWeight: 600, color: value?.lat ? C.ok : C.t3 }}>
+        <button onClick={() => { if(!showMap) setShowMap(true); else openFull(); }} style={{ padding: "9px 12px", borderRadius: 8, border: `1.5px solid ${value?.lat ? C.ok : C.b1}`, background: value?.lat ? C.okPale : C.w, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 4, fontSize: 12.1, fontWeight: 600, color: value?.lat ? C.ok : C.t3 }}>
           {Ic.pin(value?.lat ? C.ok : C.t3, 14)} {value?.lat ? "✓" : "Mapa"}
         </button>
       </div>
@@ -201,7 +201,7 @@ export function LocationPicker({ label, value, onChange, defaultCenter }) {
           <button onClick={openFull} style={{ position:"absolute", top:8, right:8, zIndex:5, padding:"6px 8px", borderRadius:6, background:"rgba(255,255,255,0.9)", border:`1px solid ${C.b1}`, cursor:"pointer", display:"flex", alignItems:"center", boxShadow:"0 1px 4px rgba(0,0,0,0.15)" }}>
             {Ic.expand(C.t1,16)}
           </button>
-          {value?.lat && <div style={{ fontSize: 10, color: C.t3, padding: "4px 8px", background: C.bg }}>{value.lat.toFixed(5)}, {value.lng.toFixed(5)}</div>}
+          {value?.lat && <div style={{ fontSize: 11, color: C.t3, padding: "4px 8px", background: C.bg }}>{value.lat.toFixed(5)}, {value.lng.toFixed(5)}</div>}
         </div>
       )}
     </div>
@@ -304,15 +304,15 @@ export function LocPickerFullscreen({ value, onChange, defaultCenter, label, onC
 
   return <>
     <div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 12px",background:C.w,borderBottom:`1px solid ${C.b2}`,flexShrink:0,zIndex:10}}>
-      <button onClick={onClose} style={{display:"flex",alignItems:"center",gap:6,padding:"7px 12px",borderRadius:8,border:`1.5px solid ${C.b1}`,background:C.bg,cursor:"pointer",fontSize:13,fontWeight:700,color:C.pri,fontFamily:"inherit",flexShrink:0}}>{Ic.chev(C.pri,14)} Listo</button>
+      <button onClick={onClose} style={{display:"flex",alignItems:"center",gap:6,padding:"7px 12px",borderRadius:8,border:`1.5px solid ${C.b1}`,background:C.bg,cursor:"pointer",fontSize:14.3,fontWeight:700,color:C.pri,fontFamily:"inherit",flexShrink:0}}>{Ic.chev(C.pri,14)} Listo</button>
       <input ref={searchRef} value={addr} onChange={e => setAddr(e.target.value)} placeholder="Buscar dirección..."
-        style={{flex:1,padding:"10px 14px",borderRadius:10,border:`1.5px solid ${C.b1}`,fontSize:14,fontFamily:"inherit",outline:"none",color:C.t1,background:C.bg}} />
+        style={{flex:1,padding:"10px 14px",borderRadius:10,border:`1.5px solid ${C.b1}`,fontSize:15.4,fontFamily:"inherit",outline:"none",color:C.t1,background:C.bg}} />
     </div>
     <div style={{flex:1,minHeight:0,position:"relative"}}>
       <div ref={mapRef} style={{position:"absolute",inset:0}} />
     </div>
     {curValue?.lat && (
-      <div style={{fontSize:11,color:C.t3,padding:"8px 16px",background:C.w,textAlign:"center",flexShrink:0,borderTop:`1px solid ${C.b2}`}}>
+      <div style={{fontSize:12.1,color:C.t3,padding:"8px 16px",background:C.w,textAlign:"center",flexShrink:0,borderTop:`1px solid ${C.b2}`}}>
         {label || "Ubicación"}: {Number(curValue.lat).toFixed(5)}, {Number(curValue.lng).toFixed(5)}
       </div>
     )}
@@ -570,7 +570,7 @@ export function FreightMap({ freightId, originLat, originLng, destLat, destLng, 
   if (!hasAnyCoord) return (
     <div style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: 12, padding: 32, textAlign: "center", boxShadow: C.sh }}>
       {Ic.pin(C.t3, 28)}
-      <div style={{ fontSize: 12, color: C.t3, marginTop: 8 }}>Ubicación no disponible</div>
+      <div style={{ fontSize: 13.2, color: C.t3, marginTop: 8 }}>Ubicación no disponible</div>
     </div>
   );
 
@@ -578,22 +578,22 @@ export function FreightMap({ freightId, originLat, originLng, destLat, destLng, 
     <div style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: 12, overflow: "hidden", boxShadow: C.sh, display:"flex", flexDirection:"column", height:"100%" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 6, padding:"10px 14px", flexShrink:0 }}>
         {Ic.pin(C.pri, 14)}
-        <span style={{ fontSize: 10.5, fontWeight: 700, color: C.t2, textTransform: "uppercase", letterSpacing: 0.5 }}>{hasCoords ? "Recorrido" : "Ubicación"}</span>
+        <span style={{ fontSize: 11.6, fontWeight: 700, color: C.t2, textTransform: "uppercase", letterSpacing: 0.5 }}>{hasCoords ? "Recorrido" : "Ubicación"}</span>
         {routeInfo && (
-          <span style={{ fontSize: 11, color: C.t1, fontWeight: 600 }}>
+          <span style={{ fontSize: 12.1, color: C.t1, fontWeight: 600 }}>
             {routeInfo.distance} · {routeInfo.duration}
           </span>
         )}
-        <button onClick={()=>goToMap(hasOrigin?originLat:(destLat),hasOrigin?originLng:(destLng),hasOrigin?originName:(destName),hasCoords?destLat:undefined,hasCoords?destLng:undefined,hasCoords?destName:undefined,freightId)} style={{ marginLeft:"auto", padding:"4px 10px", borderRadius:8, border:`1px solid ${C.b1}`, background:C.w, cursor:"pointer", display:"flex", alignItems:"center", gap:4, fontSize:10, fontWeight:600, color:C.pri, fontFamily:"inherit", WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
+        <button onClick={()=>goToMap(hasOrigin?originLat:(destLat),hasOrigin?originLng:(destLng),hasOrigin?originName:(destName),hasCoords?destLat:undefined,hasCoords?destLng:undefined,hasCoords?destName:undefined,freightId)} style={{ marginLeft:"auto", padding:"4px 10px", borderRadius:8, border:`1px solid ${C.b1}`, background:C.w, cursor:"pointer", display:"flex", alignItems:"center", gap:4, fontSize:11, fontWeight:600, color:C.pri, fontFamily:"inherit", WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
           {Ic.expand(C.pri,11)} Ver mapa
         </button>
       </div>
       {error ? (
-        <div style={{ padding: 20, textAlign: "center", fontSize: 12, color: C.t3 }}>{error}</div>
+        <div style={{ padding: 20, textAlign: "center", fontSize: 13.2, color: C.t3 }}>{error}</div>
       ) : (
         <div ref={mapRef} style={{ width: "100%", flex:1, minHeight:180 }} />
       )}
-      <div style={{ padding:"8px 14px", display: "flex", gap: 12, fontSize: 10.5, flexWrap: "wrap", alignItems: "center", flexShrink:0 }}>
+      <div style={{ padding:"8px 14px", display: "flex", gap: 12, fontSize: 11.6, flexWrap: "wrap", alignItems: "center", flexShrink:0 }}>
         {hasOrigin && <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
           <span style={{ width: 8, height: 8, borderRadius: 4, background: "#1A6B37" }} />
           <span style={{ color: C.t2 }}>{originName}</span>
@@ -605,11 +605,11 @@ export function FreightMap({ freightId, originLat, originLng, destLat, destLng, 
         {isLive && (truckPos || participants.length > 0) && (
           <div style={{ display: "flex", alignItems: "center", gap: 4, marginLeft: "auto" }}>
             <span style={{ width: 8, height: 8, borderRadius: 4, background: "#FF6A00", animation: "ti 1.5s infinite" }} />
-            <span style={{ color: C.acc, fontWeight: 600, fontSize: 10 }}>En vivo{truckPos?.speed>0?` \u00b7 ${Math.round(parseFloat(truckPos.speed))} km/h`:""}{truckPos?.updatedAt && ` \u00b7 ${new Date(truckPos.updatedAt).toLocaleTimeString("es-UY",{hour:"2-digit",minute:"2-digit"})}`}</span>
+            <span style={{ color: C.acc, fontWeight: 600, fontSize: 11 }}>En vivo{truckPos?.speed>0?` \u00b7 ${Math.round(parseFloat(truckPos.speed))} km/h`:""}{truckPos?.updatedAt && ` \u00b7 ${new Date(truckPos.updatedAt).toLocaleTimeString("es-UY",{hour:"2-digit",minute:"2-digit"})}`}</span>
           </div>
         )}
         {isLive && tracking && (
-          <div style={{ fontSize: 9, color: C.ok, fontWeight: 600 }}>📡 Enviando ubicación</div>
+          <div style={{ fontSize: 9.9, color: C.ok, fontWeight: 600 }}>📡 Enviando ubicación</div>
         )}
       </div>
     </div>
@@ -827,16 +827,16 @@ export function FreightsOverviewMap({ freights, onSelect, fields, plants }) {
 
   if (mapError) return (
     <div style={{ background:C.w, border:`1px solid ${C.b1}`, borderRadius:12, padding:40, textAlign:"center", color:C.t3 }}>
-      <div style={{fontSize:32,marginBottom:8}}>🗺️</div>
-      <div style={{fontSize:13,fontWeight:600,color:C.t2,marginBottom:4}}>Mapa no disponible</div>
-      <div style={{fontSize:11}}>{mapError}</div>
+      <div style={{fontSize:35.2,marginBottom:8}}>🗺️</div>
+      <div style={{fontSize:14.3,fontWeight:600,color:C.t2,marginBottom:4}}>Mapa no disponible</div>
+      <div style={{fontSize:12.1}}>{mapError}</div>
     </div>
   );
 
   return (
     <div style={{ background:C.w, border:`1px solid ${C.b1}`, borderRadius:12, overflow:"hidden", boxShadow:"0 1px 4px rgba(0,0,0,0.06)", position:"relative" }}>
-      {!ready && <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",background:C.bg,zIndex:5}}><div style={{fontSize:12,color:C.t3}}>Cargando mapa...</div></div>}
-      <button onClick={()=>setShowFreights(v=>!v)} style={{position:"absolute",top:12,right:12,zIndex:10,padding:"6px 12px",borderRadius:8,border:`1.5px solid ${C.pri}`,background:C.w,color:C.pri,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:5,boxShadow:C.shMd}}>
+      {!ready && <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",background:C.bg,zIndex:5}}><div style={{fontSize:13.2,color:C.t3}}>Cargando mapa...</div></div>}
+      <button onClick={()=>setShowFreights(v=>!v)} style={{position:"absolute",top:12,right:12,zIndex:10,padding:"6px 12px",borderRadius:8,border:`1.5px solid ${C.pri}`,background:C.w,color:C.pri,fontSize:12.1,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:5,boxShadow:C.shMd}}>
         {showFreights?Ic.eyeOff(C.pri,13):Ic.eye(C.pri,13)}
         {showFreights?"Ocultar fletes":"Ver fletes"}
       </button>
@@ -952,7 +952,7 @@ export function MapOverlay({ lat, lng, label, destLat, destLng, destLabel, freig
   return <div style={{width:"100%",height:"100%",position:"relative"}}>
     <div ref={mapRef} style={{width:"100%",height:"100%"}} />
     {/* List toggle button */}
-    {items.length > 0 && <button onClick={() => setListOpen(v => !v)} style={{position:"absolute",top:12,right:12,zIndex:20,padding:"8px 14px",borderRadius:10,border:`1.5px solid ${C.pri}`,background:C.w,color:C.pri,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:5,boxShadow:"0 2px 8px rgba(0,0,0,0.15)"}}>
+    {items.length > 0 && <button onClick={() => setListOpen(v => !v)} style={{position:"absolute",top:12,right:12,zIndex:20,padding:"8px 14px",borderRadius:10,border:`1.5px solid ${C.pri}`,background:C.w,color:C.pri,fontSize:12.1,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:5,boxShadow:"0 2px 8px rgba(0,0,0,0.15)"}}>
       {Ic.pin(C.pri, 13)} Ver ubicaciones compartidas
     </button>}
     {/* Scrollable item list */}
@@ -961,12 +961,12 @@ export function MapOverlay({ lat, lng, label, destLat, destLng, destLabel, freig
         <button key={it.key} onClick={() => focusPoint(it.lat, it.lng, it.mk)} style={{display:"flex",alignItems:"center",gap:10,width:"100%",padding:"12px 16px",border:"none",borderBottom:`1px solid ${C.b1}`,background:"transparent",cursor:"pointer",fontFamily:"inherit",textAlign:"left"}}>
           <span style={{width:10,height:10,borderRadius:5,background:it.color,flexShrink:0}} />
           <div style={{flex:1,minWidth:0}}>
-            <div style={{fontSize:13,fontWeight:600,color:C.t1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{it.label}</div>
-            <div style={{fontSize:10.5,color:C.t3,marginTop:1}}>
+            <div style={{fontSize:14.3,fontWeight:600,color:C.t1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{it.label}</div>
+            <div style={{fontSize:11.6,color:C.t3,marginTop:1}}>
               {it.type}{it.time ? ` \u00b7 ${it.time}` : ""}{it.dist != null ? ` \u00b7 ${it.dist.toFixed(1)} km` : ""}
             </div>
           </div>
-          <span style={{fontSize:11,color:C.pri,fontWeight:600,flexShrink:0}}>{Ic.chev(C.pri, 10)}</span>
+          <span style={{fontSize:12.1,color:C.pri,fontWeight:600,flexShrink:0}}>{Ic.chev(C.pri, 10)}</span>
         </button>
       ))}
     </div>}

@@ -181,7 +181,7 @@ export function _fmtDate(d) { if(!d) return ""; return d.slice(8,10)+"/"+d.slice
 export function NotifRow({ n, freight, onMarkRead, onTap, isLast }) {
   const icFn = NOTIF_ICONS[n.type] || ((s) => Ic.bell(C.t3, s));
   const f = freight;
-  const detailStyle = { fontSize:11, color:C.t3, display:"flex", alignItems:"center", gap:4 };
+  const detailStyle = { fontSize:12.1, color:C.t3, display:"flex", alignItems:"center", gap:4 };
   return (
     <button onClick={() => { if (!n.read) onMarkRead(n.id); if (n.entityId) onTap(n.entityId); }}
       className="tv-row"
@@ -197,10 +197,10 @@ export function NotifRow({ n, freight, onMarkRead, onTap, isLast }) {
       </div>
       <div style={{ flex:1, minWidth:0 }}>
         <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-          <span style={{ fontSize:14, fontWeight: n.read ? 500 : 700, color: n.read ? C.t2 : C.t1, flex:1 }}>{n.title}</span>
-          <span style={{ fontSize:11, color:C.t3, fontWeight:500, flexShrink:0 }}>{_timeAgo(n.createdAt)}</span>
+          <span style={{ fontSize:15.4, fontWeight: n.read ? 500 : 700, color: n.read ? C.t2 : C.t1, flex:1 }}>{n.title}</span>
+          <span style={{ fontSize:12.1, color:C.t3, fontWeight:500, flexShrink:0 }}>{_timeAgo(n.createdAt)}</span>
         </div>
-        <div style={{ fontSize:12.5, color:C.t3, marginTop:3, lineHeight:1.4 }}>{n.body}</div>
+        <div style={{ fontSize:13.8, color:C.t3, marginTop:3, lineHeight:1.4 }}>{n.body}</div>
         {f && (
           <div style={{ display:"flex", flexDirection:"column", gap:2, marginTop:6 }}>
             {(f.originCompanyName||f.requestedByName) && <span style={detailStyle}>{Ic.user(C.t3,11)} {f.originCompanyName||f.requestedByName}</span>}
@@ -216,14 +216,14 @@ export function NotifRow({ n, freight, onMarkRead, onTap, isLast }) {
 
 // ======================== ADMIN SHARED ================================
 export const adminStyles = () => {
-  const sel = { width:"100%",padding:"9px 12px",borderRadius:8,border:`1px solid ${C.b1}`,fontSize:13,fontFamily:"inherit",background:C.bgInput,color:C.t1,boxSizing:"border-box",appearance:"none",WebkitAppearance:"none",backgroundImage:`url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`,backgroundRepeat:"no-repeat",backgroundPosition:"right 10px center",paddingRight:30,cursor:"pointer",transition:"border-color 0.15s" };
-  const inp = { width:"100%",padding:"9px 12px",borderRadius:8,border:`1px solid ${C.b1}`,fontSize:13,fontFamily:"inherit",background:C.bgInput,color:C.t1,boxSizing:"border-box",transition:"border-color 0.15s" };
+  const sel = { width:"100%",padding:"9px 12px",borderRadius:8,border:`1px solid ${C.b1}`,fontSize:14.3,fontFamily:"inherit",background:C.bgInput,color:C.t1,boxSizing:"border-box",appearance:"none",WebkitAppearance:"none",backgroundImage:`url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`,backgroundRepeat:"no-repeat",backgroundPosition:"right 10px center",paddingRight:30,cursor:"pointer",transition:"border-color 0.15s" };
+  const inp = { width:"100%",padding:"9px 12px",borderRadius:8,border:`1px solid ${C.b1}`,fontSize:14.3,fontFamily:"inherit",background:C.bgInput,color:C.t1,boxSizing:"border-box",transition:"border-color 0.15s" };
   const half = { ...inp, flex:1 };
-  const btnP = (color,dis) => ({ width:"100%",padding:"10px 0",borderRadius:8,background:color,color:"#fff",border:"none",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit",opacity:dis?0.6:1,transition:"opacity 0.15s" });
-  const lbl = { fontSize:11,fontWeight:600,color:C.t3,marginBottom:4 };
+  const btnP = (color,dis) => ({ width:"100%",padding:"10px 0",borderRadius:8,background:color,color:"#fff",border:"none",fontSize:14.3,fontWeight:700,cursor:"pointer",fontFamily:"inherit",opacity:dis?0.6:1,transition:"opacity 0.15s" });
+  const lbl = { fontSize:12.1,fontWeight:600,color:C.t3,marginBottom:4 };
   return { sel, inp, half, btnP, lbl };
 };
 export const typeColors = { producer:"#F59E0B",plant:"#6366F1",transporter:"#3B82F6" };
 export const typeLabels = { producer:"Productor",plant:"Planta",transporter:"Transportista" };
 export const roleLabels = { platform_admin:"Admin Principal",admin:"Gerente",operator:"Operario",chofer:"Chofer" };
-export const adminBackBtn = (onClick) => <button onClick={onClick} style={{background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",fontSize:13,fontWeight:600,color:C.pri,marginBottom:14,padding:0,display:"flex",alignItems:"center",gap:4}}>{Ic.chev(C.pri,18)} Volver</button>;
+export const adminBackBtn = (onClick) => <button onClick={onClick} style={{background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",fontSize:14.3,fontWeight:600,color:C.pri,marginBottom:14,padding:0,display:"flex",alignItems:"center",gap:4}}>{Ic.chev(C.pri,18)} Volver</button>;

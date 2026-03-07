@@ -112,14 +112,14 @@ export default function FieldsScreen({ onBack, embedded, goToMap }) {
   return (
     <div style={{ flex: embedded?undefined:1, overflow: embedded?"visible":"auto", padding: embedded?0:undefined }}>
       {(saving||doneMsg) && <LoadingOverlay closing={!!doneMsg} closingText={doneMsg} onClose={()=>setDoneMsg("")}/>}
-      {!embedded && <div style={{ position:"sticky", top:0, zIndex:10, background:C.bg, padding:"18px 18px 8px" }}><button onClick={onBack} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 600, color: C.pri, marginBottom: 14, padding: 0, display: "flex", alignItems: "center", gap: 4 }}>{Ic.chev(C.pri, 18)} Menú</button></div>}
+      {!embedded && <div style={{ position:"sticky", top:0, zIndex:10, background:C.bg, padding:"18px 18px 8px" }}><button onClick={onBack} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", fontSize: 14.3, fontWeight: 600, color: C.pri, marginBottom: 14, padding: 0, display: "flex", alignItems: "center", gap: 4 }}>{Ic.chev(C.pri, 18)} Menú</button></div>}
       <div style={{ padding: embedded?0:"0 18px 18px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
-        <div style={{ fontSize: 20, fontWeight: 800, letterSpacing: -0.3 }}>Mis Campos</div>
+        <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: -0.3 }}>Mis Campos</div>
         <Btn sm onClick={() => setShowFieldForm(!showFieldForm)} icon={showFieldForm ? Ic.cross(C.w, 14) : Ic.plus(C.w, 14)}>{showFieldForm ? "Cerrar" : "Agregar"}</Btn>
       </div>
 
-      {msg && <div style={{ padding: "10px 14px", borderRadius: 12, marginBottom: 12, fontSize: 12, fontWeight: 600, background: msg.k === "ok" ? C.okPale : C.errPale, color: msg.k === "ok" ? C.ok : C.err }}>{msg.t}</div>}
+      {msg && <div style={{ padding: "10px 14px", borderRadius: 12, marginBottom: 12, fontSize: 13.2, fontWeight: 600, background: msg.k === "ok" ? C.okPale : C.errPale, color: msg.k === "ok" ? C.ok : C.err }}>{msg.t}</div>}
 
       {showFieldForm && (
         <div style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: 12, padding: 16, marginBottom: 16, boxShadow: C.sh }}>
@@ -150,8 +150,8 @@ export default function FieldsScreen({ onBack, embedded, goToMap }) {
                     {multiCompany && (
                       <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:10 }}>
                         {Ic.user(C.sec,16)}
-                        <span style={{ fontSize:14, fontWeight:800, color:C.t1 }}>{group.name}</span>
-                        <span style={{ fontSize:10, color:C.t3 }}>{group.fields.length} campo{group.fields.length!==1?"s":""}</span>
+                        <span style={{ fontSize:15.4, fontWeight:800, color:C.t1 }}>{group.name}</span>
+                        <span style={{ fontSize:11, color:C.t3 }}>{group.fields.length} campo{group.fields.length!==1?"s":""}</span>
                       </div>
                     )}
                     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -161,9 +161,9 @@ export default function FieldsScreen({ onBack, embedded, goToMap }) {
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                     {Ic.pin(C.pri, 18)}
                     <div>
-                      <div style={{ fontSize: 14, fontWeight: 700 }}>{f.name}{f.lat&&f.lng&&goToMap&&<span onClick={(e)=>{e.stopPropagation();goToMap(f.lat,f.lng,f.name);}} style={{cursor:"pointer",opacity:0.6,marginLeft:4,fontSize:10}} title="Ver en mapa">📍</span>}</div>
-                      {f.address && <div style={{ fontSize: 11, color: C.t3 }}>{f.address}</div>}
-                      {f.lat && <div style={{ fontSize: 9.5, color: C.ok, fontWeight: 600 }}>📍 Ubicación cargada</div>}
+                      <div style={{ fontSize: 15.4, fontWeight: 700 }}>{f.name}{f.lat&&f.lng&&goToMap&&<span onClick={(e)=>{e.stopPropagation();goToMap(f.lat,f.lng,f.name);}} style={{cursor:"pointer",opacity:0.6,marginLeft:4,fontSize:11}} title="Ver en mapa">📍</span>}</div>
+                      {f.address && <div style={{ fontSize: 12.1, color: C.t3 }}>{f.address}</div>}
+                      {f.lat && <div style={{ fontSize: 10.5, color: C.ok, fontWeight: 600 }}>📍 Ubicación cargada</div>}
                     </div>
                   </div>
                   <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
@@ -176,7 +176,7 @@ export default function FieldsScreen({ onBack, embedded, goToMap }) {
                 {/* Edit field form */}
                 {editField === f.id && (
                   <div style={{ background: C.priPale, borderRadius: 10, padding: 12, margin: "0 14px 8px" }}>
-                    <div style={{ fontSize: 11, fontWeight: 700, color: C.pri, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>Editar campo</div>
+                    <div style={{ fontSize: 12.1, fontWeight: 700, color: C.pri, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>Editar campo</div>
                     <SafeZone><LocationPicker label="Ubicación" value={editFieldLoc} onChange={setEditFieldLoc} /></SafeZone>
                     <div style={{ display: "flex", gap: 6, marginTop: 10 }}>
                       <Btn sm v="ghost" onClick={() => setEditField(null)}>Cancelar</Btn>
@@ -190,16 +190,16 @@ export default function FieldsScreen({ onBack, embedded, goToMap }) {
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 14px 6px 28px", borderTop: `1px solid ${C.b2}` }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                         {Ic.grain(C.ok, 14)}
-                        <span style={{ fontSize: 12, fontWeight: 500 }}>{l.name}</span>
-                        {l.hectares && <span style={{ fontSize: 10, color: C.t3 }}>{l.hectares} ha</span>}
-                        {l.lat&&l.lng&&goToMap?<span onClick={(e)=>{e.stopPropagation();goToMap(l.lat,l.lng,f.name+" — "+l.name);}} style={{cursor:"pointer",opacity:0.6,fontSize:10}} title="Ver en mapa">📍</span>:l.lat&&<span style={{ fontSize: 9, color: C.ok }}>📍</span>}
+                        <span style={{ fontSize: 13.2, fontWeight: 500 }}>{l.name}</span>
+                        {l.hectares && <span style={{ fontSize: 11, color: C.t3 }}>{l.hectares} ha</span>}
+                        {l.lat&&l.lng&&goToMap?<span onClick={(e)=>{e.stopPropagation();goToMap(l.lat,l.lng,f.name+" — "+l.name);}} style={{cursor:"pointer",opacity:0.6,fontSize:11}} title="Ver en mapa">📍</span>:l.lat&&<span style={{ fontSize: 9.9, color: C.ok }}>📍</span>}
                       </div>
                       <button aria-label="Editar lote" onClick={() => editLot?.lotId === l.id ? setEditLot(null) : startEditLot(f.id, l)} style={{ background: "none", border: "none", cursor: "pointer", padding: 4, minWidth: 44, minHeight: 44, display: "flex", alignItems: "center", justifyContent: "center" }}>{Ic.edit(editLot?.lotId === l.id ? C.pri : C.t3, 14)}</button>
                     </div>
                     {/* Edit lot form */}
                     {editLot?.lotId === l.id && (
                       <div style={{ background: C.accPale, borderRadius: 10, padding: 12, marginLeft: 28, marginBottom: 6 }}>
-                        <div style={{ fontSize: 11, fontWeight: 700, color: C.acc, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>Editar lote</div>
+                        <div style={{ fontSize: 12.1, fontWeight: 700, color: C.acc, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>Editar lote</div>
                         <Field label="Hectáreas" value={editLotHa} onChange={setEditLotHa} placeholder="Ej: 150" />
                         <div style={{ height: 8 }} />
                         <SafeZone><LocationPicker label="Ubicación del lote" value={editLotLoc} onChange={setEditLotLoc} defaultCenter={f.lat&&f.lng?{lat:f.lat,lng:f.lng}:null} /></SafeZone>
@@ -225,7 +225,7 @@ export default function FieldsScreen({ onBack, embedded, goToMap }) {
                     </div>
                   </div>
                 ) : (
-                  <button onClick={() => setShowLotForm(f.id)} style={{ margin: "8px 14px 14px 28px", background: `${C.acc}10`, border: `1px solid ${C.acc}40`, borderRadius: 8, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 600, color: C.acc, padding: "10px 16px", minHeight: 44, display: "flex", alignItems: "center", gap: 6 }}>{Ic.plus(C.acc, 14)} Agregar lote</button>
+                  <button onClick={() => setShowLotForm(f.id)} style={{ margin: "8px 14px 14px 28px", background: `${C.acc}10`, border: `1px solid ${C.acc}40`, borderRadius: 8, cursor: "pointer", fontFamily: "inherit", fontSize: 13.2, fontWeight: 600, color: C.acc, padding: "10px 16px", minHeight: 44, display: "flex", alignItems: "center", gap: 6 }}>{Ic.plus(C.acc, 14)} Agregar lote</button>
                 ))}
               </div>
             ))}

@@ -62,13 +62,13 @@ export default function CalendarScreen({ freights, perms, onNav, isDesktop, user
     <div style={{animation:"fadeIn 0.2s ease",padding:isDesktop?"18px 16px":0,overflow:"auto",flex:isDesktop?1:undefined}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
         <div>
-          <div style={{fontSize:16,fontWeight:800,color:C.t1}}>{calSelDay} de {monNames[activeMonth?.m??calMonth.m]}</div>
-          <div style={{fontSize:11,color:C.t2,marginTop:2}}>{selFreights.length} flete{selFreights.length!==1?"s":""}</div>
+          <div style={{fontSize:17.6,fontWeight:800,color:C.t1}}>{calSelDay} de {monNames[activeMonth?.m??calMonth.m]}</div>
+          <div style={{fontSize:12.1,color:C.t2,marginTop:2}}>{selFreights.length} flete{selFreights.length!==1?"s":""}</div>
         </div>
         {isDesktop&&<button aria-label="Cerrar" onClick={()=>setCalSelDay(null)} style={{background:"none",border:"none",cursor:"pointer",display:"flex",padding:8,borderRadius:8}}>{Ic.cross(C.t3,18)}</button>}
       </div>
       <div style={{display:"flex",flexDirection:"column",gap:10}}>
-        {selFreights.length===0&&<div style={{textAlign:"center",padding:30,color:C.t3,fontSize:12,background:C.w,borderRadius:10,border:`1px solid ${C.b1}`}}>Sin fletes programados este día</div>}
+        {selFreights.length===0&&<div style={{textAlign:"center",padding:30,color:C.t3,fontSize:13.2,background:C.w,borderRadius:10,border:`1px solid ${C.b1}`}}>Sin fletes programados este día</div>}
         {selFreights.map(f=>{
           const st=stCfg(f.status);
           return <div key={f.id} className="tv-card" onClick={()=>{setSelectedId(f.id);onRefresh(f.id);}} style={{background:C.w,border:`1px solid ${C.b1}`,borderLeft:`4px solid ${st.border}`,borderRadius:10,cursor:"pointer",boxShadow:C.sh,overflow:"hidden"}}>
@@ -76,17 +76,17 @@ export default function CalendarScreen({ freights, perms, onNav, isDesktop, user
               {/* Left column */}
               <div style={{display:"flex",flexDirection:"column",gap:3,padding:"8px 12px",borderRight:`1px solid ${C.b2}`,minWidth:0}}>
                 <div style={{display:"flex",alignItems:"center",gap:6}}>
-                  <span style={{fontSize:10.5,fontWeight:700,fontFamily:MONO,color:C.t2}}>{f.code}</span>
+                  <span style={{fontSize:11.6,fontWeight:700,fontFamily:MONO,color:C.t2}}>{f.code}</span>
                   <Bd color={st.color} bg={st.bg} small>{st.label}</Bd>
                 </div>
-                <div style={{fontSize:12,fontWeight:700,color:C.t1}}>{f.grain==="Otros"?f.productTypeOther||"Otros":f.grain} · {f.tons} {f.unit||"tn"}</div>
-                {f.loadDate&&<div style={{fontSize:11,color:C.t3,fontWeight:500}}>{formatFreightDate(f.loadDate)}{f.loadTime?.trim()?` · ${f.loadTime}`:""}</div>}
+                <div style={{fontSize:13.2,fontWeight:700,color:C.t1}}>{f.grain==="Otros"?f.productTypeOther||"Otros":f.grain} · {f.tons} {f.unit||"tn"}</div>
+                {f.loadDate&&<div style={{fontSize:12.1,color:C.t3,fontWeight:500}}>{formatFreightDate(f.loadDate)}{f.loadTime?.trim()?` · ${f.loadTime}`:""}</div>}
               </div>
               {/* Right column */}
-              <div style={{display:"flex",flexDirection:"column",gap:3,padding:"8px 12px",fontSize:11,color:C.t2,minWidth:0}}>
+              <div style={{display:"flex",flexDirection:"column",gap:3,padding:"8px 12px",fontSize:12.1,color:C.t2,minWidth:0}}>
                 <div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.user(C.t3,12)} <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.originCompanyName||(f.originName||"").split("—")[0].trim()}</span>{f.originLat&&f.originLng&&<span onClick={(e)=>{e.stopPropagation();goToMap(f.originLat,f.originLng,[f.originCompanyName,f.fieldName,f.originName].filter(Boolean).join(" — "));}} style={{cursor:"pointer",opacity:0.6,marginLeft:3,flexShrink:0,display:"inline-flex"}} title="Ver en mapa">{Ic.pin(C.t3,12)}</span>}</div>
                 <div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.plant(C.t3,12)} <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.destName}</span>{f.destLat&&f.destLng&&<span onClick={(e)=>{e.stopPropagation();goToMap(f.destLat,f.destLng,f.destName);}} style={{cursor:"pointer",opacity:0.6,marginLeft:3,flexShrink:0,display:"inline-flex"}} title="Ver en mapa">{Ic.pin(C.t3,12)}</span>}</div>
-                <div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.truck(C.t3,12)} <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.transporterName||"Sin asignar"}{f.truckPlate?` (${f.truckPlate})`:""}</span>{f.isOwnFleet&&<span style={{fontSize:8.5,color:C.acc,fontWeight:600,marginLeft:4,flexShrink:0}}>Flota propia</span>}{f.isMultiTruck&&<span style={{fontSize:9,color:C.info,fontWeight:600,marginLeft:4,flexShrink:0}}>{f.assignedTruckCount}/{f.truckCount} cam.</span>}</div>
+                <div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.truck(C.t3,12)} <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.transporterName||"Sin asignar"}{f.truckPlate?` (${f.truckPlate})`:""}</span>{f.isOwnFleet&&<span style={{fontSize:9.4,color:C.acc,fontWeight:600,marginLeft:4,flexShrink:0}}>Flota propia</span>}{f.isMultiTruck&&<span style={{fontSize:9.9,color:C.info,fontWeight:600,marginLeft:4,flexShrink:0}}>{f.assignedTruckCount}/{f.truckCount} cam.</span>}</div>
               </div>
             </div>
           </div>;
@@ -94,7 +94,7 @@ export default function CalendarScreen({ freights, perms, onNav, isDesktop, user
       </div>
     </div>
   ) : isDesktop ? (
-    <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",color:C.t3,fontSize:13,padding:20,textAlign:"center"}}>
+    <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",color:C.t3,fontSize:14.3,padding:20,textAlign:"center"}}>
       <div>{Ic.cal(C.b1,40)}<div style={{marginTop:8}}>Seleccioná un día para ver los fletes programados</div></div>
     </div>
   ) : null;
@@ -102,18 +102,18 @@ export default function CalendarScreen({ freights, perms, onNav, isDesktop, user
   // --- Calendar grid panel ---
   const calendarPanel = (
     <div style={{flex:isDesktop?undefined:1,overflow:"auto",padding:18,minWidth:isDesktop?420:undefined}}>
-      {!isDesktop && <button onClick={()=>onNav("home")} style={{ background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", fontSize:13, fontWeight:600, color:C.pri, marginBottom:10, padding:0, display:"flex", alignItems:"center", gap:4 }}>{Ic.chev(C.pri,18)} Inicio</button>}
+      {!isDesktop && <button onClick={()=>onNav("home")} style={{ background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", fontSize:14.3, fontWeight:600, color:C.pri, marginBottom:10, padding:0, display:"flex", alignItems:"center", gap:4 }}>{Ic.chev(C.pri,18)} Inicio</button>}
 
       {/* Status filter — desktop: pills, mobile: select */}
       {isDesktop ? (
       <div style={{ display:"flex", gap:5, marginBottom:14, flexWrap:"wrap" }}>
         {[{k:"",l:"Todos"},{k:"solicitado",l:"Solicitado"},{k:"en_curso",l:"En curso"},{k:"finalizados",l:"Finalizados"},{k:"cancelados",l:"Cancelados"}].map(opt=>(
-          <button key={opt.k} onClick={()=>setFStatus(opt.k)} style={{ padding:"4px 10px", borderRadius:20, border:`1.5px solid ${fStatus===opt.k?C.pri:C.b1}`, background:fStatus===opt.k?C.priPale:C.w, color:fStatus===opt.k?C.pri:C.t2, fontSize:10, fontWeight:600, cursor:"pointer", fontFamily:"inherit", transition:"all 0.15s" }}>{opt.l}</button>
+          <button key={opt.k} onClick={()=>setFStatus(opt.k)} style={{ padding:"4px 10px", borderRadius:20, border:`1.5px solid ${fStatus===opt.k?C.pri:C.b1}`, background:fStatus===opt.k?C.priPale:C.w, color:fStatus===opt.k?C.pri:C.t2, fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:"inherit", transition:"all 0.15s" }}>{opt.l}</button>
         ))}
       </div>
       ) : (
       <div style={{ marginBottom:14 }}>
-        <select value={fStatus} onChange={e=>setFStatus(e.target.value)} style={{padding:"6px 10px",borderRadius:8,border:`1.5px solid ${fStatus?C.pri:C.b1}`,background:fStatus?C.priPale:C.w,color:fStatus?C.pri:C.t2,fontSize:11,fontFamily:"inherit",cursor:"pointer",outline:"none"}}>
+        <select value={fStatus} onChange={e=>setFStatus(e.target.value)} style={{padding:"6px 10px",borderRadius:8,border:`1.5px solid ${fStatus?C.pri:C.b1}`,background:fStatus?C.priPale:C.w,color:fStatus?C.pri:C.t2,fontSize:12.1,fontFamily:"inherit",cursor:"pointer",outline:"none"}}>
           <option value="">Todos los estados</option>
           <option value="solicitado">Solicitado</option>
           <option value="en_curso">En curso</option>
@@ -125,11 +125,11 @@ export default function CalendarScreen({ freights, perms, onNav, isDesktop, user
 
       {/* Navigation + months toggle */}
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-        <button aria-label="Mes anterior" onClick={()=>{setCalMonth(p=>p.m===0?{y:p.y-1,m:11}:{y:p.y,m:p.m-1});setCalSelDay(null);setCalSelMonth(null);}} style={{background:C.priPale,border:`1px solid ${C.pri}20`,borderRadius:8,cursor:"pointer",padding:"10px 12px",display:"flex",alignItems:"center",gap:4,fontSize:11,fontWeight:600,color:C.pri,fontFamily:"inherit",minHeight:40}}>{Ic.chev(C.pri,16)} Anterior</button>
+        <button aria-label="Mes anterior" onClick={()=>{setCalMonth(p=>p.m===0?{y:p.y-1,m:11}:{y:p.y,m:p.m-1});setCalSelDay(null);setCalSelMonth(null);}} style={{background:C.priPale,border:`1px solid ${C.pri}20`,borderRadius:8,cursor:"pointer",padding:"10px 12px",display:"flex",alignItems:"center",gap:4,fontSize:12.1,fontWeight:600,color:C.pri,fontFamily:"inherit",minHeight:40}}>{Ic.chev(C.pri,16)} Anterior</button>
         {isDesktop && <div style={{display:"flex",gap:4}}>
-          {[1,3,6].map(n=><button key={n} onClick={()=>setMonthsToShow(n)} style={{padding:"5px 10px",borderRadius:6,border:`1px solid ${monthsToShow===n?C.pri:C.b1}`,background:monthsToShow===n?C.priPale:C.w,color:monthsToShow===n?C.pri:C.t2,fontSize:10,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>{n} mes{n>1?"es":""}</button>)}
+          {[1,3,6].map(n=><button key={n} onClick={()=>setMonthsToShow(n)} style={{padding:"5px 10px",borderRadius:6,border:`1px solid ${monthsToShow===n?C.pri:C.b1}`,background:monthsToShow===n?C.priPale:C.w,color:monthsToShow===n?C.pri:C.t2,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>{n} mes{n>1?"es":""}</button>)}
         </div>}
-        <button aria-label="Mes siguiente" onClick={()=>{setCalMonth(p=>p.m===11?{y:p.y+1,m:0}:{y:p.y,m:p.m+1});setCalSelDay(null);setCalSelMonth(null);}} style={{background:C.priPale,border:`1px solid ${C.pri}20`,borderRadius:8,cursor:"pointer",padding:"10px 12px",display:"flex",alignItems:"center",gap:4,fontSize:11,fontWeight:600,color:C.pri,fontFamily:"inherit",minHeight:40}}>Siguiente <span style={{display:"inline-flex",transform:"rotate(180deg)"}}>{Ic.chev(C.pri,16)}</span></button>
+        <button aria-label="Mes siguiente" onClick={()=>{setCalMonth(p=>p.m===11?{y:p.y+1,m:0}:{y:p.y,m:p.m+1});setCalSelDay(null);setCalSelMonth(null);}} style={{background:C.priPale,border:`1px solid ${C.pri}20`,borderRadius:8,cursor:"pointer",padding:"10px 12px",display:"flex",alignItems:"center",gap:4,fontSize:12.1,fontWeight:600,color:C.pri,fontFamily:"inherit",minHeight:40}}>Siguiente <span style={{display:"inline-flex",transform:"rotate(180deg)"}}>{Ic.chev(C.pri,16)}</span></button>
       </div>
 
       {/* Calendar grids */}
@@ -139,11 +139,11 @@ export default function CalendarScreen({ freights, perms, onNav, isDesktop, user
           const moCount = Object.values(mo.byDay).reduce((s,a)=>s+a.length,0);
           return <div key={`${mo.y}-${mo.m}`} style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius:12,padding:monthsToShow===1?16:12,boxShadow:C.sh}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-              <span style={{fontSize:monthsToShow===1?17:14,fontWeight:700,color:isTodayMonth?C.pri:C.t1}}>{monNames[mo.m]} {mo.y}</span>
-              {moCount>0&&<span style={{fontSize:9,color:C.t3,fontWeight:600}}>{moCount}</span>}
+              <span style={{fontSize:monthsToShow===1.1?18.7:15.4,fontWeight:700,color:isTodayMonth?C.pri:C.t1}}>{monNames[mo.m]} {mo.y}</span>
+              {moCount>0&&<span style={{fontSize:9.9,color:C.t3,fontWeight:600}}>{moCount}</span>}
             </div>
             <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:monthsToShow===1?3:2,textAlign:"center"}}>
-              {["Lu","Ma","Mi","Ju","Vi","Sá","Do"].map(d=><div key={d} style={{fontSize:monthsToShow===1?10:8,fontWeight:700,color:C.t3,padding:monthsToShow===1?6:3}}>{d}</div>)}
+              {["Lu","Ma","Mi","Ju","Vi","Sá","Do"].map(d=><div key={d} style={{fontSize:monthsToShow===1.1?11:8.8,fontWeight:700,color:C.t3,padding:monthsToShow===1?6:3}}>{d}</div>)}
               {mo.days.map((d,i)=>{
                 if(!d)return<div key={`e${i}`}/>;
                 const cnt=mo.byDay[d]?.length||0;
@@ -154,11 +154,11 @@ export default function CalendarScreen({ freights, perms, onNav, isDesktop, user
                 const densityAlpha=cnt===0?0:Math.min(0.15,0.04*cnt);
                 const densityBg=sel?C.pri:td?C.priPale:cnt>0?`rgba(26,107,55,${densityAlpha})`:"transparent";
                 return <div key={d} role="button" tabIndex={0} aria-label={`${d} de ${monNames[mo.m]}, ${cnt} flete${cnt!==1?"s":""}`} onClick={()=>{setCalSelDay(sel?null:d);setCalSelMonth(sel?null:mi);setSelectedId(null);}} onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();setCalSelDay(sel?null:d);setCalSelMonth(sel?null:mi);setSelectedId(null);}}} style={{padding:monthsToShow===1?"8px 4px":"4px 2px",borderRadius:monthsToShow===1?10:6,cursor:"pointer",background:densityBg,transition:"all 0.15s",minHeight:monthsToShow===1?44:36,position:"relative"}}>
-                  <div style={{fontSize:monthsToShow===1?14:11,fontWeight:sel||td?700:400,color:sel?C.w:td?C.pri:C.t1}}>{d}</div>
+                  <div style={{fontSize:monthsToShow===1.1?15.4:12.1,fontWeight:sel||td?700:400,color:sel?C.w:td?C.pri:C.t1}}>{d}</div>
                   {hasPending&&!sel&&<div style={{position:"absolute",top:monthsToShow===1?4:2,right:monthsToShow===1?4:2,width:5,height:5,borderRadius:3,background:C.acc}}/>}
                   {cnt>0&&<div style={{display:"flex",gap:1,justifyContent:"center",marginTop:2,flexWrap:"wrap"}}>
                     {statuses.slice(0,monthsToShow===1?4:2).map((c,j)=><div key={j} style={{width:monthsToShow===1?6:4,height:monthsToShow===1?6:4,borderRadius:3,background:sel?C.w:c}}/>)}
-                    {cnt>(monthsToShow===1?4:2)&&<div style={{fontSize:7,color:sel?C.w:C.t3,lineHeight:1}}>+{cnt-(monthsToShow===1?4:2)}</div>}
+                    {cnt>(monthsToShow===1?4:2)&&<div style={{fontSize:7.7,color:sel?C.w:C.t3,lineHeight:1}}>+{cnt-(monthsToShow===1?4:2)}</div>}
                   </div>}
                 </div>;
               })}

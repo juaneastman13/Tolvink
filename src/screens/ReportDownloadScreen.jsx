@@ -59,9 +59,9 @@ export default function ReportDownloadScreen({ code: codeProp } = {}) {
   if (!hasIdentifier) return (
     <div style={S.center}>
       <div style={S.card}>
-        <div style={{ fontSize: 48, marginBottom: 12 }}>🔗</div>
-        <div style={{ fontSize: 18, fontWeight: 700, color: COLORS.t1 }}>Link invalido</div>
-        <div style={{ fontSize: 14, color: COLORS.t3, marginTop: 8 }}>
+        <div style={{ fontSize: 52.8, marginBottom: 12 }}>🔗</div>
+        <div style={{ fontSize: 19.8, fontWeight: 700, color: COLORS.t1 }}>Link invalido</div>
+        <div style={{ fontSize: 15.4, color: COLORS.t3, marginTop: 8 }}>
           Este link fue generado desde WhatsApp. Si no funciona, pedi uno nuevo.
         </div>
       </div>
@@ -74,42 +74,42 @@ export default function ReportDownloadScreen({ code: codeProp } = {}) {
       <div style={S.card}>
         {/* Header */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 16 }}>
-          <span style={{ fontSize: 20, fontWeight: 800, color: COLORS.pri, letterSpacing: -1 }}>tolvink</span>
+          <span style={{ fontSize: 22, fontWeight: 800, color: COLORS.pri, letterSpacing: -1 }}>tolvink</span>
           <span style={{ width: 6, height: 6, borderRadius: 3, background: COLORS.acc, display: "inline-block" }} />
         </div>
 
         {status === "loading" && <>
-          <div style={{ fontSize: 32, marginBottom: 12 }}>📄</div>
-          <div style={{ fontSize: 16, fontWeight: 600, color: COLORS.t1 }}>Cargando datos del flete...</div>
+          <div style={{ fontSize: 35.2, marginBottom: 12 }}>📄</div>
+          <div style={{ fontSize: 17.6, fontWeight: 600, color: COLORS.t1 }}>Cargando datos del flete...</div>
           <div style={S.spinner} />
         </>}
 
         {status === "generating" && <>
-          <div style={{ fontSize: 32, marginBottom: 12 }}>⚙️</div>
-          <div style={{ fontSize: 16, fontWeight: 600, color: COLORS.t1 }}>
+          <div style={{ fontSize: 35.2, marginBottom: 12 }}>⚙️</div>
+          <div style={{ fontSize: 17.6, fontWeight: 600, color: COLORS.t1 }}>
             Generando informe{freightCode ? ` ${freightCode}` : ""}...
           </div>
-          <div style={{ fontSize: 13, color: COLORS.t3, marginTop: 8 }}>
+          <div style={{ fontSize: 14.3, color: COLORS.t3, marginTop: 8 }}>
             La descarga comenzara automaticamente
           </div>
           <div style={S.spinner} />
         </>}
 
         {status === "done" && <>
-          <div style={{ fontSize: 32, marginBottom: 12 }}>✅</div>
-          <div style={{ fontSize: 16, fontWeight: 600, color: COLORS.pri }}>
+          <div style={{ fontSize: 35.2, marginBottom: 12 }}>✅</div>
+          <div style={{ fontSize: 17.6, fontWeight: 600, color: COLORS.pri }}>
             Informe {freightCode} descargado
           </div>
-          <div style={{ fontSize: 13, color: COLORS.t3, marginTop: 8 }}>
+          <div style={{ fontSize: 14.3, color: COLORS.t3, marginTop: 8 }}>
             Si la descarga no inicio, hace click abajo
           </div>
           <button onClick={retry} style={S.btn}>Descargar de nuevo</button>
         </>}
 
         {status === "error" && <>
-          <div style={{ fontSize: 32, marginBottom: 12 }}>🚫</div>
-          <div style={{ fontSize: 16, fontWeight: 600, color: COLORS.err }}>Error</div>
-          <div style={{ fontSize: 13, color: COLORS.t3, marginTop: 8 }}>{error}</div>
+          <div style={{ fontSize: 35.2, marginBottom: 12 }}>🚫</div>
+          <div style={{ fontSize: 17.6, fontWeight: 600, color: COLORS.err }}>Error</div>
+          <div style={{ fontSize: 14.3, color: COLORS.t3, marginTop: 8 }}>{error}</div>
           <button onClick={retry} style={S.btn}>Reintentar</button>
         </>}
       </div>
@@ -132,7 +132,7 @@ const S = {
   },
   btn: {
     marginTop: 16, padding: "10px 24px", background: COLORS.pri, color: "#fff",
-    borderRadius: 8, border: "none", fontSize: 14, fontWeight: 600, cursor: "pointer",
+    borderRadius: 8, border: "none", fontSize: 15.4, fontWeight: 600, cursor: "pointer",
     fontFamily: "inherit",
   },
 };

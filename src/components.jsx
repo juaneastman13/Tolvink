@@ -6,11 +6,11 @@ import { captureError } from "./sentry";
 // ======================== BASE COMPONENTS ============================
 
 export const Av = memo(function Av({ letters, size=36, color=C.pri }) {
-  return <div style={{ width:size, height:size, borderRadius:size, display:"flex", alignItems:"center", justifyContent:"center", background:`${color}12`, color, fontSize:size*0.36, fontWeight:700, letterSpacing:0.5, flexShrink:0, border:`1.5px solid ${color}22` }}>{letters}</div>;
+  return <div style={{ width:size, height:size, borderRadius:size, display:"flex", alignItems:"center", justifyContent:"center", background:`${color}12`, color, fontSize:size*0.4, fontWeight:700, letterSpacing:0.5, flexShrink:0, border:`1.5px solid ${color}22` }}>{letters}</div>;
 });
 
 export const Bd = memo(function Bd({ children, color=C.pri, bg, small }) {
-  return <span style={{ display:"inline-flex", alignItems:"center", gap:4, padding:small?"2px 7px":"4px 10px", borderRadius:6, fontSize:small?10.5:11, fontWeight:600, background:bg||`${color}0D`, color, whiteSpace:"nowrap", letterSpacing:0.2 }}>{children}</span>;
+  return <span style={{ display:"inline-flex", alignItems:"center", gap:4, padding:small?"2px 7px":"4px 10px", borderRadius:6, fontSize:small?11.6:12.1, fontWeight:600, background:bg||`${color}0D`, color, whiteSpace:"nowrap", letterSpacing:0.2 }}>{children}</span>;
 });
 
 export const Btn = memo(function Btn({ children, onClick, v="pri", full, sm, icon, disabled, style={}, type="button" }) {
@@ -22,11 +22,11 @@ export const Btn = memo(function Btn({ children, onClick, v="pri", full, sm, ico
     acc:  { bg:C.acc, c:C.w, hbg:C.accLt, dbg:C.accPale, dc:C.t3 },
   };
   const vv = vs[v] || vs.pri;
-  return <button type={type} disabled={disabled} onClick={onClick} style={{ display:"inline-flex", alignItems:"center", justifyContent:"center", gap:7, padding:sm?"8px 14px":"13px 22px", borderRadius:10, fontSize:sm?12:13.5, fontWeight:600, fontFamily:"inherit", background:disabled?(vv.dbg||"#E8ECE9"):vv.bg, color:disabled?(vv.dc||C.t3):vv.c, border:vv.bd?`1px solid ${disabled?C.b1:vv.bd}`:"none", cursor:disabled?"not-allowed":"pointer", width:full?"100%":"auto", transition:"all 0.15s ease", minHeight:sm?38:44, WebkitTapHighlightColor:"transparent", touchAction:"manipulation", ...style }} onMouseEnter={e=>{if(!disabled&&vv.hbg)e.currentTarget.style.background=vv.hbg}} onMouseLeave={e=>{if(!disabled)e.currentTarget.style.background=disabled?(vv.dbg||"#E8ECE9"):vv.bg}} onPointerDown={e=>{if(!disabled)e.currentTarget.style.transform="scale(0.97)"}} onPointerUp={e=>{e.currentTarget.style.transform="none"}} onPointerLeave={e=>{e.currentTarget.style.transform="none"}}>{icon&&<span style={{display:"flex",alignItems:"center"}}>{icon}</span>}{children}</button>;
+  return <button type={type} disabled={disabled} onClick={onClick} style={{ display:"inline-flex", alignItems:"center", justifyContent:"center", gap:7, padding:sm?"8px 14px":"13px 22px", borderRadius:10, fontSize:sm?13.2:14.9, fontWeight:600, fontFamily:"inherit", background:disabled?(vv.dbg||"#E8ECE9"):vv.bg, color:disabled?(vv.dc||C.t3):vv.c, border:vv.bd?`1px solid ${disabled?C.b1:vv.bd}`:"none", cursor:disabled?"not-allowed":"pointer", width:full?"100%":"auto", transition:"all 0.15s ease", minHeight:sm?38:44, WebkitTapHighlightColor:"transparent", touchAction:"manipulation", ...style }} onMouseEnter={e=>{if(!disabled&&vv.hbg)e.currentTarget.style.background=vv.hbg}} onMouseLeave={e=>{if(!disabled)e.currentTarget.style.background=disabled?(vv.dbg||"#E8ECE9"):vv.bg}} onPointerDown={e=>{if(!disabled)e.currentTarget.style.transform="scale(0.97)"}} onPointerUp={e=>{e.currentTarget.style.transform="none"}} onPointerLeave={e=>{e.currentTarget.style.transform="none"}}>{icon&&<span style={{display:"flex",alignItems:"center"}}>{icon}</span>}{children}</button>;
 });
 
 export const Tabs = memo(function Tabs({ items, active, onChange }) {
-  return <div style={{ display:"flex", gap:2, background:C.bgInput, borderRadius:10, padding:3 }}>{items.map(t=><button key={t.k} onClick={()=>onChange(t.k)} style={{ flex:1, padding:"8px 4px", borderRadius:8, border:"none", fontFamily:"inherit", fontSize:11, fontWeight:active===t.k?700:500, cursor:"pointer", background:active===t.k?C.w:"transparent", color:active===t.k?C.pri:C.t3, boxShadow:active===t.k?C.sh:"none", transition:"all 0.15s" }}>{t.l}</button>)}</div>;
+  return <div style={{ display:"flex", gap:2, background:C.bgInput, borderRadius:10, padding:3 }}>{items.map(t=><button key={t.k} onClick={()=>onChange(t.k)} style={{ flex:1, padding:"8px 4px", borderRadius:8, border:"none", fontFamily:"inherit", fontSize:12.1, fontWeight:active===t.k?700:500, cursor:"pointer", background:active===t.k?C.w:"transparent", color:active===t.k?C.pri:C.t3, boxShadow:active===t.k?C.sh:"none", transition:"all 0.15s" }}>{t.l}</button>)}</div>;
 });
 
 export function Field({ label, icon, value, onChange, placeholder, type="text", children, hasError, onKeyDown, inputMode }) {
@@ -35,13 +35,13 @@ export function Field({ label, icon, value, onChange, placeholder, type="text", 
   const isPw = type === "password";
   const borderColor = hasError ? C.err : C.b1;
   const labelColor = hasError ? C.err : C.t2;
-  if (children) return <div>{label && <label htmlFor={fieldId} style={{ fontSize:10.5, fontWeight:600, color:labelColor, marginBottom:6, display:"flex", alignItems:"center", gap:4, textTransform:"uppercase", letterSpacing:0.6 }}>{icon} {label}</label>}{children}</div>;
+  if (children) return <div>{label && <label htmlFor={fieldId} style={{ fontSize:11.6, fontWeight:600, color:labelColor, marginBottom:6, display:"flex", alignItems:"center", gap:4, textTransform:"uppercase", letterSpacing:0.6 }}>{icon} {label}</label>}{children}</div>;
   return (
     <div>
-      {label && <label htmlFor={fieldId} style={{ fontSize:10.5, fontWeight:600, color:labelColor, marginBottom:6, display:"flex", alignItems:"center", gap:4, textTransform:"uppercase", letterSpacing:0.6 }}>{icon} {label}</label>}
+      {label && <label htmlFor={fieldId} style={{ fontSize:11.6, fontWeight:600, color:labelColor, marginBottom:6, display:"flex", alignItems:"center", gap:4, textTransform:"uppercase", letterSpacing:0.6 }}>{icon} {label}</label>}
       <div style={{ position:"relative" }}>
         <input id={fieldId} value={value} onChange={e=>onChange(e.target.value)} placeholder={placeholder} type={isPw&&!showPw?"password":"text"} onKeyDown={onKeyDown} inputMode={inputMode}
-          style={{ width:"100%", padding:"12px 14px", paddingRight:isPw?42:14, borderRadius:10, border:`1.5px solid ${borderColor}`, background:hasError?C.errPale+"40":C.w, color:C.t1, fontSize:16, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }}
+          style={{ width:"100%", padding:"12px 14px", paddingRight:isPw?42:14, borderRadius:10, border:`1.5px solid ${borderColor}`, background:hasError?C.errPale+"40":C.w, color:C.t1, fontSize:17.6, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }}
           onFocus={e=>{e.target.style.borderColor=hasError?C.err:C.bFocus;}} onBlur={e=>{e.target.style.borderColor=borderColor;}} />
         {isPw && <button aria-label={showPw?"Ocultar contraseña":"Mostrar contraseña"} onClick={()=>setShowPw(!showPw)} style={{ position:"absolute", right:10, top:"50%", transform:"translateY(-50%)", background:"none", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", minWidth:44, minHeight:44, padding:4 }}>{showPw?Ic.eye(C.t3,18):Ic.eyeOff(C.t3,18)}</button>}
       </div>
@@ -58,14 +58,14 @@ export function NumericStepper({ value, onChange, min, max, step=1, placeholder,
     if (max != null && next > max) next = max;
     onChange(String(next));
   };
-  const btnS = { width:38, height:38, borderRadius:19, border:`1.5px solid ${C.b1}`, background:C.w, color:C.pri, fontSize:20, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"inherit", flexShrink:0, transition:"background 0.15s", WebkitTapHighlightColor:"transparent", touchAction:"manipulation" };
+  const btnS = { width:38, height:38, borderRadius:19, border:`1.5px solid ${C.b1}`, background:C.w, color:C.pri, fontSize:22, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"inherit", flexShrink:0, transition:"background 0.15s", WebkitTapHighlightColor:"transparent", touchAction:"manipulation" };
   return (
     <div>
-      {label && <label style={{ fontSize:10.5, fontWeight:600, color:C.t2, marginBottom:6, display:"flex", alignItems:"center", gap:4, textTransform:"uppercase", letterSpacing:0.6 }}>{icon} {label}</label>}
+      {label && <label style={{ fontSize:11.6, fontWeight:600, color:C.t2, marginBottom:6, display:"flex", alignItems:"center", gap:4, textTransform:"uppercase", letterSpacing:0.6 }}>{icon} {label}</label>}
       <div style={{ display:"flex", alignItems:"center", gap:10 }}>
         <button type="button" onClick={()=>adjust(-step)} style={btnS} onMouseEnter={e=>e.currentTarget.style.background=C.priPale} onMouseLeave={e=>e.currentTarget.style.background=C.w}>−</button>
         <input type="number" inputMode="decimal" value={value} onChange={e=>onChange(e.target.value)} placeholder={placeholder} min={min} max={max} step={step}
-          style={{ width:80, padding:"10px 4px", borderRadius:10, border:`1.5px solid ${C.b1}`, background:C.w, color:C.t1, fontSize:16, fontFamily:"inherit", outline:"none", boxSizing:"border-box", textAlign:"center" }}
+          style={{ width:80, padding:"10px 4px", borderRadius:10, border:`1.5px solid ${C.b1}`, background:C.w, color:C.t1, fontSize:17.6, fontFamily:"inherit", outline:"none", boxSizing:"border-box", textAlign:"center" }}
           onFocus={e=>e.target.style.borderColor=C.bFocus} onBlur={e=>e.target.style.borderColor=C.b1} />
         <button type="button" onClick={()=>adjust(step)} style={btnS} onMouseEnter={e=>e.currentTarget.style.background=C.priPale} onMouseLeave={e=>e.currentTarget.style.background=C.w}>+</button>
       </div>
@@ -118,8 +118,8 @@ export function Select({ label, icon, value, onChange, options, placeholder="Sel
   if (isMobile) {
     return (
       <div style={{ position:"relative" }}>
-        {label && <label style={{ fontSize:10.5, fontWeight:600, color:C.t2, marginBottom:6, display:"flex", alignItems:"center", gap:4, textTransform:"uppercase", letterSpacing:0.6 }}>{icon} {label}</label>}
-        <select value={value||""} onChange={e=>onChange(e.target.value)} style={{ width:"100%", padding:"12px 14px", paddingRight:36, borderRadius:10, border:`1.5px solid ${C.b1}`, background:C.w, color:value?C.t1:C.t3, fontSize:15, fontFamily:"inherit", cursor:"pointer", boxSizing:"border-box", minHeight:44, outline:"none", WebkitAppearance:"none", appearance:"none" }}>
+        {label && <label style={{ fontSize:11.6, fontWeight:600, color:C.t2, marginBottom:6, display:"flex", alignItems:"center", gap:4, textTransform:"uppercase", letterSpacing:0.6 }}>{icon} {label}</label>}
+        <select value={value||""} onChange={e=>onChange(e.target.value)} style={{ width:"100%", padding:"12px 14px", paddingRight:36, borderRadius:10, border:`1.5px solid ${C.b1}`, background:C.w, color:value?C.t1:C.t3, fontSize:16.5, fontFamily:"inherit", cursor:"pointer", boxSizing:"border-box", minHeight:44, outline:"none", WebkitAppearance:"none", appearance:"none" }}>
           <option value="" disabled>{placeholder}</option>
           {options.map(o=><option key={o.value} value={o.value}>{o.label}{o.sub?` — ${o.sub}`:""}</option>)}
         </select>
@@ -130,18 +130,18 @@ export function Select({ label, icon, value, onChange, options, placeholder="Sel
 
   return (
     <div ref={ref} style={{ position:"relative" }}>
-      {label && <label style={{ fontSize:10.5, fontWeight:600, color:C.t2, marginBottom:6, display:"flex", alignItems:"center", gap:4, textTransform:"uppercase", letterSpacing:0.6 }}>{icon} {label}</label>}
-      <button type="button" onClick={()=>setOpen(!open)} onKeyDown={handleKeyDown} style={{ width:"100%", padding:"12px 14px", paddingRight:36, borderRadius:10, border:`1.5px solid ${open?C.bFocus:C.b1}`, background:C.w, color:sel?C.t1:C.t3, fontSize:15, fontFamily:"inherit", cursor:"pointer", boxSizing:"border-box", minHeight:44, outline:"none", textAlign:"left", display:"flex", alignItems:"center", transition:"border-color 0.15s" }}>
+      {label && <label style={{ fontSize:11.6, fontWeight:600, color:C.t2, marginBottom:6, display:"flex", alignItems:"center", gap:4, textTransform:"uppercase", letterSpacing:0.6 }}>{icon} {label}</label>}
+      <button type="button" onClick={()=>setOpen(!open)} onKeyDown={handleKeyDown} style={{ width:"100%", padding:"12px 14px", paddingRight:36, borderRadius:10, border:`1.5px solid ${open?C.bFocus:C.b1}`, background:C.w, color:sel?C.t1:C.t3, fontSize:16.5, fontFamily:"inherit", cursor:"pointer", boxSizing:"border-box", minHeight:44, outline:"none", textAlign:"left", display:"flex", alignItems:"center", transition:"border-color 0.15s" }}>
         {sel ? <>{sel.label}{sel.sub && <span style={{ color:C.t3, fontWeight:400 }}>&nbsp;— {sel.sub}</span>}</> : placeholder}
       </button>
       <div style={{ position:"absolute", right:12, top:label?`calc(50% + 11px)`:"50%", transform:`translateY(-50%) rotate(${open?180:0}deg)`, pointerEvents:"none", display:"flex", transition:"transform 0.2s" }}>{Ic.down(open?C.bFocus:C.t3,16)}</div>
       {open && <div ref={listRef} role="listbox" style={{ position:"absolute", top:"100%", left:0, right:0, marginTop:4, background:C.w, border:`1.5px solid ${C.b1}`, borderRadius:12, boxShadow:C.shMd, maxHeight:240, overflowY:"auto", zIndex:50, padding:4 }}>
-        {options.length===0 && <div style={{ padding:"14px 12px", fontSize:13, color:C.t3, textAlign:"center" }}>Sin opciones</div>}
+        {options.length===0 && <div style={{ padding:"14px 12px", fontSize:14.3, color:C.t3, textAlign:"center" }}>Sin opciones</div>}
         {options.map((o,i)=>{
           const active = o.value===value;
           const highlighted = i===hlIdx;
-          return <button key={o.value} data-val={o.value} type="button" role="option" aria-selected={active} onClick={()=>{onChange(o.value);setOpen(false);}} className="tv-sel-opt" style={{ width:"100%", padding:"11px 14px", background:highlighted?C.priPale:active?`${C.pri}08`:"transparent", border:"none", borderRadius:8, cursor:"pointer", fontFamily:"inherit", fontSize:14, fontWeight:active?600:400, color:active?C.pri:C.t1, textAlign:"left", display:"flex", alignItems:"center", gap:8, transition:"background 0.12s", marginBottom:i<options.length-1?2:0 }}>
-            <span style={{ flex:1 }}>{o.label}{o.sub && <span style={{ fontSize:12, color:active?C.pri:C.t3, fontWeight:400 }}> — {o.sub}</span>}</span>
+          return <button key={o.value} data-val={o.value} type="button" role="option" aria-selected={active} onClick={()=>{onChange(o.value);setOpen(false);}} className="tv-sel-opt" style={{ width:"100%", padding:"11px 14px", background:highlighted?C.priPale:active?`${C.pri}08`:"transparent", border:"none", borderRadius:8, cursor:"pointer", fontFamily:"inherit", fontSize:15.4, fontWeight:active?600:400, color:active?C.pri:C.t1, textAlign:"left", display:"flex", alignItems:"center", gap:8, transition:"background 0.12s", marginBottom:i<options.length-1?2:0 }}>
+            <span style={{ flex:1 }}>{o.label}{o.sub && <span style={{ fontSize:13.2, color:active?C.pri:C.t3, fontWeight:400 }}> — {o.sub}</span>}</span>
             {active && Ic.chk(C.pri,15)}
           </button>;
         })}
@@ -165,16 +165,16 @@ export function Sec({ label, complete, summary, children, isExpanded, onFocus, s
           <button type="button" onClick={handleClick} style={{ width:"100%", display:"flex", alignItems:"center", gap:10, padding:"12px 14px", borderRadius:12, border:`1.5px solid ${complete?C.ok+'40':(incomplete||hl)?C.acc+'60':C.b1}`, background:complete?`${C.ok}08`:(incomplete||hl)?`${C.acc}08`:C.w, cursor:disabled?"not-allowed":"pointer", opacity:disabled?0.5:1, fontFamily:"inherit", textAlign:"left", transition:"all 0.2s ease" }} tabIndex={0}>
             {complete ? Ic.chk(C.ok,16) : (incomplete||hl) ? <span style={{width:10,height:10,borderRadius:5,background:C.acc,display:"inline-block",animation:"dotPulse 1.5s ease-in-out infinite",flexShrink:0}}/> : <span style={{width:10,height:10,borderRadius:5,border:`2px solid ${C.b1}`,display:"inline-block",flexShrink:0}}/>}
             <div style={{ flex:1, minWidth:0 }}>
-              <div style={{ fontSize:10, fontWeight:700, color:complete?C.ok:(incomplete||hl)?C.acc:C.t3, textTransform:"uppercase", letterSpacing:0.5 }}>{label}</div>
-              {complete && summary && <div style={{ fontSize:12, fontWeight:600, color:C.t1, marginTop:2, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{summary}</div>}
+              <div style={{ fontSize:11, fontWeight:700, color:complete?C.ok:(incomplete||hl)?C.acc:C.t3, textTransform:"uppercase", letterSpacing:0.5 }}>{label}</div>
+              {complete && summary && <div style={{ fontSize:13.2, fontWeight:600, color:C.t1, marginTop:2, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{summary}</div>}
             </div>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.t3} strokeWidth="2" style={{flexShrink:0}}><polyline points="6 9 12 15 18 9"/></svg>
           </button>
-          {showWarn && <div style={{marginTop:6,padding:"6px 12px",borderRadius:8,background:C.acc+'18',border:`1px solid ${C.acc}40`,fontSize:11,fontWeight:600,color:C.acc,display:"flex",alignItems:"center",gap:6,animation:"fadeIn 0.2s ease"}}>{Ic.warn(C.acc,14)} Completá los campos anteriores primero</div>}
+          {showWarn && <div style={{marginTop:6,padding:"6px 12px",borderRadius:8,background:C.acc+'18',border:`1px solid ${C.acc}40`,fontSize:12.1,fontWeight:600,color:C.acc,display:"flex",alignItems:"center",gap:6,animation:"fadeIn 0.2s ease"}}>{Ic.warn(C.acc,14)} Completá los campos anteriores primero</div>}
         </>
       ) : (
         <div>
-          <div style={{fontSize:11,fontWeight:700,color:C.pri,textTransform:"uppercase",letterSpacing:0.5,marginBottom:12,display:"flex",alignItems:"center",gap:6}}><span style={{width:8,height:8,borderRadius:4,background:C.pri,display:"inline-block"}}/>{label}</div>
+          <div style={{fontSize:12.1,fontWeight:700,color:C.pri,textTransform:"uppercase",letterSpacing:0.5,marginBottom:12,display:"flex",alignItems:"center",gap:6}}><span style={{width:8,height:8,borderRadius:4,background:C.pri,display:"inline-block"}}/>{label}</div>
           {children}
         </div>
       )}
@@ -186,7 +186,7 @@ export function Toast({ msg, type="ok", onClose }) {
   const onCloseRef = useRef(onClose); onCloseRef.current = onClose;
   useEffect(()=>{ const t=setTimeout(()=>onCloseRef.current?.(),3500); return()=>clearTimeout(t); },[msg]);
   const cfg = { ok:{bg:C.pri,ic:Ic.chk(C.w,16)}, err:{bg:C.err,ic:Ic.warn(C.w,16)}, info:{bg:C.info,ic:Ic.bell(C.w,16)} }[type]||{bg:C.pri,ic:Ic.chk(C.w,16)};
-  return <div role="alert" style={{ position:"fixed", top:"max(20px, env(safe-area-inset-top))", left:"50%", transform:"translateX(-50%)", zIndex:200, background:cfg.bg, color:C.w, padding:"11px 22px", borderRadius:12, fontSize:13, fontWeight:600, boxShadow:C.shLg, display:"flex", alignItems:"center", gap:8, animation:"fadeIn 0.3s ease", maxWidth:"calc(100vw - 40px)" }}>{cfg.ic} {msg}</div>;
+  return <div role="alert" style={{ position:"fixed", top:"max(20px, env(safe-area-inset-top))", left:"50%", transform:"translateX(-50%)", zIndex:200, background:cfg.bg, color:C.w, padding:"11px 22px", borderRadius:12, fontSize:14.3, fontWeight:600, boxShadow:C.shLg, display:"flex", alignItems:"center", gap:8, animation:"fadeIn 0.3s ease", maxWidth:"calc(100vw - 40px)" }}>{cfg.ic} {msg}</div>;
 }
 
 export const Loader = memo(function Loader() {
@@ -210,14 +210,14 @@ export function LoadingOverlay({ closing=false, closingText="", onClose }) {
       <style>{`@keyframes moFadeIn{from{opacity:0}to{opacity:1}}@keyframes moLogoIn{from{opacity:0;transform:scale(0.7)}to{opacity:1;transform:scale(1)}}@keyframes moCircleIn{from{transform:scale(0);opacity:0}to{transform:scale(1);opacity:1}}@keyframes moOutroFade{to{opacity:0}}`}</style>
       {!closing && (
         <div style={{display:"flex",alignItems:"flex-start",animation:"moLogoIn 0.35s ease-out"}}>
-          <span style={{fontSize:57,fontWeight:800,color:C.pri,letterSpacing:-2.5,lineHeight:1}}>tolvink</span>
+          <span style={{fontSize:62.7,fontWeight:800,color:C.pri,letterSpacing:-2.5,lineHeight:1}}>tolvink</span>
           <span style={{width:17,height:17,borderRadius:9,background:C.acc,marginLeft:5,marginTop:3,display:"inline-block",animation:"dotPulse 1.5s ease-in-out infinite"}} />
         </div>
       )}
       {closing && (
         <div style={{width:150,height:150,borderRadius:"50%",background:C.acc,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:6,animation:"moCircleIn 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards",boxShadow:"0 8px 32px rgba(0,0,0,0.18)",pointerEvents:"none"}}>
           <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-          {closingText && <span style={{color:"#fff",fontSize:14,fontWeight:700,textAlign:"center",lineHeight:1.3,padding:"0 16px"}}>{closingText}</span>}
+          {closingText && <span style={{color:"#fff",fontSize:15.4,fontWeight:700,textAlign:"center",lineHeight:1.3,padding:"0 16px"}}>{closingText}</span>}
         </div>
       )}
     </div>
@@ -230,7 +230,7 @@ export function SortTh({ label, colKey, sortCol, sortDir, onSort }) {
   const active = sortCol === colKey;
   const arrow = active ? (sortDir === "asc" ? " ↑" : " ↓") : "";
   return (
-    <th onClick={() => onSort(colKey)} style={{ padding:"9px 10px", textAlign:"left", fontWeight:700, color: active ? C.pri : C.t2, fontSize:10, whiteSpace:"nowrap", borderBottom:`1px solid ${C.b1}`, cursor:"pointer", userSelect:"none", textTransform:"uppercase", letterSpacing:0.5 }}>
+    <th onClick={() => onSort(colKey)} style={{ padding:"9px 10px", textAlign:"left", fontWeight:700, color: active ? C.pri : C.t2, fontSize:11, whiteSpace:"nowrap", borderBottom:`1px solid ${C.b1}`, cursor:"pointer", userSelect:"none", textTransform:"uppercase", letterSpacing:0.5 }}>
       {label}{arrow && <span style={{ color: C.pri, fontWeight: 800 }}>{arrow}</span>}
     </th>
   );
@@ -296,7 +296,7 @@ export function ModalOverlay({ children, onClose, maxWidth=400, loading=false, c
       {/* Loading: full logo with pulsing dot */}
       {showLoading && (
         <div style={{position:"absolute",display:"flex",alignItems:"flex-start",animation:"moLogoIn 0.35s ease-out",pointerEvents:"none"}}>
-          <span style={{fontSize:57,fontWeight:800,color:C.pri,letterSpacing:-2.5,lineHeight:1}}>tolvink</span>
+          <span style={{fontSize:62.7,fontWeight:800,color:C.pri,letterSpacing:-2.5,lineHeight:1}}>tolvink</span>
           <span style={{width:17,height:17,borderRadius:9,background:C.acc,marginLeft:5,marginTop:3,display:"inline-block",animation:"dotPulse 1.5s ease-in-out infinite"}} />
         </div>
       )}
@@ -304,7 +304,7 @@ export function ModalOverlay({ children, onClose, maxWidth=400, loading=false, c
       {showIntro && (
         <div style={{position:"absolute",display:"flex",alignItems:"center",justifyContent:"center",animation:stage===0?"moLogoIn 0.35s ease-out forwards":"none",pointerEvents:"none"}}>
           {stage < 2 && (
-            <span style={{fontSize:57,fontWeight:800,color:C.pri,letterSpacing:-2.5,lineHeight:1,display:"inline-block",overflow:"hidden",whiteSpace:"nowrap",marginRight:5,animation:stage===1?"moTextOut 0.55s ease forwards":"none"}}>tolvink</span>
+            <span style={{fontSize:62.7,fontWeight:800,color:C.pri,letterSpacing:-2.5,lineHeight:1,display:"inline-block",overflow:"hidden",whiteSpace:"nowrap",marginRight:5,animation:stage===1?"moTextOut 0.55s ease forwards":"none"}}>tolvink</span>
           )}
           <span style={{width:17,height:17,borderRadius:9,background:C.acc,display:"inline-block",animation:stage===2?"moDotGrow 0.7s ease forwards":"dotPulse 1.5s ease-in-out infinite"}} />
         </div>
@@ -314,7 +314,7 @@ export function ModalOverlay({ children, onClose, maxWidth=400, loading=false, c
         <div style={{width:150,height:150,borderRadius:"50%",background:C.acc,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:6,animation:"moCircleIn 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards",boxShadow:"0 8px 32px rgba(0,0,0,0.18)",pointerEvents:"none"}}>
           <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
           {closingText && (
-            <span style={{color:"#fff",fontSize:14,fontWeight:700,textAlign:"center",lineHeight:1.3,padding:"0 16px"}}>{closingText}</span>
+            <span style={{color:"#fff",fontSize:15.4,fontWeight:700,textAlign:"center",lineHeight:1.3,padding:"0 16px"}}>{closingText}</span>
           )}
         </div>
       )}
@@ -344,7 +344,7 @@ export function AttachMenu({ open, onClose, onCamera, onGallery, onFiles }) {
       <div role="dialog" aria-modal="true" style={{ position:"fixed", bottom:0, left:0, right:0, zIndex:201, background:C.w, borderRadius:"18px 18px 0 0", padding:"8px 16px max(16px, env(safe-area-inset-bottom))", boxShadow:"0 -4px 24px rgba(0,0,0,0.12)", animation:"sheetUp 0.2s ease" }}>
         <style>{`@keyframes sheetUp{from{transform:translateY(100%)}to{transform:translateY(0)}}@keyframes fadeIn{from{opacity:0}to{opacity:1}}`}</style>
         <div style={{ width:36, height:4, borderRadius:2, background:C.b1, margin:"0 auto 12px" }} />
-        <div style={{ fontSize:13, fontWeight:700, color:C.t1, marginBottom:12, textAlign:"center" }}>Adjuntar</div>
+        <div style={{ fontSize:14.3, fontWeight:700, color:C.t1, marginBottom:12, textAlign:"center" }}>Adjuntar</div>
         {[
           { icon:Ic.cam(C.acc,22), label:"Tomar foto", sub:"Usar cámara del dispositivo", action:onCamera },
           { icon:Ic.img(C.pri,22), label:"Galería", sub:"Seleccionar de imágenes", action:onGallery },
@@ -353,12 +353,12 @@ export function AttachMenu({ open, onClose, onCamera, onGallery, onFiles }) {
           <button key={i} onClick={()=>{opt.action();onClose();}} style={{ display:"flex", alignItems:"center", gap:14, width:"100%", padding:"14px 12px", border:"none", borderRadius:12, background:"none", cursor:"pointer", fontFamily:"inherit", WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
             <div style={{ width:44, height:44, borderRadius:12, background:C.bg, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{opt.icon}</div>
             <div style={{ textAlign:"left" }}>
-              <div style={{ fontSize:14, fontWeight:600, color:C.t1 }}>{opt.label}</div>
-              <div style={{ fontSize:11, color:C.t3, marginTop:1 }}>{opt.sub}</div>
+              <div style={{ fontSize:15.4, fontWeight:600, color:C.t1 }}>{opt.label}</div>
+              <div style={{ fontSize:12.1, color:C.t3, marginTop:1 }}>{opt.sub}</div>
             </div>
           </button>
         ))}
-        <button onClick={onClose} style={{ width:"100%", padding:"13px 0", marginTop:4, border:"none", borderRadius:12, background:C.bg, fontSize:14, fontWeight:600, color:C.t2, cursor:"pointer", fontFamily:"inherit" }}>Cancelar</button>
+        <button onClick={onClose} style={{ width:"100%", padding:"13px 0", marginTop:4, border:"none", borderRadius:12, background:C.bg, fontSize:15.4, fontWeight:600, color:C.t2, cursor:"pointer", fontFamily:"inherit" }}>Cancelar</button>
       </div>
     </>
   );
@@ -399,7 +399,7 @@ export function Sidebar({ active, onChange, unread=0, pendingCount=0, notifCount
       {/* Logo */}
       <div style={{ padding:"10px 20px 8px", borderBottom:`1px solid ${C.b2}` }}>
         <div style={{ display:"inline-flex", alignItems:"flex-start" }}>
-          <span style={{ fontSize:63, fontWeight:800, color:C.pri, letterSpacing:-2.8, lineHeight:1 }}>tolvink</span>
+          <span style={{ fontSize:69.3, fontWeight:800, color:C.pri, letterSpacing:-2.8, lineHeight:1 }}>tolvink</span>
           <span style={{ width:15, height:15, borderRadius:8, background:C.acc, display:"inline-block", marginLeft:4, marginTop:3, animation:"dotPulse 1.5s ease-in-out infinite" }}></span>
         </div>
       </div>
@@ -410,10 +410,10 @@ export function Sidebar({ active, onChange, unread=0, pendingCount=0, notifCount
           <button onClick={() => hasMultiple && setCompOpen(!compOpen)} style={{ display:"flex", alignItems:"center", gap:8, padding:"8px 10px", borderRadius:8, background:`${(_TYPE_IC_COLORS[activeCompany.type]||C.t2)}0A`, border:`1px solid ${(_TYPE_IC_COLORS[activeCompany.type]||C.t2)+'30'}`, width:"100%", cursor:hasMultiple?"pointer":"default", fontFamily:"inherit", textAlign:"left" }}>
             <span style={{ display:"flex", flexShrink:0 }}>{_typeIcon(activeCompany.type,16) || <span style={{width:8,height:8,borderRadius:4,background:C.t2}}/>}</span>
             <div style={{ flex:1, minWidth:0 }}>
-              <div style={{ fontSize:12, fontWeight:700, color:C.t1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{activeCompany.name}</div>
-              {compLabel && <div style={{ fontSize:10, fontWeight:600, color:_TYPE_IC_COLORS[activeCompany.type]||C.t2 }}>{compLabel}</div>}
+              <div style={{ fontSize:13.2, fontWeight:700, color:C.t1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{activeCompany.name}</div>
+              {compLabel && <div style={{ fontSize:11, fontWeight:600, color:_TYPE_IC_COLORS[activeCompany.type]||C.t2 }}>{compLabel}</div>}
             </div>
-            {hasMultiple && <span style={{ fontSize:10, color:C.t3, flexShrink:0 }}>{compOpen?"▲":"▼"}</span>}
+            {hasMultiple && <span style={{ fontSize:11, color:C.t3, flexShrink:0 }}>{compOpen?"▲":"▼"}</span>}
           </button>
           {compOpen && hasMultiple && (
             <div style={{ position:"absolute", left:14, right:14, top:"100%", marginTop:2, background:C.w, border:`1px solid ${C.b1}`, borderRadius:10, boxShadow:C.shMd, padding:4, zIndex:100, maxHeight:260, overflowY:"auto" }}>
@@ -422,9 +422,9 @@ export function Sidebar({ active, onChange, unread=0, pendingCount=0, notifCount
                 return (
                   <button key={c.companyId} onClick={() => { setCompOpen(false); if (!isAct && onSwitchCompany) onSwitchCompany(c.companyId); }} style={{ display:"flex", alignItems:"center", gap:6, width:"100%", padding:"8px 10px", background:isAct?`${C.pri}08`:"transparent", border:"none", borderRadius:8, cursor:isAct?"default":"pointer", fontFamily:"inherit", textAlign:"left" }}>
                     <span style={{ display:"flex", flexShrink:0 }}>{_typeIcon(c.companyType,12)}</span>
-                    <span style={{ fontSize:11, fontWeight:isAct?700:500, color:C.t1, flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{c.companyName}</span>
-                    <span style={{ fontSize:9, color:_TYPE_IC_COLORS[c.companyType]||C.t3 }}>{_TYPE_LABELS[c.companyType]||""}</span>
-                    {isAct && <span style={{ fontSize:8, color:C.pri, fontWeight:700 }}>✓</span>}
+                    <span style={{ fontSize:12.1, fontWeight:isAct?700:500, color:C.t1, flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{c.companyName}</span>
+                    <span style={{ fontSize:9.9, color:_TYPE_IC_COLORS[c.companyType]||C.t3 }}>{_TYPE_LABELS[c.companyType]||""}</span>
+                    {isAct && <span style={{ fontSize:8.8, color:C.pri, fontWeight:700 }}>✓</span>}
                   </button>
                 );
               })}
@@ -439,7 +439,7 @@ export function Sidebar({ active, onChange, unread=0, pendingCount=0, notifCount
           <button onClick={onNew} style={{ width:"100%", display:"flex", alignItems:"center", justifyContent:"center", gap:8, padding:"10px 14px", borderRadius:12, background:C.acc, border:"none", cursor:"pointer", fontFamily:"inherit", boxShadow:`0 2px 8px ${C.acc}30`, transition:"transform 0.15s, box-shadow 0.15s" }} onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-1px)";e.currentTarget.style.boxShadow=`0 4px 12px ${C.acc}40`}} onMouseLeave={e=>{e.currentTarget.style.transform="none";e.currentTarget.style.boxShadow=`0 2px 8px ${C.acc}30`}}>
             <style>{`@keyframes truckDrive{0%,100%{transform:translateX(0)}50%{transform:translateX(3px)}}`}</style>
             <span style={{ display:"inline-flex", animation:"truckDrive 1.5s ease-in-out infinite" }}>{Ic.truck("#fff",16)}</span>
-            <span style={{ fontSize:12.5, fontWeight:700, color:"#fff" }}>Solicitar flete</span>
+            <span style={{ fontSize:13.8, fontWeight:700, color:"#fff" }}>Solicitar flete</span>
           </button>
         </div>
       )}
@@ -451,8 +451,8 @@ export function Sidebar({ active, onChange, unread=0, pendingCount=0, notifCount
           return (
             <button key={it.k} onClick={()=>onChange(it.k)} style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 12px", borderRadius:8, border:"none", background:isActive?C.priPale:"transparent", cursor:"pointer", fontFamily:"inherit", position:"relative", transition:"background 0.15s", width:"100%" }} onMouseEnter={e=>{if(!isActive)e.currentTarget.style.background=C.priGhost}} onMouseLeave={e=>{if(!isActive)e.currentTarget.style.background="transparent"}}>
               <span style={{display:"flex"}}>{it.ic(isActive)}</span>
-              <span style={{ fontSize:13, fontWeight:isActive?700:500, color:isActive?C.pri:C.t2 }}>{it.l}</span>
-              {it.bd>0 && <div style={{ marginLeft:"auto", minWidth:18, height:18, borderRadius:9, background:C.err, color:C.w, fontSize:9, fontWeight:700, padding:"0 5px", display:"flex", alignItems:"center", justifyContent:"center" }}>{it.bd}</div>}
+              <span style={{ fontSize:14.3, fontWeight:isActive?700:500, color:isActive?C.pri:C.t2 }}>{it.l}</span>
+              {it.bd>0 && <div style={{ marginLeft:"auto", minWidth:18, height:18, borderRadius:9, background:C.err, color:C.w, fontSize:9.9, fontWeight:700, padding:"0 5px", display:"flex", alignItems:"center", justifyContent:"center" }}>{it.bd}</div>}
               {isActive && <div style={{ position:"absolute", left:0, top:"20%", bottom:"20%", width:3, borderRadius:2, background:C.pri }} />}
             </button>
           );
@@ -463,8 +463,8 @@ export function Sidebar({ active, onChange, unread=0, pendingCount=0, notifCount
       {onToggleSimple && <div style={{ padding:"10px 12px", borderTop:`1px solid ${C.b2}` }}>
         <div style={{ position:"relative", display:"flex", borderRadius:8, background:C.b1, padding:2, cursor:"pointer" }} onClick={onToggleSimple}>
           <div style={{ position:"absolute", top:2, left:simpleMode?"50%":2, width:"calc(50% - 2px)", height:"calc(100% - 4px)", borderRadius:6, background:C.t2, transition:"left 0.25s ease", boxShadow:"0 1px 3px rgba(0,0,0,0.15)" }} />
-          <span style={{ flex:1, textAlign:"center", fontSize:10, fontWeight:700, padding:"5px 0", position:"relative", zIndex:1, color:simpleMode?C.t3:C.w, transition:"color 0.2s", userSelect:"none" }}>Completo</span>
-          <span style={{ flex:1, textAlign:"center", fontSize:10, fontWeight:700, padding:"5px 0", position:"relative", zIndex:1, color:simpleMode?C.w:C.t3, transition:"color 0.2s", userSelect:"none" }}>Simple</span>
+          <span style={{ flex:1, textAlign:"center", fontSize:11, fontWeight:700, padding:"5px 0", position:"relative", zIndex:1, color:simpleMode?C.t3:C.w, transition:"color 0.2s", userSelect:"none" }}>Completo</span>
+          <span style={{ flex:1, textAlign:"center", fontSize:11, fontWeight:700, padding:"5px 0", position:"relative", zIndex:1, color:simpleMode?C.w:C.t3, transition:"color 0.2s", userSelect:"none" }}>Simple</span>
         </div>
       </div>}
     </div>
@@ -492,19 +492,19 @@ export function Nav({ active, onChange, unread=0, pendingCount=0, notifCount=0, 
           {it.sp ? <>
             <div onClick={e=>{e.stopPropagation();onChange("home")}} style={{ width:40, height:40, borderRadius:20, background:centerColor, display:"flex", alignItems:"center", justifyContent:"center", marginTop:-16, boxShadow:`0 3px 12px ${centerColor}40`, position:"relative", transition:"background 0.5s ease, box-shadow 0.5s ease" }}>
               {hasPending ? Ic.clk(C.w,18) : Ic.chk(C.w,18)}
-              {it.bd>0 && <div style={{ position:"absolute", top:-4, right:-4, minWidth:16, height:16, borderRadius:8, background:C.err, color:C.w, fontSize:8, fontWeight:700, padding:"0 4px", display:"flex", alignItems:"center", justifyContent:"center", border:`2px solid ${C.nav}` }}>{it.bd}</div>}
+              {it.bd>0 && <div style={{ position:"absolute", top:-4, right:-4, minWidth:16, height:16, borderRadius:8, background:C.err, color:C.w, fontSize:8.8, fontWeight:700, padding:"0 4px", display:"flex", alignItems:"center", justifyContent:"center", border:`2px solid ${C.nav}` }}>{it.bd}</div>}
             </div>
-            <span style={{ fontSize:9, fontWeight:700, color:centerColor, marginTop:1, transition:"color 0.5s ease" }}>{hasPending?"Pendientes":"Al día"}</span>
+            <span style={{ fontSize:9.9, fontWeight:700, color:centerColor, marginTop:1, transition:"color 0.5s ease" }}>{hasPending?"Pendientes":"Al día"}</span>
             {canRequest && (
               <div onClick={e=>{e.stopPropagation();onNew();}} style={{ display:"flex", alignItems:"center", gap:5, marginTop:2, padding:"6px 14px", borderRadius:20, background:C.acc, cursor:"pointer", boxShadow:`0 2px 8px ${C.acc}40` }}>
                 <span style={{ display:"inline-flex", animation:"truckDrive 1.5s ease-in-out infinite" }}>{Ic.truck("#fff",15)}</span>
-                <span style={{ fontSize:11, fontWeight:700, color:"#fff", whiteSpace:"nowrap" }}>Solicitar flete</span>
+                <span style={{ fontSize:12.1, fontWeight:700, color:"#fff", whiteSpace:"nowrap" }}>Solicitar flete</span>
               </div>
             )}
           </> : <>
             <span style={{display:"flex"}}>{it.ic(active===it.k)}</span>
-            <span style={{ fontSize:10, fontWeight:active===it.k?700:500, color:active===it.k?C.pri:C.t3 }}>{it.l}</span>
-            {it.bd>0 && <div style={{ position:"absolute", top:1, right:"20%", minWidth:14, height:14, borderRadius:7, background:C.err, color:C.w, fontSize:8, fontWeight:700, padding:"0 3px", display:"flex", alignItems:"center", justifyContent:"center" }}>{it.bd}</div>}
+            <span style={{ fontSize:11, fontWeight:active===it.k?700:500, color:active===it.k?C.pri:C.t3 }}>{it.l}</span>
+            {it.bd>0 && <div style={{ position:"absolute", top:1, right:"20%", minWidth:14, height:14, borderRadius:7, background:C.err, color:C.w, fontSize:8.8, fontWeight:700, padding:"0 3px", display:"flex", alignItems:"center", justifyContent:"center" }}>{it.bd}</div>}
           </>}
         </button>
       ))}
@@ -567,9 +567,9 @@ export function NotificationsPanel({ open, onClose, notifications=[], onMarkRead
 
       {/* Header */}
       <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"16px 18px 12px" }}>
-        <span style={{ fontSize:16, fontWeight:700, color:C.t1 }}>Notificaciones</span>
+        <span style={{ fontSize:17.6, fontWeight:700, color:C.t1 }}>Notificaciones</span>
         {unread.length > 0 && (
-          <button onClick={onMarkAllRead} style={{ border:"none", background:"none", cursor:"pointer", fontSize:12, fontWeight:600, color:C.pri, fontFamily:"inherit", padding:"4px 8px", borderRadius:6 }}
+          <button onClick={onMarkAllRead} style={{ border:"none", background:"none", cursor:"pointer", fontSize:13.2, fontWeight:600, color:C.pri, fontFamily:"inherit", padding:"4px 8px", borderRadius:6 }}
             onMouseEnter={e=>e.currentTarget.style.background=C.priGhost} onMouseLeave={e=>e.currentTarget.style.background="none"}>
             Marcar todas leídas
           </button>
@@ -581,8 +581,8 @@ export function NotificationsPanel({ open, onClose, notifications=[], onMarkRead
         {notifications.length === 0 && (
           <div style={{ padding:"40px 20px", textAlign:"center" }}>
             <div style={{ marginBottom:8 }}>{Ic.bell(C.b1, 36)}</div>
-            <div style={{ fontSize:13, fontWeight:600, color:C.t3 }}>Sin notificaciones</div>
-            <div style={{ fontSize:11, color:C.t3, marginTop:4 }}>Las novedades de tus fletes aparecerán aquí</div>
+            <div style={{ fontSize:14.3, fontWeight:600, color:C.t3 }}>Sin notificaciones</div>
+            <div style={{ fontSize:12.1, color:C.t3, marginTop:4 }}>Las novedades de tus fletes aparecerán aquí</div>
           </div>
         )}
 
@@ -607,10 +607,10 @@ export function NotificationsPanel({ open, onClose, notifications=[], onMarkRead
               {/* Content — 2 lines max */}
               <div style={{ flex:1, minWidth:0 }}>
                 <div style={{ display:"flex", alignItems:"baseline", gap:6 }}>
-                  <span style={{ fontSize:12.5, fontWeight: n.read ? 500 : 700, color: n.read ? C.t2 : C.t1, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis", flex:1, minWidth:0 }}>{n.title}</span>
-                  <span style={{ fontSize:10, color:C.t3, fontWeight:500, whiteSpace:"nowrap", flexShrink:0 }}>{timeAgo(n.createdAt)}</span>
+                  <span style={{ fontSize:13.8, fontWeight: n.read ? 500 : 700, color: n.read ? C.t2 : C.t1, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis", flex:1, minWidth:0 }}>{n.title}</span>
+                  <span style={{ fontSize:11, color:C.t3, fontWeight:500, whiteSpace:"nowrap", flexShrink:0 }}>{timeAgo(n.createdAt)}</span>
                 </div>
-                <div style={{ fontSize:11, color:C.t3, lineHeight:1.3, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{n.body}</div>
+                <div style={{ fontSize:12.1, color:C.t3, lineHeight:1.3, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{n.body}</div>
               </div>
 
               {/* Unread dot */}
@@ -631,7 +631,7 @@ export function NotifBell({ count=0, onClick }) {
       onMouseEnter={e=>e.currentTarget.style.background=C.priGhost} onMouseLeave={e=>e.currentTarget.style.background="none"}>
       {Ic.bell(C.t2, 22)}
       {count > 0 && (
-        <div style={{ position:"absolute", top:2, right:2, minWidth:16, height:16, borderRadius:8, background:C.err, color:C.w, fontSize:9, fontWeight:700, padding:"0 4px", display:"flex", alignItems:"center", justifyContent:"center", border:`2px solid ${C.w}`, lineHeight:1 }}>
+        <div style={{ position:"absolute", top:2, right:2, minWidth:16, height:16, borderRadius:8, background:C.err, color:C.w, fontSize:9.9, fontWeight:700, padding:"0 4px", display:"flex", alignItems:"center", justifyContent:"center", border:`2px solid ${C.w}`, lineHeight:1 }}>
           {count > 99 ? "99+" : count}
         </div>
       )}
@@ -658,12 +658,12 @@ export function FileViewer({ file, onClose, onOcr, ocrLoading, onViewOcr }) {
       <div onClick={e=>e.stopPropagation()} style={{ background:C.w, borderRadius:14, boxShadow:"0 8px 32px rgba(0,0,0,0.3)", display:"flex", flexDirection:"column", maxWidth:"92vw", maxHeight:"90vh", width: isImg ? "auto" : "90vw", overflow:"hidden" }}>
         {/* Header with close */}
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"10px 14px", borderBottom:`1px solid ${C.b2}`, flexShrink:0 }}>
-          <div style={{ fontSize:13, fontWeight:600, color:C.t1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", flex:1, marginRight:10 }}>{file.name||"Archivo"}</div>
+          <div style={{ fontSize:14.3, fontWeight:600, color:C.t1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", flex:1, marginRight:10 }}>{file.name||"Archivo"}</div>
           <div style={{ display:"flex", gap:6, flexShrink:0 }}>
-            {file.ocrData && onViewOcr && <button onClick={()=>onViewOcr(file.ocrData)} style={{ display:"flex", alignItems:"center", gap:4, padding:"5px 10px", borderRadius:8, border:`1px solid ${C.pri}`, background:C.okPale, color:C.pri, fontSize:11, fontWeight:700, fontFamily:"inherit", cursor:"pointer" }}>{Ic.eye(C.pri,13)} Ver datos</button>}
-            {isImg && onOcr && !file.ocrData && <button onClick={()=>onOcr(file)} disabled={ocrLoading} style={{ display:"flex", alignItems:"center", gap:4, padding:"5px 10px", borderRadius:8, border:`1px solid ${C.pri}`, background:C.priPale, color:C.pri, fontSize:11, fontWeight:700, fontFamily:"inherit", cursor:"pointer", opacity:ocrLoading?0.6:1 }}>{Ic.doc(C.pri,13)} {ocrLoading ? "Analizando..." : "Extraer datos"}</button>}
-            {safeUrl && <a href={safeUrl} download style={{ display:"flex", alignItems:"center", gap:4, padding:"5px 10px", borderRadius:8, border:`1px solid ${C.b1}`, background:C.bg, color:C.t1, textDecoration:"none", fontSize:11, fontWeight:600, fontFamily:"inherit" }} onClick={e=>e.stopPropagation()}>{Ic.down(C.t2,13)} Descargar</a>}
-            <button onClick={onClose} style={{ display:"flex", alignItems:"center", gap:4, padding:"5px 12px", borderRadius:8, background:C.err, border:"none", cursor:"pointer", color:"#fff", fontSize:11, fontWeight:700, fontFamily:"inherit" }}>{Ic.cross("#fff",14)} Cerrar</button>
+            {file.ocrData && onViewOcr && <button onClick={()=>onViewOcr(file.ocrData)} style={{ display:"flex", alignItems:"center", gap:4, padding:"5px 10px", borderRadius:8, border:`1px solid ${C.pri}`, background:C.okPale, color:C.pri, fontSize:12.1, fontWeight:700, fontFamily:"inherit", cursor:"pointer" }}>{Ic.eye(C.pri,13)} Ver datos</button>}
+            {isImg && onOcr && !file.ocrData && <button onClick={()=>onOcr(file)} disabled={ocrLoading} style={{ display:"flex", alignItems:"center", gap:4, padding:"5px 10px", borderRadius:8, border:`1px solid ${C.pri}`, background:C.priPale, color:C.pri, fontSize:12.1, fontWeight:700, fontFamily:"inherit", cursor:"pointer", opacity:ocrLoading?0.6:1 }}>{Ic.doc(C.pri,13)} {ocrLoading ? "Analizando..." : "Extraer datos"}</button>}
+            {safeUrl && <a href={safeUrl} download style={{ display:"flex", alignItems:"center", gap:4, padding:"5px 10px", borderRadius:8, border:`1px solid ${C.b1}`, background:C.bg, color:C.t1, textDecoration:"none", fontSize:12.1, fontWeight:600, fontFamily:"inherit" }} onClick={e=>e.stopPropagation()}>{Ic.down(C.t2,13)} Descargar</a>}
+            <button onClick={onClose} style={{ display:"flex", alignItems:"center", gap:4, padding:"5px 12px", borderRadius:8, background:C.err, border:"none", cursor:"pointer", color:"#fff", fontSize:12.1, fontWeight:700, fontFamily:"inherit" }}>{Ic.cross("#fff",14)} Cerrar</button>
           </div>
         </div>
         {/* Content */}
@@ -675,8 +675,8 @@ export function FileViewer({ file, onClose, onOcr, ocrLoading, onViewOcr }) {
           ) : (
             <div style={{ textAlign:"center", padding:20 }}>
               <div style={{ marginBottom:16 }}>{Ic.doc(C.t3,48)}</div>
-              <div style={{ fontSize:16, fontWeight:700, color:C.t1, marginBottom:8 }}>{file.name||"Archivo"}</div>
-              {safeUrl && <a href={safeUrl} download style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"10px 20px", borderRadius:10, background:C.pri, color:"#fff", textDecoration:"none", fontSize:14, fontWeight:600 }} onClick={e=>e.stopPropagation()}>{Ic.down("#fff",16)} Descargar archivo</a>}
+              <div style={{ fontSize:17.6, fontWeight:700, color:C.t1, marginBottom:8 }}>{file.name||"Archivo"}</div>
+              {safeUrl && <a href={safeUrl} download style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"10px 20px", borderRadius:10, background:C.pri, color:"#fff", textDecoration:"none", fontSize:15.4, fontWeight:600 }} onClick={e=>e.stopPropagation()}>{Ic.down("#fff",16)} Descargar archivo</a>}
             </div>
           )}
         </div>
@@ -826,8 +826,8 @@ export function SkeletonDetail() {
 export function EmptyState({ icon, title, subtitle, action }) {
   return <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"40px 24px", textAlign:"center", minHeight:200 }}>
     {icon && <div style={{ width:56, height:56, borderRadius:16, background:C.priPale, display:"flex", alignItems:"center", justifyContent:"center", marginBottom:16 }}>{icon}</div>}
-    <div style={{ fontSize:15, fontWeight:700, color:C.t1, marginBottom:6 }}>{title}</div>
-    {subtitle && <div style={{ fontSize:13, color:C.t3, lineHeight:1.5, maxWidth:300 }}>{subtitle}</div>}
+    <div style={{ fontSize:16.5, fontWeight:700, color:C.t1, marginBottom:6 }}>{title}</div>
+    {subtitle && <div style={{ fontSize:14.3, color:C.t3, lineHeight:1.5, maxWidth:300 }}>{subtitle}</div>}
     {action && <div style={{ marginTop:16 }}>{action}</div>}
   </div>;
 }
@@ -858,10 +858,10 @@ export class ErrorBoundary extends Component {
         <div style={{ width:64, height:64, borderRadius:20, background:C.errPale, display:"flex", alignItems:"center", justifyContent:"center", marginBottom:20 }}>
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={C.err} strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
         </div>
-        <div style={{ fontSize:18, fontWeight:700, color:C.t1, marginBottom:8 }}>Algo salió mal</div>
-        <div style={{ fontSize:13, color:C.t3, marginBottom:20, maxWidth:320, lineHeight:1.5 }}>Ocurrió un error inesperado. Podés intentar recargar la página.</div>
-        <button onClick={() => window.location.reload()} style={{ padding:"12px 28px", borderRadius:10, background:C.pri, color:C.w, border:"none", fontSize:14, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>Recargar página</button>
-        {import.meta.env.DEV && this.state.error && <div style={{ marginTop:16, fontSize:10, color:C.t3, fontFamily:"monospace", maxWidth:400, wordBreak:"break-all" }}>{String(this.state.error.message || this.state.error).slice(0, 200)}</div>}
+        <div style={{ fontSize:19.8, fontWeight:700, color:C.t1, marginBottom:8 }}>Algo salió mal</div>
+        <div style={{ fontSize:14.3, color:C.t3, marginBottom:20, maxWidth:320, lineHeight:1.5 }}>Ocurrió un error inesperado. Podés intentar recargar la página.</div>
+        <button onClick={() => window.location.reload()} style={{ padding:"12px 28px", borderRadius:10, background:C.pri, color:C.w, border:"none", fontSize:15.4, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>Recargar página</button>
+        {import.meta.env.DEV && this.state.error && <div style={{ marginTop:16, fontSize:11, color:C.t3, fontFamily:"monospace", maxWidth:400, wordBreak:"break-all" }}>{String(this.state.error.message || this.state.error).slice(0, 200)}</div>}
       </div>;
     }
     return this.props.children;

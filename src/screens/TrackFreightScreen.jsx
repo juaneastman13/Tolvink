@@ -285,9 +285,9 @@ export default function TrackFreightScreen({ code: codeProp } = {}) {
   if (!hasIdentifier) return (
     <div style={S.center}>
       <div style={S.card}>
-        <div style={{ fontSize: 48, marginBottom: 12 }}>🔗</div>
-        <div style={{ fontSize: 18, fontWeight: 700, color: COLORS.t1 }}>Link invalido</div>
-        <div style={{ fontSize: 14, color: COLORS.t3, marginTop: 8 }}>
+        <div style={{ fontSize: 52.8, marginBottom: 12 }}>🔗</div>
+        <div style={{ fontSize: 19.8, fontWeight: 700, color: COLORS.t1 }}>Link invalido</div>
+        <div style={{ fontSize: 15.4, color: COLORS.t3, marginTop: 8 }}>
           Este link fue generado desde WhatsApp. Si no funciona, pedi uno nuevo.
         </div>
       </div>
@@ -296,16 +296,16 @@ export default function TrackFreightScreen({ code: codeProp } = {}) {
 
   if (loading) return (
     <div style={S.center}>
-      <div style={{ fontSize: 14, color: COLORS.t3 }}>Cargando...</div>
+      <div style={{ fontSize: 15.4, color: COLORS.t3 }}>Cargando...</div>
     </div>
   );
 
   if (error) return (
     <div style={S.center}>
       <div style={S.card}>
-        <div style={{ fontSize: 48, marginBottom: 12 }}>🚫</div>
-        <div style={{ fontSize: 18, fontWeight: 700, color: COLORS.t1 }}>No encontrado</div>
-        <div style={{ fontSize: 14, color: COLORS.t3, marginTop: 8 }}>{error}</div>
+        <div style={{ fontSize: 52.8, marginBottom: 12 }}>🚫</div>
+        <div style={{ fontSize: 19.8, fontWeight: 700, color: COLORS.t1 }}>No encontrado</div>
+        <div style={{ fontSize: 15.4, color: COLORS.t3, marginTop: 8 }}>{error}</div>
       </div>
     </div>
   );
@@ -321,25 +321,25 @@ export default function TrackFreightScreen({ code: codeProp } = {}) {
       {/* Header */}
       <div style={S.header}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ fontSize: 20, fontWeight: 800, color: COLORS.pri, letterSpacing: -1 }}>tolvink</span>
+          <span style={{ fontSize: 22, fontWeight: 800, color: COLORS.pri, letterSpacing: -1 }}>tolvink</span>
           <span style={{ width: 6, height: 6, borderRadius: 3, background: COLORS.acc, display: "inline-block" }} />
         </div>
-        <div style={{ fontSize: 12, color: COLORS.t3, fontWeight: 500 }}>Seguimiento en vivo</div>
+        <div style={{ fontSize: 13.2, color: COLORS.t3, fontWeight: 500 }}>Seguimiento en vivo</div>
       </div>
 
       {/* Freight info */}
       <div style={S.info}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-          <span style={{ fontWeight: 800, fontSize: 15, color: COLORS.t1 }}>{freight.code}</span>
-          <span style={{ padding: "2px 8px", borderRadius: 6, fontSize: 11, fontWeight: 700,
+          <span style={{ fontWeight: 800, fontSize: 16.5, color: COLORS.t1 }}>{freight.code}</span>
+          <span style={{ padding: "2px 8px", borderRadius: 6, fontSize: 12.1, fontWeight: 700,
                          background: sc.color + "18", color: sc.color }}>{sc.label}</span>
         </div>
-        <div style={{ fontSize: 12, color: COLORS.t2, marginTop: 4 }}>
+        <div style={{ fontSize: 13.2, color: COLORS.t2, marginTop: 4 }}>
           {freight.grain && <>{freight.grain}{freight.tons ? ` ${freight.tons} tn` : ""} · </>}
           {freight.originName} → {freight.destName}
         </div>
         {routeInfo && (
-          <div style={{ fontSize: 11, color: COLORS.t3, marginTop: 2 }}>
+          <div style={{ fontSize: 12.1, color: COLORS.t3, marginTop: 2 }}>
             {routeInfo.distance} · {routeInfo.duration} estimado
           </div>
         )}
@@ -349,7 +349,7 @@ export default function TrackFreightScreen({ code: codeProp } = {}) {
       <div style={{ flex: 1, minHeight: 0, position: "relative" }}>
         {(!freight.originLat || !freight.destLat) ? (
           <div style={{ display: "flex", alignItems: "center", justifyContent: "center",
-                        height: "100%", color: COLORS.t3, fontSize: 13 }}>
+                        height: "100%", color: COLORS.t3, fontSize: 14.3 }}>
             Sin coordenadas de ruta
           </div>
         ) : (
@@ -359,7 +359,7 @@ export default function TrackFreightScreen({ code: codeProp } = {}) {
 
       {/* Footer */}
       <div style={S.footer}>
-        <div style={{ display: "flex", gap: 12, fontSize: 11, flexWrap: "wrap", alignItems: "center" }}>
+        <div style={{ display: "flex", gap: 12, fontSize: 12.1, flexWrap: "wrap", alignItems: "center" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
             <span style={{ width: 8, height: 8, borderRadius: 4, background: "#1A6B37", display: "inline-block" }} />
             <span style={{ color: COLORS.t2 }}>{freight.originName}</span>
@@ -372,27 +372,27 @@ export default function TrackFreightScreen({ code: codeProp } = {}) {
             <div style={{ display: "flex", alignItems: "center", gap: 4, marginLeft: "auto" }}>
               <span style={{ width: 8, height: 8, borderRadius: 4, background: "#FF6A00",
                              display: "inline-block", animation: "pulse 1.5s infinite" }} />
-              <span style={{ color: COLORS.acc, fontWeight: 600, fontSize: 10 }}>
+              <span style={{ color: COLORS.acc, fontWeight: 600, fontSize: 11 }}>
                 En vivo{truckPos.speed > 0 ? ` \u00b7 ${Math.max(0, Math.round(parseFloat(truckPos.speed) || 0))} km/h` : ""}
                 {truckPos.updatedAt && ` \u00b7 ${new Date(truckPos.updatedAt).toLocaleTimeString("es-UY", { hour: "2-digit", minute: "2-digit" })}`}
               </span>
             </div>
           )}
           {isLive && !truckPos && (
-            <div style={{ marginLeft: "auto", fontSize: 10, color: COLORS.t3 }}>Esperando posición del camión</div>
+            <div style={{ marginLeft: "auto", fontSize: 11, color: COLORS.t3 }}>Esperando posición del camión</div>
           )}
           {freight.status === "finished" && (
-            <div style={{ marginLeft: "auto", fontSize: 10, fontWeight: 600, color: COLORS.pri }}>Flete completado</div>
+            <div style={{ marginLeft: "auto", fontSize: 11, fontWeight: 600, color: COLORS.pri }}>Flete completado</div>
           )}
           {freight.status === "canceled" && (
-            <div style={{ marginLeft: "auto", fontSize: 10, fontWeight: 600, color: COLORS.err }}>Flete cancelado</div>
+            <div style={{ marginLeft: "auto", fontSize: 11, fontWeight: 600, color: COLORS.err }}>Flete cancelado</div>
           )}
           {["accepted", "assigned", "pending_assignment", "draft"].includes(freight.status) && (
-            <div style={{ marginLeft: "auto", fontSize: 10, color: COLORS.t3 }}>Esperando inicio del viaje</div>
+            <div style={{ marginLeft: "auto", fontSize: 11, color: COLORS.t3 }}>Esperando inicio del viaje</div>
           )}
         </div>
         {participants.length > 0 && (
-          <div style={{ display: "flex", gap: 10, fontSize: 10, flexWrap: "wrap", marginTop: 6, paddingTop: 6,
+          <div style={{ display: "flex", gap: 10, fontSize: 11, flexWrap: "wrap", marginTop: 6, paddingTop: 6,
                         borderTop: `1px solid ${COLORS.b2}` }}>
             {participants.map(p => {
               const type = p.participantType || "other";

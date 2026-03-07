@@ -62,6 +62,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
 
   const toggleAudit = () => setShowAudit(v => !v);
 
+  const [stepModal, setStepModal] = useState(null); // {idx, label, color, backendSteps}
   const [expandedTrip, setExpandedTrip] = useState(null);
   const [locSending, setLocSending] = useState(false);
   const [locSent, setLocSent] = useState(false);
@@ -183,15 +184,15 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
     <div style={{ flex:1, overflow:"auto", animation:"slideUp 0.25s ease" }}>
       {/* Sticky header — back + product title */}
       <div style={{ position:"sticky", top:0, zIndex:10, padding:"18px 18px 8px", background:C.bg }}>
-        <button onClick={onBack} style={{ background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", fontSize:13, fontWeight:600, color:C.pri, marginBottom:14, padding:0, display:"flex", alignItems:"center", gap:4 }}>{Ic.chev(C.pri,18)} Volver</button>
+        <button onClick={onBack} style={{ background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", fontSize:14.3, fontWeight:600, color:C.pri, marginBottom:14, padding:0, display:"flex", alignItems:"center", gap:4 }}>{Ic.chev(C.pri,18)} Volver</button>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
           <div>
             <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-              <span style={{ fontSize:11, color:C.t3, fontWeight:600, fontFamily:MONO }}>{freight.code}</span>
-              {user.userType && <span style={{ fontSize:9, fontWeight:700, color:({producer:C.acc,plant:C.pri,transporter:C.info||C.sec})[user.userType]||C.t3, background:`${({producer:C.acc,plant:C.pri,transporter:C.info||C.sec})[user.userType]||C.t3}15`, padding:"1px 6px", borderRadius:4, textTransform:"uppercase", letterSpacing:0.3 }}>{({producer:"Productor",plant:"Planta",transporter:"Transportista"})[user.userType]||user.userType}</span>}
+              <span style={{ fontSize:12.1, color:C.t3, fontWeight:600, fontFamily:MONO }}>{freight.code}</span>
+              {user.userType && <span style={{ fontSize:9.9, fontWeight:700, color:({producer:C.acc,plant:C.pri,transporter:C.info||C.sec})[user.userType]||C.t3, background:`${({producer:C.acc,plant:C.pri,transporter:C.info||C.sec})[user.userType]||C.t3}15`, padding:"1px 6px", borderRadius:4, textTransform:"uppercase", letterSpacing:0.3 }}>{({producer:"Productor",plant:"Planta",transporter:"Transportista"})[user.userType]||user.userType}</span>}
             </div>
-            {freight.loadDate && <div style={{ fontSize:11, color:C.t3, fontWeight:500, marginTop:2 }}>{formatFreightDate(freight.loadDate)}</div>}
-            <div style={{ fontSize:22, fontWeight:800, marginTop:2, letterSpacing:-0.3 }}>{freight.grain==="Otros"?freight.productTypeOther||"Otros":freight.grain} · {freight.tons} {freight.unit||"tn"}</div>
+            {freight.loadDate && <div style={{ fontSize:12.1, color:C.t3, fontWeight:500, marginTop:2 }}>{formatFreightDate(freight.loadDate)}</div>}
+            <div style={{ fontSize:24.2, fontWeight:800, marginTop:2, letterSpacing:-0.3 }}>{freight.grain==="Otros"?freight.productTypeOther||"Otros":freight.grain} · {freight.tons} {freight.unit||"tn"}</div>
           </div>
           <Bd color={st.color} bg={st.bg}>{st.label}</Bd>
         </div>
@@ -203,8 +204,8 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
       {isChoferQueued && <div style={{ background:`${C.info}10`, border:`1.5px solid ${C.info}30`, borderRadius:12, padding:"12px 16px", marginBottom:12, display:"flex", alignItems:"center", gap:10 }}>
         <span style={{ display:"flex" }}>{Ic.clk(C.info,20)}</span>
         <div>
-          <div style={{ fontSize:13, fontWeight:700, color:C.info }}>En cola #{freight.queuePosition}</div>
-          <div style={{ fontSize:11, color:C.t2 }}>Debés completar los fletes anteriores primero</div>
+          <div style={{ fontSize:14.3, fontWeight:700, color:C.info }}>En cola #{freight.queuePosition}</div>
+          <div style={{ fontSize:12.1, color:C.t2 }}>Debés completar los fletes anteriores primero</div>
         </div>
       </div>}
 
@@ -212,8 +213,8 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
         <div style={{ background:`${C.info}10`, border:`1.5px solid ${C.info}30`, borderRadius:12, padding:"12px 16px", marginBottom:12, display:"flex", alignItems:"center", gap:10 }}>
           <span style={{ display:"flex" }}>{Ic.clk(C.info,20)}</span>
           <div>
-            <div style={{ fontSize:13, fontWeight:700, color:C.info }}>Pendiente de asignación por planta</div>
-            <div style={{ fontSize:11, color:C.t2 }}>La planta de destino asignará el transportista</div>
+            <div style={{ fontSize:14.3, fontWeight:700, color:C.info }}>Pendiente de asignación por planta</div>
+            <div style={{ fontSize:12.1, color:C.t2 }}>La planta de destino asignará el transportista</div>
           </div>
         </div>
       )}
@@ -247,7 +248,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
       {multiTruckTopActions.length > 0 && <div style={{ display:"flex", flexDirection:"column", gap:8, marginBottom:12 }}>
         {multiTruckTopActions.map(a => (
           <button key={a.key} disabled={actionLoading} onClick={()=>onTripAction && onTripAction(freight.id, a.assignmentId, a.key)}
-            style={{ width:"100%", padding:"14px 20px", borderRadius:12, border:"none", background:a.color, color:C.w, fontSize:15, fontWeight:700, cursor:actionLoading?"not-allowed":"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:8, opacity:actionLoading?0.6:1 }}>
+            style={{ width:"100%", padding:"14px 20px", borderRadius:12, border:"none", background:a.color, color:C.w, fontSize:16.5, fontWeight:700, cursor:actionLoading?"not-allowed":"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:8, opacity:actionLoading?0.6:1 }}>
             {a.icon} {actionLoading?"Procesando...":a.label}{a.count>1?` (${a.count})`:a.count===1?` #${a.tripNumber}`:""}
           </button>
         ))}
@@ -286,20 +287,21 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
         const getStepAssignments = (step) => { if(!isMultiTruck) return []; const ts=stepToTrip[step]; if(!ts) return []; return (freight.activeAssignments||[]).filter(a=>a.tripStatus===ts); };
         return <div ref={auditRef} style={{ background:C.w, border:`1px solid ${C.b1}`, borderRadius:12, padding:16, marginBottom:12, boxShadow:C.sh, position:"relative" }}>
           <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:12 }}>
-            <span style={{ fontSize:10.5, fontWeight:700, color:C.t2, textTransform:"uppercase", letterSpacing:0.5 }}>Progreso</span>
-            <button onClick={toggleAudit} style={{ fontSize:11, fontWeight:700, color:C.t1, background:C.bg, border:`1.5px solid ${C.b1}`, borderRadius:8, padding:"5px 14px", cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:5 }}>
-              {showAudit?"Ocultar detalle":"Ver detalle"} <span style={{ fontSize:9, marginTop:1 }}>{showAudit?"\u25B2":"\u25BC"}</span>
+            <span style={{ fontSize:11.6, fontWeight:700, color:C.t2, textTransform:"uppercase", letterSpacing:0.5 }}>Progreso</span>
+            <button onClick={toggleAudit} style={{ fontSize:12.1, fontWeight:700, color:C.t1, background:C.bg, border:`1.5px solid ${C.b1}`, borderRadius:8, padding:"5px 14px", cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:5 }}>
+              {showAudit?"Ocultar detalle":"Ver detalle"} <span style={{ fontSize:9.9, marginTop:1 }}>{showAudit?"\u25B2":"\u25BC"}</span>
             </button>
           </div>
           <div style={{display:"flex",gap:3,alignItems:"flex-start"}}>
             {visualSteps.map((vs,i)=>{
               const done = i < visualIdx; const active = i === visualIdx && !isCanceled; const isCancelStep = i === 2 && isCanceled;
               const barColor = done ? C.pri : active ? vs.color : isCancelStep ? C.err : C.b1;
-              return <div key={i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4,minWidth:0}}>
+              const visualAuditMap = [["pending_assignment"],["assigned","accepted","in_progress","loaded"],["finished"]];
+              return <div key={i} onClick={()=>setStepModal({idx:i,label:vs.label,color:vs.color,backendSteps:visualAuditMap[i]})} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4,minWidth:0,cursor:"pointer"}}>
                 <div style={{width:"100%",height:active?5:4,borderRadius:3,background:barColor,transition:"all 0.2s"}}/>
                 {(active || isCancelStep) && <div style={{width:6,height:6,borderRadius:3,background:vs.color,marginTop:-2}}/>}
-                <span style={{fontSize:12,fontWeight:(active||isCancelStep)?700:500,color:(active||isCancelStep)?vs.color:done?C.t2:C.t3,textAlign:"center",lineHeight:1.2}}>{vs.label}</span>
-                {active && vs.sub && <span style={{fontSize:10.5,color:C.t3,fontStyle:"italic",textAlign:"center",lineHeight:1.2,marginTop:-2}}>({vs.sub})</span>}
+                <span style={{fontSize:13.2,fontWeight:(active||isCancelStep)?700:500,color:(active||isCancelStep)?vs.color:done?C.t2:C.t3,textAlign:"center",lineHeight:1.2}}>{vs.label}</span>
+                {active && vs.sub && <span style={{fontSize:11.6,color:C.t3,fontStyle:"italic",textAlign:"center",lineHeight:1.2,marginTop:-2}}>({vs.sub})</span>}
               </div>;
             })}
           </div>
@@ -321,7 +323,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
                 return (
                   <div key={vi} style={{ flex:1, minWidth:0 }}>
                     {tc !== null && (
-                      <div style={{ textAlign:"center", fontSize:10, fontWeight:700, color:col, marginBottom:8, background:`${col}12`, borderRadius:5, padding:"3px 0" }}>
+                      <div style={{ textAlign:"center", fontSize:11, fontWeight:700, color:col, marginBottom:8, background:`${col}12`, borderRadius:5, padding:"3px 0" }}>
                         {tc}/{freight.truckCount}
                       </div>
                     )}
@@ -332,12 +334,12 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
                         <div key={entry.id} style={{ display:"flex", gap:5, marginBottom:8, alignItems:"flex-start" }}>
                           <div style={{ width:7, height:7, borderRadius:4, background:acCol, flexShrink:0, marginTop:3 }} />
                           <div style={{ minWidth:0 }}>
-                            <div style={{ fontSize:10.5, fontWeight:700, color:acCol, lineHeight:1.3 }}>{actionLabels[entry.action]||entry.action}{tn ? ` · ${tn}` : ""}</div>
-                            <div style={{ fontSize:10, color:C.t2, marginTop:1, lineHeight:1.3, wordBreak:"break-word" }}>{entry.user?.name||"Sistema"}</div>
-                            {entry.user?.company?.name && <div style={{ fontSize:9.5, color:C.t3, lineHeight:1.2 }}>{entry.user.company.name}</div>}
-                            {(entry.reason || entry.metadata?.reason) && <div style={{ fontSize:9.5, color:C.t3, fontStyle:"italic", marginTop:1 }}>"{entry.reason||entry.metadata.reason}"</div>}
-                            {entry.metadata?.confirmedBy && <div style={{ fontSize:9.5, color:C.t3, marginTop:1 }}>por {entry.metadata.confirmedBy==="transporter"?"transportista":entry.metadata.confirmedBy==="producer"?"productor":entry.metadata.confirmedBy==="plant"?"planta":entry.metadata.confirmedBy}</div>}
-                            <div style={{ fontSize:9.5, color:C.t3, marginTop:1 }}>{fmtD(entry.createdAt)}</div>
+                            <div style={{ fontSize:11.6, fontWeight:700, color:acCol, lineHeight:1.3 }}>{actionLabels[entry.action]||entry.action}{tn ? ` · ${tn}` : ""}</div>
+                            <div style={{ fontSize:11, color:C.t2, marginTop:1, lineHeight:1.3, wordBreak:"break-word" }}>{entry.user?.name||"Sistema"}</div>
+                            {entry.user?.company?.name && <div style={{ fontSize:10.5, color:C.t3, lineHeight:1.2 }}>{entry.user.company.name}</div>}
+                            {(entry.reason || entry.metadata?.reason) && <div style={{ fontSize:10.5, color:C.t3, fontStyle:"italic", marginTop:1 }}>"{entry.reason||entry.metadata.reason}"</div>}
+                            {entry.metadata?.confirmedBy && <div style={{ fontSize:10.5, color:C.t3, marginTop:1 }}>por {entry.metadata.confirmedBy==="transporter"?"transportista":entry.metadata.confirmedBy==="producer"?"productor":entry.metadata.confirmedBy==="plant"?"planta":entry.metadata.confirmedBy}</div>}
+                            <div style={{ fontSize:10.5, color:C.t3, marginTop:1 }}>{fmtD(entry.createdAt)}</div>
                           </div>
                         </div>
                       );
@@ -346,14 +348,14 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
                       <div key={a.id} style={{ display:"flex", gap:5, marginBottom:8, alignItems:"flex-start" }}>
                         <div style={{ width:7, height:7, borderRadius:4, background:col, flexShrink:0, marginTop:3 }} />
                         <div style={{ minWidth:0 }}>
-                          <div style={{ fontSize:10, fontWeight:700, color:C.t1 }}>Viaje #{a.tripNumber}</div>
-                          {a.plate && <div style={{ fontSize:10, color:C.t2, marginTop:1, lineHeight:1.3 }}>{a.plate}{a.truckModel?` · ${a.truckModel}`:""}</div>}
-                          {a.transporterName && <div style={{ fontSize:9.5, color:C.t3, lineHeight:1.2 }}>{a.transporterName}</div>}
-                          {a.driverName && <div style={{ fontSize:9.5, color:C.t3, lineHeight:1.2 }}>{a.driverName}</div>}
+                          <div style={{ fontSize:11, fontWeight:700, color:C.t1 }}>Viaje #{a.tripNumber}</div>
+                          {a.plate && <div style={{ fontSize:11, color:C.t2, marginTop:1, lineHeight:1.3 }}>{a.plate}{a.truckModel?` · ${a.truckModel}`:""}</div>}
+                          {a.transporterName && <div style={{ fontSize:10.5, color:C.t3, lineHeight:1.2 }}>{a.transporterName}</div>}
+                          {a.driverName && <div style={{ fontSize:10.5, color:C.t3, lineHeight:1.2 }}>{a.driverName}</div>}
                         </div>
                       </div>
                     ))}
-                    {logs.length === 0 && stepAssigns.length === 0 && hasData && <div style={{ fontSize:9, color:C.t3, textAlign:"center" }}>{"\u2014"}</div>}
+                    {logs.length === 0 && stepAssigns.length === 0 && hasData && <div style={{ fontSize:9.9, color:C.t3, textAlign:"center" }}>{"\u2014"}</div>}
                   </div>
                 );
               })}
@@ -366,8 +368,8 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
       {isMultiTruck && (
         <div style={{ background:C.w, border:`1px solid ${C.b1}`, borderRadius:12, padding:16, marginBottom:12, boxShadow:C.sh }}>
           <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:12 }}>
-            <div style={{ fontSize:10.5, fontWeight:700, color:C.t2, textTransform:"uppercase", letterSpacing:0.5 }}>Camiones</div>
-            <span style={{ fontSize:11, fontWeight:600, color:C.info }}>{freight.assignedTruckCount}/{freight.truckCount} asignados</span>
+            <div style={{ fontSize:11.6, fontWeight:700, color:C.t2, textTransform:"uppercase", letterSpacing:0.5 }}>Camiones</div>
+            <span style={{ fontSize:12.1, fontWeight:600, color:C.info }}>{freight.assignedTruckCount}/{freight.truckCount} asignados</span>
           </div>
           {/* Progress bar */}
           <div style={{ height:6, borderRadius:3, background:C.b1, marginBottom:14, overflow:"hidden" }}>
@@ -383,10 +385,10 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
                 <div onClick={()=>setExpandedTrip(isExpanded?null:a.id)} style={{ padding:"10px 12px", cursor:"pointer", background:isExpanded?`${tst.color}06`:"transparent" }}>
                   {/* Row 1: trip number, truck info, status, chevron */}
                   <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                    <span style={{ fontSize:12, fontWeight:800, color:tst.color }}>#{a.tripNumber}</span>
-                    <span style={{ fontSize:12, fontWeight:600, color:C.t1, flex:1, minWidth:0 }}>
+                    <span style={{ fontSize:13.2, fontWeight:800, color:tst.color }}>#{a.tripNumber}</span>
+                    <span style={{ fontSize:13.2, fontWeight:600, color:C.t1, flex:1, minWidth:0 }}>
                       <span style={{ display:"block", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{a.plate || "Sin camión"}{a.transporterName ? ` · ${a.transporterName}` : ""}</span>
-                      {a.driverName && <span style={{ display:"block", fontSize:10.5, fontWeight:400, color:C.t3, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{a.driverName}</span>}
+                      {a.driverName && <span style={{ display:"block", fontSize:11.6, fontWeight:400, color:C.t3, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{a.driverName}</span>}
                     </span>
                     <Bd color={tst.color} bg={tst.bg} small>{tst.label}</Bd>
                     <span style={{ display:"flex", transform:isExpanded?"rotate(-90deg)":"rotate(0deg)", transition:"transform 0.15s", flexShrink:0 }}>{Ic.chev(C.t3,14)}</span>
@@ -395,13 +397,13 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
                   {!isExpanded && tripBtns.length > 0 && (
                     <div style={{ display:"flex", gap:6, marginTop:8, flexWrap:"wrap" }}>
                       {tripBtns.map(b => (
-                        <button key={b.key} disabled={actionLoading} onClick={(e)=>{e.stopPropagation(); onTripAction && onTripAction(freight.id, a.id, b.key);}} style={{ flex:"1 1 auto", padding:"8px 12px", minHeight:36, borderRadius:8, border:"none", background:b.color, color:C.w, fontSize:11, fontWeight:700, cursor:actionLoading?"not-allowed":"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:5, opacity:actionLoading?0.6:1 }}>
+                        <button key={b.key} disabled={actionLoading} onClick={(e)=>{e.stopPropagation(); onTripAction && onTripAction(freight.id, a.id, b.key);}} style={{ flex:"1 1 auto", padding:"8px 12px", minHeight:36, borderRadius:8, border:"none", background:b.color, color:C.w, fontSize:12.1, fontWeight:700, cursor:actionLoading?"not-allowed":"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:5, opacity:actionLoading?0.6:1 }}>
                           {b.icon} {actionLoading?"...":b.label}
                         </button>
                       ))}
                       {/* Edit button for plant on trips they assigned (not own-fleet), before started */}
                       {user.userType === "plant" && (a.tripStatus === "pending" || a.tripStatus === "accepted") && a.transportCompanyId !== freight.originCompanyId && onEditTrip && (
-                        <button onClick={(e)=>{e.stopPropagation(); onEditTrip(freight.id, a);}} style={{ padding:"8px 12px", minHeight:36, borderRadius:8, border:`1px solid ${C.b1}`, background:C.w, color:C.t2, fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:4 }}>
+                        <button onClick={(e)=>{e.stopPropagation(); onEditTrip(freight.id, a);}} style={{ padding:"8px 12px", minHeight:36, borderRadius:8, border:`1px solid ${C.b1}`, background:C.w, color:C.t2, fontSize:12.1, fontWeight:600, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:4 }}>
                           {Ic.doc(C.t2,12)} Editar
                         </button>
                       )}
@@ -410,7 +412,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
                 </div>
                 {isExpanded && (
                   <div style={{ padding:"8px 12px 12px", borderTop:`1px solid ${C.b2}` }}>
-                    <div style={{ display:"flex", flexDirection:"column", gap:4, fontSize:11.5, color:C.t2, marginBottom:tripBtns.length>0?10:0 }}>
+                    <div style={{ display:"flex", flexDirection:"column", gap:4, fontSize:12.7, color:C.t2, marginBottom:tripBtns.length>0?10:0 }}>
                       {a.transporterName && <div style={{ display:"flex", alignItems:"center", gap:6 }}>{Ic.truck(C.t3,12)} {a.transporterName}</div>}
                       {a.plate && <div style={{ display:"flex", alignItems:"center", gap:6 }}>{Ic.truck(C.acc,12)} {a.plate}{a.truckModel?` · ${a.truckModel}`:""}</div>}
                       {a.driverName && <div style={{ display:"flex", alignItems:"center", gap:6 }}>{Ic.user(C.pri,12)} {a.driverName}{a.driverPhone?` · ${a.driverPhone}`:""}</div>}
@@ -419,12 +421,12 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
                       {(a.tripStatus === "in_progress" || a.tripStatus === "loaded") && (
                         <div style={{ display:"flex", gap:12, marginTop:6 }}>
                           <div>
-                            <span style={{ fontSize:9, fontWeight:700, color:C.t3, textTransform:"uppercase" }}>Carga: </span>
-                            <span style={{ fontSize:10, display:"inline-flex", alignItems:"center", gap:3 }}>{a.transporterLoadedConfirmedAt ? Ic.chk(C.ok,11) : Ic.clk(C.acc,11)} <span>Transp.</span> {a.producerLoadedConfirmedAt ? Ic.chk(C.ok,11) : Ic.clk(C.acc,11)} <span>Prod.</span></span>
+                            <span style={{ fontSize:9.9, fontWeight:700, color:C.t3, textTransform:"uppercase" }}>Carga: </span>
+                            <span style={{ fontSize:11, display:"inline-flex", alignItems:"center", gap:3 }}>{a.transporterLoadedConfirmedAt ? Ic.chk(C.ok,11) : Ic.clk(C.acc,11)} <span>Transp.</span> {a.producerLoadedConfirmedAt ? Ic.chk(C.ok,11) : Ic.clk(C.acc,11)} <span>Prod.</span></span>
                           </div>
                           {a.tripStatus === "loaded" && <div>
-                            <span style={{ fontSize:9, fontWeight:700, color:C.t3, textTransform:"uppercase" }}>Entrega: </span>
-                            <span style={{ fontSize:10, display:"inline-flex", alignItems:"center", gap:3 }}>{a.transporterFinishedConfirmedAt ? Ic.chk(C.ok,11) : Ic.clk(C.acc,11)} <span>Transp.</span> {a.plantFinishedConfirmedAt ? Ic.chk(C.ok,11) : Ic.clk(C.acc,11)} <span>Planta</span></span>
+                            <span style={{ fontSize:9.9, fontWeight:700, color:C.t3, textTransform:"uppercase" }}>Entrega: </span>
+                            <span style={{ fontSize:11, display:"inline-flex", alignItems:"center", gap:3 }}>{a.transporterFinishedConfirmedAt ? Ic.chk(C.ok,11) : Ic.clk(C.acc,11)} <span>Transp.</span> {a.plantFinishedConfirmedAt ? Ic.chk(C.ok,11) : Ic.clk(C.acc,11)} <span>Planta</span></span>
                           </div>}
                         </div>
                       )}
@@ -433,7 +435,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
                     {tripBtns.length > 0 && (
                       <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
                         {tripBtns.map(b => (
-                          <button key={b.key} disabled={actionLoading} onClick={()=>onTripAction && onTripAction(freight.id, a.id, b.key)} style={{ flex:"1 1 auto", padding:"10px 12px", minWidth:80, minHeight:40, borderRadius:8, border:"none", background:b.color, color:C.w, fontSize:11.5, fontWeight:700, cursor:actionLoading?"not-allowed":"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:6, opacity:actionLoading?0.6:1 }}>
+                          <button key={b.key} disabled={actionLoading} onClick={()=>onTripAction && onTripAction(freight.id, a.id, b.key)} style={{ flex:"1 1 auto", padding:"10px 12px", minWidth:80, minHeight:40, borderRadius:8, border:"none", background:b.color, color:C.w, fontSize:12.7, fontWeight:700, cursor:actionLoading?"not-allowed":"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:6, opacity:actionLoading?0.6:1 }}>
                             {b.icon} {actionLoading?"...":b.label}
                           </button>
                         ))}
@@ -446,7 +448,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
           })}
           {/* Unassigned slots */}
           {freight.assignedTruckCount < freight.truckCount && user.userType === "plant" && (
-            <button onClick={()=>onAction(freight.id,"assign")} style={{ width:"100%", padding:"10px 0", borderRadius:10, border:`1.5px dashed ${C.acc}`, background:`${C.acc}08`, color:C.acc, fontSize:12, fontWeight:600, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:6, marginTop:4 }}>
+            <button onClick={()=>onAction(freight.id,"assign")} style={{ width:"100%", padding:"10px 0", borderRadius:10, border:`1.5px dashed ${C.acc}`, background:`${C.acc}08`, color:C.acc, fontSize:13.2, fontWeight:600, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:6, marginTop:4 }}>
               {Ic.plus(C.acc,14)} Agregar camión ({freight.truckCount - freight.assignedTruckCount} pendientes)
             </button>
           )}
@@ -456,18 +458,18 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
       {/* Cross-confirmations panel (single-truck only) */}
       {!isMultiTruck && (freight.status==="loaded" || freight.status==="in_progress") && (
         <div style={{ background:C.w, border:`1px solid ${C.acc}30`, borderLeft:`3px solid ${C.acc}`, borderRadius:12, padding:16, marginBottom:12, boxShadow:C.sh }}>
-          <div style={{ fontSize:10.5, fontWeight:700, marginBottom:12, color:C.acc, textTransform:"uppercase", letterSpacing:0.5 }}>Confirmaciones</div>
+          <div style={{ fontSize:11.6, fontWeight:700, marginBottom:12, color:C.acc, textTransform:"uppercase", letterSpacing:0.5 }}>Confirmaciones</div>
           <div style={{display:"flex",gap:16}}>
             <div style={{flex:1}}>
-              <div style={{fontSize:10,fontWeight:700,color:C.t2,marginBottom:8,textTransform:"uppercase",letterSpacing:0.4}}>Carga</div>
+              <div style={{fontSize:11,fontWeight:700,color:C.t2,marginBottom:8,textTransform:"uppercase",letterSpacing:0.4}}>Carga</div>
               <div style={{display:"flex",flexDirection:"column",gap:6}}>
-                <div style={{display:"flex",alignItems:"center",gap:6,fontSize:11.5}}>
+                <div style={{display:"flex",alignItems:"center",gap:6,fontSize:12.7}}>
                   <span style={{width:18,height:18,borderRadius:9,display:"inline-flex",alignItems:"center",justifyContent:"center",background:freight.transporterLoadedConfirmedAt?C.okPale:C.accPale,flexShrink:0}}>
                     {freight.transporterLoadedConfirmedAt ? Ic.chk(C.ok,12) : Ic.clk(C.acc,11)}
                   </span>
                   <span style={{color:freight.transporterLoadedConfirmedAt?C.ok:C.t2,fontWeight:freight.transporterLoadedConfirmedAt?600:400}}>Transportista</span>
                 </div>
-                <div style={{display:"flex",alignItems:"center",gap:6,fontSize:11.5}}>
+                <div style={{display:"flex",alignItems:"center",gap:6,fontSize:12.7}}>
                   <span style={{width:18,height:18,borderRadius:9,display:"inline-flex",alignItems:"center",justifyContent:"center",background:freight.producerLoadedConfirmedAt?C.okPale:C.accPale,flexShrink:0}}>
                     {freight.producerLoadedConfirmedAt ? Ic.chk(C.ok,12) : Ic.clk(C.acc,11)}
                   </span>
@@ -477,15 +479,15 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
             </div>
             <div style={{width:1,background:C.b1}}/>
             <div style={{flex:1}}>
-              <div style={{fontSize:10,fontWeight:700,color:C.t2,marginBottom:8,textTransform:"uppercase",letterSpacing:0.4}}>Entrega</div>
+              <div style={{fontSize:11,fontWeight:700,color:C.t2,marginBottom:8,textTransform:"uppercase",letterSpacing:0.4}}>Entrega</div>
               <div style={{display:"flex",flexDirection:"column",gap:6}}>
-                <div style={{display:"flex",alignItems:"center",gap:6,fontSize:11.5}}>
+                <div style={{display:"flex",alignItems:"center",gap:6,fontSize:12.7}}>
                   <span style={{width:18,height:18,borderRadius:9,display:"inline-flex",alignItems:"center",justifyContent:"center",background:freight.transporterFinishedConfirmedAt?C.okPale:C.accPale,flexShrink:0}}>
                     {freight.transporterFinishedConfirmedAt ? Ic.chk(C.ok,12) : Ic.clk(C.acc,11)}
                   </span>
                   <span style={{color:freight.transporterFinishedConfirmedAt?C.ok:C.t2,fontWeight:freight.transporterFinishedConfirmedAt?600:400}}>Transportista</span>
                 </div>
-                <div style={{display:"flex",alignItems:"center",gap:6,fontSize:11.5}}>
+                <div style={{display:"flex",alignItems:"center",gap:6,fontSize:12.7}}>
                   <span style={{width:18,height:18,borderRadius:9,display:"inline-flex",alignItems:"center",justifyContent:"center",background:freight.plantFinishedConfirmedAt?C.okPale:C.accPale,flexShrink:0}}>
                     {freight.plantFinishedConfirmedAt ? Ic.chk(C.ok,12) : Ic.clk(C.acc,11)}
                   </span>
@@ -504,12 +506,11 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
             const InfoRow = ({ic,label,val,isLast}) => (
               <div style={{ display:"flex", alignItems:"center", gap:10, padding:"9px 0", borderBottom:isLast?"none":`1px solid ${C.b2}` }}>
                 <span style={{display:"flex",flexShrink:0}}>{ic}</span>
-                <span style={{ fontSize:11.5, color:C.t2, minWidth:85 }}>{label}</span>
-                {label==="Teléfono"?<a href={`tel:${val}`} style={{ fontSize:12, fontWeight:600, color:C.info, marginLeft:"auto", textDecoration:"none" }}>{val}</a>:
-                <span style={{ fontSize:12, fontWeight:600, color:C.t1, marginLeft:"auto", textAlign:"right" }}>{val}</span>}
+                <span style={{ fontSize:12.7, color:C.t2, minWidth:85 }}>{label}</span>
+                {label==="Teléfono"?<a href={`tel:${val}`} style={{ fontSize:13.2, fontWeight:600, color:C.info, marginLeft:"auto", textDecoration:"none" }}>{val}</a>:
+                <span style={{ fontSize:13.2, fontWeight:600, color:C.t1, marginLeft:"auto", textAlign:"right" }}>{val}</span>}
               </div>
             );
-            const SectionLabel = ({text}) => <div style={{ fontSize:10, fontWeight:700, color:C.t3, textTransform:"uppercase", letterSpacing:0.5, padding:"10px 0 4px" }}>{text}</div>;
             const carga = [
               [Ic.grain(C.t2,15),"Producto",`${freight.grain==="Otros"?freight.productTypeOther||"Otros":freight.grain} · ${freight.tons} ${freight.unit||"tn"}`],
               freight.amount>0&&[Ic.grain(C.t2,15),"Importe",`$${Number(freight.amount).toLocaleString()}`],
@@ -526,16 +527,12 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
               !isMultiTruck&&freight.transporterName&&[Ic.truck(C.t2,15),"Transportista",freight.transporterName],
               isMultiTruck&&[Ic.truck(C.t2,15),"Camiones",`${freight.assignedTruckCount}/${freight.truckCount}`],
               !isMultiTruck&&freight.truckPlate&&[Ic.truck(C.acc,15),"Camión",`${freight.truckPlate}${freight.truckModel?` · ${freight.truckModel}`:""}`],
-              !isMultiTruck&&freight.driverName&&[Ic.user(C.pri,15),"Chofer",<>{freight.driverName}{perms.canApprove && freight.driverId && <button onClick={()=>onAction(freight.id,"driver_queue")} style={{marginLeft:6,fontSize:9.5,fontWeight:700,color:C.info,background:`${C.info}12`,border:`1px solid ${C.info}30`,borderRadius:6,padding:"2px 7px",cursor:"pointer",fontFamily:"inherit"}}>Ver cola</button>}</>],
+              !isMultiTruck&&freight.driverName&&[Ic.user(C.pri,15),"Chofer",<>{freight.driverName}{perms.canApprove && freight.driverId && <button onClick={()=>onAction(freight.id,"driver_queue")} style={{marginLeft:6,fontSize:10.5,fontWeight:700,color:C.info,background:`${C.info}12`,border:`1px solid ${C.info}30`,borderRadius:6,padding:"2px 7px",cursor:"pointer",fontFamily:"inherit"}}>Ver cola</button>}</>],
               !isMultiTruck&&freight.driverPhone&&[Ic.msg(C.info,15),"Teléfono",freight.driverPhone],
             ].filter(Boolean);
+            const allRows = [...carga.map((r,i)=>["c"+i,...r]), ...ruta.map((r,i)=>["r"+i,...r]), ...transporte.map((r,i)=>["t"+i,...r])];
             return <>
-              <SectionLabel text="Carga"/>
-              {carga.map(([ic,label,val],i)=><InfoRow key={"c"+i} ic={ic} label={label} val={val} isLast={i===carga.length-1}/>)}
-              <SectionLabel text="Ruta"/>
-              {ruta.map(([ic,label,val],i)=><InfoRow key={"r"+i} ic={ic} label={label} val={val} isLast={i===ruta.length-1}/>)}
-              {transporte.length>0 && <><SectionLabel text="Transporte"/>
-              {transporte.map(([ic,label,val],i)=><InfoRow key={"t"+i} ic={ic} label={label} val={val} isLast={i===transporte.length-1}/>)}</>}
+              {allRows.map(([key,ic,label,val],i)=><InfoRow key={key} ic={ic} label={label} val={val} isLast={i===allRows.length-1}/>)}
             </>;
           })()}
         </div>
@@ -549,9 +546,9 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
         <div style={{ background:C.warnPale, border:`1px solid ${C.warn}30`, borderLeft:`3px solid ${C.warn}`, borderRadius:12, padding:14, marginBottom:12 }}>
           <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:6 }}>
             {Ic.doc(C.warn, 14)}
-            <span style={{ fontSize:10.5, fontWeight:700, color:C.warn, textTransform:"uppercase", letterSpacing:0.5 }}>Observaciones</span>
+            <span style={{ fontSize:11.6, fontWeight:700, color:C.warn, textTransform:"uppercase", letterSpacing:0.5 }}>Observaciones</span>
           </div>
-          <div style={{ fontSize:12.5, color:C.t1, lineHeight:1.5, whiteSpace:"pre-wrap" }}>{freight.notes}</div>
+          <div style={{ fontSize:13.8, color:C.t1, lineHeight:1.5, whiteSpace:"pre-wrap" }}>{freight.notes}</div>
         </div>
       )}
 
@@ -568,14 +565,14 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
           return <div key={pc.id} style={{ background:C.infoPale||"#e8f4fd", border:`1.5px solid ${C.info}30`, borderLeft:`3px solid ${C.info}`, borderRadius:12, padding:14, marginBottom:12 }}>
             <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:6 }}>
               {Ic.doc(C.info, 14)}
-              <span style={{ fontSize:10.5, fontWeight:700, color:C.info, textTransform:"uppercase", letterSpacing:0.5 }}>Cambio pendiente de aprobación</span>
+              <span style={{ fontSize:11.6, fontWeight:700, color:C.info, textTransform:"uppercase", letterSpacing:0.5 }}>Cambio pendiente de aprobación</span>
             </div>
-            <div style={{ fontSize:12, color:C.t1, marginBottom:isApprover?10:0 }}>{label}{pc.requestedBy?.name ? ` — solicitado por ${pc.requestedBy.name}` : ""}</div>
+            <div style={{ fontSize:13.2, color:C.t1, marginBottom:isApprover?10:0 }}>{label}{pc.requestedBy?.name ? ` — solicitado por ${pc.requestedBy.name}` : ""}</div>
             {isApprover && <div style={{ display:"flex", gap:8 }}>
               <Btn sm disabled={pcLoading===pc.id} onClick={async()=>{ setPcLoading(pc.id); try { await apiApprovePendingChange(freight.id, pc.id); onRefresh(freight.id); } catch(e) { log.error("approve-pc",e); show("Error al procesar el cambio", "err"); } finally { setPcLoading(null); } }}>Aprobar</Btn>
               <Btn sm v="err" disabled={pcLoading===pc.id} onClick={async()=>{ setPcLoading(pc.id); try { await apiRejectPendingChange(freight.id, pc.id); onRefresh(freight.id); } catch(e) { log.error("reject-pc",e); show("Error al procesar el cambio", "err"); } finally { setPcLoading(null); } }}>Rechazar</Btn>
             </div>}
-            {!isApprover && <div style={{ fontSize:10.5, color:C.t3, marginTop:4 }}>Esperando aprobación de la otra parte</div>}
+            {!isApprover && <div style={{ fontSize:11.6, color:C.t3, marginTop:4 }}>Esperando aprobación de la otra parte</div>}
           </div>;
         });
       })()}
@@ -592,8 +589,8 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
         return <div style={{ background:b.bg, border:`1.5px solid ${b.border}30`, borderRadius:12, padding:14, marginBottom:12, display:"flex", alignItems:"center", gap:10 }}>
           {b.icon}
           <div>
-            <div style={{ fontSize:12, fontWeight:700, color:b.border }}>{b.title}</div>
-            <div style={{ fontSize:11, color:C.t2 }}>{b.desc}</div>
+            <div style={{ fontSize:13.2, fontWeight:700, color:b.border }}>{b.title}</div>
+            <div style={{ fontSize:12.1, color:C.t2 }}>{b.desc}</div>
           </div>
         </div>;
       })()}
@@ -613,7 +610,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
 
       <button onClick={()=>onChat(freight.conversationId)} disabled={!freight.conversationId}
         style={{ width:"100%", background:C.priPale, borderRadius:10, padding:12, display:"flex", alignItems:"center", gap:10, border:`1.5px solid ${C.pri}30`, cursor:freight.conversationId?"pointer":"default", fontFamily:"inherit", marginBottom:12 }}>
-        {Ic.msg(C.pri,20)}<div style={{textAlign:"left"}}><div style={{ fontSize:12, fontWeight:700, color:C.pri }}>Chat del flete</div><div style={{ fontSize:10, color:C.t2 }}>Conversá con las partes involucradas</div></div>
+        {Ic.msg(C.pri,20)}<div style={{textAlign:"left"}}><div style={{ fontSize:13.2, fontWeight:700, color:C.pri }}>Chat del flete</div><div style={{ fontSize:11, color:C.t2 }}>Conversá con las partes involucradas</div></div>
       </button>
 
       {/* PDF Report */}
@@ -628,7 +625,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
         } catch(e) { log.error('PDF', e); useUIStore.getState().show('Error al generar PDF: ' + (e?.message || e), 'err'); }
         finally { setPdfLoading(false); }
       }} style={{ width:"100%", background:C.w, borderRadius:10, padding:12, display:"flex", alignItems:"center", gap:10, border:`1.5px solid ${C.b1}`, cursor:"pointer", fontFamily:"inherit", marginBottom:12, opacity:pdfLoading?0.6:1 }}>
-        {Ic.doc(C.t2,20)}<div style={{textAlign:"left"}}><div style={{ fontSize:12, fontWeight:700, color:C.t1 }}>{pdfLoading?'Generando...':'Descargar informe PDF'}</div><div style={{ fontSize:10, color:C.t3 }}>Información, recorrido, historial y documentos</div></div>
+        {Ic.doc(C.t2,20)}<div style={{textAlign:"left"}}><div style={{ fontSize:13.2, fontWeight:700, color:C.t1 }}>{pdfLoading?'Generando...':'Descargar informe PDF'}</div><div style={{ fontSize:11, color:C.t3 }}>Información, recorrido, historial y documentos</div></div>
       </button>
 
       {/* Secondary actions — edit, cancel, reject (horizontal, smaller) */}
@@ -647,6 +644,60 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
       <FileViewer file={viewFile} onClose={()=>setViewFile(null)} onOcr={handleOcr} ocrLoading={ocrLoading} onViewOcr={handleViewOcr}/>
       {ocrLoading && <div style={{ position:"fixed", inset:0, zIndex:250 }}><UploadOverlay uploading={ocrLoading} done={false} total={1} current={1} label="Extrayendo datos"/></div>}
       <OcrResultModal result={ocrResult} onClose={()=>setOcrResult(null)}/>
+
+      {/* Step detail modal — triggered by clicking a progress step */}
+      {stepModal && (()=>{
+        const steps = ["pending_assignment","assigned","accepted","in_progress","loaded","finished"];
+        const stepAuditActions = {
+          pending_assignment:["created"],
+          assigned:["assigned","assigned_multi","assignment_updated","assignment_canceled"],
+          accepted:["accepted","authorized","trip_accepted","trip_rejected"],
+          in_progress:["started","trip_started"],
+          loaded:["confirm_loaded","trip_confirm_loaded"],
+          finished:["confirm_finished","finished","trip_confirm_finished","trip_finished","canceled"],
+        };
+        const actionLabels = { created:"Solicitado", assigned:"Asignado", assigned_multi:"Asignado", accepted:"Aceptado", rejected:"Rechazado", started:"Iniciado", confirm_loaded:"Carga OK", confirm_finished:"Entrega OK", finished:"Finalizado", canceled:"Cancelado", authorized:"Autorizado", updated:"Editado", trip_accepted:"Aceptado", trip_rejected:"Rechazado", trip_started:"Iniciado", trip_confirm_loaded:"Carga OK", trip_confirm_finished:"Entrega OK", trip_finished:"Finalizado", assignment_canceled:"Cancelado", assignment_updated:"Editado" };
+        const actionColors = { created:C.pri, assigned:C.sec, assigned_multi:C.sec, accepted:C.info, rejected:C.err, started:C.acc, confirm_loaded:C.acc, confirm_finished:C.pri, finished:C.ok, canceled:C.err, authorized:C.info, updated:C.t2, trip_accepted:C.info, trip_rejected:C.err, trip_started:C.acc, trip_confirm_loaded:C.acc, trip_confirm_finished:C.pri, trip_finished:C.ok, assignment_canceled:C.err, assignment_updated:C.t2 };
+        const fmtD = (d) => { try { const dt=new Date(d); return dt.toLocaleDateString("es-AR",{day:"2-digit",month:"short"})+" "+dt.toLocaleTimeString("es-AR",{hour:"2-digit",minute:"2-digit",hour12:false}); } catch{ return ""; } };
+        const logs = auditLog ? stepModal.backendSteps.flatMap(s => (auditLog||[]).filter(l=>(stepAuditActions[s]||[]).includes(l.action))) : [];
+        const stepToTrip = { assigned:"pending", accepted:"accepted", in_progress:"in_progress", loaded:"loaded", finished:"finished" };
+        const stepAssigns = isMultiTruck ? stepModal.backendSteps.flatMap(s => { const ts=stepToTrip[s]; if(!ts) return []; return (freight.activeAssignments||[]).filter(a=>a.tripStatus===ts); }) : [];
+        return <div onClick={()=>setStepModal(null)} style={{ position:"fixed", inset:0, zIndex:200, background:"rgba(0,0,0,0.5)", display:"flex", alignItems:"center", justifyContent:"center", padding:16 }}>
+          <div onClick={e=>e.stopPropagation()} style={{ background:C.w, borderRadius:14, padding:20, maxWidth:400, width:"100%", maxHeight:"80vh", overflow:"auto", boxShadow:C.shLg }}>
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14 }}>
+              <span style={{ fontSize:15.4, fontWeight:800, color:stepModal.color }}>{stepModal.label}</span>
+              <button onClick={()=>setStepModal(null)} style={{ background:"none", border:"none", cursor:"pointer", padding:4 }}>{Ic.cross(C.t3,18)}</button>
+            </div>
+            {logs.length === 0 && stepAssigns.length === 0 && <div style={{ fontSize:13.2, color:C.t3, textAlign:"center", padding:"20px 0" }}>Sin actividad registrada en esta etapa</div>}
+            {logs.map(entry => {
+              const acCol = actionColors[entry.action] || C.t2;
+              const tn = entry.metadata?.tripNumber ? `Viaje #${entry.metadata.tripNumber}` : null;
+              return <div key={entry.id} style={{ display:"flex", gap:8, marginBottom:12, alignItems:"flex-start" }}>
+                <div style={{ width:8, height:8, borderRadius:4, background:acCol, flexShrink:0, marginTop:5 }} />
+                <div style={{ minWidth:0 }}>
+                  <div style={{ fontSize:13.2, fontWeight:700, color:acCol, lineHeight:1.3 }}>{actionLabels[entry.action]||entry.action}{tn ? ` · ${tn}` : ""}</div>
+                  <div style={{ fontSize:12.1, color:C.t2, marginTop:2, lineHeight:1.3, wordBreak:"break-word" }}>{entry.user?.name||"Sistema"}</div>
+                  {entry.user?.company?.name && <div style={{ fontSize:11.6, color:C.t3, lineHeight:1.2 }}>{entry.user.company.name}</div>}
+                  {(entry.reason || entry.metadata?.reason) && <div style={{ fontSize:11.6, color:C.t3, fontStyle:"italic", marginTop:2 }}>"{entry.reason||entry.metadata.reason}"</div>}
+                  {entry.metadata?.confirmedBy && <div style={{ fontSize:11.6, color:C.t3, marginTop:2 }}>por {entry.metadata.confirmedBy==="transporter"?"transportista":entry.metadata.confirmedBy==="producer"?"productor":entry.metadata.confirmedBy==="plant"?"planta":entry.metadata.confirmedBy}</div>}
+                  <div style={{ fontSize:11.6, color:C.t3, marginTop:2 }}>{fmtD(entry.createdAt)}</div>
+                </div>
+              </div>;
+            })}
+            {stepAssigns.length > 0 && logs.length === 0 && stepAssigns.map(a => (
+              <div key={a.id} style={{ display:"flex", gap:8, marginBottom:12, alignItems:"flex-start" }}>
+                <div style={{ width:8, height:8, borderRadius:4, background:stepModal.color, flexShrink:0, marginTop:5 }} />
+                <div style={{ minWidth:0 }}>
+                  <div style={{ fontSize:12.1, fontWeight:700, color:C.t1 }}>Viaje #{a.tripNumber}</div>
+                  {a.plate && <div style={{ fontSize:12.1, color:C.t2, marginTop:1 }}>{a.plate}{a.truckModel?` · ${a.truckModel}`:""}</div>}
+                  {a.transporterName && <div style={{ fontSize:11.6, color:C.t3 }}>{a.transporterName}</div>}
+                  {a.driverName && <div style={{ fontSize:11.6, color:C.t3 }}>{a.driverName}</div>}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>;
+      })()}
     </div>
   );
 }

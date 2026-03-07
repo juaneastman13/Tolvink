@@ -199,9 +199,9 @@ export default function DailyMapScreen() {
     return (
       <div style={styles.center}>
         <div style={styles.card}>
-          <div style={{ fontSize: 48, marginBottom: 12 }}>🔗</div>
-          <div style={{ fontSize: 18, fontWeight: 700, color: COLORS.t1 }}>Link invalido</div>
-          <div style={{ fontSize: 14, color: COLORS.t3, marginTop: 8 }}>
+          <div style={{ fontSize: 52.8, marginBottom: 12 }}>🔗</div>
+          <div style={{ fontSize: 19.8, fontWeight: 700, color: COLORS.t1 }}>Link invalido</div>
+          <div style={{ fontSize: 15.4, color: COLORS.t3, marginTop: 8 }}>
             Este link fue generado desde WhatsApp. Solicite uno nuevo en el chat.
           </div>
         </div>
@@ -214,9 +214,9 @@ export default function DailyMapScreen() {
     return (
       <div style={styles.center}>
         <div style={styles.card}>
-          <div style={{ fontSize: 28, marginBottom: 12, opacity: 0.5 }}>⏳</div>
-          <div style={{ fontSize: 18, fontWeight: 700, color: COLORS.t1 }}>Link expirado</div>
-          <div style={{ fontSize: 14, color: COLORS.t3, marginTop: 8 }}>
+          <div style={{ fontSize: 30.8, marginBottom: 12, opacity: 0.5 }}>⏳</div>
+          <div style={{ fontSize: 19.8, fontWeight: 700, color: COLORS.t1 }}>Link expirado</div>
+          <div style={{ fontSize: 15.4, color: COLORS.t3, marginTop: 8 }}>
             Solicite un nuevo link en WhatsApp para ver el mapa del dia.
           </div>
         </div>
@@ -228,7 +228,7 @@ export default function DailyMapScreen() {
   if (loading) {
     return (
       <div style={styles.center}>
-        <div style={{ fontSize: 14, color: COLORS.t3 }}>Cargando mapa...</div>
+        <div style={{ fontSize: 15.4, color: COLORS.t3 }}>Cargando mapa...</div>
       </div>
     );
   }
@@ -243,10 +243,10 @@ export default function DailyMapScreen() {
       {/* Header */}
       <div style={styles.header}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ fontSize: 24, fontWeight: 800, color: COLORS.pri, letterSpacing: -1 }}>tolvink</span>
+          <span style={{ fontSize: 26.4, fontWeight: 800, color: COLORS.pri, letterSpacing: -1 }}>tolvink</span>
           <span style={{ width: 8, height: 8, borderRadius: 4, background: COLORS.acc, display: "inline-block" }}></span>
         </div>
-        <div style={{ fontSize: 13, color: COLORS.t3, fontWeight: 500 }}>
+        <div style={{ fontSize: 14.3, color: COLORS.t3, fontWeight: 500 }}>
           Mapa del dia · {visibleCount} flete{visibleCount !== 1 ? "s" : ""}
         </div>
       </div>
@@ -279,7 +279,7 @@ export default function DailyMapScreen() {
         <div ref={mapRef} style={{ position: "absolute", inset: 0 }} />
         {freights.length === 0 && (
           <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none" }}>
-            <div style={{ background: COLORS.w, padding: "16px 24px", borderRadius: 12, boxShadow: "0 2px 8px rgba(0,0,0,0.1)", fontSize: 14, color: COLORS.t3 }}>
+            <div style={{ background: COLORS.w, padding: "16px 24px", borderRadius: 12, boxShadow: "0 2px 8px rgba(0,0,0,0.1)", fontSize: 15.4, color: COLORS.t3 }}>
               No hay fletes programados para hoy
             </div>
           </div>
@@ -329,7 +329,7 @@ const styles = {
     padding: "5px 10px",
     borderRadius: 16,
     border: "1.5px solid",
-    fontSize: 12,
+    fontSize: 13.2,
     fontWeight: 600,
     fontFamily: "inherit",
     whiteSpace: "nowrap",

@@ -126,9 +126,9 @@ export default function ViewMapScreen() {
     return (
       <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: C.bg, fontFamily: "system-ui" }}>
         <div style={{ textAlign: "center", color: C.t2, padding: 32 }}>
-          <div style={{ fontSize: 48, marginBottom: 16 }}>📍</div>
-          <div style={{ fontSize: 18, fontWeight: 600, color: C.t1 }}>{error || "Link inválido"}</div>
-          <div style={{ fontSize: 14, marginTop: 8 }}>No se pudo mostrar la ubicación.</div>
+          <div style={{ fontSize: 52.8, marginBottom: 16 }}>📍</div>
+          <div style={{ fontSize: 19.8, fontWeight: 600, color: C.t1 }}>{error || "Link inválido"}</div>
+          <div style={{ fontSize: 15.4, marginTop: 8 }}>No se pudo mostrar la ubicación.</div>
         </div>
       </div>
     );
@@ -138,9 +138,9 @@ export default function ViewMapScreen() {
     <div style={{ height: "100vh", width: "100vw", position: "relative", fontFamily: "system-ui" }}>
       {/* Header */}
       <div style={{ position: "absolute", top: 0, left: 0, right: 0, zIndex: 10, background: "rgba(255,255,255,0.95)", backdropFilter: "blur(8px)", padding: "12px 16px", display: "flex", alignItems: "center", gap: 10, boxShadow: "0 1px 4px rgba(0,0,0,0.1)" }}>
-        <span style={{ fontSize: 22, fontWeight: 800, color: C.pri, letterSpacing: -1 }}>tolvink</span>
+        <span style={{ fontSize: 24.2, fontWeight: 800, color: C.pri, letterSpacing: -1 }}>tolvink</span>
         <span style={{ width: 6, height: 6, borderRadius: 3, background: C.acc, marginTop: -8 }}></span>
-        <span style={{ marginLeft: "auto", fontSize: 14, color: C.t2, fontWeight: 500, maxWidth: "60%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+        <span style={{ marginLeft: "auto", fontSize: 15.4, color: C.t2, fontWeight: 500, maxWidth: "60%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           📍 {name}{hasDest ? ` → ${dname}` : ""}
         </span>
       </div>
@@ -154,7 +154,7 @@ export default function ViewMapScreen() {
           href={hasDest ? `https://www.google.com/maps/dir/?api=1&origin=${lat},${lng}&destination=${dlat},${dlng}` : `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`}
           target="_blank"
           rel="noopener noreferrer"
-          style={{ display: "block", textAlign: "center", background: C.pri, color: "#fff", padding: "14px 0", borderRadius: 12, fontSize: 16, fontWeight: 700, textDecoration: "none", boxShadow: "0 4px 12px rgba(26,107,55,0.3)" }}
+          style={{ display: "block", textAlign: "center", background: C.pri, color: "#fff", padding: "14px 0", borderRadius: 12, fontSize: 17.6, fontWeight: 700, textDecoration: "none", boxShadow: "0 4px 12px rgba(26,107,55,0.3)" }}
         >
           ▶ Navegar al destino
         </a>

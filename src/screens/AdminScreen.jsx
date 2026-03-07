@@ -232,7 +232,7 @@ export default function AdminScreen({ user, onBack }) {
     } catch(e) { show(e.message,"err"); setSaving(false); }
   };
 
-  const MsgBar = () => msg ? <div style={{padding:"8px 12px",borderRadius:8,background:msg.k==="ok"?C.okPale:`${C.err}15`,color:msg.k==="ok"?C.ok:C.err,fontSize:12,marginTop:10,marginBottom:10,display:"flex",justifyContent:"space-between"}}>{msg.t}<button onClick={()=>setMsg(null)} style={{background:"none",border:"none",cursor:"pointer",color:"inherit",fontFamily:"inherit"}}>✕</button></div> : null;
+  const MsgBar = () => msg ? <div style={{padding:"8px 12px",borderRadius:8,background:msg.k==="ok"?C.okPale:`${C.err}15`,color:msg.k==="ok"?C.ok:C.err,fontSize:13.2,marginTop:10,marginBottom:10,display:"flex",justifyContent:"space-between"}}>{msg.t}<button onClick={()=>setMsg(null)} style={{background:"none",border:"none",cursor:"pointer",color:"inherit",fontFamily:"inherit"}}>✕</button></div> : null;
 
   // ===================== COMPANY FORM =====================
   if (view==="companyForm") {
@@ -240,13 +240,13 @@ export default function AdminScreen({ user, onBack }) {
       <div style={{flex:1,overflow:"auto",padding:18}}>
         {(saving||doneMsg) && <LoadingOverlay closing={!!doneMsg} closingText={doneMsg} onClose={()=>setDoneMsg("")}/>}
         {adminBackBtn(()=>setView("list"))}
-        <div style={{fontSize:16,fontWeight:700,color:C.t1,marginBottom:12}}>{editCompanyId?"Editar empresa":"Nueva empresa"}</div>
+        <div style={{fontSize:17.6,fontWeight:700,color:C.t1,marginBottom:12}}>{editCompanyId?"Editar empresa":"Nueva empresa"}</div>
         <div style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius:10,padding:14,boxShadow:C.sh}}>
           <div style={s.lbl}>Nombre:</div>
           <input value={companyForm.name} onChange={e=>setCompanyForm(p=>({...p,name:e.target.value}))} placeholder="Nombre de la empresa" style={{...s.inp,marginBottom:10}} />
           <div style={s.lbl}>Tipo:</div>
           <div style={{display:"flex",gap:6,marginBottom:10}}>
-            {["producer","plant","transporter"].map(t=>(<button key={t} onClick={()=>setCompanyForm(p=>({...p,type:t}))} style={{flex:1,padding:"9px 0",borderRadius:8,border:`1.5px solid ${companyForm.type===t?typeColors[t]:C.b1}`,background:companyForm.type===t?`${typeColors[t]}12`:C.w,color:companyForm.type===t?typeColors[t]:C.t2,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit",transition:"all 0.15s"}}>{typeLabels[t]}</button>))}
+            {["producer","plant","transporter"].map(t=>(<button key={t} onClick={()=>setCompanyForm(p=>({...p,type:t}))} style={{flex:1,padding:"9px 0",borderRadius:8,border:`1.5px solid ${companyForm.type===t?typeColors[t]:C.b1}`,background:companyForm.type===t?`${typeColors[t]}12`:C.w,color:companyForm.type===t?typeColors[t]:C.t2,fontSize:13.2,fontWeight:600,cursor:"pointer",fontFamily:"inherit",transition:"all 0.15s"}}>{typeLabels[t]}</button>))}
           </div>
           <div style={{display:"flex",gap:8,marginBottom:10}}>
             <div style={{flex:1}}><div style={s.lbl}>Email:</div><input value={companyForm.email} onChange={e=>setCompanyForm(p=>({...p,email:e.target.value}))} placeholder="Email" style={s.inp} /></div>
@@ -254,12 +254,12 @@ export default function AdminScreen({ user, onBack }) {
           </div>
           <div style={s.lbl}>RUT:</div>
           <input value={companyForm.rut} onChange={e=>setCompanyForm(p=>({...p,rut:e.target.value}))} placeholder="RUT" style={{...s.inp,marginBottom:10}} />
-          <label style={{display:"flex",alignItems:"center",gap:8,fontSize:12,color:C.t2,marginBottom:10,cursor:"pointer"}}>
+          <label style={{display:"flex",alignItems:"center",gap:8,fontSize:13.2,color:C.t2,marginBottom:10,cursor:"pointer"}}>
             <input type="checkbox" checked={companyForm.hasInternalFleet} onChange={e=>setCompanyForm(p=>({...p,hasInternalFleet:e.target.checked}))} style={{width:16,height:16}} /> Flota propia
           </label>
           <LocationPicker label="Ubicación" value={companyForm.lat?{lat:companyForm.lat,lng:companyForm.lng,address:companyForm.address||""}:null} onChange={(loc)=>setCompanyForm(p=>({...p,lat:loc?.lat||null,lng:loc?.lng||null,address:loc?.address||""}))} />
           <div style={{display:"flex",gap:8,marginTop:6}}>
-            <button onClick={()=>setView("list")} style={{flex:1,padding:"10px 0",borderRadius:8,border:`1px solid ${C.b1}`,background:C.w,color:C.t2,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>Cancelar</button>
+            <button onClick={()=>setView("list")} style={{flex:1,padding:"10px 0",borderRadius:8,border:`1px solid ${C.b1}`,background:C.w,color:C.t2,fontSize:14.3,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>Cancelar</button>
             <button onClick={handleSaveCompany} disabled={saving} style={{...s.btnP(C.pri,saving),flex:2}}>{saving?"Guardando...":(editCompanyId?"Guardar cambios":"Crear empresa")}</button>
           </div>
         </div>
@@ -276,7 +276,7 @@ export default function AdminScreen({ user, onBack }) {
       <div style={{flex:1,overflow:"auto",padding:18}}>
         {(saving||doneMsg) && <LoadingOverlay closing={!!doneMsg} closingText={doneMsg} onClose={()=>setDoneMsg("")}/>}
         {adminBackBtn(()=>setView("list"))}
-        <div style={{fontSize:16,fontWeight:700,color:C.t1,marginBottom:12}}>Editar usuario</div>
+        <div style={{fontSize:17.6,fontWeight:700,color:C.t1,marginBottom:12}}>Editar usuario</div>
         <div style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius:10,padding:14,boxShadow:C.sh}}>
           {/* Basic info */}
           <div style={s.lbl}>Nombre:</div>
@@ -289,7 +289,7 @@ export default function AdminScreen({ user, onBack }) {
           {/* User types selection */}
           <div style={s.lbl}>Tipos de usuario:</div>
           <div style={{display:"flex",gap:6,marginBottom:10}}>
-            {["producer","plant","transporter"].map(t=>{const sel=types.includes(t);return(<button key={t} onClick={()=>toggleEditUserType(t)} style={{flex:1,padding:"9px 0",borderRadius:8,border:`1.5px solid ${sel?typeColors[t]:C.b1}`,background:sel?`${typeColors[t]}12`:C.w,color:sel?typeColors[t]:C.t2,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit",transition:"all 0.15s"}}>{sel?"✓ ":""}{typeLabels[t]}</button>);})}
+            {["producer","plant","transporter"].map(t=>{const sel=types.includes(t);return(<button key={t} onClick={()=>toggleEditUserType(t)} style={{flex:1,padding:"9px 0",borderRadius:8,border:`1.5px solid ${sel?typeColors[t]:C.b1}`,background:sel?`${typeColors[t]}12`:C.w,color:sel?typeColors[t]:C.t2,fontSize:13.2,fontWeight:600,cursor:"pointer",fontFamily:"inherit",transition:"all 0.15s"}}>{sel?"✓ ":""}{typeLabels[t]}</button>);})}
           </div>
 
           {/* Type tabs - select one type to configure */}
@@ -298,7 +298,7 @@ export default function AdminScreen({ user, onBack }) {
               {types.length>1 && (
                 <div style={{display:"flex",gap:4,marginBottom:10}}>
                   {types.map(t=>(
-                    <button key={t} onClick={()=>setActiveUserType(t)} style={{flex:1,padding:"7px 0",borderRadius:6,border:`1.5px solid ${at===t?typeColors[t]:C.b1}`,background:at===t?`${typeColors[t]}18`:C.w,color:at===t?typeColors[t]:C.t3,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:"inherit",transition:"all 0.15s"}}>{typeLabels[t]}</button>
+                    <button key={t} onClick={()=>setActiveUserType(t)} style={{flex:1,padding:"7px 0",borderRadius:6,border:`1.5px solid ${at===t?typeColors[t]:C.b1}`,background:at===t?`${typeColors[t]}18`:C.w,color:at===t?typeColors[t]:C.t3,fontSize:12.1,fontWeight:600,cursor:"pointer",fontFamily:"inherit",transition:"all 0.15s"}}>{typeLabels[t]}</button>
                   ))}
                 </div>
               )}
@@ -307,7 +307,7 @@ export default function AdminScreen({ user, onBack }) {
                 <div key={at}>
                   <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:8}}>
                     <div style={{width:10,height:10,borderRadius:5,background:typeColors[at]}}/>
-                    <span style={{fontSize:12,fontWeight:700,color:typeColors[at]}}>{typeLabels[at]}</span>
+                    <span style={{fontSize:13.2,fontWeight:700,color:typeColors[at]}}>{typeLabels[at]}</span>
                   </div>
 
                   {/* Role for this type */}
@@ -342,7 +342,7 @@ export default function AdminScreen({ user, onBack }) {
           </div>
 
           <div style={{display:"flex",gap:8,marginTop:4}}>
-            <button onClick={()=>setView("list")} style={{flex:1,padding:"10px 0",borderRadius:8,border:`1px solid ${C.b1}`,background:C.w,color:C.t2,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>Cancelar</button>
+            <button onClick={()=>setView("list")} style={{flex:1,padding:"10px 0",borderRadius:8,border:`1px solid ${C.b1}`,background:C.w,color:C.t2,fontSize:14.3,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>Cancelar</button>
             <button onClick={handleSaveEditUser} disabled={saving} style={{...s.btnP(C.acc,saving),flex:2}}>{saving?"Guardando...":"Guardar cambios"}</button>
           </div>
         </div>
@@ -359,7 +359,7 @@ export default function AdminScreen({ user, onBack }) {
       <div style={{flex:1,overflow:"auto",padding:18}}>
         {(saving||doneMsg) && <LoadingOverlay closing={!!doneMsg} closingText={doneMsg} onClose={()=>setDoneMsg("")}/>}
         {adminBackBtn(()=>setView("list"))}
-        <div style={{fontSize:16,fontWeight:700,color:C.t1,marginBottom:12}}>Nuevo usuario</div>
+        <div style={{fontSize:17.6,fontWeight:700,color:C.t1,marginBottom:12}}>Nuevo usuario</div>
         <div style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius:10,padding:14,boxShadow:C.sh}}>
           <div style={s.lbl}>Nombre:</div>
           <input value={userForm.name} onChange={e=>setUserForm(p=>({...p,name:e.target.value}))} placeholder="Nombre completo" style={{...s.inp,marginBottom:10}} />
@@ -400,7 +400,7 @@ export default function AdminScreen({ user, onBack }) {
                 <div style={s.lbl}>Tipo de usuario:</div>
                 <div style={{display:"flex",gap:6,marginBottom:10}}>
                   {availableTypes.map(t=>{const sel=formTypes.includes(t);return(
-                    <button key={t} onClick={()=>{if(t===baseType)return; setUserForm(p=>{const has=p.userTypes.includes(t);const newTypes=has?p.userTypes.filter(x=>x!==t):[...p.userTypes,t];const cbt={...p.companyByType};const rbt={...p.roleByType};if(!has){cbt[t]=p._selectedCompanyId;rbt[t]="operator";}else{delete cbt[t];delete rbt[t];}return{...p,userTypes:newTypes,companyByType:cbt,roleByType:rbt};});}} style={{flex:1,padding:"9px 0",borderRadius:8,border:`1.5px solid ${sel?typeColors[t]:C.b1}`,background:sel?`${typeColors[t]}12`:C.w,color:sel?typeColors[t]:C.t2,fontSize:12,fontWeight:600,cursor:t===baseType?"default":"pointer",fontFamily:"inherit",transition:"all 0.15s",opacity:t===baseType?1:undefined}}>{sel?"✓ ":""}{typeLabels[t]}</button>
+                    <button key={t} onClick={()=>{if(t===baseType)return; setUserForm(p=>{const has=p.userTypes.includes(t);const newTypes=has?p.userTypes.filter(x=>x!==t):[...p.userTypes,t];const cbt={...p.companyByType};const rbt={...p.roleByType};if(!has){cbt[t]=p._selectedCompanyId;rbt[t]="operator";}else{delete cbt[t];delete rbt[t];}return{...p,userTypes:newTypes,companyByType:cbt,roleByType:rbt};});}} style={{flex:1,padding:"9px 0",borderRadius:8,border:`1.5px solid ${sel?typeColors[t]:C.b1}`,background:sel?`${typeColors[t]}12`:C.w,color:sel?typeColors[t]:C.t2,fontSize:13.2,fontWeight:600,cursor:t===baseType?"default":"pointer",fontFamily:"inherit",transition:"all 0.15s",opacity:t===baseType?1:undefined}}>{sel?"✓ ":""}{typeLabels[t]}</button>
                   );})}
                 </div>
                 {/* Role per type */}
@@ -408,7 +408,7 @@ export default function AdminScreen({ user, onBack }) {
                   <div key={t} style={{marginBottom:8}}>
                     <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:4}}>
                       <div style={{width:8,height:8,borderRadius:4,background:typeColors[t]}}/>
-                      <span style={{fontSize:11,fontWeight:700,color:typeColors[t]}}>Rol como {typeLabels[t]}:</span>
+                      <span style={{fontSize:12.1,fontWeight:700,color:typeColors[t]}}>Rol como {typeLabels[t]}:</span>
                     </div>
                     <select value={(userForm.roleByType||{})[t]||"operator"} onChange={e=>setUserForm(p=>({...p,roleByType:{...(p.roleByType||{}),[t]:e.target.value}}))} style={s.sel}>
                       <option value="operator">Operario</option>
@@ -447,35 +447,35 @@ export default function AdminScreen({ user, onBack }) {
         <div style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius:12,padding:16,marginBottom:12,boxShadow:C.sh}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
             <div>
-              <div style={{fontSize:16,fontWeight:700,color:C.t1}}>{selectedCompany.name}</div>
+              <div style={{fontSize:17.6,fontWeight:700,color:C.t1}}>{selectedCompany.name}</div>
               <div style={{display:"flex",gap:6,marginTop:6,flexWrap:"wrap"}}>
                 <Bd color={typeColors[cType]}>{typeLabels[cType]}</Bd>
                 {selectedCompany.rut&&<Bd color={C.t2}>RUT: {selectedCompany.rut}</Bd>}
                 {selectedCompany.hasInternalFleet&&<Bd color={C.info||"#3B82F6"}>Flota propia</Bd>}
               </div>
-              {selectedCompany.email&&<div style={{fontSize:12,color:C.t2,marginTop:4}}>{selectedCompany.email}</div>}
-              {selectedCompany.phone&&<div style={{fontSize:12,color:C.t3}}>{selectedCompany.phone}</div>}
-              {selectedCompany.lat&&<div style={{fontSize:10,color:C.t3,marginTop:2}}>📍 {Number(selectedCompany.lat).toFixed(5)}, {Number(selectedCompany.lng).toFixed(5)}</div>}
+              {selectedCompany.email&&<div style={{fontSize:13.2,color:C.t2,marginTop:4}}>{selectedCompany.email}</div>}
+              {selectedCompany.phone&&<div style={{fontSize:13.2,color:C.t3}}>{selectedCompany.phone}</div>}
+              {selectedCompany.lat&&<div style={{fontSize:11,color:C.t3,marginTop:2}}>📍 {Number(selectedCompany.lat).toFixed(5)}, {Number(selectedCompany.lng).toFixed(5)}</div>}
             </div>
-            <button onClick={()=>openEditCompany(selectedCompany)} style={{padding:"6px 12px",borderRadius:6,border:`1px solid ${C.pri}40`,background:`${C.pri}08`,color:C.pri,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>Editar</button>
+            <button onClick={()=>openEditCompany(selectedCompany)} style={{padding:"6px 12px",borderRadius:6,border:`1px solid ${C.pri}40`,background:`${C.pri}08`,color:C.pri,fontSize:12.1,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>Editar</button>
           </div>
         </div>
 
         {/* Tabs */}
         <div style={{display:"flex",gap:4,marginBottom:10}}>
           {tabs.map(t=>(
-            <button key={t.k} onClick={()=>setDetailTab(t.k)} style={{flex:1,padding:"8px 0",borderRadius:8,border:`1.5px solid ${curTab===t.k?C.pri:C.b1}`,background:curTab===t.k?`${C.pri}12`:C.w,color:curTab===t.k?C.pri:C.t2,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>{t.l} ({t.n})</button>
+            <button key={t.k} onClick={()=>setDetailTab(t.k)} style={{flex:1,padding:"8px 0",borderRadius:8,border:`1.5px solid ${curTab===t.k?C.pri:C.b1}`,background:curTab===t.k?`${C.pri}12`:C.w,color:curTab===t.k?C.pri:C.t2,fontSize:13.2,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>{t.l} ({t.n})</button>
           ))}
         </div>
 
         {/* ====== TAB: BRANCHES ====== */}
         {curTab==="branches"&&(<>
           <div style={{display:"flex",justifyContent:"flex-end",marginBottom:8}}>
-            <button onClick={()=>{showBranchForm?setShowBranchForm(false):openNewBranch();}} style={{padding:"6px 12px",borderRadius:6,border:`1px solid ${C.pri}`,background:`${C.pri}12`,color:C.pri,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>{showBranchForm&&!editBranchId?"Cancelar":"+ Nueva"}</button>
+            <button onClick={()=>{showBranchForm?setShowBranchForm(false):openNewBranch();}} style={{padding:"6px 12px",borderRadius:6,border:`1px solid ${C.pri}`,background:`${C.pri}12`,color:C.pri,fontSize:12.1,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>{showBranchForm&&!editBranchId?"Cancelar":"+ Nueva"}</button>
           </div>
           {showBranchForm && (
             <div style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius:10,padding:14,marginBottom:10,boxShadow:C.sh}}>
-              <div style={{fontSize:12,fontWeight:600,color:C.t1,marginBottom:8}}>{editBranchId?"Editar sucursal":"Nueva sucursal"}</div>
+              <div style={{fontSize:13.2,fontWeight:600,color:C.t1,marginBottom:8}}>{editBranchId?"Editar sucursal":"Nueva sucursal"}</div>
               <div style={s.lbl}>Nombre:</div>
               <input value={branchForm.name} onChange={e=>setBranchForm(p=>({...p,name:e.target.value}))} placeholder="Nombre" style={{...s.inp,marginBottom:10}} />
               <div style={s.lbl}>Dirección:</div>
@@ -484,28 +484,28 @@ export default function AdminScreen({ user, onBack }) {
               <input value={branchForm.reference} onChange={e=>setBranchForm(p=>({...p,reference:e.target.value}))} placeholder="Referencia (opcional)" style={{...s.inp,marginBottom:10}} />
               <LocationPicker label="Ubicación sucursal" value={branchForm.lat?{lat:branchForm.lat,lng:branchForm.lng,address:branchForm.locationAddress||""}:null} onChange={(loc)=>setBranchForm(p=>({...p,lat:loc?.lat||null,lng:loc?.lng||null,locationAddress:loc?.address||""}))} />
               <div style={{display:"flex",gap:8,marginTop:4}}>
-                <button onClick={()=>setShowBranchForm(false)} style={{flex:1,padding:"10px 0",borderRadius:8,border:`1px solid ${C.b1}`,background:C.w,color:C.t2,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>Cancelar</button>
+                <button onClick={()=>setShowBranchForm(false)} style={{flex:1,padding:"10px 0",borderRadius:8,border:`1px solid ${C.b1}`,background:C.w,color:C.t2,fontSize:14.3,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>Cancelar</button>
                 <button onClick={handleSaveBranch} disabled={saving} style={{...s.btnP(C.pri,saving),flex:2}}>{saving?"Guardando...":(editBranchId?"Guardar":"Crear")}</button>
               </div>
             </div>
           )}
           {branches.map(b=>(<div key={b.id} style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius:10,padding:"12px 14px",marginBottom:8,boxShadow:C.sh}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-              <div style={{flex:1}}><div style={{fontSize:13,fontWeight:600,color:C.t1}}>{b.name}</div>{b.address&&<div style={{fontSize:11,color:C.t3}}>{b.address}</div>}{b.lat&&<div style={{fontSize:9,color:C.t3}}>📍 {Number(b.lat).toFixed(5)}, {Number(b.lng).toFixed(5)}</div>}</div>
-              <div style={{display:"flex",gap:4}}><button onClick={()=>openEditBranch(b)} style={{padding:"4px 8px",borderRadius:6,border:`1px solid ${C.pri}40`,background:"none",fontSize:10,color:C.pri,cursor:"pointer",fontFamily:"inherit"}}>Editar</button><button disabled={saving} onClick={()=>handleDeleteBranch(b.id)} style={{padding:"4px 8px",borderRadius:6,border:`1px solid ${C.err}30`,background:"none",fontSize:10,color:saving?C.t3:C.err,cursor:saving?"not-allowed":"pointer",fontFamily:"inherit",opacity:saving?0.5:1}}>Eliminar</button></div>
+              <div style={{flex:1}}><div style={{fontSize:14.3,fontWeight:600,color:C.t1}}>{b.name}</div>{b.address&&<div style={{fontSize:12.1,color:C.t3}}>{b.address}</div>}{b.lat&&<div style={{fontSize:9.9,color:C.t3}}>📍 {Number(b.lat).toFixed(5)}, {Number(b.lng).toFixed(5)}</div>}</div>
+              <div style={{display:"flex",gap:4}}><button onClick={()=>openEditBranch(b)} style={{padding:"4px 8px",borderRadius:6,border:`1px solid ${C.pri}40`,background:"none",fontSize:11,color:C.pri,cursor:"pointer",fontFamily:"inherit"}}>Editar</button><button disabled={saving} onClick={()=>handleDeleteBranch(b.id)} style={{padding:"4px 8px",borderRadius:6,border:`1px solid ${C.err}30`,background:"none",fontSize:11,color:saving?C.t3:C.err,cursor:saving?"not-allowed":"pointer",fontFamily:"inherit",opacity:saving?0.5:1}}>Eliminar</button></div>
             </div>
           </div>))}
-          {branches.length===0&&!showBranchForm&&<div style={{textAlign:"center",padding:20,color:C.t3,fontSize:12}}>Sin sucursales</div>}
+          {branches.length===0&&!showBranchForm&&<div style={{textAlign:"center",padding:20,color:C.t3,fontSize:13.2}}>Sin sucursales</div>}
         </>)}
 
         {/* ====== TAB: FIELDS (Producer) ====== */}
         {curTab==="fields"&&isProducer&&(<>
           <div style={{display:"flex",justifyContent:"flex-end",marginBottom:8}}>
-            <button onClick={()=>{showFieldForm?setShowFieldForm(false):openNewField();}} style={{padding:"6px 12px",borderRadius:6,border:`1px solid ${typeColors.producer}`,background:`${typeColors.producer}12`,color:typeColors.producer,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>{showFieldForm&&!editFieldId?"Cancelar":"+ Nuevo campo"}</button>
+            <button onClick={()=>{showFieldForm?setShowFieldForm(false):openNewField();}} style={{padding:"6px 12px",borderRadius:6,border:`1px solid ${typeColors.producer}`,background:`${typeColors.producer}12`,color:typeColors.producer,fontSize:12.1,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>{showFieldForm&&!editFieldId?"Cancelar":"+ Nuevo campo"}</button>
           </div>
           {showFieldForm && (
             <div style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius:10,padding:14,marginBottom:10,boxShadow:C.sh}}>
-              <div style={{fontSize:12,fontWeight:600,color:C.t1,marginBottom:8}}>{editFieldId?"Editar campo":"Nuevo campo"}</div>
+              <div style={{fontSize:13.2,fontWeight:600,color:C.t1,marginBottom:8}}>{editFieldId?"Editar campo":"Nuevo campo"}</div>
               <div style={s.lbl}>Nombre *</div>
               <input value={fieldForm.name} onChange={e=>setFieldForm(p=>({...p,name:e.target.value}))} placeholder="Nombre del campo" style={{...s.inp,marginBottom:10}} />
               <LocationPicker label="Ubicación *" value={fieldForm.lat?{lat:fieldForm.lat,lng:fieldForm.lng,address:fieldForm.address}:null} onChange={(loc)=>setFieldForm(p=>({...p,lat:loc?.lat||null,lng:loc?.lng||null,address:loc?.address||""}))} />
@@ -515,7 +515,7 @@ export default function AdminScreen({ user, onBack }) {
               <div style={s.lbl}>Comentarios</div>
               <textarea value={fieldForm.comments} onChange={e=>setFieldForm(p=>({...p,comments:e.target.value}))} placeholder="Notas opcionales..." rows={2} style={{...s.inp,resize:"vertical",marginBottom:10}} />
               <div style={{display:"flex",gap:8}}>
-                <button onClick={()=>setShowFieldForm(false)} style={{flex:1,padding:"10px 0",borderRadius:8,border:`1px solid ${C.b1}`,background:C.w,color:C.t2,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>Cancelar</button>
+                <button onClick={()=>setShowFieldForm(false)} style={{flex:1,padding:"10px 0",borderRadius:8,border:`1px solid ${C.b1}`,background:C.w,color:C.t2,fontSize:14.3,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>Cancelar</button>
                 <button onClick={handleSaveField} disabled={saving} style={{...s.btnP(typeColors.producer,saving),flex:2}}>{saving?"Guardando...":(editFieldId?"Guardar":"Crear campo")}</button>
               </div>
             </div>
@@ -523,26 +523,26 @@ export default function AdminScreen({ user, onBack }) {
           {fields.map(f=>(<div key={f.id} style={{background:C.w,border:`1px solid ${expandedFieldId===f.id?typeColors.producer:C.b1}`,borderRadius:10,marginBottom:8,boxShadow:C.sh,overflow:"hidden"}}>
             <div style={{padding:"12px 14px",cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center"}} onClick={()=>expandField(f.id)}>
               <div style={{flex:1}}>
-                <div style={{fontSize:13,fontWeight:600,color:C.t1}}>{f.name}</div>
-                <div style={{display:"flex",gap:8,fontSize:10,color:C.t3,marginTop:2}}>
+                <div style={{fontSize:14.3,fontWeight:600,color:C.t1}}>{f.name}</div>
+                <div style={{display:"flex",gap:8,fontSize:11,color:C.t3,marginTop:2}}>
                   {f.hectares&&<span>{Number(f.hectares)} ha</span>}
                   {f.lat&&<span>📍 {Number(f.lat).toFixed(3)}, {Number(f.lng).toFixed(3)}</span>}
                   <span>{f._count?.lots||f.lots?.length||0} lotes</span>
                 </div>
-                {f.comments&&<div style={{fontSize:10,color:C.t3,fontStyle:"italic",marginTop:1}}>{f.comments}</div>}
+                {f.comments&&<div style={{fontSize:11,color:C.t3,fontStyle:"italic",marginTop:1}}>{f.comments}</div>}
               </div>
               <div style={{display:"flex",gap:4,alignItems:"center"}}>
-                <button onClick={(e)=>{e.stopPropagation();openEditField(f);}} style={{padding:"4px 8px",borderRadius:6,border:`1px solid ${C.pri}40`,background:"none",fontSize:10,color:C.pri,cursor:"pointer",fontFamily:"inherit"}}>Editar</button>
-                <button disabled={saving} onClick={(e)=>{e.stopPropagation();handleDeleteField(f.id);}} style={{padding:"4px 8px",borderRadius:6,border:`1px solid ${C.err}30`,background:"none",fontSize:10,color:saving?C.t3:C.err,cursor:saving?"not-allowed":"pointer",fontFamily:"inherit",opacity:saving?0.5:1}}>Eliminar</button>
-                <span style={{fontSize:12,color:C.t3,marginLeft:4}}>{expandedFieldId===f.id?"▾":"▸"}</span>
+                <button onClick={(e)=>{e.stopPropagation();openEditField(f);}} style={{padding:"4px 8px",borderRadius:6,border:`1px solid ${C.pri}40`,background:"none",fontSize:11,color:C.pri,cursor:"pointer",fontFamily:"inherit"}}>Editar</button>
+                <button disabled={saving} onClick={(e)=>{e.stopPropagation();handleDeleteField(f.id);}} style={{padding:"4px 8px",borderRadius:6,border:`1px solid ${C.err}30`,background:"none",fontSize:11,color:saving?C.t3:C.err,cursor:saving?"not-allowed":"pointer",fontFamily:"inherit",opacity:saving?0.5:1}}>Eliminar</button>
+                <span style={{fontSize:13.2,color:C.t3,marginLeft:4}}>{expandedFieldId===f.id?"▾":"▸"}</span>
               </div>
             </div>
             {/* Lots inside field */}
             {expandedFieldId===f.id&&(
               <div style={{padding:"0 14px 12px",borderTop:`1px solid ${C.b1}`}}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,marginBottom:6}}>
-                  <div style={{fontSize:11,fontWeight:600,color:C.t2}}>Lotes</div>
-                  <button onClick={()=>{showLotForm?setShowLotForm(false):openNewLot();}} style={{padding:"4px 10px",borderRadius:6,border:`1px solid ${typeColors.producer}`,background:`${typeColors.producer}10`,color:typeColors.producer,fontSize:10,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>{showLotForm&&!editLotId?"Cancelar":"+ Lote"}</button>
+                  <div style={{fontSize:12.1,fontWeight:600,color:C.t2}}>Lotes</div>
+                  <button onClick={()=>{showLotForm?setShowLotForm(false):openNewLot();}} style={{padding:"4px 10px",borderRadius:6,border:`1px solid ${typeColors.producer}`,background:`${typeColors.producer}10`,color:typeColors.producer,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>{showLotForm&&!editLotId?"Cancelar":"+ Lote"}</button>
                 </div>
                 {showLotForm&&(
                   <div style={{background:C.bgInput,border:`1px solid ${C.b1}`,borderRadius:8,padding:12,marginBottom:8}}>
@@ -555,38 +555,38 @@ export default function AdminScreen({ user, onBack }) {
                     <div style={s.lbl}>Comentarios</div>
                     <textarea value={lotForm.comments} onChange={e=>setLotForm(p=>({...p,comments:e.target.value}))} placeholder="Notas..." rows={2} style={{...s.inp,resize:"vertical",marginBottom:8}} />
                     <div style={{display:"flex",gap:8}}>
-                      <button onClick={()=>setShowLotForm(false)} style={{flex:1,padding:"8px 0",borderRadius:8,border:`1px solid ${C.b1}`,background:C.w,color:C.t2,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>Cancelar</button>
+                      <button onClick={()=>setShowLotForm(false)} style={{flex:1,padding:"8px 0",borderRadius:8,border:`1px solid ${C.b1}`,background:C.w,color:C.t2,fontSize:13.2,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>Cancelar</button>
                       <button onClick={handleSaveLot} disabled={saving} style={{...s.btnP(typeColors.producer,saving),flex:2,padding:"8px 0"}}>{saving?"Guardando...":(editLotId?"Guardar":"Crear lote")}</button>
                     </div>
                   </div>
                 )}
                 {lots.map(l=>(<div key={l.id} style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius:8,padding:"8px 12px",marginBottom:4}}>
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                    <div><div style={{fontSize:12,fontWeight:600,color:C.t1}}>{l.name}</div>
-                      <div style={{display:"flex",gap:6,fontSize:9,color:C.t3}}>{l.hectares&&<span>{Number(l.hectares)} ha</span>}{l.lat&&<span>📍 {Number(l.lat).toFixed(3)},{Number(l.lng).toFixed(3)}</span>}</div>
-                      {l.comments&&<div style={{fontSize:9,color:C.t3,fontStyle:"italic"}}>{l.comments}</div>}
+                    <div><div style={{fontSize:13.2,fontWeight:600,color:C.t1}}>{l.name}</div>
+                      <div style={{display:"flex",gap:6,fontSize:9.9,color:C.t3}}>{l.hectares&&<span>{Number(l.hectares)} ha</span>}{l.lat&&<span>📍 {Number(l.lat).toFixed(3)},{Number(l.lng).toFixed(3)}</span>}</div>
+                      {l.comments&&<div style={{fontSize:9.9,color:C.t3,fontStyle:"italic"}}>{l.comments}</div>}
                     </div>
                     <div style={{display:"flex",gap:4}}>
-                      <button onClick={()=>openEditLot(l)} style={{padding:"3px 6px",borderRadius:4,border:`1px solid ${C.pri}40`,background:"none",fontSize:9,color:C.pri,cursor:"pointer",fontFamily:"inherit"}}>Editar</button>
-                      <button disabled={saving} onClick={()=>handleDeleteLot(l.id)} style={{padding:"3px 6px",borderRadius:4,border:`1px solid ${C.err}30`,background:"none",fontSize:9,color:saving?C.t3:C.err,cursor:saving?"not-allowed":"pointer",fontFamily:"inherit",opacity:saving?0.5:1}}>Eliminar</button>
+                      <button onClick={()=>openEditLot(l)} style={{padding:"3px 6px",borderRadius:4,border:`1px solid ${C.pri}40`,background:"none",fontSize:9.9,color:C.pri,cursor:"pointer",fontFamily:"inherit"}}>Editar</button>
+                      <button disabled={saving} onClick={()=>handleDeleteLot(l.id)} style={{padding:"3px 6px",borderRadius:4,border:`1px solid ${C.err}30`,background:"none",fontSize:9.9,color:saving?C.t3:C.err,cursor:saving?"not-allowed":"pointer",fontFamily:"inherit",opacity:saving?0.5:1}}>Eliminar</button>
                     </div>
                   </div>
                 </div>))}
-                {lots.length===0&&!showLotForm&&<div style={{textAlign:"center",padding:10,color:C.t3,fontSize:11}}>Sin lotes</div>}
+                {lots.length===0&&!showLotForm&&<div style={{textAlign:"center",padding:10,color:C.t3,fontSize:12.1}}>Sin lotes</div>}
               </div>
             )}
           </div>))}
-          {fields.length===0&&!showFieldForm&&<div style={{textAlign:"center",padding:20,color:C.t3,fontSize:12}}>Sin campos</div>}
+          {fields.length===0&&!showFieldForm&&<div style={{textAlign:"center",padding:20,color:C.t3,fontSize:13.2}}>Sin campos</div>}
         </>)}
 
         {/* ====== TAB: TRUCKS (Transporter) ====== */}
         {curTab==="trucks"&&isTransporter&&(<>
           <div style={{display:"flex",justifyContent:"flex-end",marginBottom:8}}>
-            <button onClick={()=>{showTruckForm?setShowTruckForm(false):openNewTruck();}} style={{padding:"6px 12px",borderRadius:6,border:`1px solid ${typeColors.transporter}`,background:`${typeColors.transporter}12`,color:typeColors.transporter,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>{showTruckForm&&!editTruckId?"Cancelar":"+ Nuevo vehículo"}</button>
+            <button onClick={()=>{showTruckForm?setShowTruckForm(false):openNewTruck();}} style={{padding:"6px 12px",borderRadius:6,border:`1px solid ${typeColors.transporter}`,background:`${typeColors.transporter}12`,color:typeColors.transporter,fontSize:12.1,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>{showTruckForm&&!editTruckId?"Cancelar":"+ Nuevo vehículo"}</button>
           </div>
           {showTruckForm && (
             <div style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius:10,padding:14,marginBottom:10,boxShadow:C.sh}}>
-              <div style={{fontSize:12,fontWeight:600,color:C.t1,marginBottom:8}}>{editTruckId?"Editar vehículo":"Nuevo vehículo"}</div>
+              <div style={{fontSize:13.2,fontWeight:600,color:C.t1,marginBottom:8}}>{editTruckId?"Editar vehículo":"Nuevo vehículo"}</div>
               <div style={s.lbl}>Patente *</div>
               <input value={truckForm.plate} onChange={e=>setTruckForm(p=>({...p,plate:e.target.value}))} placeholder="ABC-1234" style={{...s.inp,marginBottom:10,textTransform:"uppercase"}} />
               <div style={{display:"flex",gap:8,marginBottom:10}}>
@@ -596,7 +596,7 @@ export default function AdminScreen({ user, onBack }) {
               <div style={s.lbl}>Capacidad</div>
               <input value={truckForm.capacity} onChange={e=>setTruckForm(p=>({...p,capacity:e.target.value}))} placeholder="Ej: 30 ton" style={{...s.inp,marginBottom:10}} />
               <div style={{display:"flex",gap:8}}>
-                <button onClick={()=>setShowTruckForm(false)} style={{flex:1,padding:"10px 0",borderRadius:8,border:`1px solid ${C.b1}`,background:C.w,color:C.t2,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>Cancelar</button>
+                <button onClick={()=>setShowTruckForm(false)} style={{flex:1,padding:"10px 0",borderRadius:8,border:`1px solid ${C.b1}`,background:C.w,color:C.t2,fontSize:14.3,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>Cancelar</button>
                 <button onClick={handleSaveTruck} disabled={saving} style={{...s.btnP(typeColors.transporter,saving),flex:2}}>{saving?"Guardando...":(editTruckId?"Guardar":"Crear vehículo")}</button>
               </div>
             </div>
@@ -604,19 +604,19 @@ export default function AdminScreen({ user, onBack }) {
           {trucks.map(t=>(<div key={t.id} style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius:10,padding:"12px 14px",marginBottom:8,boxShadow:C.sh}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
               <div style={{flex:1}}>
-                <div style={{fontSize:14,fontWeight:700,color:C.t1,letterSpacing:1}}>{t.plate}</div>
-                <div style={{display:"flex",gap:8,fontSize:11,color:C.t3,marginTop:2}}>
+                <div style={{fontSize:15.4,fontWeight:700,color:C.t1,letterSpacing:1}}>{t.plate}</div>
+                <div style={{display:"flex",gap:8,fontSize:12.1,color:C.t3,marginTop:2}}>
                   {t.brand&&<span>{t.brand}</span>}{t.model&&<span>{t.model}</span>}{t.capacity&&<span>· {t.capacity}</span>}
                 </div>
-                {t.assignedUser&&<div style={{fontSize:10,color:C.t2,marginTop:1}}>Chofer: {t.assignedUser.name}</div>}
+                {t.assignedUser&&<div style={{fontSize:11,color:C.t2,marginTop:1}}>Chofer: {t.assignedUser.name}</div>}
               </div>
               <div style={{display:"flex",gap:4}}>
-                <button onClick={()=>openEditTruck(t)} style={{padding:"4px 8px",borderRadius:6,border:`1px solid ${C.pri}40`,background:"none",fontSize:10,color:C.pri,cursor:"pointer",fontFamily:"inherit"}}>Editar</button>
-                <button disabled={saving} onClick={()=>handleDeleteTruck(t.id)} style={{padding:"4px 8px",borderRadius:6,border:`1px solid ${C.err}30`,background:"none",fontSize:10,color:saving?C.t3:C.err,cursor:saving?"not-allowed":"pointer",fontFamily:"inherit",opacity:saving?0.5:1}}>Eliminar</button>
+                <button onClick={()=>openEditTruck(t)} style={{padding:"4px 8px",borderRadius:6,border:`1px solid ${C.pri}40`,background:"none",fontSize:11,color:C.pri,cursor:"pointer",fontFamily:"inherit"}}>Editar</button>
+                <button disabled={saving} onClick={()=>handleDeleteTruck(t.id)} style={{padding:"4px 8px",borderRadius:6,border:`1px solid ${C.err}30`,background:"none",fontSize:11,color:saving?C.t3:C.err,cursor:saving?"not-allowed":"pointer",fontFamily:"inherit",opacity:saving?0.5:1}}>Eliminar</button>
               </div>
             </div>
           </div>))}
-          {trucks.length===0&&!showTruckForm&&<div style={{textAlign:"center",padding:20,color:C.t3,fontSize:12}}>Sin vehículos</div>}
+          {trucks.length===0&&!showTruckForm&&<div style={{textAlign:"center",padding:20,color:C.t3,fontSize:13.2}}>Sin vehículos</div>}
         </>)}
 
         {/* ====== TAB: ACCESS ====== */}
@@ -633,15 +633,15 @@ export default function AdminScreen({ user, onBack }) {
       {(saving||doneMsg) && <LoadingOverlay closing={!!doneMsg} closingText={doneMsg} onClose={()=>setDoneMsg("")}/>}
       <div style={{position:"sticky",top:0,zIndex:10,background:C.bg,padding:"18px 18px 8px"}}>{adminBackBtn(onBack)}</div>
       <div style={{padding:"0 18px 18px"}}>
-      <div style={{fontSize:18,fontWeight:800,color:C.t1,marginBottom:4}}>Administración</div>
-      <div style={{fontSize:11,color:C.t3,marginBottom:14}}>{isPlatform?"Admin Principal — Control total":isManager?"Gerente — Tu empresa":""}</div>
+      <div style={{fontSize:19.8,fontWeight:800,color:C.t1,marginBottom:4}}>Administración</div>
+      <div style={{fontSize:12.1,color:C.t3,marginBottom:14}}>{isPlatform?"Admin Principal — Control total":isManager?"Gerente — Tu empresa":""}</div>
 
       {stats&&isPlatform&&(
         <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:14}}>
           {[{k:"companies",l:"Empresas",v:stats.companies,c:C.pri},{k:"branches",l:"Sucursales",v:stats.branches,c:C.info||"#3B82F6"},{k:"users",l:"Usuarios",v:stats.users,c:C.acc}].map(st=>(
             <button key={st.k} onClick={()=>handleStatsClick(st.k)} style={{background:C.w,border:`2px solid ${statsFilter===st.k?st.c:C.b1}`,borderRadius:8,padding:"10px 8px",textAlign:"center",boxShadow:statsFilter===st.k?`0 0 0 1px ${st.c}20`:C.sh,cursor:"pointer",fontFamily:"inherit",transition:"all 0.15s"}}>
-              <div style={{fontSize:20,fontWeight:800,color:st.c}}>{st.v}</div>
-              <div style={{fontSize:9,color:C.t3}}>{st.l}</div>
+              <div style={{fontSize:22,fontWeight:800,color:st.c}}>{st.v}</div>
+              <div style={{fontSize:9.9,color:C.t3}}>{st.l}</div>
             </button>
           ))}
         </div>
@@ -649,7 +649,7 @@ export default function AdminScreen({ user, onBack }) {
 
       <div style={{display:"flex",gap:6,marginBottom:10}}>
         {["companies","users","access"].map(t=>(
-          <button key={t} onClick={()=>{setTab(t);setSearch("");setStatsFilter(null);}} style={{flex:1,padding:"9px 0",borderRadius:8,border:`1px solid ${tab===t?C.pri:C.b1}`,background:tab===t?`${C.pri}12`:C.w,color:tab===t?C.pri:C.t2,fontWeight:600,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>
+          <button key={t} onClick={()=>{setTab(t);setSearch("");setStatsFilter(null);}} style={{flex:1,padding:"9px 0",borderRadius:8,border:`1px solid ${tab===t?C.pri:C.b1}`,background:tab===t?`${C.pri}12`:C.w,color:tab===t?C.pri:C.t2,fontWeight:600,fontSize:14.3,cursor:"pointer",fontFamily:"inherit"}}>
             {t==="companies"?"Empresas":t==="users"?"Usuarios":"Accesos"}
           </button>
         ))}
@@ -660,32 +660,32 @@ export default function AdminScreen({ user, onBack }) {
 
       {loading?<Loader/>:(<>
         {tab==="companies"&&(<>
-          {isPlatform&&<button onClick={openNewCompany} style={{width:"100%",padding:"10px 14px",borderRadius:8,border:`1px dashed ${C.pri}`,background:`${C.pri}08`,color:C.pri,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"inherit",marginBottom:8}}>+ Nueva Empresa</button>}
+          {isPlatform&&<button onClick={openNewCompany} style={{width:"100%",padding:"10px 14px",borderRadius:8,border:`1px dashed ${C.pri}`,background:`${C.pri}08`,color:C.pri,fontSize:14.3,fontWeight:600,cursor:"pointer",fontFamily:"inherit",marginBottom:8}}>+ Nueva Empresa</button>}
           <div style={{display:"flex",flexDirection:"column",gap:8}}>
             {companies.map(c=>(
               <div key={c.id} className="tv-card" style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius:10,padding:"12px 14px",boxShadow:C.sh}}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                   <div style={{flex:1,cursor:"pointer"}} onClick={()=>openCompanyDetail(c)}>
-                    <div style={{fontSize:14,fontWeight:700,color:C.t1}}>{c.name}</div>
-                    <div style={{fontSize:11,color:C.t3,marginTop:2}}>{c.email||""} {c.rut?`· RUT: ${c.rut}`:""}</div>
+                    <div style={{fontSize:15.4,fontWeight:700,color:C.t1}}>{c.name}</div>
+                    <div style={{fontSize:12.1,color:C.t3,marginTop:2}}>{c.email||""} {c.rut?`· RUT: ${c.rut}`:""}</div>
                   </div>
                   <div style={{display:"flex",gap:4,alignItems:"center"}}>
                     <Bd color={typeColors[c.type]}>{typeLabels[c.type]}</Bd>
-                    <div style={{fontSize:10,color:C.t3,background:C.bgInput,padding:"2px 6px",borderRadius:4}}>{c._count?.users||0} usr · {c._count?.branches||0} suc</div>
+                    <div style={{fontSize:11,color:C.t3,background:C.bgInput,padding:"2px 6px",borderRadius:4}}>{c._count?.users||0} usr · {c._count?.branches||0} suc</div>
                     <button onClick={()=>openEditCompany(c)} title="Editar" style={{background:"none",border:"none",cursor:"pointer",padding:2,display:"flex"}}>{Ic.doc(C.pri,14)}</button>
                     <button onClick={()=>openCompanyDetail(c)} title="Ver" style={{background:"none",border:"none",cursor:"pointer",padding:2,display:"flex"}}>{Ic.chev(C.t3,14)}</button>
                   </div>
                 </div>
               </div>
             ))}
-            {companies.length===0&&<div style={{textAlign:"center",padding:32,color:C.t3,fontSize:13}}>No se encontraron empresas</div>}
+            {companies.length===0&&<div style={{textAlign:"center",padding:32,color:C.t3,fontSize:14.3}}>No se encontraron empresas</div>}
           </div>
         </>)}
 
         {tab==="access"&&<AccessScreen user={user} embedded/>}
 
         {tab==="users"&&(<>
-          <button onClick={openNewUser} style={{width:"100%",padding:"10px 14px",borderRadius:8,border:`1px dashed ${C.acc}`,background:`${C.acc}08`,color:C.acc,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"inherit",marginBottom:8}}>+ Nuevo Usuario</button>
+          <button onClick={openNewUser} style={{width:"100%",padding:"10px 14px",borderRadius:8,border:`1px dashed ${C.acc}`,background:`${C.acc}08`,color:C.acc,fontSize:14.3,fontWeight:600,cursor:"pointer",fontFamily:"inherit",marginBottom:8}}>+ Nuevo Usuario</button>
           <div style={{display:"flex",flexDirection:"column",gap:8}}>
             {users.map(u=>{
               const cbt = u.companyByType && typeof u.companyByType === "object" ? u.companyByType : {};
@@ -695,9 +695,9 @@ export default function AdminScreen({ user, onBack }) {
               <div key={u.id} className="tv-card" style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius:10,padding:"12px 14px",boxShadow:C.sh,cursor:"pointer"}} onClick={()=>openEditUser(u)}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
                   <div>
-                    <div style={{fontSize:14,fontWeight:700,color:C.t1}}>{u.name}</div>
-                    <div style={{fontSize:11.5,color:C.t2,marginTop:1}}>{u.email}</div>
-                    {u.phone&&<div style={{fontSize:11,color:C.t3}}>{u.phone}</div>}
+                    <div style={{fontSize:15.4,fontWeight:700,color:C.t1}}>{u.name}</div>
+                    <div style={{fontSize:12.7,color:C.t2,marginTop:1}}>{u.email}</div>
+                    {u.phone&&<div style={{fontSize:12.1,color:C.t3}}>{u.phone}</div>}
                   </div>
                   <div style={{display:"flex",gap:4,flexWrap:"wrap",justifyContent:"flex-end"}}>
                     <Bd color={u.active?C.ok:C.err}>{u.active?"Activo":"Inactivo"}</Bd>
@@ -709,15 +709,15 @@ export default function AdminScreen({ user, onBack }) {
                     const role = rbt[t] || u.role || "operator";
                     return <Bd key={t} color={typeColors[t]}>{typeLabels[t]} · {roleLabels[role]||role}</Bd>;
                   })}
-                  {(u.userTypes||[]).length===0&&<span style={{fontSize:10,color:C.t3}}>Sin tipo</span>}
+                  {(u.userTypes||[]).length===0&&<span style={{fontSize:11,color:C.t3}}>Sin tipo</span>}
                 </div>
                 <div style={{display:"flex",alignItems:"center",gap:6,marginTop:6,paddingTop:6,borderTop:`1px solid ${C.b2}`,flexWrap:"wrap"}}>
-                  {assignedCompanies.length>0 ? assignedCompanies.map(([type,cId])=>{const comp=allCompanies.find(c=>c.id===cId); return comp?<Bd key={type} color={typeColors[type]}>{comp.name}</Bd>:null;}) : u.company ? <Bd color={typeColors[u.company.type]}>{u.company.name}</Bd> : <span style={{fontSize:11,color:C.t3}}>Sin empresa</span>}
+                  {assignedCompanies.length>0 ? assignedCompanies.map(([type,cId])=>{const comp=allCompanies.find(c=>c.id===cId); return comp?<Bd key={type} color={typeColors[type]}>{comp.name}</Bd>:null;}) : u.company ? <Bd color={typeColors[u.company.type]}>{u.company.name}</Bd> : <span style={{fontSize:12.1,color:C.t3}}>Sin empresa</span>}
                   <span style={{marginLeft:"auto",display:"flex"}}>{Ic.chev(C.t3,14)}</span>
                 </div>
               </div>
             );})}
-            {users.length===0&&<div style={{textAlign:"center",padding:32,color:C.t3,fontSize:13}}>No se encontraron usuarios</div>}
+            {users.length===0&&<div style={{textAlign:"center",padding:32,color:C.t3,fontSize:14.3}}>No se encontraron usuarios</div>}
           </div>
         </>)}
       </>)}
