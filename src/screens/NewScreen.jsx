@@ -285,7 +285,8 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
     setErrs(e);
     if(!ok || Object.keys(e).filter(k=>e[k]).length>0) {
       setShowIncomplete(true);
-      const first=SEC_ORDER.find(s=>!secComplete[s]);
+      const fullFlow=["product","quantity","origin"]; if(showTruckSelect)fullFlow.push("ownfleet"); fullFlow.push("destination","schedule");
+      const first=fullFlow.find(s=>s==="ownfleet"?(showTruckSelect&&!form.fleetChoice):!secComplete[s]);
       if(first){
         setActiveSection(first);
         // Wait for React to re-render the expanded section before scrolling
@@ -373,7 +374,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
           open={true}
           title={{product:"Producto",quantity:"Cantidad",origin:"Origen",ownfleet:"Transporte",destination:"Destino",schedule:"Fecha y hora"}[activeSection]||""}
           summary={secSummary[activeSection]||undefined}
-          onClose={()=>{ const idx=SEC_ORDER.indexOf(activeSection); if(idx>0)setActiveSection(SEC_ORDER[idx-1]); }}
+          onClose={()=>{ const flow=["product","quantity","origin"]; if(showTruckSelect)flow.push("ownfleet"); flow.push("destination","schedule"); const idx=flow.indexOf(activeSection); if(idx>0)setActiveSection(flow[idx-1]); }}
           stepIndex={(()=>{ const flow=["product","quantity","origin"]; if(showTruckSelect)flow.push("ownfleet"); flow.push("destination","schedule"); return flow.indexOf(activeSection)+1; })()}
           totalSteps={showTruckSelect?6:5}
         >

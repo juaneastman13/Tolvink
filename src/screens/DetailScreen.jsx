@@ -380,26 +380,33 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
             const tripBtns = getTripActions(a);
             return (
               <div key={a.id} style={{ border:`1px solid ${tst.color}30`, borderLeft:`3px solid ${tst.color}`, borderRadius:10, marginBottom:8, overflow:"hidden" }}>
-                <div onClick={()=>setExpandedTrip(isExpanded?null:a.id)} style={{ display:"flex", alignItems:"center", gap:8, padding:"10px 12px", cursor:"pointer", background:isExpanded?`${tst.color}06`:"transparent", flexWrap:"wrap" }}>
-                  <span style={{ fontSize:12, fontWeight:800, color:tst.color }}>#{a.tripNumber}</span>
-                  <span style={{ fontSize:12, fontWeight:600, color:C.t1, flex:1, minWidth:0 }}>
-                    <span style={{ display:"block", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{a.plate || "Sin camión"}{a.transporterName ? ` · ${a.transporterName}` : ""}</span>
-                    {a.driverName && <span style={{ display:"block", fontSize:10.5, fontWeight:400, color:C.t3, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{a.driverName}</span>}
-                  </span>
-                  <Bd color={tst.color} bg={tst.bg} small>{tst.label}</Bd>
-                  {/* Edit button for plant on trips they assigned (not own-fleet), before started */}
-                  {user.userType === "plant" && (a.tripStatus === "pending" || a.tripStatus === "accepted") && a.transportCompanyId !== freight.originCompanyId && onEditTrip && (
-                    <button onClick={(e)=>{e.stopPropagation(); onEditTrip(freight.id, a);}} style={{ padding:"4px 8px", borderRadius:6, border:`1px solid ${C.b1}`, background:C.w, color:C.t2, fontSize:10, fontWeight:600, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:3 }}>
-                      {Ic.doc(C.t2,12)} Editar
-                    </button>
+                <div onClick={()=>setExpandedTrip(isExpanded?null:a.id)} style={{ padding:"10px 12px", cursor:"pointer", background:isExpanded?`${tst.color}06`:"transparent" }}>
+                  {/* Row 1: trip number, truck info, status, chevron */}
+                  <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                    <span style={{ fontSize:12, fontWeight:800, color:tst.color }}>#{a.tripNumber}</span>
+                    <span style={{ fontSize:12, fontWeight:600, color:C.t1, flex:1, minWidth:0 }}>
+                      <span style={{ display:"block", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{a.plate || "Sin camión"}{a.transporterName ? ` · ${a.transporterName}` : ""}</span>
+                      {a.driverName && <span style={{ display:"block", fontSize:10.5, fontWeight:400, color:C.t3, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{a.driverName}</span>}
+                    </span>
+                    <Bd color={tst.color} bg={tst.bg} small>{tst.label}</Bd>
+                    <span style={{ display:"flex", transform:isExpanded?"rotate(-90deg)":"rotate(0deg)", transition:"transform 0.15s", flexShrink:0 }}>{Ic.chev(C.t3,14)}</span>
+                  </div>
+                  {/* Row 2: action buttons (always visible when not expanded) */}
+                  {!isExpanded && tripBtns.length > 0 && (
+                    <div style={{ display:"flex", gap:6, marginTop:8, flexWrap:"wrap" }}>
+                      {tripBtns.map(b => (
+                        <button key={b.key} disabled={actionLoading} onClick={(e)=>{e.stopPropagation(); onTripAction && onTripAction(freight.id, a.id, b.key);}} style={{ flex:"1 1 auto", padding:"8px 12px", minHeight:36, borderRadius:8, border:"none", background:b.color, color:C.w, fontSize:11, fontWeight:700, cursor:actionLoading?"not-allowed":"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:5, opacity:actionLoading?0.6:1 }}>
+                          {b.icon} {actionLoading?"...":b.label}
+                        </button>
+                      ))}
+                      {/* Edit button for plant on trips they assigned (not own-fleet), before started */}
+                      {user.userType === "plant" && (a.tripStatus === "pending" || a.tripStatus === "accepted") && a.transportCompanyId !== freight.originCompanyId && onEditTrip && (
+                        <button onClick={(e)=>{e.stopPropagation(); onEditTrip(freight.id, a);}} style={{ padding:"8px 12px", minHeight:36, borderRadius:8, border:`1px solid ${C.b1}`, background:C.w, color:C.t2, fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:4 }}>
+                          {Ic.doc(C.t2,12)} Editar
+                        </button>
+                      )}
+                    </div>
                   )}
-                  {/* Inline action buttons (visible only when NOT expanded) */}
-                  {!isExpanded && tripBtns.length > 0 && tripBtns.map(b => (
-                    <button key={b.key} disabled={actionLoading} onClick={(e)=>{e.stopPropagation(); onTripAction && onTripAction(freight.id, a.id, b.key);}} style={{ padding:"5px 10px", borderRadius:6, border:"none", background:b.color, color:C.w, fontSize:10.5, fontWeight:700, cursor:actionLoading?"not-allowed":"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:4, opacity:actionLoading?0.6:1 }}>
-                      {b.icon} {actionLoading?"...":b.label}
-                    </button>
-                  ))}
-                  <span style={{ display:"flex", transform:isExpanded?"rotate(-90deg)":"rotate(0deg)", transition:"transform 0.15s" }}>{Ic.chev(C.t3,14)}</span>
                 </div>
                 {isExpanded && (
                   <div style={{ padding:"8px 12px 12px", borderTop:`1px solid ${C.b2}` }}>
