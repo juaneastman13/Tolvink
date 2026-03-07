@@ -365,7 +365,7 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
   const handleFileUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file || !activeConv) return;
-    if (file.size > 15 * 1024 * 1024) { useUIStore.getState().show("Máximo 15MB", "error"); return; }
+    if (file.size > 15 * 1024 * 1024) { useUIStore.getState().show("Máximo 15MB", "err"); return; }
     e.target.value = "";
     setUploading(true);
     try {
@@ -604,7 +604,7 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
                         {fileData ? (
                           fileData.type === "image" && fileData.url ? (
                             <button onClick={()=>setViewFile({url:fileData.url,name:fileData.name,type:"image"})} style={{ background:"none", border:"none", cursor:"pointer", padding:0 }}>
-                              <img src={fileData.url} alt={fileData.name} loading="lazy" style={{ maxWidth: 220, maxHeight: 200, borderRadius: 10, display: "block" }} />
+                              <img src={fileData.url} alt={fileData.name} loading="lazy" style={{ maxWidth: "min(220px, 70vw)", maxHeight: 200, borderRadius: 10, display: "block" }} />
                             </button>
                           ) : (
                             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -625,7 +625,7 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
                             <div style={{ flex: 1 }}>{renderTextWithMentions(m.text, mine)}</div>
                             {!fileData && (
                               <button onClick={() => copyMessageText(m.text, m.id)} title="Copiar" style={{ background: mine ? "rgba(255,255,255,0.2)" : C.bg, border: "none", borderRadius: 4, padding: "2px 4px", cursor: "pointer", fontSize: 9, color: mine ? "#fff" : C.t2, opacity: copiedMsgId === m.id ? 1 : 0.5, transition: "opacity 0.2s" }}>
-                              {copiedMsgId === m.id ? "✓" : "⎘"}
+                              {copiedMsgId === m.id ? Ic.chk(mine ? "#fff" : C.pri, 10) : Ic.doc(mine ? "#fff" : C.t2, 10)}
                             </button>
                             )}
                           </div>
@@ -635,11 +635,11 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
                         <span title={new Date(m.createdAt).toLocaleString("es")}>
                           {new Date(m.createdAt).toLocaleTimeString("es", { hour: "2-digit", minute: "2-digit" })}
                         </span>
-                        {mine && m.status === 'pending' && <span style={{ fontSize: 9, opacity: 0.5 }} title="Enviando">⏱</span>}
-                        {mine && (!m.status || m.status === 'sent') && <span style={{ fontSize: 9, color: C.t3 }} title="Enviado">✓</span>}
+                        {mine && m.status === 'pending' && <span style={{ display: "inline-flex", opacity: 0.5 }} title="Enviando">{Ic.clk(C.t3, 10)}</span>}
+                        {mine && (!m.status || m.status === 'sent') && <span style={{ display: "inline-flex", color: C.t3 }} title="Enviado">{Ic.chk(C.t3, 10)}</span>}
                         {mine && m.status === 'failed' && (
                           <button onClick={() => retryFailedMessage(m)} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 2, padding: 0, color: C.err, fontSize: 9, fontWeight: 600 }}>
-                            ❌ Reintentar
+                            {Ic.cross(C.err, 10)} Reintentar
                           </button>
                         )}
                       </div>
@@ -662,7 +662,7 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
               <div style={{ padding: "8px 18px", background: C.accPale, borderTop: `1px solid ${C.acc}20`, display: "flex", alignItems: "center", gap: 8 }}>
                 <div style={{ width: 16, height: 16, border: `2px solid ${C.acc}`, borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
                 <span style={{ fontSize: 11, color: C.acc, fontWeight: 600 }}>Subiendo archivo...</span>
-                <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+                <style>{`@keyframes spin{to{transform:rotate(360deg)}}@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}`}</style>
               </div>
             )}
 
@@ -796,7 +796,7 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
                 {/* Action buttons */}
                 <div style={{ position: "absolute", top: 8, right: 8, display: "flex", gap: 4 }}>
                   <button onClick={(e) => handleToggleMarkUnread(c.id, e)} title={c.markedUnread ? "Marcar como leída" : "Marcar como no leída"} style={{ background: c.markedUnread ? C.accPale : C.bg, border: `1px solid ${c.markedUnread ? C.acc : C.b1}`, borderRadius: 6, padding: "4px 6px", cursor: "pointer", fontSize: 10, display: "flex", alignItems: "center", opacity: 0.8 }}>
-                    {c.markedUnread ? "✉️" : "📧"}
+                    {c.markedUnread ? Ic.mail(C.acc, 12) : Ic.mail(C.t3, 12)}
                   </button>
                 </div>
               </div>

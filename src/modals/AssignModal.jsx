@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { C, Ic } from "../theme";
 import { Btn, Field, ModalOverlay } from "../components";
 import { apiGetTrucks, apiCreateTruck, apiGetDrivers, apiCreateDriver } from "../api";
@@ -8,7 +8,7 @@ function StepDone({ label, value, sub, onEdit }) {
   return (
     <div style={{ display:"flex", alignItems:"center", gap:10, padding:"9px 12px", borderRadius:10, border:`1px solid ${C.b1}`, background:C.bg, marginBottom:10 }}>
       <div style={{ flex:1, minWidth:0 }}>
-        <div style={{ fontSize:9.5, fontWeight:700, color:C.t3, textTransform:"uppercase", letterSpacing:0.4 }}>{label}</div>
+        <div style={{ fontSize:10, fontWeight:700, color:C.t3, textTransform:"uppercase", letterSpacing:0.4 }}>{label}</div>
         <div style={{ fontSize:13, fontWeight:600, color:C.t1, marginTop:1 }}>{value}</div>
         {sub && <div style={{ fontSize:10.5, color:C.t3, marginTop:1 }}>{sub}</div>}
       </div>
@@ -61,19 +61,19 @@ export default function AssignModal({ freight, transporters, user, onClose, onCo
   // Max trips you can still add
   const remainingSlots = Math.max(0, needed - truckList.length);
 
-  const loadTrucks = (compId)=>{
+  const loadTrucks = useCallback((compId)=>{
     const cid = compId || (mode==="own"?ownFleetCompanyId:t);
     if(!cid) return;
     setLoadingTrucks(true);
     apiGetTrucks(cid).then(r=>{ setTrucks((r||[]).filter(t=>t.active!==false)); }).catch(()=>setTrucks([])).finally(()=>setLoadingTrucks(false));
-  };
-  const loadDriversFn = (compId)=>{
+  },[mode,ownFleetCompanyId,t]);
+  const loadDriversFn = useCallback((compId)=>{
     const cid = compId || (mode==="own"?ownFleetCompanyId:t);
     if(!cid) return;
     setLoadingDrivers(true);
     apiGetDrivers(cid).then(r=>{ setDrivers(r||[]); }).catch(()=>setDrivers([])).finally(()=>setLoadingDrivers(false));
-  };
-  useEffect(()=>{ if(mode==="own"){ loadTrucks(ownFleetCompanyId); loadDriversFn(ownFleetCompanyId); } },[mode,ownFleetCompanyId]);
+  },[mode,ownFleetCompanyId,t]);
+  useEffect(()=>{ if(mode==="own"){ loadTrucks(ownFleetCompanyId); loadDriversFn(ownFleetCompanyId); } },[mode,ownFleetCompanyId,loadTrucks,loadDriversFn]);
 
   // Reset tripCount when company changes
   useEffect(()=>{ setTripCount(1); },[t, mode]);
@@ -225,7 +225,7 @@ export default function AssignModal({ freight, transporters, user, onClose, onCo
                   <div style={{ width:20, height:20, borderRadius:10, background:s.done?C.pri:C.b1, display:"flex", alignItems:"center", justifyContent:"center", transition:"background 0.2s" }}>
                     {s.done ? Ic.chk(C.w, 12) : <span style={{ fontSize:10, fontWeight:700, color:C.t3 }}>{i+1}</span>}
                   </div>
-                  <span style={{ fontSize:8.5, fontWeight:600, color:s.done?C.pri:C.t3, whiteSpace:"nowrap" }}>{s.l}</span>
+                  <span style={{ fontSize:10, fontWeight:600, color:s.done?C.pri:C.t3, whiteSpace:"nowrap" }}>{s.l}</span>
                 </div>
                 {i < steps.length-1 && <div style={{ flex:1, height:2, background:s.done?C.pri:C.b1, margin:"0 4px", marginBottom:14, transition:"background 0.2s" }}/>}
               </div>
@@ -348,7 +348,7 @@ export default function AssignModal({ freight, transporters, user, onClose, onCo
                 <Field label="Modelo (opcional)" value={newModel} onChange={setNewModel} placeholder="Ej: Scania R500"/>
                 {truckErr && <div style={{fontSize:11,color:C.err,fontWeight:600,marginTop:6}}>{truckErr}</div>}
                 <div style={{display:"flex",gap:6,marginTop:10}}>
-                  <button onClick={()=>{setShowNewTruck(false);setNewPlate("");setNewModel("");setTruckErr("");}} style={{flex:1,padding:"8px 0",borderRadius:8,border:`1px solid ${C.b1}`,background:C.w,color:C.t2,fontSize:11.5,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>Cancelar</button>
+                  <button onClick={()=>{setShowNewTruck(false);setNewPlate("");setNewModel("");setTruckErr("");}} style={{flex:1,padding:"10px 0",minHeight:38,borderRadius:8,border:`1px solid ${C.b1}`,background:C.w,color:C.t2,fontSize:11.5,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>Cancelar</button>
                   <button disabled={savingTruck} onClick={handleCreateTruck} style={{flex:1,padding:"8px 0",borderRadius:8,border:"none",background:C.acc,color:C.w,fontSize:11.5,fontWeight:600,cursor:savingTruck?"not-allowed":"pointer",fontFamily:"inherit",opacity:savingTruck?0.6:1}}>{savingTruck?"Guardando...":"Registrar"}</button>
                 </div>
               </div>
@@ -392,7 +392,7 @@ export default function AssignModal({ freight, transporters, user, onClose, onCo
                   <Field label="Teléfono (opcional)" value={newDriverPhone} onChange={setNewDriverPhone} placeholder="Ej: 099123456"/>
                   {driverErr && <div style={{fontSize:11,color:C.err,fontWeight:600,marginTop:6}}>{driverErr}</div>}
                   <div style={{display:"flex",gap:6,marginTop:10}}>
-                    <button onClick={()=>{setShowNewDriver(false);setNewDriverName("");setNewDriverPhone("");setDriverErr("");}} style={{flex:1,padding:"8px 0",borderRadius:8,border:`1px solid ${C.b1}`,background:C.w,color:C.t2,fontSize:11.5,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>Cancelar</button>
+                    <button onClick={()=>{setShowNewDriver(false);setNewDriverName("");setNewDriverPhone("");setDriverErr("");}} style={{flex:1,padding:"10px 0",minHeight:38,borderRadius:8,border:`1px solid ${C.b1}`,background:C.w,color:C.t2,fontSize:11.5,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>Cancelar</button>
                     <button disabled={savingDriver} onClick={handleCreateDriver} style={{flex:1,padding:"8px 0",borderRadius:8,border:"none",background:C.info,color:C.w,fontSize:11.5,fontWeight:600,cursor:savingDriver?"not-allowed":"pointer",fontFamily:"inherit",opacity:savingDriver?0.6:1}}>{savingDriver?"Guardando...":"Registrar"}</button>
                   </div>
                 </div>

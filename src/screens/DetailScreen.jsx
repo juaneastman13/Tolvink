@@ -201,7 +201,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
 
       {/* Queue banner for chofer */}
       {isChoferQueued && <div style={{ background:`${C.info}10`, border:`1.5px solid ${C.info}30`, borderRadius:12, padding:"12px 16px", marginBottom:12, display:"flex", alignItems:"center", gap:10 }}>
-        <span style={{ fontSize:20 }}>{"\u23F3"}</span>
+        <span style={{ display:"flex" }}>{Ic.clk(C.info,20)}</span>
         <div>
           <div style={{ fontSize:13, fontWeight:700, color:C.info }}>En cola #{freight.queuePosition}</div>
           <div style={{ fontSize:11, color:C.t2 }}>Debés completar los fletes anteriores primero</div>
@@ -210,7 +210,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
 
       {freight.status === "pending_assignment" && user.userType === "producer" && freight.useOwnFleet === false && (
         <div style={{ background:`${C.info}10`, border:`1.5px solid ${C.info}30`, borderRadius:12, padding:"12px 16px", marginBottom:12, display:"flex", alignItems:"center", gap:10 }}>
-          <span style={{ fontSize:20 }}>{"\u23F3"}</span>
+          <span style={{ display:"flex" }}>{Ic.clk(C.info,20)}</span>
           <div>
             <div style={{ fontSize:13, fontWeight:700, color:C.info }}>Pendiente de asignación por planta</div>
             <div style={{ fontSize:11, color:C.t2 }}>La planta de destino asignará el transportista</div>
@@ -332,12 +332,12 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
                         <div key={entry.id} style={{ display:"flex", gap:5, marginBottom:8, alignItems:"flex-start" }}>
                           <div style={{ width:7, height:7, borderRadius:4, background:acCol, flexShrink:0, marginTop:3 }} />
                           <div style={{ minWidth:0 }}>
-                            <div style={{ fontSize:9.5, fontWeight:700, color:acCol, lineHeight:1.3 }}>{actionLabels[entry.action]||entry.action}{tn ? ` · ${tn}` : ""}</div>
-                            <div style={{ fontSize:9.5, color:C.t2, marginTop:1, lineHeight:1.3, wordBreak:"break-word" }}>{entry.user?.name||"Sistema"}</div>
-                            {entry.user?.company?.name && <div style={{ fontSize:9, color:C.t3, lineHeight:1.2 }}>{entry.user.company.name}</div>}
-                            {(entry.reason || entry.metadata?.reason) && <div style={{ fontSize:8.5, color:C.t3, fontStyle:"italic", marginTop:1 }}>"{entry.reason||entry.metadata.reason}"</div>}
-                            {entry.metadata?.confirmedBy && <div style={{ fontSize:8.5, color:C.t3, marginTop:1 }}>por {entry.metadata.confirmedBy==="transporter"?"transportista":entry.metadata.confirmedBy==="producer"?"productor":entry.metadata.confirmedBy==="plant"?"planta":entry.metadata.confirmedBy}</div>}
-                            <div style={{ fontSize:8.5, color:C.t3, marginTop:1 }}>{fmtD(entry.createdAt)}</div>
+                            <div style={{ fontSize:10.5, fontWeight:700, color:acCol, lineHeight:1.3 }}>{actionLabels[entry.action]||entry.action}{tn ? ` · ${tn}` : ""}</div>
+                            <div style={{ fontSize:10, color:C.t2, marginTop:1, lineHeight:1.3, wordBreak:"break-word" }}>{entry.user?.name||"Sistema"}</div>
+                            {entry.user?.company?.name && <div style={{ fontSize:9.5, color:C.t3, lineHeight:1.2 }}>{entry.user.company.name}</div>}
+                            {(entry.reason || entry.metadata?.reason) && <div style={{ fontSize:9.5, color:C.t3, fontStyle:"italic", marginTop:1 }}>"{entry.reason||entry.metadata.reason}"</div>}
+                            {entry.metadata?.confirmedBy && <div style={{ fontSize:9.5, color:C.t3, marginTop:1 }}>por {entry.metadata.confirmedBy==="transporter"?"transportista":entry.metadata.confirmedBy==="producer"?"productor":entry.metadata.confirmedBy==="plant"?"planta":entry.metadata.confirmedBy}</div>}
+                            <div style={{ fontSize:9.5, color:C.t3, marginTop:1 }}>{fmtD(entry.createdAt)}</div>
                           </div>
                         </div>
                       );
@@ -346,10 +346,10 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
                       <div key={a.id} style={{ display:"flex", gap:5, marginBottom:8, alignItems:"flex-start" }}>
                         <div style={{ width:7, height:7, borderRadius:4, background:col, flexShrink:0, marginTop:3 }} />
                         <div style={{ minWidth:0 }}>
-                          <div style={{ fontSize:9, fontWeight:700, color:C.t1 }}>Viaje #{a.tripNumber}</div>
-                          {a.plate && <div style={{ fontSize:9.5, color:C.t2, marginTop:1, lineHeight:1.3 }}>{a.plate}{a.truckModel?` · ${a.truckModel}`:""}</div>}
-                          {a.transporterName && <div style={{ fontSize:9, color:C.t3, lineHeight:1.2 }}>{a.transporterName}</div>}
-                          {a.driverName && <div style={{ fontSize:9, color:C.t3, lineHeight:1.2 }}>{a.driverName}</div>}
+                          <div style={{ fontSize:10, fontWeight:700, color:C.t1 }}>Viaje #{a.tripNumber}</div>
+                          {a.plate && <div style={{ fontSize:10, color:C.t2, marginTop:1, lineHeight:1.3 }}>{a.plate}{a.truckModel?` · ${a.truckModel}`:""}</div>}
+                          {a.transporterName && <div style={{ fontSize:9.5, color:C.t3, lineHeight:1.2 }}>{a.transporterName}</div>}
+                          {a.driverName && <div style={{ fontSize:9.5, color:C.t3, lineHeight:1.2 }}>{a.driverName}</div>}
                         </div>
                       </div>
                     ))}
@@ -382,8 +382,9 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
               <div key={a.id} style={{ border:`1px solid ${tst.color}30`, borderLeft:`3px solid ${tst.color}`, borderRadius:10, marginBottom:8, overflow:"hidden" }}>
                 <div onClick={()=>setExpandedTrip(isExpanded?null:a.id)} style={{ display:"flex", alignItems:"center", gap:8, padding:"10px 12px", cursor:"pointer", background:isExpanded?`${tst.color}06`:"transparent", flexWrap:"wrap" }}>
                   <span style={{ fontSize:12, fontWeight:800, color:tst.color }}>#{a.tripNumber}</span>
-                  <span style={{ fontSize:12, fontWeight:600, color:C.t1, flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", minWidth:0 }}>
-                    {a.plate || "Sin camión"}{a.transporterName ? ` · ${a.transporterName}` : ""}{a.driverName ? ` · ${a.driverName}` : ""}
+                  <span style={{ fontSize:12, fontWeight:600, color:C.t1, flex:1, minWidth:0 }}>
+                    <span style={{ display:"block", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{a.plate || "Sin camión"}{a.transporterName ? ` · ${a.transporterName}` : ""}</span>
+                    {a.driverName && <span style={{ display:"block", fontSize:10.5, fontWeight:400, color:C.t3, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{a.driverName}</span>}
                   </span>
                   <Bd color={tst.color} bg={tst.bg} small>{tst.label}</Bd>
                   {/* Edit button for plant on trips they assigned (not own-fleet), before started */}
@@ -412,11 +413,11 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
                         <div style={{ display:"flex", gap:12, marginTop:6 }}>
                           <div>
                             <span style={{ fontSize:9, fontWeight:700, color:C.t3, textTransform:"uppercase" }}>Carga: </span>
-                            <span style={{ fontSize:10 }}>{a.transporterLoadedConfirmedAt ? "\u2705 Transp." : "\u23F3 Transp."} {a.producerLoadedConfirmedAt ? "\u2705 Prod." : "\u23F3 Prod."}</span>
+                            <span style={{ fontSize:10, display:"inline-flex", alignItems:"center", gap:3 }}>{a.transporterLoadedConfirmedAt ? Ic.chk(C.ok,11) : Ic.clk(C.acc,11)} <span>Transp.</span> {a.producerLoadedConfirmedAt ? Ic.chk(C.ok,11) : Ic.clk(C.acc,11)} <span>Prod.</span></span>
                           </div>
                           {a.tripStatus === "loaded" && <div>
                             <span style={{ fontSize:9, fontWeight:700, color:C.t3, textTransform:"uppercase" }}>Entrega: </span>
-                            <span style={{ fontSize:10 }}>{a.transporterFinishedConfirmedAt ? "\u2705 Transp." : "\u23F3 Transp."} {a.plantFinishedConfirmedAt ? "\u2705 Planta" : "\u23F3 Planta"}</span>
+                            <span style={{ fontSize:10, display:"inline-flex", alignItems:"center", gap:3 }}>{a.transporterFinishedConfirmedAt ? Ic.chk(C.ok,11) : Ic.clk(C.acc,11)} <span>Transp.</span> {a.plantFinishedConfirmedAt ? Ic.chk(C.ok,11) : Ic.clk(C.acc,11)} <span>Planta</span></span>
                           </div>}
                         </div>
                       )}
@@ -425,7 +426,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
                     {tripBtns.length > 0 && (
                       <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
                         {tripBtns.map(b => (
-                          <button key={b.key} disabled={actionLoading} onClick={()=>onTripAction && onTripAction(freight.id, a.id, b.key)} style={{ flex:"1 1 auto", padding:"8px 12px", borderRadius:8, border:"none", background:b.color, color:C.w, fontSize:11.5, fontWeight:700, cursor:actionLoading?"not-allowed":"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:6, opacity:actionLoading?0.6:1 }}>
+                          <button key={b.key} disabled={actionLoading} onClick={()=>onTripAction && onTripAction(freight.id, a.id, b.key)} style={{ flex:"1 1 auto", padding:"10px 12px", minWidth:80, minHeight:40, borderRadius:8, border:"none", background:b.color, color:C.w, fontSize:11.5, fontWeight:700, cursor:actionLoading?"not-allowed":"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:6, opacity:actionLoading?0.6:1 }}>
                             {b.icon} {actionLoading?"...":b.label}
                           </button>
                         ))}
@@ -455,13 +456,13 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
               <div style={{display:"flex",flexDirection:"column",gap:6}}>
                 <div style={{display:"flex",alignItems:"center",gap:6,fontSize:11.5}}>
                   <span style={{width:18,height:18,borderRadius:9,display:"inline-flex",alignItems:"center",justifyContent:"center",background:freight.transporterLoadedConfirmedAt?C.okPale:C.accPale,flexShrink:0}}>
-                    {freight.transporterLoadedConfirmedAt ? Ic.chk(C.ok,12) : <span style={{fontSize:10,color:C.acc}}>{"\u23F3"}</span>}
+                    {freight.transporterLoadedConfirmedAt ? Ic.chk(C.ok,12) : Ic.clk(C.acc,11)}
                   </span>
                   <span style={{color:freight.transporterLoadedConfirmedAt?C.ok:C.t2,fontWeight:freight.transporterLoadedConfirmedAt?600:400}}>Transportista</span>
                 </div>
                 <div style={{display:"flex",alignItems:"center",gap:6,fontSize:11.5}}>
                   <span style={{width:18,height:18,borderRadius:9,display:"inline-flex",alignItems:"center",justifyContent:"center",background:freight.producerLoadedConfirmedAt?C.okPale:C.accPale,flexShrink:0}}>
-                    {freight.producerLoadedConfirmedAt ? Ic.chk(C.ok,12) : <span style={{fontSize:10,color:C.acc}}>{"\u23F3"}</span>}
+                    {freight.producerLoadedConfirmedAt ? Ic.chk(C.ok,12) : Ic.clk(C.acc,11)}
                   </span>
                   <span style={{color:freight.producerLoadedConfirmedAt?C.ok:C.t2,fontWeight:freight.producerLoadedConfirmedAt?600:400}}>Productor</span>
                 </div>
@@ -473,13 +474,13 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
               <div style={{display:"flex",flexDirection:"column",gap:6}}>
                 <div style={{display:"flex",alignItems:"center",gap:6,fontSize:11.5}}>
                   <span style={{width:18,height:18,borderRadius:9,display:"inline-flex",alignItems:"center",justifyContent:"center",background:freight.transporterFinishedConfirmedAt?C.okPale:C.accPale,flexShrink:0}}>
-                    {freight.transporterFinishedConfirmedAt ? Ic.chk(C.ok,12) : <span style={{fontSize:10,color:C.acc}}>{"\u23F3"}</span>}
+                    {freight.transporterFinishedConfirmedAt ? Ic.chk(C.ok,12) : Ic.clk(C.acc,11)}
                   </span>
                   <span style={{color:freight.transporterFinishedConfirmedAt?C.ok:C.t2,fontWeight:freight.transporterFinishedConfirmedAt?600:400}}>Transportista</span>
                 </div>
                 <div style={{display:"flex",alignItems:"center",gap:6,fontSize:11.5}}>
                   <span style={{width:18,height:18,borderRadius:9,display:"inline-flex",alignItems:"center",justifyContent:"center",background:freight.plantFinishedConfirmedAt?C.okPale:C.accPale,flexShrink:0}}>
-                    {freight.plantFinishedConfirmedAt ? Ic.chk(C.ok,12) : <span style={{fontSize:10,color:C.acc}}>{"\u23F3"}</span>}
+                    {freight.plantFinishedConfirmedAt ? Ic.chk(C.ok,12) : Ic.clk(C.acc,11)}
                   </span>
                   <span style={{color:freight.plantFinishedConfirmedAt?C.ok:C.t2,fontWeight:freight.plantFinishedConfirmedAt?600:400}}>Planta</span>
                 </div>
@@ -501,7 +502,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
                 <span style={{ fontSize:12, fontWeight:600, color:C.t1, marginLeft:"auto", textAlign:"right" }}>{val}</span>}
               </div>
             );
-            const SectionLabel = ({text}) => <div style={{ fontSize:9.5, fontWeight:700, color:C.t3, textTransform:"uppercase", letterSpacing:0.5, padding:"10px 0 4px" }}>{text}</div>;
+            const SectionLabel = ({text}) => <div style={{ fontSize:10, fontWeight:700, color:C.t3, textTransform:"uppercase", letterSpacing:0.5, padding:"10px 0 4px" }}>{text}</div>;
             const carga = [
               [Ic.grain(C.t2,15),"Producto",`${freight.grain==="Otros"?freight.productTypeOther||"Otros":freight.grain} · ${freight.tons} ${freight.unit||"tn"}`],
               freight.amount>0&&[Ic.grain(C.t2,15),"Importe",`$${Number(freight.amount).toLocaleString()}`],

@@ -8,7 +8,7 @@ import { apiIdentifyForReset, apiRequestCode, apiVerifyCode, apiResetPassword } 
 // Compact summary chip for a completed signup field
 function CompletedField({ icon, value, onClick }) {
   return (
-    <button onClick={onClick} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", borderRadius: 8, border: `1px solid ${C.b2}`, background: C.bg, cursor: "pointer", fontFamily: "inherit", textAlign: "left", width: "100%", transition: "all 0.15s" }}>
+    <button onClick={onClick} style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 12px", minHeight: 44, borderRadius: 8, border: `1px solid ${C.b2}`, background: C.bg, cursor: "pointer", fontFamily: "inherit", textAlign: "left", width: "100%", transition: "all 0.15s" }}>
       {icon}
       <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: C.t1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{value}</span>
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.t3} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
@@ -249,7 +249,7 @@ export default function AuthScreen({ onLogin, onSignup, onPasswordReset, loading
                   <Field label="Contraseña" icon={Ic.lock(errs.password ? C.err : C.t2, 14)} value={password} onChange={setPassword} placeholder="Tu contraseña" type="password" hasError={!!errs.password} onKeyDown={e => { if (e.key === 'Enter') submit(); }} />
                   {touched && <FieldError error={errs.password} />}
                 </div>
-                <button onClick={() => { switchMode("reset_identify"); }} style={{ background: "none", border: "none", color: C.pri, fontSize: 12.5, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", textAlign: "right", padding: 0, marginTop: -4 }}>
+                <button aria-label="Recuperar contraseña" onClick={() => { switchMode("reset_identify"); }} style={{ background: "none", border: "none", color: C.pri, fontSize: 12.5, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", textAlign: "right", padding: "10px 0", marginTop: -4 }}>
                   ¿Olvidaste tu contraseña?
                 </button>
               </>}
@@ -315,7 +315,7 @@ export default function AuthScreen({ onLogin, onSignup, onPasswordReset, loading
                       {typeOptions.map(t => {
                         const sel = userTypes.includes(t.k);
                         return (
-                          <button key={t.k} onClick={() => toggleType(t.k)} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 10, border: `1.5px solid ${sel ? t.c : C.b1}`, background: sel ? `${t.c}0A` : C.w, cursor: "pointer", fontFamily: "inherit", textAlign: "left", transition: "all 0.15s", width: "100%" }}>
+                          <button key={t.k} onClick={() => toggleType(t.k)} style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 14px", borderRadius: 10, border: `1.5px solid ${sel ? t.c : C.b1}`, background: sel ? `${t.c}0A` : C.w, cursor: "pointer", fontFamily: "inherit", textAlign: "left", transition: "all 0.15s", width: "100%", minHeight: 44 }}>
                             <div style={{ width: 36, height: 36, borderRadius: 9, background: sel ? `${t.c}18` : `${t.c}08`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "background 0.15s" }}>
                               {t.ic(sel ? t.c : C.t3, 18)}
                             </div>
@@ -354,7 +354,7 @@ export default function AuthScreen({ onLogin, onSignup, onPasswordReset, loading
               {/* === RESET: CODE === */}
               {mode === "reset_code" && <>
                 <div>
-                  <Field label="Código de verificación" value={resetCode} onChange={v => setResetCode(v.replace(/\D/g, '').slice(0, 6))} placeholder="000000" hasError={!!errs.code} onKeyDown={e => { if (e.key === 'Enter') submit(); }} style={{ letterSpacing: 8, textAlign: "center", fontSize: 22, fontWeight: 700 }} />
+                  <Field label="Código de verificación" value={resetCode} onChange={v => setResetCode(v.replace(/\D/g, '').slice(0, 6))} placeholder="000000" hasError={!!errs.code} onKeyDown={e => { if (e.key === 'Enter') submit(); }} style={{ letterSpacing: 6, textAlign: "center", fontSize: 22, fontWeight: 700 }} />
                   {touched && <FieldError error={errs.code} />}
                 </div>
                 <button onClick={() => { setResetCode(""); switchMode("reset_confirm"); }} style={{ background: "none", border: "none", color: C.pri, fontSize: 12.5, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", textAlign: "center", padding: 0 }}>
