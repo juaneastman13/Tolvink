@@ -5,7 +5,7 @@ import { useUIStore } from "./store";
 import log from "./logger";
 
 // HTML escape for InfoWindow content (prevents XSS)
-const _esc = v => String(v||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+const _esc = v => String(v||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");
 
 // Haversine distance in km (straight line)
 const _haversine = (lat1, lng1, lat2, lng2) => {
