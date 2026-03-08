@@ -40,6 +40,10 @@ const LiveFreightScreen = lazy(() => import("./screens/LiveFreightScreen"));
 const ViewMapScreen = lazy(() => import("./screens/ViewMapScreen"));
 // CompanyHeaderPicker removed — company selector moved to Sidebar
 
+// AI Chat
+const AiChat = lazy(() => import("./AiChat").then(m => ({ default: m.default })));
+const AiChatFabComp = lazy(() => import("./AiChat").then(m => ({ default: m.AiChatFab })));
+
 // Lazy modals
 const ConfirmActionModal = lazy(() => import("./modals/ConfirmActionModal"));
 const AssignModal = lazy(() => import("./modals/AssignModal"));
@@ -112,6 +116,11 @@ export default function Tolvink() {
   const [modeDropOpen, setModeDropOpen] = useState(false);
   const [unreadChats, setUnreadChats] = useState(0);
 
+  // AI Chat state
+  const [aiChatOpen, setAiChatOpen] = useState(false);
+  const [sseAiResponse, setSseAiResponse] = useState(null);
+  const [sseAiTranscription, setSseAiTranscription] = useState(null);
+
   // SSE — real-time sync
   const sse = useSSE(auth.user, {
     onFreightUpdate: (data) => { if(data?.id) fh.refresh(data.id); else fh.fetchAll(); },
@@ -126,6 +135,8 @@ export default function Tolvink() {
     onCatalogChanged: () => { catalog.refresh(); },
     onTyping: (data) => { setSseTyping(data); },
     onRead: (data) => { setSseRead(data); },
+    onAiResponse: (data) => { setSseAiResponse(data); },
+    onAiTranscription: (data) => { setSseAiTranscription(data); },
   });
 
   // React Router — URL-based navigation
@@ -660,6 +671,12 @@ export default function Tolvink() {
       {modal?.type==="driver_queue" && <DriverQueueModal driverId={modal.driverId} driverName={modal.driverName} onClose={()=>setModal(null)}/>}
       </Suspense>
       {toast && <Toast key={toast._ts||toast.msg} msg={toast.msg} type={toast.type} onClose={()=>setToast(null)}/>}
+
+      {/* AI Chat */}
+      <Suspense fallback={null}>
+        <AiChatFabComp open={aiChatOpen} onClick={() => setAiChatOpen(p => !p)} />
+        {aiChatOpen && <AiChat open={aiChatOpen} onClose={() => setAiChatOpen(false)} sseAiResponse={sseAiResponse} sseAiTranscription={sseAiTranscription} />}
+      </Suspense>
     </div>
   );
 }

@@ -455,3 +455,28 @@ export async function uploadChatFile(file, conversationId) {
 
   return `${SUPABASE_URL}/storage/v1/object/public/${STORAGE_BUCKET}/${path}`;
 }
+
+// Web Chat (AI Agent)
+export async function apiWebChatSend(text) { return api('/web-chat/message', { body: { text } }); }
+export async function apiWebChatHistory() { return api('/web-chat/history'); }
+export async function apiWebChatAudio(blob) {
+  const mkForm = () => { const f = new FormData(); f.append('audio', blob, 'audio.webm'); return f; };
+  const res = await fetch(`${API_URL}/web-chat/audio`, {
+    method: 'POST',
+    credentials: 'include',
+    body: mkForm(),
+  });
+  if (res.status === 401) {
+    const refreshed = await tryRefresh();
+    if (refreshed) {
+      const retry = await fetch(`${API_URL}/web-chat/audio`, {
+        method: 'POST', credentials: 'include', body: mkForm(),
+      });
+      if (!retry.ok) throw new ApiError(retry.status, await retry.json().catch(() => ({})));
+      return retry.json();
+    }
+    throw new ApiError(401, { message: 'Sesión expirada' });
+  }
+  if (!res.ok) throw new ApiError(res.status, await res.json().catch(() => ({})));
+  return res.json();
+}
