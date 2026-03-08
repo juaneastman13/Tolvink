@@ -56,10 +56,19 @@ export function loadGMaps() {
     const s = document.createElement("script");
     s.src = `https://maps.googleapis.com/maps/api/js?key=${GMAPS_KEY}&libraries=geometry,places`;
     s.async = true; s.defer = true;
-    s.onload = () => resolve(window.google.maps);
-    s.onerror = reject;
+    s.onload = () => {
+      // Wait for google.maps to be fully available (script load != API ready)
+      const waitReady = setInterval(() => {
+        if (window.google?.maps) { clearInterval(waitReady); resolve(window.google.maps); }
+      }, 50);
+      setTimeout(() => { clearInterval(waitReady); if (!window.google?.maps) reject(new Error('Google Maps init timeout')); }, 10000);
+    };
+    s.onerror = () => { _loadPromise = null; reject(new Error('Google Maps script failed to load')); };
     document.head.appendChild(s);
   });
+  // Reset on rejection so next call retries
+  _loadPromise.catch(() => { _loadPromise = null; });
+  return _loadPromise;
 }
 
 // Error Boundary to prevent white screens
@@ -324,9 +333,14 @@ export function LocPickerFullscreen({ value, onChange, defaultCenter, label, onC
 const _TYPE_LABEL = { chofer: "Chofer", producer: "Productor", plant: "Planta", transporter: "Transportista", other: "Participante" };
 const _TYPE_COLORS = { chofer: "#FF6A00", producer: "#1A6B37", plant: "#003882", transporter: "#8B5CF6", other: "#6B7280" };
 const _pinSvg = (color) => `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="40" viewBox="0 0 28 40"><path d="M14 0C6.27 0 0 6.27 0 14c0 10.5 14 26 14 26s14-15.5 14-26C28 6.27 21.73 0 14 0z" fill="${color}" stroke="#fff" stroke-width="2"/><circle cx="14" cy="13" r="5" fill="#fff"/></svg>`;
+// Pre-compute participant icon URLs to avoid runtime encoding
+const _participantIconUrls = {};
+Object.entries(_TYPE_COLORS).forEach(([type, color]) => {
+  _participantIconUrls[type] = "data:image/svg+xml," + encodeURIComponent(_pinSvg(color));
+});
 const _participantIcon = (type, maps) => {
-  const color = _TYPE_COLORS[type] || _TYPE_COLORS.other;
-  return { url: "data:image/svg+xml," + encodeURIComponent(_pinSvg(color)), scaledSize: new maps.Size(28, 40), anchor: new maps.Point(14, 40) };
+  const url = _participantIconUrls[type] || _participantIconUrls.other;
+  return { url, scaledSize: new maps.Size(28, 40), anchor: new maps.Point(14, 40) };
 };
 const _renderParticipantMarkers = (participants, mapInst, markersRef, iwRef, userPos) => {
   const maps = window.google?.maps;
@@ -443,7 +457,7 @@ export function FreightMap({ freightId, originLat, originLng, destLat, destLng, 
           new maps.Marker({
             position: origin, map,
             title: originName || "Origen",
-            icon: { url: "data:image/svg+xml," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"><circle cx="12" cy="12" r="10" fill="#1A6B37" stroke="#fff" stroke-width="2"/></svg>'), scaledSize: new maps.Size(24, 24), anchor: new maps.Point(12, 12) },
+            icon: { url: _circleIcon("#1A6B37", 24), scaledSize: new maps.Size(24, 24), anchor: new maps.Point(12, 12) },
           });
         }
 
@@ -451,7 +465,7 @@ export function FreightMap({ freightId, originLat, originLng, destLat, destLng, 
           new maps.Marker({
             position: dest, map,
             title: destName || "Destino",
-            icon: { url: "data:image/svg+xml," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"><circle cx="12" cy="12" r="10" fill="#003882" stroke="#fff" stroke-width="2"/></svg>'), scaledSize: new maps.Size(24, 24), anchor: new maps.Point(12, 12) },
+            icon: { url: _circleIcon("#003882", 24), scaledSize: new maps.Size(24, 24), anchor: new maps.Point(12, 12) },
           });
         }
 
@@ -589,7 +603,10 @@ export function FreightMap({ freightId, originLat, originLng, destLat, destLng, 
         </button>
       </div>
       {error ? (
-        <div style={{ padding: 20, textAlign: "center", fontSize: 13.2, color: C.t3 }}>{error}</div>
+        <div style={{ padding: 20, textAlign: "center" }}>
+          <div style={{ fontSize: 13.2, color: C.t3, marginBottom: 8 }}>{error}</div>
+          <button onClick={() => { setError(null); setMapReady(false); }} style={{ padding: "6px 14px", borderRadius: 8, border: `1px solid ${C.pri}`, background: C.priPale, color: C.pri, fontSize: 12.1, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>Reintentar</button>
+        </div>
       ) : (
         <div ref={mapRef} style={{ width: "100%", flex:1, minHeight:180 }} />
       )}
@@ -628,9 +645,23 @@ const _STATUS_COLOR = s => {
 const _STATUS_LABEL = { pending_assignment:"Solicitado", assigned:"Asignado a flota", accepted:"Camión confirmado", in_progress:"En curso", loaded:"Cargando", finished:"Finalizado", canceled:"Cancelado" };
 
 const _svgIcon = (svg) => "data:image/svg+xml," + encodeURIComponent(svg);
+// Cache for circle icon URLs to avoid repeated encodeURIComponent calls
+const _circleCache = {};
+const _circleIcon = (color, size = 20) => {
+  const key = `${color}_${size}`;
+  if (_circleCache[key]) return _circleCache[key];
+  const r = size / 2;
+  const url = "data:image/svg+xml," + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><circle cx="${r}" cy="${r}" r="${r - 2}" fill="${color}" stroke="#fff" stroke-width="2"/></svg>`);
+  _circleCache[key] = url;
+  return url;
+};
 const _FIELD_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#1A6B37" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 22L12 12l10 10"/><path d="M2 16l5-5 3 3 4-4 3 3 5-5"/><line x1="2" y1="22" x2="22" y2="22"/></svg>';
 const _PLANT_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#003882" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20h20"/><path d="M5 20V8l5 4V8l5 4V4h3v16"/></svg>';
 const _TRUCK_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="#FF6A00" stroke="#fff" stroke-width="1.5"><rect x="1" y="3" width="15" height="13" rx="2"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>';
+// Pre-encode entity SVGs at module load (avoids runtime encoding per marker)
+const _FIELD_ICON_URL = _svgIcon(_FIELD_SVG);
+const _PLANT_ICON_URL = _svgIcon(_PLANT_SVG);
+const _TRUCK_ICON_URL = _svgIcon(_TRUCK_SVG);
 
 export function FreightsOverviewMap({ freights, onSelect, fields, plants }) {
   const mapRef = useRef(null);
@@ -694,15 +725,14 @@ export function FreightsOverviewMap({ freights, onSelect, fields, plants }) {
           `\u2192 ${_esc(f.destName)}<br/>` +
           `<span style="color:${col};font-weight:600">${_esc(_STATUS_LABEL[f.status]||f.status)}</span></div>`;
 
-        const _circleUrl = (c) => "data:image/svg+xml," + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"><circle cx="10" cy="10" r="8" fill="${c}" stroke="#fff" stroke-width="2"/></svg>`);
         const existing = freightMk.current[f.id];
         if (existing) {
           existing.setPosition(pos);
-          existing.setIcon({ url: _circleUrl(col), scaledSize: new maps.Size(20, 20), anchor: new maps.Point(10, 10) });
+          existing.setIcon({ url: _circleIcon(col, 20), scaledSize: new maps.Size(20, 20), anchor: new maps.Point(10, 10) });
           existing._info = buildInfo;
         } else {
           const mk = new maps.Marker({ position: pos, map: mapObj.current, title: f.code,
-            icon: { url: _circleUrl(col), scaledSize: new maps.Size(20, 20), anchor: new maps.Point(10, 10) } });
+            icon: { url: _circleIcon(col, 20), scaledSize: new maps.Size(20, 20), anchor: new maps.Point(10, 10) } });
           mk._info = buildInfo;
           mk.addListener("click", () => { info.current.setContent(mk._info()); info.current.open(mapObj.current, mk); });
           mk.addListener("dblclick", () => { if (onSelectRef.current) onSelectRef.current(f.id); });
@@ -728,7 +758,7 @@ export function FreightsOverviewMap({ freights, onSelect, fields, plants }) {
       const pos = { lat, lng };
       bounds.extend(pos); has = true;
       const mk = new maps.Marker({ position: pos, map: mapObj.current, title: f.name,
-        icon: { url: _svgIcon(_FIELD_SVG), scaledSize: new maps.Size(28, 28), anchor: new maps.Point(14, 14) } });
+        icon: { url: _FIELD_ICON_URL, scaledSize: new maps.Size(28, 28), anchor: new maps.Point(14, 14) } });
       mk.addListener("click", () => {
         info.current.setContent(`<div style="font-family:system-ui;font-size:12px;line-height:1.4"><strong>${_esc(f.name)}</strong><br/><span style="color:#1A6B37;font-weight:600">Campo</span>${f.address ? "<br/>"+_esc(f.address) : ""}${f.hectares ? "<br/>"+_esc(f.hectares)+" ha" : ""}</div>`);
         info.current.open(mapObj.current, mk);
@@ -743,7 +773,7 @@ export function FreightsOverviewMap({ freights, onSelect, fields, plants }) {
       const pos = { lat, lng };
       bounds.extend(pos); has = true;
       const mk = new maps.Marker({ position: pos, map: mapObj.current, title: p.name,
-        icon: { url: _svgIcon(_PLANT_SVG), scaledSize: new maps.Size(28, 28), anchor: new maps.Point(14, 14) } });
+        icon: { url: _PLANT_ICON_URL, scaledSize: new maps.Size(28, 28), anchor: new maps.Point(14, 14) } });
       mk.addListener("click", () => {
         info.current.setContent(`<div style="font-family:system-ui;font-size:12px;line-height:1.4"><strong>${_esc(p.name)}</strong><br/><span style="color:#003882;font-weight:600">Planta</span>${p.address ? "<br/>"+_esc(p.address) : ""}</div>`);
         info.current.open(mapObj.current, mk);
@@ -791,7 +821,7 @@ export function FreightsOverviewMap({ freights, onSelect, fields, plants }) {
         } else {
           const mk = new maps.Marker({
             position: { lat, lng }, map: mapObj.current, title: `${f.code} \u2014 En curso`,
-            icon: { url: _svgIcon(_TRUCK_SVG), scaledSize: new maps.Size(36, 36), anchor: new maps.Point(18, 18) },
+            icon: { url: _TRUCK_ICON_URL, scaledSize: new maps.Size(36, 36), anchor: new maps.Point(18, 18) },
             zIndex: 999,
           });
           mk._fid = f.id;
@@ -901,7 +931,7 @@ export function MapOverlay({ lat, lng, label, destLat, destLng, destLabel, freig
       mapInst.current = map;
       if (!pIw.current) pIw.current = new maps.InfoWindow();
       const marker = new maps.Marker({ position: pos, map, animation: maps.Animation.DROP,
-        icon: { url: "data:image/svg+xml," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28"><circle cx="14" cy="14" r="12" fill="' + C.pri + '" fill-opacity="0.8" stroke="#fff" stroke-width="3"/></svg>'), scaledSize: new maps.Size(28, 28), anchor: new maps.Point(14, 14) } });
+        icon: { url: _circleIcon(C.pri, 28), scaledSize: new maps.Size(28, 28), anchor: new maps.Point(14, 14) } });
       originMk.current = marker;
       const iw = new maps.InfoWindow({ content: mkInfoContent(label, lat, lng) });
       iw.open(map, marker);
@@ -909,7 +939,7 @@ export function MapOverlay({ lat, lng, label, destLat, destLng, destLabel, freig
       if (destLat && destLng) {
         const dpos = { lat: Number(destLat), lng: Number(destLng) };
         const dm = new maps.Marker({ position: dpos, map, animation: maps.Animation.DROP,
-          icon: { url: "data:image/svg+xml," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28"><circle cx="14" cy="14" r="12" fill="#0891B2" fill-opacity="0.8" stroke="#fff" stroke-width="3"/></svg>'), scaledSize: new maps.Size(28, 28), anchor: new maps.Point(14, 14) } });
+          icon: { url: _circleIcon("#0891B2", 28), scaledSize: new maps.Size(28, 28), anchor: new maps.Point(14, 14) } });
         destMk.current = dm;
         const iw2 = new maps.InfoWindow({ content: mkInfoContent(destLabel, destLat, destLng) });
         dm.addListener("click", () => iw2.open(map, dm));
