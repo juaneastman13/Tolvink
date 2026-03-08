@@ -129,7 +129,7 @@ export default function PickLocationScreen({ slug: slugProp } = {}) {
         }
       } catch (err) {
         log.error("PickLocation", err);
-        setError("No se pudo cargar el mapa. Recarga la pagina.");
+        setError("No se pudo cargar el mapa. Recargá la página.");
       }
     })();
 
@@ -166,7 +166,7 @@ export default function PickLocationScreen({ slug: slugProp } = {}) {
 
       setDone(true);
     } catch (e) {
-      setError(e.message || "Error al guardar la ubicacion");
+      setError(e.message || "Error al guardar la ubicación");
     } finally {
       setSaving(false);
     }
@@ -178,9 +178,9 @@ export default function PickLocationScreen({ slug: slugProp } = {}) {
       <div style={styles.container}>
         <div style={styles.errorBox}>
           <div style={{ fontSize: 52.8, marginBottom: 12 }}>🔗</div>
-          <div style={{ fontSize: 19.8, fontWeight: 700, color: COLORS.t1 }}>Link invalido</div>
+          <div style={{ fontSize: 19.8, fontWeight: 700, color: COLORS.t1 }}>Link inválido</div>
           <div style={{ fontSize: 15.4, color: COLORS.t3, marginTop: 8 }}>
-            Este link fue generado desde WhatsApp. Si expiro, solicite uno nuevo en el chat.
+            Este link fue generado desde WhatsApp. Si expiró, solicite uno nuevo en el chat.
           </div>
         </div>
       </div>
@@ -193,9 +193,9 @@ export default function PickLocationScreen({ slug: slugProp } = {}) {
       <div style={styles.container}>
         <div style={styles.successBox}>
           <div style={{ fontSize: 61.6, marginBottom: 12 }}>✅</div>
-          <div style={{ fontSize: 22, fontWeight: 700, color: COLORS.pri }}>Ubicacion guardada</div>
+          <div style={{ fontSize: 22, fontWeight: 700, color: COLORS.pri }}>Ubicación guardada</div>
           <div style={{ fontSize: 15.4, color: COLORS.t2, marginTop: 8, lineHeight: 1.5 }}>
-            Puede volver a WhatsApp. El asistente continuara automaticamente.
+            Puede volver a WhatsApp. El asistente continuará automáticamente.
           </div>
           {address && (
             <div style={{ fontSize: 13.2, color: COLORS.t3, marginTop: 12, padding: "8px 12px", background: COLORS.bg, borderRadius: 8 }}>
@@ -215,7 +215,7 @@ export default function PickLocationScreen({ slug: slugProp } = {}) {
           <span style={{ fontSize: 26.4, fontWeight: 800, color: COLORS.pri, letterSpacing: -1 }}>tolvink</span>
           <span style={{ width: 8, height: 8, borderRadius: 4, background: COLORS.acc, display: "inline-block" }}></span>
         </div>
-        <div style={{ fontSize: 14.3, color: COLORS.t3, fontWeight: 500 }}>Elegir ubicacion</div>
+        <div style={{ fontSize: 14.3, color: COLORS.t3, fontWeight: 500 }}>Elegir ubicación</div>
       </div>
 
       {/* Search bar */}
@@ -224,7 +224,7 @@ export default function PickLocationScreen({ slug: slugProp } = {}) {
           ref={searchRef}
           value={address}
           onChange={(e) => setAddress(e.target.value)}
-          placeholder="Buscar direccion o lugar..."
+          placeholder="Buscar dirección o lugar..."
           style={styles.searchInput}
         />
       </div>
@@ -255,11 +255,11 @@ export default function PickLocationScreen({ slug: slugProp } = {}) {
             cursor: !location || saving ? "default" : "pointer",
           }}
         >
-          {saving ? "Guardando..." : "Confirmar ubicacion"}
+          {saving ? "Guardando..." : "Confirmar ubicación"}
         </button>
         {!location && (
           <div style={{ fontSize: 13.2, color: COLORS.t3, textAlign: "center", marginTop: 8 }}>
-            Busca una direccion o toca el mapa para marcar la ubicacion
+            Busca una dirección o toca el mapa para marcar la ubicación
           </div>
         )}
       </div>

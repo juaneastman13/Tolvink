@@ -157,7 +157,7 @@ export default function TrackFreightScreen({ code: codeProp } = {}) {
         if (!maps) return;
         if (!truckMarker.current) {
           truckMarker.current = new maps.Marker({
-            position: { lat, lng }, map: mapInstance.current, title: "Camion",
+            position: { lat, lng }, map: mapInstance.current, title: "Camión",
             icon: { url: "data:image/svg+xml," + encodeURIComponent(TRUCK_SVG),
                     scaledSize: new maps.Size(36, 36), anchor: new maps.Point(18, 18) },
             zIndex: 999,
@@ -286,9 +286,9 @@ export default function TrackFreightScreen({ code: codeProp } = {}) {
     <div style={S.center}>
       <div style={S.card}>
         <div style={{ fontSize: 52.8, marginBottom: 12 }}>🔗</div>
-        <div style={{ fontSize: 19.8, fontWeight: 700, color: COLORS.t1 }}>Link invalido</div>
+        <div style={{ fontSize: 19.8, fontWeight: 700, color: COLORS.t1 }}>Link inválido</div>
         <div style={{ fontSize: 15.4, color: COLORS.t3, marginTop: 8 }}>
-          Este link fue generado desde WhatsApp. Si no funciona, pedi uno nuevo.
+          Este link fue generado desde WhatsApp. Si no funciona, pedí uno nuevo.
         </div>
       </div>
     </div>

@@ -249,7 +249,7 @@ export default function LiveFreightScreen() {
   // GPS sharing logic — state machine: idle → activating → sharing (or error)
   const startSharing = useCallback(() => {
     if (!navigator.geolocation) {
-      setGeoError("Geolocalizacion no disponible en este dispositivo.");
+      setGeoError("Geolocalización no disponible en este dispositivo.");
       setShareState("error");
       return;
     }
@@ -266,7 +266,7 @@ export default function LiveFreightScreen() {
         if (isInAppBrowser()) {
           setGeoError("in_app_browser");
         } else {
-          setGeoError("No se pudo obtener la ubicacion. Verifique que los permisos de ubicacion esten activados.");
+          setGeoError("No se pudo obtener la ubicación. Verifique que los permisos de ubicación estén activados.");
         }
         cleanupGps();
       }
@@ -311,11 +311,11 @@ export default function LiveFreightScreen() {
           if (gpsTimeoutRef.current) { clearTimeout(gpsTimeoutRef.current); gpsTimeoutRef.current = null; }
           setShareState("error");
           if (err.code === 1) { // PERMISSION_DENIED
-            setGeoError("Permiso de ubicacion denegado. Active los permisos en la configuracion del navegador.");
+            setGeoError("Permiso de ubicación denegado. Active los permisos en la configuración del navegador.");
           } else if (isInAppBrowser()) {
             setGeoError("in_app_browser");
           } else {
-            setGeoError("No se pudo obtener la ubicacion. Verifique los permisos de ubicacion.");
+            setGeoError("No se pudo obtener la ubicación. Verifique los permisos de ubicación.");
           }
           cleanupGps();
         }
@@ -399,7 +399,7 @@ export default function LiveFreightScreen() {
       <div style={styles.center}>
         <div style={styles.card}>
           <div style={{ fontSize: 52.8, marginBottom: 12 }}>🔗</div>
-          <div style={{ fontSize: 19.8, fontWeight: 700, color: COLORS.t1 }}>Link invalido</div>
+          <div style={{ fontSize: 19.8, fontWeight: 700, color: COLORS.t1 }}>Link inválido</div>
           <div style={{ fontSize: 15.4, color: COLORS.t3, marginTop: 8 }}>
             Este link fue generado desde WhatsApp. Solicite uno nuevo en el chat.
           </div>
@@ -467,7 +467,7 @@ export default function LiveFreightScreen() {
             <>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <span style={{ width: 10, height: 10, borderRadius: 5, background: "#22C55E", display: "inline-block", animation: "pulse 2s infinite" }}></span>
-                <span style={{ fontSize: 14.3, fontWeight: 600, color: COLORS.pri }}>Compartiendo ubicacion</span>
+                <span style={{ fontSize: 14.3, fontWeight: 600, color: COLORS.pri }}>Compartiendo ubicación</span>
                 {timeLeft && <span style={{ fontSize: 13.2, color: COLORS.t3 }}>{formatTimeLeft(timeLeft)}</span>}
               </div>
               <button onClick={stopSharing} style={styles.stopBtn}>Detener</button>
@@ -475,10 +475,10 @@ export default function LiveFreightScreen() {
           ) : shareState === "activating" ? (
             <div style={{ display: "flex", alignItems: "center", gap: 8, width: "100%" }}>
               <span style={{ width: 10, height: 10, borderRadius: 5, background: "#F59E0B", display: "inline-block", animation: "pulse 1s infinite" }}></span>
-              <span style={{ fontSize: 14.3, fontWeight: 600, color: "#92400E" }}>Activando GPS... Permita el acceso a la ubicacion</span>
+              <span style={{ fontSize: 14.3, fontWeight: 600, color: "#92400E" }}>Activando GPS... Permita el acceso a la ubicación</span>
             </div>
           ) : (
-            <button onClick={startSharing} style={styles.shareBtn}>Compartir mi ubicacion</button>
+            <button onClick={startSharing} style={styles.shareBtn}>Compartir mi ubicación</button>
           )}
         </div>
       )}
@@ -502,7 +502,7 @@ export default function LiveFreightScreen() {
             El navegador de WhatsApp no soporta GPS
           </div>
           <div style={{ fontSize: 14.3, color: "#78350F", lineHeight: 1.4, marginBottom: 12 }}>
-            Para compartir tu ubicacion, abri este link en el navegador del celular (Chrome, Safari, etc.)
+            Para compartir tu ubicación, abrí este link en el navegador del celular (Chrome, Safari, etc.)
           </div>
           <div style={{ display: "flex", gap: 8 }}>
             <button onClick={openInBrowser} style={styles.openBrowserBtn}>
@@ -513,7 +513,7 @@ export default function LiveFreightScreen() {
             </button>
           </div>
           <div style={{ fontSize: 12.1, color: "#92400E", marginTop: 8, lineHeight: 1.4 }}>
-            Tambien podes copiar el link y pegarlo en el navegador manualmente.
+            También podés copiar el link y pegarlo en el navegador manualmente.
           </div>
         </div>
       )}
@@ -524,7 +524,7 @@ export default function LiveFreightScreen() {
         {locations.length === 0 && shareState !== "sharing" && shareState !== "activating" && (
           <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none" }}>
             <div style={{ background: COLORS.w, padding: "16px 24px", borderRadius: 12, boxShadow: "0 2px 8px rgba(0,0,0,0.1)", fontSize: 15.4, color: COLORS.t3 }}>
-              Nadie esta compartiendo ubicacion
+              Nadie está compartiendo ubicación
             </div>
           </div>
         )}

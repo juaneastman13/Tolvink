@@ -200,7 +200,7 @@ export default function DailyMapScreen() {
       <div style={styles.center}>
         <div style={styles.card}>
           <div style={{ fontSize: 52.8, marginBottom: 12 }}>🔗</div>
-          <div style={{ fontSize: 19.8, fontWeight: 700, color: COLORS.t1 }}>Link invalido</div>
+          <div style={{ fontSize: 19.8, fontWeight: 700, color: COLORS.t1 }}>Link inválido</div>
           <div style={{ fontSize: 15.4, color: COLORS.t3, marginTop: 8 }}>
             Este link fue generado desde WhatsApp. Solicite uno nuevo en el chat.
           </div>
@@ -217,7 +217,7 @@ export default function DailyMapScreen() {
           <div style={{ fontSize: 30.8, marginBottom: 12, opacity: 0.5 }}>⏳</div>
           <div style={{ fontSize: 19.8, fontWeight: 700, color: COLORS.t1 }}>Link expirado</div>
           <div style={{ fontSize: 15.4, color: COLORS.t3, marginTop: 8 }}>
-            Solicite un nuevo link en WhatsApp para ver el mapa del dia.
+            Solicite un nuevo link en WhatsApp para ver el mapa del día.
           </div>
         </div>
       </div>
@@ -247,7 +247,7 @@ export default function DailyMapScreen() {
           <span style={{ width: 8, height: 8, borderRadius: 4, background: COLORS.acc, display: "inline-block" }}></span>
         </div>
         <div style={{ fontSize: 14.3, color: COLORS.t3, fontWeight: 500 }}>
-          Mapa del dia · {visibleCount} flete{visibleCount !== 1 ? "s" : ""}
+          Mapa del día · {visibleCount} flete{visibleCount !== 1 ? "s" : ""}
         </div>
       </div>
 

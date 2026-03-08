@@ -36,7 +36,7 @@ export default function ReportDownloadScreen({ code: codeProp } = {}) {
       try {
         // 1. Fetch report data from public endpoint
         const res = await fetch(reportUrl);
-        if (!res.ok) throw new Error("Flete no encontrado o link invalido");
+        if (!res.ok) throw new Error("Flete no encontrado o link inválido");
         const data = await res.json();
         setFreightCode(data.code);
 
@@ -60,9 +60,9 @@ export default function ReportDownloadScreen({ code: codeProp } = {}) {
     <div style={S.center}>
       <div style={S.card}>
         <div style={{ fontSize: 52.8, marginBottom: 12 }}>🔗</div>
-        <div style={{ fontSize: 19.8, fontWeight: 700, color: COLORS.t1 }}>Link invalido</div>
+        <div style={{ fontSize: 19.8, fontWeight: 700, color: COLORS.t1 }}>Link inválido</div>
         <div style={{ fontSize: 15.4, color: COLORS.t3, marginTop: 8 }}>
-          Este link fue generado desde WhatsApp. Si no funciona, pedi uno nuevo.
+          Este link fue generado desde WhatsApp. Si no funciona, pedí uno nuevo.
         </div>
       </div>
     </div>
@@ -90,7 +90,7 @@ export default function ReportDownloadScreen({ code: codeProp } = {}) {
             Generando informe{freightCode ? ` ${freightCode}` : ""}...
           </div>
           <div style={{ fontSize: 14.3, color: COLORS.t3, marginTop: 8 }}>
-            La descarga comenzara automaticamente
+            La descarga comenzará automáticamente
           </div>
           <div style={S.spinner} />
         </>}
@@ -101,7 +101,7 @@ export default function ReportDownloadScreen({ code: codeProp } = {}) {
             Informe {freightCode} descargado
           </div>
           <div style={{ fontSize: 14.3, color: COLORS.t3, marginTop: 8 }}>
-            Si la descarga no inicio, hace click abajo
+            Si la descarga no inició, hacé click abajo
           </div>
           <button onClick={retry} style={S.btn}>Descargar de nuevo</button>
         </>}
