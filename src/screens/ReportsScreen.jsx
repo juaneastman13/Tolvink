@@ -16,6 +16,9 @@ export default function ReportsScreen({ onBack, freights, isDesktop, embedded, o
   const [selected, setSelected] = useState(new Set());
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  const [fPlant, setFPlant] = useState("");
+  const [fField, setFField] = useState("");
+  const [fTransporter, setFTransporter] = useState("");
   const [viewFile, setViewFile] = useState(null);
   const [pdfLoadingId, setPdfLoadingId] = useState(null);
   const [ocrLoading, setOcrLoading] = useState(false);
@@ -43,13 +46,21 @@ export default function ReportsScreen({ onBack, freights, isDesktop, embedded, o
     }
   };
 
+  const plantOptions = useMemo(()=>[...new Set((freights||[]).map(f=>f.destName).filter(Boolean))].sort(),[freights]);
+  const fieldOptions = useMemo(()=>[...new Set((freights||[]).map(f=>f.fieldName || f.originName).filter(Boolean))].sort(),[freights]);
+  const transporterOptions = useMemo(()=>[...new Set((freights||[]).map(f=>f.transporterName).filter(Boolean))].sort(),[freights]);
+  const hasEntityFilters = fPlant || fField || fTransporter;
+
   const allFreights = useMemo(() => (freights||[]).filter(f=>{
     if(dateFrom && f.loadDate < dateFrom) return false;
     if(dateTo && f.loadDate > dateTo) return false;
+    if(fPlant && f.destName !== fPlant) return false;
+    if(fField && (f.fieldName || f.originName) !== fField) return false;
+    if(fTransporter && f.transporterName !== fTransporter) return false;
     if(!searchQ) return true;
     const q = searchQ.toLowerCase();
     return (f.code||"").toLowerCase().includes(q) || (f.originName||"").toLowerCase().includes(q) || (f.destName||"").toLowerCase().includes(q) || (f.grain||"").toLowerCase().includes(q) || (f.transporterName||"").toLowerCase().includes(q) || (f.requestedByName||"").toLowerCase().includes(q);
-  }), [freights, dateFrom, dateTo, searchQ]);
+  }), [freights, dateFrom, dateTo, searchQ, fPlant, fField, fTransporter]);
 
   const STATUS_GROUPS_RPT = { solicitado:["pending_assignment"], en_curso:["assigned","accepted","in_progress","loaded"], finalizados:["finished"], cancelados:["canceled"] };
   const filtered = useMemo(() => filterStatus==="all" ? allFreights : allFreights.filter(f=>(STATUS_GROUPS_RPT[filterStatus]||[]).includes(f.status)), [allFreights, filterStatus]);
@@ -75,24 +86,50 @@ export default function ReportsScreen({ onBack, freights, isDesktop, embedded, o
       <div style={{ padding:embedded?0:isDesktop?"18px 18px 18px":"0 18px 18px" }}>
 
       {/* Search bar */}
-      <div style={{ position:"relative", marginBottom:12 }}>
-        <div style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",display:"flex"}}>{Ic.srch(C.t3,16)}</div>
-        <input value={searchQ} onChange={e=>setSearchQ(e.target.value)} placeholder="Buscar por código, origen, destino, producto..."
-          style={{width:"100%",padding:"10px 14px 10px 36px",borderRadius:10,border:`1.5px solid ${C.b1}`,background:C.w,color:C.t1,fontSize:13.8,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}/>
-        {searchQ && <button aria-label="Limpiar búsqueda" onClick={()=>setSearchQ("")} style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",display:"flex"}}>{Ic.cross(C.t3,16)}</button>}
+      <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:6 }}>
+        <div style={{ position:"relative", flex:1, minWidth:0 }}>
+          <div style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",display:"flex"}}>{Ic.srch(C.t3,14)}</div>
+          <input value={searchQ} onChange={e=>setSearchQ(e.target.value)} placeholder="Buscar flete..."
+            style={{width:"100%",padding:"8px 12px 8px 32px",borderRadius:8,border:`1.5px solid ${C.b1}`,background:C.w,color:C.t1,fontSize:13.2,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}/>
+          {searchQ && <button aria-label="Limpiar búsqueda" onClick={()=>setSearchQ("")} style={{position:"absolute",right:8,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",display:"flex"}}>{Ic.cross(C.t3,14)}</button>}
+        </div>
+        {(searchQ||hasEntityFilters||dateFrom||dateTo) && <button onClick={()=>{setSearchQ("");setFPlant("");setFField("");setFTransporter("");setDateFrom("");setDateTo("");}} style={{padding:"6px 10px",borderRadius:6,border:`1px solid ${C.err}40`,background:C.errPale,color:C.err,fontSize:12.1,fontWeight:600,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap",flexShrink:0}}>Limpiar</button>}
       </div>
 
-      {/* Status filter + export buttons — desktop: pills inline with dates, mobile: select + separate dates line */}
+      {/* Entity filters row — matching ListScreen style */}
+      <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:6, flexWrap:"wrap" }}>
+        <button onClick={()=>{const el=document.getElementById("rpt-date-row");if(el)el.style.display=el.style.display==="none"?"flex":"none";}} style={{padding:"6px 10px",borderRadius:8,border:`1.5px solid ${(dateFrom||dateTo)?C.pri:C.b1}`,background:(dateFrom||dateTo)?C.priPale:C.w,color:(dateFrom||dateTo)?C.pri:C.t2,fontSize:12.1,fontWeight:600,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:5,whiteSpace:"nowrap"}}>
+          {Ic.cal((dateFrom||dateTo)?C.pri:C.t3,13)} Filtrar por fecha{(dateFrom||dateTo)?" (activo)":""}
+        </button>
+        <select value={fPlant} onChange={e=>setFPlant(e.target.value)} style={{padding:"6px 8px",borderRadius:8,border:`1.5px solid ${fPlant?C.pri:C.b1}`,background:fPlant?C.priPale:C.w,color:fPlant?C.pri:C.t3,fontSize:12.1,fontFamily:"inherit",outline:"none",cursor:"pointer"}}>
+          <option value="">Planta</option>
+          {plantOptions.map(p=><option key={p} value={p}>{p}</option>)}
+        </select>
+        <select value={fField} onChange={e=>setFField(e.target.value)} style={{padding:"6px 8px",borderRadius:8,border:`1.5px solid ${fField?C.pri:C.b1}`,background:fField?C.priPale:C.w,color:fField?C.pri:C.t3,fontSize:12.1,fontFamily:"inherit",outline:"none",cursor:"pointer"}}>
+          <option value="">Campo</option>
+          {fieldOptions.map(p=><option key={p} value={p}>{p}</option>)}
+        </select>
+        <select value={fTransporter} onChange={e=>setFTransporter(e.target.value)} style={{padding:"6px 8px",borderRadius:8,border:`1.5px solid ${fTransporter?C.pri:C.b1}`,background:fTransporter?C.priPale:C.w,color:fTransporter?C.pri:C.t3,fontSize:12.1,fontFamily:"inherit",outline:"none",cursor:"pointer"}}>
+          <option value="">Transportista</option>
+          {transporterOptions.map(p=><option key={p} value={p}>{p}</option>)}
+        </select>
+      </div>
+
+      {/* Collapsible date filters */}
+      <div id="rpt-date-row" style={{ display:(dateFrom||dateTo)?"flex":"none", alignItems:"center", gap:6, marginBottom:6, padding:"8px 12px", background:C.bg, borderRadius:10, border:`1px solid ${C.b1}` }}>
+        <span style={{fontSize:11,color:C.t2,fontWeight:600}}>Desde</span>
+        <input type="date" value={dateFrom} onChange={e=>setDateFrom(e.target.value)} onClick={e=>e.target.showPicker?.()} style={{padding:"5px 8px",borderRadius:6,border:`1px solid ${C.b1}`,background:C.w,color:dateFrom?C.t1:C.t3,fontSize:12.1,fontFamily:"inherit",outline:"none",boxSizing:"border-box",cursor:"pointer"}}/>
+        <span style={{fontSize:11,color:C.t2,fontWeight:600}}>Hasta</span>
+        <input type="date" value={dateTo} onChange={e=>setDateTo(e.target.value)} onClick={e=>e.target.showPicker?.()} style={{padding:"5px 8px",borderRadius:6,border:`1px solid ${C.b1}`,background:C.w,color:dateTo?C.t1:C.t3,fontSize:12.1,fontFamily:"inherit",outline:"none",boxSizing:"border-box",cursor:"pointer"}}/>
+        {(dateFrom||dateTo)&&<button aria-label="Limpiar filtro de fechas" onClick={()=>{setDateFrom("");setDateTo("");}} style={{background:"none",border:"none",cursor:"pointer",display:"flex",padding:2}}>{Ic.cross(C.t3,14)}</button>}
+      </div>
+
+      {/* Status filter + export buttons */}
       {isDesktop ? (
       <div style={{ display:"flex", gap:6, marginBottom:12, flexWrap:"wrap", alignItems:"center" }}>
         {[{k:"all",l:"Todos"},{k:"solicitado",l:"Solicitado"},{k:"en_curso",l:"En curso"},{k:"finalizados",l:"Finalizados"},{k:"cancelados",l:"Cancelados"}].map(opt=>(
           <button key={opt.k} onClick={()=>setFilterStatus(opt.k)} style={{ padding:"6px 14px", borderRadius:20, border:`1.5px solid ${filterStatus===opt.k?C.pri:C.b1}`, background:filterStatus===opt.k?C.priPale:C.w, color:filterStatus===opt.k?C.pri:C.t2, fontSize:12.1, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>{opt.l}</button>
         ))}
-        <span style={{fontSize:11,color:C.t2,fontWeight:600,marginLeft:4}}>Desde</span>
-        <input type="date" value={dateFrom} onChange={e=>setDateFrom(e.target.value)} onClick={e=>e.target.showPicker?.()} style={{padding:"5px 8px",borderRadius:6,border:`1px solid ${C.b1}`,background:C.w,color:dateFrom?C.t1:C.t3,fontSize:12.1,fontFamily:"inherit",outline:"none",boxSizing:"border-box",cursor:"pointer"}}/>
-        <span style={{fontSize:11,color:C.t2,fontWeight:600}}>Hasta</span>
-        <input type="date" value={dateTo} onChange={e=>setDateTo(e.target.value)} onClick={e=>e.target.showPicker?.()} style={{padding:"5px 8px",borderRadius:6,border:`1px solid ${C.b1}`,background:C.w,color:dateTo?C.t1:C.t3,fontSize:12.1,fontFamily:"inherit",outline:"none",boxSizing:"border-box",cursor:"pointer"}}/>
-        {(dateFrom||dateTo)&&<button aria-label="Limpiar filtro de fechas" onClick={()=>{setDateFrom("");setDateTo("");}} style={{background:"none",border:"none",cursor:"pointer",display:"flex",padding:2}}>{Ic.cross(C.t3,14)}</button>}
         <div style={{ marginLeft:"auto", display:"flex", gap:6, alignItems:"center" }}>
           {selected.size>0 && <button onClick={()=>setSelected(new Set())} style={{padding:"5px 10px",borderRadius:8,border:`1.5px solid ${C.pri}`,background:C.priPale,color:C.pri,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:4}}>
             {selected.size} seleccionado{selected.size!==1?"s":""} {Ic.cross(C.pri,10)}
@@ -125,13 +162,6 @@ export default function ReportsScreen({ onBack, freights, isDesktop, embedded, o
             {Ic.doc(C.err,12)} PDF
           </button>
         </div>
-      </div>
-      <div style={{ display:"flex", gap:6, marginBottom:12, alignItems:"center" }}>
-        <span style={{fontSize:11,color:C.t2,fontWeight:600}}>Desde</span>
-        <input type="date" value={dateFrom} onChange={e=>setDateFrom(e.target.value)} onClick={e=>e.target.showPicker?.()} style={{padding:"5px 8px",borderRadius:6,border:`1px solid ${C.b1}`,background:C.w,color:dateFrom?C.t1:C.t3,fontSize:12.1,fontFamily:"inherit",outline:"none",boxSizing:"border-box",cursor:"pointer",flex:1,minWidth:0}}/>
-        <span style={{fontSize:11,color:C.t2,fontWeight:600}}>Hasta</span>
-        <input type="date" value={dateTo} onChange={e=>setDateTo(e.target.value)} onClick={e=>e.target.showPicker?.()} style={{padding:"5px 8px",borderRadius:6,border:`1px solid ${C.b1}`,background:C.w,color:dateTo?C.t1:C.t3,fontSize:12.1,fontFamily:"inherit",outline:"none",boxSizing:"border-box",cursor:"pointer",flex:1,minWidth:0}}/>
-        {(dateFrom||dateTo)&&<button aria-label="Limpiar filtro de fechas" onClick={()=>{setDateFrom("");setDateTo("");}} style={{background:"none",border:"none",cursor:"pointer",display:"flex",padding:2,flexShrink:0}}>{Ic.cross(C.t3,14)}</button>}
       </div>
       </>)}
 
