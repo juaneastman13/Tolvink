@@ -286,8 +286,9 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
         const paOpen = openGroup && openGroup.startsWith("pa_");
         return <>
         {/* Ver todo — shown when any group is expanded */}
-        {openGroup && <button onClick={() => setOpenGroup(null)} style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:6, padding:"6px 14px", borderRadius:7, border:"none", background:C.t3, cursor:"pointer", fontFamily:"inherit", marginBottom:8 }}>
-          <span style={{ fontSize:11, fontWeight:700, color:C.w }}>Ver todo</span>
+        {openGroup && <button onClick={() => setOpenGroup(null)} style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"6px 12px", borderRadius:20, border:`1px solid ${C.b1}`, background:C.w, cursor:"pointer", fontFamily:"inherit", marginBottom:8, boxShadow:"0 1px 2px rgba(0,0,0,0.04)" }}>
+          {Ic.home(C.t3, 14)}
+          <span style={{ fontSize:12.1, fontWeight:600, color:C.t2 }}>Ver todo</span>
         </button>}
         {/* Pendientes — hidden when a "sin pendientes" group is open */}
         {!smOpen && totalPendingAll > 0 && (<>
