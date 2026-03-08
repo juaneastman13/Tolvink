@@ -1,8 +1,9 @@
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useRef, useEffect, useMemo, lazy, Suspense } from "react";
 import { C, Ic, FONT, MONO, track } from "../theme";
 import { stCfg, getActions, tripStCfg, POLL_INTERVALS, formatFreightDate } from "../constants";
 import { Bd, Btn, Loader, Sec, FileViewer } from "../components";
-import { FreightMap, SafeZone } from "../maps";
+import { SafeZone } from "../maps";
+const FreightMap = lazy(() => import("../maps").then(m => ({ default: m.FreightMap })));
 import log from "../logger";
 import { DocsGallery, FreightFileUpload, OcrResultModal, UploadOverlay } from "../uploads";
 import { apiGetAuditLog, apiSendTracking, apiApprovePendingChange, apiRejectPendingChange, apiOcrAnalyze, apiSaveOcrData } from "../api";
@@ -11,7 +12,7 @@ import { useUIStore } from "../store";
 // PDF report loaded lazily to avoid bundle bloat
 const loadPdfReport = () => import("../utils/pdf-report");
 
-export default function DetailScreen({ user, freight, perms, onBack, onAction, onTripAction, onEditTrip, actionLoading, onChat, onRefresh, onDuplicate, onEdit, goToMap }) {
+export default function DetailScreen({ user, freight, perms, onBack, onAction, onTripAction, onEditTrip, actionLoading, onChat, onRefresh, onDuplicate, onEdit, goToMap, sseConnected }) {
   const [auditLog, setAuditLog] = useState(null);
   const [showAudit, setShowAudit] = useState(false);
   const [viewFile, setViewFile] = useState(null);
@@ -45,12 +46,12 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
   // Pre-load PDF module so download works synchronously on click
   useEffect(() => { loadPdfReport(); }, []);
 
-  // Auto-refresh freight detail every 10s
+  // Auto-refresh freight detail — skip when SSE pushes real-time updates, fallback 15s poll otherwise
   useEffect(() => {
-    if (!freight?.id || !onRefresh) return;
+    if (!freight?.id || !onRefresh || sseConnected) return;
     const iv = setInterval(() => { if (!document.hidden) onRefresh(freight.id); }, POLL_INTERVALS.DETAIL_REFRESH);
     return () => clearInterval(iv);
-  }, [freight?.id, onRefresh]);
+  }, [freight?.id, onRefresh, sseConnected]);
 
   // Auto-load audit log on mount / freight change
   useEffect(() => {
@@ -534,7 +535,9 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
           })()}
         </div>
         <div style={{ flex:1 }}>
-          <FreightMap freightId={freight.id} originLat={freight.originLat} originLng={freight.originLng} destLat={freight.destLat} destLng={freight.destLng} originName={[freight.originCompanyName, [freight.fieldName,freight.originName].filter(Boolean).join("/")].filter(Boolean).join(" — ")} destName={freight.destName} status={freight.status} isDriver={user.userType==="transporter"||(user.userType==="producer"&&freight.isOwnFleet)}/>
+          <Suspense fallback={<div style={{height:300,display:"flex",alignItems:"center",justifyContent:"center",color:C.t3,fontSize:13}}>Cargando mapa...</div>}>
+            <FreightMap freightId={freight.id} originLat={freight.originLat} originLng={freight.originLng} destLat={freight.destLat} destLng={freight.destLng} originName={[freight.originCompanyName, [freight.fieldName,freight.originName].filter(Boolean).join("/")].filter(Boolean).join(" — ")} destName={freight.destName} status={freight.status} isDriver={user.userType==="transporter"||(user.userType==="producer"&&freight.isOwnFleet)}/>
+          </Suspense>
         </div>
       </div>
 

@@ -340,8 +340,10 @@ export function useFreights(user, isAuthInitialized) {
       const mapped = (r.data||[]).map(mapFreight);
       pageRef.current = nextPage;
       setFreights(p=>{
-        const ids = new Set(p.map(f=>f.id));
-        return [...p, ...mapped.filter(f=>!ids.has(f.id))];
+        // Merge: update stale items + append new ones (prevents divergence on page boundaries)
+        const map = new Map(p.map(f=>[f.id,f]));
+        mapped.forEach(f=>map.set(f.id,f));
+        return [...map.values()];
       });
       setHasMore((r.page||1) < (r.pages||1));
     }
@@ -379,8 +381,10 @@ export function useFreights(user, isAuthInitialized) {
   const assign = useCallback(async (fId,compId,truckId,driverId)=>{ try { const body={transportCompanyId:compId}; if(truckId) body.truckId=truckId; if(driverId) body.driverId=driverId; await apiAssignFreight(fId,body); await refresh(fId); return {ok:true}; } catch(e) { return {ok:false,error:e.message}; } },[refresh]);
   const respond = useCallback(async (fId,action,reason,truckId,driverId)=>{
     let prev = null;
-    if(action==="accepted") {
-      prev = freightsRef.current.find(f=>f.id===fId)?.status || null;
+    const freight = freightsRef.current.find(f=>f.id===fId);
+    // Skip optimistic update for multi-truck freights — server derives status differently
+    if(action==="accepted" && !(freight?.truckCount > 1)) {
+      prev = freight?.status || null;
       setFreights(p=>{ const next=p.map(f=>f.id===fId?{...f,status:"accepted"}:f); freightsRef.current=next; return next; });
     }
     try { await apiRespondFreight(fId,{action,reason,truckId,driverId}); await refresh(fId); return {ok:true}; }

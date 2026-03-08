@@ -42,6 +42,8 @@ export const FONT = `'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-
 export const MONO = `'JetBrains Mono','IBM Plex Mono','SF Mono',monospace`;
 
 // ======================== SVG ICONS ==================================
+// Performance note: Ic.* functions create new JSX per call. For hot paths,
+// consider using React.memo components or pre-computed constants.
 export const Ic = {
   home:(c=C.t3,s=20)=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>,
   truck:(c=C.t3,s=20)=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>,

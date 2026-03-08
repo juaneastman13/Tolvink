@@ -4,6 +4,8 @@ import { stCfg } from "./constants";
 import { captureError } from "./sentry";
 
 // ======================== BASE COMPONENTS ============================
+// Performance note: Inline style={{}} objects create new references per render.
+// For frequently re-rendered components, extract as module-level constants.
 
 export const Av = memo(function Av({ letters, size=36, color=C.pri }) {
   return <div style={{ width:size, height:size, borderRadius:size, display:"flex", alignItems:"center", justifyContent:"center", background:`${color}12`, color, fontSize:size*0.4, fontWeight:700, letterSpacing:0.5, flexShrink:0, border:`1.5px solid ${color}22` }}>{letters}</div>;
