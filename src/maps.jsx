@@ -121,7 +121,7 @@ export function LocationPicker({ label, value, onChange, defaultCenter, confirmL
         });
         mapObjRef.current = map;
 
-        const marker = new maps.Marker({ position: startCenter, map, draggable: true });
+        const marker = new maps.Marker({ position: startCenter, map, draggable: true, icon: _pinSymbol(maps, "#E53935") });
         markerRef.current = marker;
 
         if (!geocoderRef.current) geocoderRef.current = new maps.Geocoder();
@@ -275,7 +275,7 @@ export function LocPickerFullscreen({ value, onChange, defaultCenter, label, onC
         });
         mapObjRef.current = map;
 
-        const marker = new maps.Marker({ position: startCenter, map, draggable: true });
+        const marker = new maps.Marker({ position: startCenter, map, draggable: true, icon: _pinSymbol(maps, "#E53935") });
         markerRef.current = marker;
 
         if (!geocoderRef.current) geocoderRef.current = new maps.Geocoder();
@@ -367,15 +367,9 @@ export function LocPickerFullscreen({ value, onChange, defaultCenter, label, onC
 
 const _TYPE_LABEL = { chofer: "Chofer", producer: "Productor", plant: "Planta", transporter: "Transportista", other: "Participante" };
 const _TYPE_COLORS = { chofer: "#FF6A00", producer: "#1A6B37", plant: "#003882", transporter: "#8B5CF6", other: "#6B7280" };
-const _pinSvg = (color) => `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="40" viewBox="0 0 28 40"><path d="M14 0C6.27 0 0 6.27 0 14c0 10.5 14 26 14 26s14-15.5 14-26C28 6.27 21.73 0 14 0z" fill="${color}" stroke="#fff" stroke-width="2"/><circle cx="14" cy="13" r="5" fill="#fff"/></svg>`;
-// Pre-compute participant icon URLs to avoid runtime encoding
-const _participantIconUrls = {};
-Object.entries(_TYPE_COLORS).forEach(([type, color]) => {
-  _participantIconUrls[type] = "data:image/svg+xml;base64," + btoa(_pinSvg(color));
-});
 const _participantIcon = (type, maps) => {
-  const url = _participantIconUrls[type] || _participantIconUrls.other;
-  return { url, scaledSize: new maps.Size(28, 40), anchor: new maps.Point(14, 40) };
+  const color = _TYPE_COLORS[type] || _TYPE_COLORS.other;
+  return _pinSymbol(maps, color, 1.0);
 };
 const _renderParticipantMarkers = (participants, mapInst, markersRef, iwRef, userPos) => {
   const maps = window.google?.maps;
@@ -492,7 +486,7 @@ export function FreightMap({ freightId, originLat, originLng, destLat, destLng, 
           new maps.Marker({
             position: origin, map,
             title: originName || "Origen",
-            icon: { url: _circleIcon("#1A6B37", 24), scaledSize: new maps.Size(24, 24), anchor: new maps.Point(12, 12) },
+            icon: _circleSymbol(maps, "#1A6B37", 10),
           });
         }
 
@@ -500,7 +494,7 @@ export function FreightMap({ freightId, originLat, originLng, destLat, destLng, 
           new maps.Marker({
             position: dest, map,
             title: destName || "Destino",
-            icon: { url: _circleIcon("#003882", 24), scaledSize: new maps.Size(24, 24), anchor: new maps.Point(12, 12) },
+            icon: _circleSymbol(maps, "#003882", 10),
           });
         }
 
@@ -679,24 +673,35 @@ const _STATUS_COLOR = s => {
 };
 const _STATUS_LABEL = { pending_assignment:"Solicitado", assigned:"Asignado a flota", accepted:"Camión confirmado", in_progress:"En curso", loaded:"Cargando", finished:"Finalizado", canceled:"Cancelado" };
 
-const _svgIcon = (svg) => "data:image/svg+xml;base64," + btoa(svg);
-// Cache for circle icon URLs to avoid repeated encoding calls
-const _circleCache = {};
-const _circleIcon = (color, size = 20) => {
-  const key = `${color}_${size}`;
-  if (_circleCache[key]) return _circleCache[key];
-  const r = size / 2;
-  const url = "data:image/svg+xml;base64," + btoa(`<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><circle cx="${r}" cy="${r}" r="${r - 2}" fill="${color}" stroke="#fff" stroke-width="2"/></svg>`);
-  _circleCache[key] = url;
-  return url;
-};
-const _FIELD_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#1A6B37" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 22L12 12l10 10"/><path d="M2 16l5-5 3 3 4-4 3 3 5-5"/><line x1="2" y1="22" x2="22" y2="22"/></svg>';
-const _PLANT_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#003882" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20h20"/><path d="M5 20V8l5 4V8l5 4V4h3v16"/></svg>';
-const _TRUCK_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="#FF6A00" stroke="#fff" stroke-width="1.5"><rect x="1" y="3" width="15" height="13" rx="2"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>';
-// Pre-encode entity SVGs at module load (avoids runtime encoding per marker)
-const _FIELD_ICON_URL = _svgIcon(_FIELD_SVG);
-const _PLANT_ICON_URL = _svgIcon(_PLANT_SVG);
-const _TRUCK_ICON_URL = _svgIcon(_TRUCK_SVG);
+// ======================== MARKER SYMBOLS (no image loading) ========================
+// Use google.maps.Symbol with SVG paths — rendered natively, no broken images.
+// Pin path for draggable markers (LocationPicker etc.)
+const _PIN_PATH = "M12 0C5.37 0 0 5.37 0 12c0 9 12 22 12 22s12-13 12-22C24 5.37 18.63 0 12 0zm0 16a4 4 0 110-8 4 4 0 010 8z";
+const _pinSymbol = (maps, color = "#E53935", scale = 1.2) => ({
+  path: _PIN_PATH, fillColor: color, fillOpacity: 1,
+  strokeColor: "#fff", strokeWeight: 2, scale,
+  anchor: new maps.Point(12, 34), labelOrigin: new maps.Point(12, 12),
+});
+// Circle symbol for freight dots on overview map
+const _circleSymbol = (maps, color, scale = 8) => ({
+  path: maps.SymbolPath.CIRCLE, fillColor: color, fillOpacity: 1,
+  strokeColor: "#fff", strokeWeight: 2, scale,
+});
+// Entity symbols (field, plant, truck) — use colored circles with labels
+const _fieldSymbol = (maps) => ({
+  path: maps.SymbolPath.CIRCLE, fillColor: "#1A6B37", fillOpacity: 1,
+  strokeColor: "#fff", strokeWeight: 2, scale: 10,
+});
+const _plantSymbol = (maps) => ({
+  path: maps.SymbolPath.CIRCLE, fillColor: "#003882", fillOpacity: 1,
+  strokeColor: "#fff", strokeWeight: 2.5, scale: 10,
+});
+const _truckSymbol = (maps) => ({
+  path: "M20 8h-3V4H3c-1.1 0-2 .9-2 2v11h2a3 3 0 006 0h6a3 3 0 006 0h2v-5l-3-4zM6 18.5A1.5 1.5 0 014.5 17 1.5 1.5 0 016 15.5 1.5 1.5 0 017.5 17 1.5 1.5 0 016 18.5zm13.5-9L21.46 12H17V9.5h2.5zM18 18.5a1.5 1.5 0 01-1.5-1.5 1.5 1.5 0 011.5-1.5 1.5 1.5 0 011.5 1.5 1.5 1.5 0 01-1.5 1.5z",
+  fillColor: "#FF6A00", fillOpacity: 1,
+  strokeColor: "#fff", strokeWeight: 1.5, scale: 1.3,
+  anchor: new maps.Point(12, 12),
+});
 
 export function FreightsOverviewMap({ freights, onSelect, fields, plants }) {
   const mapRef = useRef(null);
@@ -763,11 +768,11 @@ export function FreightsOverviewMap({ freights, onSelect, fields, plants }) {
         const existing = freightMk.current[f.id];
         if (existing) {
           existing.setPosition(pos);
-          existing.setIcon({ url: _circleIcon(col, 20), scaledSize: new maps.Size(20, 20), anchor: new maps.Point(10, 10) });
+          existing.setIcon(_circleSymbol(maps, col, 8));
           existing._info = buildInfo;
         } else {
           const mk = new maps.Marker({ position: pos, map: mapObj.current, title: f.code,
-            icon: { url: _circleIcon(col, 20), scaledSize: new maps.Size(20, 20), anchor: new maps.Point(10, 10) } });
+            icon: _circleSymbol(maps, col, 8) });
           mk._info = buildInfo;
           mk.addListener("click", () => { info.current.setContent(mk._info()); info.current.open(mapObj.current, mk); });
           mk.addListener("dblclick", () => { if (onSelectRef.current) onSelectRef.current(f.id); });
@@ -793,7 +798,7 @@ export function FreightsOverviewMap({ freights, onSelect, fields, plants }) {
       const pos = { lat, lng };
       bounds.extend(pos); has = true;
       const mk = new maps.Marker({ position: pos, map: mapObj.current, title: f.name,
-        icon: { url: _FIELD_ICON_URL, scaledSize: new maps.Size(28, 28), anchor: new maps.Point(14, 14) } });
+        icon: _fieldSymbol(maps) });
       mk.addListener("click", () => {
         info.current.setContent(`<div style="font-family:system-ui;font-size:12px;line-height:1.4"><strong>${_esc(f.name)}</strong><br/><span style="color:#1A6B37;font-weight:600">Campo</span>${f.address ? "<br/>"+_esc(f.address) : ""}${f.hectares ? "<br/>"+_esc(f.hectares)+" ha" : ""}</div>`);
         info.current.open(mapObj.current, mk);
@@ -808,7 +813,7 @@ export function FreightsOverviewMap({ freights, onSelect, fields, plants }) {
       const pos = { lat, lng };
       bounds.extend(pos); has = true;
       const mk = new maps.Marker({ position: pos, map: mapObj.current, title: p.name,
-        icon: { url: _PLANT_ICON_URL, scaledSize: new maps.Size(28, 28), anchor: new maps.Point(14, 14) } });
+        icon: _plantSymbol(maps) });
       mk.addListener("click", () => {
         info.current.setContent(`<div style="font-family:system-ui;font-size:12px;line-height:1.4"><strong>${_esc(p.name)}</strong><br/><span style="color:#003882;font-weight:600">Planta</span>${p.address ? "<br/>"+_esc(p.address) : ""}</div>`);
         info.current.open(mapObj.current, mk);
@@ -856,7 +861,7 @@ export function FreightsOverviewMap({ freights, onSelect, fields, plants }) {
         } else {
           const mk = new maps.Marker({
             position: { lat, lng }, map: mapObj.current, title: `${f.code} \u2014 En curso`,
-            icon: { url: _TRUCK_ICON_URL, scaledSize: new maps.Size(36, 36), anchor: new maps.Point(18, 18) },
+            icon: _truckSymbol(maps),
             zIndex: 999,
           });
           mk._fid = f.id;
@@ -966,7 +971,7 @@ export function MapOverlay({ lat, lng, label, destLat, destLng, destLabel, freig
       mapInst.current = map;
       if (!pIw.current) pIw.current = new maps.InfoWindow();
       const marker = new maps.Marker({ position: pos, map, animation: maps.Animation.DROP,
-        icon: { url: _circleIcon(C.pri, 28), scaledSize: new maps.Size(28, 28), anchor: new maps.Point(14, 14) } });
+        icon: _pinSymbol(maps, C.pri) });
       originMk.current = marker;
       const iw = new maps.InfoWindow({ content: mkInfoContent(label, lat, lng) });
       iw.open(map, marker);
@@ -974,7 +979,7 @@ export function MapOverlay({ lat, lng, label, destLat, destLng, destLabel, freig
       if (destLat && destLng) {
         const dpos = { lat: Number(destLat), lng: Number(destLng) };
         const dm = new maps.Marker({ position: dpos, map, animation: maps.Animation.DROP,
-          icon: { url: _circleIcon("#0891B2", 28), scaledSize: new maps.Size(28, 28), anchor: new maps.Point(14, 14) } });
+          icon: _pinSymbol(maps, "#0891B2") });
         destMk.current = dm;
         const iw2 = new maps.InfoWindow({ content: mkInfoContent(destLabel, destLat, destLng) });
         dm.addListener("click", () => iw2.open(map, dm));
