@@ -247,7 +247,7 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
     if (anotherOpen) return null;
     return (
       <div key={gKey}>
-        <button onClick={() => toggleGroup(gKey)} style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, padding: "8px 0", background: "none", border: "none", borderBottom: `1px solid ${C.b2}`, cursor: "pointer", fontFamily: "inherit", textAlign: "left" }}>
+        <button onClick={() => toggleGroup(gKey)} style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, padding: "8px 0", background: isOpen ? C.bg : "none", border: "none", borderBottom: `1px solid ${C.b2}`, cursor: "pointer", fontFamily: "inherit", textAlign: "left", ...(isOpen ? { position: "sticky", top: 32, zIndex: 10 } : {}) }}>
           {group.icon(group.color, 14)}
           <span style={{ fontSize: 15.4, fontWeight: 800, color: group.color }}>{group.items.length}</span>
           <div style={{ flex: 1, fontSize: 14.3, fontWeight: 600, color: C.t1 }}>{group.label}</div>
@@ -277,10 +277,10 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
         const smOpen = openGroup && openGroup.startsWith("sm_");
         const paOpen = openGroup && openGroup.startsWith("pa_");
         return <>
-        {/* Ver todo — shown when any group is expanded */}
-        {openGroup && <div style={{ display:"flex", justifyContent:"center", marginBottom:8 }}><button onClick={() => setOpenGroup(null)} style={{ display:"inline-flex", alignItems:"center", padding:"6px 16px", borderRadius:20, border:`1px solid ${C.b1}`, background:C.w, cursor:"pointer", fontFamily:"inherit", boxShadow:"0 1px 2px rgba(0,0,0,0.04)" }}>
+        {/* Ver todo — shown when any group is expanded, sticky at top */}
+        {openGroup && <div style={{ position:"sticky", top:0, zIndex:11, background:C.bg, paddingTop:4, paddingBottom:4 }}><div style={{ display:"flex", justifyContent:"center" }}><button onClick={() => setOpenGroup(null)} style={{ display:"inline-flex", alignItems:"center", padding:"6px 16px", borderRadius:20, border:`1px solid ${C.b1}`, background:C.w, cursor:"pointer", fontFamily:"inherit", boxShadow:"0 1px 2px rgba(0,0,0,0.04)" }}>
           <span style={{ fontSize:12.1, fontWeight:600, color:C.t2 }}>Ver todo</span>
-        </button></div>}
+        </button></div></div>}
         {/* Pendientes — hidden when a "sin pendientes" group is open */}
         {!smOpen && totalPendingAll > 0 && (<>
           <div style={{ padding: compact ? "8px 10px" : "12px 14px", borderRadius: 12, background: `${C.acc}0D`, marginBottom: 8 }}>
