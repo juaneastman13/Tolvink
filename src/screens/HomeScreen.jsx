@@ -281,7 +281,7 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
 
       {/* Pendientes */}
       {totalPendingAll > 0 && (<>
-        <div style={{ padding: compact ? "8px 10px" : "12px 14px", borderRadius: 12, background: `${C.acc}0D`, borderLeft: `3px solid ${C.acc}`, marginBottom: 8 }}>
+        <div style={{ padding: compact ? "8px 10px" : "12px 14px", borderRadius: 12, background: `${C.acc}0D`, marginBottom: 8 }}>
           <div style={{ display: "flex", alignItems: "center", gap: compact ? 8 : 10 }}>
             {!compact && <span style={{ fontSize: 24.2, fontWeight: 800, color: C.acc, lineHeight: 1, minWidth: 28, textAlign: "center" }}>{pendingCount}</span>}
             {compact && <div style={{ width: 26, height: 26, borderRadius: "50%", background: C.acc, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, position: "relative" }}>
@@ -301,17 +301,6 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
         </div>
         {pendingByProgress.length > 0 && (
           <div style={{ marginBottom: 16 }}>
-            {/* Mini progress bar */}
-            <div style={{ display:"flex", gap:3, marginBottom:10 }}>
-              {PROGRESS_GROUPS.filter(g=>g.key!=="cancelado").map(pg => {
-                const match = pendingByProgress.find(g=>g.key===pg.key);
-                const count = match ? match.items.length : 0;
-                return <div key={pg.key} style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:3 }}>
-                  <div style={{ width:"100%", height:4, borderRadius:2, background: count > 0 ? pg.color : C.b1 }} />
-                  <span style={{ fontSize:10, fontWeight:count>0?700:500, color: count>0 ? pg.color : C.t3 }}>{pg.label}{count>0?` (${count})`:""}</span>
-                </div>;
-              })}
-            </div>
             {pendingByProgress.map(g => renderGroup(g, "pa", "pending"))}
           </div>
         )}
@@ -336,17 +325,6 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
       {/* Summary groups — by progress state */}
       {summaryGroups.length > 0 ? (
         <div>
-          {/* Mini progress bar */}
-          <div style={{ display:"flex", gap:3, marginBottom:10 }}>
-            {PROGRESS_GROUPS.filter(g=>g.key!=="cancelado").map(pg => {
-              const match = summaryGroups.find(g=>g.key===pg.key);
-              const count = match ? match.items.length : 0;
-              return <div key={pg.key} style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:3 }}>
-                <div style={{ width:"100%", height:4, borderRadius:2, background: count > 0 ? pg.color : C.b1 }} />
-                <span style={{ fontSize:10, fontWeight:count>0?700:500, color: count>0 ? pg.color : C.t3 }}>{pg.label}{count>0?` (${count})`:""}</span>
-              </div>;
-            })}
-          </div>
           {summaryGroups.map(g => renderGroup(g, "sm", "pending"))}
         </div>
       ) : null}
