@@ -406,14 +406,14 @@ export function Sidebar({ active, onChange, unread=0, pendingCount=0, notifCount
 
       {/* Company selector — dropdown if multiple */}
       {activeCompany && activeCompany.name && (
-        <div ref={compRef} style={{ padding:"10px 14px", borderBottom:`1px solid ${C.b2}`, position:"relative" }}>
-          <button onClick={() => hasMultiple && setCompOpen(!compOpen)} style={{ display:"flex", alignItems:"center", gap:8, padding:"8px 10px", borderRadius:8, background:`${(_TYPE_IC_COLORS[activeCompany.type]||C.t2)}0A`, border:`1px solid ${(_TYPE_IC_COLORS[activeCompany.type]||C.t2)+'30'}`, width:"100%", cursor:hasMultiple?"pointer":"default", fontFamily:"inherit", textAlign:"left" }}>
-            <span style={{ display:"flex", flexShrink:0 }}>{_typeIcon(activeCompany.type,16) || <span style={{width:8,height:8,borderRadius:4,background:C.t2}}/>}</span>
+        <div ref={compRef} style={{ padding:"8px 14px", borderBottom:`1px solid ${C.b2}`, position:"relative" }}>
+          <button onClick={() => hasMultiple && setCompOpen(!compOpen)} style={{ display:"flex", alignItems:"center", gap:6, padding:"6px 8px", borderRadius:7, background:`${(_TYPE_IC_COLORS[activeCompany.type]||C.t2)}0A`, border:`1px solid ${(_TYPE_IC_COLORS[activeCompany.type]||C.t2)+'30'}`, width:"100%", cursor:hasMultiple?"pointer":"default", fontFamily:"inherit", textAlign:"left" }}>
+            <span style={{ display:"flex", flexShrink:0 }}>{_typeIcon(activeCompany.type,14) || <span style={{width:7,height:7,borderRadius:4,background:C.t2}}/>}</span>
             <div style={{ flex:1, minWidth:0 }}>
-              <div style={{ fontSize:13.2, fontWeight:700, color:C.t1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{activeCompany.name}</div>
-              {compLabel && <div style={{ fontSize:11, fontWeight:600, color:_TYPE_IC_COLORS[activeCompany.type]||C.t2 }}>{compLabel}</div>}
+              <div style={{ fontSize:11.2, fontWeight:700, color:C.t1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{activeCompany.name}</div>
+              {compLabel && <div style={{ fontSize:9.4, fontWeight:600, color:_TYPE_IC_COLORS[activeCompany.type]||C.t2 }}>{compLabel}</div>}
             </div>
-            {hasMultiple && <span style={{ fontSize:11, color:C.t3, flexShrink:0 }}>{compOpen?"▲":"▼"}</span>}
+            {hasMultiple && <span style={{ fontSize:9.4, color:C.t3, flexShrink:0 }}>{compOpen?"▲":"▼"}</span>}
           </button>
           {compOpen && hasMultiple && (
             <div style={{ position:"absolute", left:14, right:14, top:"100%", marginTop:2, background:C.w, border:`1px solid ${C.b1}`, borderRadius:10, boxShadow:C.shMd, padding:4, zIndex:100, maxHeight:260, overflowY:"auto" }}>
