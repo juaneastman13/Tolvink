@@ -55,128 +55,141 @@ export default function MenuScreen({ user, perms, onLogout, onNav, isDesktop, on
     </button>
   );
 
-  return (
-    <div style={{flex:1,overflow:"auto",padding:18}}>
+  const profileSection = (
+    <div style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius:12,padding:16,boxShadow:C.sh}}>
+      <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:14}}>{Ic.user(C.pri,16)}<span style={{fontSize:11.6,fontWeight:700,color:C.t2,textTransform:"uppercase",letterSpacing:0.5}}>Mi Perfil</span></div>
 
-      {/* Profile section */}
-      <div style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius:12,padding:16,marginBottom:12,boxShadow:C.sh}}>
-        <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:14}}>{Ic.user(C.pri,16)}<span style={{fontSize:11.6,fontWeight:700,color:C.t2,textTransform:"uppercase",letterSpacing:0.5}}>Mi Perfil</span></div>
-
-        <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:14}}>
-          <Av letters={user.av} size={56} color={tc}/>
-          <div>
-            <div style={{fontSize:17.6,fontWeight:700,color:C.t1}}>{user.name}</div>
-            <div style={{fontSize:13.2,color:C.t2,marginTop:2}}>{user.email}</div>
-            {user.phone && <div style={{fontSize:12.1,color:C.t3,marginTop:1}}>{user.phone}</div>}
-          </div>
+      <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:14}}>
+        <Av letters={user.av} size={56} color={tc}/>
+        <div>
+          <div style={{fontSize:17.6,fontWeight:700,color:C.t1}}>{user.name}</div>
+          <div style={{fontSize:13.2,color:C.t2,marginTop:2}}>{user.email}</div>
+          {user.phone && <div style={{fontSize:12.1,color:C.t3,marginTop:1}}>{user.phone}</div>}
         </div>
-
-        {/* Companies */}
-        <div style={{marginBottom:12}}>
-          <div style={{fontSize:11,fontWeight:700,color:C.t3,textTransform:"uppercase",letterSpacing:0.5,marginBottom:8}}>Empresas</div>
-
-          {isDesktop ? (
-          <div style={{border:`1px solid ${C.b2}`,borderRadius:8,overflow:"hidden"}}>
-            <table style={{width:"100%",borderCollapse:"collapse",fontSize:13.2,fontFamily:"inherit"}}>
-              <thead>
-                <tr style={{background:C.bg,borderBottom:`1.5px solid ${C.b1}`}}>
-                  <th style={{padding:"7px 10px",textAlign:"left",fontSize:11,fontWeight:700,color:C.t3,textTransform:"uppercase",letterSpacing:0.4}}>Empresa</th>
-                  <th style={{padding:"7px 10px",textAlign:"left",fontSize:11,fontWeight:700,color:C.t3,textTransform:"uppercase",letterSpacing:0.4}}>Tipo</th>
-                  <th style={{padding:"7px 10px",textAlign:"left",fontSize:11,fontWeight:700,color:C.t3,textTransform:"uppercase",letterSpacing:0.4}}>Rol</th>
-                </tr>
-              </thead>
-              <tbody>
-                {companies.map((c,i)=>{
-                  const isActive = c.companyId === user.activeCompanyId;
-                  const roleLabel = c.role === "chofer" ? "Chofer" : c.role === "gerente" || c.effectiveRole === "admin" ? "Gerente" : "Operario";
-                  const isExp = switching === "exp_"+c.companyId;
-                  return (<Fragment key={c.companyId||i}>
-                    <tr onClick={()=>setSwitching(isExp?null:"exp_"+c.companyId)} style={{cursor:"pointer",borderTop:i>0?`1px solid ${C.b2}`:"none",background:isExp?`${C.pri}06`:"transparent",transition:"background 0.15s"}}>
-                      <td style={{padding:"8px 10px",fontWeight:600,color:C.t1,fontSize:13.2}}>
-                        <div style={{display:"flex",alignItems:"center",gap:5}}>
-                          {companies.length>1 && <div style={{width:18,height:18,borderRadius:9,border:`2px solid ${isActive?C.pri:C.b2}`,background:isActive?C.pri:"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,cursor:"pointer"}} onClick={e=>{e.stopPropagation();if(!isActive)handleSwitch(c.companyId);}}>{isActive&&<div style={{width:8,height:8,borderRadius:4,background:C.w}}/>}</div>}
-                          <span>{c.companyName||user.entity}</span>
-                        </div>
-                      </td>
-                      <td style={{padding:"8px 10px"}}><Bd color={c.color}>{c.label}</Bd></td>
-                      <td style={{padding:"8px 10px"}}><Bd color={C.t2} bg={C.bgInput}>{roleLabel}</Bd></td>
-                    </tr>
-                    {isExp && <tr><td colSpan={3} style={{padding:"6px 10px 10px",background:`${C.pri}04`,borderTop:`1px dashed ${C.b2}`}}>
-                      <div style={{fontSize:11,fontWeight:700,color:C.t3,textTransform:"uppercase",marginBottom:5}}>Permisos</div>
-                      <div style={{display:"flex",flexWrap:"wrap",gap:4}}>
-                        {(()=>{
-                          const p=[];
-                          if(roleLabel==="Gerente"){if(perms.canRequest)p.push("Solicitar fletes");if(perms.canApprove)p.push("Aprobar fletes");if(perms.canAssignDriver)p.push("Asignar choferes");if(perms.canCancel)p.push("Cancelar fletes");if(perms.canReject)p.push("Rechazar viajes");p.push("Ver informes","Administrar empresa");}
-                          else{p.push("Ver fletes asignados","Confirmar carga","Confirmar descarga");}
-                          return p.map((pp,j)=><div key={j} style={{display:"flex",alignItems:"center",gap:3,fontSize:12.1,color:C.t1,padding:"2px 7px",background:C.w,borderRadius:5,border:`1px solid ${C.b2}`}}>{Ic.chk(C.pri,10)} {pp}</div>);
-                        })()}
-                      </div>
-                    </td></tr>}
-                  </Fragment>);
-                })}
-              </tbody>
-            </table>
-          </div>
-          ) : (
-          <div style={{display:"flex",flexDirection:"column",gap:8}}>
-            {companies.map((c,i)=>{
-              const isActive = c.companyId === user.activeCompanyId;
-              const roleLabel = c.role === "chofer" ? "Chofer" : c.role === "gerente" || c.effectiveRole === "admin" ? "Gerente" : "Operario";
-              const isExp = switching === "exp_"+c.companyId;
-              return (<div key={c.companyId||i} style={{border:`1.5px solid ${isActive?C.pri:C.b2}`,borderRadius:10,overflow:"hidden",background:isActive?`${C.pri}04`:C.w,transition:"all 0.15s"}}>
-                <button onClick={()=>{if(companies.length>1&&!isActive)handleSwitch(c.companyId);setSwitching(isExp?null:"exp_"+c.companyId);}} style={{width:"100%",display:"flex",alignItems:"center",gap:10,padding:"12px 14px",minHeight:52,background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",textAlign:"left"}}>
-                  {companies.length>1 && <div style={{width:20,height:20,borderRadius:10,border:`2px solid ${isActive?C.pri:C.b2}`,background:isActive?C.pri:"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{isActive&&<div style={{width:8,height:8,borderRadius:4,background:C.w}}/>}</div>}
-                  <div style={{flex:1,minWidth:0}}>
-                    <div style={{fontSize:14.3,fontWeight:700,color:C.t1}}>{c.companyName||user.entity}</div>
-                    <div style={{display:"flex",gap:6,marginTop:4,flexWrap:"wrap"}}>
-                      <Bd color={c.color}>{c.label}</Bd>
-                      <Bd color={C.t2} bg={C.bgInput}>{roleLabel}</Bd>
-                    </div>
-                  </div>
-                  <span style={{display:"flex",transform:isExp?"rotate(-90deg)":"rotate(0deg)",transition:"transform 0.15s"}}>{Ic.chev(C.t3,14)}</span>
-                </button>
-                {isExp && <div style={{padding:"8px 14px 12px",borderTop:`1px dashed ${C.b2}`,background:`${C.pri}04`}}>
-                  <div style={{fontSize:11,fontWeight:700,color:C.t3,textTransform:"uppercase",marginBottom:5}}>Permisos</div>
-                  <div style={{display:"flex",flexWrap:"wrap",gap:4}}>
-                    {(()=>{
-                      const p=[];
-                      if(roleLabel==="Gerente"){if(perms.canRequest)p.push("Solicitar fletes");if(perms.canApprove)p.push("Aprobar fletes");if(perms.canAssignDriver)p.push("Asignar choferes");if(perms.canCancel)p.push("Cancelar fletes");if(perms.canReject)p.push("Rechazar viajes");p.push("Ver informes","Administrar empresa");}
-                      else{p.push("Ver fletes asignados","Confirmar carga","Confirmar descarga");}
-                      return p.map((pp,j)=><div key={j} style={{display:"flex",alignItems:"center",gap:3,fontSize:12.1,color:C.t1,padding:"2px 7px",background:C.w,borderRadius:5,border:`1px solid ${C.b2}`}}>{Ic.chk(C.pri,10)} {pp}</div>);
-                    })()}
-                  </div>
-                </div>}
-              </div>);
-            })}
-          </div>
-          )}
-
-          {companies.length>1 && <div style={{fontSize:11,color:C.t3,marginTop:4}}>{isDesktop?"Tocá el círculo para cambiar empresa activa · Tocá la fila para ver permisos":"Tocá una empresa para cambiarla y ver permisos"}</div>}
-        </div>
-
-        <button onClick={()=>onNav("mydata")} style={{width:"100%",padding:"12px 16px",minHeight:44,borderRadius:8,border:`1px solid ${C.pri}`,background:`${C.pri}08`,color:C.pri,fontSize:13.2,fontWeight:600,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
-          {Ic.edit(C.pri,14)} Administrar mis datos
-        </button>
-
-
       </div>
 
+      {/* Companies */}
+      <div style={{marginBottom:12}}>
+        <div style={{fontSize:11,fontWeight:700,color:C.t3,textTransform:"uppercase",letterSpacing:0.5,marginBottom:8}}>Empresas</div>
+
+        {isDesktop ? (
+        <div style={{border:`1px solid ${C.b2}`,borderRadius:8,overflow:"hidden"}}>
+          <table style={{width:"100%",borderCollapse:"collapse",fontSize:13.2,fontFamily:"inherit"}}>
+            <thead>
+              <tr style={{background:C.bg,borderBottom:`1.5px solid ${C.b1}`}}>
+                <th style={{padding:"7px 10px",textAlign:"left",fontSize:11,fontWeight:700,color:C.t3,textTransform:"uppercase",letterSpacing:0.4}}>Empresa</th>
+                <th style={{padding:"7px 10px",textAlign:"left",fontSize:11,fontWeight:700,color:C.t3,textTransform:"uppercase",letterSpacing:0.4}}>Tipo</th>
+                <th style={{padding:"7px 10px",textAlign:"left",fontSize:11,fontWeight:700,color:C.t3,textTransform:"uppercase",letterSpacing:0.4}}>Rol</th>
+              </tr>
+            </thead>
+            <tbody>
+              {companies.map((c,i)=>{
+                const isActive = c.companyId === user.activeCompanyId;
+                const roleLabel = c.role === "chofer" ? "Chofer" : c.role === "gerente" || c.effectiveRole === "admin" ? "Gerente" : "Operario";
+                const isExp = switching === "exp_"+c.companyId;
+                return (<Fragment key={c.companyId||i}>
+                  <tr onClick={()=>setSwitching(isExp?null:"exp_"+c.companyId)} style={{cursor:"pointer",borderTop:i>0?`1px solid ${C.b2}`:"none",background:isExp?`${C.pri}06`:"transparent",transition:"background 0.15s"}}>
+                    <td style={{padding:"8px 10px",fontWeight:600,color:C.t1,fontSize:13.2}}>
+                      <div style={{display:"flex",alignItems:"center",gap:5}}>
+                        {companies.length>1 && <div style={{width:18,height:18,borderRadius:9,border:`2px solid ${isActive?C.pri:C.b2}`,background:isActive?C.pri:"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,cursor:"pointer"}} onClick={e=>{e.stopPropagation();if(!isActive)handleSwitch(c.companyId);}}>{isActive&&<div style={{width:8,height:8,borderRadius:4,background:C.w}}/>}</div>}
+                        <span>{c.companyName||user.entity}</span>
+                      </div>
+                    </td>
+                    <td style={{padding:"8px 10px"}}><Bd color={c.color}>{c.label}</Bd></td>
+                    <td style={{padding:"8px 10px"}}><Bd color={C.t2} bg={C.bgInput}>{roleLabel}</Bd></td>
+                  </tr>
+                  {isExp && <tr><td colSpan={3} style={{padding:"6px 10px 10px",background:`${C.pri}04`,borderTop:`1px dashed ${C.b2}`}}>
+                    <div style={{fontSize:11,fontWeight:700,color:C.t3,textTransform:"uppercase",marginBottom:5}}>Permisos</div>
+                    <div style={{display:"flex",flexWrap:"wrap",gap:4}}>
+                      {(()=>{
+                        const p=[];
+                        if(roleLabel==="Gerente"){if(perms.canRequest)p.push("Solicitar fletes");if(perms.canApprove)p.push("Aprobar fletes");if(perms.canAssignDriver)p.push("Asignar choferes");if(perms.canCancel)p.push("Cancelar fletes");if(perms.canReject)p.push("Rechazar viajes");p.push("Ver informes","Administrar empresa");}
+                        else{p.push("Ver fletes asignados","Confirmar carga","Confirmar descarga");}
+                        return p.map((pp,j)=><div key={j} style={{display:"flex",alignItems:"center",gap:3,fontSize:12.1,color:C.t1,padding:"2px 7px",background:C.w,borderRadius:5,border:`1px solid ${C.b2}`}}>{Ic.chk(C.pri,10)} {pp}</div>);
+                      })()}
+                    </div>
+                  </td></tr>}
+                </Fragment>);
+              })}
+            </tbody>
+          </table>
+        </div>
+        ) : (
+        <div style={{display:"flex",flexDirection:"column",gap:8}}>
+          {companies.map((c,i)=>{
+            const isActive = c.companyId === user.activeCompanyId;
+            const roleLabel = c.role === "chofer" ? "Chofer" : c.role === "gerente" || c.effectiveRole === "admin" ? "Gerente" : "Operario";
+            const isExp = switching === "exp_"+c.companyId;
+            return (<div key={c.companyId||i} style={{border:`1.5px solid ${isActive?C.pri:C.b2}`,borderRadius:10,overflow:"hidden",background:isActive?`${C.pri}04`:C.w,transition:"all 0.15s"}}>
+              <button onClick={()=>{if(companies.length>1&&!isActive)handleSwitch(c.companyId);setSwitching(isExp?null:"exp_"+c.companyId);}} style={{width:"100%",display:"flex",alignItems:"center",gap:10,padding:"12px 14px",minHeight:52,background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",textAlign:"left"}}>
+                {companies.length>1 && <div style={{width:20,height:20,borderRadius:10,border:`2px solid ${isActive?C.pri:C.b2}`,background:isActive?C.pri:"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{isActive&&<div style={{width:8,height:8,borderRadius:4,background:C.w}}/>}</div>}
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:14.3,fontWeight:700,color:C.t1}}>{c.companyName||user.entity}</div>
+                  <div style={{display:"flex",gap:6,marginTop:4,flexWrap:"wrap"}}>
+                    <Bd color={c.color}>{c.label}</Bd>
+                    <Bd color={C.t2} bg={C.bgInput}>{roleLabel}</Bd>
+                  </div>
+                </div>
+                <span style={{display:"flex",transform:isExp?"rotate(-90deg)":"rotate(0deg)",transition:"transform 0.15s"}}>{Ic.chev(C.t3,14)}</span>
+              </button>
+              {isExp && <div style={{padding:"8px 14px 12px",borderTop:`1px dashed ${C.b2}`,background:`${C.pri}04`}}>
+                <div style={{fontSize:11,fontWeight:700,color:C.t3,textTransform:"uppercase",marginBottom:5}}>Permisos</div>
+                <div style={{display:"flex",flexWrap:"wrap",gap:4}}>
+                  {(()=>{
+                    const p=[];
+                    if(roleLabel==="Gerente"){if(perms.canRequest)p.push("Solicitar fletes");if(perms.canApprove)p.push("Aprobar fletes");if(perms.canAssignDriver)p.push("Asignar choferes");if(perms.canCancel)p.push("Cancelar fletes");if(perms.canReject)p.push("Rechazar viajes");p.push("Ver informes","Administrar empresa");}
+                    else{p.push("Ver fletes asignados","Confirmar carga","Confirmar descarga");}
+                    return p.map((pp,j)=><div key={j} style={{display:"flex",alignItems:"center",gap:3,fontSize:12.1,color:C.t1,padding:"2px 7px",background:C.w,borderRadius:5,border:`1px solid ${C.b2}`}}>{Ic.chk(C.pri,10)} {pp}</div>);
+                  })()}
+                </div>
+              </div>}
+            </div>);
+          })}
+        </div>
+        )}
+
+        {companies.length>1 && <div style={{fontSize:11,color:C.t3,marginTop:4}}>{isDesktop?"Tocá el círculo para cambiar empresa activa · Tocá la fila para ver permisos":"Tocá una empresa para cambiarla y ver permisos"}</div>}
+      </div>
+
+      <button onClick={()=>onNav("mydata")} style={{width:"100%",padding:"12px 16px",minHeight:44,borderRadius:8,border:`1px solid ${C.pri}`,background:`${C.pri}08`,color:C.pri,fontSize:13.2,fontWeight:600,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
+        {Ic.edit(C.pri,14)} Administrar mis datos
+      </button>
+    </div>
+  );
+
+  const leftPanel = (
+    <div style={{display:"flex",flexDirection:"column",gap:12}}>
       {/* Management items */}
       {mgmtItems.length>0 && (
-        <div style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius:12,padding:4,marginBottom:12,boxShadow:C.sh}}>
+        <div style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius:12,padding:4,boxShadow:C.sh}}>
           {mgmtItems.map((m,i)=>menuItem(m,i,mgmtItems))}
         </div>
       )}
 
       {/* PWA install banner */}
       {canInstall && (
-        <button onClick={() => window.installPWA?.()} style={{ width:"100%", padding:"14px 16px", borderRadius:12, border:`1.5px solid ${C.pri}`, background:C.priPale, color:C.pri, fontSize:14.3, fontWeight:700, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:8, marginBottom:12, boxShadow:C.sh }}>
+        <button onClick={() => window.installPWA?.()} style={{ width:"100%", padding:"14px 16px", borderRadius:12, border:`1.5px solid ${C.pri}`, background:C.priPale, color:C.pri, fontSize:14.3, fontWeight:700, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:8, boxShadow:C.sh }}>
           {Ic.plus(C.pri, 16)} Instalar Tolvink en tu dispositivo
         </button>
       )}
 
-      <Btn full v="err" onClick={onLogout} icon={Ic.out(C.err,16)} style={{marginTop:4}}>Cerrar sesión</Btn>
+      <Btn full v="err" onClick={onLogout} icon={Ic.out(C.err,16)}>Cerrar sesión</Btn>
+    </div>
+  );
 
+  return (
+    <div style={{flex:1,overflow:"auto",padding:18}}>
+      {isDesktop ? (
+        <div style={{display:"flex",gap:18,alignItems:"flex-start"}}>
+          <div style={{flex:1,minWidth:0}}>{leftPanel}</div>
+          <div style={{flex:1,minWidth:0}}>{profileSection}</div>
+        </div>
+      ) : (
+        <div style={{display:"flex",flexDirection:"column",gap:12}}>
+          {profileSection}
+          {leftPanel}
+        </div>
+      )}
     </div>
   );
 }
