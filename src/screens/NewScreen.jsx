@@ -72,7 +72,7 @@ function SummaryCard({ secSummary, secComplete, form, showTruckSelect, isDesktop
   );
 }
 
-function MobileStepModal({ open, title, summary, children, onClose, stepIndex, totalSteps }) {
+function MobileStepModal({ open, title, summary, children, onClose, onPrev, stepIndex, totalSteps }) {
   if (!open) return null;
   return (
     <div role="dialog" aria-modal="true" aria-label={title} style={{ position:"fixed", inset:0, zIndex:1000, display:"flex", alignItems:"center", justifyContent:"center", padding:12 }}>
@@ -80,7 +80,10 @@ function MobileStepModal({ open, title, summary, children, onClose, stepIndex, t
       <div style={{ position:"relative", background:C.bg, borderRadius:16, width:"100%", maxWidth:500, maxHeight:"calc(100vh - 24px)", overflow:"auto", animation:"slideUp 0.25s ease" }}>
         <div style={{ position:"sticky", top:0, zIndex:2, background:C.bg, padding:"16px 20px 8px", borderBottom:`1px solid ${C.b2}`, borderRadius:"16px 16px 0 0" }}>
           <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-            <span style={{ fontSize:17.6, fontWeight:800, color:C.t1 }}>{title}</span>
+            <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+              {onPrev && <button aria-label="Anterior" onClick={onPrev} style={{ background:"none", border:"none", cursor:"pointer", padding:4, minWidth:36, minHeight:36, display:"flex", alignItems:"center", justifyContent:"center" }}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={C.t2} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>}
+              <span style={{ fontSize:17.6, fontWeight:800, color:C.t1 }}>{title}</span>
+            </div>
             <button aria-label="Cerrar" onClick={onClose} style={{ background:"none", border:"none", cursor:"pointer", padding:4, minWidth:44, minHeight:44, display:"flex", alignItems:"center", justifyContent:"center" }}>{Ic.cross(C.t3, 20)}</button>
           </div>
           {stepIndex != null && totalSteps > 0 && (
@@ -375,6 +378,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
           title={{product:"Producto",quantity:"Cantidad",origin:"Origen",ownfleet:"Transporte",destination:"Destino",schedule:"Fecha y hora"}[activeSection]||""}
           summary={secSummary[activeSection]||undefined}
           onClose={()=>{ const flow=["product","quantity","origin"]; if(showTruckSelect)flow.push("ownfleet"); flow.push("destination","schedule"); const idx=flow.indexOf(activeSection); if(idx>0)setActiveSection(flow[idx-1]); }}
+          onPrev={(()=>{ const flow=["product","quantity","origin"]; if(showTruckSelect)flow.push("ownfleet"); flow.push("destination","schedule"); const idx=flow.indexOf(activeSection); return idx>0 ? ()=>setActiveSection(flow[idx-1]) : null; })()}
           stepIndex={(()=>{ const flow=["product","quantity","origin"]; if(showTruckSelect)flow.push("ownfleet"); flow.push("destination","schedule"); return flow.indexOf(activeSection)+1; })()}
           totalSteps={showTruckSelect?6:5}
         >
