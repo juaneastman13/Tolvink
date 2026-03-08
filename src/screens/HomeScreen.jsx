@@ -281,55 +281,63 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
       {/* Skeleton while loading */}
       {loading && freights.length === 0 && <SkeletonList count={3} />}
 
-      {/* Pendientes */}
-      {totalPendingAll > 0 && (<>
-        <div style={{ padding: compact ? "8px 10px" : "12px 14px", borderRadius: 12, background: `${C.acc}0D`, marginBottom: 8 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: compact ? 8 : 10 }}>
-            {!compact && <span style={{ fontSize: 24.2, fontWeight: 800, color: C.acc, lineHeight: 1, minWidth: 28, textAlign: "center" }}>{pendingCount}</span>}
-            {compact && <div style={{ width: 26, height: 26, borderRadius: "50%", background: C.acc, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, position: "relative" }}>
-              {Ic.bell(C.w, 13)}
-              <div style={{ position: "absolute", top: -3, right: -3, minWidth: 15, height: 15, borderRadius: 8, background: C.err, color: C.w, fontSize: 8.8, fontWeight: 700, padding: "0 3px", display: "flex", alignItems: "center", justifyContent: "center", border: `2px solid ${C.w}` }}>{pendingCount}</div>
-            </div>}
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: compact ? 12.1 : 14.3, fontWeight: 700, color: C.acc }}>{compact ? "Con pendientes de mi parte" : `Accion${pendingCount !== 1 ? "es" : ""} pendiente${pendingCount !== 1 ? "s" : ""}`}</div>
-              {!compact && <div style={{ fontSize: 11.6, color: C.t3 }}>Requieren tu atención</div>}
+      {(()=>{
+        const smOpen = openGroup && openGroup.startsWith("sm_");
+        const paOpen = openGroup && openGroup.startsWith("pa_");
+        return <>
+        {/* Pendientes — hidden when a "sin pendientes" group is open */}
+        {!smOpen && totalPendingAll > 0 && (<>
+          <div style={{ padding: compact ? "8px 10px" : "12px 14px", borderRadius: 12, background: `${C.acc}0D`, marginBottom: 8 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: compact ? 8 : 10 }}>
+              {!compact && <span style={{ fontSize: 24.2, fontWeight: 800, color: C.acc, lineHeight: 1, minWidth: 28, textAlign: "center" }}>{pendingCount}</span>}
+              {compact && <div style={{ width: 26, height: 26, borderRadius: "50%", background: C.acc, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, position: "relative" }}>
+                {Ic.bell(C.w, 13)}
+                <div style={{ position: "absolute", top: -3, right: -3, minWidth: 15, height: 15, borderRadius: 8, background: C.err, color: C.w, fontSize: 8.8, fontWeight: 700, padding: "0 3px", display: "flex", alignItems: "center", justifyContent: "center", border: `2px solid ${C.w}` }}>{pendingCount}</div>
+              </div>}
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: compact ? 12.1 : 14.3, fontWeight: 700, color: C.acc }}>{compact ? "Con pendientes de mi parte" : `Accion${pendingCount !== 1 ? "es" : ""} pendiente${pendingCount !== 1 ? "s" : ""}`}</div>
+                {!compact && <div style={{ fontSize: 11.6, color: C.t3 }}>Requieren tu atención</div>}
+              </div>
             </div>
+            <div style={{ display: "flex", gap: 4, marginTop: 6, flexWrap: "wrap" }}>
+              {[{k:"all",l:"Todo"},{k:"today",l:"Hoy"},{k:"tomorrow",l:"Manana"},{k:"week",l:"Semana"}].map(o => (
+                <button key={o.k} onClick={() => setPendingFilter(o.k)} style={{ padding: compact ? "3px 6px" : "4px 8px", borderRadius: 6, border: `1px solid ${pendingFilter === o.k ? C.acc : C.b1}`, background: pendingFilter === o.k ? `${C.acc}15` : "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: compact ? 9.9 : 11, fontWeight: pendingFilter === o.k ? 700 : 500, color: pendingFilter === o.k ? C.acc : C.t3 }}>{o.l}</button>
+              ))}
+            </div>
+          </div>
+          {pendingByProgress.length > 0 && (
+            <div style={{ marginBottom: 16 }}>
+              {pendingByProgress.map(g => renderGroup(g, "pa", "pending"))}
+            </div>
+          )}
+          {!compact && pendingByProgress.length === 0 && <div style={{ padding:"12px 16px", fontSize:13.2, color:C.t3, display:"flex", alignItems:"center", gap:8 }}>{Ic.chk(C.ok,14)} Sin pendientes en este periodo</div>}
+        </>)}
+
+        {/* Sin pendientes de mi parte — hidden when a "pendientes" group is open */}
+        {!paOpen && <>
+        <div style={{ padding: compact ? "8px 10px" : "10px 12px", borderRadius: 12, background: C.okPale, marginBottom: 8 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: compact ? 8 : 10 }}>
+            <div style={{ width: compact ? 22 : 28, height: compact ? 22 : 28, borderRadius: "50%", background: C.ok, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              {Ic.chk(C.w, compact ? 11 : 14)}
+            </div>
+            <div style={{ flex: 1, fontSize: compact ? 12.1 : 13.2, fontWeight: 700, color: C.ok }}>Sin pendientes de mi parte</div>
           </div>
           <div style={{ display: "flex", gap: 4, marginTop: 6, flexWrap: "wrap" }}>
             {[{k:"all",l:"Todo"},{k:"today",l:"Hoy"},{k:"tomorrow",l:"Manana"},{k:"week",l:"Semana"}].map(o => (
-              <button key={o.k} onClick={() => setPendingFilter(o.k)} style={{ padding: compact ? "3px 6px" : "4px 8px", borderRadius: 6, border: `1px solid ${pendingFilter === o.k ? C.acc : C.b1}`, background: pendingFilter === o.k ? `${C.acc}15` : "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: compact ? 9.9 : 11, fontWeight: pendingFilter === o.k ? 700 : 500, color: pendingFilter === o.k ? C.acc : C.t3 }}>{o.l}</button>
+              <button key={o.k} onClick={() => setSummaryFilter(o.k)} style={{ padding: compact ? "3px 6px" : "4px 8px", borderRadius: 6, border: `1px solid ${summaryFilter === o.k ? C.ok : C.b1}`, background: summaryFilter === o.k ? `${C.ok}15` : "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: compact ? 9.9 : 11, fontWeight: summaryFilter === o.k ? 700 : 500, color: summaryFilter === o.k ? C.ok : C.t3 }}>{o.l}</button>
             ))}
           </div>
         </div>
-        {pendingByProgress.length > 0 && (
-          <div style={{ marginBottom: 16 }}>
-            {pendingByProgress.map(g => renderGroup(g, "pa", "pending"))}
-          </div>
-        )}
-        {!compact && pendingByProgress.length === 0 && <div style={{ padding:"12px 16px", fontSize:13.2, color:C.t3, display:"flex", alignItems:"center", gap:8 }}>{Ic.chk(C.ok,14)} Sin pendientes en este periodo</div>}
-      </>)}
 
-      {/* Sin pendientes de mi parte */}
-      <div style={{ padding: compact ? "8px 10px" : "10px 12px", borderRadius: 12, background: C.okPale, marginBottom: 8 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: compact ? 8 : 10 }}>
-          <div style={{ width: compact ? 22 : 28, height: compact ? 22 : 28, borderRadius: "50%", background: C.ok, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-            {Ic.chk(C.w, compact ? 11 : 14)}
+        {/* Summary groups — by progress state */}
+        {summaryGroups.length > 0 ? (
+          <div>
+            {summaryGroups.map(g => renderGroup(g, "sm", "pending"))}
           </div>
-          <div style={{ flex: 1, fontSize: compact ? 12.1 : 13.2, fontWeight: 700, color: C.ok }}>Sin pendientes de mi parte</div>
-        </div>
-        <div style={{ display: "flex", gap: 4, marginTop: 6, flexWrap: "wrap" }}>
-          {[{k:"all",l:"Todo"},{k:"today",l:"Hoy"},{k:"tomorrow",l:"Manana"},{k:"week",l:"Semana"}].map(o => (
-            <button key={o.k} onClick={() => setSummaryFilter(o.k)} style={{ padding: compact ? "3px 6px" : "4px 8px", borderRadius: 6, border: `1px solid ${summaryFilter === o.k ? C.ok : C.b1}`, background: summaryFilter === o.k ? `${C.ok}15` : "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: compact ? 9.9 : 11, fontWeight: summaryFilter === o.k ? 700 : 500, color: summaryFilter === o.k ? C.ok : C.t3 }}>{o.l}</button>
-          ))}
-        </div>
-      </div>
-
-      {/* Summary groups — by progress state */}
-      {summaryGroups.length > 0 ? (
-        <div>
-          {summaryGroups.map(g => renderGroup(g, "sm", "pending"))}
-        </div>
-      ) : null}
+        ) : null}
+        </>}
+        </>;
+      })()}
       </div>
     </div>
   );
