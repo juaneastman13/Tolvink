@@ -371,7 +371,7 @@ const _pinSvg = (color) => `<svg xmlns="http://www.w3.org/2000/svg" width="28" h
 // Pre-compute participant icon URLs to avoid runtime encoding
 const _participantIconUrls = {};
 Object.entries(_TYPE_COLORS).forEach(([type, color]) => {
-  _participantIconUrls[type] = "data:image/svg+xml," + encodeURIComponent(_pinSvg(color));
+  _participantIconUrls[type] = "data:image/svg+xml;base64," + btoa(_pinSvg(color));
 });
 const _participantIcon = (type, maps) => {
   const url = _participantIconUrls[type] || _participantIconUrls.other;
@@ -679,14 +679,14 @@ const _STATUS_COLOR = s => {
 };
 const _STATUS_LABEL = { pending_assignment:"Solicitado", assigned:"Asignado a flota", accepted:"Camión confirmado", in_progress:"En curso", loaded:"Cargando", finished:"Finalizado", canceled:"Cancelado" };
 
-const _svgIcon = (svg) => "data:image/svg+xml," + encodeURIComponent(svg);
-// Cache for circle icon URLs to avoid repeated encodeURIComponent calls
+const _svgIcon = (svg) => "data:image/svg+xml;base64," + btoa(svg);
+// Cache for circle icon URLs to avoid repeated encoding calls
 const _circleCache = {};
 const _circleIcon = (color, size = 20) => {
   const key = `${color}_${size}`;
   if (_circleCache[key]) return _circleCache[key];
   const r = size / 2;
-  const url = "data:image/svg+xml," + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><circle cx="${r}" cy="${r}" r="${r - 2}" fill="${color}" stroke="#fff" stroke-width="2"/></svg>`);
+  const url = "data:image/svg+xml;base64," + btoa(`<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><circle cx="${r}" cy="${r}" r="${r - 2}" fill="${color}" stroke="#fff" stroke-width="2"/></svg>`);
   _circleCache[key] = url;
   return url;
 };
