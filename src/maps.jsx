@@ -486,7 +486,7 @@ export function FreightMap({ freightId, originLat, originLng, destLat, destLng, 
           new maps.Marker({
             position: origin, map,
             title: originName || "Origen",
-            icon: _circleSymbol(maps, "#1A6B37", 10),
+            icon: _pinSymbol(maps, "#1A6B37", 1.0),
           });
         }
 
@@ -494,7 +494,7 @@ export function FreightMap({ freightId, originLat, originLng, destLat, destLng, 
           new maps.Marker({
             position: dest, map,
             title: destName || "Destino",
-            icon: _circleSymbol(maps, "#003882", 10),
+            icon: _pinSymbol(maps, "#003882", 1.0),
           });
         }
 
@@ -703,7 +703,7 @@ const _truckSymbol = (maps) => ({
   anchor: new maps.Point(12, 12),
 });
 
-export function FreightsOverviewMap({ freights, onSelect, fields, plants }) {
+export function FreightsOverviewMap({ freights, onSelect, fields, plants, selectedId }) {
   const mapRef = useRef(null);
   const mapObj = useRef(null);
   const freightMk = useRef({});
@@ -765,17 +765,19 @@ export function FreightsOverviewMap({ freights, onSelect, fields, plants }) {
           `\u2192 ${_esc(f.destName)}<br/>` +
           `<span style="color:${col};font-weight:600">${_esc(_STATUS_LABEL[f.status]||f.status)}</span></div>`;
 
+        const isSel = f.id === selectedId;
+        const icon = _pinSymbol(maps, col, isSel ? 1.4 : 0.8);
         const existing = freightMk.current[f.id];
         if (existing) {
           existing.setPosition(pos);
-          existing.setIcon(_circleSymbol(maps, col, 8));
+          existing.setIcon(icon);
+          existing.setZIndex(isSel ? 999 : 1);
           existing._info = buildInfo;
         } else {
           const mk = new maps.Marker({ position: pos, map: mapObj.current, title: f.code,
-            icon: _circleSymbol(maps, col, 8) });
+            icon, zIndex: isSel ? 999 : 1 });
           mk._info = buildInfo;
-          mk.addListener("click", () => { info.current.setContent(mk._info()); info.current.open(mapObj.current, mk); });
-          mk.addListener("dblclick", () => { if (onSelectRef.current) onSelectRef.current(f.id); });
+          mk.addListener("click", () => { info.current.setContent(mk._info()); info.current.open(mapObj.current, mk); if (onSelectRef.current) onSelectRef.current(f.id); });
           freightMk.current[f.id] = mk;
         }
       });
@@ -798,7 +800,7 @@ export function FreightsOverviewMap({ freights, onSelect, fields, plants }) {
       const pos = { lat, lng };
       bounds.extend(pos); has = true;
       const mk = new maps.Marker({ position: pos, map: mapObj.current, title: f.name,
-        icon: _fieldSymbol(maps) });
+        icon: _pinSymbol(maps, "#1A6B37", 0.7) });
       mk.addListener("click", () => {
         info.current.setContent(`<div style="font-family:system-ui;font-size:12px;line-height:1.4"><strong>${_esc(f.name)}</strong><br/><span style="color:#1A6B37;font-weight:600">Campo</span>${f.address ? "<br/>"+_esc(f.address) : ""}${f.hectares ? "<br/>"+_esc(f.hectares)+" ha" : ""}</div>`);
         info.current.open(mapObj.current, mk);
@@ -813,7 +815,7 @@ export function FreightsOverviewMap({ freights, onSelect, fields, plants }) {
       const pos = { lat, lng };
       bounds.extend(pos); has = true;
       const mk = new maps.Marker({ position: pos, map: mapObj.current, title: p.name,
-        icon: _plantSymbol(maps) });
+        icon: _pinSymbol(maps, "#003882", 0.7) });
       mk.addListener("click", () => {
         info.current.setContent(`<div style="font-family:system-ui;font-size:12px;line-height:1.4"><strong>${_esc(p.name)}</strong><br/><span style="color:#003882;font-weight:600">Planta</span>${p.address ? "<br/>"+_esc(p.address) : ""}</div>`);
         info.current.open(mapObj.current, mk);
@@ -823,7 +825,7 @@ export function FreightsOverviewMap({ freights, onSelect, fields, plants }) {
 
     // Fit bounds only on first render (prevents jarring map jumps on data updates)
     if (has && !boundsSet.current) { mapObj.current.fitBounds(bounds, 40); boundsSet.current = true; }
-  }, [ready, freights, fields, plants, showFreights]);
+  }, [ready, freights, fields, plants, showFreights, selectedId]);
 
   // Live truck tracking for in_progress freights (parallel fetching)
   useEffect(() => {
