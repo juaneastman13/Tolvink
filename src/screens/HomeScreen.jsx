@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef, useCallback } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { C, Ic, MONO } from "../theme";
 import { stCfg, getActions, formatFreightDate } from "../constants";
 import { Bd, Btn, SkeletonList, EmptyState, Tabs } from "../components";
@@ -14,14 +14,14 @@ const PROGRESS_GROUPS = [
   { key:"cancelado",   label:"Cancelado",  color:C.err, statuses:["canceled"] },
 ];
 
-// Status order for daily summary grouping
+// Status order for daily summary grouping — colors sourced from stCfg (STATUS_LIGHT)
 const DAILY_STATUS_ORDER = [
-  { key: "in_progress",        label: "En curso",              color: "#4ADE80" },
-  { key: "loaded",             label: "Cargando",              color: "#22C55E" },
-  { key: "accepted",           label: "Confirmado",            color: "#2563EB" },
-  { key: "assigned",           label: "Asignado",              color: "#0891B2" },
-  { key: "pending_assignment", label: "Solicitado",            color: "#FF6A00" },
-  { key: "finished",           label: "Finalizado",            color: "#6B7280" },
+  { key: "in_progress",        label: "En curso",              get color() { return stCfg("in_progress").color; } },
+  { key: "loaded",             label: "Cargando",              get color() { return stCfg("loaded").color; } },
+  { key: "accepted",           label: "Confirmado",            get color() { return stCfg("accepted").color; } },
+  { key: "assigned",           label: "Asignado",              get color() { return stCfg("assigned").color; } },
+  { key: "pending_assignment", label: "Solicitado",            get color() { return stCfg("pending_assignment").color; } },
+  { key: "finished",           label: "Finalizado",            get color() { return stCfg("finished").color; } },
 ];
 
 const DAY_NAMES = ["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"];
@@ -38,8 +38,6 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
   const [selectionSource, setSelectionSource] = useState(null);
   const [pendingFilter, setPendingFilter] = useState("all");
   const [summaryFilter, setSummaryFilter] = useState("all");
-  const [showCompanyPicker, setShowCompanyPicker] = useState(false);
-  const companyPickerRef = useRef(null);
   // Mobile tab: "pending" or "daily"
   const [mobileTab, setMobileTab] = useState("pending");
 
@@ -106,14 +104,6 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
     if (!activeTypes) return freights;
     return freights.filter(f => activeTypes.has(resolveUserTypeForFreight(f, user)));
   }, [freights, activeTypes, user]);
-
-  // Close company picker on outside click
-  useEffect(() => {
-    if (!showCompanyPicker) return;
-    const handler = (e) => { if (companyPickerRef.current && !companyPickerRef.current.contains(e.target)) setShowCompanyPicker(false); };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [showCompanyPicker]);
 
   // Date helpers for filters — recomputed every render to avoid stale dates when app stays open overnight
   const dateBounds = (() => {
@@ -214,7 +204,7 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
     if (compact) {
       // Mini card: just code + status color bar + product
       return (
-        <div key={f.id} onClick={() => selectFreight(f.id, source)} style={{ background: isSel ? C.priPale : C.w, border: `1px solid ${isSel ? C.pri : C.b1}`, borderLeft: `4px solid ${st.color}`, borderRadius: 8, padding: "8px 10px", cursor: "pointer", transition: "background 0.15s" }}>
+        <div key={f.id} role="button" tabIndex={0} aria-label={`Flete ${f.code}`} onClick={() => selectFreight(f.id, source)} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();selectFreight(f.id, source);}}} style={{ background: isSel ? C.priPale : C.w, border: `1px solid ${isSel ? C.pri : C.b1}`, borderLeft: `4px solid ${st.color}`, borderRadius: 8, padding: "8px 10px", cursor: "pointer", transition: "background 0.15s" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
             <span style={{ fontSize: 10.5, fontWeight: 700, fontFamily: MONO, color: C.t2 }}>{f.code}</span>
             <Bd color={st.color} bg={st.bg} small>{st.label}</Bd>
@@ -226,7 +216,7 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
       );
     }
     return (
-      <div key={f.id} onClick={() => selectFreight(f.id, source)} style={{ background: C.w, border: `1px solid ${C.b1}`, borderLeft: `4px solid ${st.color}`, borderRadius: 10, boxShadow: C.sh, cursor: "pointer", overflow: "hidden", transition: "background 0.15s, border-color 0.15s" }}>
+      <div key={f.id} role="button" tabIndex={0} aria-label={`Flete ${f.code}`} onClick={() => selectFreight(f.id, source)} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();selectFreight(f.id, source);}}} style={{ background: C.w, border: `1px solid ${C.b1}`, borderLeft: `4px solid ${st.color}`, borderRadius: 10, boxShadow: C.sh, cursor: "pointer", overflow: "hidden", transition: "background 0.15s, border-color 0.15s" }}>
         {/* Two-column layout with vertical divider */}
         <div style={{ display: "flex" }}>
           {/* Left column */}
@@ -415,7 +405,7 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
       const pa = f._pending;
       const isSel = selectedId === f.id;
       return (
-        <div key={f.id} onClick={() => selectFreight(f.id, "pending")} style={{ background: isSel ? C.priPale : C.w, border: `1px solid ${isSel ? C.pri : pa ? st.color + "40" : C.b1}`, borderLeft: `4px solid ${st.color}`, borderRadius: 10, padding: "10px 14px", cursor: "pointer", boxShadow: C.sh, transition: "background 0.15s, border-color 0.15s", position: "relative" }}>
+        <div key={f.id} role="button" tabIndex={0} aria-label={`Flete ${f.code}`} onClick={() => selectFreight(f.id, "pending")} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();selectFreight(f.id, "pending");}}} style={{ background: isSel ? C.priPale : C.w, border: `1px solid ${isSel ? C.pri : pa ? st.color + "40" : C.b1}`, borderLeft: `4px solid ${st.color}`, borderRadius: 10, padding: "10px 14px", cursor: "pointer", boxShadow: C.sh, transition: "background 0.15s, border-color 0.15s", position: "relative" }}>
           {/* Pending indicator — pulsing dot */}
           {pa && <div style={{ position: "absolute", top: 10, right: 12, display: "flex", alignItems: "center", gap: 5 }}>
             <span style={{ width: 7, height: 7, borderRadius: "50%", background: C.acc, display: "inline-block", animation: "dotPulse 1.5s ease-in-out infinite", flexShrink: 0 }} />
@@ -465,7 +455,7 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
               {g.items.map(f => {
                 const st = stCfg(f.status);
                 return (
-                  <div key={f.id} onClick={() => selectFreight(f.id, "daily")} style={{ padding: "7px 10px", borderRadius: 8, background: C.w, border: `1px solid ${C.b1}`, cursor: "pointer", transition: "background 0.15s" }}>
+                  <div key={f.id} role="button" tabIndex={0} aria-label={`Flete ${f.code}`} onClick={() => selectFreight(f.id, "daily")} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();selectFreight(f.id, "daily");}}} style={{ padding: "7px 10px", borderRadius: 8, background: C.w, border: `1px solid ${C.b1}`, cursor: "pointer", transition: "background 0.15s" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                       <span style={{ fontSize: 10.5, fontWeight: 700, fontFamily: MONO, color: C.t2 }}>{f.code}</span>
                       <span style={{ fontSize: 12.1, fontWeight: 600, color: C.t1, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.grain === "Otros" ? f.productTypeOther || "Otros" : f.grain} · {f.tons} tn</span>

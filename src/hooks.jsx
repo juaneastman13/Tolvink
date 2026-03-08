@@ -13,8 +13,15 @@ import { C, track } from "./theme";
 import { useCatalogStore } from "./store";
 import log from "./logger";
 
+// ======================== CONSTANTS ==================================
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const PAGE_SIZE = 25;
+const SSE_INITIAL_RECONNECT_MS = 5000;
+const SSE_MAX_RECONNECT_MS = 30000;
+const SSE_BACKOFF_FACTOR = 1.5;
+
 // ======================== CATALOG HOOK (Real API + Zustand cache) ====
-const CATALOG_TTL = 5 * 60 * 1000; // 5 min
+const CATALOG_TTL = CACHE_TTL;
 const _loadingPromises = {}; // Singleton: prevent concurrent requests for same user
 
 export function useCatalog(user) {
@@ -293,7 +300,7 @@ export function mapUser(u) {
 }
 
 // ======================== FREIGHTS HOOK (Real API) ====================
-const FREIGHTS_PAGE_SIZE = 25;
+const FREIGHTS_PAGE_SIZE = PAGE_SIZE;
 
 export function useFreights(user, isAuthInitialized) {
   const [freights, setFreights] = useState([]);
@@ -636,7 +643,7 @@ export function useSSE(user, { onFreightUpdate, onMessageNew, onNotification, on
   const [connected, setConnected] = useState(false);
   const esRef = useRef(null);
   const reconnectTimer = useRef(null);
-  const reconnectDelay = useRef(5000);
+  const reconnectDelay = useRef(SSE_INITIAL_RECONNECT_MS);
   const failureCount = useRef(0);
 
   // Keep latest callbacks in refs to avoid stale closures in EventSource handlers
@@ -666,7 +673,7 @@ export function useSSE(user, { onFreightUpdate, onMessageNew, onNotification, on
       } catch {
         // Ticket fetch failed — schedule retry with backoff instead of exposing JWT in URL
         reconnectTimer.current = setTimeout(connect, reconnectDelay.current);
-        reconnectDelay.current = Math.min(reconnectDelay.current * 1.5, 30000);
+        reconnectDelay.current = Math.min(reconnectDelay.current * SSE_BACKOFF_FACTOR, SSE_MAX_RECONNECT_MS);
         return;
       }
       const es = new EventSource(url);
@@ -721,7 +728,7 @@ export function useSSE(user, { onFreightUpdate, onMessageNew, onNotification, on
       });
 
       es.onopen = () => {
-        reconnectDelay.current = 5000;
+        reconnectDelay.current = SSE_INITIAL_RECONNECT_MS;
         failureCount.current = 0;
       };
 
@@ -735,7 +742,7 @@ export function useSSE(user, { onFreightUpdate, onMessageNew, onNotification, on
 
         // Never stop retrying — cap backoff at 30s so reconnection is fast after deploys
         reconnectTimer.current = setTimeout(connect, reconnectDelay.current);
-        reconnectDelay.current = Math.min(reconnectDelay.current * 1.5, 30000);
+        reconnectDelay.current = Math.min(reconnectDelay.current * SSE_BACKOFF_FACTOR, SSE_MAX_RECONNECT_MS);
       };
       } finally { connecting = false; }
     };
@@ -747,7 +754,7 @@ export function useSSE(user, { onFreightUpdate, onMessageNew, onNotification, on
       if (document.visibilityState === 'visible' && !esRef.current) {
         log.log('SSE', 'Tab visible — reconnecting');
         failureCount.current = 0;
-        reconnectDelay.current = 5000;
+        reconnectDelay.current = SSE_INITIAL_RECONNECT_MS;
         connect();
       }
     };

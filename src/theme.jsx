@@ -14,7 +14,7 @@ export const LIGHT = {
   warn:"#CA8A04", warnPale:"#FEF9C3",
   err:"#DC2626", errPale:"#FEE2E2",
   muted:"#71717A", mutedPale:"#F4F4F5",
-  t1:"#18251C", t2:"#4A6352", t3:"#6B7D72", tOn:"#FFFFFF",
+  t1:"#18251C", t2:"#4A6352", t3:"#566B5E", tOn:"#FFFFFF",
   b1:"#DEE4E0", b2:"#ECF0ED", bFocus:"#1A6B37",
   w:"#FFFFFF",
   sh:"0 1px 3px rgba(0,0,0,0.05),0 1px 2px rgba(0,0,0,0.03)",

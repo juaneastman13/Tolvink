@@ -4,6 +4,17 @@ import { BrowserRouter } from "react-router-dom";
 import Tolvink from "./App";
 import { ErrorBoundary } from "./components";
 
+// PWA install prompt handler
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  window._deferredInstallPrompt = e;
+  window.dispatchEvent(new Event('pwa-install-available'));
+});
+window.installPWA = async () => {
+  const p = window._deferredInstallPrompt;
+  if (p) { p.prompt(); window._deferredInstallPrompt = null; }
+};
+
 // Register service worker for offline + push notifications
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
@@ -14,10 +25,8 @@ if ('serviceWorker' in navigator) {
         reg.update().catch(() => {});
 
         const promptUpdate = (sw) => {
-          if (window.confirm('Hay una nueva versión de Tolvink disponible. ¿Actualizar ahora?')) {
-            sw.postMessage({ type: 'SKIP_WAITING' });
-            window.location.reload();
-          }
+          sw.postMessage({ type: 'SKIP_WAITING' });
+          window.dispatchEvent(new CustomEvent('sw-update-available', { detail: { reload: () => window.location.reload() } }));
         };
 
         // When a new SW is waiting, prompt user

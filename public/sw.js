@@ -8,7 +8,8 @@ const API_CACHE = 'tolvink-api-v2';
 const FONT_CACHE = 'tolvink-fonts-v1';
 const IMG_CACHE = 'tolvink-img-v1';
 
-const API_ORIGIN = 'https://tolvink-api-production.up.railway.app';
+// API_ORIGIN — can be overridden at build time via env; hardcoded fallback for production
+const API_ORIGIN = self.__API_ORIGIN || 'https://tolvink-api-production.up.railway.app';
 
 const APP_SHELL = ['/', '/index.html', '/manifest.json'];
 
@@ -91,7 +92,7 @@ self.addEventListener('fetch', (event) => {
           if (cached) return cached;
           return fetch(request).then((r) => {
             if (r.ok) cache.put(request, r.clone());
-            trimCache(IMG_CACHE, IMG_CACHE_MAX);
+            trimCache(IMG_CACHE, IMG_CACHE_MAX).catch(() => {});
             return r;
           });
         })
@@ -115,7 +116,7 @@ self.addEventListener('fetch', (event) => {
         const networkFetch = fetch(request).then((r) => {
           if (r.ok) {
             cache.put(request, r.clone());
-            trimCache(API_CACHE, API_CACHE_MAX);
+            trimCache(API_CACHE, API_CACHE_MAX).catch(() => {});
           }
           return r;
         }).catch(() => {
@@ -196,7 +197,7 @@ self.addEventListener('fetch', (event) => {
         c.put(request, r.clone());
       }
       return r;
-    })().catch(() => {})
+    })().catch((err) => { console.warn('[SW] Static asset fetch failed:', err?.message || err); })
   );
 });
 

@@ -26,7 +26,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
     setOcrLoading(true);
     try {
       const res = await apiOcrAnalyze(file.url);
-      if (res.error) { log.error("OCR", res.error); return; }
+      if (res.error) { log.error("OCR", res.error); show("Error al extraer datos del documento", "err"); return; }
       setOcrResult(res);
       // Auto-save OCR data to document
       if (file.id && freight?.id) {

@@ -518,17 +518,18 @@ export default function Tolvink() {
 
   return (
     <div className="tv-shell" style={{height:"100dvh",background:C.bg,color:C.t1,fontFamily:FONT,display:"flex",flexDirection:isDesktop?"row":"column",width:"100%",position:"relative",overflow:"hidden"}}>
+      <a href="#main-content" style={{position:'absolute',left:'-9999px',top:'auto',width:'1px',height:'1px',overflow:'hidden',zIndex:9999}} onFocus={e=>{e.currentTarget.style.cssText='position:fixed;top:0;left:0;padding:8px 16px;background:#003882;color:#fff;z-index:9999;font-size:14px';}} onBlur={e=>{e.currentTarget.style.cssText='position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden';}}>Ir al contenido principal</a>
       <style>{`body{background:${C.bg}}input::placeholder,textarea::placeholder{color:${C.t3}}::-webkit-scrollbar-thumb{background:${C.b1}}@media(hover:hover){.tv-card:hover{box-shadow:${C.shMd}!important}.tv-row:hover{background:${C.priGhost}!important}}`}</style>
 
       <RoutesBackground trucks={false} opacityMul={0.4} centerFade={false} />
 
       {/* Desktop Sidebar */}
-      <div className="tv-sidebar" style={{position:"relative",zIndex:1}}>
+      <aside className="tv-sidebar" aria-label="Navegación principal" style={{position:"relative",zIndex:1}}>
         <Sidebar active={navActive} onChange={nav} unread={unreadChats} pendingCount={pendingCount} notifCount={notif.unreadCount} canRequest={perms.canRequest} onNew={()=>nav("new")} activeCompany={auth.user ? { id: auth.user.activeCompanyId||auth.user.companyId, name: _activeComp?.companyName||auth.user.entity, type: _activeComp?.companyType||auth.user.userType } : null} companies={auth.user?.companies||[]} onSwitchCompany={async(id)=>{await auth.switchCompany(id);}} simpleMode={auth.simpleMode} onToggleSimple={auth.toggleSimpleMode} />
-      </div>
+      </aside>
 
       {/* Main content column */}
-      <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden", minWidth:0, position:"relative", zIndex:1 }}>
+      <main id="main-content" style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden", minWidth:0, position:"relative", zIndex:1 }}>
         {/* Mobile-only header */}
         <div className="tv-mobile-header" style={{paddingTop:"max(12px, env(safe-area-inset-top))",paddingBottom:12,paddingLeft:18,paddingRight:18,display:"flex",alignItems:"center",gap:10,borderBottom:`1px solid ${C.b2}`,background:C.w,flexShrink:0,zIndex:10,position:"relative"}}>
           <div style={{display:"inline-flex",alignItems:"flex-start",flexShrink:0}}>
@@ -538,7 +539,7 @@ export default function Tolvink() {
           <div style={{flex:1}}/>
           {auth.user?.entity && (auth.user.companies?.length > 1 ? (
             <div style={{position:"relative"}}>
-              <button onClick={()=>setCompDropOpen(v=>!v)} style={{display:"flex",alignItems:"center",gap:4,padding:"4px 8px",borderRadius:8,border:`1px solid ${C.b1}`,background:C.w,cursor:"pointer",fontFamily:"inherit",maxWidth:140,WebkitTapHighlightColor:"transparent",touchAction:"manipulation"}}>
+              <button aria-label="Cambiar empresa" onClick={()=>setCompDropOpen(v=>!v)} style={{display:"flex",alignItems:"center",gap:4,padding:"4px 8px",borderRadius:8,border:`1px solid ${C.b1}`,background:C.w,cursor:"pointer",fontFamily:"inherit",maxWidth:140,WebkitTapHighlightColor:"transparent",touchAction:"manipulation"}}>
                 <span style={{fontSize:12.1,fontWeight:600,color:C.t2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{auth.user.entity}</span>
                 {Ic.down(C.t3,12)}
               </button>
@@ -565,7 +566,7 @@ export default function Tolvink() {
             </div>
           ) : <span style={{ fontSize:12.1, fontWeight:600, color:C.t2, maxWidth:130, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{auth.user.entity}</span>)}
           {auth.user && <div style={{position:"relative"}}>
-            <button onClick={()=>setModeDropOpen(v=>!v)} style={{display:"flex",alignItems:"center",gap:4,padding:"4px 8px",borderRadius:8,border:`1px solid ${C.b1}`,background:C.w,cursor:"pointer",fontFamily:"inherit",WebkitTapHighlightColor:"transparent",touchAction:"manipulation"}}>
+            <button aria-label="Cambiar modo visual" onClick={()=>setModeDropOpen(v=>!v)} style={{display:"flex",alignItems:"center",gap:4,padding:"4px 8px",borderRadius:8,border:`1px solid ${C.b1}`,background:C.w,cursor:"pointer",fontFamily:"inherit",WebkitTapHighlightColor:"transparent",touchAction:"manipulation"}}>
               <span style={{fontSize:12.1,fontWeight:600,color:C.t2,whiteSpace:"nowrap"}}>Cambiar visual</span>
               {Ic.down(C.t3,12)}
             </button>
@@ -617,7 +618,7 @@ export default function Tolvink() {
         {/* Scrollable content area */}
         <div style={{flex:1,overflow:(screen==="chats"||screen==="calendar")&&isDesktop?"hidden":"auto",display:(mapFocus||locPicker)?"none":"flex",flexDirection:"column",WebkitOverflowScrolling:"touch",overscrollBehavior:"contain"}}>
         <div key={screen} className="tv-page" style={{flex:1,display:"flex",flexDirection:"column",minHeight:0}}>
-        <Suspense fallback={<SL/>}>
+        <ErrorBoundary><Suspense fallback={<SL/>}>
         {screen==="home" && <HomeScreen user={auth.user} freights={viewFreights} loading={fh.loading} perms={perms} onNav={nav} catalog={catalog} isDesktop={isDesktop} onAction={handleAction} onTripAction={handleTripAction} onEditTrip={handleEditTrip} actionLoading={actionLoading} onChat={(convId)=>{if(convId){setChatConvId(convId);navigate("/chats");}}} onRefresh={(id)=>fh.refresh(id)} onDuplicate={(f)=>{setDuplicateData(f);navigate("/new");}} onEdit={(f)=>{setEditData(f);navigate("/edit/"+f.id);}} goToMap={goToMap} simpleMode={auth.simpleMode}/>}
         {screen==="list" && <ListScreen freights={viewFreights} loading={fh.loading} onNav={nav} onRefresh={fh.fetchAll} catalog={catalog} view={listView} setView={setListView} goToMap={goToMap} hasMore={fh.hasMore} loadMore={fh.loadMore} loadingMore={fh.loadingMore} total={fh.total} isDesktop={isDesktop} onAction={handleAction} user={auth.user} simpleMode={auth.simpleMode}/>}
         {screen==="calendar" && <CalendarScreen freights={viewFreights} perms={perms} onNav={nav} isDesktop={isDesktop} user={auth.user} onAction={handleAction} onTripAction={handleTripAction} actionLoading={actionLoading} onChat={(convId)=>{if(convId){setChatConvId(convId);navigate("/chats");}}} onRefresh={(id)=>fh.refresh(id)} onDuplicate={(f)=>{setDuplicateData(f);navigate("/new");}} onEdit={(f)=>{setEditData(f);navigate("/edit/"+f.id);}} goToMap={goToMap}/>}
@@ -632,7 +633,7 @@ export default function Tolvink() {
         {screen==="reports" && <ReportsScreen onBack={()=>navigate(isDesktop?"/reports":"/menu")} freights={viewFreights} isDesktop={isDesktop}/>}
         {screen==="chats" && <ChatsScreen user={auth.user} openConvId={chatConvId} onConvOpened={()=>setChatConvId(null)} isDesktop={isDesktop} sseMsg={sseMsg} onSseMsgHandled={()=>setSseMsg(null)} sseTyping={sseTyping} sseRead={sseRead} sseConnected={sse.connected}/>}
         {screen==="notifs" && <NotificationsScreen notifications={notif.notifications} freights={viewFreights} onMarkRead={notif.markRead} onMarkAllRead={notif.markAllRead} onTap={handleNotifTap} />}
-        </Suspense>
+        </Suspense></ErrorBoundary>
         </div>
         </div>
 
@@ -640,7 +641,7 @@ export default function Tolvink() {
         <div className="tv-mobile-nav">
           <Nav active={navActive} onChange={nav} unread={unreadChats} pendingCount={pendingCount} notifCount={0} canRequest={perms.canRequest} onNew={()=>nav("new")} simpleMode={auth.simpleMode}/>
         </div>
-      </div>
+      </main>
 
       {(submitting||submitDone) && <LoadingOverlay closing={!!submitDone} closingText={submitDone} onClose={()=>{setSubmitDone("");navigate("/list");}}/>}
       <Suspense fallback={null}>
