@@ -408,12 +408,10 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
                 </div>
               </div>
             </div>
-            {form.unit==="toneladas" && parseFloat(form.tons)>0 && (
-              <div style={{ marginTop:10 }}>
-                <NumericStepper label="Camiones necesarios" icon={Ic.truck(C.acc,14)} value={form.truckCount || String(Math.ceil(parseFloat(form.tons)/30))} onChange={v=>u({truckCount:v})} min={1} max={50} step={1} />
-                <span style={{ fontSize:12.1, color:C.t3, marginTop:4, display:"block" }}>~30tn por camión. Podés ajustarlo.</span>
-              </div>
-            )}
+            <div style={{ marginTop:10 }}>
+              <NumericStepper label="Camiones necesarios" icon={Ic.truck(C.acc,14)} value={form.truckCount || (parseFloat(form.tons)>0 ? String(Math.ceil(parseFloat(form.tons)/30)) : "1")} onChange={v=>u({truckCount:v})} min={1} max={50} step={1} />
+              {form.unit==="toneladas" && parseFloat(form.tons)>0 && <span style={{ fontSize:12.1, color:C.t3, marginTop:4, display:"block" }}>~30tn por camión. Podés ajustarlo.</span>}
+            </div>
             <NextStepBtn complete={secComplete.quantity} onClick={isEditing?confirmEdit:advanceToNext} label={isEditing?"Confirmar edición":undefined}/>
           </>}
           {activeSection === "origin" && <>
@@ -576,12 +574,10 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
               </div>
             </div>
           </div>
-          {form.unit==="toneladas" && parseFloat(form.tons)>0 && (
-            <div style={{ marginTop:10 }}>
-              <NumericStepper label="Camiones necesarios" icon={Ic.truck(C.acc,14)} value={form.truckCount || String(Math.ceil(parseFloat(form.tons)/30))} onChange={v=>u({truckCount:v})} min={1} max={50} step={1} />
-              <span style={{ fontSize:12.1, color:C.t3, marginTop:4, display:"block" }}>~30tn por camión. Podés ajustarlo.</span>
-            </div>
-          )}
+          <div style={{ marginTop:10 }}>
+            <NumericStepper label="Camiones necesarios" icon={Ic.truck(C.acc,14)} value={form.truckCount || (parseFloat(form.tons)>0 ? String(Math.ceil(parseFloat(form.tons)/30)) : "1")} onChange={v=>u({truckCount:v})} min={1} max={50} step={1} />
+            {form.unit==="toneladas" && parseFloat(form.tons)>0 && <span style={{ fontSize:12.1, color:C.t3, marginTop:4, display:"block" }}>~30tn por camión. Podés ajustarlo.</span>}
+          </div>
           <NextStepBtn complete={secComplete.quantity} onClick={isEditing?confirmEdit:advanceToNext} label={isEditing?"Confirmar edición":undefined}/>
         </Sec>}
 
