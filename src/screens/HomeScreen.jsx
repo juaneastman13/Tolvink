@@ -263,10 +263,6 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
         </button>
         {isOpen && (
           <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: "8px 0 4px 16px", borderLeft: `2px solid ${group.color}30` }}>
-            <button onClick={(e) => { e.stopPropagation(); setOpenGroup(null); }} style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:6, padding:"7px 14px", borderRadius:8, border:"none", background:C.acc, cursor:"pointer", fontFamily:"inherit", alignSelf:"flex-start" }}>
-              <span style={{ width:7, height:7, borderRadius:"50%", background:C.err, flexShrink:0 }}/>
-              <span style={{ fontSize:12.1, fontWeight:700, color:C.w }}>Ver todo</span>
-            </button>
             {group.items.map(f => renderCard(f, pendingMap.get(f.id), source))}
           </div>
         )}
@@ -289,6 +285,10 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
         const smOpen = openGroup && openGroup.startsWith("sm_");
         const paOpen = openGroup && openGroup.startsWith("pa_");
         return <>
+        {/* Ver todo — shown when any group is expanded */}
+        {openGroup && <button onClick={() => setOpenGroup(null)} style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:6, padding:"6px 14px", borderRadius:7, border:"none", background:C.t3, cursor:"pointer", fontFamily:"inherit", marginBottom:8 }}>
+          <span style={{ fontSize:11, fontWeight:700, color:C.w }}>Ver todo</span>
+        </button>}
         {/* Pendientes — hidden when a "sin pendientes" group is open */}
         {!smOpen && totalPendingAll > 0 && (<>
           <div style={{ padding: compact ? "8px 10px" : "12px 14px", borderRadius: 12, background: `${C.acc}0D`, marginBottom: 8 }}>
