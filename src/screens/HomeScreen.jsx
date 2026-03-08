@@ -6,14 +6,12 @@ import { useIsDesktop } from "../hooks";
 import { getPendingActions, resolveUserTypeForFreight, getWaitingOnText } from "../utils/freight-helpers";
 import DetailScreen from "./DetailScreen";
 
-// Summary groups — by freight type/status, filtered by date. Priority: pending confirmation → active → rest
-const STATUS_GROUPS = [
-  { key:"own_fleet_pending",   label:"Esperando confirmacion de planta", icon:Ic.warn,  color:"#CA8A04", filter:(f) => f.status === "assigned" && f.isOwnFleet },
-  { key:"in_progress",         label:"En curso",                         icon:Ic.nav,   color:"#4ADE80", filter:(f) => f.status === "in_progress" },
-  { key:"loaded",              label:"Cargando",                         icon:Ic.plant, color:"#22C55E", filter:(f) => f.status === "loaded" },
-  { key:"own_fleet_confirmed", label:"Flota propia confirmada",          icon:Ic.chk,   color:"#2563EB", filter:(f) => f.status === "accepted" && f.isOwnFleet },
-  { key:"external_assigned",   label:"Transporte asignado",              icon:Ic.truck, color:"#0891B2", filter:(f) => (f.status === "assigned" || f.status === "accepted") && !f.isOwnFleet },
-  { key:"pending_assignment",  label:"Solicitado",                       icon:Ic.warn,  color:"#FF6A00", filter:(f) => f.status === "pending_assignment" },
+// Progress groups — matching the 3-step progress bar in DetailScreen
+const PROGRESS_GROUPS = [
+  { key:"pendiente",   label:"Pendiente",  color:C.acc, statuses:["pending_assignment"] },
+  { key:"en_curso",    label:"En curso",   color:C.pri, statuses:["assigned","accepted","in_progress","loaded"] },
+  { key:"finalizado",  label:"Finalizado", color:C.ok,  statuses:["finished"] },
+  { key:"cancelado",   label:"Cancelado",  color:C.err, statuses:["canceled"] },
 ];
 
 // Status order for daily summary grouping
@@ -147,24 +145,22 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
     return map;
   }, [filteredFreights, effectiveType, user.id, user.role, user.companyId, user.userType]);
 
-  // Pending groups — grouped by ACTION type, filtered by date
-  const pendingByAction = useMemo(() => {
-    const buckets = {};
-    filteredFreights.forEach(f => {
-      const pa = pendingMap.get(f.id);
-      if (!pa) return;
-      if (!matchDate(f.loadDate, pendingFilter)) return;
-      const bk = pa.groupKey || pa.actionKey;
-      const baseLabel = pa.action.replace(/ #\d+$/, '').replace(/ \d+ camiones$/, ' transporte');
-      if (!buckets[bk]) buckets[bk] = { label: baseLabel, color: pa.color, actionKey: bk, icon: pa.icon, items: [] };
-      buckets[bk].items.push({ ...f, pendingAction: pa });
-    });
-    return Object.values(buckets).map(b => ({
-      ...b,
-      items: [...b.items].sort((a, b2) => (a.destName||'').localeCompare(b2.destName||'') || (a.originName||'').localeCompare(b2.originName||'')),
-    }));
+  // Pending groups — grouped by progress state (Pendiente / En curso / Finalizado)
+  const pendingByProgress = useMemo(() => {
+    return PROGRESS_GROUPS.map(g => {
+      const items = filteredFreights
+        .filter(f => {
+          const pa = pendingMap.get(f.id);
+          if (!pa) return false;
+          if (!matchDate(f.loadDate, pendingFilter)) return false;
+          return g.statuses.includes(f.status);
+        })
+        .map(f => ({ ...f, pendingAction: pendingMap.get(f.id) }))
+        .sort((a, b) => (a.destName||'').localeCompare(b.destName||'') || (a.originName||'').localeCompare(b.originName||''));
+      return { ...g, icon: g.key==="pendiente"?Ic.warn:g.key==="en_curso"?Ic.nav:g.key==="cancelado"?Ic.cross:Ic.chk, items };
+    }).filter(g => g.items.length > 0);
   }, [filteredFreights, pendingMap, pendingFilter]);
-  const pendingCount = pendingByAction.reduce((s, g) => s + g.items.length, 0);
+  const pendingCount = pendingByProgress.reduce((s, g) => s + g.items.length, 0);
   const hasPending = pendingCount > 0;
 
   // Total pending (unfiltered) to know if section should show
@@ -174,22 +170,18 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
     return count;
   }, [pendingMap]);
 
-  const activeFreights = useMemo(() => filteredFreights.filter(f => f.status !== "finished" && f.status !== "canceled"), [filteredFreights]);
   const summaryGroups = useMemo(() => {
-    return STATUS_GROUPS.map(g => {
-      const items = activeFreights
-        .filter(f => g.filter(f) && !pendingMap.get(f.id) && matchDate(f.loadDate, summaryFilter))
+    return PROGRESS_GROUPS.map(g => {
+      const items = filteredFreights
+        .filter(f => g.statuses.includes(f.status) && !pendingMap.get(f.id) && matchDate(f.loadDate, summaryFilter))
         .sort((a, b) => (a.destName||'').localeCompare(b.destName||'') || (a.originName||'').localeCompare(b.originName||''));
-      return { ...g, items };
+      return { ...g, icon: g.key==="pendiente"?Ic.warn:g.key==="en_curso"?Ic.nav:g.key==="cancelado"?Ic.cross:Ic.chk, items };
     }).filter(g => g.items.length > 0);
-  }, [activeFreights, pendingMap, summaryFilter]);
+  }, [filteredFreights, pendingMap, summaryFilter]);
 
   // Collapsed state
   const [collapsed, setCollapsed] = useState({});
   const toggleGroup = (key) => setCollapsed(prev => ({ ...prev, [key]: !prev[key] }));
-
-  // Icon map for pending action types
-  const actionIcon = (icon) => icon === "assign" ? Ic.warn : icon === "authorize" ? Ic.chk : icon === "respond" ? Ic.truck : icon === "start" ? Ic.nav : icon === "confirm" ? Ic.plant : Ic.chk;
 
   // Selected freight for detail
   const selFreight = selectedId ? filteredFreights.find(f => f.id === selectedId) || freights.find(f => f.id === selectedId) : null;
@@ -307,12 +299,23 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
             ))}
           </div>
         </div>
-        {pendingByAction.length > 0 && (
-          <div style={{ paddingLeft: compact ? 12 : 16, borderLeft: `2px solid ${C.acc}30`, marginBottom: 16 }}>
-            {pendingByAction.map(g => renderGroup({ key: g.actionKey, label: g.label, icon: actionIcon(g.icon), color: g.color, items: g.items }, "pa", "pending"))}
+        {pendingByProgress.length > 0 && (
+          <div style={{ marginBottom: 16 }}>
+            {/* Mini progress bar */}
+            <div style={{ display:"flex", gap:3, marginBottom:10 }}>
+              {PROGRESS_GROUPS.filter(g=>g.key!=="cancelado").map(pg => {
+                const match = pendingByProgress.find(g=>g.key===pg.key);
+                const count = match ? match.items.length : 0;
+                return <div key={pg.key} style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:3 }}>
+                  <div style={{ width:"100%", height:4, borderRadius:2, background: count > 0 ? pg.color : C.b1 }} />
+                  <span style={{ fontSize:10, fontWeight:count>0?700:500, color: count>0 ? pg.color : C.t3 }}>{pg.label}{count>0?` (${count})`:""}</span>
+                </div>;
+              })}
+            </div>
+            {pendingByProgress.map(g => renderGroup(g, "pa", "pending"))}
           </div>
         )}
-        {!compact && pendingByAction.length === 0 && <div style={{ padding:"12px 16px", fontSize:13.2, color:C.t3, display:"flex", alignItems:"center", gap:8 }}>{Ic.chk(C.ok,14)} Sin pendientes en este periodo</div>}
+        {!compact && pendingByProgress.length === 0 && <div style={{ padding:"12px 16px", fontSize:13.2, color:C.t3, display:"flex", alignItems:"center", gap:8 }}>{Ic.chk(C.ok,14)} Sin pendientes en este periodo</div>}
       </>)}
 
       {/* Sin pendientes de mi parte */}
@@ -330,9 +333,20 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
         </div>
       </div>
 
-      {/* Summary groups — by status */}
+      {/* Summary groups — by progress state */}
       {summaryGroups.length > 0 ? (
-        <div style={{ paddingLeft: compact ? 12 : 16, borderLeft: `2px solid ${C.ok}30` }}>
+        <div>
+          {/* Mini progress bar */}
+          <div style={{ display:"flex", gap:3, marginBottom:10 }}>
+            {PROGRESS_GROUPS.filter(g=>g.key!=="cancelado").map(pg => {
+              const match = summaryGroups.find(g=>g.key===pg.key);
+              const count = match ? match.items.length : 0;
+              return <div key={pg.key} style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:3 }}>
+                <div style={{ width:"100%", height:4, borderRadius:2, background: count > 0 ? pg.color : C.b1 }} />
+                <span style={{ fontSize:10, fontWeight:count>0?700:500, color: count>0 ? pg.color : C.t3 }}>{pg.label}{count>0?` (${count})`:""}</span>
+              </div>;
+            })}
+          </div>
           {summaryGroups.map(g => renderGroup(g, "sm", "pending"))}
         </div>
       ) : null}
