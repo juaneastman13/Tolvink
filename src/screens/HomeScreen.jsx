@@ -221,7 +221,7 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
           </div>
           <div style={{ fontSize: 13.2, fontWeight: 700, color: C.t1, marginTop: 3 }}>{f.grain === "Otros" ? f.productTypeOther || "Otros" : f.grain} · {f.tons} {f.unit || "tn"}</div>
           {f.loadDate && <div style={{ fontSize: 10.5, color: C.t3, marginTop: 2 }}>{Ic.cal(C.t3, 9)} {formatFreightDate(f.loadDate)}{f.loadTime?.trim() ? ` · ${f.loadTime}` : ""}</div>}
-          {(f.fieldName || f.originName) && <div style={{ fontSize: 10.5, color: C.t3, marginTop: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 3 }}>{Ic.pin(C.t3, 9)} {f.fieldName || f.originName}</div>}
+          {(f.fieldName || f.originName || f.originCompanyName) && <div style={{ fontSize: 10.5, color: C.t3, marginTop: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 3 }}>{Ic.pin(C.t3, 9)} {[f.fieldName, f.originName].filter(Boolean).join(" / ") || f.originCompanyName}</div>}
         </div>
       );
     }
@@ -237,7 +237,7 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
             </div>
             <div style={{ fontSize: 13.2, fontWeight: 700, color: C.t1 }}>{f.grain === "Otros" ? f.productTypeOther || "Otros" : f.grain} · {f.tons} {f.unit || "tn"}</div>
             {f.loadDate && <div style={{ fontSize: 13.6, color: C.t3, fontWeight: 500 }}>{formatFreightDate(f.loadDate)}{f.loadTime?.trim() ? ` · ${f.loadTime}` : ""}</div>}
-            {(f.fieldName || f.originName) && <div style={{ fontSize: 12.1, color: C.t3, display: "flex", alignItems: "center", gap: 3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{Ic.pin(C.t3, 11)} {f.fieldName || f.originName}</div>}
+            {(f.fieldName || f.originName || f.originCompanyName) && <div style={{ fontSize: 12.1, color: C.t3, display: "flex", alignItems: "center", gap: 3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{Ic.pin(C.t3, 11)} {[f.fieldName, f.originName].filter(Boolean).join(" / ") || f.originCompanyName}</div>}
           </div>
           {/* Right column */}
           <div style={{ display: "flex", flexDirection: "column", gap: 3, padding: "8px 12px", fontSize: 12.1, color: C.t2, minWidth: 0 }}>
@@ -428,7 +428,7 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
           <div style={{ fontSize: 14.3, fontWeight: 700, color: C.t1, marginBottom: 3 }}>{f.grain === "Otros" ? f.productTypeOther || "Otros" : f.grain} · {f.tons} {f.unit || "tn"}</div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 4, fontSize: 11.5, color: C.t2 }}>
             {f.loadDate && <span style={{ display: "flex", alignItems: "center", gap: 3 }}>{Ic.cal(C.t3, 10)} {formatFreightDate(f.loadDate)}{f.loadTime ? ` · ${f.loadTime}` : ""}</span>}
-            {(f.fieldName || f.originName) && <span style={{ display: "flex", alignItems: "center", gap: 3 }}>{Ic.pin(C.t3, 10)} {f.fieldName || f.originName}</span>}
+            <span style={{ display: "flex", alignItems: "center", gap: 3 }}>{Ic.pin(C.t3, 10)} {[f.fieldName, f.originName].filter(Boolean).join(" / ") || f.originCompanyName || "Sin origen"}</span>
             <span style={{ display: "flex", alignItems: "center", gap: 3 }}>{Ic.plant(C.t3, 10)} {f.destName || "Sin destino"}</span>
             <span style={{ display: "flex", alignItems: "center", gap: 3 }}>{Ic.truck(C.t3, 10)} {f.transporterName || "Sin asignar"}</span>
           </div>
@@ -472,7 +472,7 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
                       {f.loadTime && <span style={{ fontSize: 10.5, color: C.t3 }}>{f.loadTime}</span>}
                     </div>
                     <div style={{ display: "flex", gap: 10, marginTop: 3, fontSize: 11, color: C.t3 }}>
-                      {(f.fieldName || f.originName) && <span style={{ display: "flex", alignItems: "center", gap: 3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{Ic.pin(C.t3, 9)} {f.fieldName || f.originName}</span>}
+                      <span style={{ display: "flex", alignItems: "center", gap: 3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{Ic.pin(C.t3, 9)} {[f.fieldName, f.originName].filter(Boolean).join(" / ") || f.originCompanyName || "Sin origen"}</span>
                       {f.destName && <span style={{ display: "flex", alignItems: "center", gap: 3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{Ic.plant(C.t3, 9)} {f.destName}</span>}
                     </div>
                   </div>
