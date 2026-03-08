@@ -54,7 +54,7 @@ function SummaryCard({ secSummary, secComplete, form, showTruckSelect, isDesktop
             <div key={i} onClick={() => onEdit?.(r.section)} style={{ cursor:onEdit?"pointer":"default", padding:"6px 8px", borderRadius:8, transition:"background 0.15s" }} onMouseEnter={e=>{if(onEdit)e.currentTarget.style.background=C.bgCardAlt}} onMouseLeave={e=>{e.currentTarget.style.background="transparent"}}>
               <div style={{ fontSize:11, fontWeight:600, color:C.t3, textTransform:"uppercase", letterSpacing:0.4 }}>{r.label}</div>
               <div style={{ fontSize:13.2, fontWeight:500, color:C.t1, marginTop:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{r.value}</div>
-              {onEdit && <div style={{ fontSize:10, fontWeight:600, color:C.pri, marginTop:2 }}>Editar</div>}
+              {onEdit && <div style={{ fontSize:10, fontWeight:700, color:"#fff", background:C.pri, padding:"2px 8px", borderRadius:4, marginTop:3, display:"inline-block" }}>Editar</div>}
             </div>
           ))}
         </div>
