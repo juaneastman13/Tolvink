@@ -677,18 +677,41 @@ const _STATUS_LABEL = { pending_assignment:"Solicitado", assigned:"Asignado a fl
 // Use google.maps.Symbol with SVG paths — rendered natively, no broken images.
 // Pin path for draggable markers (LocationPicker etc.)
 // Data URI SVG icons — reliable across all Google Maps API versions (no broken Symbol paths)
-const _pinSvg = (color, w = 28, h = 40) =>
-  `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 24 34"><path d="M12 0C5.37 0 0 5.37 0 12c0 9 12 22 12 22s12-13 12-22C24 5.37 18.63 0 12 0zm0 16a4 4 0 110-8 4 4 0 010 8z" fill="${color}" stroke="#fff" stroke-width="1.5"/></svg>`)}`;
+const _pinSvg = (color, w = 28, h = 40) => {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 24 34"><path d="M12 0C5.37 0 0 5.37 0 12c0 9 12 22 12 22s12-13 12-22C24 5.37 18.63 0 12 0zm0 16a4 4 0 110-8 4 4 0 010 8z" fill="${color}" stroke="%23fff" stroke-width="1.5"/></svg>`;
+  return `data:image/svg+xml,${svg.replace(/#/g, '%23')}`;
+};
 const _pinSymbol = (maps, color = "#E53935", scale = 1.0) => {
   const w = Math.round(28 * scale), h = Math.round(40 * scale);
   return { url: _pinSvg(color, w, h), scaledSize: new maps.Size(w, h), anchor: new maps.Point(w / 2, h) };
 };
-const _truckSvg = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path d="M20 8h-3V4H3c-1.1 0-2 .9-2 2v11h2a3 3 0 006 0h6a3 3 0 006 0h2v-5l-3-4zM6 18.5A1.5 1.5 0 014.5 17 1.5 1.5 0 016 15.5 1.5 1.5 0 017.5 17 1.5 1.5 0 016 18.5zm13.5-9L21.46 12H17V9.5h2.5zM18 18.5a1.5 1.5 0 01-1.5-1.5 1.5 1.5 0 011.5-1.5 1.5 1.5 0 011.5 1.5 1.5 1.5 0 01-1.5 1.5z" fill="#FF6A00" stroke="#fff" stroke-width="0.5"/></svg>`)}`;
+// Campo pictogram: green pin with wheat/plant icon
+const _fieldSvg = (w = 32, h = 44) => {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 24 34"><path d="M12 0C5.37 0 0 5.37 0 12c0 9 12 22 12 22s12-13 12-22C24 5.37 18.63 0 12 0z" fill="%231A6B37" stroke="%23fff" stroke-width="1.5"/><g fill="none" stroke="%23fff" stroke-width="1.3" stroke-linecap="round"><line x1="12" y1="16" x2="12" y2="7"/><path d="M12 9l-3-2"/><path d="M12 9l3-2"/><path d="M12 11.5l-2.5-1.8"/><path d="M12 11.5l2.5-1.8"/><path d="M12 14l-2-1.5"/><path d="M12 14l2-1.5"/></g></svg>`;
+  return `data:image/svg+xml,${svg}`;
+};
+const _fieldSymbol = (maps, scale = 1.0) => {
+  const w = Math.round(32 * scale), h = Math.round(44 * scale);
+  return { url: _fieldSvg(w, h), scaledSize: new maps.Size(w, h), anchor: new maps.Point(w / 2, h) };
+};
+// Lote pictogram: purple pin with grid/parcel icon
+const _lotSvg = (w = 28, h = 40) => {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 24 34"><path d="M12 0C5.37 0 0 5.37 0 12c0 9 12 22 12 22s12-13 12-22C24 5.37 18.63 0 12 0z" fill="%238B5CF6" stroke="%23fff" stroke-width="1.5"/><rect x="7.5" y="7.5" width="9" height="9" rx="1" fill="none" stroke="%23fff" stroke-width="1.2"/><line x1="12" y1="7.5" x2="12" y2="16.5" stroke="%23fff" stroke-width="1"/><line x1="7.5" y1="12" x2="16.5" y2="12" stroke="%23fff" stroke-width="1"/></svg>`;
+  return `data:image/svg+xml,${svg}`;
+};
+const _lotSymbol = (maps, scale = 1.0) => {
+  const w = Math.round(28 * scale), h = Math.round(40 * scale);
+  return { url: _lotSvg(w, h), scaledSize: new maps.Size(w, h), anchor: new maps.Point(w / 2, h) };
+};
+const _truckSvg = (() => {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path d="M20 8h-3V4H3c-1.1 0-2 .9-2 2v11h2a3 3 0 006 0h6a3 3 0 006 0h2v-5l-3-4zM6 18.5A1.5 1.5 0 014.5 17 1.5 1.5 0 016 15.5 1.5 1.5 0 017.5 17 1.5 1.5 0 016 18.5zm13.5-9L21.46 12H17V9.5h2.5zM18 18.5a1.5 1.5 0 01-1.5-1.5 1.5 1.5 0 011.5-1.5 1.5 1.5 0 011.5 1.5 1.5 1.5 0 01-1.5 1.5z" fill="%23FF6A00" stroke="%23fff" stroke-width="0.5"/></svg>`;
+  return `data:image/svg+xml,${svg}`;
+})();
 const _truckSymbol = (maps) => ({
   url: _truckSvg, scaledSize: new maps.Size(32, 32), anchor: new maps.Point(16, 16),
 });
 
-export function FreightsOverviewMap({ freights, onSelect, fields, plants, selectedId }) {
+export function FreightsOverviewMap({ freights, onSelect, fields, plants, lots, selectedId }) {
   const mapRef = useRef(null);
   const mapObj = useRef(null);
   const freightMk = useRef({});
@@ -785,7 +808,7 @@ export function FreightsOverviewMap({ freights, onSelect, fields, plants, select
       const pos = { lat, lng };
       bounds.extend(pos); has = true;
       const mk = new maps.Marker({ position: pos, map: mapObj.current, title: f.name,
-        icon: _pinSymbol(maps, "#1A6B37", 0.7) });
+        icon: _fieldSymbol(maps, 0.85) });
       mk.addListener("click", () => {
         info.current.setContent(`<div style="font-family:system-ui;font-size:12px;line-height:1.4"><strong>${_esc(f.name)}</strong><br/><span style="color:#1A6B37;font-weight:600">Campo</span>${f.address ? "<br/>"+_esc(f.address) : ""}${f.hectares ? "<br/>"+_esc(f.hectares)+" ha" : ""}</div>`);
         info.current.open(mapObj.current, mk);
@@ -808,9 +831,25 @@ export function FreightsOverviewMap({ freights, onSelect, fields, plants, select
       entityMk.current.push(mk);
     });
 
+    (lots||[]).forEach(l => {
+      const lat = l.lat ? parseFloat(l.lat) : null;
+      const lng = l.lng ? parseFloat(l.lng) : null;
+      if (!lat || !lng) return;
+      const pos = { lat, lng };
+      bounds.extend(pos); has = true;
+      const mk = new maps.Marker({ position: pos, map: mapObj.current, title: l.name,
+        icon: _lotSymbol(maps, 0.75) });
+      const fieldName = l.field?.name || (l.fieldId ? (fields||[]).find(f => f.id === l.fieldId)?.name : null);
+      mk.addListener("click", () => {
+        info.current.setContent(`<div style="font-family:system-ui;font-size:12px;line-height:1.4"><strong>${_esc(l.name)}</strong><br/><span style="color:#8B5CF6;font-weight:600">Lote</span>${fieldName ? "<br/>Campo: "+_esc(fieldName) : ""}${l.hectares ? "<br/>"+_esc(l.hectares)+" ha" : ""}</div>`);
+        info.current.open(mapObj.current, mk);
+      });
+      entityMk.current.push(mk);
+    });
+
     // Fit bounds only on first render (prevents jarring map jumps on data updates)
     if (has && !boundsSet.current) { mapObj.current.fitBounds(bounds, 40); boundsSet.current = true; }
-  }, [ready, freights, fields, plants, showFreights, selectedId]);
+  }, [ready, freights, fields, plants, lots, showFreights, selectedId]);
 
   // Live truck tracking for in_progress freights (parallel fetching)
   useEffect(() => {

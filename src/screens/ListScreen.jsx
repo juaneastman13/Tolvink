@@ -489,7 +489,7 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
       {/* View: Mapa -- stays mounted after first show to avoid reinit */}
       {(view==="mapa" || mapShown) && (
         <div style={{ display: view === "mapa" ? undefined : "none" }}>
-          <ErrorBoundary><Suspense fallback={<SkeletonList count={3}/>}><FreightsOverviewMap freights={filtered} onSelect={(id)=>onNav("detail",id)} fields={catalog?.fields} plants={catalog?.plants} /></Suspense></ErrorBoundary>
+          <ErrorBoundary><Suspense fallback={<SkeletonList count={3}/>}><FreightsOverviewMap freights={filtered} onSelect={(id)=>onNav("detail",id)} fields={catalog?.fields} plants={catalog?.plants} lots={catalog?.lots} /></Suspense></ErrorBoundary>
         </div>
       )}
 
