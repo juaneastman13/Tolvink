@@ -149,4 +149,18 @@ export const offlineQueue = {
     const items = await this.getAll();
     return items.length;
   },
+
+  async clear() {
+    let db;
+    try {
+      db = await openDB();
+      const tx = db.transaction(STORE_NAME, "readwrite");
+      tx.objectStore(STORE_NAME).clear();
+      await new Promise((res, rej) => { tx.oncomplete = res; tx.onerror = rej; });
+    } catch (e) {
+      log.error("OfflineQueue", "clear failed:", e);
+    } finally {
+      db?.close();
+    }
+  },
 };

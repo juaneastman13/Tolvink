@@ -23,9 +23,16 @@ export function clearAuth() {
   // Clean up legacy token storage if present
   localStorage.removeItem('tolvink_token');
   localStorage.removeItem('tolvink_refresh_token');
+  // Clear offline queue to prevent stale data leaking across sessions
+  import('./store.js').then(m => m.offlineQueue?.clear?.()).catch(() => {});
 }
 export function setAuthFailHandler(fn) { _onAuthFail = fn; }
-export function saveUser(u) { localStorage.setItem('tolvink_user', JSON.stringify(u)); }
+export function saveUser(u) {
+  // Strip sensitive/internal fields before persisting to localStorage
+  if (!u) return;
+  const { passwordHash, isSuperAdmin, refreshTokens, ...safe } = u;
+  localStorage.setItem('tolvink_user', JSON.stringify(safe));
+}
 export function getSavedUser() { try { const r=localStorage.getItem('tolvink_user'); return r?JSON.parse(r):null; } catch { return null; } }
 export function setLoggingIn(val) { _isLoggingIn = val; }
 
@@ -381,8 +388,11 @@ function compressImage(file, maxWidth = 1920, quality = 0.8) {
   });
 }
 
+const MAX_UPLOAD_SIZE = 10 * 1024 * 1024; // 10MB
+
 // Photo Upload — direct to Supabase Storage (public bucket)
 export async function uploadPhoto(file, freightId, step) {
+  if (file.size > MAX_UPLOAD_SIZE) throw new Error('El archivo excede el tamaño máximo de 10MB');
   // Compress image before upload
   const processed = file.type.startsWith('image/') ? await compressImage(file) : file;
   const ext = (processed.name?.split('.').pop() || 'jpg').replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
@@ -418,6 +428,7 @@ export function thumb(url, size = 96) {
 
 // Chat file upload
 export async function uploadChatFile(file, conversationId) {
+  if (file.size > MAX_UPLOAD_SIZE) throw new Error('El archivo excede el tamaño máximo de 10MB');
   // Compress image before upload (skip non-image files)
   const processed = file.type.startsWith('image/') ? await compressImage(file) : file;
   const ext = (processed.name?.split('.').pop() || 'bin').toLowerCase();
