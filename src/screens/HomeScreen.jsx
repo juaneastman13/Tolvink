@@ -179,9 +179,9 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
     }).filter(g => g.items.length > 0);
   }, [filteredFreights, pendingMap, summaryFilter]);
 
-  // Collapsed state
-  const [collapsed, setCollapsed] = useState({});
-  const toggleGroup = (key) => setCollapsed(prev => ({ ...prev, [key]: !prev[key] }));
+  // Accordion state — only one group open at a time
+  const [openGroup, setOpenGroup] = useState(null);
+  const toggleGroup = (key) => setOpenGroup(prev => prev === key ? null : key);
 
   // Selected freight for detail
   const selFreight = selectedId ? filteredFreights.find(f => f.id === selectedId) || freights.find(f => f.id === selectedId) : null;
@@ -247,10 +247,12 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
     );
   };
 
-  // Render a collapsible group (pending or summary)
-  const renderGroup = (group, keyPrefix, source) => {
+  // Render a collapsible group (accordion — opening one hides others)
+  const renderGroup = (group, keyPrefix, source, allGroups) => {
     const gKey = keyPrefix + "_" + group.key;
-    const isOpen = !!collapsed[gKey];
+    const isOpen = openGroup === gKey;
+    const anotherOpen = openGroup && openGroup.startsWith(keyPrefix + "_") && openGroup !== gKey;
+    if (anotherOpen) return null;
     return (
       <div key={gKey}>
         <button onClick={() => toggleGroup(gKey)} style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, padding: "8px 0", background: "none", border: "none", borderBottom: `1px solid ${C.b2}`, cursor: "pointer", fontFamily: "inherit", textAlign: "left" }}>
