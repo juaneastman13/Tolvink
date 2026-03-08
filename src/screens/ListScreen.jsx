@@ -46,6 +46,7 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [datePreset, setDatePreset] = useState("");
+  const [dateFilterOpen, setDateFilterOpen] = useState(false);
   const [mapShown, setMapShown] = useState(false);
   // Kanban grouping: "status" (default) or entity key
   const [kanbanGroup, setKanbanGroup] = useState(null);
@@ -296,26 +297,21 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
       {indicator}
       {/* Desktop: original filters layout */}
       {isDesktop ? (<>
-      {/* Date filters -- line 1 */}
+      {/* Search bar -- line 1 */}
       <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:6 }}>
-        <span style={{fontSize:11,color:C.t2,fontWeight:600}}>Desde</span>
-        <input type="date" value={dateFrom} onChange={e=>{setDateFrom(e.target.value);setDatePreset("custom");}} onClick={e=>e.target.showPicker?.()} style={{padding:"5px 8px",borderRadius:6,border:`1px solid ${C.b1}`,background:C.w,color:dateFrom?C.t1:C.t3,fontSize:12.1,fontFamily:"inherit",outline:"none",boxSizing:"border-box",cursor:"pointer"}}/>
-        <span style={{fontSize:11,color:C.t2,fontWeight:600}}>Hasta</span>
-        <input type="date" value={dateTo} onChange={e=>{setDateTo(e.target.value);setDatePreset("custom");}} onClick={e=>e.target.showPicker?.()} style={{padding:"5px 8px",borderRadius:6,border:`1px solid ${C.b1}`,background:C.w,color:dateTo?C.t1:C.t3,fontSize:12.1,fontFamily:"inherit",outline:"none",boxSizing:"border-box",cursor:"pointer"}}/>
-        {(dateFrom||dateTo)&&<button onClick={()=>{setDateFrom("");setDateTo("");setDatePreset("");}} aria-label="Limpiar fechas" style={{background:"none",border:"none",cursor:"pointer",display:"flex",padding:2}}>{Ic.cross(C.t3,14)}</button>}
-        {[{k:"today",l:"Hoy"},{k:"week",l:"Semana"},{k:"month",l:"Mes"}].map(p=>(
-          <button key={p.k} onClick={()=>applyDatePreset(p.k)} style={{padding:"5px 10px",borderRadius:6,border:`1px solid ${datePreset===p.k?C.pri:C.b1}`,background:datePreset===p.k?C.priPale:C.w,color:datePreset===p.k?C.pri:C.t2,fontSize:12.1,fontWeight:600,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>{p.l}</button>
-        ))}
-        {hasFilters && <button onClick={clearAll} style={{marginLeft:"auto",padding:"5px 10px",borderRadius:6,border:`1px solid ${C.err}40`,background:C.errPale,color:C.err,fontSize:12.1,fontWeight:600,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>Limpiar</button>}
-      </div>
-      {/* Search + entity filters -- line 2 */}
-      <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:12 }}>
-        <div style={{ position:"relative", minWidth:140, flex:"0 1 200px" }}>
+        <div style={{ position:"relative", flex:1, minWidth:0 }}>
           <div style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",display:"flex"}}>{Ic.srch(C.t3,14)}</div>
-          <input value={searchQ} onChange={e=>setSearchQ(e.target.value)} placeholder="Buscar..."
-            style={{width:"100%",padding:"6px 12px 6px 30px",borderRadius:8,border:`1.5px solid ${C.b1}`,background:C.w,color:C.t1,fontSize:12.1,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}/>
-          {searchQ && <button onClick={()=>setSearchQ("")} aria-label="Limpiar busqueda" style={{position:"absolute",right:6,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",display:"flex"}}>{Ic.cross(C.t3,12)}</button>}
+          <input value={searchQ} onChange={e=>setSearchQ(e.target.value)} placeholder="Buscar flete..."
+            style={{width:"100%",padding:"8px 12px 8px 32px",borderRadius:8,border:`1.5px solid ${C.b1}`,background:C.w,color:C.t1,fontSize:13.2,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}/>
+          {searchQ && <button onClick={()=>setSearchQ("")} aria-label="Limpiar busqueda" style={{position:"absolute",right:8,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",display:"flex"}}>{Ic.cross(C.t3,14)}</button>}
         </div>
+        {hasFilters && <button onClick={clearAll} style={{padding:"6px 10px",borderRadius:6,border:`1px solid ${C.err}40`,background:C.errPale,color:C.err,fontSize:12.1,fontWeight:600,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap",flexShrink:0}}>Limpiar</button>}
+      </div>
+      {/* Entity filters + date toggle -- line 2 */}
+      <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:dateFilterOpen?6:12 }}>
+        <button onClick={()=>setDateFilterOpen(p=>!p)} style={{padding:"6px 10px",borderRadius:8,border:`1.5px solid ${(dateFrom||dateTo)?C.pri:C.b1}`,background:(dateFrom||dateTo)?C.priPale:C.w,color:(dateFrom||dateTo)?C.pri:C.t2,fontSize:12.1,fontWeight:600,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:5,whiteSpace:"nowrap"}}>
+          {Ic.cal((dateFrom||dateTo)?C.pri:C.t3,13)} {dateFilterOpen?"Ocultar fechas":"Filtrar por fecha"}{(dateFrom||dateTo)?" (activo)":""}
+        </button>
         <select value={fPlant} onChange={e=>setFPlant(e.target.value)} style={{padding:"6px 8px",borderRadius:8,border:`1.5px solid ${fPlant?C.pri:C.b1}`,background:fPlant?C.priPale:C.w,color:fPlant?C.pri:C.t3,fontSize:12.1,fontFamily:"inherit",outline:"none",cursor:"pointer"}}>
           <option value="">Planta</option>
           {plantOptions.map(p=><option key={p} value={p}>{p}</option>)}
@@ -336,6 +332,17 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
           ))}
         </div>
       </div>
+      {/* Collapsible date filters */}
+      {dateFilterOpen && <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:12, padding:"8px 12px", background:C.bg, borderRadius:10, border:`1px solid ${C.b1}` }}>
+        <span style={{fontSize:11,color:C.t2,fontWeight:600}}>Desde</span>
+        <input type="date" value={dateFrom} onChange={e=>{setDateFrom(e.target.value);setDatePreset("custom");}} onClick={e=>e.target.showPicker?.()} style={{padding:"5px 8px",borderRadius:6,border:`1px solid ${C.b1}`,background:C.w,color:dateFrom?C.t1:C.t3,fontSize:12.1,fontFamily:"inherit",outline:"none",boxSizing:"border-box",cursor:"pointer"}}/>
+        <span style={{fontSize:11,color:C.t2,fontWeight:600}}>Hasta</span>
+        <input type="date" value={dateTo} onChange={e=>{setDateTo(e.target.value);setDatePreset("custom");}} onClick={e=>e.target.showPicker?.()} style={{padding:"5px 8px",borderRadius:6,border:`1px solid ${C.b1}`,background:C.w,color:dateTo?C.t1:C.t3,fontSize:12.1,fontFamily:"inherit",outline:"none",boxSizing:"border-box",cursor:"pointer"}}/>
+        {(dateFrom||dateTo)&&<button onClick={()=>{setDateFrom("");setDateTo("");setDatePreset("");}} aria-label="Limpiar fechas" style={{background:"none",border:"none",cursor:"pointer",display:"flex",padding:2}}>{Ic.cross(C.t3,14)}</button>}
+        {[{k:"today",l:"Hoy"},{k:"week",l:"Semana"},{k:"month",l:"Mes"}].map(p=>(
+          <button key={p.k} onClick={()=>applyDatePreset(p.k)} style={{padding:"5px 10px",borderRadius:6,border:`1px solid ${datePreset===p.k?C.pri:C.b1}`,background:datePreset===p.k?C.priPale:C.w,color:datePreset===p.k?C.pri:C.t2,fontSize:12.1,fontWeight:600,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>{p.l}</button>
+        ))}
+      </div>}
       </>) : (<>
       {/* Mobile: collapsible filters layout */}
       {/* Toggle button */}
