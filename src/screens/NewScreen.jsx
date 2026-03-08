@@ -811,7 +811,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
 
       </div>}
       </div>
-      {_isDesktop && <div style={{ width:340, flexShrink:0, position:"sticky", top:70, alignSelf:"flex-start" }}>
+      {_isDesktop && <div style={{ flex:"1 1 0", minWidth:0, position:"sticky", top:70, alignSelf:"flex-start" }}>
         <SummaryCard secSummary={secSummary} secComplete={secComplete} form={form} showTruckSelect={showTruckSelect} isDesktop={true} onEdit={(sec)=>{if(!editingFrom)setEditingFrom(activeSection);setActiveSection(sec);}}/>
         <div ref={secRefs.submit} style={{ marginTop:14 }}>
           {allComplete ? (
