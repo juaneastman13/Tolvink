@@ -609,7 +609,7 @@ export default function Tolvink() {
         </>}
 
         {/* Location picker fullscreen */}
-        {locPicker && <Suspense fallback={<SL/>}><LocPickerFullscreen value={locPicker.value} onChange={locPicker.onChange} defaultCenter={locPicker.defaultCenter} label={locPicker.label} onClose={()=>setLocPicker(null)}/></Suspense>}
+        {locPicker && <Suspense fallback={<SL/>}><LocPickerFullscreen value={locPicker.value} onChange={locPicker.onChange} defaultCenter={locPicker.defaultCenter} label={locPicker.label} confirmLabel={locPicker.confirmLabel} onConfirm={locPicker.onConfirm} onClose={()=>setLocPicker(null)}/></Suspense>}
 
         {/* Company switch transition overlay */}
         {auth.companySwitching && <div style={{position:"absolute",inset:0,background:"rgba(255,255,255,0.7)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:50,backdropFilter:"blur(2px)"}}><div style={{display:"flex",alignItems:"center",gap:10,padding:"12px 24px",borderRadius:12,background:C.w,boxShadow:C.shMd}}><div style={{width:18,height:18,border:`3px solid ${C.b2}`,borderTopColor:C.pri,borderRadius:"50%",animation:"spin 0.6s linear infinite"}}/><span style={{fontSize:14.3,fontWeight:600,color:C.t2}}>Cambiando empresa...</span></div></div>}

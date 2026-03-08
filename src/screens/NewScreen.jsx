@@ -452,7 +452,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
               <Field label="Nombre del origen" value={customOrigin.name} onChange={v=>setCustomOrigin(p=>({...p,name:v}))} placeholder="Ej: Chacra Los Álamos"/>
               <div style={{ marginTop:10 }}>
                 <Suspense fallback={<div style={{padding:20,textAlign:"center",color:C.t3}}>Cargando mapa...</div>}>
-                  <LocationPicker label="Ubicación en mapa" value={customOrigin.lat?{lat:customOrigin.lat,lng:customOrigin.lng}:null} onChange={loc=>setCustomOrigin(p=>({...p,lat:loc?.lat||null,lng:loc?.lng||null,name:p.name||loc?.address||""}))}/>
+                  <LocationPicker label="Ubicación en mapa" value={customOrigin.lat?{lat:customOrigin.lat,lng:customOrigin.lng}:null} onChange={loc=>setCustomOrigin(p=>({...p,lat:loc?.lat||null,lng:loc?.lng||null,name:p.name||loc?.address||""}))} confirmLabel="Confirmar origen" onConfirm={()=>{if(isEditing)confirmEdit();else advanceToNext();}}/>
                 </Suspense>
               </div>
               {touched&&errs.customOrigin&&<div style={{padding:"6px 10px",borderRadius:8,marginTop:6,fontSize:12.1,fontWeight:600,color:C.err,background:C.errPale}}>{errs.customOrigin}</div>}
@@ -493,7 +493,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
               {touched&&<FieldError error={errs.customDestName}/>}
               <div style={{ marginTop:8 }}>
                 <Suspense fallback={<div style={{padding:20,textAlign:"center",color:C.t3}}>Cargando mapa...</div>}>
-                  <LocationPicker label="Ubicación del destino" value={customDest.lat?{lat:customDest.lat,lng:customDest.lng}:null} onChange={loc=>setCustomDest(p=>({...p,lat:loc.lat,lng:loc.lng}))}/>
+                  <LocationPicker label="Ubicación del destino" value={customDest.lat?{lat:customDest.lat,lng:customDest.lng}:null} onChange={loc=>setCustomDest(p=>({...p,lat:loc.lat,lng:loc.lng}))} confirmLabel="Confirmar destino" onConfirm={()=>{if(isEditing)confirmEdit();else advanceToNext();}}/>
                 </Suspense>
               </div>
               <div style={{marginTop:14}}>
@@ -640,7 +640,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
           </>) : (<>
             <Field label="Nombre del origen" value={customOrigin.name} onChange={v=>setCustomOrigin(p=>({...p,name:v}))} placeholder="Ej: Chacra Los Álamos"/>
             <div style={{ marginTop:10 }}>
-              <SafeZone><LocationPicker label="Ubicación en mapa" value={customOrigin.lat?{lat:customOrigin.lat,lng:customOrigin.lng}:null} onChange={loc=>setCustomOrigin(p=>({...p,lat:loc?.lat||null,lng:loc?.lng||null,name:p.name||loc?.address||""}))}/></SafeZone>
+              <SafeZone><LocationPicker label="Ubicación en mapa" value={customOrigin.lat?{lat:customOrigin.lat,lng:customOrigin.lng}:null} onChange={loc=>setCustomOrigin(p=>({...p,lat:loc?.lat||null,lng:loc?.lng||null,name:p.name||loc?.address||""}))} confirmLabel="Confirmar origen" onConfirm={()=>{if(isEditing)confirmEdit();else advanceToNext();}}/></SafeZone>
             </div>
             {touched&&errs.customOrigin&&<div style={{padding:"6px 10px",borderRadius:8,marginTop:6,fontSize:12.1,fontWeight:600,color:C.err,background:C.errPale}}>{errs.customOrigin}</div>}
             {customOrigin.lat && <div style={{ display:"flex", alignItems:"center", gap:6, padding:"6px 10px", background:C.priPale, borderRadius:8, marginTop:6 }}>{Ic.chk(C.pri,14)}<span style={{fontSize:11.6,color:C.pri,fontWeight:500}}>{customOrigin.lat.toFixed(4)}, {customOrigin.lng.toFixed(4)}</span></div>}
@@ -689,7 +689,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
               <Field label="Nombre del destino" value={customDest.name} onChange={v=>setCustomDest(p=>({...p,name:v}))} placeholder="Ej: Acopio Central, Puerto Rosario..."/>
               {touched&&<FieldError error={errs.customDestName}/>}
               {!_isDesktop && <div style={{ marginTop:8 }}>
-                <LocationPicker label="Ubicación del destino" value={customDest.lat?{lat:customDest.lat,lng:customDest.lng}:null} onChange={loc=>setCustomDest(p=>({...p,lat:loc.lat,lng:loc.lng}))}/>
+                <LocationPicker label="Ubicación del destino" value={customDest.lat?{lat:customDest.lat,lng:customDest.lng}:null} onChange={loc=>setCustomDest(p=>({...p,lat:loc.lat,lng:loc.lng}))} confirmLabel="Confirmar destino" onConfirm={()=>{if(isEditing)confirmEdit();else advanceToNext();}}/>
               </div>}
               <div style={{marginTop:14}}>
                 <label style={{fontSize:11.6,fontWeight:600,color:C.t2,marginBottom:6,display:"flex",alignItems:"center",gap:4,textTransform:"uppercase",letterSpacing:0.6}}>{Ic.chk(C.t2,14)} ¿Quién debe confirmar el viaje?</label>

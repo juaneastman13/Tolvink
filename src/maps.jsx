@@ -91,7 +91,7 @@ export class SafeZone extends Component {
 // Location Picker: Autocomplete + Map Pin
 const URUGUAY_CENTER = { lat: -33.0, lng: -56.0 };
 
-export function LocationPicker({ label, value, onChange, defaultCenter }) {
+export function LocationPicker({ label, value, onChange, defaultCenter, confirmLabel, onConfirm }) {
   const inputRef = useRef(null);
   const mapRef = useRef(null);
   const markerRef = useRef(null);
@@ -103,6 +103,7 @@ export function LocationPicker({ label, value, onChange, defaultCenter }) {
   const [addr, setAddr] = useState(value?.address || "");
   const [initError, setInitError] = useState(false);
   const setLocPicker = useUIStore(s => s.setLocPicker);
+  const geoAttempted = useRef(false);
 
   useEffect(() => {
     if (!showMap || !mapRef.current) return;
@@ -125,22 +126,22 @@ export function LocationPicker({ label, value, onChange, defaultCenter }) {
 
         if (!geocoderRef.current) geocoderRef.current = new maps.Geocoder();
 
-        marker.addListener("dragend", () => {
-          const pos = marker.getPosition();
-          geocoderRef.current.geocode({ location: { lat: pos.lat(), lng: pos.lng() } }, (results, status) => {
+        const geocodeAndSet = (lat, lng) => {
+          geocoderRef.current.geocode({ location: { lat, lng } }, (results, status) => {
             const a = status === "OK" && results[0] ? results[0].formatted_address : "";
             setAddr(a);
-            onChangeRef.current({ lat: pos.lat(), lng: pos.lng(), address: a });
+            onChangeRef.current({ lat, lng, address: a });
           });
+        };
+
+        marker.addListener("dragend", () => {
+          const pos = marker.getPosition();
+          geocodeAndSet(pos.lat(), pos.lng());
         });
 
         map.addListener("click", (e) => {
           marker.setPosition(e.latLng);
-          geocoderRef.current.geocode({ location: { lat: e.latLng.lat(), lng: e.latLng.lng() } }, (results, status) => {
-            const a = status === "OK" && results[0] ? results[0].formatted_address : "";
-            setAddr(a);
-            onChangeRef.current({ lat: e.latLng.lat(), lng: e.latLng.lng(), address: a });
-          });
+          geocodeAndSet(e.latLng.lat(), e.latLng.lng());
         });
 
         // Autocomplete
@@ -162,6 +163,19 @@ export function LocationPicker({ label, value, onChange, defaultCenter }) {
               onChangeRef.current({ lat, lng, address: a });
             }
           });
+        }
+
+        // Auto-geolocate to current position if no value/defaultCenter
+        if (!value?.lat && !defaultCenter?.lat && !geoAttempted.current && navigator.geolocation) {
+          geoAttempted.current = true;
+          navigator.geolocation.getCurrentPosition((pos) => {
+            if (cancelled) return;
+            const lat = pos.coords.latitude, lng = pos.coords.longitude;
+            map.setCenter({ lat, lng });
+            map.setZoom(14);
+            marker.setPosition({ lat, lng });
+            geocodeAndSet(lat, lng);
+          }, () => {}, { timeout: 8000, maximumAge: 60000 });
         }
       } catch (err) {
         log.error("LocationPicker", err);
@@ -186,7 +200,7 @@ export function LocationPicker({ label, value, onChange, defaultCenter }) {
 
   const openFull = (e) => {
     if (e) { e.preventDefault(); e.stopPropagation(); }
-    setLocPicker({ value, onChange, defaultCenter, label });
+    setLocPicker({ value, onChange, defaultCenter, label, confirmLabel, onConfirm });
   };
 
   return (
@@ -195,12 +209,18 @@ export function LocationPicker({ label, value, onChange, defaultCenter }) {
       {initError && <div style={{ fontSize: 12.1, color: C.err, marginBottom: 4 }}>Error al cargar el mapa. Intentá recargar la página.</div>}
       <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
         <input ref={inputRef} value={addr} onChange={e => setAddr(e.target.value)}
-          placeholder="Buscar dirección o tocar en el mapa..."
-          style={{ flex: 1, padding: "10px 12px", borderRadius: 8, border: `1.5px solid ${C.b1}`, fontSize: 13.8, fontFamily: "inherit", outline: "none", color: C.t1, background: C.w, boxSizing: "border-box" }}
+          placeholder="Buscar dirección..."
+          style={{ flex: 1, padding: "10px 12px", borderRadius: 8, border: `1.5px solid ${C.b1}`, fontSize: 13.2, fontFamily: "inherit", outline: "none", color: C.t1, background: C.w, boxSizing: "border-box", minWidth:0 }}
           onFocus={() => setShowMap(true)} />
-        <button onClick={() => { if(!showMap) setShowMap(true); else openFull(); }} style={{ padding: "9px 12px", borderRadius: 8, border: `1.5px solid ${value?.lat ? C.ok : C.b1}`, background: value?.lat ? C.okPale : C.w, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 4, fontSize: 12.1, fontWeight: 600, color: value?.lat ? C.ok : C.t3 }}>
-          {Ic.pin(value?.lat ? C.ok : C.t3, 14)} {value?.lat ? "✓" : "Mapa"}
-        </button>
+        {confirmLabel && onConfirm ? (
+          <button onClick={onConfirm} disabled={!value?.lat} style={{ padding:"9px 14px", borderRadius:8, border:"none", background:value?.lat?C.ok:C.b1, color:value?.lat?C.w:C.t3, cursor:value?.lat?"pointer":"default", fontFamily:"inherit", display:"flex", alignItems:"center", gap:4, fontSize:12.1, fontWeight:700, opacity:value?.lat?1:0.5, flexShrink:0, whiteSpace:"nowrap" }}>
+            {Ic.chk(C.w,13)} {confirmLabel}
+          </button>
+        ) : (
+          <button onClick={() => { if(!showMap) setShowMap(true); else openFull(); }} style={{ padding: "9px 12px", borderRadius: 8, border: `1.5px solid ${value?.lat ? C.ok : C.b1}`, background: value?.lat ? C.okPale : C.w, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 4, fontSize: 12.1, fontWeight: 600, color: value?.lat ? C.ok : C.t3, flexShrink:0 }}>
+            {Ic.pin(value?.lat ? C.ok : C.t3, 14)} {value?.lat ? "✓" : "Mapa"}
+          </button>
+        )}
       </div>
 
       {/* Inline map (non-fullscreen) */}
@@ -220,7 +240,7 @@ export function LocationPicker({ label, value, onChange, defaultCenter }) {
 // ======================== LOCATION PICKER FULLSCREEN =====================
 // Rendered in App.jsx below header bar (same pattern as mapFocus)
 
-export function LocPickerFullscreen({ value, onChange, defaultCenter, label, onClose }) {
+export function LocPickerFullscreen({ value, onChange, defaultCenter, label, onClose, confirmLabel, onConfirm }) {
   const mapRef = useRef(null);
   const mapObjRef = useRef(null);
   const markerRef = useRef(null);
@@ -299,6 +319,18 @@ export function LocPickerFullscreen({ value, onChange, defaultCenter, label, onC
             }
           });
         }
+
+        // Auto-geolocate if no value or defaultCenter
+        if (!curValue?.lat && !defaultCenter?.lat && navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition((pos) => {
+            if (cancelled) return;
+            const lat = pos.coords.latitude, lng = pos.coords.longitude;
+            map.setCenter({ lat, lng });
+            map.setZoom(14);
+            marker.setPosition({ lat, lng });
+            geocodeAndUpdate(lat, lng);
+          }, () => {}, { timeout: 8000, maximumAge: 60000 });
+        }
       } catch (err) {
         log.error("LocPickerFullscreen", err);
       }
@@ -311,11 +343,14 @@ export function LocPickerFullscreen({ value, onChange, defaultCenter, label, onC
     };
   }, []);
 
+  const handleConfirm = () => { if (onConfirm) onConfirm(); onClose(); };
+
   return <>
-    <div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 12px",background:C.w,borderBottom:`1px solid ${C.b2}`,flexShrink:0,zIndex:10}}>
-      <button onClick={onClose} style={{display:"flex",alignItems:"center",gap:6,padding:"7px 12px",borderRadius:8,border:`1.5px solid ${C.b1}`,background:C.bg,cursor:"pointer",fontSize:14.3,fontWeight:700,color:C.pri,fontFamily:"inherit",flexShrink:0}}>{Ic.chev(C.pri,14)} Listo</button>
+    <div style={{display:"flex",alignItems:"center",gap:6,padding:"8px 12px",background:C.w,borderBottom:`1px solid ${C.b2}`,flexShrink:0,zIndex:10}}>
+      <button onClick={onClose} style={{display:"flex",alignItems:"center",gap:4,padding:"7px 10px",borderRadius:8,border:`1.5px solid ${C.b1}`,background:C.bg,cursor:"pointer",fontSize:13.2,fontWeight:700,color:C.pri,fontFamily:"inherit",flexShrink:0}}>{Ic.chev(C.pri,14)} Volver</button>
       <input ref={searchRef} value={addr} onChange={e => setAddr(e.target.value)} placeholder="Buscar dirección..."
-        style={{flex:1,padding:"10px 14px",borderRadius:10,border:`1.5px solid ${C.b1}`,fontSize:15.4,fontFamily:"inherit",outline:"none",color:C.t1,background:C.bg}} />
+        style={{flex:1,padding:"10px 12px",borderRadius:10,border:`1.5px solid ${C.b1}`,fontSize:14.3,fontFamily:"inherit",outline:"none",color:C.t1,background:C.bg,minWidth:0}} />
+      {confirmLabel && <button onClick={handleConfirm} disabled={!curValue?.lat} style={{padding:"8px 14px",borderRadius:8,border:"none",background:curValue?.lat?C.ok:C.b1,color:curValue?.lat?C.w:C.t3,cursor:curValue?.lat?"pointer":"default",fontFamily:"inherit",display:"flex",alignItems:"center",gap:4,fontSize:12.7,fontWeight:700,flexShrink:0,whiteSpace:"nowrap",opacity:curValue?.lat?1:0.5}}>{Ic.chk(C.w,13)} {confirmLabel}</button>}
     </div>
     <div style={{flex:1,minHeight:0,position:"relative"}}>
       <div ref={mapRef} style={{position:"absolute",inset:0}} />
