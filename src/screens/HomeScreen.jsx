@@ -263,6 +263,10 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
         </button>
         {isOpen && (
           <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: "8px 0 4px 16px", borderLeft: `2px solid ${group.color}30` }}>
+            <button onClick={(e) => { e.stopPropagation(); setOpenGroup(null); }} style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:6, padding:"7px 14px", borderRadius:8, border:"none", background:C.acc, cursor:"pointer", fontFamily:"inherit", alignSelf:"flex-start" }}>
+              <span style={{ width:7, height:7, borderRadius:"50%", background:C.err, flexShrink:0 }}/>
+              <span style={{ fontSize:12.1, fontWeight:700, color:C.w }}>Ver todo</span>
+            </button>
             {group.items.map(f => renderCard(f, pendingMap.get(f.id), source))}
           </div>
         )}
