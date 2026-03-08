@@ -104,10 +104,13 @@ function MobileStepModal({ open, title, summary, children, onClose, onPrev, step
   );
 }
 
-function NextStepBtn({ complete, onClick, label }) {
+function NextStepBtn({ complete, onClick, label, onPrev }) {
   const isConfirm = !!label;
   return (
-    <div style={{ marginTop:16, display:"flex", justifyContent:"flex-end" }}>
+    <div style={{ marginTop:16, display:"flex", justifyContent:onPrev?"space-between":"flex-end", gap:8 }}>
+      {onPrev && <button type="button" onClick={onPrev} style={{ padding:"11px 20px", borderRadius:10, border:`1.5px solid ${C.b1}`, background:C.w, color:C.t2, cursor:"pointer", fontSize:14.3, fontWeight:700, fontFamily:"inherit", display:"flex", alignItems:"center", gap:8, transition:"all 0.2s ease" }}>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg> Anterior
+      </button>}
       <button type="button" disabled={!complete} onClick={onClick} style={{ padding:"11px 28px", borderRadius:10, border:"none", background:complete?(isConfirm?C.ok:C.pri):C.b1, color:complete?C.w:C.t3, cursor:complete?"pointer":"default", fontSize:14.3, fontWeight:700, fontFamily:"inherit", display:"flex", alignItems:"center", gap:8, opacity:complete?1:0.5, transition:"all 0.2s ease" }}>
         {label || "Siguiente"} {isConfirm ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg> : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>}
       </button>
@@ -191,6 +194,20 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
     flow.push("destination", "schedule", "extras");
     const idx = flow.indexOf(activeSection);
     if (idx >= 0 && idx < flow.length - 1) setActiveSection(flow[idx + 1]);
+  };
+
+  const goToPrev = () => {
+    const flow = ["product", "quantity", "origin"];
+    if (showTruckSelect) flow.push("ownfleet");
+    flow.push("destination", "schedule", "extras");
+    const idx = flow.indexOf(activeSection);
+    if (idx > 0) setActiveSection(flow[idx - 1]);
+  };
+  const prevAvailable = () => {
+    const flow = ["product", "quantity", "origin"];
+    if (showTruckSelect) flow.push("ownfleet");
+    flow.push("destination", "schedule", "extras");
+    return flow.indexOf(activeSection) > 0;
   };
 
   const confirmEdit = () => { setActiveSection(editingFrom || "extras"); setEditingFrom(null); };
@@ -397,7 +414,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
                 {touched&&<FieldError error={errs.productTypeOther}/>}
               </div>
             )}
-            <NextStepBtn complete={secComplete.product} onClick={isEditing?confirmEdit:advanceToNext} label={isEditing?"Confirmar edición":undefined}/>
+            <NextStepBtn complete={secComplete.product} onClick={isEditing?confirmEdit:advanceToNext} label={isEditing?"Confirmar edición":undefined} onPrev={prevAvailable()?goToPrev:null}/>
           </>}
           {activeSection === "quantity" && <>
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
@@ -416,7 +433,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
               <NumericStepper label="Camiones necesarios" icon={Ic.truck(C.acc,14)} value={form.truckCount || (parseFloat(form.tons)>0 ? String(Math.ceil(parseFloat(form.tons)/30)) : "1")} onChange={v=>u({truckCount:v})} min={1} max={50} step={1} />
               {form.unit==="toneladas" && parseFloat(form.tons)>0 && <span style={{ fontSize:12.1, color:C.t3, marginTop:4, display:"block" }}>~30tn por camión. Podés ajustarlo.</span>}
             </div>
-            <NextStepBtn complete={secComplete.quantity} onClick={isEditing?confirmEdit:advanceToNext} label={isEditing?"Confirmar edición":undefined}/>
+            <NextStepBtn complete={secComplete.quantity} onClick={isEditing?confirmEdit:advanceToNext} label={isEditing?"Confirmar edición":undefined} onPrev={prevAvailable()?goToPrev:null}/>
           </>}
           {activeSection === "origin" && <>
             <div style={{ display:"flex", gap:0, marginBottom:14, borderRadius:10, overflow:"hidden", border:`1.5px solid ${C.b1}` }}>
@@ -440,7 +457,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
               </div>
               {touched&&errs.customOrigin&&<div style={{padding:"6px 10px",borderRadius:8,marginTop:6,fontSize:12.1,fontWeight:600,color:C.err,background:C.errPale}}>{errs.customOrigin}</div>}
             </>)}
-            <NextStepBtn complete={secComplete.origin} onClick={isEditing?confirmEdit:advanceToNext} label={isEditing?"Confirmar edición":undefined}/>
+            <NextStepBtn complete={secComplete.origin} onClick={isEditing?confirmEdit:advanceToNext} label={isEditing?"Confirmar edición":undefined} onPrev={prevAvailable()?goToPrev:null}/>
           </>}
           {activeSection === "ownfleet" && showTruckSelect && <>
             <div style={{ fontSize:13.2, color:C.t2, marginBottom:12 }}>¿Cómo desea transportar este flete?</div>
@@ -453,7 +470,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
               {!form.truckId && <div style={{ marginTop:8, padding:"8px 12px", background:`${C.acc}10`, borderRadius:8, fontSize:12.1, color:C.acc, fontWeight:500 }}>Seleccioná un camión de tu flota</div>}
             </>}
             {form.fleetChoice==="delegate" && <div style={{ padding:"10px 14px", background:`${C.info}10`, borderRadius:8, fontSize:13.2, color:C.info, fontWeight:500 }}>La planta de destino asignará el transportista</div>}
-            <NextStepBtn complete={!!form.fleetChoice} onClick={isEditing?confirmEdit:advanceToNext} label={isEditing?"Confirmar edición":undefined}/>
+            <NextStepBtn complete={!!form.fleetChoice} onClick={isEditing?confirmEdit:advanceToNext} label={isEditing?"Confirmar edición":undefined} onPrev={prevAvailable()?goToPrev:null}/>
           </>}
           {activeSection === "destination" && <>
             <label style={{ fontSize:11.6, fontWeight:600, color:C.t2, marginBottom:6, display:"flex", alignItems:"center", gap:4, textTransform:"uppercase", letterSpacing:0.6 }}>{Ic.plant(C.t2,14)} Destino</label>
@@ -491,7 +508,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
                 </>)}
               </div>
             </>)}
-            <NextStepBtn complete={secComplete.destination} onClick={isEditing?confirmEdit:advanceToNext} label={isEditing?"Confirmar edición":undefined}/>
+            <NextStepBtn complete={secComplete.destination} onClick={isEditing?confirmEdit:advanceToNext} label={isEditing?"Confirmar edición":undefined} onPrev={prevAvailable()?goToPrev:null}/>
           </>}
           {activeSection === "schedule" && <>
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
@@ -506,7 +523,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
                 {touched&&<FieldError error={errs.loadTime}/>}
               </div>
             </div>
-            <NextStepBtn complete={secComplete.schedule} onClick={()=>{if(isEditing){confirmEdit();}else{setActiveSection("extras");}}} label={isEditing?"Confirmar edición":undefined}/>
+            <NextStepBtn complete={secComplete.schedule} onClick={()=>{if(isEditing){confirmEdit();}else{setActiveSection("extras");}}} label={isEditing?"Confirmar edición":undefined} onPrev={prevAvailable()?goToPrev:null}/>
           </>}
         </MobileStepModal>
       )}
@@ -563,7 +580,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
               {touched&&<FieldError error={errs.productTypeOther}/>}
             </div>
           )}
-          <NextStepBtn complete={secComplete.product} onClick={isEditing?confirmEdit:advanceToNext} label={isEditing?"Confirmar edición":undefined}/>
+          <NextStepBtn complete={secComplete.product} onClick={isEditing?confirmEdit:advanceToNext} label={isEditing?"Confirmar edición":undefined} onPrev={prevAvailable()?goToPrev:null}/>
         </Sec>}
 
         {/* QUANTITY SECTION */}
@@ -584,7 +601,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
             <NumericStepper label="Camiones necesarios" icon={Ic.truck(C.acc,14)} value={form.truckCount || (parseFloat(form.tons)>0 ? String(Math.ceil(parseFloat(form.tons)/30)) : "1")} onChange={v=>u({truckCount:v})} min={1} max={50} step={1} />
             {form.unit==="toneladas" && parseFloat(form.tons)>0 && <span style={{ fontSize:12.1, color:C.t3, marginTop:4, display:"block" }}>~30tn por camión. Podés ajustarlo.</span>}
           </div>
-          <NextStepBtn complete={secComplete.quantity} onClick={isEditing?confirmEdit:advanceToNext} label={isEditing?"Confirmar edición":undefined}/>
+          <NextStepBtn complete={secComplete.quantity} onClick={isEditing?confirmEdit:advanceToNext} label={isEditing?"Confirmar edición":undefined} onPrev={prevAvailable()?goToPrev:null}/>
         </Sec>}
 
         {/* ORIGIN SECTION */}
@@ -628,7 +645,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
             {touched&&errs.customOrigin&&<div style={{padding:"6px 10px",borderRadius:8,marginTop:6,fontSize:12.1,fontWeight:600,color:C.err,background:C.errPale}}>{errs.customOrigin}</div>}
             {customOrigin.lat && <div style={{ display:"flex", alignItems:"center", gap:6, padding:"6px 10px", background:C.priPale, borderRadius:8, marginTop:6 }}>{Ic.chk(C.pri,14)}<span style={{fontSize:11.6,color:C.pri,fontWeight:500}}>{customOrigin.lat.toFixed(4)}, {customOrigin.lng.toFixed(4)}</span></div>}
           </>)}
-          <NextStepBtn complete={secComplete.origin} onClick={isEditing?confirmEdit:advanceToNext} label={isEditing?"Confirmar edición":undefined}/>
+          <NextStepBtn complete={secComplete.origin} onClick={isEditing?confirmEdit:advanceToNext} label={isEditing?"Confirmar edición":undefined} onPrev={prevAvailable()?goToPrev:null}/>
         </Sec>}
 
         {/* OWN FLEET — explicit binary choice */}
@@ -644,7 +661,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
               {!form.truckId && <div style={{ marginTop:8, padding:"8px 12px", background:`${C.acc}10`, borderRadius:8, fontSize:12.1, color:C.acc, fontWeight:500 }}>Seleccioná un camión de tu flota</div>}
             </>}
             {form.fleetChoice==="delegate" && <div style={{ padding:"10px 14px", background:`${C.info}10`, borderRadius:8, fontSize:13.2, color:C.info, fontWeight:500 }}>La planta de destino asignará el transportista</div>}
-            <NextStepBtn complete={!!form.fleetChoice} onClick={isEditing?confirmEdit:advanceToNext} label={isEditing?"Confirmar edición":undefined}/>
+            <NextStepBtn complete={!!form.fleetChoice} onClick={isEditing?confirmEdit:advanceToNext} label={isEditing?"Confirmar edición":undefined} onPrev={prevAvailable()?goToPrev:null}/>
           </Sec>
         )}
 
@@ -691,7 +708,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
               </div>
             </>
           )}
-          <NextStepBtn complete={secComplete.destination} onClick={isEditing?confirmEdit:advanceToNext} label={isEditing?"Confirmar edición":undefined}/>
+          <NextStepBtn complete={secComplete.destination} onClick={isEditing?confirmEdit:advanceToNext} label={isEditing?"Confirmar edición":undefined} onPrev={prevAvailable()?goToPrev:null}/>
         </Sec>}
 
         {/* Route preview + custom dest map — desktop only */}
@@ -783,7 +800,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
               {touched&&<FieldError error={errs.loadTime}/>}
             </div>
           </div>
-          <NextStepBtn complete={secComplete.schedule} onClick={isEditing?confirmEdit:advanceToNext} label={isEditing?"Confirmar edición":undefined}/>
+          <NextStepBtn complete={secComplete.schedule} onClick={isEditing?confirmEdit:advanceToNext} label={isEditing?"Confirmar edición":undefined} onPrev={prevAvailable()?goToPrev:null}/>
         </Sec>}
 
         {/* EXTRAS */}
