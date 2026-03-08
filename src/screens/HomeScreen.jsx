@@ -216,11 +216,12 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
       return (
         <div key={f.id} onClick={() => selectFreight(f.id, source)} style={{ background: isSel ? C.priPale : C.w, border: `1px solid ${isSel ? C.pri : C.b1}`, borderLeft: `4px solid ${st.color}`, borderRadius: 8, padding: "8px 10px", cursor: "pointer", transition: "background 0.15s" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <span style={{ fontSize: 11, fontWeight: 700, fontFamily: MONO, color: C.t2 }}>{f.code}</span>
+            <span style={{ fontSize: 10.5, fontWeight: 700, fontFamily: MONO, color: C.t2 }}>{f.code}</span>
             <Bd color={st.color} bg={st.bg} small>{st.label}</Bd>
           </div>
           <div style={{ fontSize: 13.2, fontWeight: 700, color: C.t1, marginTop: 3 }}>{f.grain === "Otros" ? f.productTypeOther || "Otros" : f.grain} · {f.tons} {f.unit || "tn"}</div>
-          {f.loadDate && <div style={{ fontSize: 11, color: C.t3, marginTop: 2 }}>{Ic.cal(C.t3, 9)} {formatFreightDate(f.loadDate)}{f.loadTime?.trim() ? ` · ${f.loadTime}` : ""}</div>}
+          {f.loadDate && <div style={{ fontSize: 10.5, color: C.t3, marginTop: 2 }}>{Ic.cal(C.t3, 9)} {formatFreightDate(f.loadDate)}{f.loadTime?.trim() ? ` · ${f.loadTime}` : ""}</div>}
+          {(f.fieldName || f.originName) && <div style={{ fontSize: 10.5, color: C.t3, marginTop: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 3 }}>{Ic.pin(C.t3, 9)} {f.fieldName || f.originName}</div>}
         </div>
       );
     }
@@ -231,11 +232,12 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
           {/* Left column */}
           <div style={{ display: "flex", flexDirection: "column", gap: 3, padding: "8px 12px", borderRight: `1px solid ${C.b2}`, minWidth: 0 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <span style={{ fontSize: 13.2, fontWeight: 700, fontFamily: MONO, color: C.t2 }}>{f.code}</span>
+              <span style={{ fontSize: 12.5, fontWeight: 700, fontFamily: MONO, color: C.t2 }}>{f.code}</span>
               <Bd color={st.color} bg={st.bg} small>{st.label}</Bd>
             </div>
             <div style={{ fontSize: 13.2, fontWeight: 700, color: C.t1 }}>{f.grain === "Otros" ? f.productTypeOther || "Otros" : f.grain} · {f.tons} {f.unit || "tn"}</div>
-            {f.loadDate && <div style={{ fontSize: 14.3, color: C.t3, fontWeight: 500 }}>{formatFreightDate(f.loadDate)}{f.loadTime?.trim() ? ` · ${f.loadTime}` : ""}</div>}
+            {f.loadDate && <div style={{ fontSize: 13.6, color: C.t3, fontWeight: 500 }}>{formatFreightDate(f.loadDate)}{f.loadTime?.trim() ? ` · ${f.loadTime}` : ""}</div>}
+            {(f.fieldName || f.originName) && <div style={{ fontSize: 12.1, color: C.t3, display: "flex", alignItems: "center", gap: 3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{Ic.pin(C.t3, 11)} {f.fieldName || f.originName}</div>}
           </div>
           {/* Right column */}
           <div style={{ display: "flex", flexDirection: "column", gap: 3, padding: "8px 12px", fontSize: 12.1, color: C.t2, minWidth: 0 }}>
@@ -420,12 +422,13 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
             <span style={{ fontSize: 11, fontWeight: 700, color: C.acc, whiteSpace: "nowrap" }}>{pa.action}</span>
           </div>}
           <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
-            <span style={{ fontSize: 12.1, fontWeight: 700, fontFamily: MONO, color: C.t2 }}>{f.code}</span>
+            <span style={{ fontSize: 11.5, fontWeight: 700, fontFamily: MONO, color: C.t2 }}>{f.code}</span>
             <Bd color={st.color} bg={st.bg} small>{st.label}</Bd>
           </div>
           <div style={{ fontSize: 14.3, fontWeight: 700, color: C.t1, marginBottom: 3 }}>{f.grain === "Otros" ? f.productTypeOther || "Otros" : f.grain} · {f.tons} {f.unit || "tn"}</div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 4, fontSize: 12.1, color: C.t2 }}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 4, fontSize: 11.5, color: C.t2 }}>
             {f.loadDate && <span style={{ display: "flex", alignItems: "center", gap: 3 }}>{Ic.cal(C.t3, 10)} {formatFreightDate(f.loadDate)}{f.loadTime ? ` · ${f.loadTime}` : ""}</span>}
+            {(f.fieldName || f.originName) && <span style={{ display: "flex", alignItems: "center", gap: 3 }}>{Ic.pin(C.t3, 10)} {f.fieldName || f.originName}</span>}
             <span style={{ display: "flex", alignItems: "center", gap: 3 }}>{Ic.plant(C.t3, 10)} {f.destName || "Sin destino"}</span>
             <span style={{ display: "flex", alignItems: "center", gap: 3 }}>{Ic.truck(C.t3, 10)} {f.transporterName || "Sin asignar"}</span>
           </div>
@@ -464,9 +467,9 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
                 return (
                   <div key={f.id} onClick={() => selectFreight(f.id, "daily")} style={{ padding: "7px 10px", borderRadius: 8, background: C.w, border: `1px solid ${C.b1}`, cursor: "pointer", transition: "background 0.15s" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <span style={{ fontSize: 11, fontWeight: 700, fontFamily: MONO, color: C.t2 }}>{f.code}</span>
+                      <span style={{ fontSize: 10.5, fontWeight: 700, fontFamily: MONO, color: C.t2 }}>{f.code}</span>
                       <span style={{ fontSize: 12.1, fontWeight: 600, color: C.t1, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.grain === "Otros" ? f.productTypeOther || "Otros" : f.grain} · {f.tons} tn</span>
-                      {f.loadTime && <span style={{ fontSize: 11, color: C.t3 }}>{f.loadTime}</span>}
+                      {f.loadTime && <span style={{ fontSize: 10.5, color: C.t3 }}>{f.loadTime}</span>}
                     </div>
                     <div style={{ display: "flex", gap: 10, marginTop: 3, fontSize: 11, color: C.t3 }}>
                       {(f.fieldName || f.originName) && <span style={{ display: "flex", alignItems: "center", gap: 3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{Ic.pin(C.t3, 9)} {f.fieldName || f.originName}</span>}

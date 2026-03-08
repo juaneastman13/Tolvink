@@ -175,12 +175,13 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
     return (
       <div key={f.id} onClick={()=>onNav("detail",f.id)} style={{ background:C.w, border:`1px solid ${C.b1}`, borderLeft:`4px solid ${st.color}`, borderRadius:12, padding:14, cursor:"pointer", boxShadow:C.sh, transition:"background 0.15s", contentVisibility:"auto", containIntrinsicSize:"0 120px" }}>
         <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:6 }}>
-          <span style={{ fontSize:14.3, fontWeight:700, fontFamily:MONO, color:C.t2 }}>{f.code}</span>
+          <span style={{ fontSize:13.6, fontWeight:700, fontFamily:MONO, color:C.t2 }}>{f.code}</span>
           <Bd color={st.color} bg={st.bg} small>{st.label}</Bd>
         </div>
         <div style={{fontSize:15.4,fontWeight:700,color:C.t1,marginBottom:4}}>{f.grain==="Otros"?f.productTypeOther||"Otros":f.grain} · {f.tons} {f.unit||"tn"}</div>
-        {f.loadDate && <div style={{ fontSize:14.3, color:C.t3, fontWeight:500, marginBottom:6 }}>{Ic.cal(C.t3,10)} {formatFreightDate(f.loadDate)}{f.loadTime?` · ${f.loadTime}`:""}</div>}
+        {f.loadDate && <div style={{ fontSize:13.6, color:C.t3, fontWeight:500, marginBottom:6 }}>{Ic.cal(C.t3,10)} {formatFreightDate(f.loadDate)}{f.loadTime?` · ${f.loadTime}`:""}</div>}
         <div style={{display:"flex",flexDirection:"column",gap:3,fontSize:12.1,color:C.t2}}>
+          {(f.fieldName || f.originName) && <div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.pin(C.t3,12)} <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.fieldName || f.originName}</span></div>}
           <div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.plant(C.t3,12)} <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.destName}</span>{f.destLat&&f.destLng&&<span onClick={(e)=>{e.stopPropagation();goToMap(f.destLat,f.destLng,f.destName);}} style={{cursor:"pointer",opacity:0.6,marginLeft:3,fontSize:11,flexShrink:0}} title="Ver en mapa">{"\uD83D\uDCCD"}</span>}</div>
           <div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.truck(C.t3,12)} <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.transporterName||"Sin asignar"}{f.truckPlate?` (${f.truckPlate})`:""}</span>{f.isOwnFleet&&<span style={{fontSize:11,color:C.acc,fontWeight:600,marginLeft:4}}>Flota propia</span>}{f.isMultiTruck&&<span style={{fontSize:11,color:C.info,fontWeight:600,marginLeft:4}}>{f.assignedTruckCount}/{f.truckCount} cam.</span>}</div>
         </div>
@@ -228,9 +229,9 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
             <span style={{ fontSize: 11, fontWeight: 700, color: "#FF6A00", whiteSpace: "nowrap" }}>{pa.action}</span>
           </div>}
           <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 3, fontSize: 12.1, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>
-            <span style={{ fontWeight: 700, fontFamily: MONO, color: C.t2, fontSize: 13.2 }}>{f.code}</span>
+            <span style={{ fontWeight: 700, fontFamily: MONO, color: C.t2, fontSize: 12.5 }}>{f.code}</span>
             <Bd color={st.color} bg={st.bg} small>{st.label}</Bd>
-            {f.loadDate && <span style={{ display: "flex", alignItems: "center", gap: 3, color: C.t2, fontSize: 13.8 }}>{Ic.cal(C.t3, 10)} {formatFreightDate(f.loadDate)}{f.loadTime ? ` \u00b7 ${f.loadTime}` : ""}</span>}
+            {f.loadDate && <span style={{ display: "flex", alignItems: "center", gap: 3, color: C.t2, fontSize: 13.1 }}>{Ic.cal(C.t3, 10)} {formatFreightDate(f.loadDate)}{f.loadTime ? ` \u00b7 ${f.loadTime}` : ""}</span>}
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12.1, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>
             <span style={{ fontWeight: 700, color: C.t1, fontSize: 13.2 }}>{f.grain === "Otros" ? f.productTypeOther || "Otros" : f.grain} {"\u00b7"} {f.tons} {f.unit || "tn"}</span>
@@ -530,7 +531,7 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
                   const campoLote = [f.fieldName, f.originName].filter(Boolean).join(" / ") || "\u2014";
                   return (
                     <tr key={f.id} className="tv-row" onClick={()=>onNav("detail",f.id)} style={{ borderBottom:`1px solid ${C.b1}`, cursor:"pointer", contentVisibility:"auto", containIntrinsicSize:"0 44px" }}>
-                      <td style={{ padding:"10px 12px", fontFamily:MONO, fontWeight:700, fontSize:12.1, color:C.t2, whiteSpace:"nowrap" }}>{f.code}</td>
+                      <td style={{ padding:"10px 12px", fontFamily:MONO, fontWeight:700, fontSize:11.5, color:C.t2, whiteSpace:"nowrap" }}>{f.code}</td>
                       <td style={{ padding:"10px 12px" }}><Bd color={st.color} bg={st.bg} small>{st.label}</Bd></td>
                       <td style={{ padding:"10px 12px", fontWeight:600, color:C.t1 }}>{f.grain==="Otros"?f.productTypeOther||"Otros":f.grain} · {f.tons} {f.unit||"tn"}</td>
                       <td style={{ padding:"10px 12px", color:f.isMultiTruck?C.info:C.t3, fontWeight:f.isMultiTruck?600:400, fontSize:12.1, whiteSpace:"nowrap" }}>{f.isMultiTruck?`${f.assignedTruckCount}/${f.truckCount}`:"1"}</td>
@@ -577,11 +578,12 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
                       <div key={f.id} onClick={() => onNav("detail",f.id)} style={{ display:"flex", alignItems:"center", gap:10, padding:"8px 12px", borderRadius:10, border:`1px solid ${C.b1}`, borderLeft:`3px solid ${st.color}`, background:C.bg, cursor:"pointer", transition:"background 0.15s" }}>
                         <div style={{ flex:1, minWidth:0 }}>
                           <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-                            <span style={{ fontSize:12.7, fontWeight:700, fontFamily:MONO, color:C.t2 }}>{f.code}</span>
+                            <span style={{ fontSize:12.1, fontWeight:700, fontFamily:MONO, color:C.t2 }}>{f.code}</span>
                             <Bd color={st.color} bg={st.bg} small>{st.label}</Bd>
                           </div>
                           <div style={{ fontSize:13.2, fontWeight:600, color:C.t1, marginTop:2 }}>{f.grain==="Otros"?f.productTypeOther||"Otros":f.grain} · {f.tons} {f.unit||"tn"}</div>
-                          {f.loadDate && <div style={{ fontSize:12.7, color:C.t3, fontWeight:500, marginTop:2 }}>{Ic.cal(C.t3,9)} {formatFreightDate(f.loadDate)}{f.loadTime?` · ${f.loadTime}`:""}</div>}
+                          {f.loadDate && <div style={{ fontSize:12.1, color:C.t3, fontWeight:500, marginTop:2 }}>{Ic.cal(C.t3,9)} {formatFreightDate(f.loadDate)}{f.loadTime?` · ${f.loadTime}`:""}</div>}
+                          {(f.fieldName || f.originName) && <div style={{ fontSize:11.5, color:C.t3, marginTop:1, display:"flex", alignItems:"center", gap:3 }}>{Ic.pin(C.t3,9)} <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.fieldName || f.originName}</span></div>}
                         </div>
                         <div style={{ fontSize:12.1, color:C.t3, textAlign:"right", flexShrink:0 }}>
                           {f.destName && <div style={{ display:"flex", alignItems:"center", gap:3, justifyContent:"flex-end" }}>{Ic.plant(C.t3,10)} <span style={{ maxWidth:100, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{f.destName}</span></div>}
