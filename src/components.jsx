@@ -397,7 +397,7 @@ export function Sidebar({ active, onChange, unread=0, pendingCount=0, notifCount
   return (
     <div style={{ width:220, minWidth:220, height:"100%", background:C.w, borderRight:`1px solid ${C.b2}`, display:"flex", flexDirection:"column", flexShrink:0, overflow:"hidden" }}>
       {/* Logo */}
-      <div style={{ padding:"10px 20px 8px", borderBottom:`1px solid ${C.b2}` }}>
+      <div style={{ padding:"10px 20px 8px", borderBottom:`1px solid ${C.b2}`, height:52, overflow:"hidden" }}>
         <div style={{ display:"inline-flex", alignItems:"flex-start" }}>
           <span style={{ fontSize:69.3, fontWeight:800, color:C.pri, letterSpacing:-2.8, lineHeight:1 }}>tolvink</span>
           <span style={{ width:15, height:15, borderRadius:8, background:C.acc, display:"inline-block", marginLeft:4, marginTop:3, animation:"dotPulse 1.5s ease-in-out infinite" }}></span>
