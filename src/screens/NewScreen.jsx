@@ -779,13 +779,14 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
 
         {/* EXTRAS */}
         {activeSection === "extras" && <div ref={secRefs.extras}>
-          <div>
+          <div style={{ display:"flex", gap:16 }}>
+          <div style={{ flex:1, minWidth:0 }}>
             <label style={{ fontSize:11.6, fontWeight:600, color:C.t2, marginBottom:6, display:"block", textTransform:"uppercase", letterSpacing:0.6 }}>Notas (opcional)</label>
             <textarea value={form.notes} onChange={e=>u({notes:e.target.value})} placeholder="Indicaciones, horarios especiales..." rows={3} style={{ width:"100%", padding:"12px 14px", borderRadius:10, border:`1.5px solid ${C.b1}`, background:C.w, color:C.t1, fontSize:14.3, fontFamily:"inherit", outline:"none", resize:"none", boxSizing:"border-box" }}/>
           </div>
 
           {/* Photo/file attachments */}
-          <div style={{ marginTop:12 }}>
+          <div style={{ flex:1, minWidth:0 }}>
             <label style={{ fontSize:11.6, fontWeight:600, color:C.t2, marginBottom:8, display:"flex", alignItems:"center", gap:4, textTransform:"uppercase", letterSpacing:0.6 }}>{Ic.clip(C.acc,14)} Adjuntar archivos (opcional)</label>
             {photos.length > 0 && (
               <div style={{ display:"flex", gap:8, flexWrap:"wrap", marginBottom:8 }}>
@@ -805,6 +806,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
               {Ic.clip(C.t2,16)} Adjuntar archivo
             </button>
             <AttachMenu open={showAttach} onClose={()=>setShowAttach(false)} onCamera={()=>nfCamRef.current?.click()} onGallery={()=>nfGalRef.current?.click()} onFiles={()=>nfDocRef.current?.click()} />
+          </div>
           </div>
           {isEditing && <NextStepBtn complete={true} onClick={confirmEdit} label="Confirmar edición"/>}
         </div>}
