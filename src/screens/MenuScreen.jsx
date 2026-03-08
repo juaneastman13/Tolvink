@@ -177,6 +177,8 @@ export default function MenuScreen({ user, perms, onLogout, onNav, isDesktop, on
     </div>
   );
 
+  const [showProfile, setShowProfile] = useState(false);
+
   return (
     <div style={{flex:1,overflow:"auto",padding:18}}>
       {isDesktop ? (
@@ -186,7 +188,18 @@ export default function MenuScreen({ user, perms, onLogout, onNav, isDesktop, on
         </div>
       ) : (
         <div style={{display:"flex",flexDirection:"column",gap:12}}>
-          {profileSection}
+          {/* Mobile: compact profile header + expandable */}
+          <div style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius:12,overflow:"hidden",boxShadow:C.sh}}>
+            <button onClick={()=>setShowProfile(p=>!p)} style={{width:"100%",display:"flex",alignItems:"center",gap:12,padding:"14px 14px",minHeight:52,background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",textAlign:"left",transition:"background 0.15s"}}>
+              <Av letters={user.av} size={36} color={tc}/>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontSize:15.4,fontWeight:700,color:C.t1}}>{user.name}</div>
+                <div style={{fontSize:12.1,color:C.t3}}>{user.email}</div>
+              </div>
+              <span style={{display:"flex",transform:showProfile?"rotate(-90deg)":"rotate(0deg)",transition:"transform 0.15s"}}>{Ic.chev(C.t3,16)}</span>
+            </button>
+            {showProfile && <div style={{borderTop:`1px solid ${C.b2}`,padding:16}}>{profileSection}</div>}
+          </div>
           {leftPanel}
         </div>
       )}

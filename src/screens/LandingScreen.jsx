@@ -74,8 +74,8 @@ export default function LandingScreen({ onLogin, onSignup, onPasswordReset, load
         {/* Big logo */}
         <div style={{ animation:"splashIn 0.8s ease-out", marginBottom:30 }}>
           <div style={{ display:"inline-flex", alignItems:"flex-start" }}>
-            <span className="tv-ld-logo" style={{ fontSize:152.9, fontWeight:800, color:C.pri, letterSpacing:-6.6, lineHeight:1 }}>tolvink</span>
-            <span className="tv-ld-dot" style={{ width:25, height:25, borderRadius:13, background:C.acc, marginLeft:9, marginTop:7, display:"inline-block", animation:"dotPulse 1.5s ease-in-out infinite" }} />
+            <span className="tv-ld-logo" style={{ fontSize:130, fontWeight:800, color:C.pri, letterSpacing:-5.6, lineHeight:1 }}>tolvink</span>
+            <span className="tv-ld-dot" style={{ width:21, height:21, borderRadius:11, background:C.acc, marginLeft:8, marginTop:6, display:"inline-block", animation:"dotPulse 1.5s ease-in-out infinite" }} />
           </div>
         </div>
 
