@@ -443,7 +443,7 @@ export function FreightMap({ freightId, originLat, originLng, destLat, destLng, 
           new maps.Marker({
             position: origin, map,
             title: originName || "Origen",
-            icon: { path: maps.SymbolPath.CIRCLE, scale: 10, fillColor: "#1A6B37", fillOpacity: 1, strokeColor: "#fff", strokeWeight: 2 },
+            icon: { url: "data:image/svg+xml," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"><circle cx="12" cy="12" r="10" fill="#1A6B37" stroke="#fff" stroke-width="2"/></svg>'), scaledSize: new maps.Size(24, 24), anchor: new maps.Point(12, 12) },
           });
         }
 
@@ -451,7 +451,7 @@ export function FreightMap({ freightId, originLat, originLng, destLat, destLng, 
           new maps.Marker({
             position: dest, map,
             title: destName || "Destino",
-            icon: { path: maps.SymbolPath.CIRCLE, scale: 10, fillColor: "#003882", fillOpacity: 1, strokeColor: "#fff", strokeWeight: 2 },
+            icon: { url: "data:image/svg+xml," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"><circle cx="12" cy="12" r="10" fill="#003882" stroke="#fff" stroke-width="2"/></svg>'), scaledSize: new maps.Size(24, 24), anchor: new maps.Point(12, 12) },
           });
         }
 
@@ -694,14 +694,15 @@ export function FreightsOverviewMap({ freights, onSelect, fields, plants }) {
           `\u2192 ${_esc(f.destName)}<br/>` +
           `<span style="color:${col};font-weight:600">${_esc(_STATUS_LABEL[f.status]||f.status)}</span></div>`;
 
+        const _circleUrl = (c) => "data:image/svg+xml," + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"><circle cx="10" cy="10" r="8" fill="${c}" stroke="#fff" stroke-width="2"/></svg>`);
         const existing = freightMk.current[f.id];
         if (existing) {
           existing.setPosition(pos);
-          existing.setIcon({ path: maps.SymbolPath.CIRCLE, scale: 8, fillColor: col, fillOpacity: 1, strokeColor: "#fff", strokeWeight: 2 });
+          existing.setIcon({ url: _circleUrl(col), scaledSize: new maps.Size(20, 20), anchor: new maps.Point(10, 10) });
           existing._info = buildInfo;
         } else {
           const mk = new maps.Marker({ position: pos, map: mapObj.current, title: f.code,
-            icon: { path: maps.SymbolPath.CIRCLE, scale: 8, fillColor: col, fillOpacity: 1, strokeColor: "#fff", strokeWeight: 2 } });
+            icon: { url: _circleUrl(col), scaledSize: new maps.Size(20, 20), anchor: new maps.Point(10, 10) } });
           mk._info = buildInfo;
           mk.addListener("click", () => { info.current.setContent(mk._info()); info.current.open(mapObj.current, mk); });
           mk.addListener("dblclick", () => { if (onSelectRef.current) onSelectRef.current(f.id); });
@@ -900,7 +901,7 @@ export function MapOverlay({ lat, lng, label, destLat, destLng, destLabel, freig
       mapInst.current = map;
       if (!pIw.current) pIw.current = new maps.InfoWindow();
       const marker = new maps.Marker({ position: pos, map, animation: maps.Animation.DROP,
-        icon: { path: maps.SymbolPath.CIRCLE, scale: 12, fillColor: C.pri, fillOpacity: 0.8, strokeColor: "#fff", strokeWeight: 3 } });
+        icon: { url: "data:image/svg+xml," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28"><circle cx="14" cy="14" r="12" fill="' + C.pri + '" fill-opacity="0.8" stroke="#fff" stroke-width="3"/></svg>'), scaledSize: new maps.Size(28, 28), anchor: new maps.Point(14, 14) } });
       originMk.current = marker;
       const iw = new maps.InfoWindow({ content: mkInfoContent(label, lat, lng) });
       iw.open(map, marker);
@@ -908,7 +909,7 @@ export function MapOverlay({ lat, lng, label, destLat, destLng, destLabel, freig
       if (destLat && destLng) {
         const dpos = { lat: Number(destLat), lng: Number(destLng) };
         const dm = new maps.Marker({ position: dpos, map, animation: maps.Animation.DROP,
-          icon: { path: maps.SymbolPath.CIRCLE, scale: 12, fillColor: "#0891B2", fillOpacity: 0.8, strokeColor: "#fff", strokeWeight: 3 } });
+          icon: { url: "data:image/svg+xml," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28"><circle cx="14" cy="14" r="12" fill="#0891B2" fill-opacity="0.8" stroke="#fff" stroke-width="3"/></svg>'), scaledSize: new maps.Size(28, 28), anchor: new maps.Point(14, 14) } });
         destMk.current = dm;
         const iw2 = new maps.InfoWindow({ content: mkInfoContent(destLabel, destLat, destLng) });
         dm.addListener("click", () => iw2.open(map, dm));

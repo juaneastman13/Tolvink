@@ -49,15 +49,12 @@ function SummaryCard({ secSummary, secComplete, form, showTruckSelect, isDesktop
           ))}
         </div>
       ) : (
-        <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"6px 14px" }}>
           {rows.map((r, i) => (
-            <div key={i} onClick={() => onEdit?.(r.section)} style={{ display:"flex", alignItems:"center", gap:8, cursor:onEdit?"pointer":"default", padding:"7px 10px", margin:"0 -10px", borderRadius:8, transition:"background 0.15s" }} onMouseEnter={e=>{if(onEdit)e.currentTarget.style.background=C.bgCardAlt}} onMouseLeave={e=>{e.currentTarget.style.background="transparent"}}>
-              <div style={{ width:6, height:6, borderRadius:3, background:C.pri, flexShrink:0 }}/>
-              <div style={{ flex:1, minWidth:0 }}>
-                <div style={{ fontSize:12.1, fontWeight:600, color:C.t3, textTransform:"uppercase", letterSpacing:0.5 }}>{r.label}</div>
-                <div style={{ fontSize:14.3, fontWeight:500, color:C.t1, marginTop:1 }}>{r.value}</div>
-              </div>
-              {onEdit && <div style={{ fontSize:11, fontWeight:600, color:C.pri, flexShrink:0, padding:"3px 8px", borderRadius:6, background:C.priPale }}>Editar</div>}
+            <div key={i} onClick={() => onEdit?.(r.section)} style={{ cursor:onEdit?"pointer":"default", padding:"6px 8px", borderRadius:8, transition:"background 0.15s" }} onMouseEnter={e=>{if(onEdit)e.currentTarget.style.background=C.bgCardAlt}} onMouseLeave={e=>{e.currentTarget.style.background="transparent"}}>
+              <div style={{ fontSize:11, fontWeight:600, color:C.t3, textTransform:"uppercase", letterSpacing:0.4 }}>{r.label}</div>
+              <div style={{ fontSize:13.2, fontWeight:500, color:C.t1, marginTop:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{r.value}</div>
+              {onEdit && <div style={{ fontSize:10, fontWeight:600, color:C.pri, marginTop:2 }}>Editar</div>}
             </div>
           ))}
         </div>
@@ -689,7 +686,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
         </Sec>}
 
         {/* Route preview + custom dest map — desktop only */}
-        {(activeSection === "destination" || activeSection === "extras") && _isDesktop && (destMode==="custom" ? (
+        {activeSection === "extras" && _isDesktop && (destMode==="custom" ? (
           <div style={{ display:"flex", gap:16, alignItems:"flex-start" }}>
             <div style={{ flex:1, minWidth:0 }}>
               <LocationPicker label="Ubicación del destino" value={customDest.lat?{lat:customDest.lat,lng:customDest.lng}:null} onChange={loc=>setCustomDest(p=>({...p,lat:loc.lat,lng:loc.lng}))}/>
