@@ -75,10 +75,10 @@ function SummaryCard({ secSummary, secComplete, form, showTruckSelect, isDesktop
 function MobileStepModal({ open, title, summary, children, onClose, stepIndex, totalSteps }) {
   if (!open) return null;
   return (
-    <div role="dialog" aria-modal="true" aria-label={title} style={{ position:"fixed", inset:0, zIndex:1000, display:"flex", flexDirection:"column", justifyContent:"flex-end" }}>
+    <div role="dialog" aria-modal="true" aria-label={title} style={{ position:"fixed", inset:0, zIndex:1000, display:"flex", alignItems:"center", justifyContent:"center", padding:12 }}>
       <div onClick={onClose} style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.4)" }}/>
-      <div style={{ position:"relative", background:C.bg, borderRadius:"20px 20px 0 0", maxHeight:"90vh", overflow:"auto", padding:"0 0 env(safe-area-inset-bottom, 0)", animation:"slideUp 0.25s ease" }}>
-        <div style={{ position:"sticky", top:0, zIndex:2, background:C.bg, padding:"16px 20px 8px", borderBottom:`1px solid ${C.b2}` }}>
+      <div style={{ position:"relative", background:C.bg, borderRadius:16, width:"100%", maxWidth:500, maxHeight:"calc(100vh - 24px)", overflow:"auto", animation:"slideUp 0.25s ease" }}>
+        <div style={{ position:"sticky", top:0, zIndex:2, background:C.bg, padding:"16px 20px 8px", borderBottom:`1px solid ${C.b2}`, borderRadius:"16px 16px 0 0" }}>
           <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
             <span style={{ fontSize:17.6, fontWeight:800, color:C.t1 }}>{title}</span>
             <button aria-label="Cerrar" onClick={onClose} style={{ background:"none", border:"none", cursor:"pointer", padding:4, minWidth:44, minHeight:44, display:"flex", alignItems:"center", justifyContent:"center" }}>{Ic.cross(C.t3, 20)}</button>
