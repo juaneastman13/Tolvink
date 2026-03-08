@@ -185,16 +185,13 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
       {/* Sticky header — back + product title */}
       <div style={{ position:"sticky", top:0, zIndex:10, padding:"18px 18px 8px", background:C.bg }}>
         <button onClick={onBack} style={{ background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", fontSize:14.3, fontWeight:600, color:C.pri, marginBottom:14, padding:0, display:"flex", alignItems:"center", gap:4 }}>{Ic.chev(C.pri,18)} Volver</button>
-        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-          <div>
-            <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-              <span style={{ fontSize:12.1, color:C.t3, fontWeight:600, fontFamily:MONO }}>{freight.code}</span>
-              {user.userType && <span style={{ fontSize:9.9, fontWeight:700, color:({producer:C.acc,plant:C.pri,transporter:C.info||C.sec})[user.userType]||C.t3, background:`${({producer:C.acc,plant:C.pri,transporter:C.info||C.sec})[user.userType]||C.t3}15`, padding:"1px 6px", borderRadius:4, textTransform:"uppercase", letterSpacing:0.3 }}>{({producer:"Productor",plant:"Planta",transporter:"Transportista"})[user.userType]||user.userType}</span>}
-            </div>
-            {freight.loadDate && <div style={{ fontSize:12.1, color:C.t3, fontWeight:500, marginTop:2 }}>{formatFreightDate(freight.loadDate)}</div>}
-            <div style={{ fontSize:24.2, fontWeight:800, marginTop:2, letterSpacing:-0.3 }}>{freight.grain==="Otros"?freight.productTypeOther||"Otros":freight.grain} · {freight.tons} {freight.unit||"tn"}</div>
+        <div>
+          <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+            <span style={{ fontSize:12.1, color:C.t3, fontWeight:600, fontFamily:MONO }}>{freight.code}</span>
+            {st && <span style={{ fontSize:9.9, fontWeight:700, color:st.color, background:st.bg, padding:"1px 6px", borderRadius:4, textTransform:"uppercase", letterSpacing:0.3 }}>{st.label}</span>}
           </div>
-          <Bd color={st.color} bg={st.bg}>{st.label}</Bd>
+          {freight.loadDate && <div style={{ fontSize:12.1, color:C.t3, fontWeight:500, marginTop:2 }}>{formatFreightDate(freight.loadDate)}</div>}
+          <div style={{ fontSize:24.2, fontWeight:800, marginTop:2, letterSpacing:-0.3 }}>{freight.grain==="Otros"?freight.productTypeOther||"Otros":freight.grain} · {freight.tons} {freight.unit||"tn"}</div>
         </div>
       </div>
 
