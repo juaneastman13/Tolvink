@@ -676,31 +676,16 @@ const _STATUS_LABEL = { pending_assignment:"Solicitado", assigned:"Asignado a fl
 // ======================== MARKER SYMBOLS (no image loading) ========================
 // Use google.maps.Symbol with SVG paths — rendered natively, no broken images.
 // Pin path for draggable markers (LocationPicker etc.)
-const _PIN_PATH = "M12 0C5.37 0 0 5.37 0 12c0 9 12 22 12 22s12-13 12-22C24 5.37 18.63 0 12 0zm0 16a4 4 0 110-8 4 4 0 010 8z";
-const _pinSymbol = (maps, color = "#E53935", scale = 1.2) => ({
-  path: _PIN_PATH, fillColor: color, fillOpacity: 1,
-  strokeColor: "#fff", strokeWeight: 2, scale,
-  anchor: new maps.Point(12, 34), labelOrigin: new maps.Point(12, 12),
-});
-// Circle symbol for freight dots on overview map
-const _circleSymbol = (maps, color, scale = 8) => ({
-  path: maps.SymbolPath.CIRCLE, fillColor: color, fillOpacity: 1,
-  strokeColor: "#fff", strokeWeight: 2, scale,
-});
-// Entity symbols (field, plant, truck) — use colored circles with labels
-const _fieldSymbol = (maps) => ({
-  path: maps.SymbolPath.CIRCLE, fillColor: "#1A6B37", fillOpacity: 1,
-  strokeColor: "#fff", strokeWeight: 2, scale: 10,
-});
-const _plantSymbol = (maps) => ({
-  path: maps.SymbolPath.CIRCLE, fillColor: "#003882", fillOpacity: 1,
-  strokeColor: "#fff", strokeWeight: 2.5, scale: 10,
-});
+// Data URI SVG icons — reliable across all Google Maps API versions (no broken Symbol paths)
+const _pinSvg = (color, w = 28, h = 40) =>
+  `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 24 34"><path d="M12 0C5.37 0 0 5.37 0 12c0 9 12 22 12 22s12-13 12-22C24 5.37 18.63 0 12 0zm0 16a4 4 0 110-8 4 4 0 010 8z" fill="${color}" stroke="#fff" stroke-width="1.5"/></svg>`)}`;
+const _pinSymbol = (maps, color = "#E53935", scale = 1.0) => {
+  const w = Math.round(28 * scale), h = Math.round(40 * scale);
+  return { url: _pinSvg(color, w, h), scaledSize: new maps.Size(w, h), anchor: new maps.Point(w / 2, h) };
+};
+const _truckSvg = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path d="M20 8h-3V4H3c-1.1 0-2 .9-2 2v11h2a3 3 0 006 0h6a3 3 0 006 0h2v-5l-3-4zM6 18.5A1.5 1.5 0 014.5 17 1.5 1.5 0 016 15.5 1.5 1.5 0 017.5 17 1.5 1.5 0 016 18.5zm13.5-9L21.46 12H17V9.5h2.5zM18 18.5a1.5 1.5 0 01-1.5-1.5 1.5 1.5 0 011.5-1.5 1.5 1.5 0 011.5 1.5 1.5 1.5 0 01-1.5 1.5z" fill="#FF6A00" stroke="#fff" stroke-width="0.5"/></svg>`)}`;
 const _truckSymbol = (maps) => ({
-  path: "M20 8h-3V4H3c-1.1 0-2 .9-2 2v11h2a3 3 0 006 0h6a3 3 0 006 0h2v-5l-3-4zM6 18.5A1.5 1.5 0 014.5 17 1.5 1.5 0 016 15.5 1.5 1.5 0 017.5 17 1.5 1.5 0 016 18.5zm13.5-9L21.46 12H17V9.5h2.5zM18 18.5a1.5 1.5 0 01-1.5-1.5 1.5 1.5 0 011.5-1.5 1.5 1.5 0 011.5 1.5 1.5 1.5 0 01-1.5 1.5z",
-  fillColor: "#FF6A00", fillOpacity: 1,
-  strokeColor: "#fff", strokeWeight: 1.5, scale: 1.3,
-  anchor: new maps.Point(12, 12),
+  url: _truckSvg, scaledSize: new maps.Size(32, 32), anchor: new maps.Point(16, 16),
 });
 
 export function FreightsOverviewMap({ freights, onSelect, fields, plants, selectedId }) {
