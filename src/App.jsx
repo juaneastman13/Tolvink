@@ -120,6 +120,7 @@ export default function Tolvink() {
   const [aiChatOpen, setAiChatOpen] = useState(false);
   const [sseAiResponse, setSseAiResponse] = useState(null);
   const [sseAiTranscription, setSseAiTranscription] = useState(null);
+  const sseAiSeq = useRef(0);
 
   // SSE — real-time sync
   const sse = useSSE(auth.user, {
@@ -135,8 +136,8 @@ export default function Tolvink() {
     onCatalogChanged: () => { catalog.refresh(); },
     onTyping: (data) => { setSseTyping(data); },
     onRead: (data) => { setSseRead(data); },
-    onAiResponse: (data) => { setSseAiResponse(data); },
-    onAiTranscription: (data) => { setSseAiTranscription(data); },
+    onAiResponse: (data) => { sseAiSeq.current++; setSseAiResponse({ ...data, _seq: sseAiSeq.current }); },
+    onAiTranscription: (data) => { setSseAiTranscription({ ...data, _seq: Date.now() }); },
   });
 
   // React Router — URL-based navigation
@@ -675,7 +676,7 @@ export default function Tolvink() {
       {/* AI Chat */}
       <Suspense fallback={null}>
         <AiChatFabComp open={aiChatOpen} onClick={() => setAiChatOpen(p => !p)} />
-        {aiChatOpen && <AiChat open={aiChatOpen} onClose={() => setAiChatOpen(false)} sseAiResponse={sseAiResponse} sseAiTranscription={sseAiTranscription} />}
+        <AiChat open={aiChatOpen} onClose={() => setAiChatOpen(false)} sseAiResponse={sseAiResponse} sseAiTranscription={sseAiTranscription} />
       </Suspense>
     </div>
   );
