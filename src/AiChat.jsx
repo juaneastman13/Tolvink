@@ -1,10 +1,15 @@
 // =====================================================================
-// TOLVINK — AI Chat Component (floating panel)
+// TOLVINK — AI Chat Component (fullscreen floating panel)
+// Embeds maps and location pickers inline when AI returns map URLs
 // =====================================================================
 
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo, lazy, Suspense } from "react";
 import { C, FONT, Ic } from "./theme";
-import { apiWebChatSend, apiWebChatHistory, apiWebChatAudio } from "./api";
+import { apiWebChatSend, apiWebChatHistory, apiWebChatAudio, API_URL } from "./api";
+
+// Lazy-load heavy map components
+const MapOverlay = lazy(() => import("./maps").then(m => ({ default: m.MapOverlay })));
+const LocPickerFullscreen = lazy(() => import("./maps").then(m => ({ default: m.LocPickerFullscreen })));
 
 // ======================== STATIC STYLES (injected once) ==============
 const AI_CHAT_STYLES = `
@@ -21,6 +26,64 @@ function injectStyles() {
   s.textContent = AI_CHAT_STYLES;
   document.head.appendChild(s);
   _stylesInjected = true;
+}
+
+// ======================== URL PARSING ===========================
+// Detect tolvink map/location URLs in message text and extract params
+const FRONTEND_HOST = (import.meta.env.VITE_FRONTEND_URL || "https://tolvink.com").replace(/^https?:\/\//, "");
+
+function parseMapUrls(text) {
+  if (!text) return [];
+  const results = [];
+  // Match URLs — tolvink.com/ver-mapa?..., tolvink.com/ubicacion/..., etc.
+  const urlRe = /https?:\/\/[^\s)>\]]+/gi;
+  let match;
+  while ((match = urlRe.exec(text)) !== null) {
+    const url = match[0];
+    try {
+      const u = new URL(url);
+      const host = u.hostname.replace(/^www\./, "");
+      if (!host.includes("tolvink")) continue;
+
+      // /ver-mapa?lat=...&lng=...&n=...
+      if (u.pathname === "/ver-mapa") {
+        const lat = parseFloat(u.searchParams.get("lat"));
+        const lng = parseFloat(u.searchParams.get("lng"));
+        const name = u.searchParams.get("n") || "Ubicación";
+        const dlat = parseFloat(u.searchParams.get("dlat"));
+        const dlng = parseFloat(u.searchParams.get("dlng"));
+        const dn = u.searchParams.get("dn") || "";
+        if (!isNaN(lat) && !isNaN(lng)) {
+          results.push({
+            type: "map",
+            url,
+            lat, lng, name,
+            destLat: isNaN(dlat) ? null : dlat,
+            destLng: isNaN(dlng) ? null : dlng,
+            destName: dn,
+          });
+        }
+      }
+      // /ubicacion/{slug}
+      else if (u.pathname.startsWith("/ubicacion/")) {
+        const slug = u.pathname.split("/ubicacion/")[1]?.replace(/[^a-z0-9-]/g, "");
+        if (slug && slug.length >= 3) {
+          results.push({ type: "location", url, slug });
+        }
+      }
+    } catch { /* ignore invalid URLs */ }
+  }
+  return results;
+}
+
+// Strip detected URLs from display text (so we don't show the raw link)
+function stripUrls(text, parsedUrls) {
+  if (!parsedUrls?.length) return text;
+  let clean = text;
+  for (const p of parsedUrls) {
+    clean = clean.replace(p.url, "").replace(/\n{3,}/g, "\n\n");
+  }
+  return clean.trim();
 }
 
 // ======================== ICONS ==============================
@@ -43,6 +106,11 @@ const SparkIcon = (c = C.w, s = 22) => (
     <path d="M12 2L9.19 8.63 2 9.24l5.46 4.73L5.82 21 12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61z" />
   </svg>
 );
+const MapPinIcon = (c = C.pri, s = 16) => (
+  <svg width={s} height={s} viewBox="0 0 24 24" fill={c} stroke="none">
+    <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z"/>
+  </svg>
+);
 
 // ======================== AUDIO RECORDER HOOK ================
 
@@ -59,7 +127,6 @@ function useAudioRecorder(onError) {
   const startRef = useRef(0);
   const mountedRef = useRef(true);
 
-  // Cleanup on unmount (#6)
   useEffect(() => {
     mountedRef.current = true;
     return () => {
@@ -97,7 +164,6 @@ function useAudioRecorder(onError) {
         setDuration(Math.floor((Date.now() - startRef.current) / 1000));
       }, 500);
     } catch {
-      // (#8) Notify user of mic permission error
       onError?.(MIC_ERROR_MSG);
     }
   }, [onError]);
@@ -135,38 +201,185 @@ function TypingDots() {
   );
 }
 
-// ======================== MESSAGE BUBBLE ======================
+// ======================== INLINE MAP VIEW ====================
 
-function MsgBubble({ msg }) {
-  const isUser = msg.role === "user";
-  const isAudio = msg.audioUrl;
+function InlineMap({ mapData, onClose }) {
+  return (
+    <div style={{
+      borderRadius: 12, overflow: "hidden", border: `1.5px solid ${C.b1}`,
+      height: 280, margin: "6px 0", position: "relative",
+    }}>
+      <Suspense fallback={<div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center", background: C.bgCard, color: C.t3, fontSize: 13 }}>Cargando mapa...</div>}>
+        <MapOverlay
+          lat={mapData.lat} lng={mapData.lng} label={mapData.name}
+          destLat={mapData.destLat} destLng={mapData.destLng} destLabel={mapData.destName}
+          onClose={onClose}
+        />
+      </Suspense>
+    </div>
+  );
+}
+
+// ======================== INLINE LOCATION PICKER =============
+
+function InlineLocPicker({ slug, onDone, onClose }) {
+  const [loc, setLoc] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState(null);
+
+  const handleConfirm = useCallback(async () => {
+    if (!loc?.lat || !loc?.lng || saving) return;
+    setSaving(true);
+    setError(null);
+    try {
+      const res = await fetch(`${API_URL}/whatsapp/save-location-by-slug`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ slug, lat: loc.lat, lng: loc.lng, name: loc.address || "", address: loc.address || "" }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.message || "Error al guardar ubicación");
+      }
+      setSaved(true);
+      onDone?.();
+    } catch (e) {
+      setError(e.message || "Error al guardar ubicación");
+    } finally {
+      setSaving(false);
+    }
+  }, [loc, slug, saving, onDone]);
+
+  if (saved) {
+    return (
+      <div style={{
+        borderRadius: 12, overflow: "hidden", border: `1.5px solid ${C.ok}`,
+        padding: "16px 20px", margin: "6px 0", background: C.okPale,
+        textAlign: "center",
+      }}>
+        <div style={{ fontSize: 14, fontWeight: 600, color: C.ok, marginBottom: 4 }}>
+          {Ic.chk(C.ok, 18)} Ubicación guardada
+        </div>
+        {loc && <div style={{ fontSize: 12, color: C.t3 }}>{loc.address || `${loc.lat.toFixed(5)}, ${loc.lng.toFixed(5)}`}</div>}
+      </div>
+    );
+  }
 
   return (
-    <div style={{ display: "flex", justifyContent: isUser ? "flex-end" : "flex-start", padding: "2px 0" }}>
-      <div style={{
-        maxWidth: "82%",
-        padding: isAudio ? "6px 10px" : "9px 14px",
-        borderRadius: 14,
-        background: isUser ? C.pri : C.bgCard,
-        color: isUser ? C.tOn : C.t1,
-        fontSize: 14, lineHeight: 1.45, fontFamily: FONT,
-        boxShadow: isUser ? "none" : C.sh,
-        border: isUser ? "none" : `1px solid ${C.b2}`,
-        wordBreak: "break-word",
-        whiteSpace: "pre-wrap",
-      }}>
-        {isAudio ? (
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            {MicIcon(isUser ? C.tOn : C.pri, 16)}
-            <audio src={msg.audioUrl} controls preload="metadata" style={{
-              height: 32, maxWidth: 200,
-              filter: isUser ? "invert(1) brightness(2)" : "none",
-            }} />
-          </div>
-        ) : (
-          msg.text
-        )}
-      </div>
+    <div style={{
+      borderRadius: 12, overflow: "hidden", border: `1.5px solid ${C.pri}`,
+      height: 340, margin: "6px 0", display: "flex", flexDirection: "column",
+    }}>
+      <Suspense fallback={<div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center", background: C.bgCard, color: C.t3, fontSize: 13 }}>Cargando mapa...</div>}>
+        <LocPickerFullscreen
+          value={null}
+          onChange={setLoc}
+          label="Ubicación"
+          onClose={onClose}
+          confirmLabel={saving ? "Guardando..." : "Confirmar ubicación"}
+          onConfirm={handleConfirm}
+        />
+      </Suspense>
+      {error && <div style={{ padding: "6px 12px", background: C.errPale, color: C.err, fontSize: 12, textAlign: "center" }}>{error}</div>}
+    </div>
+  );
+}
+
+// ======================== MESSAGE BUBBLE ======================
+
+function MsgBubble({ msg, onSendText }) {
+  const isUser = msg.role === "user";
+  const isAudio = msg.audioUrl;
+  const parsedUrls = useMemo(() => !isUser ? parseMapUrls(msg.text) : [], [msg.text, isUser]);
+  const displayText = useMemo(() => stripUrls(msg.text, parsedUrls), [msg.text, parsedUrls]);
+  const [expandedMaps, setExpandedMaps] = useState(() => new Set());
+  const [locDone, setLocDone] = useState(new Set());
+
+  const toggleMap = (idx) => setExpandedMaps(prev => {
+    const next = new Set(prev);
+    next.has(idx) ? next.delete(idx) : next.add(idx);
+    return next;
+  });
+
+  const handleLocDone = useCallback((idx) => {
+    setLocDone(prev => new Set(prev).add(idx));
+    // Auto-send "UBICACIÓN LISTA" to continue the AI flow
+    onSendText?.("UBICACIÓN LISTA");
+  }, [onSendText]);
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", alignItems: isUser ? "flex-end" : "flex-start", padding: "2px 0", width: "100%" }}>
+      {/* Text bubble */}
+      {(displayText || isAudio) && (
+        <div style={{
+          maxWidth: "85%",
+          padding: isAudio ? "6px 10px" : "9px 14px",
+          borderRadius: 14,
+          background: isUser ? C.pri : C.bgCard,
+          color: isUser ? C.tOn : C.t1,
+          fontSize: 14, lineHeight: 1.45, fontFamily: FONT,
+          boxShadow: isUser ? "none" : C.sh,
+          border: isUser ? "none" : `1px solid ${C.b2}`,
+          wordBreak: "break-word",
+          whiteSpace: "pre-wrap",
+        }}>
+          {isAudio ? (
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              {MicIcon(isUser ? C.tOn : C.pri, 16)}
+              <audio src={msg.audioUrl} controls preload="metadata" style={{
+                height: 32, maxWidth: 200,
+                filter: isUser ? "invert(1) brightness(2)" : "none",
+              }} />
+            </div>
+          ) : displayText}
+        </div>
+      )}
+
+      {/* Inline map/location embeds */}
+      {parsedUrls.map((pu, idx) => (
+        <div key={idx} style={{ width: "100%", maxWidth: "85%" }}>
+          {pu.type === "map" && !expandedMaps.has(idx) && (
+            <button onClick={() => toggleMap(idx)} style={{
+              display: "flex", alignItems: "center", gap: 8,
+              padding: "10px 14px", margin: "4px 0", borderRadius: 12,
+              border: `1.5px solid ${C.pri}`, background: C.priPale,
+              cursor: "pointer", fontFamily: FONT, width: "100%", textAlign: "left",
+            }}>
+              {MapPinIcon(C.pri, 18)}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: C.pri }}>Ver mapa</div>
+                <div style={{ fontSize: 11.5, color: C.t3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {pu.name}{pu.destName ? ` → ${pu.destName}` : ""}
+                </div>
+              </div>
+              {Ic.chev(C.pri, 12)}
+            </button>
+          )}
+          {pu.type === "map" && expandedMaps.has(idx) && (
+            <InlineMap mapData={pu} onClose={() => toggleMap(idx)} />
+          )}
+
+          {pu.type === "location" && !locDone.has(idx) && (
+            <InlineLocPicker
+              slug={pu.slug}
+              onDone={() => handleLocDone(idx)}
+              onClose={() => {}}
+            />
+          )}
+          {pu.type === "location" && locDone.has(idx) && (
+            <div style={{
+              borderRadius: 12, overflow: "hidden", border: `1.5px solid ${C.ok}`,
+              padding: "12px 16px", margin: "6px 0", background: C.okPale,
+              display: "flex", alignItems: "center", gap: 8,
+            }}>
+              {Ic.chk(C.ok, 16)}
+              <span style={{ fontSize: 13, fontWeight: 600, color: C.ok }}>Ubicación guardada</span>
+            </div>
+          )}
+        </div>
+      ))}
     </div>
   );
 }
@@ -192,7 +405,7 @@ function BtnRow({ buttons, onSend, disabled }) {
 }
 
 // ======================== THINKING TIMEOUT ====================
-const THINKING_TIMEOUT_MS = 90_000; // 90 seconds — matches AI loop hard timeout
+const THINKING_TIMEOUT_MS = 90_000;
 
 // ======================== MAIN COMPONENT =====================
 
@@ -205,13 +418,12 @@ export default function AiChat({ open, onClose, sseAiResponse, sseAiTranscriptio
   const scrollRef = useRef(null);
   const inputRef = useRef(null);
   const thinkingTimer = useRef(null);
-  const sseCounter = useRef(0); // (#5) monotonic counter for dedup
+  const sseCounter = useRef(0);
   const rec = useAudioRecorder(setMicError);
 
-  // (#12) Inject styles once on mount
   useEffect(() => { injectStyles(); }, []);
 
-  // (#3) Thinking timeout — recover if SSE response never arrives
+  // Thinking timeout
   useEffect(() => {
     if (thinking) {
       clearTimeout(thinkingTimer.current);
@@ -240,15 +452,13 @@ export default function AiChat({ open, onClose, sseAiResponse, sseAiTranscriptio
     }).catch(() => setHistoryLoaded(true));
   }, [open, historyLoaded]);
 
-  // Handle SSE ai:chunk — streaming partial text from Claude
+  // Handle SSE ai:chunk — streaming
   const streamMsgId = useRef(null);
   useEffect(() => {
     if (!sseAiChunk) return;
     setThinking(false);
     setMessages(prev => {
-      // start=true means new Claude iteration — create fresh streaming message
       if (sseAiChunk.start || !streamMsgId.current) {
-        // Remove previous streaming message if a new iteration starts (tool loop)
         const filtered = streamMsgId.current
           ? prev.filter(m => m.id !== streamMsgId.current)
           : prev;
@@ -256,7 +466,6 @@ export default function AiChat({ open, onClose, sseAiResponse, sseAiTranscriptio
         streamMsgId.current = id;
         return [...filtered, { id, role: "assistant", text: sseAiChunk.text, streaming: true, ts: Date.now() }];
       }
-      // Append to existing streaming message
       return prev.map(m => m.id === streamMsgId.current
         ? { ...m, text: m.text + sseAiChunk.text }
         : m
@@ -264,14 +473,13 @@ export default function AiChat({ open, onClose, sseAiResponse, sseAiTranscriptio
     });
   }, [sseAiChunk]);
 
-  // (#5) Handle SSE ai:response — final message replaces streaming message
+  // Handle SSE ai:response — final
   useEffect(() => {
     if (!sseAiResponse) return;
     sseCounter.current++;
     const seq = sseCounter.current;
     setThinking(false);
     setMessages(prev => {
-      // Replace streaming message with final, or append if no streaming msg
       const sid = streamMsgId.current;
       streamMsgId.current = null;
       const finalMsg = {
@@ -288,7 +496,7 @@ export default function AiChat({ open, onClose, sseAiResponse, sseAiTranscriptio
     });
   }, [sseAiResponse]);
 
-  // Handle SSE ai:transcription (show user what was heard)
+  // Handle SSE ai:transcription
   useEffect(() => {
     if (!sseAiTranscription) return;
     setMessages(prev => {
@@ -314,7 +522,7 @@ export default function AiChat({ open, onClose, sseAiResponse, sseAiTranscriptio
     if (open && inputRef.current) setTimeout(() => inputRef.current?.focus(), 100);
   }, [open]);
 
-  // (#7) Escape key closes chat
+  // Escape key closes chat
   useEffect(() => {
     if (!open) return;
     const onKey = (e) => { if (e.key === "Escape") onClose(); };
@@ -322,7 +530,7 @@ export default function AiChat({ open, onClose, sseAiResponse, sseAiTranscriptio
     return () => document.removeEventListener("keydown", onKey);
   }, [open, onClose]);
 
-  // Clear mic error after 4 seconds
+  // Clear mic error
   useEffect(() => {
     if (!micError) return;
     const t = setTimeout(() => setMicError(null), 4000);
@@ -367,7 +575,7 @@ export default function AiChat({ open, onClose, sseAiResponse, sseAiTranscriptio
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendText(); }
   }, [sendText]);
 
-  // (#9) Only show buttons from the LAST assistant message (not any previous one)
+  // Only show buttons from the LAST assistant message
   const lastButtons = useMemo(() => {
     if (messages.length === 0) return null;
     const last = messages[messages.length - 1];
@@ -378,200 +586,206 @@ export default function AiChat({ open, onClose, sseAiResponse, sseAiTranscriptio
 
   return (
     <div style={{
-      position: "fixed", bottom: 88, right: 20, zIndex: 9998,
-      width: 380, maxWidth: "calc(100vw - 24px)",
-      height: "min(540px, calc(100vh - 120px))",
-      background: C.bg, borderRadius: 18, overflow: "hidden",
-      boxShadow: C.shLg, border: `1px solid ${C.b1}`,
-      display: "flex", flexDirection: "column",
-      animation: "aiSlideUp 0.25s ease-out",
+      position: "fixed", inset: 0, zIndex: 9998,
+      background: "rgba(0,0,0,0.3)", backdropFilter: "blur(2px)",
+      display: "flex", alignItems: "center", justifyContent: "center",
       fontFamily: FONT,
     }}>
-      {/* Header */}
+      {/* Panel */}
       <div style={{
-        display: "flex", alignItems: "center", gap: 10,
-        padding: "14px 16px", background: C.pri, color: C.tOn,
-        flexShrink: 0,
+        width: "100%", maxWidth: 520, height: "100%", maxHeight: "calc(100dvh - 24px)",
+        background: C.bg, borderRadius: 18, overflow: "hidden",
+        boxShadow: C.shLg, border: `1px solid ${C.b1}`,
+        display: "flex", flexDirection: "column",
+        animation: "aiSlideUp 0.2s ease-out",
+        margin: 12,
       }}>
-        <div style={{
-          width: 34, height: 34, borderRadius: "50%",
-          background: "rgba(255,255,255,0.18)", display: "flex",
-          alignItems: "center", justifyContent: "center",
-        }}>
-          {Ic.grain(C.tOn, 18)}
-        </div>
-        <div style={{ flex: 1 }}>
-          <div style={{ fontWeight: 700, fontSize: 15 }}>Asistente Tolvink</div>
-          <div style={{ fontSize: 11, opacity: 0.8 }}>Agente IA</div>
-        </div>
-        <button onClick={onClose} style={{
-          background: "none", border: "none", cursor: "pointer", padding: 4,
-          display: "flex", alignItems: "center",
-        }} aria-label="Cerrar chat">
-          {Ic.cross(C.tOn, 18)}
-        </button>
-      </div>
-
-      {/* Messages */}
-      <div ref={scrollRef} className="ai-chat-scroll" style={{
-        flex: 1, overflowY: "auto", padding: "12px 14px",
-        display: "flex", flexDirection: "column", gap: 4,
-      }}>
-        {messages.length === 0 && !thinking && (
-          <div style={{
-            textAlign: "center", padding: "40px 20px", color: C.t3, fontSize: 13,
-          }}>
-            <div style={{ marginBottom: 10 }}>{Ic.grain(C.priLt, 36)}</div>
-            <div style={{ fontWeight: 600, color: C.t2, marginBottom: 4 }}>
-              Hola, soy el asistente de Tolvink
-            </div>
-            <div>Podés consultar fletes, crear nuevos, ver reportes y mucho más.</div>
-          </div>
-        )}
-
-        {messages.map((m) => (
-          <div key={m.id}>
-            <MsgBubble msg={m} />
-            {m.transcription && (
-              <div style={{
-                fontSize: 11, color: C.t3, paddingLeft: 4, marginTop: 2,
-                fontStyle: "italic",
-              }}>
-                Transcripción: {m.transcription}
-              </div>
-            )}
-          </div>
-        ))}
-
-        {thinking && (
-          <div style={{ display: "flex", justifyContent: "flex-start" }}>
-            <div style={{
-              background: C.bgCard, borderRadius: 14,
-              border: `1px solid ${C.b2}`, boxShadow: C.sh,
-            }}>
-              <TypingDots />
-            </div>
-          </div>
-        )}
-
-        {/* Buttons from last assistant message only */}
-        {!thinking && lastButtons && (
-          <BtnRow buttons={lastButtons} onSend={sendText} disabled={thinking} />
-        )}
-      </div>
-
-      {/* (#8) Mic error banner */}
-      {micError && (
-        <div style={{
-          padding: "6px 14px", background: C.warnPale, borderTop: `1px solid ${C.b2}`,
-          fontSize: 12, color: C.warn, fontFamily: FONT, textAlign: "center",
-        }}>
-          {micError}
-        </div>
-      )}
-
-      {/* Audio preview */}
-      {rec.audioBlob && !rec.recording && (
-        <div style={{
-          display: "flex", alignItems: "center", gap: 8,
-          padding: "8px 14px", background: C.priPale, borderTop: `1px solid ${C.b2}`,
-        }}>
-          <audio src={rec.audioUrl} controls preload="metadata" style={{ height: 32, flex: 1 }} />
-          <button onClick={rec.discard} style={{
-            background: C.errPale, border: "none", borderRadius: 8,
-            padding: "4px 10px", cursor: "pointer", fontSize: 12,
-            color: C.err, fontWeight: 600, fontFamily: FONT,
-          }}>Descartar</button>
-          <button onClick={sendAudio} disabled={thinking} style={{
-            background: C.pri, border: "none", borderRadius: 8,
-            padding: "4px 12px", cursor: "pointer", fontSize: 12,
-            color: C.tOn, fontWeight: 600, fontFamily: FONT,
-            opacity: thinking ? 0.5 : 1,
-          }}>Enviar</button>
-        </div>
-      )}
-
-      {/* Recording indicator */}
-      {rec.recording && (
+        {/* Header */}
         <div style={{
           display: "flex", alignItems: "center", gap: 10,
-          padding: "10px 14px", background: C.errPale, borderTop: `1px solid ${C.b2}`,
+          padding: "14px 16px", background: C.pri, color: C.tOn,
+          flexShrink: 0,
         }}>
           <div style={{
-            width: 10, height: 10, borderRadius: "50%", background: C.err,
-            animation: "aiDot 1s infinite",
-          }} />
-          <span style={{ fontSize: 13, color: C.err, fontWeight: 600, fontFamily: FONT, flex: 1 }}>
-            Grabando... {rec.duration}s
-          </span>
-          <button onClick={rec.stop} style={{
-            background: C.err, border: "none", borderRadius: 8,
-            padding: "6px 12px", cursor: "pointer", display: "flex",
-            alignItems: "center", gap: 4,
+            width: 34, height: 34, borderRadius: "50%",
+            background: "rgba(255,255,255,0.18)", display: "flex",
+            alignItems: "center", justifyContent: "center",
           }}>
-            {StopIcon(C.tOn, 14)}
-            <span style={{ color: C.tOn, fontSize: 12, fontWeight: 600, fontFamily: FONT }}>Detener</span>
+            {Ic.grain(C.tOn, 18)}
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontWeight: 700, fontSize: 15 }}>Asistente Tolvink</div>
+            <div style={{ fontSize: 11, opacity: 0.8 }}>Agente IA</div>
+          </div>
+          <button onClick={onClose} style={{
+            background: "rgba(255,255,255,0.15)", border: "none", cursor: "pointer",
+            padding: "6px 8px", borderRadius: 8,
+            display: "flex", alignItems: "center",
+          }} aria-label="Cerrar chat">
+            {Ic.cross(C.tOn, 18)}
           </button>
         </div>
-      )}
 
-      {/* Input bar */}
-      {!rec.recording && !rec.audioBlob && (
-        <div style={{
-          display: "flex", alignItems: "flex-end", gap: 8,
-          padding: "10px 12px", borderTop: `1px solid ${C.b2}`,
-          background: C.bgCard,
+        {/* Messages */}
+        <div ref={scrollRef} className="ai-chat-scroll" style={{
+          flex: 1, overflowY: "auto", padding: "12px 14px",
+          display: "flex", flexDirection: "column", gap: 4,
         }}>
-          <textarea
-            ref={inputRef}
-            value={input}
-            onChange={e => setInput(e.target.value)}
-            onKeyDown={onKey}
-            placeholder="Escribí tu mensaje..."
-            rows={1}
-            style={{
-              flex: 1, resize: "none", border: `1.5px solid ${C.b1}`,
-              borderRadius: 12, padding: "9px 12px",
-              fontSize: 14, fontFamily: FONT, lineHeight: 1.4,
-              background: C.bgInput, color: C.t1,
-              outline: "none", maxHeight: 100, overflow: "auto",
-            }}
-            onFocus={e => e.target.style.borderColor = C.bFocus}
-            onBlur={e => e.target.style.borderColor = C.b1}
-            disabled={thinking}
-          />
-          {/* Mic button */}
-          <button
-            onClick={rec.start}
-            disabled={thinking}
-            style={{
-              width: 38, height: 38, borderRadius: "50%",
-              background: C.muted, border: "none", cursor: thinking ? "default" : "pointer",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              opacity: thinking ? 0.4 : 0.8, flexShrink: 0,
-              transition: "all 0.15s",
-            }}
-            aria-label="Grabar audio"
-          >
-            {MicIcon(C.tOn, 18)}
-          </button>
-          {/* Send button */}
-          <button
-            onClick={() => sendText()}
-            disabled={!input.trim() || thinking}
-            style={{
-              width: 38, height: 38, borderRadius: "50%",
-              background: input.trim() && !thinking ? C.pri : C.b1,
-              border: "none", cursor: input.trim() && !thinking ? "pointer" : "default",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              flexShrink: 0, transition: "all 0.15s",
-            }}
-            aria-label="Enviar mensaje"
-          >
-            {Ic.send(input.trim() && !thinking ? C.tOn : C.muted, 16)}
-          </button>
+          {messages.length === 0 && !thinking && (
+            <div style={{
+              textAlign: "center", padding: "48px 20px", color: C.t3, fontSize: 13,
+            }}>
+              <div style={{ marginBottom: 10 }}>{Ic.grain(C.priLt, 40)}</div>
+              <div style={{ fontWeight: 600, color: C.t2, marginBottom: 4, fontSize: 16 }}>
+                Hola, soy el asistente de Tolvink
+              </div>
+              <div>Podés consultar fletes, crear nuevos, ver reportes, ubicaciones y mucho más.</div>
+            </div>
+          )}
+
+          {messages.map((m) => (
+            <div key={m.id}>
+              <MsgBubble msg={m} onSendText={sendText} />
+              {m.transcription && (
+                <div style={{
+                  fontSize: 11, color: C.t3, paddingLeft: 4, marginTop: 2,
+                  fontStyle: "italic",
+                }}>
+                  Transcripción: {m.transcription}
+                </div>
+              )}
+            </div>
+          ))}
+
+          {thinking && (
+            <div style={{ display: "flex", justifyContent: "flex-start" }}>
+              <div style={{
+                background: C.bgCard, borderRadius: 14,
+                border: `1px solid ${C.b2}`, boxShadow: C.sh,
+              }}>
+                <TypingDots />
+              </div>
+            </div>
+          )}
+
+          {!thinking && lastButtons && (
+            <BtnRow buttons={lastButtons} onSend={sendText} disabled={thinking} />
+          )}
         </div>
-      )}
+
+        {/* Mic error banner */}
+        {micError && (
+          <div style={{
+            padding: "6px 14px", background: C.warnPale, borderTop: `1px solid ${C.b2}`,
+            fontSize: 12, color: C.warn, fontFamily: FONT, textAlign: "center",
+          }}>
+            {micError}
+          </div>
+        )}
+
+        {/* Audio preview */}
+        {rec.audioBlob && !rec.recording && (
+          <div style={{
+            display: "flex", alignItems: "center", gap: 8,
+            padding: "8px 14px", background: C.priPale, borderTop: `1px solid ${C.b2}`,
+          }}>
+            <audio src={rec.audioUrl} controls preload="metadata" style={{ height: 32, flex: 1 }} />
+            <button onClick={rec.discard} style={{
+              background: C.errPale, border: "none", borderRadius: 8,
+              padding: "4px 10px", cursor: "pointer", fontSize: 12,
+              color: C.err, fontWeight: 600, fontFamily: FONT,
+            }}>Descartar</button>
+            <button onClick={sendAudio} disabled={thinking} style={{
+              background: C.pri, border: "none", borderRadius: 8,
+              padding: "4px 12px", cursor: "pointer", fontSize: 12,
+              color: C.tOn, fontWeight: 600, fontFamily: FONT,
+              opacity: thinking ? 0.5 : 1,
+            }}>Enviar</button>
+          </div>
+        )}
+
+        {/* Recording indicator */}
+        {rec.recording && (
+          <div style={{
+            display: "flex", alignItems: "center", gap: 10,
+            padding: "10px 14px", background: C.errPale, borderTop: `1px solid ${C.b2}`,
+          }}>
+            <div style={{
+              width: 10, height: 10, borderRadius: "50%", background: C.err,
+              animation: "aiDot 1s infinite",
+            }} />
+            <span style={{ fontSize: 13, color: C.err, fontWeight: 600, fontFamily: FONT, flex: 1 }}>
+              Grabando... {rec.duration}s
+            </span>
+            <button onClick={rec.stop} style={{
+              background: C.err, border: "none", borderRadius: 8,
+              padding: "6px 12px", cursor: "pointer", display: "flex",
+              alignItems: "center", gap: 4,
+            }}>
+              {StopIcon(C.tOn, 14)}
+              <span style={{ color: C.tOn, fontSize: 12, fontWeight: 600, fontFamily: FONT }}>Detener</span>
+            </button>
+          </div>
+        )}
+
+        {/* Input bar */}
+        {!rec.recording && !rec.audioBlob && (
+          <div style={{
+            display: "flex", alignItems: "flex-end", gap: 8,
+            padding: "10px 12px", borderTop: `1px solid ${C.b2}`,
+            background: C.bgCard,
+          }}>
+            <textarea
+              ref={inputRef}
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              onKeyDown={onKey}
+              placeholder="Escribí tu mensaje..."
+              rows={1}
+              style={{
+                flex: 1, resize: "none", border: `1.5px solid ${C.b1}`,
+                borderRadius: 12, padding: "9px 12px",
+                fontSize: 14, fontFamily: FONT, lineHeight: 1.4,
+                background: C.bgInput, color: C.t1,
+                outline: "none", maxHeight: 100, overflow: "auto",
+              }}
+              onFocus={e => e.target.style.borderColor = C.bFocus}
+              onBlur={e => e.target.style.borderColor = C.b1}
+              disabled={thinking}
+            />
+            {/* Mic button */}
+            <button
+              onClick={rec.start}
+              disabled={thinking}
+              style={{
+                width: 38, height: 38, borderRadius: "50%",
+                background: C.muted, border: "none", cursor: thinking ? "default" : "pointer",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                opacity: thinking ? 0.4 : 0.8, flexShrink: 0,
+                transition: "all 0.15s",
+              }}
+              aria-label="Grabar audio"
+            >
+              {MicIcon(C.tOn, 18)}
+            </button>
+            {/* Send button */}
+            <button
+              onClick={() => sendText()}
+              disabled={!input.trim() || thinking}
+              style={{
+                width: 38, height: 38, borderRadius: "50%",
+                background: input.trim() && !thinking ? C.pri : C.b1,
+                border: "none", cursor: input.trim() && !thinking ? "pointer" : "default",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                flexShrink: 0, transition: "all 0.15s",
+              }}
+              aria-label="Enviar mensaje"
+            >
+              {Ic.send(input.trim() && !thinking ? C.tOn : C.muted, 16)}
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
