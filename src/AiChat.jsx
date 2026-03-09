@@ -196,7 +196,7 @@ const THINKING_TIMEOUT_MS = 90_000; // 90 seconds — matches AI loop hard timeo
 
 // ======================== MAIN COMPONENT =====================
 
-export default function AiChat({ open, onClose, sseAiResponse, sseAiTranscription }) {
+export default function AiChat({ open, onClose, sseAiResponse, sseAiTranscription, sseAiChunk }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [thinking, setThinking] = useState(false);
@@ -240,19 +240,52 @@ export default function AiChat({ open, onClose, sseAiResponse, sseAiTranscriptio
     }).catch(() => setHistoryLoaded(true));
   }, [open, historyLoaded]);
 
-  // (#5) Handle SSE ai:response — use counter to detect even identical messages
+  // Handle SSE ai:chunk — streaming partial text from Claude
+  const streamMsgId = useRef(null);
+  useEffect(() => {
+    if (!sseAiChunk) return;
+    setThinking(false);
+    setMessages(prev => {
+      // start=true means new Claude iteration — create fresh streaming message
+      if (sseAiChunk.start || !streamMsgId.current) {
+        // Remove previous streaming message if a new iteration starts (tool loop)
+        const filtered = streamMsgId.current
+          ? prev.filter(m => m.id !== streamMsgId.current)
+          : prev;
+        const id = `stream-${Date.now()}`;
+        streamMsgId.current = id;
+        return [...filtered, { id, role: "assistant", text: sseAiChunk.text, streaming: true, ts: Date.now() }];
+      }
+      // Append to existing streaming message
+      return prev.map(m => m.id === streamMsgId.current
+        ? { ...m, text: m.text + sseAiChunk.text }
+        : m
+      );
+    });
+  }, [sseAiChunk]);
+
+  // (#5) Handle SSE ai:response — final message replaces streaming message
   useEffect(() => {
     if (!sseAiResponse) return;
     sseCounter.current++;
     const seq = sseCounter.current;
     setThinking(false);
-    setMessages(prev => [...prev, {
-      id: `ai-${seq}-${Date.now()}`,
-      role: "assistant",
-      text: sseAiResponse.text,
-      buttons: sseAiResponse.buttons,
-      ts: Date.now(),
-    }]);
+    setMessages(prev => {
+      // Replace streaming message with final, or append if no streaming msg
+      const sid = streamMsgId.current;
+      streamMsgId.current = null;
+      const finalMsg = {
+        id: `ai-${seq}-${Date.now()}`,
+        role: "assistant",
+        text: sseAiResponse.text,
+        buttons: sseAiResponse.buttons,
+        ts: Date.now(),
+      };
+      if (sid) {
+        return prev.map(m => m.id === sid ? finalMsg : m);
+      }
+      return [...prev, finalMsg];
+    });
   }, [sseAiResponse]);
 
   // Handle SSE ai:transcription (show user what was heard)
