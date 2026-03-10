@@ -574,6 +574,7 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
             <div ref={messagesContainerRef} onScroll={handleScroll} style={{ flex: 1, overflow: "auto", padding: 18, display: "flex", flexDirection: "column", gap: 6 }}>
               {msgHasMore && (
                 <div style={{textAlign:"center",padding:"8px 0 12px"}}>
+                  <div style={{fontSize:11,color:C.t3,marginBottom:4}}>{messages.length} mensajes cargados</div>
                   <button onClick={loadOlderMessages} disabled={loadingOlder} style={{padding:"5px 16px",borderRadius:8,border:`1px solid ${C.b1}`,background:C.bg,color:C.t2,fontSize:12.1,fontWeight:600,cursor:loadingOlder?"default":"pointer",fontFamily:"inherit",opacity:loadingOlder?0.5:1}}>
                     {loadingOlder?"Cargando...":"Cargar mensajes anteriores"}
                   </button>

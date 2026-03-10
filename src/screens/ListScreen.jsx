@@ -723,6 +723,7 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
         return <>
           {hasMore && !hasFilters && (
             <div style={{textAlign:"center",padding:"16px 0 24px"}}>
+              {total>0 && <div style={{fontSize:11,color:C.t3,marginBottom:6}}>Mostrando {visibleCount} de {total}</div>}
               <button onClick={loadMore} disabled={loadingMore} style={{padding:"8px 24px",borderRadius:10,border:`1.5px solid ${C.pri}`,background:C.w,color:C.pri,fontSize:13.2,fontWeight:700,cursor:loadingMore?"default":"pointer",fontFamily:"inherit",opacity:loadingMore?0.5:1}}>
                 {loadingMore?"Cargando...":"Cargar mas fletes"}
               </button>
