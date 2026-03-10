@@ -177,7 +177,7 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
       <div key={f.id} onClick={()=>onNav("detail",f.id)} style={{ background:C.w, border:`1px solid ${C.b1}`, borderLeft:`4px solid ${st.color}`, borderRadius:12, padding:14, cursor:"pointer", boxShadow:C.sh, transition:"background 0.15s", contentVisibility:"auto", containIntrinsicSize:"0 120px" }}>
         <div style={{fontSize:15.4,fontWeight:700,color:C.t1,marginBottom:2}}>{f.grain==="Otros"?f.productTypeOther||"Otros":f.grain} · {f.tons} {f.unit||"tn"}</div>
         <div style={{display:"flex",alignItems:"center",gap:5,fontSize:12.5,color:C.t2,marginBottom:8,overflow:"hidden",whiteSpace:"nowrap",textOverflow:"ellipsis"}}>
-          <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{origin||"Sin origen"}</span>
+          <span style={{display:"flex",alignItems:"center",gap:3,overflow:"hidden",whiteSpace:"nowrap",textOverflow:"ellipsis",flexShrink:1,minWidth:0}}>{Ic.pin(C.t3,11)} <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{origin||"Sin origen"}</span></span>
           <span style={{color:C.t3,flexShrink:0}}>→</span>
           <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.destName||"Sin destino"}</span>
           {f.destLat&&f.destLng&&<span onClick={(e)=>{e.stopPropagation();goToMap(f.destLat,f.destLng,f.destName);}} style={{cursor:"pointer",opacity:0.6,flexShrink:0,display:"inline-flex"}} title="Ver en mapa">{Ic.pin(C.t3,11)}</span>}
@@ -236,7 +236,7 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
           </div>}
           <div style={{ fontSize: 13.2, fontWeight: 700, color: C.t1, marginBottom: 2 }}>{f.grain === "Otros" ? f.productTypeOther || "Otros" : f.grain} · {f.tons} {f.unit || "tn"}</div>
           <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11.5, color: C.t2, marginBottom: 4, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>
-            <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{origin || "Sin origen"}</span>
+            <span style={{display:"flex",alignItems:"center",gap:3,overflow:"hidden",whiteSpace:"nowrap",textOverflow:"ellipsis",flexShrink:1,minWidth:0}}>{Ic.pin(C.t3,10)} <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{origin || "Sin origen"}</span></span>
             <span style={{color:C.t3,flexShrink:0}}>→</span>
             <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.destName || "Sin destino"}</span>
           </div>

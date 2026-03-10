@@ -217,7 +217,7 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
       return (
         <div key={f.id} role="button" tabIndex={0} aria-label={`Flete ${f.code}`} onClick={() => selectFreight(f.id, source)} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();selectFreight(f.id, source);}}} style={{ background: isSel ? C.priPale : C.w, border: `1px solid ${isSel ? C.pri : C.b1}`, borderLeft: `4px solid ${st.color}`, borderRadius: 8, padding: "8px 10px", cursor: "pointer", transition: "background 0.15s" }}>
           <div style={{ fontSize: 12.5, fontWeight: 700, color: C.t1 }}>{f.grain === "Otros" ? f.productTypeOther || "Otros" : f.grain} · {f.tons} {f.unit || "tn"}</div>
-          {origin && <div style={{ fontSize: 10.5, color: C.t2, marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{origin} → {f.destName || "Sin destino"}</div>}
+          {origin && <div style={{ fontSize: 10.5, color: C.t2, marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 3 }}>{Ic.pin(C.t3,9)} {origin} → {f.destName || "Sin destino"}</div>}
           <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 3 }}>
             <span style={{ fontSize: 9.5, fontWeight: 600, fontFamily: MONO, color: C.t3 }}>{f.code}</span>
             <Bd color={st.color} bg={st.bg} small>{st.label}</Bd>
@@ -231,7 +231,7 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
       <div key={f.id} role="button" tabIndex={0} aria-label={`Flete ${f.code}`} onClick={() => selectFreight(f.id, source)} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();selectFreight(f.id, source);}}} style={{ background: C.w, border: `1px solid ${C.b1}`, borderLeft: `4px solid ${st.color}`, borderRadius: 10, boxShadow: C.sh, cursor: "pointer", overflow: "hidden", transition: "background 0.15s, border-color 0.15s", padding: "10px 14px" }}>
         <div style={{ fontSize: 14.3, fontWeight: 700, color: C.t1, marginBottom: 2 }}>{f.grain === "Otros" ? f.productTypeOther || "Otros" : f.grain} · {f.tons} {f.unit || "tn"}</div>
         <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12.5, color: C.t2, marginBottom: 8, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>
-          <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{origin || "Sin origen"}</span>
+          <span style={{display:"flex",alignItems:"center",gap:3,overflow:"hidden",whiteSpace:"nowrap",textOverflow:"ellipsis",flexShrink:1,minWidth:0}}>{Ic.pin(C.t3,11)} <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{origin || "Sin origen"}</span></span>
           <span style={{color:C.t3,flexShrink:0}}>→</span>
           <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.destName || "Sin destino"}</span>
           {f.destLat&&f.destLng&&<span onClick={(e)=>{e.stopPropagation();goToMap(f.destLat,f.destLng,f.destName);}} style={{cursor:"pointer",opacity:0.6,flexShrink:0,display:"inline-flex"}} title="Ver en mapa">{Ic.pin(C.t3,11)}</span>}
@@ -422,7 +422,7 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
           </div>}
           <div style={{ fontSize: 14.3, fontWeight: 700, color: C.t1, marginBottom: 2 }}>{f.grain === "Otros" ? f.productTypeOther || "Otros" : f.grain} · {f.tons} {f.unit || "tn"}</div>
           <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: C.t2, marginBottom: 8, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>
-            <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{origin || "Sin origen"}</span>
+            <span style={{display:"flex",alignItems:"center",gap:3,overflow:"hidden",whiteSpace:"nowrap",textOverflow:"ellipsis",flexShrink:1,minWidth:0}}>{Ic.pin(C.t3,11)} <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{origin || "Sin origen"}</span></span>
             <span style={{color:C.t3,flexShrink:0}}>→</span>
             <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.destName || "Sin destino"}</span>
           </div>

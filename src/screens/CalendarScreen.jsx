@@ -75,7 +75,7 @@ export default function CalendarScreen({ freights, perms, onNav, isDesktop, user
           return <div key={f.id} className="tv-card" onClick={()=>{setSelectedId(f.id);onRefresh(f.id);}} style={{background:C.w,border:`1px solid ${C.b1}`,borderLeft:`4px solid ${st.border}`,borderRadius:10,cursor:"pointer",boxShadow:C.sh,overflow:"hidden",padding:"10px 14px"}}>
             <div style={{fontSize:14.3,fontWeight:700,color:C.t1,marginBottom:2}}>{f.grain==="Otros"?f.productTypeOther||"Otros":f.grain} · {f.tons} {f.unit||"tn"}</div>
             <div style={{display:"flex",alignItems:"center",gap:5,fontSize:12.5,color:C.t2,marginBottom:8,overflow:"hidden",whiteSpace:"nowrap",textOverflow:"ellipsis"}}>
-              <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{origin||"Sin origen"}</span>
+              <span style={{display:"flex",alignItems:"center",gap:3,overflow:"hidden",whiteSpace:"nowrap",textOverflow:"ellipsis",flexShrink:1,minWidth:0}}>{Ic.pin(C.t3,11)} <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{origin||"Sin origen"}</span></span>
               <span style={{color:C.t3,flexShrink:0}}>→</span>
               <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.destName||"Sin destino"}</span>
               {f.destLat&&f.destLng&&<span onClick={(e)=>{e.stopPropagation();goToMap(f.destLat,f.destLng,f.destName);}} style={{cursor:"pointer",opacity:0.6,flexShrink:0,display:"inline-flex"}} title="Ver en mapa">{Ic.pin(C.t3,11)}</span>}
