@@ -213,36 +213,35 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
     const compact = hasDetail && isDesktop;
     if (compact) {
       // Mini card: just code + status color bar + product
+      const origin = f.fieldName || f.originName || f.originCompanyName;
       return (
         <div key={f.id} role="button" tabIndex={0} aria-label={`Flete ${f.code}`} onClick={() => selectFreight(f.id, source)} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();selectFreight(f.id, source);}}} style={{ background: isSel ? C.priPale : C.w, border: `1px solid ${isSel ? C.pri : C.b1}`, borderLeft: `4px solid ${st.color}`, borderRadius: 8, padding: "8px 10px", cursor: "pointer", transition: "background 0.15s" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <span style={{ fontSize: 10.5, fontWeight: 700, fontFamily: MONO, color: C.t2 }}>{f.code}</span>
+          <div style={{ fontSize: 12.5, fontWeight: 700, color: C.t1 }}>{f.grain === "Otros" ? f.productTypeOther || "Otros" : f.grain} · {f.tons} {f.unit || "tn"}</div>
+          {origin && <div style={{ fontSize: 10.5, color: C.t2, marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{origin} → {f.destName || "Sin destino"}</div>}
+          <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 3 }}>
+            <span style={{ fontSize: 9.5, fontWeight: 600, fontFamily: MONO, color: C.t3 }}>{f.code}</span>
             <Bd color={st.color} bg={st.bg} small>{st.label}</Bd>
+            {f.loadDate && <span style={{ fontSize: 10, color: C.t3 }}>{formatFreightDate(f.loadDate)}</span>}
           </div>
-          <div style={{ fontSize: 13.2, fontWeight: 700, color: C.t1, marginTop: 3 }}>{f.grain === "Otros" ? f.productTypeOther || "Otros" : f.grain} · {f.tons} {f.unit || "tn"}</div>
-          {f.loadDate && <div style={{ fontSize: 10.5, color: C.t3, marginTop: 2 }}>{Ic.cal(C.t3, 9)} {formatFreightDate(f.loadDate)}{f.loadTime?.trim() ? ` · ${f.loadTime}` : ""}</div>}
-          {(f.fieldName || f.originName || f.originCompanyName) && <div style={{ fontSize: 10.5, color: C.t3, marginTop: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 3 }}>{Ic.pin(C.t3, 9)} {[f.fieldName, f.originName].filter(Boolean).join(" / ") || f.originCompanyName}</div>}
         </div>
       );
     }
+    const origin = [f.fieldName, f.originName].filter(Boolean).join(" / ") || f.originCompanyName;
     return (
-      <div key={f.id} role="button" tabIndex={0} aria-label={`Flete ${f.code}`} onClick={() => selectFreight(f.id, source)} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();selectFreight(f.id, source);}}} style={{ background: C.w, border: `1px solid ${C.b1}`, borderLeft: `4px solid ${st.color}`, borderRadius: 10, boxShadow: C.sh, cursor: "pointer", overflow: "hidden", transition: "background 0.15s, border-color 0.15s" }}>
-        {/* Two-column layout with vertical divider */}
-        <div style={{ display: "flex" }}>
-          {/* Left column */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 3, padding: "8px 12px", borderRight: `1px solid ${C.b2}`, minWidth: 0 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <span style={{ fontSize: 12.5, fontWeight: 700, fontFamily: MONO, color: C.t2 }}>{f.code}</span>
-              <Bd color={st.color} bg={st.bg} small>{st.label}</Bd>
-            </div>
-            <div style={{ fontSize: 13.2, fontWeight: 700, color: C.t1 }}>{f.grain === "Otros" ? f.productTypeOther || "Otros" : f.grain} · {f.tons} {f.unit || "tn"}</div>
-            {f.loadDate && <div style={{ fontSize: 13.6, color: C.t3, fontWeight: 500 }}>{formatFreightDate(f.loadDate)}{f.loadTime?.trim() ? ` · ${f.loadTime}` : ""}</div>}
-          </div>
-          {/* Right column */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 3, padding: "8px 12px", fontSize: 12.1, color: C.t2, minWidth: 0 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>{Ic.plant(C.t3, 12)} <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.destName}</span>{f.destLat&&f.destLng&&<span onClick={(e)=>{e.stopPropagation();goToMap(f.destLat,f.destLng,f.destName);}} style={{cursor:"pointer",opacity:0.6,marginLeft:3,flexShrink:0,display:"inline-flex"}} title="Ver en mapa">{Ic.pin(C.t3,12)}</span>}</div>
-            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>{Ic.truck(C.t3, 12)} <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.transporterName || "Sin asignar"}{f.truckPlate ? ` (${f.truckPlate})` : ""}</span>{f.isOwnFleet && <span style={{ fontSize: 11, color: C.acc, fontWeight: 600, marginLeft: 4, flexShrink: 0 }}>Flota propia</span>}{f.isMultiTruck && <span style={{ fontSize: 11, color: C.info, fontWeight: 600, marginLeft: 4, flexShrink: 0 }}>{f.assignedTruckCount}/{f.truckCount} cam.</span>}</div>
-            {(f.fieldName || f.originName || f.originCompanyName) && <div style={{ display: "flex", alignItems: "center", gap: 4 }}>{Ic.pin(C.t3, 12)} <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{[f.fieldName, f.originName].filter(Boolean).join(" / ") || f.originCompanyName}</span></div>}
+      <div key={f.id} role="button" tabIndex={0} aria-label={`Flete ${f.code}`} onClick={() => selectFreight(f.id, source)} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();selectFreight(f.id, source);}}} style={{ background: C.w, border: `1px solid ${C.b1}`, borderLeft: `4px solid ${st.color}`, borderRadius: 10, boxShadow: C.sh, cursor: "pointer", overflow: "hidden", transition: "background 0.15s, border-color 0.15s", padding: "10px 14px" }}>
+        <div style={{ fontSize: 14.3, fontWeight: 700, color: C.t1, marginBottom: 2 }}>{f.grain === "Otros" ? f.productTypeOther || "Otros" : f.grain} · {f.tons} {f.unit || "tn"}</div>
+        <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12.5, color: C.t2, marginBottom: 8, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>
+          <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{origin || "Sin origen"}</span>
+          <span style={{color:C.t3,flexShrink:0}}>→</span>
+          <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.destName || "Sin destino"}</span>
+          {f.destLat&&f.destLng&&<span onClick={(e)=>{e.stopPropagation();goToMap(f.destLat,f.destLng,f.destName);}} style={{cursor:"pointer",opacity:0.6,flexShrink:0,display:"inline-flex"}} title="Ver en mapa">{Ic.pin(C.t3,11)}</span>}
+        </div>
+        <div style={{ borderTop: `1px solid ${C.b1}`, paddingTop: 8, display: "flex", flexDirection: "column", gap: 3, fontSize: 12.1, color: C.t3 }}>
+          {f.loadDate && <div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.cal(C.t3,10)} {formatFreightDate(f.loadDate)}{f.loadTime?.trim() ? ` · ${f.loadTime}` : ""}</div>}
+          <div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.truck(C.t3,11)} <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",color:C.t2}}>{f.transporterName || "Sin asignar"}{f.truckPlate ? ` (${f.truckPlate})` : ""}</span>{f.isOwnFleet && <span style={{fontSize:10,color:C.acc,fontWeight:600,marginLeft:4,flexShrink:0}}>Flota propia</span>}{f.isMultiTruck && <span style={{fontSize:10,color:C.info,fontWeight:600,marginLeft:4,flexShrink:0}}>{f.assignedTruckCount}/{f.truckCount} cam.</span>}</div>
+          <div style={{display:"flex",alignItems:"center",gap:6,marginTop:2}}>
+            <span style={{fontSize:11,fontWeight:600,fontFamily:MONO,color:C.t3}}>{f.code}</span>
+            <Bd color={st.color} bg={st.bg} small>{st.label}</Bd>
           </div>
         </div>
       </div>
@@ -414,23 +413,26 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
       const st = stCfg(f.status);
       const pa = f._pending;
       const isSel = selectedId === f.id;
+      const origin = [f.fieldName, f.originName].filter(Boolean).join(" / ") || f.originCompanyName;
       return (
         <div key={f.id} role="button" tabIndex={0} aria-label={`Flete ${f.code}`} onClick={() => selectFreight(f.id, "pending")} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();selectFreight(f.id, "pending");}}} style={{ background: isSel ? C.priPale : C.w, border: `1px solid ${isSel ? C.pri : pa ? st.color + "40" : C.b1}`, borderLeft: `4px solid ${st.color}`, borderRadius: 10, padding: "10px 14px", cursor: "pointer", boxShadow: C.sh, transition: "background 0.15s, border-color 0.15s", position: "relative" }}>
-          {/* Pending indicator — pulsing dot */}
           {pa && <div style={{ position: "absolute", top: 10, right: 12, display: "flex", alignItems: "center", gap: 5 }}>
             <span style={{ width: 7, height: 7, borderRadius: "50%", background: C.acc, display: "inline-block", animation: "dotPulse 1.5s ease-in-out infinite", flexShrink: 0 }} />
             <span style={{ fontSize: 11, fontWeight: 700, color: C.acc, whiteSpace: "nowrap" }}>{pa.action}</span>
           </div>}
-          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
-            <span style={{ fontSize: 11.5, fontWeight: 700, fontFamily: MONO, color: C.t2 }}>{f.code}</span>
-            <Bd color={st.color} bg={st.bg} small>{st.label}</Bd>
+          <div style={{ fontSize: 14.3, fontWeight: 700, color: C.t1, marginBottom: 2 }}>{f.grain === "Otros" ? f.productTypeOther || "Otros" : f.grain} · {f.tons} {f.unit || "tn"}</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: C.t2, marginBottom: 8, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>
+            <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{origin || "Sin origen"}</span>
+            <span style={{color:C.t3,flexShrink:0}}>→</span>
+            <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.destName || "Sin destino"}</span>
           </div>
-          <div style={{ fontSize: 14.3, fontWeight: 700, color: C.t1, marginBottom: 3 }}>{f.grain === "Otros" ? f.productTypeOther || "Otros" : f.grain} · {f.tons} {f.unit || "tn"}</div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 4, fontSize: 11.5, color: C.t2 }}>
+          <div style={{ borderTop: `1px solid ${C.b1}`, paddingTop: 8, display: "flex", flexWrap: "wrap", gap: 5, fontSize: 11.5, color: C.t3 }}>
             {f.loadDate && <span style={{ display: "flex", alignItems: "center", gap: 3 }}>{Ic.cal(C.t3, 10)} {formatFreightDate(f.loadDate)}{f.loadTime ? ` · ${f.loadTime}` : ""}</span>}
-            <span style={{ display: "flex", alignItems: "center", gap: 3 }}>{Ic.pin(C.t3, 10)} {[f.fieldName, f.originName].filter(Boolean).join(" / ") || f.originCompanyName || "Sin origen"}</span>
-            <span style={{ display: "flex", alignItems: "center", gap: 3 }}>{Ic.plant(C.t3, 10)} {f.destName || "Sin destino"}</span>
-            <span style={{ display: "flex", alignItems: "center", gap: 3 }}>{Ic.truck(C.t3, 10)} {f.transporterName || "Sin asignar"}</span>
+            <span style={{ display: "flex", alignItems: "center", gap: 3 }}>{Ic.truck(C.t3, 10)} <span style={{color:C.t2}}>{f.transporterName || "Sin asignar"}</span></span>
+            <span style={{ display: "flex", alignItems: "center", gap: 5, marginLeft: "auto" }}>
+              <span style={{ fontFamily: MONO, fontWeight: 600, color: C.t3 }}>{f.code}</span>
+              <Bd color={st.color} bg={st.bg} small>{st.label}</Bd>
+            </span>
           </div>
         </div>
       );

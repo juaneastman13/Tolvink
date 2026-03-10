@@ -71,22 +71,21 @@ export default function CalendarScreen({ freights, perms, onNav, isDesktop, user
         {selFreights.length===0&&<div style={{textAlign:"center",padding:30,color:C.t3,fontSize:13.2,background:C.w,borderRadius:10,border:`1px solid ${C.b1}`}}>Sin fletes programados este día</div>}
         {selFreights.map(f=>{
           const st=stCfg(f.status);
-          return <div key={f.id} className="tv-card" onClick={()=>{setSelectedId(f.id);onRefresh(f.id);}} style={{background:C.w,border:`1px solid ${C.b1}`,borderLeft:`4px solid ${st.border}`,borderRadius:10,cursor:"pointer",boxShadow:C.sh,overflow:"hidden"}}>
-            <div style={{display:"flex"}}>
-              {/* Left column */}
-              <div style={{display:"flex",flexDirection:"column",gap:3,padding:"8px 12px",borderRight:`1px solid ${C.b2}`,minWidth:0}}>
-                <div style={{display:"flex",alignItems:"center",gap:6}}>
-                  <span style={{fontSize:11.6,fontWeight:700,fontFamily:MONO,color:C.t2}}>{f.code}</span>
-                  <Bd color={st.color} bg={st.bg} small>{st.label}</Bd>
-                </div>
-                <div style={{fontSize:13.2,fontWeight:700,color:C.t1}}>{f.grain==="Otros"?f.productTypeOther||"Otros":f.grain} · {f.tons} {f.unit||"tn"}</div>
-                {f.loadDate&&<div style={{fontSize:12.1,color:C.t3,fontWeight:500}}>{formatFreightDate(f.loadDate)}{f.loadTime?.trim()?` · ${f.loadTime}`:""}</div>}
-              </div>
-              {/* Right column */}
-              <div style={{display:"flex",flexDirection:"column",gap:3,padding:"8px 12px",fontSize:12.1,color:C.t2,minWidth:0}}>
-                <div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.user(C.t3,12)} <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.originCompanyName||(f.originName||"").split("—")[0].trim()}</span>{f.originLat&&f.originLng&&<span onClick={(e)=>{e.stopPropagation();goToMap(f.originLat,f.originLng,[f.originCompanyName,f.fieldName,f.originName].filter(Boolean).join(" — "));}} style={{cursor:"pointer",opacity:0.6,marginLeft:3,flexShrink:0,display:"inline-flex"}} title="Ver en mapa">{Ic.pin(C.t3,12)}</span>}</div>
-                <div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.plant(C.t3,12)} <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.destName}</span>{f.destLat&&f.destLng&&<span onClick={(e)=>{e.stopPropagation();goToMap(f.destLat,f.destLng,f.destName);}} style={{cursor:"pointer",opacity:0.6,marginLeft:3,flexShrink:0,display:"inline-flex"}} title="Ver en mapa">{Ic.pin(C.t3,12)}</span>}</div>
-                <div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.truck(C.t3,12)} <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.transporterName||"Sin asignar"}{f.truckPlate?` (${f.truckPlate})`:""}</span>{f.isOwnFleet&&<span style={{fontSize:9.4,color:C.acc,fontWeight:600,marginLeft:4,flexShrink:0}}>Flota propia</span>}{f.isMultiTruck&&<span style={{fontSize:9.9,color:C.info,fontWeight:600,marginLeft:4,flexShrink:0}}>{f.assignedTruckCount}/{f.truckCount} cam.</span>}</div>
+          const origin = f.fieldName || f.originCompanyName || (f.originName||"").split("—")[0].trim();
+          return <div key={f.id} className="tv-card" onClick={()=>{setSelectedId(f.id);onRefresh(f.id);}} style={{background:C.w,border:`1px solid ${C.b1}`,borderLeft:`4px solid ${st.border}`,borderRadius:10,cursor:"pointer",boxShadow:C.sh,overflow:"hidden",padding:"10px 14px"}}>
+            <div style={{fontSize:14.3,fontWeight:700,color:C.t1,marginBottom:2}}>{f.grain==="Otros"?f.productTypeOther||"Otros":f.grain} · {f.tons} {f.unit||"tn"}</div>
+            <div style={{display:"flex",alignItems:"center",gap:5,fontSize:12.5,color:C.t2,marginBottom:8,overflow:"hidden",whiteSpace:"nowrap",textOverflow:"ellipsis"}}>
+              <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{origin||"Sin origen"}</span>
+              <span style={{color:C.t3,flexShrink:0}}>→</span>
+              <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.destName||"Sin destino"}</span>
+              {f.destLat&&f.destLng&&<span onClick={(e)=>{e.stopPropagation();goToMap(f.destLat,f.destLng,f.destName);}} style={{cursor:"pointer",opacity:0.6,flexShrink:0,display:"inline-flex"}} title="Ver en mapa">{Ic.pin(C.t3,11)}</span>}
+            </div>
+            <div style={{borderTop:`1px solid ${C.b1}`,paddingTop:8,display:"flex",flexDirection:"column",gap:3,fontSize:12.1,color:C.t3}}>
+              {f.loadDate&&<div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.cal(C.t3,10)} {formatFreightDate(f.loadDate)}{f.loadTime?.trim()?` · ${f.loadTime}`:""}</div>}
+              <div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.truck(C.t3,11)} <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",color:C.t2}}>{f.transporterName||"Sin asignar"}{f.truckPlate?` (${f.truckPlate})`:""}</span>{f.isOwnFleet&&<span style={{fontSize:10,color:C.acc,fontWeight:600,marginLeft:4,flexShrink:0}}>Flota propia</span>}{f.isMultiTruck&&<span style={{fontSize:10,color:C.info,fontWeight:600,marginLeft:4,flexShrink:0}}>{f.assignedTruckCount}/{f.truckCount} cam.</span>}</div>
+              <div style={{display:"flex",alignItems:"center",gap:6,marginTop:2}}>
+                <span style={{fontSize:11,fontWeight:600,fontFamily:MONO,color:C.t3}}>{f.code}</span>
+                <Bd color={st.color} bg={st.bg} small>{st.label}</Bd>
               </div>
             </div>
           </div>;
