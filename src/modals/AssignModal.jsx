@@ -209,8 +209,12 @@ export default function AssignModal({ freight, transporters, user, onClose, onCo
 
   return (
     <ModalOverlay onClose={safeClose} loading={loading} closing={closing} closingText={closingText}>
-      <div style={{fontSize:18.7,fontWeight:700,marginBottom:4}}>Asignar transporte · {freight.code}</div>
-      <div style={{fontSize:13.2,color:C.t2,marginBottom:8}}>{freight.grain} · {freight.tons}tn · {freight.originName}</div>
+      <div style={{fontSize:18.7,fontWeight:700,marginBottom:6}}>Asignar transporte</div>
+      <div style={{fontSize:13.2,color:C.t2,marginBottom:10,padding:"8px 12px",background:C.bg,borderRadius:8,border:`1px solid ${C.b1}`}}>
+        <div style={{fontWeight:700,color:C.t1}}>{freight.grain} · {freight.tons}tn</div>
+        <div style={{marginTop:2}}>{freight.originName} → {freight.destName||"Sin destino"}</div>
+        <div style={{fontSize:11,color:C.t3,marginTop:2}}>{freight.code}</div>
+      </div>
 
       {/* Progress stepper */}
       {remainingSlots > 0 && (() => {
@@ -372,10 +376,9 @@ export default function AssignModal({ freight, transporters, user, onClose, onCo
                 {!loadingDrivers && drivers.length===0 && !showNewDriver && !user && <div style={{fontSize:13.2,color:C.t3,padding:8,textAlign:"center"}}>No hay choferes registrados</div>}
                 {drivers.filter(d=>d.id!==user?.id).map(d=>{const qLen=d.activeFreights?.length||0; return <button key={d.id} onClick={()=>setDriverId(d.id)} style={{padding:"11px 14px",borderRadius:12,textAlign:"left",fontFamily:"inherit",border:`1.5px solid ${C.b1}`,background:C.w,color:C.t2,fontSize:14.3,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",gap:10}}>
                   {Ic.user(C.t3,16)}
-                  <div>
-                    <div style={{fontSize:14.3,fontWeight:700,color:C.t1}}>{d.name}</div>
-                    {d.phone && <div style={{fontSize:11.6,fontWeight:400,color:C.t3,marginTop:1}}>{d.phone}</div>}
-                    {qLen>0 && <div style={{fontSize:11,color:C.info,fontWeight:600,marginTop:1}}>{qLen} flete{qLen>1?"s":""} en cola</div>}
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:14.3,fontWeight:700,color:C.t1}}>{d.name}</span>{qLen>0 && <span style={{fontSize:11,color:C.info,fontWeight:700,background:`${C.info}12`,padding:"1px 7px",borderRadius:6}}>{qLen} flete{qLen>1?"s":""}</span>}</div>
+                    {d.phone && <div style={{fontSize:11,fontWeight:400,color:C.t3,marginTop:2}}>{d.phone}</div>}
                   </div>
                 </button>})}
               </div>

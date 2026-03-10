@@ -200,8 +200,8 @@ export default function ReportsScreen({ onBack, freights, isDesktop, embedded, o
                   {Ic.doc(group.color,18)}
                   <div style={{ flex:1 }}>
                     <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-                      <span style={{ fontSize:13.2, fontWeight:700, fontFamily:MONO }}>{f.code}</span>
-                      <span style={{ fontSize:11, color:C.t3 }}>{f.grain} · {f.tons} {f.unit||"tn"}</span>
+                      <span style={{ fontSize:13.2, fontWeight:700, color:C.t1 }}>{f.grain} · {f.tons} {f.unit||"tn"}</span>
+                      <span style={{ fontSize:10, fontFamily:MONO, color:C.t3 }}>{f.code}</span>
                     </div>
                     <div style={{display:"flex",flexDirection:"column",gap:2,fontSize:12.1,color:C.t2,marginTop:2}}>
                       <div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.user(C.t3,12)} <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.originCompanyName||(f.originName||"").split("—")[0].trim()}</span></div>

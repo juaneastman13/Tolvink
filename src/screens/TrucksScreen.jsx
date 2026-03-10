@@ -100,9 +100,11 @@ export default function TrucksScreen({ onBack, embedded, user }) {
                   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                     {Ic.truck(C.acc, 20)}
                     <div>
-                      <div style={{ fontSize: 15.4, fontWeight: 700 }}>{t.plate}</div>
-                      {t.model && <div style={{ fontSize: 12.1, color: C.t3 }}>{t.model}</div>}
-                      {t.assignedUser && <div style={{ fontSize: 11, color: C.t2 }}>Chofer: {t.assignedUser.name}</div>}
+                      <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                        <span style={{ fontSize: 15.4, fontWeight: 700 }}>{t.plate}</span>
+                        {t.assignedUser && <span style={{ fontSize: 11.5, color: C.pri, fontWeight: 600 }}>{t.assignedUser.name}</span>}
+                      </div>
+                      {t.model && <div style={{ fontSize: 12.1, color: C.t3, marginTop: 2 }}>{t.model}</div>}
                     </div>
                   </div>
                   {canEdit && <button aria-label="Desactivar camión" disabled={saving} onClick={() => handleDeactivateTruck(t.id)} style={{ background: "none", border: "none", cursor: saving?"not-allowed":"pointer", padding: 6, opacity:saving?0.4:1 }}>{Ic.ban(C.err, 18)}</button>}

@@ -60,12 +60,12 @@ export default function DriverQueueModal({ driverId, driverName, onClose }) {
               <div key={q.assignmentId} style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 12px", borderRadius: 12, border: `1.5px solid ${i === 0 ? C.pri : C.b1}`, background: i === 0 ? C.priPale : C.w }}>
                 <div style={{ width: 24, height: 24, borderRadius: 12, background: i === 0 ? C.pri : C.b1, color: i === 0 ? C.w : C.t2, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12.1, fontWeight: 800, flexShrink: 0 }}>{i + 1}</div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                    <span style={{ fontSize: 11, fontWeight: 700, fontFamily: MONO, color: C.t2 }}>{q.code}</span>
+                  <div style={{ fontSize: 13.2, fontWeight: 700, color: C.t1 }}>{q.grain} {q.tons ? `· ${q.tons}tn` : ""}</div>
+                  {q.destName && <div style={{ fontSize: 12.1, color: C.t2, marginTop: 2 }}>{q.destName}</div>}
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 3 }}>
+                    <span style={{ fontSize: 10, fontWeight: 600, fontFamily: MONO, color: C.t3 }}>{q.code}</span>
                     <span style={{ fontSize: 9.9, fontWeight: 700, color: st.color, background: st.bg, padding: "1px 6px", borderRadius: 4 }}>{st.label}</span>
                   </div>
-                  <div style={{ fontSize: 13.2, fontWeight: 600, color: C.t1, marginTop: 2 }}>{q.grain} {q.tons ? `\u00B7 ${q.tons}tn` : ""}</div>
-                  {q.destName && <div style={{ fontSize: 11.6, color: C.t3, marginTop: 1 }}>{q.destName}</div>}
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 2, flexShrink: 0 }}>
                   <button aria-label="Subir" disabled={i === 0} onClick={() => move(i, -1)} style={{ width: 44, height: 44, borderRadius: 8, border: `1px solid ${C.b1}`, background: i === 0 ? C.bg : C.w, cursor: i === 0 ? "default" : "pointer", fontSize: 17.6, fontFamily: "inherit", color: i === 0 ? C.t3 : C.t1, display: "flex", alignItems: "center", justifyContent: "center" }}>{"\u25B2"}</button>

@@ -42,16 +42,19 @@ function _NotifRow({ n, freight, onMarkRead, onTap, isLast }) {
         {icFn(18)}
       </div>
       <div style={{ flex:1, minWidth:0 }}>
+        {f && <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:4 }}>
+          <span style={{ fontSize:12.5, fontWeight:700, color: n.read ? C.t2 : C.t1 }}>{f.grain} · {f.tons} {f.unit||"tn"}</span>
+          {f.destName && <span style={{ fontSize:11, color:C.t3 }}>→ {f.destName}</span>}
+        </div>}
         <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-          <span style={{ fontSize:15.4, fontWeight: n.read ? 500 : 700, color: n.read ? C.t2 : C.t1, flex:1 }}>{n.title}</span>
-          <span style={{ fontSize:12.1, color:C.t3, fontWeight:500, flexShrink:0 }}>{_timeAgo(n.createdAt)}</span>
+          <span style={{ fontSize: f ? 13.2 : 15.4, fontWeight: n.read ? 500 : 700, color: n.read ? C.t2 : C.t1, flex:1 }}>{n.title}</span>
+          <span style={{ fontSize:11, color:C.t3, fontWeight:500, flexShrink:0 }}>{_timeAgo(n.createdAt)}</span>
         </div>
-        <div style={{ fontSize:13.8, color:C.t3, marginTop:3, lineHeight:1.4 }}>{n.body}</div>
+        <div style={{ fontSize:12.5, color:C.t3, marginTop:3, lineHeight:1.4 }}>{n.body}</div>
         {f && (
-          <div style={{ display:"flex", flexDirection:"column", gap:2, marginTop:6 }}>
-            {(f.originCompanyName||f.requestedByName) && <span style={detailStyle}>{Ic.user(C.t3,11)} {f.originCompanyName||f.requestedByName}</span>}
-            {f.transporterName && <span style={detailStyle}>{Ic.truck(C.t3,11)} {f.transporterName}{f.truckPlate?` (${f.truckPlate})`:""}</span>}
-            {f.destName && <span style={detailStyle}>{Ic.plant(C.t3,11)} {f.destName}</span>}
+          <div style={{ display:"flex", alignItems:"center", gap:8, marginTop:4, fontSize:11, color:C.t3 }}>
+            {(f.originCompanyName||f.requestedByName) && <span style={detailStyle}>{Ic.user(C.t3,10)} {f.originCompanyName||f.requestedByName}</span>}
+            {f.transporterName && <span style={detailStyle}>{Ic.truck(C.t3,10)} {f.transporterName}</span>}
           </div>
         )}
       </div>
