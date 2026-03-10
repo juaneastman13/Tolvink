@@ -97,30 +97,30 @@ export function getPendingActions(freight, userType, role, user) {
   if (role === "chofer" || userType === "chofer") {
     const qp = freight.queuePosition || 0;
     if (qp > 1) return { action: `En cola #${qp}`, color: C.t3, icon: "queue", actionKey: null, isQueue: true };
-    if (s === "assigned") return { action: "Aceptar o rechazar", color: C.sec, icon: "respond", actionKey: "respond" };
-    if (s === "accepted") return { action: "Iniciar viaje", color: C.pri, icon: "start", actionKey: "start" };
-    if (s === "in_progress") return { action: "Confirmar carga", color: C.acc, icon: "confirm", actionKey: "confirm_loaded" };
-    if (s === "loaded") return { action: "Confirmar entrega", color: C.pri, icon: "confirm", actionKey: "confirm_finished" };
+    if (s === "assigned") return { action: "Aceptar o rechazar", color: C.sec, icon: "respond", actionKey: "respond", groupKey: "respond" };
+    if (s === "accepted") return { action: "Iniciar viaje", color: C.pri, icon: "start", actionKey: "start", groupKey: "start" };
+    if (s === "in_progress") return { action: "Confirmar carga", color: C.acc, icon: "confirm", actionKey: "confirm_loaded", groupKey: "confirm_loaded" };
+    if (s === "loaded") return { action: "Confirmar entrega", color: C.pri, icon: "confirm", actionKey: "confirm_finished", groupKey: "confirm_finished" };
     return null;
   }
   if (userType === "plant") {
-    if (s === "pending_assignment") return { action: "Asignar transporte", color: C.acc, icon: "assign", actionKey: "assign" };
-    if (s === "assigned" && own) return { action: "Autorizar viaje", color: C.sec, icon: "authorize", actionKey: "authorize" };
-    if (s === "loaded" && !freight.plantFinishedConfirmedAt) return { action: "Confirmar entrega", color: C.pri, icon: "confirm", actionKey: "confirm_finished" };
+    if (s === "pending_assignment") return { action: "Asignar transporte", color: C.acc, icon: "assign", actionKey: "assign", groupKey: "assign" };
+    if (s === "assigned" && own) return { action: "Autorizar viaje", color: C.sec, icon: "authorize", actionKey: "authorize", groupKey: "authorize" };
+    if (s === "loaded" && !freight.plantFinishedConfirmedAt) return { action: "Confirmar entrega", color: C.pri, icon: "confirm", actionKey: "confirm_finished", groupKey: "confirm_finished" };
     return null;
   }
   if (userType === "transporter") {
-    if (s === "assigned" && !own) return { action: "Aceptar o rechazar", color: C.sec, icon: "respond", actionKey: "respond" };
-    if (s === "accepted") return { action: "Iniciar viaje", color: C.pri, icon: "start", actionKey: "start" };
-    if (s === "in_progress" && !freight.transporterLoadedConfirmedAt) return { action: "Confirmar carga", color: C.acc, icon: "confirm", actionKey: "confirm_loaded" };
-    if (s === "loaded" && !freight.transporterFinishedConfirmedAt) return { action: "Confirmar entrega", color: C.pri, icon: "confirm", actionKey: "confirm_finished" };
+    if (s === "assigned" && !own) return { action: "Aceptar o rechazar", color: C.sec, icon: "respond", actionKey: "respond", groupKey: "respond" };
+    if (s === "accepted") return { action: "Iniciar viaje", color: C.pri, icon: "start", actionKey: "start", groupKey: "start" };
+    if (s === "in_progress" && !freight.transporterLoadedConfirmedAt) return { action: "Confirmar carga", color: C.acc, icon: "confirm", actionKey: "confirm_loaded", groupKey: "confirm_loaded" };
+    if (s === "loaded" && !freight.transporterFinishedConfirmedAt) return { action: "Confirmar entrega", color: C.pri, icon: "confirm", actionKey: "confirm_finished", groupKey: "confirm_finished" };
     return null;
   }
   if (userType === "producer") {
-    if (s === "accepted" && own) return { action: "Iniciar viaje", color: C.pri, icon: "start", actionKey: "start" };
-    if (s === "in_progress" && own && !freight.transporterLoadedConfirmedAt) return { action: "Confirmar carga", color: C.acc, icon: "confirm", actionKey: "confirm_loaded" };
-    if (s === "loaded" && !freight.producerLoadedConfirmedAt) return { action: "Confirmar carga", color: C.acc, icon: "confirm", actionKey: "confirm_loaded" };
-    if (s === "loaded" && own && freight.producerLoadedConfirmedAt && !freight.transporterFinishedConfirmedAt) return { action: "Confirmar entrega", color: C.pri, icon: "confirm", actionKey: "confirm_finished" };
+    if (s === "accepted" && own) return { action: "Iniciar viaje", color: C.pri, icon: "start", actionKey: "start", groupKey: "start" };
+    if (s === "in_progress" && own && !freight.transporterLoadedConfirmedAt) return { action: "Confirmar carga", color: C.acc, icon: "confirm", actionKey: "confirm_loaded", groupKey: "confirm_loaded" };
+    if (s === "loaded" && !freight.producerLoadedConfirmedAt) return { action: "Confirmar carga", color: C.acc, icon: "confirm", actionKey: "confirm_loaded", groupKey: "confirm_loaded" };
+    if (s === "loaded" && own && freight.producerLoadedConfirmedAt && !freight.transporterFinishedConfirmedAt) return { action: "Confirmar entrega", color: C.pri, icon: "confirm", actionKey: "confirm_finished", groupKey: "confirm_finished" };
     return null;
   }
   return null;

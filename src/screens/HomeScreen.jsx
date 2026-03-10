@@ -6,7 +6,17 @@ import { useIsDesktop } from "../hooks";
 import { getPendingActions, resolveUserTypeForFreight, getWaitingOnText } from "../utils/freight-helpers";
 import DetailScreen from "./DetailScreen";
 
-// Progress groups — matching the 3-step progress bar in DetailScreen
+// Action groups — grouping pending items by pending action type
+const ACTION_GROUPS = [
+  { key: "assign", label: "Asignar transporte", color: C.acc, priority: 1 },
+  { key: "respond", label: "Aceptar o rechazar", color: C.sec, priority: 2 },
+  { key: "authorize", label: "Autorizar viaje", color: C.sec, priority: 3 },
+  { key: "start", label: "Iniciar viaje", color: C.pri, priority: 4 },
+  { key: "confirm_loaded", label: "Confirmar carga", color: C.acc, priority: 5 },
+  { key: "confirm_finished", label: "Confirmar entrega", color: C.pri, priority: 6 },
+];
+
+// Progress groups — for summary view (items without pending actions), matching the 3-step progress bar in DetailScreen
 const PROGRESS_GROUPS = [
   { key:"pendiente",   label:"Pendiente",  color:C.acc, statuses:["pending_assignment"] },
   { key:"en_curso",    label:"En curso",   color:C.pri, statuses:["assigned","accepted","in_progress","loaded"] },
@@ -135,19 +145,19 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
     return map;
   }, [filteredFreights, effectiveType, user.id, user.role, user.companyId, user.userType]);
 
-  // Pending groups — grouped by progress state (Pendiente / En curso / Finalizado)
+  // Pending groups — grouped by pending action type
   const pendingByProgress = useMemo(() => {
-    return PROGRESS_GROUPS.map(g => {
+    return ACTION_GROUPS.map(g => {
       const items = filteredFreights
         .filter(f => {
           const pa = pendingMap.get(f.id);
           if (!pa) return false;
           if (!matchDate(f.loadDate, pendingFilter)) return false;
-          return g.statuses.includes(f.status);
+          return pa.groupKey === g.key;
         })
         .map(f => ({ ...f, pendingAction: pendingMap.get(f.id) }))
         .sort((a, b) => (a.destName||'').localeCompare(b.destName||'') || (a.originName||'').localeCompare(b.originName||''));
-      return { ...g, icon: g.key==="pendiente"?Ic.warn:g.key==="en_curso"?Ic.nav:g.key==="cancelado"?Ic.cross:Ic.chk, items };
+      return { ...g, icon: g.key==="assign"?Ic.truck:g.key==="respond"?Ic.info:g.key==="authorize"?Ic.chk:g.key==="start"?Ic.nav:g.key==="confirm_loaded"?Ic.warn:Ic.ok, items };
     }).filter(g => g.items.length > 0);
   }, [filteredFreights, pendingMap, pendingFilter]);
   const pendingCount = pendingByProgress.reduce((s, g) => s + g.items.length, 0);
