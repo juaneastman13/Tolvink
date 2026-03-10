@@ -464,7 +464,7 @@ export function mapFreight(f) {
       driverId: x.driverId || x.driver?.id || null,
       driverName: x.driver?.name || x.driverName || null,
       driverPhone: x.driver?.phone || null,
-      tripStatus: x.tripStatus || "pending",
+      tripStatus: x.tripStatus || ({"pending_assignment":"pending","assigned":"pending","accepted":"accepted","in_progress":"in_progress","loaded":"loaded","finished":"finished","canceled":"pending"}[f.status] || "pending"),
       tripNumber: x.tripNumber || 1,
       tons: x.tons ? parseFloat(x.tons) : null,
       queuePosition: x.queuePosition ?? 0,

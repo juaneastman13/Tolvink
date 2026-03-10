@@ -6,7 +6,7 @@ import { SafeZone } from "../maps";
 const FreightMap = lazy(() => import("../maps").then(m => ({ default: m.FreightMap })));
 import log from "../logger";
 import { DocsGallery, FreightFileUpload, OcrResultModal, UploadOverlay } from "../uploads";
-import { apiGetAuditLog, apiSendTracking, apiApprovePendingChange, apiRejectPendingChange, apiOcrAnalyze, apiSaveOcrData } from "../api";
+import { apiGetAuditLog, apiSendTracking, apiApprovePendingChange, apiRejectPendingChange, apiOcrAnalyze, apiSaveOcrData, apiUpdateFreight } from "../api";
 import { useIsDesktop } from "../hooks";
 import { useUIStore } from "../store";
 // PDF report loaded lazily to avoid bundle bloat
@@ -65,6 +65,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
 
   const [stepModal, setStepModal] = useState(null); // {idx, label, color, backendSteps}
   const [expandedTrip, setExpandedTrip] = useState(null);
+  const [truckCountLoading, setTruckCountLoading] = useState(false);
   const [locSending, setLocSending] = useState(false);
   const [locSent, setLocSent] = useState(false);
   const locTimerRef = useRef(null);
@@ -86,6 +87,25 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
     );
   };
 
+  const handleTruckCountChange = async (delta) => {
+    if (truckCountLoading || !freight) return;
+    const current = freight.truckCount || 1;
+    const next = current + delta;
+    if (next < 1 || next > 50) return;
+    const assigned = freight.assignedTruckCount || 0;
+    if (next < assigned) { show(`No se puede reducir: hay ${assigned} camiones asignados`, "err"); return; }
+    setTruckCountLoading(true);
+    try {
+      await apiUpdateFreight(freight.id, { truckCount: next });
+      if (onRefresh) onRefresh(freight.id);
+    } catch (e) {
+      log.error("truckCount", e);
+      show(e.message || "Error al actualizar camiones", "err");
+    } finally {
+      setTruckCountLoading(false);
+    }
+  };
+
   const _isDesktop = useIsDesktop(768);
 
   const st = freight ? stCfg(freight.status) : null;
@@ -103,14 +123,14 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
     return true;
   });
 
-  // Multi-truck: filter assignments visible to this user
+  // Filter assignments visible to this user (works for both single and multi-truck)
   const visibleAssignments = useMemo(() => {
-    if (!isMultiTruck) return [];
     const aa = freight?.activeAssignments || [];
+    if (aa.length === 0) return [];
     if (user.role === "chofer") return aa.filter(a => a.driverId === user.id);
     if (user.userType === "transporter") return aa.filter(a => a.transportCompanyId === user.companyId);
     return aa; // plant/producer see all
-  }, [isMultiTruck, freight?.activeAssignments, user]);
+  }, [freight?.activeAssignments, user]);
 
   // Multi-truck: aggregate top-level actions from all visible trips
   const multiTruckTopActions = useMemo(() => {
@@ -363,36 +383,51 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
         </div>;
       })()}
 
-      {/* Multi-truck: Camiones section */}
-      {isMultiTruck && (
-        <div style={{ background:C.w, border:`1px solid ${C.b1}`, borderRadius:12, padding:16, marginBottom:12, boxShadow:C.sh }}>
-          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:12 }}>
-            <div style={{ fontSize:11.6, fontWeight:700, color:C.t2, textTransform:"uppercase", letterSpacing:0.5 }}>Camiones</div>
-            <span style={{ fontSize:12.1, fontWeight:600, color:C.info }}>{freight.assignedTruckCount}/{freight.truckCount} asignados</span>
+      {/* Camiones section — always visible */}
+      {freight.status !== "canceled" && (()=>{
+        const truckCount = freight.truckCount || 1;
+        const assignedCount = freight.assignedTruckCount || visibleAssignments.length;
+        const canEditCount = (perms.canRequest || perms.canApprove) && !["finished","canceled"].includes(freight.status);
+        const showProgressBar = truckCount > 1;
+        return <div style={{ background:C.w, border:`1px solid ${C.b1}`, borderRadius:12, padding:16, marginBottom:12, boxShadow:C.sh }}>
+          {/* Header: title + count + stepper */}
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:showProgressBar||visibleAssignments.length>0?12:0 }}>
+            <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+              <span style={{ display:"flex" }}>{Ic.truck(C.t2,16)}</span>
+              <span style={{ fontSize:11.6, fontWeight:700, color:C.t2, textTransform:"uppercase", letterSpacing:0.5 }}>Camiones</span>
+            </div>
+            <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+              <span style={{ fontSize:12.1, fontWeight:600, color:C.info }}>{assignedCount}/{truckCount} asignados</span>
+              {canEditCount && <div style={{ display:"flex", alignItems:"center", gap:2 }}>
+                <button disabled={truckCountLoading||truckCount<=1||truckCount<=assignedCount} onClick={()=>handleTruckCountChange(-1)} style={{ width:28, height:28, borderRadius:7, border:`1.5px solid ${C.b1}`, background:C.bg, cursor:(truckCountLoading||truckCount<=1||truckCount<=assignedCount)?"not-allowed":"pointer", display:"flex", alignItems:"center", justifyContent:"center", opacity:(truckCountLoading||truckCount<=1||truckCount<=assignedCount)?0.35:1 }}>{Ic.minus(C.t1,14)}</button>
+                <span style={{ fontSize:14.3, fontWeight:800, color:C.t1, minWidth:26, textAlign:"center" }}>{truckCountLoading?"...":truckCount}</span>
+                <button disabled={truckCountLoading||truckCount>=50} onClick={()=>handleTruckCountChange(1)} style={{ width:28, height:28, borderRadius:7, border:`1.5px solid ${C.b1}`, background:C.bg, cursor:(truckCountLoading||truckCount>=50)?"not-allowed":"pointer", display:"flex", alignItems:"center", justifyContent:"center", opacity:(truckCountLoading||truckCount>=50)?0.35:1 }}>{Ic.plus(C.t1,14)}</button>
+              </div>}
+            </div>
           </div>
-          {/* Progress bar */}
-          <div style={{ height:6, borderRadius:3, background:C.b1, marginBottom:14, overflow:"hidden" }}>
-            <div style={{ height:"100%", borderRadius:3, background: freight.assignedTruckCount >= freight.truckCount ? C.ok : C.info, width:`${Math.min(100, (freight.assignedTruckCount / freight.truckCount) * 100)}%`, transition:"width 0.3s" }}/>
-          </div>
-          {/* Assignment list */}
+          {/* Progress bar (multi-truck) */}
+          {showProgressBar && <div style={{ height:6, borderRadius:3, background:C.b1, marginBottom:14, overflow:"hidden" }}>
+            <div style={{ height:"100%", borderRadius:3, background: assignedCount >= truckCount ? C.ok : C.info, width:`${Math.min(100, (assignedCount / truckCount) * 100)}%`, transition:"width 0.3s" }}/>
+          </div>}
+          {/* Assignment cards */}
           {visibleAssignments.map(a => {
             const tst = tripStCfg(a.tripStatus);
             const isExpanded = expandedTrip === a.id;
-            const tripBtns = getTripActions(a);
+            const tripBtns = isMultiTruck ? getTripActions(a) : [];
             return (
               <div key={a.id} style={{ border:`1px solid ${tst.color}30`, borderLeft:`3px solid ${tst.color}`, borderRadius:10, marginBottom:8, overflow:"hidden" }}>
                 <div onClick={()=>setExpandedTrip(isExpanded?null:a.id)} style={{ padding:"10px 12px", cursor:"pointer", background:isExpanded?`${tst.color}06`:"transparent" }}>
-                  {/* Row 1: trip number, truck info, status, chevron */}
+                  {/* Row 1: trip number (if multi), plate, transporter, status, chevron */}
                   <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                    <span style={{ fontSize:13.2, fontWeight:800, color:tst.color }}>#{a.tripNumber}</span>
+                    {isMultiTruck && <span style={{ fontSize:13.2, fontWeight:800, color:tst.color }}>#{a.tripNumber}</span>}
                     <span style={{ fontSize:13.2, fontWeight:600, color:C.t1, flex:1, minWidth:0 }}>
                       <span style={{ display:"block", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{a.plate || "Sin camión"}{a.transporterName ? ` · ${a.transporterName}` : ""}</span>
-                      {a.driverName && <span style={{ display:"block", fontSize:11.6, fontWeight:400, color:C.t3, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{a.driverName}</span>}
+                      {a.driverName && <span style={{ display:"block", fontSize:11.6, fontWeight:400, color:C.t3, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{a.driverName}{a.driverPhone?` · ${a.driverPhone}`:""}</span>}
                     </span>
                     <Bd color={tst.color} bg={tst.bg} small>{tst.label}</Bd>
                     <span style={{ display:"flex", transform:isExpanded?"rotate(-90deg)":"rotate(0deg)", transition:"transform 0.15s", flexShrink:0 }}>{Ic.chev(C.t3,14)}</span>
                   </div>
-                  {/* Row 2: action buttons (always visible when not expanded) */}
+                  {/* Row 2: action buttons (collapsed, multi-truck only) */}
                   {!isExpanded && tripBtns.length > 0 && (
                     <div style={{ display:"flex", gap:6, marginTop:8, flexWrap:"wrap" }}>
                       {tripBtns.map(b => (
@@ -400,7 +435,6 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
                           {b.icon} {actionLoading?"...":b.label}
                         </button>
                       ))}
-                      {/* Edit button for plant on trips they assigned (not own-fleet), before started */}
                       {user.userType === "plant" && (a.tripStatus === "pending" || a.tripStatus === "accepted") && a.transportCompanyId !== freight.originCompanyId && onEditTrip && (
                         <button onClick={(e)=>{e.stopPropagation(); onEditTrip(freight.id, a);}} style={{ padding:"8px 12px", minHeight:36, borderRadius:8, border:`1px solid ${C.b1}`, background:C.w, color:C.t2, fontSize:12.1, fontWeight:600, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:4 }}>
                           {Ic.doc(C.t2,12)} Editar
@@ -445,14 +479,16 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
               </div>
             );
           })}
-          {/* Unassigned slots */}
-          {freight.assignedTruckCount < freight.truckCount && user.userType === "plant" && (
+          {/* No assignments yet */}
+          {visibleAssignments.length === 0 && <div style={{ fontSize:12.7, color:C.t3, textAlign:"center", padding:"8px 0" }}>Sin camiones asignados</div>}
+          {/* Add truck button (unassigned slots) */}
+          {assignedCount < truckCount && (perms.canApprove || (user.userType === "producer" && freight.useOwnFleet)) && (
             <button onClick={()=>onAction(freight.id,"assign")} style={{ width:"100%", padding:"10px 0", borderRadius:10, border:`1.5px dashed ${C.acc}`, background:`${C.acc}08`, color:C.acc, fontSize:13.2, fontWeight:600, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:6, marginTop:4 }}>
-              {Ic.plus(C.acc,14)} Agregar camión ({freight.truckCount - freight.assignedTruckCount} pendientes)
+              {Ic.plus(C.acc,14)} Agregar camión {truckCount - assignedCount > 1 ? `(${truckCount - assignedCount} pendientes)` : ""}
             </button>
           )}
-        </div>
-      )}
+        </div>;
+      })()}
 
       {/* Cross-confirmations panel (single-truck only) */}
       {!isMultiTruck && (freight.status==="loaded" || freight.status==="in_progress") && (
@@ -522,14 +558,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
               [Ic.clk(C.t2,15),"Hora carga",freight.loadTime],
               [Ic.user(C.t2,15),"Solicitado por",freight.requestedByName],
             ].filter(Boolean);
-            const transporte = [
-              !isMultiTruck&&freight.transporterName&&[Ic.truck(C.t2,15),"Transportista",freight.transporterName],
-              isMultiTruck&&[Ic.truck(C.t2,15),"Camiones",`${freight.assignedTruckCount}/${freight.truckCount}`],
-              !isMultiTruck&&freight.truckPlate&&[Ic.truck(C.acc,15),"Camión",`${freight.truckPlate}${freight.truckModel?` · ${freight.truckModel}`:""}`],
-              !isMultiTruck&&freight.driverName&&[Ic.user(C.pri,15),"Chofer",<>{freight.driverName}{perms.canApprove && freight.driverId && <button onClick={()=>onAction(freight.id,"driver_queue")} style={{marginLeft:6,fontSize:10.5,fontWeight:700,color:C.info,background:`${C.info}12`,border:`1px solid ${C.info}30`,borderRadius:6,padding:"2px 7px",cursor:"pointer",fontFamily:"inherit"}}>Ver cola</button>}</>],
-              !isMultiTruck&&freight.driverPhone&&[Ic.msg(C.info,15),"Teléfono",freight.driverPhone],
-            ].filter(Boolean);
-            const allRows = [...carga.map((r,i)=>["c"+i,...r]), ...ruta.map((r,i)=>["r"+i,...r]), ...transporte.map((r,i)=>["t"+i,...r])];
+            const allRows = [...carga.map((r,i)=>["c"+i,...r]), ...ruta.map((r,i)=>["r"+i,...r])];
             return <>
               {allRows.map(([key,ic,label,val],i)=><InfoRow key={key} ic={ic} label={label} val={val} isLast={i===allRows.length-1}/>)}
             </>;
