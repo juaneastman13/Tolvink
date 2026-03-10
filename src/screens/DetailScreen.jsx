@@ -304,6 +304,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
             })}
           </div>
           {/* Per-stage detail — 3 columns matching visual stepper */}
+          {showAudit && !auditLog && <div style={{textAlign:"center",padding:"12px 0",fontSize:12.1,color:C.t3}}>Cargando detalle...</div>}
           {showAudit && auditLog && (()=>{
             const visualAuditSteps = [
               { label:"Pendiente", backendSteps:["pending_assignment"], color:C.acc },
