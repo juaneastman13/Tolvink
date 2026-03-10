@@ -1,7 +1,7 @@
 {
   "name": "Tolvink Full Stack",
   "image": "mcr.microsoft.com/devcontainers/node:20",
-  "postCreateCommand": "npm install && git clone https://github.com/juaneastman13/TolvinkBackend /workspaces/backend && cd /workspaces/backend && npm install && npx prisma generate",
+  "postCreateCommand": "npm install && git clone https://github.com/juaneastman13/tolvink-api /workspaces/tolvink-api && cd /workspaces/tolvink-api && npm install && npx prisma generate",
   "forwardPorts": [5173, 3000],
   "portsAttributes": {
     "5173": {
@@ -23,4 +23,3 @@
     }
   }
 }
-
