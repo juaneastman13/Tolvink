@@ -1,19 +1,24 @@
 {
-  "name": "Tolvink Frontend",
+  "name": "Tolvink Full Stack",
   "image": "mcr.microsoft.com/devcontainers/node:20",
-  "postCreateCommand": "npm install",
-  "forwardPorts": [5173],
+  "postCreateCommand": "npm install && git clone https://github.com/juaneastman13/TolvinkBackend /workspaces/backend && cd /workspaces/backend && npm install && npx prisma generate",
+  "forwardPorts": [5173, 3000],
   "portsAttributes": {
     "5173": {
-      "label": "Vite Dev Server",
+      "label": "Frontend",
       "onAutoForward": "openPreview"
+    },
+    "3000": {
+      "label": "Backend API",
+      "onAutoForward": "notify"
     }
   },
   "customizations": {
     "vscode": {
       "extensions": [
         "dbaeumer.vscode-eslint",
-        "esbenp.prettier-vscode"
+        "esbenp.prettier-vscode",
+        "prisma.prisma"
       ]
     }
   }
