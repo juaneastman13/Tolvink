@@ -71,6 +71,7 @@ export function formatFreightDate(dateStr) {
   if (parts.length < 3) return dateStr;
   const day = parts[2].padStart(2, "0");
   const monthIdx = parseInt(parts[1], 10) - 1;
-  return `${day}/${MESES[monthIdx] || parts[1]}`;
+  if (monthIdx < 0 || monthIdx > 11) return `${day}/${parts[1]}`;
+  return `${day}/${MESES[monthIdx]}`;
 }
 

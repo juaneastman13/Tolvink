@@ -39,6 +39,8 @@ export function useCatalog(user) {
   const [transporters, setTransporters] = useState(cached?.data?.transporters || []);
   const [trucks, setTrucks] = useState(cached?.data?.trucks || []);
   const [loading, setLoadingLocal] = useState(cached?.loading || false);
+  const mountedRef = useRef(true);
+  useEffect(() => { return () => { mountedRef.current = false; }; }, []);
 
   const load = useCallback((force)=>{
     if(!user || !cacheKey) return;
@@ -57,7 +59,7 @@ export function useCatalog(user) {
     // Singleton: if already loading for this user+company, wait for that promise
     if(_loadingPromises[cacheKey]) {
       _loadingPromises[cacheKey].then((d) => {
-        if (!d) return;
+        if (!d || !mountedRef.current) return;
         setPlants(d.plants); setBranches(d.branches); setLots(d.lots);
         setTransporters(d.transporters); setTrucks(d.trucks); setFields(d.fields);
       });
@@ -384,7 +386,7 @@ export function useFreights(user, isAuthInitialized) {
     const freight = freightsRef.current.find(f=>f.id===fId);
     // Skip optimistic update for multi-truck freights — server derives status differently
     if(action==="accepted" && !(freight?.truckCount > 1)) {
-      prev = freight?.status || null;
+      prev = freight?.status ?? null;
       setFreights(p=>{ const next=p.map(f=>f.id===fId?{...f,status:"accepted"}:f); freightsRef.current=next; return next; });
     }
     try { await apiRespondFreight(fId,{action,reason,truckId,driverId}); await refresh(fId); return {ok:true}; }

@@ -276,9 +276,11 @@ export default function Tolvink() {
   useEffect(() => {
     if (!online || !auth.user || replayingRef.current) return;
     replayingRef.current = true;
+    let cancelled = false;
     (async () => {
       const items = await offlineQueue.getAll();
       for (const item of items) {
+        if (cancelled) break;
         try {
           if (item.type === "create") await fh.create(item.payload);
           else if (item.type === "cancel") await fh.cancel(item.payload.id, item.payload.reason);
@@ -291,6 +293,7 @@ export default function Tolvink() {
         }
       }
     })().finally(() => { replayingRef.current = false; });
+    return () => { cancelled = true; };
   }, [online, auth.user]);
 
   const perms = useMemo(()=>permsFor(auth.user),[auth.user]);

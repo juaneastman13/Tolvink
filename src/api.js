@@ -24,7 +24,7 @@ export function clearAuth() {
   localStorage.removeItem('tolvink_token');
   localStorage.removeItem('tolvink_refresh_token');
   // Clear offline queue to prevent stale data leaking across sessions
-  import('./store.js').then(m => m.offlineQueue?.clear?.()).catch(() => {});
+  import('./store.js').then(m => m.offlineQueue?.clear?.()).catch(e => { console.warn('Failed to clear offline queue on logout:', e); });
 }
 export function setAuthFailHandler(fn) { _onAuthFail = fn; }
 export function saveUser(u) {
@@ -397,7 +397,8 @@ export async function uploadPhoto(file, freightId, step) {
   const processed = file.type.startsWith('image/') ? await compressImage(file) : file;
   const ext = (processed.name?.split('.').pop() || 'jpg').replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
   const SAFE_EXTS = new Set(['jpg','jpeg','png','webp','gif','pdf','doc','docx','xlsx','heic','heif']);
-  if (!SAFE_EXTS.has(ext)) throw new Error('Tipo de archivo no permitido');
+  const SAFE_MIMES = new Set(['image/jpeg','image/png','image/webp','image/gif','image/heic','image/heif','application/pdf','application/msword','application/vnd.openxmlformats-officedocument.wordprocessingml.document','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']);
+  if (!SAFE_EXTS.has(ext) || (processed.type && !SAFE_MIMES.has(processed.type))) throw new Error('Tipo de archivo no permitido');
   const safeId = String(freightId).replace(/[^a-zA-Z0-9_-]/g, '');
   const safeStep = String(step).replace(/[^a-zA-Z0-9_-]/g, '');
   const path = `${safeId}/${safeStep}/${Date.now()}.${ext}`;

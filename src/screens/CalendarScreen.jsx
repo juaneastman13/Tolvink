@@ -139,11 +139,11 @@ export default function CalendarScreen({ freights, perms, onNav, isDesktop, user
           const moCount = Object.values(mo.byDay).reduce((s,a)=>s+a.length,0);
           return <div key={`${mo.y}-${mo.m}`} style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius:12,padding:monthsToShow===1?16:12,boxShadow:C.sh}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-              <span style={{fontSize:monthsToShow===1.1?18.7:15.4,fontWeight:700,color:isTodayMonth?C.pri:C.t1}}>{monNames[mo.m]} {mo.y}</span>
+              <span style={{fontSize:monthsToShow===1?18.7:15.4,fontWeight:700,color:isTodayMonth?C.pri:C.t1}}>{monNames[mo.m]} {mo.y}</span>
               {moCount>0&&<span style={{fontSize:9.9,color:C.t3,fontWeight:600}}>{moCount}</span>}
             </div>
             <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:monthsToShow===1?3:2,textAlign:"center"}}>
-              {["Lu","Ma","Mi","Ju","Vi","Sá","Do"].map(d=><div key={d} style={{fontSize:monthsToShow===1.1?11:8.8,fontWeight:700,color:C.t3,padding:monthsToShow===1?6:3}}>{d}</div>)}
+              {["Lu","Ma","Mi","Ju","Vi","Sá","Do"].map(d=><div key={d} style={{fontSize:monthsToShow===1?11:8.8,fontWeight:700,color:C.t3,padding:monthsToShow===1?6:3}}>{d}</div>)}
               {mo.days.map((d,i)=>{
                 if(!d)return<div key={`e${i}`}/>;
                 const cnt=mo.byDay[d]?.length||0;
@@ -154,7 +154,7 @@ export default function CalendarScreen({ freights, perms, onNav, isDesktop, user
                 const densityAlpha=cnt===0?0:Math.min(0.15,0.04*cnt);
                 const densityBg=sel?C.pri:td?C.priPale:cnt>0?`rgba(26,107,55,${densityAlpha})`:"transparent";
                 return <div key={d} role="button" tabIndex={0} aria-label={`${d} de ${monNames[mo.m]}, ${cnt} flete${cnt!==1?"s":""}`} onClick={()=>{setCalSelDay(sel?null:d);setCalSelMonth(sel?null:mi);setSelectedId(null);}} onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();setCalSelDay(sel?null:d);setCalSelMonth(sel?null:mi);setSelectedId(null);}}} style={{padding:monthsToShow===1?"8px 4px":"4px 2px",borderRadius:monthsToShow===1?10:6,cursor:"pointer",background:densityBg,transition:"all 0.15s",minHeight:monthsToShow===1?44:36,position:"relative"}}>
-                  <div style={{fontSize:monthsToShow===1.1?15.4:12.1,fontWeight:sel||td?700:400,color:sel?C.w:td?C.pri:C.t1}}>{d}</div>
+                  <div style={{fontSize:monthsToShow===1?15.4:12.1,fontWeight:sel||td?700:400,color:sel?C.w:td?C.pri:C.t1}}>{d}</div>
                   {hasPending&&!sel&&<div style={{position:"absolute",top:monthsToShow===1?4:2,right:monthsToShow===1?4:2,width:5,height:5,borderRadius:3,background:C.acc}}/>}
                   {cnt>0&&<div style={{display:"flex",gap:1,justifyContent:"center",marginTop:2,flexWrap:"wrap"}}>
                     {statuses.slice(0,monthsToShow===1?4:2).map((c,j)=><div key={j} style={{width:monthsToShow===1?6:4,height:monthsToShow===1?6:4,borderRadius:3,background:sel?C.w:c}}/>)}

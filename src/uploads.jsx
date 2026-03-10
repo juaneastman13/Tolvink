@@ -258,7 +258,8 @@ export function FreightFileUpload({ freightId, step, onUploaded }) {
   const filesRef = useRef(files);
   filesRef.current = files;
   useEffect(() => {
-    return () => { filesRef.current.forEach(f => { if (f.preview) URL.revokeObjectURL(f.preview); }); };
+    const ref = filesRef;
+    return () => { (ref.current || []).forEach(f => { if (f.preview) URL.revokeObjectURL(f.preview); }); };
   }, []);
   const camRef = useRef(null);
   const galRef = useRef(null);
