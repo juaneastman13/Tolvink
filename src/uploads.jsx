@@ -163,7 +163,7 @@ export function OcrResultModal({ result, onClose }) {
 
   return (
     <div role="dialog" aria-modal="true" onClick={onClose} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", display:"flex", alignItems:mobile?"flex-end":"center", justifyContent:"center", zIndex:260, animation:"fvFadeIn 0.2s ease", padding:mobile?0:20 }}>
-      <div onClick={e=>e.stopPropagation()} style={{ background:C.w, borderRadius:mobile?"14px 14px 0 0":14, boxShadow:mobile?"0 -4px 32px rgba(0,0,0,0.3)":"0 8px 40px rgba(0,0,0,0.25)", maxWidth:480, width:"100%", maxHeight:mobile?"80vh":"70vh", display:"flex", flexDirection:"column", overflow:"hidden" }}>
+      <div onClick={e=>e.stopPropagation()} style={{ background:C.w, borderRadius:mobile?"14px 14px 0 0":14, boxShadow:mobile?"0 -4px 32px rgba(0,0,0,0.3)":"0 8px 40px rgba(0,0,0,0.25)", maxWidth:480, width:"100%", maxHeight:mobile?"80vh":"70vh", display:"flex", flexDirection:"column" }}>
         {/* Drag handle — mobile only */}
         {mobile && <div onClick={onClose} style={{ display:"flex", justifyContent:"center", padding:"10px 0 4px", cursor:"pointer", flexShrink:0 }}>
           <div style={{ width:36, height:4, borderRadius:2, background:C.b1 }}/>
@@ -308,6 +308,8 @@ export function FreightFileUpload({ freightId, step, onUploaded }) {
     setUploadDone(allOk);
     setUploadingAll(false);
     if (onUploaded) onUploaded();
+    // Reset files list after successful upload so user can upload more
+    if (allOk) { setTimeout(() => { setFiles([]); setUploadDone(false); setShowAttach(false); }, 2000); }
   };
 
   const pending = files.filter(f => !f.done);

@@ -113,7 +113,6 @@ export default function Tolvink() {
   const [sseTyping, setSseTyping] = useState(null);
   const [sseRead, setSseRead] = useState(null);
   const [compDropOpen, setCompDropOpen] = useState(false);
-  const [modeDropOpen, setModeDropOpen] = useState(false);
   const [unreadChats, setUnreadChats] = useState(0);
 
   // AI Chat state
@@ -314,7 +313,10 @@ export default function Tolvink() {
       if (s === "detail") { fh.refresh(fId); navigate(`/freight/${fId}`); return; }
     }
     if (s === "new" && !perms.canRequest) { show("Sin permisos para solicitar", "err"); return; }
-    if (s === "home") { setSelFreight(null); navigate("/"); return; }
+    // Clear state when navigating via nav buttons
+    setSelFreight(null);
+    setModal(null);
+    if (s === "home") { navigate("/"); return; }
     const path = SCREEN_TO_PATH[s] || "/";
     navigate(path);
   }, [perms.canRequest, navigate, show, setDuplicateData, fh.refresh]);
@@ -561,50 +563,38 @@ export default function Tolvink() {
             <span style={{width:8,height:8,borderRadius:4,background:C.acc,display:"inline-block",marginLeft:3,marginTop:1,animation:"dotPulse 1.5s ease-in-out infinite"}}></span>
           </div>
           <div style={{flex:1}}/>
-          {auth.user?.entity && (auth.user.companies?.length > 1 ? (
-            <div style={{position:"relative"}}>
-              <button aria-label="Cambiar empresa" onClick={()=>setCompDropOpen(v=>!v)} style={{display:"flex",alignItems:"center",gap:4,padding:"4px 8px",borderRadius:8,border:`1px solid ${C.b1}`,background:C.w,cursor:"pointer",fontFamily:"inherit",maxWidth:140,WebkitTapHighlightColor:"transparent",touchAction:"manipulation"}}>
-                <span style={{fontSize:12.1,fontWeight:600,color:C.t2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{auth.user.entity}</span>
-                {Ic.down(C.t3,12)}
-              </button>
-              {compDropOpen && <>
-                <div onClick={()=>setCompDropOpen(false)} style={{position:"fixed",inset:0,zIndex:99}}/>
-                <div style={{position:"absolute",top:"100%",right:0,marginTop:4,background:C.w,border:`1px solid ${C.b1}`,borderRadius:10,boxShadow:C.shMd,zIndex:100,minWidth:180,overflow:"hidden"}}>
+          {auth.user && <div style={{position:"relative"}}>
+            <button aria-label="Configuración" onClick={()=>setCompDropOpen(v=>!v)} style={{display:"flex",alignItems:"center",gap:6,padding:"5px 10px",borderRadius:8,border:`1px solid ${C.b1}`,background:C.w,cursor:"pointer",fontFamily:"inherit",maxWidth:180,WebkitTapHighlightColor:"transparent",touchAction:"manipulation"}}>
+              <span style={{fontSize:12.1,fontWeight:600,color:C.t1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{auth.user.entity}</span>
+              <span style={{fontSize:10,fontWeight:600,color:C.t3,background:C.bg,padding:"1px 6px",borderRadius:4,flexShrink:0,whiteSpace:"nowrap"}}>{auth.simpleMode?"Simple":"Completo"}</span>
+              {Ic.down(C.t3,10)}
+            </button>
+            {compDropOpen && <>
+              <div onClick={()=>setCompDropOpen(false)} style={{position:"fixed",inset:0,zIndex:99}}/>
+              <div style={{position:"absolute",top:"100%",right:0,marginTop:4,background:C.w,border:`1px solid ${C.b1}`,borderRadius:12,boxShadow:C.shMd,zIndex:100,minWidth:200,overflow:"hidden"}}>
+                {auth.user.companies?.length > 1 && <>
+                  <div style={{padding:"8px 14px 4px",fontSize:10,fontWeight:700,color:C.t3,textTransform:"uppercase",letterSpacing:0.5}}>Empresa</div>
                   {auth.user.companies.map(c=>{
                     const isActive = c.companyId === auth.user.activeCompanyId;
                     return <button key={c.companyId} onClick={async()=>{
+                      if(!isActive) await auth.switchCompany(c.companyId);
                       setCompDropOpen(false);
-                      if(!isActive){
-                        await auth.switchCompany(c.companyId);
-                      }
-                    }} style={{width:"100%",padding:"10px 14px",border:"none",borderBottom:`1px solid ${C.b2}`,background:isActive?C.priPale:"transparent",cursor:"pointer",fontFamily:"inherit",textAlign:"left",display:"flex",alignItems:"center",gap:8}}>
-                      <div style={{width:8,height:8,borderRadius:4,background:isActive?C.pri:C.b2,flexShrink:0}}/>
+                    }} style={{width:"100%",padding:"8px 14px",border:"none",background:isActive?C.priPale:"transparent",cursor:"pointer",fontFamily:"inherit",textAlign:"left",display:"flex",alignItems:"center",gap:8}}>
+                      <div style={{width:7,height:7,borderRadius:4,background:isActive?C.pri:C.b2,flexShrink:0}}/>
                       <div>
                         <div style={{fontSize:13.2,fontWeight:isActive?700:500,color:isActive?C.pri:C.t1}}>{c.companyName}</div>
-                        <div style={{fontSize:11,color:C.t3}}>{({plant:"Planta",transporter:"Transportista",producer:"Productor"})[c.companyType]||c.companyType}</div>
+                        <div style={{fontSize:10,color:C.t3}}>{({plant:"Planta",transporter:"Transportista",producer:"Productor"})[c.companyType]||c.companyType}</div>
                       </div>
                     </button>;
                   })}
-                </div>
-              </>}
-            </div>
-          ) : <span style={{ fontSize:12.1, fontWeight:600, color:C.t2, maxWidth:130, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{auth.user.entity}</span>)}
-          {auth.user && <div style={{position:"relative"}}>
-            <button aria-label="Cambiar modo visual" onClick={()=>setModeDropOpen(v=>!v)} style={{display:"flex",alignItems:"center",gap:4,padding:"4px 8px",borderRadius:8,border:`1px solid ${C.b1}`,background:C.w,cursor:"pointer",fontFamily:"inherit",WebkitTapHighlightColor:"transparent",touchAction:"manipulation"}}>
-              <span style={{fontSize:12.1,fontWeight:600,color:C.t2,whiteSpace:"nowrap"}}>Cambiar visual</span>
-              {Ic.down(C.t3,12)}
-            </button>
-            {modeDropOpen && <>
-              <div onClick={()=>setModeDropOpen(false)} style={{position:"fixed",inset:0,zIndex:99}}/>
-              <div style={{position:"absolute",top:"100%",right:0,marginTop:4,background:C.w,border:`1px solid ${C.b1}`,borderRadius:10,boxShadow:C.shMd,zIndex:100,minWidth:160,overflow:"hidden"}}>
-                {[{k:false,l:"Completo",sub:"Todas las funciones"},{k:true,l:"Simple",sub:"Vista simplificada"}].map(o=>{
+                  <div style={{borderTop:`1px solid ${C.b2}`,margin:"4px 0"}}/>
+                </>}
+                <div style={{padding:"8px 14px 4px",fontSize:10,fontWeight:700,color:C.t3,textTransform:"uppercase",letterSpacing:0.5}}>Vista</div>
+                {[{k:false,l:"Completo"},{k:true,l:"Simple"}].map(o=>{
                   const isActive = auth.simpleMode === o.k;
-                  return <button key={String(o.k)} onClick={()=>{setModeDropOpen(false);if(!isActive) auth.toggleSimpleMode();}} style={{width:"100%",padding:"10px 14px",border:"none",borderBottom:`1px solid ${C.b2}`,background:isActive?C.priPale:"transparent",cursor:"pointer",fontFamily:"inherit",textAlign:"left",display:"flex",alignItems:"center",gap:8}}>
-                    <div style={{width:8,height:8,borderRadius:4,background:isActive?C.pri:C.b2,flexShrink:0}}/>
-                    <div>
-                      <div style={{fontSize:13.2,fontWeight:isActive?700:500,color:isActive?C.pri:C.t1}}>{o.l}</div>
-                      <div style={{fontSize:11,color:C.t3}}>{o.sub}</div>
-                    </div>
+                  return <button key={String(o.k)} onClick={()=>{if(!isActive) auth.toggleSimpleMode(); setCompDropOpen(false);}} style={{width:"100%",padding:"8px 14px",border:"none",background:isActive?C.priPale:"transparent",cursor:"pointer",fontFamily:"inherit",textAlign:"left",display:"flex",alignItems:"center",gap:8}}>
+                    <div style={{width:7,height:7,borderRadius:4,background:isActive?C.pri:C.b2,flexShrink:0}}/>
+                    <span style={{fontSize:13.2,fontWeight:isActive?700:500,color:isActive?C.pri:C.t1}}>{o.l}</span>
                   </button>;
                 })}
               </div>
