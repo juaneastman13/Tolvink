@@ -60,6 +60,18 @@
 </head>
 <body>
   <div id="root"></div>
+  <script>
+    // Emergency SW cache purge — runs before app bundle loads
+    if ('serviceWorker' in navigator) {
+      caches.keys().then(function(ks) {
+        var dominated = ks.filter(function(k) { return k.startsWith('tolvink-v') && k !== 'tolvink-v5.4'; });
+        dominated.forEach(function(k) { caches.delete(k); });
+      });
+      navigator.serviceWorker.getRegistration().then(function(r) {
+        if (r && r.waiting) r.waiting.postMessage({ type: 'SKIP_WAITING' });
+      });
+    }
+  </script>
   <script type="module" src="/src/main.jsx"></script>
 </body>
 </html>
