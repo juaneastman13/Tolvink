@@ -395,15 +395,13 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
             <div style={{ display:"flex", alignItems:"center", gap:8 }}>
               <span style={{ display:"flex" }}>{Ic.truck(C.t2,16)}</span>
               <span style={{ fontSize:11.6, fontWeight:700, color:C.t2, textTransform:"uppercase", letterSpacing:0.5 }}>Camiones</span>
-            </div>
-            <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-              <span style={{ fontSize:12.1, fontWeight:600, color:C.info }}>{assignedCount}/{truckCount} asignados</span>
-              {canEditCount && <div style={{ display:"flex", alignItems:"center", gap:2 }}>
-                <button disabled={truckCountLoading||truckCount<=1||truckCount<=assignedCount} onClick={()=>handleTruckCountChange(-1)} style={{ width:28, height:28, borderRadius:7, border:`1.5px solid ${C.b1}`, background:C.bg, cursor:(truckCountLoading||truckCount<=1||truckCount<=assignedCount)?"not-allowed":"pointer", display:"flex", alignItems:"center", justifyContent:"center", opacity:(truckCountLoading||truckCount<=1||truckCount<=assignedCount)?0.35:1 }}>{Ic.minus(C.t1,14)}</button>
-                <span style={{ fontSize:14.3, fontWeight:800, color:C.t1, minWidth:26, textAlign:"center" }}>{truckCountLoading?"...":truckCount}</span>
-                <button disabled={truckCountLoading||truckCount>=50} onClick={()=>handleTruckCountChange(1)} style={{ width:28, height:28, borderRadius:7, border:`1.5px solid ${C.b1}`, background:C.bg, cursor:(truckCountLoading||truckCount>=50)?"not-allowed":"pointer", display:"flex", alignItems:"center", justifyContent:"center", opacity:(truckCountLoading||truckCount>=50)?0.35:1 }}>{Ic.plus(C.t1,14)}</button>
+              {canEditCount && <div style={{ display:"flex", alignItems:"center", gap:3, marginLeft:4 }}>
+                <button disabled={truckCountLoading||truckCount<=1||truckCount<=assignedCount} onClick={(e)=>{e.stopPropagation();handleTruckCountChange(-1);}} style={{ width:30, height:30, borderRadius:7, border:`1.5px solid ${C.b1}`, background:C.bg, cursor:(truckCountLoading||truckCount<=1||truckCount<=assignedCount)?"not-allowed":"pointer", display:"flex", alignItems:"center", justifyContent:"center", opacity:(truckCountLoading||truckCount<=1||truckCount<=assignedCount)?0.35:1 }}>{Ic.minus(C.t1,15)}</button>
+                <span style={{ fontSize:15, fontWeight:800, color:C.t1, minWidth:28, textAlign:"center" }}>{truckCountLoading?"...":truckCount}</span>
+                <button disabled={truckCountLoading||truckCount>=50} onClick={(e)=>{e.stopPropagation();handleTruckCountChange(1);}} style={{ width:30, height:30, borderRadius:7, border:`1.5px solid ${C.b1}`, background:C.bg, cursor:(truckCountLoading||truckCount>=50)?"not-allowed":"pointer", display:"flex", alignItems:"center", justifyContent:"center", opacity:(truckCountLoading||truckCount>=50)?0.35:1 }}>{Ic.plus(C.t1,15)}</button>
               </div>}
             </div>
+            <span style={{ fontSize:12.1, fontWeight:600, color:C.info }}>{assignedCount}/{truckCount} asignados</span>
           </div>
           {/* Progress bar (multi-truck) */}
           {showProgressBar && <div style={{ height:6, borderRadius:3, background:C.b1, marginBottom:14, overflow:"hidden" }}>
