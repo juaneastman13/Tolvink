@@ -46,16 +46,17 @@ export const DARK = {
 };
 
 // C is mutable — applyTheme() swaps all values in place
-const _saved = localStorage.getItem('tolvink_theme');
+function _ls(k,v) { try { if (v===undefined) return localStorage.getItem(k); localStorage.setItem(k,v); } catch { return null; } }
+const _saved = _ls('tolvink_theme');
 const _initial = _saved === 'dark' ? DARK : LIGHT;
 export const C = { ..._initial };
 
-export function getTheme() { return localStorage.getItem('tolvink_theme') || 'light'; }
+export function getTheme() { return _ls('tolvink_theme') || 'light'; }
 
 export function applyTheme(name) {
   const tokens = name === 'dark' ? DARK : LIGHT;
   Object.assign(C, tokens);
-  localStorage.setItem('tolvink_theme', name);
+  _ls('tolvink_theme', name);
   document.documentElement.style.colorScheme = name;
 }
 
