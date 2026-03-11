@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useRef, useEffect } from "react";
+import { useState, useMemo, useCallback, useRef, useEffect, memo } from "react";
 import { C, Ic, MONO } from "../theme";
 import { stCfg, getActions, formatFreightDate } from "../constants";
 import { Bd, Btn, SkeletonList, EmptyState, Tabs } from "../components";
@@ -55,7 +55,7 @@ function formatTodayHeader() {
   return `Fletes de hoy \u2014 ${DAY_NAMES[d.getDay()]} ${d.getDate()} de ${MONTH_NAMES[d.getMonth()]}`;
 }
 
-export default function HomeScreen({ user, freights, loading, perms, onNav, catalog, isDesktop, onAction, onTripAction, onEditTrip, actionLoading, onChat, onRefresh, onDuplicate, onEdit, goToMap, simpleMode, statusCounts }) {
+export default memo(function HomeScreen({ user, freights, loading, perms, onNav, catalog, isDesktop, onAction, onTripAction, onEditTrip, actionLoading, onChat, onRefresh, onDuplicate, onEdit, goToMap, simpleMode, statusCounts }) {
   const [selectedId, setSelectedId] = useState(null);
   // Track which panel originated the selection: "pending" (left) or "daily" (right)
   const [selectionSource, setSelectionSource] = useState(null);
@@ -716,4 +716,4 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
       {mobileTab === "pending" ? renderPendingPanel(false) : renderDailyPanel(false)}
     </div>
   );
-}
+});

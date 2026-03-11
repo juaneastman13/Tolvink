@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef, useCallback, lazy, Suspense } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback, lazy, Suspense, memo } from "react";
 import { C, Ic, FONT, MONO } from "../theme";
 import { stCfg, formatFreightDate } from "../constants";
 import { Bd, Btn, Select, SortTh, Tabs, exportExcel, SkeletonList, EmptyState, ErrorBoundary } from "../components";
@@ -36,7 +36,7 @@ const SORT_GETTERS = {
   phone:       f => f.driverPhone || "",
 };
 
-export default function ListScreen({ freights, loading, onNav, onRefresh, catalog, view, setView, goToMap, hasMore, loadMore, loadingMore, total, isDesktop, onAction, user, simpleMode, statusCounts }) {
+export default memo(function ListScreen({ freights, loading, onNav, onRefresh, catalog, view, setView, goToMap, hasMore, loadMore, loadingMore, total, isDesktop, onAction, user, simpleMode, statusCounts }) {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [searchQ, setSearchQ] = useState("");
   const [segExpanded, setSegExpanded] = useState({});
@@ -943,4 +943,4 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
       {FreightHoverPreview}
     </div>
   );
-}
+});

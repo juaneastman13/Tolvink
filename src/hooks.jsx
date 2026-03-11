@@ -319,8 +319,10 @@ export function useFreights(user, isAuthInitialized) {
   // The backend resolveAllCompanyIds already scopes to the user's memberships.
   const companyFilter = undefined;
 
+  const fetchingRef = useRef(false); // prevent concurrent fetchAll calls
   const fetchAll = useCallback(async ()=>{
-    if(!user || !isAuthInitialized) return;
+    if(!user || !isAuthInitialized || fetchingRef.current) return;
+    fetchingRef.current = true;
     setLoading(true);
     pageRef.current = 1;
     try {
@@ -333,7 +335,7 @@ export function useFreights(user, isAuthInitialized) {
       setHasMore((r.page||1) < (r.pages||1));
     }
     catch(e) { setError(e.message); }
-    finally { setLoading(false); }
+    finally { setLoading(false); fetchingRef.current = false; }
   },[user, isAuthInitialized, companyFilter]);
 
   const loadMore = useCallback(async ()=>{
@@ -588,7 +590,7 @@ export function useNotifications(user) {
     })();
   }, [user]);
 
-  // Initial fetch of notifications (polling handled by App.jsx universal poll)
+  // Initial fetch of notifications — deferred 3s to prioritize freight load
   useEffect(() => {
     if (!user) return;
     const fetchNotifications = async () => {
@@ -599,7 +601,8 @@ export function useNotifications(user) {
         setUnreadCount(r.unreadCount || 0);
       } catch (e) { log.warn('NOTIF', 'Fetch failed:', e.message); }
     };
-    fetchNotifications();
+    const t = setTimeout(fetchNotifications, 3000);
+    return () => clearTimeout(t);
   }, [user]);
 
   const markRead = useCallback(async (id) => {

@@ -196,7 +196,7 @@ export default function Tolvink() {
       setSseMsg(data);
     },
     onNotification: () => { notif.refresh(); playNotifSound(); },
-    onCatalogChanged: () => { catalog.refresh(); },
+    onCatalogChanged: (() => { let t; return () => { clearTimeout(t); t = setTimeout(() => catalogRef.current.refresh(), 3000); }; })(),
     onTyping: (data) => { setSseTyping(data); },
     onRead: (data) => { setSseRead(data); },
     onAiResponse: (data) => { sseAiSeq.current++; setSseAiResponse({ ...data, _seq: sseAiSeq.current }); },
@@ -298,25 +298,30 @@ export default function Tolvink() {
   catalogRef.current = catalog;
 
   // Smart polling — only freight screens poll freights, auto-refresh on screen change
-  // When SSE is disconnected, poll faster (10s) to compensate
+  // When SSE is disconnected, poll with progressive backoff (30s → 60s)
   const FREIGHT_SCREENS = useMemo(() => new Set(["home","list","calendar","detail","reports","notifs"]), []);
+  const lastFetchRef = useRef(0); // prevent redundant fetchAll on rapid screen changes
   useEffect(()=>{
     if(!auth.user) return;
-    // Immediate refresh when entering a freight screen
-    if (FREIGHT_SCREENS.has(screen) && navigator.onLine) fhRef.current.fetchAll();
-    notifRef.current.refresh();
+    // Immediate refresh when entering a freight screen (debounced 2s)
+    const now = Date.now();
+    if (FREIGHT_SCREENS.has(screen) && navigator.onLine && now - lastFetchRef.current > 2000) {
+      lastFetchRef.current = now;
+      fhRef.current.fetchAll();
+    }
     const poll = () => {
       if (document.hidden || !navigator.onLine) return;
-      // Skip freight polling when SSE is connected (SSE pushes real-time updates)
-      if (!sse.connected && FREIGHT_SCREENS.has(screen)) fhRef.current.fetchAll();
+      if (!sse.connected && FREIGHT_SCREENS.has(screen)) { lastFetchRef.current = Date.now(); fhRef.current.fetchAll(); }
       if (!sse.connected) notifRef.current.refresh();
     };
-    const interval = sse.connected ? POLL_INTERVALS.FREIGHTS : 10000;
+    // SSE connected: use normal interval; disconnected: 30s (not 10s — reduces backend pressure)
+    const interval = sse.connected ? POLL_INTERVALS.FREIGHTS : 30000;
     const iv = setInterval(poll, interval);
     return ()=>clearInterval(iv);
   },[auth.user, screen, sse.connected]);
 
   // Poll for unread chats — skip if SSE is connected (SSE handles real-time updates)
+  // Deferred: first check delayed 5s to prioritize initial freight load
   useEffect(()=>{
     if(!auth.user) return;
     const checkUnread = async ()=>{
@@ -327,9 +332,9 @@ export default function Tolvink() {
         setUnreadChats(count);
       } catch (e) { log.warn('CHAT', 'Unread check failed:', e.message); }
     };
-    checkUnread();
+    const initialDelay = setTimeout(checkUnread, 5000);
     const iv = setInterval(checkUnread, POLL_INTERVALS.UNREAD_CHATS);
-    return ()=>clearInterval(iv);
+    return ()=>{ clearTimeout(initialDelay); clearInterval(iv); };
   },[auth.user, sse.connected]);
 
   // Visibility refresh — immediate refetch when user returns to tab (catalog only if TTL expired)
@@ -340,8 +345,9 @@ export default function Tolvink() {
       if (document.hidden || !navigator.onLine) return;
       // Debounce: visibilitychange + focus can fire within ms of each other
       const now = Date.now();
-      if (now - lastVisible < 1000) return;
+      if (now - lastVisible < 2000) return;
       lastVisible = now;
+      lastFetchRef.current = now;
       fhRef.current.fetchAll();
       notifRef.current.refresh();
       catalogRef.current.refresh(false); // false = respect TTL, don't force
