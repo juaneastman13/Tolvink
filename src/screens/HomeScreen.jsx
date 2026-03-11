@@ -202,6 +202,8 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
   const [openGroup, setOpenGroup] = useState(null);
   // expandedData: { gKey: { items: [], loading: bool, loadingMore: bool, hasMore: bool, page: number, statuses: string[] } }
   const [expandedData, setExpandedData] = useState({});
+  const expandedRef = useRef({}); // mirror for synchronous reads
+  expandedRef.current = expandedData;
 
   const fetchGroupPage = useCallback((gKey, statuses, page) => {
     const isFirst = page === 1;
@@ -209,6 +211,7 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
       ...d,
       [gKey]: {
         ...(d[gKey] || {}),
+        items: isFirst ? [] : (d[gKey]?.items || []),
         statuses,
         loading: isFirst,
         loadingMore: !isFirst,
@@ -220,7 +223,6 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
         setExpandedData(d => {
           const prev = d[gKey] || {};
           const merged = isFirst ? mapped : [...(prev.items || []), ...mapped];
-          // Dedupe by id
           const seen = new Set();
           const items = merged.filter(f => { if (seen.has(f.id)) return false; seen.add(f.id); return true; });
           return {
@@ -237,33 +239,29 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
       });
   }, []);
 
+  const resolveStatuses = useCallback((gKey) => {
+    const prefix = gKey.split("_")[0];
+    const groupKey = gKey.slice(prefix.length + 1);
+    if (prefix === "sm") {
+      const pg = PROGRESS_GROUPS.find(g => g.key === groupKey);
+      return pg ? pg.statuses : [];
+    }
+    return ["pending_assignment", "assigned", "accepted", "in_progress", "loaded"];
+  }, []);
+
   const toggleGroup = useCallback((gKey) => {
     setOpenGroup(prev => {
-      if (prev === gKey) return null; // closing
-      // Opening — fetch first page for this group's statuses
-      const prefix = gKey.split("_")[0];
-      const groupKey = gKey.slice(prefix.length + 1);
-      let statuses;
-      if (prefix === "sm") {
-        const pg = PROGRESS_GROUPS.find(g => g.key === groupKey);
-        statuses = pg ? pg.statuses : [];
-      } else {
-        statuses = ["pending_assignment", "assigned", "accepted", "in_progress", "loaded"];
-      }
-      if (statuses.length > 0) {
-        fetchGroupPage(gKey, statuses, 1);
-      }
+      if (prev === gKey) return null;
+      const statuses = resolveStatuses(gKey);
+      if (statuses.length > 0) fetchGroupPage(gKey, statuses, 1);
       return gKey;
     });
-  }, [fetchGroupPage]);
+  }, [fetchGroupPage, resolveStatuses]);
 
   const loadMoreGroup = useCallback((gKey) => {
-    setExpandedData(d => {
-      const exp = d[gKey];
-      if (!exp || exp.loading || exp.loadingMore || !exp.hasMore) return d;
-      fetchGroupPage(gKey, exp.statuses, (exp.page || 1) + 1);
-      return d;
-    });
+    const exp = expandedRef.current[gKey];
+    if (!exp || exp.loading || exp.loadingMore || !exp.hasMore) return;
+    fetchGroupPage(gKey, exp.statuses, (exp.page || 1) + 1);
   }, [fetchGroupPage]);
 
   // Selected freight for detail — also check expanded data for freights loaded on-expand
