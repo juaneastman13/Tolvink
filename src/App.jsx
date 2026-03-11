@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo, lazy, Suspense } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { uploadPhoto, apiAddDocument, apiListConversations } from "./api";
-import { C, track, FONT, Ic } from "./theme";
+import { C, track, FONT, Ic, applyTheme } from "./theme";
 import { POLL_INTERVALS } from "./constants";
 import { Toast, LoadingOverlay, Sidebar, Nav, NotifBell, NotificationsPanel, ErrorBoundary, SkeletonList, EmptyState } from "./components";
 import { useAuth, useCatalog, useFreights, permsFor, useIsDesktop, useOnline, useNotifications, useSSE } from "./hooks";
@@ -115,6 +115,8 @@ export default function Tolvink() {
   // Zustand UI store — individual selectors prevent re-renders
   const theme = useUIStore(s => s.theme);
   const toggleTheme = useUIStore(s => s.toggleTheme);
+  // Sync mutable C tokens + colorScheme when theme changes
+  useEffect(() => { applyTheme(theme); }, [theme]);
   const modal = useUIStore(s => s.modal);
   const toast = useUIStore(s => s.toast);
   const mapFocus = useUIStore(s => s.mapFocus);
