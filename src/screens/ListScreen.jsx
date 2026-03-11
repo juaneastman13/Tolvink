@@ -7,6 +7,8 @@ import { textMatch } from "../validation";
 import { getPendingActions, resolveUserTypeForFreight } from "../utils/freight-helpers";
 const FreightsOverviewMap = lazy(() => import("../maps").then(m => ({ default: m.FreightsOverviewMap })));
 
+const isSeen = (f) => f.status === "assigned" && f.activeAssignments?.length > 0 && f.activeAssignments.every(a => a.seenAt);
+
 const GROUPS = [
   { key:"solicitado", label:"Solicitado", color:"#FF6A00", icon:Ic.warn, statuses:["pending_assignment"] },
   { key:"en_curso", label:"En curso", color:"#2563EB", icon:Ic.nav, statuses:["assigned","accepted","in_progress","loaded"] },
@@ -187,7 +189,8 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
           <div style={{display:"flex",alignItems:"center",gap:6,marginTop:2}}>
             <span style={{fontSize:11,fontWeight:600,fontFamily:MONO,color:C.t3}}>{f.code}</span>
             <Bd color={st.color} bg={st.bg} small>{st.label}</Bd>
-            {f.isOverdue && <span style={{ display:"inline-block", width:16, height:16, borderRadius:4, background:"#DC2626", flexShrink:0 }} title="Retrasado" />}
+            {isSeen(f) && <Bd color={C.info} small>{Ic.eye(C.info,10)} Visto</Bd>}
+            {f.isOverdue && <span style={{ display:"inline-block", width:16, height:16, borderRadius:4, background:"#FEE2E2", border:"2px solid #DC2626", flexShrink:0, boxSizing:"border-box" }} title="Retrasado" />}
           </div>
         </div>
       </div>
@@ -244,7 +247,8 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
             {f.loadDate && <span style={{ display: "flex", alignItems: "center", gap: 3 }}>{Ic.cal(C.t3, 9)} {formatFreightDate(f.loadDate)}{f.loadTime ? ` · ${f.loadTime}` : ""}</span>}
             <span style={{ fontFamily: MONO, fontWeight: 600 }}>{f.code}</span>
             <Bd color={st.color} bg={st.bg} small>{st.label}</Bd>
-            {f.isOverdue && <span style={{ display:"inline-block", width:16, height:16, borderRadius:4, background:"#DC2626", flexShrink:0 }} title="Retrasado" />}
+            {isSeen(f) && <Bd color={C.info} small>{Ic.eye(C.info,10)} Visto</Bd>}
+            {f.isOverdue && <span style={{ display:"inline-block", width:16, height:16, borderRadius:4, background:"#FEE2E2", border:"2px solid #DC2626", flexShrink:0, boxSizing:"border-box" }} title="Retrasado" />}
           </div>
         </div>
       );
@@ -540,7 +544,7 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
                   return (
                     <tr key={f.id} className="tv-row" onClick={()=>onNav("detail",f.id)} style={{ borderBottom:`1px solid ${C.b1}`, cursor:"pointer", contentVisibility:"auto", containIntrinsicSize:"0 44px" }}>
                       <td style={{ padding:"10px 12px", fontFamily:MONO, fontWeight:700, fontSize:11.5, color:C.t2, whiteSpace:"nowrap" }}>{f.code}</td>
-                      <td style={{ padding:"10px 12px" }}><Bd color={st.color} bg={st.bg} small>{st.label}</Bd>{f.isOverdue && <> <Bd color="#DC2626" bg="#FEE2E2" small>Retrasado</Bd></>}</td>
+                      <td style={{ padding:"10px 12px" }}><Bd color={st.color} bg={st.bg} small>{st.label}</Bd>{isSeen(f) && <> <Bd color={C.info} small>{Ic.eye(C.info,10)} Visto</Bd></>}{f.isOverdue && <> <Bd color="#DC2626" bg="#FEE2E2" small>Retrasado</Bd></>}</td>
                       <td style={{ padding:"10px 12px", fontWeight:600, color:C.t1 }}>{f.grain==="Otros"?f.productTypeOther||"Otros":f.grain} · {f.tons} {f.unit||"tn"}</td>
                       <td style={{ padding:"10px 12px", color:f.isMultiTruck?C.info:C.t3, fontWeight:f.isMultiTruck?600:400, fontSize:12.1, whiteSpace:"nowrap" }}>{f.isMultiTruck?`${f.assignedTruckCount}/${f.truckCount}`:"1"}</td>
                       <td style={{ padding:"10px 12px", color:C.t2 }}>{f.originCompanyName||f.originName}</td>
@@ -588,7 +592,8 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
                           <div style={{ display:"flex", alignItems:"center", gap:6 }}>
                             <span style={{ fontSize:12.1, fontWeight:700, fontFamily:MONO, color:C.t2 }}>{f.code}</span>
                             <Bd color={st.color} bg={st.bg} small>{st.label}</Bd>
-                            {f.isOverdue && <span style={{ display:"inline-block", width:16, height:16, borderRadius:4, background:"#DC2626", flexShrink:0 }} title="Retrasado" />}
+                            {isSeen(f) && <Bd color={C.info} small>{Ic.eye(C.info,10)} Visto</Bd>}
+                            {f.isOverdue && <span style={{ display:"inline-block", width:16, height:16, borderRadius:4, background:"#FEE2E2", border:"2px solid #DC2626", flexShrink:0, boxSizing:"border-box" }} title="Retrasado" />}
                           </div>
                           <div style={{ fontSize:13.2, fontWeight:600, color:C.t1, marginTop:2 }}>{f.grain==="Otros"?f.productTypeOther||"Otros":f.grain} · {f.tons} {f.unit||"tn"}</div>
                           {f.loadDate && <div style={{ fontSize:12.1, color:C.t3, fontWeight:500, marginTop:2 }}>{Ic.cal(C.t3,9)} {formatFreightDate(f.loadDate)}{f.loadTime?` · ${f.loadTime}`:""}</div>}
@@ -643,7 +648,8 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
                                 <div style={{ display:"flex", alignItems:"center", gap:6 }}>
                                   <span style={{ fontSize:12.7, fontWeight:700, fontFamily:MONO, color:C.t2 }}>{f.code}</span>
                                   <Bd color={st.color} bg={st.bg} small>{st.label}</Bd>
-                                  {f.isOverdue && <span style={{ display:"inline-block", width:16, height:16, borderRadius:4, background:"#DC2626", flexShrink:0 }} title="Retrasado" />}
+                                  {isSeen(f) && <Bd color={C.info} small>{Ic.eye(C.info,10)} Visto</Bd>}
+                                  {f.isOverdue && <span style={{ display:"inline-block", width:16, height:16, borderRadius:4, background:"#FEE2E2", border:"2px solid #DC2626", flexShrink:0, boxSizing:"border-box" }} title="Retrasado" />}
                                 </div>
                                 <div style={{ fontSize:13.2, fontWeight:600, color:C.t1, marginTop:2 }}>{f.grain==="Otros"?f.productTypeOther||"Otros":f.grain} · {f.tons} {f.unit||"tn"}</div>
                                 {f.loadDate && <div style={{ fontSize:12.7, color:C.t3, fontWeight:500, marginTop:2 }}>{Ic.cal(C.t3,9)} {formatFreightDate(f.loadDate)}{f.loadTime?` · ${f.loadTime}`:""}</div>}
@@ -674,7 +680,8 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
                                 <div style={{ display:"flex", alignItems:"center", gap:6 }}>
                                   <span style={{ fontSize:12.7, fontWeight:700, fontFamily:MONO, color:C.t2 }}>{f.code}</span>
                                   <Bd color={st.color} bg={st.bg} small>{st.label}</Bd>
-                                  {f.isOverdue && <span style={{ display:"inline-block", width:16, height:16, borderRadius:4, background:"#DC2626", flexShrink:0 }} title="Retrasado" />}
+                                  {isSeen(f) && <Bd color={C.info} small>{Ic.eye(C.info,10)} Visto</Bd>}
+                                  {f.isOverdue && <span style={{ display:"inline-block", width:16, height:16, borderRadius:4, background:"#FEE2E2", border:"2px solid #DC2626", flexShrink:0, boxSizing:"border-box" }} title="Retrasado" />}
                                 </div>
                                 <div style={{ fontSize:13.2, fontWeight:600, color:C.t1, marginTop:2 }}>{f.grain==="Otros"?f.productTypeOther||"Otros":f.grain} · {f.tons} {f.unit||"tn"}</div>
                               </div>
@@ -708,7 +715,8 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
                         <div style={{ display:"flex", alignItems:"center", gap:6 }}>
                           <span style={{ fontSize:11, fontWeight:700, fontFamily:MONO, color:C.t2 }}>{f.code}</span>
                           <Bd color={st.color} bg={st.bg} small>{st.label}</Bd>
-                          {f.isOverdue && <span style={{ display:"inline-block", width:16, height:16, borderRadius:4, background:"#DC2626", flexShrink:0 }} title="Retrasado" />}
+                          {isSeen(f) && <Bd color={C.info} small>{Ic.eye(C.info,10)} Visto</Bd>}
+                          {f.isOverdue && <span style={{ display:"inline-block", width:16, height:16, borderRadius:4, background:"#FEE2E2", border:"2px solid #DC2626", flexShrink:0, boxSizing:"border-box" }} title="Retrasado" />}
                         </div>
                         <div style={{ fontSize:13.2, fontWeight:600, color:C.t1, marginTop:2 }}>{f.grain==="Otros"?f.productTypeOther||"Otros":f.grain} · {f.tons} {f.unit||"tn"}</div>
                       </div>

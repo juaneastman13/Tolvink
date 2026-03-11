@@ -4,11 +4,13 @@
 // =====================================================================
 
 import { create } from "zustand";
+import { applyTheme, getTheme } from "./theme";
 import log from "./logger";
 
 // ======================== UI STORE ===================================
-// Modals, toasts, map overlay, list view mode
+// Modals, toasts, map overlay, list view mode, theme
 export const useUIStore = create((set) => ({
+  theme: getTheme(),
   modal: null,
   toast: null,
   mapFocus: null,
@@ -22,6 +24,7 @@ export const useUIStore = create((set) => ({
   editData: null,
   locPicker: null,
 
+  toggleTheme: () => set((s) => { const next = s.theme === 'dark' ? 'light' : 'dark'; applyTheme(next); return { theme: next }; }),
   setModal: (modal) => set({ modal }),
   setToast: (toast) => set({ toast }),
   show: (msg, type = "ok") => set({ toast: { msg, type, _ts: Date.now() } }),
