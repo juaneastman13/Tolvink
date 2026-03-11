@@ -65,13 +65,13 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
 
   const toggleAudit = () => setShowAudit(v => !v);
 
-  // Reset optimistic truck count when freight data refreshes (only if not mid-commit)
-  useEffect(() => { if (!truckCountLoading) setTruckCountLocal(null); }, [freight?.truckCount, truckCountLoading]);
-
   const [stepModal, setStepModal] = useState(null); // {idx, label, color, backendSteps}
   const [expandedTrip, setExpandedTrip] = useState(null);
   const [truckCountLoading, setTruckCountLoading] = useState(false);
   const [truckCountLocal, setTruckCountLocal] = useState(null); // optimistic local override
+
+  // Reset optimistic truck count when freight data refreshes (only if not mid-commit)
+  useEffect(() => { if (!truckCountLoading) setTruckCountLocal(null); }, [freight?.truckCount, truckCountLoading]);
   const [truckModal, setTruckModal] = useState(null); // {type:"add"|"remove"}
   const [locSending, setLocSending] = useState(false);
   const [locSent, setLocSent] = useState(false);
