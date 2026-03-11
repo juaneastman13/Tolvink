@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo, lazy, Suspense } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { uploadPhoto, apiAddDocument, apiListConversations } from "./api";
-import { C, track, FONT, Ic, applyTheme } from "./theme";
+import { C, track, FONT, Ic } from "./theme";
 import { POLL_INTERVALS } from "./constants";
 import { Toast, LoadingOverlay, Sidebar, Nav, NotifBell, NotificationsPanel, ErrorBoundary, SkeletonList, EmptyState } from "./components";
 import { useAuth, useCatalog, useFreights, permsFor, useIsDesktop, useOnline, useNotifications, useSSE } from "./hooks";
@@ -113,8 +113,6 @@ export default function Tolvink() {
   const isDesktop = useIsDesktop(768);
 
   // Zustand UI store — individual selectors prevent re-renders
-  const theme = useUIStore(s => s.theme);
-  const toggleTheme = useUIStore(s => s.toggleTheme);
   const modal = useUIStore(s => s.modal);
   const toast = useUIStore(s => s.toast);
   const mapFocus = useUIStore(s => s.mapFocus);
@@ -159,9 +157,6 @@ export default function Tolvink() {
   const [sseAiChunk, setSseAiChunk] = useState(null);
   const sseAiSeq = useRef(0);
   const sseChunkSeq = useRef(0);
-
-  // Bridge: apply theme tokens when store theme changes (no store→theme import needed)
-  useEffect(() => { applyTheme(theme); }, [theme]);
 
   // Notification sound + vibration
   const playNotifSound = useCallback(() => {
@@ -618,15 +613,15 @@ export default function Tolvink() {
   const navActive = ["detail"].includes(screen)?"list":["trucks","fields","admin","mydata","calendar","reports"].includes(screen)&&!isDesktop?"menu":["trucks","fields","admin","mydata"].includes(screen)?"menu":screen;
 
   return (
-    <div key={theme} className="tv-shell" style={{height:"100dvh",background:C.bg,color:C.t1,fontFamily:FONT,display:"flex",flexDirection:isDesktop?"row":"column",width:"100%",position:"relative",overflow:"hidden"}}>
+    <div className="tv-shell" style={{height:"100dvh",background:C.bg,color:C.t1,fontFamily:FONT,display:"flex",flexDirection:isDesktop?"row":"column",width:"100%",position:"relative",overflow:"hidden"}}>
       <a href="#main-content" style={{position:'absolute',left:'-9999px',top:'auto',width:'1px',height:'1px',overflow:'hidden',zIndex:9999}} onFocus={e=>{e.currentTarget.style.cssText='position:fixed;top:0;left:0;padding:8px 16px;background:#003882;color:#fff;z-index:9999;font-size:14px';}} onBlur={e=>{e.currentTarget.style.cssText='position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden';}}>Ir al contenido principal</a>
-      <style>{`body{background:${C.bg};color-scheme:${theme}}html{color-scheme:${theme}}input::placeholder,textarea::placeholder{color:${C.t3}}::-webkit-scrollbar-thumb{background:${C.b1}}@media(hover:hover){.tv-card:hover{box-shadow:${C.shMd}!important}.tv-row:hover{background:${C.priGhost}!important}}`}</style>
+      <style>{`body{background:${C.bg}}input::placeholder,textarea::placeholder{color:${C.t3}}::-webkit-scrollbar-thumb{background:${C.b1}}@media(hover:hover){.tv-card:hover{box-shadow:${C.shMd}!important}.tv-row:hover{background:${C.priGhost}!important}}`}</style>
 
       <RoutesBackground trucks={false} opacityMul={0.4} centerFade={false} />
 
       {/* Desktop Sidebar */}
       <aside className="tv-sidebar" aria-label="Navegación principal" style={{position:"relative",zIndex:1}}>
-        <Sidebar active={navActive} onChange={nav} unread={unreadChats} pendingCount={pendingCount} notifCount={notif.unreadCount} canRequest={perms.canRequest} onNew={()=>nav("new")} activeCompany={auth.user ? { id: auth.user.activeCompanyId||auth.user.companyId, name: _activeComp?.companyName||auth.user.entity, type: _activeComp?.companyType||auth.user.userType } : null} companies={auth.user?.companies||[]} onSwitchCompany={async(id)=>{await auth.switchCompany(id);}} simpleMode={auth.simpleMode} onToggleSimple={auth.toggleSimpleMode} isDark={theme==='dark'} onToggleTheme={toggleTheme} searchQuery={searchQ} onSearchChange={setSearchQ} searchResults={searchResults} onSearchSelect={(id)=>{setSelFreight(id);fh.refresh(id);navigate(`/freight/${id}`);}} />
+        <Sidebar active={navActive} onChange={nav} unread={unreadChats} pendingCount={pendingCount} notifCount={notif.unreadCount} canRequest={perms.canRequest} onNew={()=>nav("new")} activeCompany={auth.user ? { id: auth.user.activeCompanyId||auth.user.companyId, name: _activeComp?.companyName||auth.user.entity, type: _activeComp?.companyType||auth.user.userType } : null} companies={auth.user?.companies||[]} onSwitchCompany={async(id)=>{await auth.switchCompany(id);}} simpleMode={auth.simpleMode} onToggleSimple={auth.toggleSimpleMode} searchQuery={searchQ} onSearchChange={setSearchQ} searchResults={searchResults} onSearchSelect={(id)=>{setSelFreight(id);fh.refresh(id);navigate(`/freight/${id}`);}} />
       </aside>
 
       {/* Main content column */}
@@ -674,11 +669,6 @@ export default function Tolvink() {
                     <span style={{fontSize:13.2,fontWeight:isActive?700:500,color:isActive?C.pri:C.t1}}>{o.l}</span>
                   </button>;
                 })}
-                <div style={{borderTop:`1px solid ${C.b2}`,margin:"4px 0"}}/>
-                <button onClick={()=>{toggleTheme();setCompDropOpen(false);}} style={{width:"100%",padding:"8px 14px",border:"none",background:"transparent",cursor:"pointer",fontFamily:"inherit",textAlign:"left",display:"flex",alignItems:"center",gap:8}}>
-                  <span style={{display:"flex"}}>{theme==='dark'?Ic.sun(C.acc,14):Ic.moon(C.t3,14)}</span>
-                  <span style={{fontSize:13.2,fontWeight:500,color:C.t1}}>{theme==='dark'?"Modo claro":"Modo oscuro"}</span>
-                </button>
               </div>
             </>}
           </div>}

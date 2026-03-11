@@ -6,14 +6,9 @@
 import { create } from "zustand";
 import log from "./logger";
 
-// Theme: inlined localStorage to avoid importing theme.jsx (circular dep risk)
-function _getTheme() { try { return localStorage.getItem('tolvink_theme') || 'light'; } catch(e) { return 'light'; } }
-function _setTheme(name) { try { localStorage.setItem('tolvink_theme', name); } catch(e) {} }
-
 // ======================== UI STORE ===================================
-// Modals, toasts, map overlay, list view mode, theme
+// Modals, toasts, map overlay, list view mode
 export const useUIStore = create((set) => ({
-  theme: _getTheme(),
   modal: null,
   toast: null,
   mapFocus: null,
@@ -27,11 +22,6 @@ export const useUIStore = create((set) => ({
   editData: null,
   locPicker: null,
 
-  toggleTheme: () => set((s) => {
-    const next = s.theme === 'dark' ? 'light' : 'dark';
-    _setTheme(next);
-    return { theme: next };
-  }),
   setModal: (modal) => set({ modal }),
   setToast: (toast) => set({ toast }),
   show: (msg, type = "ok") => set({ toast: { msg, type, _ts: Date.now() } }),

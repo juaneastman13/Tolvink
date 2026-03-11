@@ -372,7 +372,7 @@ const _TYPE_LABELS = { producer:"Productor", plant:"Planta", transporter:"Transp
 const _TYPE_IC_COLORS = { producer:"#F59E0B", plant:"#22C55E", transporter:"#0891B2" };
 const _typeIcon = (t,s=14) => t==='producer'?Ic.grain('#F59E0B',s):t==='plant'?Ic.plant('#22C55E',s):t==='transporter'?Ic.truck('#0891B2',s):null;
 
-export function Sidebar({ active, onChange, unread=0, pendingCount=0, notifCount=0, canRequest=false, onNew, activeCompany, companies=[], onSwitchCompany, simpleMode=false, onToggleSimple, isDark=false, onToggleTheme, searchQuery="", onSearchChange, searchResults=[], onSearchSelect }) {
+export function Sidebar({ active, onChange, unread=0, pendingCount=0, notifCount=0, canRequest=false, onNew, activeCompany, companies=[], onSwitchCompany, simpleMode=false, onToggleSimple, searchQuery="", onSearchChange, searchResults=[], onSearchSelect }) {
   const hasPending = pendingCount > 0;
   const centerColor = hasPending ? C.acc : C.ok;
   const [compOpen, setCompOpen] = useState(false);
@@ -487,10 +487,6 @@ export function Sidebar({ active, onChange, unread=0, pendingCount=0, notifCount
           <span style={{ flex:1, textAlign:"center", fontSize:9.9, fontWeight:700, padding:"4px 0", position:"relative", zIndex:1, color:simpleMode?C.t3:C.w, transition:"color 0.2s", userSelect:"none" }}>Completo</span>
           <span style={{ flex:1, textAlign:"center", fontSize:9.9, fontWeight:700, padding:"4px 0", position:"relative", zIndex:1, color:simpleMode?C.w:C.t3, transition:"color 0.2s", userSelect:"none" }}>Simple</span>
         </div>}
-        {onToggleTheme && <button onClick={onToggleTheme} style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:6, padding:"5px 0", borderRadius:7, border:"none", background:C.b2, cursor:"pointer", fontFamily:"inherit" }}>
-          <span style={{ display:"flex" }}>{isDark ? Ic.sun(C.acc,14) : Ic.moon(C.t3,14)}</span>
-          <span style={{ fontSize:9.9, fontWeight:600, color:C.t2 }}>{isDark ? "Modo claro" : "Modo oscuro"}</span>
-        </button>}
       </div>
     </div>
   );

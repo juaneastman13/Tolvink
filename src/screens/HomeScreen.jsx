@@ -221,7 +221,7 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
           <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 3 }}>
             <span style={{ fontSize: 9.5, fontWeight: 600, fontFamily: MONO, color: C.t3 }}>{f.code}</span>
             <Bd color={st.color} bg={st.bg} small>{st.label}</Bd>
-            {f.isOverdue && <span style={{ display:"inline-block", width:16, height:16, borderRadius:4, background:"#DC2626", flexShrink:0 }} title="Retrasado" />}
+            {f.isOverdue && <span style={{ display:"inline-block", width:16, height:16, borderRadius:4, background:"#FEE2E2", flexShrink:0 }} title="Retrasado" />}
             {f.loadDate && <span style={{ fontSize: 10, color: C.t3 }}>{formatFreightDate(f.loadDate)}</span>}
           </div>
         </div>
