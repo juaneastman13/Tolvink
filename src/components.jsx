@@ -435,6 +435,17 @@ export function Sidebar({ active, onChange, unread=0, pendingCount=0, notifCount
         </div>
       )}
 
+      {/* Solicitar */}
+      {canRequest && (
+        <div style={{ padding:"14px 14px 10px" }}>
+          <button onClick={onNew} style={{ width:"100%", display:"flex", alignItems:"center", justifyContent:"center", gap:8, padding:"10px 14px", borderRadius:12, background:C.acc, border:"none", cursor:"pointer", fontFamily:"inherit", boxShadow:`0 2px 8px ${C.acc}30`, transition:"transform 0.15s, box-shadow 0.15s" }} onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-1px)";e.currentTarget.style.boxShadow=`0 4px 12px ${C.acc}40`}} onMouseLeave={e=>{e.currentTarget.style.transform="none";e.currentTarget.style.boxShadow=`0 2px 8px ${C.acc}30`}}>
+            <style>{`@keyframes truckDrive{0%{transform:translateX(-10px)}60%{transform:translateX(6px)}100%{transform:translateX(-10px)}}`}</style>
+            <span style={{ display:"inline-flex", animation:"truckDrive 1.5s ease-in-out infinite" }}>{Ic.truck("#fff",16)}</span>
+            <span style={{ fontSize:13.8, fontWeight:700, color:"#fff" }}>Solicitar flete</span>
+          </button>
+        </div>
+      )}
+
       {/* Global search */}
       {onSearchChange && <div style={{ padding:"0 12px 6px", position:"relative" }}>
         <div style={{ display:"flex", alignItems:"center", gap:6, padding:"7px 10px", borderRadius:8, background:C.bgInput, border:`1.5px solid ${searchQuery?C.bFocus:C.b2}`, transition:"border-color 0.15s" }}>
@@ -453,17 +464,6 @@ export function Sidebar({ active, onChange, unread=0, pendingCount=0, notifCount
         </div>}
         {searchQuery.length >= 2 && searchResults.length === 0 && <div style={{ position:"absolute", left:12, right:12, top:"100%", marginTop:2, background:C.w, border:`1px solid ${C.b1}`, borderRadius:10, boxShadow:C.shMd, zIndex:100, padding:"12px 14px", fontSize:12.1, color:C.t3 }}>Sin resultados</div>}
       </div>}
-
-      {/* Solicitar */}
-      {canRequest && (
-        <div style={{ padding:"14px 14px 10px" }}>
-          <button onClick={onNew} style={{ width:"100%", display:"flex", alignItems:"center", justifyContent:"center", gap:8, padding:"10px 14px", borderRadius:12, background:C.acc, border:"none", cursor:"pointer", fontFamily:"inherit", boxShadow:`0 2px 8px ${C.acc}30`, transition:"transform 0.15s, box-shadow 0.15s" }} onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-1px)";e.currentTarget.style.boxShadow=`0 4px 12px ${C.acc}40`}} onMouseLeave={e=>{e.currentTarget.style.transform="none";e.currentTarget.style.boxShadow=`0 2px 8px ${C.acc}30`}}>
-            <style>{`@keyframes truckDrive{0%{transform:translateX(-10px)}60%{transform:translateX(6px)}100%{transform:translateX(-10px)}}`}</style>
-            <span style={{ display:"inline-flex", animation:"truckDrive 1.5s ease-in-out infinite" }}>{Ic.truck("#fff",16)}</span>
-            <span style={{ fontSize:13.8, fontWeight:700, color:"#fff" }}>Solicitar flete</span>
-          </button>
-        </div>
-      )}
 
       {/* Nav items */}
       <nav aria-label="Menú principal" style={{ flex:1, padding:"4px 8px", display:"flex", flexDirection:"column", gap:2 }}>
