@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, memo, useMemo, Component, useCallback, useId } from "react";
+import { createPortal } from "react-dom";
 import { C, Ic, FONT, MONO } from "./theme";
 import { stCfg, formatFreightDate } from "./constants";
 import { captureError } from "./sentry";
@@ -567,7 +568,7 @@ export function Sidebar({ active, onChange, unread=0, pendingCount=0, notifCount
           <span style={{ flex:1, textAlign:"center", fontSize:9.9, fontWeight:700, padding:"4px 0", position:"relative", zIndex:1, color:simpleMode?C.w:C.t3, transition:"color 0.2s", userSelect:"none" }}>Simple</span>
         </div>}
       </div>
-      {SearchHoverPreview}
+      {SearchHoverPreview && createPortal(SearchHoverPreview, document.body)}
     </div>
   );
 }
