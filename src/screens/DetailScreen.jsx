@@ -63,9 +63,14 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
 
   const toggleAudit = () => setShowAudit(v => !v);
 
+  // Reset optimistic truck count when freight data refreshes
+  useEffect(() => { setTruckCountLocal(null); }, [freight?.truckCount]);
+
   const [stepModal, setStepModal] = useState(null); // {idx, label, color, backendSteps}
   const [expandedTrip, setExpandedTrip] = useState(null);
   const [truckCountLoading, setTruckCountLoading] = useState(false);
+  const [truckCountLocal, setTruckCountLocal] = useState(null); // optimistic local override
+  const [truckModal, setTruckModal] = useState(null); // {type:"add"|"remove"}
   const [locSending, setLocSending] = useState(false);
   const [locSent, setLocSent] = useState(false);
   const locTimerRef = useRef(null);
@@ -87,23 +92,51 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
     );
   };
 
-  const handleTruckCountChange = async (delta) => {
+  const handleTruckCountTap = (delta) => {
     if (truckCountLoading || !freight) return;
-    const current = freight.truckCount || 1;
+    const current = truckCountLocal ?? (freight.truckCount || 1);
     const next = current + delta;
     if (next < 1 || next > 50) return;
     const assigned = freight.assignedTruckCount || 0;
     if (next < assigned) { show(`No se puede reducir: hay ${assigned} camiones asignados`, "err"); return; }
+    // Optimistic: update display immediately
+    setTruckCountLocal(next);
+    if (delta > 0) {
+      setTruckModal({ type: "add", next });
+    } else {
+      setTruckModal({ type: "remove", next, assigned });
+    }
+  };
+
+  const commitTruckCount = async (newCount) => {
     setTruckCountLoading(true);
     try {
-      await apiUpdateFreight(freight.id, { truckCount: next });
+      await apiUpdateFreight(freight.id, { truckCount: newCount });
       if (onRefresh) onRefresh(freight.id);
     } catch (e) {
       log.error("truckCount", e);
       show(e.message || "Error al actualizar camiones", "err");
+      setTruckCountLocal(null); // revert optimistic
     } finally {
       setTruckCountLoading(false);
     }
+  };
+
+  const handleTruckModalConfirm = (choice) => {
+    // choice: "own_fleet" | "delegate" | "remove_delegate" | "remove_specific"
+    const modal = truckModal;
+    setTruckModal(null);
+    if (!modal) return;
+    commitTruckCount(modal.next);
+    if (modal.type === "add" && choice === "own_fleet") {
+      // After count updated, open assignment flow
+      setTimeout(() => onAction(freight.id, "assign"), 600);
+    }
+  };
+
+  const handleTruckModalCancel = () => {
+    setTruckCountLocal(null); // revert
+    setTruckModal(null);
   };
 
   const _isDesktop = useIsDesktop(768);
@@ -395,11 +428,13 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
             <div style={{ display:"flex", alignItems:"center", gap:8 }}>
               <span style={{ display:"flex" }}>{Ic.truck(C.t2,16)}</span>
               <span style={{ fontSize:11.6, fontWeight:700, color:C.t2, textTransform:"uppercase", letterSpacing:0.5 }}>Camiones</span>
-              {canEditCount && <div style={{ display:"flex", alignItems:"center", gap:3, marginLeft:4 }}>
-                <button disabled={truckCountLoading||truckCount<=1||truckCount<=assignedCount} onClick={(e)=>{e.stopPropagation();handleTruckCountChange(-1);}} style={{ width:30, height:30, borderRadius:7, border:`1.5px solid ${C.b1}`, background:C.bg, cursor:(truckCountLoading||truckCount<=1||truckCount<=assignedCount)?"not-allowed":"pointer", display:"flex", alignItems:"center", justifyContent:"center", opacity:(truckCountLoading||truckCount<=1||truckCount<=assignedCount)?0.35:1 }}>{Ic.minus(C.t1,15)}</button>
-                <span style={{ fontSize:15, fontWeight:800, color:C.t1, minWidth:28, textAlign:"center" }}>{truckCountLoading?"...":truckCount}</span>
-                <button disabled={truckCountLoading||truckCount>=50} onClick={(e)=>{e.stopPropagation();handleTruckCountChange(1);}} style={{ width:30, height:30, borderRadius:7, border:`1.5px solid ${C.b1}`, background:C.bg, cursor:(truckCountLoading||truckCount>=50)?"not-allowed":"pointer", display:"flex", alignItems:"center", justifyContent:"center", opacity:(truckCountLoading||truckCount>=50)?0.35:1 }}>{Ic.plus(C.t1,15)}</button>
-              </div>}
+              {canEditCount && (()=>{
+                const displayCount = truckCountLocal ?? truckCount;
+                return <div style={{ display:"flex", alignItems:"center", gap:3, marginLeft:4 }}>
+                <button disabled={truckCountLoading||displayCount<=1||displayCount<=assignedCount} onClick={(e)=>{e.stopPropagation();handleTruckCountTap(-1);}} style={{ width:30, height:30, borderRadius:7, border:`1.5px solid ${C.b1}`, background:C.bg, cursor:(truckCountLoading||displayCount<=1||displayCount<=assignedCount)?"not-allowed":"pointer", display:"flex", alignItems:"center", justifyContent:"center", opacity:(truckCountLoading||displayCount<=1||displayCount<=assignedCount)?0.35:1, transition:"opacity 0.1s" }}>{Ic.minus(C.t1,15)}</button>
+                <span style={{ fontSize:15, fontWeight:800, color:C.t1, minWidth:28, textAlign:"center" }}>{displayCount}</span>
+                <button disabled={truckCountLoading||displayCount>=50} onClick={(e)=>{e.stopPropagation();handleTruckCountTap(1);}} style={{ width:30, height:30, borderRadius:7, border:`1.5px solid ${C.b1}`, background:C.bg, cursor:(truckCountLoading||displayCount>=50)?"not-allowed":"pointer", display:"flex", alignItems:"center", justifyContent:"center", opacity:(truckCountLoading||displayCount>=50)?0.35:1, transition:"opacity 0.1s" }}>{Ic.plus(C.t1,15)}</button>
+              </div>;})()}
             </div>
             <span style={{ fontSize:12.1, fontWeight:600, color:C.info }}>{assignedCount}/{truckCount} asignados</span>
           </div>
@@ -487,6 +522,51 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
           )}
         </div>;
       })()}
+
+      {/* Truck add/remove modal */}
+      {truckModal && (
+        <div style={{ position:"fixed", inset:0, zIndex:999, display:"flex", alignItems:"center", justifyContent:"center", background:"rgba(0,0,0,0.4)" }} onClick={handleTruckModalCancel}>
+          <div onClick={e=>e.stopPropagation()} style={{ background:C.w, borderRadius:16, padding:"24px 20px", width:"min(340px,90vw)", boxShadow:"0 8px 32px rgba(0,0,0,0.2)" }}>
+            {truckModal.type === "add" ? (<>
+              <div style={{ fontSize:15.4, fontWeight:700, color:C.t1, marginBottom:4 }}>Agregar camión</div>
+              <div style={{ fontSize:13.2, color:C.t3, marginBottom:16 }}>¿El camión adicional es de flota propia o se delega a la planta?</div>
+              <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                <button onClick={()=>handleTruckModalConfirm("own_fleet")} style={{ width:"100%", padding:"12px 0", borderRadius:10, border:"none", background:C.pri, color:C.w, fontSize:14.3, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
+                  {Ic.truck(C.w,14)} Flota propia — Asignar ahora
+                </button>
+                <button onClick={()=>handleTruckModalConfirm("delegate")} style={{ width:"100%", padding:"12px 0", borderRadius:10, border:`1.5px solid ${C.b1}`, background:C.w, color:C.t1, fontSize:14.3, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>
+                  Delegar a planta
+                </button>
+                <button onClick={handleTruckModalCancel} style={{ width:"100%", padding:"10px 0", borderRadius:10, border:"none", background:"transparent", color:C.t3, fontSize:13.2, fontWeight:500, cursor:"pointer", fontFamily:"inherit" }}>
+                  Cancelar
+                </button>
+              </div>
+            </>) : (<>
+              <div style={{ fontSize:15.4, fontWeight:700, color:C.t1, marginBottom:4 }}>Reducir camiones</div>
+              <div style={{ fontSize:13.2, color:C.t3, marginBottom:16 }}>
+                {visibleAssignments.length > 0
+                  ? "¿Desea quitar un camión específico o delegar la decisión a la planta?"
+                  : "Se reducirá la cantidad de camiones solicitados."}
+              </div>
+              <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                {visibleAssignments.length > 0 && visibleAssignments.filter(a=>a.tripStatus==="pending"||a.tripStatus==="accepted").map(a => (
+                  <button key={a.id} onClick={()=>{setTruckModal(null);commitTruckCount(truckModal.next);/* TODO: cancel specific assignment */}} style={{ width:"100%", padding:"10px 12px", borderRadius:10, border:`1px solid ${C.b1}`, background:C.w, color:C.t1, fontSize:13.2, fontWeight:600, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:8, textAlign:"left" }}>
+                    <span style={{ fontSize:12.1, fontWeight:700, color:C.err }}>Quitar</span>
+                    <span>{a.plate || "Sin placa"}</span>
+                    {a.transporterName && <span style={{ color:C.t3, fontSize:12.1 }}>· {a.transporterName}</span>}
+                  </button>
+                ))}
+                <button onClick={()=>handleTruckModalConfirm("remove_delegate")} style={{ width:"100%", padding:"12px 0", borderRadius:10, border:`1.5px solid ${C.b1}`, background:C.w, color:C.t1, fontSize:14.3, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>
+                  Delegar a planta
+                </button>
+                <button onClick={handleTruckModalCancel} style={{ width:"100%", padding:"10px 0", borderRadius:10, border:"none", background:"transparent", color:C.t3, fontSize:13.2, fontWeight:500, cursor:"pointer", fontFamily:"inherit" }}>
+                  Cancelar
+                </button>
+              </div>
+            </>)}
+          </div>
+        </div>
+      )}
 
       {/* Cross-confirmations panel (single-truck only) */}
       {!isMultiTruck && (freight.status==="loaded" || freight.status==="in_progress") && (
