@@ -61,14 +61,15 @@
 <body>
   <div id="root"></div>
   <script>
-    // Emergency SW cache purge — runs before app bundle loads
+    // Emergency: unregister ALL service workers and purge ALL caches
+    // This ensures stale SW cannot serve broken cached bundles
+    // TODO: remove this block once all users have clean SWs (after 2026-03-18)
     if ('serviceWorker' in navigator) {
-      caches.keys().then(function(ks) {
-        var dominated = ks.filter(function(k) { return k.startsWith('tolvink-v') && k !== 'tolvink-v5.4'; });
-        dominated.forEach(function(k) { caches.delete(k); });
+      navigator.serviceWorker.getRegistrations().then(function(regs) {
+        regs.forEach(function(r) { r.unregister(); });
       });
-      navigator.serviceWorker.getRegistration().then(function(r) {
-        if (r && r.waiting) r.waiting.postMessage({ type: 'SKIP_WAITING' });
+      caches.keys().then(function(ks) {
+        ks.forEach(function(k) { caches.delete(k); });
       });
     }
   </script>
