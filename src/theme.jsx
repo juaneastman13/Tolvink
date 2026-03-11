@@ -46,7 +46,7 @@ export const DARK = {
 };
 
 // C is mutable — applyTheme() swaps all values in place
-function _ls(k,v) { try { if (v===undefined) return localStorage.getItem(k); localStorage.setItem(k,v); } catch { return null; } }
+function _ls(k,v) { try { if (v===undefined) return localStorage.getItem(k); localStorage.setItem(k,v); } catch(e) { return null; } }
 const _saved = _ls('tolvink_theme');
 const _initial = _saved === 'dark' ? DARK : LIGHT;
 export const C = { ..._initial };
