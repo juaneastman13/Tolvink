@@ -12,7 +12,9 @@ import { useUIStore } from "../store";
 // PDF report loaded lazily to avoid bundle bloat
 const loadPdfReport = () => import("../utils/pdf-report");
 
-export default function DetailScreen({ user, freight, perms, onBack, onAction, onTripAction, onEditTrip, actionLoading, onChat, onRefresh, onDuplicate, onEdit, goToMap, sseConnected }) {
+export default function DetailScreen({ user, freight, perms, onBack, onAction, onTripAction, onEditTrip, onCancelAssignment, actionLoading, onChat, onRefresh, onDuplicate, onEdit, goToMap, sseConnected }) {
+  // Guard: freight not yet loaded (deep link, stale reference)
+  if (!freight) return <div style={{ padding:40, textAlign:"center" }}><div style={{ fontSize:14, color:C.t3, marginBottom:12 }}>Cargando flete...</div><button onClick={onBack} style={{ padding:"8px 16px", borderRadius:8, border:`1px solid ${C.b1}`, background:C.w, color:C.t2, fontSize:13, cursor:"pointer", fontFamily:"inherit" }}>Volver</button></div>;
   const [auditLog, setAuditLog] = useState(null);
   const [showAudit, setShowAudit] = useState(false);
   const [viewFile, setViewFile] = useState(null);
@@ -63,8 +65,8 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
 
   const toggleAudit = () => setShowAudit(v => !v);
 
-  // Reset optimistic truck count when freight data refreshes
-  useEffect(() => { setTruckCountLocal(null); }, [freight?.truckCount]);
+  // Reset optimistic truck count when freight data refreshes (only if not mid-commit)
+  useEffect(() => { if (!truckCountLoading) setTruckCountLocal(null); }, [freight?.truckCount]);
 
   const [stepModal, setStepModal] = useState(null); // {idx, label, color, backendSteps}
   const [expandedTrip, setExpandedTrip] = useState(null);
@@ -549,7 +551,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
               </div>
               <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
                 {visibleAssignments.length > 0 && visibleAssignments.filter(a=>a.tripStatus==="pending"||a.tripStatus==="accepted").map(a => (
-                  <button key={a.id} onClick={()=>{setTruckModal(null);commitTruckCount(truckModal.next);/* TODO: cancel specific assignment */}} style={{ width:"100%", padding:"10px 12px", borderRadius:10, border:`1px solid ${C.b1}`, background:C.w, color:C.t1, fontSize:13.2, fontWeight:600, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:8, textAlign:"left" }}>
+                  <button key={a.id} onClick={async()=>{setTruckModal(null);if(onCancelAssignment){const r=await onCancelAssignment(freight.id,a.id,"Reducción de camiones");if(r&&r.ok){commitTruckCount(truckModal.next);}else{setTruckCountLocal(null);show(r?.error||"No se pudo quitar el camión","err");}}}} style={{ width:"100%", padding:"10px 12px", borderRadius:10, border:`1px solid ${C.b1}`, background:C.w, color:C.t1, fontSize:13.2, fontWeight:600, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:8, textAlign:"left" }}>
                     <span style={{ fontSize:12.1, fontWeight:700, color:C.err }}>Quitar</span>
                     <span>{a.plate || "Sin placa"}</span>
                     {a.transporterName && <span style={{ color:C.t3, fontSize:12.1 }}>· {a.transporterName}</span>}

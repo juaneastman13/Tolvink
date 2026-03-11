@@ -143,7 +143,7 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
     const map = new Map();
     filteredFreights.forEach(f => { map.set(f.id, getPendingActions(f, effectiveType(f), user.role, user)); });
     return map;
-  }, [filteredFreights, effectiveType, user.id, user.role, user.companyId, user.userType]);
+  }, [filteredFreights, effectiveType, user.id, user.role, user.companyId, user.userType, user.activeCompanyId]);
 
   // Pending groups — grouped by pending action type
   const pendingByProgress = useMemo(() => {
