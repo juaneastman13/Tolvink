@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo, lazy, Suspense } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { uploadPhoto, apiAddDocument, apiListConversations } from "./api";
-import { C, track, FONT, Ic } from "./theme";
+import { C, track, FONT, Ic, applyTheme } from "./theme";
 import { POLL_INTERVALS } from "./constants";
 import { Toast, LoadingOverlay, Sidebar, Nav, NotifBell, NotificationsPanel, ErrorBoundary, SkeletonList, EmptyState } from "./components";
 import { useAuth, useCatalog, useFreights, permsFor, useIsDesktop, useOnline, useNotifications, useSSE } from "./hooks";
@@ -70,6 +70,38 @@ const SL = () => <div role="status" aria-label="Cargando" style={{flex:1,display
   <style>{`@keyframes tvDots{0%,80%,100%{opacity:0.3;transform:scale(1)}40%{opacity:1;transform:scale(1.3)}}`}</style>
 </div>;
 
+// ======================== MOBILE SEARCH ===============================
+function MobileSearch({ query, onChange, results, onSelect }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+  useEffect(() => {
+    if (!open) return;
+    const h = e => { if (ref.current && !ref.current.contains(e.target)) { setOpen(false); onChange(""); } };
+    document.addEventListener("mousedown", h);
+    document.addEventListener("touchstart", h, { passive: true });
+    return () => { document.removeEventListener("mousedown", h); document.removeEventListener("touchstart", h); };
+  }, [open, onChange]);
+  if (!open) return <button onClick={() => setOpen(true)} style={{ display:"flex", alignItems:"center", justifyContent:"center", width:34, height:34, borderRadius:8, border:`1px solid ${C.b1}`, background:C.w, cursor:"pointer", flexShrink:0 }} aria-label="Buscar">{Ic.srch(C.t3,16)}</button>;
+  return (
+    <div ref={ref} style={{ flex:1, position:"relative", minWidth:0 }}>
+      <div style={{ display:"flex", alignItems:"center", gap:6, padding:"6px 10px", borderRadius:8, background:C.bgInput, border:`1.5px solid ${C.bFocus}` }}>
+        {Ic.srch(C.t3,14)}
+        <input autoFocus value={query} onChange={e=>onChange(e.target.value)} placeholder="Buscar flete..." style={{ flex:1, border:"none", background:"transparent", outline:"none", fontSize:13.2, color:C.t1, fontFamily:"inherit", padding:0 }} />
+        <button onClick={()=>{setOpen(false);onChange("");}} style={{ display:"flex", border:"none", background:"none", cursor:"pointer", padding:0 }}>{Ic.cross(C.t3,14)}</button>
+      </div>
+      {query.length >= 2 && results.length > 0 && <div style={{ position:"absolute", left:0, right:0, top:"100%", marginTop:4, background:C.w, border:`1px solid ${C.b1}`, borderRadius:10, boxShadow:C.shMd, zIndex:200, maxHeight:260, overflowY:"auto", padding:4 }}>
+        {results.slice(0,6).map(f => <button key={f.id} onClick={()=>{onSelect(f.id);setOpen(false);}} style={{ display:"flex", alignItems:"center", gap:8, width:"100%", padding:"8px 10px", background:"transparent", border:"none", borderRadius:8, cursor:"pointer", fontFamily:"inherit", textAlign:"left" }}>
+          <div style={{ flex:1, minWidth:0 }}>
+            <div style={{ fontSize:12.5, fontWeight:700, color:C.t1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{f.grain} · {f.tons} {f.unit||"tn"}</div>
+            <div style={{ fontSize:10.5, color:C.t3, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{f.code} · {f.originName||f.fieldName||"—"} → {f.destName||"—"}</div>
+          </div>
+        </button>)}
+      </div>}
+      {query.length >= 2 && results.length === 0 && <div style={{ position:"absolute", left:0, right:0, top:"100%", marginTop:4, background:C.w, border:`1px solid ${C.b1}`, borderRadius:10, boxShadow:C.shMd, zIndex:200, padding:"10px 14px", fontSize:12.1, color:C.t3 }}>Sin resultados</div>}
+    </div>
+  );
+}
+
 // ======================== MAIN APP ====================================
 export default function Tolvink() {
 
@@ -81,6 +113,8 @@ export default function Tolvink() {
   const isDesktop = useIsDesktop(768);
 
   // Zustand UI store — individual selectors prevent re-renders
+  const theme = useUIStore(s => s.theme);
+  const toggleTheme = useUIStore(s => s.toggleTheme);
   const modal = useUIStore(s => s.modal);
   const toast = useUIStore(s => s.toast);
   const mapFocus = useUIStore(s => s.mapFocus);
@@ -115,6 +149,17 @@ export default function Tolvink() {
   const [compDropOpen, setCompDropOpen] = useState(false);
   const [unreadChats, setUnreadChats] = useState(0);
 
+  // Global search
+  const [searchQ, setSearchQ] = useState("");
+  const searchResults = useMemo(() => {
+    if (!searchQ || searchQ.length < 2 || !viewFreights) return [];
+    const q = searchQ.toLowerCase();
+    return viewFreights.filter(f => {
+      const haystack = [f.code, f.grain, f.originName, f.fieldName, f.destName, f.transporterName, f.driverName, f.originCompanyName, f.requestedByName, f.truckPlate, f.productTypeOther].filter(Boolean).join(" ").toLowerCase();
+      return haystack.includes(q);
+    });
+  }, [searchQ, viewFreights]);
+
   // AI Chat state
   const [aiChatOpen, setAiChatOpen] = useState(false);
   const [sseAiResponse, setSseAiResponse] = useState(null);
@@ -122,6 +167,30 @@ export default function Tolvink() {
   const [sseAiChunk, setSseAiChunk] = useState(null);
   const sseAiSeq = useRef(0);
   const sseChunkSeq = useRef(0);
+
+  // Bridge: apply theme tokens when store theme changes (no store→theme import needed)
+  useEffect(() => { applyTheme(theme); }, [theme]);
+
+  // Notification sound + vibration
+  const playNotifSound = useCallback(() => {
+    try {
+      if (document.hidden) return;
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(880, ctx.currentTime);
+      osc.frequency.setValueAtTime(1100, ctx.currentTime + 0.08);
+      gain.gain.setValueAtTime(0.15, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.25);
+      osc.onended = () => ctx.close();
+    } catch(e) {}
+    try { navigator.vibrate?.([100, 50, 100]); } catch(e) {}
+  }, []);
 
   // SSE — real-time sync
   const sse = useSSE(auth.user, {
@@ -133,7 +202,7 @@ export default function Tolvink() {
       }
       setSseMsg(data);
     },
-    onNotification: () => { notif.refresh(); },
+    onNotification: () => { notif.refresh(); playNotifSound(); },
     onCatalogChanged: () => { catalog.refresh(); },
     onTyping: (data) => { setSseTyping(data); },
     onRead: (data) => { setSseRead(data); },
@@ -547,15 +616,15 @@ export default function Tolvink() {
   const navActive = ["detail"].includes(screen)?"list":["trucks","fields","admin","mydata","calendar","reports"].includes(screen)&&!isDesktop?"menu":["trucks","fields","admin","mydata"].includes(screen)?"menu":screen;
 
   return (
-    <div className="tv-shell" style={{height:"100dvh",background:C.bg,color:C.t1,fontFamily:FONT,display:"flex",flexDirection:isDesktop?"row":"column",width:"100%",position:"relative",overflow:"hidden"}}>
+    <div key={theme} className="tv-shell" style={{height:"100dvh",background:C.bg,color:C.t1,fontFamily:FONT,display:"flex",flexDirection:isDesktop?"row":"column",width:"100%",position:"relative",overflow:"hidden"}}>
       <a href="#main-content" style={{position:'absolute',left:'-9999px',top:'auto',width:'1px',height:'1px',overflow:'hidden',zIndex:9999}} onFocus={e=>{e.currentTarget.style.cssText='position:fixed;top:0;left:0;padding:8px 16px;background:#003882;color:#fff;z-index:9999;font-size:14px';}} onBlur={e=>{e.currentTarget.style.cssText='position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden';}}>Ir al contenido principal</a>
-      <style>{`body{background:${C.bg}}input::placeholder,textarea::placeholder{color:${C.t3}}::-webkit-scrollbar-thumb{background:${C.b1}}@media(hover:hover){.tv-card:hover{box-shadow:${C.shMd}!important}.tv-row:hover{background:${C.priGhost}!important}}`}</style>
+      <style>{`body{background:${C.bg};color-scheme:${theme}}html{color-scheme:${theme}}input::placeholder,textarea::placeholder{color:${C.t3}}::-webkit-scrollbar-thumb{background:${C.b1}}@media(hover:hover){.tv-card:hover{box-shadow:${C.shMd}!important}.tv-row:hover{background:${C.priGhost}!important}}`}</style>
 
       <RoutesBackground trucks={false} opacityMul={0.4} centerFade={false} />
 
       {/* Desktop Sidebar */}
       <aside className="tv-sidebar" aria-label="Navegación principal" style={{position:"relative",zIndex:1}}>
-        <Sidebar active={navActive} onChange={nav} unread={unreadChats} pendingCount={pendingCount} notifCount={notif.unreadCount} canRequest={perms.canRequest} onNew={()=>nav("new")} activeCompany={auth.user ? { id: auth.user.activeCompanyId||auth.user.companyId, name: _activeComp?.companyName||auth.user.entity, type: _activeComp?.companyType||auth.user.userType } : null} companies={auth.user?.companies||[]} onSwitchCompany={async(id)=>{await auth.switchCompany(id);}} simpleMode={auth.simpleMode} onToggleSimple={auth.toggleSimpleMode} />
+        <Sidebar active={navActive} onChange={nav} unread={unreadChats} pendingCount={pendingCount} notifCount={notif.unreadCount} canRequest={perms.canRequest} onNew={()=>nav("new")} activeCompany={auth.user ? { id: auth.user.activeCompanyId||auth.user.companyId, name: _activeComp?.companyName||auth.user.entity, type: _activeComp?.companyType||auth.user.userType } : null} companies={auth.user?.companies||[]} onSwitchCompany={async(id)=>{await auth.switchCompany(id);}} simpleMode={auth.simpleMode} onToggleSimple={auth.toggleSimpleMode} isDark={theme==='dark'} onToggleTheme={toggleTheme} searchQuery={searchQ} onSearchChange={setSearchQ} searchResults={searchResults} onSearchSelect={(id)=>{setSelFreight(id);fh.refresh(id);navigate(`/freight/${id}`);}} />
       </aside>
 
       {/* Main content column */}
@@ -567,6 +636,8 @@ export default function Tolvink() {
             <span style={{width:8,height:8,borderRadius:4,background:C.acc,display:"inline-block",marginLeft:3,marginTop:1,animation:"dotPulse 1.5s ease-in-out infinite"}}></span>
           </div>
           <div style={{flex:1}}/>
+          {/* Mobile search */}
+          {auth.user && <MobileSearch query={searchQ} onChange={setSearchQ} results={searchResults} onSelect={(id)=>{setSelFreight(id);fh.refresh(id);navigate(`/freight/${id}`);setSearchQ("");}} />}
           {auth.user && <div style={{position:"relative"}}>
             <button aria-label="Configuración" onClick={()=>setCompDropOpen(v=>!v)} style={{display:"flex",alignItems:"center",gap:6,padding:"5px 10px",borderRadius:8,border:`1px solid ${C.b1}`,background:C.w,cursor:"pointer",fontFamily:"inherit",maxWidth:180,WebkitTapHighlightColor:"transparent",touchAction:"manipulation"}}>
               <span style={{fontSize:12.1,fontWeight:600,color:C.t1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{auth.user.entity}</span>
@@ -601,6 +672,11 @@ export default function Tolvink() {
                     <span style={{fontSize:13.2,fontWeight:isActive?700:500,color:isActive?C.pri:C.t1}}>{o.l}</span>
                   </button>;
                 })}
+                <div style={{borderTop:`1px solid ${C.b2}`,margin:"4px 0"}}/>
+                <button onClick={()=>{toggleTheme();setCompDropOpen(false);}} style={{width:"100%",padding:"8px 14px",border:"none",background:"transparent",cursor:"pointer",fontFamily:"inherit",textAlign:"left",display:"flex",alignItems:"center",gap:8}}>
+                  <span style={{display:"flex"}}>{theme==='dark'?Ic.sun(C.acc,14):Ic.moon(C.t3,14)}</span>
+                  <span style={{fontSize:13.2,fontWeight:500,color:C.t1}}>{theme==='dark'?"Modo claro":"Modo oscuro"}</span>
+                </button>
               </div>
             </>}
           </div>}

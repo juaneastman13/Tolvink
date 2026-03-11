@@ -22,7 +22,43 @@ export const LIGHT = {
   shLg:"0 12px 32px rgba(0,0,0,0.10)",
 };
 
-export const C = { ...LIGHT };
+export const DARK = {
+  bg:"#0F1612",
+  bgCard:"#1A2420",
+  bgCardAlt:"#15201B",
+  bgInput:"#243029",
+  bgOverlay:"rgba(0,0,0,0.88)",
+  nav:"#1A2420",
+  pri:"#4ADE80", priLt:"#5AEF90", priPale:"#1A3A28", priGhost:"rgba(74,222,128,0.08)",
+  acc:"#FF8124", accLt:"#FF9B4E", accPale:"#3A2A15",
+  sec:"#22D3EE", secLt:"#34E0F8", secPale:"#153035",
+  ok:"#4ADE80", okPale:"#1A3A28",
+  info:"#22D3EE", infoPale:"#153035",
+  warn:"#EAB308", warnPale:"#3A3515",
+  err:"#F87171", errPale:"#3A1A1A",
+  muted:"#9CA3AF", mutedPale:"#1F2937",
+  t1:"#E8F0EC", t2:"#A0B8AA", t3:"#7A9484", tOn:"#0F1612",
+  b1:"#2A3B32", b2:"#1F2D26", bFocus:"#4ADE80",
+  w:"#1A2420",
+  sh:"0 1px 3px rgba(0,0,0,0.3),0 1px 2px rgba(0,0,0,0.2)",
+  shMd:"0 4px 14px rgba(0,0,0,0.35)",
+  shLg:"0 12px 32px rgba(0,0,0,0.45)",
+};
+
+// C is mutable — applyTheme() swaps all values in place
+function _ls(k,v) { try { if (v===undefined) return localStorage.getItem(k); localStorage.setItem(k,v); } catch(e) { return null; } }
+const _saved = _ls('tolvink_theme');
+const _initial = _saved === 'dark' ? DARK : LIGHT;
+export const C = { ..._initial };
+
+export function getTheme() { return _ls('tolvink_theme') || 'light'; }
+
+export function applyTheme(name) {
+  const tokens = name === 'dark' ? DARK : LIGHT;
+  Object.assign(C, tokens);
+  _ls('tolvink_theme', name);
+  document.documentElement.style.colorScheme = name;
+}
 
 // Analytics — fire-and-forget to backend
 const _API = import.meta.env.VITE_API_URL || 'https://tolvink-api-production.up.railway.app/api';
@@ -87,4 +123,6 @@ export const Ic = {
   edit:(c=C.t2,s=18)=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>,
   clip:(c=C.t3,s=18)=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>,
   phone:(c=C.t3,s=18)=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>,
+  sun:(c=C.t3,s=18)=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>,
+  moon:(c=C.t3,s=18)=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>,
 };

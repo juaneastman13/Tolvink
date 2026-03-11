@@ -372,7 +372,7 @@ const _TYPE_LABELS = { producer:"Productor", plant:"Planta", transporter:"Transp
 const _TYPE_IC_COLORS = { producer:"#F59E0B", plant:"#22C55E", transporter:"#0891B2" };
 const _typeIcon = (t,s=14) => t==='producer'?Ic.grain('#F59E0B',s):t==='plant'?Ic.plant('#22C55E',s):t==='transporter'?Ic.truck('#0891B2',s):null;
 
-export function Sidebar({ active, onChange, unread=0, pendingCount=0, notifCount=0, canRequest=false, onNew, activeCompany, companies=[], onSwitchCompany, simpleMode=false, onToggleSimple }) {
+export function Sidebar({ active, onChange, unread=0, pendingCount=0, notifCount=0, canRequest=false, onNew, activeCompany, companies=[], onSwitchCompany, simpleMode=false, onToggleSimple, isDark=false, onToggleTheme, searchQuery="", onSearchChange, searchResults=[], onSearchSelect }) {
   const hasPending = pendingCount > 0;
   const centerColor = hasPending ? C.acc : C.ok;
   const [compOpen, setCompOpen] = useState(false);
@@ -435,6 +435,25 @@ export function Sidebar({ active, onChange, unread=0, pendingCount=0, notifCount
         </div>
       )}
 
+      {/* Global search */}
+      {onSearchChange && <div style={{ padding:"0 12px 6px", position:"relative" }}>
+        <div style={{ display:"flex", alignItems:"center", gap:6, padding:"7px 10px", borderRadius:8, background:C.bgInput, border:`1.5px solid ${searchQuery?C.bFocus:C.b2}`, transition:"border-color 0.15s" }}>
+          <span style={{ display:"flex", flexShrink:0 }}>{Ic.srch(C.t3,14)}</span>
+          <input value={searchQuery} onChange={e=>onSearchChange(e.target.value)} placeholder="Buscar flete..." style={{ flex:1, border:"none", background:"transparent", outline:"none", fontSize:12.5, color:C.t1, fontFamily:"inherit", padding:0 }} />
+          {searchQuery && <button onClick={()=>onSearchChange("")} style={{ display:"flex", border:"none", background:"none", cursor:"pointer", padding:0 }}>{Ic.cross(C.t3,12)}</button>}
+        </div>
+        {searchQuery.length >= 2 && searchResults.length > 0 && <div style={{ position:"absolute", left:12, right:12, top:"100%", marginTop:2, background:C.w, border:`1px solid ${C.b1}`, borderRadius:10, boxShadow:C.shMd, zIndex:100, maxHeight:280, overflowY:"auto", padding:4 }}>
+          {searchResults.slice(0,8).map(f => <button key={f.id} onClick={()=>{onSearchSelect(f.id);onSearchChange("");}} style={{ display:"flex", alignItems:"center", gap:8, width:"100%", padding:"8px 10px", background:"transparent", border:"none", borderRadius:8, cursor:"pointer", fontFamily:"inherit", textAlign:"left" }} onMouseEnter={e=>e.currentTarget.style.background=C.priGhost} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+            <div style={{ flex:1, minWidth:0 }}>
+              <div style={{ fontSize:12.1, fontWeight:700, color:C.t1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{f.grain} · {f.tons} {f.unit||"tn"}</div>
+              <div style={{ fontSize:10.5, color:C.t3, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{f.code} · {f.originName||f.fieldName||"—"} → {f.destName||"—"}</div>
+            </div>
+          </button>)}
+          {searchResults.length > 8 && <div style={{ padding:"6px 10px", fontSize:10.5, color:C.t3, textAlign:"center" }}>+{searchResults.length - 8} más</div>}
+        </div>}
+        {searchQuery.length >= 2 && searchResults.length === 0 && <div style={{ position:"absolute", left:12, right:12, top:"100%", marginTop:2, background:C.w, border:`1px solid ${C.b1}`, borderRadius:10, boxShadow:C.shMd, zIndex:100, padding:"12px 14px", fontSize:12.1, color:C.t3 }}>Sin resultados</div>}
+      </div>}
+
       {/* Solicitar */}
       {canRequest && (
         <div style={{ padding:"14px 14px 10px" }}>
@@ -461,14 +480,18 @@ export function Sidebar({ active, onChange, unread=0, pendingCount=0, notifCount
         })}
       </nav>
 
-      {/* Mode toggle */}
-      {onToggleSimple && <div style={{ padding:"8px 12px", borderTop:`1px solid ${C.b2}` }}>
-        <div style={{ position:"relative", display:"flex", borderRadius:7, background:C.b2, padding:2, cursor:"pointer" }} onClick={onToggleSimple}>
+      {/* Mode toggle + Theme toggle */}
+      <div style={{ borderTop:`1px solid ${C.b2}`, padding:"8px 12px", display:"flex", flexDirection:"column", gap:6 }}>
+        {onToggleSimple && <div style={{ position:"relative", display:"flex", borderRadius:7, background:C.b2, padding:2, cursor:"pointer" }} onClick={onToggleSimple}>
           <div style={{ position:"absolute", top:2, left:simpleMode?"50%":2, width:"calc(50% - 2px)", height:"calc(100% - 4px)", borderRadius:5, background:C.t3, transition:"left 0.25s ease", boxShadow:"0 1px 3px rgba(0,0,0,0.1)" }} />
           <span style={{ flex:1, textAlign:"center", fontSize:9.9, fontWeight:700, padding:"4px 0", position:"relative", zIndex:1, color:simpleMode?C.t3:C.w, transition:"color 0.2s", userSelect:"none" }}>Completo</span>
           <span style={{ flex:1, textAlign:"center", fontSize:9.9, fontWeight:700, padding:"4px 0", position:"relative", zIndex:1, color:simpleMode?C.w:C.t3, transition:"color 0.2s", userSelect:"none" }}>Simple</span>
-        </div>
-      </div>}
+        </div>}
+        {onToggleTheme && <button onClick={onToggleTheme} style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:6, padding:"5px 0", borderRadius:7, border:"none", background:C.b2, cursor:"pointer", fontFamily:"inherit" }}>
+          <span style={{ display:"flex" }}>{isDark ? Ic.sun(C.acc,14) : Ic.moon(C.t3,14)}</span>
+          <span style={{ fontSize:9.9, fontWeight:600, color:C.t2 }}>{isDark ? "Modo claro" : "Modo oscuro"}</span>
+        </button>}
+      </div>
     </div>
   );
 }
