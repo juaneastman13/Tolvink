@@ -6,9 +6,6 @@ import { useIsDesktop } from "../hooks";
 import { getPendingActions, resolveUserTypeForFreight, getWaitingOnText } from "../utils/freight-helpers";
 import DetailScreen from "./DetailScreen";
 
-// "Seen" indicator — all active assignments have been viewed by the transporter
-const isSeen = (f) => f.status === "assigned" && f.activeAssignments?.length > 0 && f.activeAssignments.every(a => a.seenAt);
-
 // Action groups — grouping pending items by pending action type
 const ACTION_GROUPS = [
   { key: "assign", label: "Asignar transporte", color: C.acc, priority: 1 },
@@ -224,8 +221,7 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
           <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 3 }}>
             <span style={{ fontSize: 9.5, fontWeight: 600, fontFamily: MONO, color: C.t3 }}>{f.code}</span>
             <Bd color={st.color} bg={st.bg} small>{st.label}</Bd>
-            {isSeen(f) && <Bd color={C.info} small>{Ic.eye(C.info,10)} Visto</Bd>}
-            {f.isOverdue && <span style={{ display:"inline-block", width:16, height:16, borderRadius:4, background:"#FEE2E2", border:"2px solid #DC2626", flexShrink:0, boxSizing:"border-box" }} title="Retrasado" />}
+            {f.isOverdue && <span style={{ display:"inline-block", width:16, height:16, borderRadius:4, background:"#DC2626", flexShrink:0 }} title="Retrasado" />}
             {f.loadDate && <span style={{ fontSize: 10, color: C.t3 }}>{formatFreightDate(f.loadDate)}</span>}
           </div>
         </div>
@@ -246,7 +242,6 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
           <div style={{display:"flex",alignItems:"center",gap:6,marginTop:2}}>
             <span style={{fontSize:11,fontWeight:600,fontFamily:MONO,color:C.t3}}>{f.code}</span>
             <Bd color={st.color} bg={st.bg} small>{st.label}</Bd>
-            {isSeen(f) && <Bd color={C.info} small>{Ic.eye(C.info,10)} Visto</Bd>}
             {f.isOverdue && <Bd color="#DC2626" bg="#FEE2E2" small>Retrasado</Bd>}
           </div>
         </div>

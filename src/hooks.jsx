@@ -476,7 +476,6 @@ export function mapFreight(f) {
       startedAt: x.startedAt || null,
       loadedAt: x.loadedAt || null,
       finishedAt: x.finishedAt || null,
-      seenAt: x.seenAt || null,
     })),
     notes:f.notes||"", cancelReason:f.cancelReason||"", createdAt:f.createdAt,
     transporterLoadedConfirmedAt: f.transporterLoadedConfirmedAt||null,
