@@ -182,8 +182,8 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
   const handleCardMouseEnter = useCallback((f, e) => {
     if (!isDesktop) return;
     clearHoverTimer();
+    const rect = e.currentTarget.getBoundingClientRect();
     hoverTimerRef.current = setTimeout(() => {
-      const rect = e.currentTarget.getBoundingClientRect();
       setHoverPos({ x: rect.right + 12, y: rect.top });
       setHoverFreight(f);
     }, 800);

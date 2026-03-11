@@ -404,8 +404,8 @@ export function Sidebar({ active, onChange, unread=0, pendingCount=0, notifCount
   const clearHoverTimer = useCallback(() => { if (hoverTimerRef.current) { clearTimeout(hoverTimerRef.current); hoverTimerRef.current = null; } }, []);
   const handleSearchHoverEnter = useCallback((f, e) => {
     clearHoverTimer();
+    const rect = e.currentTarget.getBoundingClientRect();
     hoverTimerRef.current = setTimeout(() => {
-      const rect = e.currentTarget.getBoundingClientRect();
       setHoverPos({ x: rect.right + 12, y: rect.top });
       setHoverFreight(f);
     }, 800);
