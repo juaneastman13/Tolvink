@@ -221,6 +221,7 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
           <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 3 }}>
             <span style={{ fontSize: 9.5, fontWeight: 600, fontFamily: MONO, color: C.t3 }}>{f.code}</span>
             <Bd color={st.color} bg={st.bg} small>{st.label}</Bd>
+            {f.isOverdue && <Bd color="#DC2626" bg="#FEE2E2" small>Retrasado</Bd>}
             {f.loadDate && <span style={{ fontSize: 10, color: C.t3 }}>{formatFreightDate(f.loadDate)}</span>}
           </div>
         </div>
@@ -241,6 +242,7 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
           <div style={{display:"flex",alignItems:"center",gap:6,marginTop:2}}>
             <span style={{fontSize:11,fontWeight:600,fontFamily:MONO,color:C.t3}}>{f.code}</span>
             <Bd color={st.color} bg={st.bg} small>{st.label}</Bd>
+            {f.isOverdue && <Bd color="#DC2626" bg="#FEE2E2" small>Retrasado</Bd>}
           </div>
         </div>
       </div>
@@ -431,6 +433,7 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
             <span style={{ display: "flex", alignItems: "center", gap: 5, marginLeft: "auto" }}>
               <span style={{ fontFamily: MONO, fontWeight: 600, color: C.t3 }}>{f.code}</span>
               <Bd color={st.color} bg={st.bg} small>{st.label}</Bd>
+              {f.isOverdue && <Bd color="#DC2626" bg="#FEE2E2" small>Retrasado</Bd>}
             </span>
           </div>
         </div>

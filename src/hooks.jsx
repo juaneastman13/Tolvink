@@ -487,6 +487,15 @@ export function mapFreight(f) {
     finishedAt: f.finishedAt||null,
     documents: f.documents||[],
     conversationId: f.conversation?.id||null,
+    isOverdue: (() => {
+      const overdueStatuses = ["pending_assignment","assigned","accepted"];
+      if (!overdueStatuses.includes(f.status)) return false;
+      const ld = f.loadDate?.split("T")[0];
+      if (!ld) return false;
+      const lt = f.loadTime || "23:59";
+      const scheduled = new Date(`${ld}T${lt}:00`);
+      return scheduled < new Date();
+    })(),
   };
 }
 
