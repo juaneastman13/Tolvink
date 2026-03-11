@@ -173,7 +173,8 @@ export default function Tolvink() {
       || /^\/(FLT-\d{4,}|F\d{2}-[A-Z]{3}\.\d{4})\/(ubicacion|informe)$/i.test(p)
       || /^\/campo\/[a-z0-9-]+\/ubicacion$/i.test(p)
       || /^\/ubicacion\/[a-z0-9-]+$/i.test(p);
-    if(auth.user && !prevUser.current && !isPublicPath) {
+    const isDeepLink = p.startsWith("/freight/") || p.startsWith("/edit/") || p.startsWith("/chats/");
+    if(auth.user && !prevUser.current && !isPublicPath && !isDeepLink) {
       navigate("/", { replace: true });
     }
     prevUser.current = auth.user;
