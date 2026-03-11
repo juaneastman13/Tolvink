@@ -3,7 +3,7 @@
 // Cache-first shell, stale-while-revalidate API, navigation preload
 // =====================================================================
 
-const CACHE_NAME = 'tolvink-v5.3';
+const CACHE_NAME = 'tolvink-v5.4';
 const API_CACHE = 'tolvink-api-v2';
 const FONT_CACHE = 'tolvink-fonts-v1';
 const IMG_CACHE = 'tolvink-img-v1';
@@ -135,26 +135,23 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // --- App shell + static assets: cache-first with navigation preload ---
+  // --- App shell: network-first (ensures deploys take effect immediately) ---
   if (request.mode === 'navigate') {
     event.respondWith(
       (async () => {
-        // Try navigation preload response first
-        const preloadResp = event.preloadResponse ? await event.preloadResponse : null;
-        if (preloadResp) return preloadResp;
-
-        const cached = await caches.match(request);
-        if (cached) return cached;
-
         try {
-          const r = await fetch(request);
+          // Try navigation preload first, then network
+          const preloadResp = event.preloadResponse ? await event.preloadResponse : null;
+          const r = preloadResp || await fetch(request);
           if (r.ok && url.origin === location.origin) {
             const c = await caches.open(CACHE_NAME);
             c.put(request, r.clone());
           }
           return r;
         } catch {
-          return caches.match('/index.html');
+          // Offline: fall back to cached index.html
+          const cached = await caches.match(request);
+          return cached || caches.match('/index.html');
         }
       })()
     );
