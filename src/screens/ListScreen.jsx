@@ -2,9 +2,9 @@ import { useState, useEffect, useMemo, useRef, useCallback, lazy, Suspense } fro
 import { C, Ic, FONT, MONO } from "../theme";
 import { stCfg, formatFreightDate } from "../constants";
 import { Bd, Btn, Select, SortTh, Tabs, exportExcel, SkeletonList, EmptyState, ErrorBoundary } from "../components";
-import { useTableSort, usePullToRefresh } from "../hooks";
-import { textMatch } from "../validation";
+import { useTableSort, usePullToRefresh, mapFreight } from "../hooks";
 import { getPendingActions, resolveUserTypeForFreight } from "../utils/freight-helpers";
+import { apiListFreights } from "../api";
 const FreightsOverviewMap = lazy(() => import("../maps").then(m => ({ default: m.FreightsOverviewMap })));
 
 const GROUPS = [
@@ -53,6 +53,15 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
   // Table status filter
   const [tableStatusFilter, setTableStatusFilter] = useState("all");
 
+  // Server-side filtering state
+  const [serverData, setServerData] = useState(null); // null = use freights prop
+  const [serverLoading, setServerLoading] = useState(false);
+  const [serverHasMore, setServerHasMore] = useState(false);
+  const [serverLoadingMore, setServerLoadingMore] = useState(false);
+  const [serverTotal, setServerTotal] = useState(0);
+  const serverPageRef = useRef(1);
+  const filterTimerRef = useRef(null);
+
   const userTypes = user?.userTypes || [];
   const userType = user?.userType || userTypes[0] || "producer";
   const isProducerUser = userTypes.includes("producer");
@@ -78,20 +87,78 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
     else { setDateFrom(""); setDateTo(""); }
   };
 
-  const clearAll = () => { setSearchQ(""); setFPlant(""); setFProducer(""); setFTransporter(""); setDateFrom(""); setDateTo(""); setDatePreset(""); };
+  const clearAll = () => { setSearchQ(""); setFPlant(""); setFProducer(""); setFTransporter(""); setDateFrom(""); setDateTo(""); setDatePreset(""); setServerData(null); };
   const hasFilters = searchQ || fPlant || fProducer || fTransporter || dateFrom || dateTo;
 
-  const filtered = useMemo(()=>{
-    return freights.filter(f=>{
-      if(searchQ && !textMatch(f.originCompanyName,searchQ) && !textMatch(f.code,searchQ) && !textMatch(f.grain,searchQ) && !textMatch(f.originName,searchQ) && !textMatch(f.destName,searchQ) && !textMatch(f.transporterName,searchQ) && !textMatch(f.driverName,searchQ) && !textMatch(f.driverPhone,searchQ)) return false;
-      if(fPlant && f.destName!==fPlant) return false;
-      if(fProducer && (isProducerUser ? f.fieldName!==fProducer : isTransporterUser ? f.destName!==fProducer : f.originCompanyName!==fProducer)) return false;
-      if(fTransporter && f.transporterName!==fTransporter) return false;
-      if(dateFrom && f.loadDate < dateFrom) return false;
-      if(dateTo && f.loadDate > dateTo) return false;
-      return true;
-    });
-  },[freights,searchQ,fPlant,fProducer,fTransporter,dateFrom,dateTo]);
+  // Build query params for server-side filtering
+  const buildFilterParams = useCallback(() => {
+    const params = { limit: 25, page: 1 };
+    if (searchQ && searchQ.length >= 2) params.search = searchQ;
+    if (fPlant) params.destName = fPlant;
+    if (fProducer) {
+      // For producers: fProducer is a field name — not supported as backend filter, skip
+      // For transporters: fProducer is a plant name (destName) — already covered by fPlant mapping
+      // For plants: fProducer is an origin company name
+      if (!isProducerUser) {
+        if (isTransporterUser) params.destName = params.destName || fProducer;
+        else params.originCompany = fProducer;
+      }
+    }
+    if (fTransporter) params.transporter = fTransporter;
+    if (dateFrom) params.dateFrom = dateFrom;
+    if (dateTo) params.dateTo = dateTo;
+    return params;
+  }, [searchQ, fPlant, fProducer, fTransporter, dateFrom, dateTo, isProducerUser, isTransporterUser]);
+
+  // Server-side filter query — debounced
+  useEffect(() => {
+    if (filterTimerRef.current) clearTimeout(filterTimerRef.current);
+    if (!hasFilters) { setServerData(null); setServerHasMore(false); setServerLoading(false); return; }
+    // For search, wait for 2+ chars; for other filters, query immediately
+    if (searchQ && searchQ.length < 2 && !fPlant && !fProducer && !fTransporter && !dateFrom && !dateTo) {
+      setServerData(null); setServerHasMore(false); setServerLoading(false); return;
+    }
+    setServerLoading(true);
+    const delay = searchQ ? 300 : 50; // Shorter debounce for dropdown filters
+    filterTimerRef.current = setTimeout(async () => {
+      try {
+        serverPageRef.current = 1;
+        const params = buildFilterParams();
+        const r = await apiListFreights(params);
+        setServerData((r.data || []).map(mapFreight));
+        setServerHasMore((r.page || 1) < (r.pages || 1));
+        setServerTotal(r.total || 0);
+      } catch { setServerData([]); setServerHasMore(false); setServerTotal(0); }
+      finally { setServerLoading(false); }
+    }, delay);
+    return () => { if (filterTimerRef.current) clearTimeout(filterTimerRef.current); };
+  }, [hasFilters, searchQ, fPlant, fProducer, fTransporter, dateFrom, dateTo, buildFilterParams]);
+
+  // Load more server results (infinite scroll)
+  const loadMoreServer = useCallback(async () => {
+    if (serverLoadingMore || !serverHasMore) return;
+    setServerLoadingMore(true);
+    try {
+      const nextPage = serverPageRef.current + 1;
+      const params = buildFilterParams();
+      params.page = nextPage;
+      const r = await apiListFreights(params);
+      serverPageRef.current = nextPage;
+      setServerData(prev => [...(prev || []), ...(r.data || []).map(mapFreight)]);
+      setServerHasMore((r.page || 1) < (r.pages || 1));
+    } catch { /* ignore */ }
+    finally { setServerLoadingMore(false); }
+  }, [serverLoadingMore, serverHasMore, buildFilterParams]);
+
+  // Use server data when filters active, otherwise use freights prop
+  const filtered = useMemo(() => {
+    if (serverData !== null) {
+      // For producers, fProducer is a field name — apply local filter on server results
+      if (isProducerUser && fProducer) return serverData.filter(f => f.fieldName === fProducer);
+      return serverData;
+    }
+    return freights;
+  }, [serverData, freights, isProducerUser, fProducer]);
 
   // Status grouping (default kanban)
   const grouped = useMemo(()=>{
@@ -379,7 +446,7 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
             <option value="">{simpleFilter2.label}</option>
             {simpleFilter2.options.map(o=><option key={o} value={o}>{o}</option>)}
           </select>
-          {simpleHasFilters && <button onClick={()=>{setSearchQ("");setServerResults(null);simpleFilter1.set("");simpleFilter2.set("");}} style={{padding:"6px 10px",borderRadius:7,border:`1px solid ${C.err}40`,background:C.errPale,color:C.err,fontSize:12.1,fontWeight:600,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap",flexShrink:0}}>Limpiar</button>}
+          {simpleHasFilters && <button onClick={()=>{setSearchQ("");setServerData(null);simpleFilter1.set("");simpleFilter2.set("");}} style={{padding:"6px 10px",borderRadius:7,border:`1px solid ${C.err}40`,background:C.errPale,color:C.err,fontSize:12.1,fontWeight:600,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap",flexShrink:0}}>Limpiar</button>}
         </div>
         {loading && freights.length === 0 && <SkeletonList count={5} />}
         {!loading && freights.length === 0 && <EmptyState icon={Ic.truck(C.t3, 28)} title="Sin fletes todavia" subtitle="Los fletes que solicites o te asignen apareceran aca" />}
@@ -404,8 +471,10 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
             })}
           </div>
         )}
-        {filtered.length === 0 && freights.length > 0 && !loading && <EmptyState icon={Ic.srch(C.t3, 28)} title="Sin resultados" subtitle="Proba cambiando los filtros" />}
-        {hasMore && <div style={{ textAlign:"center", padding:12 }}><Btn v="ghost" onClick={loadMore} loading={loadingMore}>Cargar mas</Btn></div>}
+        {filtered.length === 0 && freights.length > 0 && !loading && !serverLoading && <EmptyState icon={Ic.srch(C.t3, 28)} title="Sin resultados" subtitle="Proba cambiando los filtros" />}
+        {serverLoading && <div style={{ textAlign:"center", padding:12, fontSize:12.1, color:C.t3 }}>Buscando...</div>}
+        {serverData !== null && serverHasMore && <div style={{ textAlign:"center", padding:12 }}><Btn v="ghost" onClick={loadMoreServer} loading={serverLoadingMore}>Cargar mas resultados</Btn></div>}
+        {serverData === null && hasMore && <div style={{ textAlign:"center", padding:12 }}><Btn v="ghost" onClick={loadMore} loading={loadingMore}>Cargar mas</Btn></div>}
         {FreightHoverPreview}
       </div>
     );
@@ -514,8 +583,9 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
       </>)}
 
       {/* Search result count */}
-      {hasFilters && filtered.length > 0 && <div style={{ fontSize:12.1, fontWeight:600, color:C.t3, marginBottom:8 }}>{filtered.length} flete{filtered.length!==1?"s":""} encontrado{filtered.length!==1?"s":""}</div>}
-      {hasFilters && filtered.length === 0 && freights.length > 0 && !loading && <EmptyState icon={Ic.srch(C.t3, 28)} title="Sin resultados" subtitle={`No hay fletes para "${searchQ || "los filtros seleccionados"}"`} />}
+      {hasFilters && filtered.length > 0 && !serverLoading && <div style={{ fontSize:12.1, fontWeight:600, color:C.t3, marginBottom:8 }}>{serverData !== null ? `${serverTotal} flete${serverTotal!==1?"s":""} encontrado${serverTotal!==1?"s":""}` : `${filtered.length} flete${filtered.length!==1?"s":""}`}</div>}
+      {hasFilters && filtered.length === 0 && !loading && !serverLoading && <EmptyState icon={Ic.srch(C.t3, 28)} title="Sin resultados" subtitle={`No hay fletes para "${searchQ || "los filtros seleccionados"}"`} />}
+      {serverLoading && <div style={{ textAlign:"center", padding:16, fontSize:12.1, color:C.t3 }}>Buscando...</div>}
 
       {/* Skeleton while loading */}
       {loading && freights.length === 0 && <SkeletonList count={5} />}
@@ -843,7 +913,15 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
       {(()=>{
         const visibleCount = hasFilters ? filtered.length : Object.values(grouped).reduce((s,a)=>s+a.length,0);
         return <>
-          {hasMore && !hasFilters && (
+          {serverData !== null && serverHasMore && (
+            <div style={{textAlign:"center",padding:"16px 0 24px"}}>
+              {serverTotal>0 && <div style={{fontSize:11,color:C.t3,marginBottom:6}}>Mostrando {filtered.length} de {serverTotal}</div>}
+              <button onClick={loadMoreServer} disabled={serverLoadingMore} style={{padding:"8px 24px",borderRadius:10,border:`1.5px solid ${C.pri}`,background:C.w,color:C.pri,fontSize:13.2,fontWeight:700,cursor:serverLoadingMore?"default":"pointer",fontFamily:"inherit",opacity:serverLoadingMore?0.5:1}}>
+                {serverLoadingMore?"Cargando...":"Cargar mas resultados"}
+              </button>
+            </div>
+          )}
+          {serverData === null && hasMore && (
             <div style={{textAlign:"center",padding:"16px 0 24px"}}>
               {total>0 && <div style={{fontSize:11,color:C.t3,marginBottom:6}}>Mostrando {visibleCount} de {total}</div>}
               <button onClick={loadMore} disabled={loadingMore} style={{padding:"8px 24px",borderRadius:10,border:`1.5px solid ${C.pri}`,background:C.w,color:C.pri,fontSize:13.2,fontWeight:700,cursor:loadingMore?"default":"pointer",fontFamily:"inherit",opacity:loadingMore?0.5:1}}>
