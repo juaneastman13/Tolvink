@@ -315,9 +315,12 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
         // Visual stepper: 3 steps
         const subLabels = { assigned:"Asignando flota", accepted:"Confirmando camiones", in_progress:"En camino", loaded:"Cargando" };
         const visualIdx = isCanceled ? (curIdx >= 1 ? (curIdx >= 3 ? 2 : 1) : 0) : curIdx === 0 ? 0 : curIdx <= 4 ? 1 : 2;
+        // Multi-truck: build per-assignment status breakdown
+        const multiTruckSub = isMultiTruck && [1,2,3,4].includes(curIdx) ? (freight.activeAssignments||[]).map(a => ({ n: a.tripNumber, cfg: tripStCfg(a.tripStatus) })) : null;
+        const singleSub = [1,2,3,4].includes(curIdx) || isCanceled ? subLabels[freight.status] || subLabels[steps[curIdx]] : null;
         const visualSteps = [
           { label:"Pendiente", color:C.acc },
-          { label:"En curso", color:C.pri, sub: [1,2,3,4].includes(curIdx) || isCanceled ? subLabels[freight.status] || subLabels[steps[curIdx]] : null },
+          { label:"En curso", color:C.pri, sub: !multiTruckSub ? singleSub : null, multiSub: multiTruckSub },
           { label: isCanceled ? "Cancelado" : "Finalizado", color: isCanceled ? C.err : C.ok },
         ];
         const fmtD = (d) => { try { const dt=new Date(d); return dt.toLocaleDateString("es-AR",{day:"2-digit",month:"short"})+" "+dt.toLocaleTimeString("es-AR",{hour:"2-digit",minute:"2-digit",hour12:false}); } catch(e){ return ""; } };
@@ -355,6 +358,9 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
                 {(active || isCancelStep) && <div style={{width:6,height:6,borderRadius:3,background:vs.color,marginTop:-2}}/>}
                 <span style={{fontSize:13.2,fontWeight:(active||isCancelStep)?700:500,color:(active||isCancelStep)?vs.color:done?C.t2:C.t3,textAlign:"center",lineHeight:1.2}}>{vs.label}</span>
                 {active && vs.sub && <span style={{fontSize:11.6,color:C.t3,fontStyle:"italic",textAlign:"center",lineHeight:1.2,marginTop:-2}}>({vs.sub})</span>}
+                {active && vs.multiSub && vs.multiSub.length > 0 && <div style={{display:"flex",flexDirection:"column",gap:2,marginTop:-1,alignItems:"center"}}>
+                  {vs.multiSub.map(t => <span key={t.n} style={{fontSize:10.5,color:t.cfg.color,fontWeight:600,lineHeight:1.2}}>#{t.n} {t.cfg.label}</span>)}
+                </div>}
               </div>;
             })}
           </div>

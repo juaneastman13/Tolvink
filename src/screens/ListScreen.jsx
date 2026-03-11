@@ -187,7 +187,7 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
           <div style={{display:"flex",alignItems:"center",gap:6,marginTop:2}}>
             <span style={{fontSize:11,fontWeight:600,fontFamily:MONO,color:C.t3}}>{f.code}</span>
             <Bd color={st.color} bg={st.bg} small>{st.label}</Bd>
-            {f.isOverdue && <span style={{ display:"inline-block", width:16, height:16, borderRadius:4, background:"#FEE2E2", flexShrink:0 }} title="Retrasado" />}
+            {f.isOverdue && <span style={{ display:"inline-flex", alignItems:"center", justifyContent:"center", width:16, height:16, borderRadius:4, background:"#FEE2E2", flexShrink:0, fontSize:10, fontWeight:800, color:"#DC2626", lineHeight:1 }} title="Retrasado">R</span>}
           </div>
         </div>
       </div>
@@ -244,7 +244,7 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
             {f.loadDate && <span style={{ display: "flex", alignItems: "center", gap: 3 }}>{Ic.cal(C.t3, 9)} {formatFreightDate(f.loadDate)}{f.loadTime ? ` · ${f.loadTime}` : ""}</span>}
             <span style={{ fontFamily: MONO, fontWeight: 600 }}>{f.code}</span>
             <Bd color={st.color} bg={st.bg} small>{st.label}</Bd>
-            {f.isOverdue && <span style={{ display:"inline-block", width:16, height:16, borderRadius:4, background:"#FEE2E2", flexShrink:0 }} title="Retrasado" />}
+            {f.isOverdue && <span style={{ display:"inline-flex", alignItems:"center", justifyContent:"center", width:16, height:16, borderRadius:4, background:"#FEE2E2", flexShrink:0, fontSize:10, fontWeight:800, color:"#DC2626", lineHeight:1 }} title="Retrasado">R</span>}
           </div>
         </div>
       );
@@ -588,7 +588,7 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
                           <div style={{ display:"flex", alignItems:"center", gap:6 }}>
                             <span style={{ fontSize:12.1, fontWeight:700, fontFamily:MONO, color:C.t2 }}>{f.code}</span>
                             <Bd color={st.color} bg={st.bg} small>{st.label}</Bd>
-                            {f.isOverdue && <span style={{ display:"inline-block", width:16, height:16, borderRadius:4, background:"#FEE2E2", flexShrink:0 }} title="Retrasado" />}
+                            {f.isOverdue && <span style={{ display:"inline-flex", alignItems:"center", justifyContent:"center", width:16, height:16, borderRadius:4, background:"#FEE2E2", flexShrink:0, fontSize:10, fontWeight:800, color:"#DC2626", lineHeight:1 }} title="Retrasado">R</span>}
                           </div>
                           <div style={{ fontSize:13.2, fontWeight:600, color:C.t1, marginTop:2 }}>{f.grain==="Otros"?f.productTypeOther||"Otros":f.grain} · {f.tons} {f.unit||"tn"}</div>
                           {f.loadDate && <div style={{ fontSize:12.1, color:C.t3, fontWeight:500, marginTop:2 }}>{Ic.cal(C.t3,9)} {formatFreightDate(f.loadDate)}{f.loadTime?` · ${f.loadTime}`:""}</div>}
@@ -643,7 +643,7 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
                                 <div style={{ display:"flex", alignItems:"center", gap:6 }}>
                                   <span style={{ fontSize:12.7, fontWeight:700, fontFamily:MONO, color:C.t2 }}>{f.code}</span>
                                   <Bd color={st.color} bg={st.bg} small>{st.label}</Bd>
-                                  {f.isOverdue && <span style={{ display:"inline-block", width:16, height:16, borderRadius:4, background:"#FEE2E2", flexShrink:0 }} title="Retrasado" />}
+                                  {f.isOverdue && <span style={{ display:"inline-flex", alignItems:"center", justifyContent:"center", width:16, height:16, borderRadius:4, background:"#FEE2E2", flexShrink:0, fontSize:10, fontWeight:800, color:"#DC2626", lineHeight:1 }} title="Retrasado">R</span>}
                                 </div>
                                 <div style={{ fontSize:13.2, fontWeight:600, color:C.t1, marginTop:2 }}>{f.grain==="Otros"?f.productTypeOther||"Otros":f.grain} · {f.tons} {f.unit||"tn"}</div>
                                 {f.loadDate && <div style={{ fontSize:12.7, color:C.t3, fontWeight:500, marginTop:2 }}>{Ic.cal(C.t3,9)} {formatFreightDate(f.loadDate)}{f.loadTime?` · ${f.loadTime}`:""}</div>}
@@ -674,7 +674,7 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
                                 <div style={{ display:"flex", alignItems:"center", gap:6 }}>
                                   <span style={{ fontSize:12.7, fontWeight:700, fontFamily:MONO, color:C.t2 }}>{f.code}</span>
                                   <Bd color={st.color} bg={st.bg} small>{st.label}</Bd>
-                                  {f.isOverdue && <span style={{ display:"inline-block", width:16, height:16, borderRadius:4, background:"#FEE2E2", flexShrink:0 }} title="Retrasado" />}
+                                  {f.isOverdue && <span style={{ display:"inline-flex", alignItems:"center", justifyContent:"center", width:16, height:16, borderRadius:4, background:"#FEE2E2", flexShrink:0, fontSize:10, fontWeight:800, color:"#DC2626", lineHeight:1 }} title="Retrasado">R</span>}
                                 </div>
                                 <div style={{ fontSize:13.2, fontWeight:600, color:C.t1, marginTop:2 }}>{f.grain==="Otros"?f.productTypeOther||"Otros":f.grain} · {f.tons} {f.unit||"tn"}</div>
                               </div>
@@ -708,7 +708,7 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
                         <div style={{ display:"flex", alignItems:"center", gap:6 }}>
                           <span style={{ fontSize:11, fontWeight:700, fontFamily:MONO, color:C.t2 }}>{f.code}</span>
                           <Bd color={st.color} bg={st.bg} small>{st.label}</Bd>
-                          {f.isOverdue && <span style={{ display:"inline-block", width:16, height:16, borderRadius:4, background:"#FEE2E2", flexShrink:0 }} title="Retrasado" />}
+                          {f.isOverdue && <span style={{ display:"inline-flex", alignItems:"center", justifyContent:"center", width:16, height:16, borderRadius:4, background:"#FEE2E2", flexShrink:0, fontSize:10, fontWeight:800, color:"#DC2626", lineHeight:1 }} title="Retrasado">R</span>}
                         </div>
                         <div style={{ fontSize:13.2, fontWeight:600, color:C.t1, marginTop:2 }}>{f.grain==="Otros"?f.productTypeOther||"Otros":f.grain} · {f.tons} {f.unit||"tn"}</div>
                       </div>
