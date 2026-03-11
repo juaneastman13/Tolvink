@@ -7,7 +7,7 @@ import { getPendingActions, resolveUserTypeForFreight, getWaitingOnText } from "
 import { apiListFreights } from "../api";
 import DetailScreen from "./DetailScreen";
 
-const GROUP_PAGE_SIZE = 25;
+const GROUP_PAGE_SIZE = 5;
 
 // Sentinel element — triggers loadMore via IntersectionObserver when scrolled into view
 function GroupSentinel({ gKey, onVisible }) {
