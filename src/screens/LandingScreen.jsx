@@ -274,9 +274,9 @@ export default function LandingScreen({ onLogin, onSignup, onPasswordReset, load
           <div className="tv-ld-steps" style={{ display:"flex", flexWrap:"wrap", alignItems:"flex-start", width:"100%", maxWidth:820, margin:"0 auto", justifyContent:"center" }}>
             {[
               { bg:C.priPale, color:C.pri, num:"1", title:"Solicitud", desc:"El productor crea el flete indicando grano, volumen, origen y destino.", badgeBg:C.accPale, badgeC:C.acc, badge:"Pendiente" },
-              { bg:C.secPale, color:C.sec, num:"2", title:"Asignación", desc:"La planta recibe la solicitud y asigna un transportista con flota disponible.", badgeBg:C.secPale, badgeC:C.sec, badge:"Asignando flota" },
-              { bg:"#EFF6FF", color:"#2563EB", num:"3", title:"Confirmación", desc:"El transportista acepta el viaje. Los choferes reciben la asignación en su dispositivo.", badgeBg:"#EFF6FF", badgeC:"#2563EB", badge:"Confirmado" },
-              { bg:"#ECFDF5", color:"#4ADE80", num:"4", title:"En curso", desc:"El flete avanza con seguimiento de estado: en viaje a campo, en viaje a planta y finalizado.", badgeBg:"#ECFDF5", badgeC:"#22C55E", badge:"En viaje" },
+              { bg:C.secPale, color:C.sec, num:"2", title:"Asignación", desc:"La planta recibe la solicitud y asigna un transportista con flota disponible.", badgeBg:C.secPale, badgeC:C.sec, badge:"Asignado" },
+              { bg:"#EFF6FF", color:"#2563EB", num:"3", title:"En viaje", desc:"El transportista acepta y el camión avanza: en viaje a campo y en viaje a planta.", badgeBg:"#EFF6FF", badgeC:"#2563EB", badge:"En viaje a campo" },
+              { bg:"#ECFDF5", color:"#4ADE80", num:"4", title:"Entrega", desc:"El camión llega a planta. Se confirma la recepción y el flete queda cerrado.", badgeBg:"#ECFDF5", badgeC:"#22C55E", badge:"En viaje a planta" },
               { bg:C.priPale, color:C.pri, num:"5", title:"Finalización", desc:"La planta confirma recepción. El flete queda cerrado con registro completo.", badgeBg:C.priPale, badgeC:C.pri, badge:"Finalizado" },
             ].map((s,i) => (
               <div key={i} style={{ flex:"1 1 140px", minWidth:140, display:"flex", flexDirection:"column", alignItems:"center", position:"relative", padding:"0 8px" }}>

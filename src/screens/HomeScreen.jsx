@@ -26,11 +26,11 @@ const PROGRESS_GROUPS = [
 
 // Status order for daily summary grouping — colors sourced from stCfg (STATUS_LIGHT)
 const DAILY_STATUS_ORDER = [
-  { key: "in_progress",        label: "En curso",              get color() { return stCfg("in_progress").color; } },
-  { key: "loaded",             label: "Cargando",              get color() { return stCfg("loaded").color; } },
-  { key: "accepted",           label: "Confirmado",            get color() { return stCfg("accepted").color; } },
+  { key: "in_progress",        label: "En viaje a campo",      get color() { return stCfg("in_progress").color; } },
+  { key: "loaded",             label: "En viaje a planta",     get color() { return stCfg("loaded").color; } },
+  { key: "accepted",           label: "Asignado",              get color() { return stCfg("accepted").color; } },
   { key: "assigned",           label: "Asignado",              get color() { return stCfg("assigned").color; } },
-  { key: "pending_assignment", label: "Solicitado",            get color() { return stCfg("pending_assignment").color; } },
+  { key: "pending_assignment", label: "Pendiente",             get color() { return stCfg("pending_assignment").color; } },
   { key: "finished",           label: "Finalizado",            get color() { return stCfg("finished").color; } },
 ];
 

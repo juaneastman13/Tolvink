@@ -671,7 +671,7 @@ const _STATUS_COLOR = s => {
   if (s === "canceled") return "#DC2626";
   return "#999";
 };
-const _STATUS_LABEL = { pending_assignment:"Solicitado", assigned:"Asignado a flota", accepted:"Camión confirmado", in_progress:"En curso", loaded:"Cargando", finished:"Finalizado", canceled:"Cancelado" };
+const _STATUS_LABEL = { pending_assignment:"Pendiente", assigned:"Asignado", accepted:"Asignado", in_progress:"En viaje a campo", loaded:"En viaje a planta", finished:"Finalizado", canceled:"Cancelado" };
 
 // ======================== MARKER SYMBOLS (no image loading) ========================
 // Use google.maps.Symbol with SVG paths — rendered natively, no broken images.
