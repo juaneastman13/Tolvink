@@ -57,16 +57,21 @@ function getMultiTruckPendingAction(freight, userType, role, user) {
     return null;
   }
 
-  // Producer with own fleet: find own-fleet assignments
+  // Producer: check own-fleet trips AND cross-confirmation pending on any trip
   if (userType === "producer") {
+    // Own-fleet trips: producer acts as transporter
     const ownTrips = aa.filter(a => a.transportCompanyId === freight.originCompanyId);
-    if (!ownTrips.length) return null;
-    const accepted = ownTrips.find(a => a.tripStatus === "accepted");
-    if (accepted) return { action: `Iniciar viaje #${accepted.tripNumber}`, color: C.pri, icon: "start", actionKey: "start_trip", groupKey: "start", assignmentId: accepted.id };
-    const inProgress = ownTrips.find(a => a.tripStatus === "in_progress" && !a.transporterLoadedConfirmedAt);
-    if (inProgress) return { action: `Confirmar carga #${inProgress.tripNumber}`, color: C.acc, icon: "confirm", actionKey: "confirm_trip_loaded", groupKey: "confirm_loaded", assignmentId: inProgress.id };
-    const needsFinishOwn = ownTrips.find(a => a.tripStatus === "loaded" && !a.transporterFinishedConfirmedAt);
-    if (needsFinishOwn) return { action: `Confirmar entrega #${needsFinishOwn.tripNumber}`, color: C.pri, icon: "confirm", actionKey: "confirm_trip_finished", groupKey: "confirm_finished", assignmentId: needsFinishOwn.id };
+    if (ownTrips.length) {
+      const accepted = ownTrips.find(a => a.tripStatus === "accepted");
+      if (accepted) return { action: `Iniciar viaje #${accepted.tripNumber}`, color: C.pri, icon: "start", actionKey: "start_trip", groupKey: "start", assignmentId: accepted.id };
+      const inProgress = ownTrips.find(a => a.tripStatus === "in_progress" && !a.transporterLoadedConfirmedAt);
+      if (inProgress) return { action: `Confirmar carga #${inProgress.tripNumber}`, color: C.acc, icon: "confirm", actionKey: "confirm_trip_loaded", groupKey: "confirm_loaded", assignmentId: inProgress.id };
+      const needsFinishOwn = ownTrips.find(a => a.tripStatus === "loaded" && !a.transporterFinishedConfirmedAt);
+      if (needsFinishOwn) return { action: `Confirmar entrega #${needsFinishOwn.tripNumber}`, color: C.pri, icon: "confirm", actionKey: "confirm_trip_finished", groupKey: "confirm_finished", assignmentId: needsFinishOwn.id };
+    }
+    // Cross-confirmation: producer confirms load receipt on any trip
+    const needsProducerLoadConfirm = aa.find(a => a.tripStatus === "loaded" && !a.producerLoadedConfirmedAt);
+    if (needsProducerLoadConfirm) return { action: `Confirmar carga #${needsProducerLoadConfirm.tripNumber}`, color: C.acc, icon: "confirm", actionKey: "confirm_trip_loaded", groupKey: "confirm_loaded", assignmentId: needsProducerLoadConfirm.id };
     return null;
   }
 
@@ -89,8 +94,10 @@ function getMultiTruckPendingAction(freight, userType, role, user) {
 }
 
 export function getPendingActions(freight, userType, role, user) {
-  // Multi-truck: delegate to specialized function
-  if (freight.isMultiTruck) return getMultiTruckPendingAction(freight, userType, role, user);
+  // Multi-truck OR multiple active assignments: delegate to specialized function
+  // This ensures per-trip pending actions are detected even when isMultiTruck flag is not set
+  const hasMultipleAssignments = (freight.activeAssignments || []).length > 1;
+  if (freight.isMultiTruck || hasMultipleAssignments) return getMultiTruckPendingAction(freight, userType, role, user);
 
   const s = freight.status;
   const own = freight.isOwnFleet;
