@@ -7,7 +7,7 @@ export const STATUS_LIGHT = {
   pending_assignment: { label:"Pendiente",           color:"#FF6A00",   bg:"#FFF3E8",   border:"#FF6A00"   },
   assigned:           { label:"Asignado",             color:"#0891B2",   bg:"#ECFEFF",   border:"#0891B2"   },
   accepted:           { label:"Asignado",             color:"#0891B2",   bg:"#ECFEFF",   border:"#0891B2"   },
-  in_progress:        { label:"En viaje a campo",     color:"#4ADE80",   bg:"#ECFDF5",   border:"#4ADE80"   },
+  in_progress:        { label:"En viaje a campo",     color:"#E8C840",   bg:"#FFFBE6",   border:"#E8C840"   },
   loaded:             { label:"En viaje a planta",     color:"#22C55E",   bg:"#DCFCE7",   border:"#22C55E"   },
   finished:           { label:"Finalizado",          color:"#1A6B37",   bg:"#E4F3EA",   border:"#1A6B37"   },
   canceled:           { label:"Cancelado",           color:"#DC2626",   bg:"#FEE2E2",   border:"#DC2626"   },
@@ -45,7 +45,7 @@ export function getActions(status, userType, role, isOwnFleet) {
 export const TRIP_STATUS_CFG = {
   pending:     { label:"Pendiente",        color:"#FF6A00", bg:"#FFF3E8" },
   accepted:    { label:"Asignado",         color:"#0891B2", bg:"#ECFEFF" },
-  in_progress: { label:"En viaje a campo", color:"#4ADE80", bg:"#ECFDF5" },
+  in_progress: { label:"En viaje a campo", color:"#E8C840", bg:"#FFFBE6" },
   loaded:      { label:"En viaje a planta",color:"#22C55E", bg:"#DCFCE7" },
   finished:    { label:"Finalizado",       color:"#1A6B37", bg:"#E4F3EA" },
   canceled:    { label:"Cancelado",        color:"#DC2626", bg:"#FEE2E2" },

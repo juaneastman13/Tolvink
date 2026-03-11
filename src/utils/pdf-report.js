@@ -19,7 +19,7 @@ const STATUS_LABELS = {
 };
 const STATUS_COLORS = {
   draft:'#71717A', pending_assignment:'#FF6A00', assigned:'#0891B2',
-  accepted:'#2563EB', in_progress:'#4ADE80', loaded:'#22C55E',
+  accepted:'#2563EB', in_progress:'#E8C840', loaded:'#22C55E',
   finished:'#1A6B37', canceled:'#DC2626',
 };
 

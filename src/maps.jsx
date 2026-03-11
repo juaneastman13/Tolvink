@@ -666,7 +666,8 @@ export function FreightMap({ freightId, originLat, originLng, destLat, destLng, 
 
 const _STATUS_COLOR = s => {
   if (s === "pending_assignment") return "#FF6A00";
-  if (["assigned","accepted","in_progress","loaded"].includes(s)) return "#2563EB";
+  if (s === "in_progress") return "#E8C840";
+  if (["assigned","accepted","loaded"].includes(s)) return "#2563EB";
   if (s === "finished") return "#1A6B37";
   if (s === "canceled") return "#DC2626";
   return "#999";

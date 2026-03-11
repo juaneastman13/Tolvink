@@ -275,7 +275,7 @@ export default function LandingScreen({ onLogin, onSignup, onPasswordReset, load
             {[
               { bg:C.priPale, color:C.pri, num:"1", title:"Solicitud", desc:"El productor crea el flete indicando grano, volumen, origen y destino.", badgeBg:C.accPale, badgeC:C.acc, badge:"Pendiente" },
               { bg:C.secPale, color:C.sec, num:"2", title:"Asignación", desc:"La planta recibe la solicitud y asigna un transportista con flota disponible.", badgeBg:C.secPale, badgeC:C.sec, badge:"Asignado" },
-              { bg:"#EFF6FF", color:"#2563EB", num:"3", title:"En viaje", desc:"El transportista acepta y el camión avanza: en viaje a campo y en viaje a planta.", badgeBg:"#EFF6FF", badgeC:"#2563EB", badge:"En viaje a campo" },
+              { bg:"#FFFBE6", color:"#E8C840", num:"3", title:"En viaje", desc:"El transportista acepta y el camión avanza: en viaje a campo y en viaje a planta.", badgeBg:"#FFFBE6", badgeC:"#E8C840", badge:"En viaje a campo" },
               { bg:"#ECFDF5", color:"#4ADE80", num:"4", title:"Entrega", desc:"El camión llega a planta. Se confirma la recepción y el flete queda cerrado.", badgeBg:"#ECFDF5", badgeC:"#22C55E", badge:"En viaje a planta" },
               { bg:C.priPale, color:C.pri, num:"5", title:"Finalización", desc:"La planta confirma recepción. El flete queda cerrado con registro completo.", badgeBg:C.priPale, badgeC:C.pri, badge:"Finalizado" },
             ].map((s,i) => (
@@ -390,7 +390,7 @@ export default function LandingScreen({ onLogin, onSignup, onPasswordReset, load
                     <div style={{ fontSize:16.5, fontWeight:700, color:C.t1 }}>Graneros del Sur</div>
                     <div style={{ fontSize:12.1, color:C.t3, fontFamily:MONO }}>FL-2025-0847</div>
                   </div>
-                  <div style={{ ..._badge, background:"#ECFDF5", color:"#4ADE80" }}>En curso</div>
+                  <div style={{ ..._badge, background:"#FFFBE6", color:"#E8C840" }}>En curso</div>
                 </div>
                 {/* Carga */}
                 <div style={_msec}>
@@ -561,7 +561,7 @@ export default function LandingScreen({ onLogin, onSignup, onPasswordReset, load
                         <div style={{ fontSize:15.4, fontWeight:700, color:C.t1, marginBottom:2 }}>Graneros del Sur</div>
                         <div style={{ fontSize:12.1, color:C.t3 }}>Soja · 30 t · 25/02 08:00</div>
                       </div>
-                      <div style={{ ..._badge, background:"#ECFDF5", color:"#4ADE80", fontSize:9.9, padding:"2px 7px" }}>En curso</div>
+                      <div style={{ ..._badge, background:"#FFFBE6", color:"#E8C840", fontSize:9.9, padding:"2px 7px" }}>En curso</div>
                     </div>
                     <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
                       <span style={{ display:"inline-flex", alignItems:"center", gap:4, padding:"3px 8px", borderRadius:6, fontSize:11, fontWeight:600, background:C.secPale, color:C.sec }}>
