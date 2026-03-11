@@ -307,7 +307,7 @@ const FREIGHTS_PAGE_SIZE = PAGE_SIZE;
 export function useFreights(user, isAuthInitialized) {
   const [freights, setFreights] = useState([]);
   const freightsRef = useRef([]); // Mirror of freights state for synchronous reads in optimistic updates
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(!!user && !!isAuthInitialized);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState(null);
   const [hasMore, setHasMore] = useState(false);

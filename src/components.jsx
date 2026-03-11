@@ -879,18 +879,19 @@ function SkeletonBlock({ w="100%", h=16, r=8, mb=0, style={} }) {
 export function SkeletonCard() {
   return <>
     <style>{shimmerStyle}</style>
-    <div style={{ background:C.w, borderRadius:14, padding:16, border:`1px solid ${C.b2}`, marginBottom:10 }}>
-      <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:12 }}>
-        <SkeletonBlock w={42} h={42} r={12} />
-        <div style={{ flex:1 }}>
-          <SkeletonBlock w="60%" h={14} mb={6} />
-          <SkeletonBlock w="40%" h={10} />
-        </div>
-        <SkeletonBlock w={70} h={24} r={6} />
-      </div>
-      <div style={{ display:"flex", gap:8 }}>
-        <SkeletonBlock w="50%" h={12} />
+    <div style={{ background:C.w, borderRadius:10, padding:"10px 14px", border:`1px solid ${C.b2}`, borderLeft:`4px solid ${C.b2}`, marginBottom:10 }}>
+      <SkeletonBlock w="45%" h={14} mb={4} />
+      <div style={{ display:"flex", alignItems:"center", gap:5, marginBottom:8 }}>
+        <SkeletonBlock w="35%" h={12} />
+        <SkeletonBlock w={12} h={12} r={2} />
         <SkeletonBlock w="30%" h={12} />
+      </div>
+      <div style={{ borderTop:`1px solid ${C.b2}`, paddingTop:8, display:"flex", alignItems:"center", gap:6 }}>
+        <SkeletonBlock w={80} h={11} />
+        <SkeletonBlock w={100} h={11} />
+        <div style={{ flex:1 }} />
+        <SkeletonBlock w={50} h={11} />
+        <SkeletonBlock w={60} h={20} r={6} />
       </div>
     </div>
   </>;
