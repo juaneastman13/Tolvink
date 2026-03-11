@@ -373,7 +373,7 @@ const _TYPE_LABELS = { producer:"Productor", plant:"Planta", transporter:"Transp
 const _TYPE_IC_COLORS = { producer:"#F59E0B", plant:"#22C55E", transporter:"#0891B2" };
 const _typeIcon = (t,s=14) => t==='producer'?Ic.grain('#F59E0B',s):t==='plant'?Ic.plant('#22C55E',s):t==='transporter'?Ic.truck('#0891B2',s):null;
 
-export function Sidebar({ active, onChange, unread=0, pendingCount=0, notifCount=0, canRequest=false, onNew, activeCompany, companies=[], onSwitchCompany, simpleMode=false, onToggleSimple, searchQuery="", onSearchChange, searchResults=[], onSearchSelect }) {
+export function Sidebar({ active, onChange, unread=0, pendingCount=0, notifCount=0, canRequest=false, onNew, activeCompany, companies=[], onSwitchCompany, simpleMode=false, onToggleSimple, searchQuery="", onSearchChange, searchResults=[], onSearchSelect, searchHasMore=false, searchLoadingMore=false, onSearchLoadMore }) {
   const hasPending = pendingCount > 0;
   const centerColor = hasPending ? C.acc : C.ok;
   const [compOpen, setCompOpen] = useState(false);
@@ -533,14 +533,14 @@ export function Sidebar({ active, onChange, unread=0, pendingCount=0, notifCount
           <input value={searchQuery} onChange={e=>onSearchChange(e.target.value)} placeholder="Buscar flete..." style={{ flex:1, border:"none", background:"transparent", outline:"none", fontSize:12.5, color:C.t1, fontFamily:"inherit", padding:0 }} />
           {searchQuery && <button onClick={()=>onSearchChange("")} style={{ display:"flex", border:"none", background:"none", cursor:"pointer", padding:0 }}>{Ic.cross(C.t3,12)}</button>}
         </div>
-        {searchQuery.length >= 2 && searchResults.length > 0 && <div style={{ position:"absolute", left:12, right:12, top:"100%", marginTop:2, background:C.w, border:`1px solid ${C.b1}`, borderRadius:10, boxShadow:C.shMd, zIndex:100, maxHeight:280, overflowY:"auto", padding:4 }}>
-          {searchResults.slice(0,8).map(f => <button key={f.id} onClick={()=>{handleSearchHoverLeave();onSearchSelect(f.id);onSearchChange("");}} style={{ display:"flex", alignItems:"center", gap:8, width:"100%", padding:"8px 10px", background:"transparent", border:"none", borderRadius:8, cursor:"pointer", fontFamily:"inherit", textAlign:"left" }} onMouseEnter={e=>{e.currentTarget.style.background=C.priGhost;handleSearchHoverEnter(f,e);}} onMouseLeave={e=>{e.currentTarget.style.background="transparent";handleSearchHoverLeave();}}>
+        {searchQuery.length >= 2 && searchResults.length > 0 && <div onScroll={e=>{const el=e.currentTarget;if(searchHasMore&&!searchLoadingMore&&el.scrollTop+el.clientHeight>=el.scrollHeight-20)onSearchLoadMore?.();}} style={{ position:"absolute", left:12, right:12, top:"100%", marginTop:2, background:C.w, border:`1px solid ${C.b1}`, borderRadius:10, boxShadow:C.shMd, zIndex:100, maxHeight:320, overflowY:"auto", padding:4 }}>
+          {searchResults.map(f => <button key={f.id} onClick={()=>{handleSearchHoverLeave();onSearchSelect(f.id);onSearchChange("");}} style={{ display:"flex", alignItems:"center", gap:8, width:"100%", padding:"8px 10px", background:"transparent", border:"none", borderRadius:8, cursor:"pointer", fontFamily:"inherit", textAlign:"left" }} onMouseEnter={e=>{e.currentTarget.style.background=C.priGhost;handleSearchHoverEnter(f,e);}} onMouseLeave={e=>{e.currentTarget.style.background="transparent";handleSearchHoverLeave();}}>
             <div style={{ flex:1, minWidth:0 }}>
               <div style={{ fontSize:12.1, fontWeight:700, color:C.t1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{f.grain} · {f.tons} {f.unit||"tn"}</div>
               <div style={{ fontSize:10.5, color:C.t3, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{f.code} · {f.originName||f.fieldName||"—"} → {f.destName||"—"}</div>
             </div>
           </button>)}
-          {searchResults.length > 8 && <div style={{ padding:"6px 10px", fontSize:10.5, color:C.t3, textAlign:"center" }}>+{searchResults.length - 8} más</div>}
+          {searchLoadingMore && <div style={{ padding:"8px 10px", textAlign:"center" }}><div style={{ width:16, height:16, border:`2px solid ${C.b2}`, borderTopColor:C.pri, borderRadius:"50%", animation:"spin 0.6s linear infinite", margin:"0 auto" }}/></div>}
         </div>}
         {searchQuery.length >= 2 && searchResults.length === 0 && <div style={{ position:"absolute", left:12, right:12, top:"100%", marginTop:2, background:C.w, border:`1px solid ${C.b1}`, borderRadius:10, boxShadow:C.shMd, zIndex:100, padding:"12px 14px", fontSize:12.1, color:C.t3 }}>Sin resultados</div>}
       </div>}

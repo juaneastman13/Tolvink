@@ -151,6 +151,9 @@ export default function Tolvink() {
   const [searchQ, setSearchQ] = useState("");
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [searchResults, setSearchResults] = useState([]);
+  const [searchHasMore, setSearchHasMore] = useState(false);
+  const [searchLoadingMore, setSearchLoadingMore] = useState(false);
+  const searchPageRef = useRef(1);
   const searchTimerRef = useRef(null);
 
   // AI Chat state
@@ -255,15 +258,30 @@ export default function Tolvink() {
   // Global search — debounced server-side search across all company freights
   useEffect(() => {
     if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
-    if (!searchQ || searchQ.length < 2) { setSearchResults([]); return; }
+    if (!searchQ || searchQ.length < 2) { setSearchResults([]); setSearchHasMore(false); return; }
     searchTimerRef.current = setTimeout(async () => {
       try {
-        const r = await apiSearchFreights(searchQ);
+        searchPageRef.current = 1;
+        const r = await apiSearchFreights(searchQ, 1);
         setSearchResults((r.data || []).map(mapFreight));
-      } catch { setSearchResults([]); }
+        setSearchHasMore((r.page || 1) < (r.pages || 1));
+      } catch { setSearchResults([]); setSearchHasMore(false); }
     }, 300);
     return () => { if (searchTimerRef.current) clearTimeout(searchTimerRef.current); };
   }, [searchQ]);
+
+  const loadMoreSearch = useCallback(async () => {
+    if (searchLoadingMore || !searchHasMore || !searchQ) return;
+    setSearchLoadingMore(true);
+    try {
+      const nextPage = searchPageRef.current + 1;
+      const r = await apiSearchFreights(searchQ, nextPage);
+      searchPageRef.current = nextPage;
+      setSearchResults(prev => [...prev, ...(r.data || []).map(mapFreight)]);
+      setSearchHasMore((r.page || 1) < (r.pages || 1));
+    } catch { /* ignore */ }
+    finally { setSearchLoadingMore(false); }
+  }, [searchLoadingMore, searchHasMore, searchQ]);
 
   // Calculate pending actions count
   const pendingCount = useMemo(() => {
@@ -627,7 +645,7 @@ export default function Tolvink() {
 
       {/* Desktop Sidebar */}
       <aside className="tv-sidebar" aria-label="Navegación principal" style={{position:"relative",zIndex:1}}>
-        <Sidebar active={navActive} onChange={nav} unread={unreadChats} pendingCount={pendingCount} notifCount={notif.unreadCount} canRequest={perms.canRequest} onNew={()=>nav("new")} activeCompany={auth.user ? { id: auth.user.activeCompanyId||auth.user.companyId, name: _activeComp?.companyName||auth.user.entity, type: _activeComp?.companyType||auth.user.userType } : null} companies={auth.user?.companies||[]} onSwitchCompany={async(id)=>{await auth.switchCompany(id);}} simpleMode={auth.simpleMode} onToggleSimple={auth.toggleSimpleMode} searchQuery={searchQ} onSearchChange={setSearchQ} searchResults={searchResults} onSearchSelect={(id)=>{setSelFreight(id);fh.refresh(id);navigate(`/freight/${id}`);}} />
+        <Sidebar active={navActive} onChange={nav} unread={unreadChats} pendingCount={pendingCount} notifCount={notif.unreadCount} canRequest={perms.canRequest} onNew={()=>nav("new")} activeCompany={auth.user ? { id: auth.user.activeCompanyId||auth.user.companyId, name: _activeComp?.companyName||auth.user.entity, type: _activeComp?.companyType||auth.user.userType } : null} companies={auth.user?.companies||[]} onSwitchCompany={async(id)=>{await auth.switchCompany(id);}} simpleMode={auth.simpleMode} onToggleSimple={auth.toggleSimpleMode} searchQuery={searchQ} onSearchChange={setSearchQ} searchResults={searchResults} onSearchSelect={(id)=>{setSelFreight(id);fh.refresh(id);navigate(`/freight/${id}`);}} searchHasMore={searchHasMore} searchLoadingMore={searchLoadingMore} onSearchLoadMore={loadMoreSearch} />
       </aside>
 
       {/* Main content column */}
@@ -689,15 +707,15 @@ export default function Tolvink() {
             <input autoFocus value={searchQ} onChange={e=>setSearchQ(e.target.value)} placeholder="Buscar flete..." style={{flex:1,border:"none",background:"transparent",outline:"none",fontSize:14,color:C.t1,fontFamily:"inherit",padding:0}}/>
             {searchQ && <button onClick={()=>setSearchQ("")} style={{display:"flex",border:"none",background:"none",cursor:"pointer",padding:0}}>{Ic.cross(C.t3,14)}</button>}
           </div>
-          {searchQ.length >= 2 && searchResults.length > 0 && <div style={{position:"absolute",left:18,right:18,top:"100%",marginTop:2,background:C.w,border:`1px solid ${C.b1}`,borderRadius:12,boxShadow:C.shMd,zIndex:200,maxHeight:320,overflowY:"auto",padding:4}}>
-            {searchResults.slice(0,8).map(f=>{const st=stCfg(f.status);return <button key={f.id} onClick={()=>{setSelFreight(f.id);fh.refresh(f.id);navigate(`/freight/${f.id}`);setSearchQ("");setMobileSearchOpen(false);}} style={{display:"flex",alignItems:"center",gap:10,width:"100%",padding:"10px 12px",background:"transparent",border:"none",borderRadius:10,cursor:"pointer",fontFamily:"inherit",textAlign:"left"}} onTouchStart={e=>e.currentTarget.style.background=C.priGhost} onTouchEnd={e=>e.currentTarget.style.background="transparent"}>
+          {searchQ.length >= 2 && searchResults.length > 0 && <div onScroll={e=>{const el=e.currentTarget;if(searchHasMore&&!searchLoadingMore&&el.scrollTop+el.clientHeight>=el.scrollHeight-20)loadMoreSearch();}} style={{position:"absolute",left:18,right:18,top:"100%",marginTop:2,background:C.w,border:`1px solid ${C.b1}`,borderRadius:12,boxShadow:C.shMd,zIndex:200,maxHeight:320,overflowY:"auto",padding:4}}>
+            {searchResults.map(f=>{const st=stCfg(f.status);return <button key={f.id} onClick={()=>{setSelFreight(f.id);fh.refresh(f.id);navigate(`/freight/${f.id}`);setSearchQ("");setMobileSearchOpen(false);}} style={{display:"flex",alignItems:"center",gap:10,width:"100%",padding:"10px 12px",background:"transparent",border:"none",borderRadius:10,cursor:"pointer",fontFamily:"inherit",textAlign:"left"}} onTouchStart={e=>e.currentTarget.style.background=C.priGhost} onTouchEnd={e=>e.currentTarget.style.background="transparent"}>
               <div style={{width:4,height:32,borderRadius:2,background:st.color,flexShrink:0}}/>
               <div style={{flex:1,minWidth:0}}>
                 <div style={{fontSize:14,fontWeight:700,color:C.t1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.grain==="Otros"?f.productTypeOther||"Otros":f.grain} · {f.tons} {f.unit||"tn"}</div>
                 <div style={{fontSize:12,color:C.t3,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.code} · {f.originName||f.fieldName||"—"} → {f.destName||"—"}</div>
               </div>
             </button>})}
-            {searchResults.length > 8 && <div style={{padding:"6px 10px",fontSize:11,color:C.t3,textAlign:"center"}}>+{searchResults.length-8} más</div>}
+            {searchLoadingMore && <div style={{padding:"8px",textAlign:"center"}}><div style={{width:16,height:16,border:`2px solid ${C.b2}`,borderTopColor:C.pri,borderRadius:"50%",animation:"spin 0.6s linear infinite",margin:"0 auto"}}/></div>}
           </div>}
           {searchQ.length >= 2 && searchResults.length === 0 && <div style={{position:"absolute",left:18,right:18,top:"100%",marginTop:2,background:C.w,border:`1px solid ${C.b1}`,borderRadius:12,boxShadow:C.shMd,zIndex:200,padding:"14px 16px",fontSize:13.2,color:C.t3}}>Sin resultados</div>}
         </div>}
