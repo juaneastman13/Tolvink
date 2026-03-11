@@ -447,43 +447,34 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
             const tst = tripStCfg(a.tripStatus);
             const isExpanded = expandedTrip === a.id;
             const tripBtns = isMultiTruck ? getTripActions(a) : [];
+            const mainBtn = tripBtns[0]; // primary action for inline display
             return (
               <div key={a.id} style={{ border:`1px solid ${tst.color}30`, borderLeft:`3px solid ${tst.color}`, borderRadius:10, marginBottom:8, overflow:"hidden" }}>
                 <div onClick={()=>setExpandedTrip(isExpanded?null:a.id)} style={{ padding:"10px 12px", cursor:"pointer", background:isExpanded?`${tst.color}06`:"transparent" }}>
-                  {/* Row 1: trip number (if multi), plate, transporter, status, chevron */}
                   <div style={{ display:"flex", alignItems:"center", gap:8 }}>
                     {isMultiTruck && <span style={{ fontSize:13.2, fontWeight:800, color:tst.color }}>#{a.tripNumber}</span>}
                     <span style={{ fontSize:13.2, fontWeight:600, color:C.t1, flex:1, minWidth:0 }}>
                       <span style={{ display:"block", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{a.plate || "Sin camión"}{a.transporterName ? ` · ${a.transporterName}` : ""}</span>
                       {a.driverName && <span style={{ display:"block", fontSize:11.6, fontWeight:400, color:C.t3, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{a.driverName}{a.driverPhone?` · ${a.driverPhone}`:""}</span>}
                     </span>
-                    <Bd color={tst.color} bg={tst.bg} small>{tst.label}</Bd>
+                    {/* Action button inline (right side) */}
+                    {!isExpanded && mainBtn && (
+                      <button disabled={actionLoading} onClick={(e)=>{e.stopPropagation(); onTripAction && onTripAction(freight.id, a.id, mainBtn.key);}} style={{ padding:"6px 10px", borderRadius:7, border:"none", background:mainBtn.color, color:C.w, fontSize:11, fontWeight:700, cursor:actionLoading?"not-allowed":"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:4, opacity:actionLoading?0.6:1, whiteSpace:"nowrap", flexShrink:0 }}>
+                        {mainBtn.icon} {actionLoading?"...":mainBtn.label}
+                      </button>
+                    )}
+                    {!mainBtn && <Bd color={tst.color} bg={tst.bg} small>{tst.label}</Bd>}
                     <span style={{ display:"flex", transform:isExpanded?"rotate(-90deg)":"rotate(0deg)", transition:"transform 0.15s", flexShrink:0 }}>{Ic.chev(C.t3,14)}</span>
                   </div>
-                  {/* Row 2: action buttons (collapsed, multi-truck only) */}
-                  {!isExpanded && tripBtns.length > 0 && (
-                    <div style={{ display:"flex", gap:6, marginTop:8, flexWrap:"wrap" }}>
-                      {tripBtns.map(b => (
-                        <button key={b.key} disabled={actionLoading} onClick={(e)=>{e.stopPropagation(); onTripAction && onTripAction(freight.id, a.id, b.key);}} style={{ flex:"1 1 auto", padding:"8px 12px", minHeight:36, borderRadius:8, border:"none", background:b.color, color:C.w, fontSize:12.1, fontWeight:700, cursor:actionLoading?"not-allowed":"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:5, opacity:actionLoading?0.6:1 }}>
-                          {b.icon} {actionLoading?"...":b.label}
-                        </button>
-                      ))}
-                      {user.userType === "plant" && (a.tripStatus === "pending" || a.tripStatus === "accepted") && a.transportCompanyId !== freight.originCompanyId && onEditTrip && (
-                        <button onClick={(e)=>{e.stopPropagation(); onEditTrip(freight.id, a);}} style={{ padding:"8px 12px", minHeight:36, borderRadius:8, border:`1px solid ${C.b1}`, background:C.w, color:C.t2, fontSize:12.1, fontWeight:600, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:4 }}>
-                          {Ic.doc(C.t2,12)} Editar
-                        </button>
-                      )}
-                    </div>
-                  )}
                 </div>
                 {isExpanded && (
                   <div style={{ padding:"8px 12px 12px", borderTop:`1px solid ${C.b2}` }}>
                     <div style={{ display:"flex", flexDirection:"column", gap:4, fontSize:12.7, color:C.t2, marginBottom:tripBtns.length>0?10:0 }}>
+                      <Bd color={tst.color} bg={tst.bg} small>{tst.label}</Bd>
                       {a.transporterName && <div style={{ display:"flex", alignItems:"center", gap:6 }}>{Ic.truck(C.t3,12)} {a.transporterName}</div>}
                       {a.plate && <div style={{ display:"flex", alignItems:"center", gap:6 }}>{Ic.truck(C.acc,12)} {a.plate}{a.truckModel?` · ${a.truckModel}`:""}</div>}
                       {a.driverName && <div style={{ display:"flex", alignItems:"center", gap:6 }}>{Ic.user(C.pri,12)} {a.driverName}{a.driverPhone?` · ${a.driverPhone}`:""}</div>}
                       {a.tons && <div style={{ display:"flex", alignItems:"center", gap:6 }}>{Ic.grain(C.t3,12)} {a.tons} tn</div>}
-                      {/* Cross-confirmation status */}
                       {(a.tripStatus === "in_progress" || a.tripStatus === "loaded") && (
                         <div style={{ display:"flex", gap:12, marginTop:6 }}>
                           <div>
@@ -497,7 +488,6 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
                         </div>
                       )}
                     </div>
-                    {/* Per-trip action buttons */}
                     {tripBtns.length > 0 && (
                       <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
                         {tripBtns.map(b => (
@@ -505,6 +495,11 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
                             {b.icon} {actionLoading?"...":b.label}
                           </button>
                         ))}
+                        {user.userType === "plant" && (a.tripStatus === "pending" || a.tripStatus === "accepted") && a.transportCompanyId !== freight.originCompanyId && onEditTrip && (
+                          <button onClick={(e)=>{e.stopPropagation(); onEditTrip(freight.id, a);}} style={{ padding:"8px 12px", minHeight:36, borderRadius:8, border:`1px solid ${C.b1}`, background:C.w, color:C.t2, fontSize:12.1, fontWeight:600, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:4 }}>
+                            {Ic.doc(C.t2,12)} Editar
+                          </button>
+                        )}
                       </div>
                     )}
                   </div>
@@ -512,14 +507,18 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
               </div>
             );
           })}
-          {/* No assignments yet */}
-          {visibleAssignments.length === 0 && <div style={{ fontSize:12.7, color:C.t3, textAlign:"center", padding:"8px 0" }}>Sin camiones asignados</div>}
-          {/* Add truck button (unassigned slots) */}
-          {assignedCount < truckCount && (perms.canApprove || (user.userType === "producer" && freight.useOwnFleet)) && (
-            <button onClick={()=>onAction(freight.id,"assign")} style={{ width:"100%", padding:"10px 0", borderRadius:10, border:`1.5px dashed ${C.acc}`, background:`${C.acc}08`, color:C.acc, fontSize:13.2, fontWeight:600, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:6, marginTop:4 }}>
-              {Ic.plus(C.acc,14)} Agregar camión {truckCount - assignedCount > 1 ? `(${truckCount - assignedCount} pendientes)` : ""}
-            </button>
-          )}
+          {/* Empty placeholder lines for unassigned truck slots */}
+          {Array.from({ length: Math.max(0, truckCount - assignedCount) }, (_, i) => (
+            <div key={`empty-${i}`} style={{ border:`1px dashed ${C.b1}`, borderLeft:`3px solid ${C.b1}`, borderRadius:10, marginBottom:8, padding:"10px 12px", display:"flex", alignItems:"center", gap:8 }}>
+              {isMultiTruck && <span style={{ fontSize:13.2, fontWeight:800, color:C.t3 }}>#{assignedCount + i + 1}</span>}
+              <span style={{ fontSize:13.2, fontWeight:500, color:C.t3, flex:1, fontStyle:"italic" }}>Pendiente de asignar</span>
+              {(perms.canApprove || (user.userType === "producer" && freight.useOwnFleet)) && (
+                <button onClick={()=>onAction(freight.id,"assign")} style={{ padding:"6px 10px", borderRadius:7, border:`1px solid ${C.acc}`, background:`${C.acc}0D`, color:C.acc, fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:4, whiteSpace:"nowrap", flexShrink:0 }}>
+                  {Ic.plus(C.acc,12)} Asignar
+                </button>
+              )}
+            </div>
+          ))}
         </div>;
       })()}
 
