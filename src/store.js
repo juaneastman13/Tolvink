@@ -4,13 +4,17 @@
 // =====================================================================
 
 import { create } from "zustand";
-import { applyTheme, getTheme } from "./theme";
 import log from "./logger";
+
+// Lazy theme access to avoid circular dependency (theme.jsx ↔ store.js)
+function _getTheme() { try { return localStorage.getItem('tolvink_theme') || 'light'; } catch(e) { return 'light'; } }
+let _applyTheme = null;
+export function _setApplyTheme(fn) { _applyTheme = fn; }
 
 // ======================== UI STORE ===================================
 // Modals, toasts, map overlay, list view mode, theme
 export const useUIStore = create((set) => ({
-  theme: getTheme(),
+  theme: _getTheme(),
   modal: null,
   toast: null,
   mapFocus: null,
@@ -24,7 +28,11 @@ export const useUIStore = create((set) => ({
   editData: null,
   locPicker: null,
 
-  toggleTheme: () => set((s) => { const next = s.theme === 'dark' ? 'light' : 'dark'; applyTheme(next); return { theme: next }; }),
+  toggleTheme: () => set((s) => {
+    const next = s.theme === 'dark' ? 'light' : 'dark';
+    if (_applyTheme) _applyTheme(next);
+    return { theme: next };
+  }),
   setModal: (modal) => set({ modal }),
   setToast: (toast) => set({ toast }),
   show: (msg, type = "ok") => set({ toast: { msg, type, _ts: Date.now() } }),

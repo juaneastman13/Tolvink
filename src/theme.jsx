@@ -60,6 +60,10 @@ export function applyTheme(name) {
   document.documentElement.style.colorScheme = name;
 }
 
+// Register with store (breaks circular dep: store.js → theme.jsx)
+import { _setApplyTheme } from "./store";
+_setApplyTheme(applyTheme);
+
 // Analytics — fire-and-forget to backend
 const _API = import.meta.env.VITE_API_URL || 'https://tolvink-api-production.up.railway.app/api';
 let _sid = sessionStorage.getItem('tv_sid');
