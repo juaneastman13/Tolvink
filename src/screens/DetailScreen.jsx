@@ -436,11 +436,11 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
                 <button disabled={truckCountLoading||displayCount>=50} onClick={(e)=>{e.stopPropagation();handleTruckCountTap(1);}} style={{ width:30, height:30, borderRadius:7, border:`1.5px solid ${C.b1}`, background:C.bg, cursor:(truckCountLoading||displayCount>=50)?"not-allowed":"pointer", display:"flex", alignItems:"center", justifyContent:"center", opacity:(truckCountLoading||displayCount>=50)?0.35:1, transition:"opacity 0.1s" }}>{Ic.plus(C.t1,15)}</button>
               </div>;})()}
             </div>
-            <span style={{ fontSize:12.1, fontWeight:600, color:C.info }}>{assignedCount}/{truckCount} asignados</span>
+            <span style={{ fontSize:12.1, fontWeight:600, color:C.info }}>{assignedCount}/{truckCountLocal ?? truckCount} asignados</span>
           </div>
           {/* Progress bar (multi-truck) */}
           {showProgressBar && <div style={{ height:6, borderRadius:3, background:C.b1, marginBottom:14, overflow:"hidden" }}>
-            <div style={{ height:"100%", borderRadius:3, background: assignedCount >= truckCount ? C.ok : C.info, width:`${Math.min(100, (assignedCount / truckCount) * 100)}%`, transition:"width 0.3s" }}/>
+            <div style={{ height:"100%", borderRadius:3, background: assignedCount >= (truckCountLocal ?? truckCount) ? C.ok : C.info, width:`${Math.min(100, (assignedCount / (truckCountLocal ?? truckCount)) * 100)}%`, transition:"width 0.3s" }}/>
           </div>}
           {/* Assignment cards */}
           {visibleAssignments.map(a => {
@@ -508,7 +508,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
             );
           })}
           {/* Empty placeholder lines for unassigned truck slots */}
-          {Array.from({ length: Math.max(0, truckCount - assignedCount) }, (_, i) => (
+          {Array.from({ length: Math.max(0, (truckCountLocal ?? truckCount) - assignedCount) }, (_, i) => (
             <div key={`empty-${i}`} style={{ border:`1px dashed ${C.b1}`, borderLeft:`3px solid ${C.b1}`, borderRadius:10, marginBottom:8, padding:"10px 12px", display:"flex", alignItems:"center", gap:8 }}>
               {isMultiTruck && <span style={{ fontSize:13.2, fontWeight:800, color:C.t3 }}>#{assignedCount + i + 1}</span>}
               <span style={{ fontSize:13.2, fontWeight:500, color:C.t3, flex:1, fontStyle:"italic" }}>Pendiente de asignar</span>
