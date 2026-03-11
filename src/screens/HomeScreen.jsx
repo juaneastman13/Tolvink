@@ -296,6 +296,25 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
         {openGroup && <div style={{ position:"sticky", top:0, zIndex:11, background:C.bg, paddingTop:4, paddingBottom:4 }}><div style={{ display:"flex", justifyContent:"center" }}><button onClick={() => setOpenGroup(null)} style={{ display:"inline-flex", alignItems:"center", padding:"6px 16px", borderRadius:20, border:`1px solid ${C.b1}`, background:C.w, cursor:"pointer", fontFamily:"inherit", boxShadow:"0 1px 2px rgba(0,0,0,0.04)" }}>
           <span style={{ fontSize:12.1, fontWeight:600, color:C.t2 }}>Ver todo</span>
         </button></div></div>}
+        {/* Date filter — standalone, before pendientes */}
+        <div style={{ padding: compact ? "6px 8px" : "8px 12px", borderRadius: 10, border: `1px solid ${hasDateFilter ? C.acc + "40" : C.b1}`, background: hasDateFilter ? `${C.acc}08` : C.w, marginBottom: 8 }}>
+          <div style={{ display: "flex", gap: 4, flexWrap: "wrap", alignItems: "center" }}>
+            <button onClick={() => setDateFilterOpen(p => !p)} style={{ padding: compact ? "3px 6px" : "4px 8px", borderRadius: 6, border: `1px solid ${hasDateFilter ? C.acc : C.b1}`, background: hasDateFilter ? `${C.acc}15` : "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: compact ? 9.9 : 11, fontWeight: 600, color: hasDateFilter ? C.acc : C.t3, display: "flex", alignItems: "center", gap: 3 }}>
+              {Ic.cal(hasDateFilter ? C.acc : C.t3, compact ? 10 : 11)} {dateFilterOpen ? "Ocultar fechas" : "Filtrar por fecha"}{hasDateFilter ? " (activo)" : ""}
+            </button>
+            {hasDateFilter && <button onClick={clearDateFilter} style={{ padding: compact ? "3px 6px" : "4px 8px", borderRadius: 6, border: `1px solid ${C.err}40`, background: C.errPale, cursor: "pointer", fontFamily: "inherit", fontSize: compact ? 9.9 : 11, fontWeight: 600, color: C.err }}>Limpiar</button>}
+          </div>
+          {dateFilterOpen && <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 6, flexWrap: "wrap" }}>
+            <span style={{ fontSize: compact ? 9.9 : 11, color: C.t2, fontWeight: 600 }}>Desde</span>
+            <input type="date" value={dateFrom} onChange={e => { setDateFrom(e.target.value); setDatePreset("custom"); }} onClick={e => e.target.showPicker?.()} style={{ padding: "3px 6px", borderRadius: 6, border: `1px solid ${C.b1}`, background: C.w, color: dateFrom ? C.t1 : C.t3, fontSize: compact ? 9.9 : 11, fontFamily: "inherit", outline: "none", cursor: "pointer" }} />
+            <span style={{ fontSize: compact ? 9.9 : 11, color: C.t2, fontWeight: 600 }}>Hasta</span>
+            <input type="date" value={dateTo} onChange={e => { setDateTo(e.target.value); setDatePreset("custom"); }} onClick={e => e.target.showPicker?.()} style={{ padding: "3px 6px", borderRadius: 6, border: `1px solid ${C.b1}`, background: C.w, color: dateTo ? C.t1 : C.t3, fontSize: compact ? 9.9 : 11, fontFamily: "inherit", outline: "none", cursor: "pointer" }} />
+            {[{ k: "today", l: "Hoy" }, { k: "week", l: "Semana" }, { k: "month", l: "Mes" }].map(p => (
+              <button key={p.k} onClick={() => applyDatePreset(p.k)} style={{ padding: compact ? "3px 6px" : "4px 8px", borderRadius: 6, border: `1px solid ${datePreset === p.k ? C.acc : C.b1}`, background: datePreset === p.k ? `${C.acc}15` : "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: compact ? 9.9 : 11, fontWeight: 600, color: datePreset === p.k ? C.acc : C.t3 }}>{p.l}</button>
+            ))}
+          </div>}
+        </div>
+
         {/* Pendientes — hidden when a "sin pendientes" group is open */}
         {!smOpen && totalPendingAll > 0 && (<>
           <div style={{ padding: compact ? "8px 10px" : "12px 14px", borderRadius: 12, background: `${C.acc}0D`, marginBottom: 8 }}>
@@ -310,21 +329,6 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
                 {!compact && <div style={{ fontSize: 11.6, color: C.t3 }}>Requieren tu atención</div>}
               </div>
             </div>
-            <div style={{ display: "flex", gap: 4, marginTop: 6, flexWrap: "wrap", alignItems: "center" }}>
-              <button onClick={() => setDateFilterOpen(p => !p)} style={{ padding: compact ? "3px 6px" : "4px 8px", borderRadius: 6, border: `1px solid ${hasDateFilter ? C.acc : C.b1}`, background: hasDateFilter ? `${C.acc}15` : "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: compact ? 9.9 : 11, fontWeight: 600, color: hasDateFilter ? C.acc : C.t3, display: "flex", alignItems: "center", gap: 3 }}>
-                {Ic.cal(hasDateFilter ? C.acc : C.t3, compact ? 10 : 11)} {dateFilterOpen ? "Ocultar fechas" : "Filtrar por fecha"}{hasDateFilter ? " (activo)" : ""}
-              </button>
-              {hasDateFilter && <button onClick={clearDateFilter} style={{ padding: compact ? "3px 6px" : "4px 8px", borderRadius: 6, border: `1px solid ${C.err}40`, background: C.errPale, cursor: "pointer", fontFamily: "inherit", fontSize: compact ? 9.9 : 11, fontWeight: 600, color: C.err }}>Limpiar</button>}
-            </div>
-            {dateFilterOpen && <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 6, flexWrap: "wrap" }}>
-              <span style={{ fontSize: compact ? 9.9 : 11, color: C.t2, fontWeight: 600 }}>Desde</span>
-              <input type="date" value={dateFrom} onChange={e => { setDateFrom(e.target.value); setDatePreset("custom"); }} onClick={e => e.target.showPicker?.()} style={{ padding: "3px 6px", borderRadius: 6, border: `1px solid ${C.b1}`, background: C.w, color: dateFrom ? C.t1 : C.t3, fontSize: compact ? 9.9 : 11, fontFamily: "inherit", outline: "none", cursor: "pointer" }} />
-              <span style={{ fontSize: compact ? 9.9 : 11, color: C.t2, fontWeight: 600 }}>Hasta</span>
-              <input type="date" value={dateTo} onChange={e => { setDateTo(e.target.value); setDatePreset("custom"); }} onClick={e => e.target.showPicker?.()} style={{ padding: "3px 6px", borderRadius: 6, border: `1px solid ${C.b1}`, background: C.w, color: dateTo ? C.t1 : C.t3, fontSize: compact ? 9.9 : 11, fontFamily: "inherit", outline: "none", cursor: "pointer" }} />
-              {[{ k: "today", l: "Hoy" }, { k: "week", l: "Semana" }, { k: "month", l: "Mes" }].map(p => (
-                <button key={p.k} onClick={() => applyDatePreset(p.k)} style={{ padding: compact ? "3px 6px" : "4px 8px", borderRadius: 6, border: `1px solid ${datePreset === p.k ? C.acc : C.b1}`, background: datePreset === p.k ? `${C.acc}15` : "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: compact ? 9.9 : 11, fontWeight: 600, color: datePreset === p.k ? C.acc : C.t3 }}>{p.l}</button>
-              ))}
-            </div>}
           </div>
           {pendingByProgress.length > 0 && (
             <div style={{ marginBottom: 16 }}>
@@ -343,10 +347,6 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
             </div>
             <div style={{ flex: 1, fontSize: compact ? 12.1 : 13.2, fontWeight: 700, color: C.ok }}>Sin pendientes de mi parte</div>
           </div>
-          {hasDateFilter && <div style={{ display: "flex", gap: 4, marginTop: 6, flexWrap: "wrap", alignItems: "center" }}>
-            <span style={{ fontSize: compact ? 9.9 : 11, color: C.ok, fontWeight: 600, display: "flex", alignItems: "center", gap: 3 }}>{Ic.cal(C.ok, compact ? 10 : 11)} Filtro de fecha activo</span>
-            <button onClick={clearDateFilter} style={{ padding: compact ? "3px 6px" : "4px 8px", borderRadius: 6, border: `1px solid ${C.err}40`, background: C.errPale, cursor: "pointer", fontFamily: "inherit", fontSize: compact ? 9.9 : 11, fontWeight: 600, color: C.err }}>Limpiar</button>
-          </div>}
         </div>
 
         {/* Summary groups — by progress state */}
