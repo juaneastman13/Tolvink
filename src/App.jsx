@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef, useCallback, useMemo, lazy, Suspense } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { uploadPhoto, apiAddDocument, apiListConversations } from "./api";
+import { uploadPhoto, apiAddDocument, apiListConversations, apiSearchFreights } from "./api";
 import { C, track, FONT, Ic } from "./theme";
 import { POLL_INTERVALS, stCfg } from "./constants";
 import { Toast, LoadingOverlay, Sidebar, Nav, NotifBell, NotificationsPanel, ErrorBoundary } from "./components";
-import { useAuth, useCatalog, useFreights, permsFor, useIsDesktop, useOnline, useNotifications, useSSE } from "./hooks";
+import { useAuth, useCatalog, useFreights, permsFor, useIsDesktop, useOnline, useNotifications, useSSE, mapFreight } from "./hooks";
 import { RoutesBackground } from "./routes-bg";
 import "./app.css";
 
@@ -150,6 +150,8 @@ export default function Tolvink() {
   // Global search
   const [searchQ, setSearchQ] = useState("");
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+  const [searchResults, setSearchResults] = useState([]);
+  const searchTimerRef = useRef(null);
 
   // AI Chat state
   const [aiChatOpen, setAiChatOpen] = useState(false);
@@ -250,15 +252,18 @@ export default function Tolvink() {
     return fh.freights;
   }, [fh.freights, auth.user]);
 
-  // Global search results (must be after viewFreights)
-  const searchResults = useMemo(() => {
-    if (!searchQ || searchQ.length < 2 || !viewFreights) return [];
-    const q = searchQ.toLowerCase();
-    return viewFreights.filter(f => {
-      const haystack = [f.code, f.grain, f.originName, f.fieldName, f.destName, f.transporterName, f.driverName, f.originCompanyName, f.requestedByName, f.truckPlate, f.productTypeOther].filter(Boolean).join(" ").toLowerCase();
-      return haystack.includes(q);
-    });
-  }, [searchQ, viewFreights]);
+  // Global search — debounced server-side search across all company freights
+  useEffect(() => {
+    if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+    if (!searchQ || searchQ.length < 2) { setSearchResults([]); return; }
+    searchTimerRef.current = setTimeout(async () => {
+      try {
+        const r = await apiSearchFreights(searchQ);
+        setSearchResults((r.data || []).map(mapFreight));
+      } catch { setSearchResults([]); }
+    }, 300);
+    return () => { if (searchTimerRef.current) clearTimeout(searchTimerRef.current); };
+  }, [searchQ]);
 
   // Calculate pending actions count
   const pendingCount = useMemo(() => {

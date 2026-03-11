@@ -210,7 +210,8 @@ export async function apiSwitchCompany(companyId) {
 export async function apiGetMyCompanies() { return api('/auth/me/companies'); }
 
 // Freights
-export async function apiListFreights(q={}) { const p=new URLSearchParams(); if(q.status)p.set('status',q.status); if(q.page)p.set('page',String(q.page)); if(q.limit)p.set('limit',String(q.limit)); if(q.company)p.set('company',q.company); const qs=p.toString(); return api(`/freights${qs?`?${qs}`:''}`); }
+export async function apiListFreights(q={}) { const p=new URLSearchParams(); if(q.status)p.set('status',q.status); if(q.page)p.set('page',String(q.page)); if(q.limit)p.set('limit',String(q.limit)); if(q.company)p.set('company',q.company); if(q.search)p.set('search',q.search); const qs=p.toString(); return api(`/freights${qs?`?${qs}`:''}`); }
+export async function apiSearchFreights(search) { return apiListFreights({ search, limit: 50 }); }
 export async function apiGetFreight(id) { return api(`/freights/${id}`); }
 export async function apiCreateFreight(b) { return api('/freights',{body:b}); }
 export async function apiAssignFreight(id,b) { return api(`/freights/${id}/assign`,{body:b}); }
