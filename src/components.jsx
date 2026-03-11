@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, memo, useMemo, Component, useCallback, useId } from "react";
-import { C, Ic } from "./theme";
-import { stCfg } from "./constants";
+import { C, Ic, FONT, MONO } from "./theme";
+import { stCfg, formatFreightDate } from "./constants";
 import { captureError } from "./sentry";
 
 // ======================== BASE COMPONENTS ============================
@@ -396,6 +396,85 @@ export function Sidebar({ active, onChange, unread=0, pendingCount=0, notifCount
   const items = simpleMode ? allItems.filter(it => simpleKeys.has(it.k)) : allItems;
   const compLabel = activeCompany ? (_TYPE_LABELS[activeCompany.type] || "") : null;
   const hasMultiple = companies.length > 1;
+
+  // Hover preview for search results
+  const [hoverFreight, setHoverFreight] = useState(null);
+  const [hoverPos, setHoverPos] = useState({ x:0, y:0 });
+  const hoverTimerRef = useRef(null);
+  const clearHoverTimer = useCallback(() => { if (hoverTimerRef.current) { clearTimeout(hoverTimerRef.current); hoverTimerRef.current = null; } }, []);
+  const handleSearchHoverEnter = useCallback((f, e) => {
+    clearHoverTimer();
+    hoverTimerRef.current = setTimeout(() => {
+      const rect = e.currentTarget.getBoundingClientRect();
+      setHoverPos({ x: rect.right + 12, y: rect.top });
+      setHoverFreight(f);
+    }, 800);
+  }, [clearHoverTimer]);
+  const handleSearchHoverLeave = useCallback(() => { clearHoverTimer(); setHoverFreight(null); }, [clearHoverTimer]);
+  const adjustPreviewPos = useCallback((el) => {
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    let needsUpdate = false, x = rect.left, y = rect.top;
+    if (rect.right > window.innerWidth - 12) { x = Math.max(12, rect.left - rect.width - 24); needsUpdate = true; }
+    if (rect.bottom > window.innerHeight - 12) { y = Math.max(12, window.innerHeight - rect.height - 12); needsUpdate = true; }
+    if (needsUpdate) setHoverPos({ x, y });
+  }, []);
+  useEffect(() => () => clearHoverTimer(), [clearHoverTimer]);
+
+  const SearchHoverPreview = hoverFreight ? (() => {
+    const f = hoverFreight;
+    const st = stCfg(f.status);
+    const origin = f.fieldName || f.originName;
+    return (
+      <div ref={adjustPreviewPos} style={{ position:"fixed", left:hoverPos.x, top:hoverPos.y, zIndex:9999, width:340, background:C.w, border:`1px solid ${C.b1}`, borderLeft:`5px solid ${st.color}`, borderRadius:14, boxShadow:C.shLg, padding:18, pointerEvents:"none", fontFamily:FONT, animation:"tvPreviewIn 0.15s ease-out" }}>
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:10 }}>
+          <span style={{ fontFamily:MONO, fontWeight:700, fontSize:13.2, color:C.t2 }}>{f.code}</span>
+          <Bd color={st.color} bg={st.bg}>{st.label}</Bd>
+        </div>
+        <div style={{ fontSize:16, fontWeight:700, color:C.t1, marginBottom:8 }}>
+          {Ic.grain(st.color, 16)} <span style={{ marginLeft:4 }}>{f.grain === "Otros" ? f.productTypeOther || "Otros" : f.grain} · {f.tons} {f.unit || "tn"}</span>
+        </div>
+        <div style={{ display:"flex", flexDirection:"column", gap:5, marginBottom:10, padding:"8px 0", borderTop:`1px solid ${C.b2}`, borderBottom:`1px solid ${C.b2}` }}>
+          <div style={{ display:"flex", alignItems:"center", gap:6, fontSize:13.2, color:C.t2 }}>
+            {Ic.pin(C.pri, 13)} <span style={{ fontWeight:600 }}>{origin || "Sin origen"}</span>
+          </div>
+          <div style={{ display:"flex", alignItems:"center", gap:6, fontSize:11, color:C.t3, paddingLeft:2 }}>
+            <span style={{ width:13, display:"flex", justifyContent:"center", color:C.t3 }}>↓</span>
+            <span>{f.originCompanyName || ""}</span>
+          </div>
+          <div style={{ display:"flex", alignItems:"center", gap:6, fontSize:13.2, color:C.t2 }}>
+            {Ic.plant(C.sec, 13)} <span style={{ fontWeight:600 }}>{f.destName || "Sin destino"}</span>
+          </div>
+        </div>
+        {f.loadDate && (
+          <div style={{ display:"flex", alignItems:"center", gap:6, fontSize:12.5, color:C.t2, marginBottom:6 }}>
+            {Ic.cal(C.t3, 12)} {formatFreightDate(f.loadDate)}{f.loadTime ? <><span style={{ color:C.t3, margin:"0 2px" }}>·</span>{Ic.clk(C.t3, 12)} {f.loadTime}</> : ""}
+          </div>
+        )}
+        <div style={{ display:"flex", alignItems:"center", gap:6, fontSize:12.5, color:C.t2, marginBottom:4 }}>
+          {Ic.truck(C.t3, 12)} <span>{f.transporterName || "Sin asignar"}</span>
+          {f.isOwnFleet && <span style={{ fontSize:10, color:C.acc, fontWeight:700, background:C.accPale, padding:"1px 5px", borderRadius:4 }}>Flota propia</span>}
+        </div>
+        {(f.truckPlate || f.driverName) && (
+          <div style={{ display:"flex", alignItems:"center", gap:8, fontSize:12.1, color:C.t3 }}>
+            {f.truckPlate && <span style={{ fontFamily:MONO, fontWeight:600 }}>{f.truckPlate}</span>}
+            {f.driverName && <span>{Ic.user(C.t3, 11)} {f.driverName}</span>}
+          </div>
+        )}
+        {f.isMultiTruck && (
+          <div style={{ marginTop:8, padding:"5px 8px", background:C.infoPale, borderRadius:6, fontSize:11.5, fontWeight:600, color:C.info, display:"inline-flex", alignItems:"center", gap:4 }}>
+            {Ic.truck(C.info, 12)} {f.assignedTruckCount}/{f.truckCount} camiones asignados
+          </div>
+        )}
+        {f.isOverdue && (
+          <div style={{ marginTop:8, padding:"4px 8px", background:"#FEE2E2", borderRadius:6, fontSize:11.5, fontWeight:700, color:"#DC2626", display:"inline-flex", alignItems:"center", gap:4 }}>
+            {Ic.warn("#DC2626", 12)} Retrasado
+          </div>
+        )}
+      </div>
+    );
+  })() : null;
+
   return (
     <div style={{ width:220, minWidth:220, height:"100%", background:C.w, borderRight:`1px solid ${C.b2}`, display:"flex", flexDirection:"column", flexShrink:0, overflow:"hidden" }}>
       {/* Logo */}
@@ -454,7 +533,7 @@ export function Sidebar({ active, onChange, unread=0, pendingCount=0, notifCount
           {searchQuery && <button onClick={()=>onSearchChange("")} style={{ display:"flex", border:"none", background:"none", cursor:"pointer", padding:0 }}>{Ic.cross(C.t3,12)}</button>}
         </div>
         {searchQuery.length >= 2 && searchResults.length > 0 && <div style={{ position:"absolute", left:12, right:12, top:"100%", marginTop:2, background:C.w, border:`1px solid ${C.b1}`, borderRadius:10, boxShadow:C.shMd, zIndex:100, maxHeight:280, overflowY:"auto", padding:4 }}>
-          {searchResults.slice(0,8).map(f => <button key={f.id} onClick={()=>{onSearchSelect(f.id);onSearchChange("");}} style={{ display:"flex", alignItems:"center", gap:8, width:"100%", padding:"8px 10px", background:"transparent", border:"none", borderRadius:8, cursor:"pointer", fontFamily:"inherit", textAlign:"left" }} onMouseEnter={e=>e.currentTarget.style.background=C.priGhost} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+          {searchResults.slice(0,8).map(f => <button key={f.id} onClick={()=>{handleSearchHoverLeave();onSearchSelect(f.id);onSearchChange("");}} style={{ display:"flex", alignItems:"center", gap:8, width:"100%", padding:"8px 10px", background:"transparent", border:"none", borderRadius:8, cursor:"pointer", fontFamily:"inherit", textAlign:"left" }} onMouseEnter={e=>{e.currentTarget.style.background=C.priGhost;handleSearchHoverEnter(f,e);}} onMouseLeave={e=>{e.currentTarget.style.background="transparent";handleSearchHoverLeave();}}>
             <div style={{ flex:1, minWidth:0 }}>
               <div style={{ fontSize:12.1, fontWeight:700, color:C.t1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{f.grain} · {f.tons} {f.unit||"tn"}</div>
               <div style={{ fontSize:10.5, color:C.t3, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{f.code} · {f.originName||f.fieldName||"—"} → {f.destName||"—"}</div>
@@ -488,6 +567,7 @@ export function Sidebar({ active, onChange, unread=0, pendingCount=0, notifCount
           <span style={{ flex:1, textAlign:"center", fontSize:9.9, fontWeight:700, padding:"4px 0", position:"relative", zIndex:1, color:simpleMode?C.w:C.t3, transition:"color 0.2s", userSelect:"none" }}>Simple</span>
         </div>}
       </div>
+      {SearchHoverPreview}
     </div>
   );
 }
