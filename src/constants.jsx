@@ -7,8 +7,8 @@ export const STATUS_LIGHT = {
   pending_assignment: { label:"Pendiente",           color:"#FF6A00",   bg:"#FFF3E8",   border:"#FF6A00"   },
   assigned:           { label:"Asignando flota",     color:"#0891B2",   bg:"#ECFEFF",   border:"#0891B2"   },
   accepted:           { label:"Confirmando camiones", color:"#2563EB",   bg:"#EFF6FF",   border:"#2563EB"   },
-  in_progress:        { label:"En curso",            color:"#4ADE80",   bg:"#ECFDF5",   border:"#4ADE80"   },
-  loaded:             { label:"En viaje a planta",    color:"#22C55E",   bg:"#DCFCE7",   border:"#22C55E"   },
+  in_progress:        { label:"En viaje a campo",     color:"#4ADE80",   bg:"#ECFDF5",   border:"#4ADE80"   },
+  loaded:             { label:"En viaje a planta",     color:"#22C55E",   bg:"#DCFCE7",   border:"#22C55E"   },
   finished:           { label:"Finalizado",          color:"#1A6B37",   bg:"#E4F3EA",   border:"#1A6B37"   },
   canceled:           { label:"Cancelado",           color:"#DC2626",   bg:"#FEE2E2",   border:"#DC2626"   },
 };
@@ -43,12 +43,12 @@ export function getActions(status, userType, role, isOwnFleet) {
 
 // Trip-level status (multi-truck v6.0)
 export const TRIP_STATUS_CFG = {
-  pending:     { label:"Pendiente",   color:"#FF6A00", bg:"#FFF3E8" },
-  accepted:    { label:"Aceptado",    color:"#2563EB", bg:"#EFF6FF" },
-  in_progress: { label:"En viaje",    color:"#4ADE80", bg:"#ECFDF5" },
-  loaded:      { label:"Cargado",     color:"#22C55E", bg:"#DCFCE7" },
-  finished:    { label:"Entregado",   color:"#1A6B37", bg:"#E4F3EA" },
-  canceled:    { label:"Cancelado",   color:"#DC2626", bg:"#FEE2E2" },
+  pending:     { label:"Pendiente",        color:"#FF6A00", bg:"#FFF3E8" },
+  accepted:    { label:"Asignado",         color:"#2563EB", bg:"#EFF6FF" },
+  in_progress: { label:"En viaje a campo", color:"#4ADE80", bg:"#ECFDF5" },
+  loaded:      { label:"En viaje a planta",color:"#22C55E", bg:"#DCFCE7" },
+  finished:    { label:"Finalizado",       color:"#1A6B37", bg:"#E4F3EA" },
+  canceled:    { label:"Cancelado",        color:"#DC2626", bg:"#FEE2E2" },
 };
 export function tripStCfg(s) { return TRIP_STATUS_CFG[s] || TRIP_STATUS_CFG.pending; }
 

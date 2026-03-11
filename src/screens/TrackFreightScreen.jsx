@@ -18,9 +18,9 @@ const STATUS_CFG = {
   draft: { label: "Borrador", color: "#71717A" },
   pending_assignment: { label: "Sin asignar", color: "#FF6A00" },
   assigned: { label: "Asignado", color: "#0891B2" },
-  accepted: { label: "Aceptado", color: "#2563EB" },
-  in_progress: { label: "En camino", color: "#FF6A00" },
-  loaded: { label: "Cargado", color: "#1A6B37" },
+  accepted: { label: "Asignado", color: "#2563EB" },
+  in_progress: { label: "En viaje a campo", color: "#FF6A00" },
+  loaded: { label: "En viaje a planta", color: "#1A6B37" },
   finished: { label: "Finalizado", color: "#1A6B37" },
   canceled: { label: "Cancelado", color: "#DC2626" },
 };

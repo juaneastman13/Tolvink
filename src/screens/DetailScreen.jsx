@@ -313,7 +313,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
         const curIdx = steps.indexOf(freight.status);
         const isCanceled = freight.status === "canceled";
         // Visual stepper: 3 steps
-        const subLabels = { assigned:"Asignando flota", accepted:"Confirmando camiones", in_progress:"En camino", loaded:"Cargando" };
+        const subLabels = { assigned:"Asignando flota", accepted:"Asignado", in_progress:"En viaje a campo", loaded:"En viaje a planta" };
         const visualIdx = isCanceled ? (curIdx >= 1 ? (curIdx >= 3 ? 2 : 1) : 0) : curIdx === 0 ? 0 : curIdx <= 4 ? 1 : 2;
         // Multi-truck: build per-assignment status breakdown
         const multiTruckSub = isMultiTruck && [1,2,3,4].includes(curIdx) ? (freight.activeAssignments||[]).map(a => ({ n: a.tripNumber, cfg: tripStCfg(a.tripStatus) })) : null;

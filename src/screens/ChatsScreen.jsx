@@ -460,7 +460,7 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
   };
 
   const stLabel = (s) => {
-    const m = {pending_assignment:"Pendiente",assigned:"Asignado",accepted:"Aceptado",in_progress:"En viaje",loaded:"Cargado",finished:"Finalizado",canceled:"Cancelado"};
+    const m = {pending_assignment:"Pendiente",assigned:"Asignado",accepted:"Asignado",in_progress:"En viaje a campo",loaded:"En viaje a planta",finished:"Finalizado",canceled:"Cancelado"};
     return m[s]||s;
   };
   const stColor = (s) => {

@@ -24,8 +24,8 @@ const ROLE_CFG = {
 };
 
 const STATUS_LABELS = {
-  pending_assignment: "Sin asignar", assigned: "Asignado", accepted: "Aceptado",
-  in_progress: "En camino", loaded: "Cargado", finished: "Finalizado", canceled: "Cancelado",
+  pending_assignment: "Sin asignar", assigned: "Asignado", accepted: "Asignado",
+  in_progress: "En viaje a campo", loaded: "En viaje a planta", finished: "Finalizado", canceled: "Cancelado",
 };
 
 const esc = (s) => String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
