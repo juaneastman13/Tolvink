@@ -260,7 +260,7 @@ export async function apiCreateTruck(b) { return api('/trucks',{body:b}); }
 export async function apiDeactivateTruck(id) { return api(`/trucks/${id}/deactivate`,{body:{},method:'PATCH'}); }
 
 // Drivers (choferes)
-export async function apiGetDrivers(companyId) { return api(`/freights/drivers?companyId=${encodeURIComponent(companyId)}`); }
+export async function apiGetDrivers(companyId) { return api(companyId ? `/freights/drivers?companyId=${encodeURIComponent(companyId)}` : '/freights/drivers'); }
 export async function apiGetDriverQueue(driverId) { return api(`/freights/drivers/${driverId}/queue`); }
 export async function apiReorderDriverQueue(driverId, orderedFreightIds) { return api(`/freights/drivers/${driverId}/reorder`,{body:{orderedFreightIds}}); }
 export async function apiListDrivers() { return api('/trucks/drivers'); }
@@ -383,7 +383,7 @@ function compressImage(file, maxWidth = 1920, quality = 0.8) {
         quality
       );
     };
-    img.onerror = () => { URL.revokeObjectURL(url); resolve(file); };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Error al procesar imagen')); };
     img.src = url;
   });
 }
@@ -394,7 +394,7 @@ const MAX_UPLOAD_SIZE = 10 * 1024 * 1024; // 10MB
 export async function uploadPhoto(file, freightId, step) {
   if (file.size > MAX_UPLOAD_SIZE) throw new Error('El archivo excede el tamaño máximo de 10MB');
   // Compress image before upload
-  const processed = file.type.startsWith('image/') ? await compressImage(file) : file;
+  const processed = file.type.startsWith('image/') ? await compressImage(file).catch(() => file) : file;
   const ext = (processed.name?.split('.').pop() || 'jpg').replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
   const SAFE_EXTS = new Set(['jpg','jpeg','png','webp','gif','pdf','doc','docx','xlsx','heic','heif']);
   const SAFE_MIMES = new Set(['image/jpeg','image/png','image/webp','image/gif','image/heic','image/heif','application/pdf','application/msword','application/vnd.openxmlformats-officedocument.wordprocessingml.document','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']);
@@ -431,7 +431,7 @@ export function thumb(url, size = 96) {
 export async function uploadChatFile(file, conversationId) {
   if (file.size > MAX_UPLOAD_SIZE) throw new Error('El archivo excede el tamaño máximo de 10MB');
   // Compress image before upload (skip non-image files)
-  const processed = file.type.startsWith('image/') ? await compressImage(file) : file;
+  const processed = file.type.startsWith('image/') ? await compressImage(file).catch(() => file) : file;
   const ext = (processed.name?.split('.').pop() || 'bin').toLowerCase();
   const SAFE_CHAT_EXTS = new Set(['jpg','jpeg','png','webp','gif','pdf','doc','docx','xlsx','heic','heif','mp4','mp3','ogg','wav']);
   if (!SAFE_CHAT_EXTS.has(ext)) throw new Error('Tipo de archivo no permitido');

@@ -8,8 +8,8 @@ import { getPendingActions, resolveUserTypeForFreight } from "../utils/freight-h
 const FreightsOverviewMap = lazy(() => import("../maps").then(m => ({ default: m.FreightsOverviewMap })));
 
 const GROUPS = [
-  { key:"solicitado", label:"Solicitado", color:"#FF6A00", icon:Ic.warn, statuses:["pending_assignment"] },
-  { key:"en_curso", label:"En curso", color:"#2563EB", icon:Ic.nav, statuses:["assigned","accepted","in_progress","loaded"] },
+  { key:"solicitado", label:"Solicitado", color:C.acc, icon:Ic.warn, statuses:["pending_assignment"] },
+  { key:"en_curso", label:"En curso", color:C.sec, icon:Ic.nav, statuses:["assigned","accepted","in_progress","loaded"] },
   { key:"finalizados", label:"Finalizados", color:C.pri, icon:Ic.chk, statuses:["finished"] },
   { key:"cancelados", label:"Cancelados", color:C.err, icon:Ic.ban, statuses:["canceled"] },
 ];
@@ -262,11 +262,11 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
         </div>
         {/* Filters */}
         <div style={{ display:"flex", gap:6, marginBottom:12, flexWrap:"wrap", alignItems:"center" }}>
-          <select value={simpleFilter1.value} onChange={e=>simpleFilter1.set(e.target.value)} style={{padding:"7px 10px",borderRadius:8,border:`1.5px solid ${simpleFilter1.value?C.pri:C.b1}`,background:simpleFilter1.value?C.priPale:C.w,color:simpleFilter1.value?C.pri:C.t3,fontSize:13.2,fontFamily:"inherit",outline:"none",cursor:"pointer",minWidth:0,flex:"1 1 120px",maxWidth:200}}>
+          <select aria-label={simpleFilter1.label} value={simpleFilter1.value} onChange={e=>simpleFilter1.set(e.target.value)} style={{padding:"7px 10px",borderRadius:8,border:`1.5px solid ${simpleFilter1.value?C.pri:C.b1}`,background:simpleFilter1.value?C.priPale:C.w,color:simpleFilter1.value?C.pri:C.t3,fontSize:13.2,fontFamily:"inherit",outline:"none",cursor:"pointer",minWidth:0,flex:"1 1 120px",maxWidth:200}}>
             <option value="">{simpleFilter1.label}</option>
             {simpleFilter1.options.map(o=><option key={o} value={o}>{o}</option>)}
           </select>
-          <select value={simpleFilter2.value} onChange={e=>simpleFilter2.set(e.target.value)} style={{padding:"7px 10px",borderRadius:8,border:`1.5px solid ${simpleFilter2.value?C.pri:C.b1}`,background:simpleFilter2.value?C.priPale:C.w,color:simpleFilter2.value?C.pri:C.t3,fontSize:13.2,fontFamily:"inherit",outline:"none",cursor:"pointer",minWidth:0,flex:"1 1 120px",maxWidth:200}}>
+          <select aria-label={simpleFilter2.label} value={simpleFilter2.value} onChange={e=>simpleFilter2.set(e.target.value)} style={{padding:"7px 10px",borderRadius:8,border:`1.5px solid ${simpleFilter2.value?C.pri:C.b1}`,background:simpleFilter2.value?C.priPale:C.w,color:simpleFilter2.value?C.pri:C.t3,fontSize:13.2,fontFamily:"inherit",outline:"none",cursor:"pointer",minWidth:0,flex:"1 1 120px",maxWidth:200}}>
             <option value="">{simpleFilter2.label}</option>
             {simpleFilter2.options.map(o=><option key={o} value={o}>{o}</option>)}
           </select>
@@ -385,17 +385,17 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
         {(dateFrom||dateTo)&&<button onClick={()=>{setDateFrom("");setDateTo("");setDatePreset("");}} aria-label="Limpiar fechas" style={{background:"none",border:"none",cursor:"pointer",display:"flex",padding:2,flexShrink:0}}>{Ic.cross(C.t3,14)}</button>}
       </div>
       <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:6 }}>
-        <select value={fPlant} onChange={e=>setFPlant(e.target.value)} style={{flex:1,padding:"6px 8px",borderRadius:8,border:`1.5px solid ${fPlant?C.pri:C.b1}`,background:fPlant?C.priPale:C.w,color:fPlant?C.pri:C.t3,fontSize:12.1,fontFamily:"inherit",outline:"none",cursor:"pointer",minWidth:0}}>
+        <select aria-label="Planta" value={fPlant} onChange={e=>setFPlant(e.target.value)} style={{flex:1,padding:"6px 8px",borderRadius:8,border:`1.5px solid ${fPlant?C.pri:C.b1}`,background:fPlant?C.priPale:C.w,color:fPlant?C.pri:C.t3,fontSize:12.1,fontFamily:"inherit",outline:"none",cursor:"pointer",minWidth:0}}>
           <option value="">Planta</option>
           {plantOptions.map(p=><option key={p} value={p}>{p}</option>)}
         </select>
-        <select value={fProducer} onChange={e=>setFProducer(e.target.value)} style={{flex:1,padding:"6px 8px",borderRadius:8,border:`1.5px solid ${fProducer?C.pri:C.b1}`,background:fProducer?C.priPale:C.w,color:fProducer?C.pri:C.t3,fontSize:12.1,fontFamily:"inherit",outline:"none",cursor:"pointer",minWidth:0}}>
+        <select aria-label={secondFilterLabel} value={fProducer} onChange={e=>setFProducer(e.target.value)} style={{flex:1,padding:"6px 8px",borderRadius:8,border:`1.5px solid ${fProducer?C.pri:C.b1}`,background:fProducer?C.priPale:C.w,color:fProducer?C.pri:C.t3,fontSize:12.1,fontFamily:"inherit",outline:"none",cursor:"pointer",minWidth:0}}>
           <option value="">{secondFilterLabel}</option>
           {secondFilterOptions.map(p=><option key={p} value={p}>{p}</option>)}
         </select>
       </div>
       <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:12 }}>
-        <select value={fTransporter} onChange={e=>setFTransporter(e.target.value)} style={{flex:1,padding:"6px 8px",borderRadius:8,border:`1.5px solid ${fTransporter?C.pri:C.b1}`,background:fTransporter?C.priPale:C.w,color:fTransporter?C.pri:C.t3,fontSize:12.1,fontFamily:"inherit",outline:"none",cursor:"pointer",minWidth:0}}>
+        <select aria-label="Transportista" value={fTransporter} onChange={e=>setFTransporter(e.target.value)} style={{flex:1,padding:"6px 8px",borderRadius:8,border:`1.5px solid ${fTransporter?C.pri:C.b1}`,background:fTransporter?C.priPale:C.w,color:fTransporter?C.pri:C.t3,fontSize:12.1,fontFamily:"inherit",outline:"none",cursor:"pointer",minWidth:0}}>
           <option value="">Transportista</option>
           {transporterOptions.map(p=><option key={p} value={p}>{p}</option>)}
         </select>

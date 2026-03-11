@@ -675,10 +675,10 @@ export function useSSE(user, { onFreightUpdate, onMessageNew, onNotification, on
       return;
     }
 
-    let connecting = false;
+    const connectingRef = { current: false };
     const connect = async () => {
-      if (connecting) return;
-      connecting = true;
+      if (connectingRef.current) return;
+      connectingRef.current = true;
       try {
       // Safety: close previous EventSource before creating new one
       if (esRef.current) { esRef.current.close(); esRef.current = null; }
@@ -782,7 +782,7 @@ export function useSSE(user, { onFreightUpdate, onMessageNew, onNotification, on
         reconnectTimer.current = setTimeout(connect, reconnectDelay.current);
         reconnectDelay.current = Math.min(reconnectDelay.current * SSE_BACKOFF_FACTOR, SSE_MAX_RECONNECT_MS);
       };
-      } finally { connecting = false; }
+      } finally { connectingRef.current = false; }
     };
 
     connect();

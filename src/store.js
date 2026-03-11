@@ -67,7 +67,7 @@ export const useCatalogStore = create((set, get) => ({
   setLoading: (userId, loading) => set((state) => ({
     cache: {
       ...state.cache,
-      [userId]: { ...(state.cache[userId] || {}), loading }
+      [userId]: { ...(state.cache[userId] || { data: null, ts: 0 }), loading }
     }
   })),
 
@@ -105,8 +105,10 @@ export const offlineQueue = {
         createdAt: Date.now(),
       });
       await new Promise((res, rej) => { tx.oncomplete = res; tx.onerror = rej; });
+      return true;
     } catch (e) {
       log.error("OfflineQueue", "enqueue failed:", e);
+      return false;
     } finally {
       db?.close();
     }
@@ -124,7 +126,7 @@ export const offlineQueue = {
         req.onerror = () => reject(req.error);
       });
     } catch (e) {
-      console.warn('OfflineQueue.getAll failed:', e?.message || e);
+      log.error('OfflineQueue', 'getAll failed:', e?.message || e);
       return [];
     } finally {
       db?.close();

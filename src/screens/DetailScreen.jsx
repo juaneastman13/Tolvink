@@ -66,7 +66,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
   const toggleAudit = () => setShowAudit(v => !v);
 
   // Reset optimistic truck count when freight data refreshes (only if not mid-commit)
-  useEffect(() => { if (!truckCountLoading) setTruckCountLocal(null); }, [freight?.truckCount]);
+  useEffect(() => { if (!truckCountLoading) setTruckCountLocal(null); }, [freight?.truckCount, truckCountLoading]);
 
   const [stepModal, setStepModal] = useState(null); // {idx, label, color, backendSteps}
   const [expandedTrip, setExpandedTrip] = useState(null);
@@ -427,7 +427,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
       {/* Camiones section — always visible */}
       {freight.status !== "canceled" && (()=>{
         const truckCount = freight.truckCount || 1;
-        const assignedCount = freight.assignedTruckCount || visibleAssignments.length;
+        const assignedCount = freight.assignedTruckCount || freight.activeAssignments?.length || 0;
         const canEditCount = (perms.canRequest || perms.canApprove) && !["finished","canceled"].includes(freight.status);
         const showProgressBar = truckCount > 1;
         return <div style={{ background:C.w, border:`1px solid ${C.b1}`, borderRadius:12, padding:16, marginBottom:12, boxShadow:C.sh }}>
@@ -557,7 +557,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
               </div>
               <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
                 {visibleAssignments.length > 0 && visibleAssignments.filter(a=>a.tripStatus==="pending"||a.tripStatus==="accepted").map(a => (
-                  <button key={a.id} onClick={async()=>{setTruckModal(null);if(onCancelAssignment){const r=await onCancelAssignment(freight.id,a.id,"Reducción de camiones");if(r&&r.ok){commitTruckCount(truckModal.next);}else{setTruckCountLocal(null);show(r?.error||"No se pudo quitar el camión","err");}}}} style={{ width:"100%", padding:"10px 12px", borderRadius:10, border:`1px solid ${C.b1}`, background:C.w, color:C.t1, fontSize:13.2, fontWeight:600, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:8, textAlign:"left" }}>
+                  <button key={a.id} onClick={async()=>{const nextCount=truckModal?.next;setTruckModal(null);if(onCancelAssignment){const r=await onCancelAssignment(freight.id,a.id,"Reducción de camiones");if(r&&r.ok){commitTruckCount(nextCount);}else{setTruckCountLocal(null);show(r?.error||"No se pudo quitar el camión","err");}}}} style={{ width:"100%", padding:"10px 12px", borderRadius:10, border:`1px solid ${C.b1}`, background:C.w, color:C.t1, fontSize:13.2, fontWeight:600, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:8, textAlign:"left" }}>
                     <span style={{ fontSize:12.1, fontWeight:700, color:C.err }}>Quitar</span>
                     <span>{a.plate || "Sin placa"}</span>
                     {a.transporterName && <span style={{ color:C.t3, fontSize:12.1 }}>· {a.transporterName}</span>}

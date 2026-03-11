@@ -6,7 +6,7 @@ export const STATUS_LIGHT = {
   draft:              { label:"Borrador",            color:"#71717A",   bg:"#F4F4F5",   border:"#71717A"   },
   pending_assignment: { label:"Pendiente",           color:"#FF6A00",   bg:"#FFF3E8",   border:"#FF6A00"   },
   assigned:           { label:"Asignando flota",     color:"#0891B2",   bg:"#ECFEFF",   border:"#0891B2"   },
-  accepted:           { label:"Confirmando camiones", color:"#2563EB",   bg:"#EFF6FF",   border:"#2563EB"   },
+  accepted:           { label:"Asignado",             color:"#2563EB",   bg:"#EFF6FF",   border:"#2563EB"   },
   in_progress:        { label:"En viaje a campo",     color:"#4ADE80",   bg:"#ECFDF5",   border:"#4ADE80"   },
   loaded:             { label:"En viaje a planta",     color:"#22C55E",   bg:"#DCFCE7",   border:"#22C55E"   },
   finished:           { label:"Finalizado",          color:"#1A6B37",   bg:"#E4F3EA",   border:"#1A6B37"   },
@@ -30,7 +30,7 @@ export function getActions(status, userType, role, isOwnFleet) {
   }
   const map = {
     pending_assignment: { producer:["cancel"], plant:["assign","cancel"], transporter:[] },
-    assigned:           { producer: isOwnFleet ? ["cancel"] : ["cancel"], plant: isOwnFleet ? ["authorize","cancel"] : ["cancel"], transporter:["accept","reject"] },
+    assigned:           { producer:["cancel"], plant: isOwnFleet ? ["authorize","cancel"] : ["cancel"], transporter:["accept","reject"] },
     accepted:           { producer: isOwnFleet ? ["start","cancel"] : ["cancel"], plant:["cancel"], transporter: isOwnFleet ? [] : ["start","cancel"] },
     in_progress:        { producer: isOwnFleet ? ["confirm_loaded"] : [], plant:[], transporter: isOwnFleet ? [] : ["confirm_loaded"] },
     loaded:             { producer: isOwnFleet ? ["confirm_loaded","confirm_finished"] : ["confirm_loaded"], plant:["confirm_finished"], transporter: isOwnFleet ? [] : ["confirm_finished"] },

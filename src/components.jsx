@@ -188,7 +188,7 @@ export function Toast({ msg, type="ok", onClose }) {
   const onCloseRef = useRef(onClose); onCloseRef.current = onClose;
   useEffect(()=>{ const t=setTimeout(()=>onCloseRef.current?.(),3500); return()=>clearTimeout(t); },[msg]);
   const cfg = { ok:{bg:C.pri,ic:Ic.chk(C.w,16)}, err:{bg:C.err,ic:Ic.warn(C.w,16)}, info:{bg:C.info,ic:Ic.bell(C.w,16)} }[type]||{bg:C.pri,ic:Ic.chk(C.w,16)};
-  return <div role="alert" style={{ position:"fixed", top:"max(20px, env(safe-area-inset-top))", left:"50%", transform:"translateX(-50%)", zIndex:200, background:cfg.bg, color:C.w, padding:"11px 22px", borderRadius:12, fontSize:14.3, fontWeight:600, boxShadow:C.shLg, display:"flex", alignItems:"center", gap:8, animation:"fadeIn 0.3s ease", maxWidth:"calc(100vw - 40px)" }}>{cfg.ic} {msg}</div>;
+  return <div role="alert" aria-live="assertive" style={{ position:"fixed", top:"max(20px, env(safe-area-inset-top))", left:"50%", transform:"translateX(-50%)", zIndex:300, background:cfg.bg, color:C.w, padding:"11px 22px", borderRadius:12, fontSize:14.3, fontWeight:600, boxShadow:C.shLg, display:"flex", alignItems:"center", gap:8, animation:"fadeIn 0.3s ease", maxWidth:"calc(100vw - 40px)" }}>{cfg.ic} {msg}</div>;
 }
 
 export const Loader = memo(function Loader() {
@@ -565,9 +565,9 @@ export function NotificationsPanel({ open, onClose, notifications=[], onMarkRead
     if (!open) return;
     const handleClick = (e) => { if (panelRef.current && !panelRef.current.contains(e.target)) onClose(); };
     const handleKey = (e) => { if (e.key === "Escape") onClose(); };
-    const tid = setTimeout(() => document.addEventListener("click", handleClick), 10);
+    const tid = requestAnimationFrame(() => document.addEventListener("click", handleClick));
     window.addEventListener("keydown", handleKey);
-    return () => { clearTimeout(tid); document.removeEventListener("click", handleClick); window.removeEventListener("keydown", handleKey); };
+    return () => { cancelAnimationFrame(tid); document.removeEventListener("click", handleClick); window.removeEventListener("keydown", handleKey); };
   }, [open, onClose]);
 
   const { unread, read } = useMemo(() => {
@@ -674,7 +674,7 @@ export function FileViewer({ file, onClose, onOcr, ocrLoading, onViewOcr }) {
   const isImg = file.type === "image" || file.type === "photo" || safeUrl?.match(/\.(jpg|jpeg|png|webp|gif|svg)$/i);
   const isPdf = safeUrl?.match(/\.pdf$/i);
   return (
-    <div onClick={onClose} role="dialog" aria-modal="true" style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.6)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:250, animation:"fvFadeIn 0.2s ease", padding:16 }}>
+    <div onClick={onClose} role="dialog" aria-modal="true" style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.6)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:260, animation:"fvFadeIn 0.2s ease", padding:16 }}>
       <style>{`@keyframes fvFadeIn{from{opacity:0}to{opacity:1}}`}</style>
       <div onClick={e=>e.stopPropagation()} style={{ background:C.w, borderRadius:14, boxShadow:"0 8px 32px rgba(0,0,0,0.3)", display:"flex", flexDirection:"column", maxWidth:"92vw", maxHeight:"90vh", width: isImg ? "auto" : "90vw", overflow:"hidden" }}>
         {/* Header with close */}
