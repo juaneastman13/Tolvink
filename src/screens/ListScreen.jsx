@@ -36,7 +36,7 @@ const SORT_GETTERS = {
   phone:       f => f.driverPhone || "",
 };
 
-export default function ListScreen({ freights, loading, onNav, onRefresh, catalog, view, setView, goToMap, hasMore, loadMore, loadingMore, total, isDesktop, onAction, user, simpleMode }) {
+export default function ListScreen({ freights, loading, onNav, onRefresh, catalog, view, setView, goToMap, hasMore, loadMore, loadingMore, total, isDesktop, onAction, user, simpleMode, statusCounts }) {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [searchQ, setSearchQ] = useState("");
   const [segExpanded, setSegExpanded] = useState({});
@@ -171,6 +171,14 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
     GROUPS.forEach(g => map[g.key].sort((a,b) => (a.destName||'').localeCompare(b.destName||'') || (a.originName||'').localeCompare(b.originName||'')));
     return map;
   },[filtered]);
+
+  // Real company-wide counts per status group (from backend)
+  const groupRealCounts = useMemo(() => {
+    if (!statusCounts || !Object.keys(statusCounts).length) return null;
+    const map = {};
+    GROUPS.forEach(g => { map[g.key] = g.statuses.reduce((sum, s) => sum + (statusCounts[s] || 0), 0); });
+    return map;
+  }, [statusCounts]);
 
   // Entity grouping for kanban
   const entityGrouped = useMemo(() => {
@@ -606,7 +614,7 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
                 <div style={{ padding:"10px 12px", borderBottom:`2px solid ${group.color}`, display:"flex", alignItems:"center", gap:6 }}>
                   <span style={{ display:"flex", flexShrink:0 }}>{group.icon(group.color, 14)}</span>
                   <span style={{ fontSize:12.1, fontWeight:700, color:group.color }}>{group.label}</span>
-                  <span style={{ fontSize:11, fontWeight:600, color:C.t3, marginLeft:"auto" }}>{items.length}</span>
+                  <span style={{ fontSize:11, fontWeight:600, color:C.t3, marginLeft:"auto" }}>{groupRealCounts?.[group.key] ?? items.length}</span>
                 </div>
                 <div style={{ padding:8, display:"flex", flexDirection:"column", gap:8, maxHeight:"calc(100vh - 180px)", overflowY:"auto" }}>
                   {items.length===0 && <div style={{ fontSize:12.1, color:C.t3, textAlign:"center", padding:16 }}>Sin fletes</div>}
@@ -626,7 +634,7 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
                 <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8, padding:"6px 0", borderBottom:`2px solid ${group.color}` }}>
                   <span style={{ display:"flex", flexShrink:0 }}>{group.icon(group.color, 15)}</span>
                   <span style={{ fontSize:13.2, fontWeight:700, color:group.color }}>{group.label}</span>
-                  <span style={{ fontSize:12.1, fontWeight:600, color:C.t3 }}>({items.length})</span>
+                  <span style={{ fontSize:12.1, fontWeight:600, color:C.t3 }}>({groupRealCounts?.[group.key] ?? items.length})</span>
                 </div>
                 <div style={{ display:"flex", flexWrap:"wrap", gap:10 }}>
                   {items.map(f => (

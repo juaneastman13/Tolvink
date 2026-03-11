@@ -312,6 +312,7 @@ export function useFreights(user, isAuthInitialized) {
   const [error, setError] = useState(null);
   const [hasMore, setHasMore] = useState(false);
   const [total, setTotal] = useState(0);
+  const [statusCounts, setStatusCounts] = useState({});
   const pageRef = useRef(1);
 
   // Multi-company: show ALL freights from all user's companies (no company filter).
@@ -328,6 +329,7 @@ export function useFreights(user, isAuthInitialized) {
       freightsRef.current = mapped;
       setFreights(mapped);
       setTotal(r.total||0);
+      setStatusCounts(r.statusCounts||{});
       setHasMore((r.page||1) < (r.pages||1));
     }
     catch(e) { setError(e.message); }
@@ -419,7 +421,7 @@ export function useFreights(user, isAuthInitialized) {
   const startTrip = useCallback(async (fId, aId)=>{ try { await apiStartTrip(fId, aId); await refresh(fId); return {ok:true}; } catch(e) { return {ok:false,error:e.message}; } },[refresh]);
   const confirmTripLoaded = useCallback(async (fId, aId, loadedTons)=>{ try { await apiConfirmTripLoaded(fId, aId, loadedTons); await refresh(fId); return {ok:true}; } catch(e) { return {ok:false,error:e.message}; } },[refresh]);
   const confirmTripFinished = useCallback(async (fId, aId)=>{ try { await apiConfirmTripFinished(fId, aId); await refresh(fId); return {ok:true}; } catch(e) { return {ok:false,error:e.message}; } },[refresh]);
-  return { freights, loading, loadingMore, error, hasMore, total, fetchAll, loadMore, refresh, create, assign, respond, start, finish, cancel, confirmLoaded, confirmFinished, authorize, update, assignMulti, assignTruckCb, cancelAssignment, updateAssignment, respondTrip, startTrip, confirmTripLoaded, confirmTripFinished };
+  return { freights, loading, loadingMore, error, hasMore, total, statusCounts, fetchAll, loadMore, refresh, create, assign, respond, start, finish, cancel, confirmLoaded, confirmFinished, authorize, update, assignMulti, assignTruckCb, cancelAssignment, updateAssignment, respondTrip, startTrip, confirmTripLoaded, confirmTripFinished };
 }
 
 // ======================== MAP FREIGHT =================================

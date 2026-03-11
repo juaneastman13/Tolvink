@@ -42,7 +42,7 @@ function formatTodayHeader() {
   return `Fletes de hoy \u2014 ${DAY_NAMES[d.getDay()]} ${d.getDate()} de ${MONTH_NAMES[d.getMonth()]}`;
 }
 
-export default function HomeScreen({ user, freights, loading, perms, onNav, catalog, isDesktop, onAction, onTripAction, onEditTrip, actionLoading, onChat, onRefresh, onDuplicate, onEdit, goToMap, simpleMode }) {
+export default function HomeScreen({ user, freights, loading, perms, onNav, catalog, isDesktop, onAction, onTripAction, onEditTrip, actionLoading, onChat, onRefresh, onDuplicate, onEdit, goToMap, simpleMode, statusCounts }) {
   const [selectedId, setSelectedId] = useState(null);
   // Track which panel originated the selection: "pending" (left) or "daily" (right)
   const [selectionSource, setSelectionSource] = useState(null);
@@ -180,9 +180,10 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
       const items = filteredFreights
         .filter(f => g.statuses.includes(f.status) && !pendingMap.get(f.id) && matchDate(f.loadDate))
         .sort((a, b) => (a.destName||'').localeCompare(b.destName||'') || (a.originName||'').localeCompare(b.originName||''));
-      return { ...g, icon: g.key==="pendiente"?Ic.warn:g.key==="en_curso"?Ic.nav:g.key==="cancelado"?Ic.cross:Ic.chk, items };
+      const realCount = statusCounts ? g.statuses.reduce((sum, s) => sum + (statusCounts[s] || 0), 0) : null;
+      return { ...g, icon: g.key==="pendiente"?Ic.warn:g.key==="en_curso"?Ic.nav:g.key==="cancelado"?Ic.cross:Ic.chk, items, realCount };
     }).filter(g => g.items.length > 0);
-  }, [filteredFreights, pendingMap, dateFrom, dateTo]);
+  }, [filteredFreights, pendingMap, dateFrom, dateTo, statusCounts]);
 
   // Accordion state — only one group open at a time
   const [openGroup, setOpenGroup] = useState(null);
@@ -264,7 +265,7 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
       <div key={gKey}>
         <button onClick={() => toggleGroup(gKey)} style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, padding: "8px 0", background: isOpen ? C.bg : "none", border: "none", borderBottom: `1px solid ${C.b2}`, cursor: "pointer", fontFamily: "inherit", textAlign: "left", ...(isOpen ? { position: "sticky", top: 32, zIndex: 10 } : {}) }}>
           {group.icon(group.color, 14)}
-          <span style={{ fontSize: 15.4, fontWeight: 800, color: group.color }}>{group.items.length}</span>
+          <span style={{ fontSize: 15.4, fontWeight: 800, color: group.color }}>{group.realCount ?? group.items.length}</span>
           <div style={{ flex: 1, fontSize: 14.3, fontWeight: 600, color: C.t1 }}>{group.label}</div>
           <span style={{ display: "flex", transform: isOpen ? "rotate(270deg)" : "rotate(90deg)", transition: "transform 0.15s ease" }}>{Ic.chev(C.t3, 14)}</span>
         </button>
