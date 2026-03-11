@@ -1,9 +1,10 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useRef } from "react";
 import { C, Ic, MONO } from "../theme";
 import { stCfg, getActions, formatFreightDate } from "../constants";
 import { Bd, Btn, SkeletonList, EmptyState, Tabs } from "../components";
-import { useIsDesktop } from "../hooks";
+import { useIsDesktop, mapFreight } from "../hooks";
 import { getPendingActions, resolveUserTypeForFreight, getWaitingOnText } from "../utils/freight-helpers";
+import { apiListFreights } from "../api";
 import DetailScreen from "./DetailScreen";
 
 // Action groups — grouping pending items by pending action type
@@ -20,8 +21,6 @@ const ACTION_GROUPS = [
 const PROGRESS_GROUPS = [
   { key:"pendiente",   label:"Pendiente",  color:C.acc, statuses:["pending_assignment"] },
   { key:"en_curso",    label:"En curso",   color:C.pri, statuses:["assigned","accepted","in_progress","loaded"] },
-  { key:"finalizado",  label:"Finalizado", color:C.ok,  statuses:["finished"] },
-  { key:"cancelado",   label:"Cancelado",  color:C.err, statuses:["canceled"] },
 ];
 
 // Status order for daily summary grouping — colors sourced from stCfg (STATUS_LIGHT)
@@ -31,7 +30,6 @@ const DAILY_STATUS_ORDER = [
   { key: "accepted",           label: "Asignado",              get color() { return stCfg("accepted").color; } },
   { key: "assigned",           label: "Asignado",              get color() { return stCfg("assigned").color; } },
   { key: "pending_assignment", label: "Pendiente",             get color() { return stCfg("pending_assignment").color; } },
-  { key: "finished",           label: "Finalizado",            get color() { return stCfg("finished").color; } },
 ];
 
 const DAY_NAMES = ["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"];
@@ -187,10 +185,52 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
 
   // Accordion state — only one group open at a time
   const [openGroup, setOpenGroup] = useState(null);
-  const toggleGroup = (key) => setOpenGroup(prev => prev === key ? null : key);
+  const [expandedData, setExpandedData] = useState({}); // { gKey: { items: [...], loading: bool } }
+  const expandedCacheRef = useRef({}); // avoid re-fetching same group
+  // Invalidate cache when freights data changes (SSE refresh, etc.)
+  const freightGenRef = useRef(0);
+  if (freights.length !== freightGenRef.current) {
+    freightGenRef.current = freights.length;
+    expandedCacheRef.current = {};
+  }
 
-  // Selected freight for detail
-  const selFreight = selectedId ? filteredFreights.find(f => f.id === selectedId) || freights.find(f => f.id === selectedId) : null;
+  const toggleGroup = useCallback((gKey) => {
+    setOpenGroup(prev => {
+      if (prev === gKey) return null; // closing
+      // Opening — fetch full data for this group's statuses
+      const allGroups = [...ACTION_GROUPS.map(g => ({ ...g, prefix: "pa" })), ...PROGRESS_GROUPS.map(g => ({ ...g, prefix: "sm" }))];
+      const prefix = gKey.split("_")[0];
+      const groupKey = gKey.slice(prefix.length + 1);
+      let statuses;
+      if (prefix === "sm") {
+        const pg = PROGRESS_GROUPS.find(g => g.key === groupKey);
+        statuses = pg ? pg.statuses : [];
+      } else {
+        // For pending action groups, fetch all active statuses
+        statuses = ["pending_assignment", "assigned", "accepted", "in_progress", "loaded"];
+      }
+      if (statuses.length > 0 && !expandedCacheRef.current[gKey]) {
+        setExpandedData(d => ({ ...d, [gKey]: { items: [], loading: true } }));
+        apiListFreights({ status: statuses.join(","), limit: 999 })
+          .then(r => {
+            const mapped = (r.data || []).map(mapFreight);
+            expandedCacheRef.current[gKey] = mapped;
+            setExpandedData(d => ({ ...d, [gKey]: { items: mapped, loading: false } }));
+          })
+          .catch(() => {
+            setExpandedData(d => ({ ...d, [gKey]: { items: [], loading: false } }));
+          });
+      }
+      return gKey;
+    });
+  }, []);
+
+  // Selected freight for detail — also check expanded data for freights loaded on-expand
+  const selFreight = selectedId ? (
+    filteredFreights.find(f => f.id === selectedId)
+    || freights.find(f => f.id === selectedId)
+    || Object.values(expandedData).flatMap(d => d.items || []).find(f => f.id === selectedId)
+  ) : null;
   const hasDetail = selectedId && selFreight;
 
   // ======================== DAILY SUMMARY ========================
@@ -261,6 +301,34 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
     const isOpen = openGroup === gKey;
     const anotherOpen = openGroup && openGroup.startsWith(keyPrefix + "_") && openGroup !== gKey;
     if (anotherOpen) return null;
+
+    // When open, use fetched full data if available
+    const exp = expandedData[gKey];
+    let displayItems = group.items;
+    let isLoadingExpanded = false;
+    if (isOpen && exp) {
+      if (exp.loading) {
+        isLoadingExpanded = true;
+      } else {
+        // Filter expanded data same way as group was built
+        if (keyPrefix === "sm") {
+          // Summary groups: items matching statuses WITHOUT pending actions
+          displayItems = exp.items
+            .filter(f => group.statuses.includes(f.status) && !getPendingActions(f, effectiveType(f), user.role, user) && matchDate(f.loadDate))
+            .sort((a, b) => (a.destName||'').localeCompare(b.destName||'') || (a.originName||'').localeCompare(b.originName||''));
+        } else {
+          // Pending action groups: items matching this action's groupKey
+          displayItems = exp.items
+            .filter(f => {
+              const pa = getPendingActions(f, effectiveType(f), user.role, user);
+              return pa && pa.groupKey === group.key && matchDate(f.loadDate);
+            })
+            .map(f => ({ ...f, pendingAction: getPendingActions(f, effectiveType(f), user.role, user) }))
+            .sort((a, b) => (a.destName||'').localeCompare(b.destName||'') || (a.originName||'').localeCompare(b.originName||''));
+        }
+      }
+    }
+
     return (
       <div key={gKey}>
         <button onClick={() => toggleGroup(gKey)} style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, padding: "8px 0", background: isOpen ? C.bg : "none", border: "none", borderBottom: `1px solid ${C.b2}`, cursor: "pointer", fontFamily: "inherit", textAlign: "left", ...(isOpen ? { position: "sticky", top: 32, zIndex: 10 } : {}) }}>
@@ -271,7 +339,8 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
         </button>
         {isOpen && (
           <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: "8px 0 4px 16px", borderLeft: `2px solid ${group.color}30` }}>
-            {group.items.map(f => renderCard(f, pendingMap.get(f.id), source))}
+            {isLoadingExpanded && <SkeletonList count={3} />}
+            {!isLoadingExpanded && displayItems.map(f => renderCard(f, pendingMap.get(f.id) || getPendingActions(f, effectiveType(f), user.role, user), source))}
           </div>
         )}
       </div>
