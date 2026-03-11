@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback, useMemo, lazy, Suspense } fro
 import { useNavigate, useLocation } from "react-router-dom";
 import { uploadPhoto, apiAddDocument, apiListConversations } from "./api";
 import { C, track, FONT, Ic } from "./theme";
-import { POLL_INTERVALS } from "./constants";
+import { POLL_INTERVALS, stCfg } from "./constants";
 import { Toast, LoadingOverlay, Sidebar, Nav, NotifBell, NotificationsPanel, ErrorBoundary } from "./components";
 import { useAuth, useCatalog, useFreights, permsFor, useIsDesktop, useOnline, useNotifications, useSSE } from "./hooks";
 import { RoutesBackground } from "./routes-bg";
@@ -149,6 +149,7 @@ export default function Tolvink() {
 
   // Global search
   const [searchQ, setSearchQ] = useState("");
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
 
   // AI Chat state
   const [aiChatOpen, setAiChatOpen] = useState(false);
@@ -670,11 +671,31 @@ export default function Tolvink() {
               </div>
             </>}
           </div>}
+          {auth.user && <button aria-label="Buscar" onClick={()=>{setMobileSearchOpen(v=>!v);if(mobileSearchOpen){setSearchQ("");}}} style={{display:"flex",alignItems:"center",justifyContent:"center",width:34,height:34,borderRadius:8,border:`1px solid ${mobileSearchOpen?C.pri:C.b1}`,background:mobileSearchOpen?C.priPale:C.w,cursor:"pointer",flexShrink:0,WebkitTapHighlightColor:"transparent",touchAction:"manipulation"}}>{Ic.srch(mobileSearchOpen?C.pri:C.t3,16)}</button>}
           <div style={{position:"relative",flexShrink:0}}>
             <NotifBell count={notif.unreadCount} onClick={()=>setNotifOpen(!notifOpen)} />
             <NotificationsPanel open={notifOpen} onClose={()=>setNotifOpen(false)} notifications={notif.notifications} onMarkRead={notif.markRead} onMarkAllRead={notif.markAllRead} onTap={handleNotifTap} />
           </div>
         </div>
+        {/* Mobile search bar */}
+        {mobileSearchOpen && <div style={{padding:"0 18px 10px",background:C.w,borderBottom:`1px solid ${C.b2}`,position:"relative",zIndex:10}} className="tv-mobile-header">
+          <div style={{display:"flex",alignItems:"center",gap:6,padding:"8px 12px",borderRadius:10,background:C.bg,border:`1.5px solid ${searchQ?C.bFocus:C.b2}`,transition:"border-color 0.15s"}}>
+            <span style={{display:"flex",flexShrink:0}}>{Ic.srch(C.t3,14)}</span>
+            <input autoFocus value={searchQ} onChange={e=>setSearchQ(e.target.value)} placeholder="Buscar flete..." style={{flex:1,border:"none",background:"transparent",outline:"none",fontSize:14,color:C.t1,fontFamily:"inherit",padding:0}}/>
+            {searchQ && <button onClick={()=>setSearchQ("")} style={{display:"flex",border:"none",background:"none",cursor:"pointer",padding:0}}>{Ic.cross(C.t3,14)}</button>}
+          </div>
+          {searchQ.length >= 2 && searchResults.length > 0 && <div style={{position:"absolute",left:18,right:18,top:"100%",marginTop:2,background:C.w,border:`1px solid ${C.b1}`,borderRadius:12,boxShadow:C.shMd,zIndex:200,maxHeight:320,overflowY:"auto",padding:4}}>
+            {searchResults.slice(0,8).map(f=>{const st=stCfg(f.status);return <button key={f.id} onClick={()=>{setSelFreight(f.id);fh.refresh(f.id);navigate(`/freight/${f.id}`);setSearchQ("");setMobileSearchOpen(false);}} style={{display:"flex",alignItems:"center",gap:10,width:"100%",padding:"10px 12px",background:"transparent",border:"none",borderRadius:10,cursor:"pointer",fontFamily:"inherit",textAlign:"left"}} onTouchStart={e=>e.currentTarget.style.background=C.priGhost} onTouchEnd={e=>e.currentTarget.style.background="transparent"}>
+              <div style={{width:4,height:32,borderRadius:2,background:st.color,flexShrink:0}}/>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontSize:14,fontWeight:700,color:C.t1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.grain==="Otros"?f.productTypeOther||"Otros":f.grain} · {f.tons} {f.unit||"tn"}</div>
+                <div style={{fontSize:12,color:C.t3,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.code} · {f.originName||f.fieldName||"—"} → {f.destName||"—"}</div>
+              </div>
+            </button>})}
+            {searchResults.length > 8 && <div style={{padding:"6px 10px",fontSize:11,color:C.t3,textAlign:"center"}}>+{searchResults.length-8} más</div>}
+          </div>}
+          {searchQ.length >= 2 && searchResults.length === 0 && <div style={{position:"absolute",left:18,right:18,top:"100%",marginTop:2,background:C.w,border:`1px solid ${C.b1}`,borderRadius:12,boxShadow:C.shMd,zIndex:200,padding:"14px 16px",fontSize:13.2,color:C.t3}}>Sin resultados</div>}
+        </div>}
 
         {/* Desktop: no header bar — company selector is in Sidebar */}
 
@@ -739,11 +760,11 @@ export default function Tolvink() {
       </Suspense>
       {toast && <Toast key={toast._ts||toast.msg} msg={toast.msg} type={toast.type} onClose={()=>setToast(null)}/>}
 
-      {/* AI Chat */}
-      <Suspense fallback={null}>
+      {/* AI Chat — hidden for now */}
+      {/* <Suspense fallback={null}>
         <AiChatFabComp open={aiChatOpen} onClick={() => setAiChatOpen(p => !p)} />
         <AiChat open={aiChatOpen} onClose={() => setAiChatOpen(false)} sseAiResponse={sseAiResponse} sseAiTranscription={sseAiTranscription} sseAiChunk={sseAiChunk} />
-      </Suspense>
+      </Suspense> */}
     </div>
   );
 }
