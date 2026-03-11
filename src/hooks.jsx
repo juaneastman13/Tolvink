@@ -6,6 +6,7 @@ import {
   apiAuthorizeFreight, apiUpdateFreight,
   apiAssignMultiTruck, apiAssignTruck, apiCancelAssignment, apiUpdateAssignment, apiRespondTrip, apiStartTrip, apiConfirmTripLoaded, apiConfirmTripFinished,
   apiGetPlants, apiGetBranches, apiGetLots, apiGetTransportCompanies, apiGetTrucks, apiGetFields,
+  apiGetCatalogAll,
   apiGetNotifications, apiMarkNotificationRead, apiMarkAllRead, apiSubscribePush, VAPID_PUBLIC_KEY,
   API_URL, apiGetSseTicket,
 } from "./api";
@@ -69,21 +70,17 @@ export function useCatalog(user) {
     setLoadingLocal(true);
     setLoading(cacheKey, true);
 
+    // Consolidated: 1 request for plants+branches+lots+transporters, parallel with trucks+fields
+    const needsTrucks = user.role==="admin"||user.role==="platform_admin"||user.userType==="transporter"||user.userType==="producer"||user.userType==="plant"||(user.userTypes||[]).includes("transporter")||(user.userTypes||[]).includes("producer")||(user.userTypes||[]).includes("plant");
+    const needsFields = user.role==="admin"||user.role==="platform_admin"||user.userType==="producer"||(user.userTypes||[]).includes("producer");
     _loadingPromises[cacheKey] = Promise.all([
-      apiGetPlants().catch((e)=>{ log.warn('Catalog', 'apiGetPlants failed:', e.message); return []; }),
-      apiGetBranches().catch((e)=>{ log.warn('Catalog', 'apiGetBranches failed:', e.message); return []; }),
-      apiGetLots().catch((e)=>{ log.warn('Catalog', 'apiGetLots failed:', e.message); return []; }),
-      apiGetTransportCompanies().catch((e)=>{ log.warn('Catalog', 'apiGetTransportCompanies failed:', e.message); return []; }),
-      (user.role==="admin"||user.role==="platform_admin"||user.userType==="transporter"||user.userType==="producer"||user.userType==="plant"||(user.userTypes||[]).includes("transporter")||(user.userTypes||[]).includes("producer")||(user.userTypes||[]).includes("plant"))
-        ? apiGetTrucks().catch((e)=>{ log.warn('Catalog', 'apiGetTrucks failed:', e.message); return []; })
-        : Promise.resolve([]),
-      (user.role==="admin"||user.role==="platform_admin"||user.userType==="producer"||(user.userTypes||[]).includes("producer"))
-        ? apiGetFields().catch((e)=>{ log.warn('Catalog', 'apiGetFields failed:', e.message); return []; })
-        : Promise.resolve([]),
-    ]).then(([p,br,l,t,tr,f])=>{
+      apiGetCatalogAll().catch((e)=>{ log.warn('Catalog', 'apiGetCatalogAll failed:', e.message); return { plants:[], branches:[], lots:[], transportCompanies:[] }; }),
+      needsTrucks ? apiGetTrucks().catch((e)=>{ log.warn('Catalog', 'apiGetTrucks failed:', e.message); return []; }) : Promise.resolve([]),
+      needsFields ? apiGetFields().catch((e)=>{ log.warn('Catalog', 'apiGetFields failed:', e.message); return []; }) : Promise.resolve([]),
+    ]).then(([catalog,tr,f])=>{
       const activeCoId = user.activeCompanyId || user.companyId;
       const filteredFields = activeCoId ? (f||[]).filter(fd => fd.companyId === activeCoId || fd.company?.id === activeCoId) : (f||[]);
-      const d = { plants:p||[], branches:br||[], lots:l||[], transporters:t||[], trucks:tr||[], fields:filteredFields };
+      const d = { plants:catalog.plants||[], branches:catalog.branches||[], lots:catalog.lots||[], transporters:catalog.transportCompanies||[], trucks:tr||[], fields:filteredFields };
       setCache(cacheKey, d);
       setPlants(d.plants); setBranches(d.branches); setLots(d.lots);
       setTransporters(d.transporters); setTrucks(d.trucks); setFields(d.fields);
@@ -367,10 +364,20 @@ export function useFreights(user, isAuthInitialized) {
       const u=await apiGetFreight(id); const m=mapFreight(u);
       setFreights(p=>{
         const idx = p.findIndex(f=>f.id===id);
+        const oldStatus = idx >= 0 ? p[idx].status : null;
         let next;
         if (idx >= 0) { next=[...p]; next[idx]=m; }
         else { next=[m, ...p]; } // New freight — prepend to list
         freightsRef.current = next;
+        // Update statusCounts locally to avoid full re-fetch
+        if (idx < 0 || oldStatus !== m.status) {
+          setStatusCounts(prev => {
+            const updated = { ...prev };
+            if (oldStatus && updated[oldStatus] > 0) updated[oldStatus]--;
+            updated[m.status] = (updated[m.status] || 0) + 1;
+            return updated;
+          });
+        }
         return next;
       });
       return m;

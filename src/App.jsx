@@ -187,7 +187,7 @@ export default function Tolvink() {
 
   // SSE — real-time sync
   const sse = useSSE(auth.user, {
-    onFreightUpdate: (data) => { if(data?.id) fh.refresh(data.id); else fh.fetchAll(); },
+    onFreightUpdate: (data) => { if(data?.id) fh.refresh(data.id); },
     onMessageNew: (data) => {
       // Issue #9 fix: only increment unread if message is from another user
       if (data.senderId && data.senderId !== auth.user?.id) {
@@ -303,9 +303,11 @@ export default function Tolvink() {
   const lastFetchRef = useRef(0); // prevent redundant fetchAll on rapid screen changes
   useEffect(()=>{
     if(!auth.user) return;
-    // Immediate refresh when entering a freight screen (debounced 2s)
+    // Refresh when entering a freight screen — skip if data is fresh (30s staleness window)
+    // SSE keeps data updated in real-time, so screen changes don't need immediate re-fetch
     const now = Date.now();
-    if (FREIGHT_SCREENS.has(screen) && navigator.onLine && now - lastFetchRef.current > 2000) {
+    const STALE_MS = sse.connected ? 30000 : 5000;
+    if (FREIGHT_SCREENS.has(screen) && navigator.onLine && now - lastFetchRef.current > STALE_MS) {
       lastFetchRef.current = now;
       fhRef.current.fetchAll();
     }
@@ -337,7 +339,7 @@ export default function Tolvink() {
     return ()=>{ clearTimeout(initialDelay); clearInterval(iv); };
   },[auth.user, sse.connected]);
 
-  // Visibility refresh — immediate refetch when user returns to tab (catalog only if TTL expired)
+  // Visibility refresh — refetch when user returns to tab (skip if SSE kept data fresh)
   useEffect(()=>{
     if(!auth.user) return;
     let lastVisible = 0;
@@ -347,8 +349,11 @@ export default function Tolvink() {
       const now = Date.now();
       if (now - lastVisible < 2000) return;
       lastVisible = now;
-      lastFetchRef.current = now;
-      fhRef.current.fetchAll();
+      // When SSE is connected, data is already up to date — only fetch if stale (>30s)
+      if (now - lastFetchRef.current > (sse.connected ? 30000 : 2000)) {
+        lastFetchRef.current = now;
+        fhRef.current.fetchAll();
+      }
       notifRef.current.refresh();
       catalogRef.current.refresh(false); // false = respect TTL, don't force
     };

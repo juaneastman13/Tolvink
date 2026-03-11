@@ -254,6 +254,7 @@ export async function apiRejectPendingChange(freightId, changeId) { return api(`
 export async function apiGetPlants() { return api('/catalog/plants'); }
 export async function apiGetLots() { return api('/catalog/lots'); }
 export async function apiGetTransportCompanies() { return api('/catalog/transport-companies'); }
+export async function apiGetCatalogAll() { return api('/catalog/all'); }
 
 // Trucks
 export async function apiGetTrucks(companyId) { return api(companyId ? `/trucks?companyId=${encodeURIComponent(companyId)}` : '/trucks'); }
