@@ -328,7 +328,24 @@ export function useFreights(user, isAuthInitialized) {
       freightsRef.current = mapped;
       setFreights(mapped);
       setTotal(r.total||0);
-      setHasMore((r.page||1) < (r.pages||1));
+      const totalPages = r.pages||1;
+      setHasMore(1 < totalPages);
+      // Auto-load remaining pages in background for complete data (HomeScreen summary)
+      if (totalPages > 1) {
+        let all = [...mapped];
+        for (let p = 2; p <= totalPages; p++) {
+          const r2 = await apiListFreights({page:p, limit:FREIGHTS_PAGE_SIZE, company:companyFilter});
+          const m2 = (r2.data||[]).map(mapFreight);
+          const merged = new Map(all.map(f=>[f.id,f]));
+          m2.forEach(f=>merged.set(f.id,f));
+          all = [...merged.values()];
+          pageRef.current = p;
+          freightsRef.current = all;
+          setFreights(all);
+          setHasMore(p < totalPages);
+        }
+        setTotal(all.length);
+      }
     }
     catch(e) { setError(e.message); }
     finally { setLoading(false); }
