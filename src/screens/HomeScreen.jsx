@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback, useRef, useEffect, memo } from "react";
 import { C, Ic, MONO } from "../theme";
 import { stCfg, getActions, formatFreightDate } from "../constants";
-import { Bd, Btn, SkeletonList, EmptyState, Tabs } from "../components";
+import { Bd, Btn, SkeletonList, SkeletonCard, EmptyState, Tabs } from "../components";
 import { useIsDesktop, mapFreight } from "../hooks";
 import { getPendingActions, resolveUserTypeForFreight, getWaitingOnText } from "../utils/freight-helpers";
 import { apiListFreights } from "../api";
@@ -434,8 +434,8 @@ export default memo(function HomeScreen({ user, freights, loading, perms, onNav,
           {!compact && pendingByProgress.length === 0 && <div style={{ padding:"12px 16px", fontSize:13.2, color:C.t3, display:"flex", alignItems:"center", gap:8 }}>{Ic.chk(C.ok,14)} Sin pendientes en este periodo</div>}
         </>)}
 
-        {/* Sin pendientes de mi parte — hidden when a "pendientes" group is open */}
-        {!paOpen && <>
+        {/* Sin pendientes de mi parte — hidden when a "pendientes" group is open or still loading */}
+        {!paOpen && !(loading && freights.length === 0) && <>
         <div style={{ padding: compact ? "8px 10px" : "10px 12px", borderRadius: 12, background: C.okPale, marginBottom: 8 }}>
           <div style={{ display: "flex", alignItems: "center", gap: compact ? 8 : 10 }}>
             <div style={{ width: compact ? 22 : 28, height: compact ? 22 : 28, borderRadius: "50%", background: C.ok, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
@@ -477,6 +477,9 @@ export default memo(function HomeScreen({ user, freights, loading, perms, onNav,
             </div>
           </div>
         </div>
+
+        {/* Skeleton while loading */}
+        {loading && freights.length === 0 && <SkeletonList count={3} />}
 
         {/* Empty state */}
         {todayFreights.length === 0 && !loading && (
@@ -565,6 +568,7 @@ export default memo(function HomeScreen({ user, freights, loading, perms, onNav,
             <div style={{ fontSize: 11, color: C.t3 }}>{todayFreights.length} flete{todayFreights.length !== 1 ? "s" : ""} · {Math.round(todayTons)} tn totales</div>
           </div>
         </div>
+        {loading && freights.length === 0 && <SkeletonList count={2} />}
         {todayFreights.length === 0 && !loading && (
           <div style={{ fontSize: 12.1, color: C.t3, textAlign: "center", padding: "8px 0" }}>Sin fletes programados para hoy</div>
         )}

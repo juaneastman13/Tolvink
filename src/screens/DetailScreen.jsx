@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useMemo, lazy, Suspense } from "react";
 import { C, Ic, FONT, MONO, track } from "../theme";
 import { stCfg, getActions, tripStCfg, POLL_INTERVALS, formatFreightDate } from "../constants";
-import { Bd, Btn, Loader, Sec, FileViewer } from "../components";
+import { Bd, Btn, Loader, Sec, FileViewer, SkeletonDetail } from "../components";
 import { SafeZone } from "../maps";
 const FreightMap = lazy(() => import("../maps").then(m => ({ default: m.FreightMap })));
 import log from "../logger";
@@ -14,7 +14,12 @@ const loadPdfReport = () => import("../utils/pdf-report");
 
 export default function DetailScreen({ user, freight, perms, onBack, onAction, onTripAction, onEditTrip, onCancelAssignment, actionLoading, onChat, onRefresh, onDuplicate, onEdit, goToMap, sseConnected }) {
   // Guard: freight not yet loaded (deep link, stale reference)
-  if (!freight) return <div style={{ padding:40, textAlign:"center" }}><div style={{ fontSize:14, color:C.t3, marginBottom:12 }}>Cargando flete...</div><button onClick={onBack} style={{ padding:"8px 16px", borderRadius:8, border:`1px solid ${C.b1}`, background:C.w, color:C.t2, fontSize:13, cursor:"pointer", fontFamily:"inherit" }}>Volver</button></div>;
+  if (!freight) return <div style={{ flex:1, display:"flex", flexDirection:"column" }}>
+    <div style={{ padding:"12px 18px", display:"flex", alignItems:"center", gap:8, borderBottom:`1px solid ${C.b2}` }}>
+      <button onClick={onBack} style={{ display:"flex", alignItems:"center", gap:4, padding:"6px 12px", borderRadius:8, border:`1px solid ${C.b1}`, background:C.w, color:C.t2, fontSize:13, cursor:"pointer", fontFamily:"inherit" }}>{Ic.chev(C.t3,14)} Volver</button>
+    </div>
+    <SkeletonDetail />
+  </div>;
   const [auditLog, setAuditLog] = useState(null);
   const [showAudit, setShowAudit] = useState(false);
   const [viewFile, setViewFile] = useState(null);
