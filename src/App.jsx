@@ -313,7 +313,7 @@ export default function Tolvink() {
     }
     const poll = () => {
       if (document.hidden || !navigator.onLine) return;
-      if (!sse.connected && FREIGHT_SCREENS.has(screen)) { lastFetchRef.current = Date.now(); fhRef.current.fetchAll(); }
+      if (!sse.connected && FREIGHT_SCREENS.has(screen) && Date.now() - lastFetchRef.current > 5000) { lastFetchRef.current = Date.now(); fhRef.current.fetchAll(); }
       if (!sse.connected) notifRef.current.refresh();
     };
     // SSE connected: use normal interval; disconnected: 30s (not 10s — reduces backend pressure)
@@ -363,7 +363,7 @@ export default function Tolvink() {
       document.removeEventListener("visibilitychange", onVisible);
       window.removeEventListener("focus", onVisible);
     };
-  },[auth.user]);
+  },[auth.user, sse.connected]);
 
   // Fallback timeout for submitDone overlay — auto-clear after 5s
   useEffect(() => {
