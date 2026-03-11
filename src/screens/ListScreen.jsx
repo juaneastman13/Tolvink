@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, lazy, Suspense } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback, lazy, Suspense } from "react";
 import { C, Ic, FONT, MONO } from "../theme";
 import { stCfg, formatFreightDate } from "../constants";
 import { Bd, Btn, Select, SortTh, Tabs, exportExcel, SkeletonList, EmptyState, ErrorBoundary } from "../components";
@@ -169,11 +169,120 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
   // Keep map mounted after first show to avoid reinit on view switch
   useEffect(() => { if (view === "mapa") setMapShown(true); }, [view]);
 
+  // ======================== HOVER PREVIEW ========================
+  const [hoverFreight, setHoverFreight] = useState(null);
+  const [hoverPos, setHoverPos] = useState({ x: 0, y: 0 });
+  const hoverTimerRef = useRef(null);
+  const hoverCardRef = useRef(null);
+
+  const clearHoverTimer = useCallback(() => {
+    if (hoverTimerRef.current) { clearTimeout(hoverTimerRef.current); hoverTimerRef.current = null; }
+  }, []);
+
+  const handleCardMouseEnter = useCallback((f, e) => {
+    if (!isDesktop) return;
+    clearHoverTimer();
+    hoverTimerRef.current = setTimeout(() => {
+      const rect = e.currentTarget.getBoundingClientRect();
+      setHoverPos({ x: rect.right + 12, y: rect.top });
+      setHoverFreight(f);
+    }, 800);
+  }, [isDesktop, clearHoverTimer]);
+
+  const handleCardMouseLeave = useCallback(() => {
+    clearHoverTimer();
+    setHoverFreight(null);
+  }, [clearHoverTimer]);
+
+  // Adjust preview position to stay within viewport via callback ref
+  const adjustPreviewPos = useCallback((el) => {
+    if (!el) return;
+    hoverCardRef.current = el;
+    const rect = el.getBoundingClientRect();
+    let needsUpdate = false;
+    let x = rect.left, y = rect.top;
+    if (rect.right > window.innerWidth - 12) { x = Math.max(12, rect.left - rect.width - 24); needsUpdate = true; }
+    if (rect.bottom > window.innerHeight - 12) { y = Math.max(12, window.innerHeight - rect.height - 12); needsUpdate = true; }
+    if (needsUpdate) setHoverPos({ x, y });
+  }, []);
+
+  // Cleanup timer on unmount
+  useEffect(() => () => clearHoverTimer(), [clearHoverTimer]);
+
+  const FreightHoverPreview = hoverFreight && isDesktop ? (() => {
+    const f = hoverFreight;
+    const st = stCfg(f.status);
+    const origin = f.fieldName || f.originName;
+    return (
+      <div ref={adjustPreviewPos} style={{ position:"fixed", left:hoverPos.x, top:hoverPos.y, zIndex:9999, width:340, background:C.w, border:`1px solid ${C.b1}`, borderLeft:`5px solid ${st.color}`, borderRadius:14, boxShadow:C.shLg, padding:18, pointerEvents:"none", fontFamily:FONT, animation:"tvPreviewIn 0.15s ease-out" }}>
+        {/* Header: code + status */}
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:10 }}>
+          <span style={{ fontFamily:MONO, fontWeight:700, fontSize:13.2, color:C.t2 }}>{f.code}</span>
+          <Bd color={st.color} bg={st.bg}>{st.label}</Bd>
+        </div>
+        {/* Product */}
+        <div style={{ fontSize:16, fontWeight:700, color:C.t1, marginBottom:8 }}>
+          {Ic.grain(st.color, 16)} <span style={{ marginLeft:4 }}>{f.grain === "Otros" ? f.productTypeOther || "Otros" : f.grain} · {f.tons} {f.unit || "tn"}</span>
+        </div>
+        {/* Origin → Destination */}
+        <div style={{ display:"flex", flexDirection:"column", gap:5, marginBottom:10, padding:"8px 0", borderTop:`1px solid ${C.b2}`, borderBottom:`1px solid ${C.b2}` }}>
+          <div style={{ display:"flex", alignItems:"center", gap:6, fontSize:13.2, color:C.t2 }}>
+            {Ic.pin(C.pri, 13)} <span style={{ fontWeight:600 }}>{origin || "Sin origen"}</span>
+          </div>
+          <div style={{ display:"flex", alignItems:"center", gap:6, fontSize:11, color:C.t3, paddingLeft:2 }}>
+            <span style={{ width:13, display:"flex", justifyContent:"center", color:C.t3 }}>↓</span>
+            <span>{f.originCompanyName || ""}</span>
+          </div>
+          <div style={{ display:"flex", alignItems:"center", gap:6, fontSize:13.2, color:C.t2 }}>
+            {Ic.plant(C.sec, 13)} <span style={{ fontWeight:600 }}>{f.destName || "Sin destino"}</span>
+          </div>
+        </div>
+        {/* Date & time */}
+        {f.loadDate && (
+          <div style={{ display:"flex", alignItems:"center", gap:6, fontSize:12.5, color:C.t2, marginBottom:6 }}>
+            {Ic.cal(C.t3, 12)} {formatFreightDate(f.loadDate)}{f.loadTime ? <><span style={{ color:C.t3, margin:"0 2px" }}>·</span>{Ic.clk(C.t3, 12)} {f.loadTime}</> : ""}
+          </div>
+        )}
+        {/* Transporter + truck */}
+        <div style={{ display:"flex", alignItems:"center", gap:6, fontSize:12.5, color:C.t2, marginBottom:4 }}>
+          {Ic.truck(C.t3, 12)} <span>{f.transporterName || "Sin asignar"}</span>
+          {f.isOwnFleet && <span style={{ fontSize:10, color:C.acc, fontWeight:700, background:C.accPale, padding:"1px 5px", borderRadius:4 }}>Flota propia</span>}
+        </div>
+        {/* Truck plate + driver */}
+        {(f.truckPlate || f.driverName) && (
+          <div style={{ display:"flex", alignItems:"center", gap:8, fontSize:12.1, color:C.t3 }}>
+            {f.truckPlate && <span style={{ fontFamily:MONO, fontWeight:600 }}>{f.truckPlate}</span>}
+            {f.driverName && <span>{Ic.user(C.t3, 11)} {f.driverName}</span>}
+          </div>
+        )}
+        {/* Multi-truck info */}
+        {f.isMultiTruck && (
+          <div style={{ marginTop:8, padding:"5px 8px", background:C.infoPale, borderRadius:6, fontSize:11.5, fontWeight:600, color:C.info, display:"inline-flex", alignItems:"center", gap:4 }}>
+            {Ic.truck(C.info, 12)} {f.assignedTruckCount}/{f.truckCount} camiones asignados
+          </div>
+        )}
+        {/* Overdue */}
+        {f.isOverdue && (
+          <div style={{ marginTop:8, padding:"4px 8px", background:"#FEE2E2", borderRadius:6, fontSize:11.5, fontWeight:700, color:"#DC2626", display:"inline-flex", alignItems:"center", gap:4 }}>
+            {Ic.warn("#DC2626", 12)} Retrasado
+          </div>
+        )}
+      </div>
+    );
+  })() : null;
+
+  // Wrap a card element with hover handlers
+  const wrapHover = (f, cardEl) => (
+    <div key={f.id} onMouseEnter={(e) => handleCardMouseEnter(f, e)} onMouseLeave={handleCardMouseLeave}>
+      {cardEl}
+    </div>
+  );
+
   // Kanban card renderer (shared between status and entity grouping)
   const renderKanbanCard = (f) => {
     const st = stCfg(f.status);
     const origin = f.fieldName || f.originName;
-    return (
+    return wrapHover(f,
       <div key={f.id} onClick={()=>onNav("detail",f.id)} style={{ background:C.w, border:`1px solid ${C.b1}`, borderLeft:`4px solid ${st.color}`, borderRadius:12, padding:14, cursor:"pointer", boxShadow:C.sh, transition:"background 0.15s", contentVisibility:"auto", containIntrinsicSize:"0 120px" }}>
         <div style={{fontSize:15.4,fontWeight:700,color:C.t1,marginBottom:2}}>{f.grain==="Otros"?f.productTypeOther||"Otros":f.grain} · {f.tons} {f.unit||"tn"}</div>
         <div style={{display:"flex",alignItems:"center",gap:5,fontSize:12.5,color:C.t2,marginBottom:8,overflow:"hidden",whiteSpace:"nowrap",textOverflow:"ellipsis"}}>
@@ -228,7 +337,7 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
       const st = stCfg(f.status);
       const pa = f._pending;
       const origin = f.fieldName || f.originName;
-      return (
+      return wrapHover(f,
         <div key={f.id} onClick={() => onNav("detail", f.id)} style={{ background: C.w, border: `1px solid ${pa ? st.color + "40" : C.b1}`, borderLeft: `4px solid ${st.color}`, borderRadius: 10, padding: "8px 12px", cursor: "pointer", boxShadow: C.sh, transition: "background 0.15s, border-color 0.15s", position: "relative", overflow: "hidden", boxSizing: "border-box" }}>
           {pa && <div style={{ position: "absolute", top: 8, right: 10, display: "flex", alignItems: "center", gap: 4 }}>
             <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#FF6A00", display: "inline-block", animation: "dotPulse 1.5s ease-in-out infinite", flexShrink: 0 }} />
@@ -297,6 +406,7 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
         )}
         {filtered.length === 0 && freights.length > 0 && !loading && <EmptyState icon={Ic.srch(C.t3, 28)} title="Sin resultados" subtitle="Proba cambiando los filtros" />}
         {hasMore && <div style={{ textAlign:"center", padding:12 }}><Btn v="ghost" onClick={loadMore} loading={loadingMore}>Cargar mas</Btn></div>}
+        {FreightHoverPreview}
       </div>
     );
   }
@@ -538,7 +648,7 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
                   const st = stCfg(f.status);
                   const campoLote = [f.fieldName, f.originName].filter(Boolean).join(" / ") || "\u2014";
                   return (
-                    <tr key={f.id} className="tv-row" onClick={()=>onNav("detail",f.id)} style={{ borderBottom:`1px solid ${C.b1}`, cursor:"pointer", contentVisibility:"auto", containIntrinsicSize:"0 44px" }}>
+                    <tr key={f.id} className="tv-row" onClick={()=>onNav("detail",f.id)} onMouseEnter={(e)=>handleCardMouseEnter(f,e)} onMouseLeave={handleCardMouseLeave} style={{ borderBottom:`1px solid ${C.b1}`, cursor:"pointer", contentVisibility:"auto", containIntrinsicSize:"0 44px" }}>
                       <td style={{ padding:"10px 12px", fontFamily:MONO, fontWeight:700, fontSize:11.5, color:C.t2, whiteSpace:"nowrap" }}>{f.code}</td>
                       <td style={{ padding:"10px 12px" }}><Bd color={st.color} bg={st.bg} small>{st.label}</Bd>{f.isOverdue && <> <Bd color="#DC2626" bg="#FEE2E2" small>Retrasado</Bd></>}</td>
                       <td style={{ padding:"10px 12px", fontWeight:600, color:C.t1 }}>{f.grain==="Otros"?f.productTypeOther||"Otros":f.grain} · {f.tons} {f.unit||"tn"}</td>
@@ -583,7 +693,7 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
                   {g.items.map(f => {
                     const st = stCfg(f.status);
                     return (
-                      <div key={f.id} onClick={() => onNav("detail",f.id)} style={{ display:"flex", alignItems:"center", gap:10, padding:"8px 12px", borderRadius:10, border:`1px solid ${C.b1}`, borderLeft:`3px solid ${st.color}`, background:C.bg, cursor:"pointer", transition:"background 0.15s" }}>
+                      <div key={f.id} onClick={() => onNav("detail",f.id)} onMouseEnter={(e)=>handleCardMouseEnter(f,e)} onMouseLeave={handleCardMouseLeave} style={{ display:"flex", alignItems:"center", gap:10, padding:"8px 12px", borderRadius:10, border:`1px solid ${C.b1}`, borderLeft:`3px solid ${st.color}`, background:C.bg, cursor:"pointer", transition:"background 0.15s" }}>
                         <div style={{ flex:1, minWidth:0 }}>
                           <div style={{ display:"flex", alignItems:"center", gap:6 }}>
                             <span style={{ fontSize:12.1, fontWeight:700, fontFamily:MONO, color:C.t2 }}>{f.code}</span>
@@ -637,7 +747,7 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
                         {d.freights.map((f,i)=>{
                           const st = stCfg(f.status);
                           return (
-                            <div key={f.id} onClick={()=>onNav("detail",f.id)} style={{ display:"flex", alignItems:"center", gap:10, padding:"8px 12px", borderRadius:10, border:`1px solid ${C.b1}`, borderLeft:`3px solid ${st.color}`, background:i===0?`${C.pri}06`:C.bg, cursor:"pointer", transition:"background 0.15s" }}>
+                            <div key={f.id} onClick={()=>onNav("detail",f.id)} onMouseEnter={(e)=>handleCardMouseEnter(f,e)} onMouseLeave={handleCardMouseLeave} style={{ display:"flex", alignItems:"center", gap:10, padding:"8px 12px", borderRadius:10, border:`1px solid ${C.b1}`, borderLeft:`3px solid ${st.color}`, background:i===0?`${C.pri}06`:C.bg, cursor:"pointer", transition:"background 0.15s" }}>
                               <div style={{ width:22, height:22, borderRadius:11, background:i===0?C.pri:C.b1, color:i===0?C.w:C.t3, display:"flex", alignItems:"center", justifyContent:"center", fontSize:11, fontWeight:800, flexShrink:0 }}>{i+1}</div>
                               <div style={{ flex:1, minWidth:0 }}>
                                 <div style={{ display:"flex", alignItems:"center", gap:6 }}>
@@ -669,7 +779,7 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
                         {t.noDriver.map(f=>{
                           const st = stCfg(f.status);
                           return (
-                            <div key={f.id} onClick={()=>onNav("detail",f.id)} style={{ display:"flex", alignItems:"center", gap:10, padding:"8px 12px", borderRadius:10, border:`1px dashed ${C.b1}`, background:C.bg, cursor:"pointer" }}>
+                            <div key={f.id} onClick={()=>onNav("detail",f.id)} onMouseEnter={(e)=>handleCardMouseEnter(f,e)} onMouseLeave={handleCardMouseLeave} style={{ display:"flex", alignItems:"center", gap:10, padding:"8px 12px", borderRadius:10, border:`1px dashed ${C.b1}`, background:C.bg, cursor:"pointer" }}>
                               <div style={{ flex:1, minWidth:0 }}>
                                 <div style={{ display:"flex", alignItems:"center", gap:6 }}>
                                   <span style={{ fontSize:12.7, fontWeight:700, fontFamily:MONO, color:C.t2 }}>{f.code}</span>
@@ -703,7 +813,7 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
                 {trackingGroups.unassigned.map(f=>{
                   const st = stCfg(f.status);
                   return (
-                    <div key={f.id} onClick={()=>onNav("detail",f.id)} style={{ display:"flex", alignItems:"center", gap:10, padding:"8px 12px", borderRadius:10, border:`1px dashed ${C.b1}`, borderLeft:`3px solid ${st.color}`, background:C.bg, cursor:"pointer" }}>
+                    <div key={f.id} onClick={()=>onNav("detail",f.id)} onMouseEnter={(e)=>handleCardMouseEnter(f,e)} onMouseLeave={handleCardMouseLeave} style={{ display:"flex", alignItems:"center", gap:10, padding:"8px 12px", borderRadius:10, border:`1px dashed ${C.b1}`, borderLeft:`3px solid ${st.color}`, background:C.bg, cursor:"pointer" }}>
                       <div style={{ flex:1, minWidth:0 }}>
                         <div style={{ display:"flex", alignItems:"center", gap:6 }}>
                           <span style={{ fontSize:11, fontWeight:700, fontFamily:MONO, color:C.t2 }}>{f.code}</span>
@@ -744,6 +854,7 @@ export default function ListScreen({ freights, loading, onNav, onRefresh, catalo
           {visibleCount>0 && <div style={{textAlign:"center",padding:"4px 0 16px",fontSize:11,color:C.t3}}>{visibleCount} flete{visibleCount!==1?"s":""}{hasFilters?" con filtros aplicados":""}</div>}
         </>;
       })()}
+      {FreightHoverPreview}
     </div>
   );
 }
