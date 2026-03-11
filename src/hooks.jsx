@@ -314,8 +314,9 @@ export function useFreights(user, isAuthInitialized) {
   const [total, setTotal] = useState(0);
   const pageRef = useRef(1);
 
-  // Multi-company: pass activeCompanyId to server-side filter
-  const companyFilter = user?.activeCompanyId || user?.companyId || undefined;
+  // Multi-company: show ALL freights from all user's companies (no company filter).
+  // The backend resolveAllCompanyIds already scopes to the user's memberships.
+  const companyFilter = undefined;
 
   const fetchAll = useCallback(async ()=>{
     if(!user || !isAuthInitialized) return;
