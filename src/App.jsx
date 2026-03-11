@@ -151,14 +151,6 @@ export default function Tolvink() {
 
   // Global search
   const [searchQ, setSearchQ] = useState("");
-  const searchResults = useMemo(() => {
-    if (!searchQ || searchQ.length < 2 || !viewFreights) return [];
-    const q = searchQ.toLowerCase();
-    return viewFreights.filter(f => {
-      const haystack = [f.code, f.grain, f.originName, f.fieldName, f.destName, f.transporterName, f.driverName, f.originCompanyName, f.requestedByName, f.truckPlate, f.productTypeOther].filter(Boolean).join(" ").toLowerCase();
-      return haystack.includes(q);
-    });
-  }, [searchQ, viewFreights]);
 
   // AI Chat state
   const [aiChatOpen, setAiChatOpen] = useState(false);
@@ -261,6 +253,16 @@ export default function Tolvink() {
     }
     return fh.freights;
   }, [fh.freights, auth.user]);
+
+  // Global search results (must be after viewFreights)
+  const searchResults = useMemo(() => {
+    if (!searchQ || searchQ.length < 2 || !viewFreights) return [];
+    const q = searchQ.toLowerCase();
+    return viewFreights.filter(f => {
+      const haystack = [f.code, f.grain, f.originName, f.fieldName, f.destName, f.transporterName, f.driverName, f.originCompanyName, f.requestedByName, f.truckPlate, f.productTypeOther].filter(Boolean).join(" ").toLowerCase();
+      return haystack.includes(q);
+    });
+  }, [searchQ, viewFreights]);
 
   // Calculate pending actions count
   const pendingCount = useMemo(() => {
