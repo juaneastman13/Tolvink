@@ -627,55 +627,63 @@ export default function Tolvink() {
       {/* Main content column */}
       <main id="main-content" style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden", minWidth:0, position:"relative", zIndex:1 }}>
         {/* Mobile-only header */}
-        <div className="tv-mobile-header" style={{paddingTop:"max(12px, env(safe-area-inset-top))",paddingBottom:12,paddingLeft:18,paddingRight:18,display:"flex",alignItems:"center",gap:10,borderBottom:`1px solid ${C.b2}`,background:C.w,flexShrink:0,zIndex:10,position:"relative"}}>
-          <div style={{display:"inline-flex",alignItems:"flex-start",flexShrink:0}}>
-            <span style={{fontSize:33,fontWeight:800,color:C.pri,letterSpacing:-0.9,lineHeight:1}}>tolvink</span>
-            <span style={{width:8,height:8,borderRadius:4,background:C.acc,display:"inline-block",marginLeft:3,marginTop:1,animation:"dotPulse 1.5s ease-in-out infinite"}}></span>
-          </div>
-          <div style={{flex:1}}/>
-          {/* Mobile search */}
-          {auth.user && <MobileSearch query={searchQ} onChange={setSearchQ} results={searchResults} onSelect={(id)=>{setSelFreight(id);fh.refresh(id);navigate(`/freight/${id}`);setSearchQ("");}} />}
-          {auth.user && <div style={{position:"relative"}}>
-            <button aria-label="Configuración" onClick={()=>setCompDropOpen(v=>!v)} style={{display:"flex",alignItems:"center",gap:6,padding:"5px 10px",borderRadius:8,border:`1px solid ${C.b1}`,background:C.w,cursor:"pointer",fontFamily:"inherit",maxWidth:180,WebkitTapHighlightColor:"transparent",touchAction:"manipulation"}}>
-              <span style={{fontSize:12.1,fontWeight:600,color:C.t1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{auth.user.entity}</span>
-              <span style={{fontSize:10,fontWeight:600,color:C.t3,background:C.bg,padding:"1px 6px",borderRadius:4,flexShrink:0,whiteSpace:"nowrap"}}>{auth.simpleMode?"Simple":"Completo"}</span>
-              {Ic.down(C.t3,10)}
-            </button>
-            {compDropOpen && <>
-              <div onClick={()=>setCompDropOpen(false)} style={{position:"fixed",inset:0,zIndex:99}}/>
-              <div style={{position:"absolute",top:"100%",right:0,marginTop:4,background:C.w,border:`1px solid ${C.b1}`,borderRadius:12,boxShadow:C.shMd,zIndex:100,minWidth:200,overflow:"hidden"}}>
-                {auth.user.companies?.length > 1 && <>
-                  <div style={{padding:"8px 14px 4px",fontSize:10,fontWeight:700,color:C.t3,textTransform:"uppercase",letterSpacing:0.5}}>Empresa</div>
-                  {auth.user.companies.map(c=>{
-                    const isActive = c.companyId === auth.user.activeCompanyId;
-                    return <button key={c.companyId} onClick={async()=>{
-                      if(!isActive) await auth.switchCompany(c.companyId);
-                      setCompDropOpen(false);
-                    }} style={{width:"100%",padding:"8px 14px",border:"none",background:isActive?C.priPale:"transparent",cursor:"pointer",fontFamily:"inherit",textAlign:"left",display:"flex",alignItems:"center",gap:8}}>
+        <div className="tv-mobile-header" style={{paddingTop:"max(12px, env(safe-area-inset-top))",paddingBottom:10,paddingLeft:18,paddingRight:18,borderBottom:`1px solid ${C.b2}`,background:C.w,flexShrink:0,zIndex:10,position:"relative",display:"flex",flexDirection:"column",gap:8}}>
+          {/* Row 1: logo + company + notif */}
+          <div style={{display:"flex",alignItems:"center",gap:10}}>
+            <div style={{display:"inline-flex",alignItems:"flex-start",flexShrink:0}}>
+              <span style={{fontSize:33,fontWeight:800,color:C.pri,letterSpacing:-0.9,lineHeight:1}}>tolvink</span>
+              <span style={{width:8,height:8,borderRadius:4,background:C.acc,display:"inline-block",marginLeft:3,marginTop:1,animation:"dotPulse 1.5s ease-in-out infinite"}}></span>
+            </div>
+            <div style={{flex:1}}/>
+            {auth.user && <div style={{position:"relative"}}>
+              <button aria-label="Configuración" onClick={()=>setCompDropOpen(v=>!v)} style={{display:"flex",alignItems:"center",gap:6,padding:"5px 10px",borderRadius:8,border:`1px solid ${C.b1}`,background:C.w,cursor:"pointer",fontFamily:"inherit",maxWidth:180,WebkitTapHighlightColor:"transparent",touchAction:"manipulation"}}>
+                <span style={{fontSize:12.1,fontWeight:600,color:C.t1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{auth.user.entity}</span>
+                <span style={{fontSize:10,fontWeight:600,color:C.t3,background:C.bg,padding:"1px 6px",borderRadius:4,flexShrink:0,whiteSpace:"nowrap"}}>{auth.simpleMode?"Simple":"Completo"}</span>
+                {Ic.down(C.t3,10)}
+              </button>
+              {compDropOpen && <>
+                <div onClick={()=>setCompDropOpen(false)} style={{position:"fixed",inset:0,zIndex:99}}/>
+                <div style={{position:"absolute",top:"100%",right:0,marginTop:4,background:C.w,border:`1px solid ${C.b1}`,borderRadius:12,boxShadow:C.shMd,zIndex:100,minWidth:200,overflow:"hidden"}}>
+                  {auth.user.companies?.length > 1 && <>
+                    <div style={{padding:"8px 14px 4px",fontSize:10,fontWeight:700,color:C.t3,textTransform:"uppercase",letterSpacing:0.5}}>Empresa</div>
+                    {auth.user.companies.map(c=>{
+                      const isActive = c.companyId === auth.user.activeCompanyId;
+                      return <button key={c.companyId} onClick={async()=>{
+                        if(!isActive) await auth.switchCompany(c.companyId);
+                        setCompDropOpen(false);
+                      }} style={{width:"100%",padding:"8px 14px",border:"none",background:isActive?C.priPale:"transparent",cursor:"pointer",fontFamily:"inherit",textAlign:"left",display:"flex",alignItems:"center",gap:8}}>
+                        <div style={{width:7,height:7,borderRadius:4,background:isActive?C.pri:C.b2,flexShrink:0}}/>
+                        <div>
+                          <div style={{fontSize:13.2,fontWeight:isActive?700:500,color:isActive?C.pri:C.t1}}>{c.companyName}</div>
+                          <div style={{fontSize:10,color:C.t3}}>{({plant:"Planta",transporter:"Transportista",producer:"Productor"})[c.companyType]||c.companyType}</div>
+                        </div>
+                      </button>;
+                    })}
+                    <div style={{borderTop:`1px solid ${C.b2}`,margin:"4px 0"}}/>
+                  </>}
+                  <div style={{padding:"8px 14px 4px",fontSize:10,fontWeight:700,color:C.t3,textTransform:"uppercase",letterSpacing:0.5}}>Vista</div>
+                  {[{k:false,l:"Completo"},{k:true,l:"Simple"}].map(o=>{
+                    const isActive = auth.simpleMode === o.k;
+                    return <button key={String(o.k)} onClick={()=>{if(!isActive) auth.toggleSimpleMode(); setCompDropOpen(false);}} style={{width:"100%",padding:"8px 14px",border:"none",background:isActive?C.priPale:"transparent",cursor:"pointer",fontFamily:"inherit",textAlign:"left",display:"flex",alignItems:"center",gap:8}}>
                       <div style={{width:7,height:7,borderRadius:4,background:isActive?C.pri:C.b2,flexShrink:0}}/>
-                      <div>
-                        <div style={{fontSize:13.2,fontWeight:isActive?700:500,color:isActive?C.pri:C.t1}}>{c.companyName}</div>
-                        <div style={{fontSize:10,color:C.t3}}>{({plant:"Planta",transporter:"Transportista",producer:"Productor"})[c.companyType]||c.companyType}</div>
-                      </div>
+                      <span style={{fontSize:13.2,fontWeight:isActive?700:500,color:isActive?C.pri:C.t1}}>{o.l}</span>
                     </button>;
                   })}
-                  <div style={{borderTop:`1px solid ${C.b2}`,margin:"4px 0"}}/>
-                </>}
-                <div style={{padding:"8px 14px 4px",fontSize:10,fontWeight:700,color:C.t3,textTransform:"uppercase",letterSpacing:0.5}}>Vista</div>
-                {[{k:false,l:"Completo"},{k:true,l:"Simple"}].map(o=>{
-                  const isActive = auth.simpleMode === o.k;
-                  return <button key={String(o.k)} onClick={()=>{if(!isActive) auth.toggleSimpleMode(); setCompDropOpen(false);}} style={{width:"100%",padding:"8px 14px",border:"none",background:isActive?C.priPale:"transparent",cursor:"pointer",fontFamily:"inherit",textAlign:"left",display:"flex",alignItems:"center",gap:8}}>
-                    <div style={{width:7,height:7,borderRadius:4,background:isActive?C.pri:C.b2,flexShrink:0}}/>
-                    <span style={{fontSize:13.2,fontWeight:isActive?700:500,color:isActive?C.pri:C.t1}}>{o.l}</span>
-                  </button>;
-                })}
-              </div>
-            </>}
-          </div>}
-          <div style={{position:"relative",flexShrink:0}}>
-            <NotifBell count={notif.unreadCount} onClick={()=>setNotifOpen(!notifOpen)} />
-            <NotificationsPanel open={notifOpen} onClose={()=>setNotifOpen(false)} notifications={notif.notifications} onMarkRead={notif.markRead} onMarkAllRead={notif.markAllRead} onTap={handleNotifTap} />
+                </div>
+              </>}
+            </div>}
+            <div style={{position:"relative",flexShrink:0}}>
+              <NotifBell count={notif.unreadCount} onClick={()=>setNotifOpen(!notifOpen)} />
+              <NotificationsPanel open={notifOpen} onClose={()=>setNotifOpen(false)} notifications={notif.notifications} onMarkRead={notif.markRead} onMarkAllRead={notif.markAllRead} onTap={handleNotifTap} />
+            </div>
           </div>
+          {/* Row 2: Solicitar flete + search */}
+          {auth.user && <div style={{display:"flex",alignItems:"center",gap:8}}>
+            {perms.canRequest && <button onClick={()=>nav("new")} style={{display:"flex",alignItems:"center",gap:6,padding:"8px 14px",borderRadius:10,border:"none",background:C.acc,color:C.w,fontSize:13.2,fontWeight:700,cursor:"pointer",fontFamily:"inherit",boxShadow:`0 2px 8px ${C.acc}40`,whiteSpace:"nowrap",flexShrink:0,WebkitTapHighlightColor:"transparent",touchAction:"manipulation"}}>
+              <span style={{display:"inline-flex",animation:"truckDrive 1.5s ease-in-out infinite"}}>{Ic.truck("#fff",14)}</span> Solicitar flete
+            </button>}
+            <MobileSearch query={searchQ} onChange={setSearchQ} results={searchResults} onSelect={(id)=>{setSelFreight(id);fh.refresh(id);navigate(`/freight/${id}`);setSearchQ("");}} />
+          </div>}
         </div>
 
         {/* Desktop: no header bar — company selector is in Sidebar */}

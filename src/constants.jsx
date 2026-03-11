@@ -6,7 +6,7 @@ export const STATUS_LIGHT = {
   draft:              { label:"Borrador",            color:"#71717A",   bg:"#F4F4F5",   border:"#71717A"   },
   pending_assignment: { label:"Pendiente",           color:"#FF6A00",   bg:"#FFF3E8",   border:"#FF6A00"   },
   assigned:           { label:"Asignado",             color:"#0891B2",   bg:"#ECFEFF",   border:"#0891B2"   },
-  accepted:           { label:"Asignado",             color:"#2563EB",   bg:"#EFF6FF",   border:"#2563EB"   },
+  accepted:           { label:"Asignado",             color:"#0891B2",   bg:"#ECFEFF",   border:"#0891B2"   },
   in_progress:        { label:"En viaje a campo",     color:"#4ADE80",   bg:"#ECFDF5",   border:"#4ADE80"   },
   loaded:             { label:"En viaje a planta",     color:"#22C55E",   bg:"#DCFCE7",   border:"#22C55E"   },
   finished:           { label:"Finalizado",          color:"#1A6B37",   bg:"#E4F3EA",   border:"#1A6B37"   },
@@ -44,7 +44,7 @@ export function getActions(status, userType, role, isOwnFleet) {
 // Trip-level status (multi-truck v6.0)
 export const TRIP_STATUS_CFG = {
   pending:     { label:"Pendiente",        color:"#FF6A00", bg:"#FFF3E8" },
-  accepted:    { label:"Asignado",         color:"#2563EB", bg:"#EFF6FF" },
+  accepted:    { label:"Asignado",         color:"#0891B2", bg:"#ECFEFF" },
   in_progress: { label:"En viaje a campo", color:"#4ADE80", bg:"#ECFDF5" },
   loaded:      { label:"En viaje a planta",color:"#22C55E", bg:"#DCFCE7" },
   finished:    { label:"Finalizado",       color:"#1A6B37", bg:"#E4F3EA" },

@@ -46,8 +46,10 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
   const [selectedId, setSelectedId] = useState(null);
   // Track which panel originated the selection: "pending" (left) or "daily" (right)
   const [selectionSource, setSelectionSource] = useState(null);
-  const [pendingFilter, setPendingFilter] = useState("all");
-  const [summaryFilter, setSummaryFilter] = useState("all");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [datePreset, setDatePreset] = useState("");
+  const [dateFilterOpen, setDateFilterOpen] = useState(false);
   // Mobile tab: "pending" or "daily"
   const [mobileTab, setMobileTab] = useState("pending");
 
@@ -115,23 +117,26 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
     return freights.filter(f => activeTypes.has(resolveUserTypeForFreight(f, user)));
   }, [freights, activeTypes, user]);
 
-  // Date helpers for filters — recomputed every render to avoid stale dates when app stays open overnight
-  const dateBounds = (() => {
-    const now = new Date();
-    const todayStr = now.toISOString().slice(0, 10);
-    const tom = new Date(now); tom.setDate(tom.getDate() + 1);
-    const tomorrowStr = tom.toISOString().slice(0, 10);
-    const day = now.getDay(); // 0=sun
-    const endWk = new Date(now); endWk.setDate(now.getDate() + (7 - day));
-    const weekEndStr = endWk.toISOString().slice(0, 10);
-    return { todayStr, tomorrowStr, weekEndStr };
-  })();
-  const matchDate = (loadDate, filter) => {
-    if (filter === "all") return true;
+  // Date helpers
+  const todayStr = (() => new Date().toISOString().slice(0, 10))();
+
+  const applyDatePreset = (preset) => {
+    setDatePreset(preset);
+    const today = new Date();
+    const fmt = d => d.toISOString().slice(0, 10);
+    if (preset === "today") { setDateFrom(fmt(today)); setDateTo(fmt(today)); }
+    else if (preset === "week") { const w = new Date(today); w.setDate(w.getDate() - 7); setDateFrom(fmt(w)); setDateTo(fmt(today)); }
+    else if (preset === "month") { const m = new Date(today); m.setMonth(m.getMonth() - 1); setDateFrom(fmt(m)); setDateTo(fmt(today)); }
+    else { setDateFrom(""); setDateTo(""); }
+  };
+  const clearDateFilter = () => { setDateFrom(""); setDateTo(""); setDatePreset(""); };
+  const hasDateFilter = dateFrom || dateTo;
+
+  const matchDate = (loadDate) => {
+    if (!dateFrom && !dateTo) return true;
     if (!loadDate) return false;
-    if (filter === "today") return loadDate === dateBounds.todayStr;
-    if (filter === "tomorrow") return loadDate === dateBounds.tomorrowStr;
-    if (filter === "week") return loadDate >= dateBounds.todayStr && loadDate <= dateBounds.weekEndStr;
+    if (dateFrom && loadDate < dateFrom) return false;
+    if (dateTo && loadDate > dateTo) return false;
     return true;
   };
 
@@ -152,14 +157,14 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
         .filter(f => {
           const pa = pendingMap.get(f.id);
           if (!pa) return false;
-          if (!matchDate(f.loadDate, pendingFilter)) return false;
+          if (!matchDate(f.loadDate)) return false;
           return pa.groupKey === g.key;
         })
         .map(f => ({ ...f, pendingAction: pendingMap.get(f.id) }))
         .sort((a, b) => (a.destName||'').localeCompare(b.destName||'') || (a.originName||'').localeCompare(b.originName||''));
       return { ...g, icon: g.key==="assign"?Ic.truck:g.key==="respond"?Ic.info:g.key==="authorize"?Ic.chk:g.key==="start"?Ic.nav:g.key==="confirm_loaded"?Ic.warn:Ic.ok, items };
     }).filter(g => g.items.length > 0);
-  }, [filteredFreights, pendingMap, pendingFilter]);
+  }, [filteredFreights, pendingMap, dateFrom, dateTo]);
   const pendingCount = pendingByProgress.reduce((s, g) => s + g.items.length, 0);
   const hasPending = pendingCount > 0;
 
@@ -173,11 +178,11 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
   const summaryGroups = useMemo(() => {
     return PROGRESS_GROUPS.map(g => {
       const items = filteredFreights
-        .filter(f => g.statuses.includes(f.status) && !pendingMap.get(f.id) && matchDate(f.loadDate, summaryFilter))
+        .filter(f => g.statuses.includes(f.status) && !pendingMap.get(f.id) && matchDate(f.loadDate))
         .sort((a, b) => (a.destName||'').localeCompare(b.destName||'') || (a.originName||'').localeCompare(b.originName||''));
       return { ...g, icon: g.key==="pendiente"?Ic.warn:g.key==="en_curso"?Ic.nav:g.key==="cancelado"?Ic.cross:Ic.chk, items };
     }).filter(g => g.items.length > 0);
-  }, [filteredFreights, pendingMap, summaryFilter]);
+  }, [filteredFreights, pendingMap, dateFrom, dateTo]);
 
   // Accordion state — only one group open at a time
   const [openGroup, setOpenGroup] = useState(null);
@@ -191,9 +196,9 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
 
   const todayFreights = useMemo(() => {
     return filteredFreights
-      .filter(f => f.loadDate === dateBounds.todayStr)
+      .filter(f => f.loadDate === todayStr)
       .sort((a, b) => (a.loadTime || "").localeCompare(b.loadTime || "") || (a.code || "").localeCompare(b.code || ""));
-  }, [filteredFreights, dateBounds.todayStr]);
+  }, [filteredFreights, todayStr]);
 
   const todayTons = useMemo(() => todayFreights.reduce((s, f) => s + (parseFloat(f.tons) || 0), 0), [todayFreights]);
 
@@ -305,11 +310,21 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
                 {!compact && <div style={{ fontSize: 11.6, color: C.t3 }}>Requieren tu atención</div>}
               </div>
             </div>
-            <div style={{ display: "flex", gap: 4, marginTop: 6, flexWrap: "wrap" }}>
-              {[{k:"all",l:"Todo"},{k:"today",l:"Hoy"},{k:"tomorrow",l:"Mañana"},{k:"week",l:"Semana"}].map(o => (
-                <button key={o.k} onClick={() => setPendingFilter(o.k)} style={{ padding: compact ? "3px 6px" : "4px 8px", borderRadius: 6, border: `1px solid ${pendingFilter === o.k ? C.acc : C.b1}`, background: pendingFilter === o.k ? `${C.acc}15` : "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: compact ? 9.9 : 11, fontWeight: pendingFilter === o.k ? 700 : 500, color: pendingFilter === o.k ? C.acc : C.t3 }}>{o.l}</button>
-              ))}
+            <div style={{ display: "flex", gap: 4, marginTop: 6, flexWrap: "wrap", alignItems: "center" }}>
+              <button onClick={() => setDateFilterOpen(p => !p)} style={{ padding: compact ? "3px 6px" : "4px 8px", borderRadius: 6, border: `1px solid ${hasDateFilter ? C.acc : C.b1}`, background: hasDateFilter ? `${C.acc}15` : "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: compact ? 9.9 : 11, fontWeight: 600, color: hasDateFilter ? C.acc : C.t3, display: "flex", alignItems: "center", gap: 3 }}>
+                {Ic.cal(hasDateFilter ? C.acc : C.t3, compact ? 10 : 11)} {dateFilterOpen ? "Ocultar fechas" : "Filtrar por fecha"}{hasDateFilter ? " (activo)" : ""}
+              </button>
+              {hasDateFilter && <button onClick={clearDateFilter} style={{ padding: compact ? "3px 6px" : "4px 8px", borderRadius: 6, border: `1px solid ${C.err}40`, background: C.errPale, cursor: "pointer", fontFamily: "inherit", fontSize: compact ? 9.9 : 11, fontWeight: 600, color: C.err }}>Limpiar</button>}
             </div>
+            {dateFilterOpen && <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 6, flexWrap: "wrap" }}>
+              <span style={{ fontSize: compact ? 9.9 : 11, color: C.t2, fontWeight: 600 }}>Desde</span>
+              <input type="date" value={dateFrom} onChange={e => { setDateFrom(e.target.value); setDatePreset("custom"); }} onClick={e => e.target.showPicker?.()} style={{ padding: "3px 6px", borderRadius: 6, border: `1px solid ${C.b1}`, background: C.w, color: dateFrom ? C.t1 : C.t3, fontSize: compact ? 9.9 : 11, fontFamily: "inherit", outline: "none", cursor: "pointer" }} />
+              <span style={{ fontSize: compact ? 9.9 : 11, color: C.t2, fontWeight: 600 }}>Hasta</span>
+              <input type="date" value={dateTo} onChange={e => { setDateTo(e.target.value); setDatePreset("custom"); }} onClick={e => e.target.showPicker?.()} style={{ padding: "3px 6px", borderRadius: 6, border: `1px solid ${C.b1}`, background: C.w, color: dateTo ? C.t1 : C.t3, fontSize: compact ? 9.9 : 11, fontFamily: "inherit", outline: "none", cursor: "pointer" }} />
+              {[{ k: "today", l: "Hoy" }, { k: "week", l: "Semana" }, { k: "month", l: "Mes" }].map(p => (
+                <button key={p.k} onClick={() => applyDatePreset(p.k)} style={{ padding: compact ? "3px 6px" : "4px 8px", borderRadius: 6, border: `1px solid ${datePreset === p.k ? C.acc : C.b1}`, background: datePreset === p.k ? `${C.acc}15` : "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: compact ? 9.9 : 11, fontWeight: 600, color: datePreset === p.k ? C.acc : C.t3 }}>{p.l}</button>
+              ))}
+            </div>}
           </div>
           {pendingByProgress.length > 0 && (
             <div style={{ marginBottom: 16 }}>
@@ -328,11 +343,10 @@ export default function HomeScreen({ user, freights, loading, perms, onNav, cata
             </div>
             <div style={{ flex: 1, fontSize: compact ? 12.1 : 13.2, fontWeight: 700, color: C.ok }}>Sin pendientes de mi parte</div>
           </div>
-          <div style={{ display: "flex", gap: 4, marginTop: 6, flexWrap: "wrap" }}>
-            {[{k:"all",l:"Todo"},{k:"today",l:"Hoy"},{k:"tomorrow",l:"Mañana"},{k:"week",l:"Semana"}].map(o => (
-              <button key={o.k} onClick={() => setSummaryFilter(o.k)} style={{ padding: compact ? "3px 6px" : "4px 8px", borderRadius: 6, border: `1px solid ${summaryFilter === o.k ? C.ok : C.b1}`, background: summaryFilter === o.k ? `${C.ok}15` : "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: compact ? 9.9 : 11, fontWeight: summaryFilter === o.k ? 700 : 500, color: summaryFilter === o.k ? C.ok : C.t3 }}>{o.l}</button>
-            ))}
-          </div>
+          {hasDateFilter && <div style={{ display: "flex", gap: 4, marginTop: 6, flexWrap: "wrap", alignItems: "center" }}>
+            <span style={{ fontSize: compact ? 9.9 : 11, color: C.ok, fontWeight: 600, display: "flex", alignItems: "center", gap: 3 }}>{Ic.cal(C.ok, compact ? 10 : 11)} Filtro de fecha activo</span>
+            <button onClick={clearDateFilter} style={{ padding: compact ? "3px 6px" : "4px 8px", borderRadius: 6, border: `1px solid ${C.err}40`, background: C.errPale, cursor: "pointer", fontFamily: "inherit", fontSize: compact ? 9.9 : 11, fontWeight: 600, color: C.err }}>Limpiar</button>
+          </div>}
         </div>
 
         {/* Summary groups — by progress state */}
