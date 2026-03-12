@@ -241,7 +241,7 @@ export default function LocationsScreen({ onBack }) {
               <div style={{ textAlign: "center", padding: 20, color: C.t3, fontSize: 13.2 }}>No se encontraron ubicaciones válidas</div>
             ) : (
               <>
-                <div style={{ maxHeight: 520, overflowY: "auto", display: "flex", flexDirection: "column", gap: 10 }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                   {importParsed.map((loc, i) => {
                     const sel = importSelected.has(i);
                     const t = getType(i);
