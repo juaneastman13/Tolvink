@@ -25,7 +25,7 @@ export const LIGHT = {
 export const C = { ...LIGHT };
 
 // Analytics — fire-and-forget to backend
-const _API = import.meta.env.VITE_API_URL || 'https://tolvink-api-production.up.railway.app/api';
+const _API = import.meta.env.VITE_API_URL || 'https://api.tolvink.com/api';
 let _sid = sessionStorage.getItem('tv_sid');
 if (!_sid) { _sid = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : Array.from(crypto.getRandomValues(new Uint8Array(16)), b => b.toString(16).padStart(2, '0')).join(''); sessionStorage.setItem('tv_sid', _sid); }
 export function track(event, data = {}) {

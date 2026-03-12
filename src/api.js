@@ -4,7 +4,7 @@
 
 import { captureError } from "./sentry";
 
-export const API_URL = import.meta.env.VITE_API_URL || 'https://tolvink-api-production.up.railway.app/api';
+export const API_URL = import.meta.env.VITE_API_URL || 'https://api.tolvink.com/api';
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'https://mlmecljidioymujsazrs.supabase.co';
 
 if (import.meta.env.DEV && !import.meta.env.VITE_API_URL) {
