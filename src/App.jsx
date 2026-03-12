@@ -161,8 +161,10 @@ export default function Tolvink() {
   const [sseAiResponse, setSseAiResponse] = useState(null);
   const [sseAiTranscription, setSseAiTranscription] = useState(null);
   const [sseAiChunk, setSseAiChunk] = useState(null);
+  const [sseAiThinking, setSseAiThinking] = useState(null);
   const sseAiSeq = useRef(0);
   const sseChunkSeq = useRef(0);
+  const sseThinkingSeq = useRef(0);
 
   // Notification sound + vibration
   const playNotifSound = useCallback(() => {
@@ -208,6 +210,7 @@ export default function Tolvink() {
     onAiResponse: (data) => { sseAiSeq.current++; setSseAiResponse({ ...data, _seq: sseAiSeq.current }); },
     onAiTranscription: (data) => { setSseAiTranscription({ ...data, _seq: Date.now() }); },
     onAiChunk: (data) => { sseChunkSeq.current++; setSseAiChunk({ ...data, _seq: sseChunkSeq.current }); },
+    onAiThinking: () => { sseThinkingSeq.current++; setSseAiThinking({ _seq: sseThinkingSeq.current }); },
   });
 
   // React Router — URL-based navigation
@@ -808,7 +811,7 @@ export default function Tolvink() {
             ? `/freight/${nav.freightId}`
             : SCREEN_TO_PATH[nav.screen] || '/';
           navigate(path);
-        }} sseAiResponse={sseAiResponse} sseAiTranscription={sseAiTranscription} sseAiChunk={sseAiChunk} />
+        }} sseAiResponse={sseAiResponse} sseAiTranscription={sseAiTranscription} sseAiChunk={sseAiChunk} sseAiThinking={sseAiThinking} />
       </Suspense>
     </div>
   );

@@ -720,7 +720,7 @@ export function useTableSort() {
 }
 
 // ======================== SSE (Server-Sent Events) ===================
-export function useSSE(user, { onFreightUpdate, onMessageNew, onNotification, onCatalogChanged, onTyping, onRead, onAiResponse, onAiTranscription, onAiChunk }) {
+export function useSSE(user, { onFreightUpdate, onMessageNew, onNotification, onCatalogChanged, onTyping, onRead, onAiResponse, onAiTranscription, onAiChunk, onAiThinking }) {
   const [connected, setConnected] = useState(false);
   const esRef = useRef(null);
   const reconnectTimer = useRef(null);
@@ -728,8 +728,8 @@ export function useSSE(user, { onFreightUpdate, onMessageNew, onNotification, on
   const failureCount = useRef(0);
 
   // Keep latest callbacks in refs to avoid stale closures in EventSource handlers
-  const cbRefs = useRef({ onFreightUpdate, onMessageNew, onNotification, onCatalogChanged, onTyping, onRead, onAiResponse, onAiTranscription, onAiChunk });
-  cbRefs.current = { onFreightUpdate, onMessageNew, onNotification, onCatalogChanged, onTyping, onRead, onAiResponse, onAiTranscription, onAiChunk };
+  const cbRefs = useRef({ onFreightUpdate, onMessageNew, onNotification, onCatalogChanged, onTyping, onRead, onAiResponse, onAiTranscription, onAiChunk, onAiThinking });
+  cbRefs.current = { onFreightUpdate, onMessageNew, onNotification, onCatalogChanged, onTyping, onRead, onAiResponse, onAiTranscription, onAiChunk, onAiThinking };
 
   useEffect(() => {
     if (!user) {
@@ -827,6 +827,10 @@ export function useSSE(user, { onFreightUpdate, onMessageNew, onNotification, on
           const data = JSON.parse(e.data);
           cbRefs.current.onAiChunk?.(data);
         } catch (err) { log.warn('SSE', 'Event parse error:', err.message); }
+      });
+
+      es.addEventListener('ai:thinking', () => {
+        cbRefs.current.onAiThinking?.();
       });
 
       es.onopen = () => {

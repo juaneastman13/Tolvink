@@ -459,7 +459,7 @@ function SuggestionChips({ onSend, disabled }) {
 
 // ======================== MAIN COMPONENT =====================
 
-export default function AiChat({ open, onClose, onNavigate, sseAiResponse, sseAiTranscription, sseAiChunk }) {
+export default function AiChat({ open, onClose, onNavigate, sseAiResponse, sseAiTranscription, sseAiChunk, sseAiThinking }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [thinking, setThinking] = useState(false);
@@ -501,6 +501,12 @@ export default function AiChat({ open, onClose, onNavigate, sseAiResponse, sseAi
       setHistoryLoaded(true);
     }).catch(() => setHistoryLoaded(true));
   }, [open, historyLoaded]);
+
+  // Handle SSE ai:thinking — server confirmed it's processing
+  useEffect(() => {
+    if (!sseAiThinking) return;
+    setThinking(true);
+  }, [sseAiThinking]);
 
   // Handle SSE ai:chunk — streaming
   const streamMsgId = useRef(null);
