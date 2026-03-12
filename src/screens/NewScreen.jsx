@@ -158,6 +158,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
   const photosRef = useRef(photos);
   photosRef.current = photos;
   const [showAttach, setShowAttach] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
   const nfCamRef = useRef(null);
   const nfGalRef = useRef(null);
   const nfDocRef = useRef(null);
@@ -286,18 +287,16 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
 
   const destDisplayName = destMode==="plant" ? ((selectedPlant?.name||"")+(selectedBranch?` → ${selectedBranch.name}`:"")) : (customDest.name||"");
 
-  const submit = async () => {
+  const openConfirmModal = () => {
     setTouched(true);
     const {ok,errs:e} = validate(form, SCHEMAS.freight);
     if(form.grain==="Otros" && !form.productTypeOther?.trim()) { e.productTypeOther="Descripción obligatoria"; }
     if(originMode==="field" && !form.fieldId) { e.fieldId="Seleccioná un campo"; }
     if(originMode==="field" && form.fieldId && !form.lotId) { e.lotId="Seleccioná un lote del campo"; }
     if(originMode==="map" && !customOrigin.lat) { e.customOrigin="Indicá una ubicación en el mapa"; }
-    // Destination validation
     if(destMode==="plant" && !form.plantId) { e.plantId="Seleccioná una planta"; }
     if(destMode==="plant" && form.plantId && branchOpts.length > 0 && !form.branchId) { e.branchId="Seleccioná una sucursal"; }
     if(destMode==="custom" && !customDest.lat) { e.customDestLoc="Indicá una ubicación en el mapa"; }
-    // Own fleet validation: if chose "own fleet", truck is required
     if(showTruckSelect && form.fleetChoice==="own" && !form.truckId) { e.truckId="Seleccioná un camión de tu flota"; }
     setErrs(e);
     if(!ok || Object.keys(e).filter(k=>e[k]).length>0) {
@@ -306,13 +305,16 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
       const first=fullFlow.find(s=>s==="ownfleet"?(showTruckSelect&&!form.fleetChoice):!secComplete[s]);
       if(first){
         setActiveSection(first);
-        // Wait for React to re-render the expanded section before scrolling
         requestAnimationFrame(() => {
           secRefs[first]?.current?.scrollIntoView({behavior:"smooth",block:"center"});
         });
       }
       return;
     }
+    setShowConfirmModal(true);
+  };
+
+  const submit = async () => {
     if(submitting || submitGuard.current) return;
     submitGuard.current = true;
     setSubmitting(true);
@@ -343,7 +345,15 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
       payload.lotId = undefined;
       payload.fieldId = undefined;
     }
-    try { await onCreate(payload); } finally { setSubmitting(false); submitGuard.current = false; }
+    try { await onCreate(payload); } finally { setSubmitting(false); submitGuard.current = false; setShowConfirmModal(false); }
+  };
+
+  const editFromModal = (sec) => {
+    setShowConfirmModal(false);
+    setActiveSection(sec);
+    requestAnimationFrame(() => {
+      secRefs[sec]?.current?.scrollIntoView({behavior:"smooth",block:"center"});
+    });
   };
 
   const addPhoto = (e) => {
@@ -378,7 +388,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
         <button onClick={onBack} style={{ background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", fontSize:14.3, fontWeight:600, color:C.pri, marginBottom:8, padding:0, display:"flex", alignItems:"center", gap:4 }}>{Ic.chev(C.pri,18)} Volver</button>
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
           <div style={{ fontSize:22, fontWeight:800, letterSpacing:-0.3 }}>Solicitar Flete</div>
-          {!_isDesktop && activeSection === "extras" && allComplete && <button onClick={submit} disabled={submitting} style={{ padding:"10px 20px", borderRadius:10, border:"none", background:C.ok, color:C.w, cursor:submitting?"default":"pointer", fontSize:14.3, fontWeight:700, fontFamily:"inherit", display:"flex", alignItems:"center", gap:6, opacity:submitting?0.6:1 }}>{Ic.chk(C.w,14)} {submitting?"Enviando...":"Confirmar"}</button>}
+          {!_isDesktop && allComplete && <button onClick={openConfirmModal} style={{ padding:"10px 20px", borderRadius:10, border:"none", background:C.ok, color:C.w, cursor:"pointer", fontSize:14.3, fontWeight:700, fontFamily:"inherit", display:"flex", alignItems:"center", gap:6 }}>{Ic.chk(C.w,14)} Confirmar</button>}
         </div>
       </div>
       <div style={{ padding:"0 18px 18px" }}>
@@ -528,38 +538,12 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
         </MobileStepModal>
       )}
 
-      {/* Mobile: extras/final step — inline with full summary */}
+      {/* Mobile: after last step, show summary + open modal button */}
       {!_isDesktop && activeSection === "extras" && <div>
         <SummaryCard secSummary={secSummary} secComplete={secComplete} form={form} showTruckSelect={showTruckSelect} isDesktop={false} onEdit={(sec)=>{if(!editingFrom)setEditingFrom(activeSection);setActiveSection(sec);}}/>
-        <div style={{ display:"flex", gap:12, marginTop:12 }}>
-          <div style={{ flex:1, minWidth:0 }}>
-            <label style={{ fontSize:11.6, fontWeight:600, color:C.t2, marginBottom:6, display:"block", textTransform:"uppercase", letterSpacing:0.6 }}>Notas (opcional)</label>
-            <textarea value={form.notes} onChange={e=>u({notes:e.target.value})} placeholder="Indicaciones..." rows={2} style={{ width:"100%", padding:"10px 12px", borderRadius:10, border:`1.5px solid ${C.b1}`, background:C.w, color:C.t1, fontSize:13.2, fontFamily:"inherit", outline:"none", resize:"none", boxSizing:"border-box" }}/>
-          </div>
-          <div style={{ flex:1, minWidth:0 }}>
-            <label style={{ fontSize:11.6, fontWeight:600, color:C.t2, marginBottom:6, display:"flex", alignItems:"center", gap:4, textTransform:"uppercase", letterSpacing:0.6 }}>{Ic.clip(C.acc,14)} Adjuntar (opcional)</label>
-            {photos.length > 0 && (
-              <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:6 }}>
-                {photos.map((p,i)=>(
-                  <div key={i} style={{ position:"relative", width:56, height:56, borderRadius:8, overflow:"hidden", border:`1px solid ${C.b1}` }}>
-                    {p.preview ? <img src={p.preview} alt="" loading="lazy" style={{ width:"100%", height:"100%", objectFit:"cover" }}/> : <div style={{ width:"100%", height:"100%", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", background:C.bg, padding:2 }}>{Ic.doc(C.pri,14)}<span style={{fontSize:7,color:C.t3,textAlign:"center",marginTop:1,wordBreak:"break-all"}}>{(p.name||"").slice(-10)}</span></div>}
-                    <button onClick={()=>removePhoto(i)} aria-label="Eliminar foto" style={{ position:"absolute", top:1, right:1, width:18, height:18, borderRadius:9, background:C.err, border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>{Ic.cross(C.w,10)}</button>
-                  </div>
-                ))}
-              </div>
-            )}
-            <input ref={nfCamRef} type="file" accept="image/*" capture="environment" onChange={addPhoto} style={{ display:"none" }}/>
-            <input ref={nfGalRef} type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={e=>{Array.from(e.target.files||[]).forEach(f=>{if(f.type.startsWith('image/')&&f.size<=10*1024*1024)setPhotos(prev=>[...prev,{file:f,preview:URL.createObjectURL(f)}])});e.target.value="";}} style={{ display:"none" }}/>
-            <input ref={nfDocRef} type="file" accept="image/*,.pdf,.doc,.docx" multiple onChange={e=>{Array.from(e.target.files||[]).forEach(f=>{if(f.size<=10*1024*1024)setPhotos(prev=>[...prev,{file:f,preview:f.type.startsWith('image/')?URL.createObjectURL(f):null,name:f.name}])});e.target.value="";}} style={{ display:"none" }}/>
-            <button onClick={()=>setShowAttach(true)} style={{ display:"inline-flex", alignItems:"center", gap:5, padding:"8px 12px", borderRadius:8, border:`1.5px dashed ${C.b1}`, background:C.bg, cursor:"pointer", fontFamily:"inherit", fontSize:12.1, fontWeight:600, color:C.t2 }}>
-              {Ic.clip(C.t2,14)} Adjuntar
-            </button>
-            <AttachMenu open={showAttach} onClose={()=>setShowAttach(false)} onCamera={()=>nfCamRef.current?.click()} onGallery={()=>nfGalRef.current?.click()} onFiles={()=>nfDocRef.current?.click()} />
-          </div>
+        <div style={{ marginTop:16 }}>
+          <Btn full icon={Ic.chk(C.w,16)} onClick={openConfirmModal}>{allComplete?"Solicitar Flete":"Revisar y enviar"}</Btn>
         </div>
-        {!allComplete && <div style={{ marginTop:16 }}>
-          <Btn full icon={Ic.chk(C.w,16)} disabled={submitting} onClick={submit}>{submitting?"Enviando...":"Confirmar Flete"}</Btn>
-        </div>}
       </div>}
 
       {/* Desktop: original inline sections
@@ -806,49 +790,15 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
           <NextStepBtn complete={secComplete.schedule} onClick={isEditing?confirmEdit:advanceToNext} label={isEditing?"Confirmar edición":undefined} onPrev={prevAvailable()?goToPrev:null}/>
         </Sec>}
 
-        {/* EXTRAS */}
-        {activeSection === "extras" && <div ref={secRefs.extras}>
-          <div style={{ display:"flex", gap:16 }}>
-          <div style={{ flex:1, minWidth:0 }}>
-            <label style={{ fontSize:11.6, fontWeight:600, color:C.t2, marginBottom:6, display:"block", textTransform:"uppercase", letterSpacing:0.6 }}>Notas (opcional)</label>
-            <textarea value={form.notes} onChange={e=>u({notes:e.target.value})} placeholder="Indicaciones, horarios especiales..." rows={3} style={{ width:"100%", padding:"12px 14px", borderRadius:10, border:`1.5px solid ${C.b1}`, background:C.w, color:C.t1, fontSize:14.3, fontFamily:"inherit", outline:"none", resize:"none", boxSizing:"border-box" }}/>
-          </div>
-
-          {/* Photo/file attachments */}
-          <div style={{ flex:1, minWidth:0 }}>
-            <label style={{ fontSize:11.6, fontWeight:600, color:C.t2, marginBottom:8, display:"flex", alignItems:"center", gap:4, textTransform:"uppercase", letterSpacing:0.6 }}>{Ic.clip(C.acc,14)} Adjuntar archivos (opcional)</label>
-            {photos.length > 0 && (
-              <div style={{ display:"flex", gap:8, flexWrap:"wrap", marginBottom:8 }}>
-                {photos.map((p,i)=>(
-                  <div key={i} style={{ position:"relative", width:72, height:72, borderRadius:10, overflow:"hidden", border:`1px solid ${C.b1}` }}>
-                    {p.preview ? <img src={p.preview} alt="" loading="lazy" style={{ width:"100%", height:"100%", objectFit:"cover" }}/> : <div style={{ width:"100%", height:"100%", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", background:C.bg, padding:4 }}>{Ic.doc(C.pri,18)}<span style={{fontSize:7.7,color:C.t3,textAlign:"center",marginTop:2,wordBreak:"break-all"}}>{(p.name||"").slice(-12)}</span></div>}
-                    <button onClick={()=>removePhoto(i)} aria-label="Eliminar foto" style={{ position:"absolute", top:2, right:2, width:20, height:20, borderRadius:10, background:C.err, border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>{Ic.cross(C.w,12)}</button>
-                  </div>
-                ))}
-              </div>
-            )}
-            {/* Hidden inputs */}
-            <input ref={nfCamRef} type="file" accept="image/*" capture="environment" onChange={addPhoto} style={{ display:"none" }}/>
-            <input ref={nfGalRef} type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={e=>{Array.from(e.target.files||[]).forEach(f=>{if(f.type.startsWith('image/')&&f.size<=10*1024*1024)setPhotos(prev=>[...prev,{file:f,preview:URL.createObjectURL(f)}])});e.target.value="";}} style={{ display:"none" }}/>
-            <input ref={nfDocRef} type="file" accept="image/*,.pdf,.doc,.docx" multiple onChange={e=>{Array.from(e.target.files||[]).forEach(f=>{if(f.size<=10*1024*1024)setPhotos(prev=>[...prev,{file:f,preview:f.type.startsWith('image/')?URL.createObjectURL(f):null,name:f.name}])});e.target.value="";}} style={{ display:"none" }}/>
-            <button onClick={()=>setShowAttach(true)} style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"10px 16px", borderRadius:10, border:`1.5px dashed ${C.b1}`, background:C.bg, cursor:"pointer", fontFamily:"inherit", fontSize:13.2, fontWeight:600, color:C.t2 }}>
-              {Ic.clip(C.t2,16)} Adjuntar archivo
-            </button>
-            <AttachMenu open={showAttach} onClose={()=>setShowAttach(false)} onCamera={()=>nfCamRef.current?.click()} onGallery={()=>nfGalRef.current?.click()} onFiles={()=>nfDocRef.current?.click()} />
-          </div>
-          </div>
-          {isEditing && <NextStepBtn complete={true} onClick={confirmEdit} label="Confirmar edición"/>}
-        </div>}
-
       </div>}
       </div>
       {_isDesktop && <div style={{ flex:"1 1 0", minWidth:0, position:"sticky", top:70, alignSelf:"flex-start" }}>
         <SummaryCard secSummary={secSummary} secComplete={secComplete} form={form} showTruckSelect={showTruckSelect} isDesktop={true} onEdit={(sec)=>{if(!editingFrom)setEditingFrom(activeSection);setActiveSection(sec);}}/>
         <div ref={secRefs.submit} style={{ marginTop:14 }}>
           {allComplete ? (
-            <Btn full icon={Ic.chk(C.w,16)} disabled={submitting} onClick={submit}>{submitting?"Enviando...":"Solicitar Flete"}</Btn>
+            <Btn full icon={Ic.chk(C.w,16)} onClick={openConfirmModal}>Solicitar Flete</Btn>
           ) : (
-            <button type="button" onClick={submit} style={{ width:"100%", padding:"14px 20px", borderRadius:12, border:`1.5px solid ${C.b1}`, background:C.bgInput, color:C.t3, fontSize:15.4, fontWeight:700, fontFamily:"inherit", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
+            <button type="button" onClick={openConfirmModal} style={{ width:"100%", padding:"14px 20px", borderRadius:12, border:`1.5px solid ${C.b1}`, background:C.bgInput, color:C.t3, fontSize:15.4, fontWeight:700, fontFamily:"inherit", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
               {Ic.chk(C.t3,16)} Solicitar Flete
             </button>
           )}
@@ -856,6 +806,94 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
       </div>}
       </div>
       </div>
+
+      {/* ======================== CONFIRM MODAL ======================== */}
+      {showConfirmModal && (
+        <div role="dialog" aria-modal="true" aria-label="Confirmar flete" style={{ position:"fixed", inset:0, zIndex:1100, display:"flex", alignItems:_isDesktop?"center":"flex-end", justifyContent:"center" }}>
+          <div onClick={()=>setShowConfirmModal(false)} style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.45)" }}/>
+          <div style={{ position:"relative", background:C.bg, borderRadius:_isDesktop?16:"16px 16px 0 0", width:"100%", maxWidth:_isDesktop?720:"none", maxHeight:_isDesktop?"calc(100vh - 48px)":"85vh", overflow:"auto", animation:"slideUp 0.25s ease", boxShadow:"0 -4px 32px rgba(0,0,0,0.18)" }}>
+            {/* Header */}
+            <div style={{ position:"sticky", top:0, zIndex:2, background:C.bg, padding:"16px 20px 12px", borderBottom:`1px solid ${C.b2}`, borderRadius:_isDesktop?"16px 16px 0 0":"16px 16px 0 0", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+              <span style={{ fontSize:18, fontWeight:800, color:C.t1 }}>Confirmar Flete</span>
+              <button aria-label="Cerrar" onClick={()=>setShowConfirmModal(false)} style={{ background:"none", border:"none", cursor:"pointer", padding:4, minWidth:40, minHeight:40, display:"flex", alignItems:"center", justifyContent:"center" }}>{Ic.cross(C.t3,20)}</button>
+            </div>
+
+            <div style={{ padding:"16px 20px 24px", display:"flex", flexDirection:_isDesktop&&finalOrigin&&finalDest?"row":"column", gap:_isDesktop?20:0 }}>
+              {/* Left column: summary + notes + attachments + button */}
+              <div style={{ flex:1, minWidth:0 }}>
+                {/* Summary rows with edit buttons */}
+                <div style={{ display:"flex", flexDirection:"column", gap:0 }}>
+                  {[
+                    { icon: Ic.grain(C.pri,14), label:"Producto", value:`${secSummary.product}${secSummary.quantity?` · ${secSummary.quantity}`:""}`, sec:"product" },
+                    { icon: Ic.pin(C.ok,14), label:"Origen", value:secSummary.origin, sec:"origin" },
+                    ...(showTruckSelect&&form.fleetChoice ? [{ icon: Ic.truck(C.acc,14), label:"Transporte", value:form.fleetChoice==="own"?`Flota propia${(trucks||[]).find(t=>t.id===form.truckId)?` · ${(trucks||[]).find(t=>t.id===form.truckId).plate}`:""}`:"Delegar a planta", sec:"ownfleet" }] : []),
+                    { icon: Ic.plant(C.sec,14), label:"Destino", value:secSummary.destination, sec:"destination" },
+                    { icon: Ic.cal(C.pri,14), label:"Fecha y hora", value:secSummary.schedule, sec:"schedule" },
+                  ].filter(r=>r.value).map((r,i)=>(
+                    <div key={i} style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 0", borderBottom:`1px solid ${C.b1}` }}>
+                      <div style={{ display:"flex", alignItems:"center", justifyContent:"center", width:28, height:28, borderRadius:8, background:C.priPale, flexShrink:0 }}>{r.icon}</div>
+                      <div style={{ flex:1, minWidth:0 }}>
+                        <div style={{ fontSize:11, fontWeight:600, color:C.t3, textTransform:"uppercase", letterSpacing:0.4 }}>{r.label}</div>
+                        <div style={{ fontSize:13.5, fontWeight:500, color:C.t1, marginTop:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{r.value}</div>
+                      </div>
+                      <button onClick={()=>editFromModal(r.sec)} style={{ background:"none", border:"none", cursor:"pointer", padding:"4px 8px", fontSize:12, fontWeight:700, color:C.pri, fontFamily:"inherit", flexShrink:0 }}>Editar</button>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Notes */}
+                <div style={{ marginTop:16 }}>
+                  <label style={{ fontSize:11.6, fontWeight:600, color:C.t2, marginBottom:6, display:"block", textTransform:"uppercase", letterSpacing:0.6 }}>Notas (opcional)</label>
+                  <textarea value={form.notes} onChange={e=>u({notes:e.target.value})} placeholder="Indicaciones, horarios especiales..." rows={2} style={{ width:"100%", padding:"10px 12px", borderRadius:10, border:`1.5px solid ${C.b1}`, background:C.w, color:C.t1, fontSize:14.3, fontFamily:"inherit", outline:"none", resize:"none", boxSizing:"border-box" }}/>
+                </div>
+
+                {/* Attachments */}
+                <div style={{ marginTop:12 }}>
+                  <label style={{ fontSize:11.6, fontWeight:600, color:C.t2, marginBottom:6, display:"flex", alignItems:"center", gap:4, textTransform:"uppercase", letterSpacing:0.6 }}>{Ic.clip(C.acc,14)} Adjuntar (opcional)</label>
+                  {photos.length > 0 && (
+                    <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:8 }}>
+                      {photos.map((p,i)=>(
+                        <div key={i} style={{ position:"relative", width:56, height:56, borderRadius:8, overflow:"hidden", border:`1px solid ${C.b1}` }}>
+                          {p.preview ? <img src={p.preview} alt="" loading="lazy" style={{ width:"100%", height:"100%", objectFit:"cover" }}/> : <div style={{ width:"100%", height:"100%", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", background:C.bg, padding:2 }}>{Ic.doc(C.pri,14)}<span style={{fontSize:7,color:C.t3,textAlign:"center",marginTop:1,wordBreak:"break-all"}}>{(p.name||"").slice(-10)}</span></div>}
+                          <button onClick={()=>removePhoto(i)} aria-label="Eliminar foto" style={{ position:"absolute", top:1, right:1, width:18, height:18, borderRadius:9, background:C.err, border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>{Ic.cross(C.w,10)}</button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <input ref={nfCamRef} type="file" accept="image/*" capture="environment" onChange={addPhoto} style={{ display:"none" }}/>
+                  <input ref={nfGalRef} type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={e=>{Array.from(e.target.files||[]).forEach(f=>{if(f.type.startsWith('image/')&&f.size<=10*1024*1024)setPhotos(prev=>[...prev,{file:f,preview:URL.createObjectURL(f)}])});e.target.value="";}} style={{ display:"none" }}/>
+                  <input ref={nfDocRef} type="file" accept="image/*,.pdf,.doc,.docx" multiple onChange={e=>{Array.from(e.target.files||[]).forEach(f=>{if(f.size<=10*1024*1024)setPhotos(prev=>[...prev,{file:f,preview:f.type.startsWith('image/')?URL.createObjectURL(f):null,name:f.name}])});e.target.value="";}} style={{ display:"none" }}/>
+                  <button onClick={()=>setShowAttach(true)} style={{ display:"inline-flex", alignItems:"center", gap:5, padding:"8px 12px", borderRadius:8, border:`1.5px dashed ${C.b1}`, background:C.bg, cursor:"pointer", fontFamily:"inherit", fontSize:12.1, fontWeight:600, color:C.t2 }}>
+                    {Ic.clip(C.t2,14)} Adjuntar
+                  </button>
+                  <AttachMenu open={showAttach} onClose={()=>setShowAttach(false)} onCamera={()=>nfCamRef.current?.click()} onGallery={()=>nfGalRef.current?.click()} onFiles={()=>nfDocRef.current?.click()} />
+                </div>
+
+                {/* Submit button */}
+                <div style={{ marginTop:20 }}>
+                  <Btn full icon={Ic.chk(C.w,16)} disabled={submitting} onClick={submit}>{submitting?"Enviando...":"Solicitar Flete"}</Btn>
+                </div>
+              </div>
+
+              {/* Right column: route map (desktop only, when coords available) */}
+              {_isDesktop && finalOrigin && finalDest && (
+                <div style={{ flex:1, minWidth:0, alignSelf:"flex-start" }}>
+                  <div style={{ background:C.w, border:`1px solid ${C.b1}`, borderRadius:12, overflow:"hidden", boxShadow:C.sh }}>
+                    <div style={{ display:"flex", alignItems:"center", gap:6, padding:"10px 14px" }}>
+                      {Ic.pin(C.pri,14)}
+                      <span style={{ fontSize:11.6, fontWeight:700, color:C.t2, textTransform:"uppercase", letterSpacing:0.5 }}>Vista previa del recorrido</span>
+                    </div>
+                    <Suspense fallback={<div style={{padding:40,textAlign:"center",color:C.t3}}>Cargando mapa...</div>}>
+                      <FreightMap freightId={null} originLat={finalOrigin.lat} originLng={finalOrigin.lng} destLat={finalDest.lat} destLng={finalDest.lng} originName={originMode==="map"?(customOrigin.name?.trim()||"Personalizado"):(fieldLots.find(l=>l.id===form.lotId)?.name||"Origen")} destName={destMode==="custom"?(customDest.name?.trim()||"Personalizado"):(destDisplayName||"Destino")} status="preview" isDriver={false}/>
+                    </Suspense>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
     </Suspense>
   );
