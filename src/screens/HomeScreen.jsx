@@ -2,7 +2,7 @@ import { useState, useMemo, useCallback, useRef, useEffect, memo } from "react";
 import { C, Ic, MONO } from "../theme";
 import { stCfg, getActions, formatFreightDate } from "../constants";
 import { Bd, Btn, SkeletonList, SkeletonCard, EmptyState, Tabs } from "../components";
-import { useIsDesktop, mapFreight } from "../hooks";
+import { useIsDesktop, mapFreight, originDisplay, destDisplay } from "../hooks";
 import { getPendingActions, resolveUserTypeForFreight, getWaitingOnText } from "../utils/freight-helpers";
 import { apiListFreights } from "../api";
 import DetailScreen from "./DetailScreen";
@@ -302,11 +302,12 @@ export default memo(function HomeScreen({ user, freights, loading, perms, onNav,
     const compact = hasDetail && isDesktop;
     if (compact) {
       // Mini card: just code + status color bar + product
-      const origin = f.fieldName || f.originName || f.originCompanyName;
+      const origin = originDisplay(f);
+      const dest = destDisplay(f) || "Sin destino";
       return (
         <div key={f.id} role="button" tabIndex={0} aria-label={`Flete ${f.code}`} onClick={() => selectFreight(f.id, source)} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();selectFreight(f.id, source);}}} style={{ background: isSel ? C.priPale : C.w, border: `1px solid ${isSel ? C.pri : C.b1}`, borderLeft: `4px solid ${st.color}`, borderRadius: 8, padding: "8px 10px", cursor: "pointer", transition: "background 0.15s" }}>
           <div style={{ fontSize: 12.5, fontWeight: 700, color: C.t1 }}>{f.grain === "Otros" ? f.productTypeOther || "Otros" : f.grain} · {f.tons} {f.unit || "tn"}</div>
-          {origin && <div style={{ fontSize: 10.5, color: C.t2, marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 3 }}>{Ic.pin(C.t3,9)} {origin} → {f.destName || "Sin destino"}</div>}
+          {origin && <div style={{ fontSize: 10.5, color: C.t2, marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 3 }}>{Ic.pin(C.t3,9)} {origin} → {dest}</div>}
           <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 3 }}>
             <span style={{ fontSize: 9.5, fontWeight: 600, fontFamily: MONO, color: C.t3 }}>{f.code}</span>
             <Bd color={st.color} bg={st.bg} small>{st.label}</Bd>
@@ -316,14 +317,15 @@ export default memo(function HomeScreen({ user, freights, loading, perms, onNav,
         </div>
       );
     }
-    const origin = [f.fieldName, f.originName].filter(Boolean).join(" / ") || f.originCompanyName;
+    const origin = originDisplay(f);
+    const dest = destDisplay(f) || "Sin destino";
     return (
       <div key={f.id} role="button" tabIndex={0} aria-label={`Flete ${f.code}`} onClick={() => selectFreight(f.id, source)} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();selectFreight(f.id, source);}}} style={{ background: C.w, border: `1px solid ${C.b1}`, borderLeft: `4px solid ${st.color}`, borderRadius: 10, boxShadow: C.sh, cursor: "pointer", overflow: "hidden", transition: "background 0.15s, border-color 0.15s", padding: "10px 14px" }}>
         <div style={{ fontSize: 14.3, fontWeight: 700, color: C.t1, marginBottom: 2 }}>{f.grain === "Otros" ? f.productTypeOther || "Otros" : f.grain} · {f.tons} {f.unit || "tn"}</div>
         <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12.5, color: C.t2, marginBottom: 8, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>
           <span style={{display:"flex",alignItems:"center",gap:3,overflow:"hidden",whiteSpace:"nowrap",textOverflow:"ellipsis",flexShrink:1,minWidth:0}}>{Ic.pin(C.t3,11)} <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{origin || "Sin origen"}</span></span>
           <span style={{color:C.t3,flexShrink:0}}>→</span>
-          <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.destName || "Sin destino"}</span>
+          <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{dest}</span>
         </div>
         <div style={{ borderTop: `1px solid ${C.b1}`, paddingTop: 8, display: "flex", flexDirection: "column", gap: 3, fontSize: 12.1, color: C.t3 }}>
           {f.loadDate && <div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.cal(C.t3,10)} {formatFreightDate(f.loadDate)}{f.loadTime?.trim() ? ` · ${f.loadTime}` : ""}</div>}
@@ -545,7 +547,8 @@ export default memo(function HomeScreen({ user, freights, loading, perms, onNav,
       const st = stCfg(f.status);
       const pa = f._pending;
       const isSel = selectedId === f.id;
-      const origin = [f.fieldName, f.originName].filter(Boolean).join(" / ") || f.originCompanyName;
+      const origin = originDisplay(f);
+      const dest = destDisplay(f) || "Sin destino";
       return (
         <div key={f.id} role="button" tabIndex={0} aria-label={`Flete ${f.code}`} onClick={() => selectFreight(f.id, "pending")} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();selectFreight(f.id, "pending");}}} style={{ background: isSel ? C.priPale : C.w, border: `1px solid ${isSel ? C.pri : pa ? st.color + "40" : C.b1}`, borderLeft: `4px solid ${st.color}`, borderRadius: 10, padding: "10px 14px", cursor: "pointer", boxShadow: C.sh, transition: "background 0.15s, border-color 0.15s", position: "relative" }}>
           {pa && <div style={{ position: "absolute", top: 10, right: 12, display: "flex", alignItems: "center", gap: 5 }}>
@@ -556,7 +559,7 @@ export default memo(function HomeScreen({ user, freights, loading, perms, onNav,
           <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: C.t2, marginBottom: 8, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>
             <span style={{display:"flex",alignItems:"center",gap:3,overflow:"hidden",whiteSpace:"nowrap",textOverflow:"ellipsis",flexShrink:1,minWidth:0}}>{Ic.pin(C.t3,11)} <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{origin || "Sin origen"}</span></span>
             <span style={{color:C.t3,flexShrink:0}}>→</span>
-            <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.destName || "Sin destino"}</span>
+            <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{dest}</span>
           </div>
           <div style={{ borderTop: `1px solid ${C.b1}`, paddingTop: 8, display: "flex", flexWrap: "wrap", gap: 5, fontSize: 11.5, color: C.t3 }}>
             {f.loadDate && <span style={{ display: "flex", alignItems: "center", gap: 3 }}>{Ic.cal(C.t3, 10)} {formatFreightDate(f.loadDate)}{f.loadTime ? ` · ${f.loadTime}` : ""}</span>}
@@ -608,8 +611,8 @@ export default memo(function HomeScreen({ user, freights, loading, perms, onNav,
                       {f.loadTime && <span style={{ fontSize: 10.5, color: C.t3 }}>{f.loadTime}</span>}
                     </div>
                     <div style={{ display: "flex", gap: 10, marginTop: 3, fontSize: 11, color: C.t3 }}>
-                      <span style={{ display: "flex", alignItems: "center", gap: 3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{Ic.pin(C.t3, 9)} {[f.fieldName, f.originName].filter(Boolean).join(" / ") || f.originCompanyName || "Sin origen"}</span>
-                      {f.destName && <span style={{ display: "flex", alignItems: "center", gap: 3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{Ic.plant(C.t3, 9)} {f.destName}</span>}
+                      <span style={{ display: "flex", alignItems: "center", gap: 3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{Ic.pin(C.t3, 9)} {originDisplay(f) || "Sin origen"}</span>
+                      {destDisplay(f) && <span style={{ display: "flex", alignItems: "center", gap: 3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{Ic.plant(C.t3, 9)} {destDisplay(f)}</span>}
                     </div>
                   </div>
                 );

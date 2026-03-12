@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useRef, useCallback, lazy, Suspense, memo
 import { C, Ic, FONT, MONO } from "../theme";
 import { stCfg, formatFreightDate } from "../constants";
 import { Bd, Btn, Select, SortTh, Tabs, exportExcel, SkeletonList, EmptyState, ErrorBoundary } from "../components";
-import { useTableSort, usePullToRefresh, mapFreight } from "../hooks";
+import { useTableSort, usePullToRefresh, mapFreight, originDisplay, destDisplay } from "../hooks";
 import { getPendingActions, resolveUserTypeForFreight } from "../utils/freight-helpers";
 import { apiListFreights } from "../api";
 const FreightsOverviewMap = lazy(() => import("../maps").then(m => ({ default: m.FreightsOverviewMap })));
@@ -287,7 +287,8 @@ export default memo(function ListScreen({ freights, loading, onNav, onRefresh, c
   const FreightHoverPreview = hoverFreight && isDesktop ? (() => {
     const f = hoverFreight;
     const st = stCfg(f.status);
-    const origin = f.fieldName || f.originName;
+    const origin = originDisplay(f);
+    const dest = destDisplay(f) || "Sin destino";
     return (
       <div ref={adjustPreviewPos} style={{ position:"fixed", left:hoverPos.x, top:hoverPos.y, zIndex:9999, width:340, background:C.w, border:`1px solid ${C.b1}`, borderLeft:`5px solid ${st.color}`, borderRadius:14, boxShadow:C.shLg, padding:18, pointerEvents:"none", fontFamily:FONT, animation:"tvPreviewIn 0.15s ease-out" }}>
         {/* Header: code + status */}
@@ -309,7 +310,7 @@ export default memo(function ListScreen({ freights, loading, onNav, onRefresh, c
             <span>{f.originCompanyName || ""}</span>
           </div>
           <div style={{ display:"flex", alignItems:"center", gap:6, fontSize:13.2, color:C.t2 }}>
-            {Ic.plant(C.sec, 13)} <span style={{ fontWeight:600 }}>{f.destName || "Sin destino"}</span>
+            {Ic.plant(C.sec, 13)} <span style={{ fontWeight:600 }}>{dest}</span>
           </div>
         </div>
         {/* Date & time */}
@@ -356,14 +357,15 @@ export default memo(function ListScreen({ freights, loading, onNav, onRefresh, c
   // Kanban card renderer (shared between status and entity grouping)
   const renderKanbanCard = (f) => {
     const st = stCfg(f.status);
-    const origin = f.fieldName || f.originName;
+    const origin = originDisplay(f);
+    const dest = destDisplay(f) || "Sin destino";
     return wrapHover(f,
       <div key={f.id} onClick={()=>onNav("detail",f.id)} style={{ background:C.w, border:`1px solid ${C.b1}`, borderLeft:`4px solid ${st.color}`, borderRadius:12, padding:14, cursor:"pointer", boxShadow:C.sh, transition:"background 0.15s", contentVisibility:"auto", containIntrinsicSize:"0 120px" }}>
         <div style={{fontSize:15.4,fontWeight:700,color:C.t1,marginBottom:2}}>{f.grain==="Otros"?f.productTypeOther||"Otros":f.grain} · {f.tons} {f.unit||"tn"}</div>
         <div style={{display:"flex",alignItems:"center",gap:5,fontSize:12.5,color:C.t2,marginBottom:8,overflow:"hidden",whiteSpace:"nowrap",textOverflow:"ellipsis"}}>
           <span style={{display:"flex",alignItems:"center",gap:3,overflow:"hidden",whiteSpace:"nowrap",textOverflow:"ellipsis",flexShrink:1,minWidth:0}}>{Ic.pin(C.t3,11)} <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{origin||"Sin origen"}</span></span>
           <span style={{color:C.t3,flexShrink:0}}>→</span>
-          <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.destName||"Sin destino"}</span>
+          <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{dest}</span>
         </div>
         <div style={{borderTop:`1px solid ${C.b1}`,paddingTop:8,display:"flex",flexDirection:"column",gap:3,fontSize:12.1,color:C.t3}}>
           {f.loadDate && <div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.cal(C.t3,10)} {formatFreightDate(f.loadDate)}{f.loadTime?` · ${f.loadTime}`:""}</div>}
@@ -411,7 +413,8 @@ export default memo(function ListScreen({ freights, loading, onNav, onRefresh, c
     const renderSimpleCard = (f) => {
       const st = stCfg(f.status);
       const pa = f._pending;
-      const origin = f.fieldName || f.originName;
+      const origin = originDisplay(f);
+      const dest = destDisplay(f) || "Sin destino";
       return wrapHover(f,
         <div key={f.id} onClick={() => onNav("detail", f.id)} style={{ background: C.w, border: `1px solid ${pa ? st.color + "40" : C.b1}`, borderLeft: `4px solid ${st.color}`, borderRadius: 10, padding: "8px 12px", cursor: "pointer", boxShadow: C.sh, transition: "background 0.15s, border-color 0.15s", position: "relative", overflow: "hidden", boxSizing: "border-box" }}>
           {pa && <div style={{ position: "absolute", top: 8, right: 10, display: "flex", alignItems: "center", gap: 4 }}>
@@ -422,7 +425,7 @@ export default memo(function ListScreen({ freights, loading, onNav, onRefresh, c
           <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11.5, color: C.t2, marginBottom: 4, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>
             <span style={{display:"flex",alignItems:"center",gap:3,overflow:"hidden",whiteSpace:"nowrap",textOverflow:"ellipsis",flexShrink:1,minWidth:0}}>{Ic.pin(C.t3,10)} <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{origin || "Sin origen"}</span></span>
             <span style={{color:C.t3,flexShrink:0}}>→</span>
-            <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.destName || "Sin destino"}</span>
+            <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{dest}</span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: C.t3 }}>
             {f.loadDate && <span style={{ display: "flex", alignItems: "center", gap: 3 }}>{Ic.cal(C.t3, 9)} {formatFreightDate(f.loadDate)}{f.loadTime ? ` · ${f.loadTime}` : ""}</span>}
@@ -724,7 +727,8 @@ export default memo(function ListScreen({ freights, loading, onNav, onRefresh, c
                 {tableSorted.length===0 && <tr><td colSpan={13} style={{ padding:24, textAlign:"center", color:C.t3, fontSize:13.2 }}>Sin fletes</td></tr>}
                 {tableSorted.map(f=>{
                   const st = stCfg(f.status);
-                  const campoLote = [f.fieldName, f.originName].filter(Boolean).join(" / ") || "\u2014";
+                  const campoLote = originDisplay(f) || "\u2014";
+                  const destText = destDisplay(f);
                   return (
                     <tr key={f.id} className="tv-row" onClick={()=>onNav("detail",f.id)} onMouseEnter={(e)=>handleCardMouseEnter(f,e)} onMouseLeave={handleCardMouseLeave} style={{ borderBottom:`1px solid ${C.b1}`, cursor:"pointer", contentVisibility:"auto", containIntrinsicSize:"0 44px" }}>
                       <td style={{ padding:"10px 12px", fontFamily:MONO, fontWeight:700, fontSize:11.5, color:C.t2, whiteSpace:"nowrap" }}>{f.code}</td>
@@ -732,8 +736,8 @@ export default memo(function ListScreen({ freights, loading, onNav, onRefresh, c
                       <td style={{ padding:"10px 12px", fontWeight:600, color:C.t1 }}>{f.grain==="Otros"?f.productTypeOther||"Otros":f.grain} · {f.tons} {f.unit||"tn"}</td>
                       <td style={{ padding:"10px 12px", color:f.isMultiTruck?C.info:C.t3, fontWeight:f.isMultiTruck?600:400, fontSize:12.1, whiteSpace:"nowrap" }}>{f.isMultiTruck?`${f.assignedTruckCount}/${f.truckCount}`:"1"}</td>
                       <td style={{ padding:"10px 12px", color:C.t2 }}>{f.originCompanyName||f.originName}</td>
-                      <td style={{ padding:"10px 12px", color:C.t2 }}>{campoLote}{f.originLat&&f.originLng&&<span onClick={(e)=>{e.stopPropagation();goToMap(f.originLat,f.originLng,[f.fieldName,f.originName].filter(Boolean).join(" / "));}} style={{cursor:"pointer",opacity:0.6,marginLeft:3,fontSize:11}} title="Ver en mapa">{"\uD83D\uDCCD"}</span>}</td>
-                      <td style={{ padding:"10px 12px", color:C.t2 }}>{f.destName}{f.destLat&&f.destLng&&<span onClick={(e)=>{e.stopPropagation();goToMap(f.destLat,f.destLng,f.destName);}} style={{cursor:"pointer",opacity:0.6,marginLeft:3,fontSize:11}} title="Ver en mapa">{"\uD83D\uDCCD"}</span>}</td>
+                      <td style={{ padding:"10px 12px", color:C.t2 }}>{campoLote}{f.originLat&&f.originLng&&<span onClick={(e)=>{e.stopPropagation();goToMap(f.originLat,f.originLng,campoLote);}} style={{cursor:"pointer",opacity:0.6,marginLeft:3,fontSize:11}} title="Ver en mapa">{"\uD83D\uDCCD"}</span>}</td>
+                      <td style={{ padding:"10px 12px", color:C.t2 }}>{destText}{f.destLat&&f.destLng&&<span onClick={(e)=>{e.stopPropagation();goToMap(f.destLat,f.destLng,destText);}} style={{cursor:"pointer",opacity:0.6,marginLeft:3,fontSize:11}} title="Ver en mapa">{"\uD83D\uDCCD"}</span>}</td>
                       <td style={{ padding:"10px 12px", color:C.t2, whiteSpace:"nowrap" }}>{formatFreightDate(f.loadDate)}</td>
                       <td style={{ padding:"10px 12px", color:C.t3, whiteSpace:"nowrap" }}>{f.loadTime||"\u2014"}</td>
                       <td style={{ padding:"10px 12px", color:C.t2 }}>{f.transporterName||"\u2014"}</td>
@@ -780,10 +784,10 @@ export default memo(function ListScreen({ freights, loading, onNav, onRefresh, c
                           </div>
                           <div style={{ fontSize:13.2, fontWeight:600, color:C.t1, marginTop:2 }}>{f.grain==="Otros"?f.productTypeOther||"Otros":f.grain} · {f.tons} {f.unit||"tn"}</div>
                           {f.loadDate && <div style={{ fontSize:12.1, color:C.t3, fontWeight:500, marginTop:2 }}>{Ic.cal(C.t3,9)} {formatFreightDate(f.loadDate)}{f.loadTime?` · ${f.loadTime}`:""}</div>}
-                          {(f.fieldName || f.originName) && <div style={{ fontSize:11.5, color:C.t3, marginTop:1, display:"flex", alignItems:"center", gap:3 }}>{Ic.pin(C.t3,9)} <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.fieldName || f.originName}</span></div>}
+                          {originDisplay(f) && <div style={{ fontSize:11.5, color:C.t3, marginTop:1, display:"flex", alignItems:"center", gap:3 }}>{Ic.pin(C.t3,9)} <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{originDisplay(f)}</span></div>}
                         </div>
                         <div style={{ fontSize:12.1, color:C.t3, textAlign:"right", flexShrink:0 }}>
-                          {f.destName && <div style={{ display:"flex", alignItems:"center", gap:3, justifyContent:"flex-end" }}>{Ic.plant(C.t3,10)} <span style={{ maxWidth:100, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{f.destName}</span></div>}
+                          {destDisplay(f) && <div style={{ display:"flex", alignItems:"center", gap:3, justifyContent:"flex-end" }}>{Ic.plant(C.t3,10)} <span style={{ maxWidth:100, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{destDisplay(f)}</span></div>}
                         </div>
                       </div>
                     );
@@ -837,7 +841,7 @@ export default memo(function ListScreen({ freights, loading, onNav, onRefresh, c
                                 {f.loadDate && <div style={{ fontSize:12.7, color:C.t3, fontWeight:500, marginTop:2 }}>{Ic.cal(C.t3,9)} {formatFreightDate(f.loadDate)}{f.loadTime?` · ${f.loadTime}`:""}</div>}
                               </div>
                               <div style={{ fontSize:12.1, color:C.t3, textAlign:"right", flexShrink:0 }}>
-                                {f.destName && <div style={{ display:"flex", alignItems:"center", gap:3, justifyContent:"flex-end" }}>{Ic.plant(C.t3,10)} <span style={{ maxWidth:100, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{f.destName}</span></div>}
+                                {destDisplay(f) && <div style={{ display:"flex", alignItems:"center", gap:3, justifyContent:"flex-end" }}>{Ic.plant(C.t3,10)} <span style={{ maxWidth:100, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{destDisplay(f)}</span></div>}
                               </div>
                             </div>
                           );
@@ -867,7 +871,7 @@ export default memo(function ListScreen({ freights, loading, onNav, onRefresh, c
                                 <div style={{ fontSize:13.2, fontWeight:600, color:C.t1, marginTop:2 }}>{f.grain==="Otros"?f.productTypeOther||"Otros":f.grain} · {f.tons} {f.unit||"tn"}</div>
                               </div>
                               <div style={{ fontSize:12.1, color:C.t3, textAlign:"right", flexShrink:0 }}>
-                                {f.destName && <div>{f.destName}</div>}
+                                {destDisplay(f) && <div>{destDisplay(f)}</div>}
                               </div>
                             </div>
                           );
@@ -902,7 +906,7 @@ export default memo(function ListScreen({ freights, loading, onNav, onRefresh, c
                       </div>
                       <div style={{ fontSize:12.1, color:C.t3, textAlign:"right", flexShrink:0 }}>
                         {f.originCompanyName && <div style={{ display:"flex", alignItems:"center", gap:3, justifyContent:"flex-end" }}>{Ic.user(C.t3,10)} {f.originCompanyName}</div>}
-                        {f.destName && <div style={{ display:"flex", alignItems:"center", gap:3, justifyContent:"flex-end" }}>{Ic.plant(C.t3,10)} {f.destName}</div>}
+                        {destDisplay(f) && <div style={{ display:"flex", alignItems:"center", gap:3, justifyContent:"flex-end" }}>{Ic.plant(C.t3,10)} {destDisplay(f)}</div>}
                       </div>
                     </div>
                   );

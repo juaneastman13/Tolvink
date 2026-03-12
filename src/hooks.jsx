@@ -327,6 +327,9 @@ export function useFreights(user, isAuthInitialized) {
       const mapped = (r.data||[]).map(mapFreight);
       freightsRef.current = mapped;
       setFreights(mapped);
+      // Pre-populate detail cache so card clicks render instantly
+      const detailStore = useFreightDetailStore.getState();
+      mapped.forEach(f => { if (f.id && !detailStore.getDetail(f.id)) detailStore.setDetail(f.id, f); });
       setTotal(r.total||0);
       setStatusCounts(r.statusCounts||{});
       setHasMore((r.page||1) < (r.pages||1));
@@ -342,6 +345,9 @@ export function useFreights(user, isAuthInitialized) {
     try {
       const r = await apiListFreights({page:nextPage, limit:FREIGHTS_PAGE_SIZE, company:companyFilter});
       const mapped = (r.data||[]).map(mapFreight);
+      // Pre-populate detail cache for new items
+      const detailStore = useFreightDetailStore.getState();
+      mapped.forEach(f => { if (f.id && !detailStore.getDetail(f.id)) detailStore.setDetail(f.id, f); });
       pageRef.current = nextPage;
       setFreights(p=>{
         // Merge: update stale items + append new ones (prevents divergence on page boundaries)
@@ -481,6 +487,7 @@ export function mapFreight(f) {
     destHasOwnFleet: !!(f.destCompany?.hasInternalFleet || (Array.isArray(f.destCompany?.types) && f.destCompany.types.includes("transporter"))),
     originLat:f.originLat?parseFloat(f.originLat):null, originLng:f.originLng?parseFloat(f.originLng):null,
     fieldName:f.field?.name||"", useOwnFleet:f.useOwnFleet??null, isOwnFleet: f.useOwnFleet!=null ? f.useOwnFleet : isOwnFleet,
+    fieldId:f.fieldId||null,
     destPlantId:f.destPlantId, destCompanyId:f.destCompanyId||null, destName:f.destName||"",
     destLat:f.destLat?parseFloat(f.destLat):null, destLng:f.destLng?parseFloat(f.destLng):null,
     loadDate:f.loadDate?.split("T")[0]||"", loadTime:f.loadTime||"",
@@ -543,6 +550,17 @@ export function mapFreight(f) {
       return scheduled < new Date();
     })(),
   };
+}
+
+/** Resolve origin display text — "Personalizado" for map-picked origins without field */
+export function originDisplay(f) {
+  if (!f.fieldId && f.originLat && f.originLng) return "Personalizado";
+  return [f.fieldName, f.originName].filter(Boolean).join(" / ") || f.originCompanyName || "";
+}
+/** Resolve dest display text — "Personalizado" for map-picked dests without plant */
+export function destDisplay(f) {
+  if (!f.destPlantId && f.destLat && f.destLng) return "Personalizado";
+  return f.destName || "";
 }
 
 // ======================== PERMISSIONS ================================
