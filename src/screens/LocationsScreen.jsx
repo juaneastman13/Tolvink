@@ -141,9 +141,18 @@ export default function LocationsScreen({ onBack }) {
     const parts = [];
     if (createdFields) parts.push(`${createdFields} campo${createdFields !== 1 ? "s" : ""}`);
     if (createdLots) parts.push(`${createdLots} lote${createdLots !== 1 ? "s" : ""}`);
-    if (createdPois) parts.push(`${createdPois} ubicación${createdPois !== 1 ? "es" : ""}`);
-    const errMsg = errors.length ? ` (${errors.length} error${errors.length !== 1 ? "es" : ""})` : "";
-    setDoneMsg((parts.join(", ") || "0") + ` importado${(createdFields + createdLots + createdPois) !== 1 ? "s" : ""}${errMsg}`);
+    if (createdPois) parts.push(`${createdPois} ubicación${createdPois !== 1 ? "es" : ""} de interés`);
+    const total = createdFields + createdLots + createdPois;
+    if (total > 0) {
+      let msg = parts.join(", ") + ` importado${total !== 1 ? "s" : ""}`;
+      if (createdFields || createdLots) msg += ". Campos y lotes: ver en Mis Campos y Lotes";
+      if (errors.length) msg += ` · ${errors.length} error${errors.length !== 1 ? "es" : ""}: ${errors.slice(0, 2).join("; ")}`;
+      setDoneMsg(msg);
+    } else if (errors.length) {
+      setDoneMsg(`Error al importar: ${errors.slice(0, 3).join("; ")}`);
+    } else {
+      setDoneMsg("No se importaron ubicaciones");
+    }
     load();
   };
 
