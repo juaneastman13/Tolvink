@@ -61,7 +61,6 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
   }, [freight?.id]);
 
   const [auditLog, setAuditLog] = useState(null);
-  const [showAudit, setShowAudit] = useState(false);
   const [viewFile, setViewFile] = useState(null);
   const [ocrLoading, setOcrLoading] = useState(false);
   const [ocrResult, setOcrResult] = useState(null);
@@ -108,7 +107,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
     return () => { cancelled = true; };
   }, [freight?.id]);
 
-  const toggleAudit = () => setShowAudit(v => !v);
+  const [showProgressModal, setShowProgressModal] = useState(false);
 
   const [stepModal, setStepModal] = useState(null); // {idx, label, color, backendSteps}
   const [expandedTrip, setExpandedTrip] = useState(null);
@@ -295,7 +294,8 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
   };
 
   return (
-    <div style={{ flex:1, overflow:"auto", animation:"slideUp 0.25s ease" }}>
+    <div style={{ flex:1, position:"relative" }}>
+    <div style={{ position:"absolute", inset:0, overflow:"auto", animation:"slideUp 0.25s ease" }}>
       {/* Sticky header — back + product title */}
       <div style={{ position:"sticky", top:0, zIndex:10, padding:"18px 18px 8px", background:C.bg }}>
         <button onClick={onBack} style={{ background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", fontSize:15, fontWeight:600, color:C.pri, marginBottom:14, padding:0, display:"flex", alignItems:"center", gap:4 }}>{Ic.chev(C.pri,18)} Volver</button>
@@ -412,8 +412,8 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
         return <div ref={auditRef} style={{ background:C.w, border:`1px solid ${C.b1}`, borderRadius:12, padding:16, marginBottom:12, boxShadow:C.sh, position:"relative" }}>
           <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14 }}>
             <span style={{ fontSize:12.2, fontWeight:700, color:C.t2, textTransform:"uppercase", letterSpacing:0.5 }}>Progreso</span>
-            <button onClick={toggleAudit} style={{ fontSize:14, fontWeight:700, color:C.t1, background:C.bg, border:`1.5px solid ${C.b1}`, borderRadius:8, padding:"6px 15px", cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:5 }}>
-              {showAudit?"Ocultar detalle":"Ver detalle"} <span style={{ fontSize:11.5, marginTop:1 }}>{showAudit?"\u25B2":"\u25BC"}</span>
+            <button onClick={()=>setShowProgressModal(true)} style={{ fontSize:14, fontWeight:700, color:C.t1, background:C.bg, border:`1.5px solid ${C.b1}`, borderRadius:8, padding:"6px 15px", cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:5 }}>
+              Ver detalle <span style={{ fontSize:11.5, marginTop:1 }}>{"\u25BC"}</span>
             </button>
           </div>
           {/* Circular stepper nodes with connecting lines */}
@@ -461,63 +461,6 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
               </div>
             </div>
           </div>}
-          {/* Per-stage detail — 3 columns matching visual stepper */}
-          {showAudit && !auditLog && <div style={{textAlign:"center",padding:"12px 0",fontSize:12.7,color:C.t3}}>Cargando detalle...</div>}
-          {showAudit && auditLog && (()=>{
-            const visualAuditSteps = [
-              { label:"Pendiente", backendSteps:["pending_assignment"], color:C.acc },
-              { label:"En curso", backendSteps:["assigned","accepted","in_progress","loaded"], color:C.pri },
-              { label: isCanceled ? "Cancelado" : "Finalizado", backendSteps:["finished"], color: isCanceled ? C.err : C.ok },
-            ];
-            return <div style={{ display:"flex", gap:3, marginTop:12, borderTop:`1px solid ${C.b1}`, paddingTop:10 }}>
-              {visualAuditSteps.map((vas,vi)=>{
-                const done = vi < visualIdx; const active = vi === visualIdx && !isCanceled; const isCancelStep = vi === 2 && isCanceled;
-                const col = done ? C.pri : (active || isCancelStep) ? vas.color : C.t3;
-                const logs = vas.backendSteps.flatMap(s => getStepLogs(s));
-                const stepAssigns = vas.backendSteps.flatMap(s => getStepAssignments(s));
-                const tc = isMultiTruck && vi === 1 ? (()=>{ const counts = vas.backendSteps.map(s => getTruckCount(s)).filter(v=>v!==null); return counts.length > 0 ? Math.max(...counts) : null; })() : null;
-                const hasData = logs.length > 0 || (tc !== null && tc > 0);
-                return (
-                  <div key={vi} style={{ flex:1, minWidth:0 }}>
-                    {tc !== null && (
-                      <div style={{ textAlign:"center", fontSize:11.5, fontWeight:700, color:col, marginBottom:8, background:`${col}12`, borderRadius:5, padding:"3px 0" }}>
-                        {tc}/{freight.truckCount}
-                      </div>
-                    )}
-                    {logs.length > 0 && logs.map(entry => {
-                      const acCol = actionColors[entry.action] || C.t2;
-                      const tn = tripLabel(entry);
-                      return (
-                        <div key={entry.id} style={{ display:"flex", gap:5, marginBottom:8, alignItems:"flex-start" }}>
-                          <div style={{ width:7, height:7, borderRadius:4, background:acCol, flexShrink:0, marginTop:3 }} />
-                          <div style={{ minWidth:0 }}>
-                            <div style={{ fontSize:12.2, fontWeight:700, color:acCol, lineHeight:1.3 }}>{actionLabels[entry.action]||entry.action}{tn ? ` · ${tn}` : ""}</div>
-                            <div style={{ fontSize:11.5, color:C.t2, marginTop:1, lineHeight:1.3, wordBreak:"break-word" }}>{entry.user?.name||"Sistema"}</div>
-                            {entry.user?.company?.name && <div style={{ fontSize:11, color:C.t3, lineHeight:1.2 }}>{entry.user.company.name}</div>}
-                            {(entry.reason || entry.metadata?.reason) && <div style={{ fontSize:11, color:C.t3, fontStyle:"italic", marginTop:1 }}>"{entry.reason||entry.metadata.reason}"</div>}
-                            {entry.metadata?.confirmedBy && <div style={{ fontSize:11, color:C.t3, marginTop:1 }}>por {entry.metadata.confirmedBy==="transporter"?"transportista":entry.metadata.confirmedBy==="producer"?"productor":entry.metadata.confirmedBy==="plant"?"planta":entry.metadata.confirmedBy}</div>}
-                            <div style={{ fontSize:11, color:C.t3, marginTop:1 }}>{fmtD(entry.createdAt)}</div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                    {logs.length === 0 && stepAssigns.length > 0 && stepAssigns.map(a => (
-                      <div key={a.id} style={{ display:"flex", gap:5, marginBottom:8, alignItems:"flex-start" }}>
-                        <div style={{ width:7, height:7, borderRadius:4, background:col, flexShrink:0, marginTop:3 }} />
-                        <div style={{ minWidth:0 }}>
-                          <div style={{ fontSize:11.5, fontWeight:700, color:C.t1 }}>Viaje #{a.tripNumber}</div>
-                          {a.plate && <div style={{ fontSize:11.5, color:C.t2, marginTop:1, lineHeight:1.3 }}>{a.plate}{a.truckModel?` · ${a.truckModel}`:""}</div>}
-                          {a.transporterName && <div style={{ fontSize:11, color:C.t3, lineHeight:1.2 }}>{a.transporterName}</div>}
-                          {a.driverName && <div style={{ fontSize:11, color:C.t3, lineHeight:1.2 }}>{a.driverName}</div>}
-                        </div>
-                      </div>
-                    ))}
-                    {logs.length === 0 && stepAssigns.length === 0 && hasData && <div style={{ fontSize:10.4, color:C.t3, textAlign:"center" }}>{"\u2014"}</div>}
-                  </div>
-                );
-              })}
-            </div>;
-          })()}
         </div>;
       })()}
 
@@ -834,13 +777,112 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
       {ocrLoading && <div style={{ position:"fixed", inset:0, zIndex:250 }}><UploadOverlay uploading={ocrLoading} done={false} total={1} current={1} label="Extrayendo datos"/></div>}
       <OcrResultModal result={ocrResult} onClose={()=>setOcrResult(null)}/>
 
-      {/* Truck detail modal */}
-      {showTruckModal && (()=>{
+    </div>
+
+    {/* Progress detail popup — centered in detail panel */}
+      {showProgressModal && (()=>{
+        const steps = ["pending_assignment","assigned","accepted","in_progress","loaded","finished"];
+        const curIdx = steps.indexOf(freight.status);
+        const isCanceled = freight.status === "canceled";
+        const visualIdx = isCanceled ? (curIdx >= 1 ? (curIdx >= 3 ? 2 : 1) : 0) : curIdx === 0 ? 0 : curIdx <= 4 ? 1 : 2;
+        const stepAuditActions = {
+          pending_assignment:["created"],
+          assigned:["assigned","assigned_multi","assignment_updated","assignment_canceled"],
+          accepted:["accepted","authorized","trip_accepted","trip_rejected"],
+          in_progress:["started","trip_started"],
+          loaded:["confirm_loaded","trip_confirm_loaded"],
+          finished:["confirm_finished","finished","trip_confirm_finished","trip_finished","canceled"],
+        };
+        const actionLabels = { created:"Solicitado", assigned:"Asignado", assigned_multi:"Asignado", accepted:"Aceptado", rejected:"Rechazado", started:"Iniciado", confirm_loaded:"Carga OK", confirm_finished:"Entrega OK", finished:"Finalizado", canceled:"Cancelado", authorized:"Autorizado", updated:"Editado", trip_accepted:"Aceptado", trip_rejected:"Rechazado", trip_started:"Iniciado", trip_confirm_loaded:"Carga OK", trip_confirm_finished:"Entrega OK", trip_finished:"Finalizado", assignment_canceled:"Cancelado", assignment_updated:"Editado" };
+        const actionColors = { created:C.pri, assigned:C.sec, assigned_multi:C.sec, accepted:C.info, rejected:C.err, started:C.acc, confirm_loaded:C.acc, confirm_finished:C.pri, finished:C.ok, canceled:C.err, authorized:C.info, updated:C.t2, trip_accepted:C.info, trip_rejected:C.err, trip_started:C.acc, trip_confirm_loaded:C.acc, trip_confirm_finished:C.pri, trip_finished:C.ok, assignment_canceled:C.err, assignment_updated:C.t2 };
         const fmtD = (d) => { try { const dt=new Date(d); return dt.toLocaleDateString("es-AR",{day:"2-digit",month:"short"})+" "+dt.toLocaleTimeString("es-AR",{hour:"2-digit",minute:"2-digit",hour12:false}); } catch{ return ""; } };
+        const getStepLogs = (step) => { if(!auditLog) return []; return auditLog.filter(l=>(stepAuditActions[step]||[]).includes(l.action)); };
+        const stepToTrip = { assigned:"pending", accepted:"accepted", in_progress:"in_progress", loaded:"loaded", finished:"finished" };
+        const tripRank = { pending:0, accepted:1, in_progress:2, loaded:3, finished:4 };
+        const getTruckCount = (step) => { if(!isMultiTruck) return null; const ts=stepToTrip[step]; if(!ts) return null; const rank=tripRank[ts]??0; return (freight.activeAssignments||[]).filter(a=>(tripRank[a.tripStatus]??0)>=rank).length; };
+        const getStepAssignments = (step) => { if(!isMultiTruck) return []; const ts=stepToTrip[step]; if(!ts) return []; return (freight.activeAssignments||[]).filter(a=>a.tripStatus===ts); };
+        const visualAuditSteps = [
+          { label:"Pendiente", backendSteps:["pending_assignment"], color:C.acc },
+          { label:"En curso", backendSteps:["assigned","accepted","in_progress","loaded"], color:C.pri },
+          { label: isCanceled ? "Cancelado" : "Finalizado", backendSteps:["finished"], color: isCanceled ? C.err : C.ok },
+        ];
+        const showConfs = !isMultiTruck && (freight.status==="loaded" || freight.status==="in_progress");
+        return <div onClick={()=>setShowProgressModal(false)} style={{ position:"absolute", inset:0, zIndex:200, background:"rgba(0,0,0,0.5)", display:"flex", alignItems:"center", justifyContent:"center", padding:16 }}>
+          <div onClick={e=>e.stopPropagation()} style={{ background:C.w, borderRadius:14, padding:20, maxWidth:440, width:"100%", maxHeight:"80%", overflow:"auto", boxShadow:C.shLg }}>
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14 }}>
+              <span style={{ fontSize:16.2, fontWeight:800, color:C.pri }}>Progreso</span>
+              <button onClick={()=>setShowProgressModal(false)} style={{ background:"none", border:"none", cursor:"pointer", padding:4 }}>{Ic.cross(C.t3,18)}</button>
+            </div>
+            {/* Cross-confirmations */}
+            {showConfs && <div style={{marginBottom:14,paddingBottom:12,borderBottom:`1px solid ${C.b1}`,display:"flex",gap:16}}>
+              <div style={{flex:1}}>
+                <div style={{fontSize:11,fontWeight:700,color:C.t2,marginBottom:6,textTransform:"uppercase",letterSpacing:0.4}}>Carga</div>
+                <div style={{display:"flex",flexDirection:"column",gap:5}}>
+                  <ConfDot confirmed={freight.transporterLoadedConfirmedAt} label="Transportista"/>
+                  <ConfDot confirmed={freight.producerLoadedConfirmedAt} label="Productor"/>
+                </div>
+              </div>
+              <div style={{width:1,background:C.b1}}/>
+              <div style={{flex:1}}>
+                <div style={{fontSize:11,fontWeight:700,color:C.t2,marginBottom:6,textTransform:"uppercase",letterSpacing:0.4}}>Entrega</div>
+                <div style={{display:"flex",flexDirection:"column",gap:5}}>
+                  <ConfDot confirmed={freight.transporterFinishedConfirmedAt} label="Transportista"/>
+                  <ConfDot confirmed={freight.plantFinishedConfirmedAt} label="Planta"/>
+                </div>
+              </div>
+            </div>}
+            {/* Audit timeline by stage */}
+            {!auditLog && <div style={{textAlign:"center",padding:"12px 0",fontSize:12.7,color:C.t3}}>Cargando detalle...</div>}
+            {auditLog && <div style={{ display:"flex", gap:6 }}>
+              {visualAuditSteps.map((vas,vi)=>{
+                const done = vi < visualIdx; const active = vi === visualIdx && !isCanceled; const isCancelStep = vi === 2 && isCanceled;
+                const col = done ? C.pri : (active || isCancelStep) ? vas.color : C.t3;
+                const logs = vas.backendSteps.flatMap(s => getStepLogs(s));
+                const stepAssigns = vas.backendSteps.flatMap(s => getStepAssignments(s));
+                const tc = isMultiTruck && vi === 1 ? (()=>{ const counts = vas.backendSteps.map(s => getTruckCount(s)).filter(v=>v!==null); return counts.length > 0 ? Math.max(...counts) : null; })() : null;
+                return (
+                  <div key={vi} style={{ flex:1, minWidth:0 }}>
+                    <div style={{ fontSize:12.2, fontWeight:700, color:col, marginBottom:8, textAlign:"center" }}>{vas.label}</div>
+                    {tc !== null && <div style={{ textAlign:"center", fontSize:11.5, fontWeight:700, color:col, marginBottom:8, background:`${col}12`, borderRadius:5, padding:"3px 0" }}>{tc}/{freight.truckCount}</div>}
+                    {logs.map(entry => {
+                      const acCol = actionColors[entry.action] || C.t2;
+                      const tn = entry.metadata?.tripNumber ? `#${entry.metadata.tripNumber}` : null;
+                      return <div key={entry.id} style={{ display:"flex", gap:5, marginBottom:8, alignItems:"flex-start" }}>
+                        <div style={{ width:7, height:7, borderRadius:4, background:acCol, flexShrink:0, marginTop:4 }} />
+                        <div style={{ minWidth:0 }}>
+                          <div style={{ fontSize:12.2, fontWeight:700, color:acCol, lineHeight:1.3 }}>{actionLabels[entry.action]||entry.action}{tn ? ` · ${tn}` : ""}</div>
+                          <div style={{ fontSize:11.5, color:C.t2, marginTop:1, lineHeight:1.3, wordBreak:"break-word" }}>{entry.user?.name||"Sistema"}</div>
+                          {entry.user?.company?.name && <div style={{ fontSize:11, color:C.t3, lineHeight:1.2 }}>{entry.user.company.name}</div>}
+                          {(entry.reason || entry.metadata?.reason) && <div style={{ fontSize:11, color:C.t3, fontStyle:"italic", marginTop:1 }}>"{entry.reason||entry.metadata.reason}"</div>}
+                          <div style={{ fontSize:11, color:C.t3, marginTop:1 }}>{fmtD(entry.createdAt)}</div>
+                        </div>
+                      </div>;
+                    })}
+                    {logs.length === 0 && stepAssigns.length > 0 && stepAssigns.map(a => (
+                      <div key={a.id} style={{ display:"flex", gap:5, marginBottom:8, alignItems:"flex-start" }}>
+                        <div style={{ width:7, height:7, borderRadius:4, background:col, flexShrink:0, marginTop:4 }} />
+                        <div style={{ minWidth:0 }}>
+                          <div style={{ fontSize:11.5, fontWeight:700, color:C.t1 }}>Viaje #{a.tripNumber}</div>
+                          {a.plate && <div style={{ fontSize:11.5, color:C.t2, marginTop:1, lineHeight:1.3 }}>{a.plate}{a.truckModel?` · ${a.truckModel}`:""}</div>}
+                          {a.transporterName && <div style={{ fontSize:11, color:C.t3, lineHeight:1.2 }}>{a.transporterName}</div>}
+                        </div>
+                      </div>
+                    ))}
+                    {logs.length === 0 && stepAssigns.length === 0 && <div style={{ fontSize:10.4, color:C.t3, textAlign:"center" }}>{"\u2014"}</div>}
+                  </div>
+                );
+              })}
+            </div>}
+          </div>
+        </div>;
+      })()}
+
+      {/* Truck detail popup — centered in detail panel */}
+      {showTruckModal && (()=>{
         const truckCount = freight.truckCount || 1;
         const assignedCount = freight.assignedTruckCount || freight.activeAssignments?.length || 0;
-        return <div onClick={()=>setShowTruckModal(false)} style={{ position:"fixed", inset:0, zIndex:200, background:"rgba(0,0,0,0.5)", display:"flex", alignItems:"center", justifyContent:"center", padding:16 }}>
-          <div onClick={e=>e.stopPropagation()} style={{ background:C.w, borderRadius:14, padding:20, maxWidth:440, width:"100%", maxHeight:"80vh", overflow:"auto", boxShadow:C.shLg }}>
+        return <div onClick={()=>setShowTruckModal(false)} style={{ position:"absolute", inset:0, zIndex:200, background:"rgba(0,0,0,0.5)", display:"flex", alignItems:"center", justifyContent:"center", padding:16 }}>
+          <div onClick={e=>e.stopPropagation()} style={{ background:C.w, borderRadius:14, padding:20, maxWidth:440, width:"100%", maxHeight:"80%", overflow:"auto", boxShadow:C.shLg }}>
             <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14 }}>
               <div style={{ display:"flex", alignItems:"center", gap:8 }}>
                 <span style={{ display:"flex" }}>{Ic.truck(C.pri,20)}</span>
@@ -914,8 +956,8 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
         const logs = auditLog ? stepModal.backendSteps.flatMap(s => (auditLog||[]).filter(l=>(stepAuditActions[s]||[]).includes(l.action))) : [];
         const stepToTrip = { assigned:"pending", accepted:"accepted", in_progress:"in_progress", loaded:"loaded", finished:"finished" };
         const stepAssigns = isMultiTruck ? stepModal.backendSteps.flatMap(s => { const ts=stepToTrip[s]; if(!ts) return []; return (freight.activeAssignments||[]).filter(a=>a.tripStatus===ts); }) : [];
-        return <div onClick={()=>setStepModal(null)} style={{ position:"fixed", inset:0, zIndex:200, background:"rgba(0,0,0,0.5)", display:"flex", alignItems:"center", justifyContent:"center", padding:16 }}>
-          <div onClick={e=>e.stopPropagation()} style={{ background:C.w, borderRadius:14, padding:20, maxWidth:400, width:"100%", maxHeight:"80vh", overflow:"auto", boxShadow:C.shLg }}>
+        return <div onClick={()=>setStepModal(null)} style={{ position:"absolute", inset:0, zIndex:200, background:"rgba(0,0,0,0.5)", display:"flex", alignItems:"center", justifyContent:"center", padding:16 }}>
+          <div onClick={e=>e.stopPropagation()} style={{ background:C.w, borderRadius:14, padding:20, maxWidth:400, width:"100%", maxHeight:"80%", overflow:"auto", boxShadow:C.shLg }}>
             <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14 }}>
               <span style={{ fontSize:16.2, fontWeight:800, color:stepModal.color }}>{stepModal.label}</span>
               <button onClick={()=>setStepModal(null)} style={{ background:"none", border:"none", cursor:"pointer", padding:4 }}>{Ic.cross(C.t3,18)}</button>
