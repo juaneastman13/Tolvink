@@ -13,24 +13,15 @@ import { useUIStore, useFreightDetailStore } from "../store";
 const loadPdfReport = () => import("../utils/pdf-report");
 
 export default function DetailScreen({ user, freight, perms, onBack, onAction, onTripAction, onEditTrip, onCancelAssignment, actionLoading, onChat, onRefresh, onDuplicate, onEdit, goToMap, sseConnected }) {
-  // Guard: freight not yet loaded (deep link, stale reference)
-  if (!freight) return <div style={{ flex:1, display:"flex", flexDirection:"column" }}>
-    <div style={{ padding:"12px 18px", display:"flex", alignItems:"center", gap:8, borderBottom:`1px solid ${C.b2}` }}>
-      <button onClick={onBack} style={{ display:"flex", alignItems:"center", gap:4, padding:"6px 12px", borderRadius:8, border:`1px solid ${C.b1}`, background:C.w, color:C.t2, fontSize:13, cursor:"pointer", fontFamily:"inherit" }}>{Ic.chev(C.t3,14)} Volver</button>
-    </div>
-    <SkeletonDetail />
-  </div>;
+  // === ALL HOOKS MUST BE BEFORE ANY EARLY RETURN (React rules of hooks) ===
   // Progressive loading: load full detail on-demand when freight is summary-only
   const detailEntry = useFreightDetailStore(s => s.details[freight?.id]);
   const detailData = detailEntry?.data || null;
-  const detailLoading = detailEntry?.loading || false;
 
   useEffect(() => {
     if (!freight?.id) return;
-    // Already have full detail in cache and it's fresh
     const cached = useFreightDetailStore.getState().getDetail(freight.id);
     if (cached?.data) return;
-    // Load full detail
     useFreightDetailStore.getState().setLoading(freight.id, true);
     let cancelled = false;
     apiGetFreight(freight.id).then(raw => {
@@ -43,11 +34,6 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
     return () => { cancelled = true; };
   }, [freight?.id]);
 
-  // Merge detail-only fields from full detail cache into freight
-  const fullDocs = detailData?.documents ?? freight.documents ?? [];
-  const fullConvId = detailData?.conversationId ?? freight.conversationId ?? null;
-  const fullPendingChanges = detailData?.pendingChanges ?? freight.pendingChanges ?? [];
-  const hasFullDetail = !!detailData || freight._isFullDetail;
   const [auditLog, setAuditLog] = useState(null);
   const [showAudit, setShowAudit] = useState(false);
   const [viewFile, setViewFile] = useState(null);
@@ -237,7 +223,19 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
     return [...seen.values()];
   }, [isMultiTruck, isChoferQueued, visibleAssignments, freight, user]);
 
-  if(!freight) return null;
+  // Guard: freight not yet loaded (deep link, stale reference) — AFTER all hooks
+  if (!freight) return <div style={{ flex:1, display:"flex", flexDirection:"column" }}>
+    <div style={{ padding:"12px 18px", display:"flex", alignItems:"center", gap:8, borderBottom:`1px solid ${C.b2}` }}>
+      <button onClick={onBack} style={{ display:"flex", alignItems:"center", gap:4, padding:"6px 12px", borderRadius:8, border:`1px solid ${C.b1}`, background:C.w, color:C.t2, fontSize:13, cursor:"pointer", fontFamily:"inherit" }}>{Ic.chev(C.t3,14)} Volver</button>
+    </div>
+    <SkeletonDetail />
+  </div>;
+
+  // Merge detail-only fields from full detail cache into freight
+  const fullDocs = detailData?.documents ?? freight.documents ?? [];
+  const fullConvId = detailData?.conversationId ?? freight.conversationId ?? null;
+  const fullPendingChanges = detailData?.pendingChanges ?? freight.pendingChanges ?? [];
+  const hasFullDetail = !!detailData || freight._isFullDetail;
 
   // Per-trip action for a given assignment
   const getTripActions = (a) => {

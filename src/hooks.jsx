@@ -386,10 +386,14 @@ export function useFreights(user, isAuthInitialized) {
     }
     catch(e) { setError(e.message); return null; }
   },[]);
-  /** Light refresh: fetch summary (no documents/pendingChanges/conversation) — used for SSE updates */
+  /** Light refresh: fetch summary (no documents/pendingChanges/conversation) — used for SSE updates.
+   *  Falls back to full refresh if summary endpoint is not available. */
   const refreshLight = useCallback(async (id)=>{
     try {
-      const u=await apiGetFreightSummary(id); const m=mapFreight(u);
+      let u;
+      try { u = await apiGetFreightSummary(id); }
+      catch { return refresh(id); } // Fallback: summary endpoint not deployed yet
+      const m=mapFreight(u);
       setFreights(p=>{
         const idx = p.findIndex(f=>f.id===id);
         const oldStatus = idx >= 0 ? p[idx].status : null;
@@ -410,7 +414,7 @@ export function useFreights(user, isAuthInitialized) {
       return m;
     }
     catch(e) { setError(e.message); return null; }
-  },[]);
+  },[refresh]);
   const create = useCallback(async (form)=>{
     try { const body = { originLotId:form.lotId||undefined, fieldId:form.fieldId||undefined, destPlantId:form.plantId||undefined, customOriginName:form.customOriginName||undefined, loadDate:form.loadDate, loadTime:form.loadTime, items:[{grain:form.grain,tons:parseFloat(form.tons),unit:form.unit||"toneladas",amount:form.amount?parseFloat(form.amount):0,productTypeOther:form.productTypeOther||undefined}], notes:form.notes||"", truckId:form.truckId||undefined, useOwnFleet:form.useOwnFleet, overrideOriginLat:form.overrideOriginLat, overrideOriginLng:form.overrideOriginLng, overrideDestLat:form.overrideDestLat, overrideDestLng:form.overrideDestLng };
       const computedTruckCount = form.truckCount ? parseInt(form.truckCount) : (parseFloat(form.tons) > 0 ? Math.ceil(parseFloat(form.tons) / 30) : 1);
