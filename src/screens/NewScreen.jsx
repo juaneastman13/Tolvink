@@ -161,6 +161,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
   photosRef.current = photos;
   const [showAttach, setShowAttach] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [showModalNotes, setShowModalNotes] = useState(false);
   const nfCamRef = useRef(null);
   const nfGalRef = useRef(null);
   const nfDocRef = useRef(null);
@@ -764,33 +765,59 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
                   ))}
                 </div>
 
-                {/* Notes */}
-                <div style={{ marginTop:16 }}>
-                  <label style={{ fontSize:11.6, fontWeight:600, color:C.t2, marginBottom:6, display:"block", textTransform:"uppercase", letterSpacing:0.6 }}>Notas (opcional)</label>
-                  <textarea value={form.notes} onChange={e=>u({notes:e.target.value})} placeholder="Indicaciones, horarios especiales..." rows={2} style={{ width:"100%", padding:"10px 12px", borderRadius:10, border:`1.5px solid ${C.b1}`, background:C.w, color:C.t1, fontSize:14.3, fontFamily:"inherit", outline:"none", resize:"none", boxSizing:"border-box" }}/>
-                </div>
-
-                {/* Attachments */}
-                <div style={{ marginTop:12 }}>
-                  <label style={{ fontSize:11.6, fontWeight:600, color:C.t2, marginBottom:6, display:"flex", alignItems:"center", gap:4, textTransform:"uppercase", letterSpacing:0.6 }}>{Ic.clip(C.acc,14)} Adjuntar (opcional)</label>
+                {/* Notes & Attachments — mobile: button row; desktop: full blocks */}
+                <input ref={nfCamRef} type="file" accept="image/*" capture="environment" onChange={addPhoto} style={{ display:"none" }}/>
+                <input ref={nfGalRef} type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={e=>{Array.from(e.target.files||[]).forEach(f=>{if(f.type.startsWith('image/')&&f.size<=10*1024*1024)setPhotos(prev=>[...prev,{file:f,preview:URL.createObjectURL(f)}])});e.target.value="";}} style={{ display:"none" }}/>
+                <input ref={nfDocRef} type="file" accept="image/*,.pdf,.doc,.docx" multiple onChange={e=>{Array.from(e.target.files||[]).forEach(f=>{if(f.size<=10*1024*1024)setPhotos(prev=>[...prev,{file:f,preview:f.type.startsWith('image/')?URL.createObjectURL(f):null,name:f.name}])});e.target.value="";}} style={{ display:"none" }}/>
+                {_isDesktop ? (<>
+                  <div style={{ marginTop:16 }}>
+                    <label style={{ fontSize:11.6, fontWeight:600, color:C.t2, marginBottom:6, display:"block", textTransform:"uppercase", letterSpacing:0.6 }}>Notas (opcional)</label>
+                    <textarea value={form.notes} onChange={e=>u({notes:e.target.value})} placeholder="Indicaciones, horarios especiales..." rows={2} style={{ width:"100%", padding:"10px 12px", borderRadius:10, border:`1.5px solid ${C.b1}`, background:C.w, color:C.t1, fontSize:14.3, fontFamily:"inherit", outline:"none", resize:"none", boxSizing:"border-box" }}/>
+                  </div>
+                  <div style={{ marginTop:12 }}>
+                    <label style={{ fontSize:11.6, fontWeight:600, color:C.t2, marginBottom:6, display:"flex", alignItems:"center", gap:4, textTransform:"uppercase", letterSpacing:0.6 }}>{Ic.clip(C.acc,14)} Adjuntar (opcional)</label>
+                    {photos.length > 0 && (
+                      <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:8 }}>
+                        {photos.map((p,i)=>(
+                          <div key={i} style={{ position:"relative", width:56, height:56, borderRadius:8, overflow:"hidden", border:`1px solid ${C.b1}` }}>
+                            {p.preview ? <img src={p.preview} alt="" loading="lazy" style={{ width:"100%", height:"100%", objectFit:"cover" }}/> : <div style={{ width:"100%", height:"100%", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", background:C.bg, padding:2 }}>{Ic.doc(C.pri,14)}<span style={{fontSize:7,color:C.t3,textAlign:"center",marginTop:1,wordBreak:"break-all"}}>{(p.name||"").slice(-10)}</span></div>}
+                            <button onClick={()=>removePhoto(i)} aria-label="Eliminar foto" style={{ position:"absolute", top:1, right:1, width:18, height:18, borderRadius:9, background:C.err, border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>{Ic.cross(C.w,10)}</button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    <button onClick={()=>setShowAttach(true)} style={{ display:"inline-flex", alignItems:"center", gap:5, padding:"8px 12px", borderRadius:8, border:`1.5px dashed ${C.b1}`, background:C.bg, cursor:"pointer", fontFamily:"inherit", fontSize:12.1, fontWeight:600, color:C.t2 }}>
+                      {Ic.clip(C.t2,14)} Adjuntar
+                    </button>
+                    <AttachMenu open={showAttach} onClose={()=>setShowAttach(false)} onCamera={()=>nfCamRef.current?.click()} onGallery={()=>nfGalRef.current?.click()} onFiles={()=>nfDocRef.current?.click()} />
+                  </div>
+                </>) : (<>
+                  {/* Mobile: two buttons in one row */}
+                  <div style={{ display:"flex", gap:8, marginTop:14 }}>
+                    <button onClick={()=>setShowModalNotes(v=>!v)} style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", gap:6, padding:"10px 0", borderRadius:10, border:`1.5px solid ${showModalNotes?C.pri:C.b1}`, background:showModalNotes?C.priPale:C.w, color:showModalNotes?C.pri:C.t2, cursor:"pointer", fontFamily:"inherit", fontSize:12.7, fontWeight:600 }}>
+                      {Ic.doc(showModalNotes?C.pri:C.t2,14)} Notas {form.notes?"✓":""}
+                    </button>
+                    <button onClick={()=>setShowAttach(true)} style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", gap:6, padding:"10px 0", borderRadius:10, border:`1.5px solid ${photos.length>0?C.pri:C.b1}`, background:photos.length>0?C.priPale:C.w, color:photos.length>0?C.pri:C.t2, cursor:"pointer", fontFamily:"inherit", fontSize:12.7, fontWeight:600 }}>
+                      {Ic.clip(photos.length>0?C.pri:C.t2,14)} Adjuntar {photos.length>0?`(${photos.length})`:""}
+                    </button>
+                  </div>
+                  {showModalNotes && (
+                    <div style={{ marginTop:8 }}>
+                      <textarea value={form.notes} onChange={e=>u({notes:e.target.value})} placeholder="Indicaciones, horarios especiales..." rows={2} style={{ width:"100%", padding:"10px 12px", borderRadius:10, border:`1.5px solid ${C.b1}`, background:C.w, color:C.t1, fontSize:14.3, fontFamily:"inherit", outline:"none", resize:"none", boxSizing:"border-box" }}/>
+                    </div>
+                  )}
                   {photos.length > 0 && (
-                    <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:8 }}>
+                    <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginTop:8 }}>
                       {photos.map((p,i)=>(
-                        <div key={i} style={{ position:"relative", width:56, height:56, borderRadius:8, overflow:"hidden", border:`1px solid ${C.b1}` }}>
-                          {p.preview ? <img src={p.preview} alt="" loading="lazy" style={{ width:"100%", height:"100%", objectFit:"cover" }}/> : <div style={{ width:"100%", height:"100%", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", background:C.bg, padding:2 }}>{Ic.doc(C.pri,14)}<span style={{fontSize:7,color:C.t3,textAlign:"center",marginTop:1,wordBreak:"break-all"}}>{(p.name||"").slice(-10)}</span></div>}
-                          <button onClick={()=>removePhoto(i)} aria-label="Eliminar foto" style={{ position:"absolute", top:1, right:1, width:18, height:18, borderRadius:9, background:C.err, border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>{Ic.cross(C.w,10)}</button>
+                        <div key={i} style={{ position:"relative", width:48, height:48, borderRadius:8, overflow:"hidden", border:`1px solid ${C.b1}` }}>
+                          {p.preview ? <img src={p.preview} alt="" loading="lazy" style={{ width:"100%", height:"100%", objectFit:"cover" }}/> : <div style={{ width:"100%", height:"100%", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", background:C.bg, padding:2 }}>{Ic.doc(C.pri,12)}<span style={{fontSize:6,color:C.t3,textAlign:"center",marginTop:1,wordBreak:"break-all"}}>{(p.name||"").slice(-8)}</span></div>}
+                          <button onClick={()=>removePhoto(i)} aria-label="Eliminar" style={{ position:"absolute", top:1, right:1, width:16, height:16, borderRadius:8, background:C.err, border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>{Ic.cross(C.w,8)}</button>
                         </div>
                       ))}
                     </div>
                   )}
-                  <input ref={nfCamRef} type="file" accept="image/*" capture="environment" onChange={addPhoto} style={{ display:"none" }}/>
-                  <input ref={nfGalRef} type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={e=>{Array.from(e.target.files||[]).forEach(f=>{if(f.type.startsWith('image/')&&f.size<=10*1024*1024)setPhotos(prev=>[...prev,{file:f,preview:URL.createObjectURL(f)}])});e.target.value="";}} style={{ display:"none" }}/>
-                  <input ref={nfDocRef} type="file" accept="image/*,.pdf,.doc,.docx" multiple onChange={e=>{Array.from(e.target.files||[]).forEach(f=>{if(f.size<=10*1024*1024)setPhotos(prev=>[...prev,{file:f,preview:f.type.startsWith('image/')?URL.createObjectURL(f):null,name:f.name}])});e.target.value="";}} style={{ display:"none" }}/>
-                  <button onClick={()=>setShowAttach(true)} style={{ display:"inline-flex", alignItems:"center", gap:5, padding:"8px 12px", borderRadius:8, border:`1.5px dashed ${C.b1}`, background:C.bg, cursor:"pointer", fontFamily:"inherit", fontSize:12.1, fontWeight:600, color:C.t2 }}>
-                    {Ic.clip(C.t2,14)} Adjuntar
-                  </button>
                   <AttachMenu open={showAttach} onClose={()=>setShowAttach(false)} onCamera={()=>nfCamRef.current?.click()} onGallery={()=>nfGalRef.current?.click()} onFiles={()=>nfDocRef.current?.click()} />
-                </div>
+                </>)}
 
                 {/* Submit button */}
                 <div style={{ marginTop:20 }}>
