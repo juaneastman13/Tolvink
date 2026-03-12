@@ -120,8 +120,11 @@ export default function FieldsScreen({ onBack, embedded, goToMap }) {
   };
 
   const handleImportList = async () => {
-    const url = importUrl.trim();
-    if (!url) { setMsg({ t: "Pegá el link de tu lista de Google Maps", k: "err" }); return; }
+    const raw = importUrl.trim();
+    if (!raw) { setMsg({ t: "Pegá el link de tu lista de Google Maps", k: "err" }); return; }
+    // Extract URL from pasted text (e.g. "Nueva Helvecia · Juanhttps://maps.app.goo.gl/...")
+    const urlMatch = raw.match(/https?:\/\/[^\s]+/);
+    const url = urlMatch ? urlMatch[0] : raw;
     if (!url.includes("maps") && !url.includes("goo.gl")) { setMsg({ t: "Esa URL no parece ser de Google Maps", k: "err" }); return; }
     setSaving(true);
     setImportSlowMsg(false);
