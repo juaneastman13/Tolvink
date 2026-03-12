@@ -802,15 +802,15 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
         const getTruckCount = (step) => { if(!isMultiTruck) return null; const ts=stepToTrip[step]; if(!ts) return null; const rank=tripRank[ts]??0; return (freight.activeAssignments||[]).filter(a=>(tripRank[a.tripStatus]??0)>=rank).length; };
         const getStepAssignments = (step) => { if(!isMultiTruck) return []; const ts=stepToTrip[step]; if(!ts) return []; return (freight.activeAssignments||[]).filter(a=>a.tripStatus===ts); };
         const visualAuditSteps = [
-          { label:"Pendiente", backendSteps:["pending_assignment"], color:C.acc },
-          { label:"En curso", backendSteps:["assigned","accepted","in_progress","loaded"], color:C.pri },
-          { label: isCanceled ? "Cancelado" : "Finalizado", backendSteps:["finished"], color: isCanceled ? C.err : C.ok },
+          { label:"Pendiente", backendSteps:["pending_assignment"], color:C.acc, icon:(c,s)=>Ic.clk(c,s) },
+          { label:"En curso", backendSteps:["assigned","accepted","in_progress","loaded"], color:C.pri, icon:(c,s)=>Ic.truck(c,s) },
+          { label: isCanceled ? "Cancelado" : "Finalizado", backendSteps:["finished"], color: isCanceled ? C.err : C.ok, icon:(c,s)=> isCanceled ? Ic.cross(c,s) : Ic.chk(c,s) },
         ];
         const showConfs = !isMultiTruck && (freight.status==="loaded" || freight.status==="in_progress");
         return <div onClick={()=>setShowProgressModal(false)} style={{ position:"absolute", inset:0, zIndex:200, background:"rgba(0,0,0,0.5)", display:"flex", alignItems:"center", justifyContent:"center", padding:16 }}>
-          <div onClick={e=>e.stopPropagation()} style={{ background:C.w, borderRadius:14, padding:20, maxWidth:440, width:"100%", maxHeight:"80%", overflow:"auto", boxShadow:C.shLg }}>
+          <div onClick={e=>e.stopPropagation()} style={{ background:C.w, borderRadius:14, padding:20, maxWidth:560, width:"100%", maxHeight:"80%", overflow:"auto", boxShadow:C.shLg }}>
             <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14 }}>
-              <span style={{ fontSize:18.6, fontWeight:800, color:C.pri }}>Progreso</span>
+              <div style={{ display:"flex", alignItems:"center", gap:8 }}><span style={{ display:"flex" }}>{Ic.clk(C.pri,20)}</span><span style={{ fontSize:18.6, fontWeight:800, color:C.pri }}>Progreso</span></div>
               <button onClick={()=>setShowProgressModal(false)} style={{ background:"none", border:"none", cursor:"pointer", padding:4 }}>{Ic.cross(C.t3,18)}</button>
             </div>
             {/* Cross-confirmations */}
@@ -842,7 +842,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
                 const tc = isMultiTruck && vi === 1 ? (()=>{ const counts = vas.backendSteps.map(s => getTruckCount(s)).filter(v=>v!==null); return counts.length > 0 ? Math.max(...counts) : null; })() : null;
                 return (
                   <div key={vi} style={{ flex:1, minWidth:0 }}>
-                    <div style={{ fontSize:14.0, fontWeight:700, color:col, marginBottom:8, textAlign:"center" }}>{vas.label}</div>
+                    <div style={{ fontSize:14.0, fontWeight:700, color:col, marginBottom:8, textAlign:"center", display:"flex", alignItems:"center", justifyContent:"center", gap:5 }}><span style={{ display:"flex" }}>{vas.icon(col,14)}</span>{vas.label}</div>
                     {tc !== null && <div style={{ textAlign:"center", fontSize:13.2, fontWeight:700, color:col, marginBottom:8, background:`${col}12`, borderRadius:5, padding:"3px 0" }}>{tc}/{freight.truckCount}</div>}
                     {logs.map(entry => {
                       const acCol = actionColors[entry.action] || C.t2;
