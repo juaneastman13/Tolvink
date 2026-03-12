@@ -301,7 +301,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
         <div>
           <div style={{ display:"flex", alignItems:"center", gap:6 }}>
             <span style={{ fontSize:12.7, color:C.t3, fontWeight:600, fontFamily:MONO }}>{freight.code}</span>
-            {st && <span style={{ fontSize:10.4, fontWeight:700, color:st.color, background:st.bg, padding:"1px 6px", borderRadius:4, textTransform:"uppercase", letterSpacing:0.3 }}>{st.label}</span>}
+            {st && <span style={{ fontSize:12.5, fontWeight:700, color:st.color, background:st.bg, padding:"2px 7px", borderRadius:5, textTransform:"uppercase", letterSpacing:0.3 }}>{st.label}</span>}
           </div>
           {freight.loadDate && <div style={{ fontSize:12.7, color:C.t3, fontWeight:500, marginTop:2 }}>{formatFreightDate(freight.loadDate)}</div>}
           <div style={{ fontSize:24.2, fontWeight:800, marginTop:2, letterSpacing:-0.3 }}>{freight.grain==="Otros"?freight.productTypeOther||"Otros":freight.grain} · {freight.tons} {freight.unit||"tn"}</div>
@@ -420,16 +420,16 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
             {visualSteps.map((vs,i)=>{
               const done = i < visualIdx; const active = i === visualIdx && !isCanceled; const isCancelStep = i === 2 && isCanceled;
               const nodeColor = done ? C.pri : active ? vs.color : isCancelStep ? C.err : C.b1;
-              const nodeIcon = done ? Ic.chk(C.w,13) : vs.icon(active || isCancelStep ? C.w : C.t3, 14);
+              const nodeIcon = vs.icon(done || active || isCancelStep ? C.w : C.t3, 17);
               const stepDate = getStepDate(visualAuditMap[i]);
               return <div key={i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",position:"relative",minWidth:0}}>
                 {/* Connecting line before node */}
-                {i > 0 && <div style={{position:"absolute",top:13,right:"50%",left:0,height:2,background:done||active||isCancelStep?C.pri:C.b1,zIndex:0,transform:"translateX(-4px)"}}/>}
+                {i > 0 && <div style={{position:"absolute",top:15,right:"50%",left:0,height:2,background:done||active||isCancelStep?C.pri:C.b1,zIndex:0,transform:"translateX(-4px)"}}/>}
                 {/* Connecting line after node */}
-                {i < 2 && <div style={{position:"absolute",top:13,left:"50%",right:0,height:2,background:done?(i+1<=visualIdx?C.pri:C.b1):C.b1,zIndex:0,transform:"translateX(4px)"}}/>}
+                {i < 2 && <div style={{position:"absolute",top:15,left:"50%",right:0,height:2,background:done?(i+1<=visualIdx?C.pri:C.b1):C.b1,zIndex:0,transform:"translateX(4px)"}}/>}
                 {/* Node circle */}
                 <div onClick={()=>setStepModal({idx:i,label:vs.label,color:vs.color,backendSteps:visualAuditMap[i]})}
-                  style={{width:26,height:26,borderRadius:13,background:nodeColor,display:"flex",alignItems:"center",justifyContent:"center",position:"relative",zIndex:1,cursor:"pointer",
+                  style={{width:31,height:31,borderRadius:16,background:nodeColor,display:"flex",alignItems:"center",justifyContent:"center",position:"relative",zIndex:1,cursor:"pointer",
                     boxShadow:active?`0 0 0 3px ${vs.color}25`:isCancelStep?`0 0 0 3px ${C.err}25`:"none",transition:"all 0.2s"}}>
                   {nodeIcon}
                 </div>
