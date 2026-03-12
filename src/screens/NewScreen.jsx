@@ -189,14 +189,6 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
   // Next section to fill (highlight it when collapsed)
   const nextToFill = SEC_ORDER.find(s => !secComplete[s]);
   const allComplete = !nextToFill;
-  const prevAllComplete = useRef(false);
-  useEffect(() => {
-    if (_isDesktop && allComplete && !prevAllComplete.current && !editingFrom) {
-      openConfirmModal();
-    }
-    prevAllComplete.current = allComplete;
-  }, [allComplete]);
-
   const advanceToNext = () => {
     const flow = ["product", "quantity", "origin"];
     if (showTruckSelect) flow.push("ownfleet");
@@ -547,7 +539,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
                 {touched&&<FieldError error={errs.loadTime}/>}
               </div>
             </div>
-            <NextStepBtn complete={secComplete.schedule} onClick={()=>{if(isEditing){confirmEdit();}else{openConfirmModal();}}} label={isEditing?"Confirmar edición":"Solicitar Flete"} onPrev={prevAvailable()?goToPrev:null}/>
+            <NextStepBtn complete={secComplete.schedule} onClick={()=>{if(isEditing){confirmEdit();}else{openConfirmModal();}}} label={isEditing?"Confirmar edición":"Siguiente"} onPrev={prevAvailable()?goToPrev:null}/>
           </>}
         </MobileStepModal>
       )}
@@ -724,7 +716,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
               {touched&&<FieldError error={errs.loadTime}/>}
             </div>
           </div>
-          <NextStepBtn complete={secComplete.schedule} onClick={isEditing?confirmEdit:openConfirmModal} label={isEditing?"Confirmar edición":"Solicitar Flete"} onPrev={prevAvailable()?goToPrev:null}/>
+          <NextStepBtn complete={secComplete.schedule} onClick={isEditing?confirmEdit:openConfirmModal} label={isEditing?"Confirmar edición":"Siguiente"} onPrev={prevAvailable()?goToPrev:null}/>
         </Sec>}
 
       </div>}
