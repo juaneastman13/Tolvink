@@ -293,23 +293,9 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
     return btns;
   };
 
-  const handlePdf = async () => {
-    if (pdfLoading) return;
-    setPdfLoading(true);
-    try {
-      let logs = auditLog;
-      if (!logs) { try { logs = await apiGetAuditLog(freight.id); setAuditLog(logs); } catch(e) { logs = []; } }
-      const { generateFreightPDF } = await loadPdfReport();
-      generateFreightPDF({ ...freight, documents: fullDocs, conversationId: fullConvId, pendingChanges: fullPendingChanges }, logs || []);
-    } catch(e) { log.error('PDF', e); useUIStore.getState().show('Error al generar PDF: ' + (e?.message || e), 'err'); }
-    finally { setPdfLoading(false); }
-  };
-
-  const canEdit = ["pending_assignment","assigned","accepted","in_progress","loaded"].includes(freight.status) && (perms.canRequest || perms.canApprove);
-
   return (
     <div style={{ flex:1, overflow:"auto", animation:"slideUp 0.25s ease" }}>
-      {/* Sticky header — back + product title + quick-access toolbar */}
+      {/* Sticky header — back + product title */}
       <div style={{ position:"sticky", top:0, zIndex:10, padding:"18px 18px 8px", background:C.bg }}>
         <button onClick={onBack} style={{ background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", fontSize:14.3, fontWeight:600, color:C.pri, marginBottom:14, padding:0, display:"flex", alignItems:"center", gap:4 }}>{Ic.chev(C.pri,18)} Volver</button>
         <div>
@@ -320,17 +306,9 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
           {freight.loadDate && <div style={{ fontSize:12.1, color:C.t3, fontWeight:500, marginTop:2 }}>{formatFreightDate(freight.loadDate)}</div>}
           <div style={{ fontSize:24.2, fontWeight:800, marginTop:2, letterSpacing:-0.3 }}>{freight.grain==="Otros"?freight.productTypeOther||"Otros":freight.grain} · {freight.tons} {freight.unit||"tn"}</div>
         </div>
-        {/* Mini toolbar — quick-access icons */}
-        <div style={{ display:"flex", gap:6, marginTop:10, overflowX:"auto", paddingBottom:2 }}>
-          {fullConvId && <button onClick={()=>onChat(fullConvId)} style={{ display:"flex", alignItems:"center", gap:5, padding:"5px 11px", borderRadius:8, border:`1px solid ${C.b1}`, background:C.w, color:C.t2, fontSize:11.6, fontWeight:600, cursor:"pointer", fontFamily:"inherit", whiteSpace:"nowrap" }}>{Ic.msg(C.pri,13)} Chat</button>}
-          <button disabled={pdfLoading} onClick={handlePdf} style={{ display:"flex", alignItems:"center", gap:5, padding:"5px 11px", borderRadius:8, border:`1px solid ${C.b1}`, background:C.w, color:C.t2, fontSize:11.6, fontWeight:600, cursor:"pointer", fontFamily:"inherit", whiteSpace:"nowrap", opacity:pdfLoading?0.6:1 }}>{Ic.doc(C.t2,13)} {pdfLoading?'Generando...':'PDF'}</button>
-          {canEdit && <button onClick={()=>onEdit(freight)} style={{ display:"flex", alignItems:"center", gap:5, padding:"5px 11px", borderRadius:8, border:`1px solid ${C.b1}`, background:C.w, color:C.t2, fontSize:11.6, fontWeight:600, cursor:"pointer", fontFamily:"inherit", whiteSpace:"nowrap" }}>{Ic.edit(C.t2,13)} Editar</button>}
-          {onDuplicate && <button onClick={()=>onDuplicate(freight)} style={{ display:"flex", alignItems:"center", gap:5, padding:"5px 11px", borderRadius:8, border:`1px solid ${C.b1}`, background:C.w, color:C.t2, fontSize:11.6, fontWeight:600, cursor:"pointer", fontFamily:"inherit", whiteSpace:"nowrap" }}>{Ic.redo(C.t2,13)} Duplicar</button>}
-        </div>
       </div>
 
-      <div style={{ padding:"0 18px 18px", ...(_isDesktop ? { display:"grid", gridTemplateColumns:"1fr 380px", gap:16, alignItems:"start" } : {}) }}>
-      <div>
+      <div style={{ padding:"0 18px 18px" }}>
 
       {/* Queue banner for chofer */}
       {isChoferQueued && <div style={{ background:`${C.info}10`, border:`1.5px solid ${C.info}30`, borderRadius:12, padding:"12px 16px", marginBottom:12, display:"flex", alignItems:"center", gap:10 }}>
@@ -376,34 +354,31 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
         </div>
       )}
 
-      {/* Multi-truck: top-level action buttons (sticky on mobile) */}
-      {multiTruckTopActions.length > 0 && (()=>{
-        const btns = multiTruckTopActions.map(a => (
+      {/* Multi-truck: top-level action buttons */}
+      {multiTruckTopActions.length > 0 && <div style={{ display:"flex", flexDirection:"column", gap:8, marginBottom:12 }}>
+        {multiTruckTopActions.map(a => (
           <button key={a.key} disabled={actionLoading} onClick={()=>onTripAction && onTripAction(freight.id, a.assignmentId, a.key)}
             style={{ width:"100%", padding:"14px 20px", borderRadius:12, border:"none", background:a.color, color:C.w, fontSize:16.5, fontWeight:700, cursor:actionLoading?"not-allowed":"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:8, opacity:actionLoading?0.6:1 }}>
             {a.icon} {actionLoading?"Procesando...":a.label}{a.count>1?` (${a.count})`:a.count===1?` #${a.tripNumber}`:""}
           </button>
-        ));
-        return _isDesktop
-          ? <div style={{ display:"flex", flexDirection:"column", gap:8, marginBottom:12 }}>{btns}</div>
-          : <div style={{ position:"sticky", bottom:0, zIndex:10, background:C.w, padding:"10px 0 max(10px, env(safe-area-inset-bottom))", borderTop:`1px solid ${C.b2}`, marginLeft:-18, marginRight:-18, paddingLeft:18, paddingRight:18, boxShadow:"0 -2px 8px rgba(0,0,0,0.06)" }}>
-              <div style={{ display:"flex", flexDirection:"column", gap:8 }}>{btns}</div>
-            </div>;
-      })()}
+        ))}
+      </div>}
 
-      {/* Progress — circular stepper with integrated confirmations */}
+      {/* Progress — click to see per-stage detail */}
       {(()=>{
         const steps = ["pending_assignment","assigned","accepted","in_progress","loaded","finished"];
         const curIdx = steps.indexOf(freight.status);
         const isCanceled = freight.status === "canceled";
+        // Visual stepper: 3 steps
         const subLabels = { assigned:"Asignado", accepted:"Asignado", in_progress:"En viaje a campo", loaded:"En viaje a planta" };
         const visualIdx = isCanceled ? (curIdx >= 1 ? (curIdx >= 3 ? 2 : 1) : 0) : curIdx === 0 ? 0 : curIdx <= 4 ? 1 : 2;
+        // Multi-truck: build per-assignment status breakdown
         const multiTruckSub = isMultiTruck && [1,2,3,4].includes(curIdx) ? (freight.activeAssignments||[]).map(a => ({ n: a.tripNumber, cfg: tripStCfg(a.tripStatus) })) : null;
         const singleSub = [1,2,3,4].includes(curIdx) || isCanceled ? subLabels[freight.status] || subLabels[steps[curIdx]] : null;
         const visualSteps = [
-          { label:"Pendiente", color:C.acc, icon: Ic.clk(C.w,14) },
-          { label:"En curso", color:C.pri, icon: Ic.truck(C.w,14), sub: !multiTruckSub ? singleSub : null, multiSub: multiTruckSub },
-          { label: isCanceled ? "Cancelado" : "Finalizado", color: isCanceled ? C.err : C.ok, icon: isCanceled ? Ic.cross(C.w,14) : Ic.chk(C.w,14) },
+          { label:"Pendiente", color:C.acc },
+          { label:"En curso", color:C.pri, sub: !multiTruckSub ? singleSub : null, multiSub: multiTruckSub },
+          { label: isCanceled ? "Cancelado" : "Finalizado", color: isCanceled ? C.err : C.ok },
         ];
         const fmtD = (d) => { try { const dt=new Date(d); return dt.toLocaleDateString("es-AR",{day:"2-digit",month:"short"})+" "+dt.toLocaleTimeString("es-AR",{hour:"2-digit",minute:"2-digit",hour12:false}); } catch(e){ return ""; } };
         const actionLabels = { created:"Solicitado", assigned:"Asignado", assigned_multi:"Asignado", accepted:"Aceptado", rejected:"Rechazado", started:"Iniciado", confirm_loaded:"Carga OK", confirm_finished:"Entrega OK", finished:"Finalizado", canceled:"Cancelado", authorized:"Autorizado", updated:"Editado", trip_accepted:"Aceptado", trip_rejected:"Rechazado", trip_started:"Iniciado", trip_confirm_loaded:"Carga OK", trip_confirm_finished:"Entrega OK", trip_finished:"Finalizado", assignment_canceled:"Cancelado", assignment_updated:"Editado" };
@@ -420,66 +395,33 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
         const tripRank = { pending:0, accepted:1, in_progress:2, loaded:3, finished:4 };
         const getStepLogs = (step) => { if(!auditLog) return []; return auditLog.filter(l=>(stepAuditActions[step]||[]).includes(l.action)); };
         const getTruckCount = (step) => { if(!isMultiTruck) return null; const ts=stepToTrip[step]; if(!ts) return null; const rank=tripRank[ts]??0; return (freight.activeAssignments||[]).filter(a=>(tripRank[a.tripStatus]??0)>=rank).length; };
-        const tripLabel = (lg) => { const tn = lg.metadata?.tripNumber; return tn ? `Viaje #${tn}` : null; };
+        const tripLabel = (log) => { const tn = log.metadata?.tripNumber; return tn ? `Viaje #${tn}` : null; };
+        // Get assignments exactly at a given tripStatus (for showing truck details per stage)
         const getStepAssignments = (step) => { if(!isMultiTruck) return []; const ts=stepToTrip[step]; if(!ts) return []; return (freight.activeAssignments||[]).filter(a=>a.tripStatus===ts); };
-        const visualAuditMap = [["pending_assignment"],["assigned","accepted","in_progress","loaded"],["finished"]];
-        const stepDates = visualAuditMap.map(bs => { const lgs = bs.flatMap(s => getStepLogs(s)); return lgs.length > 0 ? lgs[0].createdAt : null; });
-        const showCrossConf = !isMultiTruck && (freight.status==="loaded" || freight.status==="in_progress") && visualIdx === 1;
-        const ConfDot = ({done:d}) => <span style={{width:16,height:16,borderRadius:8,display:"inline-flex",alignItems:"center",justifyContent:"center",background:d?C.okPale:C.accPale,flexShrink:0}}>{d ? Ic.chk(C.ok,10) : Ic.clk(C.acc,9)}</span>;
-
         return <div ref={auditRef} style={{ background:C.w, border:`1px solid ${C.b1}`, borderRadius:12, padding:16, marginBottom:12, boxShadow:C.sh, position:"relative" }}>
-          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14 }}>
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:12 }}>
             <span style={{ fontSize:11.6, fontWeight:700, color:C.t2, textTransform:"uppercase", letterSpacing:0.5 }}>Progreso</span>
             <button onClick={toggleAudit} style={{ fontSize:12.1, fontWeight:700, color:C.t1, background:C.bg, border:`1.5px solid ${C.b1}`, borderRadius:8, padding:"5px 14px", cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:5 }}>
               {showAudit?"Ocultar detalle":"Ver detalle"} <span style={{ fontSize:9.9, marginTop:1 }}>{showAudit?"\u25B2":"\u25BC"}</span>
             </button>
           </div>
-          {/* Circular stepper — 3 nodes connected by lines */}
-          <div style={{ display:"flex", alignItems:"flex-start", position:"relative" }}>
+          <div style={{display:"flex",gap:3,alignItems:"flex-start"}}>
             {visualSteps.map((vs,i)=>{
               const done = i < visualIdx; const active = i === visualIdx && !isCanceled; const isCancelStep = i === 2 && isCanceled;
-              const nodeColor = done ? C.pri : (active || isCancelStep) ? vs.color : C.b1;
-              const textColor = (active || isCancelStep) ? vs.color : done ? C.t2 : C.t3;
-              return <div key={i} onClick={()=>setStepModal({idx:i,label:vs.label,color:vs.color,backendSteps:visualAuditMap[i]})} style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:4, cursor:"pointer", position:"relative", zIndex:1 }}>
-                {i > 0 && <div style={{ position:"absolute", top:12, right:"50%", width:"100%", height:2, background: done || active || isCancelStep ? C.pri : C.b1, zIndex:0 }}/>}
-                <div style={{ width:24, height:24, borderRadius:12, background:nodeColor, display:"flex", alignItems:"center", justifyContent:"center", position:"relative", zIndex:1, boxShadow: active ? `0 0 0 3px ${vs.color}25` : "none", transition:"all 0.2s" }}>
-                  {done ? Ic.chk(C.w,12) : vs.icon}
-                </div>
-                <span style={{ fontSize:11.6, fontWeight:(active||isCancelStep)?700:500, color:textColor, textAlign:"center", lineHeight:1.2 }}>{vs.label}</span>
-                {active && vs.sub && <span style={{ fontSize:10.5, color:C.t3, fontStyle:"italic", textAlign:"center", lineHeight:1.1 }}>({vs.sub})</span>}
-                {active && vs.multiSub && vs.multiSub.length > 0 && <div style={{display:"flex",flexDirection:"column",gap:1,alignItems:"center"}}>
-                  {vs.multiSub.map(t => <span key={t.n} style={{fontSize:10,color:t.cfg.color,fontWeight:600,lineHeight:1.2}}>#{t.n} {t.cfg.label}</span>)}
+              const barColor = done ? C.pri : active ? vs.color : isCancelStep ? C.err : C.b1;
+              const visualAuditMap = [["pending_assignment"],["assigned","accepted","in_progress","loaded"],["finished"]];
+              return <div key={i} onClick={()=>setStepModal({idx:i,label:vs.label,color:vs.color,backendSteps:visualAuditMap[i]})} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4,minWidth:0,cursor:"pointer"}}>
+                <div style={{width:"100%",height:active?5:4,borderRadius:3,background:barColor,transition:"all 0.2s"}}/>
+                {(active || isCancelStep) && <div style={{width:6,height:6,borderRadius:3,background:vs.color,marginTop:-2}}/>}
+                <span style={{fontSize:13.2,fontWeight:(active||isCancelStep)?700:500,color:(active||isCancelStep)?vs.color:done?C.t2:C.t3,textAlign:"center",lineHeight:1.2}}>{vs.label}</span>
+                {active && vs.sub && <span style={{fontSize:11.6,color:C.t3,fontStyle:"italic",textAlign:"center",lineHeight:1.2,marginTop:-2}}>({vs.sub})</span>}
+                {active && vs.multiSub && vs.multiSub.length > 0 && <div style={{display:"flex",flexDirection:"column",gap:2,marginTop:-1,alignItems:"center"}}>
+                  {vs.multiSub.map(t => <span key={t.n} style={{fontSize:10.5,color:t.cfg.color,fontWeight:600,lineHeight:1.2}}>#{t.n} {t.cfg.label}</span>)}
                 </div>}
-                {stepDates[i] && (done || active || isCancelStep) && <span style={{ fontSize:9.5, color:C.t3, textAlign:"center", lineHeight:1.1 }}>{fmtD(stepDates[i]).split(" ")[0]}</span>}
               </div>;
             })}
           </div>
-
-          {/* Inline cross-confirmations (single-truck, in_progress/loaded) */}
-          {showCrossConf && <div style={{ marginTop:12, padding:"10px 12px", background:`${C.acc}08`, borderRadius:8, border:`1px solid ${C.acc}20` }}>
-            <div style={{ fontSize:10.5, fontWeight:700, color:C.acc, textTransform:"uppercase", letterSpacing:0.4, marginBottom:8 }}>Confirmaciones</div>
-            <div style={{ display:"flex", gap:16 }}>
-              <div style={{ flex:1 }}>
-                <div style={{ fontSize:10, fontWeight:700, color:C.t3, textTransform:"uppercase", marginBottom:5 }}>Carga</div>
-                <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
-                  <div style={{ display:"flex", alignItems:"center", gap:5, fontSize:12.1 }}><ConfDot done={!!freight.transporterLoadedConfirmedAt}/> <span style={{color:freight.transporterLoadedConfirmedAt?C.ok:C.t2,fontWeight:freight.transporterLoadedConfirmedAt?600:400}}>Transp.</span></div>
-                  <div style={{ display:"flex", alignItems:"center", gap:5, fontSize:12.1 }}><ConfDot done={!!freight.producerLoadedConfirmedAt}/> <span style={{color:freight.producerLoadedConfirmedAt?C.ok:C.t2,fontWeight:freight.producerLoadedConfirmedAt?600:400}}>Productor</span></div>
-                </div>
-              </div>
-              {freight.status === "loaded" && <>
-                <div style={{ width:1, background:C.b1 }}/>
-                <div style={{ flex:1 }}>
-                  <div style={{ fontSize:10, fontWeight:700, color:C.t3, textTransform:"uppercase", marginBottom:5 }}>Entrega</div>
-                  <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
-                    <div style={{ display:"flex", alignItems:"center", gap:5, fontSize:12.1 }}><ConfDot done={!!freight.transporterFinishedConfirmedAt}/> <span style={{color:freight.transporterFinishedConfirmedAt?C.ok:C.t2,fontWeight:freight.transporterFinishedConfirmedAt?600:400}}>Transp.</span></div>
-                    <div style={{ display:"flex", alignItems:"center", gap:5, fontSize:12.1 }}><ConfDot done={!!freight.plantFinishedConfirmedAt}/> <span style={{color:freight.plantFinishedConfirmedAt?C.ok:C.t2,fontWeight:freight.plantFinishedConfirmedAt?600:400}}>Planta</span></div>
-                  </div>
-                </div>
-              </>}
-            </div>
-          </div>}
-
-          {/* Per-stage audit detail — 3 columns */}
+          {/* Per-stage detail — 3 columns matching visual stepper */}
           {showAudit && !auditLog && <div style={{textAlign:"center",padding:"12px 0",fontSize:12.1,color:C.t3}}>Cargando detalle...</div>}
           {showAudit && auditLog && (()=>{
             const visualAuditSteps = [
@@ -573,20 +515,21 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
             const mainBtn = tripBtns[0]; // primary action for inline display
             return (
               <div key={a.id} style={{ border:`1px solid ${tst.color}30`, borderLeft:`3px solid ${tst.color}`, borderRadius:10, marginBottom:8, overflow:"hidden" }}>
-                <div onClick={()=>setExpandedTrip(isExpanded?null:a.id)} style={{ padding:isExpanded?"10px 12px":"7px 12px", cursor:"pointer", background:isExpanded?`${tst.color}06`:"transparent" }}>
-                  <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-                    {isMultiTruck && <span style={{ fontSize:12.1, fontWeight:800, color:tst.color, flexShrink:0 }}>#{a.tripNumber}</span>}
-                    <span style={{ fontSize:12.7, fontWeight:600, color:C.t1, flex:1, minWidth:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
-                      {a.plate || "Sin camión"}{a.transporterName ? ` · ${a.transporterName}` : ""}{!isExpanded && a.driverName ? ` · ${a.driverName}` : ""}
+                <div onClick={()=>setExpandedTrip(isExpanded?null:a.id)} style={{ padding:"10px 12px", cursor:"pointer", background:isExpanded?`${tst.color}06`:"transparent" }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                    {isMultiTruck && <span style={{ fontSize:13.2, fontWeight:800, color:tst.color }}>#{a.tripNumber}</span>}
+                    <span style={{ fontSize:13.2, fontWeight:600, color:C.t1, flex:1, minWidth:0 }}>
+                      <span style={{ display:"block", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{a.plate || "Sin camión"}{a.transporterName ? ` · ${a.transporterName}` : ""}</span>
+                      {a.driverName && <span style={{ display:"block", fontSize:11.6, fontWeight:400, color:C.t3, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{a.driverName}{a.driverPhone?` · ${a.driverPhone}`:""}</span>}
                     </span>
                     {/* Action button inline (right side) */}
                     {!isExpanded && mainBtn && (
-                      <button disabled={actionLoading} onClick={(e)=>{e.stopPropagation(); onTripAction && onTripAction(freight.id, a.id, mainBtn.key);}} style={{ padding:"5px 9px", borderRadius:7, border:"none", background:mainBtn.color, color:C.w, fontSize:10.5, fontWeight:700, cursor:actionLoading?"not-allowed":"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:3, opacity:actionLoading?0.6:1, whiteSpace:"nowrap", flexShrink:0 }}>
+                      <button disabled={actionLoading} onClick={(e)=>{e.stopPropagation(); onTripAction && onTripAction(freight.id, a.id, mainBtn.key);}} style={{ padding:"6px 10px", borderRadius:7, border:"none", background:mainBtn.color, color:C.w, fontSize:11, fontWeight:700, cursor:actionLoading?"not-allowed":"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:4, opacity:actionLoading?0.6:1, whiteSpace:"nowrap", flexShrink:0 }}>
                         {mainBtn.icon} {actionLoading?"...":mainBtn.label}
                       </button>
                     )}
                     {!mainBtn && <Bd color={tst.color} bg={tst.bg} small>{tst.label}</Bd>}
-                    <span style={{ display:"flex", transform:isExpanded?"rotate(-90deg)":"rotate(0deg)", transition:"transform 0.15s", flexShrink:0 }}>{Ic.chev(C.t3,12)}</span>
+                    <span style={{ display:"flex", transform:isExpanded?"rotate(-90deg)":"rotate(0deg)", transition:"transform 0.15s", flexShrink:0 }}>{Ic.chev(C.t3,14)}</span>
                   </div>
                 </div>
                 {isExpanded && (
@@ -689,41 +632,85 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
         </div>
       )}
 
-      {/* Info section (map in right sidebar on desktop) */}
-      <div style={{ display:"flex", flexDirection:"column", gap:12, marginBottom:12 }}>
-        <div style={{ background:C.w, border:`1px solid ${C.b1}`, borderRadius:12, padding:16, boxShadow:C.sh }}>
+      {/* Cross-confirmations panel (single-truck only) */}
+      {!isMultiTruck && (freight.status==="loaded" || freight.status==="in_progress") && (
+        <div style={{ background:C.w, border:`1px solid ${C.acc}30`, borderLeft:`3px solid ${C.acc}`, borderRadius:12, padding:16, marginBottom:12, boxShadow:C.sh }}>
+          <div style={{ fontSize:11.6, fontWeight:700, marginBottom:12, color:C.acc, textTransform:"uppercase", letterSpacing:0.5 }}>Confirmaciones</div>
+          <div style={{display:"flex",gap:16}}>
+            <div style={{flex:1}}>
+              <div style={{fontSize:11,fontWeight:700,color:C.t2,marginBottom:8,textTransform:"uppercase",letterSpacing:0.4}}>Carga</div>
+              <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                <div style={{display:"flex",alignItems:"center",gap:6,fontSize:12.7}}>
+                  <span style={{width:18,height:18,borderRadius:9,display:"inline-flex",alignItems:"center",justifyContent:"center",background:freight.transporterLoadedConfirmedAt?C.okPale:C.accPale,flexShrink:0}}>
+                    {freight.transporterLoadedConfirmedAt ? Ic.chk(C.ok,12) : Ic.clk(C.acc,11)}
+                  </span>
+                  <span style={{color:freight.transporterLoadedConfirmedAt?C.ok:C.t2,fontWeight:freight.transporterLoadedConfirmedAt?600:400}}>Transportista</span>
+                </div>
+                <div style={{display:"flex",alignItems:"center",gap:6,fontSize:12.7}}>
+                  <span style={{width:18,height:18,borderRadius:9,display:"inline-flex",alignItems:"center",justifyContent:"center",background:freight.producerLoadedConfirmedAt?C.okPale:C.accPale,flexShrink:0}}>
+                    {freight.producerLoadedConfirmedAt ? Ic.chk(C.ok,12) : Ic.clk(C.acc,11)}
+                  </span>
+                  <span style={{color:freight.producerLoadedConfirmedAt?C.ok:C.t2,fontWeight:freight.producerLoadedConfirmedAt?600:400}}>Productor</span>
+                </div>
+              </div>
+            </div>
+            <div style={{width:1,background:C.b1}}/>
+            <div style={{flex:1}}>
+              <div style={{fontSize:11,fontWeight:700,color:C.t2,marginBottom:8,textTransform:"uppercase",letterSpacing:0.4}}>Entrega</div>
+              <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                <div style={{display:"flex",alignItems:"center",gap:6,fontSize:12.7}}>
+                  <span style={{width:18,height:18,borderRadius:9,display:"inline-flex",alignItems:"center",justifyContent:"center",background:freight.transporterFinishedConfirmedAt?C.okPale:C.accPale,flexShrink:0}}>
+                    {freight.transporterFinishedConfirmedAt ? Ic.chk(C.ok,12) : Ic.clk(C.acc,11)}
+                  </span>
+                  <span style={{color:freight.transporterFinishedConfirmedAt?C.ok:C.t2,fontWeight:freight.transporterFinishedConfirmedAt?600:400}}>Transportista</span>
+                </div>
+                <div style={{display:"flex",alignItems:"center",gap:6,fontSize:12.7}}>
+                  <span style={{width:18,height:18,borderRadius:9,display:"inline-flex",alignItems:"center",justifyContent:"center",background:freight.plantFinishedConfirmedAt?C.okPale:C.accPale,flexShrink:0}}>
+                    {freight.plantFinishedConfirmedAt ? Ic.chk(C.ok,12) : Ic.clk(C.acc,11)}
+                  </span>
+                  <span style={{color:freight.plantFinishedConfirmedAt?C.ok:C.t2,fontWeight:freight.plantFinishedConfirmedAt?600:400}}>Planta</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Info + Map — side by side on desktop */}
+      <div style={{ display:"flex", flexDirection:_isDesktop?"row":"column", gap:12, marginBottom:12, alignItems:_isDesktop?"stretch":undefined }}>
+        <div style={{ flex:1, background:C.w, border:`1px solid ${C.b1}`, borderRadius:12, padding:16, boxShadow:C.sh }}>
           {(()=>{
             const InfoRow = ({ic,label,val,isLast}) => (
-              <div style={{ display:"flex", alignItems:"center", gap:10, padding:"8px 0", borderBottom:isLast?"none":`1px solid ${C.b2}` }}>
+              <div style={{ display:"flex", alignItems:"center", gap:10, padding:"9px 0", borderBottom:isLast?"none":`1px solid ${C.b2}` }}>
                 <span style={{display:"flex",flexShrink:0}}>{ic}</span>
                 <span style={{ fontSize:12.7, color:C.t2, minWidth:85 }}>{label}</span>
                 {label==="Teléfono"?<a href={`tel:${val}`} style={{ fontSize:13.2, fontWeight:600, color:C.info, marginLeft:"auto", textDecoration:"none" }}>{val}</a>:
                 <span style={{ fontSize:13.2, fontWeight:600, color:C.t1, marginLeft:"auto", textAlign:"right" }}>{val}</span>}
               </div>
             );
-            const SecLabel = ({children}) => <div style={{ fontSize:10.5, fontWeight:700, color:C.t3, textTransform:"uppercase", letterSpacing:0.5, marginBottom:2, marginTop:2 }}>{children}</div>;
+            const carga = [
+              [Ic.grain(C.t2,15),"Producto",`${freight.grain==="Otros"?freight.productTypeOther||"Otros":freight.grain} · ${freight.tons} ${freight.unit||"tn"}`],
+              freight.amount>0&&[Ic.grain(C.t2,15),"Importe",`$${Number(freight.amount).toLocaleString()}`],
+            ].filter(Boolean);
+            const ruta = [
+              [Ic.user(C.pri,15),"Empresa",freight.originCompanyName||freight.originName],
+              [Ic.grain(C.ok,15),"Campo",originDisplay(freight)||"—"],
+              [Ic.plant(C.t2,15),"Destino",destDisplay(freight)],
+              [Ic.cal(C.t2,15),"Fecha carga",formatFreightDate(freight.loadDate)],
+              [Ic.clk(C.t2,15),"Hora carga",freight.loadTime],
+              [Ic.user(C.t2,15),"Solicitado por",freight.requestedByName],
+            ].filter(Boolean);
+            const allRows = [...carga.map((r,i)=>["c"+i,...r]), ...ruta.map((r,i)=>["r"+i,...r])];
             return <>
-              <SecLabel>Carga</SecLabel>
-              <InfoRow ic={Ic.grain(C.t2,15)} label="Producto" val={`${freight.grain==="Otros"?freight.productTypeOther||"Otros":freight.grain} · ${freight.tons} ${freight.unit||"tn"}`} isLast={!(freight.amount>0)} />
-              {freight.amount>0 && <InfoRow ic={Ic.grain(C.t2,15)} label="Importe" val={`$${Number(freight.amount).toLocaleString()}`} isLast />}
-              <div style={{ height:1, background:C.b1, margin:"6px 0" }}/>
-              <SecLabel>Ruta</SecLabel>
-              <InfoRow ic={Ic.grain(C.ok,15)} label="Origen" val={originDisplay(freight)||"—"} />
-              <InfoRow ic={Ic.plant(C.t2,15)} label="Destino" val={destDisplay(freight)} />
-              <InfoRow ic={Ic.cal(C.t2,15)} label="Fecha carga" val={formatFreightDate(freight.loadDate)} isLast={!freight.loadTime} />
-              {freight.loadTime && <InfoRow ic={Ic.clk(C.t2,15)} label="Hora carga" val={freight.loadTime} isLast />}
-              <div style={{ height:1, background:C.b1, margin:"6px 0" }}/>
-              <SecLabel>Gestión</SecLabel>
-              <InfoRow ic={Ic.user(C.pri,15)} label="Empresa" val={freight.originCompanyName||freight.originName} />
-              <InfoRow ic={Ic.user(C.t2,15)} label="Solicitado por" val={freight.requestedByName} isLast />
+              {allRows.map(([key,ic,label,val],i)=><InfoRow key={key} ic={ic} label={label} val={val} isLast={i===allRows.length-1}/>)}
             </>;
           })()}
         </div>
-        {!_isDesktop && <div>
+        <div style={{ flex:1 }}>
           <Suspense fallback={<div style={{height:300,display:"flex",alignItems:"center",justifyContent:"center",color:C.t3,fontSize:13}}>Cargando mapa...</div>}>
             <FreightMap freightId={freight.id} originLat={freight.originLat} originLng={freight.originLng} destLat={freight.destLat} destLng={freight.destLng} originName={[freight.originCompanyName, originDisplay(freight)].filter(Boolean).join(" — ")} destName={destDisplay(freight)} status={freight.status} isDriver={user.userType==="transporter"||(user.userType==="producer"&&freight.isOwnFleet)}/>
           </Suspense>
-        </div>}
+        </div>
       </div>
 
       {/* Notes / Observaciones */}
@@ -803,34 +790,39 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
         );
       })()}
 
-      {/* Danger zone — destructive actions separated visually */}
+      <button onClick={()=>onChat(fullConvId)} disabled={!fullConvId}
+        style={{ width:"100%", background:C.priPale, borderRadius:10, padding:12, display:"flex", alignItems:"center", gap:10, border:`1.5px solid ${C.pri}30`, cursor:fullConvId?"pointer":"default", fontFamily:"inherit", marginBottom:12 }}>
+        {Ic.msg(C.pri,20)}<div style={{textAlign:"left"}}><div style={{ fontSize:13.2, fontWeight:700, color:C.pri }}>Chat del flete</div><div style={{ fontSize:11, color:C.t2 }}>Conversá con las partes involucradas</div></div>
+      </button>
+
+      {/* PDF Report */}
+      <button disabled={pdfLoading} onClick={async()=>{
+        if(pdfLoading) return;
+        setPdfLoading(true);
+        try {
+          let logs = auditLog;
+          if(!logs) { try { logs = await apiGetAuditLog(freight.id); setAuditLog(logs); } catch(e) { logs = []; } }
+          const { generateFreightPDF } = await loadPdfReport();
+          generateFreightPDF({ ...freight, documents: fullDocs, conversationId: fullConvId, pendingChanges: fullPendingChanges }, logs || []);
+        } catch(e) { log.error('PDF', e); useUIStore.getState().show('Error al generar PDF: ' + (e?.message || e), 'err'); }
+        finally { setPdfLoading(false); }
+      }} style={{ width:"100%", background:C.w, borderRadius:10, padding:12, display:"flex", alignItems:"center", gap:10, border:`1.5px solid ${C.b1}`, cursor:"pointer", fontFamily:"inherit", marginBottom:12, opacity:pdfLoading?0.6:1 }}>
+        {Ic.doc(C.t2,20)}<div style={{textAlign:"left"}}><div style={{ fontSize:13.2, fontWeight:700, color:C.t1 }}>{pdfLoading?'Generando...':'Descargar informe PDF'}</div><div style={{ fontSize:11, color:C.t3 }}>Información, recorrido, historial y documentos</div></div>
+      </button>
+
+      {/* Secondary actions — edit, cancel, reject (horizontal, smaller) */}
       {(()=>{
-        const hasCancelOrReject = filteredActions.includes("cancel") || filteredActions.includes("reject");
-        if (!hasCancelOrReject) return null;
-        return <div style={{ borderTop:`1px dashed ${C.err}40`, marginTop:8, paddingTop:12, marginBottom:8 }}>
-          <div style={{ fontSize:10.5, fontWeight:700, color:C.err, textTransform:"uppercase", letterSpacing:0.5, marginBottom:8, display:"flex", alignItems:"center", gap:5 }}>{Ic.warn(C.err,12)} Zona de peligro</div>
-          <div style={{ display:"flex", gap:8 }}>
-            {filteredActions.includes("cancel") && <Btn key="cancel" sm v="err" icon={Ic.cross(C.err,14)} disabled={actionLoading} onClick={()=>onAction(freight.id,"cancel")} style={{flex:1}}>Cancelar flete</Btn>}
-            {filteredActions.includes("reject") && <Btn key="reject" sm v="err" icon={Ic.ban(C.err,14)} disabled={actionLoading} onClick={()=>onAction(freight.id,"reject")} style={{flex:1}}>Rechazar flete</Btn>}
-          </div>
-        </div>;
+        const sec = [];
+        if(["pending_assignment","assigned","accepted","in_progress","loaded"].includes(freight.status) && (perms.canRequest || perms.canApprove))
+          sec.push(<Btn key="edit" sm v="ghost" icon={Ic.edit(C.t2,14)} onClick={()=>onEdit(freight)} style={{flex:1}}>Editar</Btn>);
+        if(filteredActions.includes("cancel"))
+          sec.push(<Btn key="cancel" sm v="err" icon={Ic.cross(C.err,14)} disabled={actionLoading} onClick={()=>onAction(freight.id,"cancel")} style={{flex:1}}>Cancelar</Btn>);
+        if(filteredActions.includes("reject"))
+          sec.push(<Btn key="reject" sm v="err" icon={Ic.ban(C.err,14)} disabled={actionLoading} onClick={()=>onAction(freight.id,"reject")} style={{flex:1}}>Rechazar</Btn>);
+        if(sec.length===0) return null;
+        return <div style={{ display:"flex", gap:8, marginBottom:8 }}>{sec}</div>;
       })()}
-      </div>{/* end left column */}
-      {/* Right sidebar — sticky map on desktop */}
-      {_isDesktop && <div style={{ position:"sticky", top:100, alignSelf:"start" }}>
-        <div style={{ borderRadius:12, overflow:"hidden", marginBottom:12, border:`1px solid ${C.b1}`, boxShadow:C.sh }}>
-          <Suspense fallback={<div style={{height:340,display:"flex",alignItems:"center",justifyContent:"center",color:C.t3,fontSize:13,background:C.w}}>Cargando mapa...</div>}>
-            <FreightMap freightId={freight.id} originLat={freight.originLat} originLng={freight.originLng} destLat={freight.destLat} destLng={freight.destLng} originName={[freight.originCompanyName, originDisplay(freight)].filter(Boolean).join(" — ")} destName={destDisplay(freight)} status={freight.status} isDriver={user.userType==="transporter"||(user.userType==="producer"&&freight.isOwnFleet)}/>
-          </Suspense>
-        </div>
-        {fullConvId && <button onClick={()=>onChat(fullConvId)} style={{ width:"100%", background:C.priPale, borderRadius:10, padding:10, display:"flex", alignItems:"center", gap:8, border:`1.5px solid ${C.pri}30`, cursor:"pointer", fontFamily:"inherit", marginBottom:8 }}>
-          {Ic.msg(C.pri,16)}<div style={{textAlign:"left"}}><div style={{ fontSize:12.7, fontWeight:700, color:C.pri }}>Chat del flete</div><div style={{ fontSize:10.5, color:C.t2 }}>Conversá con las partes involucradas</div></div>
-        </button>}
-        <button disabled={pdfLoading} onClick={handlePdf} style={{ width:"100%", background:C.w, borderRadius:10, padding:10, display:"flex", alignItems:"center", gap:8, border:`1.5px solid ${C.b1}`, cursor:"pointer", fontFamily:"inherit", opacity:pdfLoading?0.6:1 }}>
-          {Ic.doc(C.t2,16)}<div style={{textAlign:"left"}}><div style={{ fontSize:12.7, fontWeight:700, color:C.t1 }}>{pdfLoading?'Generando...':'Descargar PDF'}</div><div style={{ fontSize:10.5, color:C.t3 }}>Informe completo del flete</div></div>
-        </button>
-      </div>}
-      </div>{/* end grid/content wrapper */}
+      </div>
       <FileViewer file={viewFile} onClose={()=>setViewFile(null)} onOcr={handleOcr} ocrLoading={ocrLoading} onViewOcr={handleViewOcr}/>
       {ocrLoading && <div style={{ position:"fixed", inset:0, zIndex:250 }}><UploadOverlay uploading={ocrLoading} done={false} total={1} current={1} label="Extrayendo datos"/></div>}
       <OcrResultModal result={ocrResult} onClose={()=>setOcrResult(null)}/>
