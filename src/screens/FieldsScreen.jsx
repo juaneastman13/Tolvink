@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { C, Ic } from "../theme";
 import { Btn, Bd, Field, Loader, LoadingOverlay, EmptyState } from "../components";
 import { SafeZone, LocationPicker } from "../maps";
-import { apiGetFields, apiCreateField, apiUpdateField, apiCreateLot, apiUpdateLot, apiGetFieldLots } from "../api";
+import { apiGetFields, apiCreateField, apiUpdateField, apiCreateLot, apiUpdateLot, apiGetFieldLots, apiImportTakeout, apiImportConfirm } from "../api";
 import log from "../logger";
 
 export default function FieldsScreen({ onBack, embedded, goToMap }) {
@@ -27,6 +27,13 @@ export default function FieldsScreen({ onBack, embedded, goToMap }) {
   const [editLot, setEditLot] = useState(null); // {fieldId, lotId}
   const [editLotHa, setEditLotHa] = useState("");
   const [editLotLoc, setEditLotLoc] = useState(null);
+  // Import flow
+  const [importStep, setImportStep] = useState(0); // 0=hidden, 1=upload, 2=preview, 3=done
+  const [importParsed, setImportParsed] = useState([]);
+  const [importDiscarded, setImportDiscarded] = useState(0);
+  const [importSelected, setImportSelected] = useState(new Set());
+  const [importNames, setImportNames] = useState({}); // id→edited name
+  const fileInputRef = useRef(null);
 
   const load = useCallback(async () => {
     try { const f = await apiGetFields(); setFields(f || []); } catch(e) { setMsg({t:e.message||"Error al cargar campos",k:"err"}); } finally { setLoading(false); }
@@ -109,6 +116,55 @@ export default function FieldsScreen({ onBack, embedded, goToMap }) {
     } catch (e) { setMsg({ t: e.message, k: "err" }); setSaving(false); }
   };
 
+  const handleImportFile = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) { setMsg({ t: "El archivo excede 10 MB", k: "err" }); return; }
+    setSaving(true);
+    try {
+      const result = await apiImportTakeout(file);
+      setImportParsed(result.parsed || []);
+      setImportDiscarded(result.discarded || 0);
+      const sel = new Set(result.parsed.map((_, i) => i));
+      setImportSelected(sel);
+      setImportNames({});
+      setImportStep(2);
+    } catch (err) { setMsg({ t: err.message || "Error al procesar archivo", k: "err" }); }
+    finally { setSaving(false); if (fileInputRef.current) fileInputRef.current.value = ""; }
+  };
+
+  const handleImportConfirm = async () => {
+    const locations = importParsed
+      .filter((_, i) => importSelected.has(i))
+      .map((loc, i) => ({
+        name: (importNames[i] || loc.name).trim().slice(0, 255),
+        address: loc.address || undefined,
+        lat: loc.lat,
+        lng: loc.lng,
+      }));
+    if (locations.length === 0) { setMsg({ t: "Seleccioná al menos una ubicación", k: "err" }); return; }
+    setSaving(true);
+    try {
+      const result = await apiImportConfirm(locations);
+      setImportStep(0); setImportParsed([]); setSaving(false);
+      const errMsg = result.errors?.length ? ` (${result.errors.length} omitidos)` : "";
+      setDoneMsg(`${result.created} campo${result.created !== 1 ? "s" : ""} importado${result.created !== 1 ? "s" : ""}${errMsg}`);
+      load();
+    } catch (err) { setMsg({ t: err.message, k: "err" }); setSaving(false); }
+  };
+
+  const toggleImportItem = (i) => {
+    setImportSelected(prev => {
+      const next = new Set(prev);
+      next.has(i) ? next.delete(i) : next.add(i);
+      return next;
+    });
+  };
+
+  const closeImport = () => { setImportStep(0); setImportParsed([]); };
+
+  const selectedCount = [...importSelected].length;
+
   return (
     <div style={{ flex: embedded?undefined:1, overflow: embedded?"visible":"auto", padding: embedded?0:undefined }}>
       {(saving||doneMsg) && <LoadingOverlay closing={!!doneMsg} closingText={doneMsg} onClose={()=>setDoneMsg("")}/>}
@@ -116,8 +172,75 @@ export default function FieldsScreen({ onBack, embedded, goToMap }) {
       <div style={{ padding: embedded?0:"0 18px 18px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
         <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: -0.3 }}>Mis Campos</div>
-        <Btn sm onClick={() => setShowFieldForm(!showFieldForm)} icon={showFieldForm ? Ic.cross(C.w, 14) : Ic.plus(C.w, 14)}>{showFieldForm ? "Cerrar" : "Agregar"}</Btn>
+        <div style={{ display: "flex", gap: 6 }}>
+          <Btn sm v="ghost" onClick={() => { setImportStep(importStep ? 0 : 1); setShowFieldForm(false); }} icon={Ic.pin(importStep ? C.pri : C.t2, 14)}>{importStep ? "Cerrar" : "Importar"}</Btn>
+          <Btn sm onClick={() => { setShowFieldForm(!showFieldForm); if (importStep) setImportStep(0); }} icon={showFieldForm ? Ic.cross(C.w, 14) : Ic.plus(C.w, 14)}>{showFieldForm ? "Cerrar" : "Agregar"}</Btn>
+        </div>
       </div>
+
+      {/* ── Import from Google Takeout ── */}
+      {importStep === 1 && (
+        <div style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: 12, padding: 18, marginBottom: 16, boxShadow: C.sh }}>
+          <div style={{ fontSize: 15.4, fontWeight: 700, marginBottom: 8 }}>{Ic.pin(C.pri, 16)} Importar desde Google Maps</div>
+          <div style={{ fontSize: 12.7, color: C.t2, lineHeight: 1.5, marginBottom: 14 }}>
+            Exportá tus ubicaciones desde <strong>takeout.google.com</strong> (seleccioná "Maps — Tus sitios") y subí el archivo ZIP aquí.
+          </div>
+          <input ref={fileInputRef} type="file" accept=".zip" onChange={handleImportFile} style={{ display: "none" }} />
+          <Btn full v="acc" onClick={() => fileInputRef.current?.click()} icon={Ic.doc(C.w, 14)}>Seleccionar archivo ZIP</Btn>
+        </div>
+      )}
+
+      {importStep === 2 && (
+        <div style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: 12, padding: 18, marginBottom: 16, boxShadow: C.sh }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+            <div style={{ fontSize: 15.4, fontWeight: 700 }}>{Ic.pin(C.pri, 16)} Ubicaciones encontradas</div>
+            <button onClick={closeImport} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }}>{Ic.cross(C.t3, 16)}</button>
+          </div>
+          <div style={{ display: "flex", gap: 10, marginBottom: 12, fontSize: 12.7, color: C.t2 }}>
+            <span style={{ fontWeight: 600, color: C.ok }}>{importParsed.length} encontradas</span>
+            {importDiscarded > 0 && <span style={{ color: C.t3 }}>{importDiscarded} descartadas (sin coordenadas)</span>}
+          </div>
+          {importParsed.length === 0 ? (
+            <div style={{ textAlign: "center", padding: 20, color: C.t3, fontSize: 13.2 }}>No se encontraron ubicaciones válidas en el archivo</div>
+          ) : (
+            <>
+              <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+                <button onClick={() => setImportSelected(new Set(importParsed.map((_, i) => i)))} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12.1, color: C.pri, fontWeight: 600, fontFamily: "inherit", padding: 0 }}>Seleccionar todas</button>
+                <span style={{ color: C.t3 }}>·</span>
+                <button onClick={() => setImportSelected(new Set())} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12.1, color: C.t3, fontWeight: 600, fontFamily: "inherit", padding: 0 }}>Ninguna</button>
+              </div>
+              <div style={{ maxHeight: 340, overflowY: "auto", display: "flex", flexDirection: "column", gap: 6 }}>
+                {importParsed.map((loc, i) => (
+                  <div key={i} onClick={() => toggleImportItem(i)} style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "10px 12px", borderRadius: 10, border: `1.5px solid ${importSelected.has(i) ? C.pri : C.b1}`, background: importSelected.has(i) ? `${C.pri}06` : C.bg, cursor: "pointer", transition: "all 0.15s" }}>
+                    <div style={{ width: 20, height: 20, borderRadius: 4, border: `2px solid ${importSelected.has(i) ? C.pri : C.b1}`, background: importSelected.has(i) ? C.pri : C.w, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 2 }}>
+                      {importSelected.has(i) && Ic.chk(C.w, 12)}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <input
+                        value={importNames[i] ?? loc.name}
+                        onChange={(e) => { e.stopPropagation(); setImportNames(prev => ({ ...prev, [i]: e.target.value })); }}
+                        onClick={(e) => e.stopPropagation()}
+                        style={{ width: "100%", border: "none", background: "transparent", fontSize: 14.3, fontWeight: 600, color: C.t1, fontFamily: "inherit", padding: 0, outline: "none" }}
+                      />
+                      {loc.address && <div style={{ fontSize: 11.5, color: C.t3, marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{loc.address}</div>}
+                      <div style={{ fontSize: 10.5, color: C.ok, fontWeight: 600, marginTop: 2 }}>
+                        {loc.lat.toFixed(4)}, {loc.lng.toFixed(4)}
+                        {loc.countryCode && <span style={{ marginLeft: 6, color: C.t3, fontWeight: 500 }}>{loc.countryCode}</span>}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div style={{ marginTop: 14, display: "flex", gap: 8 }}>
+                <Btn sm v="ghost" onClick={closeImport}>Cancelar</Btn>
+                <Btn sm disabled={saving || selectedCount === 0} onClick={handleImportConfirm} style={{ flex: 1 }}>
+                  {saving ? "Importando..." : `Importar seleccionadas (${selectedCount})`}
+                </Btn>
+              </div>
+            </>
+          )}
+        </div>
+      )}
 
       {msg && <div style={{ padding: "10px 14px", borderRadius: 12, marginBottom: 12, fontSize: 13.2, fontWeight: 600, background: msg.k === "ok" ? C.okPale : C.errPale, color: msg.k === "ok" ? C.ok : C.err }}>{msg.t}</div>}
 
