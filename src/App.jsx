@@ -802,7 +802,7 @@ export default function Tolvink() {
 
       {/* AI Chat */}
       <Suspense fallback={null}>
-        <AiChatFabComp open={aiChatOpen} onClick={() => setAiChatOpen(p => !p)} />
+        {screen !== "new" && <AiChatFabComp open={aiChatOpen} onClick={() => setAiChatOpen(p => !p)} />}
         <AiChat open={aiChatOpen} onClose={() => setAiChatOpen(false)} onNavigate={(nav) => {
           const path = nav.screen === 'detail' && nav.freightId
             ? `/freight/${nav.freightId}`
