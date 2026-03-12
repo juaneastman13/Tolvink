@@ -192,7 +192,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
   const advanceToNext = () => {
     const flow = ["product", "quantity", "origin"];
     if (showTruckSelect) flow.push("ownfleet");
-    flow.push("destination", "schedule", "extras");
+    flow.push("destination", "schedule");
     const idx = flow.indexOf(activeSection);
     if (idx >= 0 && idx < flow.length - 1) setActiveSection(flow[idx + 1]);
   };
@@ -200,18 +200,23 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
   const goToPrev = () => {
     const flow = ["product", "quantity", "origin"];
     if (showTruckSelect) flow.push("ownfleet");
-    flow.push("destination", "schedule", "extras");
+    flow.push("destination", "schedule");
     const idx = flow.indexOf(activeSection);
     if (idx > 0) setActiveSection(flow[idx - 1]);
   };
   const prevAvailable = () => {
     const flow = ["product", "quantity", "origin"];
     if (showTruckSelect) flow.push("ownfleet");
-    flow.push("destination", "schedule", "extras");
+    flow.push("destination", "schedule");
     return flow.indexOf(activeSection) > 0;
   };
 
-  const confirmEdit = () => { setActiveSection(editingFrom || "extras"); setEditingFrom(null); };
+  const confirmEdit = () => {
+    const fromModal = editingFrom === "__modal__";
+    setEditingFrom(null);
+    if (fromModal) { setShowConfirmModal(true); setActiveSection("schedule"); }
+    else { setActiveSection(editingFrom || "schedule"); }
+  };
 
   // Sections are locked if previous required sections are incomplete
   const secEnabled = {
@@ -350,6 +355,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
 
   const editFromModal = (sec) => {
     setShowConfirmModal(false);
+    setEditingFrom("__modal__");
     setActiveSection(sec);
     requestAnimationFrame(() => {
       secRefs[sec]?.current?.scrollIntoView({behavior:"smooth",block:"center"});
@@ -533,18 +539,10 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
                 {touched&&<FieldError error={errs.loadTime}/>}
               </div>
             </div>
-            <NextStepBtn complete={secComplete.schedule} onClick={()=>{if(isEditing){confirmEdit();}else{setActiveSection("extras");}}} label={isEditing?"Confirmar edición":undefined} onPrev={prevAvailable()?goToPrev:null}/>
+            <NextStepBtn complete={secComplete.schedule} onClick={()=>{if(isEditing){confirmEdit();}else{openConfirmModal();}}} label={isEditing?"Confirmar edición":"Solicitar Flete"} onPrev={prevAvailable()?goToPrev:null}/>
           </>}
         </MobileStepModal>
       )}
-
-      {/* Mobile: after last step, show summary + open modal button */}
-      {!_isDesktop && activeSection === "extras" && <div>
-        <SummaryCard secSummary={secSummary} secComplete={secComplete} form={form} showTruckSelect={showTruckSelect} isDesktop={false} onEdit={(sec)=>{if(!editingFrom)setEditingFrom(activeSection);setActiveSection(sec);}}/>
-        <div style={{ marginTop:16 }}>
-          <Btn full icon={Ic.chk(C.w,16)} onClick={openConfirmModal}>{allComplete?"Solicitar Flete":"Revisar y enviar"}</Btn>
-        </div>
-      </div>}
 
       {/* Desktop: original inline sections
          TODO: The form section markup below is largely duplicated with the mobile MobileStepModal sections above.
@@ -698,75 +696,6 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
           <NextStepBtn complete={secComplete.destination} onClick={isEditing?confirmEdit:advanceToNext} label={isEditing?"Confirmar edición":undefined} onPrev={prevAvailable()?goToPrev:null}/>
         </Sec>}
 
-        {/* Route preview + custom dest map — desktop only */}
-        {activeSection === "extras" && _isDesktop && (destMode==="custom" ? (
-          <div style={{ display:"flex", gap:16, alignItems:"flex-start" }}>
-            <div style={{ flex:1, minWidth:0 }}>
-              <LocationPicker label="Ubicación del destino" value={customDest.lat?{lat:customDest.lat,lng:customDest.lng}:null} onChange={loc=>setCustomDest(p=>({...p,lat:loc.lat,lng:loc.lng}))}/>
-            </div>
-            {(finalOrigin || finalDest) && (
-              <div style={{ flex:1, minWidth:0, background:C.w, border:`1px solid ${C.b1}`, borderRadius:12, overflow:"hidden", boxShadow:C.sh }}>
-                <div style={{ display:"flex", alignItems:"center", gap:6, padding:"10px 14px" }}>
-                  {Ic.pin(C.pri,14)}
-                  <span style={{ fontSize:11.6, fontWeight:700, color:C.t2, textTransform:"uppercase", letterSpacing:0.5 }}>Vista previa del recorrido</span>
-                </div>
-                {finalOrigin && finalDest ? (
-                  <FreightMap freightId={null} originLat={finalOrigin.lat} originLng={finalOrigin.lng} destLat={finalDest.lat} destLng={finalDest.lng} originName={originMode==="map"?(customOrigin.name?.trim()||"Personalizado"):(fieldLots.find(l=>l.id===form.lotId)?.name||"Origen")} destName={destMode==="custom"?(customDest.name?.trim()||"Personalizado"):(destDisplayName||"Destino")} status="preview" isDriver={false}/>
-                ) : (
-                  <div style={{ padding:"20px 14px", textAlign:"center", fontSize:13.2, color:C.t3 }}>
-                    Seleccioná {!finalOrigin?"origen (lote)":""}{!finalOrigin&&!finalDest?" y ":""}{!finalDest?"destino":""} para ver la ruta
-                  </div>
-                )}
-                <div style={{ padding:"6px 14px 10px", display:"flex", gap:8 }}>
-                  {finalOrigin && (
-                    <button onClick={()=>setEditingOrigin(!editingOrigin)} style={{ flex:1, padding:"7px 10px", borderRadius:8, border:`1px solid ${editingOrigin?C.pri:C.b1}`, background:editingOrigin?C.priPale:C.w, cursor:"pointer", fontFamily:"inherit", fontSize:11.6, fontWeight:600, color:editingOrigin?C.pri:C.t2, display:"flex", alignItems:"center", justifyContent:"center", gap:4 }}>
-                      {Ic.pin(C.ok,12)} {editingOrigin?"Editando origen":"Editar origen"}
-                    </button>
-                  )}
-                  {finalDest && (
-                    <button onClick={()=>setEditingDest(!editingDest)} style={{ flex:1, padding:"7px 10px", borderRadius:8, border:`1px solid ${editingDest?C.sec:C.b1}`, background:editingDest?C.secPale:C.w, cursor:"pointer", fontFamily:"inherit", fontSize:11.6, fontWeight:600, color:editingDest?C.sec:C.t2, display:"flex", alignItems:"center", justifyContent:"center", gap:4 }}>
-                      {Ic.pin(C.sec,12)} {editingDest?"Editando destino":"Editar destino"}
-                    </button>
-                  )}
-                </div>
-                {editingOrigin && <div style={{ padding:"0 14px 12px" }}><LocationPicker label="Corregir ubicación de origen" value={overrideOrigin||originCoords} onChange={loc=>setOverrideOrigin({lat:loc.lat,lng:loc.lng})}/></div>}
-                {editingDest && <div style={{ padding:"0 14px 12px" }}><LocationPicker label="Corregir ubicación de destino" value={overrideDest||destCoords} onChange={loc=>setOverrideDest({lat:loc.lat,lng:loc.lng})}/></div>}
-              </div>
-            )}
-          </div>
-        ) : (
-          /* Standard stacked layout — desktop only */
-          (finalOrigin || finalDest) && (
-            <div style={{ background:C.w, border:`1px solid ${C.b1}`, borderRadius:12, overflow:"hidden", boxShadow:C.sh }}>
-              <div style={{ display:"flex", alignItems:"center", gap:6, padding:"10px 14px" }}>
-                {Ic.pin(C.pri,14)}
-                <span style={{ fontSize:11.6, fontWeight:700, color:C.t2, textTransform:"uppercase", letterSpacing:0.5 }}>Vista previa del recorrido</span>
-              </div>
-              {finalOrigin && finalDest ? (
-                <FreightMap freightId={null} originLat={finalOrigin.lat} originLng={finalOrigin.lng} destLat={finalDest.lat} destLng={finalDest.lng} originName={originMode==="map"?(customOrigin.name?.trim()||"Personalizado"):(fieldLots.find(l=>l.id===form.lotId)?.name||"Origen")} destName={destMode==="custom"?(customDest.name?.trim()||"Personalizado"):(destDisplayName||"Destino")} status="preview" isDriver={false}/>
-              ) : (
-                <div style={{ padding:"20px 14px", textAlign:"center", fontSize:13.2, color:C.t3 }}>
-                  Seleccioná {!finalOrigin?"origen (lote)":""}{!finalOrigin&&!finalDest?" y ":""}{!finalDest?"destino":""} para ver la ruta
-                </div>
-              )}
-              <div style={{ padding:"6px 14px 10px", display:"flex", gap:8 }}>
-                {finalOrigin && (
-                  <button onClick={()=>setEditingOrigin(!editingOrigin)} style={{ flex:1, padding:"7px 10px", borderRadius:8, border:`1px solid ${editingOrigin?C.pri:C.b1}`, background:editingOrigin?C.priPale:C.w, cursor:"pointer", fontFamily:"inherit", fontSize:11.6, fontWeight:600, color:editingOrigin?C.pri:C.t2, display:"flex", alignItems:"center", justifyContent:"center", gap:4 }}>
-                    {Ic.pin(C.ok,12)} {editingOrigin?"Editando origen":"Editar origen"}
-                  </button>
-                )}
-                {finalDest && (
-                  <button onClick={()=>setEditingDest(!editingDest)} style={{ flex:1, padding:"7px 10px", borderRadius:8, border:`1px solid ${editingDest?C.sec:C.b1}`, background:editingDest?C.secPale:C.w, cursor:"pointer", fontFamily:"inherit", fontSize:11.6, fontWeight:600, color:editingDest?C.sec:C.t2, display:"flex", alignItems:"center", justifyContent:"center", gap:4 }}>
-                    {Ic.pin(C.sec,12)} {editingDest?"Editando destino":"Editar destino"}
-                  </button>
-                )}
-              </div>
-              {editingOrigin && <div style={{ padding:"0 14px 12px" }}><LocationPicker label="Corregir ubicación de origen" value={overrideOrigin||originCoords} onChange={loc=>setOverrideOrigin({lat:loc.lat,lng:loc.lng})}/></div>}
-              {editingDest && <div style={{ padding:"0 14px 12px" }}><LocationPicker label="Corregir ubicación de destino" value={overrideDest||destCoords} onChange={loc=>setOverrideDest({lat:loc.lat,lng:loc.lng})}/></div>}
-            </div>
-          )
-        ))}
-
         {/* SCHEDULE SECTION */}
         {activeSection === "schedule" && <Sec label="Fecha y hora" complete={secComplete.schedule} isExpanded={true} onFocus={()=>{}} secRef={secRefs.schedule}>
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
@@ -787,7 +716,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
               {touched&&<FieldError error={errs.loadTime}/>}
             </div>
           </div>
-          <NextStepBtn complete={secComplete.schedule} onClick={isEditing?confirmEdit:advanceToNext} label={isEditing?"Confirmar edición":undefined} onPrev={prevAvailable()?goToPrev:null}/>
+          <NextStepBtn complete={secComplete.schedule} onClick={isEditing?confirmEdit:openConfirmModal} label={isEditing?"Confirmar edición":"Solicitar Flete"} onPrev={prevAvailable()?goToPrev:null}/>
         </Sec>}
 
       </div>}
