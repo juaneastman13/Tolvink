@@ -11,7 +11,7 @@ import "./app.css";
 // Lazy load heavy map components
 const MapOverlay = lazy(() => import("./maps").then(m => ({ default: m.MapOverlay })));
 const LocPickerFullscreen = lazy(() => import("./maps").then(m => ({ default: m.LocPickerFullscreen })));
-import { useUIStore, offlineQueue } from "./store";
+import { useUIStore, useFreightDetailStore, offlineQueue } from "./store";
 import { resolveUserTypeForFreight, getPendingActions } from "./utils/freight-helpers";
 import { setUser as setSentryUser } from "./sentry";
 import log from "./logger";
@@ -187,7 +187,13 @@ export default function Tolvink() {
 
   // SSE — real-time sync
   const sse = useSSE(auth.user, {
-    onFreightUpdate: (data) => { if(data?.id) fh.refresh(data.id); },
+    onFreightUpdate: (data) => {
+      if (!data?.id) return;
+      // Light refresh for list (no documents/pendingChanges overhead)
+      fh.refreshLight(data.id);
+      // Invalidate cached detail so next click re-fetches
+      useFreightDetailStore.getState().invalidate(data.id);
+    },
     onMessageNew: (data) => {
       // Issue #9 fix: only increment unread if message is from another user
       if (data.senderId && data.senderId !== auth.user?.id) {
@@ -223,7 +229,7 @@ export default function Tolvink() {
     const p = location.pathname;
     if (p.startsWith("/freight/")) {
       const id = p.replace("/freight/", "");
-      if (id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) { setSelFreight(id); fh.refresh(id); }
+      if (id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) { setSelFreight(id); fh.refreshLight(id); }
     }
   }, [location.pathname, fh.refresh]);
 
@@ -761,7 +767,7 @@ export default function Tolvink() {
         {screen==="home" && <HomeScreen user={auth.user} freights={viewFreights} loading={fh.loading} perms={perms} onNav={nav} catalog={catalog} isDesktop={isDesktop} onAction={handleAction} onTripAction={handleTripAction} onEditTrip={handleEditTrip} actionLoading={actionLoading} onChat={(convId)=>{if(convId){setChatConvId(convId);navigate("/chats");}}} onRefresh={(id)=>fh.refresh(id)} onDuplicate={(f)=>{setDuplicateData(f);navigate("/new");}} onEdit={(f)=>{setEditData(f);navigate("/edit/"+f.id);}} goToMap={goToMap} simpleMode={auth.simpleMode} statusCounts={fh.statusCounts}/>}
         {screen==="list" && <ListScreen freights={viewFreights} loading={fh.loading} onNav={nav} onRefresh={fh.fetchAll} catalog={catalog} view={listView} setView={setListView} goToMap={goToMap} hasMore={fh.hasMore} loadMore={fh.loadMore} loadingMore={fh.loadingMore} total={fh.total} isDesktop={isDesktop} onAction={handleAction} user={auth.user} simpleMode={auth.simpleMode} statusCounts={fh.statusCounts}/>}
         {screen==="calendar" && <CalendarScreen freights={viewFreights} perms={perms} onNav={nav} isDesktop={isDesktop} user={auth.user} onAction={handleAction} onTripAction={handleTripAction} actionLoading={actionLoading} onChat={(convId)=>{if(convId){setChatConvId(convId);navigate("/chats");}}} onRefresh={(id)=>fh.refresh(id)} onDuplicate={(f)=>{setDuplicateData(f);navigate("/new");}} onEdit={(f)=>{setEditData(f);navigate("/edit/"+f.id);}} goToMap={goToMap}/>}
-        {screen==="detail" && <DetailScreen user={curFreight ? {...auth.user, userType: _resolveType(curFreight)} : auth.user} freight={curFreight} perms={perms} onBack={()=>navigate("/list")} onAction={handleAction} onTripAction={handleTripAction} onEditTrip={handleEditTrip} onCancelAssignment={fh.cancelAssignment} actionLoading={actionLoading} onChat={(convId)=>{if(convId){setChatConvId(convId);navigate("/chats");}}} onRefresh={(id)=>fh.refresh(id)} onDuplicate={(f)=>{setDuplicateData(f);navigate("/new");}} onEdit={(f)=>{setEditData(f);navigate("/edit/"+f.id);}} goToMap={goToMap} sseConnected={sse.connected}/>}
+        {screen==="detail" && <DetailScreen user={curFreight ? {...auth.user, userType: _resolveType(curFreight)} : auth.user} freight={curFreight} perms={perms} onBack={()=>navigate("/list")} onAction={handleAction} onTripAction={handleTripAction} onEditTrip={handleEditTrip} onCancelAssignment={fh.cancelAssignment} actionLoading={actionLoading} onChat={(convId)=>{if(convId){setChatConvId(convId);navigate("/chats");}}} onRefresh={(id)=>{ useFreightDetailStore.getState().invalidate(id); fh.refresh(id); }} onDuplicate={(f)=>{setDuplicateData(f);navigate("/new");}} onEdit={(f)=>{setEditData(f);navigate("/edit/"+f.id);}} goToMap={goToMap} sseConnected={sse.connected}/>}
         {screen==="new" && <NewScreen user={auth.user} lots={catalog.lots} plants={catalog.plants} branches={catalog.branches} fields={catalog.fields} trucks={catalog.trucks} onBack={()=>{setDuplicateData(null);navigate("/");}} onCreate={handleCreate} submitting={submitting} duplicateFrom={duplicateData}/>}
         {screen==="edit" && editData && <EditScreen freight={editData} fields={catalog.fields} plants={catalog.plants} branches={catalog.branches} trucks={catalog.trucks} user={auth.user} onBack={()=>{setEditData(null);navigate(-1);}} onSave={async(id,data)=>{const r=await fh.update(id,data);if(r.ok) return r.pending?"Cambio enviado a aprobación":"Flete actualizado"; show(r.error,"err"); return "";}}/>}
         {screen==="menu" && <MenuScreen user={auth.user} perms={perms} onLogout={auth.logout} onNav={nav} isDesktop={isDesktop} onSwitchCompany={async(id)=>{return await auth.switchCompany(id);}} onRefresh={()=>{fh.fetchAll();catalog.refresh();}} simpleMode={auth.simpleMode} onToggleSimple={auth.toggleSimpleMode}/>}

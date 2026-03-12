@@ -213,6 +213,7 @@ export async function apiGetMyCompanies() { return api('/auth/me/companies'); }
 export async function apiListFreights(q={}) { const p=new URLSearchParams(); if(q.status)p.set('status',q.status); if(q.page)p.set('page',String(q.page)); if(q.limit)p.set('limit',String(q.limit)); if(q.company)p.set('company',q.company); if(q.search)p.set('search',q.search); if(q.destName)p.set('destName',q.destName); if(q.originCompany)p.set('originCompany',q.originCompany); if(q.transporter)p.set('transporter',q.transporter); if(q.dateFrom)p.set('dateFrom',q.dateFrom); if(q.dateTo)p.set('dateTo',q.dateTo); const qs=p.toString(); return api(`/freights${qs?`?${qs}`:''}`); }
 export async function apiSearchFreights(search, page=1) { return apiListFreights({ search, limit: 25, page }); }
 export async function apiGetFreight(id) { return api(`/freights/${id}`); }
+export async function apiGetFreightSummary(id) { return api(`/freights/${id}/summary`); }
 export async function apiCreateFreight(b) { return api('/freights',{body:b}); }
 export async function apiAssignFreight(id,b) { return api(`/freights/${id}/assign`,{body:b}); }
 export async function apiRespondFreight(id,b) { return api(`/freights/${id}/respond`,{body:b}); }

@@ -6,9 +6,9 @@ import { SafeZone } from "../maps";
 const FreightMap = lazy(() => import("../maps").then(m => ({ default: m.FreightMap })));
 import log from "../logger";
 import { DocsGallery, FreightFileUpload, OcrResultModal, UploadOverlay } from "../uploads";
-import { apiGetAuditLog, apiSendTracking, apiApprovePendingChange, apiRejectPendingChange, apiOcrAnalyze, apiSaveOcrData, apiUpdateFreight } from "../api";
-import { useIsDesktop } from "../hooks";
-import { useUIStore } from "../store";
+import { apiGetAuditLog, apiGetFreight, apiSendTracking, apiApprovePendingChange, apiRejectPendingChange, apiOcrAnalyze, apiSaveOcrData, apiUpdateFreight } from "../api";
+import { useIsDesktop, mapFreight } from "../hooks";
+import { useUIStore, useFreightDetailStore } from "../store";
 // PDF report loaded lazily to avoid bundle bloat
 const loadPdfReport = () => import("../utils/pdf-report");
 
@@ -20,6 +20,34 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
     </div>
     <SkeletonDetail />
   </div>;
+  // Progressive loading: load full detail on-demand when freight is summary-only
+  const detailEntry = useFreightDetailStore(s => s.details[freight?.id]);
+  const detailData = detailEntry?.data || null;
+  const detailLoading = detailEntry?.loading || false;
+
+  useEffect(() => {
+    if (!freight?.id) return;
+    // Already have full detail in cache and it's fresh
+    const cached = useFreightDetailStore.getState().getDetail(freight.id);
+    if (cached?.data) return;
+    // Load full detail
+    useFreightDetailStore.getState().setLoading(freight.id, true);
+    let cancelled = false;
+    apiGetFreight(freight.id).then(raw => {
+      if (cancelled) return;
+      const mapped = mapFreight(raw);
+      useFreightDetailStore.getState().setDetail(freight.id, mapped);
+    }).catch(() => {
+      if (!cancelled) useFreightDetailStore.getState().setLoading(freight.id, false);
+    });
+    return () => { cancelled = true; };
+  }, [freight?.id]);
+
+  // Merge detail-only fields from full detail cache into freight
+  const fullDocs = detailData?.documents ?? freight.documents ?? [];
+  const fullConvId = detailData?.conversationId ?? freight.conversationId ?? null;
+  const fullPendingChanges = detailData?.pendingChanges ?? freight.pendingChanges ?? [];
+  const hasFullDetail = !!detailData || freight._isFullDetail;
   const [auditLog, setAuditLog] = useState(null);
   const [showAudit, setShowAudit] = useState(false);
   const [viewFile, setViewFile] = useState(null);
@@ -673,9 +701,9 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
       )}
 
       {/* Pending changes banner */}
-      {freight.pendingChanges?.length > 0 && (()=>{
+      {fullPendingChanges?.length > 0 && (()=>{
         const myCompanyId = user.activeCompanyId || user.companyId;
-        return freight.pendingChanges.map(pc => {
+        return fullPendingChanges.map(pc => {
           const isApprover = pc.approverCompanyId === myCompanyId;
           const label = pc.changeType === "useOwnFleet"
             ? `Cambio de flota propia: ${pc.fromValue?.useOwnFleet ? "Sí" : "No"} → ${pc.toValue?.useOwnFleet ? "Sí" : "No"}`
@@ -718,18 +746,28 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
       {/* Documents: gallery + upload side-by-side on desktop */}
       {(() => {
         const canUpload = freight.status !== "finished" && freight.status !== "canceled";
-        const hasDocs = freight.documents && freight.documents.length > 0;
+        const hasDocs = fullDocs && fullDocs.length > 0;
+        if (!canUpload && !hasDocs && hasFullDetail) return null;
+        // Show skeleton shimmer while loading detail (documents not yet available)
+        if (!hasFullDetail && !hasDocs) return (
+          <div style={{ background:C.w, borderRadius:12, padding:16, marginBottom:12 }}>
+            <div style={{ height:14, width:120, background:C.b2, borderRadius:6, marginBottom:10, animation:"pulse 1.5s ease-in-out infinite" }}/>
+            <div style={{ display:"flex", gap:8 }}>
+              {[1,2,3].map(i => <div key={i} style={{ width:72, height:72, background:C.b2, borderRadius:8, animation:"pulse 1.5s ease-in-out infinite" }}/>)}
+            </div>
+          </div>
+        );
         if (!canUpload && !hasDocs) return null;
         return (
           <div style={{ display:"flex", flexDirection:_isDesktop && canUpload && hasDocs?"row":"column", gap:12, marginBottom:12, alignItems:_isDesktop && canUpload && hasDocs?"stretch":undefined }}>
-            {hasDocs && <div style={{ flex:1, minWidth:0, display:"flex" }}><DocsGallery documents={freight.documents} onViewFile={setViewFile} freightId={freight.id} canDelete={canUpload} onDeleted={()=>{ if(onRefresh) onRefresh(freight.id); }} onOcr={handleOcr} ocrLoading={ocrLoading} onViewOcr={handleViewOcr}/></div>}
+            {hasDocs && <div style={{ flex:1, minWidth:0, display:"flex" }}><DocsGallery documents={fullDocs} onViewFile={setViewFile} freightId={freight.id} canDelete={canUpload} onDeleted={()=>{ if(onRefresh) onRefresh(freight.id); }} onOcr={handleOcr} ocrLoading={ocrLoading} onViewOcr={handleViewOcr}/></div>}
             {canUpload && <div style={{ flex:1, minWidth:0, display:"flex" }}><FreightFileUpload freightId={freight.id} step={freight.status==="pending_assignment"?"request":freight.status==="in_progress"||freight.status==="loaded"?"load_confirmation":"assignment"} onUploaded={()=>{ if(onRefresh) onRefresh(freight.id); }} /></div>}
           </div>
         );
       })()}
 
-      <button onClick={()=>onChat(freight.conversationId)} disabled={!freight.conversationId}
-        style={{ width:"100%", background:C.priPale, borderRadius:10, padding:12, display:"flex", alignItems:"center", gap:10, border:`1.5px solid ${C.pri}30`, cursor:freight.conversationId?"pointer":"default", fontFamily:"inherit", marginBottom:12 }}>
+      <button onClick={()=>onChat(fullConvId)} disabled={!fullConvId}
+        style={{ width:"100%", background:C.priPale, borderRadius:10, padding:12, display:"flex", alignItems:"center", gap:10, border:`1.5px solid ${C.pri}30`, cursor:fullConvId?"pointer":"default", fontFamily:"inherit", marginBottom:12 }}>
         {Ic.msg(C.pri,20)}<div style={{textAlign:"left"}}><div style={{ fontSize:13.2, fontWeight:700, color:C.pri }}>Chat del flete</div><div style={{ fontSize:11, color:C.t2 }}>Conversá con las partes involucradas</div></div>
       </button>
 

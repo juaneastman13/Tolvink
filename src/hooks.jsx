@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import {
   apiLogin, apiRegister, apiLogout, apiSwitchCompany, getSavedUser, clearAuth, setAuthFailHandler,
-  apiListFreights, apiGetFreight, apiCreateFreight, apiAssignFreight, apiRespondFreight,
+  apiListFreights, apiGetFreight, apiGetFreightSummary, apiCreateFreight, apiAssignFreight, apiRespondFreight,
   apiStartFreight, apiFinishFreight, apiCancelFreight, apiConfirmLoaded, apiConfirmFinished,
   apiAuthorizeFreight, apiUpdateFreight,
   apiAssignMultiTruck, apiAssignTruck, apiCancelAssignment, apiUpdateAssignment, apiRespondTrip, apiStartTrip, apiConfirmTripLoaded, apiConfirmTripFinished,
@@ -11,7 +11,7 @@ import {
   API_URL, apiGetSseTicket,
 } from "./api";
 import { C, track } from "./theme";
-import { useCatalogStore } from "./store";
+import { useCatalogStore, useFreightDetailStore } from "./store";
 import log from "./logger";
 
 // ======================== CONSTANTS ==================================
@@ -362,6 +362,8 @@ export function useFreights(user, isAuthInitialized) {
   const refresh = useCallback(async (id)=>{
     try {
       const u=await apiGetFreight(id); const m=mapFreight(u);
+      // Update detail cache since we already have full data
+      useFreightDetailStore.getState().setDetail(id, m);
       setFreights(p=>{
         const idx = p.findIndex(f=>f.id===id);
         const oldStatus = idx >= 0 ? p[idx].status : null;
@@ -370,6 +372,31 @@ export function useFreights(user, isAuthInitialized) {
         else { next=[m, ...p]; } // New freight — prepend to list
         freightsRef.current = next;
         // Update statusCounts locally to avoid full re-fetch
+        if (idx < 0 || oldStatus !== m.status) {
+          setStatusCounts(prev => {
+            const updated = { ...prev };
+            if (oldStatus && updated[oldStatus] > 0) updated[oldStatus]--;
+            updated[m.status] = (updated[m.status] || 0) + 1;
+            return updated;
+          });
+        }
+        return next;
+      });
+      return m;
+    }
+    catch(e) { setError(e.message); return null; }
+  },[]);
+  /** Light refresh: fetch summary (no documents/pendingChanges/conversation) — used for SSE updates */
+  const refreshLight = useCallback(async (id)=>{
+    try {
+      const u=await apiGetFreightSummary(id); const m=mapFreight(u);
+      setFreights(p=>{
+        const idx = p.findIndex(f=>f.id===id);
+        const oldStatus = idx >= 0 ? p[idx].status : null;
+        let next;
+        if (idx >= 0) { next=[...p]; next[idx]=m; }
+        else { next=[m, ...p]; }
+        freightsRef.current = next;
         if (idx < 0 || oldStatus !== m.status) {
           setStatusCounts(prev => {
             const updated = { ...prev };
@@ -430,7 +457,7 @@ export function useFreights(user, isAuthInitialized) {
   const startTrip = useCallback(async (fId, aId)=>{ try { await apiStartTrip(fId, aId); await refresh(fId); return {ok:true}; } catch(e) { return {ok:false,error:e.message}; } },[refresh]);
   const confirmTripLoaded = useCallback(async (fId, aId, loadedTons)=>{ try { await apiConfirmTripLoaded(fId, aId, loadedTons); await refresh(fId); return {ok:true}; } catch(e) { return {ok:false,error:e.message}; } },[refresh]);
   const confirmTripFinished = useCallback(async (fId, aId)=>{ try { await apiConfirmTripFinished(fId, aId); await refresh(fId); return {ok:true}; } catch(e) { return {ok:false,error:e.message}; } },[refresh]);
-  return { freights, loading, loadingMore, error, hasMore, total, statusCounts, fetchAll, loadMore, refresh, create, assign, respond, start, finish, cancel, confirmLoaded, confirmFinished, authorize, update, assignMulti, assignTruckCb, cancelAssignment, updateAssignment, respondTrip, startTrip, confirmTripLoaded, confirmTripFinished };
+  return { freights, loading, loadingMore, error, hasMore, total, statusCounts, fetchAll, loadMore, refresh, refreshLight, create, assign, respond, start, finish, cancel, confirmLoaded, confirmFinished, authorize, update, assignMulti, assignTruckCb, cancelAssignment, updateAssignment, respondTrip, startTrip, confirmTripLoaded, confirmTripFinished };
 }
 
 // ======================== MAP FREIGHT =================================
@@ -499,6 +526,9 @@ export function mapFreight(f) {
     finishedAt: f.finishedAt||null,
     documents: f.documents||[],
     conversationId: f.conversation?.id||null,
+    pendingChanges: f.pendingChanges||[],
+    // Flag: true when loaded via findOne (full detail), false when from list/summary
+    _isFullDetail: !!(f.documents || f.conversation || f.pendingChanges),
     isOverdue: (() => {
       const overdueStatuses = ["pending_assignment","assigned","accepted"];
       if (!overdueStatuses.includes(f.status)) return false;

@@ -74,6 +74,35 @@ export const useCatalogStore = create((set, get) => ({
   clearCache: () => set({ cache: {} }),
 }));
 
+// ======================== FREIGHT DETAIL CACHE =========================
+// Caches full freight detail (loaded on card click) separately from list data
+const DETAIL_TTL = 2 * 60 * 1000; // 2 minutes
+export const useFreightDetailStore = create((set, get) => ({
+  details: {}, // { [freightId]: { data, ts, loading } }
+
+  getDetail: (id) => {
+    const entry = get().details[id];
+    if (!entry || !entry.data) return null;
+    if (Date.now() - entry.ts > DETAIL_TTL) return null;
+    return entry;
+  },
+
+  setDetail: (id, data) => set((state) => ({
+    details: { ...state.details, [id]: { data, ts: Date.now(), loading: false } }
+  })),
+
+  setLoading: (id, loading) => set((state) => ({
+    details: { ...state.details, [id]: { ...(state.details[id] || { data: null, ts: 0 }), loading } }
+  })),
+
+  invalidate: (id) => set((state) => {
+    const { [id]: _, ...rest } = state.details;
+    return { details: rest };
+  }),
+
+  clearAll: () => set({ details: {} }),
+}));
+
 // ======================== OFFLINE WRITE QUEUE =========================
 // Queues failed writes when offline, replays when back online
 const DB_NAME = "tolvink-offline";
