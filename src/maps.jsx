@@ -627,8 +627,8 @@ export function FreightMap({ freightId, originLat, originLng, destLat, destLng, 
             {routeInfo.distance} · {routeInfo.duration}
           </span>
         )}
-        <button onClick={()=>goToMap(hasOrigin?originLat:(destLat),hasOrigin?originLng:(destLng),hasOrigin?originName:(destName),hasCoords?destLat:undefined,hasCoords?destLng:undefined,hasCoords?destName:undefined,freightId)} style={{ marginLeft:"auto", padding:"4px 10px", borderRadius:8, border:`1px solid ${C.b1}`, background:C.w, cursor:"pointer", display:"flex", alignItems:"center", gap:4, fontSize:11, fontWeight:600, color:C.pri, fontFamily:"inherit", WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
-          {Ic.expand(C.pri,11)} Ver mapa
+        <button onClick={()=>goToMap(hasOrigin?originLat:(destLat),hasOrigin?originLng:(destLng),hasOrigin?originName:(destName),hasCoords?destLat:undefined,hasCoords?destLng:undefined,hasCoords?destName:undefined,freightId)} style={{ marginLeft:"auto", padding:"4px 10px", borderRadius:8, border:`1px solid ${C.b1}`, background:C.w, cursor:"pointer", display:"flex", alignItems:"center", gap:4, fontSize:12, fontWeight:600, color:C.pri, fontFamily:"inherit", WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
+          {Ic.expand(C.pri,12)} Ver mapa
         </button>
       </div>
       {error ? (

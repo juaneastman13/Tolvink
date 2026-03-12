@@ -13,7 +13,7 @@ export const Av = memo(function Av({ letters, size=36, color=C.pri }) {
 });
 
 export const Bd = memo(function Bd({ children, color=C.pri, bg, small }) {
-  return <span style={{ display:"inline-flex", alignItems:"center", gap:4, padding:small?"2px 7px":"4px 10px", borderRadius:6, fontSize:small?11.6:12.1, fontWeight:600, background:bg||`${color}0D`, color, whiteSpace:"nowrap", letterSpacing:0.2 }}>{children}</span>;
+  return <span style={{ display:"inline-flex", alignItems:"center", gap:4, padding:small?"2px 8px":"4px 10px", borderRadius:6, fontSize:small?12.8:12.1, fontWeight:600, background:bg||`${color}0D`, color, whiteSpace:"nowrap", letterSpacing:0.2 }}>{children}</span>;
 });
 
 export const Btn = memo(function Btn({ children, onClick, v="pri", full, sm, icon, disabled, style={}, type="button" }) {

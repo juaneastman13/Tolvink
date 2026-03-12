@@ -411,8 +411,8 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
         return <div ref={auditRef} style={{ background:C.w, border:`1px solid ${C.b1}`, borderRadius:12, padding:16, marginBottom:12, boxShadow:C.sh, position:"relative" }}>
           <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14 }}>
             <span style={{ fontSize:12.2, fontWeight:700, color:C.t2, textTransform:"uppercase", letterSpacing:0.5 }}>Progreso</span>
-            <button onClick={toggleAudit} style={{ fontSize:12.7, fontWeight:700, color:C.t1, background:C.bg, border:`1.5px solid ${C.b1}`, borderRadius:8, padding:"5px 14px", cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:5 }}>
-              {showAudit?"Ocultar detalle":"Ver detalle"} <span style={{ fontSize:10.4, marginTop:1 }}>{showAudit?"\u25B2":"\u25BC"}</span>
+            <button onClick={toggleAudit} style={{ fontSize:14, fontWeight:700, color:C.t1, background:C.bg, border:`1.5px solid ${C.b1}`, borderRadius:8, padding:"6px 15px", cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:5 }}>
+              {showAudit?"Ocultar detalle":"Ver detalle"} <span style={{ fontSize:11.5, marginTop:1 }}>{showAudit?"\u25B2":"\u25BC"}</span>
             </button>
           </div>
           {/* Circular stepper nodes with connecting lines */}
@@ -424,12 +424,12 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
               const stepDate = getStepDate(visualAuditMap[i]);
               return <div key={i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",position:"relative",minWidth:0}}>
                 {/* Connecting line before node */}
-                {i > 0 && <div style={{position:"absolute",top:12,right:"50%",left:0,height:2,background:done||active||isCancelStep?C.pri:C.b1,zIndex:0,transform:"translateX(-4px)"}}/>}
+                {i > 0 && <div style={{position:"absolute",top:13,right:"50%",left:0,height:2,background:done||active||isCancelStep?C.pri:C.b1,zIndex:0,transform:"translateX(-4px)"}}/>}
                 {/* Connecting line after node */}
-                {i < 2 && <div style={{position:"absolute",top:12,left:"50%",right:0,height:2,background:done?(i+1<=visualIdx?C.pri:C.b1):C.b1,zIndex:0,transform:"translateX(4px)"}}/>}
+                {i < 2 && <div style={{position:"absolute",top:13,left:"50%",right:0,height:2,background:done?(i+1<=visualIdx?C.pri:C.b1):C.b1,zIndex:0,transform:"translateX(4px)"}}/>}
                 {/* Node circle */}
                 <div onClick={()=>setStepModal({idx:i,label:vs.label,color:vs.color,backendSteps:visualAuditMap[i]})}
-                  style={{width:24,height:24,borderRadius:12,background:nodeColor,display:"flex",alignItems:"center",justifyContent:"center",position:"relative",zIndex:1,cursor:"pointer",
+                  style={{width:26,height:26,borderRadius:13,background:nodeColor,display:"flex",alignItems:"center",justifyContent:"center",position:"relative",zIndex:1,cursor:"pointer",
                     boxShadow:active?`0 0 0 3px ${vs.color}25`:isCancelStep?`0 0 0 3px ${C.err}25`:"none",transition:"all 0.2s"}}>
                   {nodeIcon}
                 </div>
@@ -540,7 +540,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
                 <button disabled={truckCountLoading||displayCount>=50} onClick={(e)=>{e.stopPropagation();handleTruckCountTap(1);}} style={{ width:30, height:30, borderRadius:7, border:`1.5px solid ${C.b1}`, background:C.bg, cursor:(truckCountLoading||displayCount>=50)?"not-allowed":"pointer", display:"flex", alignItems:"center", justifyContent:"center", opacity:(truckCountLoading||displayCount>=50)?0.35:1, transition:"opacity 0.1s" }}>{Ic.plus(C.t1,15)}</button>
               </div>;})()}
             </div>
-            <span style={{ fontSize:12.7, fontWeight:600, color:C.info }}>{assignedCount}/{truckCountLocal ?? truckCount} asignados</span>
+            <span style={{ fontSize:14, fontWeight:600, color:C.info }}>{assignedCount}/{truckCountLocal ?? truckCount} asignados</span>
           </div>
           {/* Progress bar (multi-truck) */}
           {showProgressBar && <div style={{ height:6, borderRadius:3, background:C.b1, marginBottom:14, overflow:"hidden" }}>
