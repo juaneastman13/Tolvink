@@ -842,7 +842,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
                 const tc = isMultiTruck && vi === 1 ? (()=>{ const counts = vas.backendSteps.map(s => getTruckCount(s)).filter(v=>v!==null); return counts.length > 0 ? Math.max(...counts) : null; })() : null;
                 return (
                   <div key={vi} style={{ flex:1, minWidth:0 }}>
-                    <div style={{ fontSize:14.0, fontWeight:700, color:col, marginBottom:8, textAlign:"center", display:"flex", alignItems:"center", justifyContent:"center", gap:5 }}><span style={{ display:"flex" }}>{vas.icon(col,14)}</span>{vas.label}</div>
+                    <div style={{ fontSize:14.0, fontWeight:700, color:col, marginBottom:8, textAlign:"center", display:"flex", flexDirection:"column", alignItems:"center", gap:3 }}><span style={{ display:"flex" }}>{vas.icon(col,18)}</span>{vas.label}</div>
                     {tc !== null && <div style={{ textAlign:"center", fontSize:13.2, fontWeight:700, color:col, marginBottom:8, background:`${col}12`, borderRadius:5, padding:"3px 0" }}>{tc}/{freight.truckCount}</div>}
                     {logs.map(entry => {
                       const acCol = actionColors[entry.action] || C.t2;
