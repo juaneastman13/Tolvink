@@ -279,6 +279,7 @@ export async function apiGetFieldLots(fieldId) { return api(`/fields/${fieldId}/
 export async function apiCreateLot(fieldId,b) { return api(`/fields/${fieldId}/lots`,{body:b}); }
 export async function apiUpdateLot(fieldId, lotId, b) { return api(`/fields/${fieldId}/lots/${lotId}`,{method:'PATCH',body:b}); }
 export async function apiImportParseLinks(text) { return api('/fields/import-links', { body: { text } }); }
+export async function apiImportGoogleList(url) { return api('/fields/import-google-list', { body: { url } }); }
 export async function apiImportConfirm(locations) { return api('/fields/import-confirm', { body: { locations } }); }
 
 // Plant-Producer Access

@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { C, Ic } from "../theme";
 import { Btn, Bd, Field, Loader, LoadingOverlay, EmptyState } from "../components";
 import { SafeZone, LocationPicker } from "../maps";
-import { apiGetFields, apiCreateField, apiUpdateField, apiCreateLot, apiUpdateLot, apiGetFieldLots, apiImportParseLinks, apiImportConfirm } from "../api";
+import { apiGetFields, apiCreateField, apiUpdateField, apiCreateLot, apiUpdateLot, apiGetFieldLots, apiImportGoogleList, apiImportConfirm } from "../api";
 import log from "../logger";
 
 export default function FieldsScreen({ onBack, embedded, goToMap }) {
@@ -33,7 +33,10 @@ export default function FieldsScreen({ onBack, embedded, goToMap }) {
   const [importDiscarded, setImportDiscarded] = useState(0);
   const [importSelected, setImportSelected] = useState(new Set());
   const [importNames, setImportNames] = useState({}); // id→edited name
-  const [importText, setImportText] = useState(""); // pasted links text
+  const [importUrl, setImportUrl] = useState(""); // single Google Maps list URL
+  const [importWarning, setImportWarning] = useState(null);
+  const [importListName, setImportListName] = useState(null);
+  const [importSlowMsg, setImportSlowMsg] = useState(false);
 
   const load = useCallback(async () => {
     try { const f = await apiGetFields(); setFields(f || []); } catch(e) { setMsg({t:e.message||"Error al cargar campos",k:"err"}); } finally { setLoading(false); }
@@ -116,26 +119,33 @@ export default function FieldsScreen({ onBack, embedded, goToMap }) {
     } catch (e) { setMsg({ t: e.message, k: "err" }); setSaving(false); }
   };
 
-  const handleImportLinks = async () => {
-    if (!importText.trim()) { setMsg({ t: "Pegá al menos un link de Google Maps", k: "err" }); return; }
+  const handleImportList = async () => {
+    const url = importUrl.trim();
+    if (!url) { setMsg({ t: "Pegá el link de tu lista de Google Maps", k: "err" }); return; }
+    if (!url.includes("maps") && !url.includes("goo.gl")) { setMsg({ t: "Esa URL no parece ser de Google Maps", k: "err" }); return; }
     setSaving(true);
+    setImportSlowMsg(false);
+    const slowTimer = setTimeout(() => setImportSlowMsg(true), 15000);
     try {
-      const result = await apiImportParseLinks(importText);
+      const result = await apiImportGoogleList(url);
       setImportParsed(result.parsed || []);
       setImportDiscarded(result.discarded || 0);
+      setImportWarning(result.warning || null);
+      setImportListName(result.listName || null);
       const sel = new Set(result.parsed.map((_, i) => i));
       setImportSelected(sel);
       setImportNames({});
       setImportStep(2);
-    } catch (err) { setMsg({ t: err.message || "Error al procesar links", k: "err" }); }
-    finally { setSaving(false); }
+    } catch (err) { setMsg({ t: err.message || "No se pudieron extraer ubicaciones de este link. Verificá que sea un link de lista compartida de Google Maps.", k: "err" }); }
+    finally { clearTimeout(slowTimer); setImportSlowMsg(false); setSaving(false); }
   };
 
   const handleImportConfirm = async () => {
     const locations = importParsed
-      .filter((_, i) => importSelected.has(i))
-      .map((loc, i) => ({
-        name: (importNames[i] || loc.name).trim().slice(0, 255),
+      .map((loc, i) => ({ loc, origIdx: i }))
+      .filter(({ origIdx }) => importSelected.has(origIdx))
+      .map(({ loc, origIdx }) => ({
+        name: (importNames[origIdx] ?? loc.name).trim().slice(0, 255),
         address: loc.address || undefined,
         lat: loc.lat,
         lng: loc.lng,
@@ -159,7 +169,7 @@ export default function FieldsScreen({ onBack, embedded, goToMap }) {
     });
   };
 
-  const closeImport = () => { setImportStep(0); setImportParsed([]); setImportText(""); };
+  const closeImport = () => { setImportStep(0); setImportParsed([]); setImportUrl(""); setImportWarning(null); setImportListName(null); };
 
   const selectedCount = [...importSelected].length;
 
@@ -176,23 +186,35 @@ export default function FieldsScreen({ onBack, embedded, goToMap }) {
         </div>
       </div>
 
-      {/* ── Import from Google Maps links ── */}
+      {/* ── Import from Google Maps list link ── */}
       {importStep === 1 && (
         <div style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: 12, padding: 18, marginBottom: 16, boxShadow: C.sh }}>
           <div style={{ fontSize: 15.4, fontWeight: 700, marginBottom: 8 }}>{Ic.pin(C.pri, 16)} Importar desde Google Maps</div>
           <div style={{ fontSize: 12.7, color: C.t2, lineHeight: 1.5, marginBottom: 12 }}>
-            En Google Maps, abrí cada ubicación guardada y tocá <strong>"Compartir"</strong>. Pegá todos los links acá (uno por línea).
+            Abrí Google Maps → <strong>Tus sitios</strong> → Seleccioná una lista → <strong>Compartir</strong> → Copiar enlace
           </div>
-          <textarea
-            value={importText}
-            onChange={e => setImportText(e.target.value)}
-            placeholder={"Toma agua · Juan Eastman\nhttps://maps.app.goo.gl/qTNPZX2...\n\nOtro lugar\nhttps://maps.app.goo.gl/abc123..."}
-            style={{ width: "100%", minHeight: 120, padding: 12, borderRadius: 10, border: `1.5px solid ${importText ? C.bFocus : C.b2}`, background: C.bgInput, fontFamily: "inherit", fontSize: 13.2, color: C.t1, resize: "vertical", outline: "none", boxSizing: "border-box", transition: "border-color 0.15s" }}
-          />
+          <div style={{ display: "flex", gap: 8 }}>
+            <input
+              value={importUrl}
+              onChange={e => setImportUrl(e.target.value)}
+              placeholder="https://maps.app.goo.gl/..."
+              style={{ flex: 1, padding: "12px 14px", borderRadius: 10, border: `1.5px solid ${importUrl ? C.bFocus : C.b2}`, background: C.bgInput, fontFamily: "inherit", fontSize: 13.2, color: C.t1, outline: "none", boxSizing: "border-box", transition: "border-color 0.15s" }}
+            />
+            <button
+              onClick={async () => { try { const t = await navigator.clipboard.readText(); if (t) setImportUrl(t); } catch {} }}
+              style={{ padding: "8px 14px", borderRadius: 10, border: `1.5px solid ${C.b1}`, background: C.w, cursor: "pointer", fontFamily: "inherit", fontSize: 12.7, fontWeight: 600, color: C.pri, display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap", flexShrink: 0 }}
+            >
+              {Ic.copy ? Ic.copy(C.pri, 14) : "📋"} Pegar
+            </button>
+          </div>
+          {importSlowMsg && <div style={{ marginTop: 8, fontSize: 12.1, color: C.t3, fontStyle: "italic" }}>Esto puede tardar un momento…</div>}
           <div style={{ marginTop: 10 }}>
-            <Btn full v="acc" disabled={saving || !importText.trim()} onClick={handleImportLinks}>
-              {saving ? "Procesando links..." : "Procesar links"}
+            <Btn full v="acc" disabled={saving || !importUrl.trim()} onClick={handleImportList}>
+              {saving ? "Buscando ubicaciones…" : "Buscar ubicaciones"}
             </Btn>
+          </div>
+          <div style={{ marginTop: 8, fontSize: 11, color: C.t3, lineHeight: 1.5 }}>
+            Máximo ~20 ubicaciones por lista. Si tu lista tiene más, dividila en varias.
           </div>
         </div>
       )}
@@ -200,9 +222,10 @@ export default function FieldsScreen({ onBack, embedded, goToMap }) {
       {importStep === 2 && (
         <div style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: 12, padding: 18, marginBottom: 16, boxShadow: C.sh }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-            <div style={{ fontSize: 15.4, fontWeight: 700 }}>{Ic.pin(C.pri, 16)} Ubicaciones encontradas</div>
+            <div style={{ fontSize: 15.4, fontWeight: 700 }}>{Ic.pin(C.pri, 16)} {importListName || "Ubicaciones encontradas"}</div>
             <button onClick={closeImport} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }}>{Ic.cross(C.t3, 16)}</button>
           </div>
+          {importWarning && <div style={{ padding: "8px 12px", borderRadius: 8, marginBottom: 10, fontSize: 12.1, fontWeight: 500, background: "#FFF8E1", color: "#F57F17", border: "1px solid #FFE082" }}>{importWarning}</div>}
           <div style={{ display: "flex", gap: 10, marginBottom: 12, fontSize: 12.7, color: C.t2 }}>
             <span style={{ fontWeight: 600, color: C.ok }}>{importParsed.length} encontradas</span>
             {importDiscarded > 0 && <span style={{ color: C.t3 }}>{importDiscarded} descartadas (sin coordenadas)</span>}
