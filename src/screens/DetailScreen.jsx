@@ -6,8 +6,8 @@ import { SafeZone } from "../maps";
 const FreightMap = lazy(() => import("../maps").then(m => ({ default: m.FreightMap })));
 import log from "../logger";
 import { DocsGallery, FreightFileUpload, OcrResultModal, UploadOverlay } from "../uploads";
-import { apiGetAuditLog, apiGetFreight, apiSendTracking, apiApprovePendingChange, apiRejectPendingChange, apiOcrAnalyze, apiSaveOcrData, apiUpdateFreight } from "../api";
-import { useIsDesktop, mapFreight } from "../hooks";
+import { apiGetAuditLog, apiGetFreight, apiGetFreightDetailExtra, apiSendTracking, apiApprovePendingChange, apiRejectPendingChange, apiOcrAnalyze, apiSaveOcrData, apiUpdateFreight } from "../api";
+import { useIsDesktop, mapFreight, originDisplay, destDisplay } from "../hooks";
 import { useUIStore, useFreightDetailStore } from "../store";
 // PDF report loaded lazily to avoid bundle bloat
 const loadPdfReport = () => import("../utils/pdf-report");
@@ -21,16 +21,42 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
   useEffect(() => {
     if (!freight?.id) return;
     const cached = useFreightDetailStore.getState().getDetail(freight.id);
-    if (cached?.data) return;
+    // Only skip fetch if we already have FULL detail (with documents/conversation/pendingChanges)
+    if (cached?.data?._isFullDetail) return;
+    const hasListData = !!(cached?.data); // Pre-populated from list fetch
     useFreightDetailStore.getState().setLoading(freight.id, true);
     let cancelled = false;
-    apiGetFreight(freight.id).then(raw => {
-      if (cancelled) return;
-      const mapped = mapFreight(raw);
-      useFreightDetailStore.getState().setDetail(freight.id, mapped);
-    }).catch(() => {
-      if (!cancelled) useFreightDetailStore.getState().setLoading(freight.id, false);
-    });
+    if (hasListData) {
+      // Fast path: only fetch the delta (documents, conversation, pendingChanges)
+      apiGetFreightDetailExtra(freight.id).then(extra => {
+        if (cancelled) return;
+        const prev = useFreightDetailStore.getState().details[freight.id]?.data || freight;
+        useFreightDetailStore.getState().setDetail(freight.id, {
+          ...prev,
+          documents: extra.documents || [],
+          conversationId: extra.conversation?.id || null,
+          pendingChanges: extra.pendingChanges || [],
+          _isFullDetail: true,
+        });
+      }).catch(() => {
+        // Fallback: fetch full detail if delta endpoint not available
+        if (cancelled) return;
+        apiGetFreight(freight.id).then(raw => {
+          if (cancelled) return;
+          useFreightDetailStore.getState().setDetail(freight.id, mapFreight(raw));
+        }).catch(() => {
+          if (!cancelled) useFreightDetailStore.getState().setLoading(freight.id, false);
+        });
+      });
+    } else {
+      // Cold path: no cached data at all (direct URL, deep link) — fetch everything
+      apiGetFreight(freight.id).then(raw => {
+        if (cancelled) return;
+        useFreightDetailStore.getState().setDetail(freight.id, mapFreight(raw));
+      }).catch(() => {
+        if (!cancelled) useFreightDetailStore.getState().setLoading(freight.id, false);
+      });
+    }
     return () => { cancelled = true; };
   }, [freight?.id]);
 
@@ -668,8 +694,8 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
             ].filter(Boolean);
             const ruta = [
               [Ic.user(C.pri,15),"Empresa",freight.originCompanyName||freight.originName],
-              [Ic.grain(C.ok,15),"Campo",[freight.fieldName,freight.originName].filter(Boolean).join(" / ")||"—"],
-              [Ic.plant(C.t2,15),"Destino",freight.destName],
+              [Ic.grain(C.ok,15),"Campo",originDisplay(freight)||"—"],
+              [Ic.plant(C.t2,15),"Destino",destDisplay(freight)],
               [Ic.cal(C.t2,15),"Fecha carga",formatFreightDate(freight.loadDate)],
               [Ic.clk(C.t2,15),"Hora carga",freight.loadTime],
               [Ic.user(C.t2,15),"Solicitado por",freight.requestedByName],
@@ -682,7 +708,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
         </div>
         <div style={{ flex:1 }}>
           <Suspense fallback={<div style={{height:300,display:"flex",alignItems:"center",justifyContent:"center",color:C.t3,fontSize:13}}>Cargando mapa...</div>}>
-            <FreightMap freightId={freight.id} originLat={freight.originLat} originLng={freight.originLng} destLat={freight.destLat} destLng={freight.destLng} originName={[freight.originCompanyName, [freight.fieldName,freight.originName].filter(Boolean).join("/")].filter(Boolean).join(" — ")} destName={freight.destName} status={freight.status} isDriver={user.userType==="transporter"||(user.userType==="producer"&&freight.isOwnFleet)}/>
+            <FreightMap freightId={freight.id} originLat={freight.originLat} originLng={freight.originLng} destLat={freight.destLat} destLng={freight.destLng} originName={[freight.originCompanyName, originDisplay(freight)].filter(Boolean).join(" — ")} destName={destDisplay(freight)} status={freight.status} isDriver={user.userType==="transporter"||(user.userType==="producer"&&freight.isOwnFleet)}/>
           </Suspense>
         </div>
       </div>

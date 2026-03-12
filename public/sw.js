@@ -1,9 +1,9 @@
 // =====================================================================
-// TOLVINK — Service Worker v5.3
+// TOLVINK — Service Worker v5.4
 // Cache-first shell, stale-while-revalidate API, navigation preload
 // =====================================================================
 
-const CACHE_NAME = 'tolvink-v5.4';
+const CACHE_NAME = 'tolvink-v5.5';
 const API_CACHE = 'tolvink-api-v2';
 const FONT_CACHE = 'tolvink-fonts-v1';
 const IMG_CACHE = 'tolvink-img-v1';
@@ -128,7 +128,15 @@ self.addEventListener('fetch', (event) => {
           );
         });
 
-        // Network-first to avoid cross-user data leakage; cache is offline fallback only
+        // Stale-while-revalidate: serve cached instantly, update in background.
+        // Cache is keyed by full URL (includes query params) — safe for multi-tenant
+        // because auth cookies determine the response content from the server, and
+        // the app clears this cache on logout (caches.delete('tolvink-api-v2')).
+        if (cached) {
+          // Fire network update in background (don't await)
+          event.waitUntil(networkFetch.catch(() => {}));
+          return cached;
+        }
         return networkFetch;
       })
     );

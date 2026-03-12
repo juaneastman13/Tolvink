@@ -214,6 +214,7 @@ export async function apiListFreights(q={}) { const p=new URLSearchParams(); if(
 export async function apiSearchFreights(search, page=1) { return apiListFreights({ search, limit: 25, page }); }
 export async function apiGetFreight(id) { return api(`/freights/${id}`); }
 export async function apiGetFreightSummary(id) { return api(`/freights/${id}/summary`); }
+export async function apiGetFreightDetailExtra(id) { return api(`/freights/${id}/detail-extra`); }
 export async function apiCreateFreight(b) { return api('/freights',{body:b}); }
 export async function apiAssignFreight(id,b) { return api(`/freights/${id}/assign`,{body:b}); }
 export async function apiRespondFreight(id,b) { return api(`/freights/${id}/respond`,{body:b}); }
