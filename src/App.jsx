@@ -27,6 +27,7 @@ const CalendarScreen = lazy(() => import("./screens/CalendarScreen"));
 const MenuScreen = lazy(() => import("./screens/MenuScreen"));
 const TrucksScreen = lazy(() => import("./screens/TrucksScreen"));
 const FieldsScreen = lazy(() => import("./screens/FieldsScreen"));
+const LocationsScreen = lazy(() => import("./screens/LocationsScreen"));
 const AdminScreen = lazy(() => import("./screens/AdminScreen"));
 const MyDataScreen = lazy(() => import("./screens/MyDataScreen"));
 const ReportsScreen = lazy(() => import("./screens/ReportsScreen"));
@@ -56,8 +57,8 @@ const EditTripModal = lazy(() => import("./modals/EditTripModal"));
 const SCREEN_TO_PATH = {
   home: "/", list: "/list", detail: "/freight", new: "/new", edit: "/edit",
   calendar: "/calendar", menu: "/menu", trucks: "/trucks", fields: "/fields",
-  admin: "/admin", mydata: "/mydata", reports: "/reports", chats: "/chats",
-  notifs: "/notifications",
+  locations: "/locations", admin: "/admin", mydata: "/mydata", reports: "/reports",
+  chats: "/chats", notifs: "/notifications",
 };
 const PATH_TO_SCREEN = {};
 Object.entries(SCREEN_TO_PATH).forEach(([s, p]) => { PATH_TO_SCREEN[p] = s; });
@@ -776,6 +777,7 @@ export default function Tolvink() {
         {screen==="menu" && <MenuScreen user={auth.user} perms={perms} onLogout={auth.logout} onNav={nav} isDesktop={isDesktop} onSwitchCompany={async(id)=>{return await auth.switchCompany(id);}} onRefresh={()=>{fh.fetchAll();catalog.refresh();}} simpleMode={auth.simpleMode} onToggleSimple={auth.toggleSimpleMode}/>}
         {screen==="trucks" && <TrucksScreen user={auth.user} onBack={()=>{catalog.refresh();navigate("/menu");}}/>}
         {screen==="fields" && <FieldsScreen onBack={()=>{catalog.refresh();navigate("/menu");}} goToMap={goToMap}/>}
+        {screen==="locations" && <LocationsScreen onBack={()=>{catalog.refresh();navigate("/menu");}}/>}
         {screen==="admin" && (auth.user?.role==="admin"||auth.user?.role==="platform_admin") && <AdminScreen user={auth.user} onBack={()=>navigate("/menu")}/>}
         {screen==="mydata" && <MyDataScreen user={auth.user} onBack={()=>navigate("/menu")} onUserUpdate={auth.patchUser}/>}
         {screen==="reports" && <ReportsScreen onBack={()=>navigate(isDesktop?"/reports":"/menu")} freights={viewFreights} isDesktop={isDesktop}/>}
