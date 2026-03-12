@@ -732,9 +732,9 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
 
       {/* ======================== CONFIRM MODAL ======================== */}
       {showConfirmModal && (
-        <div role="dialog" aria-modal="true" aria-label="Confirmar flete" style={{ position:"fixed", inset:0, zIndex:1100, display:"flex", alignItems:_isDesktop?"center":"flex-end", justifyContent:"center" }}>
+        <div role="dialog" aria-modal="true" aria-label="Confirmar flete" style={{ position:"fixed", inset:0, zIndex:9999, display:"flex", alignItems:_isDesktop?"center":"stretch", justifyContent:"center" }}>
           <div onClick={()=>setShowConfirmModal(false)} style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.45)" }}/>
-          <div style={{ position:"relative", background:C.bg, borderRadius:_isDesktop?16:"16px 16px 0 0", width:"100%", maxWidth:_isDesktop?720:"none", maxHeight:_isDesktop?"calc(100vh - 48px)":"85vh", overflow:"auto", animation:"slideUp 0.25s ease", boxShadow:"0 -4px 32px rgba(0,0,0,0.18)" }}>
+          <div style={{ position:"relative", background:C.bg, borderRadius:_isDesktop?16:0, width:"100%", maxWidth:_isDesktop?720:"none", maxHeight:_isDesktop?"calc(100vh - 48px)":"none", height:_isDesktop?"auto":"100%", overflow:"auto", animation:"slideUp 0.25s ease", boxShadow:_isDesktop?"0 -4px 32px rgba(0,0,0,0.18)":"none" }}>
             {/* Header */}
             <div style={{ position:"sticky", top:0, zIndex:2, background:C.bg, padding:"16px 20px 12px", borderBottom:`1px solid ${C.b2}`, borderRadius:_isDesktop?"16px 16px 0 0":"16px 16px 0 0", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
               <span style={{ fontSize:18, fontWeight:800, color:C.t1 }}>Confirmar Flete</span>
