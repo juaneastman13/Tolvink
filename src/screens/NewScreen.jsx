@@ -167,7 +167,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
   const secRefs = { product:useRef(null), quantity:useRef(null), origin:useRef(null), ownfleet:useRef(null), destination:useRef(null), schedule:useRef(null), extras:useRef(null), submit:useRef(null) };
   const SEC_ORDER = ["product","quantity","origin","destination","schedule"];
   const [activeSection, setActiveSection] = useState(()=>{
-    const g=!!form.grain&&(form.grain!=="Otros"||!!form.productTypeOther.trim()), q=!!form.tons&&parseFloat(form.tons)>0, o=originMode==="field"?(!!form.fieldId&&!!form.lotId):(!!customOrigin.lat), d=destMode==="plant"?!!form.plantId:!!customDest.name?.trim(), s=!!form.loadDate&&/^\d{2}:\d{2}$/.test(form.loadTime);
+    const g=!!form.grain&&(form.grain!=="Otros"||!!form.productTypeOther.trim()), q=!!form.tons&&parseFloat(form.tons)>0, o=originMode==="field"?(!!form.fieldId&&!!form.lotId):(!!customOrigin.lat), d=destMode==="plant"?!!form.plantId:!!customDest.lat, s=!!form.loadDate&&/^\d{2}:\d{2}$/.test(form.loadTime);
     if(!g)return"product";if(!q)return"quantity";if(!o)return"origin";if(!d)return"destination";return"schedule";
   });
   const [showIncomplete, setShowIncomplete] = useState(false);
@@ -179,8 +179,8 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
   const secComplete = useMemo(()=>({
     product: !!form.grain && (form.grain!=="Otros" || !!form.productTypeOther.trim()),
     quantity: !!form.tons && parseFloat(form.tons) > 0,
-    origin: originMode==="field" ? (!!form.fieldId && !!form.lotId) : (!!customOrigin.lat && !!customOrigin.name?.trim()),
-    destination: destMode==="plant" ? (!!form.plantId && (!_hasBranches || !!form.branchId)) : (!!customDest.name?.trim() && (confirmMode==="none" || !!confirmPlantId)),
+    origin: originMode==="field" ? (!!form.fieldId && !!form.lotId) : (!!customOrigin.lat),
+    destination: destMode==="plant" ? (!!form.plantId && (!_hasBranches || !!form.branchId)) : (!!customDest.lat && (confirmMode==="none" || !!confirmPlantId)),
     schedule: !!form.loadDate && /^\d{2}:\d{2}$/.test(form.loadTime),
   }),[form, originMode, customOrigin, destMode, customDest, confirmMode, confirmPlantId, _hasBranches]);
 
@@ -296,7 +296,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
     // Destination validation
     if(destMode==="plant" && !form.plantId) { e.plantId="Seleccioná una planta"; }
     if(destMode==="plant" && form.plantId && branchOpts.length > 0 && !form.branchId) { e.branchId="Seleccioná una sucursal"; }
-    if(destMode==="custom" && !customDest.name?.trim()) { e.customDestName="Nombre de destino obligatorio"; }
+    if(destMode==="custom" && !customDest.lat) { e.customDestLoc="Indicá una ubicación en el mapa"; }
     // Own fleet validation: if chose "own fleet", truck is required
     if(showTruckSelect && form.fleetChoice==="own" && !form.truckId) { e.truckId="Seleccioná un camión de tu flota"; }
     setErrs(e);
@@ -319,14 +319,14 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
     const payload = {...form, photos: photos.map(p=>p.preview), useOwnFleet: showTruckSelect && form.fleetChoice ? (form.fleetChoice==="own") : undefined,
       overrideOriginLat: originMode==="map" ? customOrigin.lat : (overrideOrigin?.lat || undefined),
       overrideOriginLng: originMode==="map" ? customOrigin.lng : (overrideOrigin?.lng || undefined),
-      customOriginName: originMode==="map" ? (customOrigin.name || "Origen personalizado") : undefined,
+      customOriginName: originMode==="map" ? (customOrigin.name?.trim() || "Personalizado") : undefined,
       overrideDestLat: overrideDest?.lat || undefined,
       overrideDestLng: overrideDest?.lng || undefined,
     };
     if(destMode==="custom") {
       payload.plantId = undefined;
       payload.branchId = undefined;
-      payload.customDestName = customDest.name;
+      payload.customDestName = customDest.name?.trim() || "Personalizado";
       payload.customDestLat = customDest.lat || undefined;
       payload.customDestLng = customDest.lng || undefined;
       if(confirmMode==="plant" && confirmPlantId) {
@@ -366,8 +366,8 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
   const secSummary = {
     product: form.grain ? (form.grain==="Otros" ? `Otros: ${form.productTypeOther}` : form.grain) : "",
     quantity: form.tons ? `${form.tons} ${form.unit}` : "",
-    origin: originMode==="field" ? ((fieldOpts.find(f=>f.value===form.fieldId)?.label||"")+(selectedLot?` → ${selectedLot.name}`:"")) : (customOrigin.lat ? (customOrigin.name||"Ubicación en mapa") : ""),
-    destination: destMode==="plant" ? (destDisplayName||"") : (customDest.name?.trim() ? (customDest.name+(confirmMode==="plant"&&confirmPlantId?` · Confirma: ${(plants||[]).find(p=>p.id===confirmPlantId)?.name||""}`:"")) : ""),
+    origin: originMode==="field" ? ((fieldOpts.find(f=>f.value===form.fieldId)?.label||"")+(selectedLot?` → ${selectedLot.name}`:"")) : (customOrigin.lat ? (customOrigin.name?.trim()||"Personalizado") : ""),
+    destination: destMode==="plant" ? (destDisplayName||"") : (customDest.lat ? ((customDest.name?.trim()||"Personalizado")+(confirmMode==="plant"&&confirmPlantId?` · Confirma: ${(plants||[]).find(p=>p.id===confirmPlantId)?.name||""}`:"")) : ""),
     schedule: form.loadDate&&form.loadTime ? `${form.loadDate} a las ${form.loadTime}` : "",
   };
 
@@ -449,7 +449,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
                 {selectedLot && selectedLot.lat && <div style={{ display:"flex", alignItems:"center", gap:6, padding:"6px 10px", background:C.priPale, borderRadius:8, marginTop:6 }}>{Ic.chk(C.pri,14)}<span style={{fontSize:11.6,color:C.pri,fontWeight:500}}>{selectedLot.lat}, {selectedLot.lng}</span></div>}
               </div>
             </>) : (<>
-              <Field label="Nombre del origen" value={customOrigin.name} onChange={v=>setCustomOrigin(p=>({...p,name:v}))} placeholder="Ej: Chacra Los Álamos"/>
+              <Field label="Nombre del origen (opcional)" value={customOrigin.name} onChange={v=>setCustomOrigin(p=>({...p,name:v}))} placeholder="Ej: Chacra Los Álamos (opcional)"/>
               <div style={{ marginTop:10 }}>
                 <Suspense fallback={<div style={{padding:20,textAlign:"center",color:C.t3}}>Cargando mapa...</div>}>
                   <LocationPicker label="Ubicación en mapa" value={customOrigin.lat?{lat:customOrigin.lat,lng:customOrigin.lng}:null} onChange={loc=>setCustomOrigin(p=>({...p,lat:loc?.lat||null,lng:loc?.lng||null,name:p.name||loc?.address||""}))} confirmLabel="Confirmar origen" onConfirm={()=>{if(isEditing)confirmEdit();else advanceToNext();}}/>
@@ -489,13 +489,13 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
               )}
             </>)}
             {destMode==="custom" && (<>
-              <Field label="Nombre del destino" value={customDest.name} onChange={v=>setCustomDest(p=>({...p,name:v}))} placeholder="Ej: Acopio Central, Puerto Rosario..."/>
-              {touched&&<FieldError error={errs.customDestName}/>}
+              <Field label="Nombre del destino (opcional)" value={customDest.name} onChange={v=>setCustomDest(p=>({...p,name:v}))} placeholder="Ej: Acopio Central, Puerto Rosario... (opcional)"/>
               <div style={{ marginTop:8 }}>
                 <Suspense fallback={<div style={{padding:20,textAlign:"center",color:C.t3}}>Cargando mapa...</div>}>
                   <LocationPicker label="Ubicación del destino" value={customDest.lat?{lat:customDest.lat,lng:customDest.lng}:null} onChange={loc=>setCustomDest(p=>({...p,lat:loc.lat,lng:loc.lng}))} confirmLabel="Confirmar destino" onConfirm={()=>{if(isEditing)confirmEdit();else advanceToNext();}}/>
                 </Suspense>
               </div>
+              {touched&&errs.customDestLoc&&<div style={{padding:"6px 10px",borderRadius:8,marginTop:6,fontSize:12.1,fontWeight:600,color:C.err,background:C.errPale}}>{errs.customDestLoc}</div>}
               <div style={{marginTop:14}}>
                 <label style={{fontSize:11.6,fontWeight:600,color:C.t2,marginBottom:6,display:"flex",alignItems:"center",gap:4,textTransform:"uppercase",letterSpacing:0.6}}>{Ic.chk(C.t2,14)} ¿Quién debe confirmar el viaje?</label>
                 <div style={{display:"flex",gap:6,marginBottom:confirmMode==="plant"?10:0}}>
@@ -641,7 +641,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
               )}
             </div>
           </>) : (<>
-            <Field label="Nombre del origen" value={customOrigin.name} onChange={v=>setCustomOrigin(p=>({...p,name:v}))} placeholder="Ej: Chacra Los Álamos"/>
+            <Field label="Nombre del origen (opcional)" value={customOrigin.name} onChange={v=>setCustomOrigin(p=>({...p,name:v}))} placeholder="Ej: Chacra Los Álamos (opcional)"/>
             <div style={{ marginTop:10 }}>
               <SafeZone><LocationPicker label="Ubicación en mapa" value={customOrigin.lat?{lat:customOrigin.lat,lng:customOrigin.lng}:null} onChange={loc=>setCustomOrigin(p=>({...p,lat:loc?.lat||null,lng:loc?.lng||null,name:p.name||loc?.address||""}))} confirmLabel="Confirmar origen" onConfirm={()=>{if(isEditing)confirmEdit();else advanceToNext();}}/></SafeZone>
             </div>
@@ -689,11 +689,11 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
           )}
           {destMode==="custom" && (
             <>
-              <Field label="Nombre del destino" value={customDest.name} onChange={v=>setCustomDest(p=>({...p,name:v}))} placeholder="Ej: Acopio Central, Puerto Rosario..."/>
-              {touched&&<FieldError error={errs.customDestName}/>}
+              <Field label="Nombre del destino (opcional)" value={customDest.name} onChange={v=>setCustomDest(p=>({...p,name:v}))} placeholder="Ej: Acopio Central, Puerto Rosario... (opcional)"/>
               <div style={{ marginTop:8 }}>
                 <LocationPicker label="Ubicación del destino" value={customDest.lat?{lat:customDest.lat,lng:customDest.lng}:null} onChange={loc=>setCustomDest(p=>({...p,lat:loc.lat,lng:loc.lng}))} confirmLabel="Confirmar destino" onConfirm={()=>{if(isEditing)confirmEdit();else advanceToNext();}}/>
               </div>
+              {touched&&errs.customDestLoc&&<div style={{padding:"6px 10px",borderRadius:8,marginTop:6,fontSize:12.1,fontWeight:600,color:C.err,background:C.errPale}}>{errs.customDestLoc}</div>}
               <div style={{marginTop:14}}>
                 <label style={{fontSize:11.6,fontWeight:600,color:C.t2,marginBottom:6,display:"flex",alignItems:"center",gap:4,textTransform:"uppercase",letterSpacing:0.6}}>{Ic.chk(C.t2,14)} ¿Quién debe confirmar el viaje?</label>
                 <div style={{display:"flex",gap:6,marginBottom:confirmMode==="plant"?10:0}}>
@@ -727,7 +727,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
                   <span style={{ fontSize:11.6, fontWeight:700, color:C.t2, textTransform:"uppercase", letterSpacing:0.5 }}>Vista previa del recorrido</span>
                 </div>
                 {finalOrigin && finalDest ? (
-                  <FreightMap freightId={null} originLat={finalOrigin.lat} originLng={finalOrigin.lng} destLat={finalDest.lat} destLng={finalDest.lng} originName={fieldLots.find(l=>l.id===form.lotId)?.name||"Origen"} destName={destDisplayName||"Destino"} status="preview" isDriver={false}/>
+                  <FreightMap freightId={null} originLat={finalOrigin.lat} originLng={finalOrigin.lng} destLat={finalDest.lat} destLng={finalDest.lng} originName={originMode==="map"?(customOrigin.name?.trim()||"Personalizado"):(fieldLots.find(l=>l.id===form.lotId)?.name||"Origen")} destName={destMode==="custom"?(customDest.name?.trim()||"Personalizado"):(destDisplayName||"Destino")} status="preview" isDriver={false}/>
                 ) : (
                   <div style={{ padding:"20px 14px", textAlign:"center", fontSize:13.2, color:C.t3 }}>
                     Seleccioná {!finalOrigin?"origen (lote)":""}{!finalOrigin&&!finalDest?" y ":""}{!finalDest?"destino":""} para ver la ruta
@@ -759,7 +759,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
                 <span style={{ fontSize:11.6, fontWeight:700, color:C.t2, textTransform:"uppercase", letterSpacing:0.5 }}>Vista previa del recorrido</span>
               </div>
               {finalOrigin && finalDest ? (
-                <FreightMap freightId={null} originLat={finalOrigin.lat} originLng={finalOrigin.lng} destLat={finalDest.lat} destLng={finalDest.lng} originName={fieldLots.find(l=>l.id===form.lotId)?.name||"Origen"} destName={destDisplayName||"Destino"} status="preview" isDriver={false}/>
+                <FreightMap freightId={null} originLat={finalOrigin.lat} originLng={finalOrigin.lng} destLat={finalDest.lat} destLng={finalDest.lng} originName={originMode==="map"?(customOrigin.name?.trim()||"Personalizado"):(fieldLots.find(l=>l.id===form.lotId)?.name||"Origen")} destName={destMode==="custom"?(customDest.name?.trim()||"Personalizado"):(destDisplayName||"Destino")} status="preview" isDriver={false}/>
               ) : (
                 <div style={{ padding:"20px 14px", textAlign:"center", fontSize:13.2, color:C.t3 }}>
                   Seleccioná {!finalOrigin?"origen (lote)":""}{!finalOrigin&&!finalDest?" y ":""}{!finalDest?"destino":""} para ver la ruta
