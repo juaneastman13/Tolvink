@@ -13,17 +13,15 @@ import { useUIStore } from "../store";
 
 // ======================== SUMMARY CARD ==============================
 
-function SummaryCard({ secSummary, secComplete, form, showTruckSelect, isDesktop, compact, onEdit }) {
+function SummaryCard({ secSummary, secComplete, form, showTruckSelect, trucks, isDesktop, compact, onEdit }) {
+  const ICONS = { product: Ic.grain(C.pri,14), quantity: Ic.grain(C.t2,14), origin: Ic.pin(C.ok,14), ownfleet: Ic.truck(C.acc,14), destination: Ic.plant(C.sec,14), schedule: Ic.cal(C.pri,14) };
   const rows = [];
-  if (secSummary.product) rows.push({ label: "Producto", value: secSummary.product, section: "product" });
-  if (secSummary.quantity) rows.push({ label: "Cantidad", value: secSummary.quantity, section: "quantity" });
-  if (secSummary.origin) rows.push({ label: "Origen", value: secSummary.origin, section: "origin" });
-  if (showTruckSelect && form.fleetChoice) rows.push({ label: "Transporte", value: form.fleetChoice === "own" ? "Flota propia" : "Delegar a planta", section: "ownfleet" });
-  if (secSummary.destination) rows.push({ label: "Destino", value: secSummary.destination, section: "destination" });
-  if (secSummary.schedule) rows.push({ label: "Fecha/hora", value: secSummary.schedule, section: "schedule" });
-  if (form.notes?.trim()) rows.push({ label: "Notas", value: form.notes.trim().length > 60 ? form.notes.trim().slice(0, 57) + "..." : form.notes.trim(), section: "extras" });
-  const tc = parseInt(form.truckCount) || (parseFloat(form.tons) > 0 ? Math.ceil(parseFloat(form.tons) / 30) : 0);
-  if (tc > 1) rows.push({ label: "Camiones", value: `${tc} camiones`, section: "quantity" });
+  if (secSummary.product) rows.push({ label: "Producto", value: secSummary.product, section: "product", icon: ICONS.product });
+  if (secSummary.quantity) rows.push({ label: "Cantidad", value: secSummary.quantity, section: "quantity", icon: ICONS.quantity });
+  if (secSummary.origin) rows.push({ label: "Origen", value: secSummary.origin, section: "origin", icon: ICONS.origin });
+  if (showTruckSelect && form.fleetChoice) rows.push({ label: "Transporte", value: form.fleetChoice === "own" ? `Flota propia${(trucks||[]).find(t=>t.id===form.truckId)?.plate?` · ${(trucks||[]).find(t=>t.id===form.truckId).plate}`:""}`:"Delegar a planta", section: "ownfleet", icon: ICONS.ownfleet });
+  if (secSummary.destination) rows.push({ label: "Destino", value: secSummary.destination, section: "destination", icon: ICONS.destination });
+  if (secSummary.schedule) rows.push({ label: "Fecha/hora", value: secSummary.schedule, section: "schedule", icon: ICONS.schedule });
   const secKeys = ["product", "quantity", "origin", "destination", "schedule"];
   const filled = secKeys.filter(k => secComplete[k]).length;
   const total = secKeys.length;
@@ -32,8 +30,8 @@ function SummaryCard({ secSummary, secComplete, form, showTruckSelect, isDesktop
   if (compact && rows.length === 0) return null;
 
   return (
-    <div style={{ background:C.w, border:`1px solid ${C.b2}`, borderRadius:compact?10:14, boxShadow:C.sh, padding:compact?"12px 14px":"18px 16px", marginBottom:compact?12:0, ...(isDesktop ? {} : compact ? {} : { marginTop:16 }) }}>
-      <div style={{ fontSize:compact?13.2:14.3, fontWeight:700, color:C.t1, marginBottom:rows.length?(compact?8:14):10 }}>Resumen del flete</div>
+    <div style={{ background:C.w, border:`1px solid ${C.b2}`, borderRadius:compact?10:14, boxShadow:C.sh, padding:compact?"12px 14px":"16px", marginBottom:compact?12:0, ...(isDesktop ? {} : compact ? {} : { marginTop:16 }) }}>
+      <div style={{ fontSize:compact?13.2:14.3, fontWeight:700, color:C.t1, marginBottom:rows.length?(compact?8:10):10 }}>Resumen del flete</div>
       {rows.length === 0 ? (
         <div style={{ textAlign:"center", padding:"12px 0", color:C.t3, fontSize:13.2 }}>
           <div style={{ marginBottom:8, opacity:0.5 }}>{Ic.doc(C.t3,24)}</div>
@@ -49,17 +47,20 @@ function SummaryCard({ secSummary, secComplete, form, showTruckSelect, isDesktop
           ))}
         </div>
       ) : (
-        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"6px 14px" }}>
+        <div style={{ display:"flex", flexDirection:"column", gap:0 }}>
           {rows.map((r, i) => (
-            <div key={i} onClick={() => onEdit?.(r.section)} style={{ cursor:onEdit?"pointer":"default", padding:"6px 8px", borderRadius:8, transition:"background 0.15s" }} onMouseEnter={e=>{if(onEdit)e.currentTarget.style.background=C.bgCardAlt}} onMouseLeave={e=>{e.currentTarget.style.background="transparent"}}>
-              <div style={{ fontSize:11, fontWeight:600, color:C.t3, textTransform:"uppercase", letterSpacing:0.4 }}>{r.label}</div>
-              <div style={{ fontSize:13.2, fontWeight:500, color:C.t1, marginTop:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{r.value}</div>
-              {onEdit && <div style={{ fontSize:10, fontWeight:700, color:"#fff", background:C.pri, padding:"2px 8px", borderRadius:4, marginTop:3, display:"inline-block" }}>Editar</div>}
+            <div key={i} style={{ display:"flex", alignItems:"center", gap:10, padding:"9px 0", borderBottom:`1px solid ${C.b1}` }}>
+              <div style={{ display:"flex", alignItems:"center", justifyContent:"center", width:28, height:28, borderRadius:8, background:C.priPale, flexShrink:0 }}>{r.icon}</div>
+              <div style={{ flex:1, minWidth:0 }}>
+                <div style={{ fontSize:11, fontWeight:600, color:C.t3, textTransform:"uppercase", letterSpacing:0.4 }}>{r.label}</div>
+                <div style={{ fontSize:13, fontWeight:500, color:C.t1, marginTop:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{r.value}</div>
+              </div>
+              {onEdit && <button onClick={(e)=>{e.stopPropagation();onEdit(r.section);}} style={{ background:"none", border:"none", cursor:"pointer", padding:"4px 8px", fontSize:12, fontWeight:700, color:C.pri, fontFamily:"inherit", flexShrink:0 }}>Editar</button>}
             </div>
           ))}
         </div>
       )}
-      <div style={{ marginTop:compact?8:14, paddingTop:compact?8:12, borderTop:`1px solid ${C.b1}` }}>
+      <div style={{ marginTop:compact?8:12, paddingTop:compact?8:10, borderTop:`1px solid ${C.b1}` }}>
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:compact?4:6 }}>
           <span style={{ fontSize:11.6, fontWeight:600, color:C.t3 }}>{filled} de {total} campos</span>
           {filled === total && <span style={{ fontSize:11, fontWeight:700, color:C.ok }}>Completo</span>}
@@ -165,7 +166,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
   const u = f => setForm(p=>({...p,...f}));
 
   // Section refs for collapsible sections
-  const secRefs = { product:useRef(null), quantity:useRef(null), origin:useRef(null), ownfleet:useRef(null), destination:useRef(null), schedule:useRef(null), extras:useRef(null), submit:useRef(null) };
+  const secRefs = { product:useRef(null), quantity:useRef(null), origin:useRef(null), ownfleet:useRef(null), destination:useRef(null), schedule:useRef(null), submit:useRef(null) };
   const SEC_ORDER = ["product","quantity","origin","destination","schedule"];
   const [activeSection, setActiveSection] = useState(()=>{
     const g=!!form.grain&&(form.grain!=="Otros"||!!form.productTypeOther.trim()), q=!!form.tons&&parseFloat(form.tons)>0, o=originMode==="field"?(!!form.fieldId&&!!form.lotId):(!!customOrigin.lat), d=destMode==="plant"?!!form.plantId:!!customDest.lat, s=!!form.loadDate&&/^\d{2}:\d{2}$/.test(form.loadTime);
@@ -188,6 +189,13 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
   // Next section to fill (highlight it when collapsed)
   const nextToFill = SEC_ORDER.find(s => !secComplete[s]);
   const allComplete = !nextToFill;
+  const prevAllComplete = useRef(false);
+  useEffect(() => {
+    if (_isDesktop && allComplete && !prevAllComplete.current && !editingFrom) {
+      openConfirmModal();
+    }
+    prevAllComplete.current = allComplete;
+  }, [allComplete]);
 
   const advanceToNext = () => {
     const flow = ["product", "quantity", "origin"];
@@ -401,11 +409,11 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
       <div style={{ fontSize:13.2, color:C.t2, marginBottom:10 }}>Solicitando como: <span style={{fontWeight:600,color:C.t1}}>{user.name}</span></div>
 
       <div style={{ display:"flex", flexDirection:_isDesktop?"row":"column", gap:_isDesktop?24:0, maxWidth:_isDesktop?1100:"none", margin:"0 auto" }}>
-      {/* Mobile: compact summary at top (not shown on extras step since full summary is inline) */}
-      {!_isDesktop && activeSection !== "extras" && <SummaryCard secSummary={secSummary} secComplete={secComplete} form={form} showTruckSelect={showTruckSelect} isDesktop={false} compact onEdit={(sec)=>{if(!editingFrom)setEditingFrom(activeSection);setActiveSection(sec);}}/>}
+      {/* Mobile: compact summary at top */}
+      {!_isDesktop && <SummaryCard secSummary={secSummary} secComplete={secComplete} form={form} showTruckSelect={showTruckSelect} trucks={trucks} isDesktop={false} compact onEdit={(sec)=>{if(!editingFrom)setEditingFrom(activeSection);setActiveSection(sec);}}/>}
       <div style={{ flex:"1 1 0", minWidth:0 }}>
       {/* Mobile: step modal for form sections */}
-      {!_isDesktop && activeSection !== "extras" && (
+      {!_isDesktop && (
         <MobileStepModal
           open={true}
           title={{product:"Producto",quantity:"Cantidad",origin:"Origen",ownfleet:"Transporte",destination:"Destino",schedule:"Fecha y hora"}[activeSection]||""}
@@ -722,7 +730,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
       </div>}
       </div>
       {_isDesktop && <div style={{ flex:"1 1 0", minWidth:0, position:"sticky", top:70, alignSelf:"flex-start" }}>
-        <SummaryCard secSummary={secSummary} secComplete={secComplete} form={form} showTruckSelect={showTruckSelect} isDesktop={true} onEdit={(sec)=>{if(!editingFrom)setEditingFrom(activeSection);setActiveSection(sec);}}/>
+        <SummaryCard secSummary={secSummary} secComplete={secComplete} form={form} showTruckSelect={showTruckSelect} trucks={trucks} isDesktop={true} onEdit={(sec)=>{if(!editingFrom)setEditingFrom(activeSection);setActiveSection(sec);}}/>
         <div ref={secRefs.submit} style={{ marginTop:14 }}>
           {allComplete ? (
             <Btn full icon={Ic.chk(C.w,16)} onClick={openConfirmModal}>Solicitar Flete</Btn>
