@@ -112,6 +112,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
 
   const [stepModal, setStepModal] = useState(null); // {idx, label, color, backendSteps}
   const [expandedTrip, setExpandedTrip] = useState(null);
+  const [showTruckModal, setShowTruckModal] = useState(false);
   const [truckCountLoading, setTruckCountLoading] = useState(false);
   const [truckCountLocal, setTruckCountLocal] = useState(null); // optimistic local override
 
@@ -540,7 +541,12 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
                 <button disabled={truckCountLoading||displayCount>=50} onClick={(e)=>{e.stopPropagation();handleTruckCountTap(1);}} style={{ width:30, height:30, borderRadius:7, border:`1.5px solid ${C.b1}`, background:C.bg, cursor:(truckCountLoading||displayCount>=50)?"not-allowed":"pointer", display:"flex", alignItems:"center", justifyContent:"center", opacity:(truckCountLoading||displayCount>=50)?0.35:1, transition:"opacity 0.1s" }}>{Ic.plus(C.t1,15)}</button>
               </div>;})()}
             </div>
-            <span style={{ fontSize:14, fontWeight:600, color:C.info }}>{assignedCount}/{truckCountLocal ?? truckCount} asignados</span>
+            <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+              <span style={{ fontSize:14, fontWeight:600, color:C.info }}>{assignedCount}/{truckCountLocal ?? truckCount} asignados</span>
+              {visibleAssignments.length > 0 && <button onClick={()=>setShowTruckModal(true)} style={{ fontSize:14, fontWeight:700, color:C.t1, background:C.bg, border:`1.5px solid ${C.b1}`, borderRadius:8, padding:"6px 15px", cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:5 }}>
+                Ver detalle <span style={{ fontSize:11.5, marginTop:1 }}>{"\u25BC"}</span>
+              </button>}
+            </div>
           </div>
           {/* Progress bar (multi-truck) */}
           {showProgressBar && <div style={{ height:6, borderRadius:3, background:C.b1, marginBottom:14, overflow:"hidden" }}>
@@ -827,6 +833,69 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
       <FileViewer file={viewFile} onClose={()=>setViewFile(null)} onOcr={handleOcr} ocrLoading={ocrLoading} onViewOcr={handleViewOcr}/>
       {ocrLoading && <div style={{ position:"fixed", inset:0, zIndex:250 }}><UploadOverlay uploading={ocrLoading} done={false} total={1} current={1} label="Extrayendo datos"/></div>}
       <OcrResultModal result={ocrResult} onClose={()=>setOcrResult(null)}/>
+
+      {/* Truck detail modal */}
+      {showTruckModal && (()=>{
+        const fmtD = (d) => { try { const dt=new Date(d); return dt.toLocaleDateString("es-AR",{day:"2-digit",month:"short"})+" "+dt.toLocaleTimeString("es-AR",{hour:"2-digit",minute:"2-digit",hour12:false}); } catch{ return ""; } };
+        const truckCount = freight.truckCount || 1;
+        const assignedCount = freight.assignedTruckCount || freight.activeAssignments?.length || 0;
+        return <div onClick={()=>setShowTruckModal(false)} style={{ position:"fixed", inset:0, zIndex:200, background:"rgba(0,0,0,0.5)", display:"flex", alignItems:"center", justifyContent:"center", padding:16 }}>
+          <div onClick={e=>e.stopPropagation()} style={{ background:C.w, borderRadius:14, padding:20, maxWidth:440, width:"100%", maxHeight:"80vh", overflow:"auto", boxShadow:C.shLg }}>
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14 }}>
+              <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                <span style={{ display:"flex" }}>{Ic.truck(C.pri,20)}</span>
+                <span style={{ fontSize:16.2, fontWeight:800, color:C.t1 }}>Camiones</span>
+                <span style={{ fontSize:14, fontWeight:600, color:C.info }}>{assignedCount}/{truckCount}</span>
+              </div>
+              <button onClick={()=>setShowTruckModal(false)} style={{ background:"none", border:"none", cursor:"pointer", padding:4 }}>{Ic.cross(C.t3,18)}</button>
+            </div>
+            {visibleAssignments.map(a => {
+              const tst = tripStCfg(a.tripStatus);
+              const tripBtns = isMultiTruck ? getTripActions(a) : [];
+              return <div key={a.id} style={{ border:`1px solid ${tst.color}30`, borderLeft:`3px solid ${tst.color}`, borderRadius:10, marginBottom:10, padding:"12px 14px" }}>
+                <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
+                  {isMultiTruck && <span style={{ fontSize:14, fontWeight:800, color:tst.color }}>#{a.tripNumber}</span>}
+                  <span style={{ fontSize:15, fontWeight:700, color:C.t1, fontFamily:MONO }}>{a.plate || "Sin camión"}</span>
+                  <Bd color={tst.color} bg={tst.bg} small>{tst.label}</Bd>
+                </div>
+                <div style={{ display:"flex", flexDirection:"column", gap:4, fontSize:13.3, color:C.t2 }}>
+                  {a.transporterName && <div style={{ display:"flex", alignItems:"center", gap:6 }}>{Ic.truck(C.t3,12)} {a.transporterName}</div>}
+                  {a.plate && a.truckModel && <div style={{ display:"flex", alignItems:"center", gap:6 }}>{Ic.truck(C.acc,12)} {a.plate} · {a.truckModel}</div>}
+                  {a.driverName && <div style={{ display:"flex", alignItems:"center", gap:6 }}>{Ic.user(C.pri,12)} {a.driverName}{a.driverPhone?` · ${a.driverPhone}`:""}</div>}
+                  {a.tons && <div style={{ display:"flex", alignItems:"center", gap:6 }}>{Ic.grain(C.t3,12)} {a.tons} tn</div>}
+                  {(a.tripStatus === "in_progress" || a.tripStatus === "loaded") && (
+                    <div style={{ display:"flex", gap:12, marginTop:6 }}>
+                      <div>
+                        <span style={{ fontSize:10.4, fontWeight:700, color:C.t3, textTransform:"uppercase" }}>Carga: </span>
+                        <span style={{ fontSize:11.5, display:"inline-flex", alignItems:"center", gap:3 }}>{a.transporterLoadedConfirmedAt ? Ic.chk(C.ok,11) : Ic.clk(C.acc,11)} <span>Transp.</span> {a.producerLoadedConfirmedAt ? Ic.chk(C.ok,11) : Ic.clk(C.acc,11)} <span>Prod.</span></span>
+                      </div>
+                      {a.tripStatus === "loaded" && <div>
+                        <span style={{ fontSize:10.4, fontWeight:700, color:C.t3, textTransform:"uppercase" }}>Entrega: </span>
+                        <span style={{ fontSize:11.5, display:"inline-flex", alignItems:"center", gap:3 }}>{a.transporterFinishedConfirmedAt ? Ic.chk(C.ok,11) : Ic.clk(C.acc,11)} <span>Transp.</span> {a.plantFinishedConfirmedAt ? Ic.chk(C.ok,11) : Ic.clk(C.acc,11)} <span>Planta</span></span>
+                      </div>}
+                    </div>
+                  )}
+                </div>
+                {tripBtns.length > 0 && (
+                  <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginTop:10 }}>
+                    {tripBtns.map(b => (
+                      <button key={b.key} disabled={actionLoading} onClick={()=>onTripAction && onTripAction(freight.id, a.id, b.key)} style={{ flex:"1 1 auto", padding:"10px 12px", minWidth:80, minHeight:40, borderRadius:8, border:"none", background:b.color, color:C.w, fontSize:13.3, fontWeight:700, cursor:actionLoading?"not-allowed":"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:6, opacity:actionLoading?0.6:1 }}>
+                        {b.icon} {actionLoading?"...":b.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>;
+            })}
+            {Array.from({ length: Math.max(0, truckCount - assignedCount) }, (_, i) => (
+              <div key={`empty-${i}`} style={{ border:`1px dashed ${C.b1}`, borderLeft:`3px solid ${C.b1}`, borderRadius:10, marginBottom:10, padding:"12px 14px", display:"flex", alignItems:"center", gap:8 }}>
+                {isMultiTruck && <span style={{ fontSize:14, fontWeight:800, color:C.t3 }}>#{assignedCount + i + 1}</span>}
+                <span style={{ fontSize:13.9, fontWeight:500, color:C.t3, fontStyle:"italic" }}>Pendiente de asignar</span>
+              </div>
+            ))}
+          </div>
+        </div>;
+      })()}
 
       {/* Step detail modal — triggered by clicking a progress step */}
       {stepModal && (()=>{
