@@ -12,7 +12,7 @@ export default function MapPreviewModal({ loc, onClose }) {
     let cancelled = false;
     loadGMaps().then((maps) => {
       if (cancelled || !mapRef.current) return;
-      const center = { lat: loc.lat, lng: loc.lng };
+      const center = { lat: Number(loc.lat), lng: Number(loc.lng) };
       const map = new maps.Map(mapRef.current, {
         center,
         zoom: 14,
@@ -32,7 +32,12 @@ export default function MapPreviewModal({ loc, onClose }) {
       });
       mapInstance.current = map;
     }).catch(() => {});
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+      if (mapInstance.current) {
+        mapInstance.current = null;
+      }
+    };
   }, [loc]);
 
   if (!loc) return null;
@@ -50,7 +55,7 @@ export default function MapPreviewModal({ loc, onClose }) {
               <div style={{ fontSize: 12.7, color: C.t3, lineHeight: 1.4 }}>{loc.address}</div>
             )}
             <div style={{ fontSize: 11.5, color: C.ok, fontWeight: 700, marginTop: 4 }}>
-              {loc.lat.toFixed(6)}, {loc.lng.toFixed(6)}
+              {Number(loc.lat).toFixed(6)}, {Number(loc.lng).toFixed(6)}
             </div>
           </div>
           <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", padding: 4, flexShrink: 0 }}>
@@ -73,7 +78,7 @@ export default function MapPreviewModal({ loc, onClose }) {
 
         {/* Open in Google Maps link */}
         <a
-          href={`https://www.google.com/maps?q=${loc.lat},${loc.lng}`}
+          href={`https://www.google.com/maps?q=${Number(loc.lat)},${Number(loc.lng)}`}
           target="_blank"
           rel="noopener noreferrer"
           style={{

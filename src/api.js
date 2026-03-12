@@ -283,6 +283,8 @@ export async function apiImportGoogleList(url) { return api('/fields/import-goog
 export async function apiImportConfirm(locations) { return api('/fields/import-confirm', { body: { locations } }); }
 export async function apiGetPois() { return api('/fields/pois'); }
 export async function apiCreatePoi(b) { return api('/fields/pois', { body: b }); }
+export async function apiUpdatePoi(id, b) { return api(`/fields/pois/${id}`, { method: 'PATCH', body: b }); }
+export async function apiDeletePoi(id) { return api(`/fields/pois/${id}/delete`, { method: 'PATCH' }); }
 
 // Plant-Producer Access
 export async function apiGrantAccess(b) { return api('/plant-access/grant',{body:b}); }

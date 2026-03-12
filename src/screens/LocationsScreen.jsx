@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { C, Ic } from "../theme";
 import { Btn, Bd, Loader, LoadingOverlay, EmptyState } from "../components";
-import { apiGetFields, apiCreateField, apiCreateLot, apiImportGoogleList, apiGetPois, apiCreatePoi } from "../api";
+import { apiGetFields, apiCreateField, apiCreateLot, apiImportGoogleList, apiGetPois, apiCreatePoi, apiUpdatePoi, apiDeletePoi } from "../api";
 import MapPreviewModal from "../modals/MapPreviewModal";
 
 // Type config
@@ -35,6 +35,12 @@ export default function LocationsScreen({ onBack }) {
   const [importWarning, setImportWarning] = useState(null);
   const [importListName, setImportListName] = useState(null);
   const [importSlowMsg, setImportSlowMsg] = useState(false);
+
+  // Edit/delete POI
+  const [editingPoi, setEditingPoi] = useState(null); // poi object being edited
+  const [editName, setEditName] = useState("");
+  const [editComments, setEditComments] = useState("");
+  const [deletingPoi, setDeletingPoi] = useState(null); // poi id to confirm delete
 
   const load = useCallback(async () => {
     try {
@@ -158,6 +164,41 @@ export default function LocationsScreen({ onBack }) {
 
   const toggleItem = (i) => setImportSelected(prev => { const n = new Set(prev); n.has(i) ? n.delete(i) : n.add(i); return n; });
   const closeImport = () => { setImportStep(0); setImportParsed([]); setImportUrl(""); setImportWarning(null); setImportListName(null); setImportTypes({}); setImportFieldIds({}); setImportComments({}); };
+
+  const startEditPoi = (p) => {
+    setEditingPoi(p);
+    setEditName(p.name);
+    setEditComments(p.comments || "");
+  };
+
+  const handleUpdatePoi = async () => {
+    if (!editingPoi) return;
+    setSaving(true);
+    try {
+      await apiUpdatePoi(editingPoi.id, { name: editName.trim(), comments: editComments.trim() || undefined });
+      setEditingPoi(null);
+      setMsg({ t: "Ubicación actualizada", k: "ok" });
+      load();
+    } catch (err) {
+      setMsg({ t: err.message || "Error al actualizar", k: "err" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeletePoi = async (id) => {
+    setSaving(true);
+    try {
+      await apiDeletePoi(id);
+      setDeletingPoi(null);
+      setMsg({ t: "Ubicación eliminada", k: "ok" });
+      load();
+    } catch (err) {
+      setMsg({ t: err.message || "Error al eliminar", k: "err" });
+    } finally {
+      setSaving(false);
+    }
+  };
   const selectedCount = [...importSelected].length;
   const getType = (i) => importTypes[i] || "field";
   const getName = (i) => (importNames[i] ?? (importParsed[i]?.name || "")).trim().slice(0, 255);
@@ -210,7 +251,7 @@ export default function LocationsScreen({ onBack }) {
                 style={{ flex: 1, padding: "12px 14px", borderRadius: 10, border: `1.5px solid ${importUrl ? C.bFocus : C.b2}`, background: C.bgInput, fontFamily: "inherit", fontSize: 13.2, color: C.t1, outline: "none", boxSizing: "border-box", transition: "border-color 0.15s" }}
               />
               <button
-                onClick={async () => { try { const t = await navigator.clipboard.readText(); if (t) setImportUrl(t); } catch {} }}
+                onClick={async () => { try { const t = await navigator.clipboard.readText(); if (t) setImportUrl(t); } catch { setMsg({ t: "No se pudo pegar. Pegá manualmente.", k: "err" }); } }}
                 style={{ padding: "8px 14px", borderRadius: 10, border: `1.5px solid ${C.b1}`, background: C.w, cursor: "pointer", fontFamily: "inherit", fontSize: 12.7, fontWeight: 600, color: C.pri, display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap", flexShrink: 0 }}
               >
                 {Ic.copy ? Ic.copy(C.pri, 14) : null} Pegar
@@ -288,7 +329,7 @@ export default function LocationsScreen({ onBack }) {
                             <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 3 }}>
                               {loc.address && <span style={{ fontSize: 11.5, color: C.t3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{loc.address}</span>}
                               <span style={{ fontSize: 10.5, color: C.ok, fontWeight: 700, whiteSpace: "nowrap" }}>
-                                {loc.lat.toFixed(4)}, {loc.lng.toFixed(4)}
+                                {Number(loc.lat).toFixed(4)}, {Number(loc.lng).toFixed(4)}
                               </span>
                             </div>
                           </div>
@@ -321,6 +362,10 @@ export default function LocationsScreen({ onBack }) {
                                     } else {
                                       setImportTypes(prev => ({ ...prev, [i]: k }));
                                       if (k !== "lot") setImportFieldIds(prev => { const n = { ...prev }; delete n[i]; return n; });
+                                    }
+                                    // Auto-select field when only 1 option available
+                                    if (k === "lot" && fieldOptions.length === 1) {
+                                      setImportFieldIds(prev => ({ ...prev, [i]: fieldOptions[0].id }));
                                     }
                                     // Auto-select when setting type
                                     if (!sel) setImportSelected(prev => new Set([...prev, i]));
@@ -417,32 +462,58 @@ export default function LocationsScreen({ onBack }) {
               </div>
 
               {pois.map(p => (
-                <div key={p.id} style={{ background: C.w, border: `1px solid ${C.b1}`, borderLeft: `4px solid ${C.sec}`, borderRadius: 12, boxShadow: C.sh, display: "flex", alignItems: "center", padding: "12px 14px", gap: 10 }}>
-                  <div style={{ width: 32, height: 32, borderRadius: 8, background: `${C.sec}12`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                    {Ic.nav(C.sec, 16)}
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 14.3, fontWeight: 700, color: C.t1 }}>{p.name}</div>
-                    <div style={{ display: "flex", gap: 6, alignItems: "center", marginTop: 2, flexWrap: "wrap" }}>
-                      <Bd color={C.sec} small>Interés</Bd>
-                      {p.address && <span style={{ fontSize: 11, color: C.t3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.address}</span>}
-                      {p.comments && <span style={{ fontSize: 11, color: C.t2, fontStyle: "italic" }}>{p.comments}</span>}
+                <div key={p.id} style={{ background: C.w, border: `1px solid ${C.b1}`, borderLeft: `4px solid ${C.sec}`, borderRadius: 12, boxShadow: C.sh, padding: "12px 14px" }}>
+                  {editingPoi?.id === p.id ? (
+                    // Edit mode
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                      <input value={editName} onChange={e => setEditName(e.target.value)} placeholder="Nombre" style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: `1.5px solid ${C.bFocus}`, background: C.bgInput, fontFamily: "inherit", fontSize: 14.3, fontWeight: 700, color: C.t1, outline: "none", boxSizing: "border-box" }} />
+                      <input value={editComments} onChange={e => setEditComments(e.target.value)} placeholder="Comentarios (opcional)" style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: `1px solid ${C.b2}`, background: C.bgInput, fontFamily: "inherit", fontSize: 12.7, color: C.t1, outline: "none", boxSizing: "border-box" }} />
+                      <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+                        <button onClick={() => setEditingPoi(null)} style={{ padding: "6px 14px", borderRadius: 8, border: `1px solid ${C.b2}`, background: C.w, cursor: "pointer", fontFamily: "inherit", fontSize: 12.7, fontWeight: 600, color: C.t2 }}>Cancelar</button>
+                        <button onClick={handleUpdatePoi} disabled={!editName.trim()} style={{ padding: "6px 14px", borderRadius: 8, border: "none", background: C.pri, cursor: "pointer", fontFamily: "inherit", fontSize: 12.7, fontWeight: 700, color: C.w, opacity: editName.trim() ? 1 : 0.5 }}>Guardar</button>
+                      </div>
                     </div>
-                  </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
-                    {p.lat && p.lng && (
-                      <span style={{ fontSize: 10, color: C.ok, fontWeight: 600 }}>
-                        {Number(p.lat).toFixed(4)}, {Number(p.lng).toFixed(4)}
-                      </span>
-                    )}
-                    <button
-                      onClick={() => setPreviewLoc({ name: p.name, address: p.address, lat: Number(p.lat), lng: Number(p.lng) })}
-                      title="Ver en mapa"
-                      style={{ background: `${C.sec}10`, border: `1px solid ${C.sec}30`, borderRadius: 8, cursor: "pointer", padding: "6px 8px", display: "flex", alignItems: "center", justifyContent: "center" }}
-                    >
-                      {Ic.nav(C.sec, 14)}
-                    </button>
-                  </div>
+                  ) : deletingPoi === p.id ? (
+                    // Delete confirmation
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+                      <span style={{ fontSize: 13.2, fontWeight: 600, color: C.err }}>¿Eliminar "{p.name}"?</span>
+                      <div style={{ display: "flex", gap: 8 }}>
+                        <button onClick={() => setDeletingPoi(null)} style={{ padding: "6px 14px", borderRadius: 8, border: `1px solid ${C.b2}`, background: C.w, cursor: "pointer", fontFamily: "inherit", fontSize: 12.7, fontWeight: 600, color: C.t2 }}>No</button>
+                        <button onClick={() => handleDeletePoi(p.id)} style={{ padding: "6px 14px", borderRadius: 8, border: "none", background: C.err, cursor: "pointer", fontFamily: "inherit", fontSize: 12.7, fontWeight: 700, color: C.w }}>Sí, eliminar</button>
+                      </div>
+                    </div>
+                  ) : (
+                    // Normal display
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <div style={{ width: 32, height: 32, borderRadius: 8, background: `${C.sec}12`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                        {Ic.nav(C.sec, 16)}
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 14.3, fontWeight: 700, color: C.t1 }}>{p.name}</div>
+                        <div style={{ display: "flex", gap: 6, alignItems: "center", marginTop: 2, flexWrap: "wrap" }}>
+                          <Bd color={C.sec} small>Interés</Bd>
+                          {p.address && <span style={{ fontSize: 11, color: C.t3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.address}</span>}
+                          {p.comments && <span style={{ fontSize: 11, color: C.t2, fontStyle: "italic" }}>{p.comments}</span>}
+                        </div>
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
+                        {p.lat && p.lng && (
+                          <span style={{ fontSize: 10, color: C.ok, fontWeight: 600 }}>
+                            {Number(p.lat).toFixed(4)}, {Number(p.lng).toFixed(4)}
+                          </span>
+                        )}
+                        <button onClick={() => setPreviewLoc({ name: p.name, address: p.address, lat: Number(p.lat), lng: Number(p.lng) })} title="Ver en mapa" style={{ background: `${C.sec}10`, border: `1px solid ${C.sec}30`, borderRadius: 8, cursor: "pointer", padding: "6px 8px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                          {Ic.nav(C.sec, 14)}
+                        </button>
+                        <button onClick={() => startEditPoi(p)} title="Editar" style={{ background: `${C.pri}10`, border: `1px solid ${C.pri}30`, borderRadius: 8, cursor: "pointer", padding: "6px 8px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                          {Ic.pin(C.pri, 14)}
+                        </button>
+                        <button onClick={() => setDeletingPoi(p.id)} title="Eliminar" style={{ background: `${C.err}10`, border: `1px solid ${C.err}30`, borderRadius: 8, cursor: "pointer", padding: "6px 8px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                          {Ic.cross(C.err, 14)}
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
