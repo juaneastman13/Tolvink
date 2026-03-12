@@ -252,8 +252,12 @@ export default memo(function HomeScreen({ user, freights, loading, perms, onNav,
   const toggleGroup = useCallback((gKey) => {
     setOpenGroup(prev => {
       if (prev === gKey) return null;
-      const statuses = resolveStatuses(gKey);
-      if (statuses.length > 0) fetchGroupPage(gKey, statuses, 1);
+      // Reuse cached data if available — avoids re-fetch on tab switch
+      const cached = expandedRef.current[gKey];
+      if (!cached?.items?.length) {
+        const statuses = resolveStatuses(gKey);
+        if (statuses.length > 0) fetchGroupPage(gKey, statuses, 1);
+      }
       return gKey;
     });
   }, [fetchGroupPage, resolveStatuses]);
