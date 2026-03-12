@@ -731,15 +731,6 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
       </div>
       {_isDesktop && <div style={{ flex:"1 1 0", minWidth:0, position:"sticky", top:70, alignSelf:"flex-start" }}>
         <SummaryCard secSummary={secSummary} secComplete={secComplete} form={form} showTruckSelect={showTruckSelect} trucks={trucks} isDesktop={true} onEdit={(sec)=>{if(!editingFrom)setEditingFrom(activeSection);setActiveSection(sec);}}/>
-        <div ref={secRefs.submit} style={{ marginTop:14 }}>
-          {allComplete ? (
-            <Btn full icon={Ic.chk(C.w,16)} onClick={openConfirmModal}>Solicitar Flete</Btn>
-          ) : (
-            <button type="button" onClick={openConfirmModal} style={{ width:"100%", padding:"14px 20px", borderRadius:12, border:`1.5px solid ${C.b1}`, background:C.bgInput, color:C.t3, fontSize:15.4, fontWeight:700, fontFamily:"inherit", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
-              {Ic.chk(C.t3,16)} Solicitar Flete
-            </button>
-          )}
-        </div>
       </div>}
       </div>
       </div>
