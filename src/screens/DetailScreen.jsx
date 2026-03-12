@@ -364,21 +364,19 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
         ))}
       </div>}
 
-      {/* Progress — click to see per-stage detail */}
+      {/* Progress — circular stepper with integrated confirmations */}
       {(()=>{
         const steps = ["pending_assignment","assigned","accepted","in_progress","loaded","finished"];
         const curIdx = steps.indexOf(freight.status);
         const isCanceled = freight.status === "canceled";
-        // Visual stepper: 3 steps
         const subLabels = { assigned:"Asignado", accepted:"Asignado", in_progress:"En viaje a campo", loaded:"En viaje a planta" };
         const visualIdx = isCanceled ? (curIdx >= 1 ? (curIdx >= 3 ? 2 : 1) : 0) : curIdx === 0 ? 0 : curIdx <= 4 ? 1 : 2;
-        // Multi-truck: build per-assignment status breakdown
         const multiTruckSub = isMultiTruck && [1,2,3,4].includes(curIdx) ? (freight.activeAssignments||[]).map(a => ({ n: a.tripNumber, cfg: tripStCfg(a.tripStatus) })) : null;
         const singleSub = [1,2,3,4].includes(curIdx) || isCanceled ? subLabels[freight.status] || subLabels[steps[curIdx]] : null;
         const visualSteps = [
-          { label:"Pendiente", color:C.acc },
-          { label:"En curso", color:C.pri, sub: !multiTruckSub ? singleSub : null, multiSub: multiTruckSub },
-          { label: isCanceled ? "Cancelado" : "Finalizado", color: isCanceled ? C.err : C.ok },
+          { label:"Pendiente", color:C.acc, icon:(c,s)=>Ic.clk(c,s) },
+          { label:"En curso", color:C.pri, sub: !multiTruckSub ? singleSub : null, multiSub: multiTruckSub, icon:(c,s)=>Ic.truck(c,s) },
+          { label: isCanceled ? "Cancelado" : "Finalizado", color: isCanceled ? C.err : C.ok, icon:(c,s)=> isCanceled ? Ic.cross(c,s) : Ic.chk(c,s) },
         ];
         const fmtD = (d) => { try { const dt=new Date(d); return dt.toLocaleDateString("es-AR",{day:"2-digit",month:"short"})+" "+dt.toLocaleTimeString("es-AR",{hour:"2-digit",minute:"2-digit",hour12:false}); } catch(e){ return ""; } };
         const actionLabels = { created:"Solicitado", assigned:"Asignado", assigned_multi:"Asignado", accepted:"Aceptado", rejected:"Rechazado", started:"Iniciado", confirm_loaded:"Carga OK", confirm_finished:"Entrega OK", finished:"Finalizado", canceled:"Cancelado", authorized:"Autorizado", updated:"Editado", trip_accepted:"Aceptado", trip_rejected:"Rechazado", trip_started:"Iniciado", trip_confirm_loaded:"Carga OK", trip_confirm_finished:"Entrega OK", trip_finished:"Finalizado", assignment_canceled:"Cancelado", assignment_updated:"Editado" };
@@ -396,31 +394,72 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
         const getStepLogs = (step) => { if(!auditLog) return []; return auditLog.filter(l=>(stepAuditActions[step]||[]).includes(l.action)); };
         const getTruckCount = (step) => { if(!isMultiTruck) return null; const ts=stepToTrip[step]; if(!ts) return null; const rank=tripRank[ts]??0; return (freight.activeAssignments||[]).filter(a=>(tripRank[a.tripStatus]??0)>=rank).length; };
         const tripLabel = (log) => { const tn = log.metadata?.tripNumber; return tn ? `Viaje #${tn}` : null; };
-        // Get assignments exactly at a given tripStatus (for showing truck details per stage)
         const getStepAssignments = (step) => { if(!isMultiTruck) return []; const ts=stepToTrip[step]; if(!ts) return []; return (freight.activeAssignments||[]).filter(a=>a.tripStatus===ts); };
+        // Get date for each step from audit log
+        const getStepDate = (backendSteps) => { if(!auditLog) return null; const logs = backendSteps.flatMap(s => getStepLogs(s)); if(logs.length === 0) return null; return logs[logs.length-1].createdAt; };
+        const visualAuditMap = [["pending_assignment"],["assigned","accepted","in_progress","loaded"],["finished"]];
+        // Cross-confirmations helper
+        const ConfDot = ({confirmed,label}) => (
+          <div style={{display:"flex",alignItems:"center",gap:5,fontSize:11.6}}>
+            <span style={{width:16,height:16,borderRadius:8,display:"inline-flex",alignItems:"center",justifyContent:"center",background:confirmed?C.okPale:C.accPale,flexShrink:0}}>
+              {confirmed ? Ic.chk(C.ok,10) : Ic.clk(C.acc,9)}
+            </span>
+            <span style={{color:confirmed?C.ok:C.t2,fontWeight:confirmed?600:400}}>{label}</span>
+          </div>
+        );
+        const showConfs = !isMultiTruck && (freight.status==="loaded" || freight.status==="in_progress");
         return <div ref={auditRef} style={{ background:C.w, border:`1px solid ${C.b1}`, borderRadius:12, padding:16, marginBottom:12, boxShadow:C.sh, position:"relative" }}>
-          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:12 }}>
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14 }}>
             <span style={{ fontSize:11.6, fontWeight:700, color:C.t2, textTransform:"uppercase", letterSpacing:0.5 }}>Progreso</span>
             <button onClick={toggleAudit} style={{ fontSize:12.1, fontWeight:700, color:C.t1, background:C.bg, border:`1.5px solid ${C.b1}`, borderRadius:8, padding:"5px 14px", cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:5 }}>
               {showAudit?"Ocultar detalle":"Ver detalle"} <span style={{ fontSize:9.9, marginTop:1 }}>{showAudit?"\u25B2":"\u25BC"}</span>
             </button>
           </div>
-          <div style={{display:"flex",gap:3,alignItems:"flex-start"}}>
+          {/* Circular stepper nodes with connecting lines */}
+          <div style={{display:"flex",alignItems:"flex-start",position:"relative",padding:"0 4px"}}>
             {visualSteps.map((vs,i)=>{
               const done = i < visualIdx; const active = i === visualIdx && !isCanceled; const isCancelStep = i === 2 && isCanceled;
-              const barColor = done ? C.pri : active ? vs.color : isCancelStep ? C.err : C.b1;
-              const visualAuditMap = [["pending_assignment"],["assigned","accepted","in_progress","loaded"],["finished"]];
-              return <div key={i} onClick={()=>setStepModal({idx:i,label:vs.label,color:vs.color,backendSteps:visualAuditMap[i]})} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4,minWidth:0,cursor:"pointer"}}>
-                <div style={{width:"100%",height:active?5:4,borderRadius:3,background:barColor,transition:"all 0.2s"}}/>
-                {(active || isCancelStep) && <div style={{width:6,height:6,borderRadius:3,background:vs.color,marginTop:-2}}/>}
-                <span style={{fontSize:13.2,fontWeight:(active||isCancelStep)?700:500,color:(active||isCancelStep)?vs.color:done?C.t2:C.t3,textAlign:"center",lineHeight:1.2}}>{vs.label}</span>
-                {active && vs.sub && <span style={{fontSize:11.6,color:C.t3,fontStyle:"italic",textAlign:"center",lineHeight:1.2,marginTop:-2}}>({vs.sub})</span>}
-                {active && vs.multiSub && vs.multiSub.length > 0 && <div style={{display:"flex",flexDirection:"column",gap:2,marginTop:-1,alignItems:"center"}}>
+              const nodeColor = done ? C.pri : active ? vs.color : isCancelStep ? C.err : C.b1;
+              const nodeIcon = done ? Ic.chk(C.w,12) : vs.icon(active || isCancelStep ? C.w : C.t3, 13);
+              const stepDate = getStepDate(visualAuditMap[i]);
+              return <div key={i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",position:"relative",minWidth:0}}>
+                {/* Connecting line before node */}
+                {i > 0 && <div style={{position:"absolute",top:12,right:"50%",left:0,height:2,background:done||active||isCancelStep?C.pri:C.b1,zIndex:0,transform:"translateX(-4px)"}}/>}
+                {/* Connecting line after node */}
+                {i < 2 && <div style={{position:"absolute",top:12,left:"50%",right:0,height:2,background:done?(i+1<=visualIdx?C.pri:C.b1):C.b1,zIndex:0,transform:"translateX(4px)"}}/>}
+                {/* Node circle */}
+                <div onClick={()=>setStepModal({idx:i,label:vs.label,color:vs.color,backendSteps:visualAuditMap[i]})}
+                  style={{width:24,height:24,borderRadius:12,background:nodeColor,display:"flex",alignItems:"center",justifyContent:"center",position:"relative",zIndex:1,cursor:"pointer",
+                    boxShadow:active?`0 0 0 3px ${vs.color}25`:isCancelStep?`0 0 0 3px ${C.err}25`:"none",transition:"all 0.2s"}}>
+                  {nodeIcon}
+                </div>
+                <span style={{fontSize:12.4,fontWeight:(active||isCancelStep)?700:done?600:500,color:(active||isCancelStep)?vs.color:done?C.t1:C.t3,textAlign:"center",lineHeight:1.2,marginTop:6}}>{vs.label}</span>
+                {active && vs.sub && <span style={{fontSize:11,color:C.t3,fontStyle:"italic",textAlign:"center",lineHeight:1.2,marginTop:1}}>({vs.sub})</span>}
+                {active && vs.multiSub && vs.multiSub.length > 0 && <div style={{display:"flex",flexDirection:"column",gap:2,marginTop:2,alignItems:"center"}}>
                   {vs.multiSub.map(t => <span key={t.n} style={{fontSize:10.5,color:t.cfg.color,fontWeight:600,lineHeight:1.2}}>#{t.n} {t.cfg.label}</span>)}
                 </div>}
+                {(done || active || isCancelStep) && stepDate && <span style={{fontSize:10.2,color:C.t3,marginTop:2,textAlign:"center",lineHeight:1.2}}>{fmtD(stepDate)}</span>}
               </div>;
             })}
           </div>
+          {/* Inline cross-confirmations */}
+          {showConfs && <div style={{marginTop:14,paddingTop:12,borderTop:`1px solid ${C.b1}`,display:"flex",gap:16}}>
+            <div style={{flex:1}}>
+              <div style={{fontSize:10.5,fontWeight:700,color:C.t2,marginBottom:6,textTransform:"uppercase",letterSpacing:0.4}}>Carga</div>
+              <div style={{display:"flex",flexDirection:"column",gap:5}}>
+                <ConfDot confirmed={freight.transporterLoadedConfirmedAt} label="Transportista"/>
+                <ConfDot confirmed={freight.producerLoadedConfirmedAt} label="Productor"/>
+              </div>
+            </div>
+            <div style={{width:1,background:C.b1}}/>
+            <div style={{flex:1}}>
+              <div style={{fontSize:10.5,fontWeight:700,color:C.t2,marginBottom:6,textTransform:"uppercase",letterSpacing:0.4}}>Entrega</div>
+              <div style={{display:"flex",flexDirection:"column",gap:5}}>
+                <ConfDot confirmed={freight.transporterFinishedConfirmedAt} label="Transportista"/>
+                <ConfDot confirmed={freight.plantFinishedConfirmedAt} label="Planta"/>
+              </div>
+            </div>
+          </div>}
           {/* Per-stage detail — 3 columns matching visual stepper */}
           {showAudit && !auditLog && <div style={{textAlign:"center",padding:"12px 0",fontSize:12.1,color:C.t3}}>Cargando detalle...</div>}
           {showAudit && auditLog && (()=>{
@@ -632,49 +671,6 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
         </div>
       )}
 
-      {/* Cross-confirmations panel (single-truck only) */}
-      {!isMultiTruck && (freight.status==="loaded" || freight.status==="in_progress") && (
-        <div style={{ background:C.w, border:`1px solid ${C.acc}30`, borderLeft:`3px solid ${C.acc}`, borderRadius:12, padding:16, marginBottom:12, boxShadow:C.sh }}>
-          <div style={{ fontSize:11.6, fontWeight:700, marginBottom:12, color:C.acc, textTransform:"uppercase", letterSpacing:0.5 }}>Confirmaciones</div>
-          <div style={{display:"flex",gap:16}}>
-            <div style={{flex:1}}>
-              <div style={{fontSize:11,fontWeight:700,color:C.t2,marginBottom:8,textTransform:"uppercase",letterSpacing:0.4}}>Carga</div>
-              <div style={{display:"flex",flexDirection:"column",gap:6}}>
-                <div style={{display:"flex",alignItems:"center",gap:6,fontSize:12.7}}>
-                  <span style={{width:18,height:18,borderRadius:9,display:"inline-flex",alignItems:"center",justifyContent:"center",background:freight.transporterLoadedConfirmedAt?C.okPale:C.accPale,flexShrink:0}}>
-                    {freight.transporterLoadedConfirmedAt ? Ic.chk(C.ok,12) : Ic.clk(C.acc,11)}
-                  </span>
-                  <span style={{color:freight.transporterLoadedConfirmedAt?C.ok:C.t2,fontWeight:freight.transporterLoadedConfirmedAt?600:400}}>Transportista</span>
-                </div>
-                <div style={{display:"flex",alignItems:"center",gap:6,fontSize:12.7}}>
-                  <span style={{width:18,height:18,borderRadius:9,display:"inline-flex",alignItems:"center",justifyContent:"center",background:freight.producerLoadedConfirmedAt?C.okPale:C.accPale,flexShrink:0}}>
-                    {freight.producerLoadedConfirmedAt ? Ic.chk(C.ok,12) : Ic.clk(C.acc,11)}
-                  </span>
-                  <span style={{color:freight.producerLoadedConfirmedAt?C.ok:C.t2,fontWeight:freight.producerLoadedConfirmedAt?600:400}}>Productor</span>
-                </div>
-              </div>
-            </div>
-            <div style={{width:1,background:C.b1}}/>
-            <div style={{flex:1}}>
-              <div style={{fontSize:11,fontWeight:700,color:C.t2,marginBottom:8,textTransform:"uppercase",letterSpacing:0.4}}>Entrega</div>
-              <div style={{display:"flex",flexDirection:"column",gap:6}}>
-                <div style={{display:"flex",alignItems:"center",gap:6,fontSize:12.7}}>
-                  <span style={{width:18,height:18,borderRadius:9,display:"inline-flex",alignItems:"center",justifyContent:"center",background:freight.transporterFinishedConfirmedAt?C.okPale:C.accPale,flexShrink:0}}>
-                    {freight.transporterFinishedConfirmedAt ? Ic.chk(C.ok,12) : Ic.clk(C.acc,11)}
-                  </span>
-                  <span style={{color:freight.transporterFinishedConfirmedAt?C.ok:C.t2,fontWeight:freight.transporterFinishedConfirmedAt?600:400}}>Transportista</span>
-                </div>
-                <div style={{display:"flex",alignItems:"center",gap:6,fontSize:12.7}}>
-                  <span style={{width:18,height:18,borderRadius:9,display:"inline-flex",alignItems:"center",justifyContent:"center",background:freight.plantFinishedConfirmedAt?C.okPale:C.accPale,flexShrink:0}}>
-                    {freight.plantFinishedConfirmedAt ? Ic.chk(C.ok,12) : Ic.clk(C.acc,11)}
-                  </span>
-                  <span style={{color:freight.plantFinishedConfirmedAt?C.ok:C.t2,fontWeight:freight.plantFinishedConfirmedAt?600:400}}>Planta</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Info + Map — side by side on desktop */}
       <div style={{ display:"flex", flexDirection:_isDesktop?"row":"column", gap:12, marginBottom:12, alignItems:_isDesktop?"stretch":undefined }}>
