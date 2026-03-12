@@ -295,22 +295,15 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
 
   return (
     <div style={{ flex:1, overflow:"auto", animation:"slideUp 0.25s ease" }}>
-      {/* Sticky header — back + product title + edit (desktop) */}
+      {/* Sticky header — back + product title */}
       <div style={{ position:"sticky", top:0, zIndex:10, padding:"18px 18px 8px", background:C.bg }}>
-        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14 }}>
-          <button onClick={onBack} style={{ background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", fontSize:14.3, fontWeight:600, color:C.pri, padding:0, display:"flex", alignItems:"center", gap:4 }}>{Ic.chev(C.pri,18)} Volver</button>
-          {_isDesktop && ["pending_assignment","assigned","accepted","in_progress","loaded"].includes(freight.status) && (perms.canRequest || perms.canApprove) && (
-            <button onClick={()=>onEdit(freight)} style={{ background:C.w, border:`1.5px solid ${C.b1}`, borderRadius:8, padding:"5px 10px", cursor:"pointer", display:"flex", alignItems:"center", gap:5, fontFamily:"inherit" }}>
-              {Ic.edit(C.t2,14)}<span style={{ fontSize:12.1, fontWeight:600, color:C.t2 }}>Editar</span>
-            </button>
-          )}
-        </div>
+        <button onClick={onBack} style={{ background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", fontSize:15, fontWeight:600, color:C.pri, marginBottom:14, padding:0, display:"flex", alignItems:"center", gap:4 }}>{Ic.chev(C.pri,18)} Volver</button>
         <div>
           <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-            <span style={{ fontSize:12.1, color:C.t3, fontWeight:600, fontFamily:MONO }}>{freight.code}</span>
-            {st && <span style={{ fontSize:9.9, fontWeight:700, color:st.color, background:st.bg, padding:"1px 6px", borderRadius:4, textTransform:"uppercase", letterSpacing:0.3 }}>{st.label}</span>}
+            <span style={{ fontSize:12.7, color:C.t3, fontWeight:600, fontFamily:MONO }}>{freight.code}</span>
+            {st && <span style={{ fontSize:10.4, fontWeight:700, color:st.color, background:st.bg, padding:"1px 6px", borderRadius:4, textTransform:"uppercase", letterSpacing:0.3 }}>{st.label}</span>}
           </div>
-          {freight.loadDate && <div style={{ fontSize:12.1, color:C.t3, fontWeight:500, marginTop:2 }}>{formatFreightDate(freight.loadDate)}</div>}
+          {freight.loadDate && <div style={{ fontSize:12.7, color:C.t3, fontWeight:500, marginTop:2 }}>{formatFreightDate(freight.loadDate)}</div>}
           <div style={{ fontSize:24.2, fontWeight:800, marginTop:2, letterSpacing:-0.3 }}>{freight.grain==="Otros"?freight.productTypeOther||"Otros":freight.grain} · {freight.tons} {freight.unit||"tn"}</div>
         </div>
       </div>
@@ -321,8 +314,8 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
       {isChoferQueued && <div style={{ background:`${C.info}10`, border:`1.5px solid ${C.info}30`, borderRadius:12, padding:"12px 16px", marginBottom:12, display:"flex", alignItems:"center", gap:10 }}>
         <span style={{ display:"flex" }}>{Ic.clk(C.info,20)}</span>
         <div>
-          <div style={{ fontSize:14.3, fontWeight:700, color:C.info }}>En cola #{freight.queuePosition}</div>
-          <div style={{ fontSize:12.1, color:C.t2 }}>Debés completar los fletes anteriores primero</div>
+          <div style={{ fontSize:15, fontWeight:700, color:C.info }}>En cola #{freight.queuePosition}</div>
+          <div style={{ fontSize:12.7, color:C.t2 }}>Debés completar los fletes anteriores primero</div>
         </div>
       </div>}
 
@@ -330,8 +323,8 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
         <div style={{ background:`${C.info}10`, border:`1.5px solid ${C.info}30`, borderRadius:12, padding:"12px 16px", marginBottom:12, display:"flex", alignItems:"center", gap:10 }}>
           <span style={{ display:"flex" }}>{Ic.clk(C.info,20)}</span>
           <div>
-            <div style={{ fontSize:14.3, fontWeight:700, color:C.info }}>Pendiente de asignación por planta</div>
-            <div style={{ fontSize:12.1, color:C.t2 }}>La planta de destino asignará el transportista</div>
+            <div style={{ fontSize:15, fontWeight:700, color:C.info }}>Pendiente de asignación por planta</div>
+            <div style={{ fontSize:12.7, color:C.t2 }}>La planta de destino asignará el transportista</div>
           </div>
         </div>
       )}
@@ -365,7 +358,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
       {multiTruckTopActions.length > 0 && <div style={{ display:"flex", flexDirection:"column", gap:8, marginBottom:12 }}>
         {multiTruckTopActions.map(a => (
           <button key={a.key} disabled={actionLoading} onClick={()=>onTripAction && onTripAction(freight.id, a.assignmentId, a.key)}
-            style={{ width:"100%", padding:"14px 20px", borderRadius:12, border:"none", background:a.color, color:C.w, fontSize:16.5, fontWeight:700, cursor:actionLoading?"not-allowed":"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:8, opacity:actionLoading?0.6:1 }}>
+            style={{ width:"100%", padding:"14px 20px", borderRadius:12, border:"none", background:a.color, color:C.w, fontSize:17.3, fontWeight:700, cursor:actionLoading?"not-allowed":"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:8, opacity:actionLoading?0.6:1 }}>
             {a.icon} {actionLoading?"Procesando...":a.label}{a.count>1?` (${a.count})`:a.count===1?` #${a.tripNumber}`:""}
           </button>
         ))}
@@ -407,9 +400,9 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
         const visualAuditMap = [["pending_assignment"],["assigned","accepted","in_progress","loaded"],["finished"]];
         // Cross-confirmations helper
         const ConfDot = ({confirmed,label}) => (
-          <div style={{display:"flex",alignItems:"center",gap:5,fontSize:11.6}}>
+          <div style={{display:"flex",alignItems:"center",gap:5,fontSize:12.2}}>
             <span style={{width:16,height:16,borderRadius:8,display:"inline-flex",alignItems:"center",justifyContent:"center",background:confirmed?C.okPale:C.accPale,flexShrink:0}}>
-              {confirmed ? Ic.chk(C.ok,10) : Ic.clk(C.acc,9)}
+              {confirmed ? Ic.chk(C.ok,11) : Ic.clk(C.acc,10)}
             </span>
             <span style={{color:confirmed?C.ok:C.t2,fontWeight:confirmed?600:400}}>{label}</span>
           </div>
@@ -417,9 +410,9 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
         const showConfs = !isMultiTruck && (freight.status==="loaded" || freight.status==="in_progress");
         return <div ref={auditRef} style={{ background:C.w, border:`1px solid ${C.b1}`, borderRadius:12, padding:16, marginBottom:12, boxShadow:C.sh, position:"relative" }}>
           <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14 }}>
-            <span style={{ fontSize:11.6, fontWeight:700, color:C.t2, textTransform:"uppercase", letterSpacing:0.5 }}>Progreso</span>
-            <button onClick={toggleAudit} style={{ fontSize:12.1, fontWeight:700, color:C.t1, background:C.bg, border:`1.5px solid ${C.b1}`, borderRadius:8, padding:"5px 14px", cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:5 }}>
-              {showAudit?"Ocultar detalle":"Ver detalle"} <span style={{ fontSize:9.9, marginTop:1 }}>{showAudit?"\u25B2":"\u25BC"}</span>
+            <span style={{ fontSize:12.2, fontWeight:700, color:C.t2, textTransform:"uppercase", letterSpacing:0.5 }}>Progreso</span>
+            <button onClick={toggleAudit} style={{ fontSize:12.7, fontWeight:700, color:C.t1, background:C.bg, border:`1.5px solid ${C.b1}`, borderRadius:8, padding:"5px 14px", cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:5 }}>
+              {showAudit?"Ocultar detalle":"Ver detalle"} <span style={{ fontSize:10.4, marginTop:1 }}>{showAudit?"\u25B2":"\u25BC"}</span>
             </button>
           </div>
           {/* Circular stepper nodes with connecting lines */}
@@ -427,7 +420,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
             {visualSteps.map((vs,i)=>{
               const done = i < visualIdx; const active = i === visualIdx && !isCanceled; const isCancelStep = i === 2 && isCanceled;
               const nodeColor = done ? C.pri : active ? vs.color : isCancelStep ? C.err : C.b1;
-              const nodeIcon = done ? Ic.chk(C.w,12) : vs.icon(active || isCancelStep ? C.w : C.t3, 13);
+              const nodeIcon = done ? Ic.chk(C.w,13) : vs.icon(active || isCancelStep ? C.w : C.t3, 14);
               const stepDate = getStepDate(visualAuditMap[i]);
               return <div key={i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",position:"relative",minWidth:0}}>
                 {/* Connecting line before node */}
@@ -440,19 +433,19 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
                     boxShadow:active?`0 0 0 3px ${vs.color}25`:isCancelStep?`0 0 0 3px ${C.err}25`:"none",transition:"all 0.2s"}}>
                   {nodeIcon}
                 </div>
-                <span style={{fontSize:12.4,fontWeight:(active||isCancelStep)?700:done?600:500,color:(active||isCancelStep)?vs.color:done?C.t1:C.t3,textAlign:"center",lineHeight:1.2,marginTop:6}}>{vs.label}</span>
-                {active && vs.sub && <span style={{fontSize:11,color:C.t3,fontStyle:"italic",textAlign:"center",lineHeight:1.2,marginTop:1}}>({vs.sub})</span>}
+                <span style={{fontSize:13,fontWeight:(active||isCancelStep)?700:done?600:500,color:(active||isCancelStep)?vs.color:done?C.t1:C.t3,textAlign:"center",lineHeight:1.2,marginTop:6}}>{vs.label}</span>
+                {active && vs.sub && <span style={{fontSize:11.5,color:C.t3,fontStyle:"italic",textAlign:"center",lineHeight:1.2,marginTop:1}}>({vs.sub})</span>}
                 {active && vs.multiSub && vs.multiSub.length > 0 && <div style={{display:"flex",flexDirection:"column",gap:2,marginTop:2,alignItems:"center"}}>
-                  {vs.multiSub.map(t => <span key={t.n} style={{fontSize:10.5,color:t.cfg.color,fontWeight:600,lineHeight:1.2}}>#{t.n} {t.cfg.label}</span>)}
+                  {vs.multiSub.map(t => <span key={t.n} style={{fontSize:11,color:t.cfg.color,fontWeight:600,lineHeight:1.2}}>#{t.n} {t.cfg.label}</span>)}
                 </div>}
-                {(done || active || isCancelStep) && stepDate && <span style={{fontSize:10.2,color:C.t3,marginTop:2,textAlign:"center",lineHeight:1.2}}>{fmtD(stepDate)}</span>}
+                {(done || active || isCancelStep) && stepDate && <span style={{fontSize:10.7,color:C.t3,marginTop:2,textAlign:"center",lineHeight:1.2}}>{fmtD(stepDate)}</span>}
               </div>;
             })}
           </div>
           {/* Inline cross-confirmations */}
           {showConfs && <div style={{marginTop:14,paddingTop:12,borderTop:`1px solid ${C.b1}`,display:"flex",gap:16}}>
             <div style={{flex:1}}>
-              <div style={{fontSize:10.5,fontWeight:700,color:C.t2,marginBottom:6,textTransform:"uppercase",letterSpacing:0.4}}>Carga</div>
+              <div style={{fontSize:11,fontWeight:700,color:C.t2,marginBottom:6,textTransform:"uppercase",letterSpacing:0.4}}>Carga</div>
               <div style={{display:"flex",flexDirection:"column",gap:5}}>
                 <ConfDot confirmed={freight.transporterLoadedConfirmedAt} label="Transportista"/>
                 <ConfDot confirmed={freight.producerLoadedConfirmedAt} label="Productor"/>
@@ -460,7 +453,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
             </div>
             <div style={{width:1,background:C.b1}}/>
             <div style={{flex:1}}>
-              <div style={{fontSize:10.5,fontWeight:700,color:C.t2,marginBottom:6,textTransform:"uppercase",letterSpacing:0.4}}>Entrega</div>
+              <div style={{fontSize:11,fontWeight:700,color:C.t2,marginBottom:6,textTransform:"uppercase",letterSpacing:0.4}}>Entrega</div>
               <div style={{display:"flex",flexDirection:"column",gap:5}}>
                 <ConfDot confirmed={freight.transporterFinishedConfirmedAt} label="Transportista"/>
                 <ConfDot confirmed={freight.plantFinishedConfirmedAt} label="Planta"/>
@@ -468,7 +461,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
             </div>
           </div>}
           {/* Per-stage detail — 3 columns matching visual stepper */}
-          {showAudit && !auditLog && <div style={{textAlign:"center",padding:"12px 0",fontSize:12.1,color:C.t3}}>Cargando detalle...</div>}
+          {showAudit && !auditLog && <div style={{textAlign:"center",padding:"12px 0",fontSize:12.7,color:C.t3}}>Cargando detalle...</div>}
           {showAudit && auditLog && (()=>{
             const visualAuditSteps = [
               { label:"Pendiente", backendSteps:["pending_assignment"], color:C.acc },
@@ -486,7 +479,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
                 return (
                   <div key={vi} style={{ flex:1, minWidth:0 }}>
                     {tc !== null && (
-                      <div style={{ textAlign:"center", fontSize:11, fontWeight:700, color:col, marginBottom:8, background:`${col}12`, borderRadius:5, padding:"3px 0" }}>
+                      <div style={{ textAlign:"center", fontSize:11.5, fontWeight:700, color:col, marginBottom:8, background:`${col}12`, borderRadius:5, padding:"3px 0" }}>
                         {tc}/{freight.truckCount}
                       </div>
                     )}
@@ -497,12 +490,12 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
                         <div key={entry.id} style={{ display:"flex", gap:5, marginBottom:8, alignItems:"flex-start" }}>
                           <div style={{ width:7, height:7, borderRadius:4, background:acCol, flexShrink:0, marginTop:3 }} />
                           <div style={{ minWidth:0 }}>
-                            <div style={{ fontSize:11.6, fontWeight:700, color:acCol, lineHeight:1.3 }}>{actionLabels[entry.action]||entry.action}{tn ? ` · ${tn}` : ""}</div>
-                            <div style={{ fontSize:11, color:C.t2, marginTop:1, lineHeight:1.3, wordBreak:"break-word" }}>{entry.user?.name||"Sistema"}</div>
-                            {entry.user?.company?.name && <div style={{ fontSize:10.5, color:C.t3, lineHeight:1.2 }}>{entry.user.company.name}</div>}
-                            {(entry.reason || entry.metadata?.reason) && <div style={{ fontSize:10.5, color:C.t3, fontStyle:"italic", marginTop:1 }}>"{entry.reason||entry.metadata.reason}"</div>}
-                            {entry.metadata?.confirmedBy && <div style={{ fontSize:10.5, color:C.t3, marginTop:1 }}>por {entry.metadata.confirmedBy==="transporter"?"transportista":entry.metadata.confirmedBy==="producer"?"productor":entry.metadata.confirmedBy==="plant"?"planta":entry.metadata.confirmedBy}</div>}
-                            <div style={{ fontSize:10.5, color:C.t3, marginTop:1 }}>{fmtD(entry.createdAt)}</div>
+                            <div style={{ fontSize:12.2, fontWeight:700, color:acCol, lineHeight:1.3 }}>{actionLabels[entry.action]||entry.action}{tn ? ` · ${tn}` : ""}</div>
+                            <div style={{ fontSize:11.5, color:C.t2, marginTop:1, lineHeight:1.3, wordBreak:"break-word" }}>{entry.user?.name||"Sistema"}</div>
+                            {entry.user?.company?.name && <div style={{ fontSize:11, color:C.t3, lineHeight:1.2 }}>{entry.user.company.name}</div>}
+                            {(entry.reason || entry.metadata?.reason) && <div style={{ fontSize:11, color:C.t3, fontStyle:"italic", marginTop:1 }}>"{entry.reason||entry.metadata.reason}"</div>}
+                            {entry.metadata?.confirmedBy && <div style={{ fontSize:11, color:C.t3, marginTop:1 }}>por {entry.metadata.confirmedBy==="transporter"?"transportista":entry.metadata.confirmedBy==="producer"?"productor":entry.metadata.confirmedBy==="plant"?"planta":entry.metadata.confirmedBy}</div>}
+                            <div style={{ fontSize:11, color:C.t3, marginTop:1 }}>{fmtD(entry.createdAt)}</div>
                           </div>
                         </div>
                       );
@@ -511,14 +504,14 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
                       <div key={a.id} style={{ display:"flex", gap:5, marginBottom:8, alignItems:"flex-start" }}>
                         <div style={{ width:7, height:7, borderRadius:4, background:col, flexShrink:0, marginTop:3 }} />
                         <div style={{ minWidth:0 }}>
-                          <div style={{ fontSize:11, fontWeight:700, color:C.t1 }}>Viaje #{a.tripNumber}</div>
-                          {a.plate && <div style={{ fontSize:11, color:C.t2, marginTop:1, lineHeight:1.3 }}>{a.plate}{a.truckModel?` · ${a.truckModel}`:""}</div>}
-                          {a.transporterName && <div style={{ fontSize:10.5, color:C.t3, lineHeight:1.2 }}>{a.transporterName}</div>}
-                          {a.driverName && <div style={{ fontSize:10.5, color:C.t3, lineHeight:1.2 }}>{a.driverName}</div>}
+                          <div style={{ fontSize:11.5, fontWeight:700, color:C.t1 }}>Viaje #{a.tripNumber}</div>
+                          {a.plate && <div style={{ fontSize:11.5, color:C.t2, marginTop:1, lineHeight:1.3 }}>{a.plate}{a.truckModel?` · ${a.truckModel}`:""}</div>}
+                          {a.transporterName && <div style={{ fontSize:11, color:C.t3, lineHeight:1.2 }}>{a.transporterName}</div>}
+                          {a.driverName && <div style={{ fontSize:11, color:C.t3, lineHeight:1.2 }}>{a.driverName}</div>}
                         </div>
                       </div>
                     ))}
-                    {logs.length === 0 && stepAssigns.length === 0 && hasData && <div style={{ fontSize:9.9, color:C.t3, textAlign:"center" }}>{"\u2014"}</div>}
+                    {logs.length === 0 && stepAssigns.length === 0 && hasData && <div style={{ fontSize:10.4, color:C.t3, textAlign:"center" }}>{"\u2014"}</div>}
                   </div>
                 );
               })}
@@ -538,16 +531,16 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
           <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:showProgressBar||visibleAssignments.length>0?12:0 }}>
             <div style={{ display:"flex", alignItems:"center", gap:8 }}>
               <span style={{ display:"flex" }}>{Ic.truck(C.t2,16)}</span>
-              <span style={{ fontSize:11.6, fontWeight:700, color:C.t2, textTransform:"uppercase", letterSpacing:0.5 }}>Camiones</span>
+              <span style={{ fontSize:12.2, fontWeight:700, color:C.t2, textTransform:"uppercase", letterSpacing:0.5 }}>Camiones</span>
               {canEditCount && (()=>{
                 const displayCount = truckCountLocal ?? truckCount;
                 return <div style={{ display:"flex", alignItems:"center", gap:3, marginLeft:4 }}>
                 <button disabled={truckCountLoading||displayCount<=1||displayCount<=assignedCount} onClick={(e)=>{e.stopPropagation();handleTruckCountTap(-1);}} style={{ width:30, height:30, borderRadius:7, border:`1.5px solid ${C.b1}`, background:C.bg, cursor:(truckCountLoading||displayCount<=1||displayCount<=assignedCount)?"not-allowed":"pointer", display:"flex", alignItems:"center", justifyContent:"center", opacity:(truckCountLoading||displayCount<=1||displayCount<=assignedCount)?0.35:1, transition:"opacity 0.1s" }}>{Ic.minus(C.t1,15)}</button>
-                <span style={{ fontSize:15, fontWeight:800, color:C.t1, minWidth:28, textAlign:"center" }}>{displayCount}</span>
+                <span style={{ fontSize:15.8, fontWeight:800, color:C.t1, minWidth:28, textAlign:"center" }}>{displayCount}</span>
                 <button disabled={truckCountLoading||displayCount>=50} onClick={(e)=>{e.stopPropagation();handleTruckCountTap(1);}} style={{ width:30, height:30, borderRadius:7, border:`1.5px solid ${C.b1}`, background:C.bg, cursor:(truckCountLoading||displayCount>=50)?"not-allowed":"pointer", display:"flex", alignItems:"center", justifyContent:"center", opacity:(truckCountLoading||displayCount>=50)?0.35:1, transition:"opacity 0.1s" }}>{Ic.plus(C.t1,15)}</button>
               </div>;})()}
             </div>
-            <span style={{ fontSize:12.1, fontWeight:600, color:C.info }}>{assignedCount}/{truckCountLocal ?? truckCount} asignados</span>
+            <span style={{ fontSize:12.7, fontWeight:600, color:C.info }}>{assignedCount}/{truckCountLocal ?? truckCount} asignados</span>
           </div>
           {/* Progress bar (multi-truck) */}
           {showProgressBar && <div style={{ height:6, borderRadius:3, background:C.b1, marginBottom:14, overflow:"hidden" }}>
@@ -563,38 +556,35 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
               <div key={a.id} style={{ border:`1px solid ${tst.color}30`, borderLeft:`3px solid ${tst.color}`, borderRadius:10, marginBottom:8, overflow:"hidden" }}>
                 <div onClick={()=>setExpandedTrip(isExpanded?null:a.id)} style={{ padding:"10px 12px", cursor:"pointer", background:isExpanded?`${tst.color}06`:"transparent" }}>
                   <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                    {isMultiTruck && <span style={{ fontSize:13.2, fontWeight:800, color:tst.color }}>#{a.tripNumber}</span>}
-                    <span style={{ fontSize:13.2, fontWeight:600, color:C.t1, flex:1, minWidth:0 }}>
-                      <span style={{ display:"block", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{a.plate || "Sin camión"}{a.transporterName ? ` · ${a.transporterName}` : ""}</span>
-                      {a.driverName && <span style={{ display:"block", fontSize:11.6, fontWeight:400, color:C.t3, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{a.driverName}{a.driverPhone?` · ${a.driverPhone}`:""}</span>}
+                    {isMultiTruck && <span style={{ fontSize:13.9, fontWeight:800, color:tst.color }}>#{a.tripNumber}</span>}
+                    <span style={{ fontSize:13.9, fontWeight:600, color:C.t1, flex:1, minWidth:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                      {a.plate || "Sin camión"}
                     </span>
-                    {/* Action button inline (right side) */}
+                    <Bd color={tst.color} bg={tst.bg} small>{tst.label}</Bd>
                     {!isExpanded && mainBtn && (
-                      <button disabled={actionLoading} onClick={(e)=>{e.stopPropagation(); onTripAction && onTripAction(freight.id, a.id, mainBtn.key);}} style={{ padding:"6px 10px", borderRadius:7, border:"none", background:mainBtn.color, color:C.w, fontSize:11, fontWeight:700, cursor:actionLoading?"not-allowed":"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:4, opacity:actionLoading?0.6:1, whiteSpace:"nowrap", flexShrink:0 }}>
+                      <button disabled={actionLoading} onClick={(e)=>{e.stopPropagation(); onTripAction && onTripAction(freight.id, a.id, mainBtn.key);}} style={{ padding:"6px 10px", borderRadius:7, border:"none", background:mainBtn.color, color:C.w, fontSize:11.5, fontWeight:700, cursor:actionLoading?"not-allowed":"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:4, opacity:actionLoading?0.6:1, whiteSpace:"nowrap", flexShrink:0 }}>
                         {mainBtn.icon} {actionLoading?"...":mainBtn.label}
                       </button>
                     )}
-                    {!mainBtn && <Bd color={tst.color} bg={tst.bg} small>{tst.label}</Bd>}
                     <span style={{ display:"flex", transform:isExpanded?"rotate(-90deg)":"rotate(0deg)", transition:"transform 0.15s", flexShrink:0 }}>{Ic.chev(C.t3,14)}</span>
                   </div>
                 </div>
                 {isExpanded && (
                   <div style={{ padding:"8px 12px 12px", borderTop:`1px solid ${C.b2}` }}>
-                    <div style={{ display:"flex", flexDirection:"column", gap:4, fontSize:12.7, color:C.t2, marginBottom:tripBtns.length>0?10:0 }}>
-                      <Bd color={tst.color} bg={tst.bg} small>{tst.label}</Bd>
+                    <div style={{ display:"flex", flexDirection:"column", gap:4, fontSize:13.3, color:C.t2, marginBottom:tripBtns.length>0?10:0 }}>
                       {a.transporterName && <div style={{ display:"flex", alignItems:"center", gap:6 }}>{Ic.truck(C.t3,12)} {a.transporterName}</div>}
-                      {a.plate && <div style={{ display:"flex", alignItems:"center", gap:6 }}>{Ic.truck(C.acc,12)} {a.plate}{a.truckModel?` · ${a.truckModel}`:""}</div>}
+                      {a.plate && a.truckModel && <div style={{ display:"flex", alignItems:"center", gap:6 }}>{Ic.truck(C.acc,12)} {a.plate} · {a.truckModel}</div>}
                       {a.driverName && <div style={{ display:"flex", alignItems:"center", gap:6 }}>{Ic.user(C.pri,12)} {a.driverName}{a.driverPhone?` · ${a.driverPhone}`:""}</div>}
                       {a.tons && <div style={{ display:"flex", alignItems:"center", gap:6 }}>{Ic.grain(C.t3,12)} {a.tons} tn</div>}
                       {(a.tripStatus === "in_progress" || a.tripStatus === "loaded") && (
                         <div style={{ display:"flex", gap:12, marginTop:6 }}>
                           <div>
-                            <span style={{ fontSize:9.9, fontWeight:700, color:C.t3, textTransform:"uppercase" }}>Carga: </span>
-                            <span style={{ fontSize:11, display:"inline-flex", alignItems:"center", gap:3 }}>{a.transporterLoadedConfirmedAt ? Ic.chk(C.ok,11) : Ic.clk(C.acc,11)} <span>Transp.</span> {a.producerLoadedConfirmedAt ? Ic.chk(C.ok,11) : Ic.clk(C.acc,11)} <span>Prod.</span></span>
+                            <span style={{ fontSize:10.4, fontWeight:700, color:C.t3, textTransform:"uppercase" }}>Carga: </span>
+                            <span style={{ fontSize:11.5, display:"inline-flex", alignItems:"center", gap:3 }}>{a.transporterLoadedConfirmedAt ? Ic.chk(C.ok,11) : Ic.clk(C.acc,11)} <span>Transp.</span> {a.producerLoadedConfirmedAt ? Ic.chk(C.ok,11) : Ic.clk(C.acc,11)} <span>Prod.</span></span>
                           </div>
                           {a.tripStatus === "loaded" && <div>
-                            <span style={{ fontSize:9.9, fontWeight:700, color:C.t3, textTransform:"uppercase" }}>Entrega: </span>
-                            <span style={{ fontSize:11, display:"inline-flex", alignItems:"center", gap:3 }}>{a.transporterFinishedConfirmedAt ? Ic.chk(C.ok,11) : Ic.clk(C.acc,11)} <span>Transp.</span> {a.plantFinishedConfirmedAt ? Ic.chk(C.ok,11) : Ic.clk(C.acc,11)} <span>Planta</span></span>
+                            <span style={{ fontSize:10.4, fontWeight:700, color:C.t3, textTransform:"uppercase" }}>Entrega: </span>
+                            <span style={{ fontSize:11.5, display:"inline-flex", alignItems:"center", gap:3 }}>{a.transporterFinishedConfirmedAt ? Ic.chk(C.ok,11) : Ic.clk(C.acc,11)} <span>Transp.</span> {a.plantFinishedConfirmedAt ? Ic.chk(C.ok,11) : Ic.clk(C.acc,11)} <span>Planta</span></span>
                           </div>}
                         </div>
                       )}
@@ -602,12 +592,12 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
                     {tripBtns.length > 0 && (
                       <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
                         {tripBtns.map(b => (
-                          <button key={b.key} disabled={actionLoading} onClick={()=>onTripAction && onTripAction(freight.id, a.id, b.key)} style={{ flex:"1 1 auto", padding:"10px 12px", minWidth:80, minHeight:40, borderRadius:8, border:"none", background:b.color, color:C.w, fontSize:12.7, fontWeight:700, cursor:actionLoading?"not-allowed":"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:6, opacity:actionLoading?0.6:1 }}>
+                          <button key={b.key} disabled={actionLoading} onClick={()=>onTripAction && onTripAction(freight.id, a.id, b.key)} style={{ flex:"1 1 auto", padding:"10px 12px", minWidth:80, minHeight:40, borderRadius:8, border:"none", background:b.color, color:C.w, fontSize:13.3, fontWeight:700, cursor:actionLoading?"not-allowed":"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:6, opacity:actionLoading?0.6:1 }}>
                             {b.icon} {actionLoading?"...":b.label}
                           </button>
                         ))}
                         {user.userType === "plant" && (a.tripStatus === "pending" || a.tripStatus === "accepted") && a.transportCompanyId !== freight.originCompanyId && onEditTrip && (
-                          <button onClick={(e)=>{e.stopPropagation(); onEditTrip(freight.id, a);}} style={{ padding:"8px 12px", minHeight:36, borderRadius:8, border:`1px solid ${C.b1}`, background:C.w, color:C.t2, fontSize:12.1, fontWeight:600, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:4 }}>
+                          <button onClick={(e)=>{e.stopPropagation(); onEditTrip(freight.id, a);}} style={{ padding:"8px 12px", minHeight:36, borderRadius:8, border:`1px solid ${C.b1}`, background:C.w, color:C.t2, fontSize:12.7, fontWeight:600, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:4 }}>
                             {Ic.doc(C.t2,12)} Editar
                           </button>
                         )}
@@ -621,10 +611,10 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
           {/* Empty placeholder lines for unassigned truck slots */}
           {Array.from({ length: Math.max(0, (truckCountLocal ?? truckCount) - assignedCount) }, (_, i) => (
             <div key={`empty-${i}`} style={{ border:`1px dashed ${C.b1}`, borderLeft:`3px solid ${C.b1}`, borderRadius:10, marginBottom:8, padding:"10px 12px", display:"flex", alignItems:"center", gap:8 }}>
-              {isMultiTruck && <span style={{ fontSize:13.2, fontWeight:800, color:C.t3 }}>#{assignedCount + i + 1}</span>}
-              <span style={{ fontSize:13.2, fontWeight:500, color:C.t3, flex:1, fontStyle:"italic" }}>Pendiente de asignar</span>
+              {isMultiTruck && <span style={{ fontSize:13.9, fontWeight:800, color:C.t3 }}>#{assignedCount + i + 1}</span>}
+              <span style={{ fontSize:13.9, fontWeight:500, color:C.t3, flex:1, fontStyle:"italic" }}>Pendiente de asignar</span>
               {(perms.canApprove || (user.userType === "producer" && freight.useOwnFleet)) && (
-                <button onClick={()=>onAction(freight.id,"assign")} style={{ padding:"6px 10px", borderRadius:7, border:`1px solid ${C.acc}`, background:`${C.acc}0D`, color:C.acc, fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:4, whiteSpace:"nowrap", flexShrink:0 }}>
+                <button onClick={()=>onAction(freight.id,"assign")} style={{ padding:"6px 10px", borderRadius:7, border:`1px solid ${C.acc}`, background:`${C.acc}0D`, color:C.acc, fontSize:11.5, fontWeight:700, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:4, whiteSpace:"nowrap", flexShrink:0 }}>
                   {Ic.plus(C.acc,12)} Asignar
                 </button>
               )}
@@ -638,38 +628,38 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
         <div style={{ position:"fixed", inset:0, zIndex:999, display:"flex", alignItems:"center", justifyContent:"center", background:"rgba(0,0,0,0.4)" }} onClick={handleTruckModalCancel}>
           <div onClick={e=>e.stopPropagation()} style={{ background:C.w, borderRadius:16, padding:"24px 20px", width:"min(340px,90vw)", boxShadow:"0 8px 32px rgba(0,0,0,0.2)" }}>
             {truckModal.type === "add" ? (<>
-              <div style={{ fontSize:15.4, fontWeight:700, color:C.t1, marginBottom:4 }}>Agregar camión</div>
-              <div style={{ fontSize:13.2, color:C.t3, marginBottom:16 }}>¿El camión adicional es de flota propia o se delega a la planta?</div>
+              <div style={{ fontSize:16.2, fontWeight:700, color:C.t1, marginBottom:4 }}>Agregar camión</div>
+              <div style={{ fontSize:13.9, color:C.t3, marginBottom:16 }}>¿El camión adicional es de flota propia o se delega a la planta?</div>
               <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
-                <button onClick={()=>handleTruckModalConfirm("own_fleet")} style={{ width:"100%", padding:"12px 0", borderRadius:10, border:"none", background:C.pri, color:C.w, fontSize:14.3, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
+                <button onClick={()=>handleTruckModalConfirm("own_fleet")} style={{ width:"100%", padding:"12px 0", borderRadius:10, border:"none", background:C.pri, color:C.w, fontSize:15, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
                   {Ic.truck(C.w,14)} Flota propia — Asignar ahora
                 </button>
-                <button onClick={()=>handleTruckModalConfirm("delegate")} style={{ width:"100%", padding:"12px 0", borderRadius:10, border:`1.5px solid ${C.b1}`, background:C.w, color:C.t1, fontSize:14.3, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>
+                <button onClick={()=>handleTruckModalConfirm("delegate")} style={{ width:"100%", padding:"12px 0", borderRadius:10, border:`1.5px solid ${C.b1}`, background:C.w, color:C.t1, fontSize:15, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>
                   Delegar a planta
                 </button>
-                <button onClick={handleTruckModalCancel} style={{ width:"100%", padding:"10px 0", borderRadius:10, border:"none", background:"transparent", color:C.t3, fontSize:13.2, fontWeight:500, cursor:"pointer", fontFamily:"inherit" }}>
+                <button onClick={handleTruckModalCancel} style={{ width:"100%", padding:"10px 0", borderRadius:10, border:"none", background:"transparent", color:C.t3, fontSize:13.9, fontWeight:500, cursor:"pointer", fontFamily:"inherit" }}>
                   Cancelar
                 </button>
               </div>
             </>) : (<>
-              <div style={{ fontSize:15.4, fontWeight:700, color:C.t1, marginBottom:4 }}>Reducir camiones</div>
-              <div style={{ fontSize:13.2, color:C.t3, marginBottom:16 }}>
+              <div style={{ fontSize:16.2, fontWeight:700, color:C.t1, marginBottom:4 }}>Reducir camiones</div>
+              <div style={{ fontSize:13.9, color:C.t3, marginBottom:16 }}>
                 {visibleAssignments.length > 0
                   ? "¿Desea quitar un camión específico o delegar la decisión a la planta?"
                   : "Se reducirá la cantidad de camiones solicitados."}
               </div>
               <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
                 {visibleAssignments.length > 0 && visibleAssignments.filter(a=>a.tripStatus==="pending"||a.tripStatus==="accepted").map(a => (
-                  <button key={a.id} onClick={async()=>{const nextCount=truckModal?.next;setTruckModal(null);if(onCancelAssignment){const r=await onCancelAssignment(freight.id,a.id,"Reducción de camiones");if(r&&r.ok){commitTruckCount(nextCount);}else{setTruckCountLocal(null);show(r?.error||"No se pudo quitar el camión","err");}}}} style={{ width:"100%", padding:"10px 12px", borderRadius:10, border:`1px solid ${C.b1}`, background:C.w, color:C.t1, fontSize:13.2, fontWeight:600, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:8, textAlign:"left" }}>
-                    <span style={{ fontSize:12.1, fontWeight:700, color:C.err }}>Quitar</span>
+                  <button key={a.id} onClick={async()=>{const nextCount=truckModal?.next;setTruckModal(null);if(onCancelAssignment){const r=await onCancelAssignment(freight.id,a.id,"Reducción de camiones");if(r&&r.ok){commitTruckCount(nextCount);}else{setTruckCountLocal(null);show(r?.error||"No se pudo quitar el camión","err");}}}} style={{ width:"100%", padding:"10px 12px", borderRadius:10, border:`1px solid ${C.b1}`, background:C.w, color:C.t1, fontSize:13.9, fontWeight:600, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:8, textAlign:"left" }}>
+                    <span style={{ fontSize:12.7, fontWeight:700, color:C.err }}>Quitar</span>
                     <span>{a.plate || "Sin placa"}</span>
-                    {a.transporterName && <span style={{ color:C.t3, fontSize:12.1 }}>· {a.transporterName}</span>}
+                    {a.transporterName && <span style={{ color:C.t3, fontSize:12.7 }}>· {a.transporterName}</span>}
                   </button>
                 ))}
-                <button onClick={()=>handleTruckModalConfirm("remove_delegate")} style={{ width:"100%", padding:"12px 0", borderRadius:10, border:`1.5px solid ${C.b1}`, background:C.w, color:C.t1, fontSize:14.3, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>
+                <button onClick={()=>handleTruckModalConfirm("remove_delegate")} style={{ width:"100%", padding:"12px 0", borderRadius:10, border:`1.5px solid ${C.b1}`, background:C.w, color:C.t1, fontSize:15, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>
                   Delegar a planta
                 </button>
-                <button onClick={handleTruckModalCancel} style={{ width:"100%", padding:"10px 0", borderRadius:10, border:"none", background:"transparent", color:C.t3, fontSize:13.2, fontWeight:500, cursor:"pointer", fontFamily:"inherit" }}>
+                <button onClick={handleTruckModalCancel} style={{ width:"100%", padding:"10px 0", borderRadius:10, border:"none", background:"transparent", color:C.t3, fontSize:13.9, fontWeight:500, cursor:"pointer", fontFamily:"inherit" }}>
                   Cancelar
                 </button>
               </div>
@@ -686,9 +676,9 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
             const InfoRow = ({ic,label,val,isLast}) => (
               <div style={{ display:"flex", alignItems:"center", gap:10, padding:"9px 0", borderBottom:isLast?"none":`1px solid ${C.b2}` }}>
                 <span style={{display:"flex",flexShrink:0}}>{ic}</span>
-                <span style={{ fontSize:12.7, color:C.t2, minWidth:85 }}>{label}</span>
-                {label==="Teléfono"?<a href={`tel:${val}`} style={{ fontSize:13.2, fontWeight:600, color:C.info, marginLeft:"auto", textDecoration:"none" }}>{val}</a>:
-                <span style={{ fontSize:13.2, fontWeight:600, color:C.t1, marginLeft:"auto", textAlign:"right" }}>{val}</span>}
+                <span style={{ fontSize:13.3, color:C.t2, minWidth:85 }}>{label}</span>
+                {label==="Teléfono"?<a href={`tel:${val}`} style={{ fontSize:13.9, fontWeight:600, color:C.info, marginLeft:"auto", textDecoration:"none" }}>{val}</a>:
+                <span style={{ fontSize:13.9, fontWeight:600, color:C.t1, marginLeft:"auto", textAlign:"right" }}>{val}</span>}
               </div>
             );
             const carga = [
@@ -722,9 +712,9 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
         return <div style={{ background:C.warnPale, border:`1px solid ${C.warn}30`, borderLeft:`${isUrgent?4:3}px solid ${C.warn}`, borderRadius:12, padding:14, marginBottom:12 }}>
           <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:6 }}>
             {isUrgent ? Ic.warn(C.warn, 15) : Ic.doc(C.warn, 14)}
-            <span style={{ fontSize:11.6, fontWeight:700, color:C.warn, textTransform:"uppercase", letterSpacing:0.5 }}>Observaciones{isUrgent?" — Atención":""}</span>
+            <span style={{ fontSize:12.2, fontWeight:700, color:C.warn, textTransform:"uppercase", letterSpacing:0.5 }}>Observaciones{isUrgent?" — Atención":""}</span>
           </div>
-          <div style={{ fontSize:13.8, color:C.t1, lineHeight:1.5, whiteSpace:"pre-wrap" }}>{freight.notes}</div>
+          <div style={{ fontSize:14.5, color:C.t1, lineHeight:1.5, whiteSpace:"pre-wrap" }}>{freight.notes}</div>
         </div>;
       })()}
 
@@ -741,14 +731,14 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
           return <div key={pc.id} style={{ background:C.infoPale||"#e8f4fd", border:`1.5px solid ${C.info}30`, borderLeft:`3px solid ${C.info}`, borderRadius:12, padding:14, marginBottom:12 }}>
             <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:6 }}>
               {Ic.doc(C.info, 14)}
-              <span style={{ fontSize:11.6, fontWeight:700, color:C.info, textTransform:"uppercase", letterSpacing:0.5 }}>Cambio pendiente de aprobación</span>
+              <span style={{ fontSize:12.2, fontWeight:700, color:C.info, textTransform:"uppercase", letterSpacing:0.5 }}>Cambio pendiente de aprobación</span>
             </div>
-            <div style={{ fontSize:13.2, color:C.t1, marginBottom:isApprover?10:0 }}>{label}{pc.requestedBy?.name ? ` — solicitado por ${pc.requestedBy.name}` : ""}</div>
+            <div style={{ fontSize:13.9, color:C.t1, marginBottom:isApprover?10:0 }}>{label}{pc.requestedBy?.name ? ` — solicitado por ${pc.requestedBy.name}` : ""}</div>
             {isApprover && <div style={{ display:"flex", gap:8 }}>
               <Btn sm disabled={pcLoading===pc.id} onClick={async()=>{ setPcLoading(pc.id); try { await apiApprovePendingChange(freight.id, pc.id); onRefresh(freight.id); } catch(e) { log.error("approve-pc",e); show("Error al procesar el cambio", "err"); } finally { setPcLoading(null); } }}>Aprobar</Btn>
               <Btn sm v="err" disabled={pcLoading===pc.id} onClick={async()=>{ setPcLoading(pc.id); try { await apiRejectPendingChange(freight.id, pc.id); onRefresh(freight.id); } catch(e) { log.error("reject-pc",e); show("Error al procesar el cambio", "err"); } finally { setPcLoading(null); } }}>Rechazar</Btn>
             </div>}
-            {!isApprover && <div style={{ fontSize:11.6, color:C.t3, marginTop:4 }}>Esperando aprobación de la otra parte</div>}
+            {!isApprover && <div style={{ fontSize:12.2, color:C.t3, marginTop:4 }}>Esperando aprobación de la otra parte</div>}
           </div>;
         });
       })()}
@@ -765,8 +755,8 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
         return <div style={{ background:b.bg, border:`1.5px solid ${b.border}30`, borderRadius:12, padding:14, marginBottom:12, display:"flex", alignItems:"center", gap:10 }}>
           {b.icon}
           <div>
-            <div style={{ fontSize:13.2, fontWeight:700, color:b.border }}>{b.title}</div>
-            <div style={{ fontSize:12.1, color:C.t2 }}>{b.desc}</div>
+            <div style={{ fontSize:13.9, fontWeight:700, color:b.border }}>{b.title}</div>
+            <div style={{ fontSize:12.7, color:C.t2 }}>{b.desc}</div>
           </div>
         </div>;
       })()}
@@ -779,7 +769,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
         // Show skeleton shimmer while loading detail (documents not yet available)
         if (!hasFullDetail && !hasDocs) return (
           <div style={{ background:C.w, borderRadius:12, padding:16, marginBottom:12 }}>
-            <div style={{ fontSize:11.6, fontWeight:700, color:C.t2, textTransform:"uppercase", letterSpacing:0.5, marginBottom:10 }}>Documentos</div>
+            <div style={{ fontSize:12.2, fontWeight:700, color:C.t2, textTransform:"uppercase", letterSpacing:0.5, marginBottom:10 }}>Documentos</div>
             <div style={{ display:"flex", gap:8 }}>
               {[1,2,3].map(i => <div key={i} style={{ width:72, height:72, background:C.b2, borderRadius:8, animation:"pulse 1.5s ease-in-out infinite" }}/>)}
             </div>
@@ -798,7 +788,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
       <div style={{ display:"flex", gap:8, marginBottom:12 }}>
         <button onClick={()=>onChat(fullConvId)} disabled={!fullConvId}
           style={{ flex:1, background:C.priPale, borderRadius:10, padding:"10px 12px", display:"flex", alignItems:"center", justifyContent:"center", gap:7, border:`1.5px solid ${C.pri}30`, cursor:fullConvId?"pointer":"default", fontFamily:"inherit" }}>
-          {Ic.msg(C.pri,16)}<span style={{ fontSize:13.2, fontWeight:700, color:C.pri }}>Chat</span>
+          {Ic.msg(C.pri,16)}<span style={{ fontSize:13.9, fontWeight:700, color:C.pri }}>Chat</span>
         </button>
         <button disabled={pdfLoading} onClick={async()=>{
           if(pdfLoading) return;
@@ -811,7 +801,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
           } catch(e) { log.error('PDF', e); useUIStore.getState().show('Error al generar PDF: ' + (e?.message || e), 'err'); }
           finally { setPdfLoading(false); }
         }} style={{ flex:1, background:C.w, borderRadius:10, padding:"10px 12px", display:"flex", alignItems:"center", justifyContent:"center", gap:7, border:`1.5px solid ${C.b1}`, cursor:"pointer", fontFamily:"inherit", opacity:pdfLoading?0.6:1 }}>
-          {Ic.doc(C.t2,16)}<span style={{ fontSize:13.2, fontWeight:700, color:C.t1 }}>{pdfLoading?'Generando...':'PDF'}</span>
+          {Ic.doc(C.t2,16)}<span style={{ fontSize:13.9, fontWeight:700, color:C.t1 }}>{pdfLoading?'Generando...':'PDF'}</span>
         </button>
       </div>
 
@@ -858,22 +848,22 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
         return <div onClick={()=>setStepModal(null)} style={{ position:"fixed", inset:0, zIndex:200, background:"rgba(0,0,0,0.5)", display:"flex", alignItems:"center", justifyContent:"center", padding:16 }}>
           <div onClick={e=>e.stopPropagation()} style={{ background:C.w, borderRadius:14, padding:20, maxWidth:400, width:"100%", maxHeight:"80vh", overflow:"auto", boxShadow:C.shLg }}>
             <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14 }}>
-              <span style={{ fontSize:15.4, fontWeight:800, color:stepModal.color }}>{stepModal.label}</span>
+              <span style={{ fontSize:16.2, fontWeight:800, color:stepModal.color }}>{stepModal.label}</span>
               <button onClick={()=>setStepModal(null)} style={{ background:"none", border:"none", cursor:"pointer", padding:4 }}>{Ic.cross(C.t3,18)}</button>
             </div>
-            {logs.length === 0 && stepAssigns.length === 0 && <div style={{ fontSize:13.2, color:C.t3, textAlign:"center", padding:"20px 0" }}>Sin actividad registrada en esta etapa</div>}
+            {logs.length === 0 && stepAssigns.length === 0 && <div style={{ fontSize:13.9, color:C.t3, textAlign:"center", padding:"20px 0" }}>Sin actividad registrada en esta etapa</div>}
             {logs.map(entry => {
               const acCol = actionColors[entry.action] || C.t2;
               const tn = entry.metadata?.tripNumber ? `Viaje #${entry.metadata.tripNumber}` : null;
               return <div key={entry.id} style={{ display:"flex", gap:8, marginBottom:12, alignItems:"flex-start" }}>
                 <div style={{ width:8, height:8, borderRadius:4, background:acCol, flexShrink:0, marginTop:5 }} />
                 <div style={{ minWidth:0 }}>
-                  <div style={{ fontSize:13.2, fontWeight:700, color:acCol, lineHeight:1.3 }}>{actionLabels[entry.action]||entry.action}{tn ? ` · ${tn}` : ""}</div>
-                  <div style={{ fontSize:12.1, color:C.t2, marginTop:2, lineHeight:1.3, wordBreak:"break-word" }}>{entry.user?.name||"Sistema"}</div>
-                  {entry.user?.company?.name && <div style={{ fontSize:11.6, color:C.t3, lineHeight:1.2 }}>{entry.user.company.name}</div>}
-                  {(entry.reason || entry.metadata?.reason) && <div style={{ fontSize:11.6, color:C.t3, fontStyle:"italic", marginTop:2 }}>"{entry.reason||entry.metadata.reason}"</div>}
-                  {entry.metadata?.confirmedBy && <div style={{ fontSize:11.6, color:C.t3, marginTop:2 }}>por {entry.metadata.confirmedBy==="transporter"?"transportista":entry.metadata.confirmedBy==="producer"?"productor":entry.metadata.confirmedBy==="plant"?"planta":entry.metadata.confirmedBy}</div>}
-                  <div style={{ fontSize:11.6, color:C.t3, marginTop:2 }}>{fmtD(entry.createdAt)}</div>
+                  <div style={{ fontSize:13.9, fontWeight:700, color:acCol, lineHeight:1.3 }}>{actionLabels[entry.action]||entry.action}{tn ? ` · ${tn}` : ""}</div>
+                  <div style={{ fontSize:12.7, color:C.t2, marginTop:2, lineHeight:1.3, wordBreak:"break-word" }}>{entry.user?.name||"Sistema"}</div>
+                  {entry.user?.company?.name && <div style={{ fontSize:12.2, color:C.t3, lineHeight:1.2 }}>{entry.user.company.name}</div>}
+                  {(entry.reason || entry.metadata?.reason) && <div style={{ fontSize:12.2, color:C.t3, fontStyle:"italic", marginTop:2 }}>"{entry.reason||entry.metadata.reason}"</div>}
+                  {entry.metadata?.confirmedBy && <div style={{ fontSize:12.2, color:C.t3, marginTop:2 }}>por {entry.metadata.confirmedBy==="transporter"?"transportista":entry.metadata.confirmedBy==="producer"?"productor":entry.metadata.confirmedBy==="plant"?"planta":entry.metadata.confirmedBy}</div>}
+                  <div style={{ fontSize:12.2, color:C.t3, marginTop:2 }}>{fmtD(entry.createdAt)}</div>
                 </div>
               </div>;
             })}
@@ -881,10 +871,10 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
               <div key={a.id} style={{ display:"flex", gap:8, marginBottom:12, alignItems:"flex-start" }}>
                 <div style={{ width:8, height:8, borderRadius:4, background:stepModal.color, flexShrink:0, marginTop:5 }} />
                 <div style={{ minWidth:0 }}>
-                  <div style={{ fontSize:12.1, fontWeight:700, color:C.t1 }}>Viaje #{a.tripNumber}</div>
-                  {a.plate && <div style={{ fontSize:12.1, color:C.t2, marginTop:1 }}>{a.plate}{a.truckModel?` · ${a.truckModel}`:""}</div>}
-                  {a.transporterName && <div style={{ fontSize:11.6, color:C.t3 }}>{a.transporterName}</div>}
-                  {a.driverName && <div style={{ fontSize:11.6, color:C.t3 }}>{a.driverName}</div>}
+                  <div style={{ fontSize:12.7, fontWeight:700, color:C.t1 }}>Viaje #{a.tripNumber}</div>
+                  {a.plate && <div style={{ fontSize:12.7, color:C.t2, marginTop:1 }}>{a.plate}{a.truckModel?` · ${a.truckModel}`:""}</div>}
+                  {a.transporterName && <div style={{ fontSize:12.2, color:C.t3 }}>{a.transporterName}</div>}
+                  {a.driverName && <div style={{ fontSize:12.2, color:C.t3 }}>{a.driverName}</div>}
                 </div>
               </div>
             ))}
