@@ -4,6 +4,13 @@ import { Btn, Bd, Loader, LoadingOverlay, EmptyState } from "../components";
 import { apiGetFields, apiCreateField, apiCreateLot, apiImportGoogleList, apiGetPois, apiCreatePoi } from "../api";
 import MapPreviewModal from "../modals/MapPreviewModal";
 
+// Type config
+const TYPE_CFG = {
+  field: { label: "Campo", color: C.pri, icon: (c, s) => Ic.pin(c, s) },
+  lot:   { label: "Lote",  color: C.acc, icon: (c, s) => Ic.grain(c, s) },
+  poi:   { label: "Interés", color: C.sec, icon: (c, s) => Ic.nav(c, s) },
+};
+
 export default function LocationsScreen({ onBack }) {
   const [fields, setFields] = useState([]);
   const [pois, setPois] = useState([]);
@@ -16,21 +23,25 @@ export default function LocationsScreen({ onBack }) {
   const [previewLoc, setPreviewLoc] = useState(null);
 
   // Import flow
-  const [importStep, setImportStep] = useState(0); // 0=hidden, 1=paste, 2=preview
+  const [importStep, setImportStep] = useState(0);
   const [importUrl, setImportUrl] = useState("");
   const [importParsed, setImportParsed] = useState([]);
   const [importDiscarded, setImportDiscarded] = useState(0);
   const [importSelected, setImportSelected] = useState(new Set());
   const [importNames, setImportNames] = useState({});
-  const [importTypes, setImportTypes] = useState({}); // i -> "field"|"lot"|"poi"
-  const [importFieldIds, setImportFieldIds] = useState({}); // i -> fieldId (when type=lot)
+  const [importTypes, setImportTypes] = useState({});       // i -> "field"|"lot"|"poi"
+  const [importFieldIds, setImportFieldIds] = useState({});  // i -> fieldId (when lot)
+  const [importComments, setImportComments] = useState({});   // i -> string
   const [importWarning, setImportWarning] = useState(null);
   const [importListName, setImportListName] = useState(null);
   const [importSlowMsg, setImportSlowMsg] = useState(false);
 
   const load = useCallback(async () => {
     try {
-      const [f, p] = await Promise.all([apiGetFields(), apiGetPois()]);
+      const [f, p] = await Promise.all([
+        apiGetFields(),
+        apiGetPois().catch(() => []),  // POI table might not exist yet
+      ]);
       setFields(f || []);
       setPois(p || []);
     } catch (e) {
@@ -57,11 +68,11 @@ export default function LocationsScreen({ onBack }) {
       setImportDiscarded(result.discarded || 0);
       setImportWarning(result.warning || null);
       setImportListName(result.listName || null);
-      const sel = new Set(result.parsed.map((_, i) => i));
-      setImportSelected(sel);
+      setImportSelected(new Set(result.parsed.map((_, i) => i)));
       setImportNames({});
       setImportTypes({});
       setImportFieldIds({});
+      setImportComments({});
       setImportStep(2);
     } catch (err) {
       setMsg({ t: err.message || "No se pudieron extraer ubicaciones de este link.", k: "err" });
@@ -78,10 +89,9 @@ export default function LocationsScreen({ onBack }) {
       .filter(({ i }) => importSelected.has(i));
     if (selected.length === 0) { setMsg({ t: "Seleccioná al menos una ubicación", k: "err" }); return; }
 
-    // Validate: lots must have a field assigned
     for (const { i } of selected) {
-      if (importTypes[i] === "lot" && !importFieldIds[i]) {
-        setMsg({ t: `"${importNames[i] ?? importParsed[i].name}" es Lote pero no tiene campo asignado`, k: "err" });
+      if (getType(i) === "lot" && !importFieldIds[i]) {
+        setMsg({ t: `"${getName(i)}" es Lote pero no tiene campo asignado`, k: "err" });
         return;
       }
     }
@@ -90,26 +100,25 @@ export default function LocationsScreen({ onBack }) {
     let createdFields = 0, createdLots = 0, createdPois = 0;
     const errors = [];
 
-    // Pass 1: create fields
+    // Pass 1: fields
     const newFieldIds = {};
     for (const { loc, i } of selected) {
-      if (importTypes[i] === "lot" || importTypes[i] === "poi") continue;
-      const name = (importNames[i] ?? loc.name).trim().slice(0, 255);
+      if (getType(i) !== "field") continue;
+      const name = getName(i);
       try {
-        const created = await apiCreateField({ name, address: loc.address || undefined, lat: loc.lat, lng: loc.lng });
-        newFieldIds[i] = created.id;
+        const r = await apiCreateField({ name, address: loc.address || undefined, lat: loc.lat, lng: loc.lng });
+        newFieldIds[i] = r.id;
         createdFields++;
       } catch (err) { errors.push(`"${name}": ${err.message}`); }
     }
 
-    // Pass 2: create lots
+    // Pass 2: lots
     for (const { loc, i } of selected) {
-      if (importTypes[i] !== "lot") continue;
-      const name = (importNames[i] ?? loc.name).trim().slice(0, 255);
+      if (getType(i) !== "lot") continue;
+      const name = getName(i);
       let fieldId = importFieldIds[i];
       if (fieldId?.startsWith("new:")) {
-        const refIdx = parseInt(fieldId.split(":")[1], 10);
-        fieldId = newFieldIds[refIdx];
+        fieldId = newFieldIds[parseInt(fieldId.split(":")[1], 10)];
         if (!fieldId) { errors.push(`"${name}": el campo asociado no se pudo crear`); continue; }
       }
       try {
@@ -118,67 +127,39 @@ export default function LocationsScreen({ onBack }) {
       } catch (err) { errors.push(`"${name}": ${err.message}`); }
     }
 
-    // Pass 3: create POIs
+    // Pass 3: POIs
     for (const { loc, i } of selected) {
-      if (importTypes[i] !== "poi") continue;
-      const name = (importNames[i] ?? loc.name).trim().slice(0, 255);
+      if (getType(i) !== "poi") continue;
+      const name = getName(i);
       try {
-        await apiCreatePoi({ name, address: loc.address || undefined, lat: loc.lat, lng: loc.lng });
+        await apiCreatePoi({ name, address: loc.address || undefined, lat: loc.lat, lng: loc.lng, comments: importComments[i] || undefined });
         createdPois++;
       } catch (err) { errors.push(`"${name}": ${err.message}`); }
     }
 
-    setImportStep(0);
-    setImportParsed([]);
-    setImportUrl("");
-    setSaving(false);
-
+    setImportStep(0); setImportParsed([]); setImportUrl(""); setSaving(false);
     const parts = [];
     if (createdFields) parts.push(`${createdFields} campo${createdFields !== 1 ? "s" : ""}`);
     if (createdLots) parts.push(`${createdLots} lote${createdLots !== 1 ? "s" : ""}`);
     if (createdPois) parts.push(`${createdPois} ubicación${createdPois !== 1 ? "es" : ""}`);
     const errMsg = errors.length ? ` (${errors.length} error${errors.length !== 1 ? "es" : ""})` : "";
-    setDoneMsg((parts.join(", ") || "0 ubicaciones") + ` importado${(createdFields + createdLots + createdPois) !== 1 ? "s" : ""}${errMsg}`);
+    setDoneMsg((parts.join(", ") || "0") + ` importado${(createdFields + createdLots + createdPois) !== 1 ? "s" : ""}${errMsg}`);
     load();
   };
 
-  const toggleImportItem = (i) => {
-    setImportSelected(prev => {
-      const next = new Set(prev);
-      next.has(i) ? next.delete(i) : next.add(i);
-      return next;
-    });
-  };
-
-  const closeImport = () => {
-    setImportStep(0);
-    setImportParsed([]);
-    setImportUrl("");
-    setImportWarning(null);
-    setImportListName(null);
-    setImportTypes({});
-    setImportFieldIds({});
-  };
-
+  const toggleItem = (i) => setImportSelected(prev => { const n = new Set(prev); n.has(i) ? n.delete(i) : n.add(i); return n; });
+  const closeImport = () => { setImportStep(0); setImportParsed([]); setImportUrl(""); setImportWarning(null); setImportListName(null); setImportTypes({}); setImportFieldIds({}); setImportComments({}); };
   const selectedCount = [...importSelected].length;
+  const getType = (i) => importTypes[i] || "field";
+  const getName = (i) => (importNames[i] ?? (importParsed[i]?.name || "")).trim().slice(0, 255);
 
-  // Field options for the lot dropdown (existing + items being imported as fields)
   const fieldOptions = [
     ...fields.map(f => ({ id: f.id, name: f.name })),
     ...importParsed
       .map((loc, i) => ({ i, name: importNames[i] ?? loc.name }))
-      .filter(({ i }) => importSelected.has(i) && importTypes[i] !== "lot" && importTypes[i] !== "poi")
+      .filter(({ i }) => importSelected.has(i) && getType(i) === "field")
       .map(({ i, name }) => ({ id: `new:${i}`, name: `${name} (nuevo)` })),
   ];
-
-  // Type config
-  const typeConfig = {
-    field: { label: "Campo", color: C.pri, icon: (c, s) => Ic.pin(c, s) },
-    lot:   { label: "Lote",  color: C.acc, icon: (c, s) => Ic.grain(c, s) },
-    poi:   { label: "Interés", color: C.sec, icon: (c, s) => Ic.nav(c, s) },
-  };
-
-  const getLocType = (i) => importTypes[i] || "field";
 
   return (
     <div style={{ flex: 1, overflow: "auto" }}>
@@ -192,7 +173,6 @@ export default function LocationsScreen({ onBack }) {
       </div>
 
       <div style={{ padding: "0 18px 18px" }}>
-        {/* Header */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
           <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: -0.3 }}>Ubicaciones</div>
           <Btn sm v={importStep ? "ghost" : "acc"} onClick={() => setImportStep(importStep ? 0 : 1)} icon={importStep ? Ic.cross(C.t2, 14) : Ic.pin(C.w, 14)}>
@@ -233,13 +213,10 @@ export default function LocationsScreen({ onBack }) {
                 {saving ? "Buscando ubicaciones…" : "Buscar ubicaciones"}
               </Btn>
             </div>
-            <div style={{ marginTop: 8, fontSize: 11, color: C.t3, lineHeight: 1.5 }}>
-              Máximo ~20 ubicaciones por lista. Si tu lista tiene más, dividila en varias.
-            </div>
           </div>
         )}
 
-        {/* ── Step 2: Preview, type selector, confirm ── */}
+        {/* ── Step 2: Classify each location ── */}
         {importStep === 2 && (
           <div style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: 12, padding: 18, marginBottom: 16, boxShadow: C.sh }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
@@ -247,119 +224,158 @@ export default function LocationsScreen({ onBack }) {
               <button onClick={closeImport} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }}>{Ic.cross(C.t3, 16)}</button>
             </div>
             {importWarning && <div style={{ padding: "8px 12px", borderRadius: 8, marginBottom: 10, fontSize: 12.1, fontWeight: 500, background: C.warnPale, color: C.warn, border: `1px solid ${C.warn}30` }}>{importWarning}</div>}
-            <div style={{ display: "flex", gap: 10, marginBottom: 12, fontSize: 12.7, color: C.t2 }}>
-              <span style={{ fontWeight: 600, color: C.ok }}>{importParsed.length} encontradas</span>
-              {importDiscarded > 0 && <span style={{ color: C.t3 }}>{importDiscarded} descartadas</span>}
-            </div>
 
-            {/* Legend */}
-            <div style={{ display: "flex", gap: 10, marginBottom: 12, flexWrap: "wrap" }}>
-              {Object.entries(typeConfig).map(([k, cfg]) => (
-                <div key={k} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, color: C.t2 }}>
-                  <div style={{ width: 10, height: 10, borderRadius: 3, background: cfg.color }} />
-                  {cfg.label}
-                </div>
-              ))}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+              <div style={{ display: "flex", gap: 10, fontSize: 12.7, color: C.t2 }}>
+                <span style={{ fontWeight: 600, color: C.ok }}>{importParsed.length} encontradas</span>
+                {importDiscarded > 0 && <span style={{ color: C.t3 }}>{importDiscarded} descartadas</span>}
+              </div>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button onClick={() => setImportSelected(new Set(importParsed.map((_, i) => i)))} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12.1, color: C.pri, fontWeight: 600, fontFamily: "inherit", padding: 0 }}>Todas</button>
+                <span style={{ color: C.t3 }}>·</span>
+                <button onClick={() => setImportSelected(new Set())} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12.1, color: C.t3, fontWeight: 600, fontFamily: "inherit", padding: 0 }}>Ninguna</button>
+              </div>
             </div>
 
             {importParsed.length === 0 ? (
               <div style={{ textAlign: "center", padding: 20, color: C.t3, fontSize: 13.2 }}>No se encontraron ubicaciones válidas</div>
             ) : (
               <>
-                <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
-                  <button onClick={() => setImportSelected(new Set(importParsed.map((_, i) => i)))} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12.1, color: C.pri, fontWeight: 600, fontFamily: "inherit", padding: 0 }}>Seleccionar todas</button>
-                  <span style={{ color: C.t3 }}>·</span>
-                  <button onClick={() => setImportSelected(new Set())} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12.1, color: C.t3, fontWeight: 600, fontFamily: "inherit", padding: 0 }}>Ninguna</button>
-                </div>
-                <div style={{ maxHeight: 440, overflowY: "auto", display: "flex", flexDirection: "column", gap: 8 }}>
+                <div style={{ maxHeight: 520, overflowY: "auto", display: "flex", flexDirection: "column", gap: 10 }}>
                   {importParsed.map((loc, i) => {
-                    const selected = importSelected.has(i);
-                    const t = getLocType(i);
-                    const cfg = typeConfig[t];
+                    const sel = importSelected.has(i);
+                    const t = getType(i);
+                    const cfg = TYPE_CFG[t];
                     return (
-                      <div key={i} style={{ borderRadius: 10, border: `1.5px solid ${selected ? cfg.color : C.b1}`, background: selected ? `${cfg.color}06` : C.bg, transition: "all 0.15s", overflow: "hidden" }}>
-                        {/* Main row */}
-                        <div style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "10px 12px" }}>
-                          {/* Checkbox */}
-                          <div onClick={() => toggleImportItem(i)} style={{ width: 20, height: 20, borderRadius: 4, border: `2px solid ${selected ? cfg.color : C.b1}`, background: selected ? cfg.color : C.w, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 2, cursor: "pointer" }}>
-                            {selected && Ic.chk(C.w, 12)}
+                      <div key={i} style={{
+                        borderRadius: 12, border: `1.5px solid ${sel ? cfg.color : C.b1}`,
+                        borderLeft: sel ? `4px solid ${cfg.color}` : `4px solid ${C.b1}`,
+                        background: sel ? `${cfg.color}04` : C.bg,
+                        transition: "all 0.15s", overflow: "hidden",
+                      }}>
+                        {/* ── Row 1: checkbox + name + coords + map btn ── */}
+                        <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 12px 8px" }}>
+                          <div onClick={() => toggleItem(i)} style={{
+                            width: 22, height: 22, borderRadius: 6,
+                            border: `2px solid ${sel ? cfg.color : C.b2}`,
+                            background: sel ? cfg.color : C.w,
+                            display: "flex", alignItems: "center", justifyContent: "center",
+                            flexShrink: 0, cursor: "pointer",
+                          }}>
+                            {sel && Ic.chk(C.w, 13)}
                           </div>
+
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <input
                               value={importNames[i] ?? loc.name}
-                              onChange={(e) => setImportNames(prev => ({ ...prev, [i]: e.target.value }))}
-                              style={{ width: "100%", border: "none", background: "transparent", fontSize: 14.3, fontWeight: 600, color: C.t1, fontFamily: "inherit", padding: 0, outline: "none" }}
+                              onChange={e => setImportNames(prev => ({ ...prev, [i]: e.target.value }))}
+                              placeholder="Nombre de la ubicación"
+                              style={{
+                                width: "100%", border: "none", background: "transparent",
+                                fontSize: 15.4, fontWeight: 700, color: C.t1,
+                                fontFamily: "inherit", padding: 0, outline: "none",
+                              }}
                             />
-                            {loc.address && <div style={{ fontSize: 11.5, color: C.t3, marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{loc.address}</div>}
                             <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 3 }}>
-                              <span style={{ fontSize: 10.5, color: C.ok, fontWeight: 600 }}>
+                              {loc.address && <span style={{ fontSize: 11.5, color: C.t3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{loc.address}</span>}
+                              <span style={{ fontSize: 10.5, color: C.ok, fontWeight: 700, whiteSpace: "nowrap" }}>
                                 {loc.lat.toFixed(4)}, {loc.lng.toFixed(4)}
                               </span>
                             </div>
                           </div>
-                          {/* Map preview button */}
+
                           <button
                             onClick={() => setPreviewLoc({ name: importNames[i] ?? loc.name, address: loc.address, lat: loc.lat, lng: loc.lng })}
                             title="Ver en mapa"
-                            style={{ background: `${C.pri}10`, border: `1px solid ${C.pri}30`, borderRadius: 8, cursor: "pointer", padding: "6px 8px", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
+                            style={{
+                              background: `${cfg.color}10`, border: `1px solid ${cfg.color}30`,
+                              borderRadius: 8, cursor: "pointer", padding: "8px 10px",
+                              display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+                            }}
                           >
-                            {Ic.nav(C.pri, 16)}
+                            {Ic.nav(cfg.color, 18)}
                           </button>
                         </div>
 
-                        {/* Type selector (only when selected) */}
-                        {selected && (
-                          <div style={{ padding: "0 12px 10px", display: "flex", flexDirection: "column", gap: 6 }}>
-                            <div style={{ display: "flex", gap: 6 }}>
-                              {Object.entries(typeConfig).map(([k, c]) => {
-                                const active = t === k;
-                                return (
-                                  <button
-                                    key={k}
-                                    onClick={() => {
-                                      if (k === "field") {
-                                        setImportTypes(prev => { const n = { ...prev }; delete n[i]; return n; });
-                                        setImportFieldIds(prev => { const n = { ...prev }; delete n[i]; return n; });
-                                      } else {
-                                        setImportTypes(prev => ({ ...prev, [i]: k }));
-                                        if (k !== "lot") setImportFieldIds(prev => { const n = { ...prev }; delete n[i]; return n; });
-                                      }
-                                    }}
-                                    style={{ padding: "5px 12px", borderRadius: 8, border: `1.5px solid ${active ? c.color : C.b1}`, background: active ? `${c.color}15` : C.w, cursor: "pointer", fontFamily: "inherit", fontSize: 12.1, fontWeight: 700, color: active ? c.color : C.t3, transition: "all 0.15s", display: "flex", alignItems: "center", gap: 4 }}
-                                  >
-                                    {c.icon(active ? c.color : C.t3, 12)} {c.label}
-                                  </button>
-                                );
-                              })}
-                            </div>
-                            {/* Field selector for lots */}
-                            {t === "lot" && (
-                              <select
-                                value={importFieldIds[i] || ""}
-                                onChange={e => setImportFieldIds(prev => ({ ...prev, [i]: e.target.value }))}
-                                style={{ padding: "8px 10px", borderRadius: 8, border: `1.5px solid ${importFieldIds[i] ? C.acc : C.err}`, background: C.bgInput, fontFamily: "inherit", fontSize: 12.7, color: C.t1, outline: "none", cursor: "pointer" }}
-                              >
-                                <option value="">— Seleccioná el campo —</option>
-                                {fieldOptions.map(fo => (
-                                  <option key={fo.id} value={fo.id}>{fo.name}</option>
-                                ))}
-                              </select>
-                            )}
+                        {/* ── Row 2: Type selector (always visible) ── */}
+                        <div style={{ padding: "0 12px 10px", display: "flex", flexDirection: "column", gap: 8 }}>
+                          <div style={{ display: "flex", gap: 6 }}>
+                            {Object.entries(TYPE_CFG).map(([k, c]) => {
+                              const active = t === k;
+                              return (
+                                <button
+                                  key={k}
+                                  onClick={() => {
+                                    if (k === "field") {
+                                      setImportTypes(prev => { const n = { ...prev }; delete n[i]; return n; });
+                                      setImportFieldIds(prev => { const n = { ...prev }; delete n[i]; return n; });
+                                    } else {
+                                      setImportTypes(prev => ({ ...prev, [i]: k }));
+                                      if (k !== "lot") setImportFieldIds(prev => { const n = { ...prev }; delete n[i]; return n; });
+                                    }
+                                    // Auto-select when setting type
+                                    if (!sel) setImportSelected(prev => new Set([...prev, i]));
+                                  }}
+                                  style={{
+                                    flex: 1, padding: "8px 6px", borderRadius: 8,
+                                    border: `2px solid ${active ? c.color : C.b2}`,
+                                    background: active ? `${c.color}12` : C.w,
+                                    cursor: "pointer", fontFamily: "inherit",
+                                    fontSize: 13.2, fontWeight: 800,
+                                    color: active ? c.color : C.t3,
+                                    transition: "all 0.15s",
+                                    display: "flex", alignItems: "center", justifyContent: "center", gap: 5,
+                                  }}
+                                >
+                                  {c.icon(active ? c.color : C.t3, 14)} {c.label}
+                                </button>
+                              );
+                            })}
                           </div>
-                        )}
+
+                          {/* Field dropdown for lots */}
+                          {t === "lot" && (
+                            <select
+                              value={importFieldIds[i] || ""}
+                              onChange={e => setImportFieldIds(prev => ({ ...prev, [i]: e.target.value }))}
+                              style={{
+                                padding: "10px 12px", borderRadius: 8,
+                                border: `1.5px solid ${importFieldIds[i] ? C.acc : C.err}`,
+                                background: C.bgInput, fontFamily: "inherit", fontSize: 13.2,
+                                color: C.t1, outline: "none", cursor: "pointer",
+                              }}
+                            >
+                              <option value="">— Seleccioná el campo —</option>
+                              {fieldOptions.map(fo => <option key={fo.id} value={fo.id}>{fo.name}</option>)}
+                            </select>
+                          )}
+
+                          {/* Comments input */}
+                          <input
+                            value={importComments[i] || ""}
+                            onChange={e => setImportComments(prev => ({ ...prev, [i]: e.target.value }))}
+                            placeholder="Comentarios (opcional)"
+                            style={{
+                              width: "100%", padding: "8px 10px", borderRadius: 8,
+                              border: `1px solid ${C.b2}`, background: C.bgInput,
+                              fontFamily: "inherit", fontSize: 12.7, color: C.t1,
+                              outline: "none", boxSizing: "border-box",
+                            }}
+                          />
+                        </div>
                       </div>
                     );
                   })}
                 </div>
 
-                {/* Summary of selection */}
+                {/* Summary */}
                 {selectedCount > 0 && (
-                  <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
+                  <div style={{ display: "flex", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
                     {(() => {
                       const counts = { field: 0, lot: 0, poi: 0 };
-                      importParsed.forEach((_, i) => { if (importSelected.has(i)) counts[getLocType(i)]++; });
-                      return Object.entries(typeConfig).map(([k, c]) => counts[k] > 0 && (
-                        <Bd key={k} color={c.color} small>{counts[k]} {c.label}{counts[k] !== 1 ? "s" : ""}</Bd>
+                      importParsed.forEach((_, i) => { if (importSelected.has(i)) counts[getType(i)]++; });
+                      return Object.entries(TYPE_CFG).map(([k, c]) => counts[k] > 0 && (
+                        <Bd key={k} color={c.color}>{counts[k]} {c.label}{counts[k] !== 1 ? (k === "poi" ? "es" : "s") : ""}</Bd>
                       ));
                     })()}
                   </div>
@@ -392,15 +408,16 @@ export default function LocationsScreen({ onBack }) {
               </div>
 
               {pois.map(p => (
-                <div key={p.id} style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: 12, boxShadow: C.sh, display: "flex", alignItems: "center", padding: "12px 14px", gap: 10 }}>
+                <div key={p.id} style={{ background: C.w, border: `1px solid ${C.b1}`, borderLeft: `4px solid ${C.sec}`, borderRadius: 12, boxShadow: C.sh, display: "flex", alignItems: "center", padding: "12px 14px", gap: 10 }}>
                   <div style={{ width: 32, height: 32, borderRadius: 8, background: `${C.sec}12`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                     {Ic.nav(C.sec, 16)}
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 14.3, fontWeight: 700, color: C.t1 }}>{p.name}</div>
-                    <div style={{ display: "flex", gap: 6, alignItems: "center", marginTop: 2 }}>
+                    <div style={{ display: "flex", gap: 6, alignItems: "center", marginTop: 2, flexWrap: "wrap" }}>
                       <Bd color={C.sec} small>Interés</Bd>
                       {p.address && <span style={{ fontSize: 11, color: C.t3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.address}</span>}
+                      {p.comments && <span style={{ fontSize: 11, color: C.t2, fontStyle: "italic" }}>{p.comments}</span>}
                     </div>
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
