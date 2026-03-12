@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { C, Ic, FONT } from "../theme";
 import { Btn, Field, Tabs, Av, Loader, AttachMenu, FileViewer } from "../components";
+import { destDisplay } from "../hooks";
 import { apiSearchUsers, apiStartConversation, apiListConversations, apiGetMessages, apiSendMessage, apiMarkRead, apiTyping, apiToggleMarkUnread, uploadChatFile, thumb } from "../api";
 import log from "../logger";
 import { useUIStore } from "../store";
@@ -434,7 +435,7 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
 
   const getConvName = (conv) => {
     if (!conv) return "Chat";
-    if (conv.freight) return `#${conv.freight.code} — ${conv.freight.destName || ""}`;
+    if (conv.freight) return `#${conv.freight.code} — ${destDisplay(conv.freight) || ""}`;
     // For direct conversations, find the other user by userId
     const otherP = (conv.participants || []).find(p => p.userId && p.userId !== user.id);
     if (otherP?.user?.name) return otherP.user.name;

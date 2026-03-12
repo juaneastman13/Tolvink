@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { C, Ic } from "../theme";
+import { originDisplay, destDisplay } from "../hooks";
 
 const NOTIF_ICONS = {
   freight_created: (s) => Ic.truck(C.pri, s),
@@ -44,7 +45,7 @@ function _NotifRow({ n, freight, onMarkRead, onTap, isLast }) {
       <div style={{ flex:1, minWidth:0 }}>
         {f && <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:4 }}>
           <span style={{ fontSize:12.5, fontWeight:700, color: n.read ? C.t2 : C.t1 }}>{f.grain} · {f.tons} {f.unit||"tn"}</span>
-          {f.destName && <span style={{ fontSize:11, color:C.t3 }}>→ {f.destName}</span>}
+          {destDisplay(f) && <span style={{ fontSize:11, color:C.t3 }}>→ {destDisplay(f)}</span>}
         </div>}
         <div style={{ display:"flex", alignItems:"center", gap:8 }}>
           <span style={{ fontSize: f ? 13.2 : 15.4, fontWeight: n.read ? 500 : 700, color: n.read ? C.t2 : C.t1, flex:1 }}>{n.title}</span>

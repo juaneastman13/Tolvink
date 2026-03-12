@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, Component } from "react";
 import { apiGetLastPosition, apiSendTracking, apiGetParticipantPositions } from "./api";
 import { C, Ic } from "./theme";
+import { originDisplay, destDisplay } from "./hooks";
 import { useUIStore } from "./store";
 import log from "./logger";
 
@@ -770,8 +771,8 @@ export function FreightsOverviewMap({ freights, onSelect, fields, plants, lots, 
           `<div style="font-family:system-ui;font-size:12px;line-height:1.5;min-width:160px">` +
           `<strong>${_esc(f.code)}</strong><br/>${_esc(f.grain)} · ${_esc(f.tons)} ${_esc(f.unit||"tn")}<br/>` +
           (f.originCompanyName ? `<span style="font-weight:600">${_esc(f.originCompanyName)}</span><br/>` : "") +
-          ([f.fieldName, f.originName].filter(Boolean).length ? `${[f.fieldName, f.originName].filter(Boolean).map(_esc).join(" / ")}<br/>` : "") +
-          `\u2192 ${_esc(f.destName)}<br/>` +
+          (originDisplay(f) ? `${_esc(originDisplay(f))}<br/>` : "") +
+          `\u2192 ${_esc(destDisplay(f))}<br/>` +
           `<span style="color:${col};font-weight:600">${_esc(_STATUS_LABEL[f.status]||f.status)}</span></div>`;
 
         const isSel = f.id === selectedId;

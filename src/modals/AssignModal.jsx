@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { C, Ic } from "../theme";
 import { Btn, Field, ModalOverlay } from "../components";
+import { originDisplay, destDisplay } from "../hooks";
 import { apiGetTrucks, apiCreateTruck, apiGetDrivers, apiCreateDriver } from "../api";
 
 // Collapsed summary for a completed wizard step
@@ -212,7 +213,7 @@ export default function AssignModal({ freight, transporters, user, onClose, onCo
       <div style={{fontSize:18.7,fontWeight:700,marginBottom:6}}>Asignar transporte</div>
       <div style={{fontSize:13.2,color:C.t2,marginBottom:10,padding:"8px 12px",background:C.bg,borderRadius:8,border:`1px solid ${C.b1}`}}>
         <div style={{fontWeight:700,color:C.t1}}>{freight.grain} · {freight.tons}tn</div>
-        <div style={{marginTop:2}}>{freight.originName} → {freight.destName||"Sin destino"}</div>
+        <div style={{marginTop:2}}>{originDisplay(freight)||"—"} → {destDisplay(freight)||"Sin destino"}</div>
         <div style={{fontSize:11,color:C.t3,marginTop:2}}>{freight.code}</div>
       </div>
 

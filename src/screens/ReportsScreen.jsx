@@ -1,6 +1,7 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import { C, Ic, FONT, MONO } from "../theme";
 import { stCfg } from "../constants";
+import { originDisplay, destDisplay } from "../hooks";
 import { Bd, Btn, Field, Select, exportExcel, exportPDF, FileViewer } from "../components";
 import { OcrResultModal, UploadOverlay } from "../uploads";
 import log from "../logger";
@@ -61,16 +62,16 @@ export default function ReportsScreen({ onBack, freights, isDesktop, embedded, o
     }
   };
 
-  const plantOptions = useMemo(()=>[...new Set((freights||[]).map(f=>f.destName).filter(Boolean))].sort(),[freights]);
-  const fieldOptions = useMemo(()=>[...new Set((freights||[]).map(f=>f.fieldName || f.originName).filter(Boolean))].sort(),[freights]);
+  const plantOptions = useMemo(()=>[...new Set((freights||[]).map(f=>destDisplay(f)).filter(Boolean))].sort(),[freights]);
+  const fieldOptions = useMemo(()=>[...new Set((freights||[]).map(f=>originDisplay(f)).filter(Boolean))].sort(),[freights]);
   const transporterOptions = useMemo(()=>[...new Set((freights||[]).map(f=>f.transporterName).filter(Boolean))].sort(),[freights]);
   const hasEntityFilters = fPlant || fField || fTransporter;
 
   const allFreights = useMemo(() => (freights||[]).filter(f=>{
     if(dateFrom && f.loadDate < dateFrom) return false;
     if(dateTo && f.loadDate > dateTo) return false;
-    if(fPlant && f.destName !== fPlant) return false;
-    if(fField && (f.fieldName || f.originName) !== fField) return false;
+    if(fPlant && destDisplay(f) !== fPlant) return false;
+    if(fField && originDisplay(f) !== fField) return false;
     if(fTransporter && f.transporterName !== fTransporter) return false;
     if(!searchQ) return true;
     const q = searchQ.toLowerCase();
@@ -220,9 +221,9 @@ export default function ReportsScreen({ onBack, freights, isDesktop, embedded, o
                       <span style={{ fontSize:10, fontFamily:MONO, color:C.t3 }}>{f.code}</span>
                     </div>
                     <div style={{display:"flex",flexDirection:"column",gap:2,fontSize:12.1,color:C.t2,marginTop:2}}>
-                      <div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.user(C.t3,12)} <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.originCompanyName||(f.originName||"").split("—")[0].trim()}</span></div>
+                      <div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.user(C.t3,12)} <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.originCompanyName||originDisplay(f)}</span></div>
                       {f.transporterName&&<div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.truck(C.t3,12)} <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.transporterName}{f.truckPlate?` (${f.truckPlate})`:""}</span></div>}
-                      <div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.plant(C.t3,12)} <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.destName}</span> <span style={{color:C.t3,marginLeft:4,fontSize:11}}>{docs.length} doc{docs.length!==1?"s":""}{ocrDocs.length>0 && ` · ${ocrDocs.length} OCR`}</span></div>
+                      <div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.plant(C.t3,12)} <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{destDisplay(f)}</span> <span style={{color:C.t3,marginLeft:4,fontSize:11}}>{docs.length} doc{docs.length!==1?"s":""}{ocrDocs.length>0 && ` · ${ocrDocs.length} OCR`}</span></div>
                     </div>
                   </div>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.t3} strokeWidth="2.5" style={{transform:isOpen?"rotate(180deg)":"rotate(0deg)",transition:"transform 0.2s"}}><polyline points="6 9 12 15 18 9"/></svg>

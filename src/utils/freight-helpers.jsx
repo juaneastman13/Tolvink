@@ -1,5 +1,6 @@
 import { C, Ic } from "../theme";
 import { getActions } from "../constants";
+import { destDisplay } from "../hooks";
 
 // ======================== RESOLVE USER TYPE FOR FREIGHT ================
 export function resolveUserTypeForFreight(freight, user) {
@@ -212,7 +213,7 @@ export function NotifRow({ n, freight, onMarkRead, onTap, isLast }) {
           <div style={{ display:"flex", flexDirection:"column", gap:2, marginTop:6 }}>
             {(f.originCompanyName||f.requestedByName) && <span style={detailStyle}>{Ic.user(C.t3,11)} {f.originCompanyName||f.requestedByName}</span>}
             {f.transporterName && <span style={detailStyle}>{Ic.truck(C.t3,11)} {f.transporterName}{f.truckPlate?` (${f.truckPlate})`:""}</span>}
-            {f.destName && <span style={detailStyle}>{Ic.plant(C.t3,11)} {f.destName}</span>}
+            {destDisplay(f) && <span style={detailStyle}>{Ic.plant(C.t3,11)} {destDisplay(f)}</span>}
           </div>
         )}
       </div>

@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { C, Ic, MONO } from "../theme";
 import { stCfg, formatFreightDate } from "../constants";
 import { Bd, Btn } from "../components";
+import { originDisplay, destDisplay } from "../hooks";
 import { resolveUserTypeForFreight } from "../utils/freight-helpers";
 import DetailScreen from "./DetailScreen";
 
@@ -71,13 +72,13 @@ export default function CalendarScreen({ freights, perms, onNav, isDesktop, user
         {selFreights.length===0&&<div style={{textAlign:"center",padding:30,color:C.t3,fontSize:13.2,background:C.w,borderRadius:10,border:`1px solid ${C.b1}`}}>Sin fletes programados este día</div>}
         {selFreights.map(f=>{
           const st=stCfg(f.status);
-          const origin = f.fieldName || f.originCompanyName || (f.originName||"").split("—")[0].trim();
+          const origin = originDisplay(f) || f.originCompanyName || "";
           return <div key={f.id} className="tv-card" onClick={()=>{setSelectedId(f.id);onRefresh(f.id);}} style={{background:C.w,border:`1px solid ${C.b1}`,borderLeft:`4px solid ${st.border}`,borderRadius:10,cursor:"pointer",boxShadow:C.sh,overflow:"hidden",padding:"10px 14px"}}>
             <div style={{fontSize:14.3,fontWeight:700,color:C.t1,marginBottom:2}}>{f.grain==="Otros"?f.productTypeOther||"Otros":f.grain} · {f.tons} {f.unit||"tn"}</div>
             <div style={{display:"flex",alignItems:"center",gap:5,fontSize:12.5,color:C.t2,marginBottom:8,overflow:"hidden",whiteSpace:"nowrap",textOverflow:"ellipsis"}}>
               <span style={{display:"flex",alignItems:"center",gap:3,overflow:"hidden",whiteSpace:"nowrap",textOverflow:"ellipsis",flexShrink:1,minWidth:0}}>{Ic.pin(C.t3,11)} <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{origin||"Sin origen"}</span></span>
               <span style={{color:C.t3,flexShrink:0}}>→</span>
-              <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.destName||"Sin destino"}</span>
+              <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{destDisplay(f)||"Sin destino"}</span>
             </div>
             <div style={{borderTop:`1px solid ${C.b1}`,paddingTop:8,display:"flex",flexDirection:"column",gap:3,fontSize:12.1,color:C.t3}}>
               {f.loadDate&&<div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.cal(C.t3,10)} {formatFreightDate(f.loadDate)}{f.loadTime?.trim()?` · ${f.loadTime}`:""}</div>}

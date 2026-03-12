@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, memo, useMemo, Component, useCallback, use
 import { createPortal } from "react-dom";
 import { C, Ic, FONT, MONO } from "./theme";
 import { stCfg, formatFreightDate } from "./constants";
+import { originDisplay, destDisplay } from "./hooks";
 import { captureError } from "./sentry";
 
 // ======================== BASE COMPONENTS ============================
@@ -425,7 +426,7 @@ export function Sidebar({ active, onChange, unread=0, pendingCount=0, notifCount
   const SearchHoverPreview = hoverFreight ? (() => {
     const f = hoverFreight;
     const st = stCfg(f.status);
-    const origin = f.fieldName || f.originName;
+    const origin = originDisplay(f);
     return (
       <div ref={adjustPreviewPos} style={{ position:"fixed", left:hoverPos.x, top:hoverPos.y, zIndex:9999, width:340, background:C.w, border:`1px solid ${C.b1}`, borderLeft:`5px solid ${st.color}`, borderRadius:14, boxShadow:C.shLg, padding:18, pointerEvents:"none", fontFamily:FONT, animation:"tvPreviewIn 0.15s ease-out" }}>
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:10 }}>
@@ -444,7 +445,7 @@ export function Sidebar({ active, onChange, unread=0, pendingCount=0, notifCount
             <span>{f.originCompanyName || ""}</span>
           </div>
           <div style={{ display:"flex", alignItems:"center", gap:6, fontSize:13.2, color:C.t2 }}>
-            {Ic.plant(C.sec, 13)} <span style={{ fontWeight:600 }}>{f.destName || "Sin destino"}</span>
+            {Ic.plant(C.sec, 13)} <span style={{ fontWeight:600 }}>{destDisplay(f) || "Sin destino"}</span>
           </div>
         </div>
         {f.loadDate && (
@@ -537,7 +538,7 @@ export function Sidebar({ active, onChange, unread=0, pendingCount=0, notifCount
           {searchResults.map(f => <button key={f.id} onClick={()=>{handleSearchHoverLeave();onSearchSelect(f.id);onSearchChange("");}} style={{ display:"flex", alignItems:"center", gap:8, width:"100%", padding:"8px 10px", background:"transparent", border:"none", borderRadius:8, cursor:"pointer", fontFamily:"inherit", textAlign:"left" }} onMouseEnter={e=>{e.currentTarget.style.background=C.priGhost;handleSearchHoverEnter(f,e);}} onMouseLeave={e=>{e.currentTarget.style.background="transparent";handleSearchHoverLeave();}}>
             <div style={{ flex:1, minWidth:0 }}>
               <div style={{ fontSize:12.1, fontWeight:700, color:C.t1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{f.grain} · {f.tons} {f.unit||"tn"}</div>
-              <div style={{ fontSize:10.5, color:C.t3, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{f.code} · {f.originName||f.fieldName||"—"} → {f.destName||"—"}</div>
+              <div style={{ fontSize:10.5, color:C.t3, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{f.code} · {originDisplay(f)||"—"} → {destDisplay(f)||"—"}</div>
             </div>
           </button>)}
           {searchLoadingMore && <div style={{ padding:"8px 10px", textAlign:"center" }}><div style={{ width:16, height:16, border:`2px solid ${C.b2}`, borderTopColor:C.pri, borderRadius:"50%", animation:"spin 0.6s linear infinite", margin:"0 auto" }}/></div>}

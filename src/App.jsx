@@ -4,7 +4,7 @@ import { uploadPhoto, apiAddDocument, apiListConversations, apiSearchFreights } 
 import { C, track, FONT, Ic } from "./theme";
 import { POLL_INTERVALS, stCfg } from "./constants";
 import { Toast, LoadingOverlay, Sidebar, Nav, NotifBell, NotificationsPanel, ErrorBoundary } from "./components";
-import { useAuth, useCatalog, useFreights, permsFor, useIsDesktop, useOnline, useNotifications, useSSE, mapFreight } from "./hooks";
+import { useAuth, useCatalog, useFreights, permsFor, useIsDesktop, useOnline, useNotifications, useSSE, mapFreight, originDisplay, destDisplay } from "./hooks";
 import { RoutesBackground } from "./routes-bg";
 import "./app.css";
 
@@ -93,7 +93,7 @@ function MobileSearch({ query, onChange, results, onSelect }) {
         {results.slice(0,6).map(f => <button key={f.id} onClick={()=>{onSelect(f.id);setOpen(false);}} style={{ display:"flex", alignItems:"center", gap:8, width:"100%", padding:"8px 10px", background:"transparent", border:"none", borderRadius:8, cursor:"pointer", fontFamily:"inherit", textAlign:"left" }}>
           <div style={{ flex:1, minWidth:0 }}>
             <div style={{ fontSize:12.5, fontWeight:700, color:C.t1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{f.grain} · {f.tons} {f.unit||"tn"}</div>
-            <div style={{ fontSize:10.5, color:C.t3, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{f.code} · {f.originName||f.fieldName||"—"} → {f.destName||"—"}</div>
+            <div style={{ fontSize:10.5, color:C.t3, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{f.code} · {originDisplay(f)||"—"} → {destDisplay(f)||"—"}</div>
           </div>
         </button>)}
       </div>}
@@ -732,7 +732,7 @@ export default function Tolvink() {
               <div style={{width:4,height:32,borderRadius:2,background:st.color,flexShrink:0}}/>
               <div style={{flex:1,minWidth:0}}>
                 <div style={{fontSize:14,fontWeight:700,color:C.t1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.grain==="Otros"?f.productTypeOther||"Otros":f.grain} · {f.tons} {f.unit||"tn"}</div>
-                <div style={{fontSize:12,color:C.t3,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.code} · {f.originName||f.fieldName||"—"} → {f.destName||"—"}</div>
+                <div style={{fontSize:12,color:C.t3,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.code} · {originDisplay(f)||"—"} → {destDisplay(f)||"—"}</div>
               </div>
             </button>})}
             {searchLoadingMore && <div style={{padding:"8px",textAlign:"center"}}><div style={{width:16,height:16,border:`2px solid ${C.b2}`,borderTopColor:C.pri,borderRadius:"50%",animation:"spin 0.6s linear infinite",margin:"0 auto"}}/></div>}

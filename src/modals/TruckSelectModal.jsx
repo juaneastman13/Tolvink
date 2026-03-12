@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { C, Ic } from "../theme";
 import { Btn, Field, ModalOverlay } from "../components";
+import { originDisplay, destDisplay } from "../hooks";
 import { apiCreateTruck, apiGetDrivers, apiCreateDriver } from "../api";
 
 export default function TruckSelectModal({ freight, trucks: initialTrucks, onClose, onConfirm, user }) {
@@ -80,7 +81,7 @@ export default function TruckSelectModal({ freight, trucks: initialTrucks, onClo
   return (
     <ModalOverlay onClose={onClose} loading={loading} closing={closing} closingText={closingText} quick>
       <div style={{fontSize:18.7,fontWeight:700,marginBottom:4}}>Aceptar flete · {freight.code}</div>
-      <div style={{fontSize:13.2,color:C.t2,marginBottom:18}}>{freight.grain} · {freight.tons}tn → {freight.destName}</div>
+      <div style={{fontSize:13.2,color:C.t2,marginBottom:18}}>{freight.grain} · {freight.tons}tn → {destDisplay(freight)||"Sin destino"}</div>
 
       {/* Truck selection */}
       <label style={{fontSize:11.6,fontWeight:600,color:C.t2,marginBottom:8,display:"block",textTransform:"uppercase",letterSpacing:0.6}}>Seleccioná un camión</label>

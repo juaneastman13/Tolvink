@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { C, Ic } from "../theme";
 import { Btn, LoadingOverlay } from "../components";
+import { destDisplay } from "../hooks";
 import { apiListDrivers } from "../api";
 
 export default function EditScreen({ freight, fields, plants, branches, trucks, user, onBack, onSave }) {
@@ -165,7 +166,7 @@ export default function EditScreen({ freight, fields, plants, branches, trucks, 
             </select>
           ) : (
             <div style={{ padding:"12px 14px", borderRadius:10, border:`1.5px solid ${C.b1}`, background:C.bgInput, color:C.t2, fontSize:15.4 }}>
-              {freight.destName || "Sin destino"}
+              {destDisplay(freight) || "Sin destino"}
             </div>
           )}
         </div>}

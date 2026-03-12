@@ -635,7 +635,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
               freight.amount>0&&[Ic.grain(C.t2,15),"Importe",`$${Number(freight.amount).toLocaleString()}`],
             ].filter(Boolean);
             const ruta = [
-              [Ic.user(C.pri,15),"Empresa",freight.originCompanyName||freight.originName],
+              [Ic.user(C.pri,15),"Empresa",freight.originCompanyName||originDisplay(freight)],
               [Ic.grain(C.ok,15),"Campo",originDisplay(freight)||"—"],
               [Ic.plant(C.t2,15),"Destino",destDisplay(freight)],
               [Ic.cal(C.t2,15),"Fecha carga",formatFreightDate(freight.loadDate)],
