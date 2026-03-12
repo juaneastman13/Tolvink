@@ -278,13 +278,7 @@ export async function apiUpdateField(id, b) { return api(`/fields/${id}`,{method
 export async function apiGetFieldLots(fieldId) { return api(`/fields/${fieldId}/lots`); }
 export async function apiCreateLot(fieldId,b) { return api(`/fields/${fieldId}/lots`,{body:b}); }
 export async function apiUpdateLot(fieldId, lotId, b) { return api(`/fields/${fieldId}/lots/${lotId}`,{method:'PATCH',body:b}); }
-export async function apiImportTakeout(file) {
-  const form = new FormData();
-  form.append('file', file);
-  const res = await fetch(`${API_URL}/fields/import-takeout`, { method:'POST', credentials:'include', body: form });
-  if (!res.ok) { const e = await res.json().catch(()=>({})); throw new Error(e.message || 'Error al procesar archivo'); }
-  return res.json();
-}
+export async function apiImportParseLinks(text) { return api('/fields/import-links', { body: { text } }); }
 export async function apiImportConfirm(locations) { return api('/fields/import-confirm', { body: { locations } }); }
 
 // Plant-Producer Access

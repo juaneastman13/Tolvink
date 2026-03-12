@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { C, Ic } from "../theme";
 import { Btn, Bd, Field, Loader, LoadingOverlay, EmptyState } from "../components";
 import { SafeZone, LocationPicker } from "../maps";
-import { apiGetFields, apiCreateField, apiUpdateField, apiCreateLot, apiUpdateLot, apiGetFieldLots, apiImportTakeout, apiImportConfirm } from "../api";
+import { apiGetFields, apiCreateField, apiUpdateField, apiCreateLot, apiUpdateLot, apiGetFieldLots, apiImportParseLinks, apiImportConfirm } from "../api";
 import log from "../logger";
 
 export default function FieldsScreen({ onBack, embedded, goToMap }) {
@@ -33,7 +33,7 @@ export default function FieldsScreen({ onBack, embedded, goToMap }) {
   const [importDiscarded, setImportDiscarded] = useState(0);
   const [importSelected, setImportSelected] = useState(new Set());
   const [importNames, setImportNames] = useState({}); // id→edited name
-  const fileInputRef = useRef(null);
+  const [importText, setImportText] = useState(""); // pasted links text
 
   const load = useCallback(async () => {
     try { const f = await apiGetFields(); setFields(f || []); } catch(e) { setMsg({t:e.message||"Error al cargar campos",k:"err"}); } finally { setLoading(false); }
@@ -116,21 +116,19 @@ export default function FieldsScreen({ onBack, embedded, goToMap }) {
     } catch (e) { setMsg({ t: e.message, k: "err" }); setSaving(false); }
   };
 
-  const handleImportFile = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.size > 10 * 1024 * 1024) { setMsg({ t: "El archivo excede 10 MB", k: "err" }); return; }
+  const handleImportLinks = async () => {
+    if (!importText.trim()) { setMsg({ t: "Pegá al menos un link de Google Maps", k: "err" }); return; }
     setSaving(true);
     try {
-      const result = await apiImportTakeout(file);
+      const result = await apiImportParseLinks(importText);
       setImportParsed(result.parsed || []);
       setImportDiscarded(result.discarded || 0);
       const sel = new Set(result.parsed.map((_, i) => i));
       setImportSelected(sel);
       setImportNames({});
       setImportStep(2);
-    } catch (err) { setMsg({ t: err.message || "Error al procesar archivo", k: "err" }); }
-    finally { setSaving(false); if (fileInputRef.current) fileInputRef.current.value = ""; }
+    } catch (err) { setMsg({ t: err.message || "Error al procesar links", k: "err" }); }
+    finally { setSaving(false); }
   };
 
   const handleImportConfirm = async () => {
@@ -161,7 +159,7 @@ export default function FieldsScreen({ onBack, embedded, goToMap }) {
     });
   };
 
-  const closeImport = () => { setImportStep(0); setImportParsed([]); };
+  const closeImport = () => { setImportStep(0); setImportParsed([]); setImportText(""); };
 
   const selectedCount = [...importSelected].length;
 
@@ -178,15 +176,24 @@ export default function FieldsScreen({ onBack, embedded, goToMap }) {
         </div>
       </div>
 
-      {/* ── Import from Google Takeout ── */}
+      {/* ── Import from Google Maps links ── */}
       {importStep === 1 && (
         <div style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: 12, padding: 18, marginBottom: 16, boxShadow: C.sh }}>
           <div style={{ fontSize: 15.4, fontWeight: 700, marginBottom: 8 }}>{Ic.pin(C.pri, 16)} Importar desde Google Maps</div>
-          <div style={{ fontSize: 12.7, color: C.t2, lineHeight: 1.5, marginBottom: 14 }}>
-            Exportá tus ubicaciones desde <strong>takeout.google.com</strong> (seleccioná "Maps — Tus sitios") y subí el archivo ZIP aquí.
+          <div style={{ fontSize: 12.7, color: C.t2, lineHeight: 1.5, marginBottom: 12 }}>
+            En Google Maps, abrí cada ubicación guardada y tocá <strong>"Compartir"</strong>. Pegá todos los links acá (uno por línea).
           </div>
-          <input ref={fileInputRef} type="file" accept=".zip" onChange={handleImportFile} style={{ display: "none" }} />
-          <Btn full v="acc" onClick={() => fileInputRef.current?.click()} icon={Ic.doc(C.w, 14)}>Seleccionar archivo ZIP</Btn>
+          <textarea
+            value={importText}
+            onChange={e => setImportText(e.target.value)}
+            placeholder={"Toma agua · Juan Eastman\nhttps://maps.app.goo.gl/qTNPZX2...\n\nOtro lugar\nhttps://maps.app.goo.gl/abc123..."}
+            style={{ width: "100%", minHeight: 120, padding: 12, borderRadius: 10, border: `1.5px solid ${importText ? C.bFocus : C.b2}`, background: C.bgInput, fontFamily: "inherit", fontSize: 13.2, color: C.t1, resize: "vertical", outline: "none", boxSizing: "border-box", transition: "border-color 0.15s" }}
+          />
+          <div style={{ marginTop: 10 }}>
+            <Btn full v="acc" disabled={saving || !importText.trim()} onClick={handleImportLinks}>
+              {saving ? "Procesando links..." : "Procesar links"}
+            </Btn>
+          </div>
         </div>
       )}
 
