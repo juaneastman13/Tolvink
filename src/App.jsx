@@ -800,11 +800,16 @@ export default function Tolvink() {
       </Suspense>
       {toast && <Toast key={toast._ts||toast.msg} msg={toast.msg} type={toast.type} onClose={()=>setToast(null)}/>}
 
-      {/* AI Chat — hidden for now */}
-      {/* <Suspense fallback={null}>
+      {/* AI Chat */}
+      <Suspense fallback={null}>
         <AiChatFabComp open={aiChatOpen} onClick={() => setAiChatOpen(p => !p)} />
-        <AiChat open={aiChatOpen} onClose={() => setAiChatOpen(false)} sseAiResponse={sseAiResponse} sseAiTranscription={sseAiTranscription} sseAiChunk={sseAiChunk} />
-      </Suspense> */}
+        <AiChat open={aiChatOpen} onClose={() => setAiChatOpen(false)} onNavigate={(nav) => {
+          const path = nav.screen === 'detail' && nav.freightId
+            ? `/freight/${nav.freightId}`
+            : SCREEN_TO_PATH[nav.screen] || '/';
+          navigate(path);
+        }} sseAiResponse={sseAiResponse} sseAiTranscription={sseAiTranscription} sseAiChunk={sseAiChunk} />
+      </Suspense>
     </div>
   );
 }

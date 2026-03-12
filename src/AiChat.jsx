@@ -333,7 +333,7 @@ function MsgBubble({ msg, onSendText }) {
                 filter: isUser ? "invert(1) brightness(2)" : "none",
               }} />
             </div>
-          ) : displayText}
+          ) : (isUser ? displayText : renderMarkdown(displayText))}
         </div>
       )}
 
@@ -409,7 +409,57 @@ const THINKING_TIMEOUT_MS = 90_000;
 
 // ======================== MAIN COMPONENT =====================
 
-export default function AiChat({ open, onClose, sseAiResponse, sseAiTranscription, sseAiChunk }) {
+// ======================== SIMPLE MARKDOWN RENDERER ================
+// Supports **bold** and bullet lists (- item)
+function renderMarkdown(text) {
+  if (!text) return text;
+  const lines = text.split('\n');
+  const result = [];
+  for (let i = 0; i < lines.length; i++) {
+    if (i > 0) result.push(<br key={`br-${i}`} />);
+    let line = lines[i];
+    // Bold: **text**
+    const parts = line.split(/(\*\*[^*]+\*\*)/g);
+    const rendered = parts.map((part, j) => {
+      if (part.startsWith('**') && part.endsWith('**')) {
+        return <strong key={j}>{part.slice(2, -2)}</strong>;
+      }
+      return part;
+    });
+    result.push(<span key={`l-${i}`}>{rendered}</span>);
+  }
+  return result;
+}
+
+// ======================== SUGGESTION CHIPS =========================
+
+const SUGGESTIONS = [
+  { label: "Mis fletes pendientes", text: "Mis fletes pendientes" },
+  { label: "Crear flete", text: "Quiero crear un flete" },
+  { label: "Resumen del día", text: "Resumen del día" },
+  { label: "Dashboard", text: "¿Cómo van mis fletes?" },
+];
+
+function SuggestionChips({ onSend, disabled }) {
+  return (
+    <div style={{ display: "flex", flexWrap: "wrap", gap: 6, justifyContent: "center", padding: "8px 0" }}>
+      {SUGGESTIONS.map((s) => (
+        <button key={s.label} disabled={disabled} onClick={() => onSend(s.text)} style={{
+          padding: "7px 14px", borderRadius: 20,
+          border: `1.5px solid ${C.b1}`, background: C.bgCard, color: C.t2,
+          fontSize: 12.5, fontWeight: 600, fontFamily: FONT, cursor: disabled ? "default" : "pointer",
+          opacity: disabled ? 0.5 : 1, transition: "all 0.15s",
+        }}>
+          {s.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// ======================== MAIN COMPONENT =====================
+
+export default function AiChat({ open, onClose, onNavigate, sseAiResponse, sseAiTranscription, sseAiChunk }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [thinking, setThinking] = useState(false);
@@ -494,7 +544,11 @@ export default function AiChat({ open, onClose, sseAiResponse, sseAiTranscriptio
       }
       return [...prev, finalMsg];
     });
-  }, [sseAiResponse]);
+    // Handle navigation
+    if (sseAiResponse.navigate && onNavigate) {
+      onNavigate(sseAiResponse.navigate);
+    }
+  }, [sseAiResponse, onNavigate]);
 
   // Handle SSE ai:transcription
   useEffect(() => {
@@ -639,7 +693,8 @@ export default function AiChat({ open, onClose, sseAiResponse, sseAiTranscriptio
               <div style={{ fontWeight: 600, color: C.t2, marginBottom: 4, fontSize: 16 }}>
                 Hola, soy el asistente de Tolvink
               </div>
-              <div>Podés consultar fletes, crear nuevos, ver reportes, ubicaciones y mucho más.</div>
+              <div style={{ marginBottom: 12 }}>Podés consultar fletes, crear nuevos, ver reportes, ubicaciones y mucho más.</div>
+              <SuggestionChips onSend={sendText} disabled={thinking} />
             </div>
           )}
 
