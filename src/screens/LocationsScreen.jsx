@@ -1,14 +1,19 @@
 import { useState, useEffect, useCallback } from "react";
 import { C, Ic } from "../theme";
 import { Btn, Bd, Loader, LoadingOverlay, EmptyState } from "../components";
-import { apiGetFields, apiCreateField, apiCreateLot, apiImportGoogleList } from "../api";
+import { apiGetFields, apiCreateField, apiCreateLot, apiImportGoogleList, apiGetPois, apiCreatePoi } from "../api";
+import MapPreviewModal from "../modals/MapPreviewModal";
 
 export default function LocationsScreen({ onBack }) {
   const [fields, setFields] = useState([]);
+  const [pois, setPois] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState(null);
   const [doneMsg, setDoneMsg] = useState("");
+
+  // Map preview
+  const [previewLoc, setPreviewLoc] = useState(null);
 
   // Import flow
   const [importStep, setImportStep] = useState(0); // 0=hidden, 1=paste, 2=preview
@@ -17,7 +22,7 @@ export default function LocationsScreen({ onBack }) {
   const [importDiscarded, setImportDiscarded] = useState(0);
   const [importSelected, setImportSelected] = useState(new Set());
   const [importNames, setImportNames] = useState({});
-  const [importTypes, setImportTypes] = useState({}); // i -> "field"|"lot"
+  const [importTypes, setImportTypes] = useState({}); // i -> "field"|"lot"|"poi"
   const [importFieldIds, setImportFieldIds] = useState({}); // i -> fieldId (when type=lot)
   const [importWarning, setImportWarning] = useState(null);
   const [importListName, setImportListName] = useState(null);
@@ -25,10 +30,11 @@ export default function LocationsScreen({ onBack }) {
 
   const load = useCallback(async () => {
     try {
-      const f = await apiGetFields();
+      const [f, p] = await Promise.all([apiGetFields(), apiGetPois()]);
       setFields(f || []);
+      setPois(p || []);
     } catch (e) {
-      setMsg({ t: e.message || "Error al cargar campos", k: "err" });
+      setMsg({ t: e.message || "Error al cargar datos", k: "err" });
     } finally {
       setLoading(false);
     }
@@ -75,71 +81,64 @@ export default function LocationsScreen({ onBack }) {
     // Validate: lots must have a field assigned
     for (const { i } of selected) {
       if (importTypes[i] === "lot" && !importFieldIds[i]) {
-        setMsg({ t: `"${importNames[i] ?? importParsed[i].name}" está marcada como Lote pero no tiene campo asignado`, k: "err" });
+        setMsg({ t: `"${importNames[i] ?? importParsed[i].name}" es Lote pero no tiene campo asignado`, k: "err" });
         return;
       }
     }
 
     setSaving(true);
-    let createdFields = 0;
-    let createdLots = 0;
+    let createdFields = 0, createdLots = 0, createdPois = 0;
     const errors = [];
 
-    // First pass: create fields
-    const newFieldIds = {}; // index -> new field id
+    // Pass 1: create fields
+    const newFieldIds = {};
     for (const { loc, i } of selected) {
-      if (importTypes[i] === "lot") continue;
+      if (importTypes[i] === "lot" || importTypes[i] === "poi") continue;
       const name = (importNames[i] ?? loc.name).trim().slice(0, 255);
       try {
-        const created = await apiCreateField({
-          name,
-          address: loc.address || undefined,
-          lat: loc.lat,
-          lng: loc.lng,
-        });
+        const created = await apiCreateField({ name, address: loc.address || undefined, lat: loc.lat, lng: loc.lng });
         newFieldIds[i] = created.id;
         createdFields++;
-      } catch (err) {
-        errors.push(`"${name}": ${err.message}`);
-      }
+      } catch (err) { errors.push(`"${name}": ${err.message}`); }
     }
 
-    // Second pass: create lots
+    // Pass 2: create lots
     for (const { loc, i } of selected) {
       if (importTypes[i] !== "lot") continue;
       const name = (importNames[i] ?? loc.name).trim().slice(0, 255);
-      // The fieldId can reference either an existing field or a newly created one
       let fieldId = importFieldIds[i];
-      // Check if fieldId points to another import item (new:X format)
       if (fieldId?.startsWith("new:")) {
         const refIdx = parseInt(fieldId.split(":")[1], 10);
         fieldId = newFieldIds[refIdx];
-        if (!fieldId) {
-          errors.push(`"${name}": el campo asociado no se pudo crear`);
-          continue;
-        }
+        if (!fieldId) { errors.push(`"${name}": el campo asociado no se pudo crear`); continue; }
       }
       try {
-        await apiCreateLot(fieldId, {
-          name,
-          lat: loc.lat,
-          lng: loc.lng,
-        });
+        await apiCreateLot(fieldId, { name, lat: loc.lat, lng: loc.lng });
         createdLots++;
-      } catch (err) {
-        errors.push(`"${name}": ${err.message}`);
-      }
+      } catch (err) { errors.push(`"${name}": ${err.message}`); }
+    }
+
+    // Pass 3: create POIs
+    for (const { loc, i } of selected) {
+      if (importTypes[i] !== "poi") continue;
+      const name = (importNames[i] ?? loc.name).trim().slice(0, 255);
+      try {
+        await apiCreatePoi({ name, address: loc.address || undefined, lat: loc.lat, lng: loc.lng });
+        createdPois++;
+      } catch (err) { errors.push(`"${name}": ${err.message}`); }
     }
 
     setImportStep(0);
     setImportParsed([]);
     setImportUrl("");
     setSaving(false);
+
     const parts = [];
     if (createdFields) parts.push(`${createdFields} campo${createdFields !== 1 ? "s" : ""}`);
     if (createdLots) parts.push(`${createdLots} lote${createdLots !== 1 ? "s" : ""}`);
+    if (createdPois) parts.push(`${createdPois} ubicación${createdPois !== 1 ? "es" : ""}`);
     const errMsg = errors.length ? ` (${errors.length} error${errors.length !== 1 ? "es" : ""})` : "";
-    setDoneMsg((parts.join(" y ") || "0 ubicaciones") + ` importado${createdFields + createdLots !== 1 ? "s" : ""}${errMsg}`);
+    setDoneMsg((parts.join(", ") || "0 ubicaciones") + ` importado${(createdFields + createdLots + createdPois) !== 1 ? "s" : ""}${errMsg}`);
     load();
   };
 
@@ -163,30 +162,28 @@ export default function LocationsScreen({ onBack }) {
 
   const selectedCount = [...importSelected].length;
 
-  // ── Build field options for the lot dropdown ──
-  // Includes existing fields + items in current import marked as "field"
+  // Field options for the lot dropdown (existing + items being imported as fields)
   const fieldOptions = [
     ...fields.map(f => ({ id: f.id, name: f.name })),
     ...importParsed
       .map((loc, i) => ({ i, name: importNames[i] ?? loc.name }))
-      .filter(({ i }) => importSelected.has(i) && importTypes[i] !== "lot")
+      .filter(({ i }) => importSelected.has(i) && importTypes[i] !== "lot" && importTypes[i] !== "poi")
       .map(({ i, name }) => ({ id: `new:${i}`, name: `${name} (nuevo)` })),
   ];
 
-  // ── Flat list of all fields + lots for display ──
-  const allLocations = [];
-  for (const f of fields) {
-    allLocations.push({ ...f, _type: "field" });
-    if (f.lots) {
-      for (const l of f.lots) {
-        allLocations.push({ ...l, _type: "lot", _fieldName: f.name, _fieldId: f.id });
-      }
-    }
-  }
+  // Type config
+  const typeConfig = {
+    field: { label: "Campo", color: C.pri, icon: (c, s) => Ic.pin(c, s) },
+    lot:   { label: "Lote",  color: C.acc, icon: (c, s) => Ic.grain(c, s) },
+    poi:   { label: "Interés", color: C.sec, icon: (c, s) => Ic.nav(c, s) },
+  };
+
+  const getLocType = (i) => importTypes[i] || "field";
 
   return (
     <div style={{ flex: 1, overflow: "auto" }}>
       {(saving || doneMsg) && <LoadingOverlay closing={!!doneMsg} closingText={doneMsg} onClose={() => setDoneMsg("")} />}
+      {previewLoc && <MapPreviewModal loc={previewLoc} onClose={() => setPreviewLoc(null)} />}
 
       <div style={{ position: "sticky", top: 0, zIndex: 10, background: C.bg, padding: "18px 18px 8px" }}>
         <button onClick={onBack} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", fontSize: 14.3, fontWeight: 600, color: C.pri, marginBottom: 14, padding: 0, display: "flex", alignItems: "center", gap: 4 }}>
@@ -198,7 +195,7 @@ export default function LocationsScreen({ onBack }) {
         {/* Header */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
           <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: -0.3 }}>Ubicaciones</div>
-          <Btn sm v={importStep ? "ghost" : "acc"} onClick={() => { setImportStep(importStep ? 0 : 1); }} icon={importStep ? Ic.cross(C.t2, 14) : Ic.pin(C.w, 14)}>
+          <Btn sm v={importStep ? "ghost" : "acc"} onClick={() => setImportStep(importStep ? 0 : 1)} icon={importStep ? Ic.cross(C.t2, 14) : Ic.pin(C.w, 14)}>
             {importStep ? "Cerrar" : "Importar"}
           </Btn>
         </div>
@@ -242,18 +239,29 @@ export default function LocationsScreen({ onBack }) {
           </div>
         )}
 
-        {/* ── Step 2: Preview, assign type, confirm ── */}
+        {/* ── Step 2: Preview, type selector, confirm ── */}
         {importStep === 2 && (
           <div style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: 12, padding: 18, marginBottom: 16, boxShadow: C.sh }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
               <div style={{ fontSize: 15.4, fontWeight: 700 }}>{Ic.pin(C.pri, 16)} {importListName || "Ubicaciones encontradas"}</div>
               <button onClick={closeImport} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }}>{Ic.cross(C.t3, 16)}</button>
             </div>
-            {importWarning && <div style={{ padding: "8px 12px", borderRadius: 8, marginBottom: 10, fontSize: 12.1, fontWeight: 500, background: "#FFF8E1", color: "#F57F17", border: "1px solid #FFE082" }}>{importWarning}</div>}
+            {importWarning && <div style={{ padding: "8px 12px", borderRadius: 8, marginBottom: 10, fontSize: 12.1, fontWeight: 500, background: C.warnPale, color: C.warn, border: `1px solid ${C.warn}30` }}>{importWarning}</div>}
             <div style={{ display: "flex", gap: 10, marginBottom: 12, fontSize: 12.7, color: C.t2 }}>
               <span style={{ fontWeight: 600, color: C.ok }}>{importParsed.length} encontradas</span>
               {importDiscarded > 0 && <span style={{ color: C.t3 }}>{importDiscarded} descartadas</span>}
             </div>
+
+            {/* Legend */}
+            <div style={{ display: "flex", gap: 10, marginBottom: 12, flexWrap: "wrap" }}>
+              {Object.entries(typeConfig).map(([k, cfg]) => (
+                <div key={k} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, color: C.t2 }}>
+                  <div style={{ width: 10, height: 10, borderRadius: 3, background: cfg.color }} />
+                  {cfg.label}
+                </div>
+              ))}
+            </div>
+
             {importParsed.length === 0 ? (
               <div style={{ textAlign: "center", padding: 20, color: C.t3, fontSize: 13.2 }}>No se encontraron ubicaciones válidas</div>
             ) : (
@@ -263,50 +271,69 @@ export default function LocationsScreen({ onBack }) {
                   <span style={{ color: C.t3 }}>·</span>
                   <button onClick={() => setImportSelected(new Set())} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12.1, color: C.t3, fontWeight: 600, fontFamily: "inherit", padding: 0 }}>Ninguna</button>
                 </div>
-                <div style={{ maxHeight: 420, overflowY: "auto", display: "flex", flexDirection: "column", gap: 6 }}>
+                <div style={{ maxHeight: 440, overflowY: "auto", display: "flex", flexDirection: "column", gap: 8 }}>
                   {importParsed.map((loc, i) => {
-                    const isLot = importTypes[i] === "lot";
                     const selected = importSelected.has(i);
+                    const t = getLocType(i);
+                    const cfg = typeConfig[t];
                     return (
-                      <div key={i} style={{ borderRadius: 10, border: `1.5px solid ${selected ? (isLot ? C.acc : C.pri) : C.b1}`, background: selected ? (isLot ? `${C.acc}06` : `${C.pri}06`) : C.bg, transition: "all 0.15s", overflow: "hidden" }}>
+                      <div key={i} style={{ borderRadius: 10, border: `1.5px solid ${selected ? cfg.color : C.b1}`, background: selected ? `${cfg.color}06` : C.bg, transition: "all 0.15s", overflow: "hidden" }}>
                         {/* Main row */}
-                        <div onClick={() => toggleImportItem(i)} style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "10px 12px", cursor: "pointer" }}>
-                          <div style={{ width: 20, height: 20, borderRadius: 4, border: `2px solid ${selected ? (isLot ? C.acc : C.pri) : C.b1}`, background: selected ? (isLot ? C.acc : C.pri) : C.w, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 2 }}>
+                        <div style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "10px 12px" }}>
+                          {/* Checkbox */}
+                          <div onClick={() => toggleImportItem(i)} style={{ width: 20, height: 20, borderRadius: 4, border: `2px solid ${selected ? cfg.color : C.b1}`, background: selected ? cfg.color : C.w, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 2, cursor: "pointer" }}>
                             {selected && Ic.chk(C.w, 12)}
                           </div>
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <input
                               value={importNames[i] ?? loc.name}
-                              onChange={(e) => { e.stopPropagation(); setImportNames(prev => ({ ...prev, [i]: e.target.value })); }}
-                              onClick={(e) => e.stopPropagation()}
+                              onChange={(e) => setImportNames(prev => ({ ...prev, [i]: e.target.value }))}
                               style={{ width: "100%", border: "none", background: "transparent", fontSize: 14.3, fontWeight: 600, color: C.t1, fontFamily: "inherit", padding: 0, outline: "none" }}
                             />
                             {loc.address && <div style={{ fontSize: 11.5, color: C.t3, marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{loc.address}</div>}
-                            <div style={{ fontSize: 10.5, color: C.ok, fontWeight: 600, marginTop: 2 }}>
-                              {loc.lat.toFixed(4)}, {loc.lng.toFixed(4)}
+                            <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 3 }}>
+                              <span style={{ fontSize: 10.5, color: C.ok, fontWeight: 600 }}>
+                                {loc.lat.toFixed(4)}, {loc.lng.toFixed(4)}
+                              </span>
                             </div>
                           </div>
+                          {/* Map preview button */}
+                          <button
+                            onClick={() => setPreviewLoc({ name: importNames[i] ?? loc.name, address: loc.address, lat: loc.lat, lng: loc.lng })}
+                            title="Ver en mapa"
+                            style={{ background: `${C.pri}10`, border: `1px solid ${C.pri}30`, borderRadius: 8, cursor: "pointer", padding: "6px 8px", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
+                          >
+                            {Ic.nav(C.pri, 16)}
+                          </button>
                         </div>
 
                         {/* Type selector (only when selected) */}
                         {selected && (
                           <div style={{ padding: "0 12px 10px", display: "flex", flexDirection: "column", gap: 6 }}>
                             <div style={{ display: "flex", gap: 6 }}>
-                              <button
-                                onClick={() => { setImportTypes(prev => { const n = { ...prev }; delete n[i]; return n; }); setImportFieldIds(prev => { const n = { ...prev }; delete n[i]; return n; }); }}
-                                style={{ padding: "5px 12px", borderRadius: 8, border: `1.5px solid ${!isLot ? C.pri : C.b1}`, background: !isLot ? `${C.pri}15` : C.w, cursor: "pointer", fontFamily: "inherit", fontSize: 12.1, fontWeight: 700, color: !isLot ? C.pri : C.t3, transition: "all 0.15s" }}
-                              >
-                                {Ic.pin(!isLot ? C.pri : C.t3, 12)} Campo
-                              </button>
-                              <button
-                                onClick={() => setImportTypes(prev => ({ ...prev, [i]: "lot" }))}
-                                style={{ padding: "5px 12px", borderRadius: 8, border: `1.5px solid ${isLot ? C.acc : C.b1}`, background: isLot ? `${C.acc}15` : C.w, cursor: "pointer", fontFamily: "inherit", fontSize: 12.1, fontWeight: 700, color: isLot ? C.acc : C.t3, transition: "all 0.15s" }}
-                              >
-                                {Ic.grain(isLot ? C.acc : C.t3, 12)} Lote
-                              </button>
+                              {Object.entries(typeConfig).map(([k, c]) => {
+                                const active = t === k;
+                                return (
+                                  <button
+                                    key={k}
+                                    onClick={() => {
+                                      if (k === "field") {
+                                        setImportTypes(prev => { const n = { ...prev }; delete n[i]; return n; });
+                                        setImportFieldIds(prev => { const n = { ...prev }; delete n[i]; return n; });
+                                      } else {
+                                        setImportTypes(prev => ({ ...prev, [i]: k }));
+                                        if (k !== "lot") setImportFieldIds(prev => { const n = { ...prev }; delete n[i]; return n; });
+                                      }
+                                    }}
+                                    style={{ padding: "5px 12px", borderRadius: 8, border: `1.5px solid ${active ? c.color : C.b1}`, background: active ? `${c.color}15` : C.w, cursor: "pointer", fontFamily: "inherit", fontSize: 12.1, fontWeight: 700, color: active ? c.color : C.t3, transition: "all 0.15s", display: "flex", alignItems: "center", gap: 4 }}
+                                  >
+                                    {c.icon(active ? c.color : C.t3, 12)} {c.label}
+                                  </button>
+                                );
+                              })}
                             </div>
                             {/* Field selector for lots */}
-                            {isLot && (
+                            {t === "lot" && (
                               <select
                                 value={importFieldIds[i] || ""}
                                 onChange={e => setImportFieldIds(prev => ({ ...prev, [i]: e.target.value }))}
@@ -324,6 +351,20 @@ export default function LocationsScreen({ onBack }) {
                     );
                   })}
                 </div>
+
+                {/* Summary of selection */}
+                {selectedCount > 0 && (
+                  <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
+                    {(() => {
+                      const counts = { field: 0, lot: 0, poi: 0 };
+                      importParsed.forEach((_, i) => { if (importSelected.has(i)) counts[getLocType(i)]++; });
+                      return Object.entries(typeConfig).map(([k, c]) => counts[k] > 0 && (
+                        <Bd key={k} color={c.color} small>{counts[k]} {c.label}{counts[k] !== 1 ? "s" : ""}</Bd>
+                      ));
+                    })()}
+                  </div>
+                )}
+
                 <div style={{ marginTop: 14, display: "flex", gap: 8 }}>
                   <Btn sm v="ghost" onClick={closeImport}>Cancelar</Btn>
                   <Btn sm disabled={saving || selectedCount === 0} onClick={handleImportConfirm} style={{ flex: 1 }}>
@@ -335,64 +376,47 @@ export default function LocationsScreen({ onBack }) {
           </div>
         )}
 
-        {/* ── Location list ── */}
+        {/* ── POI list (only ubicaciones de interés) ── */}
         {loading ? <Loader /> :
-          allLocations.length === 0 && importStep === 0 ? (
+          pois.length === 0 && importStep === 0 ? (
             <EmptyState
-              icon={Ic.pin(C.t3, 28)}
-              title="Sin ubicaciones"
-              subtitle="Importá ubicaciones desde Google Maps para empezar"
+              icon={Ic.nav(C.t3, 28)}
+              title="Sin ubicaciones de interés"
+              subtitle="Importá ubicaciones desde Google Maps y marcalas como 'Interés'"
               action={<Btn sm onClick={() => setImportStep(1)}>Importar</Btn>}
             />
           ) : importStep === 0 && (
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {/* Summary */}
-              <div style={{ display: "flex", gap: 8, marginBottom: 4, fontSize: 12.1, color: C.t2 }}>
-                <Bd color={C.pri}>{fields.length} campo{fields.length !== 1 ? "s" : ""}</Bd>
-                <Bd color={C.acc}>{allLocations.filter(l => l._type === "lot").length} lote{allLocations.filter(l => l._type === "lot").length !== 1 ? "s" : ""}</Bd>
+              <div style={{ display: "flex", gap: 8, marginBottom: 4 }}>
+                <Bd color={C.sec}>{pois.length} ubicación{pois.length !== 1 ? "es" : ""} de interés</Bd>
               </div>
 
-              {fields.map(f => (
-                <div key={f.id} style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: 12, boxShadow: C.sh, overflow: "hidden" }}>
-                  {/* Field row */}
-                  <div style={{ display: "flex", alignItems: "center", padding: "12px 14px", gap: 10 }}>
-                    <div style={{ width: 32, height: 32, borderRadius: 8, background: `${C.pri}12`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                      {Ic.pin(C.pri, 16)}
+              {pois.map(p => (
+                <div key={p.id} style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: 12, boxShadow: C.sh, display: "flex", alignItems: "center", padding: "12px 14px", gap: 10 }}>
+                  <div style={{ width: 32, height: 32, borderRadius: 8, background: `${C.sec}12`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    {Ic.nav(C.sec, 16)}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 14.3, fontWeight: 700, color: C.t1 }}>{p.name}</div>
+                    <div style={{ display: "flex", gap: 6, alignItems: "center", marginTop: 2 }}>
+                      <Bd color={C.sec} small>Interés</Bd>
+                      {p.address && <span style={{ fontSize: 11, color: C.t3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.address}</span>}
                     </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 14.3, fontWeight: 700, color: C.t1 }}>{f.name}</div>
-                      <div style={{ display: "flex", gap: 6, alignItems: "center", marginTop: 2 }}>
-                        <Bd color={C.pri} small>Campo</Bd>
-                        {f.address && <span style={{ fontSize: 11, color: C.t3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.address}</span>}
-                      </div>
-                    </div>
-                    {f.lat && f.lng && (
-                      <span style={{ fontSize: 10, color: C.ok, fontWeight: 600, flexShrink: 0 }}>
-                        {Number(f.lat).toFixed(4)}, {Number(f.lng).toFixed(4)}
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+                    {p.lat && p.lng && (
+                      <span style={{ fontSize: 10, color: C.ok, fontWeight: 600 }}>
+                        {Number(p.lat).toFixed(4)}, {Number(p.lng).toFixed(4)}
                       </span>
                     )}
+                    <button
+                      onClick={() => setPreviewLoc({ name: p.name, address: p.address, lat: Number(p.lat), lng: Number(p.lng) })}
+                      title="Ver en mapa"
+                      style={{ background: `${C.sec}10`, border: `1px solid ${C.sec}30`, borderRadius: 8, cursor: "pointer", padding: "6px 8px", display: "flex", alignItems: "center", justifyContent: "center" }}
+                    >
+                      {Ic.nav(C.sec, 14)}
+                    </button>
                   </div>
-
-                  {/* Lots under this field */}
-                  {(f.lots || []).map(l => (
-                    <div key={l.id} style={{ display: "flex", alignItems: "center", padding: "8px 14px 8px 28px", gap: 10, borderTop: `1px solid ${C.b2}` }}>
-                      <div style={{ width: 24, height: 24, borderRadius: 6, background: `${C.acc}12`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                        {Ic.grain(C.acc, 12)}
-                      </div>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 13.2, fontWeight: 600, color: C.t1 }}>{l.name}</div>
-                        <div style={{ display: "flex", gap: 6, alignItems: "center", marginTop: 1 }}>
-                          <Bd color={C.acc} small>Lote</Bd>
-                          {l.hectares && <span style={{ fontSize: 10.5, color: C.t3 }}>{l.hectares} ha</span>}
-                        </div>
-                      </div>
-                      {l.lat && l.lng && (
-                        <span style={{ fontSize: 10, color: C.ok, fontWeight: 600, flexShrink: 0 }}>
-                          {Number(l.lat).toFixed(4)}, {Number(l.lng).toFixed(4)}
-                        </span>
-                      )}
-                    </div>
-                  ))}
                 </div>
               ))}
             </div>
