@@ -4,8 +4,9 @@ import { stCfg } from "../constants";
 import { Bd, Btn, Field, Select, exportExcel, exportPDF, FileViewer } from "../components";
 import { OcrResultModal, UploadOverlay } from "../uploads";
 import log from "../logger";
-import { useUIStore } from "../store";
-import { apiGetAuditLog, apiOcrAnalyze, apiSaveOcrData, thumb } from "../api";
+import { useUIStore, useFreightDetailStore } from "../store";
+import { apiGetAuditLog, apiGetFreight, apiOcrAnalyze, apiSaveOcrData, thumb } from "../api";
+import { mapFreight } from "../hooks";
 const loadPdfReport = () => import("../utils/pdf-report");
 
 export default function ReportsScreen({ onBack, freights, isDesktop, embedded, onRefresh }) {
@@ -23,7 +24,21 @@ export default function ReportsScreen({ onBack, freights, isDesktop, embedded, o
   const [pdfLoadingId, setPdfLoadingId] = useState(null);
   const [ocrLoading, setOcrLoading] = useState(false);
   const [ocrResult, setOcrResult] = useState(null);
-  const toggle = (k) => setExpanded(p=>({...p,[k]:!p[k]}));
+  const toggle = (k) => {
+    setExpanded(p => {
+      const opening = !p[k];
+      if (opening) {
+        // Load full detail on expand if not cached
+        const cached = useFreightDetailStore.getState().getDetail(k);
+        if (!cached) {
+          apiGetFreight(k).then(raw => {
+            useFreightDetailStore.getState().setDetail(k, mapFreight(raw));
+          }).catch(() => {});
+        }
+      }
+      return { ...p, [k]: opening };
+    });
+  };
 
   // Pre-load PDF module
   useEffect(() => { loadPdfReport(); }, []);
@@ -188,7 +203,8 @@ export default function ReportsScreen({ onBack, freights, isDesktop, embedded, o
           {group.items.map(f=>{
             const isOpen = expanded[f.id];
             const isSel = selected.has(f.id);
-            const docs = f.documents||[];
+            const detailCached = useFreightDetailStore.getState().getDetail(f.id);
+            const docs = detailCached?.data?.documents || f.documents || [];
             const ocrDocs = docs.filter(d => d.ocrData);
             const imgDocs = docs.filter(d => d.type === "photo" || d.url?.match(/\.(jpg|jpeg|png|webp|gif)$/i));
             return (
@@ -223,7 +239,8 @@ export default function ReportsScreen({ onBack, freights, isDesktop, embedded, o
                         let logs = [];
                         try { logs = await apiGetAuditLog(f.id); } catch(e) { console.warn("Audit logs unavailable:", e?.message); }
                         const { generateFreightPDF } = await loadPdfReport();
-                        generateFreightPDF(f, logs);
+                        const dc = useFreightDetailStore.getState().getDetail(f.id);
+                        generateFreightPDF(dc?.data ? { ...f, documents: dc.data.documents } : f, logs);
                       } catch(err) { log.error('PDF', err); useUIStore.getState().show('Error al generar PDF', 'err'); }
                       finally { setPdfLoadingId(null); }
                     }} style={{ width:"100%", padding:"8px 10px", marginBottom:8, borderRadius:8, border:`1.5px solid ${C.b1}`, background:C.w, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:8, opacity:pdfLoadingId===f.id?0.6:1 }}>
