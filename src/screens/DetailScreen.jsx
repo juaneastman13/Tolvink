@@ -295,9 +295,16 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
 
   return (
     <div style={{ flex:1, overflow:"auto", animation:"slideUp 0.25s ease" }}>
-      {/* Sticky header — back + product title */}
+      {/* Sticky header — back + product title + edit (desktop) */}
       <div style={{ position:"sticky", top:0, zIndex:10, padding:"18px 18px 8px", background:C.bg }}>
-        <button onClick={onBack} style={{ background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", fontSize:14.3, fontWeight:600, color:C.pri, marginBottom:14, padding:0, display:"flex", alignItems:"center", gap:4 }}>{Ic.chev(C.pri,18)} Volver</button>
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14 }}>
+          <button onClick={onBack} style={{ background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", fontSize:14.3, fontWeight:600, color:C.pri, padding:0, display:"flex", alignItems:"center", gap:4 }}>{Ic.chev(C.pri,18)} Volver</button>
+          {_isDesktop && ["pending_assignment","assigned","accepted","in_progress","loaded"].includes(freight.status) && (perms.canRequest || perms.canApprove) && (
+            <button onClick={()=>onEdit(freight)} style={{ background:C.w, border:`1.5px solid ${C.b1}`, borderRadius:8, padding:"5px 10px", cursor:"pointer", display:"flex", alignItems:"center", gap:5, fontFamily:"inherit" }}>
+              {Ic.edit(C.t2,14)}<span style={{ fontSize:12.1, fontWeight:600, color:C.t2 }}>Editar</span>
+            </button>
+          )}
+        </div>
         <div>
           <div style={{ display:"flex", alignItems:"center", gap:6 }}>
             <span style={{ fontSize:12.1, color:C.t3, fontWeight:600, fontFamily:MONO }}>{freight.code}</span>
@@ -710,15 +717,16 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
       </div>
 
       {/* Notes / Observaciones */}
-      {freight.notes && (
-        <div style={{ background:C.warnPale, border:`1px solid ${C.warn}30`, borderLeft:`3px solid ${C.warn}`, borderRadius:12, padding:14, marginBottom:12 }}>
+      {freight.notes && (()=>{
+        const isUrgent = /urgente|cuidado|atenci[oó]n|importante|prioridad/i.test(freight.notes);
+        return <div style={{ background:C.warnPale, border:`1px solid ${C.warn}30`, borderLeft:`${isUrgent?4:3}px solid ${C.warn}`, borderRadius:12, padding:14, marginBottom:12 }}>
           <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:6 }}>
-            {Ic.doc(C.warn, 14)}
-            <span style={{ fontSize:11.6, fontWeight:700, color:C.warn, textTransform:"uppercase", letterSpacing:0.5 }}>Observaciones</span>
+            {isUrgent ? Ic.warn(C.warn, 15) : Ic.doc(C.warn, 14)}
+            <span style={{ fontSize:11.6, fontWeight:700, color:C.warn, textTransform:"uppercase", letterSpacing:0.5 }}>Observaciones{isUrgent?" — Atención":""}</span>
           </div>
           <div style={{ fontSize:13.8, color:C.t1, lineHeight:1.5, whiteSpace:"pre-wrap" }}>{freight.notes}</div>
-        </div>
-      )}
+        </div>;
+      })()}
 
       {/* Pending changes banner */}
       {fullPendingChanges?.length > 0 && (()=>{
@@ -771,7 +779,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
         // Show skeleton shimmer while loading detail (documents not yet available)
         if (!hasFullDetail && !hasDocs) return (
           <div style={{ background:C.w, borderRadius:12, padding:16, marginBottom:12 }}>
-            <div style={{ height:14, width:120, background:C.b2, borderRadius:6, marginBottom:10, animation:"pulse 1.5s ease-in-out infinite" }}/>
+            <div style={{ fontSize:11.6, fontWeight:700, color:C.t2, textTransform:"uppercase", letterSpacing:0.5, marginBottom:10 }}>Documentos</div>
             <div style={{ display:"flex", gap:8 }}>
               {[1,2,3].map(i => <div key={i} style={{ width:72, height:72, background:C.b2, borderRadius:8, animation:"pulse 1.5s ease-in-out infinite" }}/>)}
             </div>
@@ -786,37 +794,44 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
         );
       })()}
 
-      <button onClick={()=>onChat(fullConvId)} disabled={!fullConvId}
-        style={{ width:"100%", background:C.priPale, borderRadius:10, padding:12, display:"flex", alignItems:"center", gap:10, border:`1.5px solid ${C.pri}30`, cursor:fullConvId?"pointer":"default", fontFamily:"inherit", marginBottom:12 }}>
-        {Ic.msg(C.pri,20)}<div style={{textAlign:"left"}}><div style={{ fontSize:13.2, fontWeight:700, color:C.pri }}>Chat del flete</div><div style={{ fontSize:11, color:C.t2 }}>Conversá con las partes involucradas</div></div>
-      </button>
+      {/* Chat + PDF compact row */}
+      <div style={{ display:"flex", gap:8, marginBottom:12 }}>
+        <button onClick={()=>onChat(fullConvId)} disabled={!fullConvId}
+          style={{ flex:1, background:C.priPale, borderRadius:10, padding:"10px 12px", display:"flex", alignItems:"center", justifyContent:"center", gap:7, border:`1.5px solid ${C.pri}30`, cursor:fullConvId?"pointer":"default", fontFamily:"inherit" }}>
+          {Ic.msg(C.pri,16)}<span style={{ fontSize:13.2, fontWeight:700, color:C.pri }}>Chat</span>
+        </button>
+        <button disabled={pdfLoading} onClick={async()=>{
+          if(pdfLoading) return;
+          setPdfLoading(true);
+          try {
+            let logs = auditLog;
+            if(!logs) { try { logs = await apiGetAuditLog(freight.id); setAuditLog(logs); } catch(e) { logs = []; } }
+            const { generateFreightPDF } = await loadPdfReport();
+            generateFreightPDF({ ...freight, documents: fullDocs, conversationId: fullConvId, pendingChanges: fullPendingChanges }, logs || []);
+          } catch(e) { log.error('PDF', e); useUIStore.getState().show('Error al generar PDF: ' + (e?.message || e), 'err'); }
+          finally { setPdfLoading(false); }
+        }} style={{ flex:1, background:C.w, borderRadius:10, padding:"10px 12px", display:"flex", alignItems:"center", justifyContent:"center", gap:7, border:`1.5px solid ${C.b1}`, cursor:"pointer", fontFamily:"inherit", opacity:pdfLoading?0.6:1 }}>
+          {Ic.doc(C.t2,16)}<span style={{ fontSize:13.2, fontWeight:700, color:C.t1 }}>{pdfLoading?'Generando...':'PDF'}</span>
+        </button>
+      </div>
 
-      {/* PDF Report */}
-      <button disabled={pdfLoading} onClick={async()=>{
-        if(pdfLoading) return;
-        setPdfLoading(true);
-        try {
-          let logs = auditLog;
-          if(!logs) { try { logs = await apiGetAuditLog(freight.id); setAuditLog(logs); } catch(e) { logs = []; } }
-          const { generateFreightPDF } = await loadPdfReport();
-          generateFreightPDF({ ...freight, documents: fullDocs, conversationId: fullConvId, pendingChanges: fullPendingChanges }, logs || []);
-        } catch(e) { log.error('PDF', e); useUIStore.getState().show('Error al generar PDF: ' + (e?.message || e), 'err'); }
-        finally { setPdfLoading(false); }
-      }} style={{ width:"100%", background:C.w, borderRadius:10, padding:12, display:"flex", alignItems:"center", gap:10, border:`1.5px solid ${C.b1}`, cursor:"pointer", fontFamily:"inherit", marginBottom:12, opacity:pdfLoading?0.6:1 }}>
-        {Ic.doc(C.t2,20)}<div style={{textAlign:"left"}}><div style={{ fontSize:13.2, fontWeight:700, color:C.t1 }}>{pdfLoading?'Generando...':'Descargar informe PDF'}</div><div style={{ fontSize:11, color:C.t3 }}>Información, recorrido, historial y documentos</div></div>
-      </button>
-
-      {/* Secondary actions — edit, cancel, reject (horizontal, smaller) */}
+      {/* Edit action (neutral) */}
+      {["pending_assignment","assigned","accepted","in_progress","loaded"].includes(freight.status) && (perms.canRequest || perms.canApprove) && (
+        <div style={{ marginBottom:8 }}>
+          <Btn sm v="ghost" icon={Ic.edit(C.t2,14)} onClick={()=>onEdit(freight)} style={{width:"100%"}}>Editar flete</Btn>
+        </div>
+      )}
+      {/* Danger zone — cancel/reject (visually separated) */}
       {(()=>{
-        const sec = [];
-        if(["pending_assignment","assigned","accepted","in_progress","loaded"].includes(freight.status) && (perms.canRequest || perms.canApprove))
-          sec.push(<Btn key="edit" sm v="ghost" icon={Ic.edit(C.t2,14)} onClick={()=>onEdit(freight)} style={{flex:1}}>Editar</Btn>);
+        const danger = [];
         if(filteredActions.includes("cancel"))
-          sec.push(<Btn key="cancel" sm v="err" icon={Ic.cross(C.err,14)} disabled={actionLoading} onClick={()=>onAction(freight.id,"cancel")} style={{flex:1}}>Cancelar</Btn>);
+          danger.push(<Btn key="cancel" sm v="err" icon={Ic.cross(C.err,14)} disabled={actionLoading} onClick={()=>onAction(freight.id,"cancel")} style={{flex:1}}>Cancelar</Btn>);
         if(filteredActions.includes("reject"))
-          sec.push(<Btn key="reject" sm v="err" icon={Ic.ban(C.err,14)} disabled={actionLoading} onClick={()=>onAction(freight.id,"reject")} style={{flex:1}}>Rechazar</Btn>);
-        if(sec.length===0) return null;
-        return <div style={{ display:"flex", gap:8, marginBottom:8 }}>{sec}</div>;
+          danger.push(<Btn key="reject" sm v="err" icon={Ic.ban(C.err,14)} disabled={actionLoading} onClick={()=>onAction(freight.id,"reject")} style={{flex:1}}>Rechazar</Btn>);
+        if(danger.length===0) return null;
+        return <div style={{ background:`${C.err}06`, border:`1px solid ${C.err}15`, borderRadius:10, padding:10, marginBottom:8 }}>
+          <div style={{ display:"flex", gap:8 }}>{danger}</div>
+        </div>;
       })()}
       </div>
       <FileViewer file={viewFile} onClose={()=>setViewFile(null)} onOcr={handleOcr} ocrLoading={ocrLoading} onViewOcr={handleViewOcr}/>
