@@ -99,6 +99,10 @@ export default function LocationsScreen({ onBack }) {
   const [sectionOpen, setSectionOpen] = useState({ pois: true, fields: true });
   const [expandedField, setExpandedField] = useState(null);
   const [mapFilters, setMapFilters] = useState({ field: true, lot: true, poi: true });
+  const [mapType, setMapType] = useState("roadmap");
+  const [mapSelectMode, setMapSelectMode] = useState(null); // null | { callback, currentPos }
+  const selectMarkerRef = useRef(null);
+  const selectListenerRef = useRef(null);
 
   // ── Map refs ──
   const mapContainerRef = useRef(null);
@@ -136,7 +140,7 @@ export default function LocationsScreen({ onBack }) {
       await apiCreateField({ name: data.name, address: data.address || undefined, lat: data.lat || undefined, lng: data.lng || undefined });
       setCreatingField(false);
       setMsg({ t: "Campo creado", k: "ok" });
-      load();
+      await load();
       if (data.lat && data.lng && mapObjRef.current) { mapObjRef.current.panTo({ lat: data.lat, lng: data.lng }); mapObjRef.current.setZoom(15); }
     } catch (err) { setMsg({ t: err.message || "Error al crear campo", k: "err" }); }
     finally { setSaving(false); }
@@ -148,7 +152,7 @@ export default function LocationsScreen({ onBack }) {
       await apiUpdateField(fieldId, { address: data.address || undefined, lat: data.lat || undefined, lng: data.lng || undefined });
       setEditField(null);
       setMsg({ t: "Campo actualizado", k: "ok" });
-      load();
+      await load();
     } catch (err) { setMsg({ t: err.message || "Error al actualizar campo", k: "err" }); }
     finally { setSaving(false); }
   };
@@ -159,7 +163,7 @@ export default function LocationsScreen({ onBack }) {
       await apiDeleteField(fieldId);
       setDeletingField(null);
       setMsg({ t: "Campo eliminado", k: "ok" });
-      load();
+      await load();
     } catch (err) { setMsg({ t: err.message || "Error al eliminar", k: "err" }); }
     finally { setSaving(false); }
   };
@@ -171,7 +175,7 @@ export default function LocationsScreen({ onBack }) {
       await apiCreateLot(fieldId, { name: data.name, hectares: data.hectares, lat: data.lat || undefined, lng: data.lng || undefined });
       setCreatingLotForField(null);
       setMsg({ t: "Lote creado", k: "ok" });
-      load();
+      await load();
       if (data.lat && data.lng && mapObjRef.current) { mapObjRef.current.panTo({ lat: data.lat, lng: data.lng }); mapObjRef.current.setZoom(15); }
     } catch (err) { setMsg({ t: err.message || "Error al crear lote", k: "err" }); }
     finally { setSaving(false); }
@@ -183,7 +187,7 @@ export default function LocationsScreen({ onBack }) {
       await apiUpdateLot(fieldId, lotId, { hectares: data.hectares, lat: data.lat || undefined, lng: data.lng || undefined });
       setEditLot(null);
       setMsg({ t: "Lote actualizado", k: "ok" });
-      load();
+      await load();
     } catch (err) { setMsg({ t: err.message || "Error al actualizar lote", k: "err" }); }
     finally { setSaving(false); }
   };
@@ -194,7 +198,7 @@ export default function LocationsScreen({ onBack }) {
       await apiDeleteLot(fieldId, lotId);
       setDeletingLot(null);
       setMsg({ t: "Lote eliminado", k: "ok" });
-      load();
+      await load();
     } catch (err) { setMsg({ t: err.message || "Error al eliminar", k: "err" }); }
     finally { setSaving(false); }
   };
@@ -207,7 +211,7 @@ export default function LocationsScreen({ onBack }) {
       await apiCreatePoi({ name: data.name, comments: data.comments, lat: data.lat, lng: data.lng });
       setCreatingPoi(false);
       setMsg({ t: "Ubicación creada", k: "ok" });
-      load();
+      await load();
       if (data.lat && data.lng && mapObjRef.current) { mapObjRef.current.panTo({ lat: data.lat, lng: data.lng }); mapObjRef.current.setZoom(15); }
     } catch (err) { setMsg({ t: err.message || "Error al crear ubicación", k: "err" }); }
     finally { setSaving(false); }
@@ -219,7 +223,7 @@ export default function LocationsScreen({ onBack }) {
       await apiUpdatePoi(poiId, data);
       setEditingPoi(null);
       setMsg({ t: "Ubicación actualizada", k: "ok" });
-      load();
+      await load();
     } catch (err) { setMsg({ t: err.message || "Error al actualizar", k: "err" }); }
     finally { setSaving(false); }
   };
@@ -230,7 +234,7 @@ export default function LocationsScreen({ onBack }) {
       await apiDeletePoi(id);
       setDeletingPoi(null);
       setMsg({ t: "Ubicación eliminada", k: "ok" });
-      load();
+      await load();
     } catch (err) { setMsg({ t: err.message || "Error al eliminar", k: "err" }); }
     finally { setSaving(false); }
   };
@@ -302,7 +306,7 @@ export default function LocationsScreen({ onBack }) {
     if (total > 0) { let m = parts.join(", ") + ` importado${total !== 1 ? "s" : ""}`; if (errors.length) m += ` · ${errors.length} error${errors.length !== 1 ? "es" : ""}: ${errors.slice(0, 2).join("; ")}`; setDoneMsg(m); }
     else if (errors.length) setDoneMsg(`Error al importar: ${errors.slice(0, 3).join("; ")}`);
     else setDoneMsg("No se importaron ubicaciones");
-    load();
+    await load();
   };
 
   const toggleItem = (i) => setImportSelected(prev => { const n = new Set(prev); n.has(i) ? n.delete(i) : n.add(i); return n; });
@@ -336,6 +340,8 @@ export default function LocationsScreen({ onBack }) {
 
   const filteredPois = allPois.filter(p => matchesSearch(p.name));
   const filteredFields = fields.filter(f => matchesSearch(f.name) || (f.lots || []).some(l => matchesSearch(l.name)));
+  const mapCounts = { field: 0, lot: 0, poi: 0 };
+  allLocations.forEach(l => { mapCounts[l.type]++; });
 
   // ═══════════════════════════════════════════════════════════════
   // MAP
@@ -374,7 +380,7 @@ export default function LocationsScreen({ onBack }) {
       if (cancelled || !mapContainerRef.current) return;
       const map = new maps.Map(mapContainerRef.current, {
         zoom: 7, center: URUGUAY_CENTER, disableDefaultUI: true, zoomControl: true,
-        mapTypeControl: true, mapTypeControlOptions: { style: maps.MapTypeControlStyle.DROPDOWN_MENU, position: maps.ControlPosition.BOTTOM_RIGHT },
+        mapTypeControl: false,
         gestureHandling: "greedy",
         styles: [{ featureType: "poi", stylers: [{ visibility: "off" }] }, { featureType: "transit", stylers: [{ visibility: "off" }] }],
       });
@@ -480,6 +486,66 @@ export default function LocationsScreen({ onBack }) {
   }, [isDesktop, fields, sectionOpen]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const toggleMapFilter = (key) => setMapFilters(prev => ({ ...prev, [key]: !prev[key] }));
+  const toggleMapType = () => {
+    const next = mapType === "roadmap" ? "hybrid" : "roadmap";
+    setMapType(next);
+    if (mapObjRef.current) mapObjRef.current.setMapTypeId(next);
+  };
+
+  const startMapSelect = useCallback((currentPos, callback) => {
+    if (!isDesktop) setDrawerOpen(false);
+    setMapSelectMode({ callback, currentPos });
+    const map = mapObjRef.current;
+    if (!map || !window.google?.maps) return;
+    const maps = window.google.maps;
+    // Clear previous select marker
+    if (selectMarkerRef.current) { selectMarkerRef.current.setMap(null); selectMarkerRef.current = null; }
+    if (selectListenerRef.current) { maps.event.removeListener(selectListenerRef.current); selectListenerRef.current = null; }
+    const addDragEnd = (marker) => {
+      marker.addListener("dragend", () => {
+        const p = { lat: marker.getPosition().lat(), lng: marker.getPosition().lng() };
+        setMapSelectMode(prev => prev ? { ...prev, currentPos: p } : null);
+      });
+    };
+    // Place existing marker if editing
+    if (currentPos?.lat && currentPos?.lng) {
+      selectMarkerRef.current = new maps.Marker({ position: { lat: currentPos.lat, lng: currentPos.lng }, map, draggable: true, zIndex: 1000 });
+      addDragEnd(selectMarkerRef.current);
+      map.panTo({ lat: currentPos.lat, lng: currentPos.lng });
+    }
+    // Click to place/move marker
+    selectListenerRef.current = map.addListener("click", (e) => {
+      const pos = { lat: e.latLng.lat(), lng: e.latLng.lng() };
+      if (selectMarkerRef.current) {
+        selectMarkerRef.current.setPosition(pos);
+      } else {
+        selectMarkerRef.current = new maps.Marker({ position: pos, map, draggable: true, zIndex: 1000 });
+        addDragEnd(selectMarkerRef.current);
+      }
+      setMapSelectMode(prev => prev ? { ...prev, currentPos: pos } : null);
+    });
+  }, [isDesktop]);
+
+  const confirmMapSelect = useCallback(() => {
+    const marker = selectMarkerRef.current;
+    if (!marker || !mapSelectMode?.callback) { cancelMapSelect(); return; }
+    const pos = { lat: marker.getPosition().lat(), lng: marker.getPosition().lng() };
+    const cb = mapSelectMode.callback;
+    // Cleanup
+    marker.setMap(null);
+    selectMarkerRef.current = null;
+    if (selectListenerRef.current && window.google?.maps) { window.google.maps.event.removeListener(selectListenerRef.current); selectListenerRef.current = null; }
+    setMapSelectMode(null);
+    if (!isDesktop) setDrawerOpen(true);
+    cb(pos);
+  }, [mapSelectMode, isDesktop]);
+
+  const cancelMapSelect = useCallback(() => {
+    if (selectMarkerRef.current) { selectMarkerRef.current.setMap(null); selectMarkerRef.current = null; }
+    if (selectListenerRef.current && window.google?.maps) { window.google.maps.event.removeListener(selectListenerRef.current); selectListenerRef.current = null; }
+    setMapSelectMode(null);
+    if (!isDesktop) setDrawerOpen(true);
+  }, [isDesktop]);
   const toggleSection = (key) => setSectionOpen(prev => ({ ...prev, [key]: !prev[key] }));
 
   const isFormActive = creatingField || creatingPoi || creatingLotForField || editField || editLot || editingPoi;
@@ -494,7 +560,7 @@ export default function LocationsScreen({ onBack }) {
     const hasCoords = p.lat && p.lng;
 
     if (editingPoi?.id === p.id) {
-      return <SlideIn key={`edit-poi-${p.id}`}><PoiForm mode="edit" poi={p} saving={saving} onSave={(data) => handleUpdatePoi(p.id, data)} onCancel={() => setEditingPoi(null)} /></SlideIn>;
+      return <SlideIn key={`edit-poi-${p.id}`}><PoiForm mode="edit" poi={p} saving={saving} onSave={(data) => handleUpdatePoi(p.id, data)} onCancel={() => setEditingPoi(null)} onSelectOnMap={startMapSelect} /></SlideIn>;
     }
 
     if (deletingPoi === p.id) {
@@ -588,7 +654,7 @@ export default function LocationsScreen({ onBack }) {
           </div>
         </div>
 
-        {editField === f.id && <SlideIn><FieldForm mode="edit" field={f} saving={saving} onSave={(data) => handleUpdateField(f.id, data)} onCancel={() => setEditField(null)} /></SlideIn>}
+        {editField === f.id && <SlideIn><FieldForm mode="edit" field={f} saving={saving} onSave={(data) => handleUpdateField(f.id, data)} onCancel={() => setEditField(null)} onSelectOnMap={startMapSelect} /></SlideIn>}
 
         {isExpanded && filteredLots.map(l => {
           const lotId = `lot-${l.id}`;
@@ -612,7 +678,7 @@ export default function LocationsScreen({ onBack }) {
           }
 
           if (editLot?.lotId === l.id) {
-            return <SlideIn key={`edit-lot-${l.id}`}><LotForm mode="edit" lot={l} fieldName={f.name} defaultCenter={f.lat && f.lng ? { lat: Number(f.lat), lng: Number(f.lng) } : null} saving={saving} onSave={(data) => handleUpdateLot(f.id, l.id, data)} onCancel={() => setEditLot(null)} /></SlideIn>;
+            return <SlideIn key={`edit-lot-${l.id}`}><LotForm mode="edit" lot={l} fieldName={f.name} defaultCenter={f.lat && f.lng ? { lat: Number(f.lat), lng: Number(f.lng) } : null} saving={saving} onSave={(data) => handleUpdateLot(f.id, l.id, data)} onCancel={() => setEditLot(null)} onSelectOnMap={startMapSelect} /></SlideIn>;
           }
 
           return (
@@ -643,7 +709,7 @@ export default function LocationsScreen({ onBack }) {
 
         {isExpanded && (
           creatingLotForField === f.id
-            ? <SlideIn><LotForm mode="create" fieldName={f.name} defaultCenter={f.lat && f.lng ? { lat: Number(f.lat), lng: Number(f.lng) } : null} saving={saving} onSave={(data) => handleCreateLot(f.id, data)} onCancel={() => setCreatingLotForField(null)} /></SlideIn>
+            ? <SlideIn><LotForm mode="create" fieldName={f.name} defaultCenter={f.lat && f.lng ? { lat: Number(f.lat), lng: Number(f.lng) } : null} saving={saving} onSave={(data) => handleCreateLot(f.id, data)} onCancel={() => setCreatingLotForField(null)} onSelectOnMap={startMapSelect} /></SlideIn>
             : <button onClick={() => setCreatingLotForField(f.id)} style={{ display: "flex", alignItems: "center", gap: 6, padding: "10px 16px 10px 40px", width: "100%", background: "none", border: "none", borderBottom: `1px solid ${C.b2}`, cursor: "pointer", fontFamily: FONT, fontSize: 12.7, fontWeight: 600, color: C.acc }}>{Ic.plus(C.acc, 13)} Agregar lote</button>
         )}
       </div>
@@ -682,7 +748,7 @@ export default function LocationsScreen({ onBack }) {
         <span style={{ fontSize: 11, color: C.t3, fontWeight: 600 }}>{count}</span>
       </div>
       {onAdd && (
-        <button onClick={e => { e.stopPropagation(); onAdd(); }} style={{ width: 26, height: 26, borderRadius: 7, background: `${color}14`, border: `1px solid ${color}40`, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+        <button title={`Crear ${title.toLowerCase().replace(/s$/, "")}`} onClick={e => { e.stopPropagation(); onAdd(); }} style={{ width: 26, height: 26, borderRadius: 7, background: `${color}14`, border: `1px solid ${color}40`, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
           {Ic.plus(color, 13)}
         </button>
       )}
@@ -736,7 +802,7 @@ export default function LocationsScreen({ onBack }) {
               <button onClick={onBack} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex", alignItems: "center" }}>{Ic.chev(C.pri, 18)}</button>
               <span style={{ fontSize: 18, fontWeight: 600, color: C.t1 }}>Ubicaciones</span>
             </div>
-            <button onClick={() => setImportStep(importStep ? 0 : 1)} style={{ width: 32, height: 32, borderRadius: 8, background: importStep ? "transparent" : C.pri, border: importStep ? `1px solid ${C.b1}` : "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <button title={importStep ? "Cerrar importar" : "Importar desde Google Maps"} onClick={() => setImportStep(importStep ? 0 : 1)} style={{ width: 32, height: 32, borderRadius: 8, background: importStep ? "transparent" : C.pri, border: importStep ? `1px solid ${C.b1}` : "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
               {importStep ? Ic.cross(C.t3, 16) : Ic.plus(C.w, 16)}
             </button>
           </div>
@@ -798,7 +864,7 @@ export default function LocationsScreen({ onBack }) {
                 () => { setCreatingPoi(true); if (!sectionOpen.pois) setSectionOpen(p => ({ ...p, pois: true })); })}
               {sectionOpen.pois && (
                 <>
-                  {creatingPoi && <SlideIn><PoiForm mode="create" saving={saving} onSave={handleCreatePoi} onCancel={() => setCreatingPoi(false)} /></SlideIn>}
+                  {creatingPoi && <SlideIn><PoiForm mode="create" saving={saving} onSave={handleCreatePoi} onCancel={() => setCreatingPoi(false)} onSelectOnMap={startMapSelect} /></SlideIn>}
                   {filteredPois.length === 0 && !creatingPoi
                     ? <div style={{ padding: "16px", textAlign: "center", fontSize: 12.7, color: C.t3 }}>{search ? "Sin resultados" : "Sin ubicaciones de interés"}</div>
                     : filteredPois.map(p => renderPoiItem(p, p._isSharedWithMe))}
@@ -809,7 +875,7 @@ export default function LocationsScreen({ onBack }) {
                 () => { setCreatingField(true); if (!sectionOpen.fields) setSectionOpen(p => ({ ...p, fields: true })); })}
               {sectionOpen.fields && (
                 <>
-                  {creatingField && <SlideIn><FieldForm mode="create" saving={saving} onSave={handleCreateField} onCancel={() => setCreatingField(false)} /></SlideIn>}
+                  {creatingField && <SlideIn><FieldForm mode="create" saving={saving} onSave={handleCreateField} onCancel={() => setCreatingField(false)} onSelectOnMap={startMapSelect} /></SlideIn>}
                   {filteredFields.length === 0 && !creatingField
                     ? <div style={{ padding: "16px", textAlign: "center", fontSize: 12.7, color: C.t3 }}>{search ? "Sin resultados" : "Sin campos registrados"}</div>
                     : renderFieldsList()}
@@ -824,17 +890,36 @@ export default function LocationsScreen({ onBack }) {
       <div style={{ flex: 1, position: "relative", minWidth: 0 }}>
         <div ref={mapContainerRef} style={{ position: "absolute", inset: 0 }} />
 
-        <div style={{ position: "absolute", top: 12, right: 12, zIndex: 5, display: "flex", gap: 6 }}>
-          {FILTER_CHIPS.map(fc => {
-            const active = mapFilters[fc.key];
-            return (
-              <button key={fc.key} onClick={() => toggleMapFilter(fc.key)}
-                style={{ display: "flex", alignItems: "center", gap: 4, padding: "6px 10px", borderRadius: 20, background: active ? fc.color : C.w, color: active ? "#fff" : fc.color, border: `1.5px solid ${fc.color}`, cursor: "pointer", fontFamily: "inherit", fontSize: 12.1, fontWeight: 700, boxShadow: C.sh, transition: "all 0.15s" }}>
-                {fc.icon(active ? "#fff" : fc.color, 13)} {fc.label}
-              </button>
-            );
-          })}
-        </div>
+        {mapSelectMode && (
+          <div style={{ position: "absolute", top: 0, left: 0, right: 0, padding: 16, display: "flex", flexDirection: "column", alignItems: "center", gap: 8, zIndex: 10, background: "rgba(0,0,0,0.5)", pointerEvents: "none" }}>
+            <div style={{ color: "#fff", fontFamily: FONT, fontSize: 15, fontWeight: 500, textAlign: "center", textShadow: "0 1px 3px rgba(0,0,0,0.5)" }}>
+              {Ic.pin("#fff", 16)} Tocá el mapa para seleccionar la ubicación
+            </div>
+            <div style={{ display: "flex", gap: 8, pointerEvents: "auto" }}>
+              <button onClick={cancelMapSelect} style={{ padding: "6px 16px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.4)", background: "rgba(255,255,255,0.15)", cursor: "pointer", fontFamily: FONT, fontSize: 13, fontWeight: 600, color: "#fff" }}>Cancelar</button>
+              <button onClick={confirmMapSelect} disabled={!mapSelectMode.currentPos} style={{ padding: "6px 16px", borderRadius: 8, border: "none", background: C.pri, cursor: "pointer", fontFamily: FONT, fontSize: 13, fontWeight: 700, color: "#fff", opacity: mapSelectMode.currentPos ? 1 : 0.5 }}>Confirmar</button>
+            </div>
+          </div>
+        )}
+
+        {!mapSelectMode && <>
+          <div style={{ position: "absolute", top: 12, right: 12, zIndex: 5, display: "flex", gap: 6 }}>
+            {FILTER_CHIPS.map(fc => {
+              const active = mapFilters[fc.key];
+              const count = mapCounts[fc.key] || 0;
+              return (
+                <button key={fc.key} onClick={() => toggleMapFilter(fc.key)}
+                  style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "6px 12px", borderRadius: 20, background: active ? fc.color : C.bgCard, color: active ? "#fff" : C.t2, border: `1px solid ${active ? "transparent" : C.b1}`, cursor: "pointer", fontFamily: FONT, fontSize: 12.1, fontWeight: 700, boxShadow: C.sh, transition: "all 0.2s" }}>
+                  {fc.icon(active ? "#fff" : fc.color, 14)} {fc.label} ({count})
+                </button>
+              );
+            })}
+          </div>
+
+          <button onClick={toggleMapType} style={{ position: "absolute", top: 52, right: 12, zIndex: 5, display: "inline-flex", alignItems: "center", gap: 5, padding: "6px 12px", borderRadius: 20, background: mapType === "hybrid" ? C.t1 : C.bgCard, color: mapType === "hybrid" ? "#fff" : C.t2, border: `1px solid ${mapType === "hybrid" ? "transparent" : C.b1}`, cursor: "pointer", fontFamily: FONT, fontSize: 12.1, fontWeight: 700, boxShadow: C.sh, transition: "all 0.2s" }}>
+            {mapType === "hybrid" ? "Mapa" : "Satélite"}
+          </button>
+        </>}
 
         {!isDesktop && !drawerOpen && (
           <button onClick={onBack} style={{ position: "absolute", top: 12, left: 12, zIndex: 5, width: 40, height: 40, borderRadius: 20, background: C.w, border: `1px solid ${C.b1}`, boxShadow: C.sh, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>

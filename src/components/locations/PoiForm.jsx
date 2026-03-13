@@ -1,10 +1,10 @@
 import { useState } from "react";
-import { C, FONT } from "../../theme";
+import { C, Ic, FONT } from "../../theme";
 import { SafeZone, LocationPicker } from "../../maps";
 
 const COLOR = "#0891B2";
 
-export default function PoiForm({ mode = "create", poi, onSave, onCancel, saving }) {
+export default function PoiForm({ mode = "create", poi, onSave, onCancel, saving, onSelectOnMap }) {
   const [name, setName] = useState(mode === "edit" && poi ? poi.name : "");
   const [comments, setComments] = useState(mode === "edit" && poi ? (poi.comments || "") : "");
   const [loc, setLoc] = useState(() => {
@@ -30,6 +30,12 @@ export default function PoiForm({ mode = "create", poi, onSave, onCancel, saving
     });
   };
 
+  const handleSelectOnMap = () => {
+    onSelectOnMap?.(loc, (selected) => {
+      if (selected) setLoc(selected);
+    });
+  };
+
   const canSave = name.trim() && (mode === "edit" || loc?.lat);
 
   return (
@@ -40,7 +46,22 @@ export default function PoiForm({ mode = "create", poi, onSave, onCancel, saving
         </div>
         <input autoFocus value={name} onChange={e => setName(e.target.value)} onKeyDown={handleKeyDown} placeholder="Nombre" style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: `1.5px solid ${C.bFocus}`, background: C.bgInput, fontFamily: FONT, fontSize: 13.2, fontWeight: 700, color: C.t1, outline: "none", boxSizing: "border-box" }} />
         <input value={comments} onChange={e => setComments(e.target.value)} onKeyDown={handleKeyDown} placeholder="Comentarios (opcional)" style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: `1px solid ${C.b2}`, background: C.bgInput, fontFamily: FONT, fontSize: 12.1, color: C.t1, outline: "none", boxSizing: "border-box" }} />
-        <SafeZone><LocationPicker label={mode === "create" ? "Ubicación (obligatorio)" : "Ubicación"} value={loc} onChange={setLoc} /></SafeZone>
+        {onSelectOnMap ? (
+          <div>
+            {loc ? (
+              <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 10px", borderRadius: 8, background: C.okPale, border: `1px solid ${C.ok}40` }}>
+                <span style={{ flex: 1, fontSize: 12.1, color: C.t1 }}>{`${loc.lat.toFixed(4)}, ${loc.lng.toFixed(4)}`}</span>
+                <button onClick={handleSelectOnMap} style={{ padding: "3px 8px", borderRadius: 6, border: `1px solid ${C.b2}`, background: C.w, cursor: "pointer", fontFamily: FONT, fontSize: 11, fontWeight: 600, color: C.t2 }}>Cambiar</button>
+              </div>
+            ) : (
+              <button onClick={handleSelectOnMap} style={{ display: "flex", alignItems: "center", gap: 6, width: "100%", padding: "8px 10px", borderRadius: 8, border: `1.5px dashed ${COLOR}`, background: "transparent", cursor: "pointer", fontFamily: FONT, fontSize: 12.1, fontWeight: 600, color: COLOR }}>
+                {Ic.pin(COLOR, 14)} {mode === "create" ? "Seleccionar en mapa (obligatorio)" : "Seleccionar en mapa"}
+              </button>
+            )}
+          </div>
+        ) : (
+          <SafeZone><LocationPicker label={mode === "create" ? "Ubicación (obligatorio)" : "Ubicación"} value={loc} onChange={setLoc} /></SafeZone>
+        )}
         <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
           <button onClick={onCancel} style={{ padding: "5px 12px", borderRadius: 8, border: `1px solid ${C.b2}`, background: C.w, cursor: "pointer", fontFamily: FONT, fontSize: 12.1, fontWeight: 600, color: C.t2 }}>Cancelar</button>
           <button onClick={handleSave} disabled={!canSave || saving} style={{ padding: "5px 12px", borderRadius: 8, border: "none", background: mode === "edit" ? C.pri : COLOR, cursor: "pointer", fontFamily: FONT, fontSize: 12.1, fontWeight: 700, color: C.w, opacity: canSave && !saving ? 1 : 0.5 }}>{saving ? "..." : mode === "edit" ? "Guardar" : "Crear"}</button>
