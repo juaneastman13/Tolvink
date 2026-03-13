@@ -133,7 +133,7 @@ export default function FieldsScreen({ onBack, embedded, goToMap }) {
       )}
 
       {loading ? <Loader/> :
-        fields.length === 0 ? <EmptyState icon={Ic.pin(C.t3,28)} title="Sin campos registrados" subtitle="Agregá tu primer campo para poder solicitar fletes" action={<Btn sm onClick={()=>setShowFieldForm(true)}>Agregar campo</Btn>}/> :
+        fields.length === 0 ? <EmptyState icon={Ic.field(C.t3,28)} title="Sin campos registrados" subtitle="Agregá tu primer campo para poder solicitar fletes" action={<Btn sm onClick={()=>setShowFieldForm(true)}>Agregar campo</Btn>}/> :
           (() => {
             // Group fields by company
             const companyMap = new Map();
@@ -160,7 +160,7 @@ export default function FieldsScreen({ onBack, embedded, goToMap }) {
               <div key={f.id} style={{ background: C.w, border: `1px solid ${expandedField === f.id ? C.pri : C.b1}`, borderLeft: `3px solid ${C.pri}`, borderRadius: 12, boxShadow: C.sh, overflow: "hidden" }}>
                 <div onClick={() => setExpandedField(expandedField === f.id ? null : f.id)} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: 14, cursor: "pointer", userSelect: "none" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    {Ic.pin(C.pri, 18)}
+                    {Ic.field(C.pri, 18)}
                     <div>
                       <div style={{ fontSize: 15.4, fontWeight: 700 }}>{f.name}</div>
                       {f.address && <div style={{ fontSize: 12.1, color: C.t3 }}>{f.address}</div>}
@@ -196,7 +196,7 @@ export default function FieldsScreen({ onBack, embedded, goToMap }) {
                   <div key={l.id}>
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 14px 6px 28px", borderTop: `1px solid ${C.b2}` }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        {Ic.grain(C.ok, 14)}
+                        {Ic.lot(C.ok, 14)}
                         <span style={{ fontSize: 13.2, fontWeight: 500 }}>{l.name}</span>
                         {l.hectares && <span style={{ fontSize: 11, color: C.t3 }}>{l.hectares} ha</span>}
                         {l.lat && <span style={{ fontSize: 9.9, color: C.ok }}>📍</span>}

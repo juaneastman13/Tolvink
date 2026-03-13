@@ -661,7 +661,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
             ].filter(Boolean);
             const ruta = [
               [Ic.user(C.pri,15),"Empresa",freight.originCompanyName||originDisplay(freight)],
-              [Ic.grain(C.ok,15),"Campo",originDisplay(freight)||"—"],
+              [Ic.field(C.ok,15),"Campo",originDisplay(freight)||"—"],
               [Ic.plant(C.t2,15),"Destino",destDisplay(freight)],
               [Ic.cal(C.t2,15),"Fecha carga",formatFreightDate(freight.loadDate)],
               [Ic.clk(C.t2,15),"Hora carga",freight.loadTime],

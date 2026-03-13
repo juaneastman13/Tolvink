@@ -338,7 +338,7 @@ export default function LandingScreen({ onLogin, onSignup, onPasswordReset, load
                     </div>
                   </div>
                   <div>
-                    <div style={_lbl}>{Ic.pin(C.t2,12)} Lote</div>
+                    <div style={_lbl}>{Ic.lot(C.t2,12)} Lote</div>
                     <div style={_sel}>
                       <span style={{ color:C.t3, fontSize:14.3 }}>Seleccionar...</span>
                       {Ic.down(C.t3,14)}

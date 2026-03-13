@@ -12,9 +12,9 @@ import { loadGMaps } from "../maps";
 
 // ── Color config per type ──────────────────────────────────────────
 const TYPE_CFG = {
-  field: { label: "Campo", color: "#1A6B37", icon: (c, s) => Ic.pin(c, s) },
-  lot:   { label: "Lote",  color: "#2563EB", icon: (c, s) => Ic.grain(c, s) },
-  poi:   { label: "Interés", color: "#0891B2", icon: (c, s) => Ic.nav(c, s) },
+  field: { label: "Campo", color: "#1A6B37", icon: (c, s) => Ic.field(c, s) },
+  lot:   { label: "Lote",  color: "#2563EB", icon: (c, s) => Ic.lot(c, s) },
+  poi:   { label: "Interés", color: "#0891B2", icon: (c, s) => Ic.poi(c, s) },
 };
 
 // Map marker colors
@@ -464,7 +464,7 @@ export default function LocationsScreen({ onBack }) {
         {loading ? <Loader /> :
           pois.length === 0 && importStep === 0 ? (
             <EmptyState
-              icon={Ic.nav(C.t3, 28)}
+              icon={Ic.poi(C.t3, 28)}
               title="Sin ubicaciones de interés"
               subtitle="Importá ubicaciones desde Google Maps y marcalas como 'Interés'"
               action={<Btn sm onClick={() => setImportStep(1)}>Importar</Btn>}
@@ -583,7 +583,7 @@ function PoiRow({
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
         {/* Icon */}
         <div style={{ width: 32, height: 32, borderRadius: 8, background: `${borderColor}12`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-          {Ic.nav(borderColor, 16)}
+          {Ic.poi(borderColor, 16)}
         </div>
 
         {/* Info */}
@@ -927,8 +927,8 @@ function ReclassifyPoiModal({ poi, fields, type, fieldId, hectares, saving, onTy
         {/* Type selector */}
         <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
           {[
-            { key: "field", label: "Campo", color: MAP_COLORS.field, icon: Ic.pin },
-            { key: "lot", label: "Lote", color: MAP_COLORS.lot, icon: Ic.grain },
+            { key: "field", label: "Campo", color: MAP_COLORS.field, icon: Ic.field },
+            { key: "lot", label: "Lote", color: MAP_COLORS.lot, icon: Ic.lot },
           ].map(opt => (
             <button
               key={opt.key}

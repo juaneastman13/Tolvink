@@ -14,7 +14,7 @@ import { useUIStore } from "../store";
 // ======================== SUMMARY CARD ==============================
 
 function SummaryCard({ secSummary, secComplete, form, showTruckSelect, trucks, isDesktop, compact, onEdit }) {
-  const ICONS = { product: Ic.grain(C.pri,14), quantity: Ic.grain(C.t2,14), truckCount: Ic.truck(C.acc,14), origin: Ic.pin(C.ok,14), ownfleet: Ic.truck(C.acc,14), destination: Ic.plant(C.sec,14), schedule: Ic.cal(C.pri,14) };
+  const ICONS = { product: Ic.grain(C.pri,14), quantity: Ic.grain(C.t2,14), truckCount: Ic.truck(C.acc,14), origin: Ic.field(C.ok,14), ownfleet: Ic.truck(C.acc,14), destination: Ic.plant(C.sec,14), schedule: Ic.cal(C.pri,14) };
   const rows = [];
   if (secSummary.product) rows.push({ label: "Producto", value: secSummary.product, section: "product", icon: ICONS.product });
   if (secSummary.quantity) rows.push({ label: "Cantidad", value: secSummary.quantity, section: "quantity", icon: ICONS.quantity });
@@ -461,9 +461,9 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
               ))}
             </div>
             {originMode==="field" ? (<>
-              <Select label="Campo" icon={Ic.pin(C.ok,14)} value={form.fieldId} onChange={v=>{u({fieldId:v,lotId:""});}} options={fieldOpts} placeholder="Seleccionar campo..."/>
+              <Select label="Campo" icon={Ic.field(C.ok,14)} value={form.fieldId} onChange={v=>{u({fieldId:v,lotId:""});}} options={fieldOpts} placeholder="Seleccionar campo..."/>
               <div style={{ marginTop:10 }}>
-                <Select label="Origen (lote)" icon={Ic.pin(C.pri,14)} value={form.lotId} onChange={v=>u({lotId:v})} options={lotOpts} placeholder={loadingLots?"Cargando lotes...":form.fieldId?"Seleccionar lote...":"Primero seleccioná un campo"}/>
+                <Select label="Origen (lote)" icon={Ic.lot(C.pri,14)} value={form.lotId} onChange={v=>u({lotId:v})} options={lotOpts} placeholder={loadingLots?"Cargando lotes...":form.fieldId?"Seleccionar lote...":"Primero seleccioná un campo"}/>
                 {touched&&<FieldError error={errs.lotId}/>}
                 {selectedLot && selectedLot.lat && <div style={{ display:"flex", alignItems:"center", gap:6, padding:"6px 10px", background:C.priPale, borderRadius:8, marginTop:6 }}>{Ic.chk(C.pri,14)}<span style={{fontSize:11.6,color:C.pri,fontWeight:500}}>{selectedLot.lat}, {selectedLot.lng}</span></div>}
               </div>
@@ -602,10 +602,10 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
           </div>
           {originMode==="field" ? (<>
             <div>
-              <Select label="Campo" icon={Ic.pin(C.ok,14)} value={form.fieldId} onChange={v=>{u({fieldId:v,lotId:""});}} options={fieldOpts} placeholder="Seleccionar campo..."/>
+              <Select label="Campo" icon={Ic.field(C.ok,14)} value={form.fieldId} onChange={v=>{u({fieldId:v,lotId:""});}} options={fieldOpts} placeholder="Seleccionar campo..."/>
             </div>
             <div style={{ marginTop:10 }}>
-              <Select label="Origen (lote)" icon={Ic.pin(C.pri,14)} value={form.lotId} onChange={v=>u({lotId:v})} options={lotOpts} placeholder={loadingLots?"Cargando lotes...":form.fieldId?"Seleccionar lote...":"Primero seleccioná un campo"}/>
+              <Select label="Origen (lote)" icon={Ic.lot(C.pri,14)} value={form.lotId} onChange={v=>u({lotId:v})} options={lotOpts} placeholder={loadingLots?"Cargando lotes...":form.fieldId?"Seleccionar lote...":"Primero seleccioná un campo"}/>
               {touched&&<FieldError error={errs.lotId}/>}
               {selectedLot && selectedLot.lat && <div style={{ display:"flex", alignItems:"center", gap:6, padding:"6px 10px", background:C.priPale, borderRadius:8, marginTop:6 }}>{Ic.chk(C.pri,14)}<span style={{fontSize:11.6,color:C.pri,fontWeight:500}}>{selectedLot.lat}, {selectedLot.lng}</span></div>}
               {form.fieldId && !newLot && <button type="button" onClick={()=>setNewLot(true)} style={{marginTop:8,background:"none",border:"none",cursor:"pointer",fontSize:12.1,fontWeight:600,color:C.pri,padding:0,fontFamily:"inherit",display:"flex",alignItems:"center",gap:4}}>{Ic.plus(C.pri,13)} Crear lote nuevo</button>}
@@ -749,7 +749,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
                   {[
                     { icon: Ic.grain(C.pri,14), label:"Producto", value:`${secSummary.product}${secSummary.quantity?` · ${secSummary.quantity}`:""}`, sec:"product" },
                     { icon: Ic.truck(C.acc,14), label:"Camiones", value:secSummary.truckCount, sec:"quantity" },
-                    { icon: Ic.pin(C.ok,14), label:"Origen", value:secSummary.origin, sec:"origin" },
+                    { icon: Ic.field(C.ok,14), label:"Origen", value:secSummary.origin, sec:"origin" },
                     ...(showTruckSelect&&form.fleetChoice ? [{ icon: Ic.truck(C.acc,14), label:"Transporte", value:form.fleetChoice==="own"?`Flota propia${(trucks||[]).find(t=>t.id===form.truckId)?` · ${(trucks||[]).find(t=>t.id===form.truckId).plate}`:""}`:"Delegar a planta", sec:"ownfleet" }] : []),
                     { icon: Ic.plant(C.sec,14), label:"Destino", value:secSummary.destination, sec:"destination" },
                     { icon: Ic.cal(C.pri,14), label:"Fecha y hora", value:secSummary.schedule, sec:"schedule" },
