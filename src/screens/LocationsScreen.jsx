@@ -386,8 +386,8 @@ export default function LocationsScreen({ onBack }) {
             <Btn sm v="sec" onClick={() => setShowMapOverview(true)} icon={Ic.mapView(C.pri, 14)}>
               Mapa
             </Btn>
-            <Btn sm v={importStep ? "ghost" : "acc"} onClick={() => setImportStep(importStep ? 0 : 1)} icon={importStep ? Ic.cross(C.t2, 14) : Ic.pin(C.w, 14)}>
-              {importStep ? "Cerrar" : "Importar"}
+            <Btn sm v="sec" onClick={() => setImportStep(importStep ? 0 : 1)}>
+              {importStep ? Ic.cross(C.pri, 14) : "+"} {importStep ? "Cerrar" : "Importar"}
             </Btn>
           </div>
         </div>
@@ -597,6 +597,9 @@ function PoiRow({
         {/* Info */}
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 14.3, fontWeight: 700, color: C.t1 }}>{p.name}</div>
+          {p.comments && (
+            <div style={{ fontSize: 13, color: C.t3, marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.comments}</div>
+          )}
           <div style={{ display: "flex", gap: 6, alignItems: "center", marginTop: 2, flexWrap: "wrap" }}>
             {isShared ? (
               <Bd color={C.info} small>Compartida por {p._sharedBy?.name || "alguien"}</Bd>
@@ -604,7 +607,6 @@ function PoiRow({
               <Bd color={C.sec} small>Interés</Bd>
             )}
             {p.address && <span style={{ fontSize: 11, color: C.t3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.address}</span>}
-            {p.comments && <span style={{ fontSize: 11, color: C.t2, fontStyle: "italic" }}>{p.comments}</span>}
             {!isShared && p.shares?.length > 0 && (
               <Bd color={C.pri} small>{p.shares.length} compartido{p.shares.length !== 1 ? "s" : ""}</Bd>
             )}
@@ -613,36 +615,31 @@ function PoiRow({
 
         {/* Action pictograms */}
         <div style={{ display: "flex", alignItems: "center", gap: 3, flexShrink: 0 }}>
-          {p.lat && p.lng && (
-            <span style={{ fontSize: 10, color: C.ok, fontWeight: 600, marginRight: 4 }}>
-              {Number(p.lat).toFixed(4)}, {Number(p.lng).toFixed(4)}
-            </span>
-          )}
           {/* Map */}
-          <IconBtn color={borderColor} title="Ver en mapa" onClick={() => onPreview({ name: p.name, address: p.address, lat: Number(p.lat), lng: Number(p.lng) })}>
-            {Ic.nav(borderColor, 14)}
+          <IconBtn title="Ver en mapa" onClick={() => onPreview({ name: p.name, address: p.address, lat: Number(p.lat), lng: Number(p.lng) })}>
+            {Ic.nav(C.t3, 14)}
           </IconBtn>
-          {/* Edit (own only) */}
-          {!isShared && onStartEdit && (
-            <IconBtn color={C.pri} title="Editar" onClick={() => onStartEdit(p)}>
-              {Ic.edit(C.pri, 14)}
-            </IconBtn>
-          )}
           {/* Share (own only) */}
           {!isShared && onShare && (
-            <IconBtn color={C.info} title="Compartir" onClick={() => onShare(p)}>
-              {Ic.share(C.info, 14)}
+            <IconBtn title="Compartir" onClick={() => onShare(p)}>
+              {Ic.share(C.t3, 14)}
             </IconBtn>
           )}
           {/* Reclassify (own only) */}
           {!isShared && onReclassify && (
-            <IconBtn color={C.acc} title="Reclasificar" onClick={() => onReclassify(p)}>
-              {Ic.pin(C.acc, 14)}
+            <IconBtn title="Reclasificar" onClick={() => onReclassify(p)}>
+              {Ic.pin(C.t3, 14)}
+            </IconBtn>
+          )}
+          {/* Edit (own only) */}
+          {!isShared && onStartEdit && (
+            <IconBtn title="Editar" onClick={() => onStartEdit(p)}>
+              {Ic.edit(C.t3, 14)}
             </IconBtn>
           )}
           {/* Delete */}
-          <IconBtn color={C.err} title={isShared ? "Quitar" : "Eliminar"} onClick={() => onStartDelete(p.id)}>
-            {Ic.cross(C.err, 14)}
+          <IconBtn title={isShared ? "Quitar" : "Eliminar"} onClick={() => onStartDelete(p.id)}>
+            {Ic.cross(C.t3, 14)}
           </IconBtn>
         </div>
       </div>
@@ -651,14 +648,14 @@ function PoiRow({
 }
 
 // ── Tiny icon button ────────────────────────────────────────────────
-function IconBtn({ color, title, onClick, children }) {
+function IconBtn({ title, onClick, children }) {
   return (
     <button
       onClick={onClick}
       title={title}
       style={{
-        background: `${color}10`,
-        border: `1px solid ${color}30`,
+        background: "transparent",
+        border: "none",
         borderRadius: 8,
         cursor: "pointer",
         padding: "6px 8px",
