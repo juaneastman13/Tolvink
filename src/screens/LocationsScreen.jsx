@@ -405,20 +405,12 @@ export default function LocationsScreen({ onBack }) {
             <div style={{ fontSize: 12.7, color: C.t2, lineHeight: 1.5, marginBottom: 12 }}>
               Abrí Google Maps → <strong>Tus sitios</strong> → Seleccioná una lista → <strong>Compartir</strong> → Copiar enlace
             </div>
-            <div style={{ display: "flex", gap: 8 }}>
-              <input
-                value={importUrl}
-                onChange={e => setImportUrl(e.target.value)}
-                placeholder="https://maps.app.goo.gl/..."
-                style={{ flex: 1, padding: "12px 14px", borderRadius: 10, border: `1.5px solid ${importUrl ? C.bFocus : C.b2}`, background: C.bgInput, fontFamily: "inherit", fontSize: 13.2, color: C.t1, outline: "none", boxSizing: "border-box", transition: "border-color 0.15s" }}
-              />
-              <button
-                onClick={async () => { try { const t = await navigator.clipboard.readText(); if (t) setImportUrl(t); } catch { setMsg({ t: "No se pudo pegar. Pegá manualmente.", k: "err" }); } }}
-                style={{ padding: "8px 14px", borderRadius: 10, border: `1.5px solid ${C.b1}`, background: C.w, cursor: "pointer", fontFamily: "inherit", fontSize: 12.7, fontWeight: 600, color: C.pri, display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap", flexShrink: 0 }}
-              >
-                {Ic.copy ? Ic.copy(C.pri, 14) : null} Pegar
-              </button>
-            </div>
+            <input
+              value={importUrl}
+              onChange={e => setImportUrl(e.target.value)}
+              placeholder="https://maps.app.goo.gl/..."
+              style={{ width: "100%", padding: "12px 14px", borderRadius: 10, border: `1.5px solid ${importUrl ? C.bFocus : C.b2}`, background: C.bgInput, fontFamily: "inherit", fontSize: 13.2, color: C.t1, outline: "none", boxSizing: "border-box", transition: "border-color 0.15s" }}
+            />
             {importSlowMsg && <div style={{ marginTop: 8, fontSize: 12.1, color: C.t3, fontStyle: "italic" }}>Esto puede tardar un momento…</div>}
             <div style={{ marginTop: 10 }}>
               <Btn full v="acc" disabled={saving || !importUrl.trim()} onClick={handleImportList}>
@@ -632,36 +624,29 @@ function PoiRow({
 // ── Row context menu (⋮ → dropdown) ──────────────────────────────────
 export function RowMenu({ id, items }) {
   const [open, setOpen] = useState(false);
-  const [above, setAbove] = useState(false);
+  const [pos, setPos] = useState({ top: 0, left: 0, above: false });
   const btnRef = useRef(null);
-  const menuRef = useRef(null);
 
-  // Close on outside click
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e) => {
-      if (menuRef.current && !menuRef.current.contains(e.target) && btnRef.current && !btnRef.current.contains(e.target)) {
-        setOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handler);
-    document.addEventListener("touchstart", handler);
-    return () => { document.removeEventListener("mousedown", handler); document.removeEventListener("touchstart", handler); };
-  }, [open]);
-
-  // Position: above or below
-  useEffect(() => {
-    if (!open || !btnRef.current) return;
+  const handleOpen = (e) => {
+    e.stopPropagation();
+    if (open) { setOpen(false); return; }
+    if (!btnRef.current) return;
     const rect = btnRef.current.getBoundingClientRect();
     const spaceBelow = window.innerHeight - rect.bottom;
-    setAbove(spaceBelow < 220);
-  }, [open]);
+    const above = spaceBelow < 220;
+    setPos({
+      above,
+      top: above ? rect.top : rect.bottom + 4,
+      left: Math.max(8, rect.right - 180),
+    });
+    setOpen(true);
+  };
 
   return (
-    <div style={{ position: "relative", flexShrink: 0 }}>
+    <div style={{ flexShrink: 0 }}>
       <button
         ref={btnRef}
-        onClick={(e) => { e.stopPropagation(); setOpen(!open); }}
+        onClick={handleOpen}
         style={{
           height: 32, borderRadius: 8, padding: "0 10px",
           background: open ? C.bgCard : "transparent",
@@ -672,16 +657,17 @@ export function RowMenu({ id, items }) {
       >
         Opciones <span style={{ fontSize: 18, fontWeight: 700, letterSpacing: 1, lineHeight: 1 }}>⋮</span>
       </button>
-      {open && (
+      {open && <>
+        <div onClick={(e) => { e.stopPropagation(); setOpen(false); }} style={{ position: "fixed", inset: 0, zIndex: 9998 }} />
         <div
-          ref={menuRef}
           style={{
-            position: "absolute", right: 0,
-            [above ? "bottom" : "top"]: 36,
+            position: "fixed",
+            left: pos.left,
+            ...(pos.above ? { bottom: window.innerHeight - pos.top + 4 } : { top: pos.top }),
             minWidth: 180, background: C.w,
             border: `1px solid ${C.b1}`, borderRadius: 10,
             boxShadow: C.shMd, padding: "4px 0",
-            zIndex: 1000,
+            zIndex: 9999,
             animation: "rowMenuIn 150ms ease-out",
           }}
         >
@@ -706,7 +692,7 @@ export function RowMenu({ id, items }) {
             </button>
           ))}
         </div>
-      )}
+      </>}
     </div>
   );
 }
