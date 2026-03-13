@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { createPortal } from "react-dom";
 import { C, Ic, FONT } from "../theme";
 import { Btn, Bd, Loader, LoadingOverlay, EmptyState } from "../components";
 import { ModalOverlay } from "../components/overlays";
@@ -616,7 +617,7 @@ export default function LocationsScreen({ onBack }) {
         ref={el => { if (el) itemRefsMap.current[id] = el; }}
         style={{
           display: "flex", alignItems: "center", gap: 8,
-          padding: "10px 16px",
+          padding: "16px 16px",
           borderBottom: `1px solid ${C.b2}`,
           borderLeft: isActive ? `3px solid ${C.pri}` : "3px solid transparent",
           background: isActive ? C.priPale : "transparent",
@@ -631,11 +632,11 @@ export default function LocationsScreen({ onBack }) {
           {Ic.poi(C.sec, 14)}
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 13.2, fontWeight: 600, color: C.t1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.name}</div>
-          {p.comments && <div style={{ fontSize: 11, color: C.t3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.comments}</div>}
-          {isShared && <span style={{ fontSize: 10, color: C.info, fontWeight: 600 }}>Compartida</span>}
+          <div style={{ fontSize: 15, fontWeight: 600, color: C.t1, overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", whiteSpace: "normal" }}>{p.name}</div>
+          {p.comments && <div style={{ fontSize: 11, color: C.t3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginTop: 4 }}>{p.comments}</div>}
+          {isShared && <span style={{ fontSize: 10, color: C.info, fontWeight: 600, marginTop: 4, display: "inline-block" }}>Compartida</span>}
         </div>
-        <div onClick={e => e.stopPropagation()}>
+        <div style={{ marginLeft: 4 }} onClick={e => e.stopPropagation()}>
           <RowMenu
             id={p.id}
             items={[
@@ -666,7 +667,7 @@ export default function LocationsScreen({ onBack }) {
           ref={el => { if (el) itemRefsMap.current[id] = el; }}
           style={{
             display: "flex", alignItems: "center", gap: 8,
-            padding: "10px 16px",
+            padding: "16px 16px",
             borderBottom: `1px solid ${C.b2}`,
             borderLeft: isActive ? `3px solid ${C.pri}` : "3px solid transparent",
             background: isActive ? C.priPale : "transparent",
@@ -684,14 +685,14 @@ export default function LocationsScreen({ onBack }) {
             {Ic.field(C.pri, 14)}
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 13.2, fontWeight: 600, color: C.t1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.name}</div>
-            {f.address && <div style={{ fontSize: 11, color: C.t3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.address}</div>}
+            <div style={{ fontSize: 15, fontWeight: 600, color: C.t1, overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", whiteSpace: "normal" }}>{f.name}</div>
+            {f.address && <div style={{ fontSize: 11, color: C.t3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginTop: 4 }}>{f.address}</div>}
           </div>
           <Bd color={C.pri} small>{lots.length} lote{lots.length !== 1 ? "s" : ""}</Bd>
           <span style={{ display: "inline-flex", transition: "transform 200ms", transform: isExpanded ? "rotate(0)" : "rotate(-90deg)" }}>
             {Ic.down(C.t3, 14)}
           </span>
-          <div onClick={e => e.stopPropagation()}>
+          <div style={{ marginLeft: 4 }} onClick={e => e.stopPropagation()}>
             <RowMenu
               id={f.id}
               items={[
@@ -727,7 +728,7 @@ export default function LocationsScreen({ onBack }) {
                 ref={el => { if (el) itemRefsMap.current[lotId] = el; }}
                 style={{
                   display: "flex", alignItems: "center", gap: 8,
-                  padding: "8px 16px 8px 40px",
+                  padding: "14px 16px 14px 40px",
                   borderBottom: `1px solid ${C.b2}`,
                   borderLeft: lotActive ? `3px solid ${C.pri}` : "3px solid transparent",
                   background: lotActive ? C.priPale : "transparent",
@@ -742,10 +743,10 @@ export default function LocationsScreen({ onBack }) {
                   {Ic.lot(C.ok, 12)}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <span style={{ fontSize: 12.7, fontWeight: 500, color: C.t1 }}>{l.name}</span>
+                  <span style={{ fontSize: 14, fontWeight: 500, color: C.t1 }}>{l.name}</span>
                   {l.hectares && <span style={{ fontSize: 11, color: C.t3, marginLeft: 6 }}>{l.hectares} ha</span>}
                 </div>
-                <div onClick={e => e.stopPropagation()}>
+                <div style={{ marginLeft: 4 }} onClick={e => e.stopPropagation()}>
                   <RowMenu
                     id={l.id}
                     items={[
@@ -852,7 +853,7 @@ export default function LocationsScreen({ onBack }) {
         ref={panelRef}
         style={{
           ...(isDesktop ? {
-            width: "20%", minWidth: 280, maxWidth: 360,
+            width: "30%", minWidth: 320, maxWidth: 420,
             borderRight: `1px solid ${C.b1}`,
             position: "relative",
           } : {
@@ -1140,6 +1141,47 @@ export function RowMenu({ id, items }) {
     setOpen(true);
   };
 
+  // Use portal to escape CSS transform containing blocks (e.g. mobile drawer)
+  const dropdown = open ? createPortal(
+    <>
+      <div onClick={(e) => { e.stopPropagation(); setOpen(false); }} style={{ position: "fixed", inset: 0, zIndex: 9998 }} />
+      <div
+        style={{
+          position: "fixed",
+          left: pos.left,
+          ...(pos.above ? { bottom: window.innerHeight - pos.top + 4 } : { top: pos.top }),
+          minWidth: 180, background: C.w,
+          border: `1px solid ${C.b1}`, borderRadius: 10,
+          boxShadow: C.shMd, padding: "4px 0",
+          zIndex: 9999,
+          animation: "rowMenuIn 150ms ease-out",
+        }}
+      >
+        <style>{`@keyframes rowMenuIn { from { opacity:0; transform:translateY(-4px); } to { opacity:1; transform:translateY(0); } }`}</style>
+        {items.map((item, i) => (
+          <button
+            key={i}
+            onClick={(e) => { e.stopPropagation(); setOpen(false); item.onClick(); }}
+            style={{
+              width: "100%", display: "flex", alignItems: "center", gap: 10,
+              padding: "12px 16px", background: "transparent", border: "none",
+              borderTop: item.danger ? `1px solid ${C.b2}` : "none",
+              cursor: "pointer", fontFamily: "inherit", fontSize: 13.2,
+              fontWeight: 600, color: item.danger ? C.err : C.t1,
+              textAlign: "left",
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.background = C.bgCard}
+            onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+          >
+            <span style={{ flexShrink: 0, display: "flex", alignItems: "center" }}>{item.icon}</span>
+            {item.label}
+          </button>
+        ))}
+      </div>
+    </>,
+    document.body
+  ) : null;
+
   return (
     <div style={{ flexShrink: 0 }}>
       <button
@@ -1155,42 +1197,7 @@ export function RowMenu({ id, items }) {
       >
         Opciones <span style={{ fontSize: 18, fontWeight: 700, letterSpacing: 1, lineHeight: 1 }}>⋮</span>
       </button>
-      {open && <>
-        <div onClick={(e) => { e.stopPropagation(); setOpen(false); }} style={{ position: "fixed", inset: 0, zIndex: 9998 }} />
-        <div
-          style={{
-            position: "fixed",
-            left: pos.left,
-            ...(pos.above ? { bottom: window.innerHeight - pos.top + 4 } : { top: pos.top }),
-            minWidth: 180, background: C.w,
-            border: `1px solid ${C.b1}`, borderRadius: 10,
-            boxShadow: C.shMd, padding: "4px 0",
-            zIndex: 9999,
-            animation: "rowMenuIn 150ms ease-out",
-          }}
-        >
-          <style>{`@keyframes rowMenuIn { from { opacity:0; transform:translateY(-4px); } to { opacity:1; transform:translateY(0); } }`}</style>
-          {items.map((item, i) => (
-            <button
-              key={i}
-              onClick={(e) => { e.stopPropagation(); setOpen(false); item.onClick(); }}
-              style={{
-                width: "100%", display: "flex", alignItems: "center", gap: 10,
-                padding: "12px 16px", background: "transparent", border: "none",
-                borderTop: item.danger ? `1px solid ${C.b2}` : "none",
-                cursor: "pointer", fontFamily: "inherit", fontSize: 13.2,
-                fontWeight: 600, color: item.danger ? C.err : C.t1,
-                textAlign: "left",
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.background = C.bgCard}
-              onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
-            >
-              <span style={{ flexShrink: 0, display: "flex", alignItems: "center" }}>{item.icon}</span>
-              {item.label}
-            </button>
-          ))}
-        </div>
-      </>}
+      {dropdown}
     </div>
   );
 }
