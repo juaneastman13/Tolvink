@@ -3,12 +3,12 @@ import { C, Ic, FONT } from "../theme";
 import { Btn, Bd, Loader, LoadingOverlay, EmptyState } from "../components";
 import { ModalOverlay } from "../components/overlays";
 import {
-  apiGetFields, apiCreateField, apiCreateLot,
+  apiGetFields, apiCreateField, apiCreateLot, apiUpdateField, apiUpdateLot,
   apiImportGoogleList, apiGetPois, apiCreatePoi, apiUpdatePoi, apiDeletePoi,
   apiSharePoi, apiUnsharePoi, apiGetPoiShares, apiReclassifyPoi, apiSearchUsersForShare,
 } from "../api";
 import MapPreviewModal from "../modals/MapPreviewModal";
-import { loadGMaps, mkFieldIcon, mkLotIcon, mkPoiIcon } from "../maps";
+import { loadGMaps, mkFieldIcon, mkLotIcon, mkPoiIcon, SafeZone, LocationPicker } from "../maps";
 import { useIsDesktop } from "../hooks/useResponsive";
 
 // ── Color config per type ──────────────────────────────────────────
@@ -74,6 +74,15 @@ export default function LocationsScreen({ onBack }) {
   const [reclassifyType, setReclassifyType] = useState("field");
   const [reclassifyFieldId, setReclassifyFieldId] = useState("");
   const [reclassifyHectares, setReclassifyHectares] = useState("");
+
+  // Field edit
+  const [editField, setEditField] = useState(null);
+  const [editFieldLoc, setEditFieldLoc] = useState(null);
+
+  // Lot edit
+  const [editLot, setEditLot] = useState(null); // { fieldId, lotId }
+  const [editLotHa, setEditLotHa] = useState("");
+  const [editLotLoc, setEditLotLoc] = useState(null);
 
   // ── New state for fullscreen layout ──
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -324,6 +333,60 @@ export default function LocationsScreen({ onBack }) {
       load();
     } catch (err) {
       setMsg({ t: err.message || "Error al reclasificar", k: "err" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // ── Field edit ──
+  const startEditField = (f) => {
+    setEditField(f.id);
+    const lat = f.lat != null ? Number(f.lat) : null;
+    const lng = f.lng != null ? Number(f.lng) : null;
+    setEditFieldLoc(lat && lng ? { lat, lng, address: f.address || "" } : null);
+  };
+
+  const handleUpdateField = async (fieldId) => {
+    setSaving(true);
+    try {
+      await apiUpdateField(fieldId, {
+        address: editFieldLoc?.address || undefined,
+        lat: editFieldLoc?.lat || undefined,
+        lng: editFieldLoc?.lng || undefined,
+      });
+      setEditField(null);
+      setMsg({ t: "Campo actualizado", k: "ok" });
+      load();
+    } catch (err) {
+      setMsg({ t: err.message || "Error al actualizar campo", k: "err" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // ── Lot edit ──
+  const startEditLot = (fieldId, l) => {
+    setEditLot({ fieldId, lotId: l.id });
+    setEditLotHa(l.hectares != null ? String(Number(l.hectares)) : "");
+    const lat = l.lat != null ? Number(l.lat) : null;
+    const lng = l.lng != null ? Number(l.lng) : null;
+    setEditLotLoc(lat && lng ? { lat, lng } : null);
+  };
+
+  const handleUpdateLot = async () => {
+    if (!editLot) return;
+    setSaving(true);
+    try {
+      await apiUpdateLot(editLot.fieldId, editLot.lotId, {
+        hectares: editLotHa ? parseFloat(editLotHa) : undefined,
+        lat: editLotLoc?.lat || undefined,
+        lng: editLotLoc?.lng || undefined,
+      });
+      setEditLot(null);
+      setMsg({ t: "Lote actualizado", k: "ok" });
+      load();
+    } catch (err) {
+      setMsg({ t: err.message || "Error al actualizar lote", k: "err" });
     } finally {
       setSaving(false);
     }
@@ -593,6 +656,7 @@ export default function LocationsScreen({ onBack }) {
     const isActive = activeId === id;
     const hasCoords = f.lat && f.lng;
     const isExpanded = expandedField === f.id;
+    const isEditingField = editField === f.id;
     const lots = f.lots || [];
     const filteredLots = lots.filter(l => matchesSearch(l.name) || matchesSearch(f.name));
 
@@ -627,39 +691,86 @@ export default function LocationsScreen({ onBack }) {
           <span style={{ display: "inline-flex", transition: "transform 200ms", transform: isExpanded ? "rotate(0)" : "rotate(-90deg)" }}>
             {Ic.down(C.t3, 14)}
           </span>
+          <div onClick={e => e.stopPropagation()}>
+            <RowMenu
+              id={f.id}
+              items={[
+                ...(hasCoords ? [{ icon: Ic.nav(C.t3, 14), label: "Ver en mapa", onClick: () => focusOnMap(id, Number(f.lat), Number(f.lng)) }] : []),
+                { icon: Ic.edit(C.t3, 14), label: "Editar ubicación", onClick: () => isEditingField ? setEditField(null) : startEditField(f) },
+              ]}
+            />
+          </div>
         </div>
+
+        {/* Edit field form */}
+        {isEditingField && (
+          <div style={{ background: C.priPale, padding: 12, borderBottom: `1px solid ${C.b2}` }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: C.pri, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>Editar campo</div>
+            <SafeZone><LocationPicker label="Ubicación" value={editFieldLoc} onChange={setEditFieldLoc} /></SafeZone>
+            <div style={{ display: "flex", gap: 6, marginTop: 10 }}>
+              <button onClick={() => setEditField(null)} style={{ padding: "5px 12px", borderRadius: 8, border: `1px solid ${C.b2}`, background: C.w, cursor: "pointer", fontFamily: "inherit", fontSize: 12.1, fontWeight: 600, color: C.t2 }}>Cancelar</button>
+              <button onClick={() => handleUpdateField(f.id)} disabled={saving} style={{ padding: "5px 12px", borderRadius: 8, border: "none", background: C.pri, cursor: "pointer", fontFamily: "inherit", fontSize: 12.1, fontWeight: 700, color: C.w, opacity: saving ? 0.5 : 1 }}>{saving ? "..." : "Guardar"}</button>
+            </div>
+          </div>
+        )}
 
         {/* Expanded lots */}
         {isExpanded && filteredLots.map(l => {
           const lotId = `lot-${l.id}`;
           const lotActive = activeId === lotId;
           const lotHasCoords = l.lat && l.lng;
+          const isEditingLot = editLot?.lotId === l.id;
 
           return (
-            <div
-              key={l.id}
-              ref={el => { if (el) itemRefsMap.current[lotId] = el; }}
-              style={{
-                display: "flex", alignItems: "center", gap: 8,
-                padding: "8px 16px 8px 40px",
-                borderBottom: `1px solid ${C.b2}`,
-                borderLeft: lotActive ? `3px solid ${C.pri}` : "3px solid transparent",
-                background: lotActive ? C.priPale : "transparent",
-                cursor: lotHasCoords ? "pointer" : "default",
-                transition: "background 0.15s",
-              }}
-              onClick={() => lotHasCoords && focusOnMap(lotId, Number(l.lat), Number(l.lng))}
-              onMouseEnter={e => { if (!lotActive) e.currentTarget.style.background = C.bgCard; }}
-              onMouseLeave={e => { if (!lotActive) e.currentTarget.style.background = "transparent"; }}
-            >
-              <div style={{ width: 24, height: 24, borderRadius: 6, background: `${C.ok}12`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                {Ic.lot(C.ok, 12)}
+            <div key={l.id}>
+              <div
+                ref={el => { if (el) itemRefsMap.current[lotId] = el; }}
+                style={{
+                  display: "flex", alignItems: "center", gap: 8,
+                  padding: "8px 16px 8px 40px",
+                  borderBottom: `1px solid ${C.b2}`,
+                  borderLeft: lotActive ? `3px solid ${C.pri}` : "3px solid transparent",
+                  background: lotActive ? C.priPale : "transparent",
+                  cursor: lotHasCoords ? "pointer" : "default",
+                  transition: "background 0.15s",
+                }}
+                onClick={() => lotHasCoords && focusOnMap(lotId, Number(l.lat), Number(l.lng))}
+                onMouseEnter={e => { if (!lotActive) e.currentTarget.style.background = C.bgCard; }}
+                onMouseLeave={e => { if (!lotActive) e.currentTarget.style.background = "transparent"; }}
+              >
+                <div style={{ width: 24, height: 24, borderRadius: 6, background: `${C.ok}12`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  {Ic.lot(C.ok, 12)}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <span style={{ fontSize: 12.7, fontWeight: 500, color: C.t1 }}>{l.name}</span>
+                  {l.hectares && <span style={{ fontSize: 11, color: C.t3, marginLeft: 6 }}>{l.hectares} ha</span>}
+                </div>
+                <div onClick={e => e.stopPropagation()}>
+                  <RowMenu
+                    id={l.id}
+                    items={[
+                      ...(lotHasCoords ? [{ icon: Ic.nav(C.t3, 14), label: "Ver en mapa", onClick: () => focusOnMap(lotId, Number(l.lat), Number(l.lng)) }] : []),
+                      { icon: Ic.edit(C.t3, 14), label: "Editar", onClick: () => isEditingLot ? setEditLot(null) : startEditLot(f.id, l) },
+                    ]}
+                  />
+                </div>
               </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <span style={{ fontSize: 12.7, fontWeight: 500, color: C.t1 }}>{l.name}</span>
-                {l.hectares && <span style={{ fontSize: 11, color: C.t3, marginLeft: 6 }}>{l.hectares} ha</span>}
-              </div>
-              {lotHasCoords && <span style={{ fontSize: 9.9, color: C.ok }}>📍</span>}
+
+              {/* Edit lot form */}
+              {isEditingLot && (
+                <div style={{ background: C.accPale, padding: 12, marginLeft: 40, borderBottom: `1px solid ${C.b2}` }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: C.acc, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>Editar lote</div>
+                  <div style={{ marginBottom: 8 }}>
+                    <label style={{ fontSize: 11, fontWeight: 600, color: C.t2, display: "block", marginBottom: 4 }}>Hectáreas</label>
+                    <input value={editLotHa} onChange={e => setEditLotHa(e.target.value)} placeholder="Ej: 150" type="number" style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: `1px solid ${C.b2}`, background: C.bgInput, fontFamily: "inherit", fontSize: 13.2, color: C.t1, outline: "none", boxSizing: "border-box" }} />
+                  </div>
+                  <SafeZone><LocationPicker label="Ubicación del lote" value={editLotLoc} onChange={setEditLotLoc} defaultCenter={f.lat && f.lng ? { lat: Number(f.lat), lng: Number(f.lng) } : null} /></SafeZone>
+                  <div style={{ display: "flex", gap: 6, marginTop: 10 }}>
+                    <button onClick={() => setEditLot(null)} style={{ padding: "5px 12px", borderRadius: 8, border: `1px solid ${C.b2}`, background: C.w, cursor: "pointer", fontFamily: "inherit", fontSize: 12.1, fontWeight: 600, color: C.t2 }}>Cancelar</button>
+                    <button onClick={handleUpdateLot} disabled={saving} style={{ padding: "5px 12px", borderRadius: 8, border: "none", background: C.acc, cursor: "pointer", fontFamily: "inherit", fontSize: 12.1, fontWeight: 700, color: C.w, opacity: saving ? 0.5 : 1 }}>{saving ? "..." : "Guardar"}</button>
+                  </div>
+                </div>
+              )}
             </div>
           );
         })}
