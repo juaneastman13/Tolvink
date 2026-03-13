@@ -264,6 +264,27 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
     return [...seen.values()];
   }, [isMultiTruck, isChoferQueued, visibleAssignments, freight, user]);
 
+  // Compute primary + danger action buttons for ActionFooter (mobile) / inline (desktop)
+  const primaryBtns = useMemo(() => {
+    const btns = [];
+    if(filteredActions.includes("authorize")) btns.push(<Btn key="auth" full icon={Ic.chk(C.w,16)} disabled={actionLoading} onClick={()=>onAction(freight?.id,"authorize")}>{actionLoading?"Procesando...":"Autorizar viaje"}</Btn>);
+    if(filteredActions.includes("assign")) btns.push(<Btn key="assign" full v="acc" icon={Ic.chk(C.w,16)} disabled={actionLoading} onClick={()=>onAction(freight?.id,"assign")}>Asignar transportista</Btn>);
+    if(filteredActions.includes("accept")) btns.push(<Btn key="accept" full icon={Ic.chk(C.w,16)} disabled={actionLoading} onClick={()=>onAction(freight?.id,"accept")}>Aceptar flete</Btn>);
+    if(filteredActions.includes("start")) btns.push(<Btn key="start" full icon={Ic.truck(C.w,16)} disabled={actionLoading} onClick={()=>onAction(freight?.id,"start")}>{actionLoading?"Procesando...":"Iniciar viaje"}</Btn>);
+    if(filteredActions.includes("confirm_loaded")) btns.push(<Btn key="loaded" full v="acc" icon={Ic.chk(C.w,16)} disabled={actionLoading} onClick={()=>onAction(freight?.id,"confirm_loaded")}>{actionLoading?"Procesando...":"Confirmar carga"}</Btn>);
+    if(filteredActions.includes("confirm_finished")) btns.push(<Btn key="finished" full v="acc" icon={Ic.chk(C.w,16)} disabled={actionLoading} onClick={()=>onAction(freight?.id,"confirm_finished")}>{actionLoading?"Procesando...":"Confirmar entrega"}</Btn>);
+    return btns;
+  }, [filteredActions, actionLoading, freight?.id, onAction]);
+
+  const dangerBtns = useMemo(() => {
+    const btns = [];
+    if(filteredActions.includes("cancel")) btns.push(<Btn key="cancel" sm v="err" icon={Ic.cross(C.err,14)} disabled={actionLoading} onClick={()=>onAction(freight?.id,"cancel")} style={{flex:1}}>Cancelar</Btn>);
+    if(filteredActions.includes("reject")) btns.push(<Btn key="reject" sm v="err" icon={Ic.ban(C.err,14)} disabled={actionLoading} onClick={()=>onAction(freight?.id,"reject")} style={{flex:1}}>Rechazar</Btn>);
+    return btns;
+  }, [filteredActions, actionLoading, freight?.id, onAction]);
+
+  const hasFooterActions = !_isDesktop && (primaryBtns.length > 0 || dangerBtns.length > 0);
+
   // Guard: freight not yet loaded (deep link, stale reference) — AFTER all hooks
   if (!freight) return <div style={{ flex:1, display:"flex", flexDirection:"column" }}>
     <div style={{ padding:"12px 18px", display:"flex", alignItems:"center", gap:8, borderBottom:`1px solid ${C.b2}` }}>
@@ -345,23 +366,10 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
         </div>
       )}
 
-      {/* Primary actions — flow-advancing (sticky on mobile) */}
-      {(()=>{
-        const primary = [];
-        if(filteredActions.includes("authorize")) primary.push(<Btn key="auth" full icon={Ic.chk(C.w,16)} disabled={actionLoading} onClick={()=>onAction(freight.id,"authorize")}>{actionLoading?"Procesando...":"Autorizar viaje"}</Btn>);
-        if(filteredActions.includes("assign")) primary.push(<Btn key="assign" full v="acc" icon={Ic.chk(C.w,16)} disabled={actionLoading} onClick={()=>onAction(freight.id,"assign")}>Asignar transportista</Btn>);
-        if(filteredActions.includes("accept")) primary.push(<Btn key="accept" full icon={Ic.chk(C.w,16)} disabled={actionLoading} onClick={()=>onAction(freight.id,"accept")}>Aceptar flete</Btn>);
-        if(filteredActions.includes("start")) primary.push(<Btn key="start" full icon={Ic.truck(C.w,16)} disabled={actionLoading} onClick={()=>onAction(freight.id,"start")}>{actionLoading?"Procesando...":"Iniciar viaje"}</Btn>);
-        if(filteredActions.includes("confirm_loaded")) primary.push(<Btn key="loaded" full v="acc" icon={Ic.chk(C.w,16)} disabled={actionLoading} onClick={()=>onAction(freight.id,"confirm_loaded")}>{actionLoading?"Procesando...":"Confirmar carga"}</Btn>);
-        if(filteredActions.includes("confirm_finished")) primary.push(<Btn key="finished" full v="acc" icon={Ic.chk(C.w,16)} disabled={actionLoading} onClick={()=>onAction(freight.id,"confirm_finished")}>{actionLoading?"Procesando...":"Confirmar entrega"}</Btn>);
-        if(primary.length===0) return null;
-        // Desktop: inline; Mobile: sticky bottom bar
-        return _isDesktop
-          ? <div style={{ display:"flex", flexDirection:"column", gap:8, marginBottom:12 }}>{primary}</div>
-          : <div style={{ position:"sticky", bottom:0, zIndex:10, background:C.w, padding:"10px 0 max(10px, env(safe-area-inset-bottom))", borderTop:`1px solid ${C.b2}`, marginLeft:-18, marginRight:-18, paddingLeft:18, paddingRight:18, boxShadow:"0 -2px 8px rgba(0,0,0,0.06)" }}>
-              <div style={{ display:"flex", flexDirection:"column", gap:8 }}>{primary}</div>
-            </div>;
-      })()}
+      {/* Primary actions — flow-advancing (desktop: inline, mobile: ActionFooter below) */}
+      {_isDesktop && primaryBtns.length > 0 && (
+        <div style={{ display:"flex", flexDirection:"column", gap:8, marginBottom:12 }}>{primaryBtns}</div>
+      )}
       {["in_progress","loaded"].includes(freight.status) && navigator.geolocation && (
         <div style={{ marginBottom:12 }}>
           <Btn full v="sec" sm icon={Ic.pin(locSent?C.ok:C.pri,14)} disabled={locSending} onClick={handleShareLocation}>
@@ -785,24 +793,37 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
           <Btn sm v="ghost" icon={Ic.edit(C.t2,14)} onClick={()=>onEdit(freight)} style={{width:"100%"}}>Editar flete</Btn>
         </div>
       )}
-      {/* Danger zone — cancel/reject (visually separated) */}
-      {(()=>{
-        const danger = [];
-        if(filteredActions.includes("cancel"))
-          danger.push(<Btn key="cancel" sm v="err" icon={Ic.cross(C.err,14)} disabled={actionLoading} onClick={()=>onAction(freight.id,"cancel")} style={{flex:1}}>Cancelar</Btn>);
-        if(filteredActions.includes("reject"))
-          danger.push(<Btn key="reject" sm v="err" icon={Ic.ban(C.err,14)} disabled={actionLoading} onClick={()=>onAction(freight.id,"reject")} style={{flex:1}}>Rechazar</Btn>);
-        if(danger.length===0) return null;
-        return <div style={{ background:`${C.err}06`, border:`1px solid ${C.err}15`, borderRadius:10, padding:10, marginBottom:8 }}>
-          <div style={{ display:"flex", gap:8 }}>{danger}</div>
-        </div>;
-      })()}
+      {/* Danger zone — cancel/reject (desktop: inline, mobile: ActionFooter below) */}
+      {_isDesktop && dangerBtns.length > 0 && (
+        <div style={{ background:`${C.err}06`, border:`1px solid ${C.err}15`, borderRadius:10, padding:10, marginBottom:8 }}>
+          <div style={{ display:"flex", gap:8 }}>{dangerBtns}</div>
+        </div>
+      )}
+      {/* Mobile: spacer for fixed ActionFooter */}
+      {hasFooterActions && <div style={{ height:80 }} />}
       </div>
       <FileViewer file={viewFile} onClose={()=>setViewFile(null)} onOcr={handleOcr} ocrLoading={ocrLoading} onViewOcr={handleViewOcr}/>
       {ocrLoading && <div style={{ position:"fixed", inset:0, zIndex:250 }}><UploadOverlay uploading={ocrLoading} done={false} total={1} current={1} label="Extrayendo datos"/></div>}
       <OcrResultModal result={ocrResult} onClose={()=>setOcrResult(null)}/>
 
     </div>
+
+    {/* Mobile ActionFooter — fixed above BottomNav */}
+    {hasFooterActions && (
+      <div style={{
+        position:"absolute", bottom:0, left:0, right:0, zIndex:20,
+        background:C.w, borderTop:`1px solid ${C.b2}`,
+        padding:"10px 18px max(10px, env(safe-area-inset-bottom))",
+        boxShadow:"0 -2px 12px rgba(0,0,0,0.08)",
+      }}>
+        {primaryBtns.length > 0 && (
+          <div style={{ display:"flex", flexDirection:"column", gap:8 }}>{primaryBtns}</div>
+        )}
+        {dangerBtns.length > 0 && (
+          <div style={{ display:"flex", gap:8, marginTop: primaryBtns.length > 0 ? 8 : 0 }}>{dangerBtns}</div>
+        )}
+      </div>
+    )}
 
     {/* Progress detail popup — centered in detail panel */}
       {showProgressModal && (()=>{
