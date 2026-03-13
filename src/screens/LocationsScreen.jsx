@@ -663,15 +663,14 @@ export function RowMenu({ id, items }) {
         ref={btnRef}
         onClick={(e) => { e.stopPropagation(); setOpen(!open); }}
         style={{
-          width: 32, height: 32, borderRadius: 8,
+          height: 32, borderRadius: 8, padding: "0 10px",
           background: open ? C.bgCard : "transparent",
           border: "none", cursor: "pointer",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          fontSize: 18, color: C.t3, fontFamily: "inherit", fontWeight: 700,
-          letterSpacing: 1,
+          display: "flex", alignItems: "center", justifyContent: "center", gap: 4,
+          fontSize: 12.1, color: C.t3, fontFamily: "inherit", fontWeight: 600,
         }}
       >
-        ⋮
+        Opciones <span style={{ fontSize: 18, fontWeight: 700, letterSpacing: 1, lineHeight: 1 }}>⋮</span>
       </button>
       {open && (
         <div
@@ -682,7 +681,7 @@ export function RowMenu({ id, items }) {
             minWidth: 180, background: C.w,
             border: `1px solid ${C.b1}`, borderRadius: 10,
             boxShadow: C.shMd, padding: "4px 0",
-            zIndex: 50,
+            zIndex: 1000,
             animation: "rowMenuIn 150ms ease-out",
           }}
         >

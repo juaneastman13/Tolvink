@@ -38,13 +38,13 @@ export default function MenuScreen({ user, perms, onLogout, onNav, isDesktop, on
   const mgmtItems = [];
   if (!isChofer) {
     const ut = user.userType; const uts = user.userTypes||[];
-    if(ut==="transporter"||ut==="producer"||ut==="plant"||uts.includes("transporter")||uts.includes("producer")||uts.includes("plant")||isGerente) mgmtItems.push({k:"trucks",l:"Mi Flota",ic:Ic.truck(C.acc,18),c:C.acc});
-    if(ut==="producer"||uts.includes("producer")||isGerente) mgmtItems.push({k:"locations",l:"Ubicaciones",ic:Ic.pin(C.acc,18),c:C.acc});
-    if(ut==="producer"||uts.includes("producer")||isGerente) mgmtItems.push({k:"fields",l:"Mis Campos y Lotes",ic:Ic.pin(C.pri,18),c:C.pri});
-    if(user.role==="platform_admin"||user.role==="admin") mgmtItems.push({k:"admin",l:"Administración",ic:Ic.shield(C.err,18),c:C.err});
+    if(ut==="transporter"||ut==="producer"||ut==="plant"||uts.includes("transporter")||uts.includes("producer")||uts.includes("plant")||isGerente) mgmtItems.push({k:"trucks",l:"Mi Flota",ic:Ic.truck(C.t3,18),c:C.t3});
+    if(ut==="producer"||uts.includes("producer")||isGerente) mgmtItems.push({k:"locations",l:"Ubicaciones",ic:Ic.compass(C.t3,18),c:C.t3});
+    if(ut==="producer"||uts.includes("producer")||isGerente) mgmtItems.push({k:"fields",l:"Mis Campos y Lotes",ic:Ic.pin(C.t3,18),c:C.t3});
+    if(user.role==="platform_admin"||user.role==="admin") mgmtItems.push({k:"admin",l:"Administración",ic:Ic.shield(C.t3,18),c:C.t3});
     if(!isDesktop) {
-      mgmtItems.push({k:"calendar",l:"Calendario",ic:Ic.cal(C.sec,18),c:C.sec});
-      mgmtItems.push({k:"reports",l:"Informes",ic:Ic.doc(C.t2,18),c:C.t2});
+      mgmtItems.push({k:"calendar",l:"Calendario",ic:Ic.cal(C.t3,18),c:C.t3});
+      mgmtItems.push({k:"reports",l:"Informes",ic:Ic.doc(C.t3,18),c:C.t3});
     }
   }
 
