@@ -39,6 +39,7 @@ export const TruckSelectModal = lazy(() => import("../modals/TruckSelectModal"))
 export const ReasonModal = lazy(() => import("../modals/ReasonModal"));
 export const DriverQueueModal = lazy(() => import("../modals/DriverQueueModal"));
 export const EditTripModal = lazy(() => import("../modals/EditTripModal"));
+export const WeighTicketConfirmModal = lazy(() => import("../modals/WeighTicketConfirmModal"));
 
 // Lazy load heavy map components
 export const MapOverlay = lazy(() => import("../maps").then(m => ({ default: m.MapOverlay })));

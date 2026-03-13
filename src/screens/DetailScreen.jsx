@@ -6,7 +6,8 @@ import { SafeZone } from "../maps";
 const FreightMap = lazy(() => import("../maps").then(m => ({ default: m.FreightMap })));
 import log from "../logger";
 import { DocsGallery, FreightFileUpload, OcrResultModal, UploadOverlay } from "../uploads";
-import { apiGetAuditLog, apiGetFreight, apiGetFreightDetailExtra, apiSendTracking, apiApprovePendingChange, apiRejectPendingChange, apiOcrAnalyze, apiSaveOcrData, apiUpdateFreight } from "../api";
+import { apiGetAuditLog, apiGetFreight, apiGetFreightDetailExtra, apiSendTracking, apiApprovePendingChange, apiRejectPendingChange, apiOcrAnalyze, apiSaveOcrData, apiUpdateFreight, apiGetWeighTickets } from "../api";
+import { WeighTicketSummary } from "../components/WeighTicketForm";
 import { useIsDesktop, mapFreight, originDisplay, destDisplay } from "../hooks";
 import { useUIStore, useFreightDetailStore } from "../store";
 // PDF report loaded lazily to avoid bundle bloat
@@ -61,6 +62,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
   }, [freight?.id]);
 
   const [auditLog, setAuditLog] = useState(null);
+  const [weighTickets, setWeighTickets] = useState({ origin: [], destination: [] });
   const [viewFile, setViewFile] = useState(null);
   const [ocrLoading, setOcrLoading] = useState(false);
   const [ocrResult, setOcrResult] = useState(null);
@@ -104,6 +106,19 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
     if (!freight?.id) return;
     let cancelled = false;
     apiGetAuditLog(freight.id).then(logs => { if (!cancelled) setAuditLog(logs); }).catch(() => { if (!cancelled) setAuditLog([]); });
+    return () => { cancelled = true; };
+  }, [freight?.id]);
+
+  // Fetch weigh tickets
+  useEffect(() => {
+    if (!freight?.id) return;
+    let cancelled = false;
+    apiGetWeighTickets(freight.id).then(all => {
+      if (cancelled) return;
+      const origin = (all || []).filter(t => t.type === "origin");
+      const destination = (all || []).filter(t => t.type === "destination");
+      setWeighTickets({ origin, destination });
+    }).catch(() => {});
     return () => { cancelled = true; };
   }, [freight?.id]);
 
@@ -451,6 +466,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
                 <ConfDot confirmed={freight.transporterLoadedConfirmedAt} label="Transportista"/>
                 <ConfDot confirmed={freight.producerLoadedConfirmedAt} label="Productor"/>
               </div>
+              <WeighTicketSummary tickets={weighTickets.origin} label="Pesaje origen" />
             </div>
             <div style={{width:1,background:C.b1}}/>
             <div style={{flex:1}}>
@@ -459,8 +475,17 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
                 <ConfDot confirmed={freight.transporterFinishedConfirmedAt} label="Transportista"/>
                 <ConfDot confirmed={freight.plantFinishedConfirmedAt} label="Planta"/>
               </div>
+              <WeighTicketSummary tickets={weighTickets.destination} label="Pesaje destino" />
             </div>
           </div>}
+          {/* Weigh tickets display for finished freights (no cross-confirmations shown) */}
+          {!showConfs && (weighTickets.origin.length > 0 || weighTickets.destination.length > 0) && (
+            <div style={{marginTop:14,paddingTop:12,borderTop:`1px solid ${C.b1}`}}>
+              <div style={{fontSize:11,fontWeight:700,color:C.t2,marginBottom:6,textTransform:"uppercase",letterSpacing:0.4}}>Tickets de Pesaje</div>
+              <WeighTicketSummary tickets={weighTickets.origin} label="Origen" />
+              <WeighTicketSummary tickets={weighTickets.destination} label="Destino" />
+            </div>
+          )}
         </div>;
       })()}
 

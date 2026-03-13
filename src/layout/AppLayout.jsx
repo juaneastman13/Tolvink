@@ -17,7 +17,7 @@ import {
   LocationsScreen, AdminScreen, MyDataScreen, ReportsScreen,
   ChatsScreen, NotificationsScreen,
   MapOverlay, LocPickerFullscreen,
-  ConfirmActionModal, AssignModal, TruckSelectModal, ReasonModal, DriverQueueModal, EditTripModal,
+  ConfirmActionModal, AssignModal, TruckSelectModal, ReasonModal, DriverQueueModal, EditTripModal, WeighTicketConfirmModal,
   AiChat, AiChatFabComp,
 } from "../routing/Router";
 import log from "../logger";
@@ -275,8 +275,8 @@ export default function AppLayout({ fh, catalog, online, notif, isDesktop }) {
     else if(action==="accept") { setModal({type:"truck_select",freight:f}); }
     else if(action==="start") { setModal({type:"confirm_action",freight:f,title:"Iniciar viaje",btnLabel:"Iniciar viaje",btnVariant:"acc",icon:Ic.truck(C.acc,24),action:"start"}); }
     else if(action==="authorize") { setModal({type:"confirm_action",freight:f,title:"Autorizar viaje",btnLabel:"Autorizar",icon:Ic.chk(C.pri,24),action:"authorize"}); }
-    else if(action==="confirm_loaded") { setModal({type:"confirm_action",freight:f,title:"Confirmar carga",btnLabel:"Confirmar carga",btnVariant:"acc",icon:Ic.chk(C.acc,24),action:"confirm_loaded"}); }
-    else if(action==="confirm_finished") { setModal({type:"confirm_action",freight:f,title:"Confirmar entrega",btnLabel:"Confirmar entrega",icon:Ic.chk(C.pri,24),action:"confirm_finished"}); }
+    else if(action==="confirm_loaded") { setModal({type:"wt_confirm",freight:f,title:"Confirmar carga",btnLabel:"Confirmar carga",btnVariant:"acc",icon:Ic.chk(C.acc,24),action:"confirm_loaded"}); }
+    else if(action==="confirm_finished") { setModal({type:"wt_confirm",freight:f,title:"Confirmar entrega",btnLabel:"Confirmar entrega",icon:Ic.chk(C.pri,24),action:"confirm_finished"}); }
     else if(action==="driver_queue") { setModal({type:"driver_queue",driverId:f.driverId,driverName:f.driverName}); }
   }, [actionLoading, fh.freights, setModal]);
 
@@ -558,6 +558,7 @@ export default function AppLayout({ fh, catalog, online, notif, isDesktop }) {
       {modal?.type==="assign" && <AssignModal freight={modal.freight} transporters={catalog.transporters} user={auth.user} onClose={()=>setModal(null)} onConfirm={(compId,truckId,driverId)=>handleAssign(modal.freight.id,compId,truckId,driverId)} onAssignMulti={handleAssignMulti}/>}
       {modal?.type==="truck_select" && <TruckSelectModal freight={modal.freight} trucks={catalog.trucks} user={auth.user} onClose={()=>setModal(null)} onConfirm={(t,driverId)=>handleAcceptWithTruck(modal.freight.id,t,driverId)}/>}
       {modal?.type==="confirm_action" && <ConfirmActionModal freight={modal.freight} title={modal.title} btnLabel={modal.btnLabel} btnVariant={modal.btnVariant} icon={modal.icon} onClose={()=>setModal(null)} onConfirm={(tons)=>handleConfirmAction(modal.freight.id,modal.action,tons)} showTonsInput={modal.action==="confirm_loaded"} defaultTons={modal.freight.tons}/>}
+      {modal?.type==="wt_confirm" && <WeighTicketConfirmModal freight={modal.freight} action={modal.action} title={modal.title} btnLabel={modal.btnLabel} btnVariant={modal.btnVariant} icon={modal.icon} onClose={()=>setModal(null)} onConfirm={(tons)=>handleConfirmAction(modal.freight.id,modal.action,tons)} showTonsInput={modal.action==="confirm_loaded"} defaultTons={modal.freight.tons}/>}
       {modal?.type==="confirm_trip_action" && <ConfirmActionModal freight={modal.freight} title={modal.title} btnLabel={modal.btnLabel} btnVariant={modal.btnVariant} icon={modal.icon} onClose={()=>setModal(null)} onConfirm={(tons)=>handleTripConfirmAction(modal.freight.id,modal.assignmentId,modal.actionKey,tons)} showTonsInput={modal.actionKey==="confirm_trip_loaded"} defaultTons={modal.freight.tons}/>}
       {modal?.type==="reason" && <ReasonModal title={modal.title} freight={modal.freight} btnLabel={modal.btnLabel} onClose={()=>setModal(null)} onConfirm={r=>handleReasonAction(modal.freight.id,r,modal.action,{assignmentId:modal.assignmentId})}/>}
       {modal?.type==="edit_trip" && <EditTripModal freight={modal.freight} assignment={modal.assignment} transporters={catalog.transporters} onClose={()=>setModal(null)} onSave={handleSaveTrip}/>}

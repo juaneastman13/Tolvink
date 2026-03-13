@@ -235,6 +235,13 @@ export async function apiStartTrip(freightId, assignmentId) { return api(`/freig
 export async function apiConfirmTripLoaded(freightId, assignmentId, loadedTons) { return api(`/freights/${freightId}/assignments/${assignmentId}/confirm-loaded`,{body:{loadedTons}}); }
 export async function apiConfirmTripFinished(freightId, assignmentId) { return api(`/freights/${freightId}/assignments/${assignmentId}/confirm-finished`,{body:{}}); }
 
+// Weigh Tickets
+export async function apiGetWeighTickets(freightId, type) { const q=type?`?type=${type}`:''; return api(`/freights/${freightId}/weigh-tickets${q}`); }
+export async function apiCreateWeighTicket(freightId, data) { return api(`/freights/${freightId}/weigh-tickets`,{body:data}); }
+export async function apiUpdateWeighTicket(freightId, ticketId, data) { return api(`/freights/${freightId}/weigh-tickets/${ticketId}`,{method:'PATCH',body:data}); }
+export async function apiDeleteWeighTicket(freightId, ticketId) { return api(`/freights/${freightId}/weigh-tickets/${ticketId}`,{method:'DELETE'}); }
+export async function apiRunWeighTicketOcr(freightId, ticketId) { return api(`/freights/${freightId}/weigh-tickets/${ticketId}/ocr`,{body:{}}); }
+
 // Tracking
 export async function apiSendTracking(id, data) { return api(`/freights/${id}/tracking`,{body:data}); }
 export async function apiGetTracking(id) { return api(`/freights/${id}/tracking`); }
