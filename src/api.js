@@ -298,6 +298,18 @@ export async function apiGetPoiShares(poiId) { return api(`/fields/pois/${poiId}
 export async function apiReclassifyPoi(poiId, body) { return api(`/fields/pois/${poiId}/reclassify`, { body }); }
 export async function apiSearchUsersForShare(q) { return api(`/fields/pois/search-users?q=${encodeURIComponent(q)}`); }
 
+// Fields — share/delete
+export async function apiShareField(fieldId, sharedWithUserId) { return api(`/fields/${fieldId}/share`, { body: { sharedWithUserId } }); }
+export async function apiUnshareField(fieldId, sharedWithUserId) { return api(`/fields/${fieldId}/unshare`, { method: 'PATCH', body: { sharedWithUserId } }); }
+export async function apiGetFieldShares(fieldId) { return api(`/fields/${fieldId}/shares`); }
+export async function apiDeleteField(fieldId) { return api(`/fields/${fieldId}/delete`, { method: 'PATCH' }); }
+
+// Lots — share/delete
+export async function apiShareLot(fieldId, lotId, sharedWithUserId) { return api(`/fields/${fieldId}/lots/${lotId}/share`, { body: { sharedWithUserId } }); }
+export async function apiUnshareLot(fieldId, lotId, sharedWithUserId) { return api(`/fields/${fieldId}/lots/${lotId}/unshare`, { method: 'PATCH', body: { sharedWithUserId } }); }
+export async function apiGetLotShares(fieldId, lotId) { return api(`/fields/${fieldId}/lots/${lotId}/shares`); }
+export async function apiDeleteLot(fieldId, lotId) { return api(`/fields/${fieldId}/lots/${lotId}/delete`, { method: 'PATCH' }); }
+
 // Plant-Producer Access
 export async function apiGrantAccess(b) { return api('/plant-access/grant',{body:b}); }
 export async function apiRevokeAccess(prodId) { return api(`/plant-access/revoke/${prodId}`,{body:{},method:'PATCH'}); }

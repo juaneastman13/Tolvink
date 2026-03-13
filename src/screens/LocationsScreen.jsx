@@ -7,6 +7,8 @@ import {
   apiGetFields, apiCreateField, apiCreateLot, apiUpdateField, apiUpdateLot,
   apiImportGoogleList, apiGetPois, apiCreatePoi, apiUpdatePoi, apiDeletePoi,
   apiSharePoi, apiUnsharePoi, apiGetPoiShares, apiReclassifyPoi, apiSearchUsersForShare,
+  apiShareField, apiUnshareField, apiGetFieldShares, apiDeleteField,
+  apiShareLot, apiUnshareLot, apiGetLotShares, apiDeleteLot,
 } from "../api";
 import MapPreviewModal from "../modals/MapPreviewModal";
 import { loadGMaps, mkFieldIcon, mkLotIcon, mkPoiIcon, SafeZone, LocationPicker } from "../maps";
@@ -62,13 +64,17 @@ export default function LocationsScreen({ onBack }) {
   const [editComments, setEditComments] = useState("");
   const [deletingPoi, setDeletingPoi] = useState(null);
 
-  // Share modal
-  const [sharingPoi, setSharingPoi] = useState(null);
+  // Share modal (generic: { type: 'poi'|'field'|'lot', entity, fieldId? })
+  const [sharingEntity, setSharingEntity] = useState(null);
   const [shareSearch, setShareSearch] = useState("");
   const [shareResults, setShareResults] = useState([]);
   const [shareLoading, setShareLoading] = useState(false);
   const [currentShares, setCurrentShares] = useState([]);
   const shareTimerRef = useRef(null);
+
+  // Delete fields/lots
+  const [deletingField, setDeletingField] = useState(null);
+  const [deletingLot, setDeletingLot] = useState(null); // { fieldId, lotId }
 
   // Reclassify modal
   const [reclassifyPoi, setReclassifyPoi] = useState(null);
@@ -258,14 +264,17 @@ export default function LocationsScreen({ onBack }) {
     }
   };
 
-  // ── Share modal ──
-  const openShareModal = async (p) => {
-    setSharingPoi(p);
+  // ── Share modal (generic) ──
+  const openShareModal = async (type, entity, fieldId) => {
+    setSharingEntity({ type, entity, fieldId });
     setShareSearch("");
     setShareResults([]);
     setCurrentShares([]);
     try {
-      const shares = await apiGetPoiShares(p.id);
+      let shares;
+      if (type === "poi") shares = await apiGetPoiShares(entity.id);
+      else if (type === "field") shares = await apiGetFieldShares(entity.id);
+      else if (type === "lot") shares = await apiGetLotShares(fieldId, entity.id);
       setCurrentShares(shares || []);
     } catch {}
   };
@@ -285,14 +294,22 @@ export default function LocationsScreen({ onBack }) {
   };
 
   const handleShare = async (userId) => {
-    if (!sharingPoi) return;
+    if (!sharingEntity) return;
+    const { type, entity, fieldId } = sharingEntity;
     try {
-      await apiSharePoi(sharingPoi.id, userId);
-      const shares = await apiGetPoiShares(sharingPoi.id);
+      if (type === "poi") await apiSharePoi(entity.id, userId);
+      else if (type === "field") await apiShareField(entity.id, userId);
+      else if (type === "lot") await apiShareLot(fieldId, entity.id, userId);
+
+      let shares;
+      if (type === "poi") shares = await apiGetPoiShares(entity.id);
+      else if (type === "field") shares = await apiGetFieldShares(entity.id);
+      else if (type === "lot") shares = await apiGetLotShares(fieldId, entity.id);
       setCurrentShares(shares || []);
       setShareSearch("");
       setShareResults([]);
-      setMsg({ t: "Ubicación compartida", k: "ok" });
+      const labels = { poi: "Ubicación compartida", field: "Campo compartido", lot: "Lote compartido" };
+      setMsg({ t: labels[type], k: "ok" });
       load();
     } catch (err) {
       setMsg({ t: err.message || "Error al compartir", k: "err" });
@@ -300,14 +317,46 @@ export default function LocationsScreen({ onBack }) {
   };
 
   const handleUnshare = async (userId) => {
-    if (!sharingPoi) return;
+    if (!sharingEntity) return;
+    const { type, entity, fieldId } = sharingEntity;
     try {
-      await apiUnsharePoi(sharingPoi.id, userId);
+      if (type === "poi") await apiUnsharePoi(entity.id, userId);
+      else if (type === "field") await apiUnshareField(entity.id, userId);
+      else if (type === "lot") await apiUnshareLot(fieldId, entity.id, userId);
       setCurrentShares(prev => prev.filter(s => s.sharedWith?.id !== userId));
       setMsg({ t: "Se dejó de compartir", k: "ok" });
       load();
     } catch (err) {
       setMsg({ t: err.message || "Error", k: "err" });
+    }
+  };
+
+  // ── Delete field/lot ──
+  const handleDeleteField = async (fieldId) => {
+    setSaving(true);
+    try {
+      await apiDeleteField(fieldId);
+      setDeletingField(null);
+      setMsg({ t: "Campo eliminado", k: "ok" });
+      load();
+    } catch (err) {
+      setMsg({ t: err.message || "Error al eliminar", k: "err" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeleteLot = async (fieldId, lotId) => {
+    setSaving(true);
+    try {
+      await apiDeleteLot(fieldId, lotId);
+      setDeletingLot(null);
+      setMsg({ t: "Lote eliminado", k: "ok" });
+      load();
+    } catch (err) {
+      setMsg({ t: err.message || "Error al eliminar", k: "err" });
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -641,7 +690,7 @@ export default function LocationsScreen({ onBack }) {
             id={p.id}
             items={[
               ...(hasCoords ? [{ icon: Ic.nav(C.t3, 14), label: "Ver en mapa", onClick: () => focusOnMap(id, Number(p.lat), Number(p.lng)) }] : []),
-              ...(!isShared ? [{ icon: Ic.share(C.t3, 14), label: "Compartir", onClick: () => openShareModal(p) }] : []),
+              ...(!isShared ? [{ icon: Ic.share(C.t3, 14), label: "Compartir", onClick: () => openShareModal("poi", p) }] : []),
               ...(!isShared ? [{ icon: Ic.pin(C.t3, 14), label: "Reclasificar", onClick: () => openReclassify(p) }] : []),
               ...(!isShared ? [{ icon: Ic.edit(C.t3, 14), label: "Editar", onClick: () => startEditPoi(p) }] : []),
               { icon: Ic.cross(C.err, 14), label: isShared ? "Quitar" : "Eliminar", onClick: () => setDeletingPoi(p.id), danger: true },
@@ -658,8 +707,28 @@ export default function LocationsScreen({ onBack }) {
     const hasCoords = f.lat && f.lng;
     const isExpanded = expandedField === f.id;
     const isEditingField = editField === f.id;
+    const isShared = f._isSharedWithMe;
+    const isDeletingField = deletingField === f.id;
     const lots = f.lots || [];
     const filteredLots = lots.filter(l => matchesSearch(l.name) || matchesSearch(f.name));
+
+    if (isDeletingField) {
+      return (
+        <div key={f.id}>
+          <div ref={el => { if (el) itemRefsMap.current[id] = el; }} style={{ padding: "10px 16px", borderBottom: `1px solid ${C.b2}`, background: C.errPale }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+              <span style={{ fontSize: 12.1, fontWeight: 600, color: C.err, flex: 1 }}>
+                {isShared ? `¿Quitar "${f.name}"?` : `¿Eliminar "${f.name}" y sus ${lots.length} lote${lots.length !== 1 ? "s" : ""}?`}
+              </span>
+              <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+                <button onClick={() => setDeletingField(null)} style={{ padding: "5px 10px", borderRadius: 8, border: `1px solid ${C.b2}`, background: C.w, cursor: "pointer", fontFamily: "inherit", fontSize: 12.1, fontWeight: 600, color: C.t2 }}>No</button>
+                <button onClick={() => handleDeleteField(f.id)} style={{ padding: "5px 10px", borderRadius: 8, border: "none", background: C.err, cursor: "pointer", fontFamily: "inherit", fontSize: 12.1, fontWeight: 700, color: C.w }}>{isShared ? "Quitar" : "Sí"}</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
 
     return (
       <div key={f.id}>
@@ -687,6 +756,7 @@ export default function LocationsScreen({ onBack }) {
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 15, fontWeight: 600, color: C.t1, overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", whiteSpace: "normal" }}>{f.name}</div>
             {f.address && <div style={{ fontSize: 11, color: C.t3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginTop: 4 }}>{f.address}</div>}
+            {isShared && <span style={{ fontSize: 10, color: C.info, fontWeight: 600, marginTop: 4, display: "inline-block" }}>Compartido</span>}
           </div>
           <Bd color={C.pri} small>{lots.length} lote{lots.length !== 1 ? "s" : ""}</Bd>
           <span style={{ display: "inline-flex", transition: "transform 200ms", transform: isExpanded ? "rotate(0)" : "rotate(-90deg)" }}>
@@ -697,7 +767,9 @@ export default function LocationsScreen({ onBack }) {
               id={f.id}
               items={[
                 ...(hasCoords ? [{ icon: Ic.nav(C.t3, 14), label: "Ver en mapa", onClick: () => focusOnMap(id, Number(f.lat), Number(f.lng)) }] : []),
-                { icon: Ic.edit(C.t3, 14), label: "Editar ubicación", onClick: () => isEditingField ? setEditField(null) : startEditField(f) },
+                ...(!isShared ? [{ icon: Ic.share(C.t3, 14), label: "Compartir", onClick: () => openShareModal("field", f) }] : []),
+                ...(!isShared ? [{ icon: Ic.edit(C.t3, 14), label: "Editar ubicación", onClick: () => isEditingField ? setEditField(null) : startEditField(f) }] : []),
+                { icon: Ic.cross(C.err, 14), label: isShared ? "Quitar" : "Eliminar", onClick: () => setDeletingField(f.id), danger: true },
               ]}
             />
           </div>
@@ -721,6 +793,23 @@ export default function LocationsScreen({ onBack }) {
           const lotActive = activeId === lotId;
           const lotHasCoords = l.lat && l.lng;
           const isEditingLot = editLot?.lotId === l.id;
+          const isDeletingThisLot = deletingLot?.lotId === l.id;
+
+          if (isDeletingThisLot) {
+            return (
+              <div key={l.id}>
+                <div ref={el => { if (el) itemRefsMap.current[lotId] = el; }} style={{ padding: "10px 16px 10px 40px", borderBottom: `1px solid ${C.b2}`, background: C.errPale }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+                    <span style={{ fontSize: 12.1, fontWeight: 600, color: C.err, flex: 1 }}>¿Eliminar "{l.name}"?</span>
+                    <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+                      <button onClick={() => setDeletingLot(null)} style={{ padding: "5px 10px", borderRadius: 8, border: `1px solid ${C.b2}`, background: C.w, cursor: "pointer", fontFamily: "inherit", fontSize: 12.1, fontWeight: 600, color: C.t2 }}>No</button>
+                      <button onClick={() => handleDeleteLot(f.id, l.id)} style={{ padding: "5px 10px", borderRadius: 8, border: "none", background: C.err, cursor: "pointer", fontFamily: "inherit", fontSize: 12.1, fontWeight: 700, color: C.w }}>Sí</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          }
 
           return (
             <div key={l.id}>
@@ -751,7 +840,9 @@ export default function LocationsScreen({ onBack }) {
                     id={l.id}
                     items={[
                       ...(lotHasCoords ? [{ icon: Ic.nav(C.t3, 14), label: "Ver en mapa", onClick: () => focusOnMap(lotId, Number(l.lat), Number(l.lng)) }] : []),
-                      { icon: Ic.edit(C.t3, 14), label: "Editar", onClick: () => isEditingLot ? setEditLot(null) : startEditLot(f.id, l) },
+                      ...(!isShared ? [{ icon: Ic.share(C.t3, 14), label: "Compartir", onClick: () => openShareModal("lot", l, f.id) }] : []),
+                      ...(!isShared ? [{ icon: Ic.edit(C.t3, 14), label: "Editar", onClick: () => isEditingLot ? setEditLot(null) : startEditLot(f.id, l) }] : []),
+                      { icon: Ic.cross(C.err, 14), label: "Eliminar", onClick: () => setDeletingLot({ fieldId: f.id, lotId: l.id }), danger: true },
                     ]}
                   />
                 </div>
@@ -808,9 +899,10 @@ export default function LocationsScreen({ onBack }) {
       {(saving || doneMsg) && <LoadingOverlay closing={!!doneMsg} closingText={doneMsg} onClose={() => setDoneMsg("")} />}
       {previewLoc && <MapPreviewModal loc={previewLoc} onClose={() => setPreviewLoc(null)} />}
 
-      {sharingPoi && (
-        <SharePoiModal
-          poi={sharingPoi}
+      {sharingEntity && (
+        <ShareModal
+          entity={sharingEntity.entity}
+          entityType={sharingEntity.type}
           shares={currentShares}
           search={shareSearch}
           results={shareResults}
@@ -818,7 +910,7 @@ export default function LocationsScreen({ onBack }) {
           onSearch={handleShareSearch}
           onShare={handleShare}
           onUnshare={handleUnshare}
-          onClose={() => setSharingPoi(null)}
+          onClose={() => setSharingEntity(null)}
         />
       )}
 
@@ -1203,17 +1295,18 @@ export function RowMenu({ id, items }) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
-// SHARE POI MODAL
+// SHARE MODAL (generic: poi, field, lot)
 // ═══════════════════════════════════════════════════════════════════════
 
-function SharePoiModal({ poi, shares, search, results, loading, onSearch, onShare, onUnshare, onClose }) {
+function ShareModal({ entity, entityType, shares, search, results, loading, onSearch, onShare, onUnshare, onClose }) {
   const alreadySharedIds = new Set((shares || []).map(s => s.sharedWith?.id));
+  const typeLabels = { poi: "ubicación", field: "campo", lot: "lote" };
 
   return (
     <ModalOverlay onClose={onClose} maxWidth={420} quick>
       <div style={{ padding: 18 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-          <div style={{ fontSize: 16.5, fontWeight: 800 }}>{Ic.share(C.pri, 18)} Compartir "{poi.name}"</div>
+          <div style={{ fontSize: 16.5, fontWeight: 800 }}>{Ic.share(C.pri, 18)} Compartir "{entity.name}"</div>
           <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }}>{Ic.cross(C.t3, 18)}</button>
         </div>
 
@@ -1268,7 +1361,7 @@ function SharePoiModal({ poi, shares, search, results, loading, onSearch, onShar
 
         {shares.length === 0 && results.length === 0 && !loading && search.length < 2 && (
           <div style={{ textAlign: "center", padding: 20, color: C.t3, fontSize: 13.2 }}>
-            Buscá un usuario para compartir esta ubicación
+            Buscá un usuario para compartir este {typeLabels[entityType] || "elemento"}
           </div>
         )}
       </div>
