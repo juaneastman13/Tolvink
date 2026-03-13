@@ -1,15 +1,24 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { C, Ic } from "../theme";
 import { Btn, Bd, Loader, LoadingOverlay, EmptyState } from "../components";
-import { apiGetFields, apiCreateField, apiCreateLot, apiImportGoogleList, apiGetPois, apiCreatePoi, apiUpdatePoi, apiDeletePoi } from "../api";
+import { ModalOverlay } from "../components/overlays";
+import {
+  apiGetFields, apiCreateField, apiCreateLot,
+  apiImportGoogleList, apiGetPois, apiCreatePoi, apiUpdatePoi, apiDeletePoi,
+  apiSharePoi, apiUnsharePoi, apiGetPoiShares, apiReclassifyPoi, apiSearchUsersForShare,
+} from "../api";
 import MapPreviewModal from "../modals/MapPreviewModal";
+import { loadGMaps } from "../maps";
 
-// Type config
+// ── Color config per type ──────────────────────────────────────────
 const TYPE_CFG = {
-  field: { label: "Campo", color: C.pri, icon: (c, s) => Ic.pin(c, s) },
-  lot:   { label: "Lote",  color: C.acc, icon: (c, s) => Ic.grain(c, s) },
-  poi:   { label: "Interés", color: C.sec, icon: (c, s) => Ic.nav(c, s) },
+  field: { label: "Campo", color: "#1A6B37", icon: (c, s) => Ic.pin(c, s) },
+  lot:   { label: "Lote",  color: "#2563EB", icon: (c, s) => Ic.grain(c, s) },
+  poi:   { label: "Interés", color: "#0891B2", icon: (c, s) => Ic.nav(c, s) },
 };
+
+// Map marker colors
+const MAP_COLORS = { field: "#1A6B37", lot: "#2563EB", poi: "#0891B2" };
 
 export default function LocationsScreen({ onBack }) {
   const [fields, setFields] = useState([]);
@@ -19,8 +28,12 @@ export default function LocationsScreen({ onBack }) {
   const [msg, setMsg] = useState(null);
   const [doneMsg, setDoneMsg] = useState("");
 
-  // Map preview
+  // Map preview (single location)
   const [previewLoc, setPreviewLoc] = useState(null);
+
+  // Map overview (all locations)
+  const [showMapOverview, setShowMapOverview] = useState(false);
+  const [mapFilter, setMapFilter] = useState("all"); // all | field | lot | poi
 
   // Import flow
   const [importStep, setImportStep] = useState(0);
@@ -29,24 +42,38 @@ export default function LocationsScreen({ onBack }) {
   const [importDiscarded, setImportDiscarded] = useState(0);
   const [importSelected, setImportSelected] = useState(new Set());
   const [importNames, setImportNames] = useState({});
-  const [importTypes, setImportTypes] = useState({});       // i -> "field"|"lot"|"poi"
-  const [importFieldIds, setImportFieldIds] = useState({});  // i -> fieldId (when lot)
-  const [importComments, setImportComments] = useState({});   // i -> string
+  const [importTypes, setImportTypes] = useState({});
+  const [importFieldIds, setImportFieldIds] = useState({});
+  const [importComments, setImportComments] = useState({});
   const [importWarning, setImportWarning] = useState(null);
   const [importListName, setImportListName] = useState(null);
   const [importSlowMsg, setImportSlowMsg] = useState(false);
 
   // Edit/delete POI
-  const [editingPoi, setEditingPoi] = useState(null); // poi object being edited
+  const [editingPoi, setEditingPoi] = useState(null);
   const [editName, setEditName] = useState("");
   const [editComments, setEditComments] = useState("");
-  const [deletingPoi, setDeletingPoi] = useState(null); // poi id to confirm delete
+  const [deletingPoi, setDeletingPoi] = useState(null);
+
+  // Share modal
+  const [sharingPoi, setSharingPoi] = useState(null);
+  const [shareSearch, setShareSearch] = useState("");
+  const [shareResults, setShareResults] = useState([]);
+  const [shareLoading, setShareLoading] = useState(false);
+  const [currentShares, setCurrentShares] = useState([]);
+  const shareTimerRef = useRef(null);
+
+  // Reclassify modal
+  const [reclassifyPoi, setReclassifyPoi] = useState(null);
+  const [reclassifyType, setReclassifyType] = useState("field");
+  const [reclassifyFieldId, setReclassifyFieldId] = useState("");
+  const [reclassifyHectares, setReclassifyHectares] = useState("");
 
   const load = useCallback(async () => {
     try {
       const [f, p] = await Promise.all([
         apiGetFields(),
-        apiGetPois().catch(() => []),  // POI table might not exist yet
+        apiGetPois().catch(() => []),
       ]);
       setFields(f || []);
       setPois(p || []);
@@ -106,7 +133,6 @@ export default function LocationsScreen({ onBack }) {
     let createdFields = 0, createdLots = 0, createdPois = 0;
     const errors = [];
 
-    // Pass 1: fields
     const newFieldIds = {};
     for (const { loc, i } of selected) {
       if (getType(i) !== "field") continue;
@@ -118,7 +144,6 @@ export default function LocationsScreen({ onBack }) {
       } catch (err) { errors.push(`"${name}": ${err.message}`); }
     }
 
-    // Pass 2: lots
     for (const { loc, i } of selected) {
       if (getType(i) !== "lot") continue;
       const name = getName(i);
@@ -133,7 +158,6 @@ export default function LocationsScreen({ onBack }) {
       } catch (err) { errors.push(`"${name}": ${err.message}`); }
     }
 
-    // Pass 3: POIs
     for (const { loc, i } of selected) {
       if (getType(i) !== "poi") continue;
       const name = getName(i);
@@ -165,6 +189,7 @@ export default function LocationsScreen({ onBack }) {
   const toggleItem = (i) => setImportSelected(prev => { const n = new Set(prev); n.has(i) ? n.delete(i) : n.add(i); return n; });
   const closeImport = () => { setImportStep(0); setImportParsed([]); setImportUrl(""); setImportWarning(null); setImportListName(null); setImportTypes({}); setImportFieldIds({}); setImportComments({}); };
 
+  // ── POI edit ──
   const startEditPoi = (p) => {
     setEditingPoi(p);
     setEditName(p.name);
@@ -186,6 +211,7 @@ export default function LocationsScreen({ onBack }) {
     }
   };
 
+  // ── POI delete (delete only for me) ──
   const handleDeletePoi = async (id) => {
     setSaving(true);
     try {
@@ -199,6 +225,88 @@ export default function LocationsScreen({ onBack }) {
       setSaving(false);
     }
   };
+
+  // ── Share modal ──
+  const openShareModal = async (p) => {
+    setSharingPoi(p);
+    setShareSearch("");
+    setShareResults([]);
+    setCurrentShares([]);
+    try {
+      const shares = await apiGetPoiShares(p.id);
+      setCurrentShares(shares || []);
+    } catch {}
+  };
+
+  const handleShareSearch = (q) => {
+    setShareSearch(q);
+    if (shareTimerRef.current) clearTimeout(shareTimerRef.current);
+    if (q.trim().length < 2) { setShareResults([]); return; }
+    shareTimerRef.current = setTimeout(async () => {
+      setShareLoading(true);
+      try {
+        const r = await apiSearchUsersForShare(q.trim());
+        setShareResults(r || []);
+      } catch { setShareResults([]); }
+      finally { setShareLoading(false); }
+    }, 300);
+  };
+
+  const handleShare = async (userId) => {
+    if (!sharingPoi) return;
+    try {
+      await apiSharePoi(sharingPoi.id, userId);
+      const shares = await apiGetPoiShares(sharingPoi.id);
+      setCurrentShares(shares || []);
+      setShareSearch("");
+      setShareResults([]);
+      setMsg({ t: "Ubicación compartida", k: "ok" });
+      load();
+    } catch (err) {
+      setMsg({ t: err.message || "Error al compartir", k: "err" });
+    }
+  };
+
+  const handleUnshare = async (userId) => {
+    if (!sharingPoi) return;
+    try {
+      await apiUnsharePoi(sharingPoi.id, userId);
+      setCurrentShares(prev => prev.filter(s => s.sharedWith?.id !== userId));
+      setMsg({ t: "Se dejó de compartir", k: "ok" });
+      load();
+    } catch (err) {
+      setMsg({ t: err.message || "Error", k: "err" });
+    }
+  };
+
+  // ── Reclassify ──
+  const openReclassify = (p) => {
+    setReclassifyPoi(p);
+    setReclassifyType("field");
+    setReclassifyFieldId("");
+    setReclassifyHectares("");
+  };
+
+  const handleReclassify = async () => {
+    if (!reclassifyPoi) return;
+    setSaving(true);
+    try {
+      const body = { targetType: reclassifyType };
+      if (reclassifyType === "lot") {
+        body.fieldId = reclassifyFieldId;
+        if (reclassifyHectares) body.hectares = parseFloat(reclassifyHectares);
+      }
+      await apiReclassifyPoi(reclassifyPoi.id, body);
+      setReclassifyPoi(null);
+      setMsg({ t: `Reclasificado como ${reclassifyType === "field" ? "Campo" : "Lote"}`, k: "ok" });
+      load();
+    } catch (err) {
+      setMsg({ t: err.message || "Error al reclasificar", k: "err" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const selectedCount = [...importSelected].length;
   const getType = (i) => importTypes[i] || "field";
   const getName = (i) => (importNames[i] ?? (importParsed[i]?.name || "")).trim().slice(0, 255);
@@ -211,10 +319,58 @@ export default function LocationsScreen({ onBack }) {
       .map(({ i, name }) => ({ id: `new:${i}`, name: `${name} (nuevo)` })),
   ];
 
+  // Split POIs into own and shared
+  const ownPois = pois.filter(p => !p._isSharedWithMe);
+  const sharedPois = pois.filter(p => p._isSharedWithMe);
+
   return (
     <div style={{ flex: 1, overflow: "auto" }}>
       {(saving || doneMsg) && <LoadingOverlay closing={!!doneMsg} closingText={doneMsg} onClose={() => setDoneMsg("")} />}
       {previewLoc && <MapPreviewModal loc={previewLoc} onClose={() => setPreviewLoc(null)} />}
+
+      {/* Map overview modal */}
+      {showMapOverview && (
+        <MapOverviewModal
+          fields={fields}
+          pois={pois}
+          filter={mapFilter}
+          onFilterChange={setMapFilter}
+          onClose={() => setShowMapOverview(false)}
+          onSelectLocation={loc => { setShowMapOverview(false); setPreviewLoc(loc); }}
+        />
+      )}
+
+      {/* Share modal */}
+      {sharingPoi && (
+        <SharePoiModal
+          poi={sharingPoi}
+          shares={currentShares}
+          search={shareSearch}
+          results={shareResults}
+          loading={shareLoading}
+          onSearch={handleShareSearch}
+          onShare={handleShare}
+          onUnshare={handleUnshare}
+          onClose={() => setSharingPoi(null)}
+        />
+      )}
+
+      {/* Reclassify modal */}
+      {reclassifyPoi && (
+        <ReclassifyPoiModal
+          poi={reclassifyPoi}
+          fields={fields}
+          type={reclassifyType}
+          fieldId={reclassifyFieldId}
+          hectares={reclassifyHectares}
+          saving={saving}
+          onTypeChange={setReclassifyType}
+          onFieldIdChange={setReclassifyFieldId}
+          onHectaresChange={setReclassifyHectares}
+          onConfirm={handleReclassify}
+          onClose={() => setReclassifyPoi(null)}
+        />
+      )}
 
       <div style={{ position: "sticky", top: 0, zIndex: 10, background: C.bg, padding: "18px 18px 8px" }}>
         <button onClick={onBack} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", fontSize: 14.3, fontWeight: 600, color: C.pri, marginBottom: 14, padding: 0, display: "flex", alignItems: "center", gap: 4 }}>
@@ -225,9 +381,15 @@ export default function LocationsScreen({ onBack }) {
       <div style={{ padding: "0 18px 18px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
           <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: -0.3 }}>Ubicaciones</div>
-          <Btn sm v={importStep ? "ghost" : "acc"} onClick={() => setImportStep(importStep ? 0 : 1)} icon={importStep ? Ic.cross(C.t2, 14) : Ic.pin(C.w, 14)}>
-            {importStep ? "Cerrar" : "Importar"}
-          </Btn>
+          <div style={{ display: "flex", gap: 6 }}>
+            {/* Map overview button */}
+            <Btn sm v="sec" onClick={() => setShowMapOverview(true)} icon={Ic.mapView(C.pri, 14)}>
+              Mapa
+            </Btn>
+            <Btn sm v={importStep ? "ghost" : "acc"} onClick={() => setImportStep(importStep ? 0 : 1)} icon={importStep ? Ic.cross(C.t2, 14) : Ic.pin(C.w, 14)}>
+              {importStep ? "Cerrar" : "Importar"}
+            </Btn>
+          </div>
         </div>
 
         {msg && (
@@ -268,185 +430,45 @@ export default function LocationsScreen({ onBack }) {
 
         {/* ── Step 2: Classify each location ── */}
         {importStep === 2 && (
-          <div style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: 12, padding: 18, marginBottom: 16, boxShadow: C.sh }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-              <div style={{ fontSize: 15.4, fontWeight: 700 }}>{Ic.pin(C.pri, 16)} {importListName || "Ubicaciones encontradas"}</div>
-              <button onClick={closeImport} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }}>{Ic.cross(C.t3, 16)}</button>
-            </div>
-            {importWarning && <div style={{ padding: "8px 12px", borderRadius: 8, marginBottom: 10, fontSize: 12.1, fontWeight: 500, background: C.warnPale, color: C.warn, border: `1px solid ${C.warn}30` }}>{importWarning}</div>}
-
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-              <div style={{ display: "flex", gap: 10, fontSize: 12.7, color: C.t2 }}>
-                <span style={{ fontWeight: 600, color: C.ok }}>{importParsed.length} encontradas</span>
-                {importDiscarded > 0 && <span style={{ color: C.t3 }}>{importDiscarded} descartadas</span>}
-              </div>
-              <div style={{ display: "flex", gap: 8 }}>
-                <button onClick={() => setImportSelected(new Set(importParsed.map((_, i) => i)))} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12.1, color: C.pri, fontWeight: 600, fontFamily: "inherit", padding: 0 }}>Todas</button>
-                <span style={{ color: C.t3 }}>·</span>
-                <button onClick={() => setImportSelected(new Set())} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12.1, color: C.t3, fontWeight: 600, fontFamily: "inherit", padding: 0 }}>Ninguna</button>
-              </div>
-            </div>
-
-            {importParsed.length === 0 ? (
-              <div style={{ textAlign: "center", padding: 20, color: C.t3, fontSize: 13.2 }}>No se encontraron ubicaciones válidas</div>
-            ) : (
-              <>
-                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                  {importParsed.map((loc, i) => {
-                    const sel = importSelected.has(i);
-                    const t = getType(i);
-                    const cfg = TYPE_CFG[t];
-                    return (
-                      <div key={i} style={{
-                        borderRadius: 12, border: `1.5px solid ${sel ? cfg.color : C.b1}`,
-                        borderLeft: sel ? `4px solid ${cfg.color}` : `4px solid ${C.b1}`,
-                        background: sel ? `${cfg.color}04` : C.bg,
-                        transition: "all 0.15s", overflow: "hidden",
-                      }}>
-                        {/* ── Row 1: checkbox + name + coords + map btn ── */}
-                        <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 12px 8px" }}>
-                          <div onClick={() => toggleItem(i)} style={{
-                            width: 22, height: 22, borderRadius: 6,
-                            border: `2px solid ${sel ? cfg.color : C.b2}`,
-                            background: sel ? cfg.color : C.w,
-                            display: "flex", alignItems: "center", justifyContent: "center",
-                            flexShrink: 0, cursor: "pointer",
-                          }}>
-                            {sel && Ic.chk(C.w, 13)}
-                          </div>
-
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <input
-                              value={importNames[i] ?? loc.name}
-                              onChange={e => setImportNames(prev => ({ ...prev, [i]: e.target.value }))}
-                              placeholder="Nombre de la ubicación"
-                              style={{
-                                width: "100%", border: "none", background: "transparent",
-                                fontSize: 15.4, fontWeight: 700, color: C.t1,
-                                fontFamily: "inherit", padding: 0, outline: "none",
-                              }}
-                            />
-                            <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 3 }}>
-                              {loc.address && <span style={{ fontSize: 11.5, color: C.t3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{loc.address}</span>}
-                              <span style={{ fontSize: 10.5, color: C.ok, fontWeight: 700, whiteSpace: "nowrap" }}>
-                                {Number(loc.lat).toFixed(4)}, {Number(loc.lng).toFixed(4)}
-                              </span>
-                            </div>
-                          </div>
-
-                          <button
-                            onClick={() => setPreviewLoc({ name: importNames[i] ?? loc.name, address: loc.address, lat: loc.lat, lng: loc.lng })}
-                            title="Ver en mapa"
-                            style={{
-                              background: `${cfg.color}10`, border: `1px solid ${cfg.color}30`,
-                              borderRadius: 8, cursor: "pointer", padding: "8px 10px",
-                              display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
-                            }}
-                          >
-                            {Ic.nav(cfg.color, 18)}
-                          </button>
-                        </div>
-
-                        {/* ── Row 2: Type selector (always visible) ── */}
-                        <div style={{ padding: "0 12px 10px", display: "flex", flexDirection: "column", gap: 8 }}>
-                          <div style={{ display: "flex", gap: 6 }}>
-                            {Object.entries(TYPE_CFG).map(([k, c]) => {
-                              const active = t === k;
-                              return (
-                                <button
-                                  key={k}
-                                  onClick={() => {
-                                    if (k === "field") {
-                                      setImportTypes(prev => { const n = { ...prev }; delete n[i]; return n; });
-                                      setImportFieldIds(prev => { const n = { ...prev }; delete n[i]; return n; });
-                                    } else {
-                                      setImportTypes(prev => ({ ...prev, [i]: k }));
-                                      if (k !== "lot") setImportFieldIds(prev => { const n = { ...prev }; delete n[i]; return n; });
-                                    }
-                                    // Auto-select field when only 1 option available
-                                    if (k === "lot" && fieldOptions.length === 1) {
-                                      setImportFieldIds(prev => ({ ...prev, [i]: fieldOptions[0].id }));
-                                    }
-                                    // Auto-select when setting type
-                                    if (!sel) setImportSelected(prev => new Set([...prev, i]));
-                                  }}
-                                  style={{
-                                    flex: 1, padding: "8px 6px", borderRadius: 8,
-                                    border: `2px solid ${active ? c.color : C.b2}`,
-                                    background: active ? `${c.color}12` : C.w,
-                                    cursor: "pointer", fontFamily: "inherit",
-                                    fontSize: 13.2, fontWeight: 800,
-                                    color: active ? c.color : C.t3,
-                                    transition: "all 0.15s",
-                                    display: "flex", alignItems: "center", justifyContent: "center", gap: 5,
-                                  }}
-                                >
-                                  {c.icon(active ? c.color : C.t3, 14)} {c.label}
-                                </button>
-                              );
-                            })}
-                          </div>
-
-                          {/* Field dropdown for lots */}
-                          {t === "lot" && (
-                            <select
-                              value={importFieldIds[i] || ""}
-                              onChange={e => setImportFieldIds(prev => ({ ...prev, [i]: e.target.value }))}
-                              style={{
-                                padding: "10px 12px", borderRadius: 8,
-                                border: `1.5px solid ${importFieldIds[i] ? C.acc : C.err}`,
-                                background: C.bgInput, fontFamily: "inherit", fontSize: 13.2,
-                                color: C.t1, outline: "none", cursor: "pointer",
-                              }}
-                            >
-                              <option value="">— Seleccioná el campo —</option>
-                              {fieldOptions.map(fo => <option key={fo.id} value={fo.id}>{fo.name}</option>)}
-                            </select>
-                          )}
-
-                          {/* Comments input */}
-                          <input
-                            value={importComments[i] || ""}
-                            onChange={e => setImportComments(prev => ({ ...prev, [i]: e.target.value }))}
-                            placeholder="Comentarios (opcional)"
-                            style={{
-                              width: "100%", padding: "8px 10px", borderRadius: 8,
-                              border: `1px solid ${C.b2}`, background: C.bgInput,
-                              fontFamily: "inherit", fontSize: 12.7, color: C.t1,
-                              outline: "none", boxSizing: "border-box",
-                            }}
-                          />
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                {/* Summary */}
-                {selectedCount > 0 && (
-                  <div style={{ display: "flex", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
-                    {(() => {
-                      const counts = { field: 0, lot: 0, poi: 0 };
-                      importParsed.forEach((_, i) => { if (importSelected.has(i)) counts[getType(i)]++; });
-                      return Object.entries(TYPE_CFG).map(([k, c]) => counts[k] > 0 && (
-                        <Bd key={k} color={c.color}>{counts[k]} {c.label}{counts[k] !== 1 ? (k === "poi" ? "es" : "s") : ""}</Bd>
-                      ));
-                    })()}
-                  </div>
-                )}
-
-                <div style={{ marginTop: 14, display: "flex", gap: 8 }}>
-                  <Btn sm v="ghost" onClick={closeImport}>Cancelar</Btn>
-                  <Btn sm disabled={saving || selectedCount === 0} onClick={handleImportConfirm} style={{ flex: 1 }}>
-                    {saving ? "Importando..." : `Importar seleccionadas (${selectedCount})`}
-                  </Btn>
-                </div>
-              </>
-            )}
-          </div>
+          <ImportClassifyPanel
+            importParsed={importParsed}
+            importSelected={importSelected}
+            importNames={importNames}
+            importTypes={importTypes}
+            importFieldIds={importFieldIds}
+            importComments={importComments}
+            importDiscarded={importDiscarded}
+            importWarning={importWarning}
+            importListName={importListName}
+            fieldOptions={fieldOptions}
+            saving={saving}
+            selectedCount={selectedCount}
+            getType={getType}
+            getName={getName}
+            onToggle={toggleItem}
+            onNameChange={(i, v) => setImportNames(prev => ({ ...prev, [i]: v }))}
+            onTypeChange={(i, k) => {
+              if (k === "field") {
+                setImportTypes(prev => { const n = { ...prev }; delete n[i]; return n; });
+                setImportFieldIds(prev => { const n = { ...prev }; delete n[i]; return n; });
+              } else {
+                setImportTypes(prev => ({ ...prev, [i]: k }));
+                if (k !== "lot") setImportFieldIds(prev => { const n = { ...prev }; delete n[i]; return n; });
+              }
+              if (k === "lot" && fieldOptions.length === 1) setImportFieldIds(prev => ({ ...prev, [i]: fieldOptions[0].id }));
+              if (!importSelected.has(i)) setImportSelected(prev => new Set([...prev, i]));
+            }}
+            onFieldIdChange={(i, v) => setImportFieldIds(prev => ({ ...prev, [i]: v }))}
+            onCommentChange={(i, v) => setImportComments(prev => ({ ...prev, [i]: v }))}
+            onSelectAll={() => setImportSelected(new Set(importParsed.map((_, i) => i)))}
+            onSelectNone={() => setImportSelected(new Set())}
+            onPreview={(loc) => setPreviewLoc(loc)}
+            onClose={closeImport}
+            onConfirm={handleImportConfirm}
+          />
         )}
 
-        {/* ── POI list (only ubicaciones de interés) ── */}
+        {/* ── POI list ── */}
         {loading ? <Loader /> :
           pois.length === 0 && importStep === 0 ? (
             <EmptyState
@@ -457,69 +479,646 @@ export default function LocationsScreen({ onBack }) {
             />
           ) : importStep === 0 && (
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              <div style={{ display: "flex", gap: 8, marginBottom: 4 }}>
-                <Bd color={C.sec}>{pois.length} ubicación{pois.length !== 1 ? "es" : ""} de interés</Bd>
-              </div>
+              {/* Own POIs */}
+              {ownPois.length > 0 && (
+                <>
+                  <div style={{ display: "flex", gap: 8, marginBottom: 4 }}>
+                    <Bd color={C.sec}>{ownPois.length} ubicación{ownPois.length !== 1 ? "es" : ""} de interés</Bd>
+                  </div>
+                  {ownPois.map(p => (
+                    <PoiRow
+                      key={p.id}
+                      p={p}
+                      isShared={false}
+                      editingId={editingPoi?.id}
+                      editName={editName}
+                      editComments={editComments}
+                      deletingId={deletingPoi}
+                      onEditNameChange={setEditName}
+                      onEditCommentsChange={setEditComments}
+                      onStartEdit={startEditPoi}
+                      onSaveEdit={handleUpdatePoi}
+                      onCancelEdit={() => setEditingPoi(null)}
+                      onStartDelete={setDeletingPoi}
+                      onCancelDelete={() => setDeletingPoi(null)}
+                      onConfirmDelete={handleDeletePoi}
+                      onPreview={setPreviewLoc}
+                      onShare={openShareModal}
+                      onReclassify={openReclassify}
+                    />
+                  ))}
+                </>
+              )}
 
-              {pois.map(p => (
-                <div key={p.id} style={{ background: C.w, border: `1px solid ${C.b1}`, borderLeft: `4px solid ${C.sec}`, borderRadius: 12, boxShadow: C.sh, padding: "12px 14px" }}>
-                  {editingPoi?.id === p.id ? (
-                    // Edit mode
-                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                      <input value={editName} onChange={e => setEditName(e.target.value)} placeholder="Nombre" style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: `1.5px solid ${C.bFocus}`, background: C.bgInput, fontFamily: "inherit", fontSize: 14.3, fontWeight: 700, color: C.t1, outline: "none", boxSizing: "border-box" }} />
-                      <input value={editComments} onChange={e => setEditComments(e.target.value)} placeholder="Comentarios (opcional)" style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: `1px solid ${C.b2}`, background: C.bgInput, fontFamily: "inherit", fontSize: 12.7, color: C.t1, outline: "none", boxSizing: "border-box" }} />
-                      <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-                        <button onClick={() => setEditingPoi(null)} style={{ padding: "6px 14px", borderRadius: 8, border: `1px solid ${C.b2}`, background: C.w, cursor: "pointer", fontFamily: "inherit", fontSize: 12.7, fontWeight: 600, color: C.t2 }}>Cancelar</button>
-                        <button onClick={handleUpdatePoi} disabled={!editName.trim()} style={{ padding: "6px 14px", borderRadius: 8, border: "none", background: C.pri, cursor: "pointer", fontFamily: "inherit", fontSize: 12.7, fontWeight: 700, color: C.w, opacity: editName.trim() ? 1 : 0.5 }}>Guardar</button>
-                      </div>
-                    </div>
-                  ) : deletingPoi === p.id ? (
-                    // Delete confirmation
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
-                      <span style={{ fontSize: 13.2, fontWeight: 600, color: C.err }}>¿Eliminar "{p.name}"?</span>
-                      <div style={{ display: "flex", gap: 8 }}>
-                        <button onClick={() => setDeletingPoi(null)} style={{ padding: "6px 14px", borderRadius: 8, border: `1px solid ${C.b2}`, background: C.w, cursor: "pointer", fontFamily: "inherit", fontSize: 12.7, fontWeight: 600, color: C.t2 }}>No</button>
-                        <button onClick={() => handleDeletePoi(p.id)} style={{ padding: "6px 14px", borderRadius: 8, border: "none", background: C.err, cursor: "pointer", fontFamily: "inherit", fontSize: 12.7, fontWeight: 700, color: C.w }}>Sí, eliminar</button>
-                      </div>
-                    </div>
-                  ) : (
-                    // Normal display
-                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                      <div style={{ width: 32, height: 32, borderRadius: 8, background: `${C.sec}12`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                        {Ic.nav(C.sec, 16)}
-                      </div>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 14.3, fontWeight: 700, color: C.t1 }}>{p.name}</div>
-                        <div style={{ display: "flex", gap: 6, alignItems: "center", marginTop: 2, flexWrap: "wrap" }}>
-                          <Bd color={C.sec} small>Interés</Bd>
-                          {p.address && <span style={{ fontSize: 11, color: C.t3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.address}</span>}
-                          {p.comments && <span style={{ fontSize: 11, color: C.t2, fontStyle: "italic" }}>{p.comments}</span>}
-                        </div>
-                      </div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
-                        {p.lat && p.lng && (
-                          <span style={{ fontSize: 10, color: C.ok, fontWeight: 600 }}>
-                            {Number(p.lat).toFixed(4)}, {Number(p.lng).toFixed(4)}
-                          </span>
-                        )}
-                        <button onClick={() => setPreviewLoc({ name: p.name, address: p.address, lat: Number(p.lat), lng: Number(p.lng) })} title="Ver en mapa" style={{ background: `${C.sec}10`, border: `1px solid ${C.sec}30`, borderRadius: 8, cursor: "pointer", padding: "6px 8px", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                          {Ic.nav(C.sec, 14)}
-                        </button>
-                        <button onClick={() => startEditPoi(p)} title="Editar" style={{ background: `${C.pri}10`, border: `1px solid ${C.pri}30`, borderRadius: 8, cursor: "pointer", padding: "6px 8px", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                          {Ic.pin(C.pri, 14)}
-                        </button>
-                        <button onClick={() => setDeletingPoi(p.id)} title="Eliminar" style={{ background: `${C.err}10`, border: `1px solid ${C.err}30`, borderRadius: 8, cursor: "pointer", padding: "6px 8px", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                          {Ic.cross(C.err, 14)}
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ))}
+              {/* Shared with me */}
+              {sharedPois.length > 0 && (
+                <>
+                  <div style={{ display: "flex", gap: 8, marginTop: ownPois.length > 0 ? 14 : 0, marginBottom: 4 }}>
+                    <Bd color={C.info}>{sharedPois.length} compartida{sharedPois.length !== 1 ? "s" : ""} conmigo</Bd>
+                  </div>
+                  {sharedPois.map(p => (
+                    <PoiRow
+                      key={p.id}
+                      p={p}
+                      isShared
+                      editingId={null}
+                      deletingId={deletingPoi}
+                      onStartDelete={setDeletingPoi}
+                      onCancelDelete={() => setDeletingPoi(null)}
+                      onConfirmDelete={handleDeletePoi}
+                      onPreview={setPreviewLoc}
+                    />
+                  ))}
+                </>
+              )}
             </div>
           )
         }
       </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// POI ROW — Redesigned with inline action pictograms
+// ═══════════════════════════════════════════════════════════════════════
+
+function PoiRow({
+  p, isShared,
+  editingId, editName, editComments,
+  deletingId,
+  onEditNameChange, onEditCommentsChange,
+  onStartEdit, onSaveEdit, onCancelEdit,
+  onStartDelete, onCancelDelete, onConfirmDelete,
+  onPreview, onShare, onReclassify,
+}) {
+  const borderColor = isShared ? C.info : C.sec;
+
+  if (editingId === p.id) {
+    return (
+      <div style={{ background: C.w, border: `1px solid ${C.bFocus}`, borderLeft: `4px solid ${C.pri}`, borderRadius: 12, boxShadow: C.sh, padding: "12px 14px" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <input value={editName} onChange={e => onEditNameChange(e.target.value)} placeholder="Nombre" style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: `1.5px solid ${C.bFocus}`, background: C.bgInput, fontFamily: "inherit", fontSize: 14.3, fontWeight: 700, color: C.t1, outline: "none", boxSizing: "border-box" }} />
+          <input value={editComments} onChange={e => onEditCommentsChange(e.target.value)} placeholder="Comentarios (opcional)" style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: `1px solid ${C.b2}`, background: C.bgInput, fontFamily: "inherit", fontSize: 12.7, color: C.t1, outline: "none", boxSizing: "border-box" }} />
+          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+            <button onClick={onCancelEdit} style={{ padding: "6px 14px", borderRadius: 8, border: `1px solid ${C.b2}`, background: C.w, cursor: "pointer", fontFamily: "inherit", fontSize: 12.7, fontWeight: 600, color: C.t2 }}>Cancelar</button>
+            <button onClick={onSaveEdit} disabled={!editName?.trim()} style={{ padding: "6px 14px", borderRadius: 8, border: "none", background: C.pri, cursor: "pointer", fontFamily: "inherit", fontSize: 12.7, fontWeight: 700, color: C.w, opacity: editName?.trim() ? 1 : 0.5 }}>Guardar</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (deletingId === p.id) {
+    const deleteLabel = isShared ? "Quitar" : "Sí, eliminar";
+    return (
+      <div style={{ background: C.w, border: `1px solid ${C.err}40`, borderLeft: `4px solid ${C.err}`, borderRadius: 12, boxShadow: C.sh, padding: "12px 14px" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+          <span style={{ fontSize: 13.2, fontWeight: 600, color: C.err }}>
+            {isShared ? `¿Quitar "${p.name}" de tus ubicaciones?` : `¿Eliminar "${p.name}"?`}
+          </span>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button onClick={() => onCancelDelete(null)} style={{ padding: "6px 14px", borderRadius: 8, border: `1px solid ${C.b2}`, background: C.w, cursor: "pointer", fontFamily: "inherit", fontSize: 12.7, fontWeight: 600, color: C.t2 }}>No</button>
+            <button onClick={() => onConfirmDelete(p.id)} style={{ padding: "6px 14px", borderRadius: 8, border: "none", background: C.err, cursor: "pointer", fontFamily: "inherit", fontSize: 12.7, fontWeight: 700, color: C.w }}>{deleteLabel}</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ background: C.w, border: `1px solid ${C.b1}`, borderLeft: `4px solid ${borderColor}`, borderRadius: 12, boxShadow: C.sh, padding: "12px 14px" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        {/* Icon */}
+        <div style={{ width: 32, height: 32, borderRadius: 8, background: `${borderColor}12`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+          {Ic.nav(borderColor, 16)}
+        </div>
+
+        {/* Info */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 14.3, fontWeight: 700, color: C.t1 }}>{p.name}</div>
+          <div style={{ display: "flex", gap: 6, alignItems: "center", marginTop: 2, flexWrap: "wrap" }}>
+            {isShared ? (
+              <Bd color={C.info} small>Compartida por {p._sharedBy?.name || "alguien"}</Bd>
+            ) : (
+              <Bd color={C.sec} small>Interés</Bd>
+            )}
+            {p.address && <span style={{ fontSize: 11, color: C.t3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.address}</span>}
+            {p.comments && <span style={{ fontSize: 11, color: C.t2, fontStyle: "italic" }}>{p.comments}</span>}
+            {!isShared && p.shares?.length > 0 && (
+              <Bd color={C.pri} small>{p.shares.length} compartido{p.shares.length !== 1 ? "s" : ""}</Bd>
+            )}
+          </div>
+        </div>
+
+        {/* Action pictograms */}
+        <div style={{ display: "flex", alignItems: "center", gap: 3, flexShrink: 0 }}>
+          {p.lat && p.lng && (
+            <span style={{ fontSize: 10, color: C.ok, fontWeight: 600, marginRight: 4 }}>
+              {Number(p.lat).toFixed(4)}, {Number(p.lng).toFixed(4)}
+            </span>
+          )}
+          {/* Map */}
+          <IconBtn color={borderColor} title="Ver en mapa" onClick={() => onPreview({ name: p.name, address: p.address, lat: Number(p.lat), lng: Number(p.lng) })}>
+            {Ic.nav(borderColor, 14)}
+          </IconBtn>
+          {/* Edit (own only) */}
+          {!isShared && onStartEdit && (
+            <IconBtn color={C.pri} title="Editar" onClick={() => onStartEdit(p)}>
+              {Ic.edit(C.pri, 14)}
+            </IconBtn>
+          )}
+          {/* Share (own only) */}
+          {!isShared && onShare && (
+            <IconBtn color={C.info} title="Compartir" onClick={() => onShare(p)}>
+              {Ic.share(C.info, 14)}
+            </IconBtn>
+          )}
+          {/* Reclassify (own only) */}
+          {!isShared && onReclassify && (
+            <IconBtn color={C.acc} title="Reclasificar" onClick={() => onReclassify(p)}>
+              {Ic.pin(C.acc, 14)}
+            </IconBtn>
+          )}
+          {/* Delete */}
+          <IconBtn color={C.err} title={isShared ? "Quitar" : "Eliminar"} onClick={() => onStartDelete(p.id)}>
+            {Ic.cross(C.err, 14)}
+          </IconBtn>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Tiny icon button ────────────────────────────────────────────────
+function IconBtn({ color, title, onClick, children }) {
+  return (
+    <button
+      onClick={onClick}
+      title={title}
+      style={{
+        background: `${color}10`,
+        border: `1px solid ${color}30`,
+        borderRadius: 8,
+        cursor: "pointer",
+        padding: "6px 8px",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// MAP OVERVIEW MODAL — Shows all locations color-coded on Google Maps
+// ═══════════════════════════════════════════════════════════════════════
+
+function MapOverviewModal({ fields, pois, filter, onFilterChange, onClose, onSelectLocation }) {
+  const mapRef = useRef(null);
+  const mapInstance = useRef(null);
+  const markersRef = useRef([]);
+
+  // Collect all locations
+  const allLocations = [];
+  (fields || []).forEach(f => {
+    if (f.lat && f.lng) allLocations.push({ type: "field", name: f.name, lat: Number(f.lat), lng: Number(f.lng), address: f.address });
+    (f.lots || []).forEach(l => {
+      if (l.lat && l.lng) allLocations.push({ type: "lot", name: `${l.name} (${f.name})`, lat: Number(l.lat), lng: Number(l.lng) });
+    });
+  });
+  (pois || []).forEach(p => {
+    if (p.lat && p.lng) allLocations.push({ type: "poi", name: p.name, lat: Number(p.lat), lng: Number(p.lng), address: p.address, isShared: p._isSharedWithMe });
+  });
+
+  const filtered = filter === "all" ? allLocations : allLocations.filter(l => l.type === filter);
+
+  useEffect(() => {
+    if (!mapRef.current) return;
+    let cancelled = false;
+    loadGMaps().then(maps => {
+      if (cancelled || !mapRef.current) return;
+
+      const center = filtered.length > 0
+        ? { lat: filtered.reduce((s, l) => s + l.lat, 0) / filtered.length, lng: filtered.reduce((s, l) => s + l.lng, 0) / filtered.length }
+        : { lat: -33.0, lng: -56.0 };
+
+      if (!mapInstance.current) {
+        mapInstance.current = new maps.Map(mapRef.current, {
+          center,
+          zoom: filtered.length > 0 ? 8 : 6,
+          disableDefaultUI: true,
+          zoomControl: true,
+          mapTypeControl: true,
+          mapTypeControlOptions: { style: maps.MapTypeControlStyle.DROPDOWN_MENU },
+          gestureHandling: "greedy",
+        });
+      }
+
+      // Clear existing markers
+      markersRef.current.forEach(m => m.setMap(null));
+      markersRef.current = [];
+
+      const iw = new maps.InfoWindow();
+
+      filtered.forEach(loc => {
+        const color = MAP_COLORS[loc.type] || MAP_COLORS.poi;
+        const w = 28, h = 40;
+        const svg = encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}"><path d="M${w/2} ${h}C${w/2} ${h} ${w} ${h*0.6} ${w} ${h*0.35}C${w} ${h*0.16} ${w*0.78} 0 ${w/2} 0C${w*0.22} 0 0 ${h*0.16} 0 ${h*0.35}C0 ${h*0.6} ${w/2} ${h} ${w/2} ${h}Z" fill="${color}"/><circle cx="${w/2}" cy="${h*0.35}" r="${w*0.2}" fill="white"/></svg>`);
+        const icon = { url: `data:image/svg+xml,${svg}`, scaledSize: new maps.Size(w, h), anchor: new maps.Point(w / 2, h) };
+        const mk = new maps.Marker({
+          position: { lat: loc.lat, lng: loc.lng },
+          map: mapInstance.current,
+          title: loc.name,
+          icon,
+        });
+        mk.addListener("click", () => {
+          const typeLabel = TYPE_CFG[loc.type]?.label || loc.type;
+          iw.setContent(`<div style="font-family:system-ui;font-size:12px;line-height:1.5;max-width:220px"><strong>${loc.name}</strong><br/><span style="color:${color};font-weight:700">${typeLabel}</span>${loc.address ? "<br/>" + loc.address : ""}</div>`);
+          iw.open(mapInstance.current, mk);
+        });
+        mk.addListener("dblclick", () => onSelectLocation(loc));
+        markersRef.current.push(mk);
+      });
+
+      // Fit bounds
+      if (filtered.length > 1) {
+        const bounds = new maps.LatLngBounds();
+        filtered.forEach(l => bounds.extend({ lat: l.lat, lng: l.lng }));
+        mapInstance.current.fitBounds(bounds, 40);
+      } else if (filtered.length === 1) {
+        mapInstance.current.setCenter({ lat: filtered[0].lat, lng: filtered[0].lng });
+        mapInstance.current.setZoom(14);
+      }
+    }).catch(() => {});
+
+    return () => { cancelled = true; };
+  }, [filter, fields, pois]);
+
+  const counts = { all: allLocations.length, field: allLocations.filter(l => l.type === "field").length, lot: allLocations.filter(l => l.type === "lot").length, poi: allLocations.filter(l => l.type === "poi").length };
+  const filterBtns = [
+    { key: "all", label: "Todos", color: C.t1 },
+    { key: "field", label: "Campos", color: MAP_COLORS.field },
+    { key: "lot", label: "Lotes", color: MAP_COLORS.lot },
+    { key: "poi", label: "Interés", color: MAP_COLORS.poi },
+  ];
+
+  return (
+    <ModalOverlay onClose={onClose} maxWidth={560} quick>
+      <div style={{ padding: 18 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+          <div style={{ fontSize: 17, fontWeight: 800 }}>{Ic.mapView(C.pri, 18)} Mapa de ubicaciones</div>
+          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }}>{Ic.cross(C.t3, 18)}</button>
+        </div>
+
+        {/* Filter buttons */}
+        <div style={{ display: "flex", gap: 6, marginBottom: 12 }}>
+          {filterBtns.map(fb => (
+            <button
+              key={fb.key}
+              onClick={() => onFilterChange(fb.key)}
+              style={{
+                flex: 1,
+                padding: "7px 6px",
+                borderRadius: 8,
+                border: `2px solid ${filter === fb.key ? fb.color : C.b2}`,
+                background: filter === fb.key ? `${fb.color}12` : C.w,
+                cursor: "pointer",
+                fontFamily: "inherit",
+                fontSize: 12.1,
+                fontWeight: 700,
+                color: filter === fb.key ? fb.color : C.t3,
+              }}
+            >
+              {fb.label} ({counts[fb.key]})
+            </button>
+          ))}
+        </div>
+
+        {/* Map */}
+        <div ref={mapRef} style={{ width: "100%", height: 360, borderRadius: 12, border: `1px solid ${C.b1}`, background: C.bgInput, overflow: "hidden" }} />
+        <div style={{ marginTop: 8, fontSize: 11, color: C.t3, textAlign: "center" }}>Doble clic en un marcador para ver detalle</div>
+      </div>
+    </ModalOverlay>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// SHARE POI MODAL
+// ═══════════════════════════════════════════════════════════════════════
+
+function SharePoiModal({ poi, shares, search, results, loading, onSearch, onShare, onUnshare, onClose }) {
+  const alreadySharedIds = new Set((shares || []).map(s => s.sharedWith?.id));
+
+  return (
+    <ModalOverlay onClose={onClose} maxWidth={420} quick>
+      <div style={{ padding: 18 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+          <div style={{ fontSize: 16.5, fontWeight: 800 }}>{Ic.share(C.pri, 18)} Compartir "{poi.name}"</div>
+          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }}>{Ic.cross(C.t3, 18)}</button>
+        </div>
+
+        {/* Search users */}
+        <div style={{ marginBottom: 14 }}>
+          <input
+            value={search}
+            onChange={e => onSearch(e.target.value)}
+            placeholder="Buscar usuario por nombre, email o teléfono..."
+            style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: `1.5px solid ${search ? C.bFocus : C.b2}`, background: C.bgInput, fontFamily: "inherit", fontSize: 13.2, color: C.t1, outline: "none", boxSizing: "border-box" }}
+          />
+        </div>
+
+        {/* Search results */}
+        {loading && <div style={{ textAlign: "center", padding: 10, fontSize: 12.7, color: C.t3 }}>Buscando...</div>}
+        {results.length > 0 && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 14, maxHeight: 180, overflow: "auto" }}>
+            {results.map(u => (
+              <div key={u.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 12px", borderRadius: 10, border: `1px solid ${C.b1}`, background: C.bg }}>
+                <div>
+                  <div style={{ fontSize: 13.5, fontWeight: 700, color: C.t1 }}>{u.name}</div>
+                  <div style={{ fontSize: 11.5, color: C.t3 }}>{u.email}</div>
+                </div>
+                {alreadySharedIds.has(u.id) ? (
+                  <Bd color={C.ok} small>Compartido</Bd>
+                ) : (
+                  <button onClick={() => onShare(u.id)} style={{ padding: "5px 12px", borderRadius: 8, border: "none", background: C.pri, cursor: "pointer", fontFamily: "inherit", fontSize: 12.1, fontWeight: 700, color: C.w }}>
+                    Compartir
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Current shares */}
+        {shares.length > 0 && (
+          <>
+            <div style={{ fontSize: 13.2, fontWeight: 700, color: C.t2, marginBottom: 8 }}>Compartido con:</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              {shares.map(s => (
+                <div key={s.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 12px", borderRadius: 10, border: `1px solid ${C.b1}`, background: C.w }}>
+                  <div>
+                    <div style={{ fontSize: 13.2, fontWeight: 600, color: C.t1 }}>{s.sharedWith?.name || "Usuario"}</div>
+                    <div style={{ fontSize: 11, color: C.t3 }}>{s.sharedWith?.email}</div>
+                  </div>
+                  <button onClick={() => onUnshare(s.sharedWith?.id)} style={{ padding: "4px 10px", borderRadius: 6, border: `1px solid ${C.err}40`, background: C.errPale, cursor: "pointer", fontFamily: "inherit", fontSize: 11.5, fontWeight: 600, color: C.err }}>
+                    Quitar
+                  </button>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+
+        {shares.length === 0 && results.length === 0 && !loading && search.length < 2 && (
+          <div style={{ textAlign: "center", padding: 20, color: C.t3, fontSize: 13.2 }}>
+            Buscá un usuario para compartir esta ubicación
+          </div>
+        )}
+      </div>
+    </ModalOverlay>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// RECLASSIFY POI MODAL
+// ═══════════════════════════════════════════════════════════════════════
+
+function ReclassifyPoiModal({ poi, fields, type, fieldId, hectares, saving, onTypeChange, onFieldIdChange, onHectaresChange, onConfirm, onClose }) {
+  return (
+    <ModalOverlay onClose={onClose} maxWidth={400} quick>
+      <div style={{ padding: 18 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+          <div style={{ fontSize: 16.5, fontWeight: 800 }}>{Ic.pin(C.acc, 18)} Reclasificar "{poi.name}"</div>
+          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }}>{Ic.cross(C.t3, 18)}</button>
+        </div>
+
+        <div style={{ fontSize: 13.2, color: C.t2, marginBottom: 14, lineHeight: 1.4 }}>
+          Esta ubicación de interés se convertirá en un Campo o Lote. La ubicación original se eliminará.
+        </div>
+
+        {/* Type selector */}
+        <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
+          {[
+            { key: "field", label: "Campo", color: MAP_COLORS.field, icon: Ic.pin },
+            { key: "lot", label: "Lote", color: MAP_COLORS.lot, icon: Ic.grain },
+          ].map(opt => (
+            <button
+              key={opt.key}
+              onClick={() => onTypeChange(opt.key)}
+              style={{
+                flex: 1, padding: "12px 8px", borderRadius: 10,
+                border: `2px solid ${type === opt.key ? opt.color : C.b2}`,
+                background: type === opt.key ? `${opt.color}12` : C.w,
+                cursor: "pointer", fontFamily: "inherit",
+                fontSize: 14.3, fontWeight: 800,
+                color: type === opt.key ? opt.color : C.t3,
+                display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+              }}
+            >
+              {opt.icon(type === opt.key ? opt.color : C.t3, 16)} {opt.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Field selector for lots */}
+        {type === "lot" && (
+          <>
+            <select
+              value={fieldId}
+              onChange={e => onFieldIdChange(e.target.value)}
+              style={{ width: "100%", padding: "10px 12px", borderRadius: 10, border: `1.5px solid ${fieldId ? C.ok : C.err}`, background: C.bgInput, fontFamily: "inherit", fontSize: 13.2, color: C.t1, outline: "none", cursor: "pointer", boxSizing: "border-box", marginBottom: 10 }}
+            >
+              <option value="">— Seleccioná el campo —</option>
+              {fields.filter(f => f.id).map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
+            </select>
+            <input
+              type="number"
+              value={hectares}
+              onChange={e => onHectaresChange(e.target.value)}
+              placeholder="Hectáreas (opcional)"
+              style={{ width: "100%", padding: "10px 12px", borderRadius: 10, border: `1px solid ${C.b2}`, background: C.bgInput, fontFamily: "inherit", fontSize: 13.2, color: C.t1, outline: "none", boxSizing: "border-box", marginBottom: 14 }}
+            />
+          </>
+        )}
+
+        <div style={{ display: "flex", gap: 8 }}>
+          <Btn sm v="ghost" onClick={onClose}>Cancelar</Btn>
+          <Btn sm disabled={saving || (type === "lot" && !fieldId)} onClick={onConfirm} style={{ flex: 1 }}>
+            {saving ? "Reclasificando..." : `Convertir a ${type === "field" ? "Campo" : "Lote"}`}
+          </Btn>
+        </div>
+      </div>
+    </ModalOverlay>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// IMPORT CLASSIFY PANEL (extracted for readability)
+// ═══════════════════════════════════════════════════════════════════════
+
+function ImportClassifyPanel({
+  importParsed, importSelected, importNames, importTypes, importFieldIds, importComments,
+  importDiscarded, importWarning, importListName, fieldOptions, saving, selectedCount,
+  getType, getName,
+  onToggle, onNameChange, onTypeChange, onFieldIdChange, onCommentChange,
+  onSelectAll, onSelectNone, onPreview, onClose, onConfirm,
+}) {
+  return (
+    <div style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: 12, padding: 18, marginBottom: 16, boxShadow: C.sh }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+        <div style={{ fontSize: 15.4, fontWeight: 700 }}>{Ic.pin(C.pri, 16)} {importListName || "Ubicaciones encontradas"}</div>
+        <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }}>{Ic.cross(C.t3, 16)}</button>
+      </div>
+      {importWarning && <div style={{ padding: "8px 12px", borderRadius: 8, marginBottom: 10, fontSize: 12.1, fontWeight: 500, background: C.warnPale, color: C.warn, border: `1px solid ${C.warn}30` }}>{importWarning}</div>}
+
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+        <div style={{ display: "flex", gap: 10, fontSize: 12.7, color: C.t2 }}>
+          <span style={{ fontWeight: 600, color: C.ok }}>{importParsed.length} encontradas</span>
+          {importDiscarded > 0 && <span style={{ color: C.t3 }}>{importDiscarded} descartadas</span>}
+        </div>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button onClick={onSelectAll} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12.1, color: C.pri, fontWeight: 600, fontFamily: "inherit", padding: 0 }}>Todas</button>
+          <span style={{ color: C.t3 }}>·</span>
+          <button onClick={onSelectNone} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12.1, color: C.t3, fontWeight: 600, fontFamily: "inherit", padding: 0 }}>Ninguna</button>
+        </div>
+      </div>
+
+      {importParsed.length === 0 ? (
+        <div style={{ textAlign: "center", padding: 20, color: C.t3, fontSize: 13.2 }}>No se encontraron ubicaciones válidas</div>
+      ) : (
+        <>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {importParsed.map((loc, i) => {
+              const sel = importSelected.has(i);
+              const t = getType(i);
+              const cfg = TYPE_CFG[t];
+              return (
+                <div key={i} style={{
+                  borderRadius: 12, border: `1.5px solid ${sel ? cfg.color : C.b1}`,
+                  borderLeft: sel ? `4px solid ${cfg.color}` : `4px solid ${C.b1}`,
+                  background: sel ? `${cfg.color}04` : C.bg,
+                  transition: "all 0.15s", overflow: "hidden",
+                }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 12px 8px" }}>
+                    <div onClick={() => onToggle(i)} style={{
+                      width: 22, height: 22, borderRadius: 6,
+                      border: `2px solid ${sel ? cfg.color : C.b2}`,
+                      background: sel ? cfg.color : C.w,
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      flexShrink: 0, cursor: "pointer",
+                    }}>
+                      {sel && Ic.chk(C.w, 13)}
+                    </div>
+
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <input
+                        value={importNames[i] ?? loc.name}
+                        onChange={e => onNameChange(i, e.target.value)}
+                        placeholder="Nombre de la ubicación"
+                        style={{ width: "100%", border: "none", background: "transparent", fontSize: 15.4, fontWeight: 700, color: C.t1, fontFamily: "inherit", padding: 0, outline: "none" }}
+                      />
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 3 }}>
+                        {loc.address && <span style={{ fontSize: 11.5, color: C.t3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{loc.address}</span>}
+                        <span style={{ fontSize: 10.5, color: C.ok, fontWeight: 700, whiteSpace: "nowrap" }}>
+                          {Number(loc.lat).toFixed(4)}, {Number(loc.lng).toFixed(4)}
+                        </span>
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() => onPreview({ name: importNames[i] ?? loc.name, address: loc.address, lat: loc.lat, lng: loc.lng })}
+                      title="Ver en mapa"
+                      style={{
+                        background: `${cfg.color}10`, border: `1px solid ${cfg.color}30`,
+                        borderRadius: 8, cursor: "pointer", padding: "8px 10px",
+                        display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+                      }}
+                    >
+                      {Ic.nav(cfg.color, 18)}
+                    </button>
+                  </div>
+
+                  <div style={{ padding: "0 12px 10px", display: "flex", flexDirection: "column", gap: 8 }}>
+                    <div style={{ display: "flex", gap: 6 }}>
+                      {Object.entries(TYPE_CFG).map(([k, c]) => {
+                        const active = t === k;
+                        return (
+                          <button
+                            key={k}
+                            onClick={() => onTypeChange(i, k)}
+                            style={{
+                              flex: 1, padding: "8px 6px", borderRadius: 8,
+                              border: `2px solid ${active ? c.color : C.b2}`,
+                              background: active ? `${c.color}12` : C.w,
+                              cursor: "pointer", fontFamily: "inherit",
+                              fontSize: 13.2, fontWeight: 800,
+                              color: active ? c.color : C.t3,
+                              transition: "all 0.15s",
+                              display: "flex", alignItems: "center", justifyContent: "center", gap: 5,
+                            }}
+                          >
+                            {c.icon(active ? c.color : C.t3, 14)} {c.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {t === "lot" && (
+                      <select
+                        value={importFieldIds[i] || ""}
+                        onChange={e => onFieldIdChange(i, e.target.value)}
+                        style={{
+                          padding: "10px 12px", borderRadius: 8,
+                          border: `1.5px solid ${importFieldIds[i] ? C.acc : C.err}`,
+                          background: C.bgInput, fontFamily: "inherit", fontSize: 13.2,
+                          color: C.t1, outline: "none", cursor: "pointer",
+                        }}
+                      >
+                        <option value="">— Seleccioná el campo —</option>
+                        {fieldOptions.map(fo => <option key={fo.id} value={fo.id}>{fo.name}</option>)}
+                      </select>
+                    )}
+
+                    <input
+                      value={importComments[i] || ""}
+                      onChange={e => onCommentChange(i, e.target.value)}
+                      placeholder="Comentarios (opcional)"
+                      style={{
+                        width: "100%", padding: "8px 10px", borderRadius: 8,
+                        border: `1px solid ${C.b2}`, background: C.bgInput,
+                        fontFamily: "inherit", fontSize: 12.7, color: C.t1,
+                        outline: "none", boxSizing: "border-box",
+                      }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {selectedCount > 0 && (
+            <div style={{ display: "flex", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
+              {(() => {
+                const counts = { field: 0, lot: 0, poi: 0 };
+                importParsed.forEach((_, i) => { if (importSelected.has(i)) counts[getType(i)]++; });
+                return Object.entries(TYPE_CFG).map(([k, c]) => counts[k] > 0 && (
+                  <Bd key={k} color={c.color}>{counts[k]} {c.label}{counts[k] !== 1 ? (k === "poi" ? "es" : "s") : ""}</Bd>
+                ));
+              })()}
+            </div>
+          )}
+
+          <div style={{ marginTop: 14, display: "flex", gap: 8 }}>
+            <Btn sm v="ghost" onClick={onClose}>Cancelar</Btn>
+            <Btn sm disabled={saving || selectedCount === 0} onClick={onConfirm} style={{ flex: 1 }}>
+              {saving ? "Importando..." : `Importar seleccionadas (${selectedCount})`}
+            </Btn>
+          </div>
+        </>
+      )}
     </div>
   );
 }

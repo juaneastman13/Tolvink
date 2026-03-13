@@ -292,6 +292,11 @@ export async function apiGetPois() { return api('/fields/pois'); }
 export async function apiCreatePoi(b) { return api('/fields/pois', { body: b }); }
 export async function apiUpdatePoi(id, b) { return api(`/fields/pois/${id}`, { method: 'PATCH', body: b }); }
 export async function apiDeletePoi(id) { return api(`/fields/pois/${id}/delete`, { method: 'PATCH' }); }
+export async function apiSharePoi(poiId, sharedWithUserId) { return api(`/fields/pois/${poiId}/share`, { body: { sharedWithUserId } }); }
+export async function apiUnsharePoi(poiId, sharedWithUserId) { return api(`/fields/pois/${poiId}/unshare`, { method: 'PATCH', body: { sharedWithUserId } }); }
+export async function apiGetPoiShares(poiId) { return api(`/fields/pois/${poiId}/shares`); }
+export async function apiReclassifyPoi(poiId, body) { return api(`/fields/pois/${poiId}/reclassify`, { body }); }
+export async function apiSearchUsersForShare(q) { return api(`/fields/pois/search-users?q=${encodeURIComponent(q)}`); }
 
 // Plant-Producer Access
 export async function apiGrantAccess(b) { return api('/plant-access/grant',{body:b}); }
