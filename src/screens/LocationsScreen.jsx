@@ -1166,8 +1166,8 @@ export function RowMenu({ id, items }) {
               width: "100%", display: "flex", alignItems: "center", gap: 10,
               padding: "12px 16px", background: "transparent", border: "none",
               borderTop: item.danger ? `1px solid ${C.b2}` : "none",
-              cursor: "pointer", fontFamily: "inherit", fontSize: 13.2,
-              fontWeight: 600, color: item.danger ? C.err : C.t1,
+              cursor: "pointer", fontFamily: FONT, fontSize: 15,
+              fontWeight: 400, color: item.danger ? C.err : C.t1,
               textAlign: "left",
             }}
             onMouseEnter={(e) => e.currentTarget.style.background = C.bgCard}
@@ -1192,7 +1192,7 @@ export function RowMenu({ id, items }) {
           background: open ? C.bgCard : "transparent",
           border: "none", cursor: "pointer",
           display: "flex", alignItems: "center", justifyContent: "center", gap: 4,
-          fontSize: 12.1, color: C.t3, fontFamily: "inherit", fontWeight: 600,
+          fontSize: 12.1, color: C.t3, fontFamily: FONT, fontWeight: 600,
         }}
       >
         Opciones <span style={{ fontSize: 18, fontWeight: 700, letterSpacing: 1, lineHeight: 1 }}>⋮</span>
