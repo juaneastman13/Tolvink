@@ -4,7 +4,7 @@
 // =====================================================================
 
 import { useState, useEffect, useRef } from "react";
-import { loadGMaps } from "../maps";
+import { loadGMaps, mkFieldIcon, mkPlantIcon, mkTruckIcon, mkPinIcon } from "../maps";
 import { API_URL } from "../api";
 import log from "../logger";
 
@@ -98,18 +98,16 @@ export default function TrackFreightScreen({ code: codeProp } = {}) {
         });
         mapInstance.current = map;
 
-        // Origin marker (green)
+        // Origin marker (field pin)
         new maps.Marker({
           position: origin, map, title: freight.originName || "Origen",
-          icon: { path: maps.SymbolPath.CIRCLE, scale: 10, fillColor: "#1A6B37",
-                  fillOpacity: 1, strokeColor: "#fff", strokeWeight: 2 },
+          icon: mkFieldIcon(maps, 1.0),
         });
 
-        // Destination marker (blue)
+        // Destination marker (plant pin)
         new maps.Marker({
           position: dest, map, title: freight.destName || "Destino",
-          icon: { path: maps.SymbolPath.CIRCLE, scale: 10, fillColor: "#003882",
-                  fillOpacity: 1, strokeColor: "#fff", strokeWeight: 2 },
+          icon: mkPlantIcon(maps, 1.0),
         });
 
         // Route line
@@ -158,8 +156,7 @@ export default function TrackFreightScreen({ code: codeProp } = {}) {
         if (!truckMarker.current) {
           truckMarker.current = new maps.Marker({
             position: { lat, lng }, map: mapInstance.current, title: "Camión",
-            icon: { url: "data:image/svg+xml," + encodeURIComponent(TRUCK_SVG),
-                    scaledSize: new maps.Size(36, 36), anchor: new maps.Point(18, 18) },
+            icon: mkTruckIcon(maps),
             zIndex: 999,
           });
         } else {
@@ -241,7 +238,7 @@ export default function TrackFreightScreen({ code: codeProp } = {}) {
             participantMarkersRef.current[uid].setPosition({ lat, lng });
             participantMarkersRef.current[uid]._iwContent = buildContent;
           } else {
-            const icon = { url: "data:image/svg+xml," + encodeURIComponent(pinSvg(color)), scaledSize: new maps.Size(28, 40), anchor: new maps.Point(14, 40) };
+            const icon = mkPinIcon(maps, color, 1.0);
             const marker = new maps.Marker({
               position: { lat, lng }, map: mapInstance.current,
               title: `${p.userName || "Desconocido"} (${typeLabel})`,

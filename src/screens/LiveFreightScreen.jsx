@@ -5,7 +5,7 @@
 // =====================================================================
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { loadGMaps } from "../maps";
+import { loadGMaps, mkFieldIcon, mkPlantIcon, mkPinIcon } from "../maps";
 import { API_URL } from "../api";
 import log from "../logger";
 
@@ -152,7 +152,7 @@ export default function LiveFreightScreen() {
         markersRef.current[key] = new maps.Marker({
           position: pos,
           map,
-          icon: { path: maps.SymbolPath.CIRCLE, scale: 8, fillColor: "#1A6B37", fillOpacity: 0.9, strokeColor: "#fff", strokeWeight: 2 },
+          icon: mkFieldIcon(maps, 1.0),
           title: freight.originName || "Origen",
         });
       } else {
@@ -171,7 +171,7 @@ export default function LiveFreightScreen() {
         markersRef.current[key] = new maps.Marker({
           position: pos,
           map,
-          icon: { path: maps.SymbolPath.CIRCLE, scale: 8, fillColor: "#003882", fillOpacity: 0.9, strokeColor: "#fff", strokeWeight: 2 },
+          icon: mkPlantIcon(maps, 1.0),
           title: freight.destName || "Destino",
         });
       } else {
@@ -203,9 +203,8 @@ export default function LiveFreightScreen() {
         const marker = new maps.Marker({
           position: pos,
           map,
-          icon: { path: maps.SymbolPath.CIRCLE, scale: 12, fillColor: cfg.color, fillOpacity: 0.95, strokeColor: "#fff", strokeWeight: 3 },
+          icon: mkPinIcon(maps, cfg.color, 1.0),
           title: loc.userName,
-          label: { text: loc.userName?.charAt(0)?.toUpperCase() || "?", color: "#fff", fontSize: "12.1px", fontWeight: "bold" },
         });
         marker._iwContent = buildContent;
         marker.addListener("click", () => {

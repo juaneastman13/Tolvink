@@ -6,7 +6,7 @@
 // =====================================================================
 
 import { useState, useEffect, useRef } from "react";
-import { loadGMaps } from "../maps";
+import { loadGMaps, mkFieldIcon, mkPlantIcon } from "../maps";
 
 const C = {
   pri: "#1A6B37", acc: "#FF6A00", bg: "#F7F8F7", w: "#FFFFFF",
@@ -57,14 +57,7 @@ export default function ViewMapScreen() {
           position: origin,
           map,
           title: name,
-          icon: {
-            path: maps.SymbolPath.CIRCLE,
-            fillColor: C.pri,
-            fillOpacity: 1,
-            strokeColor: "#fff",
-            strokeWeight: 2,
-            scale: 10,
-          },
+          icon: mkFieldIcon(maps, 1.0),
         });
 
         const originInfo = new maps.InfoWindow({
@@ -83,14 +76,7 @@ export default function ViewMapScreen() {
             position: dest,
             map,
             title: dname,
-            icon: {
-              path: maps.SymbolPath.CIRCLE,
-              fillColor: "#2563EB",
-              fillOpacity: 1,
-              strokeColor: "#fff",
-              strokeWeight: 2,
-              scale: 10,
-            },
+            icon: mkPlantIcon(maps, 1.0),
           });
 
           const destInfo = new maps.InfoWindow({

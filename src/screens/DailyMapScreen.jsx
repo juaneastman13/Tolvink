@@ -4,7 +4,7 @@
 // =====================================================================
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { loadGMaps } from "../maps";
+import { loadGMaps, mkPinIcon } from "../maps";
 import { API_URL } from "../api";
 import log from "../logger";
 
@@ -126,14 +126,7 @@ export default function DailyMapScreen() {
         const marker = new maps.Marker({
           position: pos,
           map,
-          icon: {
-            path: maps.SymbolPath.CIRCLE,
-            scale: 10,
-            fillColor: cfg.color,
-            fillOpacity: 0.9,
-            strokeColor: "#FFFFFF",
-            strokeWeight: 2,
-          },
+          icon: mkPinIcon(maps, cfg.color, 1.0),
           title: `${f.code} — ${cfg.label}`,
         });
 
@@ -160,14 +153,7 @@ export default function DailyMapScreen() {
         const marker = new maps.Marker({
           position: pos,
           map,
-          icon: {
-            path: maps.SymbolPath.CIRCLE,
-            scale: 6,
-            fillColor: cfg.color,
-            fillOpacity: 0.5,
-            strokeColor: cfg.color,
-            strokeWeight: 1,
-          },
+          icon: mkPinIcon(maps, cfg.color, 0.7),
           title: `${f.code} destino`,
         });
         markersRef.current.push(marker);

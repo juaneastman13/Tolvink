@@ -748,11 +748,22 @@ function MapOverviewModal({ fields, pois, filter, onFilterChange, onClose, onSel
 
       const iw = new maps.InfoWindow();
 
+      // Entity-specific marker SVGs (imported from maps.jsx pattern)
+      const _mkSvg = (type) => {
+        if (type === "field") {
+          const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="44" viewBox="0 0 24 34"><path d="M12 0C5.37 0 0 5.37 0 12c0 9 12 22 12 22s12-13 12-22C24 5.37 18.63 0 12 0z" fill="%231A6B37" stroke="%23fff" stroke-width="1.5"/><path d="M12 5.5a4.5 4.5 0 00-4.5 4.5c0 3.5 4.5 6.5 4.5 6.5s4.5-3 4.5-6.5A4.5 4.5 0 0012 5.5z" fill="none" stroke="%23fff" stroke-width="1.3"/><circle cx="12" cy="10" r="1.5" fill="%23fff"/></svg>`;
+          return { url: `data:image/svg+xml,${svg}`, scaledSize: new maps.Size(32, 44), anchor: new maps.Point(16, 44) };
+        }
+        if (type === "lot") {
+          const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="40" viewBox="0 0 24 34"><path d="M12 0C5.37 0 0 5.37 0 12c0 9 12 22 12 22s12-13 12-22C24 5.37 18.63 0 12 0z" fill="%231A6B37" stroke="%23fff" stroke-width="1.5"/><path d="M15.5 6.5C11 7.5 9.5 11 8.5 14.5l1 .3.5-1.2c.3.1.5.2.7.2C16 13.5 17 6 17 6c-.5 1-4 1.2-6.5 1.7S6.5 9.5 6.5 10.5s.9 1.9.9 1.9" fill="none" stroke="%23fff" stroke-width="1.2" stroke-linecap="round"/></svg>`;
+          return { url: `data:image/svg+xml,${svg}`, scaledSize: new maps.Size(28, 40), anchor: new maps.Point(14, 40) };
+        }
+        // poi
+        const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="40" viewBox="0 0 24 34"><path d="M12 0C5.37 0 0 5.37 0 12c0 9 12 22 12 22s12-13 12-22C24 5.37 18.63 0 12 0z" fill="%230891B2" stroke="%23fff" stroke-width="1.5"/><polygon points="7 11 17 6.5 12.5 16.5 11.5 12 7 11" fill="none" stroke="%23fff" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+        return { url: `data:image/svg+xml,${svg}`, scaledSize: new maps.Size(28, 40), anchor: new maps.Point(14, 40) };
+      };
       filtered.forEach(loc => {
-        const color = MAP_COLORS[loc.type] || MAP_COLORS.poi;
-        const w = 28, h = 40;
-        const svg = encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}"><path d="M${w/2} ${h}C${w/2} ${h} ${w} ${h*0.6} ${w} ${h*0.35}C${w} ${h*0.16} ${w*0.78} 0 ${w/2} 0C${w*0.22} 0 0 ${h*0.16} 0 ${h*0.35}C0 ${h*0.6} ${w/2} ${h} ${w/2} ${h}Z" fill="${color}"/><circle cx="${w/2}" cy="${h*0.35}" r="${w*0.2}" fill="white"/></svg>`);
-        const icon = { url: `data:image/svg+xml,${svg}`, scaledSize: new maps.Size(w, h), anchor: new maps.Point(w / 2, h) };
+        const icon = _mkSvg(loc.type);
         const mk = new maps.Marker({
           position: { lat: loc.lat, lng: loc.lng },
           map: mapInstance.current,
