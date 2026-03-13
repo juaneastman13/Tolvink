@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { RowMenu } from "./LocationsScreen";
 import { C, Ic } from "../theme";
 import { Btn, Bd, Field, Loader, LoadingOverlay, EmptyState } from "../components";
 import { SafeZone, LocationPicker } from "../maps";
@@ -161,15 +162,21 @@ export default function FieldsScreen({ onBack, embedded, goToMap }) {
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                     {Ic.pin(C.pri, 18)}
                     <div>
-                      <div style={{ fontSize: 15.4, fontWeight: 700 }}>{f.name}{f.lat&&f.lng&&goToMap&&<span onClick={(e)=>{e.stopPropagation();goToMap(f.lat,f.lng,f.name);}} style={{cursor:"pointer",opacity:0.6,marginLeft:4,fontSize:11}} title="Ver en mapa">📍</span>}</div>
+                      <div style={{ fontSize: 15.4, fontWeight: 700 }}>{f.name}</div>
                       {f.address && <div style={{ fontSize: 12.1, color: C.t3 }}>{f.address}</div>}
                       {f.lat && <div style={{ fontSize: 10.5, color: C.ok, fontWeight: 600 }}>📍 Ubicación cargada</div>}
                     </div>
                   </div>
                   <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                    <button aria-label="Editar campo" onClick={(e) => { e.stopPropagation(); editField === f.id ? setEditField(null) : startEditField(f); }} style={{ background: "none", border: "none", cursor: "pointer", padding: 4, minWidth: 44, minHeight: 44, display: "flex", alignItems: "center", justifyContent: "center" }}>{Ic.edit(editField === f.id ? C.pri : C.t3, 16)}</button>
                     <Bd color={C.pri} small>{(f.lots || []).length} lote{(f.lots || []).length !== 1 ? "s" : ""}</Bd>
                     <span style={{ display: "flex", transition: "transform 0.2s", transform: expandedField === f.id ? "rotate(-90deg)" : "rotate(0deg)", marginLeft: 2 }}>{Ic.chev(C.t3, 16)}</span>
+                    <RowMenu
+                      id={f.id}
+                      items={[
+                        ...(f.lat && f.lng && goToMap ? [{ icon: Ic.nav(C.t3, 14), label: "Ver en mapa", onClick: () => goToMap(f.lat, f.lng, f.name) }] : []),
+                        { icon: Ic.edit(C.t3, 14), label: "Editar", onClick: () => editField === f.id ? setEditField(null) : startEditField(f) },
+                      ]}
+                    />
                   </div>
                 </div>
 
@@ -192,9 +199,15 @@ export default function FieldsScreen({ onBack, embedded, goToMap }) {
                         {Ic.grain(C.ok, 14)}
                         <span style={{ fontSize: 13.2, fontWeight: 500 }}>{l.name}</span>
                         {l.hectares && <span style={{ fontSize: 11, color: C.t3 }}>{l.hectares} ha</span>}
-                        {l.lat&&l.lng&&goToMap?<span onClick={(e)=>{e.stopPropagation();goToMap(l.lat,l.lng,f.name+" — "+l.name);}} style={{cursor:"pointer",opacity:0.6,fontSize:11}} title="Ver en mapa">📍</span>:l.lat&&<span style={{ fontSize: 9.9, color: C.ok }}>📍</span>}
+                        {l.lat && <span style={{ fontSize: 9.9, color: C.ok }}>📍</span>}
                       </div>
-                      <button aria-label="Editar lote" onClick={() => editLot?.lotId === l.id ? setEditLot(null) : startEditLot(f.id, l)} style={{ background: "none", border: "none", cursor: "pointer", padding: 4, minWidth: 44, minHeight: 44, display: "flex", alignItems: "center", justifyContent: "center" }}>{Ic.edit(editLot?.lotId === l.id ? C.pri : C.t3, 14)}</button>
+                      <RowMenu
+                        id={l.id}
+                        items={[
+                          ...(l.lat && l.lng && goToMap ? [{ icon: Ic.nav(C.t3, 14), label: "Ver en mapa", onClick: () => goToMap(l.lat, l.lng, f.name + " — " + l.name) }] : []),
+                          { icon: Ic.edit(C.t3, 14), label: "Editar", onClick: () => editLot?.lotId === l.id ? setEditLot(null) : startEditLot(f.id, l) },
+                        ]}
+                      />
                     </div>
                     {/* Edit lot form */}
                     {editLot?.lotId === l.id && (

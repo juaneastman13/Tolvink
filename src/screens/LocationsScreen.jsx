@@ -613,59 +613,102 @@ function PoiRow({
           </div>
         </div>
 
-        {/* Action pictograms */}
-        <div style={{ display: "flex", alignItems: "center", gap: 3, flexShrink: 0 }}>
-          {/* Map */}
-          <IconBtn title="Ver en mapa" onClick={() => onPreview({ name: p.name, address: p.address, lat: Number(p.lat), lng: Number(p.lng) })}>
-            {Ic.nav(C.t3, 14)}
-          </IconBtn>
-          {/* Share (own only) */}
-          {!isShared && onShare && (
-            <IconBtn title="Compartir" onClick={() => onShare(p)}>
-              {Ic.share(C.t3, 14)}
-            </IconBtn>
-          )}
-          {/* Reclassify (own only) */}
-          {!isShared && onReclassify && (
-            <IconBtn title="Reclasificar" onClick={() => onReclassify(p)}>
-              {Ic.pin(C.t3, 14)}
-            </IconBtn>
-          )}
-          {/* Edit (own only) */}
-          {!isShared && onStartEdit && (
-            <IconBtn title="Editar" onClick={() => onStartEdit(p)}>
-              {Ic.edit(C.t3, 14)}
-            </IconBtn>
-          )}
-          {/* Delete */}
-          <IconBtn title={isShared ? "Quitar" : "Eliminar"} onClick={() => onStartDelete(p.id)}>
-            {Ic.cross(C.t3, 14)}
-          </IconBtn>
-        </div>
+        {/* Actions menu */}
+        <RowMenu
+          id={p.id}
+          items={[
+            { icon: Ic.nav(C.t3, 14), label: "Ver en mapa", onClick: () => onPreview({ name: p.name, address: p.address, lat: Number(p.lat), lng: Number(p.lng) }) },
+            ...(!isShared && onShare ? [{ icon: Ic.share(C.t3, 14), label: "Compartir", onClick: () => onShare(p) }] : []),
+            ...(!isShared && onReclassify ? [{ icon: Ic.pin(C.t3, 14), label: "Reclasificar", onClick: () => onReclassify(p) }] : []),
+            ...(!isShared && onStartEdit ? [{ icon: Ic.edit(C.t3, 14), label: "Editar", onClick: () => onStartEdit(p) }] : []),
+            { icon: Ic.cross(C.err, 14), label: isShared ? "Quitar" : "Eliminar", onClick: () => onStartDelete(p.id), danger: true },
+          ]}
+        />
       </div>
     </div>
   );
 }
 
-// ── Tiny icon button ────────────────────────────────────────────────
-function IconBtn({ title, onClick, children }) {
+// ── Row context menu (⋮ → dropdown) ──────────────────────────────────
+export function RowMenu({ id, items }) {
+  const [open, setOpen] = useState(false);
+  const [above, setAbove] = useState(false);
+  const btnRef = useRef(null);
+  const menuRef = useRef(null);
+
+  // Close on outside click
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target) && btnRef.current && !btnRef.current.contains(e.target)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    document.addEventListener("touchstart", handler);
+    return () => { document.removeEventListener("mousedown", handler); document.removeEventListener("touchstart", handler); };
+  }, [open]);
+
+  // Position: above or below
+  useEffect(() => {
+    if (!open || !btnRef.current) return;
+    const rect = btnRef.current.getBoundingClientRect();
+    const spaceBelow = window.innerHeight - rect.bottom;
+    setAbove(spaceBelow < 220);
+  }, [open]);
+
   return (
-    <button
-      onClick={onClick}
-      title={title}
-      style={{
-        background: "transparent",
-        border: "none",
-        borderRadius: 8,
-        cursor: "pointer",
-        padding: "6px 8px",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-      }}
-    >
-      {children}
-    </button>
+    <div style={{ position: "relative", flexShrink: 0 }}>
+      <button
+        ref={btnRef}
+        onClick={(e) => { e.stopPropagation(); setOpen(!open); }}
+        style={{
+          width: 32, height: 32, borderRadius: 8,
+          background: open ? C.bgCard : "transparent",
+          border: "none", cursor: "pointer",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          fontSize: 18, color: C.t3, fontFamily: "inherit", fontWeight: 700,
+          letterSpacing: 1,
+        }}
+      >
+        ⋮
+      </button>
+      {open && (
+        <div
+          ref={menuRef}
+          style={{
+            position: "absolute", right: 0,
+            [above ? "bottom" : "top"]: 36,
+            minWidth: 180, background: C.w,
+            border: `1px solid ${C.b1}`, borderRadius: 10,
+            boxShadow: C.shMd, padding: "4px 0",
+            zIndex: 50,
+            animation: "rowMenuIn 150ms ease-out",
+          }}
+        >
+          <style>{`@keyframes rowMenuIn { from { opacity:0; transform:translateY(-4px); } to { opacity:1; transform:translateY(0); } }`}</style>
+          {items.map((item, i) => (
+            <button
+              key={i}
+              onClick={(e) => { e.stopPropagation(); setOpen(false); item.onClick(); }}
+              style={{
+                width: "100%", display: "flex", alignItems: "center", gap: 10,
+                padding: "12px 16px", background: "transparent", border: "none",
+                borderTop: item.danger ? `1px solid ${C.b2}` : "none",
+                cursor: "pointer", fontFamily: "inherit", fontSize: 13.2,
+                fontWeight: 600, color: item.danger ? C.err : C.t1,
+                textAlign: "left",
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.background = C.bgCard}
+              onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+            >
+              <span style={{ flexShrink: 0, display: "flex", alignItems: "center" }}>{item.icon}</span>
+              {item.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 
