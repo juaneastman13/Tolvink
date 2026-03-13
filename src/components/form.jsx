@@ -71,7 +71,7 @@ export function Select({ label, icon, value, onChange, options, placeholder="Sel
       Array.from(listRef.current.children).find(el => el.dataset.val === value)?.scrollIntoView({ block:"nearest" });
     }
   },[open, value]);
-  const sel = options.find(o=>o.value===value);
+  const sel = value != null ? options.find(o=>o.value===value) : undefined;
   const handleKeyDown = (e) => {
     if (!open) { if (e.key==="ArrowDown"||e.key==="ArrowUp"||e.key===" ") { e.preventDefault(); setOpen(true); } return; }
     if (e.key==="ArrowDown") { e.preventDefault(); setHlIdx(i=>Math.min(options.length-1,(i<0?0:i+1))); }

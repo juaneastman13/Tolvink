@@ -143,31 +143,31 @@ export function useFreights(user, isAuthInitialized) {
   },[]);
   const assign = useCallback(async (fId,compId,truckId,driverId)=>{ try { const body={transportCompanyId:compId}; if(truckId) body.truckId=truckId; if(driverId) body.driverId=driverId; await apiAssignFreight(fId,body); await refresh(fId); return {ok:true}; } catch(e) { return {ok:false,error:e.message}; } },[refresh]);
   const respond = useCallback(async (fId,action,reason,truckId,driverId)=>{
-    let prev = null;
+    let prevStatus = null;
     const freight = freightsRef.current.find(f=>f.id===fId);
     // Skip optimistic update for multi-truck freights — server derives status differently
     if(action==="accepted" && !(freight?.truckCount > 1)) {
-      prev = freight?.status ?? null;
+      prevStatus = freight?.status ?? null;
       setFreights(p=>{ const next=p.map(f=>f.id===fId?{...f,status:"accepted"}:f); freightsRef.current=next; return next; });
     }
     try { await apiRespondFreight(fId,{action,reason,truckId,driverId}); await refresh(fId); return {ok:true}; }
-    catch(e) { if(prev) setFreights(p=>{ const next=p.map(f=>f.id===fId?{...f,status:prev}:f); freightsRef.current=next; return next; }); refresh(fId); return {ok:false,error:e.message}; }
+    catch(e) { if(prevStatus) setFreights(p=>{ const next=p.map(f=>f.id===fId?{...f,status:prevStatus}:f); freightsRef.current=next; return next; }); refresh(fId); return {ok:false,error:e.message}; }
   },[refresh]);
   const start = useCallback(async (fId)=>{
-    const prev = freightsRef.current.find(f=>f.id===fId)?.status || null;
+    const prevStatus = freightsRef.current.find(f=>f.id===fId)?.status || null;
     setFreights(p=>{ const next=p.map(f=>f.id===fId?{...f,status:"in_progress"}:f); freightsRef.current=next; return next; });
     try { await apiStartFreight(fId); await refresh(fId); return {ok:true}; }
-    catch(e) { if(prev) setFreights(p=>{ const next=p.map(f=>f.id===fId?{...f,status:prev}:f); freightsRef.current=next; return next; }); refresh(fId); return {ok:false,error:e.message}; }
+    catch(e) { if(prevStatus) setFreights(p=>{ const next=p.map(f=>f.id===fId?{...f,status:prevStatus}:f); freightsRef.current=next; return next; }); refresh(fId); return {ok:false,error:e.message}; }
   },[refresh]);
   const finish = useCallback(async (fId)=>{ try { await apiFinishFreight(fId); await refresh(fId); return {ok:true}; } catch(e) { return {ok:false,error:e.message}; } },[refresh]);
   const cancel = useCallback(async (fId,reason)=>{ try { await apiCancelFreight(fId,reason); await refresh(fId); return {ok:true}; } catch(e) { return {ok:false,error:e.message}; } },[refresh]);
   const confirmLoaded = useCallback(async (fId, loadedTons)=>{ try { await apiConfirmLoaded(fId, loadedTons); await refresh(fId); return {ok:true}; } catch(e) { return {ok:false,error:e.message}; } },[refresh]);
   const confirmFinished = useCallback(async (fId)=>{ try { await apiConfirmFinished(fId); await refresh(fId); return {ok:true}; } catch(e) { return {ok:false,error:e.message}; } },[refresh]);
   const authorize = useCallback(async (fId)=>{
-    const prev = freightsRef.current.find(f=>f.id===fId)?.status || null;
+    const prevStatus = freightsRef.current.find(f=>f.id===fId)?.status || null;
     setFreights(p=>{ const next=p.map(f=>f.id===fId?{...f,status:"accepted"}:f); freightsRef.current=next; return next; });
     try { await apiAuthorizeFreight(fId); await refresh(fId); return {ok:true}; }
-    catch(e) { if(prev) setFreights(p=>{ const next=p.map(f=>f.id===fId?{...f,status:prev}:f); freightsRef.current=next; return next; }); refresh(fId); return {ok:false,error:e.message}; }
+    catch(e) { if(prevStatus) setFreights(p=>{ const next=p.map(f=>f.id===fId?{...f,status:prevStatus}:f); freightsRef.current=next; return next; }); refresh(fId); return {ok:false,error:e.message}; }
   },[refresh]);
   const update = useCallback(async (fId, data)=>{ try { const res = await apiUpdateFreight(fId, data); await refresh(fId); return {ok:true, pending: !!res?.pendingChangeCreated}; } catch(e) { return {ok:false,error:e.message}; } },[refresh]);
   // Multi-truck callbacks (v6.0)

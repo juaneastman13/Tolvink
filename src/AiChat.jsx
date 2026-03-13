@@ -38,6 +38,7 @@ function parseMapUrls(text) {
   // Match URLs — tolvink.com/ver-mapa?..., tolvink.com/ubicacion/..., etc.
   const urlRe = /https?:\/\/[^\s)>\]]+/gi;
   let match;
+  urlRe.lastIndex = 0; // Reset stateful regex before use
   while ((match = urlRe.exec(text)) !== null) {
     const url = match[0];
     try {

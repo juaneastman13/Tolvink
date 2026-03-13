@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, useRef } from "react";
+import { createContext, useContext, useState, useCallback, useRef, useEffect } from "react";
 import { useSSE } from "../hooks";
 import { useFreightDetailStore } from "../store";
 
@@ -50,6 +50,10 @@ export function SSEProvider({ children, auth, fh, notif, catalog }) {
     try { navigator.vibrate?.([100, 50, 100]); } catch(e) {}
   }, []);
 
+  // Catalog debounce timer ref — cleaned up on unmount to prevent stale setState
+  const catalogTimerRef = useRef(null);
+  useEffect(() => () => { clearTimeout(catalogTimerRef.current); }, []);
+
   // SSE connection — real-time sync
   const sse = useSSE(auth.user, {
     onFreightUpdate: (data) => {
@@ -64,7 +68,7 @@ export function SSEProvider({ children, auth, fh, notif, catalog }) {
       setSseMsg(data);
     },
     onNotification: () => { notif.refresh(); playNotifSound(); },
-    onCatalogChanged: (() => { let t; return () => { clearTimeout(t); t = setTimeout(() => catalogRef.current.refresh(), 3000); }; })(),
+    onCatalogChanged: () => { clearTimeout(catalogTimerRef.current); catalogTimerRef.current = setTimeout(() => catalogRef.current?.refresh(), 3000); },
     onTyping: (data) => { setSseTyping(data); },
     onRead: (data) => { setSseRead(data); },
     onAiResponse: (data) => { sseAiSeq.current++; setSseAiResponse({ ...data, _seq: sseAiSeq.current }); },

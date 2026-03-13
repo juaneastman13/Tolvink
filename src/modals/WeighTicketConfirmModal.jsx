@@ -32,7 +32,7 @@ export default function WeighTicketConfirmModal({ freight, action, title, btnLab
     if (loading || closing) return;
     if (showTonsInput) {
       const n = parseFloat(tons);
-      if (!n || n <= 0) { show("Ingrese toneladas válidas (mayor a 0)", "error"); return; }
+      if (!n || n <= 0) { show("Ingrese toneladas válidas (mayor a 0)", "err"); return; }
     }
     setLoading(true);
     const msg = await onConfirm(showTonsInput ? tons : undefined);

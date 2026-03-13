@@ -68,11 +68,13 @@ export function useCatalog(user) {
       const filteredFields = activeCoId ? (f||[]).filter(fd => fd.companyId === activeCoId || fd.company?.id === activeCoId) : (f||[]);
       const d = { plants:catalog.plants||[], branches:catalog.branches||[], lots:catalog.lots||[], transporters:catalog.transportCompanies||[], trucks:tr||[], fields:filteredFields };
       setCache(cacheKey, d);
-      setPlants(d.plants); setBranches(d.branches); setLots(d.lots);
-      setTransporters(d.transporters); setTrucks(d.trucks); setFields(d.fields);
+      if (mountedRef.current) {
+        setPlants(d.plants); setBranches(d.branches); setLots(d.lots);
+        setTransporters(d.transporters); setTrucks(d.trucks); setFields(d.fields);
+      }
       return d;
     }).catch(()=>null).finally(()=>{
-      setLoadingLocal(false);
+      if (mountedRef.current) { setLoadingLocal(false); }
       setLoading(cacheKey, false);
       delete _loadingPromises[cacheKey];
     });
