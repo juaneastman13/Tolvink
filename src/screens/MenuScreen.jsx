@@ -40,7 +40,6 @@ export default function MenuScreen({ user, perms, onLogout, onNav, isDesktop, on
     const ut = user.userType; const uts = user.userTypes||[];
     if(ut==="transporter"||ut==="producer"||ut==="plant"||uts.includes("transporter")||uts.includes("producer")||uts.includes("plant")||isGerente) mgmtItems.push({k:"trucks",l:"Mi Flota",ic:Ic.truck(C.t3,18),c:C.t3});
     if(ut==="producer"||uts.includes("producer")||isGerente) mgmtItems.push({k:"locations",l:"Ubicaciones",ic:Ic.compass(C.t3,18),c:C.t3});
-    if(ut==="producer"||uts.includes("producer")||isGerente) mgmtItems.push({k:"fields",l:"Mis Campos y Lotes",ic:Ic.field(C.t3,18),c:C.t3});
     if(user.role==="platform_admin"||user.role==="admin") mgmtItems.push({k:"admin",l:"Administración",ic:Ic.shield(C.t3,18),c:C.t3});
     if(!isDesktop) {
       mgmtItems.push({k:"calendar",l:"Calendario",ic:Ic.cal(C.t3,18),c:C.t3});
