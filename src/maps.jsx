@@ -745,6 +745,8 @@ export const mkPinIcon = (maps, color, scale = 1.0) => _pinSymbol(maps, color, s
 export const mkFieldIcon = (maps, scale = 1.0) => _fieldSymbol(maps, scale);
 export const mkPlantIcon = (maps, scale = 1.0) => _plantSymbol(maps, scale);
 export const mkTruckIcon = (maps) => _truckSymbol(maps);
+export const mkLotIcon = (maps, scale = 1.0) => _lotSymbol(maps, scale);
+export const mkPoiIcon = (maps, scale = 1.0) => _poiSymbol(maps, scale);
 
 export function FreightsOverviewMap({ freights, onSelect, fields, plants, lots, selectedId }) {
   const mapRef = useRef(null);
