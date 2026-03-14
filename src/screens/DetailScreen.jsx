@@ -18,12 +18,11 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
   // Progressive loading: load full detail on-demand when freight is summary-only
   const detailEntry = useFreightDetailStore(s => s.details[freight?.id]);
   const detailData = detailEntry?.data || null;
+  const isFullDetail = !!detailData?._isFullDetail;
 
   useEffect(() => {
-    if (!freight?.id) return;
+    if (!freight?.id || isFullDetail) return;
     const cached = useFreightDetailStore.getState().getDetail(freight.id);
-    // Only skip fetch if we already have FULL detail (with documents/conversation/pendingChanges)
-    if (cached?.data?._isFullDetail) return;
     const hasListData = !!(cached?.data); // Pre-populated from list fetch
     useFreightDetailStore.getState().setLoading(freight.id, true);
     let cancelled = false;
@@ -59,7 +58,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
       });
     }
     return () => { cancelled = true; };
-  }, [freight?.id]);
+  }, [freight?.id, isFullDetail]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const [auditLog, setAuditLog] = useState(null);
   const [weighTickets, setWeighTickets] = useState({ origin: [], destination: [] });
