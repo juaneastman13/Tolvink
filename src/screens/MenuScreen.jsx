@@ -42,6 +42,7 @@ export default function MenuScreen({ user, perms, onLogout, onNav, isDesktop, on
     if(ut==="producer"||uts.includes("producer")||isGerente) mgmtItems.push({k:"locations",l:"Ubicaciones",ic:Ic.compass(C.t3,18),c:C.t3});
     if(user.role==="platform_admin"||user.role==="admin") mgmtItems.push({k:"admin",l:"Administración",ic:Ic.shield(C.t3,18),c:C.t3});
     if(!isDesktop) {
+      mgmtItems.push({k:"chats",l:"Chat",ic:Ic.msg(C.t3,18),c:C.t3});
       mgmtItems.push({k:"calendar",l:"Calendario",ic:Ic.cal(C.t3,18),c:C.t3});
       mgmtItems.push({k:"reports",l:"Informes",ic:Ic.doc(C.t3,18),c:C.t3});
     }
