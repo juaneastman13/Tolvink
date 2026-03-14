@@ -508,6 +508,11 @@ export default function LocationsScreen({ onBack }) {
     // Clear previous select marker
     if (selectMarkerRef.current) { selectMarkerRef.current.setMap(null); selectMarkerRef.current = null; }
     if (selectListenerRef.current) { maps.event.removeListener(selectListenerRef.current); selectListenerRef.current = null; }
+    const redPinIcon = {
+      url: "data:image/svg+xml;charset=UTF-8," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="36" height="48" viewBox="0 0 36 48"><path d="M18 0C8.06 0 0 8.06 0 18c0 13.5 18 30 18 30s18-16.5 18-30C36 8.06 27.94 0 18 0z" fill="#E53E3E"/><circle cx="18" cy="18" r="7" fill="white"/></svg>'),
+      scaledSize: new maps.Size(36, 48),
+      anchor: new maps.Point(18, 48),
+    };
     const addDragEnd = (marker) => {
       marker.addListener("dragend", () => {
         const p = { lat: marker.getPosition().lat(), lng: marker.getPosition().lng() };
@@ -516,7 +521,7 @@ export default function LocationsScreen({ onBack }) {
     };
     // Place existing marker if editing
     if (currentPos?.lat && currentPos?.lng) {
-      selectMarkerRef.current = new maps.Marker({ position: { lat: currentPos.lat, lng: currentPos.lng }, map, draggable: true, zIndex: 1000 });
+      selectMarkerRef.current = new maps.Marker({ position: { lat: currentPos.lat, lng: currentPos.lng }, map, draggable: true, icon: redPinIcon, animation: maps.Animation.DROP, zIndex: 9999 });
       addDragEnd(selectMarkerRef.current);
       map.panTo({ lat: currentPos.lat, lng: currentPos.lng });
     }
@@ -526,7 +531,7 @@ export default function LocationsScreen({ onBack }) {
       if (selectMarkerRef.current) {
         selectMarkerRef.current.setPosition(pos);
       } else {
-        selectMarkerRef.current = new maps.Marker({ position: pos, map, draggable: true, zIndex: 1000 });
+        selectMarkerRef.current = new maps.Marker({ position: pos, map, draggable: true, icon: redPinIcon, animation: maps.Animation.DROP, zIndex: 9999 });
         addDragEnd(selectMarkerRef.current);
       }
       setMapSelectMode(prev => prev ? { ...prev, currentPos: pos } : null);
