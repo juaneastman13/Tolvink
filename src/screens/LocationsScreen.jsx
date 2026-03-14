@@ -443,8 +443,8 @@ export default function LocationsScreen({ onBack }) {
     const secBtn = `flex:1;display:flex;align-items:center;justify-content:center;gap:4px;padding:6px 8px;border-radius:8px;cursor:pointer;background:${C.w};color:${C.t1};font-size:12px;font-weight:500;font-family:${FONT};border:1px solid ${C.b1}`;
     return `<div style="font-family:${FONT};font-size:12px;line-height:1.5;min-width:210px;max-width:260px">` +
       `<div style="display:flex;gap:6px;margin-bottom:8px">` +
-        `<button data-iw-action="solicitar" data-iw-type="${loc.type}" data-iw-id="${rawId}" data-iw-field-id="${loc.fieldId || ""}" data-iw-lat="${loc.lat}" data-iw-lng="${loc.lng}" data-iw-name="${_esc(loc.name)}" style="${accBtn}">🚛 Solicitar</button>` +
-        `<button data-iw-action="ver-fletes" data-iw-type="${loc.type}" data-iw-id="${rawId}" data-iw-name="${_esc(loc.name)}" style="${secBtn}">📋 Ver fletes</button>` +
+        `<button data-iw-action="ver-fletes" data-iw-type="${loc.type}" data-iw-id="${rawId}" data-iw-name="${_esc(loc.name)}" style="${secBtn}">Ver fletes</button>` +
+        `<button data-iw-action="solicitar" data-iw-type="${loc.type}" data-iw-id="${rawId}" data-iw-field-id="${loc.fieldId || ""}" data-iw-lat="${loc.lat}" data-iw-lng="${loc.lng}" data-iw-name="${_esc(loc.name)}" style="${accBtn}">Solicitar flete</button>` +
       `</div>` +
       `<strong>${_esc(loc.name)}</strong><br/>` +
       `<span style="display:inline-block;padding:1px 6px;border-radius:8px;background:${color};color:#fff;font-size:10px;font-weight:600;margin-top:2px">${_esc(typeLabel)}</span>` +
