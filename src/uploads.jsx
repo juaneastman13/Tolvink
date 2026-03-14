@@ -257,6 +257,7 @@ export function FreightFileUpload({ freightId, step, onUploaded }) {
   const [showAttach, setShowAttach] = useState(false);
   const filesRef = useRef(files);
   filesRef.current = files;
+  const uploadTriggered = useRef(false);
   useEffect(() => {
     const ref = filesRef;
     return () => { (ref.current || []).forEach(f => { if (f.preview) URL.revokeObjectURL(f.preview); }); };
@@ -277,7 +278,10 @@ export function FreightFileUpload({ freightId, step, onUploaded }) {
       done: false,
       error: null,
     }));
+    if (newFiles.length === 0) return;
     setFiles(prev => [...prev, ...newFiles]);
+    setShowAttach(false);
+    uploadTriggered.current = true;
   };
 
   const removeFile = (idx) => setFiles(prev => {
@@ -286,11 +290,20 @@ export function FreightFileUpload({ freightId, step, onUploaded }) {
     return prev.filter((_, i) => i !== idx);
   });
 
+  // Auto-upload when files are added
+  useEffect(() => {
+    if (!uploadTriggered.current || uploadingAll) return;
+    const hasPending = files.some(f => !f.done && !f.uploading && !f.error);
+    if (!hasPending) return;
+    uploadTriggered.current = false;
+    uploadAll();
+  }, [files]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const uploadAll = async () => {
     setUploadingAll(true);
     setUploadDone(false);
     let allOk = true;
-    const pending = files.reduce((acc, f, i) => f.done ? acc : [...acc, i], []);
+    const pending = filesRef.current.reduce((acc, f, i) => f.done ? acc : [...acc, i], []);
     for (let pi = 0; pi < pending.length; pi++) {
       const i = pending[pi];
       setCurrentIdx(pi + 1);
@@ -301,6 +314,7 @@ export function FreightFileUpload({ freightId, step, onUploaded }) {
         if (filesRef.current[i].preview) URL.revokeObjectURL(filesRef.current[i].preview);
         setFiles(prev => prev.map((f, j) => j === i ? { ...f, uploading: false, done: true, preview: null } : f));
       } catch (err) {
+        console.error("Upload failed:", filesRef.current[i]?.name, err);
         log.error("Upload", `Failed to upload ${filesRef.current[i]?.name}:`, err);
         setFiles(prev => prev.map((f, j) => j === i ? { ...f, uploading: false, error: err.message || "Error" } : f));
         allOk = false;
@@ -311,7 +325,8 @@ export function FreightFileUpload({ freightId, step, onUploaded }) {
     if (onUploaded) onUploaded();
     if (!allOk) { show("Algunos archivos no se pudieron subir", "err"); }
     // Reset files list after successful upload so user can upload more
-    if (allOk) { setTimeout(() => { setFiles([]); setUploadDone(false); setShowAttach(false); }, 2000); }
+    if (allOk) { setTimeout(() => { setFiles([]); setUploadDone(false); }, 1800); }
+    else { setTimeout(() => { setFiles(prev => prev.filter(f => !f.done)); }, 2000); }
   };
 
   const pending = files.filter(f => !f.done);
@@ -339,7 +354,8 @@ export function FreightFileUpload({ freightId, step, onUploaded }) {
                 </div>
               )}
               {f.done && <div style={{ position: "absolute", top: 3, right: 3, width: 18, height: 18, borderRadius: 9, background: C.ok, display: "flex", alignItems: "center", justifyContent: "center" }}>{Ic.chk("#fff", 12)}</div>}
-              {!f.done && !f.uploading && <button onClick={() => removeFile(i)} style={{ position: "absolute", top: -2, right: -2, width: 26, height: 26, borderRadius: 13, background: C.err, border: "2px solid #fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>{Ic.cross("#fff", 11)}</button>}
+              {f.uploading && <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center" }}><div style={{ width: 20, height: 20, border: "2px solid rgba(255,255,255,0.3)", borderTopColor: "#fff", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} /></div>}
+              {!f.done && !f.uploading && !f.error && <button onClick={() => removeFile(i)} style={{ position: "absolute", top: -2, right: -2, width: 26, height: 26, borderRadius: 13, background: C.err, border: "2px solid #fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>{Ic.cross("#fff", 11)}</button>}
               {f.error && <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: C.err, color: C.w, fontSize: 8.8, textAlign: "center", padding: 2 }}>Error</div>}
             </div>
           ))}
@@ -351,19 +367,14 @@ export function FreightFileUpload({ freightId, step, onUploaded }) {
       <input ref={galRef} type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={e => { if (e.target.files?.length) addFiles(e.target.files); e.target.value = ""; }} style={{ display: "none" }} />
       <input ref={docRef} type="file" accept="image/*,.pdf,.doc,.docx,.xlsx" multiple onChange={e => { if (e.target.files?.length) addFiles(e.target.files); e.target.value = ""; }} style={{ display: "none" }} />
 
-      <div style={{ marginBottom: pendingCount > 0 ? 10 : 0 }}>
-        <button onClick={() => setShowAttach(true)} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "10px 16px", borderRadius: 10, border: `1.5px dashed ${C.b1}`, background: C.bg, cursor: "pointer", fontFamily: "inherit", fontSize: 13.2, fontWeight: 600, color: C.t2 }}>
+      <div>
+        <button onClick={() => setShowAttach(true)} disabled={uploadingAll} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "10px 16px", borderRadius: 10, border: `1.5px dashed ${C.b1}`, background: C.bg, cursor: uploadingAll ? "default" : "pointer", fontFamily: "inherit", fontSize: 13.2, fontWeight: 600, color: C.t2, opacity: uploadingAll ? 0.5 : 1 }}>
           {Ic.clip(C.t2, 16)} Adjuntar archivo
         </button>
       </div>
 
       <AttachMenu open={showAttach} onClose={() => setShowAttach(false)} onCamera={() => camRef.current?.click()} onGallery={() => galRef.current?.click()} onFiles={() => docRef.current?.click()} />
-
-      {pendingCount > 0 && (
-        <Btn full v="acc" icon={uploadingAll ? null : Ic.chk(C.w, 14)} disabled={uploadingAll} onClick={uploadAll}>
-          {uploadingAll ? "Subiendo..." : `Subir ${pendingCount} archivo${pendingCount > 1 ? "s" : ""}`}
-        </Btn>
-      )}
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
     </div>
   );
 }
