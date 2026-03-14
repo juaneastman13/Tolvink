@@ -992,7 +992,7 @@ export default function LocationsScreen({ onBack }) {
         </>}
 
         {!isDesktop && !drawerOpen && (
-          <button onClick={onBack} style={{ position: "absolute", top: 62, left: 12, zIndex: 5, width: 40, height: 40, borderRadius: 20, background: C.w, border: `1px solid ${C.b1}`, boxShadow: C.sh, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <button onClick={onBack} style={{ position: "absolute", top: 62, left: 12, zIndex: 5, width: 44, height: 44, borderRadius: 22, background: C.w, border: `1px solid ${C.b1}`, boxShadow: C.sh, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
             {Ic.chev(C.pri, 20)}
           </button>
         )}
