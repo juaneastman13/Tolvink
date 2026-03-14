@@ -105,6 +105,7 @@ export default function LocationsScreen({ onBack }) {
   const [search, setSearch] = useState("");
   const [activeId, setActiveId] = useState(null);
   const [sectionOpen, setSectionOpen] = useState({ pois: true, fields: true });
+  const [collapsedCompanies, setCollapsedCompanies] = useState({});
   const [expandedField, setExpandedField] = useState(null);
   const [mapFilters, setMapFilters] = useState({ field: true, lot: true, poi: true });
   const [mapType, setMapType] = useState("roadmap");
@@ -783,16 +784,18 @@ export default function LocationsScreen({ onBack }) {
     }
     const companies = Array.from(companyMap.entries());
     const multiCompany = companies.length > 1;
+    const toggleCompany = (cId) => setCollapsedCompanies(prev => ({ ...prev, [cId]: !prev[cId] }));
     return companies.map(([cId, group]) => (
       <div key={cId}>
         {multiCompany && (
-          <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 16px", background: `${C.pri}06`, borderBottom: `1px solid ${C.b2}` }}>
+          <div onClick={() => toggleCompany(cId)} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 16px", background: `${C.pri}06`, borderBottom: `1px solid ${C.b2}`, cursor: "pointer", userSelect: "none" }}>
+            <span style={{ display: "inline-flex", transition: "transform 200ms", transform: collapsedCompanies[cId] ? "rotate(-90deg)" : "rotate(0)" }}>{Ic.down(C.t3, 14)}</span>
             {Ic.user(C.sec, 14)}
-            <span style={{ fontSize: 12.7, fontWeight: 700, color: C.t1 }}>{group.name}</span>
+            <span style={{ flex: 1, fontSize: 12.7, fontWeight: 700, color: C.t1 }}>{group.name}</span>
             <span style={{ fontSize: 10.5, color: C.t3 }}>{group.fields.length} campo{group.fields.length !== 1 ? "s" : ""}</span>
           </div>
         )}
-        {group.fields.map(f => renderFieldItem(f))}
+        {(!multiCompany || !collapsedCompanies[cId]) && group.fields.map(f => renderFieldItem(f))}
       </div>
     ));
   };
@@ -979,7 +982,25 @@ export default function LocationsScreen({ onBack }) {
                 <>
                   {filteredPois.length === 0
                     ? <div style={{ padding: "16px", textAlign: "center", fontSize: 12.7, color: C.t3 }}>{search ? "Sin resultados" : "Sin ubicaciones de interés"}</div>
-                    : filteredPois.map(p => renderPoiItem(p, p._isSharedWithMe))}
+                    : (() => {
+                        const poiCoMap = new Map();
+                        for (const p of filteredPois) { const cId = p.company?.id || p.companyId || "_"; if (!poiCoMap.has(cId)) poiCoMap.set(cId, { name: p.company?.name || "Mi empresa", items: [] }); poiCoMap.get(cId).items.push(p); }
+                        const poiCos = Array.from(poiCoMap.entries());
+                        const multi = poiCos.length > 1;
+                        return poiCos.map(([cId, g]) => (
+                          <div key={cId}>
+                            {multi && (
+                              <div onClick={() => setCollapsedCompanies(prev => ({ ...prev, [`poi_${cId}`]: !prev[`poi_${cId}`] }))} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 16px", background: `${C.sec}06`, borderBottom: `1px solid ${C.b2}`, cursor: "pointer", userSelect: "none" }}>
+                                <span style={{ display: "inline-flex", transition: "transform 200ms", transform: collapsedCompanies[`poi_${cId}`] ? "rotate(-90deg)" : "rotate(0)" }}>{Ic.down(C.t3, 14)}</span>
+                                {Ic.user(C.sec, 14)}
+                                <span style={{ flex: 1, fontSize: 12.7, fontWeight: 700, color: C.t1 }}>{g.name}</span>
+                                <span style={{ fontSize: 10.5, color: C.t3 }}>{g.items.length}</span>
+                              </div>
+                            )}
+                            {(!multi || !collapsedCompanies[`poi_${cId}`]) && g.items.map(p => renderPoiItem(p, p._isSharedWithMe))}
+                          </div>
+                        ));
+                      })()}
                 </>
               )}
 
