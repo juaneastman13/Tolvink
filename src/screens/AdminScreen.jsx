@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { C, Ic, FONT, MONO } from "../theme";
 import { Btn, Field, Tabs, Select, Loader, Av, Bd, LoadingOverlay, NumericStepper } from "../components";
-import { apiAdminStats, apiAdminListCompanies, apiAdminGetCompany, apiAdminCreateCompany, apiAdminUpdateCompany, apiAdminListBranches, apiAdminCreateBranch, apiAdminUpdateBranch, apiAdminDeleteBranch, apiAdminListUsers, apiAdminCreateUser, apiAdminUpdateUser, apiAdminListFields, apiAdminCreateField, apiAdminUpdateField, apiAdminDeleteField, apiAdminListLots, apiAdminCreateLot, apiAdminUpdateLot, apiAdminDeleteLot, apiAdminListTrucks, apiAdminCreateTruck, apiAdminUpdateTruck, apiAdminDeleteTruck } from "../api";
+import { apiAdminStats, apiAdminActivity, apiAdminListCompanies, apiAdminGetCompany, apiAdminCreateCompany, apiAdminUpdateCompany, apiAdminListBranches, apiAdminCreateBranch, apiAdminUpdateBranch, apiAdminDeleteBranch, apiAdminListUsers, apiAdminCreateUser, apiAdminUpdateUser, apiAdminListFields, apiAdminCreateField, apiAdminUpdateField, apiAdminDeleteField, apiAdminListLots, apiAdminCreateLot, apiAdminUpdateLot, apiAdminDeleteLot, apiAdminListTrucks, apiAdminCreateTruck, apiAdminUpdateTruck, apiAdminDeleteTruck } from "../api";
 import { adminStyles, typeColors, typeLabels, roleLabels, adminBackBtn } from "../utils/freight-helpers";
 import { LocationPicker } from "../maps";
 import AccessScreen from "./AccessScreen";
@@ -23,6 +23,10 @@ export default function AdminScreen({ user, onBack }) {
   const [saving, setSaving] = useState(false);
   const [doneMsg, setDoneMsg] = useState("");
   const [statsFilter, setStatsFilter] = useState(null);
+  const [activity, setActivity] = useState([]);
+  const [activityTotal, setActivityTotal] = useState(0);
+  const [activityPage, setActivityPage] = useState(1);
+  const [activityLoading, setActivityLoading] = useState(false);
 
   // Views: list | companyForm | companyDetail | userForm | userEdit
   const [view, setView] = useState("list");
@@ -82,6 +86,16 @@ export default function AdminScreen({ user, onBack }) {
     }, 300);
     return ()=>clearTimeout(t);
   }, [search, tab, allCompanies, allUsers]);
+
+  // Load activity when tab switches
+  useEffect(() => {
+    if (tab !== "activity") return;
+    setActivityLoading(true);
+    apiAdminActivity(activityPage, 20).then(r => {
+      setActivity(prev => activityPage === 1 ? (r.data || []) : [...prev, ...(r.data || [])]);
+      setActivityTotal(r.total || 0);
+    }).catch(() => {}).finally(() => setActivityLoading(false));
+  }, [tab, activityPage]);
 
   const handleStatsClick = (filter) => {
     if(statsFilter===filter) { setStatsFilter(null); return; }
@@ -648,9 +662,9 @@ export default function AdminScreen({ user, onBack }) {
       )}
 
       <div style={{display:"flex",gap:6,marginBottom:10}}>
-        {["companies","users","access"].map(t=>(
-          <button key={t} onClick={()=>{setTab(t);setSearch("");setStatsFilter(null);}} style={{flex:1,padding:"9px 0",borderRadius:8,border:`1px solid ${tab===t?C.pri:C.b1}`,background:tab===t?`${C.pri}12`:C.w,color:tab===t?C.pri:C.t2,fontWeight:600,fontSize:14.3,cursor:"pointer",fontFamily:"inherit"}}>
-            {t==="companies"?"Empresas":t==="users"?"Usuarios":"Accesos"}
+        {["companies","users","access","activity"].map(t=>(
+          <button key={t} onClick={()=>{setTab(t);setSearch("");setStatsFilter(null);}} style={{flex:1,padding:"9px 0",borderRadius:8,border:`1px solid ${tab===t?C.pri:C.b1}`,background:tab===t?`${C.pri}12`:C.w,color:tab===t?C.pri:C.t2,fontWeight:600,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>
+            {t==="companies"?"Empresas":t==="users"?"Usuarios":t==="access"?"Accesos":"Actividad"}
           </button>
         ))}
       </div>
@@ -683,6 +697,37 @@ export default function AdminScreen({ user, onBack }) {
         </>)}
 
         {tab==="access"&&<AccessScreen user={user} embedded/>}
+
+        {tab==="activity"&&(
+          <div style={{display:"flex",flexDirection:"column",gap:0}}>
+            {activityLoading && <Loader/>}
+            {!activityLoading && activity.length===0 && <div style={{textAlign:"center",padding:32,color:C.t3,fontSize:14.3}}>Sin actividad reciente</div>}
+            {activity.map(e=>{
+              const ago = ((Date.now()-new Date(e.createdAt).getTime())/60000);
+              const agoStr = ago<60?`${Math.round(ago)}m`:ago<1440?`${Math.round(ago/60)}h`:`${Math.round(ago/1440)}d`;
+              const actionLabels = {created:"Cre\u00f3 flete",assigned:"Asign\u00f3 transportista",accepted:"Acept\u00f3 flete",rejected:"Rechaz\u00f3 flete",started:"Inici\u00f3 viaje",confirm_loaded:"Confirm\u00f3 carga",canceled:"Cancel\u00f3 flete",authorized:"Autoriz\u00f3 flota propia",updated:"Actualiz\u00f3 flete",change_approved:"Aprob\u00f3 cambio",change_rejected:"Rechaz\u00f3 cambio",assigned_multi:"Asign\u00f3 multi-cami\u00f3n",assignment_canceled:"Cancel\u00f3 asignaci\u00f3n",assignment_updated:"Actualiz\u00f3 asignaci\u00f3n",trip_rejected:"Rechaz\u00f3 viaje",trip_accepted:"Acept\u00f3 viaje",trip_started:"Inici\u00f3 viaje",trip_confirm_loaded:"Confirm\u00f3 carga de viaje",document_added:"Agreg\u00f3 documento",document_deleted:"Elimin\u00f3 documento",ocr_data_saved:"Guard\u00f3 datos OCR",switch_company:"Cambi\u00f3 empresa"};
+              return (
+                <div key={e.id} style={{display:"flex",gap:10,padding:"10px 0",borderBottom:`1px solid ${C.b2}`}}>
+                  <Av name={e.userName} size={32}/>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                      <span style={{fontSize:13,fontWeight:600,color:C.t1}}>{e.userName}</span>
+                      <span style={{fontSize:11,color:C.t3}}>hace {agoStr}</span>
+                    </div>
+                    <div style={{fontSize:12.5,color:C.t2,marginTop:1}}>
+                      {actionLabels[e.action]||e.action}
+                      {e.freightCode && <span style={{fontFamily:MONO,fontWeight:600,color:C.pri,marginLeft:4}}>{e.freightCode}</span>}
+                    </div>
+                    {e.reason && <div style={{fontSize:11.5,color:C.t3,marginTop:2}}>Motivo: {e.reason}</div>}
+                  </div>
+                </div>
+              );
+            })}
+            {activityTotal > activity.length && !activityLoading && (
+              <button onClick={()=>setActivityPage(p=>p+1)} style={{padding:"10px 0",background:"none",border:`1px solid ${C.b1}`,borderRadius:8,color:C.pri,fontWeight:600,fontSize:13,cursor:"pointer",fontFamily:"inherit",marginTop:8}}>Cargar m\u00e1s</button>
+            )}
+          </div>
+        )}
 
         {tab==="users"&&(<>
           <button onClick={openNewUser} style={{width:"100%",padding:"10px 14px",borderRadius:8,border:`1px dashed ${C.acc}`,background:`${C.acc}08`,color:C.acc,fontSize:14.3,fontWeight:600,cursor:"pointer",fontFamily:"inherit",marginBottom:8}}>+ Nuevo Usuario</button>

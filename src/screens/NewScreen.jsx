@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo, lazy, Suspense } from "react";
 import { useSearchParams } from "react-router-dom";
-import { C, Ic, track } from "../theme";
+import { C, Ic, FONT, MONO, track } from "../theme";
 import { V, validate, SCHEMAS, textMatch, FieldError } from "../validation";
 import { stCfg, GRANOS, UNITS } from "../constants";
 import { Btn, Field, Select, Sec, AttachMenu, NumericStepper } from "../components";
@@ -123,7 +123,7 @@ function NextStepBtn({ complete, onClick, label, onPrev }) {
 
 // ======================== NEW FREIGHT ================================
 
-export default function NewScreen({ user, lots, plants, branches, fields, trucks, onBack, onCreate, duplicateFrom }) {
+export default function NewScreen({ user, lots, plants, branches, fields, trucks, freights, onBack, onCreate, duplicateFrom }) {
   const dup = duplicateFrom;
   const _isDesktop = useIsDesktop(768);
   const [searchParams] = useSearchParams();
@@ -173,6 +173,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
   photosRef.current = photos;
   const [showAttach, setShowAttach] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [duplicateWarning, setDuplicateWarning] = useState(null);
   const [showModalNotes, setShowModalNotes] = useState(false);
   const nfCamRef = useRef(null);
   const nfGalRef = useRef(null);
@@ -332,6 +333,17 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
       }
       return;
     }
+    // Check for similar existing freights
+    const oName = originMode==="field" ? (selectedField?.name||"") : (customOrigin.name||"");
+    const dName = destMode==="plant" ? (selectedPlant?.name||"") : (customDest.name||"");
+    const similar = (freights||[]).filter(f =>
+      f.status !== "canceled" && f.status !== "finished" &&
+      f.loadDate?.split("T")[0] === form.loadDate &&
+      f.items?.[0]?.grain === form.grain &&
+      ((oName && f.originName?.toLowerCase().includes(oName.toLowerCase())) ||
+       (dName && f.destName?.toLowerCase().includes(dName.toLowerCase())))
+    );
+    setDuplicateWarning(similar.length > 0 ? similar : null);
     setShowConfirmModal(true);
   };
 
@@ -759,6 +771,19 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
             <div style={{ padding:"16px 20px 24px", display:"flex", flexDirection:_isDesktop&&finalOrigin&&finalDest?"row":"column", gap:_isDesktop?20:0 }}>
               {/* Left column: summary + notes + attachments + button */}
               <div style={{ flex:1, minWidth:0 }}>
+                {/* Duplicate warning */}
+                {duplicateWarning && duplicateWarning.length > 0 && (
+                  <div style={{ background:C.warnPale, border:`1px solid ${C.warn}40`, borderRadius:10, padding:"10px 14px", marginBottom:12 }}>
+                    <div style={{ fontSize:13, fontWeight:700, color:C.warn, marginBottom:4 }}>Ya tenés {duplicateWarning.length === 1 ? "un flete similar" : `${duplicateWarning.length} fletes similares`} para esta fecha:</div>
+                    {duplicateWarning.slice(0, 3).map(f => (
+                      <div key={f.id} style={{ fontSize:12, color:C.t2, marginTop:2, fontFamily:FONT }}>
+                        <span style={{ fontFamily:MONO, fontWeight:600, color:C.pri }}>{f.code}</span>
+                        {" — "}{f.items?.[0]?.grain||""} {f.items?.[0]?.tons?`· ${f.items[0].tons}t`:""} — {f.originName||""} → {f.destName||""}
+                      </div>
+                    ))}
+                    <div style={{ fontSize:11.5, color:C.t3, marginTop:6 }}>Si es intencional, podés continuar.</div>
+                  </div>
+                )}
                 {/* Summary rows with edit buttons */}
                 <div style={{ display:"flex", flexDirection:"column", gap:0 }}>
                   {[

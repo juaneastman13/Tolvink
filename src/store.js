@@ -72,6 +72,19 @@ export const useCatalogStore = create((set, get) => ({
   })),
 
   clearCache: () => set({ cache: {} }),
+
+  // Invalidate cache for a specific user (e.g. after creating field/lot)
+  invalidate: (userId) => set((state) => {
+    if (!userId) return state;
+    const newCache = { ...state.cache };
+    // Remove all entries matching this userId prefix
+    for (const key of Object.keys(newCache)) {
+      if (key.startsWith(userId + ":") || key === userId) {
+        delete newCache[key];
+      }
+    }
+    return { cache: newCache };
+  }),
 }));
 
 // ======================== FREIGHT DETAIL CACHE =========================

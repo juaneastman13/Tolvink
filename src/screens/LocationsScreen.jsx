@@ -8,6 +8,7 @@ import {
   apiDeleteField, apiDeleteLot,
 } from "../api";
 import MapPreviewModal from "../modals/MapPreviewModal";
+import { useCatalogStore } from "../store";
 import { loadGMaps, mkFieldIcon, mkLotIcon, mkPoiIcon } from "../maps";
 import { useIsDesktop } from "../hooks/useResponsive";
 import {
@@ -147,6 +148,7 @@ export default function LocationsScreen({ onBack }) {
     try {
       await apiCreateField({ name: data.name, address: data.address || undefined, lat: data.lat || undefined, lng: data.lng || undefined });
       await load();
+      useCatalogStore.getState().clearCache();
       setCreatingField(false);
       setCreationMode(null);
       setMsg({ t: "Campo creado", k: "ok" });
@@ -160,6 +162,7 @@ export default function LocationsScreen({ onBack }) {
     try {
       await apiUpdateField(fieldId, { address: data.address || undefined, lat: data.lat || undefined, lng: data.lng || undefined });
       await load();
+      useCatalogStore.getState().clearCache();
       setEditField(null);
       setMsg({ t: "Campo actualizado", k: "ok" });
     } catch (err) { setMsg({ t: err.message || "Error al actualizar campo", k: "err" }); }
@@ -173,6 +176,7 @@ export default function LocationsScreen({ onBack }) {
     setMsg({ t: "Campo eliminado", k: "ok" });
     try {
       await apiDeleteField(fieldId);
+      useCatalogStore.getState().clearCache();
     } catch (err) {
       setFields(prev);
       setMsg({ t: err.message || "Error al eliminar", k: "err" });
@@ -185,6 +189,7 @@ export default function LocationsScreen({ onBack }) {
     try {
       await apiCreateLot(fieldId, { name: data.name, hectares: data.hectares, lat: data.lat || undefined, lng: data.lng || undefined });
       await load();
+      useCatalogStore.getState().clearCache();
       setCreatingLotForField(null);
       setCreationMode(null);
       setMsg({ t: "Lote creado", k: "ok" });
@@ -198,6 +203,7 @@ export default function LocationsScreen({ onBack }) {
     try {
       await apiUpdateLot(fieldId, lotId, { hectares: data.hectares, lat: data.lat || undefined, lng: data.lng || undefined });
       await load();
+      useCatalogStore.getState().clearCache();
       setEditLot(null);
       setMsg({ t: "Lote actualizado", k: "ok" });
     } catch (err) { setMsg({ t: err.message || "Error al actualizar lote", k: "err" }); }
@@ -211,6 +217,7 @@ export default function LocationsScreen({ onBack }) {
     setMsg({ t: "Lote eliminado", k: "ok" });
     try {
       await apiDeleteLot(fieldId, lotId);
+      useCatalogStore.getState().clearCache();
     } catch (err) {
       setFields(prev);
       setMsg({ t: err.message || "Error al eliminar", k: "err" });
@@ -224,6 +231,7 @@ export default function LocationsScreen({ onBack }) {
     try {
       await apiCreatePoi({ name: data.name, comments: data.comments, lat: data.lat, lng: data.lng });
       await load();
+      useCatalogStore.getState().clearCache();
       setCreatingPoi(false);
       setCreationMode(null);
       setMsg({ t: "Ubicación creada", k: "ok" });
@@ -237,6 +245,7 @@ export default function LocationsScreen({ onBack }) {
     try {
       await apiUpdatePoi(poiId, data);
       await load();
+      useCatalogStore.getState().clearCache();
       setEditingPoi(null);
       setMsg({ t: "Ubicación actualizada", k: "ok" });
     } catch (err) { setMsg({ t: err.message || "Error al actualizar", k: "err" }); }
@@ -250,6 +259,7 @@ export default function LocationsScreen({ onBack }) {
     setMsg({ t: "Ubicación eliminada", k: "ok" });
     try {
       await apiDeletePoi(id);
+      useCatalogStore.getState().clearCache();
     } catch (err) {
       setPois(prev);
       setMsg({ t: err.message || "Error al eliminar", k: "err" });
@@ -324,6 +334,7 @@ export default function LocationsScreen({ onBack }) {
     else if (errors.length) setDoneMsg(`Error al importar: ${errors.slice(0, 3).join("; ")}`);
     else setDoneMsg("No se importaron ubicaciones");
     await load();
+    if (createdFields + createdLots + createdPois > 0) useCatalogStore.getState().clearCache();
   };
 
   const toggleItem = (i) => setImportSelected(prev => { const n = new Set(prev); n.has(i) ? n.delete(i) : n.add(i); return n; });

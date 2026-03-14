@@ -212,6 +212,7 @@ export async function apiGetMyCompanies() { return api('/auth/me/companies'); }
 // Freights
 export async function apiListFreights(q={}) { const p=new URLSearchParams(); if(q.status)p.set('status',q.status); if(q.page)p.set('page',String(q.page)); if(q.limit)p.set('limit',String(q.limit)); if(q.company)p.set('company',q.company); if(q.search)p.set('search',q.search); if(q.destName)p.set('destName',q.destName); if(q.originCompany)p.set('originCompany',q.originCompany); if(q.transporter)p.set('transporter',q.transporter); if(q.dateFrom)p.set('dateFrom',q.dateFrom); if(q.dateTo)p.set('dateTo',q.dateTo); const qs=p.toString(); return api(`/freights${qs?`?${qs}`:''}`); }
 export async function apiSearchFreights(search, page=1) { return apiListFreights({ search, limit: 25, page }); }
+export async function apiGetFreightStats(from, to) { const p = new URLSearchParams(); if(from) p.set('from',from); if(to) p.set('to',to); return api(`/freights/stats?${p}`); }
 export async function apiGetFreight(id) { return api(`/freights/${id}`); }
 export async function apiGetFreightSummary(id) { return api(`/freights/${id}/summary`); }
 export async function apiGetFreightDetailExtra(id) { return api(`/freights/${id}/detail-extra`); }
@@ -345,6 +346,7 @@ export async function apiSaveOcrData(freightId, docId, ocrData) { return api(`/f
 // ======================== ADMIN ======================================
 // Stats
 export async function apiAdminStats() { return api('/admin/stats'); }
+export async function apiAdminActivity(page=1, limit=20) { return api(`/admin/activity?page=${page}&limit=${limit}`); }
 // Companies
 export async function apiAdminListCompanies(search) { const q=search?`?search=${encodeURIComponent(search)}`:''; return api(`/admin/companies${q}`); }
 export async function apiAdminGetCompany(id) { return api(`/admin/companies/${id}`); }

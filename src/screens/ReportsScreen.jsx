@@ -6,7 +6,7 @@ import { Bd, Btn, Field, Select, exportExcel, exportPDF, FileViewer } from "../c
 import { OcrResultModal, UploadOverlay } from "../uploads";
 import log from "../logger";
 import { useUIStore, useFreightDetailStore } from "../store";
-import { apiGetAuditLog, apiGetFreight, apiOcrAnalyze, apiSaveOcrData, thumb } from "../api";
+import { apiGetAuditLog, apiGetFreight, apiGetFreightStats, apiOcrAnalyze, apiSaveOcrData, thumb } from "../api";
 import { mapFreight } from "../hooks";
 const loadPdfReport = () => import("../utils/pdf-report");
 
@@ -25,6 +25,31 @@ export default function ReportsScreen({ onBack, freights, isDesktop, embedded, o
   const [pdfLoadingId, setPdfLoadingId] = useState(null);
   const [ocrLoading, setOcrLoading] = useState(false);
   const [ocrResult, setOcrResult] = useState(null);
+  const [stats, setStats] = useState(null);
+  const [statsLoading, setStatsLoading] = useState(false);
+  const [statsPeriod, setStatsPeriod] = useState("month"); // "week" | "month" | "lastMonth" | "custom"
+
+  // Load stats when period or date filters change
+  useEffect(() => {
+    let from, to;
+    const now = new Date();
+    if (statsPeriod === "week") {
+      const d = new Date(now); d.setDate(d.getDate() - d.getDay());
+      from = d.toISOString().split("T")[0]; to = now.toISOString().split("T")[0];
+    } else if (statsPeriod === "month") {
+      from = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}-01`;
+      to = now.toISOString().split("T")[0];
+    } else if (statsPeriod === "lastMonth") {
+      const pm = new Date(now.getFullYear(), now.getMonth()-1, 1);
+      from = pm.toISOString().split("T")[0];
+      to = new Date(now.getFullYear(), now.getMonth(), 0).toISOString().split("T")[0];
+    } else if (dateFrom || dateTo) {
+      from = dateFrom || undefined; to = dateTo || undefined;
+    } else { return; }
+    setStatsLoading(true);
+    apiGetFreightStats(from, to).then(setStats).catch(() => setStats(null)).finally(() => setStatsLoading(false));
+  }, [statsPeriod, dateFrom, dateTo]);
+
   const toggle = (k) => {
     setExpanded(p => {
       const opening = !p[k];
@@ -100,6 +125,58 @@ export default function ReportsScreen({ onBack, freights, isDesktop, embedded, o
     <div style={{ flex:embedded?undefined:1, overflow:embedded?"visible":"auto", padding:embedded?0:undefined }}>
       {!isDesktop && !embedded && <div style={{ position:"sticky", top:0, zIndex:10, background:C.bg, padding:"18px 18px 8px" }}><button onClick={onBack} style={{ background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", fontSize:14.3, fontWeight:600, color:C.pri, marginBottom:14, padding:0, display:"flex", alignItems:"center", gap:4 }}>{Ic.chev(C.pri,18)} Mi Perfil</button></div>}
       <div style={{ padding:embedded?0:isDesktop?"18px 18px 18px":"0 18px 18px" }}>
+
+      {/* ── Stats Summary ── */}
+      {!embedded && (
+        <div style={{ marginBottom:16 }}>
+          <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:10, flexWrap:"wrap" }}>
+            <span style={{ fontSize:15, fontWeight:700, color:C.t1 }}>Resumen del per\u00edodo</span>
+            {["week","month","lastMonth","custom"].map(p=>(
+              <button key={p} onClick={()=>setStatsPeriod(p)} style={{ padding:"5px 12px", borderRadius:16, border:`1.5px solid ${statsPeriod===p?C.pri:C.b1}`, background:statsPeriod===p?C.priPale:C.w, color:statsPeriod===p?C.pri:C.t2, fontSize:11.5, fontWeight:600, cursor:"pointer", fontFamily:FONT }}>
+                {p==="week"?"Esta semana":p==="month"?"Este mes":p==="lastMonth"?"Mes anterior":"Personalizado"}
+              </button>
+            ))}
+          </div>
+          {statsLoading && <div style={{ padding:12, color:C.t3, fontSize:13 }}>Cargando estad\u00edsticas...</div>}
+          {stats && !statsLoading && (
+            <>
+              {/* Metric cards */}
+              <div style={{ display:"grid", gridTemplateColumns:isDesktop?"repeat(4,1fr)":"repeat(2,1fr)", gap:10, marginBottom:12 }}>
+                {[
+                  { label:"Total fletes", value:stats.totalFreights, color:C.pri },
+                  { label:"Toneladas", value:`${stats.totalTons}t`, color:C.acc },
+                  { label:"Completados", value:`${Math.round(stats.completionRate*100)}%`, color:C.ok },
+                  { label:"Prom. tons/flete", value:stats.avgTonsPerFreight, color:C.sec },
+                ].map((m,i)=>(
+                  <div key={i} style={{ background:C.bgCard, borderRadius:12, padding:"14px 16px", boxShadow:C.sh }}>
+                    <div style={{ fontSize:11, fontWeight:600, color:C.t3, textTransform:"uppercase", letterSpacing:0.4 }}>{m.label}</div>
+                    <div style={{ fontSize:26, fontWeight:800, color:m.color, marginTop:2 }}>{m.value}</div>
+                  </div>
+                ))}
+              </div>
+              {/* Mini tables */}
+              <div style={{ display:"grid", gridTemplateColumns:isDesktop?"repeat(3,1fr)":"1fr", gap:10, marginBottom:12 }}>
+                {[
+                  { title:"Por grano", items:stats.byGrain, nameKey:"grain" },
+                  { title:"Top transportistas", items:stats.topTransporters, nameKey:"name" },
+                  { title:"Top destinos", items:stats.topDestinations, nameKey:"name" },
+                ].map((tbl,ti)=>(
+                  <div key={ti} style={{ background:C.bgCard, borderRadius:12, padding:"12px 14px", boxShadow:C.sh }}>
+                    <div style={{ fontSize:12, fontWeight:700, color:C.t2, marginBottom:8, textTransform:"uppercase", letterSpacing:0.3 }}>{tbl.title}</div>
+                    {(tbl.items||[]).slice(0,5).map((row,ri)=>(
+                      <div key={ri} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"4px 0", borderBottom:ri<Math.min(tbl.items.length,5)-1?`1px solid ${C.b2}`:"none" }}>
+                        <span style={{ fontSize:12.5, color:C.t1, fontWeight:500 }}>{row[tbl.nameKey]}</span>
+                        <span style={{ fontSize:12, color:C.t3, fontFamily:MONO }}>{row.count} · {row.tons}t</span>
+                      </div>
+                    ))}
+                    {(!tbl.items||tbl.items.length===0) && <div style={{ fontSize:12, color:C.t3 }}>Sin datos</div>}
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      )}
 
       {/* Search bar */}
       <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:6 }}>
