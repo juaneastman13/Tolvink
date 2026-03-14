@@ -283,22 +283,25 @@ export default function AppLayout({ fh, catalog, online, notif, isDesktop }) {
     else if(action==="driver_queue") { setModal({type:"driver_queue",driverId:f.driverId,driverName:f.driverName}); }
   }, [actionLoading, fh.freights, setModal]);
 
+  // actionLoading stays true until modal closes (500ms animation) to prevent button flicker
+  const clearActionAfterClose = ()=> setTimeout(()=>setActionLoading(false), 600);
+
   const handleAcceptWithTruck = async (fId, truckId, driverId)=>{
     setActionLoading(true);
     try {
       const r = await fh.respond(fId, "accepted", undefined, truckId, driverId);
-      if(r.ok){ track("freight_accept"); return "Flete aceptado"; }
-      show(r.error,"err"); return "";
-    } finally { setActionLoading(false); }
+      if(r.ok){ track("freight_accept"); clearActionAfterClose(); return "Flete aceptado"; }
+      show(r.error,"err"); setActionLoading(false); return "";
+    } catch { setActionLoading(false); return ""; }
   };
 
   const handleAssign = async (fId, transportCompanyId, truckId, driverId)=>{
     setActionLoading(true);
     try {
       const r = await fh.assign(fId, transportCompanyId, truckId, driverId);
-      if(r.ok){ track("freight_assign"); return "Transportista asignado"; }
-      show(r.error,"err"); return "";
-    } finally { setActionLoading(false); }
+      if(r.ok){ track("freight_assign"); clearActionAfterClose(); return "Transportista asignado"; }
+      show(r.error,"err"); setActionLoading(false); return "";
+    } catch { setActionLoading(false); return ""; }
   };
 
   const handleAssignMulti = async (trucks)=>{
@@ -306,9 +309,9 @@ export default function AppLayout({ fh, catalog, online, notif, isDesktop }) {
     setActionLoading(true);
     try {
       const r = await fh.assignMulti(modal.freight.id, trucks);
-      if(r.ok){ track("freight_assign_multi"); return `${trucks.length} camiones asignados`; }
-      show(r.error,"err"); return "";
-    } finally { setActionLoading(false); }
+      if(r.ok){ track("freight_assign_multi"); clearActionAfterClose(); return `${trucks.length} camiones asignados`; }
+      show(r.error,"err"); setActionLoading(false); return "";
+    } catch { setActionLoading(false); return ""; }
   };
 
   const handleTripAction = useCallback((fId, aId, actionKey)=>{
@@ -343,9 +346,9 @@ export default function AppLayout({ fh, catalog, online, notif, isDesktop }) {
       else if(actionKey==="start_trip") r = await fh.startTrip(fId, aId);
       else if(actionKey==="confirm_trip_loaded") r = await fh.confirmTripLoaded(fId, aId, loadedTons);
       else if(actionKey==="confirm_trip_finished") r = await fh.confirmTripFinished(fId, aId);
-      if(r?.ok) return msgs[actionKey]||"Hecho";
-      show(r?.error||"Error","err"); return "";
-    } finally { setActionLoading(false); }
+      if(r?.ok){ clearActionAfterClose(); return msgs[actionKey]||"Hecho"; }
+      show(r?.error||"Error","err"); setActionLoading(false); return "";
+    } catch { setActionLoading(false); return ""; }
   };
 
   const handleEditTrip = useCallback((fId, assignment)=>{
@@ -367,11 +370,11 @@ export default function AppLayout({ fh, catalog, online, notif, isDesktop }) {
     try {
       const msgs = { start:"Viaje iniciado", authorize:"Viaje autorizado", confirm_loaded:"Carga confirmada", confirm_finished:"Entrega confirmada" };
       const fn = { start:fh.start, authorize:fh.authorize, confirm_loaded:fh.confirmLoaded, confirm_finished:fh.confirmFinished }[action];
-      if(!fn) return "";
+      if(!fn){ setActionLoading(false); return ""; }
       const r = action==="confirm_loaded" ? await fn(fId, loadedTons) : await fn(fId);
-      if(r.ok) return msgs[action]||"Hecho";
-      show(r.error,"err"); return "";
-    } finally { setActionLoading(false); }
+      if(r.ok){ clearActionAfterClose(); return msgs[action]||"Hecho"; }
+      show(r.error,"err"); setActionLoading(false); return "";
+    } catch { setActionLoading(false); return ""; }
   };
 
   const handleReasonAction = async (fId,reason,action,extra)=>{
@@ -382,9 +385,9 @@ export default function AppLayout({ fh, catalog, online, notif, isDesktop }) {
       else if(action==="reject") r = await fh.respond(fId,"rejected",reason);
       else if(action==="reject_trip" && extra?.assignmentId) { r = await fh.respondTrip(fId, extra.assignmentId, {action:"rejected",reason}); }
       const msg = action==="cancel"?"Flete cancelado":action==="reject_trip"?"Viaje rechazado":"Asignación rechazada";
-      if(r?.ok) return msg;
-      show(r?.error||"Error","err"); return "";
-    } finally { setActionLoading(false); }
+      if(r?.ok){ clearActionAfterClose(); return msg; }
+      show(r?.error||"Error","err"); setActionLoading(false); return "";
+    } catch { setActionLoading(false); return ""; }
   };
 
   const handleCreate = async (form)=>{
