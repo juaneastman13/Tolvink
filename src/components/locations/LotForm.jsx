@@ -61,11 +61,11 @@ export default function LotForm({ mode = "create", lot, fieldName, defaultCenter
           {loc ? (
             <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 10px", borderRadius: 8, background: C.okPale, border: `1px solid ${C.ok}40` }}>
               <span style={{ flex: 1, fontSize: 12.1, color: C.t1 }}>{`${loc.lat.toFixed(4)}, ${loc.lng.toFixed(4)}`}</span>
-              <button onClick={handleSelectOnMap} style={{ padding: "3px 8px", borderRadius: 6, border: `1px solid ${C.b2}`, background: C.w, cursor: "pointer", fontFamily: FONT, fontSize: 11, fontWeight: 600, color: C.t2 }}>Cambiar</button>
+              <button onClick={handleSelectOnMap} style={{ padding: "3px 8px", borderRadius: 6, border: `1px solid ${C.b2}`, background: C.w, cursor: "pointer", fontFamily: FONT, fontSize: 11, fontWeight: 600, color: C.t2 }}>Modificar ubicación</button>
             </div>
           ) : (
             <button onClick={handleSelectOnMap} style={{ display: "flex", alignItems: "center", gap: 6, width: "100%", padding: "8px 10px", borderRadius: 8, border: `1.5px dashed ${C.b2}`, background: "transparent", cursor: "pointer", fontFamily: FONT, fontSize: 12.1, fontWeight: 600, color: C.t3 }}>
-              {Ic.pin(C.t3, 14)} Seleccionar en mapa
+              {Ic.pin(C.t3, 14)} Seleccionar ubicación en mapa
             </button>
           )}
         </div>

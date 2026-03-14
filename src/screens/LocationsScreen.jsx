@@ -23,10 +23,11 @@ const TYPE_CFG = {
 const MAP_COLORS = { field: "#1A6B37", lot: "#1A6B37", poi: "#0891B2" };
 const URUGUAY_CENTER = { lat: -33.0, lng: -56.0 };
 const FILTER_CHIPS = [
-  { key: "field", label: "Campos", color: "#1A6B37", icon: (c, s) => Ic.field(c, s) },
-  { key: "lot", label: "Lotes", color: "#1A6B37", icon: (c, s) => Ic.lot(c, s) },
-  { key: "poi", label: "POIs", color: "#0891B2", icon: (c, s) => Ic.poi(c, s) },
+  { key: "field", label: "campos", icon: (c, s) => Ic.field(c, s) },
+  { key: "lot", label: "lotes", icon: (c, s) => Ic.lot(c, s) },
+  { key: "poi", label: "ubicaciones", icon: (c, s) => Ic.poi(c, s) },
 ];
+const FILTER_COLORS = { field: C.pri, lot: C.sec, poi: C.acc };
 const _esc = (s) => String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 
 // ── Slide-in wrapper for inline forms ──
@@ -87,6 +88,8 @@ export default function LocationsScreen({ onBack }) {
   const [creatingField, setCreatingField] = useState(false);
   const [creatingLotForField, setCreatingLotForField] = useState(null);
   const [creatingPoi, setCreatingPoi] = useState(false);
+  const [addMenuOpen, setAddMenuOpen] = useState(false);
+  const [addMenuSub, setAddMenuSub] = useState(null); // null | "manual"
 
   // ── Modals ──
   const [sharingEntity, setSharingEntity] = useState(null);
@@ -158,14 +161,16 @@ export default function LocationsScreen({ onBack }) {
   };
 
   const handleDeleteField = async (fieldId) => {
-    setSaving(true);
+    const prev = fields;
+    setFields(f => f.filter(x => x.id !== fieldId));
+    setDeletingField(null);
+    setMsg({ t: "Campo eliminado", k: "ok" });
     try {
       await apiDeleteField(fieldId);
-      setDeletingField(null);
-      setMsg({ t: "Campo eliminado", k: "ok" });
-      await load();
-    } catch (err) { setMsg({ t: err.message || "Error al eliminar", k: "err" }); }
-    finally { setSaving(false); }
+    } catch (err) {
+      setFields(prev);
+      setMsg({ t: err.message || "Error al eliminar", k: "err" });
+    }
   };
 
   const handleCreateLot = async (fieldId, data) => {
@@ -193,14 +198,16 @@ export default function LocationsScreen({ onBack }) {
   };
 
   const handleDeleteLot = async (fieldId, lotId) => {
-    setSaving(true);
+    const prev = fields;
+    setFields(f => f.map(x => x.id === fieldId ? { ...x, lots: (x.lots || []).filter(l => l.id !== lotId) } : x));
+    setDeletingLot(null);
+    setMsg({ t: "Lote eliminado", k: "ok" });
     try {
       await apiDeleteLot(fieldId, lotId);
-      setDeletingLot(null);
-      setMsg({ t: "Lote eliminado", k: "ok" });
-      await load();
-    } catch (err) { setMsg({ t: err.message || "Error al eliminar", k: "err" }); }
-    finally { setSaving(false); }
+    } catch (err) {
+      setFields(prev);
+      setMsg({ t: err.message || "Error al eliminar", k: "err" });
+    }
   };
 
   const handleCreatePoi = async (data) => {
@@ -229,14 +236,16 @@ export default function LocationsScreen({ onBack }) {
   };
 
   const handleDeletePoi = async (id) => {
-    setSaving(true);
+    const prev = pois;
+    setPois(p => p.filter(x => x.id !== id));
+    setDeletingPoi(null);
+    setMsg({ t: "Ubicación eliminada", k: "ok" });
     try {
       await apiDeletePoi(id);
-      setDeletingPoi(null);
-      setMsg({ t: "Ubicación eliminada", k: "ok" });
-      await load();
-    } catch (err) { setMsg({ t: err.message || "Error al eliminar", k: "err" }); }
-    finally { setSaving(false); }
+    } catch (err) {
+      setPois(prev);
+      setMsg({ t: err.message || "Error al eliminar", k: "err" });
+    }
   };
 
   // ═══════════════════════════════════════════════════════════════
@@ -340,8 +349,6 @@ export default function LocationsScreen({ onBack }) {
 
   const filteredPois = allPois.filter(p => matchesSearch(p.name));
   const filteredFields = fields.filter(f => matchesSearch(f.name) || (f.lots || []).some(l => matchesSearch(l.name)));
-  const mapCounts = { field: 0, lot: 0, poi: 0 };
-  allLocations.forEach(l => { mapCounts[l.type]++; });
 
   // ═══════════════════════════════════════════════════════════════
   // MAP
@@ -739,19 +746,12 @@ export default function LocationsScreen({ onBack }) {
     ));
   };
 
-  const renderSectionHeader = (title, count, key, color, iconFn, onAdd) => (
-    <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 16px", background: C.bg, cursor: "pointer", userSelect: "none", borderBottom: `1px solid ${C.b2}` }}>
-      <div onClick={() => toggleSection(key)} style={{ display: "flex", alignItems: "center", gap: 8, flex: 1, cursor: "pointer" }}>
-        <span style={{ display: "inline-flex", transition: "transform 200ms", transform: sectionOpen[key] ? "rotate(0)" : "rotate(-90deg)" }}>{Ic.down(C.t3, 14)}</span>
-        {iconFn(color, 16)}
-        <span style={{ flex: 1, fontSize: 13.2, fontWeight: 700, color: C.t1 }}>{title}</span>
-        <span style={{ fontSize: 11, color: C.t3, fontWeight: 600 }}>{count}</span>
-      </div>
-      {onAdd && (
-        <button title={`Crear ${title.toLowerCase().replace(/s$/, "")}`} onClick={e => { e.stopPropagation(); onAdd(); }} style={{ width: 26, height: 26, borderRadius: 7, background: `${color}14`, border: `1px solid ${color}40`, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-          {Ic.plus(color, 13)}
-        </button>
-      )}
+  const renderSectionHeader = (title, count, key, color, iconFn) => (
+    <div onClick={() => toggleSection(key)} style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 16px", background: C.bg, cursor: "pointer", userSelect: "none", borderBottom: `1px solid ${C.b2}` }}>
+      <span style={{ display: "inline-flex", transition: "transform 200ms", transform: sectionOpen[key] ? "rotate(0)" : "rotate(-90deg)" }}>{Ic.down(C.t3, 14)}</span>
+      {iconFn(color, 16)}
+      <span style={{ flex: 1, fontSize: 13.2, fontWeight: 700, color: C.t1 }}>{title}</span>
+      <span style={{ fontSize: 11, color: C.t3, fontWeight: 600 }}>{count}</span>
     </div>
   );
 
@@ -770,7 +770,7 @@ export default function LocationsScreen({ onBack }) {
           entity={sharingEntity.entity}
           fieldId={sharingEntity.fieldId}
           onClose={() => setSharingEntity(null)}
-          onShared={() => { setMsg({ t: `${sharingEntity.type === "poi" ? "Ubicación" : sharingEntity.type === "field" ? "Campo" : "Lote"} compartido`, k: "ok" }); load(); }}
+          onShared={async () => { setMsg({ t: `${sharingEntity.type === "poi" ? "Ubicación" : sharingEntity.type === "field" ? "Campo" : "Lote"} compartido`, k: "ok" }); await load(); }}
         />
       )}
 
@@ -779,7 +779,7 @@ export default function LocationsScreen({ onBack }) {
           poi={reclassifyPoi}
           fields={fields}
           onClose={() => setReclassifyPoi(null)}
-          onReclassified={(ok, err) => { setReclassifyPoi(null); setMsg({ t: ok || err, k: ok ? "ok" : "err" }); load(); }}
+          onReclassified={async (ok, err) => { setReclassifyPoi(null); setMsg({ t: ok || err, k: ok ? "ok" : "err" }); await load(); }}
         />
       )}
 
@@ -802,9 +802,48 @@ export default function LocationsScreen({ onBack }) {
               <button onClick={onBack} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex", alignItems: "center" }}>{Ic.chev(C.pri, 18)}</button>
               <span style={{ fontSize: 18, fontWeight: 600, color: C.t1 }}>Ubicaciones</span>
             </div>
-            <button title={importStep ? "Cerrar importar" : "Importar desde Google Maps"} onClick={() => setImportStep(importStep ? 0 : 1)} style={{ width: 32, height: 32, borderRadius: 8, background: importStep ? "transparent" : C.pri, border: importStep ? `1px solid ${C.b1}` : "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              {importStep ? Ic.cross(C.t3, 16) : Ic.plus(C.w, 16)}
-            </button>
+            {importStep ? (
+              <button onClick={() => { setImportStep(0); closeImport(); }} style={{ width: 32, height: 32, borderRadius: 8, background: "transparent", border: `1px solid ${C.b1}`, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                {Ic.cross(C.t3, 16)}
+              </button>
+            ) : (
+              <div style={{ position: "relative" }}>
+                <button onClick={() => { setAddMenuOpen(!addMenuOpen); setAddMenuSub(null); }} style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 12px", borderRadius: 8, background: C.pri, border: "none", cursor: "pointer", fontFamily: FONT, fontSize: 12.7, fontWeight: 700, color: C.w }}>
+                  {Ic.plus(C.w, 14)} Agregar
+                </button>
+                {addMenuOpen && <>
+                  <div onClick={() => { setAddMenuOpen(false); setAddMenuSub(null); }} style={{ position: "fixed", inset: 0, zIndex: 19 }} />
+                  <div style={{ position: "absolute", top: "calc(100% + 4px)", right: 0, minWidth: 220, background: C.bgCard, border: `1px solid ${C.b1}`, borderRadius: 8, boxShadow: C.shMd, zIndex: 20, overflow: "hidden" }}>
+                    {!addMenuSub && <>
+                      <button onClick={() => setAddMenuSub("manual")} style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "12px 14px", background: "none", border: "none", borderBottom: `1px solid ${C.b2}`, cursor: "pointer", fontFamily: FONT, fontSize: 13.2, fontWeight: 600, color: C.t1, textAlign: "left" }}
+                        onMouseEnter={e => e.currentTarget.style.background = C.priPale} onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                        {Ic.pin(C.pri, 16)} Crear manualmente
+                      </button>
+                      <button onClick={() => { setAddMenuOpen(false); setImportStep(1); }} style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "12px 14px", background: "none", border: "none", cursor: "pointer", fontFamily: FONT, fontSize: 13.2, fontWeight: 600, color: C.t1, textAlign: "left" }}
+                        onMouseEnter={e => e.currentTarget.style.background = C.priPale} onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                        {Ic.pin(C.acc, 16)} Importar desde Google Maps
+                      </button>
+                    </>}
+                    {addMenuSub === "manual" && <>
+                      <button onClick={() => { setAddMenuOpen(false); setAddMenuSub(null); setCreatingField(true); if (!sectionOpen.fields) setSectionOpen(p => ({ ...p, fields: true })); }} style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "12px 14px", background: "none", border: "none", borderBottom: `1px solid ${C.b2}`, cursor: "pointer", fontFamily: FONT, fontSize: 13.2, fontWeight: 600, color: C.t1, textAlign: "left" }}
+                        onMouseEnter={e => e.currentTarget.style.background = C.priPale} onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                        {Ic.field("#1A6B37", 16)} Campo
+                      </button>
+                      {fields.length > 0 && (
+                        <button onClick={() => { setAddMenuOpen(false); setAddMenuSub(null); setCreatingLotForField(fields[0].id); setExpandedField(fields[0].id); if (!sectionOpen.fields) setSectionOpen(p => ({ ...p, fields: true })); }} style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "12px 14px", background: "none", border: "none", borderBottom: `1px solid ${C.b2}`, cursor: "pointer", fontFamily: FONT, fontSize: 13.2, fontWeight: 600, color: C.t1, textAlign: "left" }}
+                          onMouseEnter={e => e.currentTarget.style.background = C.priPale} onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                          {Ic.lot(C.acc, 16)} Lote
+                        </button>
+                      )}
+                      <button onClick={() => { setAddMenuOpen(false); setAddMenuSub(null); setCreatingPoi(true); if (!sectionOpen.pois) setSectionOpen(p => ({ ...p, pois: true })); }} style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "12px 14px", background: "none", border: "none", cursor: "pointer", fontFamily: FONT, fontSize: 13.2, fontWeight: 600, color: C.t1, textAlign: "left" }}
+                        onMouseEnter={e => e.currentTarget.style.background = C.priPale} onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                        {Ic.poi("#0891B2", 16)} Ubicación de interés
+                      </button>
+                    </>}
+                  </div>
+                </>}
+              </div>
+            )}
           </div>
           {importStep === 0 && (
             <div style={{ position: "relative" }}>
@@ -860,8 +899,7 @@ export default function LocationsScreen({ onBack }) {
 
           {importStep === 0 && !loading && (
             <>
-              {renderSectionHeader("Ubicaciones de interés", filteredPois.length, "pois", MAP_COLORS.poi, (c, s) => Ic.poi(c, s),
-                () => { setCreatingPoi(true); if (!sectionOpen.pois) setSectionOpen(p => ({ ...p, pois: true })); })}
+              {renderSectionHeader("Ubicaciones de interés", filteredPois.length, "pois", MAP_COLORS.poi, (c, s) => Ic.poi(c, s))}
               {sectionOpen.pois && (
                 <>
                   {creatingPoi && <SlideIn><PoiForm mode="create" saving={saving} onSave={handleCreatePoi} onCancel={() => setCreatingPoi(false)} onSelectOnMap={startMapSelect} /></SlideIn>}
@@ -871,8 +909,7 @@ export default function LocationsScreen({ onBack }) {
                 </>
               )}
 
-              {renderSectionHeader("Campos", filteredFields.length, "fields", MAP_COLORS.field, (c, s) => Ic.field(c, s),
-                () => { setCreatingField(true); if (!sectionOpen.fields) setSectionOpen(p => ({ ...p, fields: true })); })}
+              {renderSectionHeader("Campos", filteredFields.length, "fields", MAP_COLORS.field, (c, s) => Ic.field(c, s))}
               {sectionOpen.fields && (
                 <>
                   {creatingField && <SlideIn><FieldForm mode="create" saving={saving} onSave={handleCreateField} onCancel={() => setCreatingField(false)} onSelectOnMap={startMapSelect} /></SlideIn>}
@@ -906,11 +943,11 @@ export default function LocationsScreen({ onBack }) {
           <div style={{ position: "absolute", top: 12, right: 12, zIndex: 5, display: "flex", gap: 6 }}>
             {FILTER_CHIPS.map(fc => {
               const active = mapFilters[fc.key];
-              const count = mapCounts[fc.key] || 0;
+              const typeColor = FILTER_COLORS[fc.key];
               return (
                 <button key={fc.key} onClick={() => toggleMapFilter(fc.key)}
-                  style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "6px 12px", borderRadius: 20, background: active ? fc.color : C.bgCard, color: active ? "#fff" : C.t2, border: `1px solid ${active ? "transparent" : C.b1}`, cursor: "pointer", fontFamily: FONT, fontSize: 12.1, fontWeight: 700, boxShadow: C.sh, transition: "all 0.2s" }}>
-                  {fc.icon(active ? "#fff" : fc.color, 14)} {fc.label} ({count})
+                  style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "6px 12px", borderRadius: 20, background: active ? typeColor : C.bgCard, color: active ? C.tOn : C.t2, border: `1px solid ${active ? "transparent" : C.b1}`, cursor: "pointer", fontFamily: FONT, fontSize: 12.1, fontWeight: 700, boxShadow: C.sh, transition: "all 0.2s" }}>
+                  {fc.icon(active ? C.tOn : typeColor, 14)} {active ? "Ocultar" : "Ver"} {fc.label}
                 </button>
               );
             })}

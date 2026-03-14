@@ -49,14 +49,15 @@ export default function ShareLocationModal({ entityType, entity, fieldId, onClos
     }, 300);
   };
 
-  const handleShare = async (userId, userName) => {
+  const handleShare = async (userId, userName, userEmail) => {
     setMsg(null);
     try {
       if (entityType === "poi") await apiSharePoi(entity.id, userId);
       else if (entityType === "field") await apiShareField(entity.id, userId);
       else if (entityType === "lot") await apiShareLot(fieldId, entity.id, userId);
+      // Optimistic: add to shares list immediately
+      setShares(prev => [...prev, { id: `temp-${userId}`, sharedWith: { id: userId, name: userName, email: userEmail } }]);
       setMsg({ t: `Compartido con ${userName}`, k: "ok" });
-      await loadShares();
       setSearch("");
       setResults([]);
       onShared?.();
@@ -143,7 +144,7 @@ export default function ShareLocationModal({ entityType, entity, fieldId, onClos
                 {alreadySharedIds.has(u.id) ? (
                   <Bd color={C.ok} small>Compartido</Bd>
                 ) : (
-                  <button onClick={() => handleShare(u.id, u.name)} style={{ padding: "5px 12px", borderRadius: 8, border: "none", background: C.pri, cursor: "pointer", fontFamily: FONT, fontSize: 12.1, fontWeight: 700, color: C.w }}>
+                  <button onClick={() => handleShare(u.id, u.name, u.email)} style={{ padding: "5px 12px", borderRadius: 8, border: "none", background: C.pri, cursor: "pointer", fontFamily: FONT, fontSize: 12.1, fontWeight: 700, color: C.w }}>
                     Compartir
                   </button>
                 )}
