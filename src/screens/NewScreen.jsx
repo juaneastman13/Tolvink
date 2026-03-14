@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo, lazy, Suspense } from "react";
+import { useSearchParams } from "react-router-dom";
 import { C, Ic, track } from "../theme";
 import { V, validate, SCHEMAS, textMatch, FieldError } from "../validation";
 import { stCfg, GRANOS, UNITS } from "../constants";
@@ -125,8 +126,19 @@ function NextStepBtn({ complete, onClick, label, onPrev }) {
 export default function NewScreen({ user, lots, plants, branches, fields, trucks, onBack, onCreate, duplicateFrom }) {
   const dup = duplicateFrom;
   const _isDesktop = useIsDesktop(768);
-  const [originMode, setOriginMode] = useState("field"); // "field" | "map"
-  const [customOrigin, setCustomOrigin] = useState({ name:"", lat:null, lng:null });
+  const [searchParams] = useSearchParams();
+  const preFieldId = searchParams.get("originFieldId") || "";
+  const preLotId = searchParams.get("originLotId") || "";
+  const preOriginMode = searchParams.get("originMode") || "";
+  const preOriginName = searchParams.get("originName") || "";
+  const preOriginLat = searchParams.get("originLat") || "";
+  const preOriginLng = searchParams.get("originLng") || "";
+  const [originMode, setOriginMode] = useState(preOriginMode === "map" ? "map" : "field");
+  const [customOrigin, setCustomOrigin] = useState({
+    name: preOriginName,
+    lat: preOriginLat ? parseFloat(preOriginLat) : null,
+    lng: preOriginLng ? parseFloat(preOriginLng) : null,
+  });
   const [destMode, setDestMode] = useState("plant");
   const [customDest, setCustomDest] = useState({ name:"", lat:null, lng:null });
   const [confirmMode, setConfirmMode] = useState("none"); // "plant" | "none"
@@ -134,10 +146,10 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
   const [form, setForm] = useState({
     grain: dup?.grain || "",
     tons: dup?.tons?.toString() || "",
-    lotId: dup?.originLotId || "",
+    lotId: dup?.originLotId || preLotId,
     plantId: dup?.destPlantId || "",
     branchId: dup?.destBranchId || "",
-    fieldId: dup?.fieldId || "",
+    fieldId: dup?.fieldId || preFieldId,
     loadDate: dup?.loadDate?.split("T")[0] || dup?.preDate || "", loadTime: dup?.loadTime || "",
     notes: dup?.notes || "",
     unit: dup?.unit || "toneladas",

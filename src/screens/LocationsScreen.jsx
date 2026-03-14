@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { C, Ic, FONT } from "../theme";
 import { Btn, Bd, Loader, LoadingOverlay } from "../components";
 import {
@@ -55,6 +56,7 @@ function SlideIn({ children }) {
 
 export default function LocationsScreen({ onBack }) {
   const isDesktop = useIsDesktop(768);
+  const navigate = useNavigate();
 
   // ── Core data ──
   const [fields, setFields] = useState([]);
@@ -575,6 +577,21 @@ export default function LocationsScreen({ onBack }) {
   // RENDER HELPERS
   // ═══════════════════════════════════════════════════════════════
 
+  const accBtnStyle = { flex: 1, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 5, padding: "6px 8px", borderRadius: 8, border: "none", background: C.acc, cursor: "pointer", fontFamily: FONT, fontSize: 12.5, fontWeight: 700, color: "#fff", boxShadow: `0 1px 4px ${C.acc}30`, minHeight: 36 };
+  const secBtnStyle = { flex: 1, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 5, padding: "6px 8px", borderRadius: 8, border: `1px solid ${C.b1}`, background: C.bgCard, cursor: "pointer", fontFamily: FONT, fontSize: 12.5, fontWeight: 600, color: C.t1, minHeight: 36 };
+
+  const renderLocationBtns = (newUrl, listUrl) => (
+    <div style={{ display: "flex", gap: 6, marginBottom: 6 }} onClick={e => e.stopPropagation()}>
+      <button onClick={() => navigate(newUrl)} style={accBtnStyle}>
+        <span style={{ display: "inline-flex", animation: "truckDrive 1.5s ease-in-out infinite" }}>{Ic.truck("#fff", 14)}</span>
+        Solicitar
+      </button>
+      <button onClick={() => navigate(listUrl)} style={secBtnStyle}>
+        {Ic.doc(C.t2, 14)} Ver fletes
+      </button>
+    </div>
+  );
+
   const renderPoiItem = (p, isShared) => {
     const id = `poi-${p.id}`;
     const isActive = activeId === id;
@@ -607,6 +624,10 @@ export default function LocationsScreen({ onBack }) {
       >
         <div style={{ width: 28, height: 28, borderRadius: 7, background: `${LOC_COLORS.poi}18`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{Ic.poi(LOC_COLORS.poi, 14)}</div>
         <div style={{ flex: 1, minWidth: 0 }}>
+          {renderLocationBtns(
+            hasCoords ? `/new?originMode=map&originName=${encodeURIComponent(p.name)}&originLat=${p.lat}&originLng=${p.lng}` : `/new`,
+            `/list?search=${encodeURIComponent(p.name)}`
+          )}
           <div style={{ fontSize: 15, fontWeight: 600, color: C.t1, overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", whiteSpace: "normal" }}>{p.name}</div>
           {p.comments && <div style={{ fontSize: 11, color: C.t3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginTop: 4 }}>{p.comments}</div>}
           {isShared && <span style={{ fontSize: 10, color: C.info, fontWeight: 600, marginTop: 4, display: "inline-block" }}>Compartida</span>}
@@ -659,6 +680,7 @@ export default function LocationsScreen({ onBack }) {
         >
           <div style={{ width: 28, height: 28, borderRadius: 7, background: `${C.pri}12`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{Ic.field(C.pri, 14)}</div>
           <div style={{ flex: 1, minWidth: 0 }}>
+            {renderLocationBtns(`/new?originFieldId=${f.id}`, `/list?search=${encodeURIComponent(f.name)}`)}
             <div style={{ fontSize: 15, fontWeight: 600, color: C.t1, overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", whiteSpace: "normal" }}>{f.name}</div>
             {f.address && <div style={{ fontSize: 11, color: C.t3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginTop: 4 }}>{f.address}</div>}
             {isShared && <span style={{ fontSize: 10, color: C.info, fontWeight: 600, marginTop: 4, display: "inline-block" }}>Compartido</span>}
@@ -712,6 +734,7 @@ export default function LocationsScreen({ onBack }) {
               >
                 <div style={{ width: 24, height: 24, borderRadius: 6, background: `${LOC_COLORS.lot}18`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{Ic.lot(LOC_COLORS.lot, 12)}</div>
                 <div style={{ flex: 1, minWidth: 0 }}>
+                  {renderLocationBtns(`/new?originFieldId=${f.id}&originLotId=${l.id}`, `/list?search=${encodeURIComponent(l.name)}`)}
                   <span style={{ fontSize: 14, fontWeight: 500, color: C.t1 }}>{l.name}</span>
                   {l.hectares && <span style={{ fontSize: 11, color: C.t3, marginLeft: 6 }}>{l.hectares} ha</span>}
                 </div>
@@ -775,6 +798,7 @@ export default function LocationsScreen({ onBack }) {
 
   return (
     <div style={{ display: "flex", height: "100%", overflow: "hidden", background: C.bg, fontFamily: FONT }}>
+      <style>{`@keyframes truckDrive{0%{transform:translateX(-10px)}60%{transform:translateX(6px)}100%{transform:translateX(-10px)}}`}</style>
       {(saving || doneMsg) && <LoadingOverlay closing={!!doneMsg} closingText={doneMsg} onClose={() => setDoneMsg("")} />}
       {previewLoc && <MapPreviewModal loc={previewLoc} onClose={() => setPreviewLoc(null)} />}
 
