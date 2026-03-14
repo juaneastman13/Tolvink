@@ -493,7 +493,7 @@ export default memo(function ListScreen({ freights, loading, onNav, onRefresh, c
     );
   }
 
-  const fromLocations = sp.get("fieldId") || sp.get("lotId") || sp.get("originName");
+  const fromLocations = sp.get("fieldId") || sp.get("lotId") || sp.get("originName") || sp.get("fromLocations");
 
   return (
     <div ref={containerRef} style={{ flex:1, overflow:"auto", padding:18, WebkitOverflowScrolling:"touch" }}>

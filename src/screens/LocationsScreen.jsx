@@ -424,7 +424,7 @@ export default function LocationsScreen({ onBack }) {
         }
         if (action === "ver-fletes") {
           const name = btn.dataset.iwName;
-          navigateRef.current(`/list?search=${encodeURIComponent(name)}`);
+          navigateRef.current(`/list?search=${encodeURIComponent(name)}&fromLocations=1`);
         }
       });
     }).catch(() => {});
@@ -689,7 +689,7 @@ export default function LocationsScreen({ onBack }) {
           <div style={{ marginLeft: 4 }} onClick={e => e.stopPropagation()}>
             <RowMenu id={f.id} items={[
               { icon: Ic.truck(C.acc, 14), label: "Solicitar flete", onClick: () => navigate(`/new?originFieldId=${f.id}`) },
-              { icon: Ic.doc(C.t3, 14), label: "Ver fletes", onClick: () => navigate(`/list?search=${encodeURIComponent(f.name)}`) },
+              { icon: Ic.doc(C.t3, 14), label: "Ver fletes", onClick: () => navigate(`/list?search=${encodeURIComponent(f.name)}&fromLocations=1`) },
               ...(hasCoords ? [{ icon: Ic.nav(C.t3, 14), label: "Ver en mapa", onClick: () => focusOnMap(id, Number(f.lat), Number(f.lng)) }] : []),
               ...(!isShared ? [{ icon: Ic.share(C.t3, 14), label: "Compartir", onClick: () => setSharingEntity({ type: "field", entity: f }) }] : []),
               ...(!isShared ? [{ icon: Ic.edit(C.t3, 14), label: "Editar ubicación", onClick: () => setEditField(editField === f.id ? null : f.id) }] : []),
@@ -740,7 +740,7 @@ export default function LocationsScreen({ onBack }) {
                 <div style={{ marginLeft: 4 }} onClick={e => e.stopPropagation()}>
                   <RowMenu id={l.id} items={[
                     { icon: Ic.truck(C.acc, 14), label: "Solicitar flete", onClick: () => navigate(`/new?originFieldId=${f.id}&originLotId=${l.id}`) },
-                    { icon: Ic.doc(C.t3, 14), label: "Ver fletes", onClick: () => navigate(`/list?search=${encodeURIComponent(l.name)}`) },
+                    { icon: Ic.doc(C.t3, 14), label: "Ver fletes", onClick: () => navigate(`/list?search=${encodeURIComponent(l.name)}&fromLocations=1`) },
                     ...(lotHasCoords ? [{ icon: Ic.nav(C.t3, 14), label: "Ver en mapa", onClick: () => focusOnMap(lotId, Number(l.lat), Number(l.lng)) }] : []),
                     ...(!isShared ? [{ icon: Ic.share(C.t3, 14), label: "Compartir", onClick: () => setSharingEntity({ type: "lot", entity: l, fieldId: f.id }) }] : []),
                     ...(!isShared ? [{ icon: Ic.edit(C.t3, 14), label: "Editar", onClick: () => setEditLot(editLot?.lotId === l.id ? null : { fieldId: f.id, lotId: l.id }) }] : []),
