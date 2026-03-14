@@ -500,7 +500,7 @@ export default memo(function ListScreen({ freights, loading, onNav, onRefresh, c
       {indicator}
       {fromLocations && <button onClick={() => onNav("locations")} style={{ background:C.priPale, border:`1px solid ${C.pri}40`, borderRadius:8, cursor:"pointer", fontFamily:FONT, fontSize:14, fontWeight:600, color:C.pri, padding:"10px 14px", marginBottom:12, display:"flex", alignItems:"center", gap:6, width:"100%" }}>{Ic.chev(C.pri, 16)} Volver al mapa de ubicaciones</button>}
       {/* Desktop: original filters layout */}
-      {isDesktop ? (<>
+      {!fromLocations && (isDesktop ? (<>
       {/* Search bar -- line 1 */}
       <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:6 }}>
         <div style={{ position:"relative", flex:1, minWidth:0 }}>
@@ -596,7 +596,7 @@ export default memo(function ListScreen({ freights, loading, onNav, onRefresh, c
         </select>
       </div>
       </>}
-      </>)}
+      </>))}
 
       {/* Search result count */}
       {hasFilters && filtered.length > 0 && !serverLoading && <div style={{ fontSize:12.1, fontWeight:600, color:C.t3, marginBottom:8 }}>{serverData !== null ? `${serverTotal} flete${serverTotal!==1?"s":""} encontrado${serverTotal!==1?"s":""}` : `${filtered.length} flete${filtered.length!==1?"s":""}`}</div>}
