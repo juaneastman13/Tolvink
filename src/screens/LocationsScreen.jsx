@@ -90,6 +90,7 @@ export default function LocationsScreen({ onBack }) {
   const [creatingPoi, setCreatingPoi] = useState(false);
   const [addMenuOpen, setAddMenuOpen] = useState(false);
   const [addMenuSub, setAddMenuSub] = useState(null); // null | "manual"
+  const [creationMode, setCreationMode] = useState(null); // null | 'field' | 'lot' | 'poi'
 
   // ── Modals ──
   const [sharingEntity, setSharingEntity] = useState(null);
@@ -142,6 +143,7 @@ export default function LocationsScreen({ onBack }) {
     try {
       await apiCreateField({ name: data.name, address: data.address || undefined, lat: data.lat || undefined, lng: data.lng || undefined });
       setCreatingField(false);
+      setCreationMode(null);
       setMsg({ t: "Campo creado", k: "ok" });
       await load();
       if (data.lat && data.lng && mapObjRef.current) { mapObjRef.current.panTo({ lat: data.lat, lng: data.lng }); mapObjRef.current.setZoom(15); }
@@ -179,6 +181,7 @@ export default function LocationsScreen({ onBack }) {
     try {
       await apiCreateLot(fieldId, { name: data.name, hectares: data.hectares, lat: data.lat || undefined, lng: data.lng || undefined });
       setCreatingLotForField(null);
+      setCreationMode(null);
       setMsg({ t: "Lote creado", k: "ok" });
       await load();
       if (data.lat && data.lng && mapObjRef.current) { mapObjRef.current.panTo({ lat: data.lat, lng: data.lng }); mapObjRef.current.setZoom(15); }
@@ -217,6 +220,7 @@ export default function LocationsScreen({ onBack }) {
     try {
       await apiCreatePoi({ name: data.name, comments: data.comments, lat: data.lat, lng: data.lng });
       setCreatingPoi(false);
+      setCreationMode(null);
       setMsg({ t: "Ubicación creada", k: "ok" });
       await load();
       if (data.lat && data.lng && mapObjRef.current) { mapObjRef.current.panTo({ lat: data.lat, lng: data.lng }); mapObjRef.current.setZoom(15); }
@@ -560,7 +564,7 @@ export default function LocationsScreen({ onBack }) {
   }, [isDesktop]);
   const toggleSection = (key) => setSectionOpen(prev => ({ ...prev, [key]: !prev[key] }));
 
-  const isFormActive = creatingField || creatingPoi || creatingLotForField || editField || editLot || editingPoi;
+  const isFormActive = creationMode || creatingField || creatingPoi || creatingLotForField || editField || editLot || editingPoi;
 
   // ═══════════════════════════════════════════════════════════════
   // RENDER HELPERS
@@ -721,7 +725,7 @@ export default function LocationsScreen({ onBack }) {
 
         {isExpanded && (
           creatingLotForField === f.id
-            ? <SlideIn><LotForm mode="create" fieldName={f.name} defaultCenter={f.lat && f.lng ? { lat: Number(f.lat), lng: Number(f.lng) } : null} saving={saving} onSave={(data) => handleCreateLot(f.id, data)} onCancel={() => setCreatingLotForField(null)} onSelectOnMap={startMapSelect} /></SlideIn>
+            ? <SlideIn><LotForm mode="create" fieldId={f.id} fieldName={f.name} defaultCenter={f.lat && f.lng ? { lat: Number(f.lat), lng: Number(f.lng) } : null} saving={saving} onSave={(data) => handleCreateLot(f.id, data)} onCancel={() => setCreatingLotForField(null)} onSelectOnMap={startMapSelect} /></SlideIn>
             : <button onClick={() => setCreatingLotForField(f.id)} style={{ display: "flex", alignItems: "center", gap: 6, padding: "10px 16px 10px 40px", width: "100%", background: "none", border: "none", borderBottom: `1px solid ${C.b2}`, cursor: "pointer", fontFamily: FONT, fontSize: 12.7, fontWeight: 600, color: C.acc }}>{Ic.plus(C.acc, 13)} Agregar lote</button>
         )}
       </div>
@@ -802,12 +806,12 @@ export default function LocationsScreen({ onBack }) {
         background: C.w, display: "flex", flexDirection: "column", overflow: "hidden",
       }}>
         <div style={{ padding: "12px 16px", borderBottom: `1px solid ${C.b2}`, flexShrink: 0 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: importStep === 0 ? 10 : 0 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: (importStep === 0 && !creationMode) ? 10 : 0 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <button onClick={onBack} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex", alignItems: "center" }}>{Ic.chev(C.pri, 18)}</button>
               <span style={{ fontSize: 18, fontWeight: 600, color: C.t1 }}>Ubicaciones</span>
             </div>
-            {importStep ? (
+            {creationMode ? null : importStep ? (
               <button onClick={() => { setImportStep(0); closeImport(); }} style={{ width: 32, height: 32, borderRadius: 8, background: "transparent", border: `1px solid ${C.b1}`, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 {Ic.cross(C.t3, 16)}
               </button>
@@ -830,17 +834,17 @@ export default function LocationsScreen({ onBack }) {
                       </button>
                     </>}
                     {addMenuSub === "manual" && <>
-                      <button onClick={() => { setAddMenuOpen(false); setAddMenuSub(null); setCreatingField(true); if (!sectionOpen.fields) setSectionOpen(p => ({ ...p, fields: true })); }} style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "12px 14px", background: "none", border: "none", borderBottom: `1px solid ${C.b2}`, cursor: "pointer", fontFamily: FONT, fontSize: 13.2, fontWeight: 600, color: C.t1, textAlign: "left" }}
+                      <button onClick={() => { setAddMenuOpen(false); setAddMenuSub(null); setCreationMode("field"); setCreatingField(true); }} style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "12px 14px", background: "none", border: "none", borderBottom: `1px solid ${C.b2}`, cursor: "pointer", fontFamily: FONT, fontSize: 13.2, fontWeight: 600, color: C.t1, textAlign: "left" }}
                         onMouseEnter={e => e.currentTarget.style.background = C.priPale} onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
                         {Ic.field("#1A6B37", 16)} Campo
                       </button>
                       {fields.length > 0 && (
-                        <button onClick={() => { setAddMenuOpen(false); setAddMenuSub(null); setCreatingLotForField(fields[0].id); setExpandedField(fields[0].id); if (!sectionOpen.fields) setSectionOpen(p => ({ ...p, fields: true })); }} style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "12px 14px", background: "none", border: "none", borderBottom: `1px solid ${C.b2}`, cursor: "pointer", fontFamily: FONT, fontSize: 13.2, fontWeight: 600, color: C.t1, textAlign: "left" }}
+                        <button onClick={() => { setAddMenuOpen(false); setAddMenuSub(null); setCreationMode("lot"); setCreatingLotForField("__general__"); }} style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "12px 14px", background: "none", border: "none", borderBottom: `1px solid ${C.b2}`, cursor: "pointer", fontFamily: FONT, fontSize: 13.2, fontWeight: 600, color: C.t1, textAlign: "left" }}
                           onMouseEnter={e => e.currentTarget.style.background = C.priPale} onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
                           {Ic.lot(C.acc, 16)} Lote
                         </button>
                       )}
-                      <button onClick={() => { setAddMenuOpen(false); setAddMenuSub(null); setCreatingPoi(true); if (!sectionOpen.pois) setSectionOpen(p => ({ ...p, pois: true })); }} style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "12px 14px", background: "none", border: "none", cursor: "pointer", fontFamily: FONT, fontSize: 13.2, fontWeight: 600, color: C.t1, textAlign: "left" }}
+                      <button onClick={() => { setAddMenuOpen(false); setAddMenuSub(null); setCreationMode("poi"); setCreatingPoi(true); }} style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "12px 14px", background: "none", border: "none", cursor: "pointer", fontFamily: FONT, fontSize: 13.2, fontWeight: 600, color: C.t1, textAlign: "left" }}
                         onMouseEnter={e => e.currentTarget.style.background = C.priPale} onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
                         {Ic.poi("#0891B2", 16)} Ubicación de interés
                       </button>
@@ -850,7 +854,7 @@ export default function LocationsScreen({ onBack }) {
               </div>
             )}
           </div>
-          {importStep === 0 && (
+          {importStep === 0 && !creationMode && (
             <div style={{ position: "relative" }}>
               <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", display: "flex" }}>{Ic.srch(C.t3, 14)}</span>
               <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar ubicación..."
@@ -862,6 +866,29 @@ export default function LocationsScreen({ onBack }) {
         <div style={{ flex: 1, overflowY: "auto" }}>
           {msg && <div onClick={() => setMsg(null)} style={{ padding: "8px 16px", fontSize: 12.1, fontWeight: 600, background: msg.k === "ok" ? C.okPale : C.errPale, color: msg.k === "ok" ? C.ok : C.err, cursor: "pointer", borderBottom: `1px solid ${C.b2}` }}>{msg.t}</div>}
 
+          {/* ── CREATION MODE: full-panel form ── */}
+          {creationMode && (
+            <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "12px 16px", borderBottom: `1px solid ${C.b1}` }}>
+                <button onClick={() => { setCreationMode(null); setCreatingField(false); setCreatingPoi(false); setCreatingLotForField(null); }} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex", alignItems: "center", gap: 4, fontFamily: FONT, fontSize: 14, fontWeight: 600, color: C.pri }}>
+                  {Ic.chev(C.pri, 16)} Volver
+                </button>
+              </div>
+              <div style={{ padding: 16, fontSize: 16, fontWeight: 600, fontFamily: FONT, color: C.t1, borderBottom: `1px solid ${C.b2}` }}>
+                {creationMode === "field" && "Crear campo"}
+                {creationMode === "lot" && "Crear lote"}
+                {creationMode === "poi" && "Crear ubicación de interés"}
+              </div>
+              <div style={{ padding: 0, flex: 1 }}>
+                {creationMode === "field" && <FieldForm mode="create" saving={saving} onSave={handleCreateField} onCancel={() => { setCreationMode(null); setCreatingField(false); }} onSelectOnMap={startMapSelect} />}
+                {creationMode === "lot" && <LotForm mode="create" fields={fields} saving={saving} onSave={(data) => handleCreateLot(data._fieldId, data)} onCancel={() => { setCreationMode(null); setCreatingLotForField(null); }} onSelectOnMap={startMapSelect} />}
+                {creationMode === "poi" && <PoiForm mode="create" fields={fields} saving={saving} onSave={handleCreatePoi} onCancel={() => { setCreationMode(null); setCreatingPoi(false); }} onSelectOnMap={startMapSelect} />}
+              </div>
+            </div>
+          )}
+
+          {/* ── NORMAL VIEW (import + list) ── */}
+          {!creationMode && <>
           {importStep === 1 && (
             <div style={{ padding: 16 }}>
               <div style={{ fontSize: 14.3, fontWeight: 700, marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>{Ic.pin(C.pri, 16)} Importar desde Google Maps</div>
@@ -907,8 +934,7 @@ export default function LocationsScreen({ onBack }) {
               {renderSectionHeader("Ubicaciones de interés", filteredPois.length, "pois", MAP_COLORS.poi, (c, s) => Ic.poi(c, s))}
               {sectionOpen.pois && (
                 <>
-                  {creatingPoi && <SlideIn><PoiForm mode="create" saving={saving} onSave={handleCreatePoi} onCancel={() => setCreatingPoi(false)} onSelectOnMap={startMapSelect} /></SlideIn>}
-                  {filteredPois.length === 0 && !creatingPoi
+                  {filteredPois.length === 0
                     ? <div style={{ padding: "16px", textAlign: "center", fontSize: 12.7, color: C.t3 }}>{search ? "Sin resultados" : "Sin ubicaciones de interés"}</div>
                     : filteredPois.map(p => renderPoiItem(p, p._isSharedWithMe))}
                 </>
@@ -917,7 +943,7 @@ export default function LocationsScreen({ onBack }) {
               {renderSectionHeader("Campos", filteredFields.length, "fields", MAP_COLORS.field, (c, s) => Ic.field(c, s))}
               {sectionOpen.fields && (
                 <>
-                  {creatingField && <SlideIn><FieldForm mode="create" saving={saving} onSave={handleCreateField} onCancel={() => setCreatingField(false)} onSelectOnMap={startMapSelect} /></SlideIn>}
+                  {creatingField && !creationMode && <SlideIn><FieldForm mode="create" saving={saving} onSave={handleCreateField} onCancel={() => setCreatingField(false)} onSelectOnMap={startMapSelect} /></SlideIn>}
                   {filteredFields.length === 0 && !creatingField
                     ? <div style={{ padding: "16px", textAlign: "center", fontSize: 12.7, color: C.t3 }}>{search ? "Sin resultados" : "Sin campos registrados"}</div>
                     : renderFieldsList()}
@@ -925,6 +951,7 @@ export default function LocationsScreen({ onBack }) {
               )}
             </>
           )}
+          </>}
         </div>
       </div>
 

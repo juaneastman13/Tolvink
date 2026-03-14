@@ -4,7 +4,7 @@ import { SafeZone, LocationPicker } from "../../maps";
 
 const COLOR = "#0891B2";
 
-export default function PoiForm({ mode = "create", poi, onSave, onCancel, saving, onSelectOnMap }) {
+export default function PoiForm({ mode = "create", poi, fields, onSave, onCancel, saving, onSelectOnMap }) {
   const [name, setName] = useState(mode === "edit" && poi ? poi.name : "");
   const [comments, setComments] = useState(mode === "edit" && poi ? (poi.comments || "") : "");
   const [loc, setLoc] = useState(() => {
@@ -16,15 +16,29 @@ export default function PoiForm({ mode = "create", poi, onSave, onCancel, saving
     return null;
   });
 
+  // Optional field/lot association (create mode only)
+  const hasFields = mode === "create" && fields?.length > 0;
+  const [assocFieldId, setAssocFieldId] = useState("");
+  const [assocLotId, setAssocLotId] = useState("");
+  const assocField = hasFields ? fields.find(f => f.id === assocFieldId) : null;
+  const assocLots = assocField?.lots || [];
+
   const handleKeyDown = (e) => {
     if (e.key === "Escape") { e.preventDefault(); onCancel(); }
     if (e.key === "Enter" && canSave) { e.preventDefault(); handleSave(); }
   };
 
   const handleSave = () => {
+    // Build comments with association info
+    let finalComments = comments.trim();
+    if (assocFieldId && assocField) {
+      const assocLot = assocLotId ? assocLots.find(l => l.id === assocLotId) : null;
+      const ref = assocLot ? `Campo: ${assocField.name} / Lote: ${assocLot.name}` : `Campo: ${assocField.name}`;
+      finalComments = finalComments ? `${finalComments}\n${ref}` : ref;
+    }
     onSave({
       name: name.trim(),
-      comments: comments.trim() || undefined,
+      comments: finalComments || undefined,
       lat: loc?.lat || undefined,
       lng: loc?.lng || undefined,
     });
@@ -46,6 +60,26 @@ export default function PoiForm({ mode = "create", poi, onSave, onCancel, saving
         </div>
         <input autoFocus value={name} onChange={e => setName(e.target.value)} onKeyDown={handleKeyDown} placeholder="Nombre" style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: `1.5px solid ${C.bFocus}`, background: C.bgInput, fontFamily: FONT, fontSize: 13.2, fontWeight: 700, color: C.t1, outline: "none", boxSizing: "border-box" }} />
         <input value={comments} onChange={e => setComments(e.target.value)} onKeyDown={handleKeyDown} placeholder="Comentarios (opcional)" style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: `1px solid ${C.b2}`, background: C.bgInput, fontFamily: FONT, fontSize: 12.1, color: C.t1, outline: "none", boxSizing: "border-box" }} />
+        {hasFields && (
+          <>
+            <div>
+              <label style={{ fontSize: 11, fontWeight: 600, color: C.t2, display: "block", marginBottom: 4 }}>Campo asociado (opcional)</label>
+              <select value={assocFieldId} onChange={e => { setAssocFieldId(e.target.value); setAssocLotId(""); }} style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: `1px solid ${C.b2}`, background: C.bgInput, fontFamily: FONT, fontSize: 13.2, color: C.t1, outline: "none", boxSizing: "border-box", appearance: "auto" }}>
+                <option value="">Sin campo asociado</option>
+                {fields.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
+              </select>
+            </div>
+            {assocFieldId && assocLots.length > 0 && (
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 600, color: C.t2, display: "block", marginBottom: 4 }}>Lote asociado (opcional)</label>
+                <select value={assocLotId} onChange={e => setAssocLotId(e.target.value)} style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: `1px solid ${C.b2}`, background: C.bgInput, fontFamily: FONT, fontSize: 13.2, color: C.t1, outline: "none", boxSizing: "border-box", appearance: "auto" }}>
+                  <option value="">Sin lote asociado</option>
+                  {assocLots.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
+                </select>
+              </div>
+            )}
+          </>
+        )}
         {onSelectOnMap ? (
           <div>
             {loc ? (
