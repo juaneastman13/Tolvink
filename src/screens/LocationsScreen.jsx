@@ -675,13 +675,13 @@ export default function LocationsScreen({ onBack }) {
       <div key={f.id}>
         <div ref={el => { if (el) itemRefsMap.current[id] = el; }}
           style={{ display: "flex", alignItems: "center", gap: 8, padding: "16px 16px", borderBottom: `1px solid ${C.b2}`, borderLeft: isActive ? `3px solid ${C.pri}` : "3px solid transparent", background: isActive ? C.priPale : "transparent", cursor: "pointer", transition: "background 0.15s" }}
-          onClick={() => { if (hasCoords) focusOnMap(id, Number(f.lat), Number(f.lng)); setExpandedField(isExpanded ? null : f.id); }}
+          onClick={() => setExpandedField(isExpanded ? null : f.id)}
           onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = C.bgCard; }}
           onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = "transparent"; }}
         >
           <div style={{ width: 28, height: 28, borderRadius: 7, background: `${C.pri}12`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{Ic.field(C.pri, 14)}</div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 15, fontWeight: 600, color: C.t1, overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", whiteSpace: "normal" }}>{f.name}</div>
+            <div onClick={e => { e.stopPropagation(); if (hasCoords) focusOnMap(id, Number(f.lat), Number(f.lng)); }} onMouseEnter={e => { if (hasCoords) e.currentTarget.style.color = C.pri; }} onMouseLeave={e => { e.currentTarget.style.color = C.t1; }} style={{ fontSize: 15, fontWeight: 600, color: C.t1, overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", whiteSpace: "normal", cursor: hasCoords ? "pointer" : "default" }}>{f.name}</div>
             {f.address && <div style={{ fontSize: 11, color: C.t3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginTop: 4 }}>{f.address}</div>}
             {isShared && <span style={{ fontSize: 10, color: C.info, fontWeight: 600, marginTop: 4, display: "inline-block" }}>Compartido</span>}
           </div>
@@ -729,14 +729,13 @@ export default function LocationsScreen({ onBack }) {
           return (
             <div key={l.id}>
               <div ref={el => { if (el) itemRefsMap.current[lotId] = el; }}
-                style={{ display: "flex", alignItems: "center", gap: 8, padding: "14px 16px 14px 40px", borderBottom: `1px solid ${C.b2}`, borderLeft: lotActive ? `3px solid ${C.pri}` : "3px solid transparent", background: lotActive ? C.priPale : "transparent", cursor: lotHasCoords ? "pointer" : "default", transition: "background 0.15s" }}
-                onClick={() => lotHasCoords && focusOnMap(lotId, Number(l.lat), Number(l.lng))}
+                style={{ display: "flex", alignItems: "center", gap: 8, padding: "14px 16px 14px 40px", borderBottom: `1px solid ${C.b2}`, borderLeft: lotActive ? `3px solid ${C.pri}` : "3px solid transparent", background: lotActive ? C.priPale : "transparent", cursor: "default", transition: "background 0.15s" }}
                 onMouseEnter={e => { if (!lotActive) e.currentTarget.style.background = C.bgCard; }}
                 onMouseLeave={e => { if (!lotActive) e.currentTarget.style.background = "transparent"; }}
               >
                 <div style={{ width: 24, height: 24, borderRadius: 6, background: `${LOC_COLORS.lot}18`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{Ic.lot(LOC_COLORS.lot, 12)}</div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <span style={{ fontSize: 14, fontWeight: 500, color: C.t1 }}>{l.name}</span>
+                  <span onClick={() => lotHasCoords && focusOnMap(lotId, Number(l.lat), Number(l.lng))} onMouseEnter={e => { if (lotHasCoords) e.currentTarget.style.color = C.pri; }} onMouseLeave={e => { e.currentTarget.style.color = C.t1; }} style={{ fontSize: 14, fontWeight: 500, color: C.t1, cursor: lotHasCoords ? "pointer" : "default" }}>{l.name}</span>
                   {l.hectares && <span style={{ fontSize: 11, color: C.t3, marginLeft: 6 }}>{l.hectares} ha</span>}
                 </div>
                 <div style={{ marginLeft: 4 }} onClick={e => e.stopPropagation()}>
