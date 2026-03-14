@@ -7,7 +7,7 @@ import { LocationPicker } from "../maps";
 import AccessScreen from "./AccessScreen";
 
 export default function AdminScreen({ user, onBack }) {
-  const isPlatform = user.role === "platform_admin";
+  const isPlatform = user.role === "platform_admin" || user.isSuperAdmin === true;
   const isManager = user.role === "admin";
   const s = adminStyles();
 
