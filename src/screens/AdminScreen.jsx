@@ -61,6 +61,14 @@ export default function AdminScreen({ user, onBack }) {
   // Detail tab: branches | fields | trucks
   const [detailTab, setDetailTab] = useState("branches");
 
+  // User edit — membership management (must be top-level for hooks rules)
+  const [savingField, setSavingField] = useState(null);
+  const [savedField, setSavedField] = useState(null);
+  const [addingCompany, setAddingCompany] = useState(false);
+  const [addCompanyId, setAddCompanyId] = useState("");
+  const [addCompanyRole, setAddCompanyRole] = useState("operario");
+  const [confirmRemove, setConfirmRemove] = useState(null);
+
   const msgTimer = useRef(null);
   const show = (t,k="ok") => { setMsg({t,k}); clearTimeout(msgTimer.current); msgTimer.current = setTimeout(()=>setMsg(null),3000); };
   useEffect(() => () => clearTimeout(msgTimer.current), []);
@@ -285,12 +293,6 @@ export default function AdminScreen({ user, onBack }) {
   // ===================== USER EDIT =====================
   if (view==="userEdit" && editUserData) {
     const memberships = editUserData.memberships||[];
-    const [savingField,setSavingField] = useState(null);
-    const [savedField,setSavedField] = useState(null);
-    const [addingCompany,setAddingCompany] = useState(false);
-    const [addCompanyId,setAddCompanyId] = useState("");
-    const [addCompanyRole,setAddCompanyRole] = useState("operario");
-    const [confirmRemove,setConfirmRemove] = useState(null);
     const membershipRoles = {operario:"Operario",gerente:"Gerente",chofer:"Chofer"};
 
     const saveBasicField = async (field, value) => {
