@@ -21,8 +21,8 @@ export function LoadingOverlay({ closing=false, closingText="", onClose }) {
   onCloseRef.current = onClose;
   useEffect(() => {
     if (!closing) return;
-    const t1 = setTimeout(() => setFading(true), 200);
-    const t2 = setTimeout(() => { onCloseRef.current?.(); }, 500);
+    const t1 = setTimeout(() => setFading(true), 2200);
+    const t2 = setTimeout(() => { onCloseRef.current?.(); }, 2600);
     return () => { clearTimeout(t1); clearTimeout(t2); };
   }, [closing]);
   return (

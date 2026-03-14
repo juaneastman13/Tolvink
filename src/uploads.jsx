@@ -209,8 +209,8 @@ export function UploadOverlay({ uploading, done, total, current, label }) {
     if (!uploading && stage === "uploading") {
       if (done) {
         setStage("success");
-        const t1 = setTimeout(() => setStage("fadeout"), 1400);
-        const t2 = setTimeout(() => { setStage("idle"); setOpacity(0); }, 1800);
+        const t1 = setTimeout(() => setStage("fadeout"), 2200);
+        const t2 = setTimeout(() => { setStage("idle"); setOpacity(0); }, 2600);
         return () => { clearTimeout(t1); clearTimeout(t2); };
       } else {
         setStage("idle");
@@ -222,7 +222,7 @@ export function UploadOverlay({ uploading, done, total, current, label }) {
   if (stage === "idle") return null;
 
   return (
-    <div style={{ position: "absolute", inset: 0, borderRadius: 12, background: "rgba(255,255,255,0.92)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", zIndex: 5, transition: "opacity 0.35s ease", opacity: stage === "fadeout" ? 0 : 1 }}>
+    <div style={{ position: "absolute", inset: 0, borderRadius: 12, background: C.bgOverlay, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", zIndex: 5, transition: "opacity 0.35s ease", opacity: stage === "fadeout" ? 0 : 1 }}>
       <style>{`
 @keyframes uplPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.5)}}
 @keyframes uplCircleIn{from{transform:scale(0);opacity:0}to{transform:scale(1);opacity:1}}
@@ -234,8 +234,8 @@ export function UploadOverlay({ uploading, done, total, current, label }) {
             <span style={{ fontSize: 30.8, fontWeight: 800, color: C.pri, letterSpacing: -1.5, lineHeight: 1 }}>tolvink</span>
             <span style={{ width: 10, height: 10, borderRadius: 5, background: C.acc, marginLeft: 3, marginTop: 2, display: "inline-block", animation: "uplPulse 1.2s ease-in-out infinite" }} />
           </div>
-          {total > 1 && <div style={{ fontSize: 12.1, color: C.t2, fontWeight: 600 }}>{label || "Subiendo"} {current}/{total}...</div>}
-          {total <= 1 && <div style={{ fontSize: 12.1, color: C.t2, fontWeight: 600 }}>{label || "Subiendo"}...</div>}
+          {total > 1 && <div style={{ fontSize: 12.1, color: "#fff", fontWeight: 600 }}>{label || "Subiendo"} {current}/{total}...</div>}
+          {total <= 1 && <div style={{ fontSize: 12.1, color: "#fff", fontWeight: 600 }}>{label || "Subiendo"}...</div>}
         </>
       )}
       {(stage === "success" || stage === "fadeout") && (
@@ -325,7 +325,7 @@ export function FreightFileUpload({ freightId, step, onUploaded }) {
     if (onUploaded) onUploaded();
     if (!allOk) { show("Algunos archivos no se pudieron subir", "err"); }
     // Reset files list after successful upload so user can upload more
-    if (allOk) { setTimeout(() => { setFiles([]); setUploadDone(false); }, 1800); }
+    if (allOk) { setTimeout(() => { setFiles([]); setUploadDone(false); }, 2600); }
     else { setTimeout(() => { setFiles(prev => prev.filter(f => !f.done)); }, 2000); }
   };
 
