@@ -498,7 +498,7 @@ export default memo(function ListScreen({ freights, loading, onNav, onRefresh, c
   return (
     <div ref={containerRef} style={{ flex:1, overflow:"auto", padding:18, WebkitOverflowScrolling:"touch" }}>
       {indicator}
-      {fromLocations && <button onClick={() => onNav("locations")} style={{ background:"none", border:"none", cursor:"pointer", fontFamily:FONT, fontSize:14, fontWeight:600, color:C.pri, padding:"8px 0", marginBottom:8, display:"flex", alignItems:"center", gap:4 }}>{Ic.chev(C.pri, 16)} Volver al mapa</button>}
+      {fromLocations && <button onClick={() => onNav("locations")} style={{ background:C.priPale, border:`1px solid ${C.pri}40`, borderRadius:8, cursor:"pointer", fontFamily:FONT, fontSize:14, fontWeight:600, color:C.pri, padding:"10px 14px", marginBottom:12, display:"flex", alignItems:"center", gap:6, width:"100%" }}>{Ic.chev(C.pri, 16)} Volver al mapa de ubicaciones</button>}
       {/* Desktop: original filters layout */}
       {isDesktop ? (<>
       {/* Search bar -- line 1 */}
