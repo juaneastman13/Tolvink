@@ -25,7 +25,7 @@ export function Sidebar({ active, onChange, unread=0, pendingCount=0, notifCount
   const allItems = [
     { k:"home",    ic:a=>Ic.home(a?C.pri:C.t3,20),  l:"Inicio" },
     { k:"list",    ic:a=>Ic.truck(a?C.pri:C.t3,20),  l:"Fletes" },
-    { k:"locations",ic:a=>Ic.compass(a?C.pri:C.t3,20), l:"Ubicaciones" },
+    { k:"locations",ic:a=>Ic.map(a?C.pri:C.t3,20), l:"Mapa" },
     { k:"chats",   ic:a=>Ic.msg(a?C.pri:C.t3,20),    l:"Chat", bd:unread },
     { k:"notifs",  ic:a=>Ic.bell(a?C.pri:C.t3,20),   l:"Notificaciones", bd:notifCount },
     { k:"calendar",ic:a=>Ic.cal(a?C.pri:C.t3,20),    l:"Calendario" },
@@ -221,7 +221,7 @@ export function Nav({ active, onChange, unread=0, pendingCount=0, notifCount=0, 
     { k:"home",     ic:a=>Ic.home(a?C.pri:C.t3,20),  l:"Inicio" },
     { k:"list",     ic:a=>Ic.truck(a?C.pri:C.t3,20),  l:"Fletes" },
     { k:"center",  sp:true, bd:pendingCount },
-    { k:"locations",ic:a=>Ic.compass(a?C.pri:C.t3,20), l:"Ubicaciones" },
+    { k:"locations",ic:a=>Ic.map(a?C.pri:C.t3,20), l:"Mapa" },
     { k:"menu",     ic:a=>Ic.menu3(a?C.pri:C.t3,20),  l:"Menú", bd:notifCount },
   ];
   const items = allNavItems;
