@@ -477,12 +477,11 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
             </div>
             {originMode==="field" ? (<>
               <Select label="Campo" icon={Ic.field(C.ok,14)} value={form.fieldId} onChange={v=>{u({fieldId:v,lotId:""});}} options={fieldOpts} placeholder="Seleccionar campo..."/>
-              {form.fieldId && hasLots && <div style={{ marginTop:10 }}>
-                <Select label="Origen (lote)" icon={Ic.lot(C.pri,14)} value={form.lotId} onChange={v=>u({lotId:v})} options={lotOpts} placeholder={loadingLots?"Cargando lotes...":"Seleccionar lote..."}/>
+              <div style={{ marginTop:10 }}>
+                <Select label={hasLots ? "Origen (lote)" : "Origen (lote · opcional)"} icon={Ic.lot(C.pri,14)} value={form.lotId} onChange={v=>u({lotId:v})} options={lotOpts} placeholder={loadingLots?"Cargando lotes...":form.fieldId?(hasLots?"Seleccionar lote...":"Sin lotes — se usará el campo"):"Primero seleccioná un campo"}/>
                 {touched&&<FieldError error={errs.lotId}/>}
                 {selectedLot && selectedLot.lat && <div style={{ display:"flex", alignItems:"center", gap:6, padding:"6px 10px", background:C.priPale, borderRadius:8, marginTop:6 }}>{Ic.chk(C.pri,14)}<span style={{fontSize:11.6,color:C.pri,fontWeight:500}}>{selectedLot.lat}, {selectedLot.lng}</span></div>}
-              </div>}
-              {form.fieldId && !hasLots && !loadingLots && <div style={{ display:"flex", alignItems:"center", gap:6, padding:"8px 10px", background:C.priPale, borderRadius:8, marginTop:10 }}>{Ic.chk(C.pri,14)}<span style={{fontSize:12,color:C.pri,fontWeight:500}}>Se usará la ubicación del campo</span></div>}
+              </div>
             </>) : (<>
               <Field label="Nombre del origen (opcional)" value={customOrigin.name} onChange={v=>setCustomOrigin(p=>({...p,name:v}))} placeholder="Ej: Chacra Los Álamos (opcional)"/>
               <div style={{ marginTop:10 }}>
@@ -620,8 +619,8 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
             <div>
               <Select label="Campo" icon={Ic.field(C.ok,14)} value={form.fieldId} onChange={v=>{u({fieldId:v,lotId:""});}} options={fieldOpts} placeholder="Seleccionar campo..."/>
             </div>
-            {form.fieldId && hasLots && <div style={{ marginTop:10 }}>
-              <Select label="Origen (lote)" icon={Ic.lot(C.pri,14)} value={form.lotId} onChange={v=>u({lotId:v})} options={lotOpts} placeholder={loadingLots?"Cargando lotes...":"Seleccionar lote..."}/>
+            <div style={{ marginTop:10 }}>
+              <Select label={hasLots ? "Origen (lote)" : "Origen (lote · opcional)"} icon={Ic.lot(C.pri,14)} value={form.lotId} onChange={v=>u({lotId:v})} options={lotOpts} placeholder={loadingLots?"Cargando lotes...":form.fieldId?(hasLots?"Seleccionar lote...":"Sin lotes — se usará el campo"):"Primero seleccioná un campo"}/>
               {touched&&<FieldError error={errs.lotId}/>}
               {selectedLot && selectedLot.lat && <div style={{ display:"flex", alignItems:"center", gap:6, padding:"6px 10px", background:C.priPale, borderRadius:8, marginTop:6 }}>{Ic.chk(C.pri,14)}<span style={{fontSize:11.6,color:C.pri,fontWeight:500}}>{selectedLot.lat}, {selectedLot.lng}</span></div>}
               {form.fieldId && !newLot && <button type="button" onClick={()=>setNewLot(true)} style={{marginTop:8,background:"none",border:"none",cursor:"pointer",fontSize:12.1,fontWeight:600,color:C.pri,padding:0,fontFamily:"inherit",display:"flex",alignItems:"center",gap:4}}>{Ic.plus(C.pri,13)} Crear lote nuevo</button>}
@@ -640,8 +639,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
                   {newLotLoc && <div style={{display:"flex",alignItems:"center",gap:6,padding:"6px 10px",background:C.w,borderRadius:8,marginTop:6}}>{Ic.chk(C.pri,14)}<span style={{fontSize:11.6,color:C.pri,fontWeight:500}}>{newLotLoc.lat.toFixed(4)}, {newLotLoc.lng.toFixed(4)}</span></div>}
                 </div>
               )}
-            </div>}
-            {form.fieldId && !hasLots && !loadingLots && <div style={{ display:"flex", alignItems:"center", gap:6, padding:"8px 10px", background:C.priPale, borderRadius:8, marginTop:10 }}>{Ic.chk(C.pri,14)}<span style={{fontSize:12,color:C.pri,fontWeight:500}}>Se usará la ubicación del campo</span></div>}
+            </div>
           </>) : (<>
             <Field label="Nombre del origen (opcional)" value={customOrigin.name} onChange={v=>setCustomOrigin(p=>({...p,name:v}))} placeholder="Ej: Chacra Los Álamos (opcional)"/>
             <div style={{ marginTop:10 }}>
