@@ -471,7 +471,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
               <Field label="Nombre del origen (opcional)" value={customOrigin.name} onChange={v=>setCustomOrigin(p=>({...p,name:v}))} placeholder="Ej: Chacra Los Álamos (opcional)"/>
               <div style={{ marginTop:10 }}>
                 <Suspense fallback={<div style={{padding:20,textAlign:"center",color:C.t3}}>Cargando mapa...</div>}>
-                  <LocationPicker label="Ubicación en mapa" value={customOrigin.lat?{lat:customOrigin.lat,lng:customOrigin.lng}:null} onChange={loc=>setCustomOrigin(p=>({...p,lat:loc?.lat||null,lng:loc?.lng||null,name:p.name||loc?.address||""}))} confirmLabel="Confirmar origen" onConfirm={()=>{if(isEditing)confirmEdit();else advanceToNext();}}/>
+                  <LocationPicker label="Ubicación en mapa" value={customOrigin.lat?{lat:customOrigin.lat,lng:customOrigin.lng}:null} onChange={loc=>setCustomOrigin(p=>({...p,lat:loc?.lat||null,lng:loc?.lng||null}))} confirmLabel="Confirmar origen" onConfirm={()=>{if(isEditing)confirmEdit();else advanceToNext();}}/>
                 </Suspense>
               </div>
               {touched&&errs.customOrigin&&<div style={{padding:"6px 10px",borderRadius:8,marginTop:6,fontSize:12.1,fontWeight:600,color:C.err,background:C.errPale}}>{errs.customOrigin}</div>}
@@ -628,7 +628,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
           </>) : (<>
             <Field label="Nombre del origen (opcional)" value={customOrigin.name} onChange={v=>setCustomOrigin(p=>({...p,name:v}))} placeholder="Ej: Chacra Los Álamos (opcional)"/>
             <div style={{ marginTop:10 }}>
-              <SafeZone><LocationPicker label="Ubicación en mapa" value={customOrigin.lat?{lat:customOrigin.lat,lng:customOrigin.lng}:null} onChange={loc=>setCustomOrigin(p=>({...p,lat:loc?.lat||null,lng:loc?.lng||null,name:p.name||loc?.address||""}))} confirmLabel="Confirmar origen" onConfirm={()=>{if(isEditing)confirmEdit();else advanceToNext();}}/></SafeZone>
+              <SafeZone><LocationPicker label="Ubicación en mapa" value={customOrigin.lat?{lat:customOrigin.lat,lng:customOrigin.lng}:null} onChange={loc=>setCustomOrigin(p=>({...p,lat:loc?.lat||null,lng:loc?.lng||null}))} confirmLabel="Confirmar origen" onConfirm={()=>{if(isEditing)confirmEdit();else advanceToNext();}}/></SafeZone>
             </div>
             {touched&&errs.customOrigin&&<div style={{padding:"6px 10px",borderRadius:8,marginTop:6,fontSize:12.1,fontWeight:600,color:C.err,background:C.errPale}}>{errs.customOrigin}</div>}
             {customOrigin.lat && <div style={{ display:"flex", alignItems:"center", gap:6, padding:"6px 10px", background:C.priPale, borderRadius:8, marginTop:6 }}>{Ic.chk(C.pri,14)}<span style={{fontSize:11.6,color:C.pri,fontWeight:500}}>{customOrigin.lat.toFixed(4)}, {customOrigin.lng.toFixed(4)}</span></div>}
