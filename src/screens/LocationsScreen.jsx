@@ -973,7 +973,7 @@ export default function LocationsScreen({ onBack }) {
         )}
 
         {!mapSelectMode && <>
-          <div style={{ position: "absolute", top: 12, right: 12, zIndex: 5, display: "flex", gap: 6 }}>
+          <div style={{ position: "absolute", top: 12, right: 6, zIndex: 5, display: "flex", gap: 6 }}>
             {FILTER_CHIPS.map(fc => {
               const active = mapFilters[fc.key];
               const typeColor = FILTER_COLORS[fc.key];
