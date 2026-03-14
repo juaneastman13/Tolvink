@@ -347,7 +347,7 @@ export default function LocationsScreen({ onBack }) {
   fields.forEach(f => {
     if (f.lat && f.lng) allLocations.push({ id: `field-${f.id}`, type: "field", name: f.name, lat: Number(f.lat), lng: Number(f.lng), address: f.address });
     (f.lots || []).forEach(l => {
-      if (l.lat && l.lng) allLocations.push({ id: `lot-${l.id}`, type: "lot", name: l.name, lat: Number(l.lat), lng: Number(l.lng), fieldName: f.name });
+      if (l.lat && l.lng) allLocations.push({ id: `lot-${l.id}`, type: "lot", name: l.name, lat: Number(l.lat), lng: Number(l.lng), fieldName: f.name, fieldId: f.id });
     });
   });
   pois.forEach(p => {
@@ -387,6 +387,8 @@ export default function LocationsScreen({ onBack }) {
   const handleInfoActionRef = useRef(handleInfoAction);
   handleInfoActionRef.current = handleInfoAction;
   const highlightPanelItemRef = useRef(null);
+  const navigateRef = useRef(navigate);
+  navigateRef.current = navigate;
 
   useEffect(() => {
     if (!mapContainerRef.current) return;
@@ -411,6 +413,19 @@ export default function LocationsScreen({ onBack }) {
         if (action === "edit") handleInfoActionRef.current("edit", type, id);
         if (action === "share") handleInfoActionRef.current("share", type, id);
         if (action === "list") highlightPanelItemRef.current(id);
+        if (action === "solicitar") {
+          const name = btn.dataset.iwName;
+          const fieldId = btn.dataset.iwFieldId;
+          const lat = btn.dataset.iwLat;
+          const lng = btn.dataset.iwLng;
+          if (type === "field") navigateRef.current(`/new?originFieldId=${id}`);
+          else if (type === "lot") navigateRef.current(`/new?originFieldId=${fieldId}&originLotId=${id}`);
+          else navigateRef.current(`/new?originMode=map&originName=${encodeURIComponent(name)}&originLat=${lat}&originLng=${lng}`);
+        }
+        if (action === "ver-fletes") {
+          const name = btn.dataset.iwName;
+          navigateRef.current(`/list?search=${encodeURIComponent(name)}`);
+        }
       });
     }).catch(() => {});
     return () => { cancelled = true; };
@@ -424,10 +439,15 @@ export default function LocationsScreen({ onBack }) {
     const color = MAP_COLORS[loc.type] || C.t1;
     const btnStyle = `display:inline-flex;align-items:center;gap:3px;padding:3px 8px;border-radius:6px;border:1px solid ${C.b2};background:${C.w};cursor:pointer;font-family:${FONT};font-size:11px;font-weight:600;color:${C.t2}`;
     const rawId = loc.id.replace(/^(field|lot|poi)-/, "");
-    return `<div style="font-family:${FONT};font-size:12px;line-height:1.5;max-width:220px">` +
+    const accBtn = `flex:1;display:flex;align-items:center;justify-content:center;gap:4px;padding:6px 8px;border-radius:8px;border:none;cursor:pointer;background:${C.acc};color:#fff;font-size:12px;font-weight:600;font-family:${FONT}`;
+    const secBtn = `flex:1;display:flex;align-items:center;justify-content:center;gap:4px;padding:6px 8px;border-radius:8px;cursor:pointer;background:${C.w};color:${C.t1};font-size:12px;font-weight:500;font-family:${FONT};border:1px solid ${C.b1}`;
+    return `<div style="font-family:${FONT};font-size:12px;line-height:1.5;min-width:210px;max-width:260px">` +
+      `<div style="display:flex;gap:6px;margin-bottom:8px">` +
+        `<button data-iw-action="solicitar" data-iw-type="${loc.type}" data-iw-id="${rawId}" data-iw-field-id="${loc.fieldId || ""}" data-iw-lat="${loc.lat}" data-iw-lng="${loc.lng}" data-iw-name="${_esc(loc.name)}" style="${accBtn}">🚛 Solicitar</button>` +
+        `<button data-iw-action="ver-fletes" data-iw-type="${loc.type}" data-iw-id="${rawId}" data-iw-name="${_esc(loc.name)}" style="${secBtn}">📋 Ver fletes</button>` +
+      `</div>` +
       `<strong>${_esc(loc.name)}</strong><br/>` +
       `<span style="display:inline-block;padding:1px 6px;border-radius:8px;background:${color};color:#fff;font-size:10px;font-weight:600;margin-top:2px">${_esc(typeLabel)}</span>` +
-      (loc.address ? `<br/><span style="color:#666">${_esc(loc.address)}</span>` : "") +
       (loc.fieldName ? `<br/><span style="color:#666">${_esc(loc.fieldName)}</span>` : "") +
       `<div style="display:flex;gap:4px;margin-top:6px;flex-wrap:wrap">` +
         (!loc.isShared ? `<button data-iw-action="edit" data-iw-type="${loc.type}" data-iw-id="${rawId}" style="${btnStyle}">Editar</button>` : "") +
@@ -577,21 +597,6 @@ export default function LocationsScreen({ onBack }) {
   // RENDER HELPERS
   // ═══════════════════════════════════════════════════════════════
 
-  const accBtnStyle = { flex: 1, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 5, padding: "6px 8px", borderRadius: 8, border: "none", background: C.acc, cursor: "pointer", fontFamily: FONT, fontSize: 12.5, fontWeight: 700, color: "#fff", boxShadow: `0 1px 4px ${C.acc}30`, minHeight: 36 };
-  const secBtnStyle = { flex: 1, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 5, padding: "6px 8px", borderRadius: 8, border: `1px solid ${C.b1}`, background: C.bgCard, cursor: "pointer", fontFamily: FONT, fontSize: 12.5, fontWeight: 600, color: C.t1, minHeight: 36 };
-
-  const renderLocationBtns = (newUrl, listUrl) => (
-    <div style={{ display: "flex", gap: 6, marginBottom: 6 }} onClick={e => e.stopPropagation()}>
-      <button onClick={() => navigate(newUrl)} style={accBtnStyle}>
-        <span style={{ display: "inline-flex", animation: "truckDrive 1.5s ease-in-out infinite" }}>{Ic.truck("#fff", 14)}</span>
-        Solicitar
-      </button>
-      <button onClick={() => navigate(listUrl)} style={secBtnStyle}>
-        {Ic.doc(C.t2, 14)} Ver fletes
-      </button>
-    </div>
-  );
-
   const renderPoiItem = (p, isShared) => {
     const id = `poi-${p.id}`;
     const isActive = activeId === id;
@@ -624,10 +629,6 @@ export default function LocationsScreen({ onBack }) {
       >
         <div style={{ width: 28, height: 28, borderRadius: 7, background: `${LOC_COLORS.poi}18`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{Ic.poi(LOC_COLORS.poi, 14)}</div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          {renderLocationBtns(
-            hasCoords ? `/new?originMode=map&originName=${encodeURIComponent(p.name)}&originLat=${p.lat}&originLng=${p.lng}` : `/new`,
-            `/list?search=${encodeURIComponent(p.name)}`
-          )}
           <div style={{ fontSize: 15, fontWeight: 600, color: C.t1, overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", whiteSpace: "normal" }}>{p.name}</div>
           {p.comments && <div style={{ fontSize: 11, color: C.t3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginTop: 4 }}>{p.comments}</div>}
           {isShared && <span style={{ fontSize: 10, color: C.info, fontWeight: 600, marginTop: 4, display: "inline-block" }}>Compartida</span>}
@@ -680,7 +681,6 @@ export default function LocationsScreen({ onBack }) {
         >
           <div style={{ width: 28, height: 28, borderRadius: 7, background: `${C.pri}12`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{Ic.field(C.pri, 14)}</div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            {renderLocationBtns(`/new?originFieldId=${f.id}`, `/list?search=${encodeURIComponent(f.name)}`)}
             <div style={{ fontSize: 15, fontWeight: 600, color: C.t1, overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", whiteSpace: "normal" }}>{f.name}</div>
             {f.address && <div style={{ fontSize: 11, color: C.t3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginTop: 4 }}>{f.address}</div>}
             {isShared && <span style={{ fontSize: 10, color: C.info, fontWeight: 600, marginTop: 4, display: "inline-block" }}>Compartido</span>}
@@ -734,7 +734,6 @@ export default function LocationsScreen({ onBack }) {
               >
                 <div style={{ width: 24, height: 24, borderRadius: 6, background: `${LOC_COLORS.lot}18`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{Ic.lot(LOC_COLORS.lot, 12)}</div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  {renderLocationBtns(`/new?originFieldId=${f.id}&originLotId=${l.id}`, `/list?search=${encodeURIComponent(l.name)}`)}
                   <span style={{ fontSize: 14, fontWeight: 500, color: C.t1 }}>{l.name}</span>
                   {l.hectares && <span style={{ fontSize: 11, color: C.t3, marginLeft: 6 }}>{l.hectares} ha</span>}
                 </div>
