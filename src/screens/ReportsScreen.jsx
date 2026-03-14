@@ -27,28 +27,33 @@ export default function ReportsScreen({ onBack, freights, isDesktop, embedded, o
   const [ocrResult, setOcrResult] = useState(null);
   const [stats, setStats] = useState(null);
   const [statsLoading, setStatsLoading] = useState(false);
-  const [statsPeriod, setStatsPeriod] = useState("month"); // "week" | "month" | "lastMonth" | "custom"
+  const [activeView, setActiveView] = useState("stats"); // "stats" | "reports"
 
-  // Load stats when period or date filters change
+  // Stats prefs from localStorage
+  const PREFS_KEY = "tolvink_stats_prefs";
+  const defaultPrefs = { period:"thisMonth", groupBy:"week", sections:{ timeline:true, byGrain:true, byTransporter:true, byDestination:true, byOrigin:true, drivers:false, delays:true } };
+  const [prefs, setPrefs] = useState(() => { try { return JSON.parse(localStorage.getItem(PREFS_KEY)) || defaultPrefs; } catch { return defaultPrefs; } });
+  const updatePrefs = (patch) => { const np = { ...prefs, ...patch }; if (patch.sections) np.sections = { ...prefs.sections, ...patch.sections }; setPrefs(np); try { localStorage.setItem(PREFS_KEY, JSON.stringify(np)); } catch {} };
+  const toggleSection = (k) => updatePrefs({ sections: { ...prefs.sections, [k]: !prefs.sections[k] } });
+  const [statsDateFrom, setStatsDateFrom] = useState("");
+  const [statsDateTo, setStatsDateTo] = useState("");
+  const [showStatsConfig, setShowStatsConfig] = useState(false);
+
+  // Load stats
   useEffect(() => {
+    if (activeView !== "stats" && !embedded) return;
     let from, to;
     const now = new Date();
-    if (statsPeriod === "week") {
-      const d = new Date(now); d.setDate(d.getDate() - d.getDay());
-      from = d.toISOString().split("T")[0]; to = now.toISOString().split("T")[0];
-    } else if (statsPeriod === "month") {
-      from = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}-01`;
-      to = now.toISOString().split("T")[0];
-    } else if (statsPeriod === "lastMonth") {
-      const pm = new Date(now.getFullYear(), now.getMonth()-1, 1);
-      from = pm.toISOString().split("T")[0];
-      to = new Date(now.getFullYear(), now.getMonth(), 0).toISOString().split("T")[0];
-    } else if (dateFrom || dateTo) {
-      from = dateFrom || undefined; to = dateTo || undefined;
-    } else { return; }
+    const p = prefs.period;
+    if (p === "today") { from = to = now.toISOString().split("T")[0]; }
+    else if (p === "thisWeek") { const d = new Date(now); d.setDate(d.getDate() - d.getDay()); from = d.toISOString().split("T")[0]; to = now.toISOString().split("T")[0]; }
+    else if (p === "thisMonth") { from = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}-01`; to = now.toISOString().split("T")[0]; }
+    else if (p === "lastMonth") { const pm = new Date(now.getFullYear(), now.getMonth()-1, 1); from = pm.toISOString().split("T")[0]; to = new Date(now.getFullYear(), now.getMonth(), 0).toISOString().split("T")[0]; }
+    else if (p === "last3Months") { const d = new Date(now); d.setMonth(d.getMonth()-3); from = d.toISOString().split("T")[0]; to = now.toISOString().split("T")[0]; }
+    else if (p === "custom") { from = statsDateFrom || undefined; to = statsDateTo || undefined; if (!from && !to) return; }
     setStatsLoading(true);
-    apiGetFreightStats(from, to).then(setStats).catch(() => setStats(null)).finally(() => setStatsLoading(false));
-  }, [statsPeriod, dateFrom, dateTo]);
+    apiGetFreightStats(from, to, prefs.groupBy).then(setStats).catch(() => setStats(null)).finally(() => setStatsLoading(false));
+  }, [activeView, prefs.period, prefs.groupBy, statsDateFrom, statsDateTo]);
 
   const toggle = (k) => {
     setExpanded(p => {
@@ -126,59 +131,217 @@ export default function ReportsScreen({ onBack, freights, isDesktop, embedded, o
       {!isDesktop && !embedded && <div style={{ position:"sticky", top:0, zIndex:10, background:C.bg, padding:"18px 18px 8px" }}><button onClick={onBack} style={{ background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", fontSize:14.3, fontWeight:600, color:C.pri, marginBottom:14, padding:0, display:"flex", alignItems:"center", gap:4 }}>{Ic.chev(C.pri,18)} Mi Perfil</button></div>}
       <div style={{ padding:embedded?0:isDesktop?"18px 18px 18px":"0 18px 18px" }}>
 
-      {/* ── Stats Summary ── */}
+      {/* ── View toggle ── */}
       {!embedded && (
-        <div style={{ marginBottom:16 }}>
-          <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:10, flexWrap:"wrap" }}>
-            <span style={{ fontSize:15, fontWeight:700, color:C.t1 }}>Resumen del per\u00edodo</span>
-            {["week","month","lastMonth","custom"].map(p=>(
-              <button key={p} onClick={()=>setStatsPeriod(p)} style={{ padding:"5px 12px", borderRadius:16, border:`1.5px solid ${statsPeriod===p?C.pri:C.b1}`, background:statsPeriod===p?C.priPale:C.w, color:statsPeriod===p?C.pri:C.t2, fontSize:11.5, fontWeight:600, cursor:"pointer", fontFamily:FONT }}>
-                {p==="week"?"Esta semana":p==="month"?"Este mes":p==="lastMonth"?"Mes anterior":"Personalizado"}
-              </button>
-            ))}
-          </div>
-          {statsLoading && <div style={{ padding:12, color:C.t3, fontSize:13 }}>Cargando estad\u00edsticas...</div>}
-          {stats && !statsLoading && (
-            <>
-              {/* Metric cards */}
-              <div style={{ display:"grid", gridTemplateColumns:isDesktop?"repeat(4,1fr)":"repeat(2,1fr)", gap:10, marginBottom:12 }}>
-                {[
-                  { label:"Total fletes", value:stats.totalFreights, color:C.pri },
-                  { label:"Toneladas", value:`${stats.totalTons}t`, color:C.acc },
-                  { label:"Completados", value:`${Math.round(stats.completionRate*100)}%`, color:C.ok },
-                  { label:"Prom. tons/flete", value:stats.avgTonsPerFreight, color:C.sec },
-                ].map((m,i)=>(
-                  <div key={i} style={{ background:C.bgCard, borderRadius:12, padding:"14px 16px", boxShadow:C.sh }}>
-                    <div style={{ fontSize:11, fontWeight:600, color:C.t3, textTransform:"uppercase", letterSpacing:0.4 }}>{m.label}</div>
-                    <div style={{ fontSize:26, fontWeight:800, color:m.color, marginTop:2 }}>{m.value}</div>
-                  </div>
-                ))}
-              </div>
-              {/* Mini tables */}
-              <div style={{ display:"grid", gridTemplateColumns:isDesktop?"repeat(3,1fr)":"1fr", gap:10, marginBottom:12 }}>
-                {[
-                  { title:"Por grano", items:stats.byGrain, nameKey:"grain" },
-                  { title:"Top transportistas", items:stats.topTransporters, nameKey:"name" },
-                  { title:"Top destinos", items:stats.topDestinations, nameKey:"name" },
-                ].map((tbl,ti)=>(
-                  <div key={ti} style={{ background:C.bgCard, borderRadius:12, padding:"12px 14px", boxShadow:C.sh }}>
-                    <div style={{ fontSize:12, fontWeight:700, color:C.t2, marginBottom:8, textTransform:"uppercase", letterSpacing:0.3 }}>{tbl.title}</div>
-                    {(tbl.items||[]).slice(0,5).map((row,ri)=>(
-                      <div key={ri} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"4px 0", borderBottom:ri<Math.min(tbl.items.length,5)-1?`1px solid ${C.b2}`:"none" }}>
-                        <span style={{ fontSize:12.5, color:C.t1, fontWeight:500 }}>{row[tbl.nameKey]}</span>
-                        <span style={{ fontSize:12, color:C.t3, fontFamily:MONO }}>{row.count} · {row.tons}t</span>
-                      </div>
-                    ))}
-                    {(!tbl.items||tbl.items.length===0) && <div style={{ fontSize:12, color:C.t3 }}>Sin datos</div>}
-                  </div>
-                ))}
-              </div>
-            </>
-          )}
+        <div style={{ display:"flex", gap:6, marginBottom:12 }}>
+          {[{k:"stats",l:"Estad\u00edsticas",ic:Ic.doc},{k:"reports",l:"Reportes PDF",ic:Ic.download}].map(v=>(
+            <button key={v.k} onClick={()=>setActiveView(v.k)} style={{ flex:1, padding:"10px 0", borderRadius:8, border:`1.5px solid ${activeView===v.k?C.pri:C.b1}`, background:activeView===v.k?C.priPale:C.w, color:activeView===v.k?C.pri:C.t2, fontSize:13.5, fontWeight:600, cursor:"pointer", fontFamily:FONT, display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
+              {v.ic(activeView===v.k?C.pri:C.t3,15)} {v.l}
+            </button>
+          ))}
         </div>
       )}
 
-      {/* Search bar */}
+      {/* ── Stats Dashboard ── */}
+      {(activeView==="stats"||embedded) && !embedded && (() => {
+        const ov = stats?.overview || {};
+        const sec = prefs.sections;
+        const periodOpts = [{k:"today",l:"Hoy"},{k:"thisWeek",l:"Esta semana"},{k:"thisMonth",l:"Este mes"},{k:"lastMonth",l:"Mes anterior"},{k:"last3Months",l:"\u00dalt. 3 meses"},{k:"custom",l:"Personalizado"}];
+        const groupOpts = [{k:"day",l:"D\u00eda"},{k:"week",l:"Semana"},{k:"month",l:"Mes"}];
+        const sectionOpts = [{k:"timeline",l:"Timeline"},{k:"byGrain",l:"Granos"},{k:"byTransporter",l:"Transportistas"},{k:"byDestination",l:"Destinos"},{k:"byOrigin",l:"Or\u00edgenes"},{k:"drivers",l:"Conductores"},{k:"delays",l:"Retrasos"}];
+        const compRate = ov.completionRate||0;
+        const cancRate = ov.cancellationRate||0;
+        const compColor = compRate>=0.8?C.ok:compRate>=0.6?C.warn:C.err;
+        const cancColor = cancRate>0.15?C.err:cancRate>0.05?C.warn:C.ok;
+        const maxTl = stats?.timeline ? Math.max(...stats.timeline.map(t=>t.count),1) : 1;
+
+        const StatsTable = ({title,items,cols}) => (
+          <div style={{ background:C.bgCard, borderRadius:12, padding:"12px 14px", boxShadow:C.sh, marginBottom:10, overflowX:"auto" }}>
+            <div style={{ fontSize:12, fontWeight:700, color:C.t2, marginBottom:8, textTransform:"uppercase", letterSpacing:0.3 }}>{title}</div>
+            {(!items||items.length===0)?<div style={{fontSize:12,color:C.t3}}>Sin datos</div>:(
+              <table style={{ width:"100%", borderCollapse:"collapse", fontSize:12.5 }}>
+                <thead><tr>{cols.map((c,i)=><th key={i} style={{ textAlign:i===0?"left":"right", padding:"4px 6px", borderBottom:`1px solid ${C.b1}`, color:C.t3, fontWeight:600, fontSize:11 }}>{c.label}</th>)}</tr></thead>
+                <tbody>{items.slice(0,10).map((row,ri)=><tr key={ri}>{cols.map((c,ci)=><td key={ci} style={{ textAlign:ci===0?"left":"right", padding:"5px 6px", borderBottom:`1px solid ${C.b2}`, color:ci===0?C.t1:C.t2, fontWeight:ci===0?500:400, fontFamily:ci>0?MONO:FONT }}>{c.render?c.render(row):row[c.key]}</td>)}</tr>)}</tbody>
+              </table>
+            )}
+          </div>
+        );
+
+        return (
+          <div style={{ marginBottom:16 }}>
+            {/* Config bar */}
+            <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:10, flexWrap:"wrap" }}>
+              {periodOpts.map(p=>(
+                <button key={p.k} onClick={()=>updatePrefs({period:p.k})} style={{ padding:"5px 10px", borderRadius:16, border:`1.5px solid ${prefs.period===p.k?C.pri:C.b1}`, background:prefs.period===p.k?C.priPale:C.w, color:prefs.period===p.k?C.pri:C.t2, fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:FONT }}>{p.l}</button>
+              ))}
+              <button onClick={()=>setShowStatsConfig(v=>!v)} style={{ padding:"5px 10px", borderRadius:16, border:`1.5px solid ${showStatsConfig?C.sec:C.b1}`, background:showStatsConfig?C.secPale:C.w, color:showStatsConfig?C.sec:C.t3, fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:FONT, marginLeft:"auto" }}>
+                {Ic.filter(showStatsConfig?C.sec:C.t3,12)} Configurar
+              </button>
+            </div>
+            {prefs.period==="custom" && (
+              <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:10, padding:"8px 12px", background:C.bg, borderRadius:10, border:`1px solid ${C.b1}` }}>
+                <span style={{fontSize:11,color:C.t2,fontWeight:600}}>Desde</span>
+                <input type="date" value={statsDateFrom} onChange={e=>setStatsDateFrom(e.target.value)} onClick={e=>e.target.showPicker?.()} style={{padding:"5px 8px",borderRadius:6,border:`1px solid ${C.b1}`,background:C.w,color:C.t1,fontSize:12,fontFamily:"inherit",outline:"none",cursor:"pointer"}}/>
+                <span style={{fontSize:11,color:C.t2,fontWeight:600}}>Hasta</span>
+                <input type="date" value={statsDateTo} onChange={e=>setStatsDateTo(e.target.value)} onClick={e=>e.target.showPicker?.()} style={{padding:"5px 8px",borderRadius:6,border:`1px solid ${C.b1}`,background:C.w,color:C.t1,fontSize:12,fontFamily:"inherit",outline:"none",cursor:"pointer"}}/>
+              </div>
+            )}
+            {showStatsConfig && (
+              <div style={{ display:"flex", gap:6, marginBottom:10, flexWrap:"wrap", padding:"8px 12px", background:C.bg, borderRadius:10, border:`1px solid ${C.b1}` }}>
+                <div style={{ display:"flex", gap:4, alignItems:"center", marginRight:12 }}>
+                  <span style={{fontSize:11,color:C.t2,fontWeight:600}}>Agrupar:</span>
+                  {groupOpts.map(g=>(
+                    <button key={g.k} onClick={()=>updatePrefs({groupBy:g.k})} style={{ padding:"3px 8px", borderRadius:12, border:`1px solid ${prefs.groupBy===g.k?C.sec:C.b1}`, background:prefs.groupBy===g.k?C.secPale:C.w, color:prefs.groupBy===g.k?C.sec:C.t3, fontSize:10.5, fontWeight:600, cursor:"pointer", fontFamily:FONT }}>{g.l}</button>
+                  ))}
+                </div>
+                {sectionOpts.map(s=>(
+                  <label key={s.k} style={{ display:"flex", alignItems:"center", gap:3, fontSize:11, color:sec[s.k]?C.t1:C.t3, cursor:"pointer", fontFamily:FONT }}>
+                    <input type="checkbox" checked={!!sec[s.k]} onChange={()=>toggleSection(s.k)} style={{ accentColor:C.pri }}/>
+                    {s.l}
+                  </label>
+                ))}
+              </div>
+            )}
+
+            {/* Loading */}
+            {statsLoading && (
+              <div style={{ display:"grid", gridTemplateColumns:isDesktop?"repeat(4,1fr)":"repeat(2,1fr)", gap:10, marginBottom:12 }}>
+                {[1,2,3,4].map(i=><div key={i} style={{ background:C.bgCard, borderRadius:12, padding:"14px 16px", boxShadow:C.sh, height:72 }}><div style={{ width:"60%", height:12, background:C.bgInput, borderRadius:4, marginBottom:8 }}/><div style={{ width:"40%", height:24, background:C.bgInput, borderRadius:4 }}/></div>)}
+              </div>
+            )}
+
+            {stats && !statsLoading && (
+              <>
+                {/* Export button */}
+                <div style={{ display:"flex", justifyContent:"flex-end", marginBottom:8 }}>
+                  <button onClick={()=>{
+                    const s = stats; const o = s.overview; const p = s.period;
+                    const esc = v => String(v||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+                    const today = new Date().toLocaleDateString("es-UY",{day:"2-digit",month:"short",year:"numeric"});
+                    const tblRow = (cols) => "<tr>"+cols.map(c=>`<td>${esc(c)}</td>`).join("")+"</tr>";
+                    const tblHead = (cols) => "<tr>"+cols.map(c=>`<th>${esc(c)}</th>`).join("")+"</tr>";
+                    let body = `<h1>Informe de Operaciones — Tolvink</h1><div class="sub">Per\u00edodo: ${p.from} a ${p.to} · Generado el ${today}</div>`;
+                    body += `<div class="cards"><div><b>${o.totalFreights}</b><br>Fletes</div><div><b>${o.totalTons}t</b><br>Toneladas</div><div><b>${Math.round((o.completionRate||0)*100)}%</b><br>Completados</div><div><b>${Math.round((o.cancellationRate||0)*100)}%</b><br>Cancelados</div><div><b>${o.avgCompletionTimeHours||"-"}h</b><br>Prom. completado</div></div>`;
+                    if(sec.byGrain&&s.byGrain?.length){body+=`<h2>Por grano</h2><table>${tblHead(["Grano","Fletes","Tons","% Total","Prom."])}${s.byGrain.map(r=>tblRow([r.grain,r.count,r.tons+"t",r.percentage+"%",r.avgTons+"t"])).join("")}</table>`;}
+                    if(sec.byTransporter&&s.byTransporter?.length){body+=`<h2>Transportistas</h2><table>${tblHead(["Transportista","Fletes","Tons","Completados","Resp.","Rechazo"])}${s.byTransporter.map(r=>tblRow([r.name,r.count,r.tons+"t",r.completedCount,r.avgResponseTimeHours?r.avgResponseTimeHours+"h":"-",Math.round(r.rejectionRate*100)+"%"])).join("")}</table>`;}
+                    if(sec.byDestination&&s.byDestination?.length){body+=`<h2>Destinos</h2><table>${tblHead(["Destino","Fletes","Tons","Prom."])}${s.byDestination.map(r=>tblRow([r.name,r.count,r.tons+"t",r.avgTons+"t"])).join("")}</table>`;}
+                    if(sec.byOrigin&&s.byOrigin?.length){body+=`<h2>Or\u00edgenes</h2><table>${tblHead(["Campo","Fletes","Tons"])}${s.byOrigin.map(r=>tblRow([r.name,r.count,r.tons+"t"])).join("")}</table>`;}
+                    if(sec.drivers&&s.drivers?.length){body+=`<h2>Conductores</h2><table>${tblHead(["Conductor","Patente","Viajes","Tons","Viajes/d\u00eda"])}${s.drivers.map(r=>tblRow([r.name,r.plate,r.trips,r.tons+"t",r.avgTripsPerDay])).join("")}</table>`;}
+                    if(sec.delays&&s.delays?.totalDelayed>0){body+=`<h2>Retrasos</h2><p>${s.delays.totalDelayed} fletes retrasados (${s.delays.delayedPercentage}%) — Demora promedio: ${s.delays.avgDelayHours}h</p>`;}
+                    if(sec.timeline&&s.timeline?.length){body+=`<h2>Timeline</h2><table>${tblHead(["Per\u00edodo","Fletes","Tons","Completados","Cancelados"])}${s.timeline.map(t=>tblRow([t.label,t.count,t.tons+"t",t.completed,t.canceled])).join("")}</table>`;}
+                    const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Informe de Operaciones</title><style>@page{size:landscape;margin:10mm}*{box-sizing:border-box;margin:0;padding:0}body{font-family:system-ui,sans-serif;font-size:10px;color:#1a1a1a;padding:8mm}h1{font-size:16px;margin-bottom:2px}h2{font-size:12px;margin:10px 0 4px;color:#333}.sub{font-size:10px;color:#666;margin-bottom:10px}.cards{display:flex;gap:8px;margin:8px 0}table{width:100%;border-collapse:collapse;font-size:9px;margin-bottom:8px}th{background:#1A6B37;color:#fff;padding:4px;text-align:left;font-size:8px}td{padding:3px 4px;border-bottom:1px solid #e0e0e0}tr:nth-child(even){background:#f8f9fa}.cards div{border:1px solid #ddd;border-radius:6px;padding:8px 12px;text-align:center;flex:1}.cards b{font-size:16px;color:#1A6B37}</style></head><body>${body}<div style="margin-top:10px;font-size:8px;color:#999;text-align:right">tolvink.com</div><script>window.onload=()=>setTimeout(()=>window.print(),300)</script></body></html>`;
+                    const w=window.open("","_blank"); if(w){w.document.write(html);w.document.close();}
+                  }} style={{ padding:"6px 14px", borderRadius:8, border:`1.5px solid ${C.err}`, background:C.errPale, color:C.err, fontSize:11.5, fontWeight:700, cursor:"pointer", fontFamily:FONT, display:"flex", alignItems:"center", gap:5 }}>
+                    {Ic.download(C.err,13)} Exportar PDF
+                  </button>
+                </div>
+                {/* Overview cards */}
+                <div style={{ display:"grid", gridTemplateColumns:isDesktop?"repeat(6,1fr)":"repeat(2,1fr)", gap:8, marginBottom:14 }}>
+                  {[
+                    { label:"Fletes", value:ov.totalFreights, color:C.pri },
+                    { label:"Toneladas", value:`${ov.totalTons}t`, color:C.acc },
+                    { label:"Completados", value:`${Math.round(compRate*100)}%`, color:compColor },
+                    { label:"Cancelados", value:`${Math.round(cancRate*100)}%`, color:cancColor },
+                    { label:"Prom. completado", value:ov.avgCompletionTimeHours?`${ov.avgCompletionTimeHours}h`:"-", color:C.sec },
+                    { label:"Multi-cami\u00f3n", value:ov.multiTruckFreights, color:C.info },
+                  ].map((m,i)=>(
+                    <div key={i} style={{ background:C.bgCard, borderRadius:12, padding:"12px 14px", textAlign:"center", boxShadow:C.sh }}>
+                      <div style={{ fontSize:24, fontWeight:800, color:m.color }}>{m.value}</div>
+                      <div style={{ fontSize:10.5, color:C.t3, marginTop:2, textTransform:"uppercase", letterSpacing:0.3 }}>{m.label}</div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Timeline */}
+                {sec.timeline && stats.timeline?.length>0 && (
+                  <div id="stats-timeline" style={{ background:C.bgCard, borderRadius:12, padding:"12px 14px", boxShadow:C.sh, marginBottom:10 }}>
+                    <div style={{ fontSize:12, fontWeight:700, color:C.t2, marginBottom:10, textTransform:"uppercase", letterSpacing:0.3 }}>Timeline</div>
+                    <div style={{ display:"flex", gap:4, alignItems:"flex-end", overflowX:"auto", minHeight:140 }}>
+                      {stats.timeline.map((t,i)=>(
+                        <div key={i} style={{ display:"flex", flexDirection:"column", alignItems:"center", flex:"1 0 40px", minWidth:36 }}>
+                          <div style={{ height:110, display:"flex", flexDirection:"column", justifyContent:"flex-end", width:"100%", gap:1 }}>
+                            {t.canceled>0 && <div title={`Cancelados: ${t.canceled}`} style={{ height:`${(t.canceled/maxTl)*100}%`, background:C.err, borderRadius:t.completed+t.count-t.completed-t.canceled===0?"4px 4px 4px 4px":"4px 4px 0 0", minHeight:t.canceled?2:0 }}/>}
+                            {(t.count-t.completed-t.canceled)>0 && <div title={`En curso: ${t.count-t.completed-t.canceled}`} style={{ height:`${((t.count-t.completed-t.canceled)/maxTl)*100}%`, background:C.acc, minHeight:2 }}/>}
+                            {t.completed>0 && <div title={`Completados: ${t.completed}`} style={{ height:`${(t.completed/maxTl)*100}%`, background:C.pri, borderRadius:"0 0 4px 4px", minHeight:t.completed?2:0 }}/>}
+                          </div>
+                          <div style={{ fontSize:10, color:C.t3, marginTop:4, whiteSpace:"nowrap" }}>{t.label}</div>
+                          <div style={{ fontSize:10, color:C.t2, fontWeight:600, fontFamily:MONO }}>{t.count}</div>
+                          <div style={{ fontSize:9, color:C.t3, fontFamily:MONO }}>{t.tons}t</div>
+                        </div>
+                      ))}
+                    </div>
+                    <div style={{ display:"flex", gap:12, marginTop:8, justifyContent:"center" }}>
+                      {[{c:C.pri,l:"Completados"},{c:C.acc,l:"En curso"},{c:C.err,l:"Cancelados"}].map(lg=>(
+                        <div key={lg.l} style={{ display:"flex", alignItems:"center", gap:4, fontSize:10, color:C.t3 }}>
+                          <div style={{ width:10, height:10, borderRadius:2, background:lg.c }}/>{lg.l}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Grain table */}
+                {sec.byGrain && <StatsTable title="Por grano" items={stats.byGrain} cols={[
+                  {label:"Grano",key:"grain"},
+                  {label:"Fletes",key:"count"},
+                  {label:"Tons",render:r=>`${r.tons}t`},
+                  {label:"% Total",render:r=>`${r.percentage}%`},
+                  {label:"Prom.",render:r=>`${r.avgTons}t`},
+                ]}/>}
+
+                {/* Transporter table */}
+                {sec.byTransporter && <StatsTable title="Transportistas" items={stats.byTransporter} cols={[
+                  {label:"Transportista",key:"name"},
+                  {label:"Fletes",key:"count"},
+                  {label:"Tons",render:r=>`${r.tons}t`},
+                  {label:"Completados",render:r=>`${r.completedCount} (${r.count>0?Math.round(r.completedCount/r.count*100):0}%)`},
+                  {label:"Resp.",render:r=>r.avgResponseTimeHours?`${r.avgResponseTimeHours}h`:"-"},
+                  {label:"Rechazo",render:r=>`${Math.round(r.rejectionRate*100)}%`},
+                ]}/>}
+
+                {/* Destination table */}
+                {sec.byDestination && <StatsTable title="Destinos" items={stats.byDestination} cols={[
+                  {label:"Destino",key:"name"},{label:"Fletes",key:"count"},{label:"Tons",render:r=>`${r.tons}t`},{label:"Prom.",render:r=>`${r.avgTons}t`},
+                ]}/>}
+
+                {/* Origin table */}
+                {sec.byOrigin && <StatsTable title="Or\u00edgenes" items={stats.byOrigin} cols={[
+                  {label:"Campo/Origen",key:"name"},{label:"Fletes",key:"count"},{label:"Tons",render:r=>`${r.tons}t`},
+                ]}/>}
+
+                {/* Drivers table */}
+                {sec.drivers && <StatsTable title="Conductores" items={stats.drivers} cols={[
+                  {label:"Conductor",key:"name"},{label:"Patente",key:"plate"},{label:"Viajes",key:"trips"},{label:"Tons",render:r=>`${r.tons}t`},{label:"Viajes/d\u00eda",key:"avgTripsPerDay"},
+                ]}/>}
+
+                {/* Delays */}
+                {sec.delays && stats.delays && (stats.delays.totalDelayed>0 ? (
+                  <div style={{ background:stats.delays.delayedPercentage>20?C.errPale:stats.delays.delayedPercentage>10?C.warnPale:C.bgCard, border:`1px solid ${stats.delays.delayedPercentage>20?`${C.err}40`:stats.delays.delayedPercentage>10?`${C.warn}40`:C.b1}`, borderRadius:12, padding:"12px 14px", marginBottom:10 }}>
+                    <div style={{ fontSize:13, fontWeight:700, color:stats.delays.delayedPercentage>20?C.err:C.warn, marginBottom:4 }}>{stats.delays.totalDelayed} fletes retrasados ({stats.delays.delayedPercentage}%)</div>
+                    <div style={{ fontSize:12, color:C.t2, marginBottom:6 }}>Demora promedio: {stats.delays.avgDelayHours}h</div>
+                    {stats.delays.topDelayedRoutes?.length>0 && (
+                      <div style={{ fontSize:11.5, color:C.t2 }}>
+                        <div style={{ fontWeight:600, marginBottom:2 }}>Rutas problem\u00e1ticas:</div>
+                        {stats.delays.topDelayedRoutes.map((r,i)=>(
+                          <div key={i} style={{ marginLeft:8 }}>{i+1}. {r.origin} \u2192 {r.dest}: {r.delayedCount} ({r.avgDelayHours}h prom.)</div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div style={{ background:C.okPale, border:`1px solid ${C.ok}30`, borderRadius:12, padding:"12px 14px", marginBottom:10, fontSize:12.5, color:C.ok, fontWeight:600 }}>Sin fletes retrasados en este per\u00edodo</div>
+                ))}
+
+                {/* Empty state */}
+                {ov.totalFreights===0 && <div style={{ textAlign:"center", padding:32, color:C.t3, fontSize:14 }}>No hay datos para este per\u00edodo</div>}
+              </>
+            )}
+          </div>
+        );
+      })()}
+
+      {/* Search bar — only in reports view */}
+      {(activeView==="reports"||embedded) && (<>
       <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:6 }}>
         <div style={{ position:"relative", flex:1, minWidth:0 }}>
           <div style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",display:"flex"}}>{Ic.srch(C.t3,14)}</div>
@@ -397,6 +560,7 @@ export default function ReportsScreen({ onBack, freights, isDesktop, embedded, o
       <FileViewer file={viewFile} onClose={()=>setViewFile(null)} onOcr={(file)=>handleOcr(file, viewFile?.freightId)} ocrLoading={ocrLoading} onViewOcr={(data)=>setOcrResult(data)}/>
       {ocrLoading && <div style={{ position:"fixed", inset:0, zIndex:250 }}><UploadOverlay uploading={ocrLoading} done={false} total={1} current={1} label="Extrayendo datos"/></div>}
       <OcrResultModal result={ocrResult} onClose={()=>setOcrResult(null)}/>
+      </>)}
       </div>
     </div>
   );
