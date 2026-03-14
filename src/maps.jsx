@@ -697,18 +697,18 @@ const _fieldSymbol = (maps, scale = 1.0) => {
   const w = Math.round(32 * scale), h = Math.round(44 * scale);
   return { url: _fieldSvg(w, h), scaledSize: new maps.Size(w, h), anchor: new maps.Point(w / 2, h) };
 };
-// Lote: green pin with leaf icon (Ic.lot)
+// Lote: light green pin with leaf icon (Ic.lot)
 const _lotSvg = (w = 28, h = 40) => {
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 24 34"><path d="M12 0C5.37 0 0 5.37 0 12c0 9 12 22 12 22s12-13 12-22C24 5.37 18.63 0 12 0z" fill="%231A6B37" stroke="%23fff" stroke-width="1.5"/><path d="M15.5 6.5C11 7.5 9.5 11 8.5 14.5l1 .3.5-1.2c.3.1.5.2.7.2C16 13.5 17 6 17 6c-.5 1-4 1.2-6.5 1.7S6.5 9.5 6.5 10.5s.9 1.9.9 1.9" fill="none" stroke="%23fff" stroke-width="1.2" stroke-linecap="round"/></svg>`;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 24 34"><path d="M12 0C5.37 0 0 5.37 0 12c0 9 12 22 12 22s12-13 12-22C24 5.37 18.63 0 12 0z" fill="%2366BB6A" stroke="%23fff" stroke-width="1.5"/><path d="M15.5 6.5C11 7.5 9.5 11 8.5 14.5l1 .3.5-1.2c.3.1.5.2.7.2C16 13.5 17 6 17 6c-.5 1-4 1.2-6.5 1.7S6.5 9.5 6.5 10.5s.9 1.9.9 1.9" fill="none" stroke="%23fff" stroke-width="1.2" stroke-linecap="round"/></svg>`;
   return `data:image/svg+xml,${svg}`;
 };
 const _lotSymbol = (maps, scale = 1.0) => {
   const w = Math.round(28 * scale), h = Math.round(40 * scale);
   return { url: _lotSvg(w, h), scaledSize: new maps.Size(w, h), anchor: new maps.Point(w / 2, h) };
 };
-// POI: teal pin with compass arrow icon (Ic.poi)
+// POI: cyan pin with compass arrow icon (Ic.poi)
 const _poiSvg = (w = 28, h = 40) => {
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 24 34"><path d="M12 0C5.37 0 0 5.37 0 12c0 9 12 22 12 22s12-13 12-22C24 5.37 18.63 0 12 0z" fill="%230891B2" stroke="%23fff" stroke-width="1.5"/><polygon points="7 11 17 6.5 12.5 16.5 11.5 12 7 11" fill="none" stroke="%23fff" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 24 34"><path d="M12 0C5.37 0 0 5.37 0 12c0 9 12 22 12 22s12-13 12-22C24 5.37 18.63 0 12 0z" fill="%2329B6F6" stroke="%23fff" stroke-width="1.5"/><polygon points="7 11 17 6.5 12.5 16.5 11.5 12 7 11" fill="none" stroke="%23fff" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
   return `data:image/svg+xml,${svg}`;
 };
 const _poiSymbol = (maps, scale = 1.0) => {

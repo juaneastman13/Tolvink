@@ -15,19 +15,20 @@ import {
 } from "../components/locations";
 
 // ── Constants ──
+const LOC_COLORS = { field: "#1A6B37", lot: "#66BB6A", poi: "#29B6F6" };
 const TYPE_CFG = {
-  field: { label: "Campo", color: "#1A6B37", icon: (c, s) => Ic.field(c, s) },
-  lot:   { label: "Lote",  color: "#2563EB", icon: (c, s) => Ic.lot(c, s) },
-  poi:   { label: "Interés", color: "#0891B2", icon: (c, s) => Ic.poi(c, s) },
+  field: { label: "Campo", color: LOC_COLORS.field, icon: (c, s) => Ic.field(c, s) },
+  lot:   { label: "Lote",  color: LOC_COLORS.lot, icon: (c, s) => Ic.lot(c, s) },
+  poi:   { label: "Interés", color: LOC_COLORS.poi, icon: (c, s) => Ic.poi(c, s) },
 };
-const MAP_COLORS = { field: "#1A6B37", lot: "#1A6B37", poi: "#0891B2" };
+const MAP_COLORS = LOC_COLORS;
 const URUGUAY_CENTER = { lat: -33.0, lng: -56.0 };
 const FILTER_CHIPS = [
   { key: "field", label: "campos", icon: (c, s) => Ic.field(c, s) },
   { key: "lot", label: "lotes", icon: (c, s) => Ic.lot(c, s) },
   { key: "poi", label: "ubicaciones", icon: (c, s) => Ic.poi(c, s) },
 ];
-const FILTER_COLORS = { field: C.pri, lot: C.sec, poi: C.acc };
+const FILTER_COLORS = { field: LOC_COLORS.field, lot: LOC_COLORS.lot, poi: LOC_COLORS.poi };
 const _esc = (s) => String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 
 // ── Slide-in wrapper for inline forms ──
@@ -142,10 +143,10 @@ export default function LocationsScreen({ onBack }) {
     setSaving(true);
     try {
       await apiCreateField({ name: data.name, address: data.address || undefined, lat: data.lat || undefined, lng: data.lng || undefined });
+      await load();
       setCreatingField(false);
       setCreationMode(null);
       setMsg({ t: "Campo creado", k: "ok" });
-      await load();
       if (data.lat && data.lng && mapObjRef.current) { mapObjRef.current.panTo({ lat: data.lat, lng: data.lng }); mapObjRef.current.setZoom(15); }
     } catch (err) { setMsg({ t: err.message || "Error al crear campo", k: "err" }); }
     finally { setSaving(false); }
@@ -155,9 +156,9 @@ export default function LocationsScreen({ onBack }) {
     setSaving(true);
     try {
       await apiUpdateField(fieldId, { address: data.address || undefined, lat: data.lat || undefined, lng: data.lng || undefined });
+      await load();
       setEditField(null);
       setMsg({ t: "Campo actualizado", k: "ok" });
-      await load();
     } catch (err) { setMsg({ t: err.message || "Error al actualizar campo", k: "err" }); }
     finally { setSaving(false); }
   };
@@ -180,10 +181,10 @@ export default function LocationsScreen({ onBack }) {
     setSaving(true);
     try {
       await apiCreateLot(fieldId, { name: data.name, hectares: data.hectares, lat: data.lat || undefined, lng: data.lng || undefined });
+      await load();
       setCreatingLotForField(null);
       setCreationMode(null);
       setMsg({ t: "Lote creado", k: "ok" });
-      await load();
       if (data.lat && data.lng && mapObjRef.current) { mapObjRef.current.panTo({ lat: data.lat, lng: data.lng }); mapObjRef.current.setZoom(15); }
     } catch (err) { setMsg({ t: err.message || "Error al crear lote", k: "err" }); }
     finally { setSaving(false); }
@@ -193,9 +194,9 @@ export default function LocationsScreen({ onBack }) {
     setSaving(true);
     try {
       await apiUpdateLot(fieldId, lotId, { hectares: data.hectares, lat: data.lat || undefined, lng: data.lng || undefined });
+      await load();
       setEditLot(null);
       setMsg({ t: "Lote actualizado", k: "ok" });
-      await load();
     } catch (err) { setMsg({ t: err.message || "Error al actualizar lote", k: "err" }); }
     finally { setSaving(false); }
   };
@@ -219,10 +220,10 @@ export default function LocationsScreen({ onBack }) {
     setSaving(true);
     try {
       await apiCreatePoi({ name: data.name, comments: data.comments, lat: data.lat, lng: data.lng });
+      await load();
       setCreatingPoi(false);
       setCreationMode(null);
       setMsg({ t: "Ubicación creada", k: "ok" });
-      await load();
       if (data.lat && data.lng && mapObjRef.current) { mapObjRef.current.panTo({ lat: data.lat, lng: data.lng }); mapObjRef.current.setZoom(15); }
     } catch (err) { setMsg({ t: err.message || "Error al crear ubicación", k: "err" }); }
     finally { setSaving(false); }
@@ -232,9 +233,9 @@ export default function LocationsScreen({ onBack }) {
     setSaving(true);
     try {
       await apiUpdatePoi(poiId, data);
+      await load();
       setEditingPoi(null);
       setMsg({ t: "Ubicación actualizada", k: "ok" });
-      await load();
     } catch (err) { setMsg({ t: err.message || "Error al actualizar", k: "err" }); }
     finally { setSaving(false); }
   };
@@ -576,7 +577,7 @@ export default function LocationsScreen({ onBack }) {
     const hasCoords = p.lat && p.lng;
 
     if (editingPoi?.id === p.id) {
-      return <SlideIn key={`edit-poi-${p.id}`}><PoiForm mode="edit" poi={p} saving={saving} onSave={(data) => handleUpdatePoi(p.id, data)} onCancel={() => setEditingPoi(null)} onSelectOnMap={startMapSelect} /></SlideIn>;
+      return <SlideIn key={`edit-poi-${p.id}`}><PoiForm mode="edit" poi={p} fields={fields} saving={saving} onSave={(data) => handleUpdatePoi(p.id, data)} onCancel={() => setEditingPoi(null)} onSelectOnMap={startMapSelect} /></SlideIn>;
     }
 
     if (deletingPoi === p.id) {
@@ -600,7 +601,7 @@ export default function LocationsScreen({ onBack }) {
         onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = C.bgCard; }}
         onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = "transparent"; }}
       >
-        <div style={{ width: 28, height: 28, borderRadius: 7, background: `${C.sec}12`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{Ic.poi(C.sec, 14)}</div>
+        <div style={{ width: 28, height: 28, borderRadius: 7, background: `${LOC_COLORS.poi}18`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{Ic.poi(LOC_COLORS.poi, 14)}</div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 15, fontWeight: 600, color: C.t1, overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", whiteSpace: "normal" }}>{p.name}</div>
           {p.comments && <div style={{ fontSize: 11, color: C.t3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginTop: 4 }}>{p.comments}</div>}
@@ -705,7 +706,7 @@ export default function LocationsScreen({ onBack }) {
                 onMouseEnter={e => { if (!lotActive) e.currentTarget.style.background = C.bgCard; }}
                 onMouseLeave={e => { if (!lotActive) e.currentTarget.style.background = "transparent"; }}
               >
-                <div style={{ width: 24, height: 24, borderRadius: 6, background: `${C.ok}12`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{Ic.lot(C.ok, 12)}</div>
+                <div style={{ width: 24, height: 24, borderRadius: 6, background: `${LOC_COLORS.lot}18`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{Ic.lot(LOC_COLORS.lot, 12)}</div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <span style={{ fontSize: 14, fontWeight: 500, color: C.t1 }}>{l.name}</span>
                   {l.hectares && <span style={{ fontSize: 11, color: C.t3, marginLeft: 6 }}>{l.hectares} ha</span>}
@@ -836,7 +837,7 @@ export default function LocationsScreen({ onBack }) {
                     {addMenuSub === "manual" && <>
                       <button onClick={() => { setAddMenuOpen(false); setAddMenuSub(null); setCreationMode("field"); setCreatingField(true); }} style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "12px 14px", background: "none", border: "none", borderBottom: `1px solid ${C.b2}`, cursor: "pointer", fontFamily: FONT, fontSize: 13.2, fontWeight: 600, color: C.t1, textAlign: "left" }}
                         onMouseEnter={e => e.currentTarget.style.background = C.priPale} onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
-                        {Ic.field("#1A6B37", 16)} Campo
+                        {Ic.field(LOC_COLORS.field, 16)} Campo
                       </button>
                       {fields.length > 0 && (
                         <button onClick={() => { setAddMenuOpen(false); setAddMenuSub(null); setCreationMode("lot"); setCreatingLotForField("__general__"); }} style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "12px 14px", background: "none", border: "none", borderBottom: `1px solid ${C.b2}`, cursor: "pointer", fontFamily: FONT, fontSize: 13.2, fontWeight: 600, color: C.t1, textAlign: "left" }}
@@ -846,7 +847,7 @@ export default function LocationsScreen({ onBack }) {
                       )}
                       <button onClick={() => { setAddMenuOpen(false); setAddMenuSub(null); setCreationMode("poi"); setCreatingPoi(true); }} style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "12px 14px", background: "none", border: "none", cursor: "pointer", fontFamily: FONT, fontSize: 13.2, fontWeight: 600, color: C.t1, textAlign: "left" }}
                         onMouseEnter={e => e.currentTarget.style.background = C.priPale} onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
-                        {Ic.poi("#0891B2", 16)} Ubicación de interés
+                        {Ic.poi(LOC_COLORS.poi, 16)} Ubicación de interés
                       </button>
                     </>}
                   </div>

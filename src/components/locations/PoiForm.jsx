@@ -2,11 +2,28 @@ import { useState } from "react";
 import { C, Ic, FONT } from "../../theme";
 import { SafeZone, LocationPicker } from "../../maps";
 
-const COLOR = "#0891B2";
+const COLOR = "#29B6F6";
+
+// Parse "Campo: X / Lote: Y" or "Campo: X" from comments
+function parseAssoc(comments, fields) {
+  if (!comments || !fields?.length) return { fieldId: "", lotId: "", cleanComments: comments || "" };
+  const match = comments.match(/(?:^|\n)Campo: (.+?)(?:\s*\/\s*Lote: (.+?))?$/);
+  if (!match) return { fieldId: "", lotId: "", cleanComments: comments };
+  const fieldName = match[1].trim();
+  const lotName = match[2]?.trim() || "";
+  const clean = comments.replace(/(?:^|\n)Campo: .+$/, "").trim();
+  const field = fields.find(f => f.name === fieldName);
+  if (!field) return { fieldId: "", lotId: "", cleanComments: clean };
+  const lot = lotName ? (field.lots || []).find(l => l.name === lotName) : null;
+  return { fieldId: field.id, lotId: lot?.id || "", cleanComments: clean };
+}
 
 export default function PoiForm({ mode = "create", poi, fields, onSave, onCancel, saving, onSelectOnMap }) {
+  const hasFields = fields?.length > 0;
+  const parsed = mode === "edit" && poi && hasFields ? parseAssoc(poi.comments, fields) : null;
+
   const [name, setName] = useState(mode === "edit" && poi ? poi.name : "");
-  const [comments, setComments] = useState(mode === "edit" && poi ? (poi.comments || "") : "");
+  const [comments, setComments] = useState(parsed ? parsed.cleanComments : (mode === "edit" && poi ? (poi.comments || "") : ""));
   const [loc, setLoc] = useState(() => {
     if (mode === "edit" && poi) {
       const lat = poi.lat != null ? Number(poi.lat) : null;
@@ -16,10 +33,8 @@ export default function PoiForm({ mode = "create", poi, fields, onSave, onCancel
     return null;
   });
 
-  // Optional field/lot association (create mode only)
-  const hasFields = mode === "create" && fields?.length > 0;
-  const [assocFieldId, setAssocFieldId] = useState("");
-  const [assocLotId, setAssocLotId] = useState("");
+  const [assocFieldId, setAssocFieldId] = useState(parsed?.fieldId || "");
+  const [assocLotId, setAssocLotId] = useState(parsed?.lotId || "");
   const assocField = hasFields ? fields.find(f => f.id === assocFieldId) : null;
   const assocLots = assocField?.lots || [];
 
