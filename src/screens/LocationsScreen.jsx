@@ -107,6 +107,7 @@ export default function LocationsScreen({ onBack }) {
   const [expandedField, setExpandedField] = useState(null);
   const [mapFilters, setMapFilters] = useState({ field: true, lot: true, poi: true });
   const [mapType, setMapType] = useState("roadmap");
+  const [mapReady, setMapReady] = useState(false);
   const [mapSelectMode, setMapSelectMode] = useState(null); // null | { callback, currentPos }
   const selectMarkerRef = useRef(null);
   const selectListenerRef = useRef(null);
@@ -403,6 +404,7 @@ export default function LocationsScreen({ onBack }) {
       });
       mapObjRef.current = map;
       infoRef.current = new maps.InfoWindow();
+      setMapReady(true);
       map.getDiv().addEventListener("click", (e) => {
         const btn = e.target.closest("[data-iw-action]");
         if (!btn) return;
@@ -485,7 +487,7 @@ export default function LocationsScreen({ onBack }) {
       hasPoints = true;
     });
     if (hasPoints) map.fitBounds(bounds, { top: 60, bottom: 20, left: 20, right: 20 });
-  }, [fields, pois, mapFilters]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [fields, pois, mapFilters, mapReady]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!activeId) return;
