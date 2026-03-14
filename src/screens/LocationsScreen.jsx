@@ -384,6 +384,7 @@ export default function LocationsScreen({ onBack }) {
 
   const handleInfoActionRef = useRef(handleInfoAction);
   handleInfoActionRef.current = handleInfoAction;
+  const highlightPanelItemRef = useRef(null);
 
   useEffect(() => {
     if (!mapContainerRef.current) return;
@@ -407,6 +408,7 @@ export default function LocationsScreen({ onBack }) {
         infoRef.current.close();
         if (action === "edit") handleInfoActionRef.current("edit", type, id);
         if (action === "share") handleInfoActionRef.current("share", type, id);
+        if (action === "list") highlightPanelItemRef.current(id);
       });
     }).catch(() => {});
     return () => { cancelled = true; };
@@ -425,9 +427,10 @@ export default function LocationsScreen({ onBack }) {
       `<span style="display:inline-block;padding:1px 6px;border-radius:8px;background:${color};color:#fff;font-size:10px;font-weight:600;margin-top:2px">${_esc(typeLabel)}</span>` +
       (loc.address ? `<br/><span style="color:#666">${_esc(loc.address)}</span>` : "") +
       (loc.fieldName ? `<br/><span style="color:#666">${_esc(loc.fieldName)}</span>` : "") +
-      `<div style="display:flex;gap:4px;margin-top:6px">` +
+      `<div style="display:flex;gap:4px;margin-top:6px;flex-wrap:wrap">` +
         (!loc.isShared ? `<button data-iw-action="edit" data-iw-type="${loc.type}" data-iw-id="${rawId}" style="${btnStyle}">Editar</button>` : "") +
         (!loc.isShared ? `<button data-iw-action="share" data-iw-type="${loc.type}" data-iw-id="${rawId}" style="${btnStyle}">Compartir</button>` : "") +
+        (!isDesktop ? `<button data-iw-action="list" data-iw-type="${loc.type}" data-iw-id="${loc.id}" style="${btnStyle}">Ver en lista</button>` : "") +
       `</div>` +
       `</div>`;
   };
@@ -453,7 +456,7 @@ export default function LocationsScreen({ onBack }) {
         const curLoc = allLocsRef.current.find(l => l.id === loc.id) || loc;
         infoRef.current.setContent(buildInfoContent(curLoc));
         infoRef.current.open(map, marker);
-        highlightPanelItem(loc.id);
+        if (isDesktop) highlightPanelItem(loc.id);
       });
       markersRef.current[loc.id] = marker;
       bounds.extend(pos);
@@ -496,6 +499,7 @@ export default function LocationsScreen({ onBack }) {
     if (id.startsWith("poi-") && !sectionOpen.pois) setSectionOpen(prev => ({ ...prev, pois: true }));
     if (!isDesktop) setDrawerOpen(true);
   }, [isDesktop, fields, sectionOpen]); // eslint-disable-line react-hooks/exhaustive-deps
+  highlightPanelItemRef.current = highlightPanelItem;
 
   const toggleMapFilter = (key) => setMapFilters(prev => ({ ...prev, [key]: !prev[key] }));
   const toggleMapType = () => {
