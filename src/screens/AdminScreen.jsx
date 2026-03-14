@@ -705,7 +705,7 @@ export default function AdminScreen({ user, onBack }) {
             {activity.map(e=>{
               const ago = ((Date.now()-new Date(e.createdAt).getTime())/60000);
               const agoStr = ago<60?`${Math.round(ago)}m`:ago<1440?`${Math.round(ago/60)}h`:`${Math.round(ago/1440)}d`;
-              const actionLabels = {created:"Cre\u00f3 flete",assigned:"Asign\u00f3 transportista",accepted:"Acept\u00f3 flete",rejected:"Rechaz\u00f3 flete",started:"Inici\u00f3 viaje",confirm_loaded:"Confirm\u00f3 carga",canceled:"Cancel\u00f3 flete",authorized:"Autoriz\u00f3 flota propia",updated:"Actualiz\u00f3 flete",change_approved:"Aprob\u00f3 cambio",change_rejected:"Rechaz\u00f3 cambio",assigned_multi:"Asign\u00f3 multi-cami\u00f3n",assignment_canceled:"Cancel\u00f3 asignaci\u00f3n",assignment_updated:"Actualiz\u00f3 asignaci\u00f3n",trip_rejected:"Rechaz\u00f3 viaje",trip_accepted:"Acept\u00f3 viaje",trip_started:"Inici\u00f3 viaje",trip_confirm_loaded:"Confirm\u00f3 carga de viaje",document_added:"Agreg\u00f3 documento",document_deleted:"Elimin\u00f3 documento",ocr_data_saved:"Guard\u00f3 datos OCR",switch_company:"Cambi\u00f3 empresa"};
+              const actionLabels = {created:"Creó flete",assigned:"Asignó transportista",accepted:"Aceptó flete",rejected:"Rechazó flete",started:"Inició viaje",confirm_loaded:"Confirmó carga",canceled:"Canceló flete",authorized:"Autorizó flota propia",updated:"Actualizó flete",change_approved:"Aprobó cambio",change_rejected:"Rechazó cambio",assigned_multi:"Asignó multi-camión",assignment_canceled:"Canceló asignación",assignment_updated:"Actualizó asignación",trip_rejected:"Rechazó viaje",trip_accepted:"Aceptó viaje",trip_started:"Inició viaje",trip_confirm_loaded:"Confirmó carga de viaje",document_added:"Agregó documento",document_deleted:"Eliminó documento",ocr_data_saved:"Guardó datos OCR",switch_company:"Cambió empresa"};
               return (
                 <div key={e.id} style={{display:"flex",gap:10,padding:"10px 0",borderBottom:`1px solid ${C.b2}`}}>
                   <Av name={e.userName} size={32}/>
@@ -724,7 +724,7 @@ export default function AdminScreen({ user, onBack }) {
               );
             })}
             {activityTotal > activity.length && !activityLoading && (
-              <button onClick={()=>setActivityPage(p=>p+1)} style={{padding:"10px 0",background:"none",border:`1px solid ${C.b1}`,borderRadius:8,color:C.pri,fontWeight:600,fontSize:13,cursor:"pointer",fontFamily:"inherit",marginTop:8}}>Cargar m\u00e1s</button>
+              <button onClick={()=>setActivityPage(p=>p+1)} style={{padding:"10px 0",background:"none",border:`1px solid ${C.b1}`,borderRadius:8,color:C.pri,fontWeight:600,fontSize:13,cursor:"pointer",fontFamily:"inherit",marginTop:8}}>Cargar más</button>
             )}
           </div>
         )}

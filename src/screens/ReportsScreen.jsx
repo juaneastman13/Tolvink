@@ -134,7 +134,7 @@ export default function ReportsScreen({ onBack, freights, isDesktop, embedded, o
       {/* ── View toggle ── */}
       {!embedded && (
         <div style={{ display:"flex", gap:6, marginBottom:12 }}>
-          {[{k:"stats",l:"Estad\u00edsticas",ic:Ic.doc},{k:"reports",l:"Reportes PDF",ic:Ic.download}].map(v=>(
+          {[{k:"stats",l:"Estadísticas",ic:Ic.doc},{k:"reports",l:"Reportes PDF",ic:Ic.download}].map(v=>(
             <button key={v.k} onClick={()=>setActiveView(v.k)} style={{ flex:1, padding:"10px 0", borderRadius:8, border:`1.5px solid ${activeView===v.k?C.pri:C.b1}`, background:activeView===v.k?C.priPale:C.w, color:activeView===v.k?C.pri:C.t2, fontSize:13.5, fontWeight:600, cursor:"pointer", fontFamily:FONT, display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
               {v.ic(activeView===v.k?C.pri:C.t3,15)} {v.l}
             </button>
@@ -146,9 +146,9 @@ export default function ReportsScreen({ onBack, freights, isDesktop, embedded, o
       {(activeView==="stats"||embedded) && !embedded && (() => {
         const ov = stats?.overview || {};
         const sec = prefs.sections;
-        const periodOpts = [{k:"today",l:"Hoy"},{k:"thisWeek",l:"Esta semana"},{k:"thisMonth",l:"Este mes"},{k:"lastMonth",l:"Mes anterior"},{k:"last3Months",l:"\u00dalt. 3 meses"},{k:"custom",l:"Personalizado"}];
-        const groupOpts = [{k:"day",l:"D\u00eda"},{k:"week",l:"Semana"},{k:"month",l:"Mes"}];
-        const sectionOpts = [{k:"timeline",l:"Timeline"},{k:"byGrain",l:"Granos"},{k:"byTransporter",l:"Transportistas"},{k:"byDestination",l:"Destinos"},{k:"byOrigin",l:"Or\u00edgenes"},{k:"drivers",l:"Conductores"},{k:"delays",l:"Retrasos"}];
+        const periodOpts = [{k:"today",l:"Hoy"},{k:"thisWeek",l:"Esta semana"},{k:"thisMonth",l:"Este mes"},{k:"lastMonth",l:"Mes anterior"},{k:"last3Months",l:"Últ. 3 meses"},{k:"custom",l:"Personalizado"}];
+        const groupOpts = [{k:"day",l:"Día"},{k:"week",l:"Semana"},{k:"month",l:"Mes"}];
+        const sectionOpts = [{k:"timeline",l:"Timeline"},{k:"byGrain",l:"Granos"},{k:"byTransporter",l:"Transportistas"},{k:"byDestination",l:"Destinos"},{k:"byOrigin",l:"Orígenes"},{k:"drivers",l:"Conductores"},{k:"delays",l:"Retrasos"}];
         const compRate = ov.completionRate||0;
         const cancRate = ov.cancellationRate||0;
         const compColor = compRate>=0.8?C.ok:compRate>=0.6?C.warn:C.err;
@@ -220,15 +220,15 @@ export default function ReportsScreen({ onBack, freights, isDesktop, embedded, o
                     const today = new Date().toLocaleDateString("es-UY",{day:"2-digit",month:"short",year:"numeric"});
                     const tblRow = (cols) => "<tr>"+cols.map(c=>`<td>${esc(c)}</td>`).join("")+"</tr>";
                     const tblHead = (cols) => "<tr>"+cols.map(c=>`<th>${esc(c)}</th>`).join("")+"</tr>";
-                    let body = `<h1>Informe de Operaciones — Tolvink</h1><div class="sub">Per\u00edodo: ${p.from} a ${p.to} · Generado el ${today}</div>`;
+                    let body = `<h1>Informe de Operaciones — Tolvink</h1><div class="sub">Período: ${p.from} a ${p.to} · Generado el ${today}</div>`;
                     body += `<div class="cards"><div><b>${o.totalFreights}</b><br>Fletes</div><div><b>${o.totalTons}t</b><br>Toneladas</div><div><b>${Math.round((o.completionRate||0)*100)}%</b><br>Completados</div><div><b>${Math.round((o.cancellationRate||0)*100)}%</b><br>Cancelados</div><div><b>${o.avgCompletionTimeHours||"-"}h</b><br>Prom. completado</div></div>`;
                     if(sec.byGrain&&s.byGrain?.length){body+=`<h2>Por grano</h2><table>${tblHead(["Grano","Fletes","Tons","% Total","Prom."])}${s.byGrain.map(r=>tblRow([r.grain,r.count,r.tons+"t",r.percentage+"%",r.avgTons+"t"])).join("")}</table>`;}
                     if(sec.byTransporter&&s.byTransporter?.length){body+=`<h2>Transportistas</h2><table>${tblHead(["Transportista","Fletes","Tons","Completados","Resp.","Rechazo"])}${s.byTransporter.map(r=>tblRow([r.name,r.count,r.tons+"t",r.completedCount,r.avgResponseTimeHours?r.avgResponseTimeHours+"h":"-",Math.round(r.rejectionRate*100)+"%"])).join("")}</table>`;}
                     if(sec.byDestination&&s.byDestination?.length){body+=`<h2>Destinos</h2><table>${tblHead(["Destino","Fletes","Tons","Prom."])}${s.byDestination.map(r=>tblRow([r.name,r.count,r.tons+"t",r.avgTons+"t"])).join("")}</table>`;}
-                    if(sec.byOrigin&&s.byOrigin?.length){body+=`<h2>Or\u00edgenes</h2><table>${tblHead(["Campo","Fletes","Tons"])}${s.byOrigin.map(r=>tblRow([r.name,r.count,r.tons+"t"])).join("")}</table>`;}
-                    if(sec.drivers&&s.drivers?.length){body+=`<h2>Conductores</h2><table>${tblHead(["Conductor","Patente","Viajes","Tons","Viajes/d\u00eda"])}${s.drivers.map(r=>tblRow([r.name,r.plate,r.trips,r.tons+"t",r.avgTripsPerDay])).join("")}</table>`;}
+                    if(sec.byOrigin&&s.byOrigin?.length){body+=`<h2>Orígenes</h2><table>${tblHead(["Campo","Fletes","Tons"])}${s.byOrigin.map(r=>tblRow([r.name,r.count,r.tons+"t"])).join("")}</table>`;}
+                    if(sec.drivers&&s.drivers?.length){body+=`<h2>Conductores</h2><table>${tblHead(["Conductor","Patente","Viajes","Tons","Viajes/día"])}${s.drivers.map(r=>tblRow([r.name,r.plate,r.trips,r.tons+"t",r.avgTripsPerDay])).join("")}</table>`;}
                     if(sec.delays&&s.delays?.totalDelayed>0){body+=`<h2>Retrasos</h2><p>${s.delays.totalDelayed} fletes retrasados (${s.delays.delayedPercentage}%) — Demora promedio: ${s.delays.avgDelayHours}h</p>`;}
-                    if(sec.timeline&&s.timeline?.length){body+=`<h2>Timeline</h2><table>${tblHead(["Per\u00edodo","Fletes","Tons","Completados","Cancelados"])}${s.timeline.map(t=>tblRow([t.label,t.count,t.tons+"t",t.completed,t.canceled])).join("")}</table>`;}
+                    if(sec.timeline&&s.timeline?.length){body+=`<h2>Timeline</h2><table>${tblHead(["Período","Fletes","Tons","Completados","Cancelados"])}${s.timeline.map(t=>tblRow([t.label,t.count,t.tons+"t",t.completed,t.canceled])).join("")}</table>`;}
                     const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Informe de Operaciones</title><style>@page{size:landscape;margin:10mm}*{box-sizing:border-box;margin:0;padding:0}body{font-family:system-ui,sans-serif;font-size:10px;color:#1a1a1a;padding:8mm}h1{font-size:16px;margin-bottom:2px}h2{font-size:12px;margin:10px 0 4px;color:#333}.sub{font-size:10px;color:#666;margin-bottom:10px}.cards{display:flex;gap:8px;margin:8px 0}table{width:100%;border-collapse:collapse;font-size:9px;margin-bottom:8px}th{background:#1A6B37;color:#fff;padding:4px;text-align:left;font-size:8px}td{padding:3px 4px;border-bottom:1px solid #e0e0e0}tr:nth-child(even){background:#f8f9fa}.cards div{border:1px solid #ddd;border-radius:6px;padding:8px 12px;text-align:center;flex:1}.cards b{font-size:16px;color:#1A6B37}</style></head><body>${body}<div style="margin-top:10px;font-size:8px;color:#999;text-align:right">tolvink.com</div><script>window.onload=()=>setTimeout(()=>window.print(),300)</script></body></html>`;
                     const w=window.open("","_blank"); if(w){w.document.write(html);w.document.close();}
                   }} style={{ padding:"6px 14px", borderRadius:8, border:`1.5px solid ${C.err}`, background:C.errPale, color:C.err, fontSize:11.5, fontWeight:700, cursor:"pointer", fontFamily:FONT, display:"flex", alignItems:"center", gap:5 }}>
@@ -243,7 +243,7 @@ export default function ReportsScreen({ onBack, freights, isDesktop, embedded, o
                     { label:"Completados", value:`${Math.round(compRate*100)}%`, color:compColor },
                     { label:"Cancelados", value:`${Math.round(cancRate*100)}%`, color:cancColor },
                     { label:"Prom. completado", value:ov.avgCompletionTimeHours?`${ov.avgCompletionTimeHours}h`:"-", color:C.sec },
-                    { label:"Multi-cami\u00f3n", value:ov.multiTruckFreights, color:C.info },
+                    { label:"Multi-camión", value:ov.multiTruckFreights, color:C.info },
                   ].map((m,i)=>(
                     <div key={i} style={{ background:C.bgCard, borderRadius:12, padding:"12px 14px", textAlign:"center", boxShadow:C.sh }}>
                       <div style={{ fontSize:24, fontWeight:800, color:m.color }}>{m.value}</div>
@@ -305,13 +305,13 @@ export default function ReportsScreen({ onBack, freights, isDesktop, embedded, o
                 ]}/>}
 
                 {/* Origin table */}
-                {sec.byOrigin && <StatsTable title="Or\u00edgenes" items={stats.byOrigin} cols={[
+                {sec.byOrigin && <StatsTable title="Orígenes" items={stats.byOrigin} cols={[
                   {label:"Campo/Origen",key:"name"},{label:"Fletes",key:"count"},{label:"Tons",render:r=>`${r.tons}t`},
                 ]}/>}
 
                 {/* Drivers table */}
                 {sec.drivers && <StatsTable title="Conductores" items={stats.drivers} cols={[
-                  {label:"Conductor",key:"name"},{label:"Patente",key:"plate"},{label:"Viajes",key:"trips"},{label:"Tons",render:r=>`${r.tons}t`},{label:"Viajes/d\u00eda",key:"avgTripsPerDay"},
+                  {label:"Conductor",key:"name"},{label:"Patente",key:"plate"},{label:"Viajes",key:"trips"},{label:"Tons",render:r=>`${r.tons}t`},{label:"Viajes/día",key:"avgTripsPerDay"},
                 ]}/>}
 
                 {/* Delays */}
@@ -321,19 +321,19 @@ export default function ReportsScreen({ onBack, freights, isDesktop, embedded, o
                     <div style={{ fontSize:12, color:C.t2, marginBottom:6 }}>Demora promedio: {stats.delays.avgDelayHours}h</div>
                     {stats.delays.topDelayedRoutes?.length>0 && (
                       <div style={{ fontSize:11.5, color:C.t2 }}>
-                        <div style={{ fontWeight:600, marginBottom:2 }}>Rutas problem\u00e1ticas:</div>
+                        <div style={{ fontWeight:600, marginBottom:2 }}>Rutas problemáticas:</div>
                         {stats.delays.topDelayedRoutes.map((r,i)=>(
-                          <div key={i} style={{ marginLeft:8 }}>{i+1}. {r.origin} \u2192 {r.dest}: {r.delayedCount} ({r.avgDelayHours}h prom.)</div>
+                          <div key={i} style={{ marginLeft:8 }}>{i+1}. {r.origin} →{r.dest}: {r.delayedCount} ({r.avgDelayHours}h prom.)</div>
                         ))}
                       </div>
                     )}
                   </div>
                 ) : (
-                  <div style={{ background:C.okPale, border:`1px solid ${C.ok}30`, borderRadius:12, padding:"12px 14px", marginBottom:10, fontSize:12.5, color:C.ok, fontWeight:600 }}>Sin fletes retrasados en este per\u00edodo</div>
+                  <div style={{ background:C.okPale, border:`1px solid ${C.ok}30`, borderRadius:12, padding:"12px 14px", marginBottom:10, fontSize:12.5, color:C.ok, fontWeight:600 }}>Sin fletes retrasados en este período</div>
                 ))}
 
                 {/* Empty state */}
-                {ov.totalFreights===0 && <div style={{ textAlign:"center", padding:32, color:C.t3, fontSize:14 }}>No hay datos para este per\u00edodo</div>}
+                {ov.totalFreights===0 && <div style={{ textAlign:"center", padding:32, color:C.t3, fontSize:14 }}>No hay datos para este período</div>}
               </>
             )}
           </div>
