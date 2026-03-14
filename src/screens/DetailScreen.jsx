@@ -652,7 +652,8 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
 
       {/* Info + Map — side by side on desktop */}
       <div style={{ display:"flex", flexDirection:_isDesktop?"row":"column", gap:12, marginBottom:12, alignItems:_isDesktop?"stretch":undefined }}>
-        <div style={{ flex:"1 1 0%", minWidth:0, background:C.w, border:`1px solid ${C.b1}`, borderRadius:12, padding:16, boxShadow:C.sh }}>
+        <div style={{ flex:"1 1 0%", minWidth:0 }}>
+          <div style={{ background:C.w, border:`1px solid ${C.b1}`, borderRadius:12, padding:16, boxShadow:C.sh, height:"100%", boxSizing:"border-box" }}>
           {(()=>{
             const InfoRow = ({ic,label,val,isLast}) => (
               <div style={{ display:"flex", alignItems:"center", gap:10, padding:"9px 0", borderBottom:isLast?"none":`1px solid ${C.b2}` }}>
@@ -679,6 +680,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
               {allRows.map(([key,ic,label,val],i)=><InfoRow key={key} ic={ic} label={label} val={val} isLast={i===allRows.length-1}/>)}
             </>;
           })()}
+          </div>
         </div>
         <div style={{ flex:"1 1 0%", minWidth:0 }}>
           <Suspense fallback={<div style={{height:300,display:"flex",alignItems:"center",justifyContent:"center",color:C.t3,fontSize:13}}>Cargando mapa...</div>}>
