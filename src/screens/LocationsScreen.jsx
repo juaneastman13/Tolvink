@@ -986,13 +986,13 @@ export default function LocationsScreen({ onBack }) {
             })}
           </div>
 
-          <button onClick={toggleMapType} style={{ position: "absolute", top: isDesktop ? 52 : 96, right: 12, zIndex: 5, display: "inline-flex", alignItems: "center", gap: 5, padding: "6px 12px", borderRadius: 20, background: mapType === "hybrid" ? C.t1 : C.bgCard, color: mapType === "hybrid" ? "#fff" : C.t2, border: `1px solid ${mapType === "hybrid" ? "transparent" : C.b1}`, cursor: "pointer", fontFamily: FONT, fontSize: 12.1, fontWeight: 700, boxShadow: C.sh, transition: "all 0.2s" }}>
+          <button onClick={toggleMapType} style={{ position: "absolute", top: isDesktop ? 52 : 62, right: 12, zIndex: 5, display: "inline-flex", alignItems: "center", gap: 5, padding: "6px 12px", borderRadius: 20, background: mapType === "hybrid" ? C.t1 : C.bgCard, color: mapType === "hybrid" ? "#fff" : C.t2, border: `1px solid ${mapType === "hybrid" ? "transparent" : C.b1}`, cursor: "pointer", fontFamily: FONT, fontSize: 12.1, fontWeight: 700, boxShadow: C.sh, transition: "all 0.2s" }}>
             {mapType === "hybrid" ? "Mapa" : "Satélite"}
           </button>
         </>}
 
         {!isDesktop && !drawerOpen && (
-          <button onClick={onBack} style={{ position: "absolute", top: 56, left: 12, zIndex: 5, width: 40, height: 40, borderRadius: 20, background: C.w, border: `1px solid ${C.b1}`, boxShadow: C.sh, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <button onClick={onBack} style={{ position: "absolute", top: 62, left: 12, zIndex: 5, width: 40, height: 40, borderRadius: 20, background: C.w, border: `1px solid ${C.b1}`, boxShadow: C.sh, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
             {Ic.chev(C.pri, 20)}
           </button>
         )}
