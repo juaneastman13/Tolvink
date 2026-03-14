@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, Fragment } from "react";
-import { C, Ic } from "../theme";
+import { C, Ic, FONT } from "../theme";
 import { Btn, Bd, LoadingOverlay } from "../components";
 import { apiUpdateMe, apiChangePassword } from "../api";
 import { adminStyles, typeColors, typeLabels, adminBackBtn } from "../utils/freight-helpers";
@@ -13,13 +13,40 @@ export default function MyDataScreen({ user, onBack, onUserUpdate }) {
   const [expandedCo, setExpandedCo] = useState(null);
   const [pwForm, setPwForm] = useState({ current:"", next:"" });
   const [pwSaving, setPwSaving] = useState(false);
+  const [confirmModal, setConfirmModal] = useState(false);
+  const [confirmPw, setConfirmPw] = useState("");
+  const [confirmErr, setConfirmErr] = useState(false);
   const msgTimer = useRef(null);
   const show = (t,k="ok") => { setMsg({t,k}); clearTimeout(msgTimer.current); msgTimer.current = setTimeout(()=>setMsg(null),3000); };
   useEffect(() => () => clearTimeout(msgTimer.current), []);
-  const handleSave = async () => {
-    if(!form.name.trim()||!form.email.trim()) return show("Nombre y email obligatorios","err");
+  const needsPassword = form.email.trim().toLowerCase() !== (user.email||"").toLowerCase() || form.phone.trim() !== (user.phone||"");
+  const doSave = async (password) => {
     setSaving(true);
-    try { await apiUpdateMe(form); onUserUpdate?.(form); setSaving(false); setDoneMsg("Datos actualizados"); } catch(e) { show(e.message,"err"); setSaving(false); }
+    try {
+      const body = { ...form };
+      if (password) body.currentPassword = password;
+      await apiUpdateMe(body);
+      onUserUpdate?.(form);
+      setSaving(false);
+      setConfirmModal(false);
+      setConfirmPw("");
+      setConfirmErr(false);
+      setDoneMsg("Datos actualizados");
+    } catch(e) {
+      setSaving(false);
+      if (password && (e.message||"").toLowerCase().includes("contraseña")) {
+        setConfirmErr(true);
+      } else {
+        setConfirmModal(false);
+        setConfirmPw("");
+        show(e.message,"err");
+      }
+    }
+  };
+  const handleSave = () => {
+    if(!form.name.trim()||!form.email.trim()) return show("Nombre y email obligatorios","err");
+    if (needsPassword) { setConfirmModal(true); setConfirmPw(""); setConfirmErr(false); }
+    else doSave(null);
   };
   const companies = (user.companies && user.companies.length > 0) ? user.companies : (user.companyId ? [{ companyId:user.companyId, companyName:user.entity||user.company?.name||"", companyType:user.userType||user.company?.type||"", role:user.role==="admin"?"gerente":"operario" }] : []);
   const permsByRole = (role) => {
@@ -100,6 +127,31 @@ export default function MyDataScreen({ user, onBack, onUserUpdate }) {
 
       {msg&&<div style={{padding:"8px 12px",borderRadius:8,background:msg.k==="ok"?C.okPale:`${C.err}15`,color:msg.k==="ok"?C.ok:C.err,fontSize:13.2,marginTop:10}}>{msg.t}</div>}
       </div>
+
+      {confirmModal && (
+        <div style={{position:"fixed",inset:0,background:C.bgOverlay,display:"flex",alignItems:"center",justifyContent:"center",zIndex:9999}}>
+          <div style={{background:C.bgCard,borderRadius:12,padding:24,maxWidth:400,width:"90%",boxShadow:C.shLg}}>
+            <div style={{fontFamily:FONT,fontSize:16.5,fontWeight:700,color:C.t1,marginBottom:8}}>Confirmar cambios</div>
+            <div style={{fontFamily:FONT,fontSize:14.3,color:C.t2,marginBottom:16,lineHeight:1.5}}>Para confirmar los cambios, ingresá tu contraseña actual.</div>
+            <input
+              type="password"
+              placeholder="Contraseña actual"
+              value={confirmPw}
+              onChange={e => { setConfirmPw(e.target.value); setConfirmErr(false); }}
+              onKeyDown={e => e.key === "Enter" && confirmPw && !saving && doSave(confirmPw)}
+              autoFocus
+              style={{width:"100%",padding:"10px 12px",borderRadius:8,border:`1.5px solid ${confirmErr?C.err:C.b1}`,fontFamily:FONT,fontSize:14.3,background:C.bgInput,color:C.t1,outline:"none",boxSizing:"border-box"}}
+            />
+            {confirmErr && <div style={{color:C.err,fontSize:12.1,fontFamily:FONT,marginTop:4}}>Contraseña incorrecta</div>}
+            <div style={{display:"flex",gap:8,marginTop:16,justifyContent:"flex-end"}}>
+              <button onClick={()=>{setConfirmModal(false);setConfirmPw("");setConfirmErr(false);}} style={{padding:"8px 16px",borderRadius:8,border:`1px solid ${C.b2}`,background:C.w,cursor:"pointer",fontFamily:FONT,fontSize:13.2,fontWeight:600,color:C.t2}}>Cancelar</button>
+              <button onClick={()=>doSave(confirmPw)} disabled={!confirmPw||saving} style={{padding:"8px 16px",borderRadius:8,border:"none",background:C.pri,cursor:"pointer",fontFamily:FONT,fontSize:13.2,fontWeight:700,color:C.w,opacity:confirmPw&&!saving?1:0.5}}>
+                {saving?"Confirmando...":"Confirmar"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
