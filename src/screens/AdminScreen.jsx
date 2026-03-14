@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { C, Ic, FONT, MONO } from "../theme";
 import { Btn, Field, Tabs, Select, Loader, Av, Bd, LoadingOverlay, NumericStepper } from "../components";
-import { apiAdminStats, apiAdminActivity, apiAdminListCompanies, apiAdminGetCompany, apiAdminCreateCompany, apiAdminUpdateCompany, apiAdminListBranches, apiAdminCreateBranch, apiAdminUpdateBranch, apiAdminDeleteBranch, apiAdminListUsers, apiAdminCreateUser, apiAdminUpdateUser, apiAdminListFields, apiAdminCreateField, apiAdminUpdateField, apiAdminDeleteField, apiAdminListLots, apiAdminCreateLot, apiAdminUpdateLot, apiAdminDeleteLot, apiAdminListTrucks, apiAdminCreateTruck, apiAdminUpdateTruck, apiAdminDeleteTruck } from "../api";
+import { apiAdminStats, apiAdminActivity, apiAdminListCompanies, apiAdminGetCompany, apiAdminCreateCompany, apiAdminUpdateCompany, apiAdminListBranches, apiAdminCreateBranch, apiAdminUpdateBranch, apiAdminDeleteBranch, apiAdminListUsers, apiAdminCreateUser, apiAdminUpdateUser, apiAdminAddUserCompany, apiAdminUpdateUserCompany, apiAdminRemoveUserCompany, apiAdminListFields, apiAdminCreateField, apiAdminUpdateField, apiAdminDeleteField, apiAdminListLots, apiAdminCreateLot, apiAdminUpdateLot, apiAdminDeleteLot, apiAdminListTrucks, apiAdminCreateTruck, apiAdminUpdateTruck, apiAdminDeleteTruck } from "../api";
 import { adminStyles, typeColors, typeLabels, roleLabels, adminBackBtn } from "../utils/freight-helpers";
 import { LocationPicker } from "../maps";
 import AccessScreen from "./AccessScreen";
@@ -284,81 +284,195 @@ export default function AdminScreen({ user, onBack }) {
 
   // ===================== USER EDIT =====================
   if (view==="userEdit" && editUserData) {
-    const types = editUserData.userTypes||[];
-    const at = activeUserType && types.includes(activeUserType) ? activeUserType : types[0]||null;
+    const memberships = editUserData.memberships||[];
+    const [savingField,setSavingField] = useState(null);
+    const [savedField,setSavedField] = useState(null);
+    const [addingCompany,setAddingCompany] = useState(false);
+    const [addCompanyId,setAddCompanyId] = useState("");
+    const [addCompanyRole,setAddCompanyRole] = useState("operario");
+    const [confirmRemove,setConfirmRemove] = useState(null);
+    const membershipRoles = {operario:"Operario",gerente:"Gerente",chofer:"Chofer"};
+
+    const saveBasicField = async (field, value) => {
+      setSavingField(field);
+      try {
+        await apiAdminUpdateUser(editUserData.id, {[field]:value});
+        setSavedField(field); setTimeout(()=>setSavedField(null),2000);
+      } catch(e) { show(e.message,"err"); }
+      finally { setSavingField(null); }
+    };
+
+    const handleAddCompany = async () => {
+      if(!addCompanyId) return;
+      setSavingField("addCompany");
+      try {
+        const result = await apiAdminAddUserCompany(editUserData.id, addCompanyId, addCompanyRole);
+        const co = allCompanies.find(c=>c.id===addCompanyId);
+        setEditUserData(p=>({...p, memberships:[...(p.memberships||[]), {id:result.id, companyId:addCompanyId, role:addCompanyRole, company:co||result.company}]}));
+        setAddingCompany(false); setAddCompanyId(""); setAddCompanyRole("operario");
+        show("Empresa agregada","ok");
+      } catch(e) { show(e.message,"err"); }
+      finally { setSavingField(null); }
+    };
+
+    const handleUpdateMembershipRole = async (companyId, newRole) => {
+      setSavingField("role_"+companyId);
+      try {
+        await apiAdminUpdateUserCompany(editUserData.id, companyId, newRole);
+        setEditUserData(p=>({...p, memberships:(p.memberships||[]).map(m=>m.companyId===companyId?{...m,role:newRole}:m)}));
+        setSavedField("role_"+companyId); setTimeout(()=>setSavedField(null),2000);
+      } catch(e) { show(e.message,"err"); }
+      finally { setSavingField(null); }
+    };
+
+    const handleRemoveMembership = async (companyId) => {
+      setSavingField("rm_"+companyId);
+      try {
+        await apiAdminRemoveUserCompany(editUserData.id, companyId);
+        setEditUserData(p=>({...p, memberships:(p.memberships||[]).filter(m=>m.companyId!==companyId)}));
+        setConfirmRemove(null);
+        show("Empresa removida","ok");
+      } catch(e) { show(e.message,"err"); }
+      finally { setSavingField(null); }
+    };
+
+    const existingCompanyIds = new Set(memberships.map(m=>m.companyId));
+    const availableCompanies = allCompanies.filter(c=>!existingCompanyIds.has(c.id));
+
     return (
       <div style={{flex:1,overflow:"auto",padding:18}}>
-        {(saving||doneMsg) && <LoadingOverlay closing={!!doneMsg} closingText={doneMsg} onClose={()=>setDoneMsg("")}/>}
+        {doneMsg && <LoadingOverlay closing closingText={doneMsg} onClose={()=>setDoneMsg("")}/>}
         {adminBackBtn(()=>setView("list"))}
         <div style={{fontSize:17.6,fontWeight:700,color:C.t1,marginBottom:12}}>Editar usuario</div>
-        <div style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius:10,padding:14,boxShadow:C.sh}}>
-          {/* Basic info */}
+
+        {/* Section A — Personal data */}
+        <div style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius:12,padding:16,boxShadow:C.sh,marginBottom:14}}>
+          <div style={{fontSize:14,fontWeight:700,color:C.t1,marginBottom:10}}>Datos personales</div>
           <div style={s.lbl}>Nombre:</div>
-          <input value={editUserData.name} onChange={e=>setEditUserData(p=>({...p,name:e.target.value}))} placeholder="Nombre" style={{...s.inp,marginBottom:10}} />
-          <div style={{display:"flex",gap:8,marginBottom:10}}>
-            <div style={{flex:1}}><div style={s.lbl}>Email:</div><input value={editUserData.email} onChange={e=>setEditUserData(p=>({...p,email:e.target.value}))} placeholder="Email" style={s.inp} /></div>
-            <div style={{flex:1}}><div style={s.lbl}>Teléfono:</div><input value={editUserData.phone||""} onChange={e=>setEditUserData(p=>({...p,phone:e.target.value}))} placeholder="Teléfono" style={s.inp} /></div>
+          <div style={{display:"flex",gap:6,marginBottom:10,alignItems:"center"}}>
+            <input value={editUserData.name} onChange={e=>setEditUserData(p=>({...p,name:e.target.value}))} placeholder="Nombre" style={{...s.inp,flex:1,marginBottom:0}} />
+            <button disabled={savingField==="name"} onClick={()=>saveBasicField("name",editUserData.name)} style={{...s.btnP(C.pri,savingField==="name"),padding:"8px 14px",fontSize:12,minWidth:80}}>
+              {savingField==="name"?"...":savedField==="name"?"Guardado ✓":"Guardar"}
+            </button>
           </div>
-
-          {/* User types selection */}
-          <div style={s.lbl}>Tipos de usuario:</div>
-          <div style={{display:"flex",gap:6,marginBottom:10}}>
-            {["producer","plant","transporter"].map(t=>{const sel=types.includes(t);return(<button key={t} onClick={()=>toggleEditUserType(t)} style={{flex:1,padding:"9px 0",borderRadius:8,border:`1.5px solid ${sel?typeColors[t]:C.b1}`,background:sel?`${typeColors[t]}12`:C.w,color:sel?typeColors[t]:C.t2,fontSize:13.2,fontWeight:600,cursor:"pointer",fontFamily:"inherit",transition:"all 0.15s"}}>{sel?"✓ ":""}{typeLabels[t]}</button>);})}
-          </div>
-
-          {/* Type tabs - select one type to configure */}
-          {types.length>0 && (
-            <div style={{background:C.bgInput,border:`1px solid ${C.b1}`,borderRadius:10,padding:12,marginBottom:10}}>
-              {types.length>1 && (
-                <div style={{display:"flex",gap:4,marginBottom:10}}>
-                  {types.map(t=>(
-                    <button key={t} onClick={()=>setActiveUserType(t)} style={{flex:1,padding:"7px 0",borderRadius:6,border:`1.5px solid ${at===t?typeColors[t]:C.b1}`,background:at===t?`${typeColors[t]}18`:C.w,color:at===t?typeColors[t]:C.t3,fontSize:12.1,fontWeight:600,cursor:"pointer",fontFamily:"inherit",transition:"all 0.15s"}}>{typeLabels[t]}</button>
-                  ))}
-                </div>
-              )}
-
-              {at && (
-                <div key={at}>
-                  <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:8}}>
-                    <div style={{width:10,height:10,borderRadius:5,background:typeColors[at]}}/>
-                    <span style={{fontSize:13.2,fontWeight:700,color:typeColors[at]}}>{typeLabels[at]}</span>
-                  </div>
-
-                  {/* Role for this type */}
-                  <div style={s.lbl}>Rol como {typeLabels[at]}:</div>
-                  <select value={(editUserData.roleByType||{})[at]||"operator"} onChange={e=>setEditUserData(p=>({...p,roleByType:{...(p.roleByType||{}),[at]:e.target.value}}))} style={{...s.sel,marginBottom:8}}>
-                    <option value="operator">Operario</option>
-                    <option value="admin">Gerente</option>
-                    <option value="chofer">Chofer</option>
-                    {isPlatform&&<option value="platform_admin">Admin Principal</option>}
-                  </select>
-
-                  {/* Company for this type */}
-                  <div style={s.lbl}>Empresa ({typeLabels[at]}):</div>
-                  <select value={(editUserData.companyByType||{})[at]||""} onChange={e=>setEditUserData(p=>({...p,companyByType:{...(p.companyByType||{}),[at]:e.target.value||null}}))} style={{...s.sel,marginBottom:4}}>
-                    <option value="">Sin empresa</option>
-                    {allCompanies.filter(c=>c.type===at).map(c=><option key={c.id} value={c.id}>{c.name}</option>)}
-                  </select>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Status */}
           <div style={{display:"flex",gap:8,marginBottom:10}}>
             <div style={{flex:1}}>
-              <div style={s.lbl}>Estado:</div>
-              <select value={editUserData.active?"active":"inactive"} onChange={e=>setEditUserData(p=>({...p,active:e.target.value==="active"}))} style={s.sel}>
-                <option value="active">Activo</option>
-                <option value="inactive">Inactivo</option>
-              </select>
+              <div style={s.lbl}>Email:</div>
+              <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                <input value={editUserData.email} onChange={e=>setEditUserData(p=>({...p,email:e.target.value}))} placeholder="Email" style={{...s.inp,flex:1,marginBottom:0}} />
+                <button disabled={savingField==="email"} onClick={()=>saveBasicField("email",editUserData.email)} style={{...s.btnP(C.pri,savingField==="email"),padding:"8px 12px",fontSize:12,minWidth:70}}>
+                  {savingField==="email"?"...":savedField==="email"?"✓":"Guardar"}
+                </button>
+              </div>
+            </div>
+            <div style={{flex:1}}>
+              <div style={s.lbl}>Teléfono:</div>
+              <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                <input value={editUserData.phone||""} onChange={e=>setEditUserData(p=>({...p,phone:e.target.value}))} placeholder="Teléfono" style={{...s.inp,flex:1,marginBottom:0}} />
+                <button disabled={savingField==="phone"} onClick={()=>saveBasicField("phone",editUserData.phone)} style={{...s.btnP(C.pri,savingField==="phone"),padding:"8px 12px",fontSize:12,minWidth:70}}>
+                  {savingField==="phone"?"...":savedField==="phone"?"✓":"Guardar"}
+                </button>
+              </div>
             </div>
           </div>
-
-          <div style={{display:"flex",gap:8,marginTop:4}}>
-            <button onClick={()=>setView("list")} style={{flex:1,padding:"10px 0",borderRadius:8,border:`1px solid ${C.b1}`,background:C.w,color:C.t2,fontSize:14.3,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>Cancelar</button>
-            <button onClick={handleSaveEditUser} disabled={saving} style={{...s.btnP(C.acc,saving),flex:2}}>{saving?"Guardando...":"Guardar cambios"}</button>
+          <div style={{display:"flex",gap:8}}>
+            <div style={{flex:1}}>
+              <div style={s.lbl}>Rol global:</div>
+              <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                <select value={editUserData.role||"operator"} onChange={e=>setEditUserData(p=>({...p,role:e.target.value}))} style={{...s.sel,flex:1}}>
+                  <option value="operator">Operador</option>
+                  <option value="admin">Admin</option>
+                  {isPlatform && <option value="platform_admin">Admin Principal</option>}
+                </select>
+                <button disabled={savingField==="role"} onClick={()=>saveBasicField("role",editUserData.role)} style={{...s.btnP(C.pri,savingField==="role"),padding:"8px 12px",fontSize:12,minWidth:70}}>
+                  {savingField==="role"?"...":savedField==="role"?"✓":"Guardar"}
+                </button>
+              </div>
+            </div>
+            <div style={{flex:1}}>
+              <div style={s.lbl}>Estado:</div>
+              <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                <select value={editUserData.active?"active":"inactive"} onChange={e=>setEditUserData(p=>({...p,active:e.target.value==="active"}))} style={{...s.sel,flex:1}}>
+                  <option value="active">Activo</option>
+                  <option value="inactive">Inactivo</option>
+                </select>
+                <button disabled={savingField==="active"} onClick={()=>saveBasicField("active",editUserData.active)} style={{...s.btnP(C.pri,savingField==="active"),padding:"8px 12px",fontSize:12,minWidth:70}}>
+                  {savingField==="active"?"...":savedField==="active"?"✓":"Guardar"}
+                </button>
+              </div>
+            </div>
           </div>
+        </div>
+
+        {/* Section B — Company memberships */}
+        <div style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius:12,padding:16,boxShadow:C.sh}}>
+          <div style={{fontSize:14,fontWeight:700,color:C.t1,marginBottom:10}}>Empresas asignadas</div>
+
+          {memberships.length===0 && !addingCompany && (
+            <div style={{fontSize:13,color:C.t3,padding:"12px 0",textAlign:"center"}}>Sin empresas asignadas</div>
+          )}
+
+          {memberships.map((m,i)=>{
+            const co = m.company || {};
+            const isRemoving = confirmRemove===m.companyId;
+            return (
+              <div key={m.companyId} style={{padding:"12px 0",borderBottom:i<memberships.length-1?`1px solid ${C.b2}`:"none",display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
+                <div style={{flex:"1 1 140px",minWidth:0}}>
+                  <div style={{fontSize:14,fontWeight:600,color:C.t1}}>{co.name||"Empresa"}</div>
+                  <span style={{display:"inline-block",fontSize:11,fontWeight:600,padding:"2px 8px",borderRadius:10,marginTop:3,color:typeColors[co.type]||C.t3,background:`${typeColors[co.type]||C.t3}15`}}>
+                    {typeLabels[co.type]||co.type}
+                  </span>
+                </div>
+                <div style={{display:"flex",alignItems:"center",gap:6,flexShrink:0}}>
+                  <select value={m.role} onChange={e=>handleUpdateMembershipRole(m.companyId,e.target.value)}
+                    disabled={savingField==="role_"+m.companyId}
+                    style={{...s.sel,fontSize:12,padding:"6px 8px",minWidth:100,marginBottom:0}}>
+                    {Object.entries(membershipRoles).map(([k,v])=><option key={k} value={k}>{v}</option>)}
+                  </select>
+                  {savingField==="role_"+m.companyId && <span style={{fontSize:11,color:C.t3}}>...</span>}
+                  {savedField==="role_"+m.companyId && <span style={{fontSize:11,color:C.ok,fontWeight:600}}>✓</span>}
+                  {!isRemoving ? (
+                    <button onClick={()=>setConfirmRemove(m.companyId)} style={{background:"none",border:"none",color:C.err,cursor:"pointer",fontSize:12,fontWeight:600,padding:"4px 8px",borderRadius:6,fontFamily:"inherit"}}
+                      onMouseEnter={e=>{e.currentTarget.style.background=C.errPale}} onMouseLeave={e=>{e.currentTarget.style.background="none"}}>
+                      Quitar
+                    </button>
+                  ) : (
+                    <div style={{display:"flex",gap:4,alignItems:"center"}}>
+                      <button disabled={savingField==="rm_"+m.companyId} onClick={()=>handleRemoveMembership(m.companyId)} style={{background:C.err,color:C.w,border:"none",borderRadius:6,padding:"4px 10px",fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>
+                        {savingField==="rm_"+m.companyId?"...":"Confirmar"}
+                      </button>
+                      <button onClick={()=>setConfirmRemove(null)} style={{background:"none",border:`1px solid ${C.b1}`,borderRadius:6,padding:"4px 8px",fontSize:11,color:C.t3,cursor:"pointer",fontFamily:"inherit"}}>No</button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+
+          {/* Add company */}
+          {!addingCompany ? (
+            <button onClick={()=>setAddingCompany(true)} style={{width:"100%",padding:"10px 0",borderRadius:10,border:`1.5px dashed ${C.pri}`,background:`${C.pri}06`,color:C.pri,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:6,marginTop:10}}>
+              {Ic.plus(C.pri,14)} Agregar empresa
+            </button>
+          ) : (
+            <div style={{border:`1.5px solid ${C.pri}`,borderRadius:10,padding:12,marginTop:10,background:`${C.pri}04`}}>
+              <div style={{fontSize:12,fontWeight:700,color:C.pri,marginBottom:8}}>Agregar empresa</div>
+              <select value={addCompanyId} onChange={e=>setAddCompanyId(e.target.value)} style={{...s.sel,marginBottom:8}}>
+                <option value="">Seleccionar empresa...</option>
+                {availableCompanies.map(c=><option key={c.id} value={c.id}>{c.name} ({typeLabels[c.type]||c.type})</option>)}
+              </select>
+              <div style={s.lbl}>Rol en la empresa:</div>
+              <select value={addCompanyRole} onChange={e=>setAddCompanyRole(e.target.value)} style={{...s.sel,marginBottom:8}}>
+                {Object.entries(membershipRoles).map(([k,v])=><option key={k} value={k}>{v}</option>)}
+              </select>
+              <div style={{display:"flex",gap:6}}>
+                <button onClick={()=>{setAddingCompany(false);setAddCompanyId("");}} style={{flex:1,padding:"8px 0",borderRadius:8,border:`1px solid ${C.b1}`,background:C.w,color:C.t2,fontSize:12.5,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>Cancelar</button>
+                <button disabled={!addCompanyId||savingField==="addCompany"} onClick={handleAddCompany} style={{...s.btnP(C.pri,savingField==="addCompany"),flex:1,padding:"8px 0",fontSize:12.5}}>
+                  {savingField==="addCompany"?"Agregando...":"Agregar"}
+                </button>
+              </div>
+            </div>
+          )}
         </div>
         <MsgBar/>
       </div>

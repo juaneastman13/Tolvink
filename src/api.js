@@ -366,6 +366,9 @@ export async function apiAdminListUsers(search, companyId) {
 }
 export async function apiAdminCreateUser(b) { return api('/admin/users',{body:b}); }
 export async function apiAdminUpdateUser(id,b) { return api(`/admin/users/${id}`,{method:'PATCH',body:b}); }
+export async function apiAdminAddUserCompany(userId,companyId,role) { return api(`/admin/users/${userId}/companies`,{body:{companyId,role}}); }
+export async function apiAdminUpdateUserCompany(userId,companyId,role) { return api(`/admin/users/${userId}/companies/${companyId}`,{method:'PATCH',body:{role}}); }
+export async function apiAdminRemoveUserCompany(userId,companyId) { return api(`/admin/users/${userId}/companies/${companyId}`,{method:'DELETE'}); }
 // Self-edit
 export async function apiUpdateMe(b) { return api('/admin/me',{method:'PATCH',body:b}); }
 // Fields (Producer)
