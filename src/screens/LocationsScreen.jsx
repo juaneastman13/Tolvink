@@ -689,6 +689,8 @@ export default function LocationsScreen({ onBack }) {
           <span style={{ display: "inline-flex", transition: "transform 200ms", transform: isExpanded ? "rotate(0)" : "rotate(-90deg)" }}>{Ic.down(C.t3, 14)}</span>
           <div style={{ marginLeft: 4 }} onClick={e => e.stopPropagation()}>
             <RowMenu id={f.id} items={[
+              { icon: Ic.truck(C.acc, 14), label: "Solicitar flete", onClick: () => navigate(`/new?originFieldId=${f.id}`) },
+              { icon: Ic.doc(C.t3, 14), label: "Ver fletes", onClick: () => navigate(`/list?search=${encodeURIComponent(f.name)}`) },
               ...(hasCoords ? [{ icon: Ic.nav(C.t3, 14), label: "Ver en mapa", onClick: () => focusOnMap(id, Number(f.lat), Number(f.lng)) }] : []),
               ...(!isShared ? [{ icon: Ic.share(C.t3, 14), label: "Compartir", onClick: () => setSharingEntity({ type: "field", entity: f }) }] : []),
               ...(!isShared ? [{ icon: Ic.edit(C.t3, 14), label: "Editar ubicación", onClick: () => setEditField(editField === f.id ? null : f.id) }] : []),
@@ -739,6 +741,8 @@ export default function LocationsScreen({ onBack }) {
                 </div>
                 <div style={{ marginLeft: 4 }} onClick={e => e.stopPropagation()}>
                   <RowMenu id={l.id} items={[
+                    { icon: Ic.truck(C.acc, 14), label: "Solicitar flete", onClick: () => navigate(`/new?originFieldId=${f.id}&originLotId=${l.id}`) },
+                    { icon: Ic.doc(C.t3, 14), label: "Ver fletes", onClick: () => navigate(`/list?search=${encodeURIComponent(l.name)}`) },
                     ...(lotHasCoords ? [{ icon: Ic.nav(C.t3, 14), label: "Ver en mapa", onClick: () => focusOnMap(lotId, Number(l.lat), Number(l.lng)) }] : []),
                     ...(!isShared ? [{ icon: Ic.share(C.t3, 14), label: "Compartir", onClick: () => setSharingEntity({ type: "lot", entity: l, fieldId: f.id }) }] : []),
                     ...(!isShared ? [{ icon: Ic.edit(C.t3, 14), label: "Editar", onClick: () => setEditLot(editLot?.lotId === l.id ? null : { fieldId: f.id, lotId: l.id }) }] : []),
@@ -828,7 +832,7 @@ export default function LocationsScreen({ onBack }) {
       {/* ── PANEL ── */}
       <div ref={panelRef} style={{
         ...(isDesktop ? { width: "30%", minWidth: 320, maxWidth: 420, borderRight: `1px solid ${C.b1}`, position: "relative" } : {
-          position: "fixed", left: 0, top: 0, bottom: 0, width: "85vw", maxWidth: 360,
+          position: "fixed", left: 0, top: 0, bottom: 0, width: "100vw",
           transform: drawerOpen ? "translateX(0)" : "translateX(-100%)", transition: "transform 250ms ease-out", zIndex: 101, boxShadow: drawerOpen ? C.shLg : "none",
         }),
         background: C.w, display: "flex", flexDirection: "column", overflow: "hidden",
