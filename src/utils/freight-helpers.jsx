@@ -163,19 +163,18 @@ export function getWaitingOnText(freight, userType) {
 // ======================== THIRD-PARTY LABEL (for grouping) =============
 export function getThirdPartyLabel(freight, userType) {
   const s = freight.status;
+  if (s === "in_progress") return "En viaje";
+  if (s === "loaded") return "En viaje a planta";
   if (userType === "plant") {
     if (s === "assigned") return "Esperando respuesta del transportista";
     if (s === "accepted") return "Esperando inicio del viaje";
-    if (s === "loaded") return "Esperando confirmación de entrega (transportista)";
   } else if (userType === "transporter" || userType === "chofer") {
     if (s === "assigned") return "Esperando respuesta del transportista";
     if (s === "accepted") return "Esperando inicio del viaje";
-    if (s === "loaded") return "Esperando confirmación de entrega (planta)";
   } else if (userType === "producer") {
     if (s === "pending_assignment") return "Esperando asignación de planta";
     if (s === "assigned") return "Esperando respuesta del transportista";
     if (s === "accepted") return "Esperando inicio del viaje";
-    if (s === "in_progress") return "Esperando confirmación de carga";
   }
   return "Sin pendientes de mi parte";
 }
