@@ -138,8 +138,8 @@ export class ErrorBoundary extends Component {
         </div>
         <div style={{ fontSize:19.8, fontWeight:700, color:C.t1, marginBottom:8 }}>Algo salió mal</div>
         <div style={{ fontSize:14.3, color:C.t3, marginBottom:20, maxWidth:320, lineHeight:1.5 }}>Ocurrió un error inesperado. Podés intentar recargar la página.</div>
+        {this.state.error && <pre style={{ fontSize:11, textAlign:'left', background:'#fee', padding:8, borderRadius:4, overflowX:'auto', maxHeight:200, overflowY:'auto', maxWidth:400, width:'100%' }}>{this.state.error?.message + '\n' + this.state.error?.stack}</pre>}
         <button onClick={() => window.location.reload()} style={{ padding:"12px 28px", borderRadius:10, background:C.pri, color:C.w, border:"none", fontSize:15.4, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>Recargar página</button>
-        {import.meta.env.DEV && this.state.error && <div style={{ marginTop:16, fontSize:11, color:C.t3, fontFamily:"monospace", maxWidth:400, wordBreak:"break-all" }}>{String(this.state.error.message || this.state.error).slice(0, 200)}</div>}
       </div>;
     }
     return this.props.children;
