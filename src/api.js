@@ -225,6 +225,7 @@ export async function apiCancelFreight(id,reason) { return api(`/freights/${id}/
 export async function apiConfirmLoaded(id, loadedTons) { return api(`/freights/${id}/confirm-loaded`,{body:{loadedTons}}); }
 export async function apiConfirmFinished(id) { return api(`/freights/${id}/confirm-finished`,{body:{}}); }
 export async function apiAuthorizeFreight(id) { return api(`/freights/${id}/authorize`,{body:{}}); }
+export async function apiGetAssignmentSuggestions(id) { return api(`/freights/${id}/assignment-suggestions`); }
 
 // Multi-truck (v6.0)
 export async function apiAssignMultiTruck(id, trucks) { return api(`/freights/${id}/assign-multi`,{body:{trucks}}); }

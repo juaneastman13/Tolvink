@@ -6,10 +6,11 @@ import { SafeZone } from "../maps";
 const FreightMap = lazy(() => import("../maps").then(m => ({ default: m.FreightMap })));
 import log from "../logger";
 import { DocsGallery, FreightFileUpload, OcrResultModal, UploadOverlay } from "../uploads";
-import { apiGetAuditLog, apiGetFreight, apiGetFreightDetailExtra, apiSendTracking, apiApprovePendingChange, apiRejectPendingChange, apiOcrAnalyze, apiSaveOcrData, apiUpdateFreight, apiGetWeighTickets } from "../api";
+import { apiGetAuditLog, apiGetFreight, apiGetFreightDetailExtra, apiSendTracking, apiApprovePendingChange, apiRejectPendingChange, apiOcrAnalyze, apiSaveOcrData, apiUpdateFreight, apiGetWeighTickets, apiAssignFreight } from "../api";
 import { WeighTicketSummary } from "../components/WeighTicketForm";
 import { useIsDesktop, mapFreight, originDisplay, destDisplay } from "../hooks";
 import { useUIStore, useFreightDetailStore } from "../store";
+import AssignmentSuggestions from "../components/AssignmentSuggestions";
 // PDF report loaded lazily to avoid bundle bloat
 const loadPdfReport = () => import("../utils/pdf-report");
 
@@ -495,6 +496,11 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
           )}
         </div>;
       })()}
+
+      {/* Assignment suggestions — for plant users when freight needs assignment */}
+      {perms.canApprove && (freight.status === "pending_assignment" || (freight.status === "assigned" && (freight.assignedTruckCount || 0) < (freight.truckCount || 1))) && (
+        <AssignmentSuggestions freight={freight} user={user} onAssign={async (body) => { await apiAssignFreight(freight.id, body); if (onRefresh) onRefresh(freight.id); }} onRefreshKey={freight.updatedAt || freight.status} />
+      )}
 
       {/* Camiones section — always visible */}
       {freight.status !== "canceled" && (()=>{
