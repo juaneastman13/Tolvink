@@ -163,25 +163,21 @@ export function getWaitingOnText(freight, userType) {
 // ======================== THIRD-PARTY LABEL (for grouping) =============
 export function getThirdPartyLabel(freight, userType) {
   const s = freight.status;
-  const own = freight.isOwnFleet;
   if (userType === "plant") {
-    if (s === "assigned" && !own) return "Esperando transporte";
-    if (s === "accepted") return "Esperando inicio";
-    if (s === "in_progress") return "En tránsito";
-    if (s === "loaded") return "Esperando confirmaciones";
+    if (s === "assigned") return "Esperando respuesta del transportista";
+    if (s === "accepted") return "Esperando inicio del viaje";
+    if (s === "loaded") return "Esperando confirmación de entrega (transportista)";
   } else if (userType === "transporter" || userType === "chofer") {
-    if (s === "assigned" && own) return "Esperando autorización planta";
-    if (s === "in_progress") return "En tránsito";
-    if (s === "loaded") return "Esperando confirmaciones";
+    if (s === "assigned") return "Esperando respuesta del transportista";
+    if (s === "accepted") return "Esperando inicio del viaje";
+    if (s === "loaded") return "Esperando confirmación de entrega (planta)";
   } else if (userType === "producer") {
-    if (s === "pending_assignment") return "Esperando asignación planta";
-    if (s === "assigned" && own) return "Esperando autorización planta";
-    if (s === "assigned") return "Esperando transporte";
-    if (s === "accepted") return "Esperando inicio";
-    if (s === "in_progress") return "En tránsito";
-    if (s === "loaded") return "Esperando confirmaciones";
+    if (s === "pending_assignment") return "Esperando asignación de planta";
+    if (s === "assigned") return "Esperando respuesta del transportista";
+    if (s === "accepted") return "Esperando inicio del viaje";
+    if (s === "in_progress") return "Esperando confirmación de carga";
   }
-  return "En proceso";
+  return "Sin pendientes de mi parte";
 }
 
 // ======================== NOTIFICATION HELPERS =========================
