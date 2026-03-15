@@ -120,6 +120,7 @@ export class ErrorBoundary extends Component {
     return { hasError: true, error };
   }
   componentDidCatch(error, info) {
+    console.error(error, info);
     try {
       captureError(error, { componentStack: info?.componentStack });
     } catch {}
