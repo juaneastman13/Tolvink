@@ -765,7 +765,9 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
           <div style={{ position:"relative", background:C.bg, borderRadius:_isDesktop?16:0, width:"100%", maxWidth:_isDesktop?720:"none", maxHeight:_isDesktop?"calc(100vh - 48px)":"none", height:_isDesktop?"auto":"100%", overflow:"auto", animation:"slideUp 0.25s ease", boxShadow:_isDesktop?"0 -4px 32px rgba(0,0,0,0.18)":"none" }}>
             {/* Header */}
             <div style={{ position:"sticky", top:0, zIndex:2, background:C.bg, padding:"16px 20px 12px", borderBottom:`1px solid ${C.b2}`, borderRadius:_isDesktop?"16px 16px 0 0":"16px 16px 0 0", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-              <span style={{ fontSize:18, fontWeight:800, color:C.t1 }}>Confirmar Flete</span>
+              {_isDesktop
+                ? <Btn icon={Ic.chk(C.w,16)} disabled={submitting} onClick={submit}>{submitting?"Enviando...":"Solicitar Flete"}</Btn>
+                : <span style={{ fontSize:18, fontWeight:800, color:C.t1 }}>Confirmar Flete</span>}
               <button aria-label="Cerrar" onClick={()=>setShowConfirmModal(false)} style={{ background:"none", border:"none", cursor:"pointer", padding:4, minWidth:40, minHeight:40, display:"flex", alignItems:"center", justifyContent:"center" }}>{Ic.cross(C.t3,20)}</button>
             </div>
 
@@ -860,10 +862,10 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
                   <AttachMenu open={showAttach} onClose={()=>setShowAttach(false)} onCamera={()=>nfCamRef.current?.click()} onGallery={()=>nfGalRef.current?.click()} onFiles={()=>nfDocRef.current?.click()} />
                 </>)}
 
-                {/* Submit button */}
-                <div style={{ marginTop:20 }}>
+                {/* Submit button (mobile only — desktop has it in header) */}
+                {!_isDesktop && <div style={{ marginTop:20 }}>
                   <Btn full icon={Ic.chk(C.w,16)} disabled={submitting} onClick={submit}>{submitting?"Enviando...":"Solicitar Flete"}</Btn>
-                </div>
+                </div>}
               </div>
 
               {/* Right column: route map (desktop only, when coords available) */}
