@@ -3,7 +3,7 @@ import { C, Ic, MONO } from "../theme";
 import { stCfg, getActions, formatFreightDate } from "../constants";
 import { Bd, Btn, SkeletonList, SkeletonCard, EmptyState, Tabs } from "../components";
 import { useIsDesktop, mapFreight, originDisplay, destDisplay } from "../hooks";
-import { getPendingActions, resolveUserTypeForFreight, getWaitingOnText } from "../utils/freight-helpers";
+import { getPendingActions, resolveUserTypeForFreight, getThirdPartyLabel } from "../utils/freight-helpers";
 import { apiListFreights } from "../api";
 import DetailScreen from "./DetailScreen";
 
@@ -188,15 +188,29 @@ export default memo(function HomeScreen({ user, freights, loading, perms, onNav,
     return count;
   }, [pendingMap]);
 
-  const summaryGroups = useMemo(() => {
-    return PROGRESS_GROUPS.map(g => {
-      const items = filteredFreights
-        .filter(f => g.statuses.includes(f.status) && !pendingMap.get(f.id) && matchDate(f.loadDate))
-        .sort((a, b) => (a.destName||'').localeCompare(b.destName||'') || (a.originName||'').localeCompare(b.originName||''));
-      const realCount = statusCounts ? g.statuses.reduce((sum, s) => sum + (statusCounts[s] || 0), 0) : null;
-      return { ...g, icon: g.key==="pendiente"?Ic.warn:g.key==="en_curso"?Ic.nav:g.key==="cancelado"?Ic.cross:Ic.chk, items, realCount };
-    }).filter(g => g.items.length > 0);
-  }, [filteredFreights, pendingMap, dateFrom, dateTo, statusCounts]);
+  // Third-party sub-groups — freights without pending actions, grouped by what's being waited on
+  const thirdPartyGroups = useMemo(() => {
+    const allItems = filteredFreights
+      .filter(f => !pendingMap.get(f.id) && matchDate(f.loadDate))
+      .sort((a, b) => (a.destName||'').localeCompare(b.destName||'') || (a.originName||'').localeCompare(b.originName||''));
+    if (!allItems.length) return [];
+    const grouped = new Map();
+    allItems.forEach(f => {
+      const label = getThirdPartyLabel(f, effectiveType(f));
+      if (!grouped.has(label)) grouped.set(label, []);
+      grouped.get(label).push(f);
+    });
+    return [...grouped.entries()].map(([label, items]) => ({
+      key: "tp_" + label.toLowerCase().replace(/\s+/g, '_'),
+      label,
+      color: C.ok,
+      icon: Ic.clk,
+      items,
+    }));
+  }, [filteredFreights, pendingMap, effectiveType, dateFrom, dateTo]);
+
+  // Third-party sub-group accordion (separate from main accordion)
+  const [openTp, setOpenTp] = useState(null);
 
   // Accordion state — only one group open at a time
   const [openGroup, setOpenGroup] = useState(null);
@@ -379,6 +393,28 @@ export default memo(function HomeScreen({ user, freights, loading, perms, onNav,
     );
   };
 
+  // Render a third-party sub-group (simple collapsible, no pagination)
+  const renderTpGroup = (group) => {
+    const isOpen = openTp === group.key;
+    const anotherOpen = openTp && openTp !== group.key;
+    if (anotherOpen) return null;
+    return (
+      <div key={group.key}>
+        <button onClick={() => setOpenTp(prev => prev === group.key ? null : group.key)} style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, padding: "8px 0", background: isOpen ? C.bg : "none", border: "none", borderBottom: `1px solid ${C.b2}`, cursor: "pointer", fontFamily: "inherit", textAlign: "left", ...(isOpen ? { position: "sticky", top: 32, zIndex: 10 } : {}) }}>
+          {Ic.clk(group.color, 14)}
+          <span style={{ fontSize: 15.4, fontWeight: 800, color: group.color }}>{group.items.length}</span>
+          <div style={{ flex: 1, fontSize: 14.3, fontWeight: 600, color: C.t1 }}>{group.label}</div>
+          <span style={{ display: "flex", transform: isOpen ? "rotate(270deg)" : "rotate(90deg)", transition: "transform 0.15s ease" }}>{Ic.chev(C.t3, 14)}</span>
+        </button>
+        {isOpen && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: "8px 0 4px 16px", borderLeft: `2px solid ${group.color}30` }}>
+            {group.items.map(f => renderCard(f, pendingMap.get(f.id) || getPendingActions(f, effectiveType(f), user.role, user), "pending"))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   // ======================== PANEL: PENDING/AL DIA ========================
 
   const renderPendingPanel = (compact) => (
@@ -454,23 +490,31 @@ export default memo(function HomeScreen({ user, freights, loading, perms, onNav,
           {!compact && pendingByProgress.length === 0 && <div style={{ padding:"12px 16px", fontSize:13.2, color:C.t3, display:"flex", alignItems:"center", gap:8 }}>{Ic.chk(C.ok,14)} Sin pendientes en este periodo</div>}
         </>)}
 
-        {/* Sin pendientes de mi parte — hidden when a "pendientes" group is open or still loading */}
-        {!isInitialLoad && !paOpen && <>
-        <div style={{ padding: compact ? "8px 10px" : "10px 12px", borderRadius: 12, background: C.okPale, marginBottom: 8 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: compact ? 8 : 10 }}>
-            <div style={{ width: compact ? 22 : 28, height: compact ? 22 : 28, borderRadius: "50%", background: C.ok, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-              {Ic.chk(C.w, compact ? 11 : 14)}
+        {/* Sin pendientes de mi parte — sub-grouped by third-party action */}
+        {!isInitialLoad && !paOpen && thirdPartyGroups.length > 0 && <>
+        {thirdPartyGroups.length === 1 ? (<>
+          <div style={{ padding: compact ? "8px 10px" : "10px 12px", borderRadius: 12, background: C.okPale, marginBottom: 8 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: compact ? 8 : 10 }}>
+              <div style={{ width: compact ? 22 : 28, height: compact ? 22 : 28, borderRadius: "50%", background: C.ok, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                {Ic.chk(C.w, compact ? 11 : 14)}
+              </div>
+              <div style={{ flex: 1, fontSize: compact ? 12.1 : 13.2, fontWeight: 700, color: C.ok }}>Sin pendientes de mi parte</div>
             </div>
-            <div style={{ flex: 1, fontSize: compact ? 12.1 : 13.2, fontWeight: 700, color: C.ok }}>Sin pendientes de mi parte</div>
           </div>
-        </div>
-
-        {/* Summary groups — by progress state */}
-        {summaryGroups.length > 0 ? (
+          <div>{renderTpGroup(thirdPartyGroups[0])}</div>
+        </>) : (<>
+          <div style={{ padding: compact ? "6px 10px" : "8px 12px", borderRadius: 12, background: C.okPale, marginBottom: 4 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: compact ? 8 : 10 }}>
+              <div style={{ width: compact ? 22 : 28, height: compact ? 22 : 28, borderRadius: "50%", background: C.ok, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                {Ic.chk(C.w, compact ? 11 : 14)}
+              </div>
+              <div style={{ flex: 1, fontSize: compact ? 12.1 : 13.2, fontWeight: 700, color: C.ok }}>Sin pendientes de mi parte</div>
+            </div>
+          </div>
           <div>
-            {summaryGroups.map(g => renderGroup(g, "sm", "pending"))}
+            {thirdPartyGroups.map(g => renderTpGroup(g))}
           </div>
-        ) : null}
+        </>)}
         </>}
         </>;
       })()}

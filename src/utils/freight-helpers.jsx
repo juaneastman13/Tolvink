@@ -160,6 +160,30 @@ export function getWaitingOnText(freight, userType) {
   return null;
 }
 
+// ======================== THIRD-PARTY LABEL (for grouping) =============
+export function getThirdPartyLabel(freight, userType) {
+  const s = freight.status;
+  const own = freight.isOwnFleet;
+  if (userType === "plant") {
+    if (s === "assigned" && !own) return "Esperando transporte";
+    if (s === "accepted") return "Esperando inicio";
+    if (s === "in_progress") return "En tránsito";
+    if (s === "loaded") return "Esperando confirmaciones";
+  } else if (userType === "transporter" || userType === "chofer") {
+    if (s === "assigned" && own) return "Esperando autorización planta";
+    if (s === "in_progress") return "En tránsito";
+    if (s === "loaded") return "Esperando confirmaciones";
+  } else if (userType === "producer") {
+    if (s === "pending_assignment") return "Esperando asignación planta";
+    if (s === "assigned" && own) return "Esperando autorización planta";
+    if (s === "assigned") return "Esperando transporte";
+    if (s === "accepted") return "Esperando inicio";
+    if (s === "in_progress") return "En tránsito";
+    if (s === "loaded") return "Esperando confirmaciones";
+  }
+  return "En proceso";
+}
+
 // ======================== NOTIFICATION HELPERS =========================
 export const NOTIF_ICONS = {
   freight_created: (s) => Ic.truck(C.pri, s),
