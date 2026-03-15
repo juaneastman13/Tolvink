@@ -362,7 +362,7 @@ export default memo(function HomeScreen({ user, freights, loading, perms, onNav,
     return (
       <div key={gKey}>
         <button onClick={() => toggleGroup(gKey)} style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, padding: "8px 0", background: isOpen ? C.bg : "none", border: "none", borderBottom: `1px solid ${C.b2}`, cursor: "pointer", fontFamily: "inherit", textAlign: "left", ...(isOpen ? { position: "sticky", top: 32, zIndex: 10 } : {}) }}>
-          {group.icon(group.color, 14)}
+          {typeof group.icon === "function" ? group.icon(group.color, 14) : group.icon}
           <span style={{ fontSize: 15.4, fontWeight: 800, color: group.color }}>{group.realCount ?? group.items.length}</span>
           <div style={{ flex: 1, fontSize: 14.3, fontWeight: 600, color: C.t1 }}>{group.label}</div>
           <span style={{ display: "flex", transform: isOpen ? "rotate(270deg)" : "rotate(90deg)", transition: "transform 0.15s ease" }}>{Ic.chev(C.t3, 14)}</span>
