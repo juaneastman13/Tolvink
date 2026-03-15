@@ -14,7 +14,7 @@
         { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
         { "key": "Permissions-Policy", "value": "camera=(self), microphone=(), geolocation=(self)" },
         { "key": "Strict-Transport-Security", "value": "max-age=63072000; includeSubDomains; preload" },
-        { "key": "Content-Security-Policy", "value": "default-src 'self'; script-src 'self' 'sha256-SHEUAste1XQywo5XxP+uStFPMhrNbE8PF5pS8GiTccE=' https://maps.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://*.supabase.co https://maps.gstatic.com https://maps.googleapis.com; connect-src 'self' https://tolvink-api-production.up.railway.app https://*.supabase.co https://maps.googleapis.com https://fonts.googleapis.com https://fonts.gstatic.com https://*.sentry.io; worker-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'self'" }
+        { "key": "Content-Security-Policy", "value": "default-src 'self'; script-src 'self' 'sha256-SHEUAste1XQywo5XxP+uStFPMhrNbE8PF5pS8GiTccE=' https://maps.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://*.supabase.co https://maps.gstatic.com https://maps.googleapis.com; connect-src 'self' https://tolvink-api-production.up.railway.app https://*.supabase.co https://maps.googleapis.com https://maps.gstatic.com https://fonts.googleapis.com https://fonts.gstatic.com https://*.sentry.io; worker-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'self'" }
       ]
     },
     {

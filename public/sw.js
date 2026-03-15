@@ -69,6 +69,18 @@ self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
+  // Skip external requests — let the browser handle them directly
+  if (url.origin !== self.location.origin) {
+    // Only intercept known cacheable origins (fonts, images)
+    const isFont = FONT_ORIGINS.some((o) => url.origin === o);
+    const isImg = IMG_ORIGINS.some((o) => url.origin === o);
+    const isApi = url.origin === API_ORIGIN;
+    if (!isFont && !isImg && !isApi) {
+      event.respondWith(fetch(request));
+      return;
+    }
+  }
+
   if (request.method !== 'GET') return;
 
   // --- Fonts: cache-first (immutable) ---
