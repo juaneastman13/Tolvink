@@ -192,6 +192,19 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
   const isEditing = editingFrom !== null;
   const _hasBranches = (branches||[]).some(b => b.companyId === (plants||[]).find(p => p.id === form.plantId)?.companyId);
 
+  // Derived data needed by secComplete and section flow
+  const fieldOpts = (fields||[]).map(f=>({ value:f.id, label:f.name, sub:f.address||"" }));
+  const hasLots = fieldLots.length > 0;
+  const lotOpts = hasLots ? [{ value:"__field__", label:"Usar ubicación del campo" }, ...fieldLots.map(l=>({ value:l.id, label:l.name, sub:l.hectares?`${l.hectares} ha`:'' }))] : [];
+  const plantOpts = (plants||[]).map(p=>({ value:p.id, label:p.name }));
+  const selectedPlantCompanyId = (plants||[]).find(p=>p.id===form.plantId)?.companyId;
+  const branchOpts = (branches||[]).filter(b=>b.companyId===selectedPlantCompanyId).map(b=>({ value:b.id, label:b.name }));
+  const selectedLot = form.lotId === "__field__" ? null : fieldLots.find(l=>l.id===form.lotId);
+  const selectedPlant = (plants||[]).find(p=>p.id===form.plantId);
+  const selectedBranch = (branches||[]).find(b=>b.id===form.branchId);
+  const truckOpts = (trucks||[]).map(t=>({ value:t.id, label:`${t.plate}${t.model?` · ${t.model}`:""}` }));
+  const showTruckSelect = (user.userType==="producer"||(user.userTypes||[]).includes("producer")) && truckOpts.length > 0;
+
   // Section completeness
   const secComplete = useMemo(()=>({
     product: !!form.grain && (form.grain!=="Otros" || !!form.productTypeOther.trim()),
@@ -272,18 +285,6 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
     } catch(e) { log.error("NewScreen", "error creando lote:", e); useUIStore.getState().show("No se pudo crear el lote. Intente nuevamente.", "error"); }
     finally { setNewLotSaving(false); }
   };
-
-  const fieldOpts = (fields||[]).map(f=>({ value:f.id, label:f.name, sub:f.address||"" }));
-  const hasLots = fieldLots.length > 0;
-  const lotOpts = hasLots ? [{ value:"__field__", label:"Usar ubicación del campo" }, ...fieldLots.map(l=>({ value:l.id, label:l.name, sub:l.hectares?`${l.hectares} ha`:'' }))] : [];
-  const plantOpts = (plants||[]).map(p=>({ value:p.id, label:p.name }));
-  const selectedPlantCompanyId = (plants||[]).find(p=>p.id===form.plantId)?.companyId;
-  const branchOpts = (branches||[]).filter(b=>b.companyId===selectedPlantCompanyId).map(b=>({ value:b.id, label:b.name }));
-  const selectedLot = form.lotId === "__field__" ? null : fieldLots.find(l=>l.id===form.lotId);
-  const selectedPlant = (plants||[]).find(p=>p.id===form.plantId);
-  const selectedBranch = (branches||[]).find(b=>b.id===form.branchId);
-  const truckOpts = (trucks||[]).map(t=>({ value:t.id, label:`${t.plate}${t.model?` · ${t.model}`:""}` }));
-  const showTruckSelect = (user.userType==="producer"||(user.userTypes||[]).includes("producer")) && truckOpts.length > 0;
 
   // Auto-select own fleet + truck when producer has exactly 1 in fleet
   useEffect(()=>{
