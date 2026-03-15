@@ -112,7 +112,7 @@ export function Select({ label, icon, value, onChange, options, placeholder="Sel
         {options.map((o,i)=>{
           const active = o.value===value;
           const highlighted = i===hlIdx;
-          return <button key={o.value} data-val={o.value} type="button" role="option" aria-selected={active} onClick={()=>{onChange(o.value);setOpen(false);}} className="tv-sel-opt" style={{ width:"100%", padding:"11px 14px", background:highlighted?C.priPale:active?`${C.pri}08`:"transparent", border:"none", borderRadius:8, cursor:"pointer", fontFamily:"inherit", fontSize:15.4, fontWeight:active?600:400, color:active?C.pri:C.t1, textAlign:"left", display:"flex", alignItems:"center", gap:8, transition:"background 0.12s", marginBottom:i<options.length-1?2:0 }}>
+          return <button key={o.value} data-val={o.value} type="button" role="option" aria-selected={active} onClick={()=>{onChange(o.value);setOpen(false);}} className="tv-sel-opt" style={{ width:"100%", padding:"11px 14px", background:highlighted?C.priPale:active?`${C.pri}08`:"transparent", border:"none", borderRadius:8, cursor:"pointer", fontFamily:"inherit", fontSize:15.4, fontWeight:active?600:o.bold?700:400, color:active?C.pri:C.t1, textAlign:"left", display:"flex", alignItems:"center", gap:8, transition:"background 0.12s", marginBottom:i<options.length-1?2:0 }}>
             <span style={{ flex:1 }}>{o.label}{o.sub && <span style={{ fontSize:13.2, color:active?C.pri:C.t3, fontWeight:400 }}> — {o.sub}</span>}</span>
             {active && Ic.chk(C.pri,15)}
           </button>;

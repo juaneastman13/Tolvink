@@ -195,7 +195,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
   // Derived data needed by secComplete and section flow
   const fieldOpts = (fields||[]).map(f=>({ value:f.id, label:f.name, sub:f.address||"" }));
   const hasLots = fieldLots.length > 0;
-  const lotOpts = hasLots ? [{ value:"__field__", label:"Usar ubicación del campo" }, ...fieldLots.map(l=>({ value:l.id, label:l.name, sub:l.hectares?`${l.hectares} ha`:'' }))] : [];
+  const lotOpts = hasLots ? [{ value:"__field__", label:"Usar ubicación del campo", bold:true }, ...fieldLots.map(l=>({ value:l.id, label:l.name, sub:l.hectares?`${l.hectares} ha`:'' }))] : [];
   const plantOpts = (plants||[]).map(p=>({ value:p.id, label:p.name }));
   const selectedPlantCompanyId = (plants||[]).find(p=>p.id===form.plantId)?.companyId;
   const branchOpts = (branches||[]).filter(b=>b.companyId===selectedPlantCompanyId).map(b=>({ value:b.id, label:b.name }));
@@ -766,7 +766,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
             {/* Header */}
             <div style={{ position:"sticky", top:0, zIndex:2, background:C.bg, padding:"16px 20px 12px", borderBottom:`1px solid ${C.b2}`, borderRadius:_isDesktop?"16px 16px 0 0":"16px 16px 0 0", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
               {_isDesktop
-                ? <Btn icon={Ic.chk(C.w,16)} disabled={submitting} onClick={submit}>{submitting?"Enviando...":"Solicitar Flete"}</Btn>
+                ? <div style={{ flex:1, marginRight:12 }}><Btn full icon={Ic.chk(C.w,16)} disabled={submitting} onClick={submit}>{submitting?"Enviando...":"Solicitar Flete"}</Btn></div>
                 : <span style={{ fontSize:18, fontWeight:800, color:C.t1 }}>Confirmar Flete</span>}
               <button aria-label="Cerrar" onClick={()=>setShowConfirmModal(false)} style={{ background:"none", border:"none", cursor:"pointer", padding:4, minWidth:40, minHeight:40, display:"flex", alignItems:"center", justifyContent:"center" }}>{Ic.cross(C.t3,20)}</button>
             </div>
