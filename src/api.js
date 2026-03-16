@@ -388,6 +388,10 @@ export async function apiAdminCreateTruck(companyId, b) { return api(`/admin/com
 export async function apiAdminUpdateTruck(id, b) { return api(`/admin/trucks/${id}`,{method:'PATCH',body:b}); }
 export async function apiAdminDeleteTruck(id) { return api(`/admin/trucks/${id}`,{method:'DELETE'}); }
 
+// Bulk import
+export async function apiAdminImportCompanies(companies) { return api('/admin/import/companies',{method:'POST',body:{companies}}); }
+export async function apiAdminImportUsers(users) { return api('/admin/import/users',{method:'POST',body:{users}}); }
+
 // Notifications
 export async function apiGetNotifications() { return api('/notifications'); }
 export async function apiMarkNotificationRead(id) { return api(`/notifications/${id}/read`,{method:'PATCH',body:{}}); }

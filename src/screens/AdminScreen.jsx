@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { C, Ic, FONT, MONO } from "../theme";
 import { Btn, Field, Tabs, Select, Loader, Av, Bd, LoadingOverlay, NumericStepper } from "../components";
-import { apiAdminStats, apiAdminActivity, apiAdminListCompanies, apiAdminGetCompany, apiAdminCreateCompany, apiAdminUpdateCompany, apiAdminListBranches, apiAdminCreateBranch, apiAdminUpdateBranch, apiAdminDeleteBranch, apiAdminListUsers, apiAdminCreateUser, apiAdminUpdateUser, apiAdminAddUserCompany, apiAdminUpdateUserCompany, apiAdminRemoveUserCompany, apiAdminListFields, apiAdminCreateField, apiAdminUpdateField, apiAdminDeleteField, apiAdminListLots, apiAdminCreateLot, apiAdminUpdateLot, apiAdminDeleteLot, apiAdminListTrucks, apiAdminCreateTruck, apiAdminUpdateTruck, apiAdminDeleteTruck } from "../api";
+import { apiAdminStats, apiAdminActivity, apiAdminListCompanies, apiAdminGetCompany, apiAdminCreateCompany, apiAdminUpdateCompany, apiAdminListBranches, apiAdminCreateBranch, apiAdminUpdateBranch, apiAdminDeleteBranch, apiAdminListUsers, apiAdminCreateUser, apiAdminUpdateUser, apiAdminAddUserCompany, apiAdminUpdateUserCompany, apiAdminRemoveUserCompany, apiAdminListFields, apiAdminCreateField, apiAdminUpdateField, apiAdminDeleteField, apiAdminListLots, apiAdminCreateLot, apiAdminUpdateLot, apiAdminDeleteLot, apiAdminListTrucks, apiAdminCreateTruck, apiAdminUpdateTruck, apiAdminDeleteTruck, apiAdminImportCompanies, apiAdminImportUsers } from "../api";
 import { adminStyles, typeColors, typeLabels, roleLabels, adminBackBtn } from "../utils/freight-helpers";
 import { LocationPicker } from "../maps";
 import AccessScreen from "./AccessScreen";
+import ImportExcelModal from "../components/ImportExcelModal";
 
 export default function AdminScreen({ user, onBack }) {
   const isPlatform = user.role === "platform_admin" || user.isSuperAdmin === true;
@@ -69,6 +70,9 @@ export default function AdminScreen({ user, onBack }) {
   const [addCompanyId, setAddCompanyId] = useState("");
   const [addCompanyRole, setAddCompanyRole] = useState("operario");
   const [confirmRemove, setConfirmRemove] = useState(null);
+
+  // Import modal: null | "companies" | "users"
+  const [importMode, setImportMode] = useState(null);
 
   const msgTimer = useRef(null);
   const show = (t,k="ok") => { setMsg({t,k}); clearTimeout(msgTimer.current); msgTimer.current = setTimeout(()=>setMsg(null),3000); };
@@ -809,7 +813,10 @@ export default function AdminScreen({ user, onBack }) {
 
       {loading?<Loader/>:(<>
         {tab==="companies"&&(<>
-          {isPlatform&&<button onClick={openNewCompany} style={{width:"100%",padding:"10px 14px",borderRadius:8,border:`1px dashed ${C.pri}`,background:`${C.pri}08`,color:C.pri,fontSize:14.3,fontWeight:600,cursor:"pointer",fontFamily:"inherit",marginBottom:8}}>+ Nueva Empresa</button>}
+          {isPlatform&&<div style={{display:"flex",gap:8,marginBottom:8}}>
+            <button onClick={openNewCompany} style={{flex:1,padding:"10px 14px",borderRadius:8,border:`1px dashed ${C.pri}`,background:`${C.pri}08`,color:C.pri,fontSize:14.3,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>+ Nueva Empresa</button>
+            <button onClick={()=>setImportMode("companies")} style={{padding:"10px 14px",borderRadius:8,border:`1px solid ${C.pri}`,background:`${C.pri}08`,color:C.pri,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>Importar Excel</button>
+          </div>}
           <div style={{display:"flex",flexDirection:"column",gap:8}}>
             {companies.map(c=>(
               <div key={c.id} className="tv-card" style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius:10,padding:"12px 14px",boxShadow:C.sh}}>
@@ -865,7 +872,10 @@ export default function AdminScreen({ user, onBack }) {
         )}
 
         {tab==="users"&&(<>
-          <button onClick={openNewUser} style={{width:"100%",padding:"10px 14px",borderRadius:8,border:`1px dashed ${C.acc}`,background:`${C.acc}08`,color:C.acc,fontSize:14.3,fontWeight:600,cursor:"pointer",fontFamily:"inherit",marginBottom:8}}>+ Nuevo Usuario</button>
+          <div style={{display:"flex",gap:8,marginBottom:8}}>
+            <button onClick={openNewUser} style={{flex:1,padding:"10px 14px",borderRadius:8,border:`1px dashed ${C.acc}`,background:`${C.acc}08`,color:C.acc,fontSize:14.3,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>+ Nuevo Usuario</button>
+            <button onClick={()=>setImportMode("users")} style={{padding:"10px 14px",borderRadius:8,border:`1px solid ${C.acc}`,background:`${C.acc}08`,color:C.acc,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>Importar Excel</button>
+          </div>
           <div style={{display:"flex",flexDirection:"column",gap:8}}>
             {users.map(u=>{
               const cbt = u.companyByType && typeof u.companyByType === "object" ? u.companyByType : {};
@@ -902,6 +912,15 @@ export default function AdminScreen({ user, onBack }) {
         </>)}
       </>)}
       </div>
+      {importMode && (
+        <ImportExcelModal
+          mode={importMode}
+          existingCompanies={allCompanies}
+          existingUsers={allUsers}
+          onClose={() => { setImportMode(null); load(); }}
+          onImport={(data) => importMode === "companies" ? apiAdminImportCompanies(data) : apiAdminImportUsers(data)}
+        />
+      )}
     </div>
   );
 }
