@@ -34,6 +34,7 @@ export default function AdminScreen({ user, onBack }) {
   const [editCompanyId, setEditCompanyId] = useState(null);
   const [userForm, setUserForm] = useState({ name:"",email:"",phone:"",password:"",userTypes:[],companyByType:{},roleByType:{} });
   const [editUserData, setEditUserData] = useState(null);
+  const [originalUserData, setOriginalUserData] = useState(null);
   const [activeUserType, setActiveUserType] = useState(null); // which type tab is active in user edit
   const [branchForm, setBranchForm] = useState({ name:"",address:"",reference:"",lat:null,lng:null,locationAddress:"" });
   const [editBranchId, setEditBranchId] = useState(null);
@@ -223,7 +224,9 @@ export default function AdminScreen({ user, onBack }) {
       (u.userTypes||[]).forEach(t => { rbt[t] = u.role; });
     }
     const types = u.userTypes||[];
-    setEditUserData({...u, userTypes:types, companyByType:cbt, roleByType:rbt});
+    const userData = {...u, userTypes:types, companyByType:cbt, roleByType:rbt};
+    setEditUserData(userData);
+    setOriginalUserData({...userData});
     setActiveUserType(types[0]||null);
     setView("userEdit");
   };
@@ -242,16 +245,36 @@ export default function AdminScreen({ user, onBack }) {
     catch(e) { show(e.message,"err"); setSaving(false); }
   };
 
+  const getEditChanges = () => {
+    if(!editUserData||!originalUserData) return {};
+    const changes = {};
+    const fields = ["name","email","phone","role","active"];
+    fields.forEach(f => { if(editUserData[f] !== originalUserData[f]) changes[f] = true; });
+    return changes;
+  };
+
   const handleSaveEditUser = async () => {
+    const changes = getEditChanges();
+    if(Object.keys(changes).length===0) return;
     setSaving(true);
-    const cbt = editUserData.companyByType||{};
-    const rbt = editUserData.roleByType||{};
-    const firstCompanyId = Object.values(cbt).find(v=>v) || null;
-    const highestRole = Object.values(rbt).includes("platform_admin") ? "platform_admin" : Object.values(rbt).includes("admin") ? "admin" : "operator";
+    const payload = {};
+    if(changes.name) payload.name = editUserData.name;
+    if(changes.email) payload.email = editUserData.email;
+    if(changes.phone) payload.phone = editUserData.phone;
+    if(changes.role) payload.role = editUserData.role;
+    if(changes.active) payload.active = editUserData.active;
     try {
-      await apiAdminUpdateUser(editUserData.id, { name:editUserData.name, email:editUserData.email, phone:editUserData.phone, role:highestRole, userTypes:editUserData.userTypes, companyId:firstCompanyId, companyByType:cbt, roleByType:rbt, active:editUserData.active });
-      setSaving(false); setDoneMsg("Usuario actualizado"); setView("list"); load();
+      await apiAdminUpdateUser(editUserData.id, payload);
+      setSaving(false); setDoneMsg("Cambios guardados"); setOriginalUserData({...editUserData}); setView("list"); load();
     } catch(e) { show(e.message,"err"); setSaving(false); }
+  };
+
+  const handleEditUserBack = () => {
+    const changes = getEditChanges();
+    if(Object.keys(changes).length>0) {
+      if(!window.confirm("Tenés cambios sin guardar. ¿Salir sin guardar?")) return;
+    }
+    setView("list");
   };
 
   const MsgBar = () => msg ? <div style={{padding:"8px 12px",borderRadius:8,background:msg.k==="ok"?C.okPale:`${C.err}15`,color:msg.k==="ok"?C.ok:C.err,fontSize:13.2,marginTop:10,marginBottom:10,display:"flex",justifyContent:"space-between"}}>{msg.t}<button onClick={()=>setMsg(null)} style={{background:"none",border:"none",cursor:"pointer",color:"inherit",fontFamily:"inherit"}}>✕</button></div> : null;
@@ -294,15 +317,10 @@ export default function AdminScreen({ user, onBack }) {
   if (view==="userEdit" && editUserData) {
     const memberships = editUserData.memberships||[];
     const membershipRoles = {operario:"Operario",gerente:"Gerente",chofer:"Chofer"};
-
-    const saveBasicField = async (field, value) => {
-      setSavingField(field);
-      try {
-        await apiAdminUpdateUser(editUserData.id, {[field]:value});
-        setSavedField(field); setTimeout(()=>setSavedField(null),2000);
-      } catch(e) { show(e.message,"err"); }
-      finally { setSavingField(null); }
-    };
+    const changes = getEditChanges();
+    const changeCount = Object.keys(changes).length;
+    const roleLabelsMap = {operator:"Operador",admin:"Admin",platform_admin:"Admin Principal"};
+    const statusLabelsMap = {true:"Activo",false:"Inactivo"};
 
     const handleAddCompany = async () => {
       if(!addCompanyId) return;
@@ -341,69 +359,70 @@ export default function AdminScreen({ user, onBack }) {
     const existingCompanyIds = new Set(memberships.map(m=>m.companyId));
     const availableCompanies = allCompanies.filter(c=>!existingCompanyIds.has(c.id));
 
+    const PrevValue = ({field, labelFn}) => {
+      if(!changes[field] || !originalUserData) return null;
+      const prev = labelFn ? labelFn(originalUserData[field]) : (originalUserData[field]||"(vacío)");
+      return <div style={{fontSize:11.5,color:C.t3,textDecoration:"line-through",marginTop:2}}>{prev}</div>;
+    };
+
     return (
       <div style={{flex:1,overflow:"auto",padding:18}}>
-        {doneMsg && <LoadingOverlay closing closingText={doneMsg} onClose={()=>setDoneMsg("")}/>}
-        {adminBackBtn(()=>setView("list"))}
+        {(saving||doneMsg) && <LoadingOverlay closing={!!doneMsg} closingText={doneMsg} onClose={()=>setDoneMsg("")}/>}
+        {adminBackBtn(handleEditUserBack)}
         <div style={{fontSize:17.6,fontWeight:700,color:C.t1,marginBottom:12}}>Editar usuario</div>
 
         {/* Section A — Personal data */}
         <div style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius:12,padding:16,boxShadow:C.sh,marginBottom:14}}>
           <div style={{fontSize:14,fontWeight:700,color:C.t1,marginBottom:10}}>Datos personales</div>
-          <div style={s.lbl}>Nombre:</div>
-          <div style={{display:"flex",gap:6,marginBottom:10,alignItems:"center"}}>
-            <input value={editUserData.name} onChange={e=>setEditUserData(p=>({...p,name:e.target.value}))} placeholder="Nombre" style={{...s.inp,flex:1,marginBottom:0}} />
-            <button disabled={savingField==="name"} onClick={()=>saveBasicField("name",editUserData.name)} style={{...s.btnP(C.pri,savingField==="name"),padding:"8px 14px",fontSize:12,minWidth:80}}>
-              {savingField==="name"?"...":savedField==="name"?"Guardado ✓":"Guardar"}
-            </button>
-          </div>
-          <div style={{display:"flex",gap:8,marginBottom:10}}>
-            <div style={{flex:1}}>
+
+          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(240px, 1fr))",gap:"0 16px"}}>
+            {/* Nombre — full width */}
+            <div style={{gridColumn:"1 / -1",marginBottom:10}}>
+              <div style={s.lbl}>Nombre:</div>
+              <input value={editUserData.name} onChange={e=>setEditUserData(p=>({...p,name:e.target.value}))} placeholder="Nombre" style={{...s.inp,marginBottom:0,borderColor:changes.name?C.pri:undefined}} />
+              <PrevValue field="name"/>
+            </div>
+
+            {/* Email */}
+            <div style={{marginBottom:10}}>
               <div style={s.lbl}>Email:</div>
-              <div style={{display:"flex",gap:6,alignItems:"center"}}>
-                <input value={editUserData.email} onChange={e=>setEditUserData(p=>({...p,email:e.target.value}))} placeholder="Email" style={{...s.inp,flex:1,marginBottom:0}} />
-                <button disabled={savingField==="email"} onClick={()=>saveBasicField("email",editUserData.email)} style={{...s.btnP(C.pri,savingField==="email"),padding:"8px 12px",fontSize:12,minWidth:70}}>
-                  {savingField==="email"?"...":savedField==="email"?"✓":"Guardar"}
-                </button>
-              </div>
+              <input value={editUserData.email} onChange={e=>setEditUserData(p=>({...p,email:e.target.value}))} placeholder="Email" style={{...s.inp,marginBottom:0,borderColor:changes.email?C.pri:undefined}} />
+              <PrevValue field="email"/>
             </div>
-            <div style={{flex:1}}>
+
+            {/* Teléfono */}
+            <div style={{marginBottom:10}}>
               <div style={s.lbl}>Teléfono:</div>
-              <div style={{display:"flex",gap:6,alignItems:"center"}}>
-                <input value={editUserData.phone||""} onChange={e=>setEditUserData(p=>({...p,phone:e.target.value}))} placeholder="Teléfono" style={{...s.inp,flex:1,marginBottom:0}} />
-                <button disabled={savingField==="phone"} onClick={()=>saveBasicField("phone",editUserData.phone)} style={{...s.btnP(C.pri,savingField==="phone"),padding:"8px 12px",fontSize:12,minWidth:70}}>
-                  {savingField==="phone"?"...":savedField==="phone"?"✓":"Guardar"}
-                </button>
-              </div>
+              <input value={editUserData.phone||""} onChange={e=>setEditUserData(p=>({...p,phone:e.target.value}))} placeholder="Teléfono" style={{...s.inp,marginBottom:0,borderColor:changes.phone?C.pri:undefined}} />
+              <PrevValue field="phone"/>
             </div>
-          </div>
-          <div style={{display:"flex",gap:8}}>
-            <div style={{flex:1}}>
+
+            {/* Rol global */}
+            <div style={{marginBottom:10}}>
               <div style={s.lbl}>Rol global:</div>
-              <div style={{display:"flex",gap:6,alignItems:"center"}}>
-                <select value={editUserData.role||"operator"} onChange={e=>setEditUserData(p=>({...p,role:e.target.value}))} style={{...s.sel,flex:1}}>
-                  <option value="operator">Operador</option>
-                  <option value="admin">Admin</option>
-                  {isPlatform && <option value="platform_admin">Admin Principal</option>}
-                </select>
-                <button disabled={savingField==="role"} onClick={()=>saveBasicField("role",editUserData.role)} style={{...s.btnP(C.pri,savingField==="role"),padding:"8px 12px",fontSize:12,minWidth:70}}>
-                  {savingField==="role"?"...":savedField==="role"?"✓":"Guardar"}
-                </button>
-              </div>
+              <select value={editUserData.role||"operator"} onChange={e=>setEditUserData(p=>({...p,role:e.target.value}))} style={{...s.sel,borderColor:changes.role?C.pri:undefined}}>
+                <option value="operator">Operador</option>
+                <option value="admin">Admin</option>
+                {isPlatform && <option value="platform_admin">Admin Principal</option>}
+              </select>
+              <PrevValue field="role" labelFn={v=>roleLabelsMap[v]||v}/>
             </div>
-            <div style={{flex:1}}>
+
+            {/* Estado */}
+            <div style={{marginBottom:10}}>
               <div style={s.lbl}>Estado:</div>
-              <div style={{display:"flex",gap:6,alignItems:"center"}}>
-                <select value={editUserData.active?"active":"inactive"} onChange={e=>setEditUserData(p=>({...p,active:e.target.value==="active"}))} style={{...s.sel,flex:1}}>
-                  <option value="active">Activo</option>
-                  <option value="inactive">Inactivo</option>
-                </select>
-                <button disabled={savingField==="active"} onClick={()=>saveBasicField("active",editUserData.active)} style={{...s.btnP(C.pri,savingField==="active"),padding:"8px 12px",fontSize:12,minWidth:70}}>
-                  {savingField==="active"?"...":savedField==="active"?"✓":"Guardar"}
-                </button>
-              </div>
+              <select value={editUserData.active?"active":"inactive"} onChange={e=>setEditUserData(p=>({...p,active:e.target.value==="active"}))} style={{...s.sel,borderColor:changes.active?C.pri:undefined}}>
+                <option value="active">Activo</option>
+                <option value="inactive">Inactivo</option>
+              </select>
+              <PrevValue field="active" labelFn={v=>statusLabelsMap[String(v)]||String(v)}/>
             </div>
           </div>
+
+          {/* Single save button */}
+          <button disabled={changeCount===0||saving} onClick={handleSaveEditUser} style={{...s.btnP(C.pri,saving||changeCount===0),width:"100%",marginTop:6,opacity:changeCount===0?0.45:1}}>
+            {saving?"Guardando...":`Guardar cambios${changeCount>0?` (${changeCount})`:""}`}
+          </button>
         </div>
 
         {/* Section B — Company memberships */}
