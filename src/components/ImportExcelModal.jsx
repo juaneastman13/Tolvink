@@ -7,27 +7,46 @@ const TYPE_MAP_REVERSE = { plant: "Planta", producer: "Productor", transporter: 
 const VALID_ROLES = ["operario", "gerente", "chofer"];
 const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-function validateCompanyRows(rows, existingNames) {
-  const nameSet = new Set(existingNames.map(n => n.toLowerCase()));
+function validateCompanyRows(rows, existingCompanies) {
+  const nameSet = new Set(existingCompanies.map(c => c.name.toLowerCase()));
+  const rutSet = new Set(existingCompanies.filter(c => c.rut).map(c => c.rut.toLowerCase()));
+  const emailSet = new Set(existingCompanies.filter(c => c.email).map(c => c.email.toLowerCase()));
+
   return rows.map((r, i) => {
     const errors = [];
     const warnings = [];
+    let duplicate = false;
     const name = r.name?.toString().trim();
-    if (!name) errors.push("Nombre requerido");
-    else if (nameSet.has(name.toLowerCase())) warnings.push("Empresa ya existe");
+
+    if (!name) { errors.push("Nombre requerido"); }
+    else if (nameSet.has(name.toLowerCase())) { duplicate = true; }
+
     const rawType = r.type?.toString().trim().toLowerCase();
     if (!rawType || !TYPE_MAP[rawType]) errors.push(`Tipo inválido: ${r.type || "(vacío)"}`);
-    if (r.email && !emailRe.test(r.email)) warnings.push("Email inválido");
-    return { ...r, _row: i + 1, _errors: errors, _warnings: warnings, _valid: errors.length === 0 };
+    if (r.email && !emailRe.test(r.email)) errors.push("Email inválido");
+
+    // Partial matches (only if not already a full duplicate)
+    if (!duplicate && name) {
+      if (r.rut && rutSet.has(r.rut.toString().trim().toLowerCase()))
+        warnings.push("RUT coincide con empresa existente");
+      if (r.email && emailSet.has(r.email.toString().trim().toLowerCase()))
+        warnings.push("Email coincide con empresa existente");
+    }
+
+    return { ...r, _row: i + 1, _errors: errors, _warnings: warnings, _valid: errors.length === 0, _duplicate: duplicate, _include: !duplicate && errors.length === 0 };
   });
 }
 
-function validateUserRows(rows, existingCompanies, existingEmails) {
-  const emailSet = new Set(existingEmails.map(e => e.toLowerCase()));
+function validateUserRows(rows, existingCompanies, existingUsers) {
+  const emailSet = new Set(existingUsers.map(u => u.email.toLowerCase()));
+  const phoneSet = new Set(existingUsers.filter(u => u.phone).map(u => u.phone));
+  const nameSet = new Set(existingUsers.map(u => u.name.toLowerCase()));
   const companyMap = new Map(existingCompanies.map(c => [c.name.toLowerCase(), c]));
+
   return rows.map((r, i) => {
     const errors = [];
     const warnings = [];
+    let duplicate = false;
     const name = r.name?.toString().trim();
     const email = r.email?.toString().trim().toLowerCase();
     const password = r.password?.toString().trim();
@@ -37,12 +56,22 @@ function validateUserRows(rows, existingCompanies, existingEmails) {
     if (!name) errors.push("Nombre requerido");
     if (!email) errors.push("Email requerido");
     else if (!emailRe.test(email)) errors.push("Email inválido");
-    else if (emailSet.has(email)) warnings.push("Email ya registrado");
+    else if (emailSet.has(email)) { duplicate = true; }
+
     if (!password || password.length < 6) errors.push("Contraseña mín 6 caracteres");
     if (!companyName) errors.push("Empresa requerida");
     else if (!companyMap.has(companyName.toLowerCase())) errors.push(`Empresa no encontrada: ${companyName}`);
     if (!role || !VALID_ROLES.includes(role)) errors.push(`Rol inválido: ${r.role || "(vacío)"}`);
-    return { ...r, _row: i + 1, _errors: errors, _warnings: warnings, _valid: errors.length === 0 };
+
+    // Partial matches
+    if (!duplicate && name && email) {
+      if (r.phone && phoneSet.has(r.phone.toString().trim()))
+        warnings.push("Teléfono coincide con usuario existente");
+      if (name && nameSet.has(name.toLowerCase()))
+        warnings.push("Nombre coincide con usuario existente");
+    }
+
+    return { ...r, _row: i + 1, _errors: errors, _warnings: warnings, _valid: errors.length === 0, _duplicate: duplicate, _include: !duplicate && errors.length === 0 };
   });
 }
 
@@ -81,9 +110,6 @@ export default function ImportExcelModal({ mode, onClose, onImport, existingComp
   const label = isCompanies ? "Empresas" : "Usuarios";
   const sheetName = isCompanies ? "EMPRESA" : "USUARIOS";
 
-  const existingNames = existingCompanies.map(c => c.name);
-  const existingEmails = existingUsers.map(u => u.email);
-
   const processFile = useCallback(async (file) => {
     setParseError(null);
     if (!file) return;
@@ -101,14 +127,14 @@ export default function ImportExcelModal({ mode, onClose, onImport, existingComp
       if (raw.length === 0) { setParseError("No se encontraron datos en la pestaña"); return; }
       const mapped = raw.map(r => mapExcelRow(r, mode));
       const validated = isCompanies
-        ? validateCompanyRows(mapped, existingNames)
-        : validateUserRows(mapped, existingCompanies, existingEmails);
+        ? validateCompanyRows(mapped, existingCompanies)
+        : validateUserRows(mapped, existingCompanies, existingUsers);
       setRows(validated);
       setStep("preview");
     } catch {
       setParseError("Error al leer el archivo. Verificá que sea un Excel válido.");
     }
-  }, [sheetName, mode, isCompanies, existingNames, existingCompanies, existingEmails]);
+  }, [sheetName, mode, isCompanies, existingCompanies, existingUsers]);
 
   const handleDrop = useCallback((e) => {
     e.preventDefault(); setIsDragging(false);
@@ -116,12 +142,16 @@ export default function ImportExcelModal({ mode, onClose, onImport, existingComp
     if (file) processFile(file);
   }, [processFile]);
 
+  const toggleRow = (idx) => {
+    setRows(prev => prev.map((r, i) => i === idx && !r._duplicate && r._valid ? { ...r, _include: !r._include } : r));
+  };
+
   const handleImport = async () => {
-    const valid = rows.filter(r => r._valid);
-    if (valid.length === 0) return;
+    const toImport = rows.filter(r => r._include);
+    if (toImport.length === 0) return;
     setImporting(true);
     try {
-      const payload = valid.map(({ _row, _errors, _warnings, _valid, ...rest }) => rest);
+      const payload = toImport.map(({ _row, _errors, _warnings, _valid, _duplicate, _include, ...rest }) => rest);
       const res = await onImport(payload);
       setResult(res);
     } catch (e) {
@@ -131,10 +161,11 @@ export default function ImportExcelModal({ mode, onClose, onImport, existingComp
     }
   };
 
-  const validCount = rows.filter(r => r._valid && r._warnings.length === 0).length;
-  const warnCount = rows.filter(r => r._valid && r._warnings.length > 0).length;
-  const errorCount = rows.filter(r => !r._valid).length;
-  const importableCount = rows.filter(r => r._valid).length;
+  const dupCount = rows.filter(r => r._duplicate).length;
+  const errorCount = rows.filter(r => !r._valid && !r._duplicate).length;
+  const warnCount = rows.filter(r => r._valid && !r._duplicate && r._warnings.length > 0).length;
+  const cleanCount = rows.filter(r => r._valid && !r._duplicate && r._warnings.length === 0).length;
+  const importableCount = rows.filter(r => r._include).length;
 
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}
@@ -225,25 +256,36 @@ export default function ImportExcelModal({ mode, onClose, onImport, existingComp
         {/* Preview step */}
         {!result && step === "preview" && (
           <div>
-            <div style={{ fontSize: 13, color: C.t2, marginBottom: 10 }}>
-              {rows.length} {isCompanies ? "empresas" : "usuarios"} encontrados
-              {" — "}
-              <span style={{ color: C.ok, fontWeight: 600 }}>{validCount} válidos</span>
-              {warnCount > 0 && <>, <span style={{ color: C.warn, fontWeight: 600 }}>{warnCount} con avisos</span></>}
+            <div style={{ fontSize: 13, color: C.t2, marginBottom: 10, lineHeight: 1.6 }}>
+              {rows.length} {isCompanies ? "empresas" : "usuarios"} encontrados:
+              {cleanCount > 0 && <> <span style={{ color: C.ok, fontWeight: 600 }}>{cleanCount} nuevos</span></>}
+              {warnCount > 0 && <>{cleanCount > 0 ? "," : ""} <span style={{ color: C.warn, fontWeight: 600 }}>{warnCount} con coincidencias parciales</span></>}
+              {dupCount > 0 && <>, <span style={{ color: C.t3, fontWeight: 600 }}>{dupCount} ya existentes</span></>}
               {errorCount > 0 && <>, <span style={{ color: C.err, fontWeight: 600 }}>{errorCount} con errores</span></>}
             </div>
 
             <div style={{ maxHeight: 320, overflow: "auto", marginBottom: 12 }}>
               {rows.map((r, i) => {
-                const hasErr = !r._valid;
-                const hasWarn = r._valid && r._warnings.length > 0;
-                const bg = hasErr ? C.errPale : hasWarn ? C.warnPale : C.okPale;
-                const icon = hasErr ? "❌" : hasWarn ? "⚠️" : "✅";
+                const isDup = r._duplicate;
+                const hasErr = !r._valid && !isDup;
+                const hasWarn = r._valid && !isDup && r._warnings.length > 0;
+                const isClean = r._valid && !isDup && r._warnings.length === 0;
+                const bg = isDup ? `${C.t3}10` : hasErr ? C.errPale : hasWarn ? C.warnPale : C.okPale;
+                const canToggle = (hasWarn || isClean) && !isDup;
+
                 return (
-                  <div key={i} style={{ background: bg, borderRadius: 8, padding: "8px 12px", marginBottom: 4, display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ fontSize: 14, flexShrink: 0 }}>{icon}</span>
+                  <div key={i} style={{ background: bg, borderRadius: 8, padding: "8px 12px", marginBottom: 4, display: "flex", alignItems: "center", gap: 8, opacity: isDup ? 0.6 : 1 }}>
+                    {/* Checkbox for toggleable rows */}
+                    {canToggle ? (
+                      <input type="checkbox" checked={r._include} onChange={() => toggleRow(i)}
+                        style={{ width: 16, height: 16, flexShrink: 0, cursor: "pointer", accentColor: C.pri }} />
+                    ) : (
+                      <span style={{ fontSize: 14, flexShrink: 0, width: 16, textAlign: "center" }}>
+                        {isDup ? "—" : "❌"}
+                      </span>
+                    )}
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 13, fontWeight: 600, color: C.t1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: isDup ? C.t3 : C.t1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textDecoration: isDup ? "line-through" : "none" }}>
                         {isCompanies
                           ? (r.name || "(sin nombre)")
                           : `${r.name || "(sin nombre)"} — ${r.email || "(sin email)"}`}
@@ -253,7 +295,12 @@ export default function ImportExcelModal({ mode, onClose, onImport, existingComp
                           ? `${TYPE_MAP_REVERSE[TYPE_MAP[r.type?.toLowerCase()]] || r.type || "?"} ${r.rut ? `· RUT: ${r.rut}` : ""}`
                           : `${r.companyName || "?"} · ${r.role || "?"}`}
                       </div>
-                      {(r._errors.length > 0 || r._warnings.length > 0) && (
+                      {isDup && (
+                        <div style={{ fontSize: 11, color: C.t3, marginTop: 2 }}>
+                          Ya existe — no se importa
+                        </div>
+                      )}
+                      {!isDup && (r._errors.length > 0 || r._warnings.length > 0) && (
                         <div style={{ fontSize: 11, color: hasErr ? C.err : C.warn, marginTop: 2 }}>
                           {[...r._errors, ...r._warnings].join(" · ")}
                         </div>
@@ -277,7 +324,7 @@ export default function ImportExcelModal({ mode, onClose, onImport, existingComp
                   fontSize: 15, fontWeight: 600, cursor: importableCount > 0 ? "pointer" : "default",
                   fontFamily: "inherit", opacity: importing ? 0.7 : 1,
                 }}>
-                {importing ? "Importando..." : `Importar ${importableCount} válidos`}
+                {importing ? "Importando..." : importableCount > 0 ? `Importar ${importableCount}` : "Nada para importar"}
               </button>
             </div>
           </div>
