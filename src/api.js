@@ -30,7 +30,7 @@ export function setAuthFailHandler(fn) { _onAuthFail = fn; }
 export function saveUser(u) {
   // Strip sensitive/internal fields before persisting to localStorage
   if (!u) return;
-  const { passwordHash, isSuperAdmin, refreshTokens, ...safe } = u;
+  const { passwordHash, refreshTokens, ...safe } = u;
   localStorage.setItem('tolvink_user', JSON.stringify(safe));
 }
 export function getSavedUser() { try { const r=localStorage.getItem('tolvink_user'); return r?JSON.parse(r):null; } catch { return null; } }
