@@ -203,7 +203,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
   const selectedPlant = (plants||[]).find(p=>p.id===form.plantId);
   const selectedBranch = (branches||[]).find(b=>b.id===form.branchId);
   const truckOpts = (trucks||[]).map(t=>({ value:t.id, label:`${t.plate}${t.model?` · ${t.model}`:""}` }));
-  const showTruckSelect = (user.userType==="producer"||(user.userTypes||[]).includes("producer")) && truckOpts.length > 0;
+  const showTruckSelect = (user.userType==="producer"||(user.userTypes||[]).includes("producer")) && !!user.hasInternalFleet;
 
   // Section completeness
   const secComplete = useMemo(()=>({
@@ -291,7 +291,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
     if (showTruckSelect && truckOpts.length === 1 && !form.truckId && !form.fleetChoice) {
       u({ fleetChoice: "own", truckId: truckOpts[0].value });
     }
-  },[showTruckSelect, truckOpts.length]); // eslint-disable-line react-hooks/exhaustive-deps
+  },[showTruckSelect, truckOpts.length]); // eslint-disable-line
 
   // Coords for map preview
   const selectedField = (fields||[]).find(f=>f.id===form.fieldId);
@@ -513,11 +513,16 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
               <button type="button" onClick={()=>u({fleetChoice:"delegate",truckId:""})} style={{ flex:1, padding:"12px 8px", borderRadius:10, border:`1.5px solid ${form.fleetChoice==="delegate"?C.pri:C.b1}`, background:form.fleetChoice==="delegate"?C.priPale:C.w, color:form.fleetChoice==="delegate"?C.pri:C.t2, cursor:"pointer", fontSize:14.3, fontWeight:form.fleetChoice==="delegate"?700:500, fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>{Ic.plant(form.fleetChoice==="delegate"?C.pri:C.t3,16)} Delegar a planta</button>
             </div>
             {form.fleetChoice==="own" && <>
-              <Select label="Camión" icon={Ic.truck(C.acc,14)} value={form.truckId} onChange={v=>u({truckId:v})} options={truckOpts} placeholder="Seleccionar camión..."/>
-              {!form.truckId && <div style={{ marginTop:8, padding:"8px 12px", background:`${C.acc}10`, borderRadius:8, fontSize:12.1, color:C.acc, fontWeight:500 }}>Seleccioná un camión de tu flota</div>}
+              {truckOpts.length > 0 ? <>
+                <Select label="Camión" icon={Ic.truck(C.acc,14)} value={form.truckId} onChange={v=>u({truckId:v})} options={truckOpts} placeholder="Seleccionar camión..."/>
+                {!form.truckId && <div style={{ marginTop:8, padding:"8px 12px", background:`${C.acc}10`, borderRadius:8, fontSize:12.1, color:C.acc, fontWeight:500 }}>Seleccioná un camión de tu flota</div>}
+              </> : <div style={{ padding:"14px 16px", background:`${C.acc}08`, borderRadius:10, border:`1.5px dashed ${C.acc}40`, textAlign:"center" }}>
+                <div style={{ fontSize:13.2, color:C.t2, fontWeight:500, marginBottom:8 }}>No tenés camiones registrados.</div>
+                <a href="/trucks" style={{ fontSize:13.2, fontWeight:700, color:C.acc, textDecoration:"none" }}>Registrá uno desde Camiones →</a>
+              </div>}
             </>}
             {form.fleetChoice==="delegate" && <div style={{ padding:"10px 14px", background:`${C.info}10`, borderRadius:8, fontSize:13.2, color:C.info, fontWeight:500 }}>La planta de destino asignará el transportista</div>}
-            <NextStepBtn complete={!!form.fleetChoice} onClick={isEditing?confirmEdit:advanceToNext} label={isEditing?"Confirmar edición":undefined} onPrev={prevAvailable()?goToPrev:null}/>
+            <NextStepBtn complete={!!form.fleetChoice && (form.fleetChoice!=="own" || !!form.truckId)} onClick={isEditing?confirmEdit:advanceToNext} label={isEditing?"Confirmar edición":undefined} onPrev={prevAvailable()?goToPrev:null}/>
           </>}
           {activeSection === "destination" && <>
             <label style={{ fontSize:11.6, fontWeight:600, color:C.t2, marginBottom:6, display:"flex", alignItems:"center", gap:4, textTransform:"uppercase", letterSpacing:0.6 }}>{Ic.plant(C.t2,14)} Destino</label>
@@ -673,11 +678,16 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
               <button type="button" onClick={()=>u({fleetChoice:"delegate",truckId:""})} style={{ flex:1, padding:"12px 8px", borderRadius:10, border:`1.5px solid ${form.fleetChoice==="delegate"?C.pri:C.b1}`, background:form.fleetChoice==="delegate"?C.priPale:C.w, color:form.fleetChoice==="delegate"?C.pri:C.t2, cursor:"pointer", fontSize:14.3, fontWeight:form.fleetChoice==="delegate"?700:500, fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>{Ic.plant(form.fleetChoice==="delegate"?C.pri:C.t3,16)} Delegar a planta</button>
             </div>
             {form.fleetChoice==="own" && <>
-              <Select label="Camión" icon={Ic.truck(C.acc,14)} value={form.truckId} onChange={v=>u({truckId:v})} options={truckOpts} placeholder="Seleccionar camión..."/>
-              {!form.truckId && <div style={{ marginTop:8, padding:"8px 12px", background:`${C.acc}10`, borderRadius:8, fontSize:12.1, color:C.acc, fontWeight:500 }}>Seleccioná un camión de tu flota</div>}
+              {truckOpts.length > 0 ? <>
+                <Select label="Camión" icon={Ic.truck(C.acc,14)} value={form.truckId} onChange={v=>u({truckId:v})} options={truckOpts} placeholder="Seleccionar camión..."/>
+                {!form.truckId && <div style={{ marginTop:8, padding:"8px 12px", background:`${C.acc}10`, borderRadius:8, fontSize:12.1, color:C.acc, fontWeight:500 }}>Seleccioná un camión de tu flota</div>}
+              </> : <div style={{ padding:"14px 16px", background:`${C.acc}08`, borderRadius:10, border:`1.5px dashed ${C.acc}40`, textAlign:"center" }}>
+                <div style={{ fontSize:13.2, color:C.t2, fontWeight:500, marginBottom:8 }}>No tenés camiones registrados.</div>
+                <a href="/trucks" style={{ fontSize:13.2, fontWeight:700, color:C.acc, textDecoration:"none" }}>Registrá uno desde Camiones →</a>
+              </div>}
             </>}
             {form.fleetChoice==="delegate" && <div style={{ padding:"10px 14px", background:`${C.info}10`, borderRadius:8, fontSize:13.2, color:C.info, fontWeight:500 }}>La planta de destino asignará el transportista</div>}
-            <NextStepBtn complete={!!form.fleetChoice} onClick={isEditing?confirmEdit:advanceToNext} label={isEditing?"Confirmar edición":undefined} onPrev={prevAvailable()?goToPrev:null}/>
+            <NextStepBtn complete={!!form.fleetChoice && (form.fleetChoice!=="own" || !!form.truckId)} onClick={isEditing?confirmEdit:advanceToNext} label={isEditing?"Confirmar edición":undefined} onPrev={prevAvailable()?goToPrev:null}/>
           </Sec>
         )}
 

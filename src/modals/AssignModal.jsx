@@ -53,8 +53,10 @@ export default function AssignModal({ freight, transporters, user, onClose, onCo
   const [tonsInput, setTonsInput] = useState(defaultTonsPerTruck.toString());
 
   // Either origin (producer) or dest (plant) can have own fleet
-  const hasOwnFleet = !!freight.originHasOwnFleet || !!freight.destHasOwnFleet;
-  const ownFleetCompanyId = freight.destHasOwnFleet ? freight.destCompanyId : freight.originCompanyId;
+  const hasOwnFleet = !!freight.originHasOwnFleet || !!freight.destHasOwnFleet || !!user?.hasInternalFleet;
+  const ownFleetCompanyId = (user?.hasInternalFleet && !freight.destHasOwnFleet && !freight.originHasOwnFleet)
+    ? (user.activeCompanyId || user.companyId)
+    : freight.destHasOwnFleet ? freight.destCompanyId : freight.originCompanyId;
 
   // Respect explicit useOwnFleet decision: force mode when set
   const forceMode = freight.useOwnFleet === true ? "own" : freight.useOwnFleet === false ? "company" : null;
