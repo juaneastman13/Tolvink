@@ -12,6 +12,19 @@ import { mapFreight } from "./helpers";
 const PAGE_SIZE = 25;
 const FREIGHTS_PAGE_SIZE = PAGE_SIZE;
 
+// Detail-only fields that must not be overwritten by summary/list data
+const DETAIL_FIELDS = ['documents', 'pendingChanges', 'conversationId'];
+
+/** Merge new data into existing freight, preserving detail-only fields if the
+ *  existing entry was loaded in full but the new one is summary/list data. */
+function mergeFreight(existing, incoming) {
+  if (!existing || !existing._isFullDetail || incoming._isFullDetail) return incoming;
+  const merged = { ...incoming };
+  for (const k of DETAIL_FIELDS) { if (existing[k] !== undefined) merged[k] = existing[k]; }
+  merged._isFullDetail = true;
+  return merged;
+}
+
 // ======================== FREIGHTS HOOK (Real API) ====================
 export function useFreights(user, isAuthInitialized) {
   const [freights, setFreights] = useState([]);
@@ -37,8 +50,13 @@ export function useFreights(user, isAuthInitialized) {
     try {
       const r = await apiListFreights({page:1, limit:FREIGHTS_PAGE_SIZE, company:companyFilter});
       const mapped = (r.data||[]).map(mapFreight);
-      freightsRef.current = mapped;
-      setFreights(mapped);
+      // Preserve full-detail fields for items currently loaded in detail view
+      const prev = freightsRef.current;
+      const fullMap = new Map();
+      prev.forEach(f => { if (f._isFullDetail) fullMap.set(f.id, f); });
+      const merged = fullMap.size > 0 ? mapped.map(f => mergeFreight(fullMap.get(f.id), f)) : mapped;
+      freightsRef.current = merged;
+      setFreights(merged);
       // Pre-populate detail cache so card clicks render instantly
       const detailStore = useFreightDetailStore.getState();
       mapped.forEach(f => { if (f.id && !detailStore.getDetail(f.id)) detailStore.setDetail(f.id, f); });
@@ -64,7 +82,7 @@ export function useFreights(user, isAuthInitialized) {
       setFreights(p=>{
         // Merge: update stale items + append new ones (prevents divergence on page boundaries)
         const map = new Map(p.map(f=>[f.id,f]));
-        mapped.forEach(f=>map.set(f.id,f));
+        mapped.forEach(f=>map.set(f.id, mergeFreight(map.get(f.id), f)));
         return [...map.values()];
       });
       setHasMore((r.page||1) < (r.pages||1));
@@ -105,7 +123,8 @@ export function useFreights(user, isAuthInitialized) {
     catch(e) { setError(e.message); return null; }
   },[]);
   /** Light refresh: fetch summary (no documents/pendingChanges/conversation) — used for SSE updates.
-   *  Falls back to full refresh if summary endpoint is not available. */
+   *  Falls back to full refresh if summary endpoint is not available.
+   *  Merges into existing full-detail entries to avoid losing detail-only fields. */
   const refreshLight = useCallback(async (id)=>{
     try {
       let u;
@@ -116,7 +135,7 @@ export function useFreights(user, isAuthInitialized) {
         const idx = p.findIndex(f=>f.id===id);
         const oldStatus = idx >= 0 ? p[idx].status : null;
         let next;
-        if (idx >= 0) { next=[...p]; next[idx]=m; }
+        if (idx >= 0) { next=[...p]; next[idx]=mergeFreight(p[idx], m); }
         else { next=[m, ...p]; }
         freightsRef.current = next;
         if (idx < 0 || oldStatus !== m.status) {
