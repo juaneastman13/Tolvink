@@ -123,7 +123,7 @@ export default function TruckSelectModal({ freight, trucks: initialTrucks, onClo
       )}
 
       {/* Driver selection */}
-      <label style={{fontSize:11.6,fontWeight:600,color:C.t2,marginBottom:8,marginTop:6,display:"block",textTransform:"uppercase",letterSpacing:0.6}}>Chofer (opcional)</label>
+      <label style={{fontSize:11.6,fontWeight:600,color:C.t2,marginBottom:8,marginTop:6,display:"block",textTransform:"uppercase",letterSpacing:0.6}}>Chofer</label>
       <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:10,maxHeight:160,overflowY:"auto"}}>
         {loadingDrivers && <div style={{fontSize:13.2,color:C.t3,padding:10,textAlign:"center"}}>Cargando choferes...</div>}
         {!loadingDrivers && drivers.length===0 && !showNewDriver && <div style={{fontSize:13.2,color:C.t3,padding:8,textAlign:"center"}}>No hay choferes registrados</div>}
@@ -156,7 +156,7 @@ export default function TruckSelectModal({ freight, trucks: initialTrucks, onClo
         </div>
       )}
 
-      <div style={{display:"flex",gap:8}}><Btn full v="ghost" onClick={onClose} disabled={loading||closing}>Cancelar</Btn><Btn full v="acc" disabled={!sel||loading||closing} onClick={doConfirm}>{loading?"Aceptando...":"Aceptar flete"}</Btn></div>
+      <div style={{display:"flex",gap:8}}><Btn full v="ghost" onClick={onClose} disabled={loading||closing}>Cancelar</Btn><Btn full v="acc" disabled={!sel||!driverId||loading||closing} onClick={doConfirm}>{loading?"Aceptando...":"Aceptar flete"}</Btn></div>
     </ModalOverlay>
   );
 }
