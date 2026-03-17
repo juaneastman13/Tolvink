@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { uploadPhoto, apiAddDocument, apiDeleteDocument, thumb } from "./api";
 import { C, Ic } from "./theme";
 import { AttachMenu, Btn } from "./components";
@@ -287,16 +287,7 @@ export function FreightFileUpload({ freightId, step, onUploaded }) {
     return prev.filter((_, i) => i !== idx);
   });
 
-  // Auto-upload when files are added
-  useEffect(() => {
-    if (!uploadTriggered.current || uploadingAll) return;
-    const hasPending = files.some(f => !f.done && !f.uploading && !f.error);
-    if (!hasPending) return;
-    uploadTriggered.current = false;
-    uploadAll();
-  }, [files, uploadAll]);
-
-  const uploadAll = async () => {
+  const uploadAll = useCallback(async () => {
     setUploadingAll(true);
     setUploadDone(false);
     let allOk = true;
@@ -324,7 +315,16 @@ export function FreightFileUpload({ freightId, step, onUploaded }) {
     // Reset files list after successful upload so user can upload more
     if (allOk) { setTimeout(() => { setFiles([]); setUploadDone(false); }, 2600); }
     else { setTimeout(() => { setFiles(prev => prev.filter(f => !f.done)); }, 2000); }
-  };
+  }, [freightId, step, onUploaded, show]);
+
+  // Auto-upload when files are added
+  useEffect(() => {
+    if (!uploadTriggered.current || uploadingAll) return;
+    const hasPending = files.some(f => !f.done && !f.uploading && !f.error);
+    if (!hasPending) return;
+    uploadTriggered.current = false;
+    uploadAll();
+  }, [files, uploadAll, uploadingAll]);
 
   const pending = files.filter(f => !f.done);
   const pendingCount = pending.length;
