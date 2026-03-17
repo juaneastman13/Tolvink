@@ -77,11 +77,13 @@ export function SSEProvider({ children, auth, fh, notif, catalog }) {
     onAiThinking: () => { sseThinkingSeq.current++; setSseAiThinking({ _seq: sseThinkingSeq.current }); },
   });
 
+  const resetUnreadChats = useCallback(() => setUnreadChats(0), []);
+
   const value = {
     sse,
     sseMsg, setSseMsg,
     sseTyping, sseRead,
-    unreadChats, setUnreadChats,
+    unreadChats, setUnreadChats, resetUnreadChats,
     sseAiResponse, sseAiTranscription, sseAiChunk, sseAiThinking,
     catalogRef,
   };

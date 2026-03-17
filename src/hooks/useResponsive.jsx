@@ -4,10 +4,10 @@ import { useState, useEffect } from "react";
 export function useIsDesktop(bp = 768) {
   const [isDesktop, setIsDesktop] = useState(() => typeof window !== "undefined" && window.innerWidth >= bp);
   useEffect(() => {
-    const mq = window.matchMedia(`(min-width: ${bp}px)`);
-    const handler = (e) => setIsDesktop(e.matches);
-    mq.addEventListener("change", handler);
-    return () => mq.removeEventListener("change", handler);
+    let timer;
+    const handler = () => { clearTimeout(timer); timer = setTimeout(() => setIsDesktop(window.innerWidth >= bp), 150); };
+    window.addEventListener('resize', handler);
+    return () => { window.removeEventListener('resize', handler); clearTimeout(timer); };
   }, [bp]);
   return isDesktop;
 }

@@ -4,12 +4,11 @@
 
 import { captureError } from "./sentry";
 
-export const API_URL = import.meta.env.VITE_API_URL || 'https://tolvink-api-production.up.railway.app/api';
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'https://mlmecljidioymujsazrs.supabase.co';
+export const API_URL = import.meta.env.VITE_API_URL || '';
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || '';
 
-if (import.meta.env.DEV && !import.meta.env.VITE_API_URL) {
-  console.error('[API] VITE_API_URL not set — using production fallback. Set it in .env');
-}
+if (!API_URL) console.error('[Tolvink] VITE_API_URL not set — API calls will fail');
+if (!SUPABASE_URL) console.error('[Tolvink] VITE_SUPABASE_URL not set — uploads will fail');
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 const STORAGE_BUCKET = 'freight-docs';
 
@@ -210,7 +209,21 @@ export async function apiSwitchCompany(companyId) {
 export async function apiGetMyCompanies() { return api('/auth/me/companies'); }
 
 // Freights
-export async function apiListFreights(q={}) { const p=new URLSearchParams(); if(q.status)p.set('status',q.status); if(q.page)p.set('page',String(q.page)); if(q.limit)p.set('limit',String(q.limit)); if(q.company)p.set('company',q.company); if(q.search)p.set('search',q.search); if(q.destName)p.set('destName',q.destName); if(q.originCompany)p.set('originCompany',q.originCompany); if(q.transporter)p.set('transporter',q.transporter); if(q.dateFrom)p.set('dateFrom',q.dateFrom); if(q.dateTo)p.set('dateTo',q.dateTo); const qs=p.toString(); return api(`/freights${qs?`?${qs}`:''}`); }
+export async function apiListFreights(q={}) {
+  const p = new URLSearchParams();
+  if (q.status) p.set('status', q.status);
+  if (q.page) p.set('page', String(q.page));
+  if (q.limit) p.set('limit', String(q.limit));
+  if (q.company) p.set('company', q.company);
+  if (q.search) p.set('search', q.search);
+  if (q.destName) p.set('destName', q.destName);
+  if (q.originCompany) p.set('originCompany', q.originCompany);
+  if (q.transporter) p.set('transporter', q.transporter);
+  if (q.dateFrom) p.set('dateFrom', q.dateFrom);
+  if (q.dateTo) p.set('dateTo', q.dateTo);
+  const qs = p.toString();
+  return api(`/freights${qs ? `?${qs}` : ''}`);
+}
 export async function apiSearchFreights(search, page=1) { return apiListFreights({ search, limit: 25, page }); }
 export async function apiGetFreightStats(from, to, groupBy) { const p = new URLSearchParams(); if(from) p.set('from',from); if(to) p.set('to',to); if(groupBy) p.set('groupBy',groupBy); return api(`/freights/stats?${p}`); }
 export async function apiGetFreight(id) { return api(`/freights/${id}`); }
@@ -410,8 +423,8 @@ function compressImage(file, maxWidth = 1920, quality = 0.8) {
     const url = URL.createObjectURL(file);
     img.onload = () => {
       URL.revokeObjectURL(url);
-      // Skip if already smaller than maxWidth
-      if (img.width <= maxWidth) { resolve(file); return; }
+      // Skip if already smaller than maxWidth AND under 500KB
+      if (img.width <= maxWidth && file.size < 500 * 1024) { resolve(file); return; }
       const ratio = maxWidth / img.width;
       const canvas = document.createElement('canvas');
       canvas.width = maxWidth;

@@ -22,10 +22,11 @@ export const LIGHT = {
   shLg:"0 12px 32px rgba(0,0,0,0.10)",
 };
 
-export const C = { ...LIGHT };
+export const C = { ...LIGHT, bgAlt: '#F3F4F6' };
 
 // Analytics — fire-and-forget to backend
-const _API = import.meta.env.VITE_API_URL || 'https://tolvink-api-production.up.railway.app/api';
+const _API = import.meta.env.VITE_API_URL || '';
+if (!_API) console.error('[Tolvink] VITE_API_URL not set — analytics will not be sent');
 let _sid = sessionStorage.getItem('tv_sid');
 if (!_sid) { _sid = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : (typeof crypto !== 'undefined' && crypto.getRandomValues ? Array.from(crypto.getRandomValues(new Uint8Array(16)), b => b.toString(16).padStart(2, '0')).join('') : Math.random().toString(36).slice(2) + Date.now().toString(36)); sessionStorage.setItem('tv_sid', _sid); }
 export function track(event, data = {}) {
@@ -94,4 +95,5 @@ export const Ic = {
   poi:(c=C.sec,s=18)=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>,
   clip:(c=C.t3,s=18)=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>,
   phone:(c=C.t3,s=18)=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>,
+  star:(c='#000',s=20)=><svg width={s} height={s} viewBox="0 0 20 20" fill="none"><path d="M10 1.5l2.47 5.01 5.53.8-4 3.9.94 5.49L10 14.27 5.06 16.7 6 11.21l-4-3.9 5.53-.8L10 1.5z" fill={c}/></svg>,
 };

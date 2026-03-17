@@ -99,7 +99,7 @@ export function mapFreight(f) {
     conversationId: f.conversation?.id||null,
     pendingChanges: f.pendingChanges||[],
     // Flag: true when loaded via findOne (full detail), false when from list/summary
-    _isFullDetail: !!(f.documents || f.conversation || f.pendingChanges),
+    _isFullDetail: 'documents' in f || 'conversation' in f || 'pendingChanges' in f,
     isOverdue: (() => {
       const overdueStatuses = ["pending_assignment","assigned","accepted"];
       if (!overdueStatuses.includes(f.status)) return false;
@@ -114,11 +114,13 @@ export function mapFreight(f) {
 
 /** Resolve origin display text — "Personalizado" for map-picked origins without field */
 export function originDisplay(f) {
+  if (!f) return '';
   if (!f.fieldId && f.originLat && f.originLng) return "Personalizado";
   return [f.fieldName, f.originName].filter(Boolean).join(" / ") || f.originCompanyName || "";
 }
 /** Resolve dest display text — "Personalizado" for map-picked dests without plant */
 export function destDisplay(f) {
+  if (!f) return '';
   if (!f.destPlantId && f.destLat && f.destLng) return "Personalizado";
   return f.destName || "";
 }

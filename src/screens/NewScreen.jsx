@@ -76,11 +76,20 @@ function SummaryCard({ secSummary, secComplete, form, showTruckSelect, trucks, i
 }
 
 function MobileStepModal({ open, title, summary, children, onClose, onPrev, stepIndex, totalSteps }) {
+  const modalRef = useRef(null);
+  const trapFocus = (e) => {
+    if (e.key !== 'Tab') return;
+    const focusable = modalRef.current?.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+    if (!focusable?.length) return;
+    const first = focusable[0], last = focusable[focusable.length - 1];
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  };
   if (!open) return null;
   return (
-    <div role="dialog" aria-modal="true" aria-label={title} style={{ position:"fixed", inset:0, zIndex:1000, display:"flex", alignItems:"center", justifyContent:"center", padding:12 }}>
+    <div role="dialog" aria-modal="true" aria-label={title} style={{ position:"fixed", inset:0, zIndex:1000, display:"flex", alignItems:"center", justifyContent:"center", padding:12 }} onKeyDown={trapFocus}>
       <div onClick={onClose} style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.4)" }}/>
-      <div style={{ position:"relative", background:C.bg, borderRadius:16, width:"100%", maxWidth:500, maxHeight:"calc(100vh - 24px)", overflow:"auto", animation:"slideUp 0.25s ease" }}>
+      <div ref={modalRef} style={{ position:"relative", background:C.bg, borderRadius:16, width:"100%", maxWidth:500, maxHeight:"calc(100vh - 24px)", overflow:"auto", animation:"slideUp 0.25s ease" }}>
         <div style={{ position:"sticky", top:0, zIndex:2, background:C.bg, padding:"16px 20px 8px", borderBottom:`1px solid ${C.b2}`, borderRadius:"16px 16px 0 0" }}>
           <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
             <div style={{ display:"flex", alignItems:"center", gap:8 }}>
@@ -491,6 +500,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
             {originMode==="field" ? (<>
               <Select label="Campo" icon={Ic.field(C.ok,14)} value={form.fieldId} onChange={v=>{u({fieldId:v,lotId:""});}} options={fieldOpts} placeholder="Seleccionar campo..."/>
               <div style={{ marginTop:10 }}>
+                {loadingLots && <div style={{padding:8,color:'#888',fontSize:13}}>Cargando lotes...</div>}
                 <Select label={hasLots ? "Origen (lote)" : "Origen (lote · opcional)"} icon={Ic.lot(C.pri,14)} value={form.lotId} onChange={v=>u({lotId:v})} options={lotOpts} placeholder={loadingLots?"Cargando lotes...":form.fieldId?(hasLots?"Seleccionar lote...":"Sin lotes — se usará el campo"):"Primero seleccioná un campo"}/>
                 {touched&&<FieldError error={errs.lotId}/>}
                 {selectedLot && selectedLot.lat && <div style={{ display:"flex", alignItems:"center", gap:6, padding:"6px 10px", background:C.priPale, borderRadius:8, marginTop:6 }}>{Ic.chk(C.pri,14)}<span style={{fontSize:11.6,color:C.pri,fontWeight:500}}>{selectedLot.lat}, {selectedLot.lng}</span></div>}
@@ -638,6 +648,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
               <Select label="Campo" icon={Ic.field(C.ok,14)} value={form.fieldId} onChange={v=>{u({fieldId:v,lotId:""});}} options={fieldOpts} placeholder="Seleccionar campo..."/>
             </div>
             <div style={{ marginTop:10 }}>
+              {loadingLots && <div style={{padding:8,color:'#888',fontSize:13}}>Cargando lotes...</div>}
               <Select label={hasLots ? "Origen (lote)" : "Origen (lote · opcional)"} icon={Ic.lot(C.pri,14)} value={form.lotId} onChange={v=>u({lotId:v})} options={lotOpts} placeholder={loadingLots?"Cargando lotes...":form.fieldId?(hasLots?"Seleccionar lote...":"Sin lotes — se usará el campo"):"Primero seleccioná un campo"}/>
               {touched&&<FieldError error={errs.lotId}/>}
               {selectedLot && selectedLot.lat && <div style={{ display:"flex", alignItems:"center", gap:6, padding:"6px 10px", background:C.priPale, borderRadius:8, marginTop:6 }}>{Ic.chk(C.pri,14)}<span style={{fontSize:11.6,color:C.pri,fontWeight:500}}>{selectedLot.lat}, {selectedLot.lng}</span></div>}

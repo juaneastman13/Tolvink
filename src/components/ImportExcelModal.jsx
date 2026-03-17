@@ -38,7 +38,7 @@ function validateCompanyRows(rows, existingCompanies) {
 }
 
 function validateUserRows(rows, existingCompanies, existingUsers) {
-  const emailSet = new Set(existingUsers.map(u => u.email.toLowerCase()));
+  const emailSet = new Set(existingUsers.filter(u => u.email).map(u => u.email.toLowerCase()));
   const phoneSet = new Set(existingUsers.filter(u => u.phone).map(u => u.phone));
   const nameSet = new Set(existingUsers.map(u => u.name.toLowerCase()));
   const companyMap = new Map(existingCompanies.map(c => [c.name.toLowerCase(), c]));

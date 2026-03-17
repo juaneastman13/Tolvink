@@ -105,18 +105,26 @@ export default function AppLayout({ fh, catalog, online, notif, isDesktop }) {
   }, [fh.freights, auth.user]);
 
   // Global search — debounced server-side search
+  const searchAbortRef = useRef(null);
   useEffect(() => {
     if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
     if (!searchQ || searchQ.length < 2) { setSearchResults([]); setSearchHasMore(false); return; }
     searchTimerRef.current = setTimeout(async () => {
+      searchAbortRef.current?.abort();
+      const controller = new AbortController();
+      searchAbortRef.current = controller;
       try {
         searchPageRef.current = 1;
         const r = await apiSearchFreights(searchQ, 1);
+        if (controller.signal.aborted) return;
         setSearchResults((r.data || []).map(mapFreight));
         setSearchHasMore((r.page || 1) < (r.pages || 1));
-      } catch { setSearchResults([]); setSearchHasMore(false); }
+      } catch (e) {
+        if (e.name === 'AbortError') return;
+        setSearchResults([]); setSearchHasMore(false);
+      }
     }, 300);
-    return () => { if (searchTimerRef.current) clearTimeout(searchTimerRef.current); };
+    return () => { if (searchTimerRef.current) clearTimeout(searchTimerRef.current); searchAbortRef.current?.abort(); };
   }, [searchQ]);
 
   const loadMoreSearch = useCallback(async () => {
@@ -209,7 +217,7 @@ export default function AppLayout({ fh, catalog, online, notif, isDesktop }) {
     if (!submitDone) return;
     const t = setTimeout(() => { setSubmitDone(""); navigate("/list"); }, 5000);
     return () => clearTimeout(t);
-  }, [submitDone]);
+  }, [submitDone, navigate, setSubmitDone]);
 
   // Replay offline queue when back online
   const replayingRef = useRef(false);
@@ -493,11 +501,11 @@ export default function AppLayout({ fh, catalog, online, notif, isDesktop }) {
         {mobileSearchOpen && <div style={{padding:"0 18px 10px",background:C.w,borderBottom:`1px solid ${C.b2}`,position:"relative",zIndex:10}} className="tv-mobile-header">
           <div style={{display:"flex",alignItems:"center",gap:6,padding:"8px 12px",borderRadius:10,background:C.bg,border:`1.5px solid ${searchQ?C.bFocus:C.b2}`,transition:"border-color 0.15s"}}>
             <span style={{display:"flex",flexShrink:0}}>{Ic.srch(C.t3,14)}</span>
-            <input autoFocus value={searchQ} onChange={e=>setSearchQ(e.target.value)} placeholder="Buscar flete..." style={{flex:1,border:"none",background:"transparent",outline:"none",fontSize:14,color:C.t1,fontFamily:"inherit",padding:0}}/>
+            <input autoFocus aria-label="Buscar fletes" value={searchQ} onChange={e=>setSearchQ(e.target.value)} placeholder="Buscar flete..." style={{flex:1,border:"none",background:"transparent",outline:"none",fontSize:14,color:C.t1,fontFamily:"inherit",padding:0}}/>
             {searchQ && <button onClick={()=>setSearchQ("")} style={{display:"flex",border:"none",background:"none",cursor:"pointer",padding:0}}>{Ic.cross(C.t3,14)}</button>}
           </div>
           {searchQ.length >= 2 && searchResults.length > 0 && <div onScroll={e=>{const el=e.currentTarget;if(searchHasMore&&!searchLoadingMore&&el.scrollTop+el.clientHeight>=el.scrollHeight-20)loadMoreSearch();}} style={{position:"absolute",left:18,right:18,top:"100%",marginTop:2,background:C.w,border:`1px solid ${C.b1}`,borderRadius:12,boxShadow:C.shMd,zIndex:200,maxHeight:320,overflowY:"auto",padding:4}}>
-            {searchResults.map(f=>{const st=stCfg(f.status);return <button key={f.id} onClick={()=>{setSelFreight(f.id);fh.refresh(f.id);navigate(`/freight/${f.id}`);setSearchQ("");setMobileSearchOpen(false);}} style={{display:"flex",alignItems:"center",gap:10,width:"100%",padding:"10px 12px",background:"transparent",border:"none",borderRadius:10,cursor:"pointer",fontFamily:"inherit",textAlign:"left"}} onTouchStart={e=>e.currentTarget.style.background=C.priGhost} onTouchEnd={e=>e.currentTarget.style.background="transparent"}>
+            {searchResults.map(f=>{const st=stCfg(f.status);return <button key={f.id} aria-label={`Ver flete ${f.code || ''} ${f.grain || ''}`} onClick={()=>{setSelFreight(f.id);fh.refresh(f.id);navigate(`/freight/${f.id}`);setSearchQ("");setMobileSearchOpen(false);}} style={{display:"flex",alignItems:"center",gap:10,width:"100%",padding:"10px 12px",background:"transparent",border:"none",borderRadius:10,cursor:"pointer",fontFamily:"inherit",textAlign:"left"}} onTouchStart={e=>e.currentTarget.style.background=C.priGhost} onTouchEnd={e=>e.currentTarget.style.background="transparent"}>
               <div style={{width:4,height:32,borderRadius:2,background:st.color,flexShrink:0}}/>
               <div style={{flex:1,minWidth:0}}>
                 <div style={{fontSize:14,fontWeight:700,color:C.t1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.grain==="Otros"?f.productTypeOther||"Otros":f.grain} · {f.tons} {f.unit||"tn"}</div>

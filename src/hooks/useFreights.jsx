@@ -83,7 +83,9 @@ export function useFreights(user, isAuthInitialized) {
         // Merge: update stale items + append new ones (prevents divergence on page boundaries)
         const map = new Map(p.map(f=>[f.id,f]));
         mapped.forEach(f=>map.set(f.id, mergeFreight(map.get(f.id), f)));
-        return [...map.values()];
+        const next = [...map.values()];
+        freightsRef.current = next;
+        return next;
       });
       setHasMore((r.page||1) < (r.pages||1));
     }

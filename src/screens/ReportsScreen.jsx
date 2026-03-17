@@ -216,11 +216,11 @@ export default function ReportsScreen({ onBack, freights, isDesktop, embedded, o
                 <div style={{ display:"flex", justifyContent:"flex-end", marginBottom:8 }}>
                   <button onClick={()=>{
                     const s = stats; const o = s.overview; const p = s.period;
-                    const esc = v => String(v||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+                    const esc = v => String(v??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
                     const today = new Date().toLocaleDateString("es-UY",{day:"2-digit",month:"short",year:"numeric"});
                     const tblRow = (cols) => "<tr>"+cols.map(c=>`<td>${esc(c)}</td>`).join("")+"</tr>";
                     const tblHead = (cols) => "<tr>"+cols.map(c=>`<th>${esc(c)}</th>`).join("")+"</tr>";
-                    let body = `<h1>Informe de Operaciones — Tolvink</h1><div class="sub">Período: ${p.from} a ${p.to} · Generado el ${today}</div>`;
+                    let body = `<h1>Informe de Operaciones — Tolvink</h1><div class="sub">Período: ${esc(p.from)} a ${esc(p.to)} · Generado el ${esc(today)}</div>`;
                     body += `<div class="cards"><div><b>${o.totalFreights}</b><br>Fletes</div><div><b>${o.totalTons}t</b><br>Toneladas</div><div><b>${Math.round((o.completionRate||0)*100)}%</b><br>Completados</div><div><b>${Math.round((o.cancellationRate||0)*100)}%</b><br>Cancelados</div><div><b>${o.avgCompletionTimeHours||"-"}h</b><br>Prom. completado</div></div>`;
                     if(sec.byGrain&&s.byGrain?.length){body+=`<h2>Por grano</h2><table>${tblHead(["Grano","Fletes","Tons","% Total","Prom."])}${s.byGrain.map(r=>tblRow([r.grain,r.count,r.tons+"t",r.percentage+"%",r.avgTons+"t"])).join("")}</table>`;}
                     if(sec.byTransporter&&s.byTransporter?.length){body+=`<h2>Transportistas</h2><table>${tblHead(["Transportista","Fletes","Tons","Completados","Resp.","Rechazo"])}${s.byTransporter.map(r=>tblRow([r.name,r.count,r.tons+"t",r.completedCount,r.avgResponseTimeHours?r.avgResponseTimeHours+"h":"-",Math.round(r.rejectionRate*100)+"%"])).join("")}</table>`;}

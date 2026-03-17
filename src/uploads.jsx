@@ -199,22 +199,19 @@ export function OcrResultModal({ result, onClose }) {
 
 export function UploadOverlay({ uploading, done, total, current, label }) {
   const [stage, setStage] = useState("idle"); // idle | uploading | success | fadeout
-  const [opacity, setOpacity] = useState(0);
 
   useEffect(() => {
     if (uploading && stage === "idle") {
       setStage("uploading");
-      setOpacity(1);
     }
     if (!uploading && stage === "uploading") {
       if (done) {
         setStage("success");
         const t1 = setTimeout(() => setStage("fadeout"), 2200);
-        const t2 = setTimeout(() => { setStage("idle"); setOpacity(0); }, 2600);
+        const t2 = setTimeout(() => { setStage("idle"); }, 2600);
         return () => { clearTimeout(t1); clearTimeout(t2); };
       } else {
         setStage("idle");
-        setOpacity(0);
       }
     }
   }, [uploading, done, stage]);
@@ -297,7 +294,7 @@ export function FreightFileUpload({ freightId, step, onUploaded }) {
     if (!hasPending) return;
     uploadTriggered.current = false;
     uploadAll();
-  }, [files]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [files, uploadAll]);
 
   const uploadAll = async () => {
     setUploadingAll(true);

@@ -91,7 +91,7 @@ export default function AssignModal({ freight, transporters, user, onClose, onCo
         if(d) setDriverId(tk.assignedUser.id);
       }
     }
-  },[truckId]);
+  },[truckId, trucks, drivers]);
 
   const handleCreateTruck = async ()=>{
     if(savingTruck) return;
