@@ -58,8 +58,9 @@ export default function AssignModal({ freight, transporters, user, onClose, onCo
     ? (user.activeCompanyId || user.companyId)
     : freight.destHasOwnFleet ? freight.destCompanyId : freight.originCompanyId;
 
-  // Respect explicit useOwnFleet decision: force mode when set
-  const forceMode = freight.useOwnFleet === true ? "own" : freight.useOwnFleet === false ? "company" : null;
+  // Respect explicit useOwnFleet decision: force "own" when producer chose own fleet,
+  // but do NOT force "company" — the plant should still be able to use their own fleet
+  const forceMode = freight.useOwnFleet === true ? "own" : null;
 
   // Max trips you can still add
   const remainingSlots = Math.max(0, needed - truckList.length);
@@ -289,7 +290,7 @@ export default function AssignModal({ freight, transporters, user, onClose, onCo
           <button onClick={()=>{setMode("company");setTruckId("");setDriverId("");}} style={{flex:1,padding:"10px 0",fontFamily:"inherit",fontSize:13.8,fontWeight:mode==="company"?700:500,background:mode==="company"?C.pri:C.w,color:mode==="company"?C.w:C.t2,border:"none",cursor:"pointer"}}>Empresa</button>
           <button onClick={()=>{setMode("own");setT("");}} style={{flex:1,padding:"10px 0",fontFamily:"inherit",fontSize:13.8,fontWeight:mode==="own"?700:500,background:mode==="own"?C.acc:C.w,color:mode==="own"?C.w:C.t2,border:"none",cursor:"pointer",borderLeft:`1px solid ${C.b1}`}}>Flota propia</button>
         </div>}
-        {forceMode && <div style={{padding:"8px 12px",background:forceMode==="own"?C.accPale:`${C.info}10`,borderRadius:8,fontSize:12.1,fontWeight:500,color:forceMode==="own"?C.acc:C.info,marginBottom:12}}>{forceMode==="own"?"El productor eligió usar flota propia":"El productor delegó el transporte"}</div>}
+        {forceMode==="own" && <div style={{padding:"8px 12px",background:C.accPale,borderRadius:8,fontSize:12.1,fontWeight:500,color:C.acc,marginBottom:12}}>El productor eligió usar flota propia</div>}
 
         {/* ======== COMPANY MODE ======== */}
         {mode==="company" && <>
