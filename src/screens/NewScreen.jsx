@@ -21,7 +21,7 @@ function SummaryCard({ secSummary, secComplete, form, showTruckSelect, trucks, i
   if (secSummary.quantity) rows.push({ label: "Cantidad", value: secSummary.quantity, section: "quantity", icon: ICONS.quantity });
   if (secSummary.truckCount) rows.push({ label: "Camiones", value: secSummary.truckCount, section: "quantity", icon: ICONS.truckCount });
   if (secSummary.origin) rows.push({ label: "Origen", value: secSummary.origin, section: "origin", icon: ICONS.origin });
-  if (showTruckSelect && form.fleetChoice) rows.push({ label: "Transporte", value: form.fleetChoice === "own" ? `Flota propia${(trucks||[]).find(t=>t.id===form.truckId)?.plate?` · ${(trucks||[]).find(t=>t.id===form.truckId).plate}`:""}`:"Delegar a planta", section: "ownfleet", icon: ICONS.ownfleet });
+  if (showTruckSelect && form.fleetChoice && (form.fleetChoice!=="own" || form.truckId)) rows.push({ label: "Transporte", value: form.fleetChoice === "own" ? `Flota propia${(trucks||[]).find(t=>t.id===form.truckId)?.plate?` · ${(trucks||[]).find(t=>t.id===form.truckId).plate}`:""}`:"Delegar a planta", section: "ownfleet", icon: ICONS.ownfleet });
   if (secSummary.destination) rows.push({ label: "Destino", value: secSummary.destination, section: "destination", icon: ICONS.destination });
   if (secSummary.schedule) rows.push({ label: "Fecha/hora", value: secSummary.schedule, section: "schedule", icon: ICONS.schedule });
   const secKeys = ["product", "quantity", "origin", "destination", "schedule"];
@@ -286,12 +286,12 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
     finally { setNewLotSaving(false); }
   };
 
-  // Auto-select own fleet + truck when producer has exactly 1 in fleet
+  // Auto-select truck (not fleet choice) when producer has exactly 1 in fleet
   useEffect(()=>{
-    if (showTruckSelect && truckOpts.length === 1 && !form.truckId && !form.fleetChoice) {
-      u({ fleetChoice: "own", truckId: truckOpts[0].value });
+    if (showTruckSelect && truckOpts.length === 1 && form.fleetChoice === "own" && !form.truckId) {
+      u({ truckId: truckOpts[0].value });
     }
-  },[showTruckSelect, truckOpts.length]); // eslint-disable-line
+  },[showTruckSelect, truckOpts.length, form.fleetChoice]); // eslint-disable-line
 
   // Coords for map preview
   const selectedField = (fields||[]).find(f=>f.id===form.fieldId);
