@@ -254,7 +254,8 @@ export default function AdminScreen({ user, onBack }) {
     const cbt = userForm.companyByType||{};
     const rbt = userForm.roleByType||{};
     const firstCompanyId = Object.values(cbt).find(v=>v) || undefined;
-    const firstRole = Object.values(rbt).find(v=>v) || "operator";
+    const rawRole = Object.values(rbt).find(v=>v) || "operator";
+    const firstRole = rawRole === "chofer" ? "operator" : rawRole;
     const {_selectedCompanyId, ...payload} = userForm;
     try { await apiAdminCreateUser({...payload, companyId:firstCompanyId, role:firstRole, companyByType:cbt, roleByType:rbt}); setDoneMsg("Usuario creado"); useCatalogStore.getState().clearCache(); setView("list"); await load(); }
     catch(e) { show(e.message,"err"); }
