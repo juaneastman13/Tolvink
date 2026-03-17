@@ -39,17 +39,26 @@ function AuthRouteGuard({ children }) {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Redirect to home when user logs in + Sentry user tracking
-  const prevUser = useRef(null);
+  // Redirect to home only on real login (not page refresh).
+  // On refresh, the first render already has auth.user (loaded from cookie),
+  // so we skip the redirect. Only redirect when user transitions null→object
+  // AFTER the initial render (i.e., the user just logged in).
+  const prevUser = useRef(auth.user);
+  const isInitialRender = useRef(true);
   useEffect(() => {
-    const p = location.pathname;
-    const isDeepLink = p.startsWith("/freight/") || p.startsWith("/edit/") || p.startsWith("/chats/");
-    if (auth.user && !prevUser.current && !isPublicPath(p) && !isDeepLink) {
+    if (isInitialRender.current) {
+      isInitialRender.current = false;
+      prevUser.current = auth.user;
+      setSentryUser(auth.user);
+      return;
+    }
+    if (auth.user && !prevUser.current) {
+      // User just logged in — redirect to home
       navigate("/", { replace: true });
     }
     prevUser.current = auth.user;
     setSentryUser(auth.user);
-  }, [auth.user, navigate, location.pathname]);
+  }, [auth.user, navigate]);
 
   // Public routes — render without authentication
   const publicRoute = renderPublicRoute(location.pathname);
