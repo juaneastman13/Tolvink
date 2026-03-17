@@ -112,6 +112,11 @@ export default async function api(path, opts={}) {
     }
   }
 
+  // After a successful mutation, clear SW API cache so subsequent GETs return fresh data
+  if (method !== 'GET' && res.ok) {
+    caches.open('tolvink-api-v2').then(c => c.keys().then(keys => keys.forEach(k => c.delete(k)))).catch(() => {});
+  }
+
   let data;
   try {
     data = await res.json();
