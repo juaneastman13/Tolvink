@@ -4,7 +4,7 @@ import { Btn, Field, Loader, LoadingOverlay, EmptyState } from "../components";
 import { apiGetTrucks, apiCreateTruck, apiDeactivateTruck, apiListDrivers, apiCreateDriver, apiDeactivateDriver } from "../api";
 
 export default function TrucksScreen({ onBack, embedded, user }) {
-  const canEdit = !user || user.role==="admin" || user.role==="platform_admin";
+  const canEdit = !user || user.role !== "chofer";
   const [tab, setTab] = useState("trucks"); // "trucks" | "drivers"
   const [trucks, setTrucks] = useState([]);
   const [drivers, setDrivers] = useState([]);
