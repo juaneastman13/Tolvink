@@ -6,6 +6,7 @@ import { adminStyles, typeColors, typeLabels, roleLabels, adminBackBtn } from ".
 import { LocationPicker } from "../maps";
 import AccessScreen from "./AccessScreen";
 import ImportExcelModal from "../components/ImportExcelModal";
+import { useCatalogStore } from "../store";
 
 export default function AdminScreen({ user, onBack }) {
   const isPlatform = user.role === "platform_admin" || user.isSuperAdmin === true;
@@ -125,10 +126,12 @@ export default function AdminScreen({ user, onBack }) {
     if(!companyForm.name.trim()) return show("Nombre requerido","err");
     setSaving(true);
     try {
-      if(editCompanyId) { await apiAdminUpdateCompany(editCompanyId, companyForm); setSaving(false); setDoneMsg("Empresa actualizada"); }
-      else { await apiAdminCreateCompany(companyForm); setSaving(false); setDoneMsg("Empresa creada"); }
-      setView("list"); load();
-    } catch(e) { show(e.message,"err"); setSaving(false); }
+      if(editCompanyId) { await apiAdminUpdateCompany(editCompanyId, companyForm); setDoneMsg("Empresa actualizada"); }
+      else { await apiAdminCreateCompany(companyForm); setDoneMsg("Empresa creada"); }
+      useCatalogStore.getState().clearCache();
+      setView("list"); await load();
+    } catch(e) { show(e.message,"err"); }
+    finally { setSaving(false); }
   };
 
   // --- Branches ---
@@ -151,12 +154,14 @@ export default function AdminScreen({ user, onBack }) {
       if(locationAddress && !branchData.address?.trim()) {
         branchData.address = locationAddress;
       }
-      if(editBranchId) { await apiAdminUpdateBranch(editBranchId, branchData); setSaving(false); setDoneMsg("Sucursal actualizada"); }
-      else { await apiAdminCreateBranch({...branchData,companyId:selectedCompany.id}); setSaving(false); setDoneMsg("Sucursal creada"); }
-      setShowBranchForm(false); const b=await apiAdminListBranches(selectedCompany.id); setBranches(b||[]); load();
-    } catch(e) { show(e.message,"err"); setSaving(false); }
+      if(editBranchId) { await apiAdminUpdateBranch(editBranchId, branchData); setDoneMsg("Sucursal actualizada"); }
+      else { await apiAdminCreateBranch({...branchData,companyId:selectedCompany.id}); setDoneMsg("Sucursal creada"); }
+      useCatalogStore.getState().clearCache();
+      setShowBranchForm(false); const b=await apiAdminListBranches(selectedCompany.id); setBranches(b||[]); await load();
+    } catch(e) { show(e.message,"err"); }
+    finally { setSaving(false); }
   };
-  const handleDeleteBranch = async (id) => { if(saving) return; setSaving(true); try { await apiAdminDeleteBranch(id); setSaving(false); setDoneMsg("Sucursal eliminada"); const b=await apiAdminListBranches(selectedCompany.id); setBranches(b||[]); load(); } catch(e) { show(e.message,"err"); setSaving(false); } };
+  const handleDeleteBranch = async (id) => { if(saving) return; setSaving(true); try { await apiAdminDeleteBranch(id); setDoneMsg("Sucursal eliminada"); useCatalogStore.getState().clearCache(); const b=await apiAdminListBranches(selectedCompany.id); setBranches(b||[]); await load(); } catch(e) { show(e.message,"err"); } finally { setSaving(false); } };
 
   // --- Fields ---
   const openNewField = () => { setFieldForm({name:"",lat:null,lng:null,address:"",hectares:"",comments:""}); setEditFieldId(null); setShowFieldForm(true); };
@@ -167,12 +172,14 @@ export default function AdminScreen({ user, onBack }) {
     setSaving(true);
     try {
       const data = {...fieldForm, hectares:fieldForm.hectares?Number(fieldForm.hectares):null};
-      if(editFieldId) { await apiAdminUpdateField(editFieldId, data); setSaving(false); setDoneMsg("Campo actualizado"); }
-      else { await apiAdminCreateField(selectedCompany.id, data); setSaving(false); setDoneMsg("Campo creado"); }
-      setShowFieldForm(false); const f=await apiAdminListFields(selectedCompany.id); setFields(f||[]);
-    } catch(e) { show(e.message,"err"); setSaving(false); }
+      if(editFieldId) { await apiAdminUpdateField(editFieldId, data); setDoneMsg("Campo actualizado"); }
+      else { await apiAdminCreateField(selectedCompany.id, data); setDoneMsg("Campo creado"); }
+      useCatalogStore.getState().clearCache();
+      setShowFieldForm(false); const f=await apiAdminListFields(selectedCompany.id); setFields(f||[]); await load();
+    } catch(e) { show(e.message,"err"); }
+    finally { setSaving(false); }
   };
-  const handleDeleteField = async (id) => { if(saving) return; setSaving(true); try { await apiAdminDeleteField(id); setSaving(false); setDoneMsg("Campo eliminado"); const f=await apiAdminListFields(selectedCompany.id); setFields(f||[]); } catch(e) { show(e.message,"err"); setSaving(false); } };
+  const handleDeleteField = async (id) => { if(saving) return; setSaving(true); try { await apiAdminDeleteField(id); setDoneMsg("Campo eliminado"); useCatalogStore.getState().clearCache(); const f=await apiAdminListFields(selectedCompany.id); setFields(f||[]); await load(); } catch(e) { show(e.message,"err"); } finally { setSaving(false); } };
 
   // --- Lots ---
   const expandField = async (fieldId) => {
@@ -188,13 +195,15 @@ export default function AdminScreen({ user, onBack }) {
     setSaving(true);
     try {
       const data = {...lotForm, hectares:lotForm.hectares?Number(lotForm.hectares):null};
-      if(editLotId) { await apiAdminUpdateLot(editLotId, data); setSaving(false); setDoneMsg("Lote actualizado"); }
-      else { await apiAdminCreateLot(expandedFieldId, data); setSaving(false); setDoneMsg("Lote creado"); }
+      if(editLotId) { await apiAdminUpdateLot(editLotId, data); setDoneMsg("Lote actualizado"); }
+      else { await apiAdminCreateLot(expandedFieldId, data); setDoneMsg("Lote creado"); }
+      useCatalogStore.getState().clearCache();
       setShowLotForm(false); const l=await apiAdminListLots(expandedFieldId); setLots(l||[]);
       const f=await apiAdminListFields(selectedCompany.id); setFields(f||[]);
-    } catch(e) { show(e.message,"err"); setSaving(false); }
+    } catch(e) { show(e.message,"err"); }
+    finally { setSaving(false); }
   };
-  const handleDeleteLot = async (id) => { if(saving) return; setSaving(true); try { await apiAdminDeleteLot(id); setSaving(false); setDoneMsg("Lote eliminado"); const l=await apiAdminListLots(expandedFieldId); setLots(l||[]); } catch(e) { show(e.message,"err"); setSaving(false); } };
+  const handleDeleteLot = async (id) => { if(saving) return; setSaving(true); try { await apiAdminDeleteLot(id); setDoneMsg("Lote eliminado"); useCatalogStore.getState().clearCache(); const l=await apiAdminListLots(expandedFieldId); setLots(l||[]); } catch(e) { show(e.message,"err"); } finally { setSaving(false); } };
 
   // --- Trucks ---
   const openNewTruck = () => { setTruckForm({plate:"",brand:"",model:"",capacity:""}); setEditTruckId(null); setShowTruckForm(true); };
@@ -203,12 +212,14 @@ export default function AdminScreen({ user, onBack }) {
     if(!truckForm.plate.trim()) return show("Patente requerida","err");
     setSaving(true);
     try {
-      if(editTruckId) { await apiAdminUpdateTruck(editTruckId, truckForm); setSaving(false); setDoneMsg("Vehículo actualizado"); }
-      else { await apiAdminCreateTruck(selectedCompany.id, truckForm); setSaving(false); setDoneMsg("Vehículo creado"); }
-      setShowTruckForm(false); const t=await apiAdminListTrucks(selectedCompany.id); setTrucks(t||[]);
-    } catch(e) { show(e.message,"err"); setSaving(false); }
+      if(editTruckId) { await apiAdminUpdateTruck(editTruckId, truckForm); setDoneMsg("Vehículo actualizado"); }
+      else { await apiAdminCreateTruck(selectedCompany.id, truckForm); setDoneMsg("Vehículo creado"); }
+      useCatalogStore.getState().clearCache();
+      setShowTruckForm(false); const t=await apiAdminListTrucks(selectedCompany.id); setTrucks(t||[]); await load();
+    } catch(e) { show(e.message,"err"); }
+    finally { setSaving(false); }
   };
-  const handleDeleteTruck = async (id) => { if(saving) return; setSaving(true); try { await apiAdminDeleteTruck(id); setSaving(false); setDoneMsg("Vehículo eliminado"); const t=await apiAdminListTrucks(selectedCompany.id); setTrucks(t||[]); } catch(e) { show(e.message,"err"); setSaving(false); } };
+  const handleDeleteTruck = async (id) => { if(saving) return; setSaving(true); try { await apiAdminDeleteTruck(id); setDoneMsg("Vehículo eliminado"); useCatalogStore.getState().clearCache(); const t=await apiAdminListTrucks(selectedCompany.id); setTrucks(t||[]); await load(); } catch(e) { show(e.message,"err"); } finally { setSaving(false); } };
 
   // --- Users with companyByType + roleByType ---
   const toggleFormUserType = (t) => setUserForm(p=>({...p,userTypes:p.userTypes.includes(t)?p.userTypes.filter(x=>x!==t):[...p.userTypes,t]}));
@@ -245,8 +256,9 @@ export default function AdminScreen({ user, onBack }) {
     const firstCompanyId = Object.values(cbt).find(v=>v) || undefined;
     const firstRole = Object.values(rbt).find(v=>v) || "operator";
     const {_selectedCompanyId, ...payload} = userForm;
-    try { await apiAdminCreateUser({...payload, companyId:firstCompanyId, role:firstRole, companyByType:cbt, roleByType:rbt}); setSaving(false); setDoneMsg("Usuario creado"); setView("list"); load(); }
-    catch(e) { show(e.message,"err"); setSaving(false); }
+    try { await apiAdminCreateUser({...payload, companyId:firstCompanyId, role:firstRole, companyByType:cbt, roleByType:rbt}); setDoneMsg("Usuario creado"); useCatalogStore.getState().clearCache(); setView("list"); await load(); }
+    catch(e) { show(e.message,"err"); }
+    finally { setSaving(false); }
   };
 
   const getEditChanges = () => {
@@ -269,8 +281,9 @@ export default function AdminScreen({ user, onBack }) {
     if(changes.active) payload.active = editUserData.active;
     try {
       await apiAdminUpdateUser(editUserData.id, payload);
-      setSaving(false); setDoneMsg("Cambios guardados"); setOriginalUserData({...editUserData}); setView("list"); load();
-    } catch(e) { show(e.message,"err"); setSaving(false); }
+      setDoneMsg("Cambios guardados"); useCatalogStore.getState().clearCache(); setOriginalUserData({...editUserData}); setView("list"); await load();
+    } catch(e) { show(e.message,"err"); }
+    finally { setSaving(false); }
   };
 
   const handleEditUserBack = () => {

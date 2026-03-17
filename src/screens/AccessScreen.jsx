@@ -96,15 +96,17 @@ export default function AccessScreen({ user, onBack, embedded, defaultCompanyId,
       useCatalogStore.getState().clearCache();
       setSearchQ(""); setSelectedProducer(null); setSelectedCompany(null); setSearchResults([]); setShowGrant(false); setEditingAccess(null);
       setSelectedPlantIds([]);
-      setSaving(false); setDoneMsg(editingAccess ? "Habilitación actualizada" : selectedCompany ? "Empresa habilitada" : grantType==="producer"?"Productor habilitado":"Transportista habilitado"); load();
-    } catch (e) { setMsg({ t: e.message, k: "err" }); setSaving(false); }
+      setDoneMsg(editingAccess ? "Habilitación actualizada" : selectedCompany ? "Empresa habilitada" : grantType==="producer"?"Productor habilitado":"Transportista habilitado"); await load();
+    } catch (e) { setMsg({ t: e.message, k: "err" }); }
+    finally { setSaving(false); }
   };
 
   const handleRevoke = async (accessId) => {
     if(saving) return;
     setSaving(true);
-    try { await apiRevokeAccess(accessId); useCatalogStore.getState().clearCache(); setSaving(false); setRevokeClosing("Acceso revocado"); load(); }
-    catch (e) { setMsg({ t: e.message, k: "err" }); setSaving(false); }
+    try { await apiRevokeAccess(accessId); useCatalogStore.getState().clearCache(); setRevokeClosing("Acceso revocado"); await load(); }
+    catch (e) { setMsg({ t: e.message, k: "err" }); }
+    finally { setSaving(false); }
   };
 
   const startEdit = (p) => {

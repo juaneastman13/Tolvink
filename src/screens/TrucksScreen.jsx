@@ -32,16 +32,18 @@ export default function TrucksScreen({ onBack, embedded, user }) {
     setSaving(true);
     try {
       await apiCreateTruck({ plate: plate.trim().toUpperCase(), model: model.trim() || undefined });
-      setPlate(""); setModel(""); setShowForm(false); setSaving(false); setDoneMsg("Camión registrado");
-      loadTrucks();
-    } catch (e) { setMsg({ t: e.message, k: "err" }); setSaving(false); }
+      setPlate(""); setModel(""); setShowForm(false); setDoneMsg("Camión registrado");
+      await loadTrucks();
+    } catch (e) { setMsg({ t: e.message, k: "err" }); }
+    finally { setSaving(false); }
   };
 
   const handleDeactivateTruck = async (id) => {
     if(saving||doneMsg) return;
     setSaving(true);
-    try { await apiDeactivateTruck(id); setSaving(false); setDoneMsg("Camión eliminado"); loadTrucks(); }
-    catch (e) { setMsg({ t: e.message, k: "err" }); setSaving(false); }
+    try { await apiDeactivateTruck(id); setDoneMsg("Camión eliminado"); await loadTrucks(); }
+    catch (e) { setMsg({ t: e.message, k: "err" }); }
+    finally { setSaving(false); }
   };
 
   const handleCreateDriver = async () => {
@@ -49,16 +51,18 @@ export default function TrucksScreen({ onBack, embedded, user }) {
     setSaving(true);
     try {
       await apiCreateDriver({ name: dName.trim(), phone: dPhone.trim() || undefined });
-      setDName(""); setDPhone(""); setShowForm(false); setSaving(false); setDoneMsg("Chofer registrado");
-      loadDrivers();
-    } catch (e) { setMsg({ t: e.message, k: "err" }); setSaving(false); }
+      setDName(""); setDPhone(""); setShowForm(false); setDoneMsg("Chofer registrado");
+      await loadDrivers();
+    } catch (e) { setMsg({ t: e.message, k: "err" }); }
+    finally { setSaving(false); }
   };
 
   const handleDeactivateDriver = async (id) => {
     if(saving||doneMsg) return;
     setSaving(true);
-    try { await apiDeactivateDriver(id); setSaving(false); setDoneMsg("Chofer eliminado"); loadDrivers(); }
-    catch (e) { setMsg({ t: e.message, k: "err" }); setSaving(false); }
+    try { await apiDeactivateDriver(id); setDoneMsg("Chofer eliminado"); await loadDrivers(); }
+    catch (e) { setMsg({ t: e.message, k: "err" }); }
+    finally { setSaving(false); }
   };
 
   const switchTab = (t) => { setTab(t); setShowForm(false); setMsg(null); setLoading(true); };
