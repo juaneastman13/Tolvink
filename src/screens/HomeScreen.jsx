@@ -191,7 +191,7 @@ export default memo(function HomeScreen({ user, freights, loading, perms, onNav,
   // Third-party sub-groups — freights without pending actions, grouped by what's being waited on
   const thirdPartyGroups = useMemo(() => {
     const allItems = filteredFreights
-      .filter(f => !pendingMap.get(f.id) && matchDate(f.loadDate))
+      .filter(f => !pendingMap.get(f.id) && matchDate(f.loadDate) && f.status !== 'finished' && f.status !== 'canceled')
       .sort((a, b) => (a.destName||'').localeCompare(b.destName||'') || (a.originName||'').localeCompare(b.originName||''));
     if (!allItems.length) return [];
     const grouped = new Map();
