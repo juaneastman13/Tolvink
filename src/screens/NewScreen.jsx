@@ -371,7 +371,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
       }
     }
     if(selectedBranch) {
-      payload.customDestName = selectedBranch.name;
+      payload.customDestName = (selectedPlant?.name||"") + " — " + selectedBranch.name;
       payload.customDestLat = selectedBranch.lat ? parseFloat(selectedBranch.lat) : undefined;
       payload.customDestLng = selectedBranch.lng ? parseFloat(selectedBranch.lng) : undefined;
     }
