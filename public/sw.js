@@ -1,6 +1,6 @@
 // =====================================================================
-// TOLVINK — Service Worker v5.4
-// Cache-first shell, stale-while-revalidate API, navigation preload
+// TOLVINK — Service Worker v5.5
+// Cache-first shell, network-first API, navigation preload
 // =====================================================================
 
 const CACHE_NAME = 'tolvink-v5.5';
@@ -113,7 +113,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // --- API calls: stale-while-revalidate ---
+  // --- API calls: network-first (fresh data when online, cached fallback when offline) ---
   const isApiCall = (url.origin === API_ORIGIN && url.pathname.startsWith('/api/'))
     || (url.origin === location.origin && url.pathname.startsWith('/api/'));
 
@@ -122,35 +122,25 @@ self.addEventListener('fetch', (event) => {
     if (!isCacheable) return; // Non-cacheable API → let browser handle
 
     event.respondWith(
-      caches.open(API_CACHE).then(async (cache) => {
-        const cached = await cache.match(request);
-
-        const networkFetch = fetch(request).then((r) => {
+      (async () => {
+        const cache = await caches.open(API_CACHE);
+        try {
+          const r = await fetch(request);
           if (r.ok) {
             cache.put(request, r.clone());
             trimCache(API_CACHE, API_CACHE_MAX).catch(() => {});
           }
           return r;
-        }).catch(() => {
-          // Offline fallback
+        } catch {
+          // Offline: fall back to cached response
+          const cached = await cache.match(request);
           if (cached) return cached;
           return new Response(
             JSON.stringify({ error: 'offline', message: 'Sin conexión' }),
             { headers: { 'Content-Type': 'application/json' }, status: 503 }
           );
-        });
-
-        // Stale-while-revalidate: serve cached instantly, update in background.
-        // Cache is keyed by full URL (includes query params) — safe for multi-tenant
-        // because auth cookies determine the response content from the server, and
-        // the app clears this cache on logout (caches.delete('tolvink-api-v2')).
-        if (cached) {
-          // Fire network update in background (don't await)
-          event.waitUntil(networkFetch.catch(() => {}));
-          return cached;
         }
-        return networkFetch;
-      })
+      })()
     );
     return;
   }
