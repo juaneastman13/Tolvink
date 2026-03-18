@@ -14,8 +14,8 @@ export default function CompanyHeaderPicker({ user, onSwitch }) {
   useEffect(()=>{
     if(!open) return;
     const h = e => { if(ref.current && !ref.current.contains(e.target)) setOpen(false); };
-    document.addEventListener("mousedown",h);
-    return ()=>document.removeEventListener("mousedown",h);
+    const tid = setTimeout(() => document.addEventListener("mousedown",h), 0);
+    return () => { clearTimeout(tid); document.removeEventListener("mousedown",h); };
   },[open]);
 
   const now = new Date();

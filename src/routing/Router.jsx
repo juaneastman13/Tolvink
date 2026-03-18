@@ -70,9 +70,8 @@ export function MobileSearch({ query, onChange, results, onSelect }) {
   useEffect(() => {
     if (!open) return;
     const h = e => { if (ref.current && !ref.current.contains(e.target)) { setOpen(false); onChange(""); } };
-    document.addEventListener("mousedown", h);
-    document.addEventListener("touchstart", h, { passive: true });
-    return () => { document.removeEventListener("mousedown", h); document.removeEventListener("touchstart", h); };
+    const tid = setTimeout(() => { document.addEventListener("mousedown", h); document.addEventListener("touchstart", h, { passive: true }); }, 0);
+    return () => { clearTimeout(tid); document.removeEventListener("mousedown", h); document.removeEventListener("touchstart", h); };
   }, [open, onChange]);
   if (!open) return <button onClick={() => setOpen(true)} style={{ display:"flex", alignItems:"center", justifyContent:"center", width:34, height:34, borderRadius:8, border:`1px solid ${C.b1}`, background:C.w, cursor:"pointer", flexShrink:0 }} aria-label="Buscar">{Ic.srch(C.t3,16)}</button>;
   return (

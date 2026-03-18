@@ -60,9 +60,8 @@ export function Select({ label, icon, value, onChange, options, placeholder="Sel
   useEffect(()=>{
     if(!open) return;
     const h = e => { if(ref.current && !ref.current.contains(e.target)) setOpen(false); };
-    document.addEventListener("mousedown", h);
-    document.addEventListener("touchstart", h, { passive:true });
-    return () => { document.removeEventListener("mousedown", h); document.removeEventListener("touchstart", h); };
+    const tid = setTimeout(() => { document.addEventListener("mousedown", h); document.addEventListener("touchstart", h, { passive:true }); }, 0);
+    return () => { clearTimeout(tid); document.removeEventListener("mousedown", h); document.removeEventListener("touchstart", h); };
   },[open]);
   useEffect(()=>{
     if(open && listRef.current && value) {

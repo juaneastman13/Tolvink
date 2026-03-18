@@ -19,8 +19,8 @@ export function Sidebar({ active, onChange, unread=0, pendingCount=0, notifCount
   useEffect(() => {
     if (!compOpen) return;
     const h = e => { if (compRef.current && !compRef.current.contains(e.target)) setCompOpen(false); };
-    document.addEventListener("mousedown", h);
-    return () => document.removeEventListener("mousedown", h);
+    const tid = setTimeout(() => document.addEventListener("mousedown", h), 0);
+    return () => { clearTimeout(tid); document.removeEventListener("mousedown", h); };
   }, [compOpen]);
   const allItems = [
     { k:"home",    ic:a=>Ic.home(a?C.pri:C.t3,20),  l:"Inicio" },
@@ -285,9 +285,9 @@ export function NotificationsPanel({ open, onClose, notifications=[], onMarkRead
     if (!open) return;
     const handleClick = (e) => { if (panelRef.current && !panelRef.current.contains(e.target)) onClose(); };
     const handleKey = (e) => { if (e.key === "Escape") onClose(); };
-    const tid = requestAnimationFrame(() => document.addEventListener("click", handleClick));
+    const tid = setTimeout(() => document.addEventListener("click", handleClick), 0);
     window.addEventListener("keydown", handleKey);
-    return () => { cancelAnimationFrame(tid); document.removeEventListener("click", handleClick); window.removeEventListener("keydown", handleKey); };
+    return () => { clearTimeout(tid); document.removeEventListener("click", handleClick); window.removeEventListener("keydown", handleKey); };
   }, [open, onClose]);
 
   const { unread, read } = useMemo(() => {
