@@ -137,17 +137,14 @@ export const FreightCardCompact = memo(function FreightCardCompact({ freight: f,
       <div style={{ width: 20, background: sc.ribbon, flexShrink: 0 }} />
       {/* Content */}
       <div style={{ padding: "8px 12px", flex: 1, minWidth: 0 }}>
-        {/* Row 1: code + title | pill */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-          <div style={{ display: "flex", alignItems: "baseline", minWidth: 0, overflow: "hidden" }}>
-            <span style={{ fontSize: 11, color: C.t2, fontFamily: MONO, marginRight: 6, flexShrink: 0 }}>{f.code}</span>
-            <span style={{ fontSize: 13, fontWeight: 500, color: C.t1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{title}</span>
-          </div>
-          <div style={{ marginLeft: 6, flexShrink: 0 }}>
-            <StatusPill status={f.status} small />
-          </div>
+        {/* Row 1: code | pill */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 2 }}>
+          <span style={{ fontSize: 11, color: C.t2, fontFamily: MONO }}>{f.code}</span>
+          <StatusPill status={f.status} small />
         </div>
-        {/* Row 2: route + date */}
+        {/* Row 2: title */}
+        <div style={{ fontSize: 13, fontWeight: 500, color: C.t1, marginBottom: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{title}</div>
+        {/* Row 3: route + date */}
         <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
           {Ic.pin("#888", 11)}
           <span style={{ fontSize: 11, color: C.t2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{shortOrigin}</span>
