@@ -40,7 +40,7 @@ export function getActions(status, userType, role, isOwnFleet) {
 // Trip-level status (multi-truck v6.0)
 export const TRIP_STATUS_CFG = {
   pending:     { label:"Sin camión",       color:"#FF6A00", bg:"#FFF3E0" },
-  accepted:    { label:"Asignado",         color:"#2196F3", bg:"#E3F2FD" },
+  accepted:    { label:"Asignado",         color:"#0891B2", bg:"#ECFEFF" },
   in_progress: { label:"A campo",          color:"#43A047", bg:"#E8F5E9" },
   loaded:      { label:"A planta",         color:"#1A6B37", bg:"#E0F2E5" },
   finished:    { label:"Finalizado",       color:"#9E9E9E", bg:"#F5F5F5" },

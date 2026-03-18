@@ -669,7 +669,7 @@ const _STATUS_COLOR = s => {
   if (s === "pending_assignment") return "#FF6A00";
   if (s === "in_progress") return "#43A047";
   if (s === "loaded") return "#1A6B37";
-  if (["assigned","accepted"].includes(s)) return "#2196F3";
+  if (["assigned","accepted"].includes(s)) return "#0891B2";
   if (s === "finished") return "#9E9E9E";
   if (s === "canceled") return "#E53935";
   return "#999";

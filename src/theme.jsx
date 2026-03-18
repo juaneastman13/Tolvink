@@ -46,8 +46,8 @@ export const MONO = `'JetBrains Mono','IBM Plex Mono','SF Mono',monospace`;
 export const STATUS_COLORS = {
   draft:              { ribbon:'#71717A', pillBg:'#F4F4F5', pillText:'#71717A', label:'Borrador',   pulse:false },
   pending_assignment: { ribbon:'#FF6A00', pillBg:'#FFF3E0', pillText:'#E65100', label:'Pendiente',  pulse:false },
-  assigned:           { ribbon:'#2196F3', pillBg:'#E3F2FD', pillText:'#1565C0', label:'Asignado',   pulse:false },
-  accepted:           { ribbon:'#2196F3', pillBg:'#E3F2FD', pillText:'#1565C0', label:'Asignado',   pulse:false },
+  assigned:           { ribbon:'#0891B2', pillBg:'#ECFEFF', pillText:'#0E7490', label:'Asignado',   pulse:false },
+  accepted:           { ribbon:'#0891B2', pillBg:'#ECFEFF', pillText:'#0E7490', label:'Asignado',   pulse:false },
   in_progress:        { ribbon:'#43A047', pillBg:'#E8F5E9', pillText:'#2E7D32', label:'A campo',    pulse:true  },
   loaded:             { ribbon:'#1A6B37', pillBg:'#E0F2E5', pillText:'#1A6B37', label:'A planta',   pulse:true  },
   finished:           { ribbon:'#9E9E9E', pillBg:'#F5F5F5', pillText:'#616161', label:'Finalizado', pulse:false },

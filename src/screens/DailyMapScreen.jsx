@@ -16,8 +16,8 @@ const COLORS = {
 
 const STATUS_CFG = {
   pending_assignment: { label: "Sin asignar", color: "#FF6A00" },
-  assigned: { label: "Asignado", color: "#2196F3" },
-  accepted: { label: "Asignado", color: "#2196F3" },
+  assigned: { label: "Asignado", color: "#0891B2" },
+  accepted: { label: "Asignado", color: "#0891B2" },
   in_progress: { label: "A campo", color: "#43A047" },
   loaded: { label: "A planta", color: "#1A6B37" },
   finished: { label: "Finalizado", color: "#9E9E9E" },

@@ -18,8 +18,8 @@ const STATUS_LABELS = {
   finished:'Finalizado', canceled:'Cancelado',
 };
 const STATUS_COLORS = {
-  draft:'#71717A', pending_assignment:'#FF6A00', assigned:'#2196F3',
-  accepted:'#2196F3', in_progress:'#43A047', loaded:'#1A6B37',
+  draft:'#71717A', pending_assignment:'#FF6A00', assigned:'#0891B2',
+  accepted:'#0891B2', in_progress:'#43A047', loaded:'#1A6B37',
   finished:'#9E9E9E', canceled:'#E53935',
 };
 

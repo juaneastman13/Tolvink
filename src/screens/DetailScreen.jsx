@@ -569,30 +569,17 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
               <div key={a.id} style={{ display:"flex", borderRadius:6, border:`0.5px solid ${C.b1}`, overflow:"hidden", background:C.w, marginBottom:8 }}>
                 <div style={{ width:20, background:tst.color, flexShrink:0 }} />
                 <div style={{ padding:"8px 10px", flex:1, minWidth:0 }}>
-                  {/* Line 1: #N plate · model | pill | edit */}
-                  <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:3 }}>
+                  {/* Single line: #N plate - empresa - chofer | pill | edit */}
+                  <div style={{ display:"flex", alignItems:"center", gap:6 }}>
                     {isMultiTruck && <span style={{ fontSize:12, fontWeight:500, color:C.t2, marginRight:2 }}>#{a.tripNumber}</span>}
-                    <span style={{ fontFamily:MONO, fontSize:14, fontWeight:500, color:C.t1 }}>{hasTruck ? a.plate : "Sin camión asignado"}</span>
-                    {hasTruck && a.truckModel && <span style={{ fontSize:12, color:C.t2 }}>· {a.truckModel}</span>}
+                    <span style={{ fontFamily:MONO, fontSize:14, fontWeight:500, color:C.t1 }}>{hasTruck ? a.plate : "Sin camión"}</span>
+                    <span style={{ fontSize:12, color:C.t2 }}>- {a.transporterName || "Sin empresa"}</span>
+                    <span style={{ fontSize:12, color:C.t2 }}>- {a.driverName || "Sin chofer"}</span>
                     <span style={{ flex:1 }} />
                     <span style={{ display:"inline-flex", alignItems:"center", gap:4, fontSize:11, fontWeight:500, color:tst.color, background:tst.bg, padding:"2px 8px", borderRadius:20, flexShrink:0 }}>{tst.label}</span>
                     {canEditA && onEditTrip && (
                       <button onClick={()=>onEditTrip(freight.id, a)} aria-label="Editar asignación" style={{ width:28, height:28, borderRadius:6, display:"flex", alignItems:"center", justifyContent:"center", background:"transparent", border:"none", cursor:"pointer", flexShrink:0 }}>{Ic.edit(C.t3,14)}</button>
                     )}
-                  </div>
-                  {/* Line 2: driver */}
-                  <div style={{ display:"flex", alignItems:"center", gap:5, marginBottom:3 }}>
-                    {Ic.user(C.t2,13)}
-                    {a.driverName
-                      ? <span style={{ fontSize:12, color:C.t1 }}>{a.driverName}{a.driverPhone ? <span style={{ fontSize:11, color:C.t2 }}> · {a.driverPhone}</span> : ""}</span>
-                      : <span style={{ fontSize:12, color:C.t3 }}>Sin chofer asignado</span>}
-                  </div>
-                  {/* Line 3: transporter · tons | date */}
-                  <div style={{ display:"flex", alignItems:"center", gap:5 }}>
-                    {Ic.truck(C.t2,13)}
-                    <span style={{ fontSize:12, color:C.t2 }}>{a.transporterName || "Sin transportista"}</span>
-                    {a.tons && <span style={{ fontSize:12, color:C.t2 }}>· {a.tons} tn</span>}
-                    {a.assignedAt && <span style={{ marginLeft:"auto", fontSize:11, color:C.t2, flexShrink:0 }}>{new Date(a.assignedAt).toLocaleDateString("es-UY",{day:"2-digit",month:"short"})}</span>}
                   </div>
                   {/* Confirmation status (in_progress/loaded) */}
                   {(a.tripStatus === "in_progress" || a.tripStatus === "loaded") && (
@@ -977,26 +964,14 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
               return <div key={a.id} style={{ display:"flex", borderRadius:6, border:`0.5px solid ${C.b1}`, overflow:"hidden", background:C.w, marginBottom:10 }}>
                 <div style={{ width:20, background:tst.color, flexShrink:0 }} />
                 <div style={{ padding:"10px 12px", flex:1, minWidth:0 }}>
-                  {/* Line 1 */}
-                  <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:4 }}>
+                  {/* Single line: #N plate - empresa - chofer | pill */}
+                  <div style={{ display:"flex", alignItems:"center", gap:6 }}>
                     {isMultiTruck && <span style={{ fontSize:13, fontWeight:500, color:C.t2 }}>#{a.tripNumber}</span>}
-                    <span style={{ fontFamily:MONO, fontSize:15, fontWeight:500, color:C.t1 }}>{hasTruck ? a.plate : "Sin camión asignado"}</span>
-                    {hasTruck && a.truckModel && <span style={{ fontSize:13, color:C.t2 }}>· {a.truckModel}</span>}
+                    <span style={{ fontFamily:MONO, fontSize:15, fontWeight:500, color:C.t1 }}>{hasTruck ? a.plate : "Sin camión"}</span>
+                    <span style={{ fontSize:13, color:C.t2 }}>- {a.transporterName || "Sin empresa"}</span>
+                    <span style={{ fontSize:13, color:C.t2 }}>- {a.driverName || "Sin chofer"}</span>
                     <span style={{ flex:1 }} />
                     <span style={{ display:"inline-flex", alignItems:"center", gap:4, fontSize:11, fontWeight:500, color:tst.color, background:tst.bg, padding:"2px 8px", borderRadius:20 }}>{tst.label}</span>
-                  </div>
-                  {/* Line 2: driver */}
-                  <div style={{ display:"flex", alignItems:"center", gap:5, marginBottom:3 }}>
-                    {Ic.user(C.t2,13)}
-                    {a.driverName
-                      ? <span style={{ fontSize:13, color:C.t1 }}>{a.driverName}{a.driverPhone ? <span style={{ fontSize:12, color:C.t2 }}> · {a.driverPhone}</span> : ""}</span>
-                      : <span style={{ fontSize:13, color:C.t3 }}>Sin chofer asignado</span>}
-                  </div>
-                  {/* Line 3: transporter · tons */}
-                  <div style={{ display:"flex", alignItems:"center", gap:5 }}>
-                    {Ic.truck(C.t2,13)}
-                    <span style={{ fontSize:13, color:C.t2 }}>{a.transporterName || "Sin transportista"}</span>
-                    {a.tons && <span style={{ fontSize:13, color:C.t2 }}>· {a.tons} tn</span>}
                   </div>
                   {/* Confirmation status */}
                   {(a.tripStatus === "in_progress" || a.tripStatus === "loaded") && (
