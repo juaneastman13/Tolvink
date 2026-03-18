@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
-import { C, Ic, MONO } from "../theme";
+import { C, Ic, MONO, STATUS_COLORS } from "../theme";
 import { stCfg, formatFreightDate } from "../constants";
-import { Bd, Btn } from "../components";
+import { Bd, Btn, FreightCardCompact, CalendarChip } from "../components";
 import { originDisplay, destDisplay } from "../hooks";
 import { resolveUserTypeForFreight } from "../utils/freight-helpers";
 import DetailScreen from "./DetailScreen";
@@ -70,26 +70,9 @@ export default function CalendarScreen({ freights, perms, onNav, isDesktop, user
       </div>
       <div style={{display:"flex",flexDirection:"column",gap:10}}>
         {selFreights.length===0&&<div style={{textAlign:"center",padding:30,color:C.t3,fontSize:13.2,background:C.w,borderRadius:10,border:`1px solid ${C.b1}`}}>Sin fletes programados este día</div>}
-        {selFreights.map(f=>{
-          const st=stCfg(f.status);
-          const origin = originDisplay(f) || f.originCompanyName || "";
-          return <div key={f.id} className="tv-card" onClick={()=>{setSelectedId(f.id);onRefresh(f.id);}} style={{background:C.w,border:`1px solid ${C.b1}`,borderLeft:`4px solid ${st.border}`,borderRadius:10,cursor:"pointer",boxShadow:C.sh,overflow:"hidden",padding:"10px 14px"}}>
-            <div style={{fontSize:14.3,fontWeight:700,color:C.t1,marginBottom:2}}>{f.grain==="Otros"?f.productTypeOther||"Otros":f.grain} · {f.tons} {f.unit||"tn"}</div>
-            <div style={{display:"flex",alignItems:"center",gap:5,fontSize:12.5,color:C.t2,marginBottom:8,overflow:"hidden",whiteSpace:"nowrap",textOverflow:"ellipsis"}}>
-              <span style={{display:"flex",alignItems:"center",gap:3,overflow:"hidden",whiteSpace:"nowrap",textOverflow:"ellipsis",flexShrink:1,minWidth:0}}>{Ic.pin(C.t3,11)} <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{origin||"Sin origen"}</span></span>
-              <span style={{color:C.t3,flexShrink:0}}>→</span>
-              <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{destDisplay(f)||"Sin destino"}</span>
-            </div>
-            <div style={{borderTop:`1px solid ${C.b1}`,paddingTop:8,display:"flex",flexDirection:"column",gap:3,fontSize:12.1,color:C.t3}}>
-              {f.loadDate&&<div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.cal(C.t3,10)} {formatFreightDate(f.loadDate)}{f.loadTime?.trim()?` · ${f.loadTime}`:""}</div>}
-              <div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.truck(C.t3,11)} <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",color:C.t2}}>{f.transporterName||"Sin asignar"}{f.truckPlate?` (${f.truckPlate})`:""}</span>{f.isOwnFleet&&<span style={{fontSize:10,color:C.acc,fontWeight:600,marginLeft:4,flexShrink:0}}>Flota propia</span>}{f.isMultiTruck&&<span style={{fontSize:10,color:C.info,fontWeight:600,marginLeft:4,flexShrink:0}}>{f.assignedTruckCount}/{f.truckCount} cam.</span>}</div>
-              <div style={{display:"flex",alignItems:"center",gap:6,marginTop:2}}>
-                <span style={{fontSize:11,fontWeight:600,fontFamily:MONO,color:C.t3}}>{f.code}</span>
-                <Bd color={st.color} bg={st.bg} small>{st.label}</Bd>
-              </div>
-            </div>
-          </div>;
-        })}
+        {selFreights.map(f=>
+          <FreightCardCompact key={f.id} freight={f} onClick={()=>{setSelectedId(f.id);onRefresh(f.id);}} showTime />
+        )}
       </div>
     </div>
   ) : isDesktop ? (
@@ -148,16 +131,21 @@ export default function CalendarScreen({ freights, perms, onNav, isDesktop, user
                 const cnt=mo.byDay[d]?.length||0;
                 const sel=calSelDay===d&&calSelMonth===mi;
                 const td=d===today.getDate()&&isTodayMonth;
-                const statuses=mo.byDay[d]?.map(f=>stCfg(f.status).color)||[];
-                const hasPending=mo.byDay[d]?.some(f=>f.status==="pending_assignment");
+                const dayFreights=mo.byDay[d]||[];
+                const hasPending=dayFreights.some(f=>f.status==="pending_assignment");
                 const densityAlpha=cnt===0?0:Math.min(0.15,0.04*cnt);
                 const densityBg=sel?C.pri:td?C.priPale:cnt>0?`rgba(26,107,55,${densityAlpha})`:"transparent";
-                return <div key={d} role="button" tabIndex={0} aria-label={`${d} de ${monNames[mo.m]}, ${cnt} flete${cnt!==1?"s":""}`} onClick={()=>{setCalSelDay(sel?null:d);setCalSelMonth(sel?null:mi);setSelectedId(null);}} onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();setCalSelDay(sel?null:d);setCalSelMonth(sel?null:mi);setSelectedId(null);}}} style={{padding:monthsToShow===1?"8px 4px":"4px 2px",borderRadius:monthsToShow===1?10:6,cursor:"pointer",background:densityBg,transition:"all 0.15s",minHeight:monthsToShow===1?44:36,position:"relative"}}>
-                  <div style={{fontSize:monthsToShow===1?15.4:12.1,fontWeight:sel||td?700:400,color:sel?C.w:td?C.pri:C.t1}}>{d}</div>
-                  {hasPending&&!sel&&<div style={{position:"absolute",top:monthsToShow===1?4:2,right:monthsToShow===1?4:2,width:5,height:5,borderRadius:3,background:C.acc}}/>}
-                  {cnt>0&&<div style={{display:"flex",gap:1,justifyContent:"center",marginTop:2,flexWrap:"wrap"}}>
-                    {statuses.slice(0,monthsToShow===1?4:2).map((c,j)=><div key={j} style={{width:monthsToShow===1?6:4,height:monthsToShow===1?6:4,borderRadius:3,background:sel?C.w:c}}/>)}
-                    {cnt>(monthsToShow===1?4:2)&&<div style={{fontSize:7.7,color:sel?C.w:C.t3,lineHeight:1}}>+{cnt-(monthsToShow===1?4:2)}</div>}
+                const isSingle=monthsToShow===1;
+                return <div key={d} role="button" tabIndex={0} aria-label={`${d} de ${monNames[mo.m]}, ${cnt} flete${cnt!==1?"s":""}`} onClick={()=>{setCalSelDay(sel?null:d);setCalSelMonth(sel?null:mi);setSelectedId(null);}} onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();setCalSelDay(sel?null:d);setCalSelMonth(sel?null:mi);setSelectedId(null);}}} style={{padding:isSingle?"6px 3px":"4px 2px",borderRadius:isSingle?10:6,cursor:"pointer",background:densityBg,border:td&&!sel?`1.5px solid #1A6B37`:"1.5px solid transparent",transition:"all 0.15s",minHeight:isSingle?52:36,position:"relative"}}>
+                  <div style={{fontSize:isSingle?14:12.1,fontWeight:sel||td?700:400,color:sel?C.w:td?C.pri:C.t1}}>{d}</div>
+                  {hasPending&&!sel&&<div style={{position:"absolute",top:isSingle?4:2,right:isSingle?4:2,width:5,height:5,borderRadius:3,background:STATUS_COLORS.pending_assignment.ribbon}}/>}
+                  {cnt>0&&isSingle&&!sel&&<div style={{display:"flex",flexDirection:"column",gap:1,marginTop:2}}>
+                    {dayFreights.slice(0,2).map((f,j)=><CalendarChip key={j} freight={f}/>)}
+                    {cnt>2&&<div style={{fontSize:7.7,color:C.t3,textAlign:"center",lineHeight:1}}>+{cnt-2}</div>}
+                  </div>}
+                  {cnt>0&&(!isSingle||sel)&&<div style={{display:"flex",gap:1,justifyContent:"center",marginTop:2,flexWrap:"wrap"}}>
+                    {dayFreights.slice(0,isSingle?4:2).map((f,j)=><div key={j} style={{width:isSingle?6:4,height:isSingle?6:4,borderRadius:3,background:sel?C.w:(STATUS_COLORS[f.status]||STATUS_COLORS.pending_assignment).ribbon}}/>)}
+                    {cnt>(isSingle?4:2)&&<div style={{fontSize:7.7,color:sel?C.w:C.t3,lineHeight:1}}>+{cnt-(isSingle?4:2)}</div>}
                   </div>}
                 </div>;
               })}

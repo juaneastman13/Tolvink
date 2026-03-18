@@ -1,19 +1,20 @@
 import { useState, useEffect, useMemo, useRef, useCallback, lazy, Suspense, memo } from "react";
 import { useSearchParams } from "react-router-dom";
-import { C, Ic, FONT, MONO } from "../theme";
+import { C, Ic, FONT, MONO, STATUS_COLORS } from "../theme";
 import { stCfg, formatFreightDate } from "../constants";
-import { Bd, Btn, Select, SortTh, Tabs, exportExcel, SkeletonList, EmptyState, ErrorBoundary } from "../components";
+import { Bd, Btn, Select, SortTh, Tabs, exportExcel, SkeletonList, EmptyState, ErrorBoundary, FreightCard, FreightCardCompact } from "../components";
 import { useTableSort, usePullToRefresh, mapFreight, originDisplay, destDisplay } from "../hooks";
 import { getPendingActions, resolveUserTypeForFreight } from "../utils/freight-helpers";
 import { apiListFreights } from "../api";
 const FreightsOverviewMap = lazy(() => import("../maps").then(m => ({ default: m.FreightsOverviewMap })));
 
 const GROUPS = [
-  { key:"solicitado", label:"Pendiente", color:C.acc, icon:Ic.warn, statuses:["pending_assignment"] },
-  { key:"asignado", label:"Asignado", color:"#0891B2", icon:Ic.chk, statuses:["assigned","accepted"] },
-  { key:"en_curso", label:"En curso", color:C.sec, icon:Ic.nav, statuses:["in_progress","loaded"] },
-  { key:"finalizados", label:"Finalizados", color:C.pri, icon:Ic.chk, statuses:["finished"] },
-  { key:"cancelados", label:"Cancelados", color:C.err, icon:Ic.ban, statuses:["canceled"] },
+  { key:"solicitado", label:"Pendiente", color:STATUS_COLORS.pending_assignment.ribbon, icon:Ic.warn, statuses:["draft","pending_assignment"] },
+  { key:"asignado", label:"Asignado", color:STATUS_COLORS.assigned.ribbon, icon:Ic.chk, statuses:["assigned","accepted"] },
+  { key:"a_campo", label:"A campo", color:STATUS_COLORS.in_progress.ribbon, icon:Ic.nav, statuses:["in_progress"] },
+  { key:"a_planta", label:"A planta", color:STATUS_COLORS.loaded.ribbon, icon:Ic.truck, statuses:["loaded"] },
+  { key:"finalizados", label:"Finalizados", color:STATUS_COLORS.finished.ribbon, icon:Ic.chk, statuses:["finished"] },
+  { key:"cancelados", label:"Cancelados", color:STATUS_COLORS.canceled.ribbon, icon:Ic.ban, statuses:["canceled"] },
 ];
 
 // Entity grouping configs per user type
@@ -359,27 +360,8 @@ export default memo(function ListScreen({ freights, loading, onNav, onRefresh, c
 
   // Kanban card renderer (shared between status and entity grouping)
   const renderKanbanCard = (f) => {
-    const st = stCfg(f.status);
-    const origin = originDisplay(f);
-    const dest = destDisplay(f) || "Sin destino";
     return wrapHover(f,
-      <div key={f.id} onClick={()=>onNav("detail",f.id)} style={{ background:C.w, border:`1px solid ${C.b1}`, borderLeft:`4px solid ${st.color}`, borderRadius:12, padding:14, cursor:"pointer", boxShadow:C.sh, transition:"background 0.15s", contentVisibility:"auto", containIntrinsicSize:"0 120px" }}>
-        <div style={{fontSize:15.4,fontWeight:700,color:C.t1,marginBottom:2}}>{f.grain==="Otros"?f.productTypeOther||"Otros":f.grain} · {f.tons} {f.unit||"tn"}</div>
-        <div style={{display:"flex",alignItems:"center",gap:5,fontSize:12.5,color:C.t2,marginBottom:8,overflow:"hidden",whiteSpace:"nowrap",textOverflow:"ellipsis"}}>
-          <span style={{display:"flex",alignItems:"center",gap:3,overflow:"hidden",whiteSpace:"nowrap",textOverflow:"ellipsis",flexShrink:1,minWidth:0}}>{Ic.pin(C.t3,11)} <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{origin||"Sin origen"}</span></span>
-          <span style={{color:C.t3,flexShrink:0}}>→</span>
-          <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{dest}</span>
-        </div>
-        <div style={{borderTop:`1px solid ${C.b1}`,paddingTop:8,display:"flex",flexDirection:"column",gap:3,fontSize:12.1,color:C.t3}}>
-          {f.loadDate && <div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.cal(C.t3,10)} {formatFreightDate(f.loadDate)}{f.loadTime?` · ${f.loadTime}`:""}</div>}
-          <div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.truck(C.t3,11)} <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",color:C.t2}}>{f.transporterName||"Sin asignar"}{f.truckPlate?` (${f.truckPlate})`:""}</span>{f.isOwnFleet&&<span style={{fontSize:10,color:C.acc,fontWeight:600,marginLeft:4}}>Flota propia</span>}{f.isMultiTruck&&<span style={{fontSize:10,color:C.info,fontWeight:600,marginLeft:4}}>{f.assignedTruckCount}/{f.truckCount} cam.</span>}</div>
-          <div style={{display:"flex",alignItems:"center",gap:6,marginTop:2}}>
-            <span style={{fontSize:11,fontWeight:600,fontFamily:MONO,color:C.t3}}>{f.code}</span>
-            <Bd color={st.color} bg={st.bg} small>{st.label}</Bd>
-            {f.isOverdue && <span style={{ display:"inline-flex", alignItems:"center", justifyContent:"center", width:16, height:16, borderRadius:4, background:"#FEE2E2", flexShrink:0, fontSize:10, fontWeight:800, color:"#DC2626", lineHeight:1 }} title="Retrasado">R</span>}
-          </div>
-        </div>
-      </div>
+      <FreightCardCompact freight={f} onClick={()=>onNav("detail",f.id)} showTime style={{ contentVisibility:"auto", containIntrinsicSize:"0 80px" }} />
     );
   };
 
@@ -619,8 +601,8 @@ export default memo(function ListScreen({ freights, loading, onNav, onRefresh, c
           {GROUPS.map(group => {
             const items = grouped[group.key];
             return (
-              <div key={group.key} style={{ minWidth:220, flex:"1 1 0", background:C.bg, borderRadius:12, border:`1px solid ${C.b1}`, overflow:"hidden" }}>
-                <div style={{ padding:"10px 12px", borderBottom:`2px solid ${group.color}`, display:"flex", alignItems:"center", gap:6 }}>
+              <div key={group.key} style={{ minWidth:200, flex:"1 1 0", background:C.bg, borderRadius:12, border:`1px solid ${C.b1}`, overflow:"hidden", borderTop:`4px solid ${group.color}` }}>
+                <div style={{ padding:"10px 12px", display:"flex", alignItems:"center", gap:6 }}>
                   <span style={{ display:"flex", flexShrink:0 }}>{group.icon(group.color, 14)}</span>
                   <span style={{ fontSize:12.1, fontWeight:700, color:group.color }}>{group.label}</span>
                   <span style={{ fontSize:11, fontWeight:600, color:C.t3, marginLeft:"auto" }}>{groupRealCounts?.[group.key] ?? items.length}</span>

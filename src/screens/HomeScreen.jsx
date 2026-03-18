@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback, useRef, useEffect, memo } from "react";
-import { C, Ic, MONO } from "../theme";
+import { C, Ic, MONO, STATUS_COLORS } from "../theme";
 import { stCfg, getActions, formatFreightDate } from "../constants";
-import { Bd, Btn, SkeletonList, SkeletonCard, EmptyState, Tabs } from "../components";
+import { Bd, Btn, SkeletonList, SkeletonCard, EmptyState, Tabs, FreightCard, FreightCardCompact, ActiveTripCard } from "../components";
 import { useIsDesktop, mapFreight, originDisplay, destDisplay } from "../hooks";
 import { getPendingActions, resolveUserTypeForFreight, getThirdPartyLabel } from "../utils/freight-helpers";
 import { apiListFreights } from "../api";
@@ -309,49 +309,16 @@ export default memo(function HomeScreen({ user, freights, loading, perms, onNav,
 
   // ======================== RENDER HELPERS ========================
 
+  // Active trips (in_progress + loaded) for "Viajes en curso" section
+  const activeTrips = useMemo(() => filteredFreights.filter(f => f.status === "in_progress" || f.status === "loaded"), [filteredFreights]);
+
   // Render a freight card — compact when detail is open on desktop
   const renderCard = (f, pa, source) => {
-    const st = stCfg(f.status);
-    const isSel = selectedId === f.id;
     const compact = hasDetail && isDesktop;
     if (compact) {
-      // Mini card: just code + status color bar + product
-      const origin = originDisplay(f);
-      const dest = destDisplay(f) || "Sin destino";
-      return (
-        <div key={f.id} role="button" tabIndex={0} aria-label={`Flete ${f.code}`} onClick={() => selectFreight(f.id, source)} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();selectFreight(f.id, source);}}} style={{ background: isSel ? C.priPale : C.w, border: `1px solid ${isSel ? C.pri : C.b1}`, borderLeft: `4px solid ${st.color}`, borderRadius: 8, padding: "8px 10px", cursor: "pointer", transition: "background 0.15s" }}>
-          <div style={{ fontSize: 12.5, fontWeight: 700, color: C.t1 }}>{f.grain === "Otros" ? f.productTypeOther || "Otros" : f.grain} · {f.tons} {f.unit || "tn"}</div>
-          {origin && <div style={{ fontSize: 10.5, color: C.t2, marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 3 }}>{Ic.pin(C.t3,9)} {origin} → {dest}</div>}
-          <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 3 }}>
-            <span style={{ fontSize: 9.5, fontWeight: 600, fontFamily: MONO, color: C.t3 }}>{f.code}</span>
-            <Bd color={st.color} bg={st.bg} small>{st.label}</Bd>
-            {f.isOverdue && <span style={{ display:"inline-flex", alignItems:"center", justifyContent:"center", width:16, height:16, borderRadius:4, background:"#FEE2E2", flexShrink:0, fontSize:10, fontWeight:800, color:"#DC2626", lineHeight:1 }} title="Retrasado">R</span>}
-            {f.loadDate && <span style={{ fontSize: 10, color: C.t3 }}>{formatFreightDate(f.loadDate)}</span>}
-          </div>
-        </div>
-      );
+      return <FreightCardCompact key={f.id} freight={f} onClick={() => selectFreight(f.id, source)} showTime />;
     }
-    const origin = originDisplay(f);
-    const dest = destDisplay(f) || "Sin destino";
-    return (
-      <div key={f.id} role="button" tabIndex={0} aria-label={`Flete ${f.code}`} onClick={() => selectFreight(f.id, source)} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();selectFreight(f.id, source);}}} style={{ background: C.w, border: `1px solid ${C.b1}`, borderLeft: `4px solid ${st.color}`, borderRadius: 10, boxShadow: C.sh, cursor: "pointer", overflow: "hidden", transition: "background 0.15s, border-color 0.15s", padding: "10px 14px" }}>
-        <div style={{ fontSize: 14.3, fontWeight: 700, color: C.t1, marginBottom: 2 }}>{f.grain === "Otros" ? f.productTypeOther || "Otros" : f.grain} · {f.tons} {f.unit || "tn"}</div>
-        <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12.5, color: C.t2, marginBottom: 8, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>
-          <span style={{display:"flex",alignItems:"center",gap:3,overflow:"hidden",whiteSpace:"nowrap",textOverflow:"ellipsis",flexShrink:1,minWidth:0}}>{Ic.pin(C.t3,11)} <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{origin || "Sin origen"}</span></span>
-          <span style={{color:C.t3,flexShrink:0}}>→</span>
-          <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{dest}</span>
-        </div>
-        <div style={{ borderTop: `1px solid ${C.b1}`, paddingTop: 8, display: "flex", flexDirection: "column", gap: 3, fontSize: 12.1, color: C.t3 }}>
-          {f.loadDate && <div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.cal(C.t3,10)} {formatFreightDate(f.loadDate)}{f.loadTime?.trim() ? ` · ${f.loadTime}` : ""}</div>}
-          <div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.truck(C.t3,11)} <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",color:C.t2}}>{f.transporterName || "Sin asignar"}{f.truckPlate ? ` (${f.truckPlate})` : ""}</span>{f.isOwnFleet && <span style={{fontSize:10,color:C.acc,fontWeight:600,marginLeft:4,flexShrink:0}}>Flota propia</span>}{f.isMultiTruck && <span style={{fontSize:10,color:C.info,fontWeight:600,marginLeft:4,flexShrink:0}}>{f.assignedTruckCount}/{f.truckCount} cam.</span>}</div>
-          <div style={{display:"flex",alignItems:"center",gap:6,marginTop:2}}>
-            <span style={{fontSize:11,fontWeight:600,fontFamily:MONO,color:C.t3}}>{f.code}</span>
-            <Bd color={st.color} bg={st.bg} small>{st.label}</Bd>
-            {f.isOverdue && <Bd color="#DC2626" bg="#FEE2E2" small>Retrasado</Bd>}
-          </div>
-        </div>
-      </div>
-    );
+    return <FreightCard key={f.id} freight={f} onClick={() => selectFreight(f.id, source)} />;
   };
 
   // Render a collapsible group (accordion — opening one hides others)
@@ -550,6 +517,20 @@ export default memo(function HomeScreen({ user, freights, loading, perms, onNav,
           <EmptyState icon={Ic.cal(C.t3, 28)} title="Sin fletes para hoy" subtitle="No hay fletes programados para la fecha de hoy" />
         )}
 
+        {/* Active trips section */}
+        {activeTrips.length > 0 && (
+          <div style={{ marginBottom: 14 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 0", borderBottom: `2px solid ${STATUS_COLORS.in_progress.ribbon}`, marginBottom: 8 }}>
+              {Ic.nav(STATUS_COLORS.in_progress.ribbon, 14)}
+              <span style={{ fontSize: 13, fontWeight: 700, color: STATUS_COLORS.in_progress.pillText, textTransform: "uppercase", letterSpacing: 0.5 }}>Viajes en curso</span>
+              <span style={{ fontSize: 12, fontWeight: 600, color: C.t3 }}>({activeTrips.length})</span>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {activeTrips.map(f => <ActiveTripCard key={f.id} freight={f} onClick={() => selectFreight(f.id, "daily")} />)}
+            </div>
+          </div>
+        )}
+
         {/* Groups by status */}
         {dailyGroups.map(g => (
           <div key={g.key} style={{ marginBottom: 12 }}>
@@ -588,34 +569,7 @@ export default memo(function HomeScreen({ user, freights, loading, perms, onNav,
       });
 
     const renderSimpleCard = (f) => {
-      const st = stCfg(f.status);
-      const pa = f._pending;
-      const isSel = selectedId === f.id;
-      const origin = originDisplay(f);
-      const dest = destDisplay(f) || "Sin destino";
-      return (
-        <div key={f.id} role="button" tabIndex={0} aria-label={`Flete ${f.code}`} onClick={() => selectFreight(f.id, "pending")} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();selectFreight(f.id, "pending");}}} style={{ background: isSel ? C.priPale : C.w, border: `1px solid ${isSel ? C.pri : pa ? st.color + "40" : C.b1}`, borderLeft: `4px solid ${st.color}`, borderRadius: 10, padding: "10px 14px", cursor: "pointer", boxShadow: C.sh, transition: "background 0.15s, border-color 0.15s", position: "relative" }}>
-          {pa && <div style={{ position: "absolute", top: 10, right: 12, display: "flex", alignItems: "center", gap: 5 }}>
-            <span style={{ width: 7, height: 7, borderRadius: "50%", background: C.acc, display: "inline-block", animation: "dotPulse 1.5s ease-in-out infinite", flexShrink: 0 }} />
-            <span style={{ fontSize: 11, fontWeight: 700, color: C.acc, whiteSpace: "nowrap" }}>{pa.action}</span>
-          </div>}
-          <div style={{ fontSize: 14.3, fontWeight: 700, color: C.t1, marginBottom: 2 }}>{f.grain === "Otros" ? f.productTypeOther || "Otros" : f.grain} · {f.tons} {f.unit || "tn"}</div>
-          <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: C.t2, marginBottom: 8, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>
-            <span style={{display:"flex",alignItems:"center",gap:3,overflow:"hidden",whiteSpace:"nowrap",textOverflow:"ellipsis",flexShrink:1,minWidth:0}}>{Ic.pin(C.t3,11)} <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{origin || "Sin origen"}</span></span>
-            <span style={{color:C.t3,flexShrink:0}}>→</span>
-            <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{dest}</span>
-          </div>
-          <div style={{ borderTop: `1px solid ${C.b1}`, paddingTop: 8, display: "flex", flexWrap: "wrap", gap: 5, fontSize: 11.5, color: C.t3 }}>
-            {f.loadDate && <span style={{ display: "flex", alignItems: "center", gap: 3 }}>{Ic.cal(C.t3, 10)} {formatFreightDate(f.loadDate)}{f.loadTime ? ` · ${f.loadTime}` : ""}</span>}
-            <span style={{ display: "flex", alignItems: "center", gap: 3 }}>{Ic.truck(C.t3, 10)} <span style={{color:C.t2}}>{f.transporterName || "Sin asignar"}</span></span>
-            <span style={{ display: "flex", alignItems: "center", gap: 5, marginLeft: "auto" }}>
-              <span style={{ fontFamily: MONO, fontWeight: 600, color: C.t3 }}>{f.code}</span>
-              <Bd color={st.color} bg={st.bg} small>{st.label}</Bd>
-              {f.isOverdue && <Bd color="#DC2626" bg="#FEE2E2" small>Retrasado</Bd>}
-            </span>
-          </div>
-        </div>
-      );
+      return <FreightCard key={f.id} freight={f} onClick={() => selectFreight(f.id, "pending")} />;
     };
 
 
@@ -645,22 +599,7 @@ export default memo(function HomeScreen({ user, freights, loading, perms, onNav,
               <span style={{ fontSize: 11, fontWeight: 600, color: C.t3 }}>({g.items.length})</span>
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 6, paddingLeft: 14, borderLeft: `2px solid ${g.color}30` }}>
-              {g.items.map(f => {
-                const st = stCfg(f.status);
-                return (
-                  <div key={f.id} role="button" tabIndex={0} aria-label={`Flete ${f.code}`} onClick={() => selectFreight(f.id, "daily")} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();selectFreight(f.id, "daily");}}} style={{ padding: "7px 10px", borderRadius: 8, background: C.w, border: `1px solid ${C.b1}`, cursor: "pointer", transition: "background 0.15s" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <span style={{ fontSize: 10.5, fontWeight: 700, fontFamily: MONO, color: C.t2 }}>{f.code}</span>
-                      <span style={{ fontSize: 12.1, fontWeight: 600, color: C.t1, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.grain === "Otros" ? f.productTypeOther || "Otros" : f.grain} · {f.tons} tn</span>
-                      {f.loadTime && <span style={{ fontSize: 10.5, color: C.t3 }}>{f.loadTime}</span>}
-                    </div>
-                    <div style={{ display: "flex", gap: 10, marginTop: 3, fontSize: 11, color: C.t3 }}>
-                      <span style={{ display: "flex", alignItems: "center", gap: 3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{Ic.pin(C.t3, 9)} {originDisplay(f) || "Sin origen"}</span>
-                      {destDisplay(f) && <span style={{ display: "flex", alignItems: "center", gap: 3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{Ic.plant(C.t3, 9)} {destDisplay(f)}</span>}
-                    </div>
-                  </div>
-                );
-              })}
+              {g.items.map(f => <FreightCardCompact key={f.id} freight={f} onClick={() => selectFreight(f.id, "daily")} showTime />)}
             </div>
           </div>
         ))}

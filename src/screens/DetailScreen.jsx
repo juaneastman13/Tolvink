@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useMemo, lazy, Suspense } from "react";
-import { C, Ic, FONT, MONO, track } from "../theme";
+import { C, Ic, FONT, MONO, track, STATUS_COLORS } from "../theme";
 import { stCfg, getActions, tripStCfg, POLL_INTERVALS, formatFreightDate } from "../constants";
 import { Bd, Btn, Loader, Sec, FileViewer, SkeletonDetail } from "../components";
 import { SafeZone } from "../maps";
@@ -189,10 +189,10 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
     const modal = truckModal;
     setTruckModal(null);
     if (!modal) return;
-    commitTruckCount(modal.next);
     if (modal.type === "add" && choice === "own_fleet") {
-      // After count updated, open assignment flow
-      setTimeout(() => onAction(freight.id, "assign"), 600);
+      commitTruckCount(modal.next).then(() => onAction(freight.id, "assign"));
+    } else {
+      commitTruckCount(modal.next);
     }
   };
 
@@ -313,7 +313,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
       if (ts === "loaded" && !a.transporterFinishedConfirmedAt) btns.push({ key:"confirm_trip_finished", label:"Confirmar entrega", color:C.pri, icon:Ic.chk(C.w,14) });
     }
     // Transporter can cancel a pending assignment (return it)
-    if (user.userType === "transporter" && user.role !== "chofer" && (ts === "pending" || ts === "accepted") && a.transportCompanyId === user.companyId) {
+    if (user.userType === "transporter" && user.role !== "chofer" && ts === "pending" && a.transportCompanyId === user.companyId) {
       btns.push({ key:"reject_trip", label:"Devolver", color:C.err, icon:Ic.cross(C.w,14) });
     }
     if (user.userType === "producer" && isOwnFleetTrip) {
@@ -337,7 +337,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
         <div>
           <div style={{ display:"flex", alignItems:"center", gap:6 }}>
             <span style={{ fontSize:12.7, color:C.t3, fontWeight:600, fontFamily:MONO }}>{freight.code}</span>
-            {st && <span style={{ fontSize:12.5, fontWeight:700, color:st.color, background:st.bg, padding:"2px 7px", borderRadius:5, textTransform:"uppercase", letterSpacing:0.3 }}>{st.label}</span>}
+            {st && (()=>{const sc=STATUS_COLORS[freight.status]||STATUS_COLORS.pending_assignment; return <span style={{ display:"inline-flex", alignItems:"center", gap:4, fontSize:11, fontWeight:500, color:sc.pillText, background:sc.pillBg, padding:"3px 10px", borderRadius:20 }}>{sc.pulse&&<span style={{width:6,height:6,borderRadius:"50%",background:sc.ribbon,animation:"tolvinkPulse 1.5s infinite"}}/>}{sc.label}</span>;})()}
           </div>
           {freight.loadDate && <div style={{ fontSize:12.7, color:C.t3, fontWeight:500, marginTop:2 }}>{formatFreightDate(freight.loadDate)}</div>}
           <div style={{ fontSize:24.2, fontWeight:800, marginTop:2, letterSpacing:-0.3 }}>{freight.grain==="Otros"?freight.productTypeOther||"Otros":freight.grain} · {freight.tons} {freight.unit||"tn"}</div>
@@ -355,7 +355,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
         </div>
       </div>}
 
-      {freight.status === "pending_assignment" && user.userType === "producer" && freight.useOwnFleet === false && (
+      {freight.status === "pending_assignment" && user.userType === "producer" && !freight.useOwnFleet && (
         <div style={{ background:`${C.info}10`, border:`1.5px solid ${C.info}30`, borderRadius:12, padding:"12px 16px", marginBottom:12, display:"flex", alignItems:"center", gap:10 }}>
           <span style={{ display:"flex" }}>{Ic.clk(C.info,20)}</span>
           <div>
@@ -366,14 +366,17 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
       )}
 
       {/* Flow C: Plant sees producer's own fleet pending approval */}
-      {freight.status === "pending_assignment" && user.userType === "plant" && freight.useOwnFleet && freight.activeAssignments?.length > 0 && freight.activeAssignments[0]?.truckId && (
+      {freight.status === "pending_assignment" && user.userType === "plant" && freight.useOwnFleet && (()=>{
+        const ownFleetAssign = (freight.activeAssignments||[]).find(a => a.truckId);
+        if (!ownFleetAssign) return null;
+        return (
         <div style={{ background:`${C.acc}10`, border:`1.5px solid ${C.acc}30`, borderRadius:12, padding:"12px 16px", marginBottom:12 }}>
           <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:8 }}>
             <span style={{ display:"flex" }}>{Ic.truck(C.acc,20)}</span>
             <div>
               <div style={{ fontSize:15, fontWeight:700, color:C.acc }}>Flota propia del productor</div>
               <div style={{ fontSize:12.7, color:C.t2 }}>
-                {freight.activeAssignments[0].plate || "Sin patente"} — {freight.activeAssignments[0].driverName || "Sin chofer"}. Esperando tu aprobación.
+                {ownFleetAssign.plate || "Sin patente"} — {ownFleetAssign.driverName || "Sin chofer"}. Esperando tu aprobación.
               </div>
             </div>
           </div>
@@ -381,8 +384,8 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
             <Btn full icon={Ic.chk(C.w,14)} disabled={actionLoading} onClick={()=>onAction(freight.id,"authorize")}>{actionLoading?"Procesando...":"Aprobar"}</Btn>
             <Btn full v="err" icon={Ic.cross(C.err,14)} disabled={actionLoading} onClick={()=>onAction(freight.id,"reject_own_fleet")}>Rechazar</Btn>
           </div>
-        </div>
-      )}
+        </div>);
+      })()}
 
       {/* Primary actions — flow-advancing (desktop: inline, mobile: ActionFooter below) */}
       {_isDesktop && primaryBtns.length > 0 && (
@@ -411,14 +414,14 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
         const steps = ["pending_assignment","assigned","accepted","in_progress","loaded","finished"];
         const curIdx = steps.indexOf(freight.status);
         const isCanceled = freight.status === "canceled";
-        const subLabels = { assigned:"Asignado", accepted:"Asignado", in_progress:"En viaje a campo", loaded:"En viaje a planta" };
+        const subLabels = { assigned:"Asignado", accepted:"Asignado", in_progress:"A campo", loaded:"A planta" };
         const visualIdx = isCanceled ? (curIdx >= 1 ? (curIdx >= 3 ? 2 : 1) : 0) : curIdx === 0 ? 0 : curIdx <= 4 ? 1 : 2;
         const multiTruckSub = isMultiTruck && [1,2,3,4].includes(curIdx) ? (freight.activeAssignments||[]).map(a => ({ n: a.tripNumber, cfg: tripStCfg(a.tripStatus) })) : null;
         const singleSub = [1,2,3,4].includes(curIdx) || isCanceled ? subLabels[freight.status] || subLabels[steps[curIdx]] : null;
         const visualSteps = [
-          { label:"Pendiente", color:C.acc, icon:(c,s)=>Ic.clk(c,s) },
-          { label:"En curso", color:C.pri, sub: !multiTruckSub ? singleSub : null, multiSub: multiTruckSub, icon:(c,s)=>Ic.truck(c,s) },
-          { label: isCanceled ? "Cancelado" : "Finalizado", color: isCanceled ? C.err : C.ok, icon:(c,s)=> isCanceled ? Ic.cross(c,s) : Ic.chk(c,s) },
+          { label:"Pendiente", color:STATUS_COLORS.pending_assignment.ribbon, icon:(c,s)=>Ic.clk(c,s) },
+          { label:"En viaje", color:STATUS_COLORS.in_progress.ribbon, sub: !multiTruckSub ? singleSub : null, multiSub: multiTruckSub, icon:(c,s)=>Ic.truck(c,s) },
+          { label: isCanceled ? "Cancelado" : "Finalizado", color: isCanceled ? STATUS_COLORS.canceled.ribbon : STATUS_COLORS.finished.ribbon, icon:(c,s)=> isCanceled ? Ic.cross(c,s) : Ic.chk(c,s) },
         ];
         const fmtD = (d) => { try { const dt=new Date(d); return dt.toLocaleDateString("es-AR",{day:"2-digit",month:"short"})+" "+dt.toLocaleTimeString("es-AR",{hour:"2-digit",minute:"2-digit",hour12:false}); } catch(e){ return ""; } };
         const actionLabels = { created:"Solicitado", assigned:"Asignado", assigned_multi:"Asignado", accepted:"Aceptado", rejected:"Rechazado", started:"Iniciado", confirm_loaded:"Carga OK", confirm_finished:"Entrega OK", finished:"Finalizado", canceled:"Cancelado", authorized:"Autorizado", updated:"Editado", trip_accepted:"Aceptado", trip_rejected:"Rechazado", trip_started:"Iniciado", trip_confirm_loaded:"Carga OK", trip_confirm_finished:"Entrega OK", trip_finished:"Finalizado", assignment_canceled:"Cancelado", assignment_updated:"Editado", assignment_truck_assigned:"Camión asignado" };
@@ -431,12 +434,12 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
           loaded:["confirm_loaded","trip_confirm_loaded"],
           finished:["confirm_finished","finished","trip_confirm_finished","trip_finished","canceled"],
         };
-        const stepToTrip = { assigned:"pending", accepted:"accepted", in_progress:"in_progress", loaded:"loaded", finished:"finished" };
+        const stepToTrip = { assigned:["pending","accepted"], accepted:["accepted"], in_progress:["in_progress"], loaded:["loaded"], finished:["finished"] };
         const tripRank = { pending:0, accepted:1, in_progress:2, loaded:3, finished:4 };
         const getStepLogs = (step) => { if(!auditLog) return []; return auditLog.filter(l=>(stepAuditActions[step]||[]).includes(l.action)); };
-        const getTruckCount = (step) => { if(!isMultiTruck) return null; const ts=stepToTrip[step]; if(!ts) return null; const rank=tripRank[ts]??0; return (freight.activeAssignments||[]).filter(a=>(tripRank[a.tripStatus]??0)>=rank).length; };
+        const getTruckCount = (step) => { if(!isMultiTruck) return null; const tsList=stepToTrip[step]; if(!tsList) return null; const minRank=Math.min(...tsList.map(t=>tripRank[t]??0)); return (freight.activeAssignments||[]).filter(a=>(tripRank[a.tripStatus]??0)>=minRank).length; };
         const tripLabel = (log) => { const tn = log.metadata?.tripNumber; return tn ? `Viaje #${tn}` : null; };
-        const getStepAssignments = (step) => { if(!isMultiTruck) return []; const ts=stepToTrip[step]; if(!ts) return []; return (freight.activeAssignments||[]).filter(a=>a.tripStatus===ts); };
+        const getStepAssignments = (step) => { if(!isMultiTruck) return []; const tsList=stepToTrip[step]; if(!tsList) return []; return (freight.activeAssignments||[]).filter(a=>tsList.includes(a.tripStatus)); };
         // Get date for each step from audit log
         const getStepDate = (backendSteps) => { if(!auditLog) return null; const logs = backendSteps.flatMap(s => getStepLogs(s)); if(logs.length === 0) return null; return logs[logs.length-1].createdAt; };
         const visualAuditMap = [["pending_assignment"],["assigned","accepted","in_progress","loaded"],["finished"]];
@@ -609,7 +612,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
                           </button>
                         )}
                         {/* Edit button: plant or transporter can edit non-started trips */}
-                        {(user.userType === "plant" || (user.userType === "transporter" && a.transportCompanyId === user.companyId)) && (a.tripStatus === "pending" || a.tripStatus === "accepted") && onEditTrip && (
+                        {(user.userType === "plant" || (user.userType === "transporter" && a.transportCompanyId === user.companyId)) && (a.tripStatus === "pending" || a.tripStatus === "accepted") && onEditTrip && !(user.userType === "transporter" && a.tripStatus === "pending" && !a.truckId) && (
                           <button onClick={(e)=>{e.stopPropagation(); onEditTrip(freight.id, a);}} style={{ padding:"8px 12px", minHeight:36, borderRadius:8, border:`1px solid ${C.b1}`, background:C.w, color:C.t2, fontSize:12.7, fontWeight:600, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:4 }}>
                             {Ic.doc(C.t2,12)} Editar
                           </button>
@@ -876,10 +879,10 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
         const actionColors = { created:C.pri, assigned:C.sec, assigned_multi:C.sec, accepted:C.info, rejected:C.err, started:C.acc, confirm_loaded:C.acc, confirm_finished:C.pri, finished:C.ok, canceled:C.err, authorized:C.info, updated:C.t2, trip_accepted:C.info, trip_rejected:C.err, trip_started:C.acc, trip_confirm_loaded:C.acc, trip_confirm_finished:C.pri, trip_finished:C.ok, assignment_canceled:C.err, assignment_updated:C.t2, assignment_truck_assigned:C.info };
         const fmtD = (d) => { try { const dt=new Date(d); return dt.toLocaleDateString("es-AR",{day:"2-digit",month:"short"})+" "+dt.toLocaleTimeString("es-AR",{hour:"2-digit",minute:"2-digit",hour12:false}); } catch{ return ""; } };
         const getStepLogs = (step) => { if(!auditLog) return []; return auditLog.filter(l=>(stepAuditActions[step]||[]).includes(l.action)); };
-        const stepToTrip = { assigned:"pending", accepted:"accepted", in_progress:"in_progress", loaded:"loaded", finished:"finished" };
+        const stepToTrip = { assigned:["pending","accepted"], accepted:["accepted"], in_progress:["in_progress"], loaded:["loaded"], finished:["finished"] };
         const tripRank = { pending:0, accepted:1, in_progress:2, loaded:3, finished:4 };
-        const getTruckCount = (step) => { if(!isMultiTruck) return null; const ts=stepToTrip[step]; if(!ts) return null; const rank=tripRank[ts]??0; return (freight.activeAssignments||[]).filter(a=>(tripRank[a.tripStatus]??0)>=rank).length; };
-        const getStepAssignments = (step) => { if(!isMultiTruck) return []; const ts=stepToTrip[step]; if(!ts) return []; return (freight.activeAssignments||[]).filter(a=>a.tripStatus===ts); };
+        const getTruckCount = (step) => { if(!isMultiTruck) return null; const tsList=stepToTrip[step]; if(!tsList) return null; const minRank=Math.min(...tsList.map(t=>tripRank[t]??0)); return (freight.activeAssignments||[]).filter(a=>(tripRank[a.tripStatus]??0)>=minRank).length; };
+        const getStepAssignments = (step) => { if(!isMultiTruck) return []; const tsList=stepToTrip[step]; if(!tsList) return []; return (freight.activeAssignments||[]).filter(a=>tsList.includes(a.tripStatus)); };
         const visualAuditSteps = [
           { label:"Pendiente", backendSteps:["pending_assignment"], color:C.acc, icon:(c,s)=>Ic.clk(c,s) },
           { label:"En curso", backendSteps:["assigned","accepted","in_progress","loaded"], color:C.pri, icon:(c,s)=>Ic.truck(c,s) },
@@ -1033,8 +1036,8 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
         const actionColors = { created:C.pri, assigned:C.sec, assigned_multi:C.sec, accepted:C.info, rejected:C.err, started:C.acc, confirm_loaded:C.acc, confirm_finished:C.pri, finished:C.ok, canceled:C.err, authorized:C.info, updated:C.t2, trip_accepted:C.info, trip_rejected:C.err, trip_started:C.acc, trip_confirm_loaded:C.acc, trip_confirm_finished:C.pri, trip_finished:C.ok, assignment_canceled:C.err, assignment_updated:C.t2, assignment_truck_assigned:C.info };
         const fmtD = (d) => { try { const dt=new Date(d); return dt.toLocaleDateString("es-AR",{day:"2-digit",month:"short"})+" "+dt.toLocaleTimeString("es-AR",{hour:"2-digit",minute:"2-digit",hour12:false}); } catch{ return ""; } };
         const logs = auditLog ? stepModal.backendSteps.flatMap(s => (auditLog||[]).filter(l=>(stepAuditActions[s]||[]).includes(l.action))) : [];
-        const stepToTrip = { assigned:"pending", accepted:"accepted", in_progress:"in_progress", loaded:"loaded", finished:"finished" };
-        const stepAssigns = isMultiTruck ? stepModal.backendSteps.flatMap(s => { const ts=stepToTrip[s]; if(!ts) return []; return (freight.activeAssignments||[]).filter(a=>a.tripStatus===ts); }) : [];
+        const stepToTrip = { assigned:["pending","accepted"], accepted:["accepted"], in_progress:["in_progress"], loaded:["loaded"], finished:["finished"] };
+        const stepAssigns = isMultiTruck ? stepModal.backendSteps.flatMap(s => { const tsList=stepToTrip[s]; if(!tsList) return []; return (freight.activeAssignments||[]).filter(a=>tsList.includes(a.tripStatus)); }) : [];
         return <div onClick={()=>setStepModal(null)} style={{ position:"absolute", inset:0, zIndex:200, background:"rgba(0,0,0,0.5)", display:"flex", alignItems:"center", justifyContent:"center", padding:16 }}>
           <div onClick={e=>e.stopPropagation()} style={{ background:C.w, borderRadius:14, padding:20, maxWidth:400, width:"100%", maxHeight:"80%", overflow:"auto", boxShadow:C.shLg }}>
             <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14 }}>

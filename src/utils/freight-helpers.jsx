@@ -84,7 +84,7 @@ function getMultiTruckPendingAction(freight, userType, role, user) {
 
   // Priority: pending > accepted > in_progress > loaded
   const pending = myAssignments.find(a => a.tripStatus === "pending");
-  if (pending) return { action: `Aceptar camión #${pending.tripNumber}`, color: C.sec, icon: "respond", actionKey: "respond_trip", groupKey: "respond", assignmentId: pending.id };
+  if (pending) return { action: `Asignar camión #${pending.tripNumber}`, color: C.pri, icon: "truck", actionKey: "edit_trip", groupKey: "assign", assignmentId: pending.id };
   const accepted = myAssignments.find(a => a.tripStatus === "accepted");
   if (accepted) return { action: `Iniciar viaje #${accepted.tripNumber}`, color: C.pri, icon: "start", actionKey: "start_trip", groupKey: "start", assignmentId: accepted.id };
   const inProgress = myAssignments.find(a => a.tripStatus === "in_progress" && !a.transporterLoadedConfirmedAt);

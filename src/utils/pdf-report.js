@@ -13,14 +13,14 @@ const B1 = '#DEE4E0';
 const BG_ALT = [247, 248, 247];
 
 const STATUS_LABELS = {
-  draft:'Borrador', pending_assignment:'Solicitado', assigned:'Asignado a flota',
-  accepted:'Confirmado camión', in_progress:'En curso', loaded:'Cargando',
+  draft:'Borrador', pending_assignment:'Pendiente', assigned:'Asignado',
+  accepted:'Asignado', in_progress:'A campo', loaded:'A planta',
   finished:'Finalizado', canceled:'Cancelado',
 };
 const STATUS_COLORS = {
-  draft:'#71717A', pending_assignment:'#FF6A00', assigned:'#0891B2',
-  accepted:'#2563EB', in_progress:'#E8C840', loaded:'#22C55E',
-  finished:'#1A6B37', canceled:'#DC2626',
+  draft:'#71717A', pending_assignment:'#FF6A00', assigned:'#2196F3',
+  accepted:'#2196F3', in_progress:'#43A047', loaded:'#1A6B37',
+  finished:'#9E9E9E', canceled:'#E53935',
 };
 
 const hex = h => [parseInt(h.slice(1,3),16), parseInt(h.slice(3,5),16), parseInt(h.slice(5,7),16)];

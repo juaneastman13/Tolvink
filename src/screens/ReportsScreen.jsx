@@ -1,8 +1,8 @@
 import { useState, useMemo, useRef, useEffect } from "react";
-import { C, Ic, FONT, MONO } from "../theme";
+import { C, Ic, FONT, MONO, STATUS_COLORS } from "../theme";
 import { stCfg } from "../constants";
 import { originDisplay, destDisplay } from "../hooks";
-import { Bd, Btn, Field, Select, exportExcel, exportPDF, FileViewer } from "../components";
+import { Bd, Btn, Field, Select, exportExcel, exportPDF, FileViewer, FreightCard } from "../components";
 import { OcrResultModal, UploadOverlay } from "../uploads";
 import log from "../logger";
 import { useUIStore, useFreightDetailStore } from "../store";
@@ -449,25 +449,17 @@ export default function ReportsScreen({ onBack, freights, isDesktop, embedded, o
             const ocrDocs = docs.filter(d => d.ocrData);
             const imgDocs = docs.filter(d => d.type === "photo" || d.url?.match(/\.(jpg|jpeg|png|webp|gif)$/i));
             return (
-              <div key={f.id} style={{ background:isSel?C.priPale:C.w, border:`1px solid ${isSel?C.pri:C.b1}`, borderRadius:12, overflow:"hidden", marginBottom:8, boxShadow:C.sh, transition:"all 0.15s" }}>
-                <button onClick={()=>toggle(f.id)} style={{ width:"100%", padding:"12px 14px", background:"transparent", border:"none", cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:10, textAlign:"left" }}>
-                  <span onClick={(e)=>toggleSel(f.id,e)} style={{width:20,height:20,borderRadius:6,border:`2px solid ${isSel?C.pri:C.b1}`,background:isSel?C.pri:"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,cursor:"pointer",transition:"all 0.15s"}}>
-                    {isSel && Ic.chk(C.w,12)}
-                  </span>
-                  {Ic.doc(group.color,18)}
-                  <div style={{ flex:1 }}>
-                    <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-                      <span style={{ fontSize:13.2, fontWeight:700, color:C.t1 }}>{f.grain} · {f.tons} {f.unit||"tn"}</span>
-                      <span style={{ fontSize:10, fontFamily:MONO, color:C.t3 }}>{f.code}</span>
-                    </div>
-                    <div style={{display:"flex",flexDirection:"column",gap:2,fontSize:12.1,color:C.t2,marginTop:2}}>
-                      <div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.user(C.t3,12)} <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.originCompanyName||originDisplay(f)}</span></div>
-                      {f.transporterName&&<div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.truck(C.t3,12)} <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.transporterName}{f.truckPlate?` (${f.truckPlate})`:""}</span></div>}
-                      <div style={{display:"flex",alignItems:"center",gap:4}}>{Ic.plant(C.t3,12)} <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{destDisplay(f)}</span> <span style={{color:C.t3,marginLeft:4,fontSize:11}}>{docs.length} doc{docs.length!==1?"s":""}{ocrDocs.length>0 && ` · ${ocrDocs.length} OCR`}</span></div>
-                    </div>
-                  </div>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.t3} strokeWidth="2.5" style={{transform:isOpen?"rotate(180deg)":"rotate(0deg)",transition:"transform 0.2s"}}><polyline points="6 9 12 15 18 9"/></svg>
-                </button>
+              <div key={f.id} style={{ marginBottom:8, transition:"all 0.15s" }}>
+                <FreightCard
+                  freight={f}
+                  onClick={()=>toggle(f.id)}
+                  selected={isSel}
+                  checkbox={
+                    <span onClick={(e)=>toggleSel(f.id,e)} style={{width:20,height:20,borderRadius:4,border:`1.5px solid ${isSel?'#1A6B37':C.b2}`,background:isSel?'#1A6B37':"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,cursor:"pointer",transition:"all 0.15s"}}>
+                      {isSel && Ic.chk(C.w,12)}
+                    </span>
+                  }
+                />
 
                 {isOpen && (
                   <div style={{ borderTop:`1px solid ${C.b2}`, padding:"8px 14px" }}>

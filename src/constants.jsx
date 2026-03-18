@@ -1,17 +1,12 @@
 // ======================== STATE MACHINE ==============================
 // Freight has 2 states. Trip has its own lifecycle.
 // Backend states: draft, pending_assignment, assigned, accepted, in_progress, loaded, finished, canceled
+import { STATUS_COLORS } from "./theme";
 
-export const STATUS_LIGHT = {
-  draft:              { label:"Borrador",            color:"#71717A",   bg:"#F4F4F5",   border:"#71717A"   },
-  pending_assignment: { label:"Pendiente",           color:"#FF6A00",   bg:"#FFF3E8",   border:"#FF6A00"   },
-  assigned:           { label:"Asignado",             color:"#0891B2",   bg:"#ECFEFF",   border:"#0891B2"   },
-  accepted:           { label:"Asignado",             color:"#0891B2",   bg:"#ECFEFF",   border:"#0891B2"   },
-  in_progress:        { label:"En viaje a campo",     color:"#E8C840",   bg:"#FFFBE6",   border:"#E8C840"   },
-  loaded:             { label:"En viaje a planta",     color:"#22C55E",   bg:"#DCFCE7",   border:"#22C55E"   },
-  finished:           { label:"Finalizado",          color:"#1A6B37",   bg:"#E4F3EA",   border:"#1A6B37"   },
-  canceled:           { label:"Cancelado",           color:"#DC2626",   bg:"#FEE2E2",   border:"#DC2626"   },
-};
+// STATUS_LIGHT derived from STATUS_COLORS (backward compat — color/bg/border/label)
+export const STATUS_LIGHT = Object.fromEntries(
+  Object.entries(STATUS_COLORS).map(([k, v]) => [k, { label: v.label, color: v.ribbon, bg: v.pillBg, border: v.ribbon }])
+);
 
 export function stCfg(s) {
   return STATUS_LIGHT[s] || STATUS_LIGHT.pending_assignment;
@@ -44,12 +39,12 @@ export function getActions(status, userType, role, isOwnFleet) {
 
 // Trip-level status (multi-truck v6.0)
 export const TRIP_STATUS_CFG = {
-  pending:     { label:"Sin camión",       color:"#FF6A00", bg:"#FFF3E8" },
-  accepted:    { label:"Asignado",         color:"#0891B2", bg:"#ECFEFF" },
-  in_progress: { label:"En viaje a campo", color:"#E8C840", bg:"#FFFBE6" },
-  loaded:      { label:"En viaje a planta",color:"#22C55E", bg:"#DCFCE7" },
-  finished:    { label:"Finalizado",       color:"#1A6B37", bg:"#E4F3EA" },
-  canceled:    { label:"Cancelado",        color:"#DC2626", bg:"#FEE2E2" },
+  pending:     { label:"Sin camión",       color:"#FF6A00", bg:"#FFF3E0" },
+  accepted:    { label:"Asignado",         color:"#2196F3", bg:"#E3F2FD" },
+  in_progress: { label:"A campo",          color:"#43A047", bg:"#E8F5E9" },
+  loaded:      { label:"A planta",         color:"#1A6B37", bg:"#E0F2E5" },
+  finished:    { label:"Finalizado",       color:"#9E9E9E", bg:"#F5F5F5" },
+  canceled:    { label:"Cancelado",        color:"#E53935", bg:"#FFEBEE" },
 };
 export function tripStCfg(s) { return TRIP_STATUS_CFG[s] || TRIP_STATUS_CFG.pending; }
 
@@ -75,4 +70,3 @@ export function formatFreightDate(dateStr) {
   if (monthIdx < 0 || monthIdx > 11) return `${day}/${parts[1]}`;
   return `${day}/${MESES[monthIdx]}`;
 }
-

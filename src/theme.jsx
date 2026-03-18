@@ -42,6 +42,26 @@ export function track(event, data = {}) {
 export const FONT = `'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif`;
 export const MONO = `'JetBrains Mono','IBM Plex Mono','SF Mono',monospace`;
 
+// ======================== STATUS COLORS (single source of truth) ========
+export const STATUS_COLORS = {
+  draft:              { ribbon:'#71717A', pillBg:'#F4F4F5', pillText:'#71717A', label:'Borrador',   pulse:false },
+  pending_assignment: { ribbon:'#FF6A00', pillBg:'#FFF3E0', pillText:'#E65100', label:'Pendiente',  pulse:false },
+  assigned:           { ribbon:'#2196F3', pillBg:'#E3F2FD', pillText:'#1565C0', label:'Asignado',   pulse:false },
+  accepted:           { ribbon:'#2196F3', pillBg:'#E3F2FD', pillText:'#1565C0', label:'Asignado',   pulse:false },
+  in_progress:        { ribbon:'#43A047', pillBg:'#E8F5E9', pillText:'#2E7D32', label:'A campo',    pulse:true  },
+  loaded:             { ribbon:'#1A6B37', pillBg:'#E0F2E5', pillText:'#1A6B37', label:'A planta',   pulse:true  },
+  finished:           { ribbon:'#9E9E9E', pillBg:'#F5F5F5', pillText:'#616161', label:'Finalizado', pulse:false },
+  canceled:           { ribbon:'#E53935', pillBg:'#FFEBEE', pillText:'#C62828', label:'Cancelado',  pulse:false },
+};
+
+// Inject pulse keyframes once
+if (typeof document !== 'undefined' && !document.getElementById('tv-pulse-style')) {
+  const s = document.createElement('style');
+  s.id = 'tv-pulse-style';
+  s.textContent = `@keyframes tolvinkPulse{0%,100%{opacity:1}50%{opacity:.3}}`;
+  document.head.appendChild(s);
+}
+
 // ======================== SVG ICONS ==================================
 // Performance note: Ic.* functions create new JSX per call. For hot paths,
 // consider using React.memo components or pre-computed constants.

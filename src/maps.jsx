@@ -667,13 +667,14 @@ export function FreightMap({ freightId, originLat, originLng, destLat, destLng, 
 
 const _STATUS_COLOR = s => {
   if (s === "pending_assignment") return "#FF6A00";
-  if (s === "in_progress") return "#E8C840";
-  if (["assigned","accepted","loaded"].includes(s)) return "#2563EB";
-  if (s === "finished") return "#1A6B37";
-  if (s === "canceled") return "#DC2626";
+  if (s === "in_progress") return "#43A047";
+  if (s === "loaded") return "#1A6B37";
+  if (["assigned","accepted"].includes(s)) return "#2196F3";
+  if (s === "finished") return "#9E9E9E";
+  if (s === "canceled") return "#E53935";
   return "#999";
 };
-const _STATUS_LABEL = { pending_assignment:"Pendiente", assigned:"Asignado", accepted:"Asignado", in_progress:"En viaje a campo", loaded:"En viaje a planta", finished:"Finalizado", canceled:"Cancelado" };
+const _STATUS_LABEL = { pending_assignment:"Pendiente", assigned:"Asignado", accepted:"Asignado", in_progress:"A campo", loaded:"A planta", finished:"Finalizado", canceled:"Cancelado" };
 
 // ======================== MARKER SYMBOLS (no image loading) ========================
 // Use google.maps.Symbol with SVG paths — rendered natively, no broken images.

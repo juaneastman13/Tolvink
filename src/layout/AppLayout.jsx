@@ -284,13 +284,13 @@ export default function AppLayout({ fh, catalog, online, notif, isDesktop }) {
     else if(action==="cancel") { setModal({type:"reason",freight:f,title:"Cancelar flete",btnLabel:"Cancelar flete",action:"cancel"}); }
     else if(action==="reject") { setModal({type:"reason",freight:f,title:"Rechazar asignación",btnLabel:"Rechazar",action:"reject"}); }
     else if(action==="assign_truck") {
-      // Transporter: open edit modal for the first pending assignment without truck
       const pendingAssignment = (f.activeAssignments||[]).find(a => !a.truckId && a.transportCompanyId === auth.user?.companyId);
       if(pendingAssignment) setModal({type:"edit_trip",freight:f,assignment:pendingAssignment});
+      else show("No hay viajes pendientes de camión","warn");
     }
     else if(action==="start") { setModal({type:"confirm_action",freight:f,title:"Iniciar viaje",btnLabel:"Iniciar viaje",btnVariant:"acc",icon:Ic.truck(C.acc,24),action:"start"}); }
     else if(action==="authorize") { setModal({type:"confirm_action",freight:f,title:"Autorizar viaje",btnLabel:"Autorizar",icon:Ic.chk(C.pri,24),action:"authorize"}); }
-    else if(action==="reject_own_fleet") { setModal({type:"reason",freight:f,title:"Rechazar flota propia",btnLabel:"Rechazar",action:"reject"}); }
+    else if(action==="reject_own_fleet") { setModal({type:"reason",freight:f,title:"Rechazar flota propia",btnLabel:"Rechazar",action:"cancel"}); }
     else if(action==="confirm_loaded") { setModal({type:"wt_confirm",freight:f,title:"Confirmar carga",btnLabel:"Confirmar carga",btnVariant:"acc",icon:Ic.chk(C.acc,24),action:"confirm_loaded"}); }
     else if(action==="confirm_finished") { setModal({type:"wt_confirm",freight:f,title:"Confirmar entrega",btnLabel:"Confirmar entrega",icon:Ic.chk(C.pri,24),action:"confirm_finished"}); }
     else if(action==="driver_queue") { setModal({type:"driver_queue",driverId:f.driverId,driverName:f.driverName}); }
@@ -340,6 +340,12 @@ export default function AppLayout({ fh, catalog, online, notif, isDesktop }) {
     };
     if(actionKey==="respond_trip_reject" || actionKey==="reject_trip") {
       setModal({type:"reason",freight:f,title:"Devolver asignación",btnLabel:"Devolver",action:"reject_trip",assignmentId:aId});
+      return;
+    }
+    if(actionKey==="edit_trip") {
+      const assignment = (f.activeAssignments||[]).find(a=>a.id===aId);
+      if(assignment) setModal({type:"edit_trip",freight:f,assignment});
+      else show("Asignación no encontrada","warn");
       return;
     }
     const cfg = cfgs[actionKey];
