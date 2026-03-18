@@ -161,7 +161,7 @@ export default memo(function HomeScreen({ user, freights, loading, perms, onNav,
     const map = new Map();
     filteredFreights.forEach(f => { map.set(f.id, getPendingActions(f, effectiveType(f), user.role, user)); });
     return map;
-  }, [filteredFreights, effectiveType, user.id, user.role, user.companyId, user.userType, user.activeCompanyId]);
+  }, [filteredFreights, effectiveType, user.id, user.role, user.companyId, user.userType, user.activeCompanyId, user.userTypes]);
 
   // Pending groups — grouped by pending action type
   const pendingByProgress = useMemo(() => {
@@ -174,7 +174,7 @@ export default memo(function HomeScreen({ user, freights, loading, perms, onNav,
           return pa.groupKey === g.key;
         })
         .map(f => ({ ...f, pendingAction: pendingMap.get(f.id) }))
-        .sort((a, b) => (a.destName||'').localeCompare(b.destName||'') || (a.originName||'').localeCompare(b.originName||''));
+        .sort((a, b) => (a.destName||'').localeCompare(b.destName||'') || (a.originName||'').localeCompare(b.originName||'') || a.id.localeCompare(b.id));
       return { ...g, icon: g.key==="assign"?Ic.truck:g.key==="respond"?Ic.info:g.key==="authorize"?Ic.chk:g.key==="start"?Ic.nav:g.key==="confirm_loaded"?Ic.warn:Ic.ok, items };
     }).filter(g => g.items.length > 0);
   }, [filteredFreights, pendingMap, dateFrom, dateTo]);
@@ -192,7 +192,7 @@ export default memo(function HomeScreen({ user, freights, loading, perms, onNav,
   const thirdPartyGroups = useMemo(() => {
     const allItems = filteredFreights
       .filter(f => !pendingMap.get(f.id) && matchDate(f.loadDate) && f.status !== 'finished' && f.status !== 'canceled')
-      .sort((a, b) => (a.destName||'').localeCompare(b.destName||'') || (a.originName||'').localeCompare(b.originName||''));
+      .sort((a, b) => (a.destName||'').localeCompare(b.destName||'') || (a.originName||'').localeCompare(b.originName||'') || a.id.localeCompare(b.id));
     if (!allItems.length) return [];
     const grouped = new Map();
     allItems.forEach(f => {
@@ -266,6 +266,11 @@ export default memo(function HomeScreen({ user, freights, loading, perms, onNav,
   const toggleGroup = useCallback((gKey) => {
     setOpenGroup(prev => {
       if (prev === gKey) return null;
+      // Clear old expanded data to prevent memory accumulation
+      const oldKey = prev;
+      if (oldKey && oldKey !== gKey) {
+        setExpandedData(d => { const next = {...d}; delete next[oldKey]; return next; });
+      }
       // "pa_" groups already have correctly filtered items in memory — no API fetch needed
       if (gKey.startsWith("pa_")) return gKey;
       // Reuse cached data if available — avoids re-fetch on tab switch

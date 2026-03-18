@@ -57,6 +57,10 @@ export const FreightCard = memo(function FreightCard({ freight: f, onClick, styl
     <div
       className="tv-card"
       onClick={onClick}
+      role={onClick ? "button" : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      aria-label={`Flete ${f.code}`}
+      onKeyDown={onClick ? (e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick(); } }) : undefined}
       style={{
         display: "flex", borderRadius: 6, border: selected ? "1.5px solid #1A6B37" : `0.5px solid ${C.b1}`,
         overflow: "hidden", cursor: onClick ? "pointer" : "default",
@@ -118,6 +122,10 @@ export const FreightCardCompact = memo(function FreightCardCompact({ freight: f,
     <div
       className="tv-card"
       onClick={onClick}
+      role={onClick ? "button" : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      aria-label={`Flete ${f.code}`}
+      onKeyDown={onClick ? (e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick(); } }) : undefined}
       style={{
         display: "flex", borderRadius: 6, border: `0.5px solid ${C.b1}`,
         overflow: "hidden", cursor: onClick ? "pointer" : "default",
@@ -183,7 +191,7 @@ export const ActiveTripCard = memo(function ActiveTripCard({ freight: f, onClick
   const isMulti = aa.length > 1;
 
   return (
-    <div className="tv-card" onClick={onClick} style={{ display: "flex", borderRadius: 6, border: `0.5px solid ${C.b1}`, overflow: "hidden", cursor: "pointer", background: C.w }}>
+    <div className="tv-card" onClick={onClick} role="button" tabIndex={0} aria-label={`Flete ${f.code}`} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick?.(); } }} style={{ display: "flex", borderRadius: 6, border: `0.5px solid ${C.b1}`, overflow: "hidden", cursor: "pointer", background: C.w }}>
       <div style={{ width: 20, background: sc.ribbon, flexShrink: 0 }} />
       <div style={{ padding: "12px 14px", flex: 1, minWidth: 0 }}>
         {/* Header */}

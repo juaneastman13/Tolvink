@@ -122,6 +122,7 @@ export default function AssignModal({ freight, transporters, user, onClose, onCo
   const [driverErr, setDriverErr] = useState("");
 
   const [tonsInput, setTonsInput] = useState("");
+  const [loadError, setLoadError] = useState(null);
   const ts = transporters || [];
 
   const alreadyAssigned = freight.assignedTruckCount || 0;
@@ -144,6 +145,7 @@ export default function AssignModal({ freight, transporters, user, onClose, onCo
 
   const isDelegation = mode === "company";
   const tonsStep = isDelegation ? 0 : 2;
+  useEffect(() => { setStep(0); }, [isDelegation]);
   useEffect(() => {
     if (step === tonsStep && !tonsInput) setTonsInput(defaultTons > 0 ? String(Math.round(defaultTons * 10) / 10) : "");
   }, [step]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -151,15 +153,15 @@ export default function AssignModal({ freight, transporters, user, onClose, onCo
   const loadTrucks = useCallback((compId) => {
     const cid = compId || (mode === "own" ? ownFleetCompanyId : t);
     if (!cid) return;
-    setLoadingTrucks(true);
-    apiGetTrucks(cid).then(r => setTrucks((r || []).filter(t => t.active !== false))).catch(e => { console.error("AssignModal loadTrucks error:", cid, e); setTrucks([]); }).finally(() => setLoadingTrucks(false));
+    setLoadingTrucks(true); setLoadError(null);
+    apiGetTrucks(cid).then(r => setTrucks((r || []).filter(t => t.active !== false))).catch(e => { console.error("AssignModal loadTrucks error:", cid, e); setTrucks([]); setLoadError("No se pudieron cargar los vehículos"); }).finally(() => setLoadingTrucks(false));
   }, [mode, ownFleetCompanyId, t]);
 
   const loadDriversFn = useCallback((compId) => {
     const cid = compId || (mode === "own" ? ownFleetCompanyId : t);
     if (!cid) return;
-    setLoadingDrivers(true);
-    apiGetDrivers(cid).then(r => setDrivers(r || [])).catch(e => { console.error("AssignModal loadDrivers error:", cid, e); setDrivers([]); }).finally(() => setLoadingDrivers(false));
+    setLoadingDrivers(true); setLoadError(null);
+    apiGetDrivers(cid).then(r => setDrivers(r || [])).catch(e => { console.error("AssignModal loadDrivers error:", cid, e); setDrivers([]); setLoadError("No se pudieron cargar los choferes"); }).finally(() => setLoadingDrivers(false));
   }, [mode, ownFleetCompanyId, t]);
 
   useEffect(() => { if (mode === "own") { loadTrucks(ownFleetCompanyId); loadDriversFn(ownFleetCompanyId); } }, [mode, ownFleetCompanyId, loadTrucks, loadDriversFn]);
@@ -319,7 +321,7 @@ export default function AssignModal({ freight, transporters, user, onClose, onCo
                 <div style={{ fontSize:14, fontWeight:700, color:C.t1, marginBottom:8 }}>Seleccionar vehículo</div>
                 <div style={{ display:"flex", flexDirection:"column", gap:0, maxHeight:320, overflowY:"auto", marginBottom:6 }}>
                   {loadingTrucks && <div style={{ fontSize:12, color:C.t3, padding:8, textAlign:"center" }}>Cargando...</div>}
-                  {!loadingTrucks && trucks.length === 0 && !showNewTruck && <div style={{ fontSize:12, color:C.t3, padding:8, textAlign:"center" }}>No hay vehículos</div>}
+                  {!loadingTrucks && trucks.length === 0 && !showNewTruck && <div style={{ fontSize:12, color: loadError ? C.err : C.t3, padding:8, textAlign:"center" }}>{loadError || "No hay vehículos"}</div>}
                   {trucks.map(tk => (
                     <TruckRow key={tk.id} tk={tk} selected={truckId === tk.id} onClick={() => setTruckId(truckId === tk.id ? "" : tk.id)} />
                   ))}
@@ -361,7 +363,7 @@ export default function AssignModal({ freight, transporters, user, onClose, onCo
 
                 <div style={{ display:"flex", flexDirection:"column", gap:0, maxHeight:320, overflowY:"auto", marginBottom:6 }}>
                   {loadingDrivers && <div style={{ fontSize:12, color:C.t3, padding:8, textAlign:"center" }}>Cargando...</div>}
-                  {!loadingDrivers && drivers.length === 0 && !showNewDriver && !user && <div style={{ fontSize:12, color:C.t3, padding:8, textAlign:"center" }}>No hay choferes</div>}
+                  {!loadingDrivers && drivers.length === 0 && !showNewDriver && !user && <div style={{ fontSize:12, color: loadError ? C.err : C.t3, padding:8, textAlign:"center" }}>{loadError || "No hay choferes"}</div>}
                   {drivers.filter(d => d.id !== user?.id).map(d => (
                     <DriverRow key={d.id} d={d} selected={driverId === d.id} onClick={() => setDriverId(driverId === d.id ? "" : d.id)} />
                   ))}
