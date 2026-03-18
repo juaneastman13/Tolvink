@@ -266,6 +266,8 @@ export default memo(function HomeScreen({ user, freights, loading, perms, onNav,
   const toggleGroup = useCallback((gKey) => {
     setOpenGroup(prev => {
       if (prev === gKey) return null;
+      // "pa_" groups already have correctly filtered items in memory — no API fetch needed
+      if (gKey.startsWith("pa_")) return gKey;
       // Reuse cached data if available — avoids re-fetch on tab switch
       const cached = expandedRef.current[gKey];
       if (!cached?.items?.length) {
