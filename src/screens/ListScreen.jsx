@@ -10,9 +10,7 @@ const FreightsOverviewMap = lazy(() => import("../maps").then(m => ({ default: m
 
 const GROUPS = [
   { key:"solicitado", label:"Pendiente", color:STATUS_COLORS.pending_assignment.ribbon, icon:Ic.warn, statuses:["draft","pending_assignment"] },
-  { key:"asignado", label:"Asignado", color:STATUS_COLORS.assigned.ribbon, icon:Ic.chk, statuses:["assigned","accepted"] },
-  { key:"a_campo", label:"A campo", color:STATUS_COLORS.in_progress.ribbon, icon:Ic.nav, statuses:["in_progress"] },
-  { key:"a_planta", label:"A planta", color:STATUS_COLORS.loaded.ribbon, icon:Ic.truck, statuses:["loaded"] },
+  { key:"en_curso", label:"En curso", color:STATUS_COLORS.in_progress.ribbon, icon:Ic.nav, statuses:["assigned","accepted","in_progress","loaded"] },
   { key:"finalizados", label:"Finalizados", color:STATUS_COLORS.finished.ribbon, icon:Ic.chk, statuses:["finished"] },
   { key:"cancelados", label:"Cancelados", color:STATUS_COLORS.canceled.ribbon, icon:Ic.ban, statuses:["canceled"] },
 ];
