@@ -35,7 +35,6 @@ export function mapFreight(f) {
   if(!f) return null;
   const activeAssigns = (f.assignments||[]).filter(x=>x.status==="active"||x.status==="accepted");
   const a = activeAssigns[0];
-  const isOwnFleet = !!(a && a.transportCompanyId === f.originCompanyId);
   const isMultiTruck = !!(f.isMultiTruck || f.truckCount > 1);
   return {
     id:f.id, code:f.code, status:f.status,
@@ -46,7 +45,9 @@ export function mapFreight(f) {
     originHasOwnFleet: !!(f.originCompany?.hasInternalFleet || (Array.isArray(f.originCompany?.types) && f.originCompany.types.includes("transporter"))),
     destHasOwnFleet: !!(f.destCompany?.hasInternalFleet || (Array.isArray(f.destCompany?.types) && f.destCompany.types.includes("transporter"))),
     originLat:f.originLat?parseFloat(f.originLat):null, originLng:f.originLng?parseFloat(f.originLng):null,
-    fieldName:f.field?.name||"", useOwnFleet:f.useOwnFleet??null, isOwnFleet: f.useOwnFleet!=null ? f.useOwnFleet : isOwnFleet,
+    fieldName:f.field?.name||"", useOwnFleet:f.useOwnFleet??null,
+    // useOwnFleet is the initial request; actual assignment reflects reality
+    isOwnFleet: a ? !!(a.transportCompanyId === f.originCompanyId) : (f.useOwnFleet ?? false),
     fieldId:f.fieldId||null,
     destPlantId:f.destPlantId, destCompanyId:f.destCompanyId||null, destName:f.destName||"",
     destLat:f.destLat?parseFloat(f.destLat):null, destLng:f.destLng?parseFloat(f.destLng):null,
