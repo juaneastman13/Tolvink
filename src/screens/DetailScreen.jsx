@@ -334,13 +334,12 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
       {/* Sticky header — back + product title */}
       <div style={{ position:"sticky", top:0, zIndex:10, padding:"18px 18px 8px", background:C.bg }}>
         <button onClick={onBack} style={{ background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", fontSize:15, fontWeight:600, color:C.pri, marginBottom:14, padding:0, display:"flex", alignItems:"center", gap:4 }}>{Ic.chev(C.pri,18)} Volver</button>
-        <div>
-          <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-            <span style={{ fontSize:12.7, color:C.t3, fontWeight:600, fontFamily:MONO }}>{freight.code}</span>
-            {st && (()=>{const sc=STATUS_COLORS[freight.status]||STATUS_COLORS.pending_assignment; return <span style={{ display:"inline-flex", alignItems:"center", gap:4, fontSize:11, fontWeight:500, color:sc.pillText, background:sc.pillBg, padding:"3px 10px", borderRadius:20 }}>{sc.pulse&&<span style={{width:6,height:6,borderRadius:"50%",background:sc.ribbon,animation:"tolvinkPulse 1.5s infinite"}}/>}{sc.label}</span>;})()}
-          </div>
-          {freight.loadDate && <div style={{ fontSize:12.7, color:C.t3, fontWeight:500, marginTop:2 }}>{formatFreightDate(freight.loadDate)}</div>}
-          <div style={{ fontSize:24.2, fontWeight:800, marginTop:2, letterSpacing:-0.3 }}>{freight.grain==="Otros"?freight.productTypeOther||"Otros":freight.grain} · {freight.tons} {freight.unit||"tn"}</div>
+        <div style={{ display:"flex", alignItems:"center", flexWrap:"wrap", gap:4 }}>
+          {(()=>{const sc=STATUS_COLORS[freight.status]||STATUS_COLORS.pending_assignment; return <span style={{ display:"inline-flex", alignItems:"center", gap:4, fontSize:11, fontWeight:500, color:sc.pillText, background:sc.pillBg, padding:"3px 10px", borderRadius:20 }}>{sc.pulse&&<span style={{width:6,height:6,borderRadius:"50%",background:sc.ribbon,animation:"tolvinkPulse 1.5s infinite"}}/>}{sc.label}</span>;})()}
+          <span style={{ fontFamily:MONO, fontSize:14, color:C.t1, marginLeft:4 }}>{freight.code}</span>
+          {freight.loadDate && <><span style={{ fontSize:14, color:C.t2 }}>-</span><span style={{ fontSize:14, color:C.t2 }}>{formatFreightDate(freight.loadDate)}</span></>}
+          <span style={{ fontSize:14, color:C.t2 }}>-</span>
+          <span style={{ fontSize:14, fontWeight:500, color:C.t1 }}>{freight.grain==="Otros"?freight.productTypeOther||"Otros":freight.grain} · {freight.tons} {freight.unit||"toneladas"}</span>
         </div>
       </div>
 
