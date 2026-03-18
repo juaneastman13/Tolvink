@@ -328,6 +328,16 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
     return btns;
   };
 
+  // Cross-confirmations dot (shared between inline progress and detail modal)
+  const ConfDot = ({confirmed,label}) => (
+    <div style={{display:"flex",alignItems:"center",gap:5,fontSize:12.2}}>
+      <span style={{width:16,height:16,borderRadius:8,display:"inline-flex",alignItems:"center",justifyContent:"center",background:confirmed?C.okPale:C.accPale,flexShrink:0}}>
+        {confirmed ? Ic.chk(C.ok,11) : Ic.clk(C.acc,10)}
+      </span>
+      <span style={{color:confirmed?C.ok:C.t2,fontWeight:confirmed?600:400}}>{label}</span>
+    </div>
+  );
+
   return (
     <div style={{ flex:1, position:"relative" }}>
     <div style={{ position:"absolute", inset:0, overflow:"auto", animation:"slideUp 0.25s ease" }}>
@@ -441,15 +451,6 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
         // Get date for each step from audit log
         const getStepDate = (backendSteps) => { if(!auditLog) return null; const logs = backendSteps.flatMap(s => getStepLogs(s)); if(logs.length === 0) return null; return logs[logs.length-1].createdAt; };
         const visualAuditMap = [["pending_assignment"],["assigned","accepted","in_progress","loaded"],["finished"]];
-        // Cross-confirmations helper
-        const ConfDot = ({confirmed,label}) => (
-          <div style={{display:"flex",alignItems:"center",gap:5,fontSize:12.2}}>
-            <span style={{width:16,height:16,borderRadius:8,display:"inline-flex",alignItems:"center",justifyContent:"center",background:confirmed?C.okPale:C.accPale,flexShrink:0}}>
-              {confirmed ? Ic.chk(C.ok,11) : Ic.clk(C.acc,10)}
-            </span>
-            <span style={{color:confirmed?C.ok:C.t2,fontWeight:confirmed?600:400}}>{label}</span>
-          </div>
-        );
         const showConfs = !isMultiTruck && (freight.status==="loaded" || freight.status==="in_progress");
         return <div ref={auditRef} style={{ background:C.w, border:`1px solid ${C.b1}`, borderRadius:12, padding:16, marginBottom:12, boxShadow:C.sh, position:"relative" }}>
           <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14 }}>
