@@ -129,9 +129,11 @@ export default function AssignModal({ freight, transporters, user, onClose, onCo
   const totalTons = freight.tons || 0;
 
   const hasOwnFleet = !!freight.originHasOwnFleet || !!freight.destHasOwnFleet || !!user?.hasInternalFleet;
-  const ownFleetCompanyId = (user?.hasInternalFleet && !freight.destHasOwnFleet && !freight.originHasOwnFleet)
-    ? (user.activeCompanyId || user.companyId)
-    : freight.destHasOwnFleet ? freight.destCompanyId : freight.originCompanyId;
+  // When freight.useOwnFleet is set, always use origin company (producer's fleet).
+  // Otherwise, use the user's active company (works for both plant and producer toggling "Flota propia").
+  const ownFleetCompanyId = (freight.useOwnFleet && freight.originCompanyId)
+    ? freight.originCompanyId
+    : (user?.activeCompanyId || user?.companyId || freight.originCompanyId);
   const forceMode = freight.useOwnFleet === true ? "own" : null;
 
   const selTruck = truckId ? trucks.find(x => x.id === truckId) : null;
@@ -150,14 +152,14 @@ export default function AssignModal({ freight, transporters, user, onClose, onCo
     const cid = compId || (mode === "own" ? ownFleetCompanyId : t);
     if (!cid) return;
     setLoadingTrucks(true);
-    apiGetTrucks(cid).then(r => setTrucks((r || []).filter(t => t.active !== false))).catch(() => setTrucks([])).finally(() => setLoadingTrucks(false));
+    apiGetTrucks(cid).then(r => setTrucks((r || []).filter(t => t.active !== false))).catch(e => { console.error("AssignModal loadTrucks error:", cid, e); setTrucks([]); }).finally(() => setLoadingTrucks(false));
   }, [mode, ownFleetCompanyId, t]);
 
   const loadDriversFn = useCallback((compId) => {
     const cid = compId || (mode === "own" ? ownFleetCompanyId : t);
     if (!cid) return;
     setLoadingDrivers(true);
-    apiGetDrivers(cid).then(r => setDrivers(r || [])).catch(() => setDrivers([])).finally(() => setLoadingDrivers(false));
+    apiGetDrivers(cid).then(r => setDrivers(r || [])).catch(e => { console.error("AssignModal loadDrivers error:", cid, e); setDrivers([]); }).finally(() => setLoadingDrivers(false));
   }, [mode, ownFleetCompanyId, t]);
 
   useEffect(() => { if (mode === "own") { loadTrucks(ownFleetCompanyId); loadDriversFn(ownFleetCompanyId); } }, [mode, ownFleetCompanyId, loadTrucks, loadDriversFn]);
