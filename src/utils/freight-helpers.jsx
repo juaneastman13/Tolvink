@@ -162,20 +162,13 @@ export function getWaitingOnText(freight, userType) {
 
 // ======================== THIRD-PARTY LABEL (for grouping) =============
 export function getThirdPartyLabel(freight, userType) {
+  // Delegate to getWaitingOnText which already handles isOwnFleet + cross-confirmations
+  const waitText = getWaitingOnText(freight, userType);
+  if (waitText) return waitText;
+  // Fallback for statuses not covered by getWaitingOnText
   const s = freight.status;
-  if (s === "in_progress") return "En viaje";
+  if (s === "in_progress") return "En viaje a campo";
   if (s === "loaded") return "En viaje a planta";
-  if (userType === "plant") {
-    if (s === "assigned") return "Esperando respuesta del transportista";
-    if (s === "accepted") return "Esperando inicio del viaje";
-  } else if (userType === "transporter" || userType === "chofer") {
-    if (s === "assigned") return "Esperando respuesta del transportista";
-    if (s === "accepted") return "Esperando inicio del viaje";
-  } else if (userType === "producer") {
-    if (s === "pending_assignment") return "Esperando asignación de planta";
-    if (s === "assigned") return "Esperando respuesta del transportista";
-    if (s === "accepted") return "Esperando inicio del viaje";
-  }
   return "Sin pendientes de mi parte";
 }
 
