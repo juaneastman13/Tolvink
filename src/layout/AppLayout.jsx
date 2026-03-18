@@ -340,10 +340,24 @@ export default function AppLayout({ fh, catalog, online, notif, isDesktop }) {
       setModal({type:"reason",freight:f,title:"Rechazar viaje",btnLabel:"Rechazar",action:"reject_trip",assignmentId:aId});
       return;
     }
+    // Transporter accepting trip → show truck selection modal
+    if(actionKey==="respond_trip_accept" && !isPlant) {
+      setModal({type:"truck_select_trip",freight:f,assignmentId:aId});
+      return;
+    }
     const cfg = cfgs[actionKey];
     if(!cfg) return;
     setModal({type:"confirm_trip_action",freight:f,...cfg,actionKey,assignmentId:aId});
   }, [actionLoading, fh.freights, auth.user, setModal]);
+
+  const handleAcceptTripWithTruck = async (fId, aId, truckId, driverId)=>{
+    setActionLoading(true);
+    try {
+      const r = await fh.respondTrip(fId, aId, {action:"accepted", truckId, driverId});
+      if(r.ok){ track("trip_accept"); clearActionAfterClose(); return "Viaje aceptado"; }
+      show(r.error,"err"); setActionLoading(false); return "";
+    } catch { setActionLoading(false); return ""; }
+  };
 
   const handleTripConfirmAction = async (fId, aId, actionKey, loadedTons)=>{
     setActionLoading(true);
@@ -570,6 +584,7 @@ export default function AppLayout({ fh, catalog, online, notif, isDesktop }) {
       <Suspense fallback={null}>
       {modal?.type==="assign" && <AssignModal freight={modal.freight} transporters={catalog.transporters} user={auth.user} onClose={()=>setModal(null)} onConfirm={(compId,truckId,driverId)=>handleAssign(modal.freight.id,compId,truckId,driverId)} onAssignMulti={handleAssignMulti}/>}
       {modal?.type==="truck_select" && <TruckSelectModal freight={modal.freight} trucks={catalog.trucks} user={auth.user} onClose={()=>setModal(null)} onConfirm={(t,driverId)=>handleAcceptWithTruck(modal.freight.id,t,driverId)}/>}
+      {modal?.type==="truck_select_trip" && <TruckSelectModal freight={modal.freight} trucks={catalog.trucks} user={auth.user} onClose={()=>setModal(null)} onConfirm={(t,driverId)=>handleAcceptTripWithTruck(modal.freight.id,modal.assignmentId,t,driverId)}/>}
       {modal?.type==="confirm_action" && <ConfirmActionModal freight={modal.freight} title={modal.title} btnLabel={modal.btnLabel} btnVariant={modal.btnVariant} icon={modal.icon} onClose={()=>setModal(null)} onConfirm={(tons)=>handleConfirmAction(modal.freight.id,modal.action,tons)} showTonsInput={modal.action==="confirm_loaded"} defaultTons={modal.freight.tons}/>}
       {modal?.type==="wt_confirm" && <WeighTicketConfirmModal freight={modal.freight} action={modal.action} title={modal.title} btnLabel={modal.btnLabel} btnVariant={modal.btnVariant} icon={modal.icon} onClose={()=>setModal(null)} onConfirm={(tons)=>handleConfirmAction(modal.freight.id,modal.action,tons)} showTonsInput={modal.action==="confirm_loaded"} defaultTons={modal.freight.tons}/>}
       {modal?.type==="confirm_trip_action" && <ConfirmActionModal freight={modal.freight} title={modal.title} btnLabel={modal.btnLabel} btnVariant={modal.btnVariant} icon={modal.icon} onClose={()=>setModal(null)} onConfirm={(tons)=>handleTripConfirmAction(modal.freight.id,modal.assignmentId,modal.actionKey,tons)} showTonsInput={modal.actionKey==="confirm_trip_loaded"} defaultTons={modal.freight.tons}/>}
