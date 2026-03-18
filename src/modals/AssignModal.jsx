@@ -240,8 +240,7 @@ export default function AssignModal({ freight, transporters, user, onClose, onCo
 
   // ======================== RENDER =======================================
   return (
-    <ModalOverlay onClose={safeClose} loading={loading} closing={closing} closingText={closingText}>
-      <div style={{ maxWidth:420, width:"92vw", maxHeight:"80vh", overflow:"auto", padding:16 }}>
+    <ModalOverlay onClose={safeClose} loading={loading} closing={closing} closingText={closingText} maxWidth={560}>
 
         {/* Title */}
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
@@ -289,7 +288,7 @@ export default function AssignModal({ freight, transporters, user, onClose, onCo
         {needsTransporter && remainingSlots > 0 ? (
           <>
             <div style={{ fontSize:10, fontWeight:600, color:C.t2, marginBottom:6, textTransform:"uppercase", letterSpacing:0.5 }}>Seleccioná un transportista</div>
-            <div style={{ display:"flex", flexDirection:"column", gap:4, maxHeight:280, overflowY:"auto" }}>
+            <div style={{ display:"flex", flexDirection:"column", gap:4, maxHeight:320, overflowY:"auto" }}>
               {(hasOwnFleet ? externalTs : ts).length === 0 && <div style={{ fontSize:12, color:C.t3, padding:8 }}>No hay transportistas disponibles</div>}
               {(hasOwnFleet ? externalTs : ts).map(x => (
                 <button key={x.id} onClick={() => setT(x.id)} style={{ width:"100%", padding:"8px 10px", borderRadius:8, textAlign:"left", fontFamily:"inherit", border:`1px solid ${C.b1}`, background:C.bgCard, cursor:"pointer", display:"block", marginBottom:4 }}>
@@ -316,7 +315,7 @@ export default function AssignModal({ freight, transporters, user, onClose, onCo
             {step === 0 && (
               <div>
                 <div style={{ fontSize:14, fontWeight:700, color:C.t1, marginBottom:8 }}>Seleccionar vehículo</div>
-                <div style={{ display:"flex", flexDirection:"column", gap:0, maxHeight:240, overflowY:"auto", marginBottom:6 }}>
+                <div style={{ display:"flex", flexDirection:"column", gap:0, maxHeight:320, overflowY:"auto", marginBottom:6 }}>
                   {loadingTrucks && <div style={{ fontSize:12, color:C.t3, padding:8, textAlign:"center" }}>Cargando...</div>}
                   {!loadingTrucks && trucks.length === 0 && !showNewTruck && <div style={{ fontSize:12, color:C.t3, padding:8, textAlign:"center" }}>No hay vehículos</div>}
                   {trucks.map(tk => (
@@ -358,7 +357,7 @@ export default function AssignModal({ freight, transporters, user, onClose, onCo
 
                 {user && <DriverRow d={{ name: user.name, phone: user.phone }} selected={driverId === user.id} isMe onClick={() => setDriverId(driverId === user.id ? "" : user.id)} />}
 
-                <div style={{ display:"flex", flexDirection:"column", gap:0, maxHeight:200, overflowY:"auto", marginBottom:6 }}>
+                <div style={{ display:"flex", flexDirection:"column", gap:0, maxHeight:320, overflowY:"auto", marginBottom:6 }}>
                   {loadingDrivers && <div style={{ fontSize:12, color:C.t3, padding:8, textAlign:"center" }}>Cargando...</div>}
                   {!loadingDrivers && drivers.length === 0 && !showNewDriver && !user && <div style={{ fontSize:12, color:C.t3, padding:8, textAlign:"center" }}>No hay choferes</div>}
                   {drivers.filter(d => d.id !== user?.id).map(d => (
@@ -441,7 +440,6 @@ export default function AssignModal({ freight, transporters, user, onClose, onCo
           </div>
         ) : null}
 
-      </div>
     </ModalOverlay>
   );
 }
