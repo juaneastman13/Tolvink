@@ -113,16 +113,14 @@ export function mapFreight(f) {
   };
 }
 
-/** Resolve origin display text — "Personalizado" for map-picked origins without field */
+/** Resolve origin display text — always use the name saved at freight creation */
 export function originDisplay(f) {
   if (!f) return '';
-  if (!f.fieldId && f.originLat && f.originLng) return "Personalizado";
   return [f.fieldName, f.originName].filter(Boolean).join(" / ") || f.originCompanyName || "";
 }
-/** Resolve dest display text — "Personalizado" for map-picked dests without plant */
+/** Resolve dest display text — always use the name saved at freight creation */
 export function destDisplay(f) {
   if (!f) return '';
-  if (!f.destPlantId && f.destLat && f.destLng) return "Personalizado";
   return f.destName || "";
 }
 
