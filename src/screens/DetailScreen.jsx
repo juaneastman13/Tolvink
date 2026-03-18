@@ -337,9 +337,9 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
         <div style={{ display:"flex", alignItems:"center", flexWrap:"wrap", gap:4 }}>
           {(()=>{const sc=STATUS_COLORS[freight.status]||STATUS_COLORS.pending_assignment; return <span style={{ display:"inline-flex", alignItems:"center", gap:4, fontSize:11, fontWeight:500, color:sc.pillText, background:sc.pillBg, padding:"3px 10px", borderRadius:20 }}>{sc.pulse&&<span style={{width:6,height:6,borderRadius:"50%",background:sc.ribbon,animation:"tolvinkPulse 1.5s infinite"}}/>}{sc.label}</span>;})()}
           <span style={{ fontFamily:MONO, fontSize:14, color:C.t1, marginLeft:4 }}>{freight.code}</span>
-          {freight.loadDate && <><span style={{ fontSize:14, color:C.t2 }}>-</span><span style={{ fontSize:14, color:C.t2 }}>{formatFreightDate(freight.loadDate)}</span></>}
-          <span style={{ fontSize:14, color:C.t2 }}>-</span>
-          <span style={{ fontSize:14, fontWeight:500, color:C.t1 }}>{freight.grain==="Otros"?freight.productTypeOther||"Otros":freight.grain} · {freight.tons} {freight.unit||"toneladas"}</span>
+          {freight.loadDate && <><span style={{ fontSize:14, color:C.t1 }}>-</span><span style={{ fontSize:14, color:C.t1 }}>{formatFreightDate(freight.loadDate)}</span></>}
+          <span style={{ fontSize:14, color:C.t1 }}>-</span>
+          <span style={{ fontSize:28, fontWeight:800, color:C.t1, letterSpacing:-0.3 }}>{freight.grain==="Otros"?freight.productTypeOther||"Otros":freight.grain} · {freight.tons} {freight.unit||"toneladas"}</span>
         </div>
       </div>
 
