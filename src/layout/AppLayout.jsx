@@ -329,20 +329,12 @@ export default function AppLayout({ fh, catalog, online, notif, isDesktop }) {
     if(!f) return;
     const isPlant = auth.user?.userType === "plant" || (auth.user?.userTypes||[]).includes("plant");
     const cfgs = {
-      respond_trip_accept: isPlant
-        ? { title:"Autorizar viaje", btnLabel:"Autorizar", icon:Ic.chk(C.pri,24), btnVariant:"pri" }
-        : { title:"Aceptar viaje", btnLabel:"Aceptar", icon:Ic.chk(C.ok,24), btnVariant:"pri" },
       start_trip: { title:"Iniciar viaje", btnLabel:"Iniciar viaje", icon:Ic.truck(C.acc,24), btnVariant:"acc" },
       confirm_trip_loaded: { title:"Confirmar carga", btnLabel:"Confirmar carga", icon:Ic.chk(C.acc,24), btnVariant:"acc" },
       confirm_trip_finished: { title:"Confirmar entrega", btnLabel:"Confirmar entrega", icon:Ic.chk(C.pri,24), btnVariant:"pri" },
     };
     if(actionKey==="respond_trip_reject") {
       setModal({type:"reason",freight:f,title:"Rechazar viaje",btnLabel:"Rechazar",action:"reject_trip",assignmentId:aId});
-      return;
-    }
-    // Transporter accepting trip → show truck selection modal
-    if(actionKey==="respond_trip_accept" && !isPlant) {
-      setModal({type:"truck_select_trip",freight:f,assignmentId:aId});
       return;
     }
     const cfg = cfgs[actionKey];
@@ -362,10 +354,9 @@ export default function AppLayout({ fh, catalog, online, notif, isDesktop }) {
   const handleTripConfirmAction = async (fId, aId, actionKey, loadedTons)=>{
     setActionLoading(true);
     try {
-      const msgs = { respond_trip_accept:"Viaje autorizado", start_trip:"Viaje iniciado", confirm_trip_loaded:"Carga confirmada", confirm_trip_finished:"Entrega confirmada" };
+      const msgs = { start_trip:"Viaje iniciado", confirm_trip_loaded:"Carga confirmada", confirm_trip_finished:"Entrega confirmada" };
       let r;
-      if(actionKey==="respond_trip_accept") r = await fh.respondTrip(fId, aId, {action:"accepted"});
-      else if(actionKey==="start_trip") r = await fh.startTrip(fId, aId);
+      if(actionKey==="start_trip") r = await fh.startTrip(fId, aId);
       else if(actionKey==="confirm_trip_loaded") r = await fh.confirmTripLoaded(fId, aId, loadedTons);
       else if(actionKey==="confirm_trip_finished") r = await fh.confirmTripFinished(fId, aId);
       if(r?.ok){ clearActionAfterClose(); return msgs[actionKey]||"Hecho"; }

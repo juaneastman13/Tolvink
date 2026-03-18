@@ -236,13 +236,11 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
       const isOwn = a.transportCompanyId === freight?.originCompanyId;
       const entries = [];
       if (user.userType === "plant") {
-        if (isOwn && ts === "pending") entries.push({ key:"respond_trip_accept", label:"Autorizar viaje", color:C.sec, icon:Ic.chk(C.w,16) });
         if (ts === "loaded" && !a.plantFinishedConfirmedAt) entries.push({ key:"confirm_trip_finished", label:"Confirmar entrega", color:C.pri, icon:Ic.chk(C.w,16) });
       } else if (user.role !== "chofer" && user.userType === "producer" && !isOwn) {
         if (ts === "loaded" && !a.plantFinishedConfirmedAt) entries.push({ key:"confirm_trip_finished", label:"Confirmar entrega", color:C.pri, icon:Ic.chk(C.w,16) });
       }
       if (user.userType === "transporter" || user.role === "chofer") {
-        if (ts === "pending") entries.push({ key:"respond_trip_accept", label:"Aceptar viaje", color:C.ok, icon:Ic.chk(C.w,16) });
         if (ts === "accepted") entries.push({ key:"start_trip", label:"Iniciar viaje", color:C.pri, icon:Ic.truck(C.w,16) });
         if (ts === "in_progress" && !a.transporterLoadedConfirmedAt) entries.push({ key:"confirm_trip_loaded", label:"Confirmar carga", color:C.acc, icon:Ic.chk(C.w,16) });
         if (ts === "loaded" && !a.transporterFinishedConfirmedAt) entries.push({ key:"confirm_trip_finished", label:"Confirmar entrega", color:C.pri, icon:Ic.chk(C.w,16) });
@@ -305,14 +303,11 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
     const ts = a.tripStatus;
     const isOwnFleetTrip = a.transportCompanyId === freight.originCompanyId;
     if (user.userType === "plant") {
-      // Plant authorizes own-fleet trips
-      if (isOwnFleetTrip && ts === "pending") btns.push({ key:"respond_trip_accept", label:"Autorizar", color:C.sec, icon:Ic.chk(C.w,14) });
       if (ts === "loaded" && !a.plantFinishedConfirmedAt) btns.push({ key:"confirm_trip_finished", label:"Confirmar entrega", color:C.pri, icon:Ic.chk(C.w,14) });
     } else if (user.role !== "chofer" && user.userType === "producer" && !isOwnFleetTrip) {
       if (ts === "loaded" && !a.plantFinishedConfirmedAt) btns.push({ key:"confirm_trip_finished", label:"Confirmar entrega", color:C.pri, icon:Ic.chk(C.w,14) });
     }
     if (user.userType === "transporter" || user.role === "chofer") {
-      if (ts === "pending") btns.push({ key:"respond_trip_accept", label:"Aceptar", color:C.ok, icon:Ic.chk(C.w,14) }, { key:"respond_trip_reject", label:"Rechazar", color:C.err, icon:Ic.ban(C.w,14) });
       if (ts === "accepted") btns.push({ key:"start_trip", label:"Iniciar viaje", color:C.pri, icon:Ic.truck(C.w,14) });
       if (ts === "in_progress" && !a.transporterLoadedConfirmedAt) btns.push({ key:"confirm_trip_loaded", label:"Confirmar carga", color:C.acc, icon:Ic.chk(C.w,14) });
       if (ts === "loaded" && !a.transporterFinishedConfirmedAt) btns.push({ key:"confirm_trip_finished", label:"Confirmar entrega", color:C.pri, icon:Ic.chk(C.w,14) });
@@ -413,7 +408,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
           loaded:["confirm_loaded","trip_confirm_loaded"],
           finished:["confirm_finished","finished","trip_confirm_finished","trip_finished","canceled"],
         };
-        const stepToTrip = { assigned:"pending", accepted:"accepted", in_progress:"in_progress", loaded:"loaded", finished:"finished" };
+        const stepToTrip = { assigned:"accepted", accepted:"accepted", in_progress:"in_progress", loaded:"loaded", finished:"finished" };
         const tripRank = { pending:0, accepted:1, in_progress:2, loaded:3, finished:4 };
         const getStepLogs = (step) => { if(!auditLog) return []; return auditLog.filter(l=>(stepAuditActions[step]||[]).includes(l.action)); };
         const getTruckCount = (step) => { if(!isMultiTruck) return null; const ts=stepToTrip[step]; if(!ts) return null; const rank=tripRank[ts]??0; return (freight.activeAssignments||[]).filter(a=>(tripRank[a.tripStatus]??0)>=rank).length; };
@@ -850,7 +845,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
         const actionColors = { created:C.pri, assigned:C.sec, assigned_multi:C.sec, accepted:C.info, rejected:C.err, started:C.acc, confirm_loaded:C.acc, confirm_finished:C.pri, finished:C.ok, canceled:C.err, authorized:C.info, updated:C.t2, trip_accepted:C.info, trip_rejected:C.err, trip_started:C.acc, trip_confirm_loaded:C.acc, trip_confirm_finished:C.pri, trip_finished:C.ok, assignment_canceled:C.err, assignment_updated:C.t2 };
         const fmtD = (d) => { try { const dt=new Date(d); return dt.toLocaleDateString("es-AR",{day:"2-digit",month:"short"})+" "+dt.toLocaleTimeString("es-AR",{hour:"2-digit",minute:"2-digit",hour12:false}); } catch{ return ""; } };
         const getStepLogs = (step) => { if(!auditLog) return []; return auditLog.filter(l=>(stepAuditActions[step]||[]).includes(l.action)); };
-        const stepToTrip = { assigned:"pending", accepted:"accepted", in_progress:"in_progress", loaded:"loaded", finished:"finished" };
+        const stepToTrip = { assigned:"accepted", accepted:"accepted", in_progress:"in_progress", loaded:"loaded", finished:"finished" };
         const tripRank = { pending:0, accepted:1, in_progress:2, loaded:3, finished:4 };
         const getTruckCount = (step) => { if(!isMultiTruck) return null; const ts=stepToTrip[step]; if(!ts) return null; const rank=tripRank[ts]??0; return (freight.activeAssignments||[]).filter(a=>(tripRank[a.tripStatus]??0)>=rank).length; };
         const getStepAssignments = (step) => { if(!isMultiTruck) return []; const ts=stepToTrip[step]; if(!ts) return []; return (freight.activeAssignments||[]).filter(a=>a.tripStatus===ts); };
@@ -1007,7 +1002,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
         const actionColors = { created:C.pri, assigned:C.sec, assigned_multi:C.sec, accepted:C.info, rejected:C.err, started:C.acc, confirm_loaded:C.acc, confirm_finished:C.pri, finished:C.ok, canceled:C.err, authorized:C.info, updated:C.t2, trip_accepted:C.info, trip_rejected:C.err, trip_started:C.acc, trip_confirm_loaded:C.acc, trip_confirm_finished:C.pri, trip_finished:C.ok, assignment_canceled:C.err, assignment_updated:C.t2 };
         const fmtD = (d) => { try { const dt=new Date(d); return dt.toLocaleDateString("es-AR",{day:"2-digit",month:"short"})+" "+dt.toLocaleTimeString("es-AR",{hour:"2-digit",minute:"2-digit",hour12:false}); } catch{ return ""; } };
         const logs = auditLog ? stepModal.backendSteps.flatMap(s => (auditLog||[]).filter(l=>(stepAuditActions[s]||[]).includes(l.action))) : [];
-        const stepToTrip = { assigned:"pending", accepted:"accepted", in_progress:"in_progress", loaded:"loaded", finished:"finished" };
+        const stepToTrip = { assigned:"accepted", accepted:"accepted", in_progress:"in_progress", loaded:"loaded", finished:"finished" };
         const stepAssigns = isMultiTruck ? stepModal.backendSteps.flatMap(s => { const ts=stepToTrip[s]; if(!ts) return []; return (freight.activeAssignments||[]).filter(a=>a.tripStatus===ts); }) : [];
         return <div onClick={()=>setStepModal(null)} style={{ position:"absolute", inset:0, zIndex:200, background:"rgba(0,0,0,0.5)", display:"flex", alignItems:"center", justifyContent:"center", padding:16 }}>
           <div onClick={e=>e.stopPropagation()} style={{ background:C.w, borderRadius:14, padding:20, maxWidth:400, width:"100%", maxHeight:"80%", overflow:"auto", boxShadow:C.shLg }}>

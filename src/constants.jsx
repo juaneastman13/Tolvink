@@ -18,10 +18,9 @@ export function stCfg(s) {
 }
 
 export function getActions(status, userType, role, isOwnFleet) {
-  // Chofer: restricted actions — only can respond/start/confirm on assigned freights
+  // Chofer: first action is start (assignments are auto-accepted)
   if (role === "chofer") {
     const choferMap = {
-      assigned:    ["accept","reject"],
       accepted:    ["start"],
       in_progress: ["confirm_loaded"],
       loaded:      ["confirm_finished"],
@@ -30,7 +29,7 @@ export function getActions(status, userType, role, isOwnFleet) {
   }
   const map = {
     pending_assignment: { producer:["cancel"], plant:["assign","cancel"], transporter:[] },
-    assigned:           { producer:["cancel"], plant: isOwnFleet ? ["authorize","cancel"] : ["cancel"], transporter:["accept","reject"] },
+    assigned:           { producer:["cancel"], plant:["cancel"], transporter:["start","cancel"] },
     accepted:           { producer: isOwnFleet ? ["start","cancel"] : ["cancel"], plant:["cancel"], transporter: isOwnFleet ? [] : ["start","cancel"] },
     in_progress:        { producer: isOwnFleet ? ["confirm_loaded"] : [], plant:[], transporter: isOwnFleet ? [] : ["confirm_loaded"] },
     loaded:             { producer: isOwnFleet ? ["confirm_loaded","confirm_finished"] : ["confirm_loaded"], plant:["confirm_finished"], transporter: isOwnFleet ? [] : ["confirm_finished"] },
@@ -43,7 +42,7 @@ export function getActions(status, userType, role, isOwnFleet) {
 
 // Trip-level status (multi-truck v6.0)
 export const TRIP_STATUS_CFG = {
-  pending:     { label:"Pendiente",        color:"#FF6A00", bg:"#FFF3E8" },
+  pending:     { label:"Asignado",         color:"#0891B2", bg:"#ECFEFF" },
   accepted:    { label:"Asignado",         color:"#0891B2", bg:"#ECFEFF" },
   in_progress: { label:"En viaje a campo", color:"#E8C840", bg:"#FFFBE6" },
   loaded:      { label:"En viaje a planta",color:"#22C55E", bg:"#DCFCE7" },
