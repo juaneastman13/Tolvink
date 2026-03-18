@@ -197,7 +197,8 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
   // Drivers for own fleet
   const [ownFleetDrivers, setOwnFleetDrivers] = useState([]);
   const [loadingDrivers, setLoadingDrivers] = useState(false);
-  const ownFleetCompanyId = user.activeCompanyId || user.companyId;
+  // For own fleet, resolve the producer company — may differ from activeCompanyId for multi-type users
+  const ownFleetCompanyId = user.companyByType?.producer || user.activeCompanyId || user.companyId;
   useEffect(() => {
     if (form.fleetChoice === "own" && ownFleetCompanyId) {
       setLoadingDrivers(true);
