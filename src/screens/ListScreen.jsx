@@ -37,6 +37,15 @@ const SORT_GETTERS = {
   phone:       f => f.driverPhone || "",
 };
 
+const MESES_K = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
+function fmtKanbanDate(dateStr, timeStr) {
+  if (!dateStr) return "";
+  const p = dateStr.split("-");
+  if (p.length < 3) return dateStr;
+  const base = `${p[2].padStart(2,"0")}/${MESES_K[parseInt(p[1],10)-1]||p[1]}`;
+  return timeStr?.trim() ? `${base} ${timeStr.trim().slice(0,5)}` : base;
+}
+
 export default memo(function ListScreen({ freights, loading, onNav, onRefresh, catalog, view, setView, goToMap, hasMore, loadMore, loadingMore, total, isDesktop, onAction, user, simpleMode, statusCounts }) {
   const [sp] = useSearchParams();
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -358,8 +367,41 @@ export default memo(function ListScreen({ freights, loading, onNav, onRefresh, c
 
   // Kanban card renderer (shared between status and entity grouping)
   const renderKanbanCard = (f) => {
+    const origin = originDisplay(f) || f.originCompanyName || "Sin origen";
+    const dest = destDisplay(f) || "Sin destino";
+    const isCustomDest = !f.destPlantId && f.destLat && f.destLng;
+    const grain = f.grain === "Otros" ? (f.productTypeOther || "Otros") : f.grain;
+    const tons = `${f.tons || ""}${f.unit && f.unit !== "toneladas" ? ` ${f.unit}` : " tn"}`;
+    const dt = fmtKanbanDate(f.loadDate, f.loadTime);
+    const transport = f.transporterName || "Sin asignar";
+    const plate = f.truckPlate;
+    const sc = STATUS_COLORS[f.status] || STATUS_COLORS.pending_assignment;
     return wrapHover(f,
-      <FreightCardCompact freight={f} onClick={()=>onNav("detail",f.id)} showTime style={{ contentVisibility:"auto", containIntrinsicSize:"0 80px" }} />
+      <div className="tv-card" onClick={()=>onNav("detail",f.id)} style={{ display:"flex", borderRadius:6, border:`0.5px solid ${C.b1}`, overflow:"hidden", cursor:"pointer", background:C.w, transition:"border-color 0.15s", contentVisibility:"auto", containIntrinsicSize:"0 90px" }}>
+        <div style={{ width:5, background:sc.ribbon, flexShrink:0 }} />
+        <div style={{ padding:"8px 10px", flex:1, minWidth:0 }}>
+          {/* Line 1: code - date */}
+          <div style={{ fontSize:11, color:C.t2, marginBottom:3, display:"flex", alignItems:"baseline", gap:4 }}>
+            <span style={{ fontFamily:MONO, fontWeight:700 }}>{f.code}</span>
+            {dt && <><span>-</span><span>{dt}</span></>}
+          </div>
+          {/* Line 2: grain · tons */}
+          <div style={{ fontSize:14, fontWeight:500, color:C.t1, marginBottom:4 }}>{grain} · {tons}</div>
+          {/* Line 3: origin → dest */}
+          <div style={{ display:"flex", alignItems:"center", gap:4, marginBottom:3 }}>
+            {Ic.pin("#888",12)}
+            <span style={{ fontSize:12, color:C.t2, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{origin}</span>
+            <span style={{ fontSize:12, color:C.t2, flexShrink:0 }}>→</span>
+            {isCustomDest ? Ic.pin("#888",11) : Ic.plant("#666",11)}
+            <span style={{ fontSize:12, color:C.t2, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{dest}</span>
+          </div>
+          {/* Line 4: transporter */}
+          <div style={{ display:"flex", alignItems:"center", gap:4 }}>
+            {Ic.truck(C.t2,12)}
+            <span style={{ fontSize:12, color:C.t2 }}>{transport}{plate ? ` · ${plate}` : ""}</span>
+          </div>
+        </div>
+      </div>
     );
   };
 
