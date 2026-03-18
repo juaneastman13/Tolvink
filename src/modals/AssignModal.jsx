@@ -142,6 +142,7 @@ export default function AssignModal({ freight, transporters, user, onClose, onCo
   const remainingTons = Math.max(0, totalTons - assignedTons);
   const defaultTons = truckCapacity ? Math.min(truckCapacity, remainingTons || totalTons) : (remainingTons || totalTons);
 
+  const isDelegation = mode === "company";
   const tonsStep = isDelegation ? 0 : 2;
   useEffect(() => {
     if (step === tonsStep && !tonsInput) setTonsInput(defaultTons > 0 ? String(Math.round(defaultTons * 10) / 10) : "");
@@ -235,7 +236,6 @@ export default function AssignModal({ freight, transporters, user, onClose, onCo
   const safeClose = () => { if (hasDirtyData && !loading && !closing && !window.confirm("¿Descartar los cambios sin guardar?")) return; onClose(); };
 
   const needsTransporter = mode === "company" && !t;
-  const isDelegation = mode === "company"; // Delegation: plant picks transporter only, no truck/driver
   const externalTs = ts.filter(x => x.id !== freight.originCompanyId);
   const remainingSlots = multiTruck ? Math.max(0, needed - truckList.length) : 1;
   const stepLabels = isDelegation ? ["Toneladas"] : ["Vehículo", "Chofer", "Toneladas"];
