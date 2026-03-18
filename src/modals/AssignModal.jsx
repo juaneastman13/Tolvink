@@ -142,8 +142,9 @@ export default function AssignModal({ freight, transporters, user, onClose, onCo
   const remainingTons = Math.max(0, totalTons - assignedTons);
   const defaultTons = truckCapacity ? Math.min(truckCapacity, remainingTons || totalTons) : (remainingTons || totalTons);
 
+  const tonsStep = isDelegation ? 0 : 2;
   useEffect(() => {
-    if (step === 2 && !tonsInput) setTonsInput(defaultTons > 0 ? String(Math.round(defaultTons * 10) / 10) : "");
+    if (step === tonsStep && !tonsInput) setTonsInput(defaultTons > 0 ? String(Math.round(defaultTons * 10) / 10) : "");
   }, [step]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadTrucks = useCallback((compId) => {
@@ -161,7 +162,7 @@ export default function AssignModal({ freight, transporters, user, onClose, onCo
   }, [mode, ownFleetCompanyId, t]);
 
   useEffect(() => { if (mode === "own") { loadTrucks(ownFleetCompanyId); loadDriversFn(ownFleetCompanyId); } }, [mode, ownFleetCompanyId, loadTrucks, loadDriversFn]);
-  useEffect(() => { if (mode === "company" && t) { loadTrucks(t); loadDriversFn(t); } }, [mode, t, loadTrucks, loadDriversFn]);
+  useEffect(() => { if (mode === "company" && t && !isDelegation) { loadTrucks(t); loadDriversFn(t); } }, [mode, t, isDelegation, loadTrucks, loadDriversFn]);
 
   useEffect(() => {
     if (truckId) {
@@ -234,9 +235,10 @@ export default function AssignModal({ freight, transporters, user, onClose, onCo
   const safeClose = () => { if (hasDirtyData && !loading && !closing && !window.confirm("¿Descartar los cambios sin guardar?")) return; onClose(); };
 
   const needsTransporter = mode === "company" && !t;
+  const isDelegation = mode === "company"; // Delegation: plant picks transporter only, no truck/driver
   const externalTs = ts.filter(x => x.id !== freight.originCompanyId);
   const remainingSlots = multiTruck ? Math.max(0, needed - truckList.length) : 1;
-  const stepLabels = ["Vehículo", "Chofer", "Toneladas"];
+  const stepLabels = isDelegation ? ["Toneladas"] : ["Vehículo", "Chofer", "Toneladas"];
 
   // ======================== RENDER =======================================
   return (
@@ -309,10 +311,10 @@ export default function AssignModal({ freight, transporters, user, onClose, onCo
               </div>
             )}
 
-            <Stepper steps={stepLabels} current={step} />
+            {!isDelegation && <Stepper steps={stepLabels} current={step} />}
 
-            {/* =================== STEP 0: VEHICLE =================== */}
-            {step === 0 && (
+            {/* =================== STEP 0: VEHICLE (own fleet only) =================== */}
+            {!isDelegation && step === 0 && (
               <div>
                 <div style={{ fontSize:14, fontWeight:700, color:C.t1, marginBottom:8 }}>Seleccionar vehículo</div>
                 <div style={{ display:"flex", flexDirection:"column", gap:0, maxHeight:320, overflowY:"auto", marginBottom:6 }}>
@@ -350,8 +352,8 @@ export default function AssignModal({ freight, transporters, user, onClose, onCo
               </div>
             )}
 
-            {/* =================== STEP 1: DRIVER =================== */}
-            {step === 1 && (
+            {/* =================== STEP 1: DRIVER (own fleet only) =================== */}
+            {!isDelegation && step === 1 && (
               <div>
                 <div style={{ fontSize:14, fontWeight:700, color:C.t1, marginBottom:8 }}>Seleccionar chofer</div>
 
@@ -389,31 +391,38 @@ export default function AssignModal({ freight, transporters, user, onClose, onCo
               </div>
             )}
 
-            {/* =================== STEP 2: TONS =================== */}
-            {step === 2 && (
+            {/* =================== TONS + CONFIRM (delegation: step 0, own fleet: step 2) =================== */}
+            {((isDelegation && step === 0) || (!isDelegation && step === 2)) && (
               <div>
                 <div style={{ fontSize:14, fontWeight:700, color:C.t1, marginBottom:10 }}>Toneladas</div>
 
-                <div style={{ padding:"8px 10px", borderRadius:8, border:`1px solid ${C.b1}`, background:C.bg, marginBottom:12 }}>
-                  <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:2 }}>
-                    {Ic.truck(C.t1, 14)}
-                    <span style={{ fontSize:13, fontWeight:600, color:C.t1 }}>{selTruck?.plate || ""}{selTruck?.model ? ` · ${selTruck.model}` : ""}</span>
+                {/* Truck/driver summary — only for own fleet mode */}
+                {!isDelegation && (
+                  <div style={{ padding:"8px 10px", borderRadius:8, border:`1px solid ${C.b1}`, background:C.bg, marginBottom:12 }}>
+                    <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:2 }}>
+                      {Ic.truck(C.t1, 14)}
+                      <span style={{ fontSize:13, fontWeight:600, color:C.t1 }}>{selTruck?.plate || ""}{selTruck?.model ? ` · ${selTruck.model}` : ""}</span>
+                    </div>
+                    <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                      {Ic.user(C.t1, 14)}
+                      <span style={{ fontSize:13, fontWeight:600, color:C.t1 }}>{selDriver?._isMe ? `${selDriver.name} (yo)` : selDriver?.name || ""}</span>
+                    </div>
                   </div>
-                  <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-                    {Ic.user(C.t1, 14)}
-                    <span style={{ fontSize:13, fontWeight:600, color:C.t1 }}>{selDriver?._isMe ? `${selDriver.name} (yo)` : selDriver?.name || ""}</span>
-                  </div>
-                </div>
+                )}
+
+                {isDelegation && (
+                  <div style={{ fontSize:12, color:C.t3, marginBottom:10 }}>El transportista asignará vehículo y chofer.</div>
+                )}
 
                 <label style={{ fontSize:11, fontWeight:600, color:C.t2, marginBottom:4, display:"block" }}>Toneladas a transportar</label>
                 <input type="number" min="0" step="0.1" value={tonsInput} onChange={e => setTonsInput(e.target.value)}
                   placeholder={defaultTons > 0 ? String(defaultTons) : ""}
                   style={{ width:"100%", fontSize:16, textAlign:"center", padding:"10px 12px", border:`1px solid ${C.b1}`, borderRadius:8, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }}
                 />
-                {truckCapacity && <div style={{ fontSize:10, color:C.t3, textAlign:"center", marginTop:3 }}>Capacidad: {truckCapacity} tn</div>}
+                {!isDelegation && truckCapacity && <div style={{ fontSize:10, color:C.t3, textAlign:"center", marginTop:3 }}>Capacidad: {truckCapacity} tn</div>}
 
-                <div style={{ display:"flex", justifyContent:"space-between", marginTop:12, gap:8 }}>
-                  <button onClick={() => setStep(1)} style={btnPrev}>← Anterior</button>
+                <div style={{ display:"flex", justifyContent:isDelegation ? "flex-end" : "space-between", marginTop:12, gap:8 }}>
+                  {!isDelegation && <button onClick={() => setStep(1)} style={btnPrev}>← Anterior</button>}
                   {multiTruck && remainingSlots > 1 ? (
                     <div style={{ display:"flex", gap:6 }}>
                       <button disabled={!parseFloat(tonsInput)} onClick={addAndContinue} style={{ background:"transparent", border:`1px solid ${C.pri}`, color:C.pri, borderRadius:8, padding:"8px 12px", fontSize:12, fontWeight:500, cursor: parseFloat(tonsInput) ? "pointer" : "default", fontFamily:"inherit" }}>+ Otro</button>
