@@ -9,8 +9,9 @@ import { apiListFreights } from "../api";
 const FreightsOverviewMap = lazy(() => import("../maps").then(m => ({ default: m.FreightsOverviewMap })));
 
 const GROUPS = [
-  { key:"solicitado", label:"Solicitado", color:C.acc, icon:Ic.warn, statuses:["pending_assignment"] },
-  { key:"en_curso", label:"En curso", color:C.sec, icon:Ic.nav, statuses:["assigned","accepted","in_progress","loaded"] },
+  { key:"solicitado", label:"Pendiente", color:C.acc, icon:Ic.warn, statuses:["pending_assignment"] },
+  { key:"asignado", label:"Asignado", color:"#0891B2", icon:Ic.chk, statuses:["assigned","accepted"] },
+  { key:"en_curso", label:"En curso", color:C.sec, icon:Ic.nav, statuses:["in_progress","loaded"] },
   { key:"finalizados", label:"Finalizados", color:C.pri, icon:Ic.chk, statuses:["finished"] },
   { key:"cancelados", label:"Cancelados", color:C.err, icon:Ic.ban, statuses:["canceled"] },
 ];

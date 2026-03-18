@@ -283,9 +283,14 @@ export default function AppLayout({ fh, catalog, online, notif, isDesktop }) {
     if(action==="assign") { setModal({type:"assign",freight:f}); }
     else if(action==="cancel") { setModal({type:"reason",freight:f,title:"Cancelar flete",btnLabel:"Cancelar flete",action:"cancel"}); }
     else if(action==="reject") { setModal({type:"reason",freight:f,title:"Rechazar asignación",btnLabel:"Rechazar",action:"reject"}); }
-    else if(action==="accept") { setModal({type:"truck_select",freight:f}); }
+    else if(action==="assign_truck") {
+      // Transporter: open edit modal for the first pending assignment without truck
+      const pendingAssignment = (f.activeAssignments||[]).find(a => !a.truckId && a.transportCompanyId === auth.user?.companyId);
+      if(pendingAssignment) setModal({type:"edit_trip",freight:f,assignment:pendingAssignment});
+    }
     else if(action==="start") { setModal({type:"confirm_action",freight:f,title:"Iniciar viaje",btnLabel:"Iniciar viaje",btnVariant:"acc",icon:Ic.truck(C.acc,24),action:"start"}); }
     else if(action==="authorize") { setModal({type:"confirm_action",freight:f,title:"Autorizar viaje",btnLabel:"Autorizar",icon:Ic.chk(C.pri,24),action:"authorize"}); }
+    else if(action==="reject_own_fleet") { setModal({type:"reason",freight:f,title:"Rechazar flota propia",btnLabel:"Rechazar",action:"reject"}); }
     else if(action==="confirm_loaded") { setModal({type:"wt_confirm",freight:f,title:"Confirmar carga",btnLabel:"Confirmar carga",btnVariant:"acc",icon:Ic.chk(C.acc,24),action:"confirm_loaded"}); }
     else if(action==="confirm_finished") { setModal({type:"wt_confirm",freight:f,title:"Confirmar entrega",btnLabel:"Confirmar entrega",icon:Ic.chk(C.pri,24),action:"confirm_finished"}); }
     else if(action==="driver_queue") { setModal({type:"driver_queue",driverId:f.driverId,driverName:f.driverName}); }
@@ -333,8 +338,8 @@ export default function AppLayout({ fh, catalog, online, notif, isDesktop }) {
       confirm_trip_loaded: { title:"Confirmar carga", btnLabel:"Confirmar carga", icon:Ic.chk(C.acc,24), btnVariant:"acc" },
       confirm_trip_finished: { title:"Confirmar entrega", btnLabel:"Confirmar entrega", icon:Ic.chk(C.pri,24), btnVariant:"pri" },
     };
-    if(actionKey==="respond_trip_reject") {
-      setModal({type:"reason",freight:f,title:"Rechazar viaje",btnLabel:"Rechazar",action:"reject_trip",assignmentId:aId});
+    if(actionKey==="respond_trip_reject" || actionKey==="reject_trip") {
+      setModal({type:"reason",freight:f,title:"Devolver asignación",btnLabel:"Devolver",action:"reject_trip",assignmentId:aId});
       return;
     }
     const cfg = cfgs[actionKey];

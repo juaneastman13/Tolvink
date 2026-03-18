@@ -267,7 +267,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
     const btns = [];
     if(filteredActions.includes("authorize")) btns.push(<Btn key="auth" full icon={Ic.chk(C.w,16)} disabled={actionLoading} onClick={()=>onAction(freight?.id,"authorize")}>{actionLoading?"Procesando...":"Autorizar viaje"}</Btn>);
     if(filteredActions.includes("assign")) btns.push(<Btn key="assign" full v="acc" icon={Ic.chk(C.w,16)} disabled={actionLoading} onClick={()=>onAction(freight?.id,"assign")}>Asignar transportista</Btn>);
-    if(filteredActions.includes("accept")) btns.push(<Btn key="accept" full icon={Ic.chk(C.w,16)} disabled={actionLoading} onClick={()=>onAction(freight?.id,"accept")}>Aceptar flete</Btn>);
+    if(filteredActions.includes("assign_truck")) btns.push(<Btn key="assign_truck" full icon={Ic.truck(C.w,16)} disabled={actionLoading} onClick={()=>onAction(freight?.id,"assign_truck")}>Asignar camión y chofer</Btn>);
     if(filteredActions.includes("start")) btns.push(<Btn key="start" full icon={Ic.truck(C.w,16)} disabled={actionLoading} onClick={()=>onAction(freight?.id,"start")}>{actionLoading?"Procesando...":"Iniciar viaje"}</Btn>);
     if(filteredActions.includes("confirm_loaded")) btns.push(<Btn key="loaded" full v="acc" icon={Ic.chk(C.w,16)} disabled={actionLoading} onClick={()=>onAction(freight?.id,"confirm_loaded")}>{actionLoading?"Procesando...":"Confirmar carga"}</Btn>);
     if(filteredActions.includes("confirm_finished")) btns.push(<Btn key="finished" full v="acc" icon={Ic.chk(C.w,16)} disabled={actionLoading} onClick={()=>onAction(freight?.id,"confirm_finished")}>{actionLoading?"Procesando...":"Confirmar entrega"}</Btn>);
@@ -311,6 +311,10 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
       if (ts === "accepted") btns.push({ key:"start_trip", label:"Iniciar viaje", color:C.pri, icon:Ic.truck(C.w,14) });
       if (ts === "in_progress" && !a.transporterLoadedConfirmedAt) btns.push({ key:"confirm_trip_loaded", label:"Confirmar carga", color:C.acc, icon:Ic.chk(C.w,14) });
       if (ts === "loaded" && !a.transporterFinishedConfirmedAt) btns.push({ key:"confirm_trip_finished", label:"Confirmar entrega", color:C.pri, icon:Ic.chk(C.w,14) });
+    }
+    // Transporter can cancel a pending assignment (return it)
+    if (user.userType === "transporter" && user.role !== "chofer" && (ts === "pending" || ts === "accepted") && a.transportCompanyId === user.companyId) {
+      btns.push({ key:"reject_trip", label:"Devolver", color:C.err, icon:Ic.cross(C.w,14) });
     }
     if (user.userType === "producer" && isOwnFleetTrip) {
       if (ts === "accepted") btns.push({ key:"start_trip", label:"Iniciar viaje", color:C.pri, icon:Ic.truck(C.w,14) });
@@ -361,6 +365,25 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
         </div>
       )}
 
+      {/* Flow C: Plant sees producer's own fleet pending approval */}
+      {freight.status === "pending_assignment" && user.userType === "plant" && freight.useOwnFleet && freight.activeAssignments?.length > 0 && freight.activeAssignments[0]?.truckId && (
+        <div style={{ background:`${C.acc}10`, border:`1.5px solid ${C.acc}30`, borderRadius:12, padding:"12px 16px", marginBottom:12 }}>
+          <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:8 }}>
+            <span style={{ display:"flex" }}>{Ic.truck(C.acc,20)}</span>
+            <div>
+              <div style={{ fontSize:15, fontWeight:700, color:C.acc }}>Flota propia del productor</div>
+              <div style={{ fontSize:12.7, color:C.t2 }}>
+                {freight.activeAssignments[0].plate || "Sin patente"} — {freight.activeAssignments[0].driverName || "Sin chofer"}. Esperando tu aprobación.
+              </div>
+            </div>
+          </div>
+          <div style={{ display:"flex", gap:8 }}>
+            <Btn full icon={Ic.chk(C.w,14)} disabled={actionLoading} onClick={()=>onAction(freight.id,"authorize")}>{actionLoading?"Procesando...":"Aprobar"}</Btn>
+            <Btn full v="err" icon={Ic.cross(C.err,14)} disabled={actionLoading} onClick={()=>onAction(freight.id,"reject_own_fleet")}>Rechazar</Btn>
+          </div>
+        </div>
+      )}
+
       {/* Primary actions — flow-advancing (desktop: inline, mobile: ActionFooter below) */}
       {_isDesktop && primaryBtns.length > 0 && (
         <div style={{ display:"flex", flexDirection:"column", gap:8, marginBottom:12 }}>{primaryBtns}</div>
@@ -398,8 +421,8 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
           { label: isCanceled ? "Cancelado" : "Finalizado", color: isCanceled ? C.err : C.ok, icon:(c,s)=> isCanceled ? Ic.cross(c,s) : Ic.chk(c,s) },
         ];
         const fmtD = (d) => { try { const dt=new Date(d); return dt.toLocaleDateString("es-AR",{day:"2-digit",month:"short"})+" "+dt.toLocaleTimeString("es-AR",{hour:"2-digit",minute:"2-digit",hour12:false}); } catch(e){ return ""; } };
-        const actionLabels = { created:"Solicitado", assigned:"Asignado", assigned_multi:"Asignado", accepted:"Aceptado", rejected:"Rechazado", started:"Iniciado", confirm_loaded:"Carga OK", confirm_finished:"Entrega OK", finished:"Finalizado", canceled:"Cancelado", authorized:"Autorizado", updated:"Editado", trip_accepted:"Aceptado", trip_rejected:"Rechazado", trip_started:"Iniciado", trip_confirm_loaded:"Carga OK", trip_confirm_finished:"Entrega OK", trip_finished:"Finalizado", assignment_canceled:"Cancelado", assignment_updated:"Editado" };
-        const actionColors = { created:C.pri, assigned:C.sec, assigned_multi:C.sec, accepted:C.info, rejected:C.err, started:C.acc, confirm_loaded:C.acc, confirm_finished:C.pri, finished:C.ok, canceled:C.err, authorized:C.info, updated:C.t2, trip_accepted:C.info, trip_rejected:C.err, trip_started:C.acc, trip_confirm_loaded:C.acc, trip_confirm_finished:C.pri, trip_finished:C.ok, assignment_canceled:C.err, assignment_updated:C.t2 };
+        const actionLabels = { created:"Solicitado", assigned:"Asignado", assigned_multi:"Asignado", accepted:"Aceptado", rejected:"Rechazado", started:"Iniciado", confirm_loaded:"Carga OK", confirm_finished:"Entrega OK", finished:"Finalizado", canceled:"Cancelado", authorized:"Autorizado", updated:"Editado", trip_accepted:"Aceptado", trip_rejected:"Rechazado", trip_started:"Iniciado", trip_confirm_loaded:"Carga OK", trip_confirm_finished:"Entrega OK", trip_finished:"Finalizado", assignment_canceled:"Cancelado", assignment_updated:"Editado", assignment_truck_assigned:"Camión asignado" };
+        const actionColors = { created:C.pri, assigned:C.sec, assigned_multi:C.sec, accepted:C.info, rejected:C.err, started:C.acc, confirm_loaded:C.acc, confirm_finished:C.pri, finished:C.ok, canceled:C.err, authorized:C.info, updated:C.t2, trip_accepted:C.info, trip_rejected:C.err, trip_started:C.acc, trip_confirm_loaded:C.acc, trip_confirm_finished:C.pri, trip_finished:C.ok, assignment_canceled:C.err, assignment_updated:C.t2, assignment_truck_assigned:C.info };
         const stepAuditActions = {
           pending_assignment:["created"],
           assigned:["assigned","assigned_multi","assignment_updated","assignment_canceled"],
@@ -408,7 +431,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
           loaded:["confirm_loaded","trip_confirm_loaded"],
           finished:["confirm_finished","finished","trip_confirm_finished","trip_finished","canceled"],
         };
-        const stepToTrip = { assigned:"accepted", accepted:"accepted", in_progress:"in_progress", loaded:"loaded", finished:"finished" };
+        const stepToTrip = { assigned:"pending", accepted:"accepted", in_progress:"in_progress", loaded:"loaded", finished:"finished" };
         const tripRank = { pending:0, accepted:1, in_progress:2, loaded:3, finished:4 };
         const getStepLogs = (step) => { if(!auditLog) return []; return auditLog.filter(l=>(stepAuditActions[step]||[]).includes(l.action)); };
         const getTruckCount = (step) => { if(!isMultiTruck) return null; const ts=stepToTrip[step]; if(!ts) return null; const rank=tripRank[ts]??0; return (freight.activeAssignments||[]).filter(a=>(tripRank[a.tripStatus]??0)>=rank).length; };
@@ -556,6 +579,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
                     <div style={{ display:"flex", flexDirection:"column", gap:4, fontSize:13.3, color:C.t2, marginBottom:tripBtns.length>0?10:0 }}>
                       {a.transporterName && <div style={{ display:"flex", alignItems:"center", gap:6 }}>{Ic.truck(C.t3,12)} {a.transporterName}</div>}
                       {a.plate && a.truckModel && <div style={{ display:"flex", alignItems:"center", gap:6 }}>{Ic.truck(C.acc,12)} {a.plate} · {a.truckModel}</div>}
+                      {!a.plate && a.transporterName && <div style={{ display:"flex", alignItems:"center", gap:6, color:C.acc, fontStyle:"italic" }}>{Ic.clk(C.acc,12)} Pendiente de camión y chofer</div>}
                       {a.driverName && <div style={{ display:"flex", alignItems:"center", gap:6 }}>{Ic.user(C.pri,12)} {a.driverName}{a.driverPhone?` · ${a.driverPhone}`:""}</div>}
                       {a.tons && <div style={{ display:"flex", alignItems:"center", gap:6 }}>{Ic.grain(C.t3,12)} {a.tons} tn</div>}
                       {(a.tripStatus === "in_progress" || a.tripStatus === "loaded") && (
@@ -578,7 +602,14 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
                             {b.icon} {actionLoading?"...":b.label}
                           </button>
                         ))}
-                        {user.userType === "plant" && (a.tripStatus === "pending" || a.tripStatus === "accepted") && a.transportCompanyId !== freight.originCompanyId && onEditTrip && (
+                        {/* Transporter: "Asignar camión" for pending assignments without truck */}
+                        {user.userType === "transporter" && a.tripStatus === "pending" && !a.truckId && a.transportCompanyId === user.companyId && onEditTrip && (
+                          <button onClick={(e)=>{e.stopPropagation(); onEditTrip(freight.id, a);}} style={{ flex:"1 1 auto", padding:"10px 12px", minWidth:80, minHeight:40, borderRadius:8, border:"none", background:C.pri, color:C.w, fontSize:13.3, fontWeight:700, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
+                            {Ic.truck(C.w,14)} Asignar camión
+                          </button>
+                        )}
+                        {/* Edit button: plant or transporter can edit non-started trips */}
+                        {(user.userType === "plant" || (user.userType === "transporter" && a.transportCompanyId === user.companyId)) && (a.tripStatus === "pending" || a.tripStatus === "accepted") && onEditTrip && (
                           <button onClick={(e)=>{e.stopPropagation(); onEditTrip(freight.id, a);}} style={{ padding:"8px 12px", minHeight:36, borderRadius:8, border:`1px solid ${C.b1}`, background:C.w, color:C.t2, fontSize:12.7, fontWeight:600, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:4 }}>
                             {Ic.doc(C.t2,12)} Editar
                           </button>
@@ -841,11 +872,11 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
           loaded:["confirm_loaded","trip_confirm_loaded"],
           finished:["confirm_finished","finished","trip_confirm_finished","trip_finished","canceled"],
         };
-        const actionLabels = { created:"Solicitado", assigned:"Asignado", assigned_multi:"Asignado", accepted:"Aceptado", rejected:"Rechazado", started:"Iniciado", confirm_loaded:"Carga OK", confirm_finished:"Entrega OK", finished:"Finalizado", canceled:"Cancelado", authorized:"Autorizado", updated:"Editado", trip_accepted:"Aceptado", trip_rejected:"Rechazado", trip_started:"Iniciado", trip_confirm_loaded:"Carga OK", trip_confirm_finished:"Entrega OK", trip_finished:"Finalizado", assignment_canceled:"Cancelado", assignment_updated:"Editado" };
-        const actionColors = { created:C.pri, assigned:C.sec, assigned_multi:C.sec, accepted:C.info, rejected:C.err, started:C.acc, confirm_loaded:C.acc, confirm_finished:C.pri, finished:C.ok, canceled:C.err, authorized:C.info, updated:C.t2, trip_accepted:C.info, trip_rejected:C.err, trip_started:C.acc, trip_confirm_loaded:C.acc, trip_confirm_finished:C.pri, trip_finished:C.ok, assignment_canceled:C.err, assignment_updated:C.t2 };
+        const actionLabels = { created:"Solicitado", assigned:"Asignado", assigned_multi:"Asignado", accepted:"Aceptado", rejected:"Rechazado", started:"Iniciado", confirm_loaded:"Carga OK", confirm_finished:"Entrega OK", finished:"Finalizado", canceled:"Cancelado", authorized:"Autorizado", updated:"Editado", trip_accepted:"Aceptado", trip_rejected:"Rechazado", trip_started:"Iniciado", trip_confirm_loaded:"Carga OK", trip_confirm_finished:"Entrega OK", trip_finished:"Finalizado", assignment_canceled:"Cancelado", assignment_updated:"Editado", assignment_truck_assigned:"Camión asignado" };
+        const actionColors = { created:C.pri, assigned:C.sec, assigned_multi:C.sec, accepted:C.info, rejected:C.err, started:C.acc, confirm_loaded:C.acc, confirm_finished:C.pri, finished:C.ok, canceled:C.err, authorized:C.info, updated:C.t2, trip_accepted:C.info, trip_rejected:C.err, trip_started:C.acc, trip_confirm_loaded:C.acc, trip_confirm_finished:C.pri, trip_finished:C.ok, assignment_canceled:C.err, assignment_updated:C.t2, assignment_truck_assigned:C.info };
         const fmtD = (d) => { try { const dt=new Date(d); return dt.toLocaleDateString("es-AR",{day:"2-digit",month:"short"})+" "+dt.toLocaleTimeString("es-AR",{hour:"2-digit",minute:"2-digit",hour12:false}); } catch{ return ""; } };
         const getStepLogs = (step) => { if(!auditLog) return []; return auditLog.filter(l=>(stepAuditActions[step]||[]).includes(l.action)); };
-        const stepToTrip = { assigned:"accepted", accepted:"accepted", in_progress:"in_progress", loaded:"loaded", finished:"finished" };
+        const stepToTrip = { assigned:"pending", accepted:"accepted", in_progress:"in_progress", loaded:"loaded", finished:"finished" };
         const tripRank = { pending:0, accepted:1, in_progress:2, loaded:3, finished:4 };
         const getTruckCount = (step) => { if(!isMultiTruck) return null; const ts=stepToTrip[step]; if(!ts) return null; const rank=tripRank[ts]??0; return (freight.activeAssignments||[]).filter(a=>(tripRank[a.tripStatus]??0)>=rank).length; };
         const getStepAssignments = (step) => { if(!isMultiTruck) return []; const ts=stepToTrip[step]; if(!ts) return []; return (freight.activeAssignments||[]).filter(a=>a.tripStatus===ts); };
@@ -998,11 +1029,11 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
           loaded:["confirm_loaded","trip_confirm_loaded"],
           finished:["confirm_finished","finished","trip_confirm_finished","trip_finished","canceled"],
         };
-        const actionLabels = { created:"Solicitado", assigned:"Asignado", assigned_multi:"Asignado", accepted:"Aceptado", rejected:"Rechazado", started:"Iniciado", confirm_loaded:"Carga OK", confirm_finished:"Entrega OK", finished:"Finalizado", canceled:"Cancelado", authorized:"Autorizado", updated:"Editado", trip_accepted:"Aceptado", trip_rejected:"Rechazado", trip_started:"Iniciado", trip_confirm_loaded:"Carga OK", trip_confirm_finished:"Entrega OK", trip_finished:"Finalizado", assignment_canceled:"Cancelado", assignment_updated:"Editado" };
-        const actionColors = { created:C.pri, assigned:C.sec, assigned_multi:C.sec, accepted:C.info, rejected:C.err, started:C.acc, confirm_loaded:C.acc, confirm_finished:C.pri, finished:C.ok, canceled:C.err, authorized:C.info, updated:C.t2, trip_accepted:C.info, trip_rejected:C.err, trip_started:C.acc, trip_confirm_loaded:C.acc, trip_confirm_finished:C.pri, trip_finished:C.ok, assignment_canceled:C.err, assignment_updated:C.t2 };
+        const actionLabels = { created:"Solicitado", assigned:"Asignado", assigned_multi:"Asignado", accepted:"Aceptado", rejected:"Rechazado", started:"Iniciado", confirm_loaded:"Carga OK", confirm_finished:"Entrega OK", finished:"Finalizado", canceled:"Cancelado", authorized:"Autorizado", updated:"Editado", trip_accepted:"Aceptado", trip_rejected:"Rechazado", trip_started:"Iniciado", trip_confirm_loaded:"Carga OK", trip_confirm_finished:"Entrega OK", trip_finished:"Finalizado", assignment_canceled:"Cancelado", assignment_updated:"Editado", assignment_truck_assigned:"Camión asignado" };
+        const actionColors = { created:C.pri, assigned:C.sec, assigned_multi:C.sec, accepted:C.info, rejected:C.err, started:C.acc, confirm_loaded:C.acc, confirm_finished:C.pri, finished:C.ok, canceled:C.err, authorized:C.info, updated:C.t2, trip_accepted:C.info, trip_rejected:C.err, trip_started:C.acc, trip_confirm_loaded:C.acc, trip_confirm_finished:C.pri, trip_finished:C.ok, assignment_canceled:C.err, assignment_updated:C.t2, assignment_truck_assigned:C.info };
         const fmtD = (d) => { try { const dt=new Date(d); return dt.toLocaleDateString("es-AR",{day:"2-digit",month:"short"})+" "+dt.toLocaleTimeString("es-AR",{hour:"2-digit",minute:"2-digit",hour12:false}); } catch{ return ""; } };
         const logs = auditLog ? stepModal.backendSteps.flatMap(s => (auditLog||[]).filter(l=>(stepAuditActions[s]||[]).includes(l.action))) : [];
-        const stepToTrip = { assigned:"accepted", accepted:"accepted", in_progress:"in_progress", loaded:"loaded", finished:"finished" };
+        const stepToTrip = { assigned:"pending", accepted:"accepted", in_progress:"in_progress", loaded:"loaded", finished:"finished" };
         const stepAssigns = isMultiTruck ? stepModal.backendSteps.flatMap(s => { const ts=stepToTrip[s]; if(!ts) return []; return (freight.activeAssignments||[]).filter(a=>a.tripStatus===ts); }) : [];
         return <div onClick={()=>setStepModal(null)} style={{ position:"absolute", inset:0, zIndex:200, background:"rgba(0,0,0,0.5)", display:"flex", alignItems:"center", justifyContent:"center", padding:16 }}>
           <div onClick={e=>e.stopPropagation()} style={{ background:C.w, borderRadius:14, padding:20, maxWidth:400, width:"100%", maxHeight:"80%", overflow:"auto", boxShadow:C.shLg }}>
