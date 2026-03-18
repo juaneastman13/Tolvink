@@ -129,11 +129,9 @@ export default function AssignModal({ freight, transporters, user, onClose, onCo
   const totalTons = freight.tons || 0;
 
   const hasOwnFleet = !!freight.originHasOwnFleet || !!freight.destHasOwnFleet || !!user?.hasInternalFleet;
-  // When freight.useOwnFleet is set, always use origin company (producer's fleet).
-  // Otherwise, use the user's active company (works for both plant and producer toggling "Flota propia").
-  const ownFleetCompanyId = (freight.useOwnFleet && freight.originCompanyId)
-    ? freight.originCompanyId
-    : (user?.activeCompanyId || user?.companyId || freight.originCompanyId);
+  // Use the user's active company for own-fleet truck/driver loading.
+  // The user always has access to their own active company, and trucks/drivers are created under it.
+  const ownFleetCompanyId = user?.activeCompanyId || user?.companyId || freight.originCompanyId;
   const forceMode = freight.useOwnFleet === true ? "own" : null;
 
   const selTruck = truckId ? trucks.find(x => x.id === truckId) : null;
