@@ -526,10 +526,9 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
         const truckCount = freight.truckCount || 1;
         const assignedCount = freight.assignedTruckCount || freight.activeAssignments?.length || 0;
         const canEditCount = (perms.canRequest || perms.canApprove) && !["finished","canceled"].includes(freight.status);
-        const showProgressBar = truckCount > 1;
         return <div style={{ background:C.w, border:`1px solid ${C.b1}`, borderRadius:12, padding:16, marginBottom:12, boxShadow:C.sh }}>
           {/* Header: title + count + stepper */}
-          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:showProgressBar||visibleAssignments.length>0?12:0 }}>
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", flexWrap:"wrap", gap:6, marginBottom:visibleAssignments.length>0?12:0 }}>
             <div style={{ display:"flex", alignItems:"center", gap:8 }}>
               <span style={{ display:"flex" }}>{Ic.truck(C.t2,16)}</span>
               <span style={{ fontSize:12.2, fontWeight:700, color:C.t2, textTransform:"uppercase", letterSpacing:0.5 }}>Camiones</span>
@@ -548,10 +547,6 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
               </button>}
             </div>
           </div>
-          {/* Progress bar (multi-truck) */}
-          {showProgressBar && <div style={{ height:6, borderRadius:3, background:C.b1, marginBottom:14, overflow:"hidden" }}>
-            <div style={{ height:"100%", borderRadius:3, background: assignedCount >= (truckCountLocal ?? truckCount) ? C.ok : C.info, width:`${Math.min(100, (assignedCount / (truckCountLocal ?? truckCount)) * 100)}%`, transition:"width 0.3s" }}/>
-          </div>}
           {/* Assignment cards */}
           {visibleAssignments.map(a => {
             const tst = tripStCfg(a.tripStatus);

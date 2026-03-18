@@ -8,20 +8,24 @@ import log from "../logger";
 const LocationPicker = lazy(() => import("../maps").then(m => ({ default: m.LocationPicker })));
 const SafeZone = lazy(() => import("../maps").then(m => ({ default: m.SafeZone })));
 const FreightMap = lazy(() => import("../maps").then(m => ({ default: m.FreightMap })));
-import { uploadPhoto, apiAddDocument, apiGetFieldLots, apiCreateLot } from "../api";
+import { uploadPhoto, apiAddDocument, apiGetFieldLots, apiCreateLot, apiGetDrivers } from "../api";
 import { useIsDesktop } from "../hooks";
 import { useUIStore } from "../store";
 
 // ======================== SUMMARY CARD ==============================
 
-function SummaryCard({ secSummary, secComplete, form, showTruckSelect, trucks, isDesktop, compact, onEdit }) {
+function SummaryCard({ secSummary, secComplete, form, showTruckSelect, trucks, ownFleetDrivers, isDesktop, compact, onEdit }) {
   const ICONS = { product: Ic.grain(C.pri,14), quantity: Ic.grain(C.t2,14), truckCount: Ic.truck(C.acc,14), origin: Ic.field(C.ok,14), ownfleet: Ic.truck(C.acc,14), destination: Ic.plant(C.sec,14), schedule: Ic.cal(C.pri,14) };
   const rows = [];
   if (secSummary.product) rows.push({ label: "Producto", value: secSummary.product, section: "product", icon: ICONS.product });
   if (secSummary.quantity) rows.push({ label: "Cantidad", value: secSummary.quantity, section: "quantity", icon: ICONS.quantity });
   if (secSummary.truckCount) rows.push({ label: "Camiones", value: secSummary.truckCount, section: "quantity", icon: ICONS.truckCount });
   if (secSummary.origin) rows.push({ label: "Origen", value: secSummary.origin, section: "origin", icon: ICONS.origin });
-  if (showTruckSelect && form.fleetChoice && (form.fleetChoice!=="own" || form.truckId)) rows.push({ label: "Transporte", value: form.fleetChoice === "own" ? `Flota propia${(trucks||[]).find(t=>t.id===form.truckId)?.plate?` · ${(trucks||[]).find(t=>t.id===form.truckId).plate}`:""}`:"Delegar a planta", section: "ownfleet", icon: ICONS.ownfleet });
+  if (showTruckSelect && form.fleetChoice && (form.fleetChoice!=="own" || (form.truckId && form.driverId))) {
+    const trk = (trucks||[]).find(t=>t.id===form.truckId);
+    const drv = (ownFleetDrivers||[]).find(d=>d.id===form.driverId);
+    rows.push({ label: "Transporte", value: form.fleetChoice === "own" ? `Flota propia${trk?` · ${trk.plate}`:""}${drv?` · ${drv.name}`:""}`:"Delegar a planta", section: "ownfleet", icon: ICONS.ownfleet });
+  }
   if (secSummary.destination) rows.push({ label: "Destino", value: secSummary.destination, section: "destination", icon: ICONS.destination });
   if (secSummary.schedule) rows.push({ label: "Fecha/hora", value: secSummary.schedule, section: "schedule", icon: ICONS.schedule });
   const secKeys = ["product", "quantity", "origin", "destination", "schedule"];
@@ -164,6 +168,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
     unit: dup?.unit || "toneladas",
     productTypeOther: dup?.productTypeOther || "",
     truckId: "",
+    driverId: "",
     truckCount: "",
     fleetChoice: ""
   });
@@ -188,6 +193,18 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
   const nfGalRef = useRef(null);
   const nfDocRef = useRef(null);
   const u = f => setForm(p=>({...p,...f}));
+
+  // Drivers for own fleet
+  const [ownFleetDrivers, setOwnFleetDrivers] = useState([]);
+  const [loadingDrivers, setLoadingDrivers] = useState(false);
+  const ownFleetCompanyId = user.activeCompanyId || user.companyId;
+  useEffect(() => {
+    if (form.fleetChoice === "own" && ownFleetCompanyId) {
+      setLoadingDrivers(true);
+      apiGetDrivers(ownFleetCompanyId).then(r => setOwnFleetDrivers(r || [])).catch(() => setOwnFleetDrivers([])).finally(() => setLoadingDrivers(false));
+    }
+  }, [form.fleetChoice, ownFleetCompanyId]);
+  const driverOpts = ownFleetDrivers.map(d => ({ value: d.id, label: `${d.name}${d.phone ? ` · ${d.phone}` : ""}` }));
 
   // Section refs for collapsible sections
   const secRefs = { product:useRef(null), quantity:useRef(null), origin:useRef(null), ownfleet:useRef(null), destination:useRef(null), schedule:useRef(null), submit:useRef(null) };
@@ -330,6 +347,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
     if(destMode==="plant" && form.plantId && branchOpts.length > 0 && !form.branchId) { e.branchId="Seleccioná una sucursal"; }
     if(destMode==="custom" && !customDest.lat) { e.customDestLoc="Indicá una ubicación en el mapa"; }
     if(showTruckSelect && form.fleetChoice==="own" && !form.truckId) { e.truckId="Seleccioná un camión de tu flota"; }
+    if(showTruckSelect && form.fleetChoice==="own" && !form.driverId) { e.driverId="Seleccioná un chofer"; }
     setErrs(e);
     if(!ok || Object.keys(e).filter(k=>e[k]).length>0) {
       setShowIncomplete(true);
@@ -442,7 +460,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
 
       <div style={{ display:"flex", flexDirection:_isDesktop?"row":"column", gap:_isDesktop?24:0, maxWidth:_isDesktop?1100:"none", margin:"0 auto" }}>
       {/* Mobile: compact summary at top */}
-      {!_isDesktop && <SummaryCard secSummary={secSummary} secComplete={secComplete} form={form} showTruckSelect={showTruckSelect} trucks={trucks} isDesktop={false} compact onEdit={(sec)=>{if(!editingFrom)setEditingFrom(activeSection);setActiveSection(sec);}}/>}
+      {!_isDesktop && <SummaryCard secSummary={secSummary} secComplete={secComplete} form={form} showTruckSelect={showTruckSelect} trucks={trucks} ownFleetDrivers={ownFleetDrivers} isDesktop={false} compact onEdit={(sec)=>{if(!editingFrom)setEditingFrom(activeSection);setActiveSection(sec);}}/>}
       <div style={{ flex:"1 1 0", minWidth:0 }}>
       {/* Mobile: step modal for form sections */}
       {!_isDesktop && (
@@ -520,7 +538,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
             <div style={{ fontSize:13.2, color:C.t2, marginBottom:12 }}>¿Cómo desea transportar este flete?</div>
             <div style={{ display:"flex", gap:8, marginBottom:14 }}>
               <button type="button" onClick={()=>u({fleetChoice:"own"})} style={{ flex:1, padding:"12px 8px", borderRadius:10, border:`1.5px solid ${form.fleetChoice==="own"?C.acc:C.b1}`, background:form.fleetChoice==="own"?C.accPale:C.w, color:form.fleetChoice==="own"?C.acc:C.t2, cursor:"pointer", fontSize:14.3, fontWeight:form.fleetChoice==="own"?700:500, fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>{Ic.truck(form.fleetChoice==="own"?C.acc:C.t3,16)} Flota propia</button>
-              <button type="button" onClick={()=>u({fleetChoice:"delegate",truckId:""})} style={{ flex:1, padding:"12px 8px", borderRadius:10, border:`1.5px solid ${form.fleetChoice==="delegate"?C.pri:C.b1}`, background:form.fleetChoice==="delegate"?C.priPale:C.w, color:form.fleetChoice==="delegate"?C.pri:C.t2, cursor:"pointer", fontSize:14.3, fontWeight:form.fleetChoice==="delegate"?700:500, fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>{Ic.plant(form.fleetChoice==="delegate"?C.pri:C.t3,16)} Delegar a planta</button>
+              <button type="button" onClick={()=>u({fleetChoice:"delegate",truckId:"",driverId:""})} style={{ flex:1, padding:"12px 8px", borderRadius:10, border:`1.5px solid ${form.fleetChoice==="delegate"?C.pri:C.b1}`, background:form.fleetChoice==="delegate"?C.priPale:C.w, color:form.fleetChoice==="delegate"?C.pri:C.t2, cursor:"pointer", fontSize:14.3, fontWeight:form.fleetChoice==="delegate"?700:500, fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>{Ic.plant(form.fleetChoice==="delegate"?C.pri:C.t3,16)} Delegar a planta</button>
             </div>
             {form.fleetChoice==="own" && <>
               {truckOpts.length > 0 ? <>
@@ -530,9 +548,16 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
                 <div style={{ fontSize:13.2, color:C.t2, fontWeight:500, marginBottom:8 }}>No tenés camiones registrados.</div>
                 <a href="/trucks" style={{ fontSize:13.2, fontWeight:700, color:C.acc, textDecoration:"none" }}>Registrá uno desde Camiones →</a>
               </div>}
+              {form.truckId && <div style={{ marginTop:10 }}>
+                {loadingDrivers ? <div style={{ fontSize:12, color:C.t3, padding:8, textAlign:"center" }}>Cargando choferes...</div>
+                : driverOpts.length > 0 ? <>
+                  <Select label="Chofer" icon={Ic.user(C.acc,14)} value={form.driverId} onChange={v=>u({driverId:v})} options={driverOpts} placeholder="Seleccionar chofer..."/>
+                  {!form.driverId && <div style={{ marginTop:8, padding:"8px 12px", background:`${C.acc}10`, borderRadius:8, fontSize:12.1, color:C.acc, fontWeight:500 }}>Seleccioná un chofer</div>}
+                </> : <div style={{ padding:"10px 14px", background:`${C.acc}08`, borderRadius:8, border:`1.5px dashed ${C.acc}40`, textAlign:"center", fontSize:13.2, color:C.t2, fontWeight:500 }}>No hay choferes registrados</div>}
+              </div>}
             </>}
             {form.fleetChoice==="delegate" && <div style={{ padding:"10px 14px", background:`${C.info}10`, borderRadius:8, fontSize:13.2, color:C.info, fontWeight:500 }}>La planta de destino asignará el transportista</div>}
-            <NextStepBtn complete={!!form.fleetChoice && (form.fleetChoice!=="own" || !!form.truckId)} onClick={isEditing?confirmEdit:advanceToNext} label={isEditing?"Confirmar edición":undefined} onPrev={prevAvailable()?goToPrev:null}/>
+            <NextStepBtn complete={!!form.fleetChoice && (form.fleetChoice!=="own" || (!!form.truckId && !!form.driverId))} onClick={isEditing?confirmEdit:advanceToNext} label={isEditing?"Confirmar edición":undefined} onPrev={prevAvailable()?goToPrev:null}/>
           </>}
           {activeSection === "destination" && <>
             <label style={{ fontSize:11.6, fontWeight:600, color:C.t2, marginBottom:6, display:"flex", alignItems:"center", gap:4, textTransform:"uppercase", letterSpacing:0.6 }}>{Ic.plant(C.t2,14)} Destino</label>
@@ -686,7 +711,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
             <div style={{ fontSize:13.2, color:C.t2, marginBottom:12 }}>¿Cómo desea transportar este flete?</div>
             <div style={{ display:"flex", gap:8, marginBottom:14 }}>
               <button type="button" onClick={()=>u({fleetChoice:"own"})} style={{ flex:1, padding:"12px 8px", borderRadius:10, border:`1.5px solid ${form.fleetChoice==="own"?C.acc:C.b1}`, background:form.fleetChoice==="own"?C.accPale:C.w, color:form.fleetChoice==="own"?C.acc:C.t2, cursor:"pointer", fontSize:14.3, fontWeight:form.fleetChoice==="own"?700:500, fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>{Ic.truck(form.fleetChoice==="own"?C.acc:C.t3,16)} Flota propia</button>
-              <button type="button" onClick={()=>u({fleetChoice:"delegate",truckId:""})} style={{ flex:1, padding:"12px 8px", borderRadius:10, border:`1.5px solid ${form.fleetChoice==="delegate"?C.pri:C.b1}`, background:form.fleetChoice==="delegate"?C.priPale:C.w, color:form.fleetChoice==="delegate"?C.pri:C.t2, cursor:"pointer", fontSize:14.3, fontWeight:form.fleetChoice==="delegate"?700:500, fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>{Ic.plant(form.fleetChoice==="delegate"?C.pri:C.t3,16)} Delegar a planta</button>
+              <button type="button" onClick={()=>u({fleetChoice:"delegate",truckId:"",driverId:""})} style={{ flex:1, padding:"12px 8px", borderRadius:10, border:`1.5px solid ${form.fleetChoice==="delegate"?C.pri:C.b1}`, background:form.fleetChoice==="delegate"?C.priPale:C.w, color:form.fleetChoice==="delegate"?C.pri:C.t2, cursor:"pointer", fontSize:14.3, fontWeight:form.fleetChoice==="delegate"?700:500, fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>{Ic.plant(form.fleetChoice==="delegate"?C.pri:C.t3,16)} Delegar a planta</button>
             </div>
             {form.fleetChoice==="own" && <>
               {truckOpts.length > 0 ? <>
@@ -696,9 +721,16 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
                 <div style={{ fontSize:13.2, color:C.t2, fontWeight:500, marginBottom:8 }}>No tenés camiones registrados.</div>
                 <a href="/trucks" style={{ fontSize:13.2, fontWeight:700, color:C.acc, textDecoration:"none" }}>Registrá uno desde Camiones →</a>
               </div>}
+              {form.truckId && <div style={{ marginTop:10 }}>
+                {loadingDrivers ? <div style={{ fontSize:12, color:C.t3, padding:8, textAlign:"center" }}>Cargando choferes...</div>
+                : driverOpts.length > 0 ? <>
+                  <Select label="Chofer" icon={Ic.user(C.acc,14)} value={form.driverId} onChange={v=>u({driverId:v})} options={driverOpts} placeholder="Seleccionar chofer..."/>
+                  {!form.driverId && <div style={{ marginTop:8, padding:"8px 12px", background:`${C.acc}10`, borderRadius:8, fontSize:12.1, color:C.acc, fontWeight:500 }}>Seleccioná un chofer</div>}
+                </> : <div style={{ padding:"10px 14px", background:`${C.acc}08`, borderRadius:8, border:`1.5px dashed ${C.acc}40`, textAlign:"center", fontSize:13.2, color:C.t2, fontWeight:500 }}>No hay choferes registrados</div>}
+              </div>}
             </>}
             {form.fleetChoice==="delegate" && <div style={{ padding:"10px 14px", background:`${C.info}10`, borderRadius:8, fontSize:13.2, color:C.info, fontWeight:500 }}>La planta de destino asignará el transportista</div>}
-            <NextStepBtn complete={!!form.fleetChoice && (form.fleetChoice!=="own" || !!form.truckId)} onClick={isEditing?confirmEdit:advanceToNext} label={isEditing?"Confirmar edición":undefined} onPrev={prevAvailable()?goToPrev:null}/>
+            <NextStepBtn complete={!!form.fleetChoice && (form.fleetChoice!=="own" || (!!form.truckId && !!form.driverId))} onClick={isEditing?confirmEdit:advanceToNext} label={isEditing?"Confirmar edición":undefined} onPrev={prevAvailable()?goToPrev:null}/>
           </Sec>
         )}
 
@@ -774,7 +806,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
       </div>}
       </div>
       {_isDesktop && <div style={{ flex:"1 1 0", minWidth:0, position:"sticky", top:70, alignSelf:"flex-start" }}>
-        <SummaryCard secSummary={secSummary} secComplete={secComplete} form={form} showTruckSelect={showTruckSelect} trucks={trucks} isDesktop={true} onEdit={(sec)=>{if(!editingFrom)setEditingFrom(activeSection);setActiveSection(sec);}}/>
+        <SummaryCard secSummary={secSummary} secComplete={secComplete} form={form} showTruckSelect={showTruckSelect} trucks={trucks} ownFleetDrivers={ownFleetDrivers} isDesktop={true} onEdit={(sec)=>{if(!editingFrom)setEditingFrom(activeSection);setActiveSection(sec);}}/>
       </div>}
       </div>
       </div>
@@ -814,7 +846,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
                     { icon: Ic.grain(C.pri,14), label:"Producto", value:`${secSummary.product}${secSummary.quantity?` · ${secSummary.quantity}`:""}`, sec:"product" },
                     { icon: Ic.truck(C.acc,14), label:"Camiones", value:secSummary.truckCount, sec:"quantity" },
                     { icon: Ic.field(C.ok,14), label:"Origen", value:secSummary.origin, sec:"origin" },
-                    ...(showTruckSelect&&form.fleetChoice ? [{ icon: Ic.truck(C.acc,14), label:"Transporte", value:form.fleetChoice==="own"?`Flota propia${(trucks||[]).find(t=>t.id===form.truckId)?` · ${(trucks||[]).find(t=>t.id===form.truckId).plate}`:""}`:"Delegar a planta", sec:"ownfleet" }] : []),
+                    ...(showTruckSelect&&form.fleetChoice ? [{ icon: Ic.truck(C.acc,14), label:"Transporte", value:form.fleetChoice==="own"?`Flota propia${(trucks||[]).find(t=>t.id===form.truckId)?` · ${(trucks||[]).find(t=>t.id===form.truckId).plate}`:""}${(ownFleetDrivers||[]).find(d=>d.id===form.driverId)?` · ${(ownFleetDrivers||[]).find(d=>d.id===form.driverId).name}`:""}`:"Delegar a planta", sec:"ownfleet" }] : []),
                     { icon: Ic.plant(C.sec,14), label:"Destino", value:secSummary.destination, sec:"destination" },
                     { icon: Ic.cal(C.pri,14), label:"Fecha y hora", value:secSummary.schedule, sec:"schedule" },
                   ].filter(r=>r.value).map((r,i)=>(
