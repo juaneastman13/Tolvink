@@ -893,7 +893,7 @@ export default function AdminScreen({ user, onBack }) {
           <div style={{display:"flex",flexDirection:"column",gap:8}}>
             {users.map(u=>{
               const cbt = u.companyByType && typeof u.companyByType === "object" ? u.companyByType : {};
-              const rbt = u.roleByType && typeof u.roleByType === "object" ? u.roleByType : {};
+              const memberships = u.memberships || [];
               const assignedCompanies = Object.entries(cbt).filter(([_,v])=>v);
               return (
               <div key={u.id} className="tv-card" style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius:10,padding:"12px 14px",boxShadow:C.sh,cursor:"pointer"}} onClick={()=>openEditUser(u)}>
@@ -910,8 +910,10 @@ export default function AdminScreen({ user, onBack }) {
                 {/* Types with inline role */}
                 <div style={{display:"flex",gap:4,marginTop:6,flexWrap:"wrap"}}>
                   {(u.userTypes||[]).map(t=>{
-                    const role = rbt[t] || u.role || "operator";
-                    return <Bd key={t} color={typeColors[t]}>{typeLabels[t]} · {roleLabels[role]||role}</Bd>;
+                    const mem = memberships.find(m=>m.companyId===cbt[t]);
+                    const memberRole = mem?.role;
+                    const displayRole = memberRole === "gerente" ? "admin" : memberRole === "chofer" ? "chofer" : memberRole === "operario" ? "operator" : u.role || "operator";
+                    return <Bd key={t} color={typeColors[t]}>{typeLabels[t]} · {roleLabels[displayRole]||displayRole}</Bd>;
                   })}
                   {(u.userTypes||[]).length===0&&<span style={{fontSize:11,color:C.t3}}>Sin tipo</span>}
                 </div>
