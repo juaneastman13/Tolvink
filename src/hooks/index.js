@@ -27,3 +27,6 @@ export { useIsDesktop, useOnline } from "./useResponsive";
 
 // Table interactions
 export { useTableSort, usePullToRefresh } from "./useTableInteractions";
+
+// Access Level (plant-centric model)
+export { useAccessLevel } from "./useAccessLevel";

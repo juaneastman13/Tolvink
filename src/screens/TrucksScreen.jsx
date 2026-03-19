@@ -1,10 +1,11 @@
 import { useState, useCallback, useEffect } from "react";
 import { C, Ic } from "../theme";
 import { Btn, Field, Loader, LoadingOverlay, EmptyState } from "../components";
-import { apiGetTrucks, apiCreateTruck, apiDeactivateTruck, apiListDrivers, apiCreateDriver, apiDeactivateDriver } from "../api";
+import { apiGetTrucks, apiCreateTruck, apiDeactivateTruck, apiListDrivers, apiCreateDriver, apiDeactivateDriver, apiGetCompanyAccess } from "../api";
 
 export default function TrucksScreen({ onBack, embedded, user }) {
   const canEdit = !user || user.role !== "chofer";
+  const isPlant = user?.userType === "plant";
   const [tab, setTab] = useState("trucks"); // "trucks" | "drivers"
   const [trucks, setTrucks] = useState([]);
   const [drivers, setDrivers] = useState([]);
@@ -18,20 +19,47 @@ export default function TrucksScreen({ onBack, embedded, user }) {
   const [msg, setMsg] = useState(null);
   const [doneMsg, setDoneMsg] = useState("");
 
+  // Cross-company: plant selects whose fleet to view
+  const [linkedCompanies, setLinkedCompanies] = useState([]);
+  const [selectedCompanyId, setSelectedCompanyId] = useState(""); // "" = my fleet
+
+  // Load linked companies for plant dropdown
+  useEffect(() => {
+    if (!isPlant || !user?.activeCompanyId) return;
+    apiGetCompanyAccess(user.activeCompanyId)
+      .then(data => {
+        // Filter to transporters + producers with own fleet
+        const relevant = (data || []).filter(r =>
+          r.isActive && (r.granteeType === "TRANSPORTER" || (r.granteeType === "PRODUCER" && r.granteeCompany?.hasInternalFleet))
+        );
+        setLinkedCompanies(relevant);
+      })
+      .catch(() => {});
+  }, [isPlant, user?.activeCompanyId]);
+
   const loadTrucks = useCallback(async () => {
-    try { const t = await apiGetTrucks(); setTrucks(t||[]); } catch(e) { setMsg({t:e.message||"Error al cargar flota",k:"err"}); } finally { setLoading(false); }
-  }, []);
+    try {
+      const t = await apiGetTrucks(selectedCompanyId || undefined);
+      setTrucks(t || []);
+    } catch (e) { setMsg({ t: e.message || "Error al cargar flota", k: "err" }); }
+    finally { setLoading(false); }
+  }, [selectedCompanyId]);
+
   const loadDrivers = useCallback(async () => {
     try { const d = await apiListDrivers(); setDrivers(d||[]); } catch(e) { setMsg({t:e.message||"Error al cargar choferes",k:"err"}); } finally { setLoading(false); }
   }, []);
 
-  useEffect(() => { if(tab==="trucks") loadTrucks(); else loadDrivers(); }, [tab, loadTrucks, loadDrivers]);
+  useEffect(() => { setLoading(true); if(tab==="trucks") loadTrucks(); else loadDrivers(); }, [tab, loadTrucks, loadDrivers]);
 
   const handleCreateTruck = async () => {
     if (!plate.trim()) { setMsg({ t: "Patente obligatoria", k: "err" }); return; }
     setSaving(true);
     try {
-      await apiCreateTruck({ plate: plate.trim().toUpperCase(), model: model.trim() || undefined });
+      await apiCreateTruck({
+        plate: plate.trim().toUpperCase(),
+        model: model.trim() || undefined,
+        ...(selectedCompanyId ? { ownerCompanyId: selectedCompanyId } : {}),
+      });
       setPlate(""); setModel(""); setShowForm(false); setDoneMsg("Camión registrado");
       await loadTrucks();
     } catch (e) { setMsg({ t: e.message, k: "err" }); }
@@ -67,15 +95,52 @@ export default function TrucksScreen({ onBack, embedded, user }) {
 
   const switchTab = (t) => { setTab(t); setShowForm(false); setMsg(null); setLoading(true); };
 
+  const handleCompanyChange = (companyId) => {
+    setSelectedCompanyId(companyId);
+    setShowForm(false);
+    setMsg(null);
+    setLoading(true);
+  };
+
+  // Resolve company name for badge on trucks
+  const selectedCompanyName = selectedCompanyId
+    ? linkedCompanies.find(r => (r.granteeCompanyId || r.granteeCompany?.id) === selectedCompanyId)?.granteeCompany?.name || ""
+    : "";
+
+  // Build company name map for badges
+  const companyNameMap = {};
+  for (const r of linkedCompanies) {
+    const cId = r.granteeCompanyId || r.granteeCompany?.id;
+    if (cId) companyNameMap[cId] = r.granteeCompany?.name || "";
+  }
+
   return (
     <div style={{ flex: embedded?undefined:1, overflow: embedded?"visible":"auto", padding: embedded?0:undefined }}>
       {(saving||doneMsg) && <LoadingOverlay closing={!!doneMsg} closingText={doneMsg} onClose={()=>setDoneMsg("")}/>}
       {!embedded && <div style={{ position:"sticky", top:0, zIndex:10, background:C.bg, padding:"18px 18px 8px" }}><button onClick={onBack} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", fontSize: 14.3, fontWeight: 600, color: C.pri, marginBottom: 14, padding: 0, display: "flex", alignItems: "center", gap: 4 }}>{Ic.chev(C.pri, 18)} Menú</button></div>}
       <div style={{ padding: embedded?0:"0 18px 18px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-        <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: -0.3 }}>Mi Flota</div>
+        <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: -0.3 }}>{selectedCompanyId ? "Flota" : "Mi Flota"}</div>
         {canEdit && <Btn sm onClick={() => { setShowForm(!showForm); setMsg(null); }} icon={showForm ? Ic.cross(C.w, 14) : Ic.plus(C.w, 14)}>{showForm ? "Cerrar" : "Agregar"}</Btn>}
       </div>
+
+      {/* Plant: company dropdown */}
+      {isPlant && linkedCompanies.length > 0 && (
+        <div style={{ marginBottom: 14 }}>
+          <select
+            value={selectedCompanyId}
+            onChange={e => handleCompanyChange(e.target.value)}
+            style={{ width: "100%", padding: "9px 12px", borderRadius: 8, border: `1px solid ${C.b1}`, fontSize: 13.2, fontFamily: "inherit", background: C.w, color: C.t1 }}
+          >
+            <option value="">Mi flota</option>
+            {linkedCompanies.map(r => {
+              const co = r.granteeCompany || {};
+              const cId = r.granteeCompanyId || co.id;
+              return <option key={cId} value={cId}>{co.name || "Empresa"} ({r.granteeType === "TRANSPORTER" ? "Transportista" : "Productor"})</option>;
+            })}
+          </select>
+        </div>
+      )}
 
       {/* Tabs */}
       <div style={{ display:"flex", gap:0, marginBottom:16, borderRadius:10, overflow:"hidden", border:`1.5px solid ${C.b1}` }}>
@@ -89,6 +154,7 @@ export default function TrucksScreen({ onBack, embedded, user }) {
       {tab === "trucks" && <>
         {showForm && (
           <div style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: 12, padding: 16, marginBottom: 16, boxShadow: C.sh }}>
+            {selectedCompanyId && <div style={{ fontSize: 12.1, fontWeight: 600, color: C.info, marginBottom: 8 }}>Creando para: {selectedCompanyName}</div>}
             <Field label="Patente" value={plate} onChange={setPlate} placeholder="Ej: AB-123-CD" />
             <div style={{ height: 10 }} />
             <Field label="Modelo (opcional)" value={model} onChange={setModel} placeholder="Ej: Scania R500" />
@@ -97,23 +163,27 @@ export default function TrucksScreen({ onBack, embedded, user }) {
           </div>
         )}
         {loading ? <Loader/> :
-          trucks.length === 0 ? <EmptyState icon={Ic.truck(C.t3,28)} title="Sin vehículos registrados" subtitle="Registrá tu primer camión para recibir asignaciones de flete" action={canEdit && <Btn sm onClick={()=>setShowForm(true)}>Registrar camión</Btn>}/> :
+          trucks.length === 0 ? <EmptyState icon={Ic.truck(C.t3,28)} title="Sin vehículos registrados" subtitle={selectedCompanyId ? "Esta empresa aún no tiene camiones registrados" : "Registrá tu primer camión para recibir asignaciones de flete"} action={canEdit && <Btn sm onClick={()=>setShowForm(true)}>Registrar camión</Btn>}/> :
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              {trucks.map(t => (
-                <div key={t.id} style={{ background: C.w, border: `1px solid ${C.b1}`, borderLeft: `3px solid ${C.acc}`, borderRadius: 12, padding: 14, boxShadow: C.sh, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    {Ic.truck(C.acc, 20)}
-                    <div>
-                      <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                        <span style={{ fontSize: 15.4, fontWeight: 700 }}>{t.plate}</span>
-                        {t.assignedUser && <span style={{ fontSize: 11.5, color: C.pri, fontWeight: 600 }}>{t.assignedUser.name}</span>}
+              {trucks.map(t => {
+                const ownerName = t.ownerCompanyId && companyNameMap[t.ownerCompanyId];
+                return (
+                  <div key={t.id} style={{ background: C.w, border: `1px solid ${C.b1}`, borderLeft: `3px solid ${C.acc}`, borderRadius: 12, padding: 14, boxShadow: C.sh, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      {Ic.truck(C.acc, 20)}
+                      <div>
+                        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                          <span style={{ fontSize: 15.4, fontWeight: 700 }}>{t.plate}</span>
+                          {t.assignedUser && <span style={{ fontSize: 11.5, color: C.pri, fontWeight: 600 }}>{t.assignedUser.name}</span>}
+                        </div>
+                        {t.model && <div style={{ fontSize: 12.1, color: C.t3, marginTop: 2 }}>{t.model}</div>}
+                        {ownerName && !selectedCompanyId && <div style={{ fontSize: 10.5, color: C.info, fontWeight: 600, marginTop: 2 }}>{ownerName}</div>}
                       </div>
-                      {t.model && <div style={{ fontSize: 12.1, color: C.t3, marginTop: 2 }}>{t.model}</div>}
                     </div>
+                    {canEdit && <button aria-label="Desactivar camión" disabled={saving} onClick={() => handleDeactivateTruck(t.id)} style={{ background: "none", border: "none", cursor: saving?"not-allowed":"pointer", padding: 6, opacity:saving?0.4:1 }}>{Ic.ban(C.err, 18)}</button>}
                   </div>
-                  {canEdit && <button aria-label="Desactivar camión" disabled={saving} onClick={() => handleDeactivateTruck(t.id)} style={{ background: "none", border: "none", cursor: saving?"not-allowed":"pointer", padding: 6, opacity:saving?0.4:1 }}>{Ic.ban(C.err, 18)}</button>}
-                </div>
-              ))}
+                );
+              })}
             </div>
         }
       </>}

@@ -5,12 +5,14 @@ import { apiAdminStats, apiAdminActivity, apiAdminListCompanies, apiAdminGetComp
 import { adminStyles, typeColors, typeLabels, roleLabels, adminBackBtn } from "../utils/freight-helpers";
 import { LocationPicker } from "../maps";
 import AccessScreen from "./AccessScreen";
+import LinkedCompaniesScreen from "./LinkedCompaniesScreen";
 import ImportExcelModal from "../components/ImportExcelModal";
 import { useCatalogStore } from "../store";
 
 export default function AdminScreen({ user, onBack }) {
   const isPlatform = user.role === "platform_admin" || user.isSuperAdmin === true;
   const isManager = user.role === "admin";
+  const isPlant = user.userType === "plant";
   const s = adminStyles();
 
   const [tab, setTab] = useState("companies");
@@ -814,10 +816,10 @@ export default function AdminScreen({ user, onBack }) {
         </div>
       )}
 
-      <div style={{display:"flex",gap:6,marginBottom:10}}>
-        {["companies","users","access","activity"].map(t=>(
-          <button key={t} onClick={()=>{setTab(t);setSearch("");setStatsFilter(null);}} style={{flex:1,padding:"9px 0",borderRadius:8,border:`1px solid ${tab===t?C.pri:C.b1}`,background:tab===t?`${C.pri}12`:C.w,color:tab===t?C.pri:C.t2,fontWeight:600,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>
-            {t==="companies"?"Empresas":t==="users"?"Usuarios":t==="access"?"Accesos":"Actividad"}
+      <div style={{display:"flex",gap:6,marginBottom:10,flexWrap:"wrap"}}>
+        {[...(isPlant ? ["vinculadas"] : []), "companies","users","access","activity"].map(t=>(
+          <button key={t} onClick={()=>{setTab(t);setSearch("");setStatsFilter(null);}} style={{flex:1,padding:"9px 0",borderRadius:8,border:`1px solid ${tab===t?C.pri:C.b1}`,background:tab===t?`${C.pri}12`:C.w,color:tab===t?C.pri:C.t2,fontWeight:600,fontSize:13,cursor:"pointer",fontFamily:"inherit",minWidth:t==="vinculadas"?90:undefined}}>
+            {t==="vinculadas"?"Vinculadas":t==="companies"?"Empresas":t==="users"?"Usuarios":t==="access"?"Accesos":"Actividad"}
           </button>
         ))}
       </div>
@@ -851,6 +853,8 @@ export default function AdminScreen({ user, onBack }) {
             {companies.length===0&&<div style={{textAlign:"center",padding:32,color:C.t3,fontSize:14.3}}>No se encontraron empresas</div>}
           </div>
         </>)}
+
+        {tab==="vinculadas"&&<LinkedCompaniesScreen user={user} embedded/>}
 
         {tab==="access"&&<AccessScreen user={user} embedded/>}
 

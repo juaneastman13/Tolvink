@@ -417,6 +417,15 @@ export async function apiMarkAllRead() { return api('/notifications/read-all',{m
 export async function apiSubscribePush(subscription) { return api('/notifications/subscribe',{body:subscription}); }
 export async function apiUnsubscribePush(endpoint) { return api('/notifications/subscribe',{method:'DELETE',body:{endpoint}}); }
 
+// Company Access (Plant-Centric)
+export async function apiGetCompanyAccess(companyId, type) { const p=new URLSearchParams(); if(type)p.set('type',type); const q=p.toString(); return api(`/company-access/${companyId}${q?`?${q}`:''}`); }
+export async function apiGetMyAccess() { return api('/company-access/my-access'); }
+export async function apiUpdateAccessLevel(id, level) { return api(`/company-access/${id}/level`,{method:'PATCH',body:{level}}); }
+export async function apiUpdateAccessPermissions(id, permissions) { return api(`/company-access/${id}/permissions`,{method:'PATCH',body:{permissions}}); }
+export async function apiToggleAccess(id) { return api(`/company-access/${id}/toggle`,{method:'PATCH',body:{}}); }
+export async function apiCreateLinkedCompany(b) { return api('/company-access/create-company',{body:b}); }
+export async function apiCreateLinkedUser(b) { return api('/company-access/create-user',{body:b}); }
+
 // VAPID public key for push subscription
 export const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY || '';
 
