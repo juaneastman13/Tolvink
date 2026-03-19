@@ -8,7 +8,7 @@ import log from "../logger";
 const LocationPicker = lazy(() => import("../maps").then(m => ({ default: m.LocationPicker })));
 const SafeZone = lazy(() => import("../maps").then(m => ({ default: m.SafeZone })));
 const FreightMap = lazy(() => import("../maps").then(m => ({ default: m.FreightMap })));
-import { uploadPhoto, apiAddDocument, apiGetFieldLots, apiCreateLot, apiGetDrivers, apiGetCompanyAccess, apiGetFields } from "../api";
+import { uploadPhoto, apiAddDocument, apiGetFieldLots, apiCreateLot, apiGetDrivers, apiGetCompanyAccess, apiGetFields, apiGetTrucks, apiListDrivers } from "../api";
 import { useIsDesktop } from "../hooks";
 import { useUIStore } from "../store";
 
@@ -29,6 +29,7 @@ function SummaryCard({ secSummary, secComplete, form, showTruckSelect, trucks, o
   }
   if (secSummary.destination) rows.push({ label: "Destino", value: secSummary.destination, section: "destination", icon: ICONS.destination });
   if (secSummary.schedule) rows.push({ label: "Fecha/hora", value: secSummary.schedule, section: "schedule", icon: ICONS.schedule });
+  if (secSummary.transport) rows.push({ label: "Transporte", value: secSummary.transport, section: "transport", icon: ICONS.ownfleet });
   const secKeys = ["product", "quantity", "origin", "destination", "schedule"];
   const filled = secKeys.filter(k => secComplete[k]).length;
   const total = secKeys.length;
@@ -215,13 +216,87 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
     apiGetFields(producerCompanyId).then(f => setProducerFields(f || [])).catch(() => setProducerFields([]));
   }, [isPlantUser, producerCompanyId]);
 
-  // When producer changes, reset origin selection
+  // When producer changes, reset origin selection + transport
   const handleProducerChange = (pId) => {
     setProducerCompanyId(pId);
     u({ fieldId: "", lotId: "" });
     setFieldLots([]);
     setProducerFields(null);
+    setTransportChoice("");
+    setAssignTruckId("");
+    setAssignDriverId("");
   };
+
+  // Plant transport step: linked transporters + access levels
+  const [linkedTransporters, setLinkedTransporters] = useState([]);
+  const [selectedProducerAccess, setSelectedProducerAccess] = useState(null); // CompanyAccess record for selected producer
+  const [transportChoice, setTransportChoice] = useState(""); // "" | "skip" | companyId | "ownfleet"
+  const [selectedTransporterAccess, setSelectedTransporterAccess] = useState(null);
+  const [assignTruckId, setAssignTruckId] = useState("");
+  const [assignDriverId, setAssignDriverId] = useState("");
+  const [assignTrucks, setAssignTrucks] = useState([]);
+  const [assignDriversList, setAssignDriversList] = useState([]);
+  const [loadingAssignTrucks, setLoadingAssignTrucks] = useState(false);
+  const [loadingAssignDrivers, setLoadingAssignDrivers] = useState(false);
+
+  const showTransportStep = isPlantUser && selectedProducerAccess?.accessLevel === "READONLY";
+  const plantCompanyId = user?.activeCompanyId || user?.companyId;
+
+  // Load linked transporters for plant
+  useEffect(() => {
+    if (!isPlantUser || !plantCompanyId) return;
+    apiGetCompanyAccess(plantCompanyId, "TRANSPORTER")
+      .then(data => setLinkedTransporters((data || []).filter(r => r.isActive)))
+      .catch(() => {});
+  }, [isPlantUser, plantCompanyId]);
+
+  // Resolve access level when producer changes
+  useEffect(() => {
+    if (!isPlantUser || !producerCompanyId) { setSelectedProducerAccess(null); return; }
+    const rec = linkedProducers.find(r => (r.granteeCompanyId || r.granteeCompany?.id) === producerCompanyId);
+    setSelectedProducerAccess(rec || null);
+  }, [isPlantUser, producerCompanyId, linkedProducers]);
+
+  // Resolve transporter access level when transport choice changes
+  useEffect(() => {
+    if (!transportChoice || transportChoice === "skip" || transportChoice === "ownfleet") {
+      setSelectedTransporterAccess(null);
+      return;
+    }
+    const rec = linkedTransporters.find(r => (r.granteeCompanyId || r.granteeCompany?.id) === transportChoice);
+    setSelectedTransporterAccess(rec || null);
+  }, [transportChoice, linkedTransporters]);
+
+  // Load trucks for selected transporter (or own fleet)
+  useEffect(() => {
+    if (!showTransportStep) return;
+    const targetCompanyId = transportChoice === "ownfleet" ? plantCompanyId : transportChoice;
+    if (!targetCompanyId || targetCompanyId === "skip") { setAssignTrucks([]); return; }
+    const isConsulta = transportChoice === "ownfleet" || selectedTransporterAccess?.accessLevel === "READONLY";
+    if (!isConsulta) { setAssignTrucks([]); return; }
+    setLoadingAssignTrucks(true);
+    apiGetTrucks(targetCompanyId).then(t => setAssignTrucks(t || [])).catch(() => setAssignTrucks([])).finally(() => setLoadingAssignTrucks(false));
+  }, [showTransportStep, transportChoice, selectedTransporterAccess?.accessLevel, plantCompanyId]);
+
+  // Load drivers for selected transporter (or own fleet)
+  useEffect(() => {
+    if (!showTransportStep) return;
+    const targetCompanyId = transportChoice === "ownfleet" ? plantCompanyId : transportChoice;
+    if (!targetCompanyId || targetCompanyId === "skip") { setAssignDriversList([]); return; }
+    const isConsulta = transportChoice === "ownfleet" || selectedTransporterAccess?.accessLevel === "READONLY";
+    if (!isConsulta) { setAssignDriversList([]); return; }
+    setLoadingAssignDrivers(true);
+    apiListDrivers(targetCompanyId).then(d => setAssignDriversList(d || [])).catch(() => setAssignDriversList([])).finally(() => setLoadingAssignDrivers(false));
+  }, [showTransportStep, transportChoice, selectedTransporterAccess?.accessLevel, plantCompanyId]);
+
+  const assignTruckOpts = assignTrucks.map(t => ({ value: t.id, label: `${t.plate}${t.model ? ` · ${t.model}` : ""}` }));
+  const assignDriverOpts = assignDriversList.map(d => ({ value: d.id, label: `${d.name}${d.phone ? ` · ${d.phone}` : ""}` }));
+
+  // Is the selected transporter CONSULTA or own fleet (needs truck+driver inline)?
+  const transportNeedsTruckDriver = transportChoice === "ownfleet" || (transportChoice && transportChoice !== "skip" && selectedTransporterAccess?.accessLevel === "READONLY");
+  const transportIsOperator = transportChoice && transportChoice !== "skip" && transportChoice !== "ownfleet" && selectedTransporterAccess?.accessLevel !== "READONLY";
+
+  const transportStepComplete = !showTransportStep || transportChoice === "skip" || transportIsOperator || (transportNeedsTruckDriver && !!assignTruckId && !!assignDriverId);
 
   // Drivers for own fleet
   const [ownFleetDrivers, setOwnFleetDrivers] = useState([]);
@@ -238,7 +313,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
 
   // Section refs for collapsible sections
   const secRefs = { product:useRef(null), quantity:useRef(null), origin:useRef(null), ownfleet:useRef(null), destination:useRef(null), schedule:useRef(null), submit:useRef(null) };
-  const SEC_ORDER = isPlantUser ? ["producer","product","quantity","origin","destination","schedule"] : ["product","quantity","origin","destination","schedule"];
+  const SEC_ORDER = isPlantUser ? (showTransportStep ? ["producer","product","quantity","origin","destination","schedule","transport"] : ["producer","product","quantity","origin","destination","schedule"]) : ["product","quantity","origin","destination","schedule"];
   const [activeSection, setActiveSection] = useState(()=>{
     if (isPlantUser) return "producer";
     const g=!!form.grain&&(form.grain!=="Otros"||!!form.productTypeOther.trim()), q=!!form.tons&&parseFloat(form.tons)>0, o=originMode==="field"?(!!form.fieldId):(!!customOrigin.lat), d=destMode==="plant"?!!form.plantId:!!customDest.lat, s=!!form.loadDate&&/^\d{2}:\d{2}$/.test(form.loadTime);
@@ -271,7 +346,8 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
     origin: originMode==="field" ? (!!form.fieldId && (!hasLots || !!form.lotId)) : (!!customOrigin.lat),
     destination: destMode==="plant" ? (!!form.plantId && (!_hasBranches || !!form.branchId)) : (!!customDest.lat && (confirmMode==="none" || !!confirmPlantId)),
     schedule: !!form.loadDate && /^\d{2}:\d{2}$/.test(form.loadTime),
-  }),[form, originMode, customOrigin, destMode, customDest, confirmMode, confirmPlantId, _hasBranches, isPlantUser, producerCompanyId]);
+    ...(showTransportStep ? { transport: transportStepComplete } : {}),
+  }),[form, originMode, customOrigin, destMode, customDest, confirmMode, confirmPlantId, _hasBranches, isPlantUser, producerCompanyId, showTransportStep, transportStepComplete]);
 
   // Next section to fill (highlight it when collapsed)
   const nextToFill = SEC_ORDER.find(s => !secComplete[s]);
@@ -282,6 +358,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
     flow.push("product", "quantity", "origin");
     if (showTruckSelect) flow.push("ownfleet");
     flow.push("destination", "schedule");
+    if (showTransportStep) flow.push("transport");
     return flow;
   };
   const advanceToNext = () => {
@@ -317,6 +394,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
     ownfleet: pOk && secComplete.product && secComplete.quantity && secComplete.origin,
     destination: pOk && secComplete.product && secComplete.quantity && secComplete.origin,
     schedule: pOk && secComplete.product && secComplete.quantity && secComplete.origin && secComplete.destination,
+    transport: pOk && secComplete.product && secComplete.quantity && secComplete.origin && secComplete.destination && secComplete.schedule,
   };
 
   // Revoke blob URLs on unmount
@@ -456,6 +534,15 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
       payload.fieldId = undefined;
     }
     if(payload.lotId === "__field__" || !hasLots) { payload.lotId = undefined; }
+    // Include transport assignment data if selected
+    if (showTransportStep && transportChoice && transportChoice !== "skip") {
+      const transportCompanyId = transportChoice === "ownfleet" ? plantCompanyId : transportChoice;
+      payload.assignData = {
+        transportCompanyId,
+        ...(transportNeedsTruckDriver && assignTruckId ? { truckId: assignTruckId } : {}),
+        ...(transportNeedsTruckDriver && assignDriverId ? { driverId: assignDriverId } : {}),
+      };
+    }
     try { await onCreate(payload); } finally { setSubmitting(false); submitGuard.current = false; setShowConfirmModal(false); }
   };
 
@@ -494,6 +581,24 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
     destination: destMode==="plant" ? (destDisplayName||"") : (customDest.lat ? ((customDest.name?.trim()||"Ubicación personalizada")+(confirmMode==="plant"&&confirmPlantId?` · Confirma: ${(plants||[]).find(p=>p.id===confirmPlantId)?.name||""}`:"")) : ""),
     schedule: form.loadDate&&form.loadTime ? `${form.loadDate} a las ${form.loadTime}` : "",
     truckCount: (() => { const tc = form.truckCount || (parseFloat(form.tons)>0 ? String(Math.ceil(parseFloat(form.tons)/30)) : ""); return tc ? `${tc} camión${tc!=="1"?"es":""}` : ""; })(),
+    ...(showTransportStep ? { transport: (() => {
+      if (transportChoice === "skip") return "Pendiente de asignar";
+      if (transportChoice === "ownfleet") {
+        const trk = assignTrucks.find(t => t.id === assignTruckId);
+        const drv = assignDriversList.find(d => d.id === assignDriverId);
+        return `Flota propia${trk ? ` · ${trk.plate}` : ""}${drv ? ` · ${drv.name}` : ""}`;
+      }
+      if (transportChoice) {
+        const tName = linkedTransporters.find(r => (r.granteeCompanyId || r.granteeCompany?.id) === transportChoice)?.granteeCompany?.name || "Transportista";
+        if (transportNeedsTruckDriver) {
+          const trk = assignTrucks.find(t => t.id === assignTruckId);
+          const drv = assignDriversList.find(d => d.id === assignDriverId);
+          return `${tName}${trk ? ` · ${trk.plate}` : ""}${drv ? ` · ${drv.name}` : ""}`;
+        }
+        return tName;
+      }
+      return "";
+    })() } : {}),
   };
 
   return (
@@ -517,7 +622,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
       {!_isDesktop && (
         <MobileStepModal
           open={true}
-          title={{producer:"Productor",product:"Producto",quantity:"Cantidad",origin:"Origen",ownfleet:"Transporte",destination:"Destino",schedule:"Fecha y hora"}[activeSection]||""}
+          title={{producer:"Productor",product:"Producto",quantity:"Cantidad",origin:"Origen",ownfleet:"Transporte",destination:"Destino",schedule:"Fecha y hora",transport:"Asignar transporte"}[activeSection]||""}
           summary={secSummary[activeSection]||undefined}
           onClose={()=>{ const flow=buildFlow(); const idx=flow.indexOf(activeSection); if(idx>0)setActiveSection(flow[idx-1]); }}
           onPrev={(()=>{ const flow=buildFlow(); const idx=flow.indexOf(activeSection); return idx>0 ? ()=>setActiveSection(flow[idx-1]) : null; })()}
@@ -683,7 +788,55 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
                 {touched&&<FieldError error={errs.loadTime}/>}
               </div>
             </div>
-            <NextStepBtn complete={secComplete.schedule} onClick={()=>{if(isEditing){confirmEdit();}else{openConfirmModal();}}} label={isEditing?"Confirmar edición":"Siguiente"} onPrev={prevAvailable()?goToPrev:null}/>
+            <NextStepBtn complete={secComplete.schedule} onClick={()=>{if(isEditing){confirmEdit();}else if(showTransportStep){advanceToNext();}else{openConfirmModal();}}} label={isEditing?"Confirmar edición":"Siguiente"} onPrev={prevAvailable()?goToPrev:null}/>
+          </>}
+          {activeSection === "transport" && showTransportStep && <>
+            <div style={{ fontSize:13.2, color:C.t2, marginBottom:12 }}>Asignar transporte para este flete</div>
+            <div style={{ display:"flex", flexDirection:"column", gap:8, marginBottom:14 }}>
+              {user?.hasInternalFleet && (
+                <button onClick={() => { setTransportChoice("ownfleet"); setAssignTruckId(""); setAssignDriverId(""); }} style={{ display:"flex", alignItems:"center", gap:10, padding:"12px 14px", borderRadius:10, border:`1.5px solid ${transportChoice==="ownfleet" ? C.acc : C.b1}`, background:transportChoice==="ownfleet" ? C.accPale : C.w, cursor:"pointer", fontFamily:"inherit", textAlign:"left" }}>
+                  {Ic.truck(transportChoice==="ownfleet" ? C.acc : C.t3, 18)}
+                  <div style={{ flex:1 }}>
+                    <div style={{ fontSize:14.3, fontWeight:transportChoice==="ownfleet"?700:500, color:transportChoice==="ownfleet"?C.acc:C.t1 }}>Flota propia</div>
+                  </div>
+                  {transportChoice==="ownfleet" && Ic.chk(C.acc, 16)}
+                </button>
+              )}
+              {linkedTransporters.map(r => {
+                const co = r.granteeCompany || {};
+                const cId = r.granteeCompanyId || co.id;
+                const sel = transportChoice === cId;
+                const isConsulta = r.accessLevel === "READONLY";
+                return (
+                  <button key={cId} onClick={() => { setTransportChoice(cId); setAssignTruckId(""); setAssignDriverId(""); }} style={{ display:"flex", alignItems:"center", gap:10, padding:"12px 14px", borderRadius:10, border:`1.5px solid ${sel ? C.pri : C.b1}`, background:sel ? C.priPale : C.w, cursor:"pointer", fontFamily:"inherit", textAlign:"left" }}>
+                    {Ic.truck(sel ? C.pri : C.t3, 18)}
+                    <div style={{ flex:1 }}>
+                      <div style={{ fontSize:14.3, fontWeight:sel?700:500, color:sel?C.pri:C.t1 }}>{co.name || "Empresa"}</div>
+                      {isConsulta && <div style={{ fontSize:10.5, color:C.warn, fontWeight:600 }}>Modo consulta</div>}
+                    </div>
+                    {sel && Ic.chk(C.pri, 16)}
+                  </button>
+                );
+              })}
+            </div>
+            {transportNeedsTruckDriver && <>
+              {transportChoice === "ownfleet"
+                ? <div style={{ padding:"8px 12px", background:`${C.acc}10`, borderRadius:8, fontSize:12.1, color:C.acc, fontWeight:500, marginBottom:10 }}>Seleccioná camión y chofer de tu flota</div>
+                : <div style={{ padding:"8px 12px", background:`${C.warn}15`, borderRadius:8, fontSize:12.1, color:C.warn, fontWeight:500, marginBottom:10 }}>Este transportista está en modo consulta. Se asignará automáticamente.</div>}
+              <div style={{ marginBottom:8 }}>
+                {loadingAssignTrucks ? <div style={{ fontSize:12, color:C.t3, padding:8 }}>Cargando camiones...</div>
+                : assignTruckOpts.length > 0 ? <Select label="Camión" icon={Ic.truck(C.acc,14)} value={assignTruckId} onChange={v=>setAssignTruckId(v)} options={assignTruckOpts} placeholder="Seleccionar camión..."/>
+                : <div style={{ padding:"10px 14px", background:`${C.acc}08`, borderRadius:8, border:`1.5px dashed ${C.acc}40`, fontSize:12.7, color:C.t2, fontWeight:500, textAlign:"center" }}>Sin camiones registrados</div>}
+              </div>
+              {assignTruckId && <div style={{ marginBottom:8 }}>
+                {loadingAssignDrivers ? <div style={{ fontSize:12, color:C.t3, padding:8 }}>Cargando choferes...</div>
+                : assignDriverOpts.length > 0 ? <Select label="Chofer" icon={Ic.user(C.acc,14)} value={assignDriverId} onChange={v=>setAssignDriverId(v)} options={assignDriverOpts} placeholder="Seleccionar chofer..."/>
+                : <div style={{ padding:"10px 14px", background:`${C.acc}08`, borderRadius:8, border:`1.5px dashed ${C.acc}40`, fontSize:12.7, color:C.t2, fontWeight:500, textAlign:"center" }}>Sin choferes registrados</div>}
+              </div>}
+            </>}
+            {transportIsOperator && <div style={{ padding:"10px 14px", background:`${C.info}10`, borderRadius:8, fontSize:13.2, color:C.info, fontWeight:500, marginBottom:10 }}>El transportista confirmará y asignará camión/chofer.</div>}
+            <button onClick={() => { setTransportChoice("skip"); setAssignTruckId(""); setAssignDriverId(""); }} style={{ background:"none", border:"none", cursor:"pointer", fontSize:12.7, fontWeight:600, color:C.t3, padding:"8px 0", fontFamily:"inherit", textDecoration:"underline" }}>Asignar después</button>
+            <NextStepBtn complete={transportStepComplete} onClick={openConfirmModal} label="Siguiente" onPrev={prevAvailable()?goToPrev:null}/>
           </>}
         </MobileStepModal>
       )}
@@ -897,8 +1050,60 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
               {touched&&<FieldError error={errs.loadTime}/>}
             </div>
           </div>
-          <NextStepBtn complete={secComplete.schedule} onClick={isEditing?confirmEdit:openConfirmModal} label={isEditing?"Confirmar edición":"Siguiente"} onPrev={prevAvailable()?goToPrev:null}/>
+          <NextStepBtn complete={secComplete.schedule} onClick={isEditing?confirmEdit:(showTransportStep?advanceToNext:openConfirmModal)} label={isEditing?"Confirmar edición":"Siguiente"} onPrev={prevAvailable()?goToPrev:null}/>
         </Sec>}
+
+        {/* TRANSPORT STEP (plant + CONSULTA producer) */}
+        {activeSection === "transport" && showTransportStep && (
+          <Sec label="Asignar transporte" complete={transportStepComplete} isExpanded={true} onFocus={()=>{}} secRef={null}>
+            <div style={{ fontSize:13.2, color:C.t2, marginBottom:12 }}>Asignar transporte para este flete</div>
+            <div style={{ display:"flex", flexDirection:"column", gap:8, marginBottom:14 }}>
+              {user?.hasInternalFleet && (
+                <button onClick={() => { setTransportChoice("ownfleet"); setAssignTruckId(""); setAssignDriverId(""); }} style={{ display:"flex", alignItems:"center", gap:10, padding:"12px 14px", borderRadius:10, border:`1.5px solid ${transportChoice==="ownfleet" ? C.acc : C.b1}`, background:transportChoice==="ownfleet" ? C.accPale : C.w, cursor:"pointer", fontFamily:"inherit", textAlign:"left" }}>
+                  {Ic.truck(transportChoice==="ownfleet" ? C.acc : C.t3, 18)}
+                  <div style={{ flex:1 }}>
+                    <div style={{ fontSize:14.3, fontWeight:transportChoice==="ownfleet"?700:500, color:transportChoice==="ownfleet"?C.acc:C.t1 }}>Flota propia</div>
+                  </div>
+                  {transportChoice==="ownfleet" && Ic.chk(C.acc, 16)}
+                </button>
+              )}
+              {linkedTransporters.map(r => {
+                const co = r.granteeCompany || {};
+                const cId = r.granteeCompanyId || co.id;
+                const sel = transportChoice === cId;
+                const isConsulta = r.accessLevel === "READONLY";
+                return (
+                  <button key={cId} onClick={() => { setTransportChoice(cId); setAssignTruckId(""); setAssignDriverId(""); }} style={{ display:"flex", alignItems:"center", gap:10, padding:"12px 14px", borderRadius:10, border:`1.5px solid ${sel ? C.pri : C.b1}`, background:sel ? C.priPale : C.w, cursor:"pointer", fontFamily:"inherit", textAlign:"left" }}>
+                    {Ic.truck(sel ? C.pri : C.t3, 18)}
+                    <div style={{ flex:1 }}>
+                      <div style={{ fontSize:14.3, fontWeight:sel?700:500, color:sel?C.pri:C.t1 }}>{co.name || "Empresa"}</div>
+                      {isConsulta && <div style={{ fontSize:10.5, color:C.warn, fontWeight:600 }}>Modo consulta</div>}
+                    </div>
+                    {sel && Ic.chk(C.pri, 16)}
+                  </button>
+                );
+              })}
+            </div>
+            {transportNeedsTruckDriver && <>
+              {transportChoice === "ownfleet"
+                ? <div style={{ padding:"8px 12px", background:`${C.acc}10`, borderRadius:8, fontSize:12.1, color:C.acc, fontWeight:500, marginBottom:10 }}>Seleccioná camión y chofer de tu flota</div>
+                : <div style={{ padding:"8px 12px", background:`${C.warn}15`, borderRadius:8, fontSize:12.1, color:C.warn, fontWeight:500, marginBottom:10 }}>Este transportista está en modo consulta. Se asignará automáticamente.</div>}
+              <div style={{ marginBottom:8 }}>
+                {loadingAssignTrucks ? <div style={{ fontSize:12, color:C.t3, padding:8 }}>Cargando camiones...</div>
+                : assignTruckOpts.length > 0 ? <Select label="Camión" icon={Ic.truck(C.acc,14)} value={assignTruckId} onChange={v=>setAssignTruckId(v)} options={assignTruckOpts} placeholder="Seleccionar camión..."/>
+                : <div style={{ padding:"10px 14px", background:`${C.acc}08`, borderRadius:10, border:`1.5px dashed ${C.acc}40`, fontSize:12.7, color:C.t2, fontWeight:500, textAlign:"center" }}>Sin camiones registrados</div>}
+              </div>
+              {assignTruckId && <div style={{ marginBottom:8 }}>
+                {loadingAssignDrivers ? <div style={{ fontSize:12, color:C.t3, padding:8 }}>Cargando choferes...</div>
+                : assignDriverOpts.length > 0 ? <Select label="Chofer" icon={Ic.user(C.acc,14)} value={assignDriverId} onChange={v=>setAssignDriverId(v)} options={assignDriverOpts} placeholder="Seleccionar chofer..."/>
+                : <div style={{ padding:"10px 14px", background:`${C.acc}08`, borderRadius:10, border:`1.5px dashed ${C.acc}40`, fontSize:12.7, color:C.t2, fontWeight:500, textAlign:"center" }}>Sin choferes registrados</div>}
+              </div>}
+            </>}
+            {transportIsOperator && <div style={{ padding:"10px 14px", background:`${C.info}10`, borderRadius:8, fontSize:13.2, color:C.info, fontWeight:500, marginBottom:10 }}>El transportista confirmará y asignará camión/chofer.</div>}
+            <button onClick={() => { setTransportChoice("skip"); setAssignTruckId(""); setAssignDriverId(""); }} style={{ background:"none", border:"none", cursor:"pointer", fontSize:12.7, fontWeight:600, color:C.t3, padding:"8px 0", fontFamily:"inherit", textDecoration:"underline" }}>Asignar después</button>
+            <NextStepBtn complete={transportStepComplete} onClick={openConfirmModal} label="Siguiente" onPrev={prevAvailable()?goToPrev:null}/>
+          </Sec>
+        )}
 
       </div>}
       </div>
@@ -946,6 +1151,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
                     ...(showTruckSelect&&form.fleetChoice ? [{ icon: Ic.truck(C.acc,14), label:"Transporte", value:form.fleetChoice==="own"?`Flota propia${(trucks||[]).find(t=>t.id===form.truckId)?` · ${(trucks||[]).find(t=>t.id===form.truckId).plate}`:""}${(ownFleetDrivers||[]).find(d=>d.id===form.driverId)?` · ${(ownFleetDrivers||[]).find(d=>d.id===form.driverId).name}`:""}`:"Delegar a planta", sec:"ownfleet" }] : []),
                     { icon: Ic.plant(C.sec,14), label:"Destino", value:secSummary.destination, sec:"destination" },
                     { icon: Ic.cal(C.pri,14), label:"Fecha y hora", value:secSummary.schedule, sec:"schedule" },
+                    ...(secSummary.transport ? [{ icon: Ic.truck(C.acc,14), label:"Transporte", value:secSummary.transport, sec:"transport" }] : []),
                   ].filter(r=>r.value).map((r,i)=>(
                     <div key={i} style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 0", borderBottom:`1px solid ${C.b1}` }}>
                       <div style={{ display:"flex", alignItems:"center", justifyContent:"center", width:28, height:28, borderRadius:8, background:C.priPale, flexShrink:0 }}>{r.icon}</div>

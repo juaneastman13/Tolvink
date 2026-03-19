@@ -442,10 +442,18 @@ export default function AppLayout({ fh, catalog, online, notif, isDesktop }) {
       photoFailCount = results.filter(res => res.status === 'rejected').length;
       results.filter(res => res.status === 'rejected').forEach(res => log.error('FREIGHT', 'Photo upload failed:', res.reason));
     }
+    // After creating, assign transport if assignData was included
+    let assignError = null;
+    if (r.ok && r.freightId && form.assignData) {
+      const ad = form.assignData;
+      const ar = await fh.assign(r.freightId, ad.transportCompanyId, ad.truckId, ad.driverId);
+      if (!ar.ok) assignError = ar.error;
+    }
     setSubmitting(false);
     if(r.ok){
       track("freight_create");
-      if(photoFailCount > 0) show(`Flete solicitado, pero ${photoFailCount} foto(s) no se pudieron adjuntar`,"warn");
+      if (assignError) show(`Flete creado, pero no se pudo asignar transporte: ${assignError}`, "warn");
+      else if(photoFailCount > 0) show(`Flete solicitado, pero ${photoFailCount} foto(s) no se pudieron adjuntar`,"warn");
       else setSubmitDone("Flete solicitado");
     } else show(r.error,"err");
   };
