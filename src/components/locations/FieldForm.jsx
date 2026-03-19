@@ -4,8 +4,9 @@ import { SafeZone, LocationPicker } from "../../maps";
 
 const COLOR = "#1A6B37";
 
-export default function FieldForm({ mode = "create", field, onSave, onCancel, saving, onSelectOnMap }) {
+export default function FieldForm({ mode = "create", field, onSave, onCancel, saving, onSelectOnMap, isPlant, linkedCompanies, defaultOwnerCompanyId }) {
   const [name, setName] = useState(mode === "edit" ? "" : "");
+  const [ownerCompanyId, setOwnerCompanyId] = useState(defaultOwnerCompanyId || "");
   const [loc, setLoc] = useState(() => {
     if (mode === "edit" && field) {
       const lat = field.lat != null ? Number(field.lat) : null;
@@ -22,7 +23,7 @@ export default function FieldForm({ mode = "create", field, onSave, onCancel, sa
 
   const handleSave = () => {
     if (mode === "create") {
-      onSave({ name: name.trim(), address: loc?.address, lat: loc?.lat, lng: loc?.lng });
+      onSave({ name: name.trim(), address: loc?.address, lat: loc?.lat, lng: loc?.lng, ...(ownerCompanyId ? { ownerCompanyId } : {}) });
     } else {
       onSave({ address: loc?.address, lat: loc?.lat, lng: loc?.lng });
     }
@@ -41,9 +42,22 @@ export default function FieldForm({ mode = "create", field, onSave, onCancel, sa
       <div style={{ fontSize: 11, fontWeight: 700, color: mode === "edit" ? C.pri : COLOR, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>
         {mode === "edit" ? "Editar campo" : "Nuevo campo"}
       </div>
+      {mode === "create" && isPlant && linkedCompanies?.length > 0 && (
+        <div style={{ marginBottom: 8 }}>
+          <label style={{ fontSize: 11, fontWeight: 600, color: C.t2, display: "block", marginBottom: 4 }}>¿Para quién es este campo?</label>
+          <select value={ownerCompanyId} onChange={e => setOwnerCompanyId(e.target.value)} style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: `1.5px solid ${ownerCompanyId ? C.bFocus : C.b2}`, background: C.bgInput, fontFamily: FONT, fontSize: 13.2, color: C.t1, outline: "none", boxSizing: "border-box", appearance: "auto" }}>
+            <option value="">Para mi empresa</option>
+            {linkedCompanies.map(r => {
+              const co = r.granteeCompany || {};
+              const cId = r.granteeCompanyId || co.id;
+              return <option key={cId} value={cId}>{co.name || "Empresa"}</option>;
+            })}
+          </select>
+        </div>
+      )}
       {mode === "create" && (
         <input
-          autoFocus
+          autoFocus={!isPlant || !linkedCompanies?.length}
           value={name}
           onChange={e => setName(e.target.value)}
           onKeyDown={handleKeyDown}

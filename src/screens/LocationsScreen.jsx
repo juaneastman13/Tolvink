@@ -5,7 +5,7 @@ import { Btn, Bd, Loader, LoadingOverlay } from "../components";
 import {
   apiGetFields, apiGetFieldOwnersSummary, apiCreateField, apiCreateLot, apiUpdateField, apiUpdateLot,
   apiImportGoogleList, apiGetPois, apiCreatePoi, apiUpdatePoi, apiDeletePoi,
-  apiDeleteField, apiDeleteLot,
+  apiDeleteField, apiDeleteLot, apiGetCompanyAccess,
 } from "../api";
 import MapPreviewModal from "../modals/MapPreviewModal";
 import { useCatalogStore } from "../store";
@@ -63,6 +63,7 @@ export default function LocationsScreen({ onBack, user }) {
   // ── Plant filter: company dropdown ──
   const [ownerFilter, setOwnerFilter] = useState(""); // "" = all, "mine" = own, uuid = specific company
   const [ownersSummary, setOwnersSummary] = useState([]); // [{companyId, companyName, fieldCount, lotCount}]
+  const [linkedCompanies, setLinkedCompanies] = useState([]); // CompanyAccess linked companies for creation forms
 
   // ── Core data ──
   const [fields, setFields] = useState([]);
@@ -146,6 +147,14 @@ export default function LocationsScreen({ onBack, user }) {
   }, [isPlant]);
   useEffect(() => { load(); }, [load]);
 
+  // Load linked companies for plant creation forms
+  useEffect(() => {
+    if (!isPlant || !user?.activeCompanyId) return;
+    apiGetCompanyAccess(user.activeCompanyId)
+      .then(data => setLinkedCompanies((data || []).filter(r => r.isActive)))
+      .catch(() => {});
+  }, [isPlant, user?.activeCompanyId]);
+
   // ═══════════════════════════════════════════════════════════════
   // API HANDLERS
   // ═══════════════════════════════════════════════════════════════
@@ -154,8 +163,7 @@ export default function LocationsScreen({ onBack, user }) {
     if (!data.name) { setMsg({ t: "Nombre obligatorio", k: "err" }); return; }
     setSaving(true);
     try {
-      const ownerCid = (ownerFilter && ownerFilter !== "mine") ? ownerFilter : undefined;
-      await apiCreateField({ name: data.name, address: data.address || undefined, lat: data.lat || undefined, lng: data.lng || undefined, ...(ownerCid ? { ownerCompanyId: ownerCid } : {}) });
+      await apiCreateField({ name: data.name, address: data.address || undefined, lat: data.lat || undefined, lng: data.lng || undefined, ...(data.ownerCompanyId ? { ownerCompanyId: data.ownerCompanyId } : {}) });
       await load();
       useCatalogStore.getState().clearCache();
       setCreatingField(false);
@@ -238,7 +246,7 @@ export default function LocationsScreen({ onBack, user }) {
     if (!data.lat) { setMsg({ t: "Seleccioná una ubicación en el mapa", k: "err" }); return; }
     setSaving(true);
     try {
-      await apiCreatePoi({ name: data.name, comments: data.comments, lat: data.lat, lng: data.lng });
+      await apiCreatePoi({ name: data.name, comments: data.comments, lat: data.lat, lng: data.lng, ...(data.ownerCompanyId ? { ownerCompanyId: data.ownerCompanyId } : {}) });
       await load();
       useCatalogStore.getState().clearCache();
       setCreatingPoi(false);
@@ -952,9 +960,9 @@ export default function LocationsScreen({ onBack, user }) {
                 {creationMode === "poi" && "Crear ubicación de interés"}
               </div>
               <div style={{ padding: 0, flex: 1 }}>
-                {creationMode === "field" && <FieldForm mode="create" saving={saving} onSave={handleCreateField} onCancel={() => { setCreationMode(null); setCreatingField(false); }} onSelectOnMap={startMapSelect} />}
+                {creationMode === "field" && <FieldForm mode="create" saving={saving} onSave={handleCreateField} onCancel={() => { setCreationMode(null); setCreatingField(false); }} onSelectOnMap={startMapSelect} isPlant={isPlant} linkedCompanies={linkedCompanies} defaultOwnerCompanyId={ownerFilter && ownerFilter !== "mine" ? ownerFilter : ""} />}
                 {creationMode === "lot" && <LotForm mode="create" fields={fields} saving={saving} onSave={(data) => handleCreateLot(data._fieldId, data)} onCancel={() => { setCreationMode(null); setCreatingLotForField(null); }} onSelectOnMap={startMapSelect} />}
-                {creationMode === "poi" && <PoiForm mode="create" fields={fields} saving={saving} onSave={handleCreatePoi} onCancel={() => { setCreationMode(null); setCreatingPoi(false); }} onSelectOnMap={startMapSelect} />}
+                {creationMode === "poi" && <PoiForm mode="create" fields={fields} saving={saving} onSave={handleCreatePoi} onCancel={() => { setCreationMode(null); setCreatingPoi(false); }} onSelectOnMap={startMapSelect} isPlant={isPlant} linkedCompanies={linkedCompanies} defaultOwnerCompanyId={ownerFilter && ownerFilter !== "mine" ? ownerFilter : ""} />}
               </div>
             </div>
           )}
@@ -1033,7 +1041,7 @@ export default function LocationsScreen({ onBack, user }) {
               {renderSectionHeader("Campos", filteredFields.length, "fields", MAP_COLORS.field, (c, s) => Ic.field(c, s))}
               {sectionOpen.fields && (
                 <>
-                  {creatingField && !creationMode && <SlideIn><FieldForm mode="create" saving={saving} onSave={handleCreateField} onCancel={() => setCreatingField(false)} onSelectOnMap={startMapSelect} /></SlideIn>}
+                  {creatingField && !creationMode && <SlideIn><FieldForm mode="create" saving={saving} onSave={handleCreateField} onCancel={() => setCreatingField(false)} onSelectOnMap={startMapSelect} isPlant={isPlant} linkedCompanies={linkedCompanies} defaultOwnerCompanyId={ownerFilter && ownerFilter !== "mine" ? ownerFilter : ""} /></SlideIn>}
                   {filteredFields.length === 0 && !creatingField
                     ? <div style={{ padding: "16px", textAlign: "center", fontSize: 12.7, color: C.t3 }}>{search ? "Sin resultados" : "Sin campos registrados"}</div>
                     : renderFieldsList()}
