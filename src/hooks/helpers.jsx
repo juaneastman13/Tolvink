@@ -88,6 +88,7 @@ export function mapFreight(f) {
       finishedAt: x.finishedAt || null,
       seenAt: x.seenAt || null,
     })),
+    producerCompanyId:f.producerCompanyId||null, producerCompanyName:f.producerCompany?.name||null,
     notes:f.notes||"", cancelReason:f.cancelReason||"", createdAt:f.createdAt,
     transporterLoadedConfirmedAt: f.transporterLoadedConfirmedAt||null,
     producerLoadedConfirmedAt: f.producerLoadedConfirmedAt||null,

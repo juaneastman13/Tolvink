@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { C, Ic } from "../theme";
 import { Field, ModalOverlay } from "../components";
-import { apiGetTrucks, apiCreateTruck, apiGetDrivers, apiCreateDriver } from "../api";
+import { apiGetTrucks, apiCreateTruck, apiGetDrivers, apiCreateDriver, apiGetCompanyAccess } from "../api";
 
 // ======================== STEPPER (compact) ==============================
 function Stepper({ steps, current }) {
@@ -123,7 +123,9 @@ export default function AssignModal({ freight, transporters, user, onClose, onCo
 
   const [tonsInput, setTonsInput] = useState("");
   const [loadError, setLoadError] = useState(null);
+  const [transporterIsConsulta, setTransporterIsConsulta] = useState(false);
   const ts = transporters || [];
+  const isPlantUser = user?.userType === "plant";
 
   const alreadyAssigned = freight.assignedTruckCount || 0;
   const needed = (freight.truckCount || 1) - alreadyAssigned;
@@ -143,9 +145,29 @@ export default function AssignModal({ freight, transporters, user, onClose, onCo
   const remainingTons = Math.max(0, totalTons - assignedTons);
   const defaultTons = truckCapacity ? Math.min(truckCapacity, remainingTons || totalTons) : (remainingTons || totalTons);
 
-  const isDelegation = mode === "company";
+  const isDelegation = mode === "company" && !transporterIsConsulta;
   const tonsStep = isDelegation ? 0 : 2;
   useEffect(() => { setStep(0); }, [isDelegation]);
+
+  // Check access level when plant selects a transporter in company mode
+  useEffect(() => {
+    if (!isPlantUser || mode !== "company" || !t || !user?.activeCompanyId) {
+      setTransporterIsConsulta(false);
+      return;
+    }
+    let cancelled = false;
+    apiGetCompanyAccess(user.activeCompanyId, "TRANSPORTER").then(records => {
+      if (cancelled) return;
+      const rec = (records || []).find(r => (r.granteeCompanyId || r.granteeCompany?.id) === t);
+      setTransporterIsConsulta(rec?.accessLevel === "READONLY");
+      // When CONSULTA detected, load trucks+drivers from transporter's fleet
+      if (rec?.accessLevel === "READONLY") {
+        loadTrucks(t);
+        loadDriversFn(t);
+      }
+    }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [isPlantUser, mode, t, user?.activeCompanyId]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (step === tonsStep && !tonsInput) setTonsInput(defaultTons > 0 ? String(Math.round(defaultTons * 10) / 10) : "");
   }, [step]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -241,6 +263,7 @@ export default function AssignModal({ freight, transporters, user, onClose, onCo
   const externalTs = ts.filter(x => x.id !== freight.originCompanyId);
   const remainingSlots = multiTruck ? Math.max(0, needed - truckList.length) : 1;
   const stepLabels = isDelegation ? ["Toneladas"] : ["Vehículo", "Chofer", "Toneladas"];
+  const isConsultaFlow = mode === "company" && transporterIsConsulta;
 
   // ======================== RENDER =======================================
   return (
@@ -309,7 +332,14 @@ export default function AssignModal({ freight, transporters, user, onClose, onCo
               <div style={{ display:"flex", alignItems:"center", gap:6, padding:"6px 10px", borderRadius:6, border:`1px solid ${C.b1}`, background:C.bg, marginBottom:10 }}>
                 {Ic.truck(C.t3, 12)}
                 <span style={{ fontSize:12, fontWeight:600, color:C.t1, flex:1 }}>{ts.find(x => x.id === t)?.name || ""}</span>
-                <button onClick={() => { setT(""); setTruckId(""); setDriverId(""); setStep(0); }} style={{ background:"none", border:`1px solid ${C.b2}`, borderRadius:4, padding:"2px 6px", fontSize:10, fontWeight:600, color:C.pri, cursor:"pointer", fontFamily:"inherit" }}>Cambiar</button>
+                {isConsultaFlow && <span style={{ fontSize:9.5, fontWeight:700, color:C.info, background:`${C.info}15`, padding:"2px 6px", borderRadius:4 }}>CONSULTA</span>}
+                <button onClick={() => { setT(""); setTruckId(""); setDriverId(""); setStep(0); setTransporterIsConsulta(false); }} style={{ background:"none", border:`1px solid ${C.b2}`, borderRadius:4, padding:"2px 6px", fontSize:10, fontWeight:600, color:C.pri, cursor:"pointer", fontFamily:"inherit" }}>Cambiar</button>
+              </div>
+            )}
+            {/* CONSULTA banner */}
+            {isConsultaFlow && (
+              <div style={{ padding:"8px 10px", background:`${C.info}10`, border:`1px solid ${C.info}30`, borderRadius:8, marginBottom:10, fontSize:11.5, color:C.info, fontWeight:500 }}>
+                Este transportista está en modo consulta. Seleccioná vehículo y chofer. La asignación se confirma automáticamente.
               </div>
             )}
 
@@ -327,9 +357,9 @@ export default function AssignModal({ freight, transporters, user, onClose, onCo
                   ))}
                 </div>
 
-                {!showNewTruck ? (
+                {!isConsultaFlow && !showNewTruck ? (
                   <CreateBtn label="Crear nuevo vehículo" onClick={() => { setShowNewTruck(true); setTruckErr(""); }} />
-                ) : (
+                ) : !isConsultaFlow && showNewTruck ? (
                   <div style={{ border:`1.5px solid ${C.pri}`, borderRadius:8, padding:10, marginBottom:6, background:`${C.pri}04` }}>
                     <div style={{ fontSize:11, fontWeight:700, color:C.pri, marginBottom:6 }}>Nuevo vehículo</div>
                     <div style={{ display:"flex", gap:6, marginBottom:4 }}>
@@ -346,7 +376,7 @@ export default function AssignModal({ freight, transporters, user, onClose, onCo
                       <button disabled={savingTruck} onClick={handleCreateTruck} style={{ flex:1, padding:"7px 0", borderRadius:6, border:"none", background:C.pri, color:C.tOn, fontSize:12, fontWeight:600, cursor:savingTruck ? "not-allowed" : "pointer", fontFamily:"inherit", opacity:savingTruck ? 0.6 : 1 }}>{savingTruck ? "Creando..." : "Crear"}</button>
                     </div>
                   </div>
-                )}
+                ) : null}
 
                 <div style={{ display:"flex", justifyContent:"flex-end", marginTop:12 }}>
                   <button disabled={!truckId} onClick={() => setStep(1)} style={btnNext(!!truckId)}>Siguiente →</button>
@@ -359,7 +389,7 @@ export default function AssignModal({ freight, transporters, user, onClose, onCo
               <div>
                 <div style={{ fontSize:14, fontWeight:700, color:C.t1, marginBottom:8 }}>Seleccionar chofer</div>
 
-                {user && <DriverRow d={{ name: user.name, phone: user.phone }} selected={driverId === user.id} isMe onClick={() => setDriverId(driverId === user.id ? "" : user.id)} />}
+                {user && !isConsultaFlow && <DriverRow d={{ name: user.name, phone: user.phone }} selected={driverId === user.id} isMe onClick={() => setDriverId(driverId === user.id ? "" : user.id)} />}
 
                 <div style={{ display:"flex", flexDirection:"column", gap:0, maxHeight:320, overflowY:"auto", marginBottom:6 }}>
                   {loadingDrivers && <div style={{ fontSize:12, color:C.t3, padding:8, textAlign:"center" }}>Cargando...</div>}
@@ -369,9 +399,9 @@ export default function AssignModal({ freight, transporters, user, onClose, onCo
                   ))}
                 </div>
 
-                {!showNewDriver ? (
+                {!isConsultaFlow && !showNewDriver ? (
                   <CreateBtn label="Crear chofer" onClick={() => { setShowNewDriver(true); setDriverErr(""); }} />
-                ) : (
+                ) : !isConsultaFlow && showNewDriver ? (
                   <div style={{ border:`1.5px solid ${C.pri}`, borderRadius:8, padding:10, marginBottom:6, background:`${C.pri}04` }}>
                     <div style={{ fontSize:11, fontWeight:700, color:C.pri, marginBottom:6 }}>Nuevo chofer</div>
                     <div style={{ display:"flex", gap:6, marginBottom:4 }}>
@@ -384,7 +414,7 @@ export default function AssignModal({ freight, transporters, user, onClose, onCo
                       <button disabled={savingDriver} onClick={handleCreateDriver} style={{ flex:1, padding:"7px 0", borderRadius:6, border:"none", background:C.pri, color:C.tOn, fontSize:12, fontWeight:600, cursor:savingDriver ? "not-allowed" : "pointer", fontFamily:"inherit", opacity:savingDriver ? 0.6 : 1 }}>{savingDriver ? "Creando..." : "Crear"}</button>
                     </div>
                   </div>
-                )}
+                ) : null}
 
                 <div style={{ display:"flex", justifyContent:"space-between", marginTop:12 }}>
                   <button onClick={() => setStep(0)} style={btnPrev}>← Anterior</button>
@@ -431,7 +461,7 @@ export default function AssignModal({ freight, transporters, user, onClose, onCo
                       <button disabled={!(parseFloat(tonsInput) > 0) || loading} onClick={doConfirm} style={btnNext(parseFloat(tonsInput) > 0)}>{loading ? "..." : "Confirmar"}</button>
                     </div>
                   ) : (
-                    <button disabled={!(parseFloat(tonsInput) > 0) || loading} onClick={doConfirm} style={btnNext(parseFloat(tonsInput) > 0)}>{loading ? "Asignando..." : "Confirmar"}</button>
+                    <button disabled={!(parseFloat(tonsInput) > 0) || loading} onClick={doConfirm} style={btnNext(parseFloat(tonsInput) > 0)}>{loading ? "Asignando..." : isConsultaFlow ? "Asignar y confirmar" : "Confirmar"}</button>
                   )}
                 </div>
               </div>

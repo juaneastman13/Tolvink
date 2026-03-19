@@ -91,6 +91,13 @@ export const FreightCard = memo(function FreightCard({ freight: f, onClick, styl
           {isCustomDest ? Ic.pin("#888", 12) : Ic.plant("#666", 12)}
           <span style={{ fontSize: 12, color: C.t2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{dest}</span>
         </div>
+        {/* Producer badge (plant-centric) */}
+        {f.producerCompanyName && (
+          <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 4 }}>
+            {Ic.user(C.acc, 11)}
+            <span style={{ fontSize: 11, color: C.acc, fontWeight: 600 }}>{f.producerCompanyName}</span>
+          </div>
+        )}
         {/* Row 3: transport + date */}
         <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
           {Ic.truck(C.t2, 13)}
@@ -144,6 +151,13 @@ export const FreightCardCompact = memo(function FreightCardCompact({ freight: f,
         </div>
         {/* Row 2: title */}
         <div style={{ fontSize: 13, fontWeight: 500, color: C.t1, marginBottom: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{title}</div>
+        {/* Producer badge (plant-centric) */}
+        {f.producerCompanyName && (
+          <div style={{ display: "flex", alignItems: "center", gap: 3, marginBottom: 2 }}>
+            {Ic.user(C.acc, 10)}
+            <span style={{ fontSize: 10, color: C.acc, fontWeight: 600 }}>{f.producerCompanyName}</span>
+          </div>
+        )}
         {/* Row 3: route + date */}
         <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
           {Ic.pin("#888", 11)}

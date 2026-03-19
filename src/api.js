@@ -299,7 +299,8 @@ export async function apiCreateDriver(b) { return api('/trucks/drivers',{body:b}
 export async function apiDeactivateDriver(id) { return api(`/trucks/drivers/${id}/deactivate`,{body:{},method:'PATCH'}); }
 
 // Fields & Lots
-export async function apiGetFields() { return api('/fields'); }
+export async function apiGetFields(ownerCompanyId) { const q = ownerCompanyId ? `?ownerCompanyId=${encodeURIComponent(ownerCompanyId)}` : ''; return api(`/fields${q}`); }
+export async function apiGetFieldOwnersSummary() { return api('/fields/owners-summary'); }
 export async function apiCreateField(b) { return api('/fields',{body:b}); }
 export async function apiUpdateField(id, b) { return api(`/fields/${id}`,{method:'PATCH',body:b}); }
 export async function apiGetFieldLots(fieldId) { return api(`/fields/${fieldId}/lots`); }

@@ -8,7 +8,7 @@ import log from "../logger";
 const LocationPicker = lazy(() => import("../maps").then(m => ({ default: m.LocationPicker })));
 const SafeZone = lazy(() => import("../maps").then(m => ({ default: m.SafeZone })));
 const FreightMap = lazy(() => import("../maps").then(m => ({ default: m.FreightMap })));
-import { uploadPhoto, apiAddDocument, apiGetFieldLots, apiCreateLot, apiGetDrivers } from "../api";
+import { uploadPhoto, apiAddDocument, apiGetFieldLots, apiCreateLot, apiGetDrivers, apiGetCompanyAccess, apiGetFields } from "../api";
 import { useIsDesktop } from "../hooks";
 import { useUIStore } from "../store";
 
@@ -17,6 +17,7 @@ import { useUIStore } from "../store";
 function SummaryCard({ secSummary, secComplete, form, showTruckSelect, trucks, ownFleetDrivers, isDesktop, compact, onEdit }) {
   const ICONS = { product: Ic.grain(C.pri,14), quantity: Ic.grain(C.t2,14), truckCount: Ic.truck(C.acc,14), origin: Ic.field(C.ok,14), ownfleet: Ic.truck(C.acc,14), destination: Ic.plant(C.sec,14), schedule: Ic.cal(C.pri,14) };
   const rows = [];
+  if (secSummary.producer) rows.push({ label: "Productor", value: secSummary.producer, section: "producer", icon: ICONS.origin });
   if (secSummary.product) rows.push({ label: "Producto", value: secSummary.product, section: "product", icon: ICONS.product });
   if (secSummary.quantity) rows.push({ label: "Cantidad", value: secSummary.quantity, section: "quantity", icon: ICONS.quantity });
   if (secSummary.truckCount) rows.push({ label: "Camiones", value: secSummary.truckCount, section: "quantity", icon: ICONS.truckCount });
@@ -194,6 +195,34 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
   const nfDocRef = useRef(null);
   const u = f => setForm(p=>({...p,...f}));
 
+  // Plant-centric: producer selection (step 0 for plant users)
+  const isPlantUser = user?.userType === "plant";
+  const [producerCompanyId, setProducerCompanyId] = useState("");
+  const [linkedProducers, setLinkedProducers] = useState([]); // CompanyAccess records
+  const [producerFields, setProducerFields] = useState(null); // null = not loaded, [] = loaded empty
+
+  // Load linked producers for plant
+  useEffect(() => {
+    if (!isPlantUser || !user?.activeCompanyId) return;
+    apiGetCompanyAccess(user.activeCompanyId, "PRODUCER")
+      .then(data => setLinkedProducers((data || []).filter(r => r.isActive)))
+      .catch(() => {});
+  }, [isPlantUser, user?.activeCompanyId]);
+
+  // Load fields for selected producer
+  useEffect(() => {
+    if (!isPlantUser || !producerCompanyId) { setProducerFields(null); return; }
+    apiGetFields(producerCompanyId).then(f => setProducerFields(f || [])).catch(() => setProducerFields([]));
+  }, [isPlantUser, producerCompanyId]);
+
+  // When producer changes, reset origin selection
+  const handleProducerChange = (pId) => {
+    setProducerCompanyId(pId);
+    u({ fieldId: "", lotId: "" });
+    setFieldLots([]);
+    setProducerFields(null);
+  };
+
   // Drivers for own fleet
   const [ownFleetDrivers, setOwnFleetDrivers] = useState([]);
   const [loadingDrivers, setLoadingDrivers] = useState(false);
@@ -209,8 +238,9 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
 
   // Section refs for collapsible sections
   const secRefs = { product:useRef(null), quantity:useRef(null), origin:useRef(null), ownfleet:useRef(null), destination:useRef(null), schedule:useRef(null), submit:useRef(null) };
-  const SEC_ORDER = ["product","quantity","origin","destination","schedule"];
+  const SEC_ORDER = isPlantUser ? ["producer","product","quantity","origin","destination","schedule"] : ["product","quantity","origin","destination","schedule"];
   const [activeSection, setActiveSection] = useState(()=>{
+    if (isPlantUser) return "producer";
     const g=!!form.grain&&(form.grain!=="Otros"||!!form.productTypeOther.trim()), q=!!form.tons&&parseFloat(form.tons)>0, o=originMode==="field"?(!!form.fieldId):(!!customOrigin.lat), d=destMode==="plant"?!!form.plantId:!!customDest.lat, s=!!form.loadDate&&/^\d{2}:\d{2}$/.test(form.loadTime);
     if(!g)return"product";if(!q)return"quantity";if(!o)return"origin";if(!d)return"destination";return"schedule";
   });
@@ -220,7 +250,8 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
   const _hasBranches = (branches||[]).some(b => b.companyId === (plants||[]).find(p => p.id === form.plantId)?.companyId);
 
   // Derived data needed by secComplete and section flow
-  const fieldOpts = (fields||[]).map(f=>({ value:f.id, label:f.name, sub:f.address||"" }));
+  const effectiveFields = isPlantUser && producerFields !== null ? producerFields : (fields || []);
+  const fieldOpts = effectiveFields.map(f=>({ value:f.id, label:f.name, sub:f.address||"" }));
   const hasLots = fieldLots.length > 0;
   const lotOpts = hasLots ? [{ value:"__field__", label:"Usar ubicación del campo", bold:true }, ...fieldLots.map(l=>({ value:l.id, label:l.name, sub:l.hectares?`${l.hectares} ha`:'' }))] : [];
   const plantOpts = (plants||[]).map(p=>({ value:p.id, label:p.name }));
@@ -234,35 +265,38 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
 
   // Section completeness
   const secComplete = useMemo(()=>({
+    ...(isPlantUser ? { producer: !!producerCompanyId } : {}),
     product: !!form.grain && (form.grain!=="Otros" || !!form.productTypeOther.trim()),
     quantity: !!form.tons && parseFloat(form.tons) > 0,
     origin: originMode==="field" ? (!!form.fieldId && (!hasLots || !!form.lotId)) : (!!customOrigin.lat),
     destination: destMode==="plant" ? (!!form.plantId && (!_hasBranches || !!form.branchId)) : (!!customDest.lat && (confirmMode==="none" || !!confirmPlantId)),
     schedule: !!form.loadDate && /^\d{2}:\d{2}$/.test(form.loadTime),
-  }),[form, originMode, customOrigin, destMode, customDest, confirmMode, confirmPlantId, _hasBranches]);
+  }),[form, originMode, customOrigin, destMode, customDest, confirmMode, confirmPlantId, _hasBranches, isPlantUser, producerCompanyId]);
 
   // Next section to fill (highlight it when collapsed)
   const nextToFill = SEC_ORDER.find(s => !secComplete[s]);
   const allComplete = !nextToFill;
-  const advanceToNext = () => {
-    const flow = ["product", "quantity", "origin"];
+  const buildFlow = () => {
+    const flow = [];
+    if (isPlantUser) flow.push("producer");
+    flow.push("product", "quantity", "origin");
     if (showTruckSelect) flow.push("ownfleet");
     flow.push("destination", "schedule");
+    return flow;
+  };
+  const advanceToNext = () => {
+    const flow = buildFlow();
     const idx = flow.indexOf(activeSection);
     if (idx >= 0 && idx < flow.length - 1) setActiveSection(flow[idx + 1]);
   };
 
   const goToPrev = () => {
-    const flow = ["product", "quantity", "origin"];
-    if (showTruckSelect) flow.push("ownfleet");
-    flow.push("destination", "schedule");
+    const flow = buildFlow();
     const idx = flow.indexOf(activeSection);
     if (idx > 0) setActiveSection(flow[idx - 1]);
   };
   const prevAvailable = () => {
-    const flow = ["product", "quantity", "origin"];
-    if (showTruckSelect) flow.push("ownfleet");
-    flow.push("destination", "schedule");
+    const flow = buildFlow();
     return flow.indexOf(activeSection) > 0;
   };
 
@@ -274,13 +308,15 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
   };
 
   // Sections are locked if previous required sections are incomplete
+  const pOk = isPlantUser ? !!producerCompanyId : true;
   const secEnabled = {
-    product: true,
-    quantity: secComplete.product,
-    origin: secComplete.product && secComplete.quantity,
-    ownfleet: secComplete.product && secComplete.quantity && secComplete.origin,
-    destination: secComplete.product && secComplete.quantity && secComplete.origin,
-    schedule: secComplete.product && secComplete.quantity && secComplete.origin && secComplete.destination,
+    producer: true,
+    product: pOk,
+    quantity: pOk && secComplete.product,
+    origin: pOk && secComplete.product && secComplete.quantity,
+    ownfleet: pOk && secComplete.product && secComplete.quantity && secComplete.origin,
+    destination: pOk && secComplete.product && secComplete.quantity && secComplete.origin,
+    schedule: pOk && secComplete.product && secComplete.quantity && secComplete.origin && secComplete.destination,
   };
 
   // Revoke blob URLs on unmount
@@ -389,6 +425,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
       originNameForPayload = customOrigin.name?.trim() || undefined;
     }
     const payload = {...form, photos: photos.map(p=>p.preview), useOwnFleet: showTruckSelect && form.fleetChoice ? (form.fleetChoice==="own") : undefined,
+      ...(isPlantUser && producerCompanyId ? { producerCompanyId } : {}),
       overrideOriginLat: originMode==="map" ? customOrigin.lat : (overrideOrigin?.lat || undefined),
       overrideOriginLng: originMode==="map" ? customOrigin.lng : (overrideOrigin?.lng || undefined),
       customOriginName: originNameForPayload || undefined,
@@ -448,7 +485,9 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
     });
   };
 
+  const selectedProducerName = linkedProducers.find(r => (r.granteeCompanyId || r.granteeCompany?.id) === producerCompanyId)?.granteeCompany?.name || "";
   const secSummary = {
+    ...(isPlantUser ? { producer: selectedProducerName || "" } : {}),
     product: form.grain ? (form.grain==="Otros" ? `Otros: ${form.productTypeOther}` : form.grain) : "",
     quantity: form.tons ? `${form.tons} ${form.unit}` : "",
     origin: originMode==="field" ? ((fieldOpts.find(f=>f.value===form.fieldId)?.label||"")+(selectedLot?` — ${selectedLot.name}`:"")) : (customOrigin.lat ? (customOrigin.name?.trim()||"Ubicación personalizada") : ""),
@@ -478,13 +517,35 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
       {!_isDesktop && (
         <MobileStepModal
           open={true}
-          title={{product:"Producto",quantity:"Cantidad",origin:"Origen",ownfleet:"Transporte",destination:"Destino",schedule:"Fecha y hora"}[activeSection]||""}
+          title={{producer:"Productor",product:"Producto",quantity:"Cantidad",origin:"Origen",ownfleet:"Transporte",destination:"Destino",schedule:"Fecha y hora"}[activeSection]||""}
           summary={secSummary[activeSection]||undefined}
-          onClose={()=>{ const flow=["product","quantity","origin"]; if(showTruckSelect)flow.push("ownfleet"); flow.push("destination","schedule"); const idx=flow.indexOf(activeSection); if(idx>0)setActiveSection(flow[idx-1]); }}
-          onPrev={(()=>{ const flow=["product","quantity","origin"]; if(showTruckSelect)flow.push("ownfleet"); flow.push("destination","schedule"); const idx=flow.indexOf(activeSection); return idx>0 ? ()=>setActiveSection(flow[idx-1]) : null; })()}
-          stepIndex={(()=>{ const flow=["product","quantity","origin"]; if(showTruckSelect)flow.push("ownfleet"); flow.push("destination","schedule"); return flow.indexOf(activeSection)+1; })()}
-          totalSteps={showTruckSelect?6:5}
+          onClose={()=>{ const flow=buildFlow(); const idx=flow.indexOf(activeSection); if(idx>0)setActiveSection(flow[idx-1]); }}
+          onPrev={(()=>{ const flow=buildFlow(); const idx=flow.indexOf(activeSection); return idx>0 ? ()=>setActiveSection(flow[idx-1]) : null; })()}
+          stepIndex={(()=>{ const flow=buildFlow(); return flow.indexOf(activeSection)+1; })()}
+          totalSteps={buildFlow().length}
         >
+          {activeSection === "producer" && isPlantUser && <>
+            <div style={{ fontSize:13.2, color:C.t2, marginBottom:12 }}>¿Para qué productor es este flete?</div>
+            <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+              {linkedProducers.map(r => {
+                const co = r.granteeCompany || {};
+                const cId = r.granteeCompanyId || co.id;
+                const sel = producerCompanyId === cId;
+                return (
+                  <button key={cId} onClick={() => handleProducerChange(cId)} style={{ display:"flex", alignItems:"center", gap:10, padding:"12px 14px", borderRadius:10, border:`1.5px solid ${sel ? C.pri : C.b1}`, background:sel ? C.priPale : C.w, cursor:"pointer", fontFamily:"inherit", textAlign:"left" }}>
+                    {Ic.user(sel ? C.pri : C.t3, 18)}
+                    <div style={{ flex:1 }}>
+                      <div style={{ fontSize:14.3, fontWeight:sel?700:500, color:sel?C.pri:C.t1 }}>{co.name || "Empresa"}</div>
+                      {co.hasInternalFleet && <div style={{ fontSize:10.5, color:C.ok, fontWeight:600 }}>Flota propia</div>}
+                    </div>
+                    {sel && Ic.chk(C.pri, 16)}
+                  </button>
+                );
+              })}
+            </div>
+            {linkedProducers.length === 0 && <div style={{ fontSize:13.2, color:C.t3, textAlign:"center", padding:20 }}>No hay productores vinculados</div>}
+            <NextStepBtn complete={!!producerCompanyId} onClick={advanceToNext}/>
+          </>}
           {activeSection === "product" && <>
             <div>
               <Field label="Tipo de producto" icon={Ic.grain(C.pri,14)}>
@@ -632,6 +693,30 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
          Consider extracting shared section components (ProductSection, QuantitySection, OriginSection, etc.)
          to reduce duplication and ensure mobile/desktop stay in sync. */}
       {_isDesktop && <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
+        {/* PRODUCER SECTION (plant only) */}
+        {activeSection === "producer" && isPlantUser && <Sec label="Productor" complete={!!producerCompanyId} isExpanded={true} onFocus={()=>{}} secRef={null}>
+          <div style={{ fontSize:13.2, color:C.t2, marginBottom:12 }}>¿Para qué productor es este flete?</div>
+          <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+            {linkedProducers.map(r => {
+              const co = r.granteeCompany || {};
+              const cId = r.granteeCompanyId || co.id;
+              const sel = producerCompanyId === cId;
+              return (
+                <button key={cId} onClick={() => handleProducerChange(cId)} style={{ display:"flex", alignItems:"center", gap:10, padding:"12px 14px", borderRadius:10, border:`1.5px solid ${sel ? C.pri : C.b1}`, background:sel ? C.priPale : C.w, cursor:"pointer", fontFamily:"inherit", textAlign:"left" }}>
+                  {Ic.user(sel ? C.pri : C.t3, 18)}
+                  <div style={{ flex:1 }}>
+                    <div style={{ fontSize:14.3, fontWeight:sel?700:500, color:sel?C.pri:C.t1 }}>{co.name || "Empresa"}</div>
+                    {co.hasInternalFleet && <div style={{ fontSize:10.5, color:C.ok, fontWeight:600 }}>Flota propia</div>}
+                  </div>
+                  {sel && Ic.chk(C.pri, 16)}
+                </button>
+              );
+            })}
+          </div>
+          {linkedProducers.length === 0 && <div style={{ fontSize:13.2, color:C.t3, textAlign:"center", padding:20 }}>No hay productores vinculados</div>}
+          <NextStepBtn complete={!!producerCompanyId} onClick={advanceToNext}/>
+        </Sec>}
+
         {/* PRODUCT SECTION */}
         {activeSection === "product" && <Sec label="Producto" complete={secComplete.product} isExpanded={true} onFocus={()=>{}} secRef={secRefs.product}>
           <div>

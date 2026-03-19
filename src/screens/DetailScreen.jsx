@@ -6,9 +6,10 @@ import { SafeZone } from "../maps";
 const FreightMap = lazy(() => import("../maps").then(m => ({ default: m.FreightMap })));
 import log from "../logger";
 import { DocsGallery, FreightFileUpload, OcrResultModal, UploadOverlay } from "../uploads";
-import { apiGetAuditLog, apiGetFreight, apiGetFreightDetailExtra, apiSendTracking, apiApprovePendingChange, apiRejectPendingChange, apiOcrAnalyze, apiSaveOcrData, apiUpdateFreight, apiGetWeighTickets, apiAssignFreight } from "../api";
+import { apiGetAuditLog, apiGetFreight, apiGetFreightDetailExtra, apiSendTracking, apiApprovePendingChange, apiRejectPendingChange, apiOcrAnalyze, apiSaveOcrData, apiUpdateFreight, apiGetWeighTickets, apiAssignFreight, apiGetCompanyAccess } from "../api";
 import { WeighTicketSummary } from "../components/WeighTicketForm";
 import { useIsDesktop, mapFreight, originDisplay, destDisplay } from "../hooks";
+import { useAccessLevel } from "../hooks/useAccessLevel";
 import { useUIStore, useFreightDetailStore } from "../store";
 import AssignmentSuggestions from "../components/AssignmentSuggestions";
 // PDF report loaded lazily to avoid bundle bloat
@@ -203,20 +204,56 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
 
   const _isDesktop = useIsDesktop(768);
 
+  // Plant-centric: access level for current user + transporter CONSULTA detection
+  const { can, isConsulta } = useAccessLevel(user);
+  const isPlantUser = user?.userType === "plant";
+  const [transporterAccessMap, setTransporterAccessMap] = useState({});
+  useEffect(() => {
+    if (!isPlantUser || !user?.activeCompanyId) return;
+    let cancelled = false;
+    apiGetCompanyAccess(user.activeCompanyId, "TRANSPORTER").then(records => {
+      if (cancelled) return;
+      const map = {};
+      for (const r of (records || [])) {
+        const cId = r.granteeCompanyId || r.granteeCompany?.id;
+        if (cId) map[cId] = r.accessLevel;
+      }
+      setTransporterAccessMap(map);
+    }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [isPlantUser, user?.activeCompanyId]);
+
+  // Check if the freight's transporter is CONSULTA (READONLY)
+  const transporterCompanyId = freight?.activeAssignments?.[0]?.transportCompanyId;
+  const transporterIsConsulta = isPlantUser && transporterCompanyId && transporterAccessMap[transporterCompanyId] === "READONLY";
+
   const st = freight ? stCfg(freight.status) : null;
   const isMultiTruck = freight?.isMultiTruck && (freight?.truckCount || 1) > 1;
   const isChoferQueued = user.role === "chofer" && (freight?.queuePosition || 0) > 1;
   const actions = !freight ? [] : isMultiTruck ? [] : getActions(freight.status, user.userType, user.role, freight.isOwnFleet);
 
   // Filter actions based on confirmation state (single-truck only)
-  const filteredActions = !freight ? [] : isChoferQueued ? [] : actions.filter(a=>{
-    if(a==="confirm_loaded" && user.userType==="transporter" && freight?.transporterLoadedConfirmedAt) return false;
-    if(a==="confirm_loaded" && user.userType==="producer" && freight?.producerLoadedConfirmedAt) return false;
-    if(a==="confirm_finished" && user.userType==="transporter" && freight?.transporterFinishedConfirmedAt) return false;
-    if(a==="confirm_finished" && user.userType==="plant" && freight?.plantFinishedConfirmedAt) return false;
-    if(a==="confirm_finished" && user.userType==="producer" && freight?.isOwnFleet && freight?.transporterFinishedConfirmedAt) return false;
-    return true;
-  });
+  // CONSULTA users: no actions at all
+  // Plant + transporter CONSULTA: plant absorbs trip lifecycle actions
+  const filteredActions = useMemo(() => {
+    if (!freight || isChoferQueued) return [];
+    if (isConsulta) return []; // CONSULTA = zero actions
+    let acts = actions.filter(a=>{
+      if(a==="confirm_loaded" && user.userType==="transporter" && freight?.transporterLoadedConfirmedAt) return false;
+      if(a==="confirm_loaded" && user.userType==="producer" && freight?.producerLoadedConfirmedAt) return false;
+      if(a==="confirm_finished" && user.userType==="transporter" && freight?.transporterFinishedConfirmedAt) return false;
+      if(a==="confirm_finished" && user.userType==="plant" && freight?.plantFinishedConfirmedAt) return false;
+      if(a==="confirm_finished" && user.userType==="producer" && freight?.isOwnFleet && freight?.transporterFinishedConfirmedAt) return false;
+      return true;
+    });
+    // Plant absorbs trip lifecycle when transporter is CONSULTA
+    if (transporterIsConsulta && !isMultiTruck) {
+      const tripLifecycle = { accepted: "start", in_progress: "confirm_loaded", loaded: "confirm_finished" };
+      const extra = tripLifecycle[freight.status];
+      if (extra && !acts.includes(extra)) acts = [...acts, extra];
+    }
+    return acts;
+  }, [freight, isChoferQueued, isConsulta, actions, user, transporterIsConsulta, isMultiTruck]);
 
   // Filter assignments visible to this user (works for both single and multi-truck)
   const visibleAssignments = useMemo(() => {
@@ -229,14 +266,21 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
 
   // Multi-truck: aggregate top-level actions from all visible trips
   const multiTruckTopActions = useMemo(() => {
-    if (!isMultiTruck || isChoferQueued) return [];
+    if (!isMultiTruck || isChoferQueued || isConsulta) return [];
     const seen = new Map(); // key -> { label, color, icon, assignmentId, count }
     for (const a of visibleAssignments) {
       const ts = a.tripStatus;
       const isOwn = a.transportCompanyId === freight?.originCompanyId;
+      const aTransporterIsConsulta = isPlantUser && a.transportCompanyId && transporterAccessMap[a.transportCompanyId] === "READONLY";
       const entries = [];
       if (user.userType === "plant") {
         if (ts === "loaded" && !a.plantFinishedConfirmedAt) entries.push({ key:"confirm_trip_finished", label:"Confirmar entrega", color:C.pri, icon:Ic.chk(C.w,16) });
+        // Plant absorbs trip lifecycle when this assignment's transporter is CONSULTA
+        if (aTransporterIsConsulta) {
+          if (ts === "accepted") entries.push({ key:"start_trip", label:"Iniciar viaje", color:C.pri, icon:Ic.truck(C.w,16) });
+          if (ts === "in_progress" && !a.transporterLoadedConfirmedAt) entries.push({ key:"confirm_trip_loaded", label:"Confirmar carga", color:C.acc, icon:Ic.chk(C.w,16) });
+          if (ts === "loaded" && !a.transporterFinishedConfirmedAt && !entries.find(e=>e.key==="confirm_trip_finished")) entries.push({ key:"confirm_trip_finished", label:"Confirmar entrega", color:C.pri, icon:Ic.chk(C.w,16) });
+        }
       } else if (user.role !== "chofer" && user.userType === "producer" && !isOwn) {
         if (ts === "loaded" && !a.plantFinishedConfirmedAt) entries.push({ key:"confirm_trip_finished", label:"Confirmar entrega", color:C.pri, icon:Ic.chk(C.w,16) });
       }
@@ -260,7 +304,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
       }
     }
     return [...seen.values()];
-  }, [isMultiTruck, isChoferQueued, visibleAssignments, freight, user]);
+  }, [isMultiTruck, isChoferQueued, isConsulta, isPlantUser, transporterAccessMap, visibleAssignments, freight, user]);
 
   // Compute primary + danger action buttons for ActionFooter (mobile) / inline (desktop)
   const primaryBtns = useMemo(() => {
@@ -526,7 +570,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
       {freight.status !== "canceled" && (()=>{
         const truckCount = freight.truckCount || 1;
         const assignedCount = freight.assignedTruckCount || freight.activeAssignments?.length || 0;
-        const canEditCount = (perms.canRequest || perms.canApprove) && !["finished","canceled"].includes(freight.status);
+        const canEditCount = !isConsulta && (perms.canRequest || perms.canApprove) && !["finished","canceled"].includes(freight.status);
         return <div style={{ background:C.w, border:`1px solid ${C.b1}`, borderRadius:12, padding:16, marginBottom:12, boxShadow:C.sh }}>
           {/* Header: title + count + stepper */}
           <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", flexWrap:"wrap", gap:6, marginBottom:visibleAssignments.length>0?12:0 }}>
@@ -554,6 +598,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
             const tripBtns = isMultiTruck ? getTripActions(a) : [];
             const hasTruck = !!a.plate;
             const canEditA = (()=>{
+              if (isConsulta) return false;
               if (["in_progress","loaded","finished"].includes(a.tripStatus)) return false;
               if (user.role === "platform_admin" || user.isSuperAdmin) return true;
               if (a.transportCompanyId === user.activeCompanyId) return true;
@@ -609,7 +654,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
             <div key={`empty-${i}`} style={{ border:`1px dashed ${C.b1}`, borderLeft:`3px solid ${C.b1}`, borderRadius:10, marginBottom:8, padding:"10px 12px", display:"flex", alignItems:"center", gap:8 }}>
               {isMultiTruck && <span style={{ fontSize:13.9, fontWeight:800, color:C.t3 }}>#{assignedCount + i + 1}</span>}
               <span style={{ fontSize:13.9, fontWeight:500, color:C.t3, flex:1, fontStyle:"italic" }}>Pendiente de asignar</span>
-              {(perms.canApprove || (user.userType === "producer" && freight.useOwnFleet)) && (
+              {!isConsulta && (perms.canApprove || (user.userType === "producer" && freight.useOwnFleet)) && (
                 <button onClick={()=>onAction(freight.id,"assign")} style={{ padding:"6px 10px", borderRadius:7, border:`1px solid ${C.acc}`, background:`${C.acc}0D`, color:C.acc, fontSize:11.5, fontWeight:700, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:4, whiteSpace:"nowrap", flexShrink:0 }}>
                   {Ic.plus(C.acc,12)} Asignar
                 </button>
@@ -683,6 +728,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
               freight.amount>0&&[Ic.grain(C.t2,15),"Importe",`$${Number(freight.amount).toLocaleString()}`],
             ].filter(Boolean);
             const ruta = [
+              freight.producerCompanyName && [Ic.user(C.acc,15),"Productor",freight.producerCompanyName],
               [Ic.user(C.pri,15),"Empresa",freight.originCompanyName||originDisplay(freight)],
               [Ic.field(C.ok,15),"Campo",originDisplay(freight)||"—"],
               [Ic.plant(C.t2,15),"Destino",destDisplay(freight)],
@@ -803,8 +849,8 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
         </button>
       </div>
 
-      {/* Edit action (neutral) */}
-      {["pending_assignment","assigned","accepted","in_progress","loaded"].includes(freight.status) && (perms.canRequest || perms.canApprove) && (
+      {/* Edit action (neutral) — hidden for CONSULTA */}
+      {!isConsulta && ["pending_assignment","assigned","accepted","in_progress","loaded"].includes(freight.status) && (perms.canRequest || perms.canApprove) && (
         <div style={{ marginBottom:8 }}>
           <Btn sm v="ghost" icon={Ic.edit(C.t2,14)} onClick={()=>onEdit(freight)} style={{width:"100%"}}>Editar flete</Btn>
         </div>

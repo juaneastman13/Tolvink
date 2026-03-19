@@ -5,6 +5,7 @@ import { C, track, FONT, Ic } from "../theme";
 import { POLL_INTERVALS, stCfg } from "../constants";
 import { Toast, LoadingOverlay, Sidebar, Nav, NotifBell, NotificationsPanel, ErrorBoundary } from "../components";
 import { permsFor, mapFreight, originDisplay, destDisplay } from "../hooks";
+import { useAccessLevel } from "../hooks/useAccessLevel";
 import { RoutesBackground } from "../routes-bg";
 import { useUIStore, useFreightDetailStore, offlineQueue } from "../store";
 import { resolveUserTypeForFreight, getPendingActions } from "../utils/freight-helpers";
@@ -244,7 +245,13 @@ export default function AppLayout({ fh, catalog, online, notif, isDesktop }) {
     return () => { cancelled = true; };
   }, [online, auth.user]);
 
-  const perms = useMemo(()=>permsFor(auth.user),[auth.user]);
+  const { isConsulta: _isConsulta } = useAccessLevel(auth.user);
+  const perms = useMemo(()=>{
+    const p = permsFor(auth.user);
+    // CONSULTA users: override all write permissions to false
+    if (_isConsulta) return { ...p, canRequest:false, canApprove:false, canAssign:false, canAssignDriver:false, canCancel:false, canReject:false };
+    return p;
+  },[auth.user, _isConsulta]);
   const _resolveType = useCallback((f) => resolveUserTypeForFreight(f, auth.user), [auth.user]);
   const _activeComp = useMemo(() => { const c = (auth.user?.companies||[]).find(x => x.companyId === (auth.user?.activeCompanyId||auth.user?.companyId)); return c || null; }, [auth.user]);
 
@@ -566,7 +573,7 @@ export default function AppLayout({ fh, catalog, online, notif, isDesktop }) {
         {screen==="edit" && editData && <EditScreen freight={editData} fields={catalog.fields} plants={catalog.plants} branches={catalog.branches} trucks={catalog.trucks} user={auth.user} onBack={()=>{setEditData(null);navigate(-1);}} onSave={async(id,data)=>{const r=await fh.update(id,data);if(r.ok) return r.pending?"Cambio enviado a aprobación":"Flete actualizado"; show(r.error,"err"); return "";}}/>}
         {screen==="menu" && <MenuScreen user={auth.user} perms={perms} onLogout={auth.logout} onNav={nav} isDesktop={isDesktop} onSwitchCompany={async(id)=>{return await auth.switchCompany(id);}} onRefresh={()=>{fh.fetchAll();catalog.refresh();}} simpleMode={auth.simpleMode} onToggleSimple={auth.toggleSimpleMode}/>}
         {screen==="trucks" && <TrucksScreen user={auth.user} onBack={()=>{catalog.refresh();navigate("/menu");}}/>}
-        {screen==="locations" && <LocationsScreen onBack={()=>{catalog.refresh();navigate("/menu");}}/>}
+        {screen==="locations" && <LocationsScreen user={auth.user} onBack={()=>{catalog.refresh();navigate("/menu");}}/>}
         {screen==="admin" && (auth.user?.role==="admin"||auth.user?.role==="platform_admin") && <AdminScreen user={auth.user} onBack={()=>navigate("/menu")}/>}
         {screen==="mydata" && <MyDataScreen user={auth.user} onBack={()=>navigate("/menu")} onUserUpdate={auth.patchUser}/>}
         {screen==="reports" && <ReportsScreen onBack={()=>navigate(isDesktop?"/reports":"/menu")} freights={viewFreights} isDesktop={isDesktop}/>}

@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { C, Ic, FONT } from "../theme";
 import { Btn, Bd, Loader, LoadingOverlay } from "../components";
 import {
-  apiGetFields, apiCreateField, apiCreateLot, apiUpdateField, apiUpdateLot,
+  apiGetFields, apiGetFieldOwnersSummary, apiCreateField, apiCreateLot, apiUpdateField, apiUpdateLot,
   apiImportGoogleList, apiGetPois, apiCreatePoi, apiUpdatePoi, apiDeletePoi,
   apiDeleteField, apiDeleteLot,
 } from "../api";
@@ -55,9 +55,14 @@ function SlideIn({ children }) {
 // LOCATIONS SCREEN — orchestrator
 // ═══════════════════════════════════════════════════════════════════
 
-export default function LocationsScreen({ onBack }) {
+export default function LocationsScreen({ onBack, user }) {
   const isDesktop = useIsDesktop(768);
   const navigate = useNavigate();
+  const isPlant = user?.userType === "plant";
+
+  // ── Plant filter: company dropdown ──
+  const [ownerFilter, setOwnerFilter] = useState(""); // "" = all, "mine" = own, uuid = specific company
+  const [ownersSummary, setOwnersSummary] = useState([]); // [{companyId, companyName, fieldCount, lotCount}]
 
   // ── Core data ──
   const [fields, setFields] = useState([]);
@@ -131,12 +136,14 @@ export default function LocationsScreen({ onBack }) {
       const [f, p] = await Promise.all([apiGetFields(), apiGetPois().catch(() => [])]);
       setFields(f || []);
       setPois(p || []);
+      // Load owners summary for plant dropdown
+      if (isPlant) apiGetFieldOwnersSummary().then(s => setOwnersSummary(s || [])).catch(() => {});
     } catch (e) {
       setMsg({ t: e.message || "Error al cargar datos", k: "err" });
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [isPlant]);
   useEffect(() => { load(); }, [load]);
 
   // ═══════════════════════════════════════════════════════════════
@@ -147,7 +154,8 @@ export default function LocationsScreen({ onBack }) {
     if (!data.name) { setMsg({ t: "Nombre obligatorio", k: "err" }); return; }
     setSaving(true);
     try {
-      await apiCreateField({ name: data.name, address: data.address || undefined, lat: data.lat || undefined, lng: data.lng || undefined });
+      const ownerCid = (ownerFilter && ownerFilter !== "mine") ? ownerFilter : undefined;
+      await apiCreateField({ name: data.name, address: data.address || undefined, lat: data.lat || undefined, lng: data.lng || undefined, ...(ownerCid ? { ownerCompanyId: ownerCid } : {}) });
       await load();
       useCatalogStore.getState().clearCache();
       setCreatingField(false);
@@ -357,8 +365,11 @@ export default function LocationsScreen({ onBack }) {
   const matchesSearch = (name) => !search || name.toLowerCase().includes(search.toLowerCase());
 
   const allLocations = [];
-  fields.forEach(f => {
-    if (f.lat && f.lng) allLocations.push({ id: `field-${f.id}`, type: "field", name: f.name, lat: Number(f.lat), lng: Number(f.lng), address: f.address });
+  const fieldsForMap = isPlant && ownerFilter
+    ? fields.filter(f => ownerFilter === "mine" ? !f.ownerCompanyId : (f.ownerCompanyId === ownerFilter || f.companyId === ownerFilter))
+    : fields;
+  fieldsForMap.forEach(f => {
+    if (f.lat && f.lng) allLocations.push({ id: `field-${f.id}`, type: "field", name: f.name, lat: Number(f.lat), lng: Number(f.lng), address: f.address, ownerCompanyName: f.ownerCompany?.name });
     (f.lots || []).forEach(l => {
       if (l.lat && l.lng) allLocations.push({ id: `lot-${l.id}`, type: "lot", name: l.name, lat: Number(l.lat), lng: Number(l.lng), fieldName: f.name, fieldId: f.id });
     });
@@ -368,7 +379,14 @@ export default function LocationsScreen({ onBack }) {
   });
 
   const filteredPois = allPois.filter(p => matchesSearch(p.name));
-  const filteredFields = fields.filter(f => matchesSearch(f.name) || (f.lots || []).some(l => matchesSearch(l.name)));
+  // Apply owner filter for plant users
+  const ownerFilteredFields = isPlant && ownerFilter
+    ? fields.filter(f => {
+        if (ownerFilter === "mine") return !f.ownerCompanyId;
+        return f.ownerCompanyId === ownerFilter || f.companyId === ownerFilter;
+      })
+    : fields;
+  const filteredFields = ownerFilteredFields.filter(f => matchesSearch(f.name) || (f.lots || []).some(l => matchesSearch(l.name)));
 
   // ═══════════════════════════════════════════════════════════════
   // MAP
@@ -697,6 +715,7 @@ export default function LocationsScreen({ onBack }) {
             <div style={{ fontSize: 15, fontWeight: 600, color: C.t1, overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", whiteSpace: "normal" }}>{f.name}</div>
             {f.address && <div style={{ fontSize: 11, color: C.t3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginTop: 4 }}>{f.address}</div>}
             {isShared && <span style={{ fontSize: 10, color: C.info, fontWeight: 600, marginTop: 4, display: "inline-block" }}>Compartido</span>}
+            {isPlant && f.ownerCompany?.name && !ownerFilter && <span style={{ fontSize: 10, color: "#F59E0B", fontWeight: 600, marginTop: 2, display: "inline-block" }}>{f.ownerCompany.name}</span>}
           </div>
           <Bd color={C.pri} small>{lots.length} lote{lots.length !== 1 ? "s" : ""}</Bd>
           <span style={{ display: "inline-flex", transition: "transform 200ms", transform: isExpanded ? "rotate(0)" : "rotate(-90deg)" }}>{Ic.down(C.t3, 14)}</span>
@@ -900,13 +919,20 @@ export default function LocationsScreen({ onBack }) {
               </div>
             )}
           </div>
-          {importStep === 0 && !creationMode && (
+          {importStep === 0 && !creationMode && (<>
+            {isPlant && ownersSummary.length > 0 && (
+              <select value={ownerFilter} onChange={e => setOwnerFilter(e.target.value)} style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: `1px solid ${C.b1}`, fontSize: 12.7, fontFamily: "inherit", background: C.w, color: C.t1, marginBottom: 8 }}>
+                <option value="">Todas las empresas</option>
+                <option value="mine">Mis ubicaciones</option>
+                {ownersSummary.map(o => <option key={o.companyId} value={o.companyId}>{o.companyName} ({o.fieldCount} campos)</option>)}
+              </select>
+            )}
             <div style={{ position: "relative" }}>
               <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", display: "flex" }}>{Ic.srch(C.t3, 14)}</span>
               <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar ubicación..."
                 style={{ width: "100%", padding: "8px 12px 8px 32px", borderRadius: 10, border: `1.5px solid ${search ? C.bFocus : C.b2}`, background: C.bgInput, fontFamily: "inherit", fontSize: 13.2, color: C.t1, outline: "none", boxSizing: "border-box", transition: "border-color 0.15s" }} />
             </div>
-          )}
+          </>)}
         </div>
 
         <div style={{ flex: 1, overflowY: "auto" }}>
