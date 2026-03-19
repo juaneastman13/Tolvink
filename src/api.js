@@ -294,8 +294,8 @@ export async function apiDeactivateTruck(id) { return api(`/trucks/${id}/deactiv
 export async function apiGetDrivers(companyId) { return api(companyId ? `/freights/drivers?companyId=${encodeURIComponent(companyId)}` : '/freights/drivers'); }
 export async function apiGetDriverQueue(driverId) { return api(`/freights/drivers/${driverId}/queue`); }
 export async function apiReorderDriverQueue(driverId, orderedFreightIds) { return api(`/freights/drivers/${driverId}/reorder`,{body:{orderedFreightIds}}); }
-export async function apiListDrivers() { return api('/trucks/drivers'); }
-export async function apiCreateDriver(b) { return api('/trucks/drivers',{body:b}); }
+export async function apiListDrivers(companyId) { return api(companyId ? `/trucks/drivers?companyId=${encodeURIComponent(companyId)}` : '/trucks/drivers'); }
+export async function apiCreateDriver(b, companyId) { return api(companyId ? `/trucks/drivers?companyId=${encodeURIComponent(companyId)}` : '/trucks/drivers',{body:b}); }
 export async function apiDeactivateDriver(id) { return api(`/trucks/drivers/${id}/deactivate`,{body:{},method:'PATCH'}); }
 
 // Fields & Lots

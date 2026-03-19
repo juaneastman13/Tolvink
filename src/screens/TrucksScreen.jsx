@@ -28,10 +28,8 @@ export default function TrucksScreen({ onBack, embedded, user }) {
     if (!isPlant || !user?.activeCompanyId) return;
     apiGetCompanyAccess(user.activeCompanyId)
       .then(data => {
-        // Filter to transporters + producers with own fleet
-        const relevant = (data || []).filter(r =>
-          r.isActive && (r.granteeType === "TRANSPORTER" || (r.granteeType === "PRODUCER" && r.granteeCompany?.hasInternalFleet))
-        );
+        // Show all active linked companies (transporters + producers)
+        const relevant = (data || []).filter(r => r.isActive);
         setLinkedCompanies(relevant);
       })
       .catch(() => {});
@@ -46,8 +44,8 @@ export default function TrucksScreen({ onBack, embedded, user }) {
   }, [selectedCompanyId]);
 
   const loadDrivers = useCallback(async () => {
-    try { const d = await apiListDrivers(); setDrivers(d||[]); } catch(e) { setMsg({t:e.message||"Error al cargar choferes",k:"err"}); } finally { setLoading(false); }
-  }, []);
+    try { const d = await apiListDrivers(selectedCompanyId || undefined); setDrivers(d||[]); } catch(e) { setMsg({t:e.message||"Error al cargar choferes",k:"err"}); } finally { setLoading(false); }
+  }, [selectedCompanyId]);
 
   useEffect(() => { setLoading(true); if(tab==="trucks") loadTrucks(); else loadDrivers(); }, [tab, loadTrucks, loadDrivers]);
 
@@ -78,7 +76,7 @@ export default function TrucksScreen({ onBack, embedded, user }) {
     if (!dName.trim()) { setMsg({ t: "Nombre obligatorio", k: "err" }); return; }
     setSaving(true);
     try {
-      await apiCreateDriver({ name: dName.trim(), phone: dPhone.trim() || undefined });
+      await apiCreateDriver({ name: dName.trim(), phone: dPhone.trim() || undefined }, selectedCompanyId || undefined);
       setDName(""); setDPhone(""); setShowForm(false); setDoneMsg("Chofer registrado");
       await loadDrivers();
     } catch (e) { setMsg({ t: e.message, k: "err" }); }
