@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { C, Ic, STATUS_COLORS } from "../theme";
 import { Loader, EmptyState } from "../components";
-import { apiGetCompanyAccess, apiListFreights, apiGetWeighTickets, apiGetFreight, apiOcrAnalyze, apiSaveOcrData } from "../api";
+import { apiGetCompanyAccess, apiListFreights, apiGetWeighTickets, apiGetFreight, apiOcrAnalyze, apiSaveOcrData, apiClearOcrData } from "../api";
 
 const API_URL = import.meta.env.VITE_API_URL || "";
 const DOC_TYPE_ICONS = {
@@ -52,6 +52,9 @@ export default function DocumentsScreen({ user, onBack, onNavigate }) {
   const [processingOcr, setProcessingOcr] = useState(null); // doc id being processed
   const [processingAll, setProcessingAll] = useState(false);
   const [ocrProgress, setOcrProgress] = useState({ current: 0, total: 0 });
+  const [clearingOcr, setClearingOcr] = useState(null); // doc id
+  const [confirmClear, setConfirmClear] = useState(null); // doc to confirm clear
+  const [viewerDoc, setViewerDoc] = useState(null); // doc for viewer modal
 
   const companyId = user?.activeCompanyId || user?.companyId;
   const isManager = ["admin", "gerente", "platform_admin"].includes(user?.role);
@@ -250,6 +253,39 @@ export default function DocumentsScreen({ user, onBack, onNavigate }) {
     setProcessingAll(false);
   }, [docsWithoutOcr, handleProcessOcr]);
 
+  // Clear OCR data
+  const handleClearOcr = useCallback(async (doc) => {
+    if (!doc._freight?.id || !doc.id || doc._source !== "document") return;
+    setClearingOcr(doc.id);
+    try {
+      await apiClearOcrData(doc._freight.id, doc.id);
+      const updateDocs = (docs) => docs.map(d => d.id === doc.id ? { ...d, _hasOcr: false, _ocrData: null, ocrData: null } : d);
+      if (tab === "company") setCompanyDocs(updateDocs);
+      else setFreightDocs(updateDocs);
+    } catch (e) { console.error("Clear OCR error:", e); }
+    finally { setClearingOcr(null); setConfirmClear(null); }
+  }, [tab]);
+
+  // Download document
+  const handleDownload = useCallback(async (doc) => {
+    const url = doc._thumb || doc.photoUrl || doc.url;
+    if (!url) return;
+    try {
+      const res = await fetch(url);
+      const blob = await res.blob();
+      const ext = (url.split(".").pop() || "jpg").split("?")[0].toLowerCase();
+      const code = (doc._freight?.code || "doc").replace(/[^a-zA-Z0-9-]/g, "");
+      const type = (doc._type || "documento").replace(/\s+/g, "-").toLowerCase();
+      const date = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+      const filename = `${code}_${type}_${date}.${ext}`;
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    } catch (e) { console.error("Download error:", e); }
+  }, []);
+
   const StatusPill = ({ status }) => {
     const sc = STATUS_COLORS[status] || { pillBg: C.bg, pillText: C.t3, label: status };
     return <span style={{ padding: "2px 8px", borderRadius: 6, fontSize: 10.5, fontWeight: 700, background: sc.pillBg, color: sc.pillText }}>{sc.label}</span>;
@@ -291,15 +327,33 @@ export default function DocumentsScreen({ user, onBack, onNavigate }) {
               return <div style={{ fontSize: 11, color: C.t2, marginTop: 3, lineHeight: 1.4 }}>{lines.join(" · ")}</div>;
             })()}
           </div>
-          {!doc._hasOcr && (doc._thumb || doc.photoUrl || doc.url) && (
-            <button onClick={e => { e.stopPropagation(); handleProcessOcr(doc); }} disabled={processingOcr === doc.id} style={{
-              padding: "4px 8px", borderRadius: 6, border: `1px solid ${C.acc}`, background: `${C.acc}10`,
-              cursor: processingOcr === doc.id ? "wait" : "pointer", fontFamily: "inherit", fontSize: 10.5, fontWeight: 700, color: C.acc,
-              display: "flex", alignItems: "center", gap: 4, flexShrink: 0, opacity: processingOcr === doc.id ? 0.5 : 1,
-            }}>
-              {processingOcr === doc.id ? <Loader size={12} /> : Ic.doc(C.acc, 12)} {processingOcr === doc.id ? "..." : "OCR"}
-            </button>
-          )}
+          <div style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
+            {(doc._thumb || doc.photoUrl || doc.url) && (
+              <button onClick={e => { e.stopPropagation(); setViewerDoc(doc); }} title="Ver documento" style={{
+                padding: 5, borderRadius: 6, border: `1px solid ${C.b2}`, background: C.bg,
+                cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+              }}>
+                <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={C.t2} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+            )}
+            {(doc._thumb || doc.photoUrl || doc.url) && (
+              <button onClick={e => { e.stopPropagation(); handleDownload(doc); }} title="Descargar" style={{
+                padding: 5, borderRadius: 6, border: `1px solid ${C.b2}`, background: C.bg,
+                cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+              }}>
+                {Ic.download(C.t2, 14)}
+              </button>
+            )}
+            {!doc._hasOcr && (doc._thumb || doc.photoUrl || doc.url) && (
+              <button onClick={e => { e.stopPropagation(); handleProcessOcr(doc); }} disabled={processingOcr === doc.id} style={{
+                padding: "4px 8px", borderRadius: 6, border: `1px solid ${C.acc}`, background: `${C.acc}10`,
+                cursor: processingOcr === doc.id ? "wait" : "pointer", fontFamily: "inherit", fontSize: 10.5, fontWeight: 700, color: C.acc,
+                display: "flex", alignItems: "center", gap: 4, opacity: processingOcr === doc.id ? 0.5 : 1,
+              }}>
+                {processingOcr === doc.id ? <Loader size={12} /> : Ic.doc(C.acc, 12)} {processingOcr === doc.id ? "..." : "OCR"}
+              </button>
+            )}
+          </div>
           <span style={{ display: "flex", transform: isExp ? "rotate(-90deg)" : "rotate(0deg)", transition: "transform 0.15s" }}>{Ic.chev(C.t3, 14)}</span>
         </div>
         {isExp && (
@@ -329,6 +383,17 @@ export default function DocumentsScreen({ user, onBack, onNavigate }) {
                     <span style={{ fontSize: 11, fontWeight: 700, color: C.pri, textTransform: "uppercase", letterSpacing: 0.4 }}>Datos OCR</span>
                     <span style={{ fontSize: 10, color: C.t3, fontStyle: "italic" }}>{isStructured ? "Estructurado" : "Libre"}</span>
                     {raw?.confianza != null && <span style={{ fontSize: 10, color: C.t3 }}>({Math.round((raw.confianza || 0) * 100)}%)</span>}
+                    <span style={{ flex: 1 }} />
+                    {doc._source === "document" && (
+                      <button onClick={e => { e.stopPropagation(); setConfirmClear(doc); }} disabled={clearingOcr === doc.id} style={{
+                        padding: "3px 8px", borderRadius: 6, border: `1px solid #EF4444`, background: "#FEF2F2",
+                        cursor: "pointer", fontFamily: "inherit", fontSize: 10.5, fontWeight: 700, color: "#EF4444",
+                        display: "flex", alignItems: "center", gap: 4, opacity: clearingOcr === doc.id ? 0.5 : 1,
+                      }}>
+                        <svg width={11} height={11} viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth="2.5" strokeLinecap="round"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14"/></svg>
+                        {clearingOcr === doc.id ? "..." : "Borrar OCR"}
+                      </button>
+                    )}
                   </div>
                   {!isStructured && data.documentType && <div style={{ fontSize: 12.6, color: C.t2, fontWeight: 600, marginBottom: 4 }}>{data.documentType}</div>}
                   {!isStructured && data.summary && <div style={{ fontSize: 12.1, color: C.t3, marginBottom: 6, fontStyle: "italic" }}>{data.summary}</div>}
@@ -494,6 +559,69 @@ export default function DocumentsScreen({ user, onBack, onNavigate }) {
               {freightDocs.map(d => <DocCard key={d.id} doc={d} />)}
             </div>
           }
+        </div>
+      )}
+
+      {/* Confirm Clear OCR Dialog */}
+      {confirmClear && (
+        <div onClick={() => setConfirmClear(null)} style={{
+          position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", zIndex: 9999,
+          display: "flex", alignItems: "center", justifyContent: "center", padding: 20,
+        }}>
+          <div onClick={e => e.stopPropagation()} style={{
+            background: C.w, borderRadius: 16, padding: 24, maxWidth: 340, width: "100%", boxShadow: "0 20px 60px rgba(0,0,0,0.3)",
+          }}>
+            <div style={{ fontSize: 16, fontWeight: 800, color: C.t1, marginBottom: 8 }}>Borrar datos OCR</div>
+            <div style={{ fontSize: 13.2, color: C.t2, marginBottom: 20, lineHeight: 1.5 }}>
+              Se eliminarán los datos OCR extraídos de este documento. Podrás volver a procesarlo después.
+            </div>
+            <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+              <button onClick={() => setConfirmClear(null)} style={{
+                padding: "8px 18px", borderRadius: 10, border: `1px solid ${C.b2}`, background: C.bg,
+                cursor: "pointer", fontFamily: "inherit", fontSize: 13.2, fontWeight: 600, color: C.t2,
+              }}>Cancelar</button>
+              <button onClick={() => handleClearOcr(confirmClear)} disabled={clearingOcr === confirmClear.id} style={{
+                padding: "8px 18px", borderRadius: 10, border: "none", background: "#EF4444",
+                cursor: "pointer", fontFamily: "inherit", fontSize: 13.2, fontWeight: 700, color: "#fff",
+                opacity: clearingOcr === confirmClear.id ? 0.6 : 1,
+              }}>{clearingOcr === confirmClear.id ? "Borrando..." : "Borrar OCR"}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Document Viewer Modal */}
+      {viewerDoc && (
+        <div onClick={() => setViewerDoc(null)} style={{
+          position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", zIndex: 9999,
+          display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 16,
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12, width: "100%", maxWidth: 900, justifyContent: "space-between" }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: "#fff" }}>{viewerDoc._name || viewerDoc.name || viewerDoc._type}</div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button onClick={e => { e.stopPropagation(); handleDownload(viewerDoc); }} style={{
+                padding: "6px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.3)", background: "rgba(255,255,255,0.1)",
+                cursor: "pointer", fontFamily: "inherit", fontSize: 12.1, fontWeight: 600, color: "#fff",
+                display: "flex", alignItems: "center", gap: 6,
+              }}>
+                {Ic.download("#fff", 14)} Descargar
+              </button>
+              <button onClick={() => setViewerDoc(null)} style={{
+                padding: "6px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.3)", background: "rgba(255,255,255,0.1)",
+                cursor: "pointer", fontFamily: "inherit", fontSize: 12.1, fontWeight: 600, color: "#fff",
+              }}>Cerrar</button>
+            </div>
+          </div>
+          <div onClick={e => e.stopPropagation()} style={{ maxWidth: 900, maxHeight: "calc(100vh - 120px)", overflow: "auto", borderRadius: 12 }}>
+            {(() => {
+              const url = viewerDoc._thumb || viewerDoc.photoUrl || viewerDoc.url || "";
+              const isPdf = url.toLowerCase().includes(".pdf");
+              if (isPdf) {
+                return <iframe src={url} title="PDF viewer" style={{ width: "min(900px, 90vw)", height: "calc(100vh - 140px)", border: "none", borderRadius: 12, background: "#fff" }} />;
+              }
+              return <img src={url} alt="" style={{ maxWidth: "min(900px, 90vw)", maxHeight: "calc(100vh - 140px)", objectFit: "contain", borderRadius: 12, background: "#fff" }} />;
+            })()}
+          </div>
         </div>
       )}
     </div>
