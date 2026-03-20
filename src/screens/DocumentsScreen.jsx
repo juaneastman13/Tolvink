@@ -53,6 +53,14 @@ export default function DocumentsScreen({ user, onBack, onNavigate }) {
   const companyId = user?.activeCompanyId || user?.companyId;
   const isManager = ["admin", "gerente", "platform_admin"].includes(user?.role);
 
+  // Load freights (shared between both tabs for counts)
+  useEffect(() => {
+    setLoadingFreights(true);
+    apiListFreights({ limit: 200 }).then(r => {
+      setFreights((r?.data || r || []).filter(f => f.id));
+    }).catch(() => setFreights([])).finally(() => setLoadingFreights(false));
+  }, []);
+
   // Load linked companies for "Por empresa" tab
   useEffect(() => {
     if (tab !== "company" || !companyId) return;
@@ -62,14 +70,25 @@ export default function DocumentsScreen({ user, onBack, onNavigate }) {
     }).catch(() => setCompanies([])).finally(() => setLoadingCompanies(false));
   }, [tab, companyId]);
 
-  // Load freights for "Por flete" tab
-  useEffect(() => {
-    if (tab !== "freight") return;
-    setLoadingFreights(true);
-    apiListFreights({ limit: 100 }).then(r => {
-      setFreights((r?.data || r || []).filter(f => f.id));
-    }).catch(() => setFreights([])).finally(() => setLoadingFreights(false));
-  }, [tab]);
+  // Compute per-company doc counts from freights
+  const companyDocCounts2 = useMemo(() => {
+    const map = {};
+    freights.forEach(f => {
+      const total = (f.documentCount || 0) + (f.weighTicketCount || 0);
+      const ocr = (f.ocrDocCount || 0) + (f.ocrTicketCount || 0);
+      const addTo = (cid) => {
+        if (!cid) return;
+        if (!map[cid]) map[cid] = { total: 0, ocr: 0 };
+        map[cid].total += total;
+        map[cid].ocr += ocr;
+      };
+      addTo(f.companyId);
+      addTo(f.producerCompanyId);
+      addTo(f.originCompanyId);
+      (f.assignments || []).forEach(a => addTo(a.transportCompanyId));
+    });
+    return map;
+  }, [freights]);
 
   // Load docs for selected company
   const loadCompanyDocs = useCallback(async (granteeCompanyId) => {
@@ -193,11 +212,6 @@ export default function DocumentsScreen({ user, onBack, onNavigate }) {
     finally { setExporting(false); }
   }, [ocrDocs]);
 
-  // Company doc counts
-  const companyDocCounts = useMemo(() => {
-    if (tab !== "company" || !selCompany) return {};
-    return {};
-  }, [tab, selCompany]);
 
   const StatusPill = ({ status }) => {
     const sc = STATUS_COLORS[status] || { pillBg: C.bg, pillText: C.t3, label: status };
@@ -315,6 +329,7 @@ export default function DocumentsScreen({ user, onBack, onNavigate }) {
           {companies.map(c => {
             const comp = c.granteeCompany || {};
             const typeColor = comp.type === "producer" ? "#F59E0B" : comp.type === "transporter" ? "#0891B2" : C.pri;
+            const counts = companyDocCounts2[comp.id] || { total: 0, ocr: 0 };
             return (
               <button key={c.id} onClick={() => { setSelCompany(c); loadCompanyDocs(comp.id); }} style={{
                 display: "flex", alignItems: "center", gap: 12, padding: 16, background: C.w,
@@ -326,7 +341,11 @@ export default function DocumentsScreen({ user, onBack, onNavigate }) {
                 </div>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 15.4, fontWeight: 700, color: C.t1 }}>{comp.name}</div>
-                  <div style={{ fontSize: 12.1, color: typeColor, fontWeight: 600 }}>{comp.type === "producer" ? "Productor" : "Transportista"}</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 2 }}>
+                    <span style={{ padding: "2px 8px", borderRadius: 6, fontSize: 10.5, fontWeight: 700, background: `${typeColor}14`, color: typeColor }}>{comp.type === "producer" ? "Productor" : "Transportista"}</span>
+                    {counts.total > 0 && <span style={{ fontSize: 11.5, color: C.t2, fontWeight: 600 }}>{counts.total} documento{counts.total !== 1 ? "s" : ""}</span>}
+                    {counts.ocr > 0 && <span style={{ fontSize: 10.5, color: C.pri, fontWeight: 600 }}>{counts.ocr} con OCR</span>}
+                  </div>
                 </div>
                 {Ic.chev(C.t3, 16)}
               </button>
@@ -357,6 +376,8 @@ export default function DocumentsScreen({ user, onBack, onNavigate }) {
           {freights.map(f => {
             const sc = STATUS_COLORS[f.status] || {};
             const docCount = (f.documentCount || 0) + (f.weighTicketCount || 0);
+            const ocrCount = (f.ocrDocCount || 0) + (f.ocrTicketCount || 0);
+            const fDate = f.loadDate || f.createdAt;
             return (
               <button key={f.id} onClick={() => { setSelFreight(f); loadFreightDocs(f.id); }} style={{
                 display: "flex", alignItems: "center", gap: 12, padding: 14, background: C.w,
@@ -367,12 +388,16 @@ export default function DocumentsScreen({ user, onBack, onNavigate }) {
                   <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                     <span style={{ fontSize: 14.3, fontWeight: 700, color: C.t1 }}>{f.code}</span>
                     <StatusPill status={f.status} />
-                    {docCount > 0 && <span style={{ padding: "2px 7px", borderRadius: 6, fontSize: 10, fontWeight: 700, background: C.bg, color: C.t2 }}>{docCount} doc{docCount !== 1 ? "s" : ""}</span>}
+                    {fDate && <span style={{ fontSize: 10.5, color: C.t3 }}>{fmtDate(fDate)}</span>}
                   </div>
                   <div style={{ fontSize: 12.1, color: C.t3, marginTop: 3 }}>
-                    {f.originName || f.originCompanyName || "—"} → {f.destName || "—"}
+                    {f.producerCompany?.name || f.originCompany?.name || f.originName || "—"} → {f.destName || "—"}
                   </div>
-                  {f.producerCompanyName && <div style={{ fontSize: 11, color: C.t3, marginTop: 1 }}>{f.producerCompanyName}</div>}
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4 }}>
+                    {docCount > 0 && <span style={{ fontSize: 11.5, fontWeight: 600, color: C.t2 }}>{docCount} documento{docCount !== 1 ? "s" : ""}</span>}
+                    {ocrCount > 0 && <span style={{ fontSize: 10.5, fontWeight: 600, color: C.pri }}>{ocrCount} con OCR</span>}
+                    {docCount === 0 && <span style={{ fontSize: 11, color: C.t3 }}>Sin documentos</span>}
+                  </div>
                 </div>
                 {Ic.chev(C.t3, 16)}
               </button>
