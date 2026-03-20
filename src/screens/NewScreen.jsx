@@ -303,7 +303,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
   const transportNeedsTruckDriver = transportChoice === "ownfleet" || (transportChoice && transportChoice !== "skip" && selectedTransporterAccess?.accessLevel === "READONLY");
   const transportIsOperator = transportChoice && transportChoice !== "skip" && transportChoice !== "ownfleet" && selectedTransporterAccess?.accessLevel !== "READONLY";
 
-  const transportStepComplete = !showTransportStep || transportChoice === "skip" || transportIsOperator || (transportNeedsTruckDriver && !!assignTruckId && !!assignDriverId);
+  const transportStepComplete = !showTransportStep || transportChoice === "skip" || transportIsOperator || (transportNeedsTruckDriver && !!assignTruckId);
 
   // On-the-fly field creation (for producers with no fields)
   const [showNewFieldForm, setShowNewFieldForm] = useState(false);
@@ -394,7 +394,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
     ...(isPlantUser ? { producer: !!producerCompanyId } : {}),
     product: !!form.grain && (form.grain!=="Otros" || !!form.productTypeOther.trim()),
     quantity: !!form.tons && parseFloat(form.tons) > 0,
-    origin: originMode==="field" ? (!!form.fieldId && (!hasLots || !!form.lotId)) : (!!customOrigin.lat),
+    origin: originMode==="field" ? !!form.fieldId : (!!customOrigin.lat),
     destination: destMode==="plant" ? (!!form.plantId && (!_hasBranches || !!form.branchId)) : (!!customDest.lat && (confirmMode==="none" || !!confirmPlantId)),
     schedule: !!form.loadDate && /^\d{2}:\d{2}$/.test(form.loadTime),
     ...(showTransportStep ? { transport: transportStepComplete } : {}),
