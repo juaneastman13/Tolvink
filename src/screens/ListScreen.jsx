@@ -181,6 +181,20 @@ export default memo(function ListScreen({ freights, loading, onNav, onRefresh, c
     return data;
   }, [serverData, freights, isProducerUser, fProducer, fProducerCompany]);
 
+  // Pending actions map for kanban cards + "requiere mi acción" filter
+  const effectiveTypeKanban = useCallback((f) => resolveUserTypeForFreight ? resolveUserTypeForFreight(f, user) : userType, [user, userType]);
+  const pendingMap = useMemo(() => {
+    const m = new Map();
+    filtered.forEach(f => { m.set(f.id, getPendingActions(f, effectiveTypeKanban(f), user?.role, user)); });
+    return m;
+  }, [filtered, user?.role, user?.id, userType, effectiveTypeKanban]);
+
+  // Apply "Requiere mi acción" filter
+  const filteredFinal = useMemo(() => {
+    if (!filterRequiresAction) return filtered;
+    return filtered.filter(f => pendingMap.get(f.id) != null);
+  }, [filtered, filterRequiresAction, pendingMap]);
+
   // Status grouping (default kanban)
   const grouped = useMemo(()=>{
     const map = {};
@@ -227,20 +241,6 @@ export default memo(function ListScreen({ freights, loading, onNav, onRefresh, c
     (ENTITY_GROUPS[userType] || []).forEach(e => opts.push({ key: e.key, label: e.label }));
     return opts;
   }, [userType]);
-
-  // Pending actions map for kanban cards + "requiere mi acción" filter
-  const effectiveTypeKanban = useCallback((f) => resolveUserTypeForFreight ? resolveUserTypeForFreight(f, user) : userType, [user, userType]);
-  const pendingMap = useMemo(() => {
-    const m = new Map();
-    filtered.forEach(f => { m.set(f.id, getPendingActions(f, effectiveTypeKanban(f), user?.role, user)); });
-    return m;
-  }, [filtered, user?.role, user?.id, userType, effectiveTypeKanban]);
-
-  // Apply "Requiere mi acción" filter
-  const filteredFinal = useMemo(() => {
-    if (!filterRequiresAction) return filtered;
-    return filtered.filter(f => pendingMap.get(f.id) != null);
-  }, [filtered, filterRequiresAction, pendingMap]);
 
   // Table: status-filtered + sorted
   const { sortCol, sortDir, toggle: toggleSort, sortData } = useTableSort();
