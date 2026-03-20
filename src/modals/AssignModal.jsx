@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { C, Ic } from "../theme";
 import { Field, ModalOverlay } from "../components";
-import { apiGetTrucks, apiCreateTruck, apiGetDrivers, apiCreateDriver, apiGetCompanyAccess } from "../api";
+import { apiGetTrucks, apiCreateTruck, apiGetDrivers, apiCreateDriver, apiGetCompanyAccess, apiCreateLinkedCompany } from "../api";
 
 // ======================== STEPPER (compact) ==============================
 function Stepper({ steps, current }) {
@@ -124,8 +124,58 @@ export default function AssignModal({ freight, transporters, user, onClose, onCo
   const [tonsInput, setTonsInput] = useState("");
   const [loadError, setLoadError] = useState(null);
   const [transporterIsConsulta, setTransporterIsConsulta] = useState(false);
+
+  // Linked transporters from CompanyAccess (includes CONSULTA)
+  const [linkedTs, setLinkedTs] = useState([]);
+  const [loadingLinkedTs, setLoadingLinkedTs] = useState(false);
+
+  // Inline company creation
+  const [showNewCompany, setShowNewCompany] = useState(false);
+  const [newCompanyName, setNewCompanyName] = useState("");
+  const [newCompanyRut, setNewCompanyRut] = useState("");
+  const [newCompanyAccess, setNewCompanyAccess] = useState("OPERATOR");
+  const [savingCompany, setSavingCompany] = useState(false);
+  const [companyErr, setCompanyErr] = useState("");
+
   const ts = transporters || [];
   const isPlantUser = user?.userType === "plant";
+
+  // Load linked transporters from CompanyAccess for plant users (includes CONSULTA)
+  useEffect(() => {
+    if (!isPlantUser || !user?.activeCompanyId) return;
+    let cancelled = false;
+    setLoadingLinkedTs(true);
+    apiGetCompanyAccess(user.activeCompanyId, "TRANSPORTER").then(records => {
+      if (cancelled) return;
+      setLinkedTs((records || []).map(r => ({
+        id: r.granteeCompanyId || r.granteeCompany?.id,
+        name: r.granteeCompany?.name || "—",
+        accessLevel: r.accessLevel,
+      })));
+    }).catch(() => {}).finally(() => { if (!cancelled) setLoadingLinkedTs(false); });
+    return () => { cancelled = true; };
+  }, [isPlantUser, user?.activeCompanyId]);
+
+  // Handler: create transporter company inline
+  const handleCreateCompany = async () => {
+    if (savingCompany) return;
+    const name = newCompanyName.trim();
+    if (!name) { setCompanyErr("Nombre obligatorio"); return; }
+    setSavingCompany(true); setCompanyErr("");
+    try {
+      const res = await apiCreateLinkedCompany({
+        name,
+        type: "transporter",
+        rut: newCompanyRut.trim() || undefined,
+        accessLevel: newCompanyAccess,
+      });
+      const newId = res?.company?.id || res?.companyAccess?.granteeCompanyId || res?.id;
+      setLinkedTs(prev => [...prev, { id: newId, name, accessLevel: newCompanyAccess }]);
+      setShowNewCompany(false); setNewCompanyName(""); setNewCompanyRut(""); setNewCompanyAccess("OPERATOR");
+      if (newId) setT(newId);
+    } catch (e) { setCompanyErr(e.message || "Error al crear"); }
+    finally { setSavingCompany(false); }
+  };
 
   const alreadyAssigned = freight.assignedTruckCount || 0;
   const needed = (freight.truckCount || 1) - alreadyAssigned;
@@ -149,25 +199,17 @@ export default function AssignModal({ freight, transporters, user, onClose, onCo
   const tonsStep = isDelegation ? 0 : 2;
   useEffect(() => { setStep(0); }, [isDelegation]);
 
-  // Check access level when plant selects a transporter in company mode
+  // Check access level when plant selects a transporter in company mode (uses linkedTs)
   useEffect(() => {
-    if (!isPlantUser || mode !== "company" || !t || !user?.activeCompanyId) {
+    if (!isPlantUser || mode !== "company" || !t) {
       setTransporterIsConsulta(false);
       return;
     }
-    let cancelled = false;
-    apiGetCompanyAccess(user.activeCompanyId, "TRANSPORTER").then(records => {
-      if (cancelled) return;
-      const rec = (records || []).find(r => (r.granteeCompanyId || r.granteeCompany?.id) === t);
-      setTransporterIsConsulta(rec?.accessLevel === "READONLY");
-      // When CONSULTA detected, load trucks+drivers from transporter's fleet
-      if (rec?.accessLevel === "READONLY") {
-        loadTrucks(t);
-        loadDriversFn(t);
-      }
-    }).catch(() => {});
-    return () => { cancelled = true; };
-  }, [isPlantUser, mode, t, user?.activeCompanyId]); // eslint-disable-line react-hooks/exhaustive-deps
+    const rec = linkedTs.find(r => r.id === t);
+    const isConsulta = rec?.accessLevel === "READONLY";
+    setTransporterIsConsulta(isConsulta);
+    if (isConsulta) { loadTrucks(t); loadDriversFn(t); }
+  }, [isPlantUser, mode, t, linkedTs]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (step === tonsStep && !tonsInput) setTonsInput(defaultTons > 0 ? String(Math.round(defaultTons * 10) / 10) : "");
   }, [step]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -205,7 +247,12 @@ export default function AssignModal({ freight, transporters, user, onClose, onCo
     setSavingTruck(true); setTruckErr("");
     try {
       const model = `${newBrand.trim()} ${newModel.trim()}`.trim();
-      const created = await apiCreateTruck({ plate, model });
+      const body = { plate, model };
+      // When plant creates truck for a transporter, set ownerCompanyId
+      if (mode === "company" && t) body.ownerCompanyId = t;
+      const cap = parseFloat(newCapacity);
+      if (cap > 0) body.capacity = cap;
+      const created = await apiCreateTruck(body);
       setNewPlate(""); setNewBrand(""); setNewModel(""); setNewCapacity(""); setShowNewTruck(false);
       loadTrucks();
       if (created?.id) setTruckId(created.id);
@@ -256,11 +303,14 @@ export default function AssignModal({ freight, transporters, user, onClose, onCo
 
   const removeFromList = (idx) => setTruckList(prev => prev.filter((_, i) => i !== idx));
 
-  const hasDirtyData = !!(t || truckId || driverId || truckList.length > 0 || showNewTruck || showNewDriver);
+  const hasDirtyData = !!(t || truckId || driverId || truckList.length > 0 || showNewTruck || showNewDriver || showNewCompany);
   const safeClose = () => { if (hasDirtyData && !loading && !closing && !window.confirm("¿Descartar los cambios sin guardar?")) return; onClose(); };
 
   const needsTransporter = mode === "company" && !t;
-  const externalTs = ts.filter(x => x.id !== freight.originCompanyId);
+  // Plant users: use linkedTs from CompanyAccess (includes CONSULTA). Others: use catalog transporters.
+  const displayTs = isPlantUser && linkedTs.length > 0
+    ? linkedTs.filter(x => x.id !== freight.originCompanyId)
+    : ts.filter(x => x.id !== freight.originCompanyId);
   const remainingSlots = multiTruck ? Math.max(0, needed - truckList.length) : 1;
   const stepLabels = isDelegation ? ["Toneladas"] : ["Vehículo", "Chofer", "Toneladas"];
   const isConsultaFlow = mode === "company" && transporterIsConsulta;
@@ -315,15 +365,44 @@ export default function AssignModal({ freight, transporters, user, onClose, onCo
         {needsTransporter && remainingSlots > 0 ? (
           <>
             <div style={{ fontSize:10, fontWeight:600, color:C.t2, marginBottom:6, textTransform:"uppercase", letterSpacing:0.5 }}>Seleccioná un transportista</div>
-            <div style={{ display:"flex", flexDirection:"column", gap:4, maxHeight:320, overflowY:"auto" }}>
-              {(hasOwnFleet ? externalTs : ts).length === 0 && <div style={{ fontSize:12, color:C.t3, padding:8 }}>No hay transportistas disponibles</div>}
-              {(hasOwnFleet ? externalTs : ts).map(x => (
-                <button key={x.id} onClick={() => setT(x.id)} style={{ width:"100%", padding:"8px 10px", borderRadius:8, textAlign:"left", fontFamily:"inherit", border:`1px solid ${C.b1}`, background:C.bgCard, cursor:"pointer", display:"block", marginBottom:4 }}>
-                  <div style={{ fontSize:13, fontWeight:500, color:C.t1 }}>{x.name}</div>
-                  {x.accessUsers?.length > 0 && <div style={{ fontSize:11, color:C.t3, marginTop:1 }}>{x.accessUsers.map(u => u.name).join(", ")}</div>}
+            {loadingLinkedTs && <div style={{ fontSize:12, color:C.t3, padding:8, textAlign:"center" }}>Cargando...</div>}
+            <div style={{ display:"flex", flexDirection:"column", gap:4, maxHeight:280, overflowY:"auto" }}>
+              {!loadingLinkedTs && displayTs.length === 0 && !showNewCompany && <div style={{ fontSize:12, color:C.t3, padding:8 }}>No hay transportistas disponibles</div>}
+              {displayTs.map(x => (
+                <button key={x.id} onClick={() => setT(x.id)} style={{ width:"100%", padding:"8px 10px", borderRadius:8, textAlign:"left", fontFamily:"inherit", border:`1px solid ${C.b1}`, background:C.bgCard, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:4 }}>
+                  <div>
+                    <div style={{ fontSize:13, fontWeight:500, color:C.t1 }}>{x.name}</div>
+                    {x.accessUsers?.length > 0 && <div style={{ fontSize:11, color:C.t3, marginTop:1 }}>{x.accessUsers.map(u => u.name).join(", ")}</div>}
+                  </div>
+                  {x.accessLevel === "READONLY" && <span style={{ fontSize:9, fontWeight:700, color:C.info, background:`${C.info}15`, padding:"2px 6px", borderRadius:4, flexShrink:0 }}>CONSULTA</span>}
                 </button>
               ))}
             </div>
+            {/* Inline create transporter company (plant only) */}
+            {isPlantUser && !showNewCompany && (
+              <CreateBtn label="Crear empresa transportista" onClick={() => { setShowNewCompany(true); setCompanyErr(""); }} />
+            )}
+            {isPlantUser && showNewCompany && (
+              <div style={{ border:`1.5px solid ${C.pri}`, borderRadius:8, padding:10, marginTop:4, background:`${C.pri}04` }}>
+                <div style={{ fontSize:11, fontWeight:700, color:C.pri, marginBottom:6 }}>Nueva empresa transportista</div>
+                <div style={{ display:"flex", gap:6, marginBottom:4 }}>
+                  <div style={{ flex:2 }}><Field label="Nombre" value={newCompanyName} onChange={v => { setNewCompanyName(v); setCompanyErr(""); }} placeholder="Transporte SA" hasError={!!companyErr && !newCompanyName.trim()} /></div>
+                  <div style={{ flex:1 }}><Field label="RUT (opcional)" value={newCompanyRut} onChange={setNewCompanyRut} placeholder="123456" /></div>
+                </div>
+                <div style={{ marginBottom:4 }}>
+                  <label style={{ fontSize:10, fontWeight:600, color:C.t2, marginBottom:2, display:"block" }}>Nivel de acceso</label>
+                  <div style={{ display:"flex", gap:0, borderRadius:6, overflow:"hidden", border:`1px solid ${C.b1}` }}>
+                    <button onClick={() => setNewCompanyAccess("OPERATOR")} style={{ flex:1, padding:"6px 0", fontSize:11, fontWeight:newCompanyAccess === "OPERATOR" ? 700 : 500, background:newCompanyAccess === "OPERATOR" ? C.pri : C.w, color:newCompanyAccess === "OPERATOR" ? C.w : C.t2, border:"none", cursor:"pointer", fontFamily:"inherit" }}>Operador</button>
+                    <button onClick={() => setNewCompanyAccess("READONLY")} style={{ flex:1, padding:"6px 0", fontSize:11, fontWeight:newCompanyAccess === "READONLY" ? 700 : 500, background:newCompanyAccess === "READONLY" ? C.info : C.w, color:newCompanyAccess === "READONLY" ? C.w : C.t2, border:"none", cursor:"pointer", fontFamily:"inherit", borderLeft:`1px solid ${C.b1}` }}>Consulta</button>
+                  </div>
+                </div>
+                {companyErr && <div style={{ fontSize:11, color:C.err, fontWeight:600, marginTop:2 }}>{companyErr}</div>}
+                <div style={{ display:"flex", gap:6, marginTop:8 }}>
+                  <button onClick={() => { setShowNewCompany(false); setNewCompanyName(""); setNewCompanyRut(""); setCompanyErr(""); }} style={{ flex:1, padding:"7px 0", borderRadius:6, border:`1px solid ${C.b1}`, background:C.w, color:C.t2, fontSize:12, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>Cancelar</button>
+                  <button disabled={savingCompany} onClick={handleCreateCompany} style={{ flex:1, padding:"7px 0", borderRadius:6, border:"none", background:C.pri, color:C.tOn, fontSize:12, fontWeight:600, cursor:savingCompany ? "not-allowed" : "pointer", fontFamily:"inherit", opacity:savingCompany ? 0.6 : 1 }}>{savingCompany ? "Creando..." : "Crear"}</button>
+                </div>
+              </div>
+            )}
           </>
         ) : remainingSlots > 0 ? (
           <>
@@ -331,7 +410,7 @@ export default function AssignModal({ freight, transporters, user, onClose, onCo
             {mode === "company" && t && (
               <div style={{ display:"flex", alignItems:"center", gap:6, padding:"6px 10px", borderRadius:6, border:`1px solid ${C.b1}`, background:C.bg, marginBottom:10 }}>
                 {Ic.truck(C.t3, 12)}
-                <span style={{ fontSize:12, fontWeight:600, color:C.t1, flex:1 }}>{ts.find(x => x.id === t)?.name || ""}</span>
+                <span style={{ fontSize:12, fontWeight:600, color:C.t1, flex:1 }}>{displayTs.find(x => x.id === t)?.name || ts.find(x => x.id === t)?.name || ""}</span>
                 {isConsultaFlow && <span style={{ fontSize:9.5, fontWeight:700, color:C.info, background:`${C.info}15`, padding:"2px 6px", borderRadius:4 }}>CONSULTA</span>}
                 <button onClick={() => { setT(""); setTruckId(""); setDriverId(""); setStep(0); setTransporterIsConsulta(false); }} style={{ background:"none", border:`1px solid ${C.b2}`, borderRadius:4, padding:"2px 6px", fontSize:10, fontWeight:600, color:C.pri, cursor:"pointer", fontFamily:"inherit" }}>Cambiar</button>
               </div>
@@ -357,9 +436,9 @@ export default function AssignModal({ freight, transporters, user, onClose, onCo
                   ))}
                 </div>
 
-                {!isConsultaFlow && !showNewTruck ? (
+                {!showNewTruck ? (
                   <CreateBtn label="Crear nuevo vehículo" onClick={() => { setShowNewTruck(true); setTruckErr(""); }} />
-                ) : !isConsultaFlow && showNewTruck ? (
+                ) : showNewTruck ? (
                   <div style={{ border:`1.5px solid ${C.pri}`, borderRadius:8, padding:10, marginBottom:6, background:`${C.pri}04` }}>
                     <div style={{ fontSize:11, fontWeight:700, color:C.pri, marginBottom:6 }}>Nuevo vehículo</div>
                     <div style={{ display:"flex", gap:6, marginBottom:4 }}>
@@ -389,7 +468,7 @@ export default function AssignModal({ freight, transporters, user, onClose, onCo
               <div>
                 <div style={{ fontSize:14, fontWeight:700, color:C.t1, marginBottom:8 }}>Seleccionar chofer</div>
 
-                {user && !isConsultaFlow && <DriverRow d={{ name: user.name, phone: user.phone }} selected={driverId === user.id} isMe onClick={() => setDriverId(driverId === user.id ? "" : user.id)} />}
+                {user && !isConsultaFlow && !isPlantUser && <DriverRow d={{ name: user.name, phone: user.phone }} selected={driverId === user.id} isMe onClick={() => setDriverId(driverId === user.id ? "" : user.id)} />}
 
                 <div style={{ display:"flex", flexDirection:"column", gap:0, maxHeight:320, overflowY:"auto", marginBottom:6 }}>
                   {loadingDrivers && <div style={{ fontSize:12, color:C.t3, padding:8, textAlign:"center" }}>Cargando...</div>}
@@ -399,9 +478,9 @@ export default function AssignModal({ freight, transporters, user, onClose, onCo
                   ))}
                 </div>
 
-                {!isConsultaFlow && !showNewDriver ? (
+                {!showNewDriver ? (
                   <CreateBtn label="Crear chofer" onClick={() => { setShowNewDriver(true); setDriverErr(""); }} />
-                ) : !isConsultaFlow && showNewDriver ? (
+                ) : showNewDriver ? (
                   <div style={{ border:`1.5px solid ${C.pri}`, borderRadius:8, padding:10, marginBottom:6, background:`${C.pri}04` }}>
                     <div style={{ fontSize:11, fontWeight:700, color:C.pri, marginBottom:6 }}>Nuevo chofer</div>
                     <div style={{ display:"flex", gap:6, marginBottom:4 }}>
