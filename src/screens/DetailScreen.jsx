@@ -716,7 +716,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
             <div key={`empty-${i}`} style={{ border:`1px dashed ${C.b1}`, borderLeft:`3px solid ${C.b1}`, borderRadius:10, marginBottom:8, padding:"10px 12px", display:"flex", alignItems:"center", gap:8 }}>
               {isMultiTruck && <span style={{ fontSize:13.9, fontWeight:800, color:C.t3 }}>#{assignedCount + i + 1}</span>}
               <span style={{ fontSize:13.9, fontWeight:500, color:C.t3, flex:1, fontStyle:"italic" }}>Pendiente de asignar</span>
-              {!isConsulta && ["pending_assignment","assigned"].includes(freight.status) && (perms.canApprove || user.userType === "producer") && (
+              {!isConsulta && !["canceled","finished"].includes(freight.status) && (perms.canApprove || user.userType === "producer") && (
                 <button onClick={()=>onAction(freight.id,"assign")} style={{ padding:"6px 10px", borderRadius:7, border:`1px solid ${C.acc}`, background:`${C.acc}0D`, color:C.acc, fontSize:11.5, fontWeight:700, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:4, whiteSpace:"nowrap", flexShrink:0 }}>
                   {Ic.plus(C.acc,12)} Asignar
                 </button>
