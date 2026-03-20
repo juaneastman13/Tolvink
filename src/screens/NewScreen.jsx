@@ -585,6 +585,9 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
       payload.fieldId = undefined;
     }
     if(payload.lotId === "__field__" || !hasLots) { payload.lotId = undefined; }
+    // Map frontend lotId to backend originLotId
+    if(payload.lotId) { payload.originLotId = payload.lotId; }
+    delete payload.lotId;
     // Include transport assignment data if selected
     if (showTransportStep && transportChoice && transportChoice !== "skip") {
       const transportCompanyId = transportChoice === "ownfleet" ? plantCompanyId : transportChoice;
