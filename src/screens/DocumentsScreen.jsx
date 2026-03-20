@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { C, Ic, STATUS_COLORS } from "../theme";
 import { Loader, EmptyState } from "../components";
-import { apiGetCompanyAccess, apiListFreights, apiGetWeighTickets, apiGetFreight } from "../api";
+import { apiGetCompanyAccess, apiListFreights, apiGetWeighTickets, apiGetFreight, apiOcrAnalyze, apiSaveOcrData } from "../api";
 
 const API_URL = import.meta.env.VITE_API_URL || "";
 const DOC_TYPE_ICONS = {
@@ -49,6 +49,9 @@ export default function DocumentsScreen({ user, onBack, onNavigate }) {
 
   const [expanded, setExpanded] = useState(null); // doc id
   const [exporting, setExporting] = useState(false);
+  const [processingOcr, setProcessingOcr] = useState(null); // doc id being processed
+  const [processingAll, setProcessingAll] = useState(false);
+  const [ocrProgress, setOcrProgress] = useState({ current: 0, total: 0 });
 
   const companyId = user?.activeCompanyId || user?.companyId;
   const isManager = ["admin", "gerente", "platform_admin"].includes(user?.role);
@@ -212,6 +215,40 @@ export default function DocumentsScreen({ user, onBack, onNavigate }) {
     finally { setExporting(false); }
   }, [ocrDocs]);
 
+  // OCR processing — single document
+  const handleProcessOcr = useCallback(async (doc) => {
+    const url = doc._thumb || doc.photoUrl || doc.url;
+    if (!url || !doc._freight?.id) return;
+    setProcessingOcr(doc.id);
+    try {
+      const result = await apiOcrAnalyze(url);
+      if (result && result.datos) {
+        // Save OCR data to the document
+        if (doc._source === "document") {
+          await apiSaveOcrData(doc._freight.id, doc.id, result);
+        }
+        // Update doc in local state
+        const updateDocs = (docs) => docs.map(d => d.id === doc.id ? { ...d, _hasOcr: true, _ocrData: result, ocrData: result } : d);
+        if (tab === "company") setCompanyDocs(updateDocs);
+        else setFreightDocs(updateDocs);
+      }
+    } catch (e) { console.error("OCR error:", e); }
+    finally { setProcessingOcr(null); }
+  }, [tab]);
+
+  // OCR processing — all docs without OCR
+  const docsWithoutOcr = useMemo(() => visibleDocs.filter(d => !d._hasOcr && (d._thumb || d.photoUrl || d.url)), [visibleDocs]);
+
+  const handleProcessAll = useCallback(async () => {
+    if (docsWithoutOcr.length === 0) return;
+    setProcessingAll(true);
+    setOcrProgress({ current: 0, total: docsWithoutOcr.length });
+    for (let i = 0; i < docsWithoutOcr.length; i++) {
+      setOcrProgress({ current: i + 1, total: docsWithoutOcr.length });
+      try { await handleProcessOcr(docsWithoutOcr[i]); } catch { /* continue */ }
+    }
+    setProcessingAll(false);
+  }, [docsWithoutOcr, handleProcessOcr]);
 
   const StatusPill = ({ status }) => {
     const sc = STATUS_COLORS[status] || { pillBg: C.bg, pillText: C.t3, label: status };
@@ -238,12 +275,31 @@ export default function DocumentsScreen({ user, onBack, onNavigate }) {
             <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
               <span style={{ fontSize: 14.3, fontWeight: 700, color: C.t1 }}>{doc._name || doc.name || doc._type}</span>
               <span style={{ padding: "2px 7px", borderRadius: 6, fontSize: 10, fontWeight: 600, background: `${C.t3}12`, color: C.t3 }}>{doc._type}</span>
-              {doc._hasOcr && <span style={{ padding: "2px 7px", borderRadius: 6, fontSize: 10, fontWeight: 700, background: C.priPale, color: C.pri }}>OCR</span>}
+              {doc._hasOcr && <span style={{ padding: "2px 7px", borderRadius: 6, fontSize: 10, fontWeight: 700, background: C.priPale, color: C.pri }}>{doc._ocrData?.structured !== false ? "OCR" : "OCR libre"}</span>}
             </div>
             <div style={{ fontSize: 12.1, color: C.t3, marginTop: 2 }}>
               {fmtDate(doc._date)} {doc._freight?.code ? `· ${doc._freight.code}` : ""}
             </div>
+            {doc._hasOcr && doc._ocrData?.structured !== false && (() => {
+              const d = typeof doc._ocrData === "string" ? JSON.parse(doc._ocrData) : doc._ocrData;
+              const data = d?.datos || d?.data || d || {};
+              const lines = [];
+              if (data.documentNumber || data.numero) lines.push(`${data.documentNumber || data.numero}${data.date || data.fecha ? ` — ${data.date || data.fecha}` : ""}`);
+              if (data.origin || data.destination) lines.push(`${data.origin || data.origenLocalidad || "?"} → ${data.destination || data.destinoPlanta || "?"}`);
+              if (data.product || data.grano) lines.push(`${data.product || data.grano}${data.quantity || data.pesoNeto ? ` — ${data.quantity || data.pesoNeto} ${data.quantityUnit || "kg"}` : ""}`);
+              if (lines.length === 0) return null;
+              return <div style={{ fontSize: 11, color: C.t2, marginTop: 3, lineHeight: 1.4 }}>{lines.join(" · ")}</div>;
+            })()}
           </div>
+          {!doc._hasOcr && (doc._thumb || doc.photoUrl || doc.url) && (
+            <button onClick={e => { e.stopPropagation(); handleProcessOcr(doc); }} disabled={processingOcr === doc.id} style={{
+              padding: "4px 8px", borderRadius: 6, border: `1px solid ${C.acc}`, background: `${C.acc}10`,
+              cursor: processingOcr === doc.id ? "wait" : "pointer", fontFamily: "inherit", fontSize: 10.5, fontWeight: 700, color: C.acc,
+              display: "flex", alignItems: "center", gap: 4, flexShrink: 0, opacity: processingOcr === doc.id ? 0.5 : 1,
+            }}>
+              {processingOcr === doc.id ? <Loader size={12} /> : Ic.doc(C.acc, 12)} {processingOcr === doc.id ? "..." : "OCR"}
+            </button>
+          )}
           <span style={{ display: "flex", transform: isExp ? "rotate(-90deg)" : "rotate(0deg)", transition: "transform 0.15s" }}>{Ic.chev(C.t3, 14)}</span>
         </div>
         {isExp && (
@@ -257,15 +313,27 @@ export default function DocumentsScreen({ user, onBack, onNavigate }) {
               </div>
             )}
             {doc._ocrData && (() => {
-              const data = typeof doc._ocrData === "string" ? JSON.parse(doc._ocrData) : doc._ocrData;
-              const flat = data?.datos || data || {};
-              const entries = Object.entries(flat).filter(([, v]) => v != null && v !== "");
-              if (entries.length === 0) return null;
+              const raw = typeof doc._ocrData === "string" ? JSON.parse(doc._ocrData) : doc._ocrData;
+              const isStructured = raw?.structured !== false;
+              const data = raw?.datos || raw?.data || raw || {};
+              // For free extraction, show rawFields separately
+              const rawFields = data?.rawFields || {};
+              const mainEntries = isStructured
+                ? Object.entries(data).filter(([k, v]) => v != null && v !== "" && !k.startsWith("_"))
+                : Object.entries(rawFields).filter(([, v]) => v != null && v !== "");
+              if (mainEntries.length === 0 && !data.documentType && !data.summary) return null;
+              const STRUCTURED_LABELS = { documentNumber:"Nº Documento", date:"Fecha", origin:"Origen", destination:"Destino", product:"Producto", quantity:"Cantidad", quantityUnit:"Unidad", producer:"Productor", transporter:"Transportista", grossWeight:"Peso Bruto", tareWeight:"Tara", netWeight:"Peso Neto", truckPlate:"Patente", driverName:"Chofer" };
               return (
                 <div style={{ marginBottom: 10 }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: C.pri, textTransform: "uppercase", letterSpacing: 0.4, marginBottom: 6 }}>Datos OCR</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: C.pri, textTransform: "uppercase", letterSpacing: 0.4 }}>Datos OCR</span>
+                    <span style={{ fontSize: 10, color: C.t3, fontStyle: "italic" }}>{isStructured ? "Estructurado" : "Libre"}</span>
+                    {raw?.confianza != null && <span style={{ fontSize: 10, color: C.t3 }}>({Math.round((raw.confianza || 0) * 100)}%)</span>}
+                  </div>
+                  {!isStructured && data.documentType && <div style={{ fontSize: 12.6, color: C.t2, fontWeight: 600, marginBottom: 4 }}>{data.documentType}</div>}
+                  {!isStructured && data.summary && <div style={{ fontSize: 12.1, color: C.t3, marginBottom: 6, fontStyle: "italic" }}>{data.summary}</div>}
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 6 }}>
-                    {entries.map(([k, v]) => <DCell key={k} label={k} value={String(v)} />)}
+                    {mainEntries.map(([k, v]) => <DCell key={k} label={STRUCTURED_LABELS[k] || k} value={typeof v === "object" ? JSON.stringify(v) : String(v)} />)}
                   </div>
                 </div>
               );
@@ -298,11 +366,20 @@ export default function DocumentsScreen({ user, onBack, onNavigate }) {
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
         <button onClick={onBack} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex", alignItems: "center" }}>{Ic.chev(C.pri, 18)}</button>
         <span style={{ fontSize: 22, fontWeight: 800, letterSpacing: -0.3, flex: 1 }}>Documentos</span>
+        {docsWithoutOcr.length > 0 && (selCompany || selFreight) && (
+          <button onClick={handleProcessAll} disabled={processingAll} style={{
+            display: "flex", alignItems: "center", gap: 6, padding: "7px 12px", borderRadius: 10,
+            border: `1.5px solid ${C.acc}`, background: `${C.acc}10`, cursor: processingAll ? "wait" : "pointer",
+            fontFamily: "inherit", fontSize: 12.1, fontWeight: 700, color: C.acc, opacity: processingAll ? 0.6 : 1,
+          }}>
+            {Ic.doc(C.acc, 14)} {processingAll ? `Procesando ${ocrProgress.current}/${ocrProgress.total}...` : `Procesar OCR (${docsWithoutOcr.length})`}
+          </button>
+        )}
         {ocrDocs.length > 0 && (
           <button onClick={handleExportOcr} disabled={exporting} style={{
-            display: "flex", alignItems: "center", gap: 6, padding: "7px 14px", borderRadius: 10,
+            display: "flex", alignItems: "center", gap: 6, padding: "7px 12px", borderRadius: 10,
             border: `1.5px solid ${C.pri}`, background: C.priPale, cursor: exporting ? "wait" : "pointer",
-            fontFamily: "inherit", fontSize: 12.7, fontWeight: 700, color: C.pri, opacity: exporting ? 0.6 : 1,
+            fontFamily: "inherit", fontSize: 12.1, fontWeight: 700, color: C.pri, opacity: exporting ? 0.6 : 1,
           }}>
             {Ic.download(C.pri, 14)} {exporting ? "Exportando..." : `Exportar OCR (${ocrDocs.length})`}
           </button>
