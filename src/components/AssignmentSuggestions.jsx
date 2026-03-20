@@ -19,10 +19,11 @@ function ScoreBar({ score }) {
 
 export default function AssignmentSuggestions({ freight, user, onAssign, onRefreshKey }) {
   const [suggestions, setSuggestions] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [assigningId, setAssigningId] = useState(null);
   const [showManual, setShowManual] = useState(false);
+  const [expanded, setExpanded] = useState(false);
 
   const fetchSuggestions = useCallback(async () => {
     setLoading(true);
@@ -39,7 +40,15 @@ export default function AssignmentSuggestions({ freight, user, onAssign, onRefre
     }
   }, [freight.id]);
 
-  useEffect(() => { fetchSuggestions(); }, [fetchSuggestions, onRefreshKey]);
+  // Fetch only when expanded for the first time
+  useEffect(() => {
+    if (expanded && suggestions === null) fetchSuggestions();
+  }, [expanded, suggestions, fetchSuggestions]);
+
+  // Re-fetch when refreshKey changes (but only if already expanded)
+  useEffect(() => {
+    if (expanded && onRefreshKey) fetchSuggestions();
+  }, [onRefreshKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleAssign = async (s) => {
     setAssigningId(s.truckId || s.companyId);
@@ -56,12 +65,14 @@ export default function AssignmentSuggestions({ freight, user, onAssign, onRefre
 
   return (
     <div style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: 12, padding: 16, marginBottom: 12, boxShadow: C.sh }}>
-      {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: loading || suggestions?.length ? 12 : 0 }}>
+      {/* Header — clickable to expand/collapse */}
+      <div onClick={() => setExpanded(e => !e)} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", userSelect: "none" }}>
         <span style={{ display: "flex" }}>{Ic.star ? Ic.star(C.pri, 16) : Ic.chk(C.pri, 16)}</span>
-        <span style={{ fontSize: 12.2, fontWeight: 700, color: C.t2, textTransform: "uppercase", letterSpacing: 0.5 }}>Sugerencias de asignación</span>
+        <span style={{ fontSize: 12.2, fontWeight: 700, color: C.t2, textTransform: "uppercase", letterSpacing: 0.5, flex: 1 }}>Sugerencias de asignación</span>
+        <span style={{ display: "flex", transform: expanded ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.15s" }}>{Ic.chev(C.t3, 14)}</span>
       </div>
 
+      {!expanded ? null : <>
       {/* Loading */}
       {loading && <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         <SkeletonCard /><SkeletonCard /><SkeletonCard />
@@ -145,6 +156,7 @@ export default function AssignmentSuggestions({ freight, user, onAssign, onRefre
           Selección manual
         </button>
       )}
+      </>}
     </div>
   );
 }
