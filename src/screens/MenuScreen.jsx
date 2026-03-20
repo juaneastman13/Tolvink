@@ -40,7 +40,7 @@ export default function MenuScreen({ user, perms, onLogout, onNav, isDesktop, on
   if (!isChofer) {
     const ut = user.userType; const uts = user.userTypes||[];
     if(ut==="transporter"||ut==="producer"||ut==="plant"||uts.includes("transporter")||uts.includes("producer")||uts.includes("plant")||isGerente) mgmtItems.push({k:"trucks",l:"Mi Flota",ic:Ic.truck(C.t3,18),c:C.t3});
-    mgmtItems.push({k:"tickets",l:"Tickets de pesaje",ic:Ic.doc(C.t3,18),c:C.t3});
+    mgmtItems.push({k:"documents",l:"Documentos",ic:Ic.doc(C.t3,18),c:C.t3});
     mgmtItems.push({k:"calendar",l:"Calendario",ic:Ic.cal(C.t3,18),c:C.t3});
     mgmtItems.push({k:"chats",l:"Chat",ic:Ic.msg(C.t3,18),c:C.t3});
     mgmtItems.push({k:"reports",l:"Informes",ic:Ic.doc(C.t3,18),c:C.t3});
