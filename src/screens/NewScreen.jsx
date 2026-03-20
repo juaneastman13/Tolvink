@@ -746,7 +746,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
                 <div style={{ fontSize:12, fontWeight:700, color:C.pri, marginBottom:8 }}>Nuevo productor</div>
                 <div style={{ marginBottom:6 }}><Field label="Nombre *" value={newProducerName} onChange={v => { setNewProducerName(v); setProducerErr(""); }} placeholder="Juan Pérez" hasError={!!producerErr && !newProducerName.trim()} /></div>
                 <div style={{ marginBottom:6 }}><Field label="Celular *" value={newProducerPhone} onChange={v => { setNewProducerPhone(v); setProducerErr(""); }} placeholder="099123456" hasError={!!producerErr && !newProducerPhone.trim()} /></div>
-                <div style={{ marginBottom:6 }}><Field label="Empresa (opc)" value={newProducerCompany} onChange={setNewProducerCompany} placeholder="Estancia SA" /></div>
+                <div style={{ marginBottom:6 }}><Field label="Empresa (opcional)" value={newProducerCompany} onChange={setNewProducerCompany} placeholder="Estancia SA" /></div>
                 {producerErr && <div style={{ fontSize:11, color:C.err, fontWeight:600, marginTop:2 }}>{producerErr}</div>}
                 <div style={{ display:"flex", gap:6, marginTop:8 }}>
                   <button onClick={() => { setShowNewProducer(false); setNewProducerName(""); setNewProducerPhone(""); setNewProducerCompany(""); setProducerErr(""); }} style={{ flex:1, padding:"8px 0", borderRadius:6, border:`1px solid ${C.b1}`, background:C.w, color:C.t2, fontSize:12, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>Cancelar</button>
@@ -1029,7 +1029,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
                 <div style={{ flex:1 }}><Field label="Nombre *" value={newProducerName} onChange={v => { setNewProducerName(v); setProducerErr(""); }} placeholder="Juan Pérez" hasError={!!producerErr && !newProducerName.trim()} /></div>
                 <div style={{ flex:1 }}><Field label="Celular *" value={newProducerPhone} onChange={v => { setNewProducerPhone(v); setProducerErr(""); }} placeholder="099123456" hasError={!!producerErr && !newProducerPhone.trim()} /></div>
               </div>
-              <div style={{ marginBottom:6 }}><Field label="Empresa (opc)" value={newProducerCompany} onChange={setNewProducerCompany} placeholder="Estancia SA" /></div>
+              <div style={{ marginBottom:6 }}><Field label="Empresa (opcional)" value={newProducerCompany} onChange={setNewProducerCompany} placeholder="Estancia SA" /></div>
               {producerErr && <div style={{ fontSize:11, color:C.err, fontWeight:600, marginTop:2 }}>{producerErr}</div>}
               <div style={{ display:"flex", gap:6, marginTop:8 }}>
                 <button onClick={() => { setShowNewProducer(false); setNewProducerName(""); setNewProducerPhone(""); setNewProducerCompany(""); setProducerErr(""); }} style={{ flex:1, padding:"8px 0", borderRadius:6, border:`1px solid ${C.b1}`, background:C.w, color:C.t2, fontSize:12, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>Cancelar</button>
