@@ -167,8 +167,8 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
     // Optimistic: update display immediately
     setTruckCountLocal(next);
     if (delta > 0) {
-      // Plant user: skip intermediate modal, update count + open AssignModal directly
-      if (user.userType === "plant") {
+      // Plant/Producer: skip intermediate modal, open AssignModal directly
+      if (user.userType === "plant" || user.userType === "producer") {
         commitTruckCount(next).then(() => onAction(freight.id, "assign"));
         return;
       }
