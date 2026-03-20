@@ -544,7 +544,7 @@ export default function AssignModal({ freight, transporters, user, onClose, onCo
 
                 <div style={{ display:"flex", justifyContent:"space-between", marginTop:12 }}>
                   <button onClick={() => setStep(0)} style={btnPrev}>← Anterior</button>
-                  <button disabled={!driverId} onClick={() => setStep(2)} style={btnNext(!!driverId)}>Siguiente →</button>
+                  <button onClick={() => setStep(2)} style={btnNext(true)}>{driverId ? "Siguiente →" : "Omitir →"}</button>
                 </div>
               </div>
             )}
