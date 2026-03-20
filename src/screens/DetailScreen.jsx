@@ -167,6 +167,11 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
     // Optimistic: update display immediately
     setTruckCountLocal(next);
     if (delta > 0) {
+      // Plant user: skip intermediate modal, update count + open AssignModal directly
+      if (user.userType === "plant") {
+        commitTruckCount(next).then(() => onAction(freight.id, "assign"));
+        return;
+      }
       setTruckModal({ type: "add", next });
     } else {
       setTruckModal({ type: "remove", next, assigned });
@@ -450,13 +455,27 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
         </div>
       </div>}
 
-      {freight.status === "pending_assignment" && user.userType === "producer" && !freight.useOwnFleet && (
+      {freight.status === "pending_assignment" && user.userType === "producer" && freight.useOwnFleet === false && (
         <div style={{ background:`${C.info}10`, border:`1.5px solid ${C.info}30`, borderRadius:12, padding:"12px 16px", marginBottom:12, display:"flex", alignItems:"center", gap:10 }}>
-          <span style={{ display:"flex" }}>{Ic.clk(C.info,20)}</span>
+          <span style={{ display:"flex" }}>{Ic.plant(C.info,20)}</span>
           <div>
-            <div style={{ fontSize:15, fontWeight:700, color:C.info }}>Pendiente de asignación por planta</div>
-            <div style={{ fontSize:12.7, color:C.t2 }}>La planta de destino asignará el transportista</div>
+            <div style={{ fontSize:15, fontWeight:700, color:C.info }}>Transporte delegado a {freight.destPlantName || freight.destCompanyName || freight.destName || "la planta"}</div>
+            <div style={{ fontSize:12.7, color:C.t2 }}>La planta se encargará de asignar el transportista</div>
           </div>
+        </div>
+      )}
+
+      {/* Plant sees delegation request from producer */}
+      {freight.status === "pending_assignment" && user.userType === "plant" && freight.useOwnFleet === false && freight.producerCompanyName && (
+        <div style={{ background:`${C.acc}10`, border:`1.5px solid ${C.acc}30`, borderRadius:12, padding:"12px 16px", marginBottom:12, display:"flex", alignItems:"center", gap:10 }}>
+          <span style={{ display:"flex" }}>{Ic.warn(C.acc,20)}</span>
+          <div style={{ flex:1 }}>
+            <div style={{ fontSize:15, fontWeight:700, color:C.acc }}>Requiere asignar transporte</div>
+            <div style={{ fontSize:12.7, color:C.t2 }}>{freight.producerCompanyName} delegó la asignación de transporte</div>
+          </div>
+          {!isConsulta && perms.canApprove && (
+            <button onClick={()=>onAction(freight.id,"assign")} style={{ padding:"8px 14px", borderRadius:8, border:"none", background:C.acc, color:C.w, fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit", whiteSpace:"nowrap" }}>Asignar</button>
+          )}
         </div>
       )}
 
@@ -697,7 +716,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
             <div key={`empty-${i}`} style={{ border:`1px dashed ${C.b1}`, borderLeft:`3px solid ${C.b1}`, borderRadius:10, marginBottom:8, padding:"10px 12px", display:"flex", alignItems:"center", gap:8 }}>
               {isMultiTruck && <span style={{ fontSize:13.9, fontWeight:800, color:C.t3 }}>#{assignedCount + i + 1}</span>}
               <span style={{ fontSize:13.9, fontWeight:500, color:C.t3, flex:1, fontStyle:"italic" }}>Pendiente de asignar</span>
-              {!isConsulta && (perms.canApprove || (user.userType === "producer" && freight.useOwnFleet)) && (
+              {!isConsulta && (perms.canApprove || user.userType === "producer") && (
                 <button onClick={()=>onAction(freight.id,"assign")} style={{ padding:"6px 10px", borderRadius:7, border:`1px solid ${C.acc}`, background:`${C.acc}0D`, color:C.acc, fontSize:11.5, fontWeight:700, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:4, whiteSpace:"nowrap", flexShrink:0 }}>
                   {Ic.plus(C.acc,12)} Asignar
                 </button>

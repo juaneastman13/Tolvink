@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { C, Ic } from "../theme";
 import { Field, ModalOverlay } from "../components";
-import { apiGetTrucks, apiCreateTruck, apiGetDrivers, apiCreateDriver, apiGetCompanyAccess, apiCreateLinkedCompany } from "../api";
+import { apiGetTrucks, apiCreateTruck, apiGetDrivers, apiCreateDriver, apiGetCompanyAccess, apiCreateLinkedCompany, apiUpdateFreight } from "../api";
 
 // ======================== STEPPER (compact) ==============================
 function Stepper({ steps, current }) {
@@ -91,11 +91,18 @@ const btnPrev = { background:"transparent", border:`1px solid ${C.b1}`, color:C.
 const btnNext = (on) => ({ background: on ? C.pri : C.b1, color: on ? C.tOn : C.t3, borderRadius:8, padding:"8px 16px", fontSize:13, fontWeight:500, border:"none", cursor: on ? "pointer" : "default", fontFamily:"inherit" });
 
 // ======================== MAIN MODAL =====================================
-export default function AssignModal({ freight, transporters, user, onClose, onConfirm, onAssignMulti }) {
+export default function AssignModal({ freight, transporters, user, onClose, onConfirm, onAssignMulti, onRefresh }) {
   const multiTruck = (freight.truckCount || 1) > 1;
   const [step, setStep] = useState(0);
   const [truckList, setTruckList] = useState([]);
-  const [mode, setMode] = useState(() => freight.useOwnFleet === true ? "own" : "company");
+  const isProducerUser = user?.userType === "producer";
+  const _producerHasFleet = !!freight.originHasOwnFleet || !!freight.destHasOwnFleet || !!user?.hasInternalFleet;
+  const _producerHasTransporters = (transporters || []).length > 0;
+  const _producerOnlyDelegate = isProducerUser && !_producerHasFleet && !_producerHasTransporters && !!freight.destCompanyId;
+  const [mode, setMode] = useState(() => {
+    if (_producerOnlyDelegate) return "delegate";
+    return freight.useOwnFleet === true ? "own" : "company";
+  });
   const [t, setT] = useState("");
   const [truckId, setTruckId] = useState("");
   const [driverId, setDriverId] = useState("");
@@ -303,6 +310,24 @@ export default function AssignModal({ freight, transporters, user, onClose, onCo
 
   const removeFromList = (idx) => setTruckList(prev => prev.filter((_, i) => i !== idx));
 
+  // Producer delegation to plant
+  const plantName = freight.destPlantName || freight.destCompanyName || freight.destName || "la planta";
+  const canDelegate = isProducerUser && freight.destCompanyId;
+  const producerHasOptions = hasOwnFleet || ts.length > 0;
+
+  const handleDelegate = async () => {
+    if (loading || closing) return;
+    setLoading(true);
+    try {
+      await apiUpdateFreight(freight.id, { useOwnFleet: false });
+      if (onRefresh) onRefresh(freight.id);
+      setClosingText(`Transporte delegado a ${plantName}`);
+      setClosing(true);
+    } catch (e) {
+      setLoading(false);
+    }
+  };
+
   const hasDirtyData = !!(t || truckId || driverId || truckList.length > 0 || showNewTruck || showNewDriver || showNewCompany);
   const safeClose = () => { if (hasDirtyData && !loading && !closing && !window.confirm("¿Descartar los cambios sin guardar?")) return; onClose(); };
 
@@ -326,16 +351,38 @@ export default function AssignModal({ freight, transporters, user, onClose, onCo
         </div>
 
         {/* Mode toggle */}
-        {hasOwnFleet && !forceMode && (
+        {hasOwnFleet && !forceMode && mode !== "delegate" && (
           <div style={{ display:"flex", gap:0, marginBottom:12, borderRadius:8, overflow:"hidden", border:`1.5px solid ${C.b1}` }}>
             <button onClick={() => { setMode("company"); setTruckId(""); setDriverId(""); setStep(0); setT(""); }} style={{ flex:1, padding:"8px 0", fontFamily:"inherit", fontSize:13, fontWeight:mode === "company" ? 700 : 500, background:mode === "company" ? C.pri : C.w, color:mode === "company" ? C.w : C.t2, border:"none", cursor:"pointer" }}>Empresa</button>
             <button onClick={() => { setMode("own"); setT(""); setStep(0); }} style={{ flex:1, padding:"8px 0", fontFamily:"inherit", fontSize:13, fontWeight:mode === "own" ? 700 : 500, background:mode === "own" ? C.acc : C.w, color:mode === "own" ? C.w : C.t2, border:"none", cursor:"pointer", borderLeft:`1px solid ${C.b1}` }}>Flota propia</button>
+            {canDelegate && (
+              <button onClick={() => { setMode("delegate"); setT(""); setTruckId(""); setDriverId(""); setStep(0); }} style={{ flex:1, padding:"8px 0", fontFamily:"inherit", fontSize:13, fontWeight:mode === "delegate" ? 700 : 500, background:mode === "delegate" ? C.info : C.w, color:mode === "delegate" ? C.w : C.t2, border:"none", cursor:"pointer", borderLeft:`1px solid ${C.b1}` }}>Delegar</button>
+            )}
           </div>
         )}
         {forceMode === "own" && <div style={{ padding:"6px 10px", background:C.accPale, borderRadius:6, fontSize:11, fontWeight:500, color:C.acc, marginBottom:10 }}>Flota propia del productor</div>}
 
+        {/* Producer: delegate to plant (sole option or selected mode) */}
+        {mode === "delegate" && canDelegate && (
+          <div>
+            <div style={{ background:`${C.info}08`, border:`1px solid ${C.info}25`, borderRadius:12, padding:16, marginBottom:12 }}>
+              <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
+                {Ic.plant(C.info, 20)}
+                <div>
+                  <div style={{ fontSize:14, fontWeight:700, color:C.t1 }}>Delegar a {plantName}</div>
+                  <div style={{ fontSize:12, color:C.t3, marginTop:2 }}>La planta se encargará de asignar el transporte</div>
+                </div>
+              </div>
+            </div>
+            <div style={{ display:"flex", gap:8 }}>
+              {producerHasOptions && <button onClick={() => setMode(hasOwnFleet ? "own" : "company")} style={{ flex:1, padding:"10px 0", borderRadius:8, border:`1px solid ${C.b1}`, background:C.w, color:C.t2, fontSize:13, fontWeight:500, cursor:"pointer", fontFamily:"inherit" }}>Cancelar</button>}
+              <button disabled={loading} onClick={handleDelegate} style={{ flex:1, padding:"10px 0", borderRadius:8, border:"none", background:C.info, color:C.w, fontSize:13, fontWeight:700, cursor:loading ? "not-allowed" : "pointer", fontFamily:"inherit", opacity:loading ? 0.6 : 1 }}>{loading ? "Delegando..." : "Delegar asignación"}</button>
+            </div>
+          </div>
+        )}
+
         {/* Multi-truck header */}
-        {multiTruck && (
+        {multiTruck && mode !== "delegate" && (
           <div style={{ background:`${C.info}10`, border:`1px solid ${C.info}30`, borderRadius:8, padding:"8px 10px", marginBottom:10, display:"flex", alignItems:"center", gap:8 }}>
             {Ic.truck(C.info, 16)}
             <div>
@@ -344,7 +391,7 @@ export default function AssignModal({ freight, transporters, user, onClose, onCo
             </div>
           </div>
         )}
-        {multiTruck && truckList.length > 0 && (
+        {multiTruck && mode !== "delegate" && truckList.length > 0 && (
           <div style={{ marginBottom:10 }}>
             <div style={{ fontSize:10, fontWeight:600, color:C.t2, marginBottom:4, textTransform:"uppercase", letterSpacing:0.5 }}>Agregados ({truckList.length})</div>
             {truckList.map((tk, i) => (
@@ -362,7 +409,7 @@ export default function AssignModal({ freight, transporters, user, onClose, onCo
         )}
 
         {/* Company selector (pre-step) */}
-        {needsTransporter && remainingSlots > 0 ? (
+        {mode === "delegate" ? null : needsTransporter && remainingSlots > 0 ? (
           <>
             <div style={{ fontSize:10, fontWeight:600, color:C.t2, marginBottom:6, textTransform:"uppercase", letterSpacing:0.5 }}>Seleccioná un transportista</div>
             {loadingLinkedTs && <div style={{ fontSize:12, color:C.t3, padding:8, textAlign:"center" }}>Cargando...</div>}
