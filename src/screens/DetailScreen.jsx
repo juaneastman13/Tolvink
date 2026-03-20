@@ -517,15 +517,15 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
           { label: isCanceled ? "Cancelado" : "Finalizado", color: isCanceled ? STATUS_COLORS.canceled.ribbon : STATUS_COLORS.finished.ribbon, icon:(c,s)=> isCanceled ? Ic.cross(c,s) : Ic.chk(c,s) },
         ];
         const fmtD = (d) => { try { const dt=new Date(d); return dt.toLocaleDateString("es-AR",{day:"2-digit",month:"short"})+" "+dt.toLocaleTimeString("es-AR",{hour:"2-digit",minute:"2-digit",hour12:false}); } catch(e){ return ""; } };
-        const actionLabels = { created:"Solicitado", assigned:"Asignado", assigned_multi:"Asignado", accepted:"Aceptado", rejected:"Rechazado", started:"Iniciado", confirm_loaded:"Carga OK", confirm_finished:"Entrega OK", finished:"Finalizado", canceled:"Cancelado", authorized:"Autorizado", updated:"Editado", trip_accepted:"Aceptado", trip_rejected:"Rechazado", trip_started:"Iniciado", trip_confirm_loaded:"Carga OK", trip_confirm_finished:"Entrega OK", trip_finished:"Finalizado", assignment_canceled:"Cancelado", assignment_updated:"Editado", assignment_truck_assigned:"Camión asignado" };
-        const actionColors = { created:C.pri, assigned:C.sec, assigned_multi:C.sec, accepted:C.info, rejected:C.err, started:C.acc, confirm_loaded:C.acc, confirm_finished:C.pri, finished:C.ok, canceled:C.err, authorized:C.info, updated:C.t2, trip_accepted:C.info, trip_rejected:C.err, trip_started:C.acc, trip_confirm_loaded:C.acc, trip_confirm_finished:C.pri, trip_finished:C.ok, assignment_canceled:C.err, assignment_updated:C.t2, assignment_truck_assigned:C.info };
+        const actionLabels = { created:"Solicitado", assigned:"Asignado", assigned_multi:"Asignado", accepted:"Aceptado", rejected:"Rechazado", started:"Iniciado", confirm_loaded:"Carga OK", confirm_finished:"Entrega OK", finished:"Finalizado", canceled:"Cancelado", authorized:"Autorizado", updated:"Editado", trip_accepted:"Aceptado", trip_rejected:"Rechazado", trip_started:"Iniciado", trip_confirm_loaded:"Carga OK", trip_confirm_finished:"Entrega OK", trip_finished:"Finalizado", assignment_canceled:"Cancelado", assignment_updated:"Editado", assignment_truck_assigned:"Camión asignado", auto_started:"Inicio auto", auto_loaded:"Carga auto", auto_transporter_confirmed:"Entrega auto" };
+        const actionColors = { created:C.pri, assigned:C.sec, assigned_multi:C.sec, accepted:C.info, rejected:C.err, started:C.acc, confirm_loaded:C.acc, confirm_finished:C.pri, finished:C.ok, canceled:C.err, authorized:C.info, updated:C.t2, trip_accepted:C.info, trip_rejected:C.err, trip_started:C.acc, trip_confirm_loaded:C.acc, trip_confirm_finished:C.pri, trip_finished:C.ok, assignment_canceled:C.err, assignment_updated:C.t2, assignment_truck_assigned:C.info, auto_started:C.acc, auto_loaded:C.acc, auto_transporter_confirmed:C.pri };
         const stepAuditActions = {
           pending_assignment:["created"],
           assigned:["assigned","assigned_multi","assignment_updated","assignment_canceled"],
           accepted:["accepted","authorized","trip_accepted","trip_rejected"],
-          in_progress:["started","trip_started"],
-          loaded:["confirm_loaded","trip_confirm_loaded"],
-          finished:["confirm_finished","finished","trip_confirm_finished","trip_finished","canceled"],
+          in_progress:["started","trip_started","auto_started"],
+          loaded:["confirm_loaded","trip_confirm_loaded","auto_loaded"],
+          finished:["confirm_finished","finished","trip_confirm_finished","trip_finished","canceled","auto_transporter_confirmed"],
         };
         const stepToTrip = { assigned:["pending","accepted"], accepted:["accepted"], in_progress:["in_progress"], loaded:["loaded"], finished:["finished"] };
         const tripRank = { pending:0, accepted:1, in_progress:2, loaded:3, finished:4 };
@@ -938,12 +938,12 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
           pending_assignment:["created"],
           assigned:["assigned","assigned_multi","assignment_updated","assignment_canceled"],
           accepted:["accepted","authorized","trip_accepted","trip_rejected"],
-          in_progress:["started","trip_started"],
-          loaded:["confirm_loaded","trip_confirm_loaded"],
-          finished:["confirm_finished","finished","trip_confirm_finished","trip_finished","canceled"],
+          in_progress:["started","trip_started","auto_started"],
+          loaded:["confirm_loaded","trip_confirm_loaded","auto_loaded"],
+          finished:["confirm_finished","finished","trip_confirm_finished","trip_finished","canceled","auto_transporter_confirmed"],
         };
-        const actionLabels = { created:"Solicitado", assigned:"Asignado", assigned_multi:"Asignado", accepted:"Aceptado", rejected:"Rechazado", started:"Iniciado", confirm_loaded:"Carga OK", confirm_finished:"Entrega OK", finished:"Finalizado", canceled:"Cancelado", authorized:"Autorizado", updated:"Editado", trip_accepted:"Aceptado", trip_rejected:"Rechazado", trip_started:"Iniciado", trip_confirm_loaded:"Carga OK", trip_confirm_finished:"Entrega OK", trip_finished:"Finalizado", assignment_canceled:"Cancelado", assignment_updated:"Editado", assignment_truck_assigned:"Camión asignado" };
-        const actionColors = { created:C.pri, assigned:C.sec, assigned_multi:C.sec, accepted:C.info, rejected:C.err, started:C.acc, confirm_loaded:C.acc, confirm_finished:C.pri, finished:C.ok, canceled:C.err, authorized:C.info, updated:C.t2, trip_accepted:C.info, trip_rejected:C.err, trip_started:C.acc, trip_confirm_loaded:C.acc, trip_confirm_finished:C.pri, trip_finished:C.ok, assignment_canceled:C.err, assignment_updated:C.t2, assignment_truck_assigned:C.info };
+        const actionLabels = { created:"Solicitado", assigned:"Asignado", assigned_multi:"Asignado", accepted:"Aceptado", rejected:"Rechazado", started:"Iniciado", confirm_loaded:"Carga OK", confirm_finished:"Entrega OK", finished:"Finalizado", canceled:"Cancelado", authorized:"Autorizado", updated:"Editado", trip_accepted:"Aceptado", trip_rejected:"Rechazado", trip_started:"Iniciado", trip_confirm_loaded:"Carga OK", trip_confirm_finished:"Entrega OK", trip_finished:"Finalizado", assignment_canceled:"Cancelado", assignment_updated:"Editado", assignment_truck_assigned:"Camión asignado", auto_started:"Inicio auto", auto_loaded:"Carga auto", auto_transporter_confirmed:"Entrega auto" };
+        const actionColors = { created:C.pri, assigned:C.sec, assigned_multi:C.sec, accepted:C.info, rejected:C.err, started:C.acc, confirm_loaded:C.acc, confirm_finished:C.pri, finished:C.ok, canceled:C.err, authorized:C.info, updated:C.t2, trip_accepted:C.info, trip_rejected:C.err, trip_started:C.acc, trip_confirm_loaded:C.acc, trip_confirm_finished:C.pri, trip_finished:C.ok, assignment_canceled:C.err, assignment_updated:C.t2, assignment_truck_assigned:C.info, auto_started:C.acc, auto_loaded:C.acc, auto_transporter_confirmed:C.pri };
         const fmtD = (d) => { try { const dt=new Date(d); return dt.toLocaleDateString("es-AR",{day:"2-digit",month:"short"})+" "+dt.toLocaleTimeString("es-AR",{hour:"2-digit",minute:"2-digit",hour12:false}); } catch{ return ""; } };
         const getStepLogs = (step) => { if(!auditLog) return []; return auditLog.filter(l=>(stepAuditActions[step]||[]).includes(l.action)); };
         const stepToTrip = { assigned:["pending","accepted"], accepted:["accepted"], in_progress:["in_progress"], loaded:["loaded"], finished:["finished"] };
@@ -1002,7 +1002,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
                           <div style={{ fontSize:14.0, fontWeight:700, color:acCol, lineHeight:1.3 }}>{actionLabels[entry.action]||entry.action}{tn ? ` · ${tn}` : ""}</div>
                           <div style={{ fontSize:13.2, color:C.t2, marginTop:1, lineHeight:1.3, wordBreak:"break-word" }}>{entry.user?.name||"Sistema"}</div>
                           {entry.user?.company?.name && <div style={{ fontSize:12.6, color:C.t3, lineHeight:1.2 }}>{entry.user.company.name}</div>}
-                          {(entry.reason || entry.metadata?.reason) && <div style={{ fontSize:12.6, color:C.t3, fontStyle:"italic", marginTop:1 }}>"{entry.reason||entry.metadata.reason}"</div>}
+                          {(entry.reason || entry.metadata?.reason) && <div style={{ fontSize:12.6, color:C.t3, fontStyle:"italic", marginTop:1 }}>"{(entry.reason||entry.metadata.reason)==="both_consulta"?"Ambos CONSULTA — auto-completado":entry.reason||entry.metadata.reason}"</div>}
                           <div style={{ fontSize:12.6, color:C.t3, marginTop:1 }}>{fmtD(entry.createdAt)}</div>
                         </div>
                       </div>;
@@ -1099,12 +1099,12 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
           pending_assignment:["created"],
           assigned:["assigned","assigned_multi","assignment_updated","assignment_canceled"],
           accepted:["accepted","authorized","trip_accepted","trip_rejected"],
-          in_progress:["started","trip_started"],
-          loaded:["confirm_loaded","trip_confirm_loaded"],
-          finished:["confirm_finished","finished","trip_confirm_finished","trip_finished","canceled"],
+          in_progress:["started","trip_started","auto_started"],
+          loaded:["confirm_loaded","trip_confirm_loaded","auto_loaded"],
+          finished:["confirm_finished","finished","trip_confirm_finished","trip_finished","canceled","auto_transporter_confirmed"],
         };
-        const actionLabels = { created:"Solicitado", assigned:"Asignado", assigned_multi:"Asignado", accepted:"Aceptado", rejected:"Rechazado", started:"Iniciado", confirm_loaded:"Carga OK", confirm_finished:"Entrega OK", finished:"Finalizado", canceled:"Cancelado", authorized:"Autorizado", updated:"Editado", trip_accepted:"Aceptado", trip_rejected:"Rechazado", trip_started:"Iniciado", trip_confirm_loaded:"Carga OK", trip_confirm_finished:"Entrega OK", trip_finished:"Finalizado", assignment_canceled:"Cancelado", assignment_updated:"Editado", assignment_truck_assigned:"Camión asignado" };
-        const actionColors = { created:C.pri, assigned:C.sec, assigned_multi:C.sec, accepted:C.info, rejected:C.err, started:C.acc, confirm_loaded:C.acc, confirm_finished:C.pri, finished:C.ok, canceled:C.err, authorized:C.info, updated:C.t2, trip_accepted:C.info, trip_rejected:C.err, trip_started:C.acc, trip_confirm_loaded:C.acc, trip_confirm_finished:C.pri, trip_finished:C.ok, assignment_canceled:C.err, assignment_updated:C.t2, assignment_truck_assigned:C.info };
+        const actionLabels = { created:"Solicitado", assigned:"Asignado", assigned_multi:"Asignado", accepted:"Aceptado", rejected:"Rechazado", started:"Iniciado", confirm_loaded:"Carga OK", confirm_finished:"Entrega OK", finished:"Finalizado", canceled:"Cancelado", authorized:"Autorizado", updated:"Editado", trip_accepted:"Aceptado", trip_rejected:"Rechazado", trip_started:"Iniciado", trip_confirm_loaded:"Carga OK", trip_confirm_finished:"Entrega OK", trip_finished:"Finalizado", assignment_canceled:"Cancelado", assignment_updated:"Editado", assignment_truck_assigned:"Camión asignado", auto_started:"Inicio auto", auto_loaded:"Carga auto", auto_transporter_confirmed:"Entrega auto" };
+        const actionColors = { created:C.pri, assigned:C.sec, assigned_multi:C.sec, accepted:C.info, rejected:C.err, started:C.acc, confirm_loaded:C.acc, confirm_finished:C.pri, finished:C.ok, canceled:C.err, authorized:C.info, updated:C.t2, trip_accepted:C.info, trip_rejected:C.err, trip_started:C.acc, trip_confirm_loaded:C.acc, trip_confirm_finished:C.pri, trip_finished:C.ok, assignment_canceled:C.err, assignment_updated:C.t2, assignment_truck_assigned:C.info, auto_started:C.acc, auto_loaded:C.acc, auto_transporter_confirmed:C.pri };
         const fmtD = (d) => { try { const dt=new Date(d); return dt.toLocaleDateString("es-AR",{day:"2-digit",month:"short"})+" "+dt.toLocaleTimeString("es-AR",{hour:"2-digit",minute:"2-digit",hour12:false}); } catch{ return ""; } };
         const logs = auditLog ? stepModal.backendSteps.flatMap(s => (auditLog||[]).filter(l=>(stepAuditActions[s]||[]).includes(l.action))) : [];
         const stepToTrip = { assigned:["pending","accepted"], accepted:["accepted"], in_progress:["in_progress"], loaded:["loaded"], finished:["finished"] };
