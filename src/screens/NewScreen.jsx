@@ -8,7 +8,7 @@ import log from "../logger";
 const LocationPicker = lazy(() => import("../maps").then(m => ({ default: m.LocationPicker })));
 const SafeZone = lazy(() => import("../maps").then(m => ({ default: m.SafeZone })));
 const FreightMap = lazy(() => import("../maps").then(m => ({ default: m.FreightMap })));
-import { uploadPhoto, apiAddDocument, apiGetFieldLots, apiCreateLot, apiGetDrivers, apiGetCompanyAccess, apiGetFields, apiGetTrucks, apiListDrivers } from "../api";
+import { uploadPhoto, apiAddDocument, apiGetFieldLots, apiCreateLot, apiGetDrivers, apiGetCompanyAccess, apiGetFields, apiGetTrucks, apiListDrivers, apiCreateField, apiCreateTruck } from "../api";
 import { useIsDesktop } from "../hooks";
 import { useUIStore } from "../store";
 
@@ -216,6 +216,13 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
     apiGetFields(producerCompanyId).then(f => setProducerFields(f || [])).catch(() => setProducerFields([]));
   }, [isPlantUser, producerCompanyId]);
 
+  // Pre-select plant as destination for plant users
+  useEffect(() => {
+    if (!isPlantUser || form.plantId) return;
+    const ownPlant = (plants || []).find(p => p.companyId === (user?.activeCompanyId || user?.companyId));
+    if (ownPlant) u({ plantId: ownPlant.id });
+  }, [isPlantUser, plants]);
+
   // When producer changes, reset origin selection + transport
   const handleProducerChange = (pId) => {
     setProducerCompanyId(pId);
@@ -297,6 +304,50 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
   const transportIsOperator = transportChoice && transportChoice !== "skip" && transportChoice !== "ownfleet" && selectedTransporterAccess?.accessLevel !== "READONLY";
 
   const transportStepComplete = !showTransportStep || transportChoice === "skip" || transportIsOperator || (transportNeedsTruckDriver && !!assignTruckId && !!assignDriverId);
+
+  // On-the-fly field creation (for producers with no fields)
+  const [showNewFieldForm, setShowNewFieldForm] = useState(false);
+  const [newFieldName, setNewFieldName] = useState("");
+  const [newFieldLoc, setNewFieldLoc] = useState(null);
+  const [newFieldSaving, setNewFieldSaving] = useState(false);
+  const selectedProducerName = linkedProducers.find(r => (r.granteeCompanyId || r.granteeCompany?.id) === producerCompanyId)?.granteeCompany?.name || "";
+
+  const handleCreateFieldInline = async () => {
+    if (!newFieldName.trim() || !producerCompanyId || newFieldSaving) return;
+    setNewFieldSaving(true);
+    try {
+      const f = await apiCreateField({ name: newFieldName.trim(), ownerCompanyId: producerCompanyId, lat: newFieldLoc?.lat || undefined, lng: newFieldLoc?.lng || undefined });
+      setProducerFields(prev => [...(prev || []), f]);
+      u({ fieldId: f.id, lotId: "" });
+      setShowNewFieldForm(false);
+      setNewFieldName("");
+      setNewFieldLoc(null);
+    } catch (e) { useUIStore.getState().show(e.message || "Error al crear campo", "error"); }
+    finally { setNewFieldSaving(false); }
+  };
+
+  // On-the-fly truck creation (for CONSULTA transporters with no trucks)
+  const [showNewTruckForm, setShowNewTruckForm] = useState(false);
+  const [newTruckPlate, setNewTruckPlate] = useState("");
+  const [newTruckModel, setNewTruckModel] = useState("");
+  const [newTruckSaving, setNewTruckSaving] = useState(false);
+  const selectedTransporterName = linkedTransporters.find(r => (r.granteeCompanyId || r.granteeCompany?.id) === transportChoice)?.granteeCompany?.name || "";
+
+  const handleCreateTruckInline = async () => {
+    if (!newTruckPlate.trim() || newTruckSaving) return;
+    const targetCompanyId = transportChoice === "ownfleet" ? plantCompanyId : transportChoice;
+    if (!targetCompanyId) return;
+    setNewTruckSaving(true);
+    try {
+      const t = await apiCreateTruck({ plate: newTruckPlate.trim().toUpperCase(), model: newTruckModel.trim() || undefined, ownerCompanyId: targetCompanyId });
+      setAssignTrucks(prev => [...prev, t]);
+      setAssignTruckId(t.id);
+      setShowNewTruckForm(false);
+      setNewTruckPlate("");
+      setNewTruckModel("");
+    } catch (e) { useUIStore.getState().show(e.message || "Error al crear camión", "error"); }
+    finally { setNewTruckSaving(false); }
+  };
 
   // Drivers for own fleet
   const [ownFleetDrivers, setOwnFleetDrivers] = useState([]);
@@ -572,7 +623,6 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
     });
   };
 
-  const selectedProducerName = linkedProducers.find(r => (r.granteeCompanyId || r.granteeCompany?.id) === producerCompanyId)?.granteeCompany?.name || "";
   const secSummary = {
     ...(isPlantUser ? { producer: selectedProducerName || "" } : {}),
     product: form.grain ? (form.grain==="Otros" ? `Otros: ${form.productTypeOther}` : form.grain) : "",
@@ -641,7 +691,11 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
                     {Ic.user(sel ? C.pri : C.t3, 18)}
                     <div style={{ flex:1 }}>
                       <div style={{ fontSize:14.3, fontWeight:sel?700:500, color:sel?C.pri:C.t1 }}>{co.name || "Empresa"}</div>
-                      {co.hasInternalFleet && <div style={{ fontSize:10.5, color:C.ok, fontWeight:600 }}>Flota propia</div>}
+                      <div style={{ display:"flex", gap:6, marginTop:2 }}>
+                        {r.accessLevel === "READONLY" && <span style={{ fontSize:10, fontWeight:700, color:C.warn, background:`${C.warn}15`, padding:"1px 6px", borderRadius:4 }}>Consulta</span>}
+                        {r.accessLevel !== "READONLY" && <span style={{ fontSize:10, fontWeight:700, color:C.ok, background:`${C.ok}15`, padding:"1px 6px", borderRadius:4 }}>Uso</span>}
+                        {co.hasInternalFleet && <span style={{ fontSize:10, fontWeight:700, color:C.acc, background:`${C.acc}15`, padding:"1px 6px", borderRadius:4 }}>Flota propia</span>}
+                      </div>
                     </div>
                     {sel && Ic.chk(C.pri, 16)}
                   </button>
@@ -694,7 +748,32 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
               ))}
             </div>
             {originMode==="field" ? (<>
-              <Select label="Campo" icon={Ic.field(C.ok,14)} value={form.fieldId} onChange={v=>{u({fieldId:v,lotId:""});}} options={fieldOpts} placeholder="Seleccionar campo..."/>
+              {isPlantUser && producerCompanyId && fieldOpts.length === 0 && !showNewFieldForm ? (
+                <div style={{ padding:"14px 16px", background:`${C.ok}08`, borderRadius:10, border:`1.5px dashed ${C.ok}40`, textAlign:"center" }}>
+                  <div style={{ fontSize:13.2, color:C.t2, fontWeight:500, marginBottom:8 }}>{selectedProducerName || "El productor"} no tiene campos cargados</div>
+                  <button onClick={()=>setShowNewFieldForm(true)} style={{ background:C.ok, border:"none", borderRadius:8, padding:"8px 16px", cursor:"pointer", fontFamily:FONT, fontSize:12.7, fontWeight:700, color:C.w }}>{Ic.plus(C.w,13)} Crear campo para {selectedProducerName || "el productor"}</button>
+                </div>
+              ) : (
+                <Select label="Campo" icon={Ic.field(C.ok,14)} value={form.fieldId} onChange={v=>{u({fieldId:v,lotId:""});}} options={fieldOpts} placeholder="Seleccionar campo..."/>
+              )}
+              {isPlantUser && producerCompanyId && fieldOpts.length > 0 && !showNewFieldForm && (
+                <button type="button" onClick={()=>setShowNewFieldForm(true)} style={{marginTop:8,background:"none",border:"none",cursor:"pointer",fontSize:12.1,fontWeight:600,color:C.ok,padding:0,fontFamily:"inherit",display:"flex",alignItems:"center",gap:4}}>{Ic.plus(C.ok,13)} Crear campo nuevo</button>
+              )}
+              {showNewFieldForm && (
+                <div style={{marginTop:8,background:`${C.ok}08`,borderRadius:10,padding:12,border:`1px solid ${C.ok}30`}}>
+                  <div style={{fontSize:11,fontWeight:700,color:C.ok,textTransform:"uppercase",letterSpacing:0.5,marginBottom:8}}>Nuevo campo para {selectedProducerName || "el productor"}</div>
+                  <Field label="Nombre del campo" value={newFieldName} onChange={setNewFieldName} placeholder="Ej: Campo Norte"/>
+                  <div style={{marginTop:8}}>
+                    <Suspense fallback={<div style={{padding:10,textAlign:"center",color:C.t3,fontSize:12}}>Cargando mapa...</div>}>
+                      <SafeZone><LocationPicker label="Ubicación (opcional)" value={newFieldLoc} onChange={setNewFieldLoc}/></SafeZone>
+                    </Suspense>
+                  </div>
+                  <div style={{display:"flex",gap:6,marginTop:10}}>
+                    <button onClick={()=>{setShowNewFieldForm(false);setNewFieldName("");setNewFieldLoc(null);}} style={{padding:"5px 12px",borderRadius:8,border:`1px solid ${C.b2}`,background:C.w,cursor:"pointer",fontFamily:FONT,fontSize:12.1,fontWeight:600,color:C.t2}}>Cancelar</button>
+                    <button onClick={handleCreateFieldInline} disabled={!newFieldName.trim()||newFieldSaving} style={{padding:"5px 12px",borderRadius:8,border:"none",background:C.ok,cursor:"pointer",fontFamily:FONT,fontSize:12.1,fontWeight:700,color:C.w,opacity:newFieldName.trim()&&!newFieldSaving?1:0.5}}>{newFieldSaving?"Creando...":"Crear campo"}</button>
+                  </div>
+                </div>
+              )}
               <div style={{ marginTop:10 }}>
                 {loadingLots && <div style={{padding:8,color:'#888',fontSize:13}}>Cargando lotes...</div>}
                 <Select label={hasLots ? "Origen (lote)" : "Origen (lote · opcional)"} icon={Ic.lot(C.pri,14)} value={form.lotId} onChange={v=>u({lotId:v})} options={lotOpts} placeholder={loadingLots?"Cargando lotes...":form.fieldId?(hasLots?"Seleccionar lote...":"Sin lotes — se usará el campo"):"Primero seleccioná un campo"}/>
@@ -825,8 +904,25 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
                 : <div style={{ padding:"8px 12px", background:`${C.warn}15`, borderRadius:8, fontSize:12.1, color:C.warn, fontWeight:500, marginBottom:10 }}>Este transportista está en modo consulta. Se asignará automáticamente.</div>}
               <div style={{ marginBottom:8 }}>
                 {loadingAssignTrucks ? <div style={{ fontSize:12, color:C.t3, padding:8 }}>Cargando camiones...</div>
-                : assignTruckOpts.length > 0 ? <Select label="Camión" icon={Ic.truck(C.acc,14)} value={assignTruckId} onChange={v=>setAssignTruckId(v)} options={assignTruckOpts} placeholder="Seleccionar camión..."/>
-                : <div style={{ padding:"10px 14px", background:`${C.acc}08`, borderRadius:8, border:`1.5px dashed ${C.acc}40`, fontSize:12.7, color:C.t2, fontWeight:500, textAlign:"center" }}>Sin camiones registrados</div>}
+                : assignTruckOpts.length > 0 ? <>
+                  <Select label="Camión" icon={Ic.truck(C.acc,14)} value={assignTruckId} onChange={v=>setAssignTruckId(v)} options={assignTruckOpts} placeholder="Seleccionar camión..."/>
+                  {!showNewTruckForm && <button type="button" onClick={()=>setShowNewTruckForm(true)} style={{marginTop:8,background:"none",border:"none",cursor:"pointer",fontSize:12.1,fontWeight:600,color:C.acc,padding:0,fontFamily:"inherit",display:"flex",alignItems:"center",gap:4}}>{Ic.plus(C.acc,13)} Crear camión nuevo</button>}
+                </>
+                : !showNewTruckForm ? <div style={{ padding:"14px 16px", background:`${C.acc}08`, borderRadius:10, border:`1.5px dashed ${C.acc}40`, textAlign:"center" }}>
+                  <div style={{ fontSize:13.2, color:C.t2, fontWeight:500, marginBottom:8 }}>{transportChoice === "ownfleet" ? "No hay camiones en tu flota" : `${selectedTransporterName || "El transportista"} no tiene camiones registrados`}</div>
+                  <button onClick={()=>setShowNewTruckForm(true)} style={{ background:C.acc, border:"none", borderRadius:8, padding:"8px 16px", cursor:"pointer", fontFamily:FONT, fontSize:12.7, fontWeight:700, color:C.w }}>{Ic.plus(C.w,13)} Crear camión</button>
+                </div> : null}
+                {showNewTruckForm && (
+                  <div style={{marginTop:8,background:`${C.acc}08`,borderRadius:10,padding:12,border:`1px solid ${C.acc}30`}}>
+                    <div style={{fontSize:11,fontWeight:700,color:C.acc,textTransform:"uppercase",letterSpacing:0.5,marginBottom:8}}>Nuevo camión{transportChoice !== "ownfleet" && selectedTransporterName ? ` para ${selectedTransporterName}` : ""}</div>
+                    <Field label="Matrícula" value={newTruckPlate} onChange={setNewTruckPlate} placeholder="Ej: ABC 1234"/>
+                    <div style={{marginTop:6}}><Field label="Modelo (opcional)" value={newTruckModel} onChange={setNewTruckModel} placeholder="Ej: Scania R500"/></div>
+                    <div style={{display:"flex",gap:6,marginTop:10}}>
+                      <button onClick={()=>{setShowNewTruckForm(false);setNewTruckPlate("");setNewTruckModel("");}} style={{padding:"5px 12px",borderRadius:8,border:`1px solid ${C.b2}`,background:C.w,cursor:"pointer",fontFamily:FONT,fontSize:12.1,fontWeight:600,color:C.t2}}>Cancelar</button>
+                      <button onClick={handleCreateTruckInline} disabled={!newTruckPlate.trim()||newTruckSaving} style={{padding:"5px 12px",borderRadius:8,border:"none",background:C.acc,cursor:"pointer",fontFamily:FONT,fontSize:12.1,fontWeight:700,color:C.w,opacity:newTruckPlate.trim()&&!newTruckSaving?1:0.5}}>{newTruckSaving?"Creando...":"Crear camión"}</button>
+                    </div>
+                  </div>
+                )}
               </div>
               {assignTruckId && <div style={{ marginBottom:8 }}>
                 {loadingAssignDrivers ? <div style={{ fontSize:12, color:C.t3, padding:8 }}>Cargando choferes...</div>
@@ -859,7 +955,11 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
                   {Ic.user(sel ? C.pri : C.t3, 18)}
                   <div style={{ flex:1 }}>
                     <div style={{ fontSize:14.3, fontWeight:sel?700:500, color:sel?C.pri:C.t1 }}>{co.name || "Empresa"}</div>
-                    {co.hasInternalFleet && <div style={{ fontSize:10.5, color:C.ok, fontWeight:600 }}>Flota propia</div>}
+                    <div style={{ display:"flex", gap:6, marginTop:2 }}>
+                      {r.accessLevel === "READONLY" && <span style={{ fontSize:10, fontWeight:700, color:C.warn, background:`${C.warn}15`, padding:"1px 6px", borderRadius:4 }}>Consulta</span>}
+                      {r.accessLevel !== "READONLY" && <span style={{ fontSize:10, fontWeight:700, color:C.ok, background:`${C.ok}15`, padding:"1px 6px", borderRadius:4 }}>Uso</span>}
+                      {co.hasInternalFleet && <span style={{ fontSize:10, fontWeight:700, color:C.acc, background:`${C.acc}15`, padding:"1px 6px", borderRadius:4 }}>Flota propia</span>}
+                    </div>
                   </div>
                   {sel && Ic.chk(C.pri, 16)}
                 </button>
@@ -920,7 +1020,30 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
           </div>
           {originMode==="field" ? (<>
             <div>
-              <Select label="Campo" icon={Ic.field(C.ok,14)} value={form.fieldId} onChange={v=>{u({fieldId:v,lotId:""});}} options={fieldOpts} placeholder="Seleccionar campo..."/>
+              {isPlantUser && producerCompanyId && fieldOpts.length === 0 && !showNewFieldForm ? (
+                <div style={{ padding:"14px 16px", background:`${C.ok}08`, borderRadius:10, border:`1.5px dashed ${C.ok}40`, textAlign:"center" }}>
+                  <div style={{ fontSize:13.2, color:C.t2, fontWeight:500, marginBottom:8 }}>{selectedProducerName || "El productor"} no tiene campos cargados</div>
+                  <button onClick={()=>setShowNewFieldForm(true)} style={{ background:C.ok, border:"none", borderRadius:8, padding:"8px 16px", cursor:"pointer", fontFamily:FONT, fontSize:12.7, fontWeight:700, color:C.w }}>{Ic.plus(C.w,13)} Crear campo para {selectedProducerName || "el productor"}</button>
+                </div>
+              ) : (
+                <Select label="Campo" icon={Ic.field(C.ok,14)} value={form.fieldId} onChange={v=>{u({fieldId:v,lotId:""});}} options={fieldOpts} placeholder="Seleccionar campo..."/>
+              )}
+              {isPlantUser && producerCompanyId && fieldOpts.length > 0 && !showNewFieldForm && (
+                <button type="button" onClick={()=>setShowNewFieldForm(true)} style={{marginTop:8,background:"none",border:"none",cursor:"pointer",fontSize:12.1,fontWeight:600,color:C.ok,padding:0,fontFamily:"inherit",display:"flex",alignItems:"center",gap:4}}>{Ic.plus(C.ok,13)} Crear campo nuevo</button>
+              )}
+              {showNewFieldForm && (
+                <div style={{marginTop:8,background:`${C.ok}08`,borderRadius:10,padding:12,border:`1px solid ${C.ok}30`}}>
+                  <div style={{fontSize:11,fontWeight:700,color:C.ok,textTransform:"uppercase",letterSpacing:0.5,marginBottom:8}}>Nuevo campo para {selectedProducerName || "el productor"}</div>
+                  <Field label="Nombre del campo" value={newFieldName} onChange={setNewFieldName} placeholder="Ej: Campo Norte"/>
+                  <div style={{marginTop:8}}>
+                    <SafeZone><LocationPicker label="Ubicación (opcional)" value={newFieldLoc} onChange={setNewFieldLoc}/></SafeZone>
+                  </div>
+                  <div style={{display:"flex",gap:6,marginTop:10}}>
+                    <button onClick={()=>{setShowNewFieldForm(false);setNewFieldName("");setNewFieldLoc(null);}} style={{padding:"5px 12px",borderRadius:8,border:`1px solid ${C.b2}`,background:C.w,cursor:"pointer",fontFamily:FONT,fontSize:12.1,fontWeight:600,color:C.t2}}>Cancelar</button>
+                    <button onClick={handleCreateFieldInline} disabled={!newFieldName.trim()||newFieldSaving} style={{padding:"5px 12px",borderRadius:8,border:"none",background:C.ok,cursor:"pointer",fontFamily:FONT,fontSize:12.1,fontWeight:700,color:C.w,opacity:newFieldName.trim()&&!newFieldSaving?1:0.5}}>{newFieldSaving?"Creando...":"Crear campo"}</button>
+                  </div>
+                </div>
+              )}
             </div>
             <div style={{ marginTop:10 }}>
               {loadingLots && <div style={{padding:8,color:'#888',fontSize:13}}>Cargando lotes...</div>}
@@ -1090,8 +1213,25 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
                 : <div style={{ padding:"8px 12px", background:`${C.warn}15`, borderRadius:8, fontSize:12.1, color:C.warn, fontWeight:500, marginBottom:10 }}>Este transportista está en modo consulta. Se asignará automáticamente.</div>}
               <div style={{ marginBottom:8 }}>
                 {loadingAssignTrucks ? <div style={{ fontSize:12, color:C.t3, padding:8 }}>Cargando camiones...</div>
-                : assignTruckOpts.length > 0 ? <Select label="Camión" icon={Ic.truck(C.acc,14)} value={assignTruckId} onChange={v=>setAssignTruckId(v)} options={assignTruckOpts} placeholder="Seleccionar camión..."/>
-                : <div style={{ padding:"10px 14px", background:`${C.acc}08`, borderRadius:10, border:`1.5px dashed ${C.acc}40`, fontSize:12.7, color:C.t2, fontWeight:500, textAlign:"center" }}>Sin camiones registrados</div>}
+                : assignTruckOpts.length > 0 ? <>
+                  <Select label="Camión" icon={Ic.truck(C.acc,14)} value={assignTruckId} onChange={v=>setAssignTruckId(v)} options={assignTruckOpts} placeholder="Seleccionar camión..."/>
+                  {!showNewTruckForm && <button type="button" onClick={()=>setShowNewTruckForm(true)} style={{marginTop:8,background:"none",border:"none",cursor:"pointer",fontSize:12.1,fontWeight:600,color:C.acc,padding:0,fontFamily:"inherit",display:"flex",alignItems:"center",gap:4}}>{Ic.plus(C.acc,13)} Crear camión nuevo</button>}
+                </>
+                : !showNewTruckForm ? <div style={{ padding:"14px 16px", background:`${C.acc}08`, borderRadius:10, border:`1.5px dashed ${C.acc}40`, textAlign:"center" }}>
+                  <div style={{ fontSize:13.2, color:C.t2, fontWeight:500, marginBottom:8 }}>{transportChoice === "ownfleet" ? "No hay camiones en tu flota" : `${selectedTransporterName || "El transportista"} no tiene camiones registrados`}</div>
+                  <button onClick={()=>setShowNewTruckForm(true)} style={{ background:C.acc, border:"none", borderRadius:8, padding:"8px 16px", cursor:"pointer", fontFamily:FONT, fontSize:12.7, fontWeight:700, color:C.w }}>{Ic.plus(C.w,13)} Crear camión</button>
+                </div> : null}
+                {showNewTruckForm && (
+                  <div style={{marginTop:8,background:`${C.acc}08`,borderRadius:10,padding:12,border:`1px solid ${C.acc}30`}}>
+                    <div style={{fontSize:11,fontWeight:700,color:C.acc,textTransform:"uppercase",letterSpacing:0.5,marginBottom:8}}>Nuevo camión{transportChoice !== "ownfleet" && selectedTransporterName ? ` para ${selectedTransporterName}` : ""}</div>
+                    <Field label="Matrícula" value={newTruckPlate} onChange={setNewTruckPlate} placeholder="Ej: ABC 1234"/>
+                    <div style={{marginTop:6}}><Field label="Modelo (opcional)" value={newTruckModel} onChange={setNewTruckModel} placeholder="Ej: Scania R500"/></div>
+                    <div style={{display:"flex",gap:6,marginTop:10}}>
+                      <button onClick={()=>{setShowNewTruckForm(false);setNewTruckPlate("");setNewTruckModel("");}} style={{padding:"5px 12px",borderRadius:8,border:`1px solid ${C.b2}`,background:C.w,cursor:"pointer",fontFamily:FONT,fontSize:12.1,fontWeight:600,color:C.t2}}>Cancelar</button>
+                      <button onClick={handleCreateTruckInline} disabled={!newTruckPlate.trim()||newTruckSaving} style={{padding:"5px 12px",borderRadius:8,border:"none",background:C.acc,cursor:"pointer",fontFamily:FONT,fontSize:12.1,fontWeight:700,color:C.w,opacity:newTruckPlate.trim()&&!newTruckSaving?1:0.5}}>{newTruckSaving?"Creando...":"Crear camión"}</button>
+                    </div>
+                  </div>
+                )}
               </div>
               {assignTruckId && <div style={{ marginBottom:8 }}>
                 {loadingAssignDrivers ? <div style={{ fontSize:12, color:C.t3, padding:8 }}>Cargando choferes...</div>
