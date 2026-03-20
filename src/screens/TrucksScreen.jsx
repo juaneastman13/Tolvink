@@ -5,7 +5,7 @@ import { apiGetTrucks, apiCreateTruck, apiDeactivateTruck, apiListDrivers, apiCr
 
 export default function TrucksScreen({ onBack, embedded, user }) {
   const canEdit = !user || user.role !== "chofer";
-  const isPlant = user?.userType === "plant";
+  const isManager = ["admin","gerente","platform_admin"].includes(user?.role);
   const [tab, setTab] = useState("trucks"); // "trucks" | "drivers"
   const [trucks, setTrucks] = useState([]);
   const [drivers, setDrivers] = useState([]);
@@ -23,9 +23,9 @@ export default function TrucksScreen({ onBack, embedded, user }) {
   const [linkedCompanies, setLinkedCompanies] = useState([]);
   const [selectedCompanyId, setSelectedCompanyId] = useState(""); // "" = my fleet
 
-  // Load linked companies for plant dropdown
+  // Load linked companies for hub dropdown (any admin/gerente)
   useEffect(() => {
-    if (!isPlant || !user?.activeCompanyId) return;
+    if (!isManager || !user?.activeCompanyId) return;
     apiGetCompanyAccess(user.activeCompanyId)
       .then(data => {
         // Show all active linked companies (transporters + producers)
@@ -33,7 +33,7 @@ export default function TrucksScreen({ onBack, embedded, user }) {
         setLinkedCompanies(relevant);
       })
       .catch(() => {});
-  }, [isPlant, user?.activeCompanyId]);
+  }, [isManager, user?.activeCompanyId]);
 
   const loadTrucks = useCallback(async () => {
     try {
@@ -123,7 +123,7 @@ export default function TrucksScreen({ onBack, embedded, user }) {
       </div>
 
       {/* Plant: company dropdown */}
-      {isPlant && linkedCompanies.length > 0 && (
+      {isManager && linkedCompanies.length > 0 && (
         <div style={{ marginBottom: 14 }}>
           <select
             value={selectedCompanyId}

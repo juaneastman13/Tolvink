@@ -261,6 +261,14 @@ export async function apiCreateWeighTicket(freightId, data) { return api(`/freig
 export async function apiUpdateWeighTicket(freightId, ticketId, data) { return api(`/freights/${freightId}/weigh-tickets/${ticketId}`,{method:'PATCH',body:data}); }
 export async function apiDeleteWeighTicket(freightId, ticketId) { return api(`/freights/${freightId}/weigh-tickets/${ticketId}`,{method:'DELETE'}); }
 export async function apiRunWeighTicketOcr(freightId, ticketId) { return api(`/freights/${freightId}/weigh-tickets/${ticketId}/ocr`,{body:{}}); }
+export async function apiGetAllWeighTickets(params={}) { const q=new URLSearchParams(); if(params.type)q.set('type',params.type); if(params.search)q.set('search',params.search); if(params.limit)q.set('limit',String(params.limit)); if(params.offset)q.set('offset',String(params.offset)); const qs=q.toString(); return api(`/weigh-tickets${qs?'?'+qs:''}`); }
+
+// Business Analytics
+export async function apiFreightSummary(period) { return api(`/analytics/freight-summary${period?'?period='+period:''}`); }
+export async function apiByProducer(period) { return api(`/analytics/by-producer${period?'?period='+period:''}`); }
+export async function apiByProduct(period) { return api(`/analytics/by-product${period?'?period='+period:''}`); }
+export async function apiByMonth(months) { return api(`/analytics/by-month${months?'?months='+months:''}`); }
+export async function apiTransporterRanking(period) { return api(`/analytics/transporter-ranking${period?'?period='+period:''}`); }
 
 // Tracking
 export async function apiSendTracking(id, data) { return api(`/freights/${id}/tracking`,{body:data}); }

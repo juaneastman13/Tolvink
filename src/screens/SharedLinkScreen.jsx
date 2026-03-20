@@ -1,6 +1,121 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { C, Ic, FONT, MONO } from "../theme";
 import { API_URL, apiResolveSharedLink } from "../api";
+
+// Decode Google Maps encoded polyline
+function decodePolyline(encoded) {
+  const points = [];
+  let index = 0, lat = 0, lng = 0;
+  while (index < encoded.length) {
+    let shift = 0, result = 0, byte;
+    do { byte = encoded.charCodeAt(index++) - 63; result |= (byte & 0x1f) << shift; shift += 5; } while (byte >= 0x20);
+    lat += (result & 1) ? ~(result >> 1) : (result >> 1);
+    shift = 0; result = 0;
+    do { byte = encoded.charCodeAt(index++) - 63; result |= (byte & 0x1f) << shift; shift += 5; } while (byte >= 0x20);
+    lng += (result & 1) ? ~(result >> 1) : (result >> 1);
+    points.push({ lat: lat / 1e5, lng: lng / 1e5 });
+  }
+  return points;
+}
+
+function FreightMap({ freight }) {
+  const oLat = freight.originLat != null ? Number(freight.originLat) : null;
+  const oLng = freight.originLng != null ? Number(freight.originLng) : null;
+  const dLat = freight.destLat != null ? Number(freight.destLat) : null;
+  const dLng = freight.destLng != null ? Number(freight.destLng) : null;
+  if (!oLat || !oLng || !dLat || !dLng) return null;
+
+  const mapRef = useRef(null);
+  const containerRef = useRef(null);
+  const [visible, setVisible] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+  const [mapError, setMapError] = useState(false);
+
+  // Intersection Observer for lazy loading
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(([entry]) => { if (entry.isIntersecting) { setVisible(true); obs.disconnect(); } }, { threshold: 0.1 });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (!visible || loaded) return;
+    const key = import.meta.env.VITE_GOOGLE_MAPS_PUBLIC_KEY || import.meta.env.VITE_GOOGLE_MAPS_KEY;
+    if (!key) { setMapError(true); return; }
+
+    // Load Google Maps JS
+    const existing = document.getElementById("gm-shared");
+    const init = () => {
+      if (!window.google?.maps || !mapRef.current) return;
+      const maps = window.google.maps;
+      const center = { lat: (oLat + dLat) / 2, lng: (oLng + dLng) / 2 };
+      const map = new maps.Map(mapRef.current, {
+        center, zoom: 8, disableDefaultUI: true, zoomControl: true, gestureHandling: "cooperative",
+        styles: [{ featureType: "poi", stylers: [{ visibility: "off" }] }],
+      });
+      // Origin marker (green)
+      new maps.Marker({ position: { lat: oLat, lng: oLng }, map, title: freight.originName || "Origen",
+        icon: { path: maps.SymbolPath.CIRCLE, scale: 8, fillColor: "#22C55E", fillOpacity: 1, strokeColor: "#fff", strokeWeight: 2 } });
+      // Destination marker (orange)
+      new maps.Marker({ position: { lat: dLat, lng: dLng }, map, title: freight.destName || "Destino",
+        icon: { path: maps.SymbolPath.CIRCLE, scale: 8, fillColor: "#F59E0B", fillOpacity: 1, strokeColor: "#fff", strokeWeight: 2 } });
+      // Route polyline
+      if (freight.routePolyline) {
+        const path = decodePolyline(freight.routePolyline);
+        new maps.Polyline({ path, map, strokeColor: "#1D4ED8", strokeWeight: 3, strokeOpacity: 0.7 });
+      }
+      // Fit bounds
+      const bounds = new maps.LatLngBounds();
+      bounds.extend({ lat: oLat, lng: oLng });
+      bounds.extend({ lat: dLat, lng: dLng });
+      map.fitBounds(bounds, 40);
+      setLoaded(true);
+    };
+
+    if (existing) { init(); return; }
+    const script = document.createElement("script");
+    script.id = "gm-shared";
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${key}`;
+    script.onload = init;
+    script.onerror = () => setMapError(true);
+    document.head.appendChild(script);
+  }, [visible]);
+
+  // Static fallback
+  if (mapError) {
+    return (
+      <div style={{ background: C.w, borderRadius: 12, padding: 16, marginBottom: 12, border: `1px solid ${C.b2}`, textAlign: "center" }}>
+        <div style={{ fontSize: 13, color: C.t2 }}>
+          {freight.originName || "Origen"} → {freight.destName || "Destino"}
+        </div>
+        {freight.routeDistanceKm && (
+          <div style={{ fontSize: 12, color: C.t3, marginTop: 4 }}>
+            {freight.routeDistanceKm} km · ~{freight.routeDurationMin} min
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div ref={containerRef} style={{ background: C.w, borderRadius: 12, overflow: "hidden", marginBottom: 12, border: `1px solid ${C.b2}`, position: "relative" }}>
+      <div ref={mapRef} style={{ width: "100%", height: 260 }}>
+        {!loaded && (
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", background: C.bg }}>
+            <div style={{ fontSize: 13, color: C.t3 }}>Cargando mapa...</div>
+          </div>
+        )}
+      </div>
+      {freight.routeDistanceKm && (
+        <div style={{ position: "absolute", bottom: 8, left: 8, background: "rgba(255,255,255,0.9)", borderRadius: 8, padding: "4px 10px", fontSize: 12, fontWeight: 600, color: C.t1, boxShadow: "0 1px 3px rgba(0,0,0,0.15)" }}>
+          {freight.routeDistanceKm} km · ~{freight.routeDurationMin} min
+        </div>
+      )}
+    </div>
+  );
+}
 
 // =====================================================================
 // TOLVINK — SharedLinkScreen (Public)
@@ -116,6 +231,9 @@ function FreightView({ data, creatorName }) {
           </div>
         </div>
       </div>
+
+      {/* Map */}
+      <FreightMap freight={f} />
 
       {/* Transporter */}
       {assignment && (

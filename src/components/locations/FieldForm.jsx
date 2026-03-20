@@ -4,7 +4,7 @@ import { SafeZone, LocationPicker } from "../../maps";
 
 const COLOR = "#1A6B37";
 
-export default function FieldForm({ mode = "create", field, onSave, onCancel, saving, onSelectOnMap, isPlant, linkedCompanies, defaultOwnerCompanyId }) {
+export default function FieldForm({ mode = "create", field, onSave, onCancel, saving, onSelectOnMap, isManager, linkedCompanies, defaultOwnerCompanyId }) {
   const [name, setName] = useState(mode === "edit" ? "" : "");
   const [ownerCompanyId, setOwnerCompanyId] = useState(defaultOwnerCompanyId || "");
   const [loc, setLoc] = useState(() => {
@@ -42,7 +42,7 @@ export default function FieldForm({ mode = "create", field, onSave, onCancel, sa
       <div style={{ fontSize: 11, fontWeight: 700, color: mode === "edit" ? C.pri : COLOR, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>
         {mode === "edit" ? "Editar campo" : "Nuevo campo"}
       </div>
-      {mode === "create" && isPlant && linkedCompanies?.length > 0 && (
+      {mode === "create" && isManager && linkedCompanies?.length > 0 && (
         <div style={{ marginBottom: 8 }}>
           <label style={{ fontSize: 11, fontWeight: 600, color: C.t2, display: "block", marginBottom: 4 }}>¿Para quién es este campo?</label>
           <select value={ownerCompanyId} onChange={e => setOwnerCompanyId(e.target.value)} style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: `1.5px solid ${ownerCompanyId ? C.bFocus : C.b2}`, background: C.bgInput, fontFamily: FONT, fontSize: 13.2, color: C.t1, outline: "none", boxSizing: "border-box", appearance: "auto" }}>
@@ -57,7 +57,7 @@ export default function FieldForm({ mode = "create", field, onSave, onCancel, sa
       )}
       {mode === "create" && (
         <input
-          autoFocus={!isPlant || !linkedCompanies?.length}
+          autoFocus={!isManager || !linkedCompanies?.length}
           value={name}
           onChange={e => setName(e.target.value)}
           onKeyDown={handleKeyDown}

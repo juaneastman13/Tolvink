@@ -12,7 +12,7 @@ import { useCatalogStore } from "../store";
 export default function AdminScreen({ user, onBack }) {
   const isPlatform = user.role === "platform_admin" || user.isSuperAdmin === true;
   const isManager = user.role === "admin";
-  const isPlant = user.userType === "plant";
+  const isHub = ["admin","gerente","platform_admin"].includes(user.role);
   const s = adminStyles();
 
   const [tab, setTab] = useState("companies");
@@ -817,7 +817,7 @@ export default function AdminScreen({ user, onBack }) {
       )}
 
       <div style={{display:"flex",gap:6,marginBottom:10,flexWrap:"wrap"}}>
-        {[...(isPlant ? ["vinculadas"] : []), "companies","users","access","activity"].map(t=>(
+        {[...(isHub ? ["vinculadas"] : []), "companies","users","access","activity"].map(t=>(
           <button key={t} onClick={()=>{setTab(t);setSearch("");setStatsFilter(null);}} style={{flex:1,padding:"9px 0",borderRadius:8,border:`1px solid ${tab===t?C.pri:C.b1}`,background:tab===t?`${C.pri}12`:C.w,color:tab===t?C.pri:C.t2,fontWeight:600,fontSize:13,cursor:"pointer",fontFamily:"inherit",minWidth:t==="vinculadas"?90:undefined}}>
             {t==="vinculadas"?"Vinculadas":t==="companies"?"Empresas":t==="users"?"Usuarios":t==="access"?"Accesos":"Actividad"}
           </button>

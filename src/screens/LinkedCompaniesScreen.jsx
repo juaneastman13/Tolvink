@@ -34,7 +34,10 @@ function timeAgo(dateStr) {
 }
 
 export default function LinkedCompaniesScreen({ user, embedded, onBack, onNav }) {
-  const plantCompanyId = user?.activeCompanyId;
+  const hubCompanyId = user?.activeCompanyId;
+  // Determine which grantee types this hub can create
+  const hubType = user?.userType; // "plant" | "producer" | "transporter"
+  const allowedGranteeTypes = hubType === "producer" ? ["TRANSPORTER"] : hubType === "transporter" ? ["PRODUCER"] : ["PRODUCER", "TRANSPORTER"];
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState(null);
@@ -45,7 +48,7 @@ export default function LinkedCompaniesScreen({ user, embedded, onBack, onNav })
 
   // New company form
   const [showNewCompany, setShowNewCompany] = useState(false);
-  const [cf, setCf] = useState({ name: "", type: "PRODUCER", rut: "", contactEmail: "", hasInternalFleet: false, accessLevel: "OPERATOR" });
+  const [cf, setCf] = useState({ name: "", type: allowedGranteeTypes[0], rut: "", contactEmail: "", hasInternalFleet: false, accessLevel: "OPERATOR" });
 
   // Expanded company detail
   const [expandedId, setExpandedId] = useState(null);
@@ -61,17 +64,17 @@ export default function LinkedCompaniesScreen({ user, embedded, onBack, onNav })
   useEffect(() => () => clearTimeout(msgTimer.current), []);
 
   const load = useCallback(async () => {
-    if (!plantCompanyId) return;
+    if (!hubCompanyId) return;
     try {
       const [data, statsData] = await Promise.all([
-        apiGetCompanyAccess(plantCompanyId),
-        apiGetLinkedStats(plantCompanyId).catch(() => ({})),
+        apiGetCompanyAccess(hubCompanyId),
+        apiGetLinkedStats(hubCompanyId).catch(() => ({})),
       ]);
       setRecords(data || []);
       setStats(statsData || {});
     } catch (e) { show(e.message || "Error al cargar empresas vinculadas", "err"); }
     finally { setLoading(false); }
-  }, [plantCompanyId]);
+  }, [hubCompanyId]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -203,7 +206,7 @@ export default function LinkedCompaniesScreen({ user, embedded, onBack, onNav })
           <Field label="Nombre" value={cf.name} onChange={v => setCf(p => ({ ...p, name: v }))} placeholder="Nombre de la empresa" />
           <div style={{ height: 10 }} />
           <div style={{ display: "flex", gap: 8 }}>
-            {["PRODUCER", "TRANSPORTER"].map(t => (
+            {allowedGranteeTypes.map(t => (
               <button key={t} onClick={() => setCf(p => ({ ...p, type: t }))} style={{
                 flex: 1, padding: "9px 0", borderRadius: 8, fontFamily: "inherit", fontSize: 13.2, fontWeight: 600, cursor: "pointer",
                 border: `1.5px solid ${cf.type === t ? TYPE_COLORS[t] : C.b1}`,

@@ -18,7 +18,7 @@ function parseAssoc(comments, fields) {
   return { fieldId: field.id, lotId: lot?.id || "", cleanComments: clean };
 }
 
-export default function PoiForm({ mode = "create", poi, fields, onSave, onCancel, saving, onSelectOnMap, isPlant, linkedCompanies, defaultOwnerCompanyId }) {
+export default function PoiForm({ mode = "create", poi, fields, onSave, onCancel, saving, onSelectOnMap, isManager, linkedCompanies, defaultOwnerCompanyId }) {
   const hasFields = fields?.length > 0;
   const parsed = mode === "edit" && poi && hasFields ? parseAssoc(poi.comments, fields) : null;
 
@@ -75,7 +75,7 @@ export default function PoiForm({ mode = "create", poi, fields, onSave, onCancel
         <div style={{ fontSize: 11, fontWeight: 700, color: mode === "edit" ? C.pri : COLOR, textTransform: "uppercase", letterSpacing: 0.5 }}>
           {mode === "edit" ? "Editar ubicación" : "Nueva ubicación de interés"}
         </div>
-        {mode === "create" && isPlant && linkedCompanies?.length > 0 && (
+        {mode === "create" && isManager && linkedCompanies?.length > 0 && (
           <div>
             <label style={{ fontSize: 11, fontWeight: 600, color: C.t2, display: "block", marginBottom: 4 }}>¿Para quién es esta ubicación?</label>
             <select value={ownerCompanyId} onChange={e => setOwnerCompanyId(e.target.value)} style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: `1.5px solid ${ownerCompanyId ? C.bFocus : C.b2}`, background: C.bgInput, fontFamily: FONT, fontSize: 13.2, color: C.t1, outline: "none", boxSizing: "border-box", appearance: "auto" }}>
@@ -88,7 +88,7 @@ export default function PoiForm({ mode = "create", poi, fields, onSave, onCancel
             </select>
           </div>
         )}
-        <input autoFocus={!isPlant || !linkedCompanies?.length} value={name} onChange={e => setName(e.target.value)} onKeyDown={handleKeyDown} placeholder="Nombre" style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: `1.5px solid ${C.bFocus}`, background: C.bgInput, fontFamily: FONT, fontSize: 13.2, fontWeight: 700, color: C.t1, outline: "none", boxSizing: "border-box" }} />
+        <input autoFocus={!isManager || !linkedCompanies?.length} value={name} onChange={e => setName(e.target.value)} onKeyDown={handleKeyDown} placeholder="Nombre" style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: `1.5px solid ${C.bFocus}`, background: C.bgInput, fontFamily: FONT, fontSize: 13.2, fontWeight: 700, color: C.t1, outline: "none", boxSizing: "border-box" }} />
         <input value={comments} onChange={e => setComments(e.target.value)} onKeyDown={handleKeyDown} placeholder="Comentarios (opcional)" style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: `1px solid ${C.b2}`, background: C.bgInput, fontFamily: FONT, fontSize: 12.1, color: C.t1, outline: "none", boxSizing: "border-box" }} />
         {hasFields && (
           <>

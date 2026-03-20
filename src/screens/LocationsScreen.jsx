@@ -58,7 +58,7 @@ function SlideIn({ children }) {
 export default function LocationsScreen({ onBack, user }) {
   const isDesktop = useIsDesktop(768);
   const navigate = useNavigate();
-  const isPlant = user?.userType === "plant";
+  const isManager = ["admin","gerente","platform_admin"].includes(user?.role);
 
   // ── Plant filter: company dropdown ──
   const [ownerFilter, setOwnerFilter] = useState(""); // "" = all, "mine" = own, uuid = specific company
@@ -138,22 +138,22 @@ export default function LocationsScreen({ onBack, user }) {
       setFields(f || []);
       setPois(p || []);
       // Load owners summary for plant dropdown
-      if (isPlant) apiGetFieldOwnersSummary().then(s => setOwnersSummary(s || [])).catch(() => {});
+      if (isManager) apiGetFieldOwnersSummary().then(s => setOwnersSummary(s || [])).catch(() => {});
     } catch (e) {
       setMsg({ t: e.message || "Error al cargar datos", k: "err" });
     } finally {
       setLoading(false);
     }
-  }, [isPlant]);
+  }, [isManager]);
   useEffect(() => { load(); }, [load]);
 
   // Load linked companies for plant creation forms
   useEffect(() => {
-    if (!isPlant || !user?.activeCompanyId) return;
+    if (!isManager || !user?.activeCompanyId) return;
     apiGetCompanyAccess(user.activeCompanyId)
       .then(data => setLinkedCompanies((data || []).filter(r => r.isActive)))
       .catch(() => {});
-  }, [isPlant, user?.activeCompanyId]);
+  }, [isManager, user?.activeCompanyId]);
 
   // ═══════════════════════════════════════════════════════════════
   // API HANDLERS
@@ -373,7 +373,7 @@ export default function LocationsScreen({ onBack, user }) {
   const matchesSearch = (name) => !search || name.toLowerCase().includes(search.toLowerCase());
 
   const allLocations = [];
-  const fieldsForMap = isPlant && ownerFilter
+  const fieldsForMap = isManager && ownerFilter
     ? fields.filter(f => ownerFilter === "mine" ? !f.ownerCompanyId : (f.ownerCompanyId === ownerFilter || f.companyId === ownerFilter))
     : fields;
   fieldsForMap.forEach(f => {
@@ -388,7 +388,7 @@ export default function LocationsScreen({ onBack, user }) {
 
   const filteredPois = allPois.filter(p => matchesSearch(p.name));
   // Apply owner filter for plant users
-  const ownerFilteredFields = isPlant && ownerFilter
+  const ownerFilteredFields = isManager && ownerFilter
     ? fields.filter(f => {
         if (ownerFilter === "mine") return !f.ownerCompanyId;
         return f.ownerCompanyId === ownerFilter || f.companyId === ownerFilter;
@@ -723,7 +723,7 @@ export default function LocationsScreen({ onBack, user }) {
             <div style={{ fontSize: 15, fontWeight: 600, color: C.t1, overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", whiteSpace: "normal" }}>{f.name}</div>
             {f.address && <div style={{ fontSize: 11, color: C.t3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginTop: 4 }}>{f.address}</div>}
             {isShared && <span style={{ fontSize: 10, color: C.info, fontWeight: 600, marginTop: 4, display: "inline-block" }}>Compartido</span>}
-            {isPlant && f.ownerCompany?.name && !ownerFilter && <span style={{ fontSize: 10, color: "#F59E0B", fontWeight: 600, marginTop: 2, display: "inline-block" }}>{f.ownerCompany.name}</span>}
+            {isManager && f.ownerCompany?.name && !ownerFilter && <span style={{ fontSize: 10, color: "#F59E0B", fontWeight: 600, marginTop: 2, display: "inline-block" }}>{f.ownerCompany.name}</span>}
           </div>
           <Bd color={C.pri} small>{lots.length} lote{lots.length !== 1 ? "s" : ""}</Bd>
           <span style={{ display: "inline-flex", transition: "transform 200ms", transform: isExpanded ? "rotate(0)" : "rotate(-90deg)" }}>{Ic.down(C.t3, 14)}</span>
@@ -928,7 +928,7 @@ export default function LocationsScreen({ onBack, user }) {
             )}
           </div>
           {importStep === 0 && !creationMode && (<>
-            {isPlant && ownersSummary.length > 0 && (
+            {isManager && ownersSummary.length > 0 && (
               <select value={ownerFilter} onChange={e => setOwnerFilter(e.target.value)} style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: `1px solid ${C.b1}`, fontSize: 12.7, fontFamily: "inherit", background: C.w, color: C.t1, marginBottom: 8 }}>
                 <option value="">Todas las empresas</option>
                 <option value="mine">Mis ubicaciones</option>
@@ -960,9 +960,9 @@ export default function LocationsScreen({ onBack, user }) {
                 {creationMode === "poi" && "Crear ubicación de interés"}
               </div>
               <div style={{ padding: 0, flex: 1 }}>
-                {creationMode === "field" && <FieldForm mode="create" saving={saving} onSave={handleCreateField} onCancel={() => { setCreationMode(null); setCreatingField(false); }} onSelectOnMap={startMapSelect} isPlant={isPlant} linkedCompanies={linkedCompanies} defaultOwnerCompanyId={ownerFilter && ownerFilter !== "mine" ? ownerFilter : ""} />}
+                {creationMode === "field" && <FieldForm mode="create" saving={saving} onSave={handleCreateField} onCancel={() => { setCreationMode(null); setCreatingField(false); }} onSelectOnMap={startMapSelect} isManager={isManager} linkedCompanies={linkedCompanies} defaultOwnerCompanyId={ownerFilter && ownerFilter !== "mine" ? ownerFilter : ""} />}
                 {creationMode === "lot" && <LotForm mode="create" fields={fields} saving={saving} onSave={(data) => handleCreateLot(data._fieldId, data)} onCancel={() => { setCreationMode(null); setCreatingLotForField(null); }} onSelectOnMap={startMapSelect} />}
-                {creationMode === "poi" && <PoiForm mode="create" fields={fields} saving={saving} onSave={handleCreatePoi} onCancel={() => { setCreationMode(null); setCreatingPoi(false); }} onSelectOnMap={startMapSelect} isPlant={isPlant} linkedCompanies={linkedCompanies} defaultOwnerCompanyId={ownerFilter && ownerFilter !== "mine" ? ownerFilter : ""} />}
+                {creationMode === "poi" && <PoiForm mode="create" fields={fields} saving={saving} onSave={handleCreatePoi} onCancel={() => { setCreationMode(null); setCreatingPoi(false); }} onSelectOnMap={startMapSelect} isManager={isManager} linkedCompanies={linkedCompanies} defaultOwnerCompanyId={ownerFilter && ownerFilter !== "mine" ? ownerFilter : ""} />}
               </div>
             </div>
           )}
@@ -1041,7 +1041,7 @@ export default function LocationsScreen({ onBack, user }) {
               {renderSectionHeader("Campos", filteredFields.length, "fields", MAP_COLORS.field, (c, s) => Ic.field(c, s))}
               {sectionOpen.fields && (
                 <>
-                  {creatingField && !creationMode && <SlideIn><FieldForm mode="create" saving={saving} onSave={handleCreateField} onCancel={() => setCreatingField(false)} onSelectOnMap={startMapSelect} isPlant={isPlant} linkedCompanies={linkedCompanies} defaultOwnerCompanyId={ownerFilter && ownerFilter !== "mine" ? ownerFilter : ""} /></SlideIn>}
+                  {creatingField && !creationMode && <SlideIn><FieldForm mode="create" saving={saving} onSave={handleCreateField} onCancel={() => setCreatingField(false)} onSelectOnMap={startMapSelect} isManager={isManager} linkedCompanies={linkedCompanies} defaultOwnerCompanyId={ownerFilter && ownerFilter !== "mine" ? ownerFilter : ""} /></SlideIn>}
                   {filteredFields.length === 0 && !creatingField
                     ? <div style={{ padding: "16px", textAlign: "center", fontSize: 12.7, color: C.t3 }}>{search ? "Sin resultados" : "Sin campos registrados"}</div>
                     : renderFieldsList()}

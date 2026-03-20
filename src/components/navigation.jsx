@@ -11,7 +11,7 @@ const _TYPE_LABELS = { producer:"Productor", plant:"Planta", transporter:"Transp
 const _TYPE_IC_COLORS = { producer:"#F59E0B", plant:"#22C55E", transporter:"#0891B2" };
 const _typeIcon = (t,s=14) => t==='producer'?Ic.grain('#F59E0B',s):t==='plant'?Ic.plant('#22C55E',s):t==='transporter'?Ic.truck('#0891B2',s):null;
 
-export function Sidebar({ active, onChange, unread=0, pendingCount=0, notifCount=0, canRequest=false, onNew, activeCompany, companies=[], onSwitchCompany, simpleMode=false, onToggleSimple, searchQuery="", onSearchChange, searchResults=[], onSearchSelect, searchHasMore=false, searchLoadingMore=false, onSearchLoadMore }) {
+export function Sidebar({ active, onChange, unread=0, pendingCount=0, notifCount=0, canRequest=false, onNew, activeCompany, companies=[], onSwitchCompany, simpleMode=false, onToggleSimple, searchQuery="", onSearchChange, searchResults=[], onSearchSelect, searchHasMore=false, searchLoadingMore=false, onSearchLoadMore, user }) {
   const hasPending = pendingCount > 0;
   const centerColor = hasPending ? C.acc : C.ok;
   const [compOpen, setCompOpen] = useState(false);
@@ -22,11 +22,11 @@ export function Sidebar({ active, onChange, unread=0, pendingCount=0, notifCount
     const tid = setTimeout(() => document.addEventListener("mousedown", h), 0);
     return () => { clearTimeout(tid); document.removeEventListener("mousedown", h); };
   }, [compOpen]);
-  const isPlantNav = activeCompany?.type === "plant";
+  const isManager = ["admin","gerente","platform_admin"].includes(user?.role);
   const allItems = [
     { k:"home",    ic:a=>Ic.home(a?C.pri:C.t3,20),  l:"Inicio" },
     { k:"list",    ic:a=>Ic.truck(a?C.pri:C.t3,20),  l:"Fletes" },
-    ...(isPlantNav ? [{ k:"linked", ic:a=>Ic.plant(a?C.pri:C.t3,20), l:"Empresas" }] : []),
+    ...(isManager ? [{ k:"linked", ic:a=>Ic.plant(a?C.pri:C.t3,20), l:"Empresas" }] : []),
     { k:"locations",ic:a=>Ic.map(a?C.pri:C.t3,20), l:"Mapa" },
     { k:"chats",   ic:a=>Ic.msg(a?C.pri:C.t3,20),    l:"Chat", bd:unread },
     { k:"notifs",  ic:a=>Ic.bell(a?C.pri:C.t3,20),   l:"Notificaciones", bd:notifCount },
