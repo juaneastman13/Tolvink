@@ -214,6 +214,14 @@ export const ActiveTripCard = memo(function ActiveTripCard({ freight: f, onClick
           <StatusPill status={f.status} />
         </div>
 
+        {/* Producer badge (plant-centric) */}
+        {f.producerCompanyName && (
+          <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 6 }}>
+            {Ic.user(C.acc, 11)}
+            <span style={{ fontSize: 11, color: C.acc, fontWeight: 600 }}>{f.producerCompanyName}</span>
+          </div>
+        )}
+
         {isMulti ? (
           /* Multi-truck: route header + per-truck bars */
           <>
