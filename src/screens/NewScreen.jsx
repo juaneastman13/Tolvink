@@ -8,7 +8,7 @@ import log from "../logger";
 const LocationPicker = lazy(() => import("../maps").then(m => ({ default: m.LocationPicker })));
 const SafeZone = lazy(() => import("../maps").then(m => ({ default: m.SafeZone })));
 const FreightMap = lazy(() => import("../maps").then(m => ({ default: m.FreightMap })));
-import { uploadPhoto, apiAddDocument, apiGetFieldLots, apiCreateLot, apiGetDrivers, apiGetCompanyAccess, apiGetFields, apiGetTrucks, apiListDrivers, apiCreateField, apiCreateTruck } from "../api";
+import { uploadPhoto, apiAddDocument, apiGetFieldLots, apiCreateLot, apiGetDrivers, apiGetCompanyAccess, apiGetFields, apiGetTrucks, apiListDrivers, apiCreateField, apiCreateTruck, apiCreateLinkedCompany } from "../api";
 import { useIsDesktop } from "../hooks";
 import { useUIStore } from "../store";
 
@@ -232,6 +232,30 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
     setTransportChoice("");
     setAssignTruckId("");
     setAssignDriverId("");
+  };
+
+  // Inline producer creation
+  const [showNewProducer, setShowNewProducer] = useState(false);
+  const [newProducerName, setNewProducerName] = useState("");
+  const [newProducerRut, setNewProducerRut] = useState("");
+  const [newProducerAccess, setNewProducerAccess] = useState("READONLY");
+  const [savingProducer, setSavingProducer] = useState(false);
+  const [producerErr, setProducerErr] = useState("");
+
+  const handleCreateProducer = async () => {
+    if (savingProducer) return;
+    const name = newProducerName.trim();
+    if (!name) { setProducerErr("Nombre obligatorio"); return; }
+    setSavingProducer(true); setProducerErr("");
+    try {
+      const res = await apiCreateLinkedCompany({ name, type: "producer", rut: newProducerRut.trim() || undefined, accessLevel: newProducerAccess });
+      const newId = res?.company?.id || res?.companyAccess?.granteeCompanyId || res?.id;
+      const newRecord = { granteeCompanyId: newId, granteeCompany: { id: newId, name }, accessLevel: newProducerAccess, isActive: true };
+      setLinkedProducers(prev => [...prev, newRecord]);
+      setShowNewProducer(false); setNewProducerName(""); setNewProducerRut(""); setNewProducerAccess("READONLY");
+      if (newId) handleProducerChange(newId);
+    } catch (e) { setProducerErr(e.message || "Error al crear"); }
+    finally { setSavingProducer(false); }
   };
 
   // Plant transport step: linked transporters + access levels
@@ -705,7 +729,32 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
                 );
               })}
             </div>
-            {linkedProducers.length === 0 && <div style={{ fontSize:13.2, color:C.t3, textAlign:"center", padding:20 }}>No hay productores vinculados</div>}
+            {linkedProducers.length === 0 && !showNewProducer && <div style={{ fontSize:13.2, color:C.t3, textAlign:"center", padding:20 }}>No hay productores vinculados</div>}
+            {!showNewProducer ? (
+              <button onClick={() => { setShowNewProducer(true); setProducerErr(""); }} style={{ width:"100%", padding:"10px 12px", borderRadius:10, textAlign:"center", fontFamily:"inherit", border:`1.5px dashed ${C.pri}`, background:"transparent", color:C.pri, fontSize:13, fontWeight:600, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:6, marginTop:8 }}>
+                {Ic.plus(C.pri, 13)} Crear productor
+              </button>
+            ) : (
+              <div style={{ border:`1.5px solid ${C.pri}`, borderRadius:10, padding:12, marginTop:8, background:`${C.pri}04` }}>
+                <div style={{ fontSize:12, fontWeight:700, color:C.pri, marginBottom:8 }}>Nuevo productor</div>
+                <div style={{ display:"flex", gap:8, marginBottom:6 }}>
+                  <div style={{ flex:2 }}><Field label="Nombre" value={newProducerName} onChange={v => { setNewProducerName(v); setProducerErr(""); }} placeholder="Estancia SA" hasError={!!producerErr && !newProducerName.trim()} /></div>
+                  <div style={{ flex:1 }}><Field label="RUT (opc)" value={newProducerRut} onChange={setNewProducerRut} placeholder="123456" /></div>
+                </div>
+                <div style={{ marginBottom:6 }}>
+                  <label style={{ fontSize:10, fontWeight:600, color:C.t2, marginBottom:3, display:"block" }}>Nivel de acceso</label>
+                  <div style={{ display:"flex", gap:0, borderRadius:6, overflow:"hidden", border:`1px solid ${C.b1}` }}>
+                    <button onClick={() => setNewProducerAccess("READONLY")} style={{ flex:1, padding:"7px 0", fontSize:11, fontWeight:newProducerAccess === "READONLY" ? 700 : 500, background:newProducerAccess === "READONLY" ? C.info : C.w, color:newProducerAccess === "READONLY" ? C.w : C.t2, border:"none", cursor:"pointer", fontFamily:"inherit" }}>Consulta</button>
+                    <button onClick={() => setNewProducerAccess("OPERATOR")} style={{ flex:1, padding:"7px 0", fontSize:11, fontWeight:newProducerAccess === "OPERATOR" ? 700 : 500, background:newProducerAccess === "OPERATOR" ? C.pri : C.w, color:newProducerAccess === "OPERATOR" ? C.w : C.t2, border:"none", cursor:"pointer", fontFamily:"inherit", borderLeft:`1px solid ${C.b1}` }}>Operador</button>
+                  </div>
+                </div>
+                {producerErr && <div style={{ fontSize:11, color:C.err, fontWeight:600, marginTop:2 }}>{producerErr}</div>}
+                <div style={{ display:"flex", gap:6, marginTop:8 }}>
+                  <button onClick={() => { setShowNewProducer(false); setNewProducerName(""); setNewProducerRut(""); setProducerErr(""); }} style={{ flex:1, padding:"8px 0", borderRadius:6, border:`1px solid ${C.b1}`, background:C.w, color:C.t2, fontSize:12, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>Cancelar</button>
+                  <button disabled={savingProducer} onClick={handleCreateProducer} style={{ flex:1, padding:"8px 0", borderRadius:6, border:"none", background:C.pri, color:C.tOn, fontSize:12, fontWeight:600, cursor:savingProducer ? "not-allowed" : "pointer", fontFamily:"inherit", opacity:savingProducer ? 0.6 : 1 }}>{savingProducer ? "Creando..." : "Crear"}</button>
+                </div>
+              </div>
+            )}
             <NextStepBtn complete={!!producerCompanyId} onClick={advanceToNext}/>
           </>}
           {activeSection === "product" && <>
@@ -969,7 +1018,32 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
               );
             })}
           </div>
-          {linkedProducers.length === 0 && <div style={{ fontSize:13.2, color:C.t3, textAlign:"center", padding:20 }}>No hay productores vinculados</div>}
+          {linkedProducers.length === 0 && !showNewProducer && <div style={{ fontSize:13.2, color:C.t3, textAlign:"center", padding:20 }}>No hay productores vinculados</div>}
+          {!showNewProducer ? (
+            <button onClick={() => { setShowNewProducer(true); setProducerErr(""); }} style={{ width:"100%", padding:"10px 12px", borderRadius:10, textAlign:"center", fontFamily:"inherit", border:`1.5px dashed ${C.pri}`, background:"transparent", color:C.pri, fontSize:13, fontWeight:600, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:6, marginTop:8 }}>
+              {Ic.plus(C.pri, 13)} Crear productor
+            </button>
+          ) : (
+            <div style={{ border:`1.5px solid ${C.pri}`, borderRadius:10, padding:12, marginTop:8, background:`${C.pri}04` }}>
+              <div style={{ fontSize:12, fontWeight:700, color:C.pri, marginBottom:8 }}>Nuevo productor</div>
+              <div style={{ display:"flex", gap:8, marginBottom:6 }}>
+                <div style={{ flex:2 }}><Field label="Nombre" value={newProducerName} onChange={v => { setNewProducerName(v); setProducerErr(""); }} placeholder="Estancia SA" hasError={!!producerErr && !newProducerName.trim()} /></div>
+                <div style={{ flex:1 }}><Field label="RUT (opc)" value={newProducerRut} onChange={setNewProducerRut} placeholder="123456" /></div>
+              </div>
+              <div style={{ marginBottom:6 }}>
+                <label style={{ fontSize:10, fontWeight:600, color:C.t2, marginBottom:3, display:"block" }}>Nivel de acceso</label>
+                <div style={{ display:"flex", gap:0, borderRadius:6, overflow:"hidden", border:`1px solid ${C.b1}` }}>
+                  <button onClick={() => setNewProducerAccess("READONLY")} style={{ flex:1, padding:"7px 0", fontSize:11, fontWeight:newProducerAccess === "READONLY" ? 700 : 500, background:newProducerAccess === "READONLY" ? C.info : C.w, color:newProducerAccess === "READONLY" ? C.w : C.t2, border:"none", cursor:"pointer", fontFamily:"inherit" }}>Consulta</button>
+                  <button onClick={() => setNewProducerAccess("OPERATOR")} style={{ flex:1, padding:"7px 0", fontSize:11, fontWeight:newProducerAccess === "OPERATOR" ? 700 : 500, background:newProducerAccess === "OPERATOR" ? C.pri : C.w, color:newProducerAccess === "OPERATOR" ? C.w : C.t2, border:"none", cursor:"pointer", fontFamily:"inherit", borderLeft:`1px solid ${C.b1}` }}>Operador</button>
+                </div>
+              </div>
+              {producerErr && <div style={{ fontSize:11, color:C.err, fontWeight:600, marginTop:2 }}>{producerErr}</div>}
+              <div style={{ display:"flex", gap:6, marginTop:8 }}>
+                <button onClick={() => { setShowNewProducer(false); setNewProducerName(""); setNewProducerRut(""); setProducerErr(""); }} style={{ flex:1, padding:"8px 0", borderRadius:6, border:`1px solid ${C.b1}`, background:C.w, color:C.t2, fontSize:12, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>Cancelar</button>
+                <button disabled={savingProducer} onClick={handleCreateProducer} style={{ flex:1, padding:"8px 0", borderRadius:6, border:"none", background:C.pri, color:C.tOn, fontSize:12, fontWeight:600, cursor:savingProducer ? "not-allowed" : "pointer", fontFamily:"inherit", opacity:savingProducer ? 0.6 : 1 }}>{savingProducer ? "Creando..." : "Crear"}</button>
+              </div>
+            </div>
+          )}
           <NextStepBtn complete={!!producerCompanyId} onClick={advanceToNext}/>
         </Sec>}
 
