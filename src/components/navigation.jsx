@@ -22,9 +22,11 @@ export function Sidebar({ active, onChange, unread=0, pendingCount=0, notifCount
     const tid = setTimeout(() => document.addEventListener("mousedown", h), 0);
     return () => { clearTimeout(tid); document.removeEventListener("mousedown", h); };
   }, [compOpen]);
+  const isPlantNav = activeCompany?.type === "plant";
   const allItems = [
     { k:"home",    ic:a=>Ic.home(a?C.pri:C.t3,20),  l:"Inicio" },
     { k:"list",    ic:a=>Ic.truck(a?C.pri:C.t3,20),  l:"Fletes" },
+    ...(isPlantNav ? [{ k:"linked", ic:a=>Ic.plant(a?C.pri:C.t3,20), l:"Empresas" }] : []),
     { k:"locations",ic:a=>Ic.map(a?C.pri:C.t3,20), l:"Mapa" },
     { k:"chats",   ic:a=>Ic.msg(a?C.pri:C.t3,20),    l:"Chat", bd:unread },
     { k:"notifs",  ic:a=>Ic.bell(a?C.pri:C.t3,20),   l:"Notificaciones", bd:notifCount },

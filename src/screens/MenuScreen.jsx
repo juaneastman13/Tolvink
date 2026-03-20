@@ -35,10 +35,12 @@ export default function MenuScreen({ user, perms, onLogout, onNav, isDesktop, on
 
   const isChofer = user.role === "chofer";
   const isGerente = user.role==="admin"||user.role==="platform_admin";
+  const isPlantUser = user.userType === "plant";
   const mgmtItems = [];
   if (!isChofer) {
     const ut = user.userType; const uts = user.userTypes||[];
     if(ut==="transporter"||ut==="producer"||ut==="plant"||uts.includes("transporter")||uts.includes("producer")||uts.includes("plant")||isGerente) mgmtItems.push({k:"trucks",l:"Mi Flota",ic:Ic.truck(C.t3,18),c:C.t3});
+    if(isPlantUser) mgmtItems.push({k:"linked",l:"Empresas vinculadas",ic:Ic.plant(C.t3,18),c:C.t3});
     if(user.role==="platform_admin"||user.role==="admin") mgmtItems.push({k:"admin",l:"Administración",ic:Ic.shield(C.t3,18),c:C.t3});
     if(!isDesktop) {
       mgmtItems.push({k:"chats",l:"Chat",ic:Ic.msg(C.t3,18),c:C.t3});

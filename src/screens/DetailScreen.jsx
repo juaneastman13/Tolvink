@@ -394,6 +394,14 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
           <span style={{ fontFamily:MONO, fontSize:14, color:C.t1, marginLeft:4 }}>{freight.code}</span>
           {freight.loadDate && <><span style={{ fontSize:14, color:C.t1 }}>-</span><span style={{ fontSize:14, color:C.t1 }}>{formatFreightDate(freight.loadDate)}</span></>}
         </div>
+        {/* "Creado por" info */}
+        {freight.producerCompanyName && (
+          <div style={{ padding:"2px 0 0", fontSize:12, color:C.t3 }}>
+            {freight.producerCompanyId !== freight.originCompanyId
+              ? `Creado por ${freight.originCompanyName || "planta"} para ${freight.producerCompanyName}`
+              : `Creado por ${freight.producerCompanyName}`}
+          </div>
+        )}
       </div>
 
       <div style={{ padding:"0 18px 18px" }}>

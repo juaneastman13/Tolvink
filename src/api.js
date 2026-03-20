@@ -421,6 +421,7 @@ export async function apiUnsubscribePush(endpoint) { return api('/notifications/
 // Company Access (Plant-Centric)
 export async function apiGetCompanyAccess(companyId, type) { const p=new URLSearchParams(); if(type)p.set('type',type); const q=p.toString(); return api(`/company-access/${companyId}${q?`?${q}`:''}`); }
 export async function apiGetMyAccess() { return api('/company-access/my-access'); }
+export async function apiGetLinkedStats(companyId) { return api(`/company-access/stats/${companyId}`); }
 export async function apiUpdateAccessLevel(id, level) { return api(`/company-access/${id}/level`,{method:'PATCH',body:{level}}); }
 export async function apiUpdateAccessPermissions(id, permissions) { return api(`/company-access/${id}/permissions`,{method:'PATCH',body:{permissions}}); }
 export async function apiToggleAccess(id) { return api(`/company-access/${id}/toggle`,{method:'PATCH',body:{}}); }

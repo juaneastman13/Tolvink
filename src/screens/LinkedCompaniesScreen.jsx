@@ -5,7 +5,9 @@ import { Select } from "../components/form";
 import {
   apiGetCompanyAccess, apiUpdateAccessLevel, apiToggleAccess,
   apiCreateLinkedCompany, apiCreateLinkedUser, apiAdminListUsers,
+  apiGetLinkedStats,
 } from "../api";
+import { FONT } from "../theme";
 
 // =====================================================================
 // TOLVINK — LinkedCompaniesScreen
@@ -18,13 +20,28 @@ const TYPE_LABELS = { PRODUCER: "Productor", TRANSPORTER: "Transportista" };
 const LEVEL_LABELS = { OPERATOR: "USO", READONLY: "CONSULTA" };
 const ROLE_LABELS = { gerente: "Gerente", operario: "Operario", chofer: "Chofer" };
 
-export default function LinkedCompaniesScreen({ user, embedded }) {
+function timeAgo(dateStr) {
+  if (!dateStr) return null;
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const m = Math.floor(diff / 60000);
+  if (m < 1) return "ahora";
+  if (m < 60) return `hace ${m}m`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `hace ${h}h`;
+  const d = Math.floor(h / 24);
+  if (d < 30) return `hace ${d}d`;
+  return `hace ${Math.floor(d / 30)} mes${Math.floor(d / 30) > 1 ? "es" : ""}`;
+}
+
+export default function LinkedCompaniesScreen({ user, embedded, onBack, onNav }) {
   const plantCompanyId = user?.activeCompanyId;
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState(null);
   const [saving, setSaving] = useState(false);
   const [doneMsg, setDoneMsg] = useState("");
+  const [search, setSearch] = useState("");
+  const [stats, setStats] = useState({}); // { companyId: { activeFreights, lastFreightAt } }
 
   // New company form
   const [showNewCompany, setShowNewCompany] = useState(false);
@@ -46,8 +63,12 @@ export default function LinkedCompaniesScreen({ user, embedded }) {
   const load = useCallback(async () => {
     if (!plantCompanyId) return;
     try {
-      const data = await apiGetCompanyAccess(plantCompanyId);
+      const [data, statsData] = await Promise.all([
+        apiGetCompanyAccess(plantCompanyId),
+        apiGetLinkedStats(plantCompanyId).catch(() => ({})),
+      ]);
       setRecords(data || []);
+      setStats(statsData || {});
     } catch (e) { show(e.message || "Error al cargar empresas vinculadas", "err"); }
     finally { setLoading(false); }
   }, [plantCompanyId]);
@@ -139,12 +160,20 @@ export default function LinkedCompaniesScreen({ user, embedded }) {
     finally { setSaving(false); }
   };
 
-  const activeRecords = records.filter(r => r.isActive);
+  const searchLower = search.toLowerCase().trim();
+  const activeRecords = records.filter(r => r.isActive && (!searchLower || (r.granteeCompany?.name || "").toLowerCase().includes(searchLower)));
   const inactiveRecords = records.filter(r => !r.isActive);
 
   return (
-    <div style={{ padding: embedded ? 0 : "0 18px 18px" }}>
+    <div style={{ padding: embedded ? 0 : "18px", flex: 1, overflow: "auto" }}>
       {(saving || doneMsg) && <LoadingOverlay closing={!!doneMsg} closingText={doneMsg} onClose={() => setDoneMsg("")} />}
+
+      {/* Back button (standalone mode) */}
+      {!embedded && onBack && (
+        <button onClick={onBack} style={{ display: "flex", alignItems: "center", gap: 4, background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", fontSize: 14.3, fontWeight: 600, color: C.pri, padding: "0 0 12px", marginTop: 0 }}>
+          {Ic.chev(C.pri, 18)} Volver
+        </button>
+      )}
 
       {/* Header */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
@@ -153,6 +182,17 @@ export default function LinkedCompaniesScreen({ user, embedded }) {
           {showNewCompany ? "Cerrar" : "Nueva empresa"}
         </Btn>
       </div>
+
+      {/* Search */}
+      {records.filter(r => r.isActive).length > 3 && (
+        <div style={{ marginBottom: 12 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 10px", borderRadius: 8, background: C.bgInput, border: `1.5px solid ${search ? C.bFocus : C.b2}` }}>
+            {Ic.srch(C.t3, 14)}
+            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar empresa..." style={{ flex: 1, border: "none", background: "transparent", outline: "none", fontSize: 13.2, color: C.t1, fontFamily: FONT, padding: 0 }} />
+            {search && <button onClick={() => setSearch("")} style={{ display: "flex", border: "none", background: "none", cursor: "pointer", padding: 0 }}>{Ic.cross(C.t3, 12)}</button>}
+          </div>
+        </div>
+      )}
 
       {msg && <div style={{ padding: "10px 14px", borderRadius: 12, marginBottom: 12, fontSize: 13.2, fontWeight: 600, background: msg.k === "ok" ? C.okPale : C.errPale, color: msg.k === "ok" ? C.ok : C.err }}>{msg.t}</div>}
 
@@ -210,6 +250,8 @@ export default function LinkedCompaniesScreen({ user, embedded }) {
             const isExpanded = expandedId === r.id;
             const typeColor = TYPE_COLORS[r.granteeType] || C.t3;
             const companyId = r.granteeCompanyId || co.id;
+            const st = stats[companyId] || {};
+            const lastAgo = timeAgo(st.lastFreightAt);
             return (
               <div key={r.id} style={{ background: C.w, border: `1px solid ${C.b1}`, borderLeft: `3px solid ${typeColor}`, borderRadius: 12, boxShadow: C.sh, overflow: "hidden" }}>
                 {/* Company row */}
@@ -221,7 +263,12 @@ export default function LinkedCompaniesScreen({ user, embedded }) {
                         {TYPE_LABELS[r.granteeType] || r.granteeType}
                       </span>
                     </div>
-                    {co.email && <div style={{ fontSize: 11.6, color: C.t3 }}>{co.email}</div>}
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 11.6, color: C.t3 }}>
+                      {st.activeFreights > 0 && <span style={{ fontWeight: 600, color: C.pri }}>{st.activeFreights} flete{st.activeFreights > 1 ? "s" : ""} activo{st.activeFreights > 1 ? "s" : ""}</span>}
+                      {lastAgo && <span>Último: {lastAgo}</span>}
+                      {!st.activeFreights && !lastAgo && co.email && <span>{co.email}</span>}
+                      {!st.activeFreights && !lastAgo && !co.email && <span>Sin actividad</span>}
+                    </div>
                   </div>
                   {/* USO / CONSULTA toggle */}
                   <button
@@ -252,10 +299,15 @@ export default function LinkedCompaniesScreen({ user, embedded }) {
                       {co.hasInternalFleet && <span style={{ color: C.ok, fontWeight: 600 }}>Flota propia</span>}
                     </div>
 
-                    {/* Deactivate link */}
-                    <button onClick={() => handleToggleActive(r)} disabled={saving} style={{ background: "none", border: "none", fontSize: 11.6, color: C.err, fontWeight: 600, cursor: "pointer", padding: 0, marginBottom: 14 }}>
-                      Desactivar vinculación
-                    </button>
+                    {/* Action buttons */}
+                    <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
+                      {onNav && <button onClick={() => onNav("list", { filterCompany: co.name })} style={{ display: "flex", alignItems: "center", gap: 4, padding: "5px 10px", borderRadius: 6, border: `1px solid ${C.pri}30`, background: `${C.pri}08`, cursor: "pointer", fontFamily: "inherit", fontSize: 11.6, fontWeight: 600, color: C.pri }}>
+                        {Ic.truck(C.pri, 13)} Ver fletes
+                      </button>}
+                      <button onClick={() => handleToggleActive(r)} disabled={saving} style={{ background: "none", border: "none", fontSize: 11.6, color: C.err, fontWeight: 600, cursor: "pointer", padding: 0 }}>
+                        Desactivar vinculación
+                      </button>
+                    </div>
 
                     {/* Users section */}
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8, marginTop: 4 }}>

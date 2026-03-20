@@ -20,6 +20,7 @@ export const MyDataScreen = lazy(() => import("../screens/MyDataScreen"));
 export const ReportsScreen = lazy(() => import("../screens/ReportsScreen"));
 export const ChatsScreen = lazy(() => import("../screens/ChatsScreen"));
 export const NotificationsScreen = lazy(() => import("../screens/NotificationsScreen"));
+export const LinkedCompaniesScreen = lazy(() => import("../screens/LinkedCompaniesScreen"));
 export const PickLocationScreen = lazy(() => import("../screens/PickLocationScreen"));
 export const TrackFreightScreen = lazy(() => import("../screens/TrackFreightScreen"));
 export const ReportDownloadScreen = lazy(() => import("../screens/ReportDownloadScreen"));
@@ -49,7 +50,7 @@ export const SCREEN_TO_PATH = {
   home: "/", list: "/list", detail: "/freight", new: "/new", edit: "/edit",
   calendar: "/calendar", menu: "/menu", trucks: "/trucks",
   locations: "/locations", admin: "/admin", mydata: "/mydata", reports: "/reports",
-  chats: "/chats", notifs: "/notifications",
+  chats: "/chats", notifs: "/notifications", linked: "/linked",
 };
 export const PATH_TO_SCREEN = {};
 Object.entries(SCREEN_TO_PATH).forEach(([s, p]) => { PATH_TO_SCREEN[p] = s; });
