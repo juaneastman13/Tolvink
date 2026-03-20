@@ -5,7 +5,7 @@ import { Select } from "../components/form";
 import {
   apiGetCompanyAccess, apiUpdateAccessLevel, apiToggleAccess,
   apiCreateLinkedCompany, apiCreateLinkedUser, apiAdminListUsers,
-  apiGetLinkedStats,
+  apiGetLinkedStats, apiCreateSharedLink,
 } from "../api";
 import { FONT } from "../theme";
 
@@ -300,10 +300,20 @@ export default function LinkedCompaniesScreen({ user, embedded, onBack, onNav })
                     </div>
 
                     {/* Action buttons */}
-                    <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
-                      {onNav && <button onClick={() => onNav("list", { filterCompany: co.name })} style={{ display: "flex", alignItems: "center", gap: 4, padding: "5px 10px", borderRadius: 6, border: `1px solid ${C.pri}30`, background: `${C.pri}08`, cursor: "pointer", fontFamily: "inherit", fontSize: 11.6, fontWeight: 600, color: C.pri }}>
+                    <div style={{ display: "flex", gap: 8, marginBottom: 14, flexWrap: "wrap" }}>
+                      {onNav && <button onClick={() => onNav("list", { filterCompany: co.name })} style={{ display: "flex", alignItems: "center", gap: 4, padding: "5px 10px", borderRadius: 6, border: `1px solid ${C.pri}30`, background: `${C.pri}08`, cursor: "pointer", fontFamily: FONT, fontSize: 11.6, fontWeight: 600, color: C.pri }}>
                         {Ic.truck(C.pri, 13)} Ver fletes
                       </button>}
+                      <button onClick={async () => {
+                        try {
+                          const link = await apiCreateSharedLink({ linkType: "PORTAL", targetCompanyId: companyId });
+                          const url = `${window.location.origin}/s/${link.token}`;
+                          await navigator.clipboard.writeText(url);
+                          show("Link de portal copiado");
+                        } catch (e) { show(e.message || "Error", "err"); }
+                      }} style={{ display: "flex", alignItems: "center", gap: 4, padding: "5px 10px", borderRadius: 6, border: `1px solid ${C.info}30`, background: `${C.info}08`, cursor: "pointer", fontFamily: FONT, fontSize: 11.6, fontWeight: 600, color: C.info }}>
+                        {Ic.doc(C.info, 13)} Link de portal
+                      </button>
                       <button onClick={() => handleToggleActive(r)} disabled={saving} style={{ background: "none", border: "none", fontSize: 11.6, color: C.err, fontWeight: 600, cursor: "pointer", padding: 0 }}>
                         Desactivar vinculación
                       </button>

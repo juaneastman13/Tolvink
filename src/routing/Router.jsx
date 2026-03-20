@@ -27,6 +27,7 @@ export const ReportDownloadScreen = lazy(() => import("../screens/ReportDownload
 export const DailyMapScreen = lazy(() => import("../screens/DailyMapScreen"));
 export const LiveFreightScreen = lazy(() => import("../screens/LiveFreightScreen"));
 export const ViewMapScreen = lazy(() => import("../screens/ViewMapScreen"));
+export const SharedLinkScreen = lazy(() => import("../screens/SharedLinkScreen"));
 
 // AI Chat
 export const AiChat = lazy(() => import("../AiChat").then(m => ({ default: m.default })));
@@ -109,6 +110,9 @@ export function renderPublicRoute(pathname) {
   const ubicacionMatch = pathname.match(/^\/ubicacion\/([a-z0-9-]+)$/i);
   if (ubicacionMatch) return <Suspense fallback={<SL/>}><PickLocationScreen slug={ubicacionMatch[1]} /></Suspense>;
 
+  const sharedMatch = pathname.match(/^\/s\/([a-zA-Z0-9_-]{10,30})$/);
+  if (sharedMatch) return <Suspense fallback={<SL/>}><SharedLinkScreen token={sharedMatch[1]} /></Suspense>;
+
   if (pathname === "/ver-mapa") return <Suspense fallback={<SL/>}><ViewMapScreen /></Suspense>;
   if (pathname === "/pick-location") return <Suspense fallback={<SL/>}><PickLocationScreen /></Suspense>;
   if (pathname === "/track") return <Suspense fallback={<SL/>}><TrackFreightScreen /></Suspense>;
@@ -133,7 +137,8 @@ export function useScreen() {
 
 // ======================== PUBLIC PATH CHECK ============================
 export function isPublicPath(pathname) {
-  return ["/pick-location","/track","/report","/daily-map","/live-freight","/ver-mapa"].includes(pathname)
+  return /^\/s\/[a-zA-Z0-9_-]{10,30}$/.test(pathname)
+    || ["/pick-location","/track","/report","/daily-map","/live-freight","/ver-mapa"].includes(pathname)
     || /^\/(FLT-\d{4,}|F\d{2}-[A-Z]{3}\.\d{4})\/(ubicacion|informe)$/i.test(pathname)
     || /^\/campo\/[a-z0-9-]+\/ubicacion$/i.test(pathname)
     || /^\/ubicacion\/[a-z0-9-]+$/i.test(pathname);

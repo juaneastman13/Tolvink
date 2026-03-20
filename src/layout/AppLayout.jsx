@@ -68,6 +68,10 @@ export default function AppLayout({ fh, catalog, online, notif, isDesktop }) {
   const setLocPicker = useUIStore(s => s.setLocPicker);
   const goToMap = useUIStore(s => s.goToMap);
 
+  // Post-creation modal state
+  const [postCreateFreightId, setPostCreateFreightId] = useState(null);
+  const [postCreateForm, setPostCreateForm] = useState(null);
+
   // Mobile header state
   const [compDropOpen, setCompDropOpen] = useState(false);
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
@@ -213,12 +217,17 @@ export default function AppLayout({ fh, catalog, online, notif, isDesktop }) {
     };
   },[auth.user, sse.connected]);
 
-  // Fallback timeout for submitDone overlay
+  // Fallback timeout for submitDone overlay — skip auto-nav when post-creation modal is active
   useEffect(() => {
     if (!submitDone) return;
+    if (postCreateFreightId) {
+      // Clear the overlay text quickly but don't navigate — post-creation modal takes over
+      const t = setTimeout(() => setSubmitDone(""), 1500);
+      return () => clearTimeout(t);
+    }
     const t = setTimeout(() => { setSubmitDone(""); navigate("/list"); }, 5000);
     return () => clearTimeout(t);
-  }, [submitDone, navigate, setSubmitDone]);
+  }, [submitDone, navigate, setSubmitDone, postCreateFreightId]);
 
   // Replay offline queue when back online
   const replayingRef = useRef(false);
@@ -454,7 +463,10 @@ export default function AppLayout({ fh, catalog, online, notif, isDesktop }) {
       track("freight_create");
       if (assignError) show(`Flete creado, pero no se pudo asignar transporte: ${assignError}`, "warn");
       else if(photoFailCount > 0) show(`Flete solicitado, pero ${photoFailCount} foto(s) no se pudieron adjuntar`,"warn");
-      else setSubmitDone("Flete solicitado");
+      // Show post-creation modal with options
+      setPostCreateFreightId(r.freightId);
+      setPostCreateForm(form);
+      if (!assignError && photoFailCount === 0) setSubmitDone("Flete solicitado");
     } else show(r.error,"err");
   };
 
@@ -598,7 +610,41 @@ export default function AppLayout({ fh, catalog, online, notif, isDesktop }) {
         </div>
       </main>
 
-      {(submitting||submitDone) && <LoadingOverlay closing={!!submitDone} closingText={submitDone} onClose={()=>{setSubmitDone("");navigate("/list");}}/>}
+      {(submitting||submitDone) && !postCreateFreightId && <LoadingOverlay closing={!!submitDone} closingText={submitDone} onClose={()=>{setSubmitDone("");navigate("/list");}}/>}
+      {submitting && postCreateFreightId && <LoadingOverlay />}
+      {/* Post-creation modal */}
+      {!submitting && postCreateFreightId && (
+        <div style={{ position:"fixed", inset:0, zIndex:9999, display:"flex", alignItems:"center", justifyContent:"center", background:"rgba(0,0,0,0.5)", fontFamily:FONT }}>
+          <div style={{ background:C.w, borderRadius:16, padding:28, maxWidth:380, width:"90%", boxShadow:C.shLg, textAlign:"center" }}>
+            <div style={{ width:48, height:48, borderRadius:"50%", background:C.okPale, display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 16px" }}>{Ic.chk(C.ok,24)}</div>
+            <div style={{ fontSize:18, fontWeight:800, color:C.t1, marginBottom:4 }}>Flete solicitado</div>
+            <div style={{ fontSize:13, color:C.t3, marginBottom:24 }}>El flete fue creado correctamente</div>
+            <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+              <button onClick={()=>{
+                const prev = postCreateForm;
+                setPostCreateFreightId(null); setPostCreateForm(null); setSubmitDone("");
+                setDuplicateData(prev ? { ...prev, fieldId:undefined, lotId:undefined, tons:undefined, truckCount:undefined } : null);
+                navigate("/new");
+              }} style={{ padding:"12px 16px", borderRadius:10, border:"none", background:C.pri, color:C.w, fontSize:14, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
+                Crear otro similar
+              </button>
+              <button onClick={()=>{
+                const fId = postCreateFreightId;
+                setPostCreateFreightId(null); setPostCreateForm(null); setSubmitDone("");
+                navigate("/freight/" + fId);
+              }} style={{ padding:"12px 16px", borderRadius:10, border:`1.5px solid ${C.pri}`, background:C.w, color:C.pri, fontSize:14, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
+                Ver flete creado
+              </button>
+              <button onClick={()=>{
+                setPostCreateFreightId(null); setPostCreateForm(null); setSubmitDone("");
+                navigate("/list");
+              }} style={{ padding:"8px 16px", borderRadius:10, border:"none", background:"transparent", color:C.t3, fontSize:13, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>
+                Ir a la lista
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <Suspense fallback={null}>
       {modal?.type==="assign" && <AssignModal freight={modal.freight} transporters={catalog.transporters} user={auth.user} onClose={()=>setModal(null)} onConfirm={(compId,truckId,driverId)=>handleAssign(modal.freight.id,compId,truckId,driverId)} onAssignMulti={handleAssignMulti}/>}
       {modal?.type==="truck_select" && <TruckSelectModal freight={modal.freight} trucks={catalog.trucks} user={auth.user} onClose={()=>setModal(null)} onConfirm={(t,driverId)=>handleAcceptWithTruck(modal.freight.id,t,driverId)}/>}

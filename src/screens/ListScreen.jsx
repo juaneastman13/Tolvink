@@ -2,9 +2,9 @@ import { useState, useEffect, useMemo, useRef, useCallback, lazy, Suspense, memo
 import { useSearchParams } from "react-router-dom";
 import { C, Ic, FONT, MONO, STATUS_COLORS } from "../theme";
 import { stCfg, formatFreightDate } from "../constants";
-import { Bd, Btn, Select, SortTh, Tabs, exportExcel, SkeletonList, EmptyState, ErrorBoundary, FreightCard, FreightCardCompact } from "../components";
+import { Bd, Btn, Select, SortTh, Tabs, exportExcel, exportCSV, SkeletonList, EmptyState, ErrorBoundary, FreightCard, FreightCardCompact } from "../components";
 import { useTableSort, usePullToRefresh, mapFreight, originDisplay, destDisplay } from "../hooks";
-import { getPendingActions, resolveUserTypeForFreight } from "../utils/freight-helpers";
+import { getPendingActions, getWaitingOnText, resolveUserTypeForFreight } from "../utils/freight-helpers";
 import { apiListFreights } from "../api";
 const FreightsOverviewMap = lazy(() => import("../maps").then(m => ({ default: m.FreightsOverviewMap })));
 
@@ -64,6 +64,8 @@ export default memo(function ListScreen({ freights, loading, onNav, onRefresh, c
   const [kanbanGroup, setKanbanGroup] = useState(null);
   // Table status filter
   const [tableStatusFilter, setTableStatusFilter] = useState("all");
+  // "Requiere mi acción" filter
+  const [filterRequiresAction, setFilterRequiresAction] = useState(false);
 
   // Server-side filtering state
   const [serverData, setServerData] = useState(null); // null = use freights prop
@@ -102,8 +104,8 @@ export default memo(function ListScreen({ freights, loading, onNav, onRefresh, c
     else { setDateFrom(""); setDateTo(""); }
   };
 
-  const clearAll = () => { setSearchQ(""); setFPlant(""); setFProducer(""); setFTransporter(""); setDateFrom(""); setDateTo(""); setDatePreset(""); setServerData(null); };
-  const hasFilters = searchQ || fPlant || fProducer || fTransporter || fProducerCompany || dateFrom || dateTo;
+  const clearAll = () => { setSearchQ(""); setFPlant(""); setFProducer(""); setFTransporter(""); setDateFrom(""); setDateTo(""); setDatePreset(""); setFilterRequiresAction(false); setServerData(null); };
+  const hasFilters = searchQ || fPlant || fProducer || fTransporter || fProducerCompany || dateFrom || dateTo || filterRequiresAction;
 
   // Build query params for server-side filtering
   const buildFilterParams = useCallback(() => {
@@ -183,13 +185,13 @@ export default memo(function ListScreen({ freights, loading, onNav, onRefresh, c
   const grouped = useMemo(()=>{
     const map = {};
     GROUPS.forEach(g => map[g.key] = []);
-    filtered.forEach(f => {
+    filteredFinal.forEach(f => {
       const g = GROUPS.find(g => g.statuses.includes(f.status));
       if(g) map[g.key].push(f);
     });
     GROUPS.forEach(g => map[g.key].sort((a,b) => (a.destName||'').localeCompare(b.destName||'') || (a.originName||'').localeCompare(b.originName||'')));
     return map;
-  },[filtered]);
+  },[filteredFinal]);
 
   // Real company-wide counts per status group (from backend)
   const groupRealCounts = useMemo(() => {
@@ -205,7 +207,7 @@ export default memo(function ListScreen({ freights, loading, onNav, onRefresh, c
     const entityCfg = (ENTITY_GROUPS[userType] || []).find(e => e.key === kanbanGroup);
     if (!entityCfg) return null;
     const buckets = {};
-    filtered.forEach(f => {
+    filteredFinal.forEach(f => {
       const val = f[entityCfg.field] || entityCfg.fallback;
       if (!buckets[val]) buckets[val] = [];
       buckets[val].push(f);
@@ -217,7 +219,7 @@ export default memo(function ListScreen({ freights, loading, onNav, onRefresh, c
       return a.localeCompare(b, "es");
     });
     return keys.map(k => ({ name: k, items: buckets[k], isFallback: k === entityCfg.fallback }));
-  }, [filtered, kanbanGroup, userType]);
+  }, [filteredFinal, kanbanGroup, userType]);
 
   // Available kanban grouping options
   const kanbanGroupOptions = useMemo(() => {
@@ -226,19 +228,33 @@ export default memo(function ListScreen({ freights, loading, onNav, onRefresh, c
     return opts;
   }, [userType]);
 
+  // Pending actions map for kanban cards + "requiere mi acción" filter
+  const effectiveTypeKanban = useCallback((f) => resolveUserTypeForFreight ? resolveUserTypeForFreight(f, user) : userType, [user, userType]);
+  const pendingMap = useMemo(() => {
+    const m = new Map();
+    filtered.forEach(f => { m.set(f.id, getPendingActions(f, effectiveTypeKanban(f), user?.role, user)); });
+    return m;
+  }, [filtered, user?.role, user?.id, userType, effectiveTypeKanban]);
+
+  // Apply "Requiere mi acción" filter
+  const filteredFinal = useMemo(() => {
+    if (!filterRequiresAction) return filtered;
+    return filtered.filter(f => pendingMap.get(f.id) != null);
+  }, [filtered, filterRequiresAction, pendingMap]);
+
   // Table: status-filtered + sorted
   const { sortCol, sortDir, toggle: toggleSort, sortData } = useTableSort();
   const tableFiltered = useMemo(() => {
-    if (tableStatusFilter === "all") return filtered;
+    if (tableStatusFilter === "all") return filteredFinal;
     const group = GROUPS.find(g => g.key === tableStatusFilter);
-    if (!group) return filtered;
-    return filtered.filter(f => group.statuses.includes(f.status));
-  }, [filtered, tableStatusFilter]);
+    if (!group) return filteredFinal;
+    return filteredFinal.filter(f => group.statuses.includes(f.status));
+  }, [filteredFinal, tableStatusFilter]);
   const tableSorted = useMemo(() => sortData(tableFiltered, SORT_GETTERS), [tableFiltered, sortCol, sortDir]);
 
   // Tracking view: group by transporter -> driver -> queue
   const trackingGroups = useMemo(()=>{
-    const active = filtered.filter(f=>!["finished","canceled"].includes(f.status));
+    const active = filteredFinal.filter(f=>!["finished","canceled"].includes(f.status));
     const unassigned = active.filter(f=>!f.transporterName);
     const byT = {};
     active.filter(f=>f.transporterName).forEach(f=>{
@@ -254,7 +270,7 @@ export default memo(function ListScreen({ freights, loading, onNav, onRefresh, c
     });
     Object.values(byT).forEach(t=>Object.values(t.drivers).forEach(d=>d.freights.sort((a,b)=>(a.queuePosition||0)-(b.queuePosition||0))));
     return { transporters:Object.values(byT).sort((a,b)=>a.name.localeCompare(b.name)), unassigned };
-  },[filtered]);
+  },[filteredFinal]);
 
   const { containerRef, indicator } = usePullToRefresh(onRefresh);
 
@@ -384,8 +400,10 @@ export default memo(function ListScreen({ freights, loading, onNav, onRefresh, c
     const transport = f.transporterName || "Sin asignar";
     const plate = f.truckPlate;
     const sc = STATUS_COLORS[f.status] || STATUS_COLORS.pending_assignment;
+    const pa = pendingMap.get(f.id);
+    const waitText = !pa ? getWaitingOnText(f, effectiveTypeKanban(f)) : null;
     return wrapHover(f,
-      <div className="tv-card" onClick={()=>onNav("detail",f.id)} style={{ display:"flex", borderRadius:6, border:`0.5px solid ${C.b1}`, overflow:"hidden", cursor:"pointer", background:C.w, transition:"border-color 0.15s", contentVisibility:"auto", containIntrinsicSize:"0 90px" }}>
+      <div className="tv-card" onClick={()=>onNav("detail",f.id)} style={{ display:"flex", borderRadius:6, border:`0.5px solid ${pa ? pa.color + "30" : C.b1}`, overflow:"hidden", cursor:"pointer", background:C.w, transition:"border-color 0.15s", contentVisibility:"auto", containIntrinsicSize:"0 90px" }}>
         <div style={{ width:5, background:sc.ribbon, flexShrink:0 }} />
         <div style={{ padding:"8px 10px", flex:1, minWidth:0 }}>
           {/* Line 1: code - date */}
@@ -415,7 +433,21 @@ export default memo(function ListScreen({ freights, loading, onNav, onRefresh, c
             {Ic.truck(C.t2,12)}
             <span style={{ fontSize:12, color:C.t2 }}>{transport}{plate ? ` · ${plate}` : ""}</span>
           </div>
+          {/* Pending action / waiting indicator */}
+          {pa && <div style={{ display:"flex", alignItems:"center", gap:4, marginTop:4 }}>
+            <span style={{ width:6, height:6, borderRadius:"50%", background:pa.color, flexShrink:0 }} />
+            <span style={{ fontSize:11, fontWeight:700, color:pa.color }}>{pa.action}</span>
+          </div>}
+          {!pa && waitText && <div style={{ fontSize:11, color:C.t3, marginTop:3 }}>{waitText}</div>}
         </div>
+        {/* Quick action button (plant only) */}
+        {isPlantUser && onAction && pa && pa.actionKey && (
+          <div style={{ display:"flex", alignItems:"center", paddingRight:6, flexShrink:0 }}>
+            <button onClick={(e)=>{e.stopPropagation();onAction(f.id, pa.actionKey, pa.assignmentId);}} title={pa.action} style={{ width:32, height:32, borderRadius:8, border:`1.5px solid ${pa.color}30`, background:`${pa.color}10`, color:pa.color, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", flexShrink:0 }}>
+              {pa.icon === "assign" ? Ic.truck(pa.color,15) : pa.icon === "confirm" ? Ic.chk(pa.color,15) : pa.icon === "authorize" ? Ic.chk(pa.color,15) : Ic.nav(pa.color,15)}
+            </button>
+          </div>
+        )}
       </div>
     );
   };
@@ -551,6 +583,9 @@ export default memo(function ListScreen({ freights, loading, onNav, onRefresh, c
       </div>
       {/* Entity filters + date toggle -- line 2 */}
       <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:dateFilterOpen?6:12 }}>
+        <button onClick={()=>setFilterRequiresAction(p=>!p)} style={{padding:"6px 10px",borderRadius:8,border:`1.5px solid ${filterRequiresAction?C.acc:C.b1}`,background:filterRequiresAction?`${C.acc}15`:C.w,color:filterRequiresAction?C.acc:C.t2,fontSize:12.1,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:5,whiteSpace:"nowrap"}}>
+          {filterRequiresAction ? Ic.chk(C.acc,12) : Ic.warn(C.t3,12)} Mi acción
+        </button>
         <button onClick={()=>setDateFilterOpen(p=>!p)} style={{padding:"6px 10px",borderRadius:8,border:`1.5px solid ${(dateFrom||dateTo)?C.pri:C.b1}`,background:(dateFrom||dateTo)?C.priPale:C.w,color:(dateFrom||dateTo)?C.pri:C.t2,fontSize:12.1,fontWeight:600,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:5,whiteSpace:"nowrap"}}>
           {Ic.cal((dateFrom||dateTo)?C.pri:C.t3,13)} {dateFilterOpen?"Ocultar fechas":"Filtrar por fecha"}{(dateFrom||dateTo)?" (activo)":""}
         </button>
@@ -599,6 +634,12 @@ export default memo(function ListScreen({ freights, loading, onNav, onRefresh, c
           {Ic.srch(hasFilters?C.pri:C.t3,12)} {filtersOpen?"Ocultar filtros":"Ver filtros"}{hasFilters?" (activos)":""}
         </button>
         {hasFilters && <button onClick={clearAll} style={{padding:"8px 12px",borderRadius:6,border:`1px solid ${C.err}40`,background:C.errPale,color:C.err,fontSize:13.2,fontWeight:600,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap",flexShrink:0,minHeight:44}}>Limpiar</button>}
+      </div>
+      {/* "Requiere mi acción" chip (mobile) */}
+      <div style={{ display:"flex", gap:6, marginBottom:8 }}>
+        <button onClick={()=>setFilterRequiresAction(p=>!p)} style={{padding:"7px 12px",borderRadius:8,border:`1.5px solid ${filterRequiresAction?C.acc:C.b1}`,background:filterRequiresAction?`${C.acc}15`:C.w,color:filterRequiresAction?C.acc:C.t2,fontSize:13.2,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:5,whiteSpace:"nowrap",minHeight:36}}>
+          {filterRequiresAction ? Ic.chk(C.acc,12) : Ic.warn(C.t3,12)} Mi acción
+        </button>
       </div>
       {/* View mode buttons */}
       <div style={{ display:"flex", gap:4, marginBottom:10, overflowX:"auto", WebkitOverflowScrolling:"touch", paddingBottom:2 }}>
@@ -649,8 +690,8 @@ export default memo(function ListScreen({ freights, loading, onNav, onRefresh, c
       </>))}
 
       {/* Search result count */}
-      {hasFilters && filtered.length > 0 && !serverLoading && <div style={{ fontSize:12.1, fontWeight:600, color:C.t3, marginBottom:8 }}>{serverData !== null ? `${serverTotal} flete${serverTotal!==1?"s":""} encontrado${serverTotal!==1?"s":""}` : `${filtered.length} flete${filtered.length!==1?"s":""}`}</div>}
-      {hasFilters && filtered.length === 0 && !loading && !serverLoading && <EmptyState icon={Ic.srch(C.t3, 28)} title="Sin resultados" subtitle={`No hay fletes para "${searchQ || "los filtros seleccionados"}"`} />}
+      {hasFilters && filteredFinal.length > 0 && !serverLoading && <div style={{ fontSize:12.1, fontWeight:600, color:C.t3, marginBottom:8 }}>{serverData !== null ? `${serverTotal} flete${serverTotal!==1?"s":""} encontrado${serverTotal!==1?"s":""}` : `${filteredFinal.length} flete${filteredFinal.length!==1?"s":""}`}</div>}
+      {hasFilters && filteredFinal.length === 0 && !loading && !serverLoading && <EmptyState icon={Ic.srch(C.t3, 28)} title="Sin resultados" subtitle={`No hay fletes para "${searchQ || "los filtros seleccionados"}"`} />}
       {serverLoading && <div style={{ textAlign:"center", padding:16, fontSize:12.1, color:C.t3 }}>Buscando...</div>}
 
       {/* Skeleton while loading */}
@@ -743,7 +784,7 @@ export default memo(function ListScreen({ freights, loading, onNav, onRefresh, c
       {/* View: Mapa -- stays mounted after first show to avoid reinit */}
       {(view==="mapa" || mapShown) && (
         <div style={{ display: view === "mapa" ? undefined : "none" }}>
-          <ErrorBoundary><Suspense fallback={<SkeletonList count={3}/>}><FreightsOverviewMap freights={filtered} onSelect={(id)=>onNav("detail",id)} fields={catalog?.fields} plants={catalog?.plants} lots={catalog?.lots} /></Suspense></ErrorBoundary>
+          <ErrorBoundary><Suspense fallback={<SkeletonList count={3}/>}><FreightsOverviewMap freights={filteredFinal} onSelect={(id)=>onNav("detail",id)} fields={catalog?.fields} plants={catalog?.plants} lots={catalog?.lots} /></Suspense></ErrorBoundary>
         </div>
       )}
 
@@ -755,8 +796,9 @@ export default memo(function ListScreen({ freights, loading, onNav, onRefresh, c
             {[{k:"all",label:"Todos",color:C.t2},...GROUPS.map(g=>({k:g.key,label:g.label,color:g.color}))].map(s => (
               <button key={s.k} onClick={() => setTableStatusFilter(s.k)} style={{ padding:"4px 10px", borderRadius:6, border:`1px solid ${tableStatusFilter === s.k ? s.color : C.b1}`, background: tableStatusFilter === s.k ? `${s.color}15` : "transparent", color: tableStatusFilter === s.k ? s.color : C.t3, fontSize:11, fontWeight: tableStatusFilter === s.k ? 700 : 500, cursor:"pointer", fontFamily:"inherit", whiteSpace:"nowrap" }}>{s.label}</button>
             ))}
-            <div style={{ marginLeft:"auto" }}>
-              <button onClick={()=>exportExcel(tableFiltered,"tolvink-fletes.xls")} style={{padding:"5px 12px",borderRadius:8,border:`1.5px solid ${C.pri}`,background:C.okPale,color:C.pri,fontSize:12.1,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:5}}>{Ic.doc(C.pri,13)} Exportar Excel</button>
+            <div style={{ marginLeft:"auto", display:"flex", gap:6 }}>
+              <button onClick={()=>exportCSV(tableFiltered,"tolvink-fletes.csv")} style={{padding:"5px 12px",borderRadius:8,border:`1.5px solid ${C.t3}`,background:C.bg,color:C.t2,fontSize:12.1,fontWeight:600,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:5}}>{Ic.doc(C.t3,13)} CSV</button>
+              <button onClick={()=>exportExcel(tableFiltered,"tolvink-fletes.xls")} style={{padding:"5px 12px",borderRadius:8,border:`1.5px solid ${C.pri}`,background:C.okPale,color:C.pri,fontSize:12.1,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:5}}>{Ic.doc(C.pri,13)} Excel</button>
             </div>
           </div>
           <div style={{ overflowX:"auto" }}>
@@ -776,14 +818,16 @@ export default memo(function ListScreen({ freights, loading, onNav, onRefresh, c
                   <SortTh label="Matricula" colKey="plate" sortCol={sortCol} sortDir={sortDir} onSort={toggleSort} />
                   <SortTh label="Chofer" colKey="driver" sortCol={sortCol} sortDir={sortDir} onSort={toggleSort} />
                   <SortTh label="Celular" colKey="phone" sortCol={sortCol} sortDir={sortDir} onSort={toggleSort} />
+                  <th style={{ padding:"10px 12px", textAlign:"left", fontSize:11, fontWeight:700, color:C.t2, textTransform:"uppercase", letterSpacing:0.5, whiteSpace:"nowrap" }}>Acción</th>
                 </tr>
               </thead>
               <tbody>
-                {tableSorted.length===0 && <tr><td colSpan={13} style={{ padding:24, textAlign:"center", color:C.t3, fontSize:13.2 }}>Sin fletes</td></tr>}
+                {tableSorted.length===0 && <tr><td colSpan={14} style={{ padding:24, textAlign:"center", color:C.t3, fontSize:13.2 }}>Sin fletes</td></tr>}
                 {tableSorted.map(f=>{
                   const st = stCfg(f.status);
                   const campoLote = originDisplay(f) || "\u2014";
                   const destText = destDisplay(f);
+                  const tpa = pendingMap.get(f.id);
                   return (
                     <tr key={f.id} className="tv-row" onClick={()=>onNav("detail",f.id)} onMouseEnter={(e)=>handleCardMouseEnter(f,e)} onMouseLeave={handleCardMouseLeave} style={{ borderBottom:`1px solid ${C.b1}`, cursor:"pointer", contentVisibility:"auto", containIntrinsicSize:"0 44px" }}>
                       <td style={{ padding:"10px 12px", fontFamily:MONO, fontWeight:700, fontSize:11.5, color:C.t2, whiteSpace:"nowrap" }}>{f.code}</td>
@@ -799,6 +843,15 @@ export default memo(function ListScreen({ freights, loading, onNav, onRefresh, c
                       <td style={{ padding:"10px 12px", fontFamily:MONO, fontSize:12.1, color:C.t2, whiteSpace:"nowrap" }}>{f.truckPlate||"\u2014"}</td>
                       <td style={{ padding:"10px 12px", color:C.t2 }}>{f.driverName||"\u2014"}</td>
                       <td style={{ padding:"10px 12px", color:C.t2, whiteSpace:"nowrap" }}>{f.driverPhone||"\u2014"}</td>
+                      <td style={{ padding:"8px 12px", whiteSpace:"nowrap" }}>
+                        {tpa && tpa.actionKey && onAction ? (
+                          <button onClick={(e)=>{e.stopPropagation();onAction(f.id, tpa.actionKey, tpa.assignmentId);}} style={{padding:"4px 10px",borderRadius:6,border:`1px solid ${tpa.color}40`,background:`${tpa.color}10`,color:tpa.color,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>{tpa.action}</button>
+                        ) : tpa ? (
+                          <span style={{ fontSize:11, color:tpa.color, fontWeight:600 }}>{tpa.action}</span>
+                        ) : (
+                          <span style={{ fontSize:11, color:C.t3 }}>{getWaitingOnText(f, effectiveTypeKanban(f)) || "\u2014"}</span>
+                        )}
+                      </td>
                     </tr>
                   );
                 })}
@@ -978,11 +1031,11 @@ export default memo(function ListScreen({ freights, loading, onNav, onRefresh, c
 
       {/* Load more / pagination indicator */}
       {(()=>{
-        const visibleCount = hasFilters ? filtered.length : Object.values(grouped).reduce((s,a)=>s+a.length,0);
+        const visibleCount = hasFilters ? filteredFinal.length : Object.values(grouped).reduce((s,a)=>s+a.length,0);
         return <>
           {serverData !== null && serverHasMore && (
             <div style={{textAlign:"center",padding:"16px 0 24px"}}>
-              {serverTotal>0 && <div style={{fontSize:11,color:C.t3,marginBottom:6}}>Mostrando {filtered.length} de {serverTotal}</div>}
+              {serverTotal>0 && <div style={{fontSize:11,color:C.t3,marginBottom:6}}>Mostrando {filteredFinal.length} de {serverTotal}</div>}
               <button onClick={loadMoreServer} disabled={serverLoadingMore} style={{padding:"8px 24px",borderRadius:10,border:`1.5px solid ${C.pri}`,background:C.w,color:C.pri,fontSize:13.2,fontWeight:700,cursor:serverLoadingMore?"default":"pointer",fontFamily:"inherit",opacity:serverLoadingMore?0.5:1}}>
                 {serverLoadingMore?"Cargando...":"Cargar mas resultados"}
               </button>

@@ -6,7 +6,7 @@ import { SafeZone } from "../maps";
 const FreightMap = lazy(() => import("../maps").then(m => ({ default: m.FreightMap })));
 import log from "../logger";
 import { DocsGallery, FreightFileUpload, OcrResultModal, UploadOverlay } from "../uploads";
-import { apiGetAuditLog, apiGetFreight, apiGetFreightDetailExtra, apiSendTracking, apiApprovePendingChange, apiRejectPendingChange, apiOcrAnalyze, apiSaveOcrData, apiUpdateFreight, apiGetWeighTickets, apiAssignFreight, apiGetCompanyAccess } from "../api";
+import { apiGetAuditLog, apiGetFreight, apiGetFreightDetailExtra, apiSendTracking, apiApprovePendingChange, apiRejectPendingChange, apiOcrAnalyze, apiSaveOcrData, apiUpdateFreight, apiGetWeighTickets, apiAssignFreight, apiGetCompanyAccess, apiCreateSharedLink } from "../api";
 import { WeighTicketSummary } from "../components/WeighTicketForm";
 import { useIsDesktop, mapFreight, originDisplay, destDisplay } from "../hooks";
 import { useAccessLevel } from "../hooks/useAccessLevel";
@@ -136,6 +136,8 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
   const [truckModal, setTruckModal] = useState(null); // {type:"add"|"remove"}
   const [locSending, setLocSending] = useState(false);
   const [locSent, setLocSent] = useState(false);
+  const [shareLink, setShareLink] = useState(null); // { url, copied }
+  const [shareLoading, setShareLoading] = useState(false);
   const locTimerRef = useRef(null);
   useEffect(() => () => clearTimeout(locTimerRef.current), []);
   const handleShareLocation = () => {
@@ -387,7 +389,38 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
     <div style={{ position:"absolute", inset:0, overflow:"auto", animation:"slideUp 0.25s ease" }}>
       {/* Sticky header — back + product title */}
       <div style={{ position:"sticky", top:0, zIndex:10, padding:"18px 18px 8px", background:C.bg }}>
-        <button onClick={onBack} style={{ background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", fontSize:15, fontWeight:600, color:C.pri, marginBottom:14, padding:0, display:"flex", alignItems:"center", gap:4 }}>{Ic.chev(C.pri,18)} Volver</button>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
+          <button onClick={onBack} style={{ background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", fontSize:15, fontWeight:600, color:C.pri, padding:0, display:"flex", alignItems:"center", gap:4 }}>{Ic.chev(C.pri,18)} Volver</button>
+          {freight.producerCompanyId && (
+            <button disabled={shareLoading} onClick={async()=>{
+              if (shareLink) { setShareLink(null); return; }
+              setShareLoading(true);
+              try {
+                const r = await apiCreateSharedLink({ linkType:"FREIGHT", targetCompanyId:freight.producerCompanyId, freightId:freight.id });
+                const url = `${window.location.origin}/s/${r.token}`;
+                setShareLink({ url, copied:false });
+              } catch(e) { show(e.message||"Error al generar link","err"); }
+              finally { setShareLoading(false); }
+            }} style={{ display:"flex", alignItems:"center", gap:4, padding:"5px 10px", borderRadius:6, border:`1px solid ${C.pri}30`, background:shareLink?C.priPale:`${C.pri}08`, cursor:"pointer", fontFamily:"inherit", fontSize:12, fontWeight:600, color:C.pri }}>
+              {Ic.doc(C.pri,13)} {shareLoading ? "..." : shareLink ? "Cerrar" : "Compartir"}
+            </button>
+          )}
+        </div>
+        {/* Share link mini-modal */}
+        {shareLink && (
+          <div style={{ padding:"10px 12px", marginBottom:8, borderRadius:10, background:C.w, border:`1px solid ${C.b1}`, boxShadow:C.sh }}>
+            <div style={{ fontSize:11, color:C.t3, fontWeight:600, marginBottom:6 }}>Link de seguimiento</div>
+            <div style={{ display:"flex", gap:6 }}>
+              <input readOnly value={shareLink.url} style={{ flex:1, padding:"6px 8px", borderRadius:6, border:`1px solid ${C.b2}`, fontSize:12, fontFamily:"inherit", color:C.t1, background:C.bgInput, outline:"none" }} />
+              <button onClick={()=>{ navigator.clipboard.writeText(shareLink.url); setShareLink(s=>({...s,copied:true})); setTimeout(()=>setShareLink(s=>s?{...s,copied:false}:null),2000); }} style={{ padding:"6px 10px", borderRadius:6, border:"none", background:shareLink.copied?C.ok:C.pri, color:C.w, fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"inherit", whiteSpace:"nowrap" }}>
+                {shareLink.copied ? "Copiado!" : "Copiar"}
+              </button>
+            </div>
+            <button onClick={()=>{ window.open(`https://wa.me/?text=${encodeURIComponent(`Seguimiento de flete ${freight.code}: ${shareLink.url}`)}`, "_blank"); }} style={{ display:"flex", alignItems:"center", gap:4, marginTop:6, background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", fontSize:11, fontWeight:600, color:"#25D366" }}>
+              Enviar por WhatsApp
+            </button>
+          </div>
+        )}
         <div style={{ display:"flex", alignItems:"center", flexWrap:"wrap", gap:4 }}>
           {(()=>{const sc=STATUS_COLORS[freight.status]||STATUS_COLORS.pending_assignment; return <span style={{ display:"inline-flex", alignItems:"center", gap:4, fontSize:11, fontWeight:500, color:sc.pillText, background:sc.pillBg, padding:"3px 10px", borderRadius:20 }}>{sc.pulse&&<span style={{width:6,height:6,borderRadius:"50%",background:sc.ribbon,animation:"tolvinkPulse 1.5s infinite"}}/>}{sc.label}</span>;})()}
           <span style={{ fontSize:24, fontWeight:800, color:C.t1, letterSpacing:-0.3 }}>{freight.grain==="Otros"?freight.productTypeOther||"Otros":freight.grain} · {freight.tons} {freight.unit||"toneladas"}</span>

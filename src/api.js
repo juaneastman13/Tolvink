@@ -428,6 +428,15 @@ export async function apiToggleAccess(id) { return api(`/company-access/${id}/to
 export async function apiCreateLinkedCompany(b) { return api('/company-access/create-company',{body:b}); }
 export async function apiCreateLinkedUser(b) { return api('/company-access/create-user',{body:b}); }
 
+// Shared links
+export async function apiCreateSharedLink(b) { return api('/shared-links',{body:b}); }
+export async function apiResolveSharedLink(token) {
+  const res = await fetch(`${API_URL}/s/${token}/data`);
+  if (!res.ok) { const d = await res.json().catch(()=>({})); throw new Error(d.message || 'Error'); }
+  return res.json();
+}
+export async function apiRevokeSharedLink(id) { return api(`/shared-links/${id}/revoke`,{method:'PATCH',body:{}}); }
+
 // VAPID public key for push subscription
 export const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY || '';
 
