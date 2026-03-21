@@ -744,6 +744,13 @@ export default function SharedLinkScreen({ token }) {
     return () => { mounted = false; clearInterval(refreshRef.current); };
   }, [token]);
 
+  // Enable body scroll (app.css sets overflow-y:hidden for the authenticated shell)
+  useEffect(() => {
+    document.body.style.overflowY = "auto";
+    document.documentElement.style.height = "auto";
+    return () => { document.body.style.overflowY = ""; document.documentElement.style.height = ""; };
+  }, []);
+
   // Determine what view to render
   const showFreightDetail = selectedFreight || (data?.linkType === "FREIGHT");
   const freightData = selectedFreight || (data?.linkType === "FREIGHT" ? data?.data : null);
