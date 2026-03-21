@@ -67,6 +67,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
   const [viewFile, setViewFile] = useState(null);
   const [ocrLoading, setOcrLoading] = useState(false);
   const [ocrResult, setOcrResult] = useState(null);
+  const [ocrDocId, setOcrDocId] = useState(null);
   const [pdfLoading, setPdfLoading] = useState(false);
   const [pcLoading, setPcLoading] = useState(null);
   const auditRef = useRef(null);
@@ -78,6 +79,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
       const res = await apiOcrAnalyze(file.url);
       if (res.error) { log.error("OCR", res.error); show("Error al extraer datos del documento", "err"); return; }
       setOcrResult(res);
+      setOcrDocId(file.id || null);
       // Auto-save OCR data to document
       if (file.id && freight?.id) {
         apiSaveOcrData(freight.id, file.id, res).then(() => { if (onRefresh) onRefresh(freight.id); }).catch(e => { log.error('ocr-save', e); show('No se pudieron guardar los datos OCR', 'err'); });
@@ -90,7 +92,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
     }
   };
 
-  const handleViewOcr = (ocrData) => setOcrResult(ocrData);
+  const handleViewOcr = (ocrData, docIdArg) => { setOcrResult(ocrData); setOcrDocId(docIdArg || null); };
 
   // Pre-load PDF module so download works synchronously on click
   useEffect(() => { loadPdfReport(); }, []);
@@ -928,7 +930,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
       </div>
       <FileViewer file={viewFile} onClose={()=>setViewFile(null)} onOcr={handleOcr} ocrLoading={ocrLoading} onViewOcr={handleViewOcr}/>
       {ocrLoading && <div style={{ position:"fixed", inset:0, zIndex:250 }}><UploadOverlay uploading={ocrLoading} done={false} total={1} current={1} label="Extrayendo datos"/></div>}
-      <OcrResultModal result={ocrResult} onClose={()=>setOcrResult(null)}/>
+      <OcrResultModal result={ocrResult} onClose={()=>{setOcrResult(null);setOcrDocId(null);}} freightId={freight?.id} docId={ocrDocId} onSaved={()=>{ if(onRefresh) onRefresh(freight?.id); }}/>
 
     </div>
 

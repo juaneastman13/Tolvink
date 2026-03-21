@@ -371,6 +371,7 @@ export async function apiDeleteDocument(freightId, docId) { return api(`/freight
 export async function apiOcrAnalyze(url, docType) { return api('/ocr/analyze', { body: { url, ...(docType ? { docType } : {}) } }); }
 export async function apiSaveOcrData(freightId, docId, ocrData) { return api(`/freights/${freightId}/documents/${docId}/ocr`, { method:'PATCH', body: { ocrData } }); }
 export async function apiClearOcrData(freightId, docId) { return api(`/freights/${freightId}/documents/${docId}/ocr-clear`, { method:'PATCH' }); }
+export async function apiEditOcrData(freightId, docId, ocrData) { return api(`/freights/${freightId}/documents/${docId}/ocr-edit`, { method:'PATCH', body: { ocrData } }); }
 
 // ======================== ADMIN ======================================
 // Stats

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { uploadPhoto, apiAddDocument, apiDeleteDocument, thumb } from "./api";
+import { uploadPhoto, apiAddDocument, apiDeleteDocument, apiEditOcrData, thumb } from "./api";
 import { C, Ic } from "./theme";
 import { AttachMenu, Btn } from "./components";
 import { useUIStore } from "./store";
@@ -109,14 +109,13 @@ export function DocsGallery({ documents, onViewFile, freightId, canDelete, onDel
                   )}
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 12.1, fontWeight: 600, color: C.t1, wordBreak: "break-all" }}>{d.name || "Archivo"}</div>
-                    <div style={{ fontSize: 11, color: C.t3, marginTop: 2 }}>
-                      {stepLabels[d.step] || d.type || "Doc"}
-                      {d.createdAt && ` · ${new Date(d.createdAt).toLocaleDateString("es", { day: "2-digit", month: "short" })}`}
-                      {d.uploadedBy?.name && ` · ${d.uploadedBy.name.split(" ")[0]}`}
+                    <div style={{ fontSize: 11, color: C.t3, marginTop: 2, display:"flex", alignItems:"center", gap:4, flexWrap:"wrap" }}>
+                      <span>{stepLabels[d.step] || d.type || "Doc"}{d.createdAt && ` · ${new Date(d.createdAt).toLocaleDateString("es", { day: "2-digit", month: "short" })}`}{d.uploadedBy?.name && ` · ${d.uploadedBy.name.split(" ")[0]}`}</span>
+                      {d.ocrData?._editMeta && <span style={{ fontSize:9, fontWeight:700, color:C.acc, background:`${C.acc}15`, padding:"1px 5px", borderRadius:6 }}>Editado</span>}
                     </div>
                   </div>
                 </button>
-                {d.ocrData && onViewOcr && <button onClick={()=>onViewOcr(d.ocrData)} title="Ver datos extraídos" aria-label="Ver datos extraídos" style={{ padding:6, minWidth:36, minHeight:36, borderRadius:6, border:`1px solid ${C.pri}`, background:C.okPale, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{Ic.eye(C.pri,14)}</button>}
+                {d.ocrData && onViewOcr && <button onClick={()=>onViewOcr(d.ocrData, d.id)} title="Ver datos extraídos" aria-label="Ver datos extraídos" style={{ padding:6, minWidth:36, minHeight:36, borderRadius:6, border:`1px solid ${C.pri}`, background:C.okPale, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{Ic.eye(C.pri,14)}</button>}
                 {isImg && onOcr && !d.ocrData && <button onClick={()=>onOcr({url:d.url,name:d.name||"Archivo",type:d.type,id:d.id})} disabled={ocrLoading} title="Extraer datos (OCR)" aria-label="Extraer datos (OCR)" style={{ padding:6, minWidth:36, minHeight:36, borderRadius:6, border:`1px solid ${C.pri}40`, background:C.priPale, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, opacity:ocrLoading?0.5:1 }}>{Ic.doc(C.pri,14)}</button>}
                 {canDelete && <button onClick={()=>setConfirm(d.id)} disabled={!!deleting} aria-label="Eliminar archivo" style={{ padding:6, minWidth:36, minHeight:36, borderRadius:6, border:`1px solid ${C.err}40`, background:C.errPale||"#fef2f2", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{Ic.cross(C.err,14)}</button>}
               </div>
@@ -139,22 +138,69 @@ export function DocsGallery({ documents, onViewFile, freightId, canDelete, onDel
 
 // ======================== OCR RESULT MODAL (floating) ====================
 
-export function OcrResultModal({ result, onClose }) {
+export function OcrResultModal({ result, onClose, freightId, docId, onSaved }) {
   const show = useUIStore(s => s.show);
   const [mobile, setMobile] = useState(() => window.innerWidth < 768);
+  const [editing, setEditing] = useState(false);
+  const [editValues, setEditValues] = useState({});
+  const [saving, setSaving] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+
   useEffect(() => {
     const h = () => setMobile(window.innerWidth < 768);
     window.addEventListener("resize", h);
     return () => window.removeEventListener("resize", h);
   }, []);
   useEffect(() => {
-    const h = (e) => { if (e.key === 'Escape') onClose?.(); };
+    const h = (e) => { if (e.key === 'Escape') { if (editing) { setEditing(false); } else { onClose?.(); } } };
     window.addEventListener('keydown', h);
     return () => window.removeEventListener('keydown', h);
-  }, [onClose]);
+  }, [onClose, editing]);
+
   if (!result) return null;
+
+  const editMeta = result._editMeta || null;
+  const editHistory = result._editHistory || [];
   const datos = result.datos || {};
   const entries = Object.entries(datos).filter(([,v]) => v != null && v !== "");
+  const canEdit = !!(freightId && docId);
+
+  const startEdit = () => {
+    const vals = {};
+    entries.forEach(([k, v]) => { vals[k] = typeof v === "object" ? JSON.stringify(v) : String(v); });
+    setEditValues(vals);
+    setEditing(true);
+  };
+
+  const cancelEdit = () => { setEditing(false); setEditValues({}); };
+
+  const handleSave = async () => {
+    if (!canEdit) return;
+    setSaving(true);
+    try {
+      // Build updated datos from editValues
+      const updatedDatos = {};
+      for (const [k, v] of Object.entries(editValues)) {
+        if (v === "") continue; // skip blanked-out fields
+        updatedDatos[k] = v;
+      }
+      const updatedOcrData = { ...result, datos: updatedDatos };
+      // Remove internal meta (backend will re-add)
+      delete updatedOcrData._editMeta;
+      delete updatedOcrData._editHistory;
+      const res = await apiEditOcrData(freightId, docId, updatedOcrData);
+      if (res.error) { show(res.error || "Error al guardar", "err"); return; }
+      show("Datos OCR actualizados", "ok");
+      setEditing(false);
+      if (onSaved) onSaved();
+      onClose?.();
+    } catch (e) {
+      log.error("OCR-edit", e);
+      show("Error al guardar cambios OCR", "err");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const copyAll = () => {
     const text = entries.map(([k,v]) => `${k}\t${typeof v === "object" ? JSON.stringify(v) : v}`).join("\n");
@@ -162,34 +208,82 @@ export function OcrResultModal({ result, onClose }) {
   };
 
   return (
-    <div role="dialog" aria-modal="true" onClick={onClose} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", display:"flex", alignItems:mobile?"flex-end":"center", justifyContent:"center", zIndex:260, animation:"fvFadeIn 0.2s ease", padding:mobile?0:20 }}>
-      <div onClick={e=>e.stopPropagation()} style={{ background:C.w, borderRadius:mobile?"14px 14px 0 0":14, boxShadow:mobile?"0 -4px 32px rgba(0,0,0,0.3)":"0 8px 40px rgba(0,0,0,0.25)", maxWidth:480, width:"100%", maxHeight:mobile?"80vh":"70vh", display:"flex", flexDirection:"column" }}>
+    <div role="dialog" aria-modal="true" onClick={editing ? undefined : onClose} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", display:"flex", alignItems:mobile?"flex-end":"center", justifyContent:"center", zIndex:260, animation:"fvFadeIn 0.2s ease", padding:mobile?0:20 }}>
+      <div onClick={e=>e.stopPropagation()} style={{ background:C.w, borderRadius:mobile?"14px 14px 0 0":14, boxShadow:mobile?"0 -4px 32px rgba(0,0,0,0.3)":"0 8px 40px rgba(0,0,0,0.25)", maxWidth:480, width:"100%", maxHeight:mobile?"85vh":"75vh", display:"flex", flexDirection:"column" }}>
         {/* Drag handle — mobile only */}
-        {mobile && <div onClick={onClose} style={{ display:"flex", justifyContent:"center", padding:"10px 0 4px", cursor:"pointer", flexShrink:0 }}>
+        {mobile && <div onClick={editing ? undefined : onClose} style={{ display:"flex", justifyContent:"center", padding:"10px 0 4px", cursor:"pointer", flexShrink:0 }}>
           <div style={{ width:36, height:4, borderRadius:2, background:C.b1 }}/>
         </div>}
         {/* Header */}
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:mobile?"4px 16px 10px":"12px 16px", borderBottom:`1px solid ${C.b2}`, flexShrink:0, gap:8 }}>
-          <div style={{ display:"flex", alignItems:"center", gap:6, flex:1, minWidth:0 }}>
+          <div style={{ display:"flex", alignItems:"center", gap:6, flex:1, minWidth:0, flexWrap:"wrap" }}>
             {Ic.doc(C.pri,16)}
-            <span style={{ fontSize:14.3, fontWeight:700, color:C.t1 }}>Datos extraídos</span>
-            <span style={{ fontSize:9.9, color:C.t3, fontWeight:500, background:C.bg, padding:"2px 6px", borderRadius:8, whiteSpace:"nowrap" }}>{result.tipoDocumento} · {Math.round((result.confianza||0)*100)}%</span>
+            <span style={{ fontSize:14.3, fontWeight:700, color:C.t1 }}>{editing ? "Editar datos" : "Datos extraídos"}</span>
+            {result.tipoDocumento && <span style={{ fontSize:9.9, color:C.t3, fontWeight:500, background:C.bg, padding:"2px 6px", borderRadius:8, whiteSpace:"nowrap" }}>{result.tipoDocumento}{result.confianza ? ` · ${Math.round(result.confianza*100)}%` : ""}</span>}
+            {editMeta && !editing && <span style={{ fontSize:9.9, color:C.acc, fontWeight:700, background:`${C.acc}15`, padding:"2px 8px", borderRadius:8, whiteSpace:"nowrap" }}>Editado</span>}
           </div>
-          {entries.length > 0 && <button onClick={copyAll} style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:4, padding:"6px 12px", borderRadius:8, border:"none", background:C.pri, cursor:"pointer", fontSize:12.1, fontWeight:700, color:"#fff", fontFamily:"inherit", flexShrink:0, whiteSpace:"nowrap" }}>{Ic.doc("#fff",13)} Copiar</button>}
-          <button onClick={onClose} style={{ display:"flex", alignItems:"center", justifyContent:"center", width:36, height:36, borderRadius:8, background:C.err, border:"none", cursor:"pointer", flexShrink:0 }}>{Ic.cross("#fff",16)}</button>
+          <div style={{ display:"flex", gap:6, alignItems:"center", flexShrink:0 }}>
+            {!editing && entries.length > 0 && <button onClick={copyAll} style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:4, padding:"6px 12px", borderRadius:8, border:"none", background:C.pri, cursor:"pointer", fontSize:12.1, fontWeight:700, color:"#fff", fontFamily:"inherit", whiteSpace:"nowrap" }}>{Ic.doc("#fff",13)} Copiar</button>}
+            {!editing && canEdit && entries.length > 0 && <button onClick={startEdit} style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:4, padding:"6px 12px", borderRadius:8, border:`1px solid ${C.acc}`, background:`${C.acc}10`, cursor:"pointer", fontSize:12.1, fontWeight:700, color:C.acc, fontFamily:"inherit", whiteSpace:"nowrap" }}>Editar</button>}
+            <button onClick={editing ? cancelEdit : onClose} style={{ display:"flex", alignItems:"center", justifyContent:"center", width:36, height:36, borderRadius:8, background:C.err, border:"none", cursor:"pointer", flexShrink:0 }}>{Ic.cross("#fff",16)}</button>
+          </div>
         </div>
         {/* Content */}
         <div style={{ flex:1, overflow:"auto", padding:"14px 18px" }}>
-          <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
-            {entries.map(([key, val]) => (
-              <div key={key} style={{ display:"flex", gap:10, fontSize:13.2, lineHeight:1.5, padding:"6px 0", borderBottom:`1px solid ${C.b2}` }}>
-                <span style={{ fontWeight:700, color:C.t2, minWidth:100, flexShrink:0, textTransform:"capitalize" }}>{key.replace(/([A-Z])/g, ' $1').trim()}</span>
-                <span style={{ color:C.t1, wordBreak:"break-word" }}>{typeof val === "object" ? JSON.stringify(val, null, 2) : String(val)}</span>
-              </div>
-            ))}
-            {entries.length === 0 && <div style={{ fontSize:13.2, color:C.t3, textAlign:"center", padding:20 }}>No se pudieron extraer datos del documento</div>}
+          {/* Edit metadata info */}
+          {editMeta && !editing && (
+            <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:10, padding:"6px 10px", background:`${C.acc}08`, borderRadius:8, border:`1px solid ${C.acc}20` }}>
+              <span style={{ fontSize:11, color:C.acc, fontWeight:600 }}>Editado {editMeta.editedByName ? `por ${editMeta.editedByName}` : ""} · {new Date(editMeta.editedAt).toLocaleDateString("es",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"})}</span>
+              {editHistory.length > 0 && <button onClick={()=>setShowHistory(v=>!v)} style={{ marginLeft:"auto", fontSize:10, color:C.t3, fontWeight:600, background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", textDecoration:"underline" }}>{showHistory ? "Ocultar historial" : `Ver historial (${editHistory.length})`}</button>}
+            </div>
+          )}
+          {/* History panel */}
+          {showHistory && editHistory.length > 0 && !editing && (
+            <div style={{ marginBottom:12, padding:10, background:C.bg, borderRadius:8, border:`1px solid ${C.b2}`, maxHeight:150, overflow:"auto" }}>
+              <div style={{ fontSize:10, fontWeight:700, color:C.t2, marginBottom:6, textTransform:"uppercase", letterSpacing:0.5 }}>Historial de ediciones</div>
+              {[...editHistory].reverse().map((h, i) => (
+                <div key={i} style={{ fontSize:11, color:C.t3, padding:"4px 0", borderBottom:i < editHistory.length-1 ? `1px solid ${C.b2}` : "none" }}>
+                  <span style={{ fontWeight:600 }}>{h.editedAt ? new Date(h.editedAt).toLocaleDateString("es",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"}) : "Original"}</span>
+                  {h.datos && <span> — {Object.keys(h.datos).filter(k=>k!=='_editMeta'&&k!=='_editHistory').length} campos</span>}
+                </div>
+              ))}
+            </div>
+          )}
+          {/* Fields */}
+          <div style={{ display:"flex", flexDirection:"column", gap:editing?10:8 }}>
+            {editing ? (
+              Object.entries(editValues).map(([key, val]) => (
+                <div key={key} style={{ display:"flex", flexDirection:"column", gap:3 }}>
+                  <label style={{ fontWeight:700, color:C.t2, fontSize:11.6, textTransform:"capitalize" }}>{key.replace(/([A-Z])/g, ' $1').trim()}</label>
+                  <input
+                    value={val}
+                    onChange={e => setEditValues(prev => ({ ...prev, [key]: e.target.value }))}
+                    style={{ padding:"8px 10px", borderRadius:8, border:`1.5px solid ${C.b1}`, fontSize:13.2, fontFamily:"inherit", color:C.t1, background:C.bg, outline:"none", transition:"border-color 0.15s" }}
+                    onFocus={e => e.target.style.borderColor = C.pri}
+                    onBlur={e => e.target.style.borderColor = C.b1}
+                  />
+                </div>
+              ))
+            ) : (
+              <>
+                {entries.map(([key, val]) => (
+                  <div key={key} style={{ display:"flex", gap:10, fontSize:13.2, lineHeight:1.5, padding:"6px 0", borderBottom:`1px solid ${C.b2}` }}>
+                    <span style={{ fontWeight:700, color:C.t2, minWidth:100, flexShrink:0, textTransform:"capitalize" }}>{key.replace(/([A-Z])/g, ' $1').trim()}</span>
+                    <span style={{ color:C.t1, wordBreak:"break-word" }}>{typeof val === "object" ? JSON.stringify(val, null, 2) : String(val)}</span>
+                  </div>
+                ))}
+                {entries.length === 0 && <div style={{ fontSize:13.2, color:C.t3, textAlign:"center", padding:20 }}>No se pudieron extraer datos del documento</div>}
+              </>
+            )}
           </div>
         </div>
+        {/* Edit footer */}
+        {editing && (
+          <div style={{ display:"flex", gap:8, padding:"12px 18px", borderTop:`1px solid ${C.b2}`, flexShrink:0 }}>
+            <button onClick={cancelEdit} disabled={saving} style={{ flex:1, padding:"10px 0", borderRadius:10, border:`1px solid ${C.b1}`, background:C.w, cursor:"pointer", fontSize:13.2, fontWeight:600, color:C.t2, fontFamily:"inherit" }}>Cancelar</button>
+            <button onClick={handleSave} disabled={saving} style={{ flex:1, padding:"10px 0", borderRadius:10, border:"none", background:C.pri, cursor:saving?"wait":"pointer", fontSize:13.2, fontWeight:700, color:"#fff", fontFamily:"inherit", opacity:saving?0.7:1 }}>{saving ? "Guardando..." : "Guardar"}</button>
+          </div>
+        )}
       </div>
     </div>
   );
