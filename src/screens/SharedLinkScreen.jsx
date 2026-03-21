@@ -251,13 +251,12 @@ function FreightMap({ freight, style }) {
 
   return (
     <div ref={containerRef} style={{ background: C.w, borderRadius: R.lg, overflow: "hidden", border: `1px solid ${C.b2}`, boxShadow: C.sh, position: "relative", height: "100%", minHeight: 300, ...style }}>
-      <div ref={mapRef} style={{ width: "100%", height: "100%", minHeight: 300 }}>
-        {!loaded && (
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", background: C.bg }}>
-            <div style={{ fontSize: 13, color: C.t3 }}>Cargando mapa...</div>
-          </div>
-        )}
-      </div>
+      <div ref={mapRef} style={{ width: "100%", height: "100%", minHeight: 300 }} />
+      {!loaded && (
+        <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: C.bg, zIndex: 1 }}>
+          <div style={{ fontSize: 13, color: C.t3 }}>Cargando mapa...</div>
+        </div>
+      )}
       {freight.routeDistanceKm && (
         <div style={{ position: "absolute", bottom: 10, left: 10, background: "rgba(255,255,255,0.92)", borderRadius: R.md, padding: "5px 12px", fontSize: 12, fontWeight: 700, color: C.t1, boxShadow: C.shMd, backdropFilter: "blur(4px)" }}>
           {Ic.nav(C.pri, 13)} {freight.routeDistanceKm} km · ~{freight.routeDurationMin} min
