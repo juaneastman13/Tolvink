@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { C, Ic, STATUS_COLORS } from "../theme";
 import { Loader, EmptyState } from "../components";
-import { apiGetCompanyAccess, apiListFreights, apiGetWeighTickets, apiGetFreight, apiOcrAnalyze, apiSaveOcrData, apiClearOcrData, apiEditOcrData } from "../api";
-import { OcrResultModal, ocrLabel } from "../uploads";
+import { apiGetCompanyAccess, apiListFreights, apiGetWeighTickets, apiGetFreight, apiOcrAnalyze, apiSaveOcrData, apiClearOcrData, apiEditOcrData, apiDeleteDocument, apiRenameDocument } from "../api";
+import { OcrResultModal, ocrLabel, FreightFileUpload } from "../uploads";
 
 const API_URL = import.meta.env.VITE_API_URL || "";
 const DOC_TYPE_ICONS = {
@@ -57,6 +57,10 @@ export default function DocumentsScreen({ user, onBack, onNavigate }) {
   const [confirmClear, setConfirmClear] = useState(null); // doc to confirm clear
   const [viewerDoc, setViewerDoc] = useState(null); // doc for viewer modal
   const [ocrEditDoc, setOcrEditDoc] = useState(null); // doc for OCR edit modal
+  const [confirmDeleteDoc, setConfirmDeleteDoc] = useState(null); // doc to confirm delete
+  const [deletingDoc, setDeletingDoc] = useState(null); // doc id being deleted
+  const [renamingDoc, setRenamingDoc] = useState(null); // doc id being renamed
+  const [renameValue, setRenameValue] = useState("");
 
   const companyId = user?.activeCompanyId || user?.companyId;
   const isManager = ["admin", "gerente", "platform_admin"].includes(user?.role);
@@ -288,6 +292,34 @@ export default function DocumentsScreen({ user, onBack, onNavigate }) {
     } catch (e) { console.error("Download error:", e); }
   }, []);
 
+  const reloadDocs = useCallback(() => {
+    if (tab === "company" && selCompany) loadCompanyDocs(selCompany.granteeCompany?.id || selCompany.companyId || selCompany.id);
+    else if (tab === "freight" && selFreight) loadFreightDocs(selFreight.id);
+  }, [tab, selCompany, selFreight]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleDeleteDoc = useCallback(async (doc) => {
+    if (!doc._freight?.id || !doc.id || doc._source !== "document") return;
+    setDeletingDoc(doc.id);
+    try {
+      await apiDeleteDocument(doc._freight.id, doc.id);
+      const updateDocs = (docs) => docs.filter(d => d.id !== doc.id);
+      if (tab === "company") setCompanyDocs(updateDocs);
+      else setFreightDocs(updateDocs);
+    } catch (e) { console.error("Delete doc error:", e); }
+    finally { setDeletingDoc(null); setConfirmDeleteDoc(null); }
+  }, [tab]);
+
+  const handleRenameDoc = useCallback(async (doc, newName) => {
+    if (!doc._freight?.id || !doc.id || doc._source !== "document" || !newName.trim()) return;
+    try {
+      await apiRenameDocument(doc._freight.id, doc.id, newName.trim());
+      const updateDocs = (docs) => docs.map(d => d.id === doc.id ? { ...d, name: newName.trim(), _name: newName.trim() } : d);
+      if (tab === "company") setCompanyDocs(updateDocs);
+      else setFreightDocs(updateDocs);
+    } catch (e) { console.error("Rename doc error:", e); }
+    finally { setRenamingDoc(null); setRenameValue(""); }
+  }, [tab]);
+
   const StatusPill = ({ status }) => {
     const sc = STATUS_COLORS[status] || { pillBg: C.bg, pillText: C.t3, label: status };
     return <span style={{ padding: "2px 8px", borderRadius: 6, fontSize: 10.5, fontWeight: 700, background: sc.pillBg, color: sc.pillText }}>{sc.label}</span>;
@@ -311,7 +343,15 @@ export default function DocumentsScreen({ user, onBack, onNavigate }) {
           )}
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-              <span style={{ fontSize: 14.3, fontWeight: 700, color: C.t1 }}>{doc._name || doc.name || doc._type}</span>
+              {renamingDoc === doc.id ? (
+                <form onSubmit={e => { e.preventDefault(); e.stopPropagation(); handleRenameDoc(doc, renameValue); }} onClick={e => e.stopPropagation()} style={{ display: "flex", gap: 4, alignItems: "center" }}>
+                  <input value={renameValue} onChange={e => setRenameValue(e.target.value)} autoFocus style={{ padding: "3px 8px", borderRadius: 6, border: `1.5px solid ${C.pri}`, fontSize: 13.2, fontFamily: "inherit", color: C.t1, width: 160, outline: "none" }} />
+                  <button type="submit" style={{ padding: "3px 8px", borderRadius: 6, border: "none", background: C.pri, color: "#fff", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>Ok</button>
+                  <button type="button" onClick={e => { e.stopPropagation(); setRenamingDoc(null); }} style={{ padding: "3px 8px", borderRadius: 6, border: `1px solid ${C.b1}`, background: C.bg, color: C.t3, fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>✕</button>
+                </form>
+              ) : (
+                <span style={{ fontSize: 14.3, fontWeight: 700, color: C.t1 }}>{doc._name || doc.name || doc._type}</span>
+              )}
               <span style={{ padding: "2px 7px", borderRadius: 6, fontSize: 10, fontWeight: 600, background: `${C.t3}12`, color: C.t3 }}>{doc._type}</span>
               {doc._hasOcr && <span style={{ padding: "2px 7px", borderRadius: 6, fontSize: 10, fontWeight: 700, background: C.priPale, color: C.pri }}>{doc._ocrData?.structured !== false ? "OCR" : "OCR libre"}</span>}
               {doc._hasOcr && doc._ocrData?._editMeta && <span style={{ padding: "2px 6px", borderRadius: 6, fontSize: 9, fontWeight: 700, background: `${C.acc}15`, color: C.acc }}>Editado</span>}
@@ -354,6 +394,23 @@ export default function DocumentsScreen({ user, onBack, onNavigate }) {
                 display: "flex", alignItems: "center", gap: 4, opacity: processingOcr === doc.id ? 0.5 : 1,
               }}>
                 {processingOcr === doc.id ? <Loader size={12} /> : Ic.doc(C.acc, 12)} {processingOcr === doc.id ? "..." : "OCR"}
+              </button>
+            )}
+            {doc._source === "document" && (
+              <button onClick={e => { e.stopPropagation(); setRenamingDoc(doc.id); setRenameValue(doc._name || doc.name || ""); }} title="Renombrar" style={{
+                padding: 5, borderRadius: 6, border: `1px solid ${C.b2}`, background: C.bg,
+                cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+              }}>
+                <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={C.t2} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              </button>
+            )}
+            {doc._source === "document" && (
+              <button onClick={e => { e.stopPropagation(); setConfirmDeleteDoc(doc); }} disabled={deletingDoc === doc.id} title="Eliminar" style={{
+                padding: 5, borderRadius: 6, border: `1px solid ${C.err}40`, background: C.errPale || "#fef2f2",
+                cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+                opacity: deletingDoc === doc.id ? 0.5 : 1,
+              }}>
+                {Ic.cross(C.err, 14)}
               </button>
             )}
           </div>
@@ -567,10 +624,15 @@ export default function DocumentsScreen({ user, onBack, onNavigate }) {
             {Ic.chev(C.pri, 14)} {selFreight.code || "Flete"}
           </button>
           {loadingFreightDocs ? <div style={{ padding: 40, textAlign: "center" }}><Loader /></div> :
-            freightDocs.length === 0 ? <EmptyState icon={Ic.doc(C.t3, 28)} title="No hay documentos para este flete" subtitle="Los documentos aparecerán cuando se adjunten" /> :
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              {freightDocs.map(d => <DocCard key={d.id} doc={d} />)}
-            </div>
+            <>
+              <div style={{ marginBottom: 12 }}>
+                <FreightFileUpload freightId={selFreight.id} step="assignment" onUploaded={() => loadFreightDocs(selFreight.id)} />
+              </div>
+              {freightDocs.length === 0 ? <EmptyState icon={Ic.doc(C.t3, 28)} title="No hay documentos para este flete" subtitle="Los documentos aparecerán cuando se adjunten" /> :
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {freightDocs.map(d => <DocCard key={d.id} doc={d} />)}
+              </div>}
+            </>
           }
         </div>
       )}
@@ -598,6 +660,35 @@ export default function DocumentsScreen({ user, onBack, onNavigate }) {
                 cursor: "pointer", fontFamily: "inherit", fontSize: 13.2, fontWeight: 700, color: "#fff",
                 opacity: clearingOcr === confirmClear.id ? 0.6 : 1,
               }}>{clearingOcr === confirmClear.id ? "Borrando..." : "Borrar OCR"}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirm Delete Document Dialog */}
+      {confirmDeleteDoc && (
+        <div onClick={() => setConfirmDeleteDoc(null)} style={{
+          position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", zIndex: 9999,
+          display: "flex", alignItems: "center", justifyContent: "center", padding: 20,
+        }}>
+          <div onClick={e => e.stopPropagation()} style={{
+            background: C.w, borderRadius: 16, padding: 24, maxWidth: 340, width: "100%", boxShadow: "0 20px 60px rgba(0,0,0,0.3)",
+          }}>
+            <div style={{ fontSize: 16, fontWeight: 800, color: C.t1, marginBottom: 8 }}>Eliminar documento</div>
+            <div style={{ fontSize: 13.2, color: C.t2, marginBottom: 6, lineHeight: 1.5 }}>
+              ¿Eliminar <strong>{confirmDeleteDoc._name || confirmDeleteDoc.name || "este documento"}</strong>?
+            </div>
+            <div style={{ fontSize: 12.1, color: C.t3, marginBottom: 20 }}>Esta acción no se puede deshacer.</div>
+            <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+              <button onClick={() => setConfirmDeleteDoc(null)} style={{
+                padding: "8px 18px", borderRadius: 10, border: `1px solid ${C.b2}`, background: C.bg,
+                cursor: "pointer", fontFamily: "inherit", fontSize: 13.2, fontWeight: 600, color: C.t2,
+              }}>Cancelar</button>
+              <button onClick={() => handleDeleteDoc(confirmDeleteDoc)} disabled={deletingDoc === confirmDeleteDoc.id} style={{
+                padding: "8px 18px", borderRadius: 10, border: "none", background: "#EF4444",
+                cursor: "pointer", fontFamily: "inherit", fontSize: 13.2, fontWeight: 700, color: "#fff",
+                opacity: deletingDoc === confirmDeleteDoc.id ? 0.6 : 1,
+              }}>{deletingDoc === confirmDeleteDoc.id ? "Eliminando..." : "Eliminar"}</button>
             </div>
           </div>
         </div>

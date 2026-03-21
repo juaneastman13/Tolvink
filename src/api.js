@@ -366,6 +366,7 @@ export async function apiToggleMarkUnread(convId) { return api(`/conversations/$
 // Documents
 export async function apiAddDocument(freightId, body) { return api(`/freights/${freightId}/documents`,{body}); }
 export async function apiDeleteDocument(freightId, docId) { return api(`/freights/${freightId}/documents/${docId}`,{method:'DELETE'}); }
+export async function apiRenameDocument(freightId, docId, name) { return api(`/freights/${freightId}/documents/${docId}/rename`, { method:'PATCH', body: { name } }); }
 
 // OCR
 export async function apiOcrAnalyze(url, docType) { return api('/ocr/analyze', { body: { url, ...(docType ? { docType } : {}) } }); }
