@@ -625,9 +625,9 @@ function PublicHeader({ data }) {
       height: 56, display: "flex", alignItems: "center", gap: 12, boxShadow: C.sh,
       position: "sticky", top: 0, zIndex: 100,
     }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
-        {Ic.seedling(C.pri, 26)}
-        <span style={{ fontSize: 22, fontWeight: 800, color: C.pri, letterSpacing: -0.8 }}>tolvink</span>
+      <div style={{ display: "inline-flex", alignItems: "flex-start", flexShrink: 0 }}>
+        <span style={{ fontSize: 26, fontWeight: 800, color: C.pri, letterSpacing: -1, lineHeight: 1 }}>tolvink</span>
+        <span style={{ width: 7, height: 7, borderRadius: 4, background: C.acc, display: "inline-block", marginLeft: 2, marginTop: 2, animation: "dotPulse 1.5s ease-in-out infinite" }} />
       </div>
       {data?.creatorCompanyName && <div style={{ width: 1, height: 24, background: C.b2, flexShrink: 0 }} />}
       <div style={{ flex: 1, minWidth: 0, overflow: "hidden" }}>
@@ -662,9 +662,9 @@ function PublicFooter({ creatorName }) {
           Compartido por <span style={{ fontWeight: 600 }}>{creatorName}</span> vía Tolvink
         </div>
       )}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, marginBottom: 8 }}>
-        {Ic.seedling(C.pri, 18)}
-        <span style={{ fontSize: 14, fontWeight: 700, color: C.pri }}>tolvink</span>
+      <div style={{ display: "inline-flex", alignItems: "flex-start", justifyContent: "center", marginBottom: 8 }}>
+        <span style={{ fontSize: 20, fontWeight: 800, color: C.pri, letterSpacing: -0.8, lineHeight: 1 }}>tolvink</span>
+        <span style={{ width: 5.5, height: 5.5, borderRadius: 3, background: C.acc, display: "inline-block", marginLeft: 1.5, marginTop: 1.5, animation: "dotPulse 1.5s ease-in-out infinite" }} />
       </div>
       <a href="https://tolvink.com" style={{
         fontSize: 12.5, color: C.pri, textDecoration: "none", fontWeight: 600,
@@ -836,6 +836,7 @@ export default function SharedLinkScreen({ token }) {
     <div style={{ minHeight: "100dvh", background: C.bg, fontFamily: FONT, display: "flex", flexDirection: "column" }}>
       <style>{`
         @keyframes tolvinkPulse{0%,100%{opacity:1}50%{opacity:.3}}
+        @keyframes dotPulse{0%,100%{opacity:.3;transform:scale(0.8)}50%{opacity:1;transform:scale(1.2)}}
         @keyframes spin{to{transform:rotate(360deg)}}
         .tv-card:hover{box-shadow:0 2px 8px rgba(0,0,0,0.08)}
         @media print{
