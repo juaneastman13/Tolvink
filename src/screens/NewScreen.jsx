@@ -332,6 +332,22 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
   const assignTruckOpts = assignTrucks.map(t => ({ value: t.id, label: `${t.plate}${t.model ? ` · ${t.model}` : ""}` }));
   const assignDriverOpts = assignDriversList.map(d => ({ value: d.id, label: `${d.name}${d.phone ? ` · ${d.phone}` : ""}` }));
 
+  // Options for producer/transporter Select dropdowns
+  const producerOpts = linkedProducers.map(r => {
+    const co = r.granteeCompany || {};
+    const cId = r.granteeCompanyId || co.id;
+    const tags = [r.accessLevel === "READONLY" ? "Consulta" : "Uso", co.hasInternalFleet ? "Flota propia" : ""].filter(Boolean).join(" · ");
+    return { value: cId, label: co.name || "Empresa", sub: tags };
+  });
+  const transporterOpts = [
+    ...(user?.hasInternalFleet ? [{ value: "ownfleet", label: "Flota propia", bold: true }] : []),
+    ...linkedTransporters.map(r => {
+      const co = r.granteeCompany || {};
+      const cId = r.granteeCompanyId || co.id;
+      return { value: cId, label: co.name || "Empresa", sub: r.accessLevel === "READONLY" ? "Consulta" : "" };
+    }),
+  ];
+
   // Is the selected transporter CONSULTA or own fleet (needs truck+driver inline)?
   const transportNeedsTruckDriver = transportChoice === "ownfleet" || (transportChoice && transportChoice !== "skip" && selectedTransporterAccess?.accessLevel === "READONLY");
   const transportIsOperator = transportChoice && transportChoice !== "skip" && transportChoice !== "ownfleet" && selectedTransporterAccess?.accessLevel !== "READONLY";
@@ -717,28 +733,9 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
         >
           {activeSection === "producer" && isPlantUser && <>
             <div style={{ fontSize:13.2, color:C.t2, marginBottom:12 }}>¿Para qué productor es este flete?</div>
-            <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
-              {linkedProducers.map(r => {
-                const co = r.granteeCompany || {};
-                const cId = r.granteeCompanyId || co.id;
-                const sel = producerCompanyId === cId;
-                return (
-                  <button key={cId} onClick={() => handleProducerChange(cId)} style={{ display:"flex", alignItems:"center", gap:10, padding:"12px 14px", borderRadius: R.md, border:`1.5px solid ${sel ? C.pri : C.b1}`, background:sel ? C.priPale : C.w, cursor:"pointer", fontFamily:"inherit", textAlign:"left" }}>
-                    {Ic.user(sel ? C.pri : C.t3, 18)}
-                    <div style={{ flex:1 }}>
-                      <div style={{ fontSize:14.3, fontWeight:sel?700:500, color:sel?C.pri:C.t1 }}>{co.name || "Empresa"}</div>
-                      <div style={{ display:"flex", gap:6, marginTop:2 }}>
-                        {r.accessLevel === "READONLY" && <span style={{ fontSize:10, fontWeight:700, color:C.warn, background:`${C.warn}15`, padding:"1px 6px", borderRadius: R.xs }}>Consulta</span>}
-                        {r.accessLevel !== "READONLY" && <span style={{ fontSize:10, fontWeight:700, color:C.ok, background:`${C.ok}15`, padding:"1px 6px", borderRadius: R.xs }}>Uso</span>}
-                        {co.hasInternalFleet && <span style={{ fontSize:10, fontWeight:700, color:C.acc, background:`${C.acc}15`, padding:"1px 6px", borderRadius: R.xs }}>Flota propia</span>}
-                      </div>
-                    </div>
-                    {sel && Ic.chk(C.pri, 16)}
-                  </button>
-                );
-              })}
-            </div>
-            {linkedProducers.length === 0 && !showNewProducer && <div style={{ fontSize:13.2, color:C.t3, textAlign:"center", padding:20 }}>No hay productores vinculados</div>}
+            {producerOpts.length > 0 ? (
+              <Select label="Empresa productora" icon={Ic.user(C.pri,14)} value={producerCompanyId} onChange={handleProducerChange} options={producerOpts} placeholder="Seleccionar productor..." searchable />
+            ) : !showNewProducer && <div style={{ fontSize:13.2, color:C.t3, textAlign:"center", padding:20 }}>No hay productores vinculados</div>}
             {!showNewProducer ? (
               <button onClick={() => { setShowNewProducer(true); setProducerErr(""); }} style={{ width:"100%", padding:"10px 12px", borderRadius: R.md, textAlign:"center", fontFamily:"inherit", border:`1.5px dashed ${C.pri}`, background:"transparent", color:C.pri, fontSize:13, fontWeight:600, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:6, marginTop:8 }}>
                 {Ic.plus(C.pri, 13)} Crear productor
@@ -924,32 +921,8 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
           </>}
           {activeSection === "transport" && showTransportStep && <>
             <div style={{ fontSize:13.2, color:C.t2, marginBottom:12 }}>Asignar transporte para este flete</div>
-            <div style={{ display:"flex", flexDirection:"column", gap:8, marginBottom:14 }}>
-              {user?.hasInternalFleet && (
-                <button onClick={() => { setTransportChoice("ownfleet"); setAssignTruckId(""); setAssignDriverId(""); }} style={{ display:"flex", alignItems:"center", gap:10, padding:"12px 14px", borderRadius: R.md, border:`1.5px solid ${transportChoice==="ownfleet" ? C.acc : C.b1}`, background:transportChoice==="ownfleet" ? C.accPale : C.w, cursor:"pointer", fontFamily:"inherit", textAlign:"left" }}>
-                  {Ic.truck(transportChoice==="ownfleet" ? C.acc : C.t3, 18)}
-                  <div style={{ flex:1 }}>
-                    <div style={{ fontSize:14.3, fontWeight:transportChoice==="ownfleet"?700:500, color:transportChoice==="ownfleet"?C.acc:C.t1 }}>Flota propia</div>
-                  </div>
-                  {transportChoice==="ownfleet" && Ic.chk(C.acc, 16)}
-                </button>
-              )}
-              {linkedTransporters.map(r => {
-                const co = r.granteeCompany || {};
-                const cId = r.granteeCompanyId || co.id;
-                const sel = transportChoice === cId;
-                const isConsulta = r.accessLevel === "READONLY";
-                return (
-                  <button key={cId} onClick={() => { setTransportChoice(cId); setAssignTruckId(""); setAssignDriverId(""); }} style={{ display:"flex", alignItems:"center", gap:10, padding:"12px 14px", borderRadius: R.md, border:`1.5px solid ${sel ? C.pri : C.b1}`, background:sel ? C.priPale : C.w, cursor:"pointer", fontFamily:"inherit", textAlign:"left" }}>
-                    {Ic.truck(sel ? C.pri : C.t3, 18)}
-                    <div style={{ flex:1 }}>
-                      <div style={{ fontSize:14.3, fontWeight:sel?700:500, color:sel?C.pri:C.t1 }}>{co.name || "Empresa"}</div>
-                      {isConsulta && <div style={{ fontSize:10.5, color:C.warn, fontWeight:600 }}>Modo consulta</div>}
-                    </div>
-                    {sel && Ic.chk(C.pri, 16)}
-                  </button>
-                );
-              })}
+            <div style={{ marginBottom:14 }}>
+              <Select label="Empresa transportista" icon={Ic.truck(C.pri,14)} value={transportChoice} onChange={v=>{setTransportChoice(v);setAssignTruckId("");setAssignDriverId("");}} options={transporterOpts} placeholder="Seleccionar transportista..." searchable />
             </div>
             {transportNeedsTruckDriver && <>
               {transportChoice === "ownfleet"
@@ -998,28 +971,9 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
         {/* PRODUCER SECTION (plant only) */}
         {activeSection === "producer" && isPlantUser && <Sec label="Productor" complete={!!producerCompanyId} isExpanded={true} onFocus={()=>{}} secRef={null}>
           <div style={{ fontSize:13.2, color:C.t2, marginBottom:12 }}>¿Para qué productor es este flete?</div>
-          <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
-            {linkedProducers.map(r => {
-              const co = r.granteeCompany || {};
-              const cId = r.granteeCompanyId || co.id;
-              const sel = producerCompanyId === cId;
-              return (
-                <button key={cId} onClick={() => handleProducerChange(cId)} style={{ display:"flex", alignItems:"center", gap:10, padding:"12px 14px", borderRadius: R.md, border:`1.5px solid ${sel ? C.pri : C.b1}`, background:sel ? C.priPale : C.w, cursor:"pointer", fontFamily:"inherit", textAlign:"left" }}>
-                  {Ic.user(sel ? C.pri : C.t3, 18)}
-                  <div style={{ flex:1 }}>
-                    <div style={{ fontSize:14.3, fontWeight:sel?700:500, color:sel?C.pri:C.t1 }}>{co.name || "Empresa"}</div>
-                    <div style={{ display:"flex", gap:6, marginTop:2 }}>
-                      {r.accessLevel === "READONLY" && <span style={{ fontSize:10, fontWeight:700, color:C.warn, background:`${C.warn}15`, padding:"1px 6px", borderRadius: R.xs }}>Consulta</span>}
-                      {r.accessLevel !== "READONLY" && <span style={{ fontSize:10, fontWeight:700, color:C.ok, background:`${C.ok}15`, padding:"1px 6px", borderRadius: R.xs }}>Uso</span>}
-                      {co.hasInternalFleet && <span style={{ fontSize:10, fontWeight:700, color:C.acc, background:`${C.acc}15`, padding:"1px 6px", borderRadius: R.xs }}>Flota propia</span>}
-                    </div>
-                  </div>
-                  {sel && Ic.chk(C.pri, 16)}
-                </button>
-              );
-            })}
-          </div>
-          {linkedProducers.length === 0 && !showNewProducer && <div style={{ fontSize:13.2, color:C.t3, textAlign:"center", padding:20 }}>No hay productores vinculados</div>}
+          {producerOpts.length > 0 ? (
+            <Select label="Empresa productora" icon={Ic.user(C.pri,14)} value={producerCompanyId} onChange={handleProducerChange} options={producerOpts} placeholder="Seleccionar productor..." searchable />
+          ) : !showNewProducer && <div style={{ fontSize:13.2, color:C.t3, textAlign:"center", padding:20 }}>No hay productores vinculados</div>}
           {!showNewProducer ? (
             <button onClick={() => { setShowNewProducer(true); setProducerErr(""); }} style={{ width:"100%", padding:"10px 12px", borderRadius: R.md, textAlign:"center", fontFamily:"inherit", border:`1.5px dashed ${C.pri}`, background:"transparent", color:C.pri, fontSize:13, fontWeight:600, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:6, marginTop:8 }}>
               {Ic.plus(C.pri, 13)} Crear productor
@@ -1252,32 +1206,8 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
         {activeSection === "transport" && showTransportStep && (
           <Sec label="Asignar transporte" complete={transportStepComplete} isExpanded={true} onFocus={()=>{}} secRef={null}>
             <div style={{ fontSize:13.2, color:C.t2, marginBottom:12 }}>Asignar transporte para este flete</div>
-            <div style={{ display:"flex", flexDirection:"column", gap:8, marginBottom:14 }}>
-              {user?.hasInternalFleet && (
-                <button onClick={() => { setTransportChoice("ownfleet"); setAssignTruckId(""); setAssignDriverId(""); }} style={{ display:"flex", alignItems:"center", gap:10, padding:"12px 14px", borderRadius: R.md, border:`1.5px solid ${transportChoice==="ownfleet" ? C.acc : C.b1}`, background:transportChoice==="ownfleet" ? C.accPale : C.w, cursor:"pointer", fontFamily:"inherit", textAlign:"left" }}>
-                  {Ic.truck(transportChoice==="ownfleet" ? C.acc : C.t3, 18)}
-                  <div style={{ flex:1 }}>
-                    <div style={{ fontSize:14.3, fontWeight:transportChoice==="ownfleet"?700:500, color:transportChoice==="ownfleet"?C.acc:C.t1 }}>Flota propia</div>
-                  </div>
-                  {transportChoice==="ownfleet" && Ic.chk(C.acc, 16)}
-                </button>
-              )}
-              {linkedTransporters.map(r => {
-                const co = r.granteeCompany || {};
-                const cId = r.granteeCompanyId || co.id;
-                const sel = transportChoice === cId;
-                const isConsulta = r.accessLevel === "READONLY";
-                return (
-                  <button key={cId} onClick={() => { setTransportChoice(cId); setAssignTruckId(""); setAssignDriverId(""); }} style={{ display:"flex", alignItems:"center", gap:10, padding:"12px 14px", borderRadius: R.md, border:`1.5px solid ${sel ? C.pri : C.b1}`, background:sel ? C.priPale : C.w, cursor:"pointer", fontFamily:"inherit", textAlign:"left" }}>
-                    {Ic.truck(sel ? C.pri : C.t3, 18)}
-                    <div style={{ flex:1 }}>
-                      <div style={{ fontSize:14.3, fontWeight:sel?700:500, color:sel?C.pri:C.t1 }}>{co.name || "Empresa"}</div>
-                      {isConsulta && <div style={{ fontSize:10.5, color:C.warn, fontWeight:600 }}>Modo consulta</div>}
-                    </div>
-                    {sel && Ic.chk(C.pri, 16)}
-                  </button>
-                );
-              })}
+            <div style={{ marginBottom:14 }}>
+              <Select label="Empresa transportista" icon={Ic.truck(C.pri,14)} value={transportChoice} onChange={v=>{setTransportChoice(v);setAssignTruckId("");setAssignDriverId("");}} options={transporterOpts} placeholder="Seleccionar transportista..." searchable />
             </div>
             {transportNeedsTruckDriver && <>
               {transportChoice === "ownfleet"

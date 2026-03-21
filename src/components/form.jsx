@@ -45,11 +45,13 @@ export function NumericStepper({ value, onChange, min, max, step=1, placeholder,
   );
 }
 
-export function Select({ label, icon, value, onChange, options, placeholder="Seleccionar..." }) {
+export function Select({ label, icon, value, onChange, options, placeholder="Seleccionar...", searchable }) {
   const [open, setOpen] = useState(false);
   const [hlIdx, setHlIdx] = useState(-1);
+  const [filter, setFilter] = useState("");
   const ref = useRef(null);
   const listRef = useRef(null);
+  const searchRef = useRef(null);
   const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth < 768);
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 767px)');
@@ -84,6 +86,13 @@ export function Select({ label, icon, value, onChange, options, placeholder="Sel
       if(el) el.scrollIntoView({ block:"nearest" });
     }
   },[hlIdx, open]);
+  useEffect(()=>{
+    if(open && searchable) { setFilter(""); setTimeout(()=>searchRef.current?.focus(), 50); }
+  },[open]);
+  const filteredOpts = searchable && filter ? options.filter(o => {
+    const q = filter.toLowerCase();
+    return (o.label||"").toLowerCase().includes(q) || (o.sub||"").toLowerCase().includes(q);
+  }) : options;
 
   // Mobile: native <select> for best touch UX
   if (isMobile) {
@@ -106,12 +115,15 @@ export function Select({ label, icon, value, onChange, options, placeholder="Sel
         {sel ? <>{sel.label}{sel.sub && <span style={{ color:C.t3, fontWeight:400 }}>&nbsp;— {sel.sub}</span>}</> : placeholder}
       </button>
       <div style={{ position:"absolute", right:12, top:label?`calc(50% + 11px)`:"50%", transform:`translateY(-50%) rotate(${open?180:0}deg)`, pointerEvents:"none", display:"flex", transition:"transform 0.2s" }}>{Ic.down(open?C.bFocus:C.t3,16)}</div>
-      {open && <div ref={listRef} role="listbox" style={{ position:"absolute", top:"100%", left:0, right:0, marginTop:4, background:C.w, border:`1.5px solid ${C.b1}`, borderRadius: R.lg, boxShadow:C.shMd, maxHeight:240, overflowY:"auto", zIndex:50, padding:4 }}>
-        {options.length===0 && <div style={{ padding:"14px 12px", fontSize:14.3, color:C.t3, textAlign:"center" }}>Sin opciones</div>}
-        {options.map((o,i)=>{
+      {open && <div ref={listRef} role="listbox" style={{ position:"absolute", top:"100%", left:0, right:0, marginTop:4, background:C.w, border:`1.5px solid ${C.b1}`, borderRadius: R.lg, boxShadow:C.shMd, maxHeight:280, overflowY:"auto", zIndex:50, padding:4 }}>
+        {searchable && <div style={{ padding:"4px 4px 6px", borderBottom:`1px solid ${C.b1}`, marginBottom:4 }}>
+          <input ref={searchRef} value={filter} onChange={e=>{setFilter(e.target.value);setHlIdx(0);}} placeholder="Buscar..." style={{ width:"100%", padding:"8px 10px", borderRadius: R.md, border:`1.5px solid ${C.b1}`, background:C.bg, color:C.t1, fontSize:13.2, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }} onKeyDown={e=>{if(e.key==="Escape"){e.preventDefault();setOpen(false);}else if(e.key==="Enter"&&filteredOpts.length>0){e.preventDefault();onChange(filteredOpts[hlIdx>=0?hlIdx:0].value);setOpen(false);}}} />
+        </div>}
+        {filteredOpts.length===0 && <div style={{ padding:"14px 12px", fontSize:14.3, color:C.t3, textAlign:"center" }}>{searchable && filter ? "Sin resultados" : "Sin opciones"}</div>}
+        {filteredOpts.map((o,i)=>{
           const active = o.value===value;
           const highlighted = i===hlIdx;
-          return <button key={o.value} data-val={o.value} type="button" role="option" aria-selected={active} onClick={()=>{onChange(o.value);setOpen(false);}} className="tv-sel-opt" style={{ width:"100%", padding:"11px 14px", background:highlighted?C.priPale:active?`${C.pri}08`:"transparent", border:"none", borderRadius: R.md, cursor:"pointer", fontFamily:"inherit", fontSize:15.4, fontWeight:active?600:o.bold?700:400, color:active?C.pri:C.t1, textAlign:"left", display:"flex", alignItems:"center", gap:8, transition:"background 0.12s", marginBottom:i<options.length-1?2:0 }}>
+          return <button key={o.value} data-val={o.value} type="button" role="option" aria-selected={active} onClick={()=>{onChange(o.value);setOpen(false);}} className="tv-sel-opt" style={{ width:"100%", padding:"11px 14px", background:highlighted?C.priPale:active?`${C.pri}08`:"transparent", border:"none", borderRadius: R.md, cursor:"pointer", fontFamily:"inherit", fontSize:15.4, fontWeight:active?600:o.bold?700:400, color:active?C.pri:C.t1, textAlign:"left", display:"flex", alignItems:"center", gap:8, transition:"background 0.12s", marginBottom:i<filteredOpts.length-1?2:0 }}>
             <span style={{ flex:1 }}>{o.label}{o.sub && <span style={{ fontSize:13.2, color:active?C.pri:C.t3, fontWeight:400 }}> — {o.sub}</span>}</span>
             {active && Ic.chk(C.pri,15)}
           </button>;
