@@ -817,9 +817,9 @@ export default function AdminScreen({ user, onBack }) {
       )}
 
       <div style={{display:"flex",gap:6,marginBottom:10,flexWrap:"wrap"}}>
-        {[...(isHub ? ["vinculadas"] : []), "companies","users","access","activity"].map(t=>(
+        {[...(isHub ? ["vinculadas"] : []), "companies","users","activity"].map(t=>(
           <button key={t} onClick={()=>{setTab(t);setSearch("");setStatsFilter(null);}} style={{flex:1,padding:"9px 0",borderRadius:8,border:`1px solid ${tab===t?C.pri:C.b1}`,background:tab===t?`${C.pri}12`:C.w,color:tab===t?C.pri:C.t2,fontWeight:600,fontSize:13,cursor:"pointer",fontFamily:"inherit",minWidth:t==="vinculadas"?90:undefined}}>
-            {t==="vinculadas"?"Vinculadas":t==="companies"?"Empresas":t==="users"?"Usuarios":t==="access"?"Accesos":"Actividad"}
+            {t==="vinculadas"?"Vinculadas":t==="companies"?"Empresas":t==="users"?"Usuarios":"Actividad"}
           </button>
         ))}
       </div>
@@ -855,8 +855,6 @@ export default function AdminScreen({ user, onBack }) {
         </>)}
 
         {tab==="vinculadas"&&<LinkedCompaniesScreen user={user} embedded/>}
-
-        {tab==="access"&&<AccessScreen user={user} embedded/>}
 
         {tab==="activity"&&(
           <div style={{display:"flex",flexDirection:"column",gap:0}}>

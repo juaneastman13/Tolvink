@@ -1,18 +1,17 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { C, Ic } from "../theme";
-import { Btn, Field, Loader, LoadingOverlay, ModalOverlay } from "../components";
+import { C, Ic, FONT } from "../theme";
+import { Btn, Field, Loader, LoadingOverlay } from "../components";
 import { Select } from "../components/form";
 import {
-  apiGetCompanyAccess, apiUpdateAccessLevel, apiToggleAccess,
+  apiGetUnifiedAccess, apiUpdateAccessLevel, apiToggleAccess,
   apiCreateLinkedCompany, apiCreateLinkedUser, apiAdminListUsers,
   apiGetLinkedStats, apiCreateSharedLink,
 } from "../api";
-import { FONT } from "../theme";
 
 // =====================================================================
-// TOLVINK — LinkedCompaniesScreen
-// Plant-centric: manage linked companies (producers/transporters),
-// their access levels (USO/CONSULTA), and create users for them.
+// TOLVINK — LinkedCompaniesScreen (Unified)
+// Merges CompanyAccess + PlantProducerAccess into a single grouped view.
+// Groups: Productores / Transportistas, with badges USO/CONSULTA.
 // =====================================================================
 
 const TYPE_COLORS = { PRODUCER: "#F59E0B", TRANSPORTER: "#14B8A6" };
@@ -35,16 +34,16 @@ function timeAgo(dateStr) {
 
 export default function LinkedCompaniesScreen({ user, embedded, onBack, onNav }) {
   const hubCompanyId = user?.activeCompanyId;
-  // Determine which grantee types this hub can create
-  const hubType = user?.userType; // "plant" | "producer" | "transporter"
+  const hubType = user?.userType;
   const allowedGranteeTypes = hubType === "producer" ? ["TRANSPORTER"] : hubType === "transporter" ? ["PRODUCER"] : ["PRODUCER", "TRANSPORTER"];
+
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState(null);
   const [saving, setSaving] = useState(false);
   const [doneMsg, setDoneMsg] = useState("");
   const [search, setSearch] = useState("");
-  const [stats, setStats] = useState({}); // { companyId: { activeFreights, lastFreightAt } }
+  const [stats, setStats] = useState({});
 
   // New company form
   const [showNewCompany, setShowNewCompany] = useState(false);
@@ -55,7 +54,7 @@ export default function LinkedCompaniesScreen({ user, embedded, onBack, onNav })
   const [companyUsers, setCompanyUsers] = useState([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
 
-  // New user form (inside expanded company)
+  // New user form
   const [showNewUser, setShowNewUser] = useState(false);
   const [uf, setUf] = useState({ name: "", phone: "", email: "", role: "operario" });
 
@@ -67,7 +66,7 @@ export default function LinkedCompaniesScreen({ user, embedded, onBack, onNav })
     if (!hubCompanyId) return;
     try {
       const [data, statsData] = await Promise.all([
-        apiGetCompanyAccess(hubCompanyId),
+        apiGetUnifiedAccess(hubCompanyId),
         apiGetLinkedStats(hubCompanyId).catch(() => ({})),
       ]);
       setRecords(data || []);
@@ -78,102 +77,247 @@ export default function LinkedCompaniesScreen({ user, embedded, onBack, onNav })
 
   useEffect(() => { load(); }, [load]);
 
-  // Load users when expanding a company
   const toggleExpand = async (accessRecord) => {
     const companyId = accessRecord.granteeCompanyId || accessRecord.granteeCompany?.id;
     if (expandedId === accessRecord.id) {
-      setExpandedId(null);
-      setCompanyUsers([]);
-      setShowNewUser(false);
+      setExpandedId(null); setCompanyUsers([]); setShowNewUser(false);
       return;
     }
     setExpandedId(accessRecord.id);
     setShowNewUser(false);
     setLoadingUsers(true);
-    try {
-      const users = await apiAdminListUsers(undefined, companyId);
-      setCompanyUsers(users || []);
-    } catch { setCompanyUsers([]); }
+    try { const users = await apiAdminListUsers(undefined, companyId); setCompanyUsers(users || []); }
+    catch { setCompanyUsers([]); }
     finally { setLoadingUsers(false); }
   };
 
-  // Toggle CONSULTA / USO
   const handleToggleLevel = async (record) => {
+    if (record.accessSource === "plant_producer_access") {
+      show("Migrar a vinculación completa primero (usar Crear empresa)", "err");
+      return;
+    }
     const newLevel = record.accessLevel === "OPERATOR" ? "READONLY" : "OPERATOR";
     setSaving(true);
-    try {
-      await apiUpdateAccessLevel(record.id, newLevel);
-      await load();
-      show(newLevel === "READONLY" ? "Cambiado a CONSULTA" : "Cambiado a USO");
-    } catch (e) { show(e.message, "err"); }
+    try { await apiUpdateAccessLevel(record.id, newLevel); await load(); show(newLevel === "READONLY" ? "Cambiado a CONSULTA" : "Cambiado a USO"); }
+    catch (e) { show(e.message, "err"); }
     finally { setSaving(false); }
   };
 
-  // Toggle active/inactive
   const handleToggleActive = async (record) => {
+    if (record.accessSource === "plant_producer_access") {
+      show("No se puede desactivar acceso legacy desde aquí", "err");
+      return;
+    }
     setSaving(true);
-    try {
-      await apiToggleAccess(record.id);
-      await load();
-      show(record.isActive ? "Vinculación desactivada" : "Vinculación activada");
-    } catch (e) { show(e.message, "err"); }
+    try { await apiToggleAccess(record.id); await load(); show(record.isActive ? "Vinculación desactivada" : "Vinculación activada"); }
+    catch (e) { show(e.message, "err"); }
     finally { setSaving(false); }
   };
 
-  // Create linked company
   const handleCreateCompany = async () => {
     if (!cf.name.trim()) return show("Nombre obligatorio", "err");
     setSaving(true);
     try {
       await apiCreateLinkedCompany({
-        name: cf.name.trim(),
-        type: cf.type,
-        rut: cf.rut.trim() || undefined,
-        contactEmail: cf.contactEmail.trim() || undefined,
-        hasInternalFleet: cf.type === "PRODUCER" ? cf.hasInternalFleet : false,
-        accessLevel: cf.accessLevel,
+        name: cf.name.trim(), type: cf.type,
+        rut: cf.rut.trim() || undefined, contactEmail: cf.contactEmail.trim() || undefined,
+        hasInternalFleet: cf.type === "PRODUCER" ? cf.hasInternalFleet : false, accessLevel: cf.accessLevel,
       });
       setCf({ name: "", type: "PRODUCER", rut: "", contactEmail: "", hasInternalFleet: false, accessLevel: "OPERATOR" });
-      setShowNewCompany(false);
-      setDoneMsg("Empresa creada y vinculada");
-      await load();
+      setShowNewCompany(false); setDoneMsg("Empresa creada y vinculada"); await load();
     } catch (e) { show(e.message, "err"); }
     finally { setSaving(false); }
   };
 
-  // Create user for linked company
   const handleCreateUser = async (targetCompanyId) => {
     if (!uf.name.trim()) return show("Nombre obligatorio", "err");
     setSaving(true);
     try {
-      await apiCreateLinkedUser({
-        targetCompanyId,
-        name: uf.name.trim(),
-        phone: uf.phone.trim() || undefined,
-        email: uf.email.trim() || undefined,
-        role: uf.role,
-      });
-      setUf({ name: "", phone: "", email: "", role: "operario" });
-      setShowNewUser(false);
-      setDoneMsg("Usuario creado");
-      // Reload users for this company
-      const users = await apiAdminListUsers(undefined, targetCompanyId);
-      setCompanyUsers(users || []);
+      await apiCreateLinkedUser({ targetCompanyId, name: uf.name.trim(), phone: uf.phone.trim() || undefined, email: uf.email.trim() || undefined, role: uf.role });
+      setUf({ name: "", phone: "", email: "", role: "operario" }); setShowNewUser(false); setDoneMsg("Usuario creado");
+      const users = await apiAdminListUsers(undefined, targetCompanyId); setCompanyUsers(users || []);
     } catch (e) { show(e.message, "err"); }
     finally { setSaving(false); }
   };
 
+  // Filter + group
   const searchLower = search.toLowerCase().trim();
   const activeRecords = records.filter(r => r.isActive && (!searchLower || (r.granteeCompany?.name || "").toLowerCase().includes(searchLower)));
   const inactiveRecords = records.filter(r => !r.isActive);
+  const producers = activeRecords.filter(r => r.granteeType === "PRODUCER");
+  const transporters = activeRecords.filter(r => r.granteeType === "TRANSPORTER");
+
+  // Render a single company card
+  const CompanyCard = ({ r }) => {
+    const co = r.granteeCompany || {};
+    const isExpanded = expandedId === r.id;
+    const typeColor = TYPE_COLORS[r.granteeType] || C.t3;
+    const companyId = r.granteeCompanyId || co.id;
+    const st = stats[companyId] || {};
+    const lastAgo = timeAgo(st.lastFreightAt);
+    const isLegacy = r.accessSource === "plant_producer_access";
+    const levelColor = r.accessLevel === "OPERATOR" ? C.ok : C.info;
+
+    return (
+      <div style={{ background: C.w, border: `1px solid ${C.b1}`, borderLeft: `3px solid ${typeColor}`, borderRadius: 12, boxShadow: C.sh, overflow: "hidden" }}>
+        <div style={{ padding: "12px 14px", display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }} onClick={() => toggleExpand(r)}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginBottom: 2 }}>
+              <span style={{ fontSize: 15.4, fontWeight: 700, color: C.t1 }}>{co.name || "Empresa"}</span>
+              <span style={{ fontSize: 9.9, fontWeight: 700, color: typeColor, background: `${typeColor}15`, padding: "1px 6px", borderRadius: 4 }}>
+                {TYPE_LABELS[r.granteeType] || r.granteeType}
+              </span>
+              <span style={{ fontSize: 9.9, fontWeight: 700, color: levelColor, background: `${levelColor}18`, padding: "1px 6px", borderRadius: 4 }}>
+                {LEVEL_LABELS[r.accessLevel] || r.accessLevel}
+              </span>
+              {isLegacy && <span style={{ fontSize: 8.8, fontWeight: 600, color: C.t3, background: `${C.t3}12`, padding: "1px 5px", borderRadius: 4 }}>Legacy</span>}
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 11.6, color: C.t3 }}>
+              {st.activeFreights > 0 ? (
+                <span style={{ fontWeight: 600, color: C.pri }}>{st.activeFreights} flete{st.activeFreights > 1 ? "s" : ""}</span>
+              ) : (
+                <span>Sin actividad</span>
+              )}
+              {lastAgo && <span>Último: {lastAgo}</span>}
+            </div>
+          </div>
+          {/* Toggle USO/CONSULTA */}
+          {!isLegacy && (
+            <button onClick={e => { e.stopPropagation(); handleToggleLevel(r); }} disabled={saving}
+              style={{ padding: "5px 10px", borderRadius: 6, fontFamily: "inherit", fontSize: 11.6, fontWeight: 700, cursor: saving ? "not-allowed" : "pointer", border: "none", background: `${levelColor}18`, color: levelColor }}>
+              {LEVEL_LABELS[r.accessLevel] || r.accessLevel}
+            </button>
+          )}
+          <div style={{ transform: isExpanded ? "rotate(-90deg)" : "rotate(0deg)", transition: "transform 0.15s" }}>
+            {Ic.chev(C.t3, 18)}
+          </div>
+        </div>
+
+        {/* Expanded detail */}
+        {isExpanded && (
+          <div style={{ borderTop: `1px solid ${C.b2}`, padding: "12px 14px" }}>
+            {/* Company info */}
+            <div style={{ display: "flex", gap: 16, flexWrap: "wrap", marginBottom: 12, fontSize: 12.1, color: C.t2 }}>
+              {co.rut && <span>RUT: {co.rut}</span>}
+              {co.phone && <span>Tel: {co.phone}</span>}
+              {co.email && <span>{co.email}</span>}
+              {co.hasInternalFleet && <span style={{ color: C.ok, fontWeight: 600 }}>Flota propia</span>}
+              {isLegacy && <span style={{ color: C.acc, fontWeight: 600, fontSize: 11 }}>Acceso legacy (PlantProducerAccess)</span>}
+            </div>
+
+            {/* Level toggle row */}
+            {!isLegacy && (
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12, padding: "8px 12px", background: C.bg, borderRadius: 8 }}>
+                <span style={{ fontSize: 12.1, fontWeight: 600, color: C.t2, flex: 1 }}>Nivel de acceso:</span>
+                {["OPERATOR", "READONLY"].map(l => (
+                  <button key={l} onClick={() => { if (r.accessLevel !== l) handleToggleLevel(r); }} disabled={saving}
+                    style={{
+                      padding: "5px 12px", borderRadius: 6, fontFamily: "inherit", fontSize: 11.6, fontWeight: 700, cursor: saving ? "not-allowed" : "pointer",
+                      border: `1.5px solid ${r.accessLevel === l ? (l === "OPERATOR" ? C.ok : C.info) : C.b1}`,
+                      background: r.accessLevel === l ? (l === "OPERATOR" ? `${C.ok}12` : `${C.info}12`) : C.w,
+                      color: r.accessLevel === l ? (l === "OPERATOR" ? C.ok : C.info) : C.t3,
+                    }}>
+                    {l === "OPERATOR" ? "USO" : "CONSULTA"}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Action buttons */}
+            <div style={{ display: "flex", gap: 8, marginBottom: 14, flexWrap: "wrap" }}>
+              {onNav && <button onClick={() => onNav("list", { filterCompany: co.name })} style={{ display: "flex", alignItems: "center", gap: 4, padding: "5px 10px", borderRadius: 6, border: `1px solid ${C.pri}30`, background: `${C.pri}08`, cursor: "pointer", fontFamily: FONT, fontSize: 11.6, fontWeight: 600, color: C.pri }}>
+                {Ic.truck(C.pri, 13)} Ver fletes
+              </button>}
+              <button onClick={async () => {
+                try {
+                  const link = await apiCreateSharedLink({ linkType: "PORTAL", targetCompanyId: companyId });
+                  const url = `${window.location.origin}/s/${link.token}`;
+                  await navigator.clipboard.writeText(url);
+                  show("Link de portal copiado");
+                } catch (e) { show(e.message || "Error", "err"); }
+              }} style={{ display: "flex", alignItems: "center", gap: 4, padding: "5px 10px", borderRadius: 6, border: `1px solid ${C.info}30`, background: `${C.info}08`, cursor: "pointer", fontFamily: FONT, fontSize: 11.6, fontWeight: 600, color: C.info }}>
+                {Ic.doc(C.info, 13)} Link de portal
+              </button>
+              {!isLegacy && <button onClick={() => handleToggleActive(r)} disabled={saving} style={{ background: "none", border: "none", fontSize: 11.6, color: C.err, fontWeight: 600, cursor: "pointer", padding: 0 }}>
+                Desactivar vinculación
+              </button>}
+            </div>
+
+            {/* Users section */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+              <div style={{ fontSize: 13.8, fontWeight: 700, color: C.t1 }}>Usuarios</div>
+              {!isLegacy && <button onClick={() => { setShowNewUser(!showNewUser); setUf({ name: "", phone: "", email: "", role: "operario" }); }} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", fontSize: 12.1, fontWeight: 600, color: C.pri }}>
+                {showNewUser ? "Cancelar" : "+ Crear usuario"}
+              </button>}
+            </div>
+
+            {/* New user form */}
+            {showNewUser && !isLegacy && (
+              <div style={{ background: C.bg, border: `1px solid ${C.b2}`, borderRadius: 10, padding: 14, marginBottom: 12 }}>
+                <Field label="Nombre" value={uf.name} onChange={v => setUf(p => ({ ...p, name: v }))} placeholder="Nombre completo" />
+                <div style={{ height: 8 }} />
+                <Field label="Teléfono" value={uf.phone} onChange={v => setUf(p => ({ ...p, phone: v }))} placeholder="09X XXX XXX" />
+                <div style={{ height: 8 }} />
+                <Field label="Email (opcional)" value={uf.email} onChange={v => setUf(p => ({ ...p, email: v }))} placeholder="usuario@email.com" />
+                <div style={{ height: 8 }} />
+                <div style={{ display: "flex", gap: 6 }}>
+                  {["gerente", "operario", "chofer"].map(r => (
+                    <button key={r} onClick={() => setUf(p => ({ ...p, role: r }))} style={{
+                      flex: 1, padding: "7px 0", borderRadius: 6, fontFamily: "inherit", fontSize: 12.1, fontWeight: 600, cursor: "pointer",
+                      border: `1.5px solid ${uf.role === r ? C.pri : C.b1}`,
+                      background: uf.role === r ? `${C.pri}12` : C.w,
+                      color: uf.role === r ? C.pri : C.t3,
+                    }}>{ROLE_LABELS[r]}</button>
+                  ))}
+                </div>
+                <div style={{ height: 10 }} />
+                <Btn full v="acc" disabled={saving} onClick={() => handleCreateUser(companyId)}>
+                  {saving ? "Creando..." : "Crear usuario"}
+                </Btn>
+              </div>
+            )}
+
+            {/* Users list */}
+            {loadingUsers ? <Loader /> : companyUsers.length === 0 ? (
+              <div style={{ fontSize: 12.1, color: C.t3, textAlign: "center", padding: 16 }}>Sin usuarios registrados</div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {companyUsers.map(u => (
+                  <div key={u.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", background: C.bg, borderRadius: 8 }}>
+                    {Ic.user(C.t2, 16)}
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 13.2, fontWeight: 600, color: C.t1 }}>{u.name}</div>
+                      <div style={{ fontSize: 11, color: C.t3 }}>
+                        {u.phone || u.email || ""}
+                        {u.role && <span style={{ marginLeft: 6, fontWeight: 600, color: C.t2 }}>{ROLE_LABELS[u.role] || u.role}</span>}
+                      </div>
+                    </div>
+                    {!u.active && <span style={{ fontSize: 9.9, fontWeight: 700, color: C.err, background: C.errPale, padding: "1px 6px", borderRadius: 4 }}>Inactivo</span>}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // Section header
+  const SectionHeader = ({ icon, label, count, color }) => (
+    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, marginTop: 8 }}>
+      {icon}
+      <span style={{ fontSize: 14.3, fontWeight: 800, color }}>{label}</span>
+      <span style={{ fontSize: 12.1, fontWeight: 600, color: C.t3 }}>({count})</span>
+    </div>
+  );
 
   return (
     <div style={{ padding: embedded ? 0 : "18px", flex: 1, overflow: "auto" }}>
       {(saving || doneMsg) && <LoadingOverlay closing={!!doneMsg} closingText={doneMsg} onClose={() => setDoneMsg("")} />}
 
-      {/* Back button (standalone mode) */}
       {!embedded && onBack && (
-        <button onClick={onBack} style={{ display: "flex", alignItems: "center", gap: 4, background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", fontSize: 14.3, fontWeight: 600, color: C.pri, padding: "0 0 12px", marginTop: 0 }}>
+        <button onClick={onBack} style={{ display: "flex", alignItems: "center", gap: 4, background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", fontSize: 14.3, fontWeight: 600, color: C.pri, padding: "0 0 12px" }}>
           {Ic.chev(C.pri, 18)} Volver
         </button>
       )}
@@ -186,10 +330,10 @@ export default function LinkedCompaniesScreen({ user, embedded, onBack, onNav })
         </Btn>
       </div>
 
-      {/* Search */}
-      {records.filter(r => r.isActive).length > 3 && (
+      {/* Search — always show when there are records */}
+      {records.filter(r => r.isActive).length > 0 && (
         <div style={{ marginBottom: 12 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 10px", borderRadius: 8, background: C.bgInput, border: `1.5px solid ${search ? C.bFocus : C.b2}` }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 10px", borderRadius: 8, background: C.bgInput || C.bg, border: `1.5px solid ${search ? C.bFocus || C.pri : C.b2}` }}>
             {Ic.srch(C.t3, 14)}
             <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar empresa..." style={{ flex: 1, border: "none", background: "transparent", outline: "none", fontSize: 13.2, color: C.t1, fontFamily: FONT, padding: 0 }} />
             {search && <button onClick={() => setSearch("")} style={{ display: "flex", border: "none", background: "none", cursor: "pointer", padding: 0 }}>{Ic.cross(C.t3, 12)}</button>}
@@ -241,162 +385,51 @@ export default function LinkedCompaniesScreen({ user, embedded, onBack, onNav })
         </div>
       )}
 
-      {/* Company list */}
+      {/* Company list — grouped */}
       {loading ? <Loader /> : activeRecords.length === 0 && !showNewCompany ? (
         <div style={{ textAlign: "center", padding: 40, color: C.t3, fontSize: 14.3 }}>
           No hay empresas vinculadas aún. Creá una para empezar.
         </div>
       ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          {activeRecords.map(r => {
-            const co = r.granteeCompany || {};
-            const isExpanded = expandedId === r.id;
-            const typeColor = TYPE_COLORS[r.granteeType] || C.t3;
-            const companyId = r.granteeCompanyId || co.id;
-            const st = stats[companyId] || {};
-            const lastAgo = timeAgo(st.lastFreightAt);
-            return (
-              <div key={r.id} style={{ background: C.w, border: `1px solid ${C.b1}`, borderLeft: `3px solid ${typeColor}`, borderRadius: 12, boxShadow: C.sh, overflow: "hidden" }}>
-                {/* Company row */}
-                <div style={{ padding: "12px 14px", display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }} onClick={() => toggleExpand(r)}>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2 }}>
-                      <span style={{ fontSize: 15.4, fontWeight: 700, color: C.t1 }}>{co.name || "Empresa"}</span>
-                      <span style={{ fontSize: 9.9, fontWeight: 700, color: typeColor, background: `${typeColor}15`, padding: "1px 6px", borderRadius: 4 }}>
-                        {TYPE_LABELS[r.granteeType] || r.granteeType}
-                      </span>
-                    </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 11.6, color: C.t3 }}>
-                      {st.activeFreights > 0 && <span style={{ fontWeight: 600, color: C.pri }}>{st.activeFreights} flete{st.activeFreights > 1 ? "s" : ""} activo{st.activeFreights > 1 ? "s" : ""}</span>}
-                      {lastAgo && <span>Último: {lastAgo}</span>}
-                      {!st.activeFreights && !lastAgo && co.email && <span>{co.email}</span>}
-                      {!st.activeFreights && !lastAgo && !co.email && <span>Sin actividad</span>}
-                    </div>
-                  </div>
-                  {/* USO / CONSULTA toggle */}
-                  <button
-                    onClick={e => { e.stopPropagation(); handleToggleLevel(r); }}
-                    disabled={saving}
-                    style={{
-                      padding: "5px 10px", borderRadius: 6, fontFamily: "inherit", fontSize: 11.6, fontWeight: 700, cursor: saving ? "not-allowed" : "pointer",
-                      border: "none",
-                      background: r.accessLevel === "OPERATOR" ? `${C.ok}18` : `${C.info}18`,
-                      color: r.accessLevel === "OPERATOR" ? C.ok : C.info,
-                    }}
-                  >
-                    {LEVEL_LABELS[r.accessLevel] || r.accessLevel}
-                  </button>
-                  {/* Expand chevron */}
-                  <div style={{ transform: isExpanded ? "rotate(-90deg)" : "rotate(0deg)", transition: "transform 0.15s" }}>
-                    {Ic.chev(C.t3, 18)}
-                  </div>
-                </div>
-
-                {/* Expanded detail */}
-                {isExpanded && (
-                  <div style={{ borderTop: `1px solid ${C.b2}`, padding: "12px 14px" }}>
-                    {/* Company info */}
-                    <div style={{ display: "flex", gap: 16, flexWrap: "wrap", marginBottom: 12, fontSize: 12.1, color: C.t2 }}>
-                      {co.rut && <span>RUT: {co.rut}</span>}
-                      {co.phone && <span>Tel: {co.phone}</span>}
-                      {co.hasInternalFleet && <span style={{ color: C.ok, fontWeight: 600 }}>Flota propia</span>}
-                    </div>
-
-                    {/* Action buttons */}
-                    <div style={{ display: "flex", gap: 8, marginBottom: 14, flexWrap: "wrap" }}>
-                      {onNav && <button onClick={() => onNav("list", { filterCompany: co.name })} style={{ display: "flex", alignItems: "center", gap: 4, padding: "5px 10px", borderRadius: 6, border: `1px solid ${C.pri}30`, background: `${C.pri}08`, cursor: "pointer", fontFamily: FONT, fontSize: 11.6, fontWeight: 600, color: C.pri }}>
-                        {Ic.truck(C.pri, 13)} Ver fletes
-                      </button>}
-                      <button onClick={async () => {
-                        try {
-                          const link = await apiCreateSharedLink({ linkType: "PORTAL", targetCompanyId: companyId });
-                          const url = `${window.location.origin}/s/${link.token}`;
-                          await navigator.clipboard.writeText(url);
-                          show("Link de portal copiado");
-                        } catch (e) { show(e.message || "Error", "err"); }
-                      }} style={{ display: "flex", alignItems: "center", gap: 4, padding: "5px 10px", borderRadius: 6, border: `1px solid ${C.info}30`, background: `${C.info}08`, cursor: "pointer", fontFamily: FONT, fontSize: 11.6, fontWeight: 600, color: C.info }}>
-                        {Ic.doc(C.info, 13)} Link de portal
-                      </button>
-                      <button onClick={() => handleToggleActive(r)} disabled={saving} style={{ background: "none", border: "none", fontSize: 11.6, color: C.err, fontWeight: 600, cursor: "pointer", padding: 0 }}>
-                        Desactivar vinculación
-                      </button>
-                    </div>
-
-                    {/* Users section */}
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8, marginTop: 4 }}>
-                      <div style={{ fontSize: 13.8, fontWeight: 700, color: C.t1 }}>Usuarios</div>
-                      <button onClick={() => { setShowNewUser(!showNewUser); setUf({ name: "", phone: "", email: "", role: "operario" }); }} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", fontSize: 12.1, fontWeight: 600, color: C.pri }}>
-                        {showNewUser ? "Cancelar" : "+ Crear usuario"}
-                      </button>
-                    </div>
-
-                    {/* New user form */}
-                    {showNewUser && (
-                      <div style={{ background: C.bg, border: `1px solid ${C.b2}`, borderRadius: 10, padding: 14, marginBottom: 12 }}>
-                        <Field label="Nombre" value={uf.name} onChange={v => setUf(p => ({ ...p, name: v }))} placeholder="Nombre completo" />
-                        <div style={{ height: 8 }} />
-                        <Field label="Teléfono" value={uf.phone} onChange={v => setUf(p => ({ ...p, phone: v }))} placeholder="09X XXX XXX" />
-                        <div style={{ height: 8 }} />
-                        <Field label="Email (opcional)" value={uf.email} onChange={v => setUf(p => ({ ...p, email: v }))} placeholder="usuario@email.com" />
-                        <div style={{ height: 8 }} />
-                        <div style={{ display: "flex", gap: 6 }}>
-                          {["gerente", "operario", "chofer"].map(r => (
-                            <button key={r} onClick={() => setUf(p => ({ ...p, role: r }))} style={{
-                              flex: 1, padding: "7px 0", borderRadius: 6, fontFamily: "inherit", fontSize: 12.1, fontWeight: 600, cursor: "pointer",
-                              border: `1.5px solid ${uf.role === r ? C.pri : C.b1}`,
-                              background: uf.role === r ? `${C.pri}12` : C.w,
-                              color: uf.role === r ? C.pri : C.t3,
-                            }}>{ROLE_LABELS[r]}</button>
-                          ))}
-                        </div>
-                        <div style={{ height: 10 }} />
-                        <Btn full v="acc" disabled={saving} onClick={() => handleCreateUser(companyId)}>
-                          {saving ? "Creando..." : "Crear usuario"}
-                        </Btn>
-                      </div>
-                    )}
-
-                    {/* Users list */}
-                    {loadingUsers ? <Loader /> : companyUsers.length === 0 ? (
-                      <div style={{ fontSize: 12.1, color: C.t3, textAlign: "center", padding: 16 }}>Sin usuarios registrados</div>
-                    ) : (
-                      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                        {companyUsers.map(u => (
-                          <div key={u.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", background: C.bg, borderRadius: 8 }}>
-                            {Ic.user(C.t2, 16)}
-                            <div style={{ flex: 1 }}>
-                              <div style={{ fontSize: 13.2, fontWeight: 600, color: C.t1 }}>{u.name}</div>
-                              <div style={{ fontSize: 11, color: C.t3 }}>
-                                {u.phone || u.email || ""}
-                                {u.role && <span style={{ marginLeft: 6, fontWeight: 600, color: C.t2 }}>{ROLE_LABELS[u.role] || u.role}</span>}
-                              </div>
-                            </div>
-                            {!u.active && <span style={{ fontSize: 9.9, fontWeight: 700, color: C.err, background: C.errPale, padding: "1px 6px", borderRadius: 4 }}>Inactivo</span>}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
+        <div>
+          {/* Productores */}
+          {producers.length > 0 && (
+            <>
+              <SectionHeader icon={Ic.grain("#F59E0B", 18)} label="Productores" count={producers.length} color="#F59E0B" />
+              <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 16 }}>
+                {producers.map(r => <CompanyCard key={r.id} r={r} />)}
               </div>
-            );
-          })}
+            </>
+          )}
 
-          {/* Inactive companies */}
+          {/* Transportistas */}
+          {transporters.length > 0 && (
+            <>
+              <SectionHeader icon={Ic.truck("#14B8A6", 18)} label="Transportistas" count={transporters.length} color="#14B8A6" />
+              <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 16 }}>
+                {transporters.map(r => <CompanyCard key={r.id} r={r} />)}
+              </div>
+            </>
+          )}
+
+          {/* Inactive */}
           {inactiveRecords.length > 0 && (
             <div style={{ marginTop: 8 }}>
               <div style={{ fontSize: 12.1, fontWeight: 600, color: C.t3, marginBottom: 6 }}>Desactivadas ({inactiveRecords.length})</div>
               {inactiveRecords.map(r => {
                 const co = r.granteeCompany || {};
+                const typeColor = TYPE_COLORS[r.granteeType] || C.t3;
                 return (
-                  <div key={r.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", background: C.mutedPale, borderRadius: 8, marginBottom: 6, opacity: 0.7 }}>
+                  <div key={r.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", background: C.mutedPale || C.bg, borderRadius: 8, marginBottom: 6, opacity: 0.7 }}>
                     <div style={{ flex: 1 }}>
                       <span style={{ fontSize: 13.8, fontWeight: 600, color: C.t2 }}>{co.name || "Empresa"}</span>
-                      <span style={{ fontSize: 9.9, marginLeft: 8, color: C.t3 }}>{TYPE_LABELS[r.granteeType] || ""}</span>
+                      <span style={{ fontSize: 9.9, marginLeft: 8, fontWeight: 700, color: typeColor, background: `${typeColor}15`, padding: "1px 6px", borderRadius: 4 }}>{TYPE_LABELS[r.granteeType] || ""}</span>
                     </div>
-                    <button onClick={() => handleToggleActive(r)} disabled={saving} style={{ background: "none", border: "none", fontSize: 11.6, color: C.pri, fontWeight: 600, cursor: "pointer" }}>
-                      Reactivar
-                    </button>
+                    {r.accessSource !== "plant_producer_access" && (
+                      <button onClick={() => handleToggleActive(r)} disabled={saving} style={{ background: "none", border: "none", fontSize: 11.6, color: C.pri, fontWeight: 600, cursor: "pointer" }}>
+                        Reactivar
+                      </button>
+                    )}
                   </div>
                 );
               })}
