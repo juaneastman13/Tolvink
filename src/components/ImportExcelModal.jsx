@@ -170,7 +170,7 @@ export default function ImportExcelModal({ mode, onClose, onImport, existingComp
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}
       onClick={(e) => { if (e.target === e.currentTarget && !importing) onClose(); }}>
-      <div style={{ background: C.bgCard || C.w, borderRadius: 16, padding: 24, maxWidth: 640, width: "90vw", maxHeight: "80vh", overflow: "auto", position: "relative" }}>
+      <div style={{ background: C.bgCard || C.w, borderRadius: R.xl, padding: 24, maxWidth: 640, width: "90vw", maxHeight: "80vh", overflow: "auto", position: "relative" }}>
 
         {/* Header */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>

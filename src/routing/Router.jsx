@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo, lazy, Suspense } from "react";
 import { useLocation } from "react-router-dom";
-import { C, Ic } from "../theme";
+import { C, Ic , R} from "../theme";
 import { stCfg } from "../constants";
 import { originDisplay, destDisplay } from "../hooks";
 
@@ -63,7 +63,7 @@ PATH_TO_SCREEN["/fields"] = "locations"; // redirect legacy route
 // ======================== SCREEN LOADER ===============================
 export const SL = () => <div role="status" aria-label="Cargando" style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:40,gap:14,animation:"fadeIn 0.3s ease"}}>
   <div style={{display:"flex",gap:6}}>
-    {[0,1,2].map(i=><div key={i} style={{width:8,height:8,borderRadius:4,background:C.pri,opacity:0.3,animation:`tvDots 1.2s ${i*0.15}s ease-in-out infinite`}}/>)}
+    {[0,1,2].map(i=><div key={i} style={{width:8,height:8,borderRadius: R.xs,background:C.pri,opacity:0.3,animation:`tvDots 1.2s ${i*0.15}s ease-in-out infinite`}}/>)}
   </div>
   <style>{`@keyframes tvDots{0%,80%,100%{opacity:0.3;transform:scale(1)}40%{opacity:1;transform:scale(1.3)}}`}</style>
 </div>;
@@ -78,23 +78,23 @@ export function MobileSearch({ query, onChange, results, onSelect }) {
     const tid = setTimeout(() => { document.addEventListener("mousedown", h); document.addEventListener("touchstart", h, { passive: true }); }, 0);
     return () => { clearTimeout(tid); document.removeEventListener("mousedown", h); document.removeEventListener("touchstart", h); };
   }, [open, onChange]);
-  if (!open) return <button onClick={() => setOpen(true)} style={{ display:"flex", alignItems:"center", justifyContent:"center", width:34, height:34, borderRadius:8, border:`1px solid ${C.b1}`, background:C.w, cursor:"pointer", flexShrink:0 }} aria-label="Buscar">{Ic.srch(C.t3,16)}</button>;
+  if (!open) return <button onClick={() => setOpen(true)} style={{ display:"flex", alignItems:"center", justifyContent:"center", width:34, height:34, borderRadius: R.md, border:`1px solid ${C.b1}`, background:C.w, cursor:"pointer", flexShrink:0 }} aria-label="Buscar">{Ic.srch(C.t3,16)}</button>;
   return (
     <div ref={ref} style={{ flex:1, position:"relative", minWidth:0 }}>
-      <div style={{ display:"flex", alignItems:"center", gap:6, padding:"6px 10px", borderRadius:8, background:C.bgInput, border:`1.5px solid ${C.bFocus}` }}>
+      <div style={{ display:"flex", alignItems:"center", gap:6, padding:"6px 10px", borderRadius: R.md, background:C.bgInput, border:`1.5px solid ${C.bFocus}` }}>
         {Ic.srch(C.t3,14)}
         <input autoFocus value={query} onChange={e=>onChange(e.target.value)} placeholder="Buscar flete..." style={{ flex:1, border:"none", background:"transparent", outline:"none", fontSize:13.2, color:C.t1, fontFamily:"inherit", padding:0 }} />
         <button onClick={()=>{setOpen(false);onChange("");}} style={{ display:"flex", border:"none", background:"none", cursor:"pointer", padding:0 }}>{Ic.cross(C.t3,14)}</button>
       </div>
-      {query.length >= 2 && results.length > 0 && <div style={{ position:"absolute", left:0, right:0, top:"100%", marginTop:4, background:C.w, border:`1px solid ${C.b1}`, borderRadius:10, boxShadow:C.shMd, zIndex:200, maxHeight:260, overflowY:"auto", padding:4 }}>
-        {results.slice(0,6).map(f => <button key={f.id} onClick={()=>{onSelect(f.id);setOpen(false);}} style={{ display:"flex", alignItems:"center", gap:8, width:"100%", padding:"8px 10px", background:"transparent", border:"none", borderRadius:8, cursor:"pointer", fontFamily:"inherit", textAlign:"left" }}>
+      {query.length >= 2 && results.length > 0 && <div style={{ position:"absolute", left:0, right:0, top:"100%", marginTop:4, background:C.w, border:`1px solid ${C.b1}`, borderRadius: R.md, boxShadow:C.shMd, zIndex:200, maxHeight:260, overflowY:"auto", padding:4 }}>
+        {results.slice(0,6).map(f => <button key={f.id} onClick={()=>{onSelect(f.id);setOpen(false);}} style={{ display:"flex", alignItems:"center", gap:8, width:"100%", padding:"8px 10px", background:"transparent", border:"none", borderRadius: R.md, cursor:"pointer", fontFamily:"inherit", textAlign:"left" }}>
           <div style={{ flex:1, minWidth:0 }}>
             <div style={{ fontSize:12.5, fontWeight:700, color:C.t1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{f.grain} · {f.tons} {f.unit||"tn"}</div>
             <div style={{ fontSize:10.5, color:C.t3, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{f.code} · {originDisplay(f)||"—"} → {destDisplay(f)||"—"}</div>
           </div>
         </button>)}
       </div>}
-      {query.length >= 2 && results.length === 0 && <div style={{ position:"absolute", left:0, right:0, top:"100%", marginTop:4, background:C.w, border:`1px solid ${C.b1}`, borderRadius:10, boxShadow:C.shMd, zIndex:200, padding:"10px 14px", fontSize:12.1, color:C.t3 }}>Sin resultados</div>}
+      {query.length >= 2 && results.length === 0 && <div style={{ position:"absolute", left:0, right:0, top:"100%", marginTop:4, background:C.w, border:`1px solid ${C.b1}`, borderRadius: R.md, boxShadow:C.shMd, zIndex:200, padding:"10px 14px", fontSize:12.1, color:C.t3 }}>Sin resultados</div>}
     </div>
   );
 }

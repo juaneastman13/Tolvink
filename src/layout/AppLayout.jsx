@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo, Suspense } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { uploadPhoto, apiAddDocument, apiListConversations, apiSearchFreights } from "../api";
-import { C, track, FONT, Ic } from "../theme";
+import { C, track, FONT, Ic , R} from "../theme";
 import { POLL_INTERVALS, stCfg } from "../constants";
 import { Toast, LoadingOverlay, Sidebar, Nav, NotifBell, NotificationsPanel, ErrorBoundary } from "../components";
 import { permsFor, mapFreight, originDisplay, destDisplay } from "../hooks";
@@ -494,18 +494,18 @@ export default function AppLayout({ fh, catalog, online, notif, isDesktop }) {
         <div className="tv-mobile-header" style={{paddingTop:"max(12px, env(safe-area-inset-top))",paddingBottom:10,paddingLeft:18,paddingRight:18,borderBottom:`1px solid ${C.b2}`,background:C.w,flexShrink:0,zIndex:10,position:"relative",display:"flex",alignItems:"center",gap:10}}>
           <div style={{display:"inline-flex",alignItems:"flex-start",flexShrink:0}}>
             <span style={{fontSize:33,fontWeight:800,color:C.pri,letterSpacing:-0.9,lineHeight:1}}>tolvink</span>
-            <span style={{width:8,height:8,borderRadius:4,background:C.acc,display:"inline-block",marginLeft:3,marginTop:1,animation:"dotPulse 1.5s ease-in-out infinite"}}></span>
+            <span style={{width:8,height:8,borderRadius: R.xs,background:C.acc,display:"inline-block",marginLeft:3,marginTop:1,animation:"dotPulse 1.5s ease-in-out infinite"}}></span>
           </div>
           <div style={{flex:1}}/>
           {auth.user && <div style={{position:"relative"}}>
-            <button aria-label="Configuración" onClick={()=>setCompDropOpen(v=>!v)} style={{display:"flex",alignItems:"center",gap:6,padding:"5px 10px",borderRadius:8,border:`1px solid ${C.b1}`,background:C.w,cursor:"pointer",fontFamily:"inherit",maxWidth:180,WebkitTapHighlightColor:"transparent",touchAction:"manipulation"}}>
+            <button aria-label="Configuración" onClick={()=>setCompDropOpen(v=>!v)} style={{display:"flex",alignItems:"center",gap:6,padding:"5px 10px",borderRadius: R.md,border:`1px solid ${C.b1}`,background:C.w,cursor:"pointer",fontFamily:"inherit",maxWidth:180,WebkitTapHighlightColor:"transparent",touchAction:"manipulation"}}>
               <span style={{fontSize:12.1,fontWeight:600,color:C.t1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{auth.user.entity}</span>
-              <span style={{fontSize:10,fontWeight:600,color:C.t3,background:C.bg,padding:"1px 6px",borderRadius:4,flexShrink:0,whiteSpace:"nowrap"}}>{auth.simpleMode?"Simple":"Completo"}</span>
+              <span style={{fontSize:10,fontWeight:600,color:C.t3,background:C.bg,padding:"1px 6px",borderRadius: R.xs,flexShrink:0,whiteSpace:"nowrap"}}>{auth.simpleMode?"Simple":"Completo"}</span>
               {Ic.down(C.t3,10)}
             </button>
             {compDropOpen && <>
               <div onClick={()=>setCompDropOpen(false)} style={{position:"fixed",inset:0,zIndex:99}}/>
-              <div style={{position:"absolute",top:"100%",right:0,marginTop:4,background:C.w,border:`1px solid ${C.b1}`,borderRadius:12,boxShadow:C.shMd,zIndex:100,minWidth:200,overflow:"hidden"}}>
+              <div style={{position:"absolute",top:"100%",right:0,marginTop:4,background:C.w,border:`1px solid ${C.b1}`,borderRadius: R.lg,boxShadow:C.shMd,zIndex:100,minWidth:200,overflow:"hidden"}}>
                 {auth.user.companies?.length > 1 && <>
                   <div style={{padding:"8px 14px 4px",fontSize:10,fontWeight:700,color:C.t3,textTransform:"uppercase",letterSpacing:0.5}}>Empresa</div>
                   {auth.user.companies.map(c=>{
@@ -514,7 +514,7 @@ export default function AppLayout({ fh, catalog, online, notif, isDesktop }) {
                       if(!isActive) await auth.switchCompany(c.companyId);
                       setCompDropOpen(false);
                     }} style={{width:"100%",padding:"8px 14px",border:"none",background:isActive?C.priPale:"transparent",cursor:"pointer",fontFamily:"inherit",textAlign:"left",display:"flex",alignItems:"center",gap:8}}>
-                      <div style={{width:7,height:7,borderRadius:4,background:isActive?C.pri:C.b2,flexShrink:0}}/>
+                      <div style={{width:7,height:7,borderRadius: R.xs,background:isActive?C.pri:C.b2,flexShrink:0}}/>
                       <div>
                         <div style={{fontSize:13.2,fontWeight:isActive?700:500,color:isActive?C.pri:C.t1}}>{c.companyName}</div>
                         <div style={{fontSize:10,color:C.t3}}>{({plant:"Planta",transporter:"Transportista",producer:"Productor"})[c.companyType]||c.companyType}</div>
@@ -527,14 +527,14 @@ export default function AppLayout({ fh, catalog, online, notif, isDesktop }) {
                 {[{k:false,l:"Completo"},{k:true,l:"Simple"}].map(o=>{
                   const isActive = auth.simpleMode === o.k;
                   return <button key={String(o.k)} onClick={()=>{if(!isActive) auth.toggleSimpleMode(); setCompDropOpen(false);}} style={{width:"100%",padding:"8px 14px",border:"none",background:isActive?C.priPale:"transparent",cursor:"pointer",fontFamily:"inherit",textAlign:"left",display:"flex",alignItems:"center",gap:8}}>
-                    <div style={{width:7,height:7,borderRadius:4,background:isActive?C.pri:C.b2,flexShrink:0}}/>
+                    <div style={{width:7,height:7,borderRadius: R.xs,background:isActive?C.pri:C.b2,flexShrink:0}}/>
                     <span style={{fontSize:13.2,fontWeight:isActive?700:500,color:isActive?C.pri:C.t1}}>{o.l}</span>
                   </button>;
                 })}
               </div>
             </>}
           </div>}
-          {auth.user && <button aria-label="Buscar" onClick={()=>{setMobileSearchOpen(v=>!v);if(mobileSearchOpen){setSearchQ("");}}} style={{display:"flex",alignItems:"center",justifyContent:"center",width:34,height:34,borderRadius:8,border:`1px solid ${mobileSearchOpen?C.pri:C.b1}`,background:mobileSearchOpen?C.priPale:C.w,cursor:"pointer",flexShrink:0,WebkitTapHighlightColor:"transparent",touchAction:"manipulation"}}>{Ic.srch(mobileSearchOpen?C.pri:C.t3,16)}</button>}
+          {auth.user && <button aria-label="Buscar" onClick={()=>{setMobileSearchOpen(v=>!v);if(mobileSearchOpen){setSearchQ("");}}} style={{display:"flex",alignItems:"center",justifyContent:"center",width:34,height:34,borderRadius: R.md,border:`1px solid ${mobileSearchOpen?C.pri:C.b1}`,background:mobileSearchOpen?C.priPale:C.w,cursor:"pointer",flexShrink:0,WebkitTapHighlightColor:"transparent",touchAction:"manipulation"}}>{Ic.srch(mobileSearchOpen?C.pri:C.t3,16)}</button>}
           <div style={{position:"relative",flexShrink:0}}>
             <NotifBell count={notif.unreadCount} onClick={()=>setNotifOpen(!notifOpen)} />
             <NotificationsPanel open={notifOpen} onClose={()=>setNotifOpen(false)} notifications={notif.notifications} onMarkRead={notif.markRead} onMarkAllRead={notif.markAllRead} onTap={handleNotifTap} />
@@ -542,14 +542,14 @@ export default function AppLayout({ fh, catalog, online, notif, isDesktop }) {
         </div>
         {/* Mobile search bar */}
         {mobileSearchOpen && <div style={{padding:"0 18px 10px",background:C.w,borderBottom:`1px solid ${C.b2}`,position:"relative",zIndex:10}} className="tv-mobile-header">
-          <div style={{display:"flex",alignItems:"center",gap:6,padding:"8px 12px",borderRadius:10,background:C.bg,border:`1.5px solid ${searchQ?C.bFocus:C.b2}`,transition:"border-color 0.15s"}}>
+          <div style={{display:"flex",alignItems:"center",gap:6,padding:"8px 12px",borderRadius: R.md,background:C.bg,border:`1.5px solid ${searchQ?C.bFocus:C.b2}`,transition:"border-color 0.15s"}}>
             <span style={{display:"flex",flexShrink:0}}>{Ic.srch(C.t3,14)}</span>
             <input autoFocus aria-label="Buscar fletes" value={searchQ} onChange={e=>setSearchQ(e.target.value)} placeholder="Buscar flete..." style={{flex:1,border:"none",background:"transparent",outline:"none",fontSize:14,color:C.t1,fontFamily:"inherit",padding:0}}/>
             {searchQ && <button onClick={()=>setSearchQ("")} style={{display:"flex",border:"none",background:"none",cursor:"pointer",padding:0}}>{Ic.cross(C.t3,14)}</button>}
           </div>
-          {searchQ.length >= 2 && searchResults.length > 0 && <div onScroll={e=>{const el=e.currentTarget;if(searchHasMore&&!searchLoadingMore&&el.scrollTop+el.clientHeight>=el.scrollHeight-20)loadMoreSearch();}} style={{position:"absolute",left:18,right:18,top:"100%",marginTop:2,background:C.w,border:`1px solid ${C.b1}`,borderRadius:12,boxShadow:C.shMd,zIndex:200,maxHeight:320,overflowY:"auto",padding:4}}>
-            {searchResults.map(f=>{const st=stCfg(f.status);return <button key={f.id} aria-label={`Ver flete ${f.code || ''} ${f.grain || ''}`} onClick={()=>{setSelFreight(f.id);fh.refresh(f.id);navigate(`/freight/${f.id}`);setSearchQ("");setMobileSearchOpen(false);}} style={{display:"flex",alignItems:"center",gap:10,width:"100%",padding:"10px 12px",background:"transparent",border:"none",borderRadius:10,cursor:"pointer",fontFamily:"inherit",textAlign:"left"}} onTouchStart={e=>e.currentTarget.style.background=C.priGhost} onTouchEnd={e=>e.currentTarget.style.background="transparent"}>
-              <div style={{width:4,height:32,borderRadius:2,background:st.color,flexShrink:0}}/>
+          {searchQ.length >= 2 && searchResults.length > 0 && <div onScroll={e=>{const el=e.currentTarget;if(searchHasMore&&!searchLoadingMore&&el.scrollTop+el.clientHeight>=el.scrollHeight-20)loadMoreSearch();}} style={{position:"absolute",left:18,right:18,top:"100%",marginTop:2,background:C.w,border:`1px solid ${C.b1}`,borderRadius: R.lg,boxShadow:C.shMd,zIndex:200,maxHeight:320,overflowY:"auto",padding:4}}>
+            {searchResults.map(f=>{const st=stCfg(f.status);return <button key={f.id} aria-label={`Ver flete ${f.code || ''} ${f.grain || ''}`} onClick={()=>{setSelFreight(f.id);fh.refresh(f.id);navigate(`/freight/${f.id}`);setSearchQ("");setMobileSearchOpen(false);}} style={{display:"flex",alignItems:"center",gap:10,width:"100%",padding:"10px 12px",background:"transparent",border:"none",borderRadius: R.md,cursor:"pointer",fontFamily:"inherit",textAlign:"left"}} onTouchStart={e=>e.currentTarget.style.background=C.priGhost} onTouchEnd={e=>e.currentTarget.style.background="transparent"}>
+              <div style={{width:4,height:32,borderRadius: R.xs,background:st.color,flexShrink:0}}/>
               <div style={{flex:1,minWidth:0}}>
                 <div style={{fontSize:14,fontWeight:700,color:C.t1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.grain==="Otros"?f.productTypeOther||"Otros":f.grain} · {f.tons} {f.unit||"tn"}</div>
                 <div style={{fontSize:12,color:C.t3,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.code} · {originDisplay(f)||"—"} → {destDisplay(f)||"—"}</div>
@@ -557,7 +557,7 @@ export default function AppLayout({ fh, catalog, online, notif, isDesktop }) {
             </button>})}
             {searchLoadingMore && <div style={{padding:"8px",textAlign:"center"}}><div style={{width:16,height:16,border:`2px solid ${C.b2}`,borderTopColor:C.pri,borderRadius:"50%",animation:"spin 0.6s linear infinite",margin:"0 auto"}}/></div>}
           </div>}
-          {searchQ.length >= 2 && searchResults.length === 0 && <div style={{position:"absolute",left:18,right:18,top:"100%",marginTop:2,background:C.w,border:`1px solid ${C.b1}`,borderRadius:12,boxShadow:C.shMd,zIndex:200,padding:"14px 16px",fontSize:13.2,color:C.t3}}>Sin resultados</div>}
+          {searchQ.length >= 2 && searchResults.length === 0 && <div style={{position:"absolute",left:18,right:18,top:"100%",marginTop:2,background:C.w,border:`1px solid ${C.b1}`,borderRadius: R.lg,boxShadow:C.shMd,zIndex:200,padding:"14px 16px",fontSize:13.2,color:C.t3}}>Sin resultados</div>}
         </div>}
 
         {/* Offline banner */}
@@ -566,9 +566,9 @@ export default function AppLayout({ fh, catalog, online, notif, isDesktop }) {
         {/* Map bar + fullscreen map */}
         {mapFocus && <>
           <div style={{display:"flex",alignItems:"center",gap:10,padding:"8px 18px",background:C.w,borderBottom:`1px solid ${C.b2}`,flexShrink:0,zIndex:10}}>
-            <button onClick={()=>setMapFocus(null)} style={{display:"flex",alignItems:"center",gap:6,padding:"7px 14px",borderRadius:8,border:`1.5px solid ${C.b1}`,background:C.bg,cursor:"pointer",fontSize:14.3,fontWeight:700,color:C.pri,fontFamily:"inherit"}}>{Ic.chev(C.pri,14)} Cerrar mapa</button>
+            <button onClick={()=>setMapFocus(null)} style={{display:"flex",alignItems:"center",gap:6,padding:"7px 14px",borderRadius: R.md,border:`1.5px solid ${C.b1}`,background:C.bg,cursor:"pointer",fontSize:14.3,fontWeight:700,color:C.pri,fontFamily:"inherit"}}>{Ic.chev(C.pri,14)} Cerrar mapa</button>
             <span style={{flex:1,fontSize:13.2,color:C.t2,fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{mapFocus.label||"Ubicación"}</span>
-            <a href={mapFocus.destLat!=null&&mapFocus.destLng!=null?`https://www.google.com/maps/dir/?api=1&origin=${mapFocus.lat},${mapFocus.lng}&destination=${mapFocus.destLat},${mapFocus.destLng}`:`https://www.google.com/maps/search/?api=1&query=${mapFocus.lat},${mapFocus.lng}`} target="_blank" rel="noopener noreferrer" style={{display:"flex",alignItems:"center",gap:5,padding:"7px 14px",borderRadius:8,background:C.pri,color:"#fff",fontSize:13.2,fontWeight:700,textDecoration:"none",fontFamily:"inherit",flexShrink:0}}>Navegar ↗</a>
+            <a href={mapFocus.destLat!=null&&mapFocus.destLng!=null?`https://www.google.com/maps/dir/?api=1&origin=${mapFocus.lat},${mapFocus.lng}&destination=${mapFocus.destLat},${mapFocus.destLng}`:`https://www.google.com/maps/search/?api=1&query=${mapFocus.lat},${mapFocus.lng}`} target="_blank" rel="noopener noreferrer" style={{display:"flex",alignItems:"center",gap:5,padding:"7px 14px",borderRadius: R.md,background:C.pri,color:"#fff",fontSize:13.2,fontWeight:700,textDecoration:"none",fontFamily:"inherit",flexShrink:0}}>Navegar ↗</a>
           </div>
           <div style={{flex:1,minHeight:0}}>
             <Suspense fallback={<SL/>}><MapOverlay lat={mapFocus.lat} lng={mapFocus.lng} label={mapFocus.label} destLat={mapFocus.destLat} destLng={mapFocus.destLng} destLabel={mapFocus.destLabel} freightId={mapFocus.freightId} onClose={()=>setMapFocus(null)}/></Suspense>
@@ -579,7 +579,7 @@ export default function AppLayout({ fh, catalog, online, notif, isDesktop }) {
         {locPicker && <Suspense fallback={<SL/>}><LocPickerFullscreen value={locPicker.value} onChange={locPicker.onChange} defaultCenter={locPicker.defaultCenter} label={locPicker.label} confirmLabel={locPicker.confirmLabel} onConfirm={locPicker.onConfirm} onClose={()=>setLocPicker(null)}/></Suspense>}
 
         {/* Company switch transition overlay */}
-        {auth.companySwitching && <div style={{position:"absolute",inset:0,background:"rgba(255,255,255,0.7)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:50,backdropFilter:"blur(2px)"}}><div style={{display:"flex",alignItems:"center",gap:10,padding:"12px 24px",borderRadius:12,background:C.w,boxShadow:C.shMd}}><div style={{width:18,height:18,border:`3px solid ${C.b2}`,borderTopColor:C.pri,borderRadius:"50%",animation:"spin 0.6s linear infinite"}}/><span style={{fontSize:14.3,fontWeight:600,color:C.t2}}>Cambiando empresa...</span></div></div>}
+        {auth.companySwitching && <div style={{position:"absolute",inset:0,background:"rgba(255,255,255,0.7)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:50,backdropFilter:"blur(2px)"}}><div style={{display:"flex",alignItems:"center",gap:10,padding:"12px 24px",borderRadius: R.lg,background:C.w,boxShadow:C.shMd}}><div style={{width:18,height:18,border:`3px solid ${C.b2}`,borderTopColor:C.pri,borderRadius:"50%",animation:"spin 0.6s linear infinite"}}/><span style={{fontSize:14.3,fontWeight:600,color:C.t2}}>Cambiando empresa...</span></div></div>}
 
         {/* Scrollable content area */}
         <div style={{flex:1,overflow:(screen==="chats"||screen==="calendar")&&isDesktop?"hidden":"auto",display:(mapFocus||locPicker)?"none":"flex",flexDirection:"column",WebkitOverflowScrolling:"touch",overscrollBehavior:"contain"}}>
@@ -618,7 +618,7 @@ export default function AppLayout({ fh, catalog, online, notif, isDesktop }) {
       {/* Post-creation modal */}
       {!submitting && postCreateFreightId && (
         <div style={{ position:"fixed", inset:0, zIndex:9999, display:"flex", alignItems:"center", justifyContent:"center", background:"rgba(0,0,0,0.5)", fontFamily:FONT }}>
-          <div style={{ background:C.w, borderRadius:16, padding:28, maxWidth:380, width:"90%", boxShadow:C.shLg, textAlign:"center" }}>
+          <div style={{ background:C.w, borderRadius: R.xl, padding:28, maxWidth:380, width:"90%", boxShadow:C.shLg, textAlign:"center" }}>
             <div style={{ width:48, height:48, borderRadius:"50%", background:C.okPale, display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 16px" }}>{Ic.chk(C.ok,24)}</div>
             <div style={{ fontSize:18, fontWeight:800, color:C.t1, marginBottom:4 }}>Flete solicitado</div>
             <div style={{ fontSize:13, color:C.t3, marginBottom:24 }}>El flete fue creado correctamente</div>
@@ -628,20 +628,20 @@ export default function AppLayout({ fh, catalog, online, notif, isDesktop }) {
                 setPostCreateFreightId(null); setPostCreateForm(null); setSubmitDone("");
                 setDuplicateData(prev ? { ...prev, fieldId:undefined, lotId:undefined, tons:undefined, truckCount:undefined } : null);
                 navigate("/new");
-              }} style={{ padding:"12px 16px", borderRadius:10, border:"none", background:C.pri, color:C.w, fontSize:14, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
+              }} style={{ padding:"12px 16px", borderRadius: R.md, border:"none", background:C.pri, color:C.w, fontSize:14, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
                 Crear otro similar
               </button>
               <button onClick={()=>{
                 const fId = postCreateFreightId;
                 setPostCreateFreightId(null); setPostCreateForm(null); setSubmitDone("");
                 navigate("/freight/" + fId);
-              }} style={{ padding:"12px 16px", borderRadius:10, border:`1.5px solid ${C.pri}`, background:C.w, color:C.pri, fontSize:14, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
+              }} style={{ padding:"12px 16px", borderRadius: R.md, border:`1.5px solid ${C.pri}`, background:C.w, color:C.pri, fontSize:14, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
                 Ver flete creado
               </button>
               <button onClick={()=>{
                 setPostCreateFreightId(null); setPostCreateForm(null); setSubmitDone("");
                 navigate("/list");
-              }} style={{ padding:"8px 16px", borderRadius:10, border:"none", background:"transparent", color:C.t3, fontSize:13, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>
+              }} style={{ padding:"8px 16px", borderRadius: R.md, border:"none", background:"transparent", color:C.t3, fontSize:13, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>
                 Ir a la lista
               </button>
             </div>

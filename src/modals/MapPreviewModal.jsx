@@ -88,7 +88,7 @@ export default function MapPreviewModal({ loc, onClose }) {
             gap: 6,
             marginTop: 12,
             padding: "10px 16px",
-            borderRadius: 10,
+            borderRadius: R.md,
             border: `1.5px solid ${C.b1}`,
             background: C.w,
             color: C.pri,

@@ -72,7 +72,7 @@ function DonutChart({ data, labelKey, valueKey }) {
       <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1 }}>
         {segments.map((s, i) => (
           <div key={i} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <div style={{ width: 10, height: 10, borderRadius: 3, background: s.color, flexShrink: 0 }} />
+            <div style={{ width: 10, height: 10, borderRadius: R.xs, background: s.color, flexShrink: 0 }} />
             <span style={{ fontSize: 12.1, color: C.t1, flex: 1 }}>{s[labelKey]}</span>
             <span style={{ fontSize: 12.1, fontWeight: 700, color: C.t1 }}>{s[valueKey].toLocaleString("es-UY")} t</span>
             <span style={{ fontSize: 10.5, color: C.t3, minWidth: 32, textAlign: "right" }}>{Math.round(s.pct)}%</span>

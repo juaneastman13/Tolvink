@@ -5,6 +5,7 @@
 // =====================================================================
 
 import { useState, useEffect, useRef } from "react";
+import { R } from "../theme";
 import { API_URL } from "../api";
 
 const COLORS = {
@@ -75,7 +76,7 @@ export default function ReportDownloadScreen({ code: codeProp } = {}) {
         {/* Header */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 16 }}>
           <span style={{ fontSize: 22, fontWeight: 800, color: COLORS.pri, letterSpacing: -1 }}>tolvink</span>
-          <span style={{ width: 6, height: 6, borderRadius: 3, background: COLORS.acc, display: "inline-block" }} />
+          <span style={{ width: 6, height: 6, borderRadius: R.xs, background: COLORS.acc, display: "inline-block" }} />
         </div>
 
         {status === "loading" && <>
@@ -123,7 +124,7 @@ const S = {
     background: COLORS.bg, fontFamily: "'DM Sans', system-ui, -apple-system, sans-serif", padding: 24,
   },
   card: {
-    textAlign: "center", padding: 32, background: COLORS.w, borderRadius: 16,
+    textAlign: "center", padding: 32, background: COLORS.w, borderRadius: R.xl,
     maxWidth: 380, width: "100%", boxShadow: "0 4px 14px rgba(0,0,0,0.06)",
   },
   spinner: {
@@ -132,7 +133,7 @@ const S = {
   },
   btn: {
     marginTop: 16, padding: "10px 24px", background: COLORS.pri, color: "#fff",
-    borderRadius: 8, border: "none", fontSize: 15.4, fontWeight: 600, cursor: "pointer",
+    borderRadius: R.md, border: "none", fontSize: 15.4, fontWeight: 600, cursor: "pointer",
     fontFamily: "inherit",
   },
 };

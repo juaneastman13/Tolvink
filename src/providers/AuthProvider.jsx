@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useRef, Suspense } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../hooks";
 import { setUser as setSentryUser } from "../sentry";
-import { C } from "../theme";
+import { C , R} from "../theme";
 import { SL, LandingScreen, isPublicPath, renderPublicRoute } from "../routing/Router";
 
 // ======================== AUTH CONTEXT =================================
@@ -20,7 +20,7 @@ export function AuthProvider({ children }) {
       <style>{`@keyframes splashIn{0%{opacity:0;transform:scale(0.7)}50%{opacity:1;transform:scale(1.05)}100%{opacity:1;transform:scale(1)}}@keyframes dotPulse{0%,100%{opacity:0.3;transform:scale(0.8)}50%{opacity:1;transform:scale(1.2)}}*{margin:0;padding:0;box-sizing:border-box}html,body,#root{background:${C.bg};margin:0;height:auto!important;overflow:visible!important}`}</style>
       <div style={{textAlign:"center",animation:"splashIn 0.8s ease-out forwards"}}>
         <span style={{fontSize:91.3,fontWeight:800,color:C.pri,letterSpacing:-3.5,display:"inline-block"}}>tolvink</span>
-        <span style={{width:16,height:16,borderRadius:8,background:C.acc,display:"inline-block",marginLeft:5,marginTop:-34,verticalAlign:"top",animation:"dotPulse 1.5s ease-in-out infinite"}}></span>
+        <span style={{width:16,height:16,borderRadius: R.md,background:C.acc,display:"inline-block",marginLeft:5,marginTop:-34,verticalAlign:"top",animation:"dotPulse 1.5s ease-in-out infinite"}}></span>
       </div>
     </div>;
   }

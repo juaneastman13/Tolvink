@@ -1,6 +1,6 @@
 import { useUIStore } from "../store";
 import { useState } from "react";
-import { C, Ic } from "../theme";
+import { C, Ic , R} from "../theme";
 import { Btn, ModalOverlay, NumericStepper } from "../components";
 
 export default function ConfirmActionModal({ freight, title, btnLabel, btnVariant="pri", icon, onClose, onConfirm, showTonsInput, defaultTons }) {
@@ -15,9 +15,9 @@ export default function ConfirmActionModal({ freight, title, btnLabel, btnVarian
   };
   return (
     <ModalOverlay onClose={onClose} maxWidth={360} loading={loading} closing={closing} closingText={closingText} quick>
-      {icon && <div style={{display:"flex",justifyContent:"center",marginBottom:12}}><div style={{width:48,height:48,borderRadius:24,background:`${btnVariant==="acc"?C.acc:C.pri}12`,display:"flex",alignItems:"center",justifyContent:"center"}}>{icon}</div></div>}
+      {icon && <div style={{display:"flex",justifyContent:"center",marginBottom:12}}><div style={{width:48,height:48,borderRadius: R.pill,background:`${btnVariant==="acc"?C.acc:C.pri}12`,display:"flex",alignItems:"center",justifyContent:"center"}}>{icon}</div></div>}
       <div style={{fontSize:18.7,fontWeight:700,marginBottom:6,textAlign:"center"}}>{title}</div>
-      <div style={{fontSize:13.2,color:C.t2,marginBottom:showTonsInput?12:20,textAlign:"center",padding:"8px 12px",background:C.bg,borderRadius:8,border:`1px solid ${C.b1}`}}>
+      <div style={{fontSize:13.2,color:C.t2,marginBottom:showTonsInput?12:20,textAlign:"center",padding:"8px 12px",background:C.bg,borderRadius: R.md,border:`1px solid ${C.b1}`}}>
         <div style={{fontWeight:700,color:C.t1}}>{freight.grain} · {freight.tons}{freight.unit||"tn"}</div>
         <div style={{fontSize:11,color:C.t3,marginTop:2}}>{freight.code}</div>
       </div>

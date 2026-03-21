@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo, lazy, Suspense } from "react";
 import { useSearchParams } from "react-router-dom";
-import { C, Ic, FONT, MONO, track } from "../theme";
+import { C, Ic, FONT, MONO, track , R} from "../theme";
 import { V, validate, SCHEMAS, textMatch, FieldError } from "../validation";
 import { stCfg, GRANOS, UNITS } from "../constants";
 import { Btn, Field, Select, Sec, AttachMenu, NumericStepper } from "../components";
@@ -59,7 +59,7 @@ function SummaryCard({ secSummary, secComplete, form, showTruckSelect, trucks, o
         <div style={{ display:"flex", flexDirection:"column", gap:0 }}>
           {rows.map((r, i) => (
             <div key={i} style={{ display:"flex", alignItems:"center", gap:10, padding:"9px 0", borderBottom:`1px solid ${C.b1}` }}>
-              <div style={{ display:"flex", alignItems:"center", justifyContent:"center", width:28, height:28, borderRadius:8, background:C.priPale, flexShrink:0 }}>{r.icon}</div>
+              <div style={{ display:"flex", alignItems:"center", justifyContent:"center", width:28, height:28, borderRadius: R.md, background:C.priPale, flexShrink:0 }}>{r.icon}</div>
               <div style={{ flex:1, minWidth:0 }}>
                 <div style={{ fontSize:11, fontWeight:600, color:C.t3, textTransform:"uppercase", letterSpacing:0.4 }}>{r.label}</div>
                 <div style={{ fontSize:13, fontWeight:500, color:C.t1, marginTop:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{r.value}</div>
@@ -74,8 +74,8 @@ function SummaryCard({ secSummary, secComplete, form, showTruckSelect, trucks, o
           <span style={{ fontSize:11.6, fontWeight:600, color:C.t3 }}>{filled} de {total} campos</span>
           {filled === total && <span style={{ fontSize:11, fontWeight:700, color:C.ok }}>Completo</span>}
         </div>
-        <div style={{ height:4, borderRadius:2, background:C.b1, overflow:"hidden" }}>
-          <div style={{ height:"100%", width:`${pct}%`, background:filled===total?C.ok:C.pri, borderRadius:2, transition:"width 0.3s ease" }}/>
+        <div style={{ height:4, borderRadius: R.xs, background:C.b1, overflow:"hidden" }}>
+          <div style={{ height:"100%", width:`${pct}%`, background:filled===total?C.ok:C.pri, borderRadius: R.xs, transition:"width 0.3s ease" }}/>
         </div>
       </div>
     </div>
@@ -96,7 +96,7 @@ function MobileStepModal({ open, title, summary, children, onClose, onPrev, step
   return (
     <div role="dialog" aria-modal="true" aria-label={title} style={{ position:"fixed", inset:0, zIndex:1000, display:"flex", alignItems:"center", justifyContent:"center", padding:12 }} onKeyDown={trapFocus}>
       <div onClick={onClose} style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.4)" }}/>
-      <div ref={modalRef} style={{ position:"relative", background:C.bg, borderRadius:16, width:"100%", maxWidth:500, maxHeight:"calc(100vh - 24px)", overflow:"auto", animation:"slideUp 0.25s ease" }}>
+      <div ref={modalRef} style={{ position:"relative", background:C.bg, borderRadius: R.xl, width:"100%", maxWidth:500, maxHeight:"calc(100vh - 24px)", overflow:"auto", animation:"slideUp 0.25s ease" }}>
         <div style={{ position:"sticky", top:0, zIndex:2, background:C.bg, padding:"16px 20px 8px", borderBottom:`1px solid ${C.b2}`, borderRadius:"16px 16px 0 0" }}>
           <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
             <div style={{ display:"flex", alignItems:"center", gap:8 }}>
@@ -108,8 +108,8 @@ function MobileStepModal({ open, title, summary, children, onClose, onPrev, step
           {stepIndex != null && totalSteps > 0 && (
             <div style={{ display:"flex", alignItems:"center", gap:8, marginTop:6 }}>
               <span style={{ fontSize:12.1, fontWeight:600, color:C.t3 }}>Paso {stepIndex} de {totalSteps}</span>
-              <div style={{ flex:1, height:3, borderRadius:2, background:C.b1, overflow:"hidden" }}>
-                <div style={{ height:"100%", width:`${(stepIndex/totalSteps)*100}%`, background:C.pri, borderRadius:2, transition:"width 0.3s ease" }}/>
+              <div style={{ flex:1, height:3, borderRadius: R.xs, background:C.b1, overflow:"hidden" }}>
+                <div style={{ height:"100%", width:`${(stepIndex/totalSteps)*100}%`, background:C.pri, borderRadius: R.xs, transition:"width 0.3s ease" }}/>
               </div>
             </div>
           )}
@@ -127,10 +127,10 @@ function NextStepBtn({ complete, onClick, label, onPrev }) {
   const isConfirm = !!label;
   return (
     <div style={{ marginTop:16, display:"flex", justifyContent:onPrev?"space-between":"flex-end", gap:8 }}>
-      {onPrev && <button type="button" onClick={onPrev} style={{ padding:"11px 20px", borderRadius:10, border:`1.5px solid ${C.b1}`, background:C.w, color:C.t2, cursor:"pointer", fontSize:14.3, fontWeight:700, fontFamily:"inherit", display:"flex", alignItems:"center", gap:8, transition:"all 0.2s ease" }}>
+      {onPrev && <button type="button" onClick={onPrev} style={{ padding:"11px 20px", borderRadius: R.md, border:`1.5px solid ${C.b1}`, background:C.w, color:C.t2, cursor:"pointer", fontSize:14.3, fontWeight:700, fontFamily:"inherit", display:"flex", alignItems:"center", gap:8, transition:"all 0.2s ease" }}>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg> Anterior
       </button>}
-      <button type="button" disabled={!complete} onClick={onClick} style={{ padding:"11px 28px", borderRadius:10, border:"none", background:complete?(isConfirm?C.ok:C.pri):C.b1, color:complete?C.w:C.t3, cursor:complete?"pointer":"default", fontSize:14.3, fontWeight:700, fontFamily:"inherit", display:"flex", alignItems:"center", gap:8, opacity:complete?1:0.5, transition:"all 0.2s ease" }}>
+      <button type="button" disabled={!complete} onClick={onClick} style={{ padding:"11px 28px", borderRadius: R.md, border:"none", background:complete?(isConfirm?C.ok:C.pri):C.b1, color:complete?C.w:C.t3, cursor:complete?"pointer":"default", fontSize:14.3, fontWeight:700, fontFamily:"inherit", display:"flex", alignItems:"center", gap:8, opacity:complete?1:0.5, transition:"all 0.2s ease" }}>
         {label || "Siguiente"} {isConfirm ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg> : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>}
       </button>
     </div>
@@ -694,7 +694,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
         <button onClick={onBack} style={{ background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", fontSize:14.3, fontWeight:600, color:C.pri, marginBottom:8, padding:0, display:"flex", alignItems:"center", gap:4 }}>{Ic.chev(C.pri,18)} Volver</button>
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
           <div style={{ fontSize:22, fontWeight:800, letterSpacing:-0.3 }}>Solicitar Flete</div>
-          {!_isDesktop && allComplete && <button onClick={openConfirmModal} style={{ padding:"10px 20px", borderRadius:10, border:"none", background:C.ok, color:C.w, cursor:"pointer", fontSize:14.3, fontWeight:700, fontFamily:"inherit", display:"flex", alignItems:"center", gap:6 }}>{Ic.chk(C.w,14)} Confirmar</button>}
+          {!_isDesktop && allComplete && <button onClick={openConfirmModal} style={{ padding:"10px 20px", borderRadius: R.md, border:"none", background:C.ok, color:C.w, cursor:"pointer", fontSize:14.3, fontWeight:700, fontFamily:"inherit", display:"flex", alignItems:"center", gap:6 }}>{Ic.chk(C.w,14)} Confirmar</button>}
         </div>
       </div>
       <div style={{ padding:"0 18px 18px" }}>
@@ -723,14 +723,14 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
                 const cId = r.granteeCompanyId || co.id;
                 const sel = producerCompanyId === cId;
                 return (
-                  <button key={cId} onClick={() => handleProducerChange(cId)} style={{ display:"flex", alignItems:"center", gap:10, padding:"12px 14px", borderRadius:10, border:`1.5px solid ${sel ? C.pri : C.b1}`, background:sel ? C.priPale : C.w, cursor:"pointer", fontFamily:"inherit", textAlign:"left" }}>
+                  <button key={cId} onClick={() => handleProducerChange(cId)} style={{ display:"flex", alignItems:"center", gap:10, padding:"12px 14px", borderRadius: R.md, border:`1.5px solid ${sel ? C.pri : C.b1}`, background:sel ? C.priPale : C.w, cursor:"pointer", fontFamily:"inherit", textAlign:"left" }}>
                     {Ic.user(sel ? C.pri : C.t3, 18)}
                     <div style={{ flex:1 }}>
                       <div style={{ fontSize:14.3, fontWeight:sel?700:500, color:sel?C.pri:C.t1 }}>{co.name || "Empresa"}</div>
                       <div style={{ display:"flex", gap:6, marginTop:2 }}>
-                        {r.accessLevel === "READONLY" && <span style={{ fontSize:10, fontWeight:700, color:C.warn, background:`${C.warn}15`, padding:"1px 6px", borderRadius:4 }}>Consulta</span>}
-                        {r.accessLevel !== "READONLY" && <span style={{ fontSize:10, fontWeight:700, color:C.ok, background:`${C.ok}15`, padding:"1px 6px", borderRadius:4 }}>Uso</span>}
-                        {co.hasInternalFleet && <span style={{ fontSize:10, fontWeight:700, color:C.acc, background:`${C.acc}15`, padding:"1px 6px", borderRadius:4 }}>Flota propia</span>}
+                        {r.accessLevel === "READONLY" && <span style={{ fontSize:10, fontWeight:700, color:C.warn, background:`${C.warn}15`, padding:"1px 6px", borderRadius: R.xs }}>Consulta</span>}
+                        {r.accessLevel !== "READONLY" && <span style={{ fontSize:10, fontWeight:700, color:C.ok, background:`${C.ok}15`, padding:"1px 6px", borderRadius: R.xs }}>Uso</span>}
+                        {co.hasInternalFleet && <span style={{ fontSize:10, fontWeight:700, color:C.acc, background:`${C.acc}15`, padding:"1px 6px", borderRadius: R.xs }}>Flota propia</span>}
                       </div>
                     </div>
                     {sel && Ic.chk(C.pri, 16)}
@@ -740,19 +740,19 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
             </div>
             {linkedProducers.length === 0 && !showNewProducer && <div style={{ fontSize:13.2, color:C.t3, textAlign:"center", padding:20 }}>No hay productores vinculados</div>}
             {!showNewProducer ? (
-              <button onClick={() => { setShowNewProducer(true); setProducerErr(""); }} style={{ width:"100%", padding:"10px 12px", borderRadius:10, textAlign:"center", fontFamily:"inherit", border:`1.5px dashed ${C.pri}`, background:"transparent", color:C.pri, fontSize:13, fontWeight:600, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:6, marginTop:8 }}>
+              <button onClick={() => { setShowNewProducer(true); setProducerErr(""); }} style={{ width:"100%", padding:"10px 12px", borderRadius: R.md, textAlign:"center", fontFamily:"inherit", border:`1.5px dashed ${C.pri}`, background:"transparent", color:C.pri, fontSize:13, fontWeight:600, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:6, marginTop:8 }}>
                 {Ic.plus(C.pri, 13)} Crear productor
               </button>
             ) : (
-              <div style={{ border:`1.5px solid ${C.pri}`, borderRadius:10, padding:12, marginTop:8, background:`${C.pri}04` }}>
+              <div style={{ border:`1.5px solid ${C.pri}`, borderRadius: R.md, padding:12, marginTop:8, background:`${C.pri}04` }}>
                 <div style={{ fontSize:12, fontWeight:700, color:C.pri, marginBottom:8 }}>Nuevo productor</div>
                 <div style={{ marginBottom:6 }}><Field label="Nombre *" value={newProducerName} onChange={v => { setNewProducerName(v); setProducerErr(""); }} placeholder="Juan Pérez" hasError={!!producerErr && !newProducerName.trim()} /></div>
                 <div style={{ marginBottom:6 }}><Field label="Celular *" value={newProducerPhone} onChange={v => { setNewProducerPhone(v); setProducerErr(""); }} placeholder="099123456" hasError={!!producerErr && !newProducerPhone.trim()} /></div>
                 <div style={{ marginBottom:6 }}><Field label="Empresa (opcional)" value={newProducerCompany} onChange={setNewProducerCompany} placeholder="Estancia SA" /></div>
                 {producerErr && <div style={{ fontSize:11, color:C.err, fontWeight:600, marginTop:2 }}>{producerErr}</div>}
                 <div style={{ display:"flex", gap:6, marginTop:8 }}>
-                  <button onClick={() => { setShowNewProducer(false); setNewProducerName(""); setNewProducerPhone(""); setNewProducerCompany(""); setProducerErr(""); }} style={{ flex:1, padding:"8px 0", borderRadius:6, border:`1px solid ${C.b1}`, background:C.w, color:C.t2, fontSize:12, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>Cancelar</button>
-                  <button disabled={savingProducer} onClick={handleCreateProducer} style={{ flex:1, padding:"8px 0", borderRadius:6, border:"none", background:C.pri, color:C.tOn, fontSize:12, fontWeight:600, cursor:savingProducer ? "not-allowed" : "pointer", fontFamily:"inherit", opacity:savingProducer ? 0.6 : 1 }}>{savingProducer ? "Creando..." : "Crear"}</button>
+                  <button onClick={() => { setShowNewProducer(false); setNewProducerName(""); setNewProducerPhone(""); setNewProducerCompany(""); setProducerErr(""); }} style={{ flex:1, padding:"8px 0", borderRadius: R.sm, border:`1px solid ${C.b1}`, background:C.w, color:C.t2, fontSize:12, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>Cancelar</button>
+                  <button disabled={savingProducer} onClick={handleCreateProducer} style={{ flex:1, padding:"8px 0", borderRadius: R.sm, border:"none", background:C.pri, color:C.tOn, fontSize:12, fontWeight:600, cursor:savingProducer ? "not-allowed" : "pointer", fontFamily:"inherit", opacity:savingProducer ? 0.6 : 1 }}>{savingProducer ? "Creando..." : "Crear"}</button>
                 </div>
               </div>
             )}
@@ -762,7 +762,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
             <div>
               <Field label="Tipo de producto" icon={Ic.grain(C.pri,14)}>
                 <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:6 }}>
-                  {GRANOS.map(g=><button key={g} onClick={()=>{u({grain:g}); if(g!=="Otros")u({productTypeOther:""});}} style={{ padding:"10px 8px", borderRadius:8, border:`1.5px solid ${form.grain===g?C.pri:C.b1}`, background:form.grain===g?C.priPale:C.w, color:form.grain===g?C.pri:C.t2, cursor:"pointer", fontSize:13.2, fontWeight:600, fontFamily:"inherit" }}>{g}</button>)}
+                  {GRANOS.map(g=><button key={g} onClick={()=>{u({grain:g}); if(g!=="Otros")u({productTypeOther:""});}} style={{ padding:"10px 8px", borderRadius: R.md, border:`1.5px solid ${form.grain===g?C.pri:C.b1}`, background:form.grain===g?C.priPale:C.w, color:form.grain===g?C.pri:C.t2, cursor:"pointer", fontSize:13.2, fontWeight:600, fontFamily:"inherit" }}>{g}</button>)}
                 </div>
               </Field>
               {touched&&<FieldError error={errs.grain}/>}
@@ -784,7 +784,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
               <div>
                 <label style={{ fontSize:11.6, fontWeight:600, color:C.t2, marginBottom:6, display:"flex", alignItems:"center", gap:4, textTransform:"uppercase", letterSpacing:0.6 }}>Unidad</label>
                 <div style={{ display:"flex", gap:4 }}>
-                  {UNITS.map(uu=><button key={uu.v} onClick={()=>u({unit:uu.v})} style={{ flex:1, padding:"10px 4px", borderRadius:8, border:`1.5px solid ${form.unit===uu.v?C.pri:C.b1}`, background:form.unit===uu.v?C.priPale:C.w, color:form.unit===uu.v?C.pri:C.t2, cursor:"pointer", fontSize:11, fontWeight:600, fontFamily:"inherit" }}>{uu.l}</button>)}
+                  {UNITS.map(uu=><button key={uu.v} onClick={()=>u({unit:uu.v})} style={{ flex:1, padding:"10px 4px", borderRadius: R.md, border:`1.5px solid ${form.unit===uu.v?C.pri:C.b1}`, background:form.unit===uu.v?C.priPale:C.w, color:form.unit===uu.v?C.pri:C.t2, cursor:"pointer", fontSize:11, fontWeight:600, fontFamily:"inherit" }}>{uu.l}</button>)}
                 </div>
               </div>
             </div>
@@ -795,16 +795,16 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
             <NextStepBtn complete={secComplete.quantity} onClick={isEditing?confirmEdit:advanceToNext} label={isEditing?"Confirmar edición":undefined} onPrev={prevAvailable()?goToPrev:null}/>
           </>}
           {activeSection === "origin" && <>
-            <div style={{ display:"flex", gap:0, marginBottom:14, borderRadius:10, overflow:"hidden", border:`1.5px solid ${C.b1}` }}>
+            <div style={{ display:"flex", gap:0, marginBottom:14, borderRadius: R.md, overflow:"hidden", border:`1.5px solid ${C.b1}` }}>
               {[{k:"field",l:"Seleccionar campo"},{k:"map",l:"Indicar en mapa"}].map(m=>(
                 <button key={m.k} type="button" onClick={()=>{setOriginMode(m.k);if(m.k==="map"){u({fieldId:"",lotId:""});}else{setCustomOrigin({name:"",lat:null,lng:null});}}} style={{ flex:1, padding:"9px 0", fontSize:12.7, fontWeight:700, border:"none", cursor:"pointer", fontFamily:"inherit", background:originMode===m.k?C.pri:C.w, color:originMode===m.k?C.w:C.t2, transition:"all 0.2s ease" }}>{m.l}</button>
               ))}
             </div>
             {originMode==="field" ? (<>
               {isPlantUser && producerCompanyId && fieldOpts.length === 0 && !showNewFieldForm ? (
-                <div style={{ padding:"14px 16px", background:`${C.ok}08`, borderRadius:10, border:`1.5px dashed ${C.ok}40`, textAlign:"center" }}>
+                <div style={{ padding:"14px 16px", background:`${C.ok}08`, borderRadius: R.md, border:`1.5px dashed ${C.ok}40`, textAlign:"center" }}>
                   <div style={{ fontSize:13.2, color:C.t2, fontWeight:500, marginBottom:8 }}>{selectedProducerName || "El productor"} no tiene campos cargados</div>
-                  <button onClick={()=>setShowNewFieldForm(true)} style={{ background:C.ok, border:"none", borderRadius:8, padding:"8px 16px", cursor:"pointer", fontFamily:FONT, fontSize:12.7, fontWeight:700, color:C.w }}>{Ic.plus(C.w,13)} Crear campo para {selectedProducerName || "el productor"}</button>
+                  <button onClick={()=>setShowNewFieldForm(true)} style={{ background:C.ok, border:"none", borderRadius: R.md, padding:"8px 16px", cursor:"pointer", fontFamily:FONT, fontSize:12.7, fontWeight:700, color:C.w }}>{Ic.plus(C.w,13)} Crear campo para {selectedProducerName || "el productor"}</button>
                 </div>
               ) : (
                 <Select label="Campo" icon={Ic.field(C.ok,14)} value={form.fieldId} onChange={v=>{u({fieldId:v,lotId:""});}} options={fieldOpts} placeholder="Seleccionar campo..."/>
@@ -813,7 +813,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
                 <button type="button" onClick={()=>setShowNewFieldForm(true)} style={{marginTop:8,background:"none",border:"none",cursor:"pointer",fontSize:12.1,fontWeight:600,color:C.ok,padding:0,fontFamily:"inherit",display:"flex",alignItems:"center",gap:4}}>{Ic.plus(C.ok,13)} Crear campo nuevo</button>
               )}
               {showNewFieldForm && (
-                <div style={{marginTop:8,background:`${C.ok}08`,borderRadius:10,padding:12,border:`1px solid ${C.ok}30`}}>
+                <div style={{marginTop:8,background:`${C.ok}08`,borderRadius: R.md,padding:12,border:`1px solid ${C.ok}30`}}>
                   <div style={{fontSize:11,fontWeight:700,color:C.ok,textTransform:"uppercase",letterSpacing:0.5,marginBottom:8}}>Nuevo campo para {selectedProducerName || "el productor"}</div>
                   <Field label="Nombre del campo" value={newFieldName} onChange={setNewFieldName} placeholder="Ej: Campo Norte"/>
                   <div style={{marginTop:8}}>
@@ -822,8 +822,8 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
                     </Suspense>
                   </div>
                   <div style={{display:"flex",gap:6,marginTop:10}}>
-                    <button onClick={()=>{setShowNewFieldForm(false);setNewFieldName("");setNewFieldLoc(null);}} style={{padding:"5px 12px",borderRadius:8,border:`1px solid ${C.b2}`,background:C.w,cursor:"pointer",fontFamily:FONT,fontSize:12.1,fontWeight:600,color:C.t2}}>Cancelar</button>
-                    <button onClick={handleCreateFieldInline} disabled={!newFieldName.trim()||newFieldSaving} style={{padding:"5px 12px",borderRadius:8,border:"none",background:C.ok,cursor:"pointer",fontFamily:FONT,fontSize:12.1,fontWeight:700,color:C.w,opacity:newFieldName.trim()&&!newFieldSaving?1:0.5}}>{newFieldSaving?"Creando...":"Crear campo"}</button>
+                    <button onClick={()=>{setShowNewFieldForm(false);setNewFieldName("");setNewFieldLoc(null);}} style={{padding:"5px 12px",borderRadius: R.md,border:`1px solid ${C.b2}`,background:C.w,cursor:"pointer",fontFamily:FONT,fontSize:12.1,fontWeight:600,color:C.t2}}>Cancelar</button>
+                    <button onClick={handleCreateFieldInline} disabled={!newFieldName.trim()||newFieldSaving} style={{padding:"5px 12px",borderRadius: R.md,border:"none",background:C.ok,cursor:"pointer",fontFamily:FONT,fontSize:12.1,fontWeight:700,color:C.w,opacity:newFieldName.trim()&&!newFieldSaving?1:0.5}}>{newFieldSaving?"Creando...":"Crear campo"}</button>
                   </div>
                 </div>
               )}
@@ -831,7 +831,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
                 {loadingLots && <div style={{padding:8,color:'#888',fontSize:13}}>Cargando lotes...</div>}
                 <Select label={hasLots ? "Origen (lote)" : "Origen (lote · opcional)"} icon={Ic.lot(C.pri,14)} value={form.lotId} onChange={v=>u({lotId:v})} options={lotOpts} placeholder={loadingLots?"Cargando lotes...":form.fieldId?(hasLots?"Seleccionar lote...":"Sin lotes — se usará el campo"):"Primero seleccioná un campo"}/>
                 {touched&&<FieldError error={errs.lotId}/>}
-                {selectedLot && selectedLot.lat && <div style={{ display:"flex", alignItems:"center", gap:6, padding:"6px 10px", background:C.priPale, borderRadius:8, marginTop:6 }}>{Ic.chk(C.pri,14)}<span style={{fontSize:11.6,color:C.pri,fontWeight:500}}>{selectedLot.lat}, {selectedLot.lng}</span></div>}
+                {selectedLot && selectedLot.lat && <div style={{ display:"flex", alignItems:"center", gap:6, padding:"6px 10px", background:C.priPale, borderRadius: R.md, marginTop:6 }}>{Ic.chk(C.pri,14)}<span style={{fontSize:11.6,color:C.pri,fontWeight:500}}>{selectedLot.lat}, {selectedLot.lng}</span></div>}
               </div>
             </>) : (<>
               <Field label="Nombre del origen (opcional)" value={customOrigin.name} onChange={v=>setCustomOrigin(p=>({...p,name:v}))} placeholder="Ej: Chacra Los Álamos (opcional)"/>
@@ -840,21 +840,21 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
                   <LocationPicker label="Ubicación en mapa" value={customOrigin.lat?{lat:customOrigin.lat,lng:customOrigin.lng}:null} onChange={loc=>setCustomOrigin(p=>({...p,lat:loc?.lat||null,lng:loc?.lng||null}))} confirmLabel="Confirmar origen" onConfirm={()=>{if(isEditing)confirmEdit();else advanceToNext();}}/>
                 </Suspense>
               </div>
-              {touched&&errs.customOrigin&&<div style={{padding:"6px 10px",borderRadius:8,marginTop:6,fontSize:12.1,fontWeight:600,color:C.err,background:C.errPale}}>{errs.customOrigin}</div>}
+              {touched&&errs.customOrigin&&<div style={{padding:"6px 10px",borderRadius: R.md,marginTop:6,fontSize:12.1,fontWeight:600,color:C.err,background:C.errPale}}>{errs.customOrigin}</div>}
             </>)}
             <NextStepBtn complete={secComplete.origin} onClick={isEditing?confirmEdit:advanceToNext} label={isEditing?"Confirmar edición":undefined} onPrev={prevAvailable()?goToPrev:null}/>
           </>}
           {activeSection === "ownfleet" && showTruckSelect && <>
             <div style={{ fontSize:13.2, color:C.t2, marginBottom:12 }}>¿Cómo desea transportar este flete?</div>
             <div style={{ display:"flex", gap:8, marginBottom:14 }}>
-              <button type="button" onClick={()=>u({fleetChoice:"own"})} style={{ flex:1, padding:"12px 8px", borderRadius:10, border:`1.5px solid ${form.fleetChoice==="own"?C.acc:C.b1}`, background:form.fleetChoice==="own"?C.accPale:C.w, color:form.fleetChoice==="own"?C.acc:C.t2, cursor:"pointer", fontSize:14.3, fontWeight:form.fleetChoice==="own"?700:500, fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>{Ic.truck(form.fleetChoice==="own"?C.acc:C.t3,16)} Flota propia</button>
-              <button type="button" onClick={()=>u({fleetChoice:"delegate",truckId:"",driverId:""})} style={{ flex:1, padding:"12px 8px", borderRadius:10, border:`1.5px solid ${form.fleetChoice==="delegate"?C.pri:C.b1}`, background:form.fleetChoice==="delegate"?C.priPale:C.w, color:form.fleetChoice==="delegate"?C.pri:C.t2, cursor:"pointer", fontSize:14.3, fontWeight:form.fleetChoice==="delegate"?700:500, fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>{Ic.plant(form.fleetChoice==="delegate"?C.pri:C.t3,16)} Delegar a planta</button>
+              <button type="button" onClick={()=>u({fleetChoice:"own"})} style={{ flex:1, padding:"12px 8px", borderRadius: R.md, border:`1.5px solid ${form.fleetChoice==="own"?C.acc:C.b1}`, background:form.fleetChoice==="own"?C.accPale:C.w, color:form.fleetChoice==="own"?C.acc:C.t2, cursor:"pointer", fontSize:14.3, fontWeight:form.fleetChoice==="own"?700:500, fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>{Ic.truck(form.fleetChoice==="own"?C.acc:C.t3,16)} Flota propia</button>
+              <button type="button" onClick={()=>u({fleetChoice:"delegate",truckId:"",driverId:""})} style={{ flex:1, padding:"12px 8px", borderRadius: R.md, border:`1.5px solid ${form.fleetChoice==="delegate"?C.pri:C.b1}`, background:form.fleetChoice==="delegate"?C.priPale:C.w, color:form.fleetChoice==="delegate"?C.pri:C.t2, cursor:"pointer", fontSize:14.3, fontWeight:form.fleetChoice==="delegate"?700:500, fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>{Ic.plant(form.fleetChoice==="delegate"?C.pri:C.t3,16)} Delegar a planta</button>
             </div>
             {form.fleetChoice==="own" && <>
               {truckOpts.length > 0 ? <>
                 <Select label="Camión" icon={Ic.truck(C.acc,14)} value={form.truckId} onChange={v=>u({truckId:v})} options={truckOpts} placeholder="Seleccionar camión..."/>
-                {!form.truckId && <div style={{ marginTop:8, padding:"8px 12px", background:`${C.acc}10`, borderRadius:8, fontSize:12.1, color:C.acc, fontWeight:500 }}>Seleccioná un camión de tu flota</div>}
-              </> : <div style={{ padding:"14px 16px", background:`${C.acc}08`, borderRadius:10, border:`1.5px dashed ${C.acc}40`, textAlign:"center" }}>
+                {!form.truckId && <div style={{ marginTop:8, padding:"8px 12px", background:`${C.acc}10`, borderRadius: R.md, fontSize:12.1, color:C.acc, fontWeight:500 }}>Seleccioná un camión de tu flota</div>}
+              </> : <div style={{ padding:"14px 16px", background:`${C.acc}08`, borderRadius: R.md, border:`1.5px dashed ${C.acc}40`, textAlign:"center" }}>
                 <div style={{ fontSize:13.2, color:C.t2, fontWeight:500, marginBottom:8 }}>No tenés camiones registrados.</div>
                 <a href="/trucks" style={{ fontSize:13.2, fontWeight:700, color:C.acc, textDecoration:"none" }}>Registrá uno desde Camiones →</a>
               </div>}
@@ -862,18 +862,18 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
                 {loadingDrivers ? <div style={{ fontSize:12, color:C.t3, padding:8, textAlign:"center" }}>Cargando choferes...</div>
                 : driverOpts.length > 0 ? <>
                   <Select label="Chofer" icon={Ic.user(C.acc,14)} value={form.driverId} onChange={v=>u({driverId:v})} options={driverOpts} placeholder="Seleccionar chofer..."/>
-                  {!form.driverId && <div style={{ marginTop:8, padding:"8px 12px", background:`${C.acc}10`, borderRadius:8, fontSize:12.1, color:C.acc, fontWeight:500 }}>Seleccioná un chofer</div>}
-                </> : <div style={{ padding:"10px 14px", background:`${C.acc}08`, borderRadius:8, border:`1.5px dashed ${C.acc}40`, textAlign:"center", fontSize:13.2, color:C.t2, fontWeight:500 }}>No hay choferes registrados</div>}
+                  {!form.driverId && <div style={{ marginTop:8, padding:"8px 12px", background:`${C.acc}10`, borderRadius: R.md, fontSize:12.1, color:C.acc, fontWeight:500 }}>Seleccioná un chofer</div>}
+                </> : <div style={{ padding:"10px 14px", background:`${C.acc}08`, borderRadius: R.md, border:`1.5px dashed ${C.acc}40`, textAlign:"center", fontSize:13.2, color:C.t2, fontWeight:500 }}>No hay choferes registrados</div>}
               </div>}
             </>}
-            {form.fleetChoice==="delegate" && <div style={{ padding:"10px 14px", background:`${C.info}10`, borderRadius:8, fontSize:13.2, color:C.info, fontWeight:500 }}>La planta de destino asignará el transportista</div>}
+            {form.fleetChoice==="delegate" && <div style={{ padding:"10px 14px", background:`${C.info}10`, borderRadius: R.md, fontSize:13.2, color:C.info, fontWeight:500 }}>La planta de destino asignará el transportista</div>}
             <NextStepBtn complete={!!form.fleetChoice && (form.fleetChoice!=="own" || (!!form.truckId && !!form.driverId))} onClick={isEditing?confirmEdit:advanceToNext} label={isEditing?"Confirmar edición":undefined} onPrev={prevAvailable()?goToPrev:null}/>
           </>}
           {activeSection === "destination" && <>
             <label style={{ fontSize:11.6, fontWeight:600, color:C.t2, marginBottom:6, display:"flex", alignItems:"center", gap:4, textTransform:"uppercase", letterSpacing:0.6 }}>{Ic.plant(C.t2,14)} Destino</label>
             <div style={{ display:"flex", gap:6, marginBottom:10 }}>
-              <button onClick={()=>{setDestMode("plant"); setCustomDest({name:"",lat:null,lng:null}); setConfirmMode("none"); setConfirmPlantId("");}} style={{ flex:1, padding:"10px 8px", borderRadius:8, border:`1.5px solid ${destMode==="plant"?C.pri:C.b1}`, background:destMode==="plant"?C.priPale:C.w, color:destMode==="plant"?C.pri:C.t2, cursor:"pointer", fontSize:13.2, fontWeight:600, fontFamily:"inherit" }}>Planta</button>
-              <button onClick={()=>{setDestMode("custom"); u({plantId:""}); setConfirmMode("none"); setConfirmPlantId("");}} style={{ flex:1, padding:"10px 8px", borderRadius:8, border:`1.5px solid ${destMode==="custom"?C.acc:C.b1}`, background:destMode==="custom"?C.accPale:C.w, color:destMode==="custom"?C.acc:C.t2, cursor:"pointer", fontSize:13.2, fontWeight:600, fontFamily:"inherit" }}>Personalizado</button>
+              <button onClick={()=>{setDestMode("plant"); setCustomDest({name:"",lat:null,lng:null}); setConfirmMode("none"); setConfirmPlantId("");}} style={{ flex:1, padding:"10px 8px", borderRadius: R.md, border:`1.5px solid ${destMode==="plant"?C.pri:C.b1}`, background:destMode==="plant"?C.priPale:C.w, color:destMode==="plant"?C.pri:C.t2, cursor:"pointer", fontSize:13.2, fontWeight:600, fontFamily:"inherit" }}>Planta</button>
+              <button onClick={()=>{setDestMode("custom"); u({plantId:""}); setConfirmMode("none"); setConfirmPlantId("");}} style={{ flex:1, padding:"10px 8px", borderRadius: R.md, border:`1.5px solid ${destMode==="custom"?C.acc:C.b1}`, background:destMode==="custom"?C.accPale:C.w, color:destMode==="custom"?C.acc:C.t2, cursor:"pointer", fontSize:13.2, fontWeight:600, fontFamily:"inherit" }}>Personalizado</button>
             </div>
             {destMode==="plant" && (<>
               <Select value={form.plantId} onChange={v=>u({plantId:v,branchId:""})} options={plantOpts} placeholder="Seleccionar planta..."/>
@@ -892,12 +892,12 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
                   <LocationPicker label="Ubicación del destino" value={customDest.lat?{lat:customDest.lat,lng:customDest.lng}:null} onChange={loc=>setCustomDest(p=>({...p,lat:loc.lat,lng:loc.lng}))} confirmLabel="Confirmar destino" onConfirm={()=>{if(isEditing)confirmEdit();else advanceToNext();}}/>
                 </Suspense>
               </div>
-              {touched&&errs.customDestLoc&&<div style={{padding:"6px 10px",borderRadius:8,marginTop:6,fontSize:12.1,fontWeight:600,color:C.err,background:C.errPale}}>{errs.customDestLoc}</div>}
+              {touched&&errs.customDestLoc&&<div style={{padding:"6px 10px",borderRadius: R.md,marginTop:6,fontSize:12.1,fontWeight:600,color:C.err,background:C.errPale}}>{errs.customDestLoc}</div>}
               <div style={{marginTop:14}}>
                 <label style={{fontSize:11.6,fontWeight:600,color:C.t2,marginBottom:6,display:"flex",alignItems:"center",gap:4,textTransform:"uppercase",letterSpacing:0.6}}>{Ic.chk(C.t2,14)} ¿Quién debe confirmar el viaje?</label>
                 <div style={{display:"flex",gap:6,marginBottom:confirmMode==="plant"?10:0}}>
-                  <button onClick={()=>setConfirmMode("plant")} style={{flex:1,padding:"10px 8px",borderRadius:8,border:`1.5px solid ${confirmMode==="plant"?C.pri:C.b1}`,background:confirmMode==="plant"?C.priPale:C.w,color:confirmMode==="plant"?C.pri:C.t2,cursor:"pointer",fontSize:13.2,fontWeight:600,fontFamily:"inherit"}}>Planta</button>
-                  <button onClick={()=>{setConfirmMode("none");setConfirmPlantId("");}} style={{flex:1,padding:"10px 8px",borderRadius:8,border:`1.5px solid ${confirmMode==="none"?C.ok:C.b1}`,background:confirmMode==="none"?C.okPale:C.w,color:confirmMode==="none"?C.ok:C.t2,cursor:"pointer",fontSize:13.2,fontWeight:600,fontFamily:"inherit"}}>Nadie</button>
+                  <button onClick={()=>setConfirmMode("plant")} style={{flex:1,padding:"10px 8px",borderRadius: R.md,border:`1.5px solid ${confirmMode==="plant"?C.pri:C.b1}`,background:confirmMode==="plant"?C.priPale:C.w,color:confirmMode==="plant"?C.pri:C.t2,cursor:"pointer",fontSize:13.2,fontWeight:600,fontFamily:"inherit"}}>Planta</button>
+                  <button onClick={()=>{setConfirmMode("none");setConfirmPlantId("");}} style={{flex:1,padding:"10px 8px",borderRadius: R.md,border:`1.5px solid ${confirmMode==="none"?C.ok:C.b1}`,background:confirmMode==="none"?C.okPale:C.w,color:confirmMode==="none"?C.ok:C.t2,cursor:"pointer",fontSize:13.2,fontWeight:600,fontFamily:"inherit"}}>Nadie</button>
                 </div>
                 {confirmMode==="plant" && (<>
                   <Select value={confirmPlantId} onChange={v=>setConfirmPlantId(v)} options={plantOpts} placeholder="Seleccionar planta que confirma..."/>
@@ -911,12 +911,12 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
               <div>
                 <label htmlFor="freight-date-m" style={{ fontSize:11.6, fontWeight:600, color:C.t2, marginBottom:6, display:"flex", alignItems:"center", gap:4, textTransform:"uppercase", letterSpacing:0.6 }}>{Ic.cal(C.pri,14)} Fecha carga</label>
-                <input id="freight-date-m" type="date" value={form.loadDate} onChange={e=>u({loadDate:e.target.value})} onClick={e=>e.target.showPicker?.()} min={new Date().toISOString().split('T')[0]} style={{ width:"100%", padding:"12px 14px", borderRadius:10, border:`1.5px solid ${touched&&errs.loadDate?C.err:C.b1}`, background:C.w, color:form.loadDate?C.t1:C.t3, fontSize:16.5, fontFamily:"inherit", outline:"none", boxSizing:"border-box", cursor:"pointer", minHeight:44 }}/>
+                <input id="freight-date-m" type="date" value={form.loadDate} onChange={e=>u({loadDate:e.target.value})} onClick={e=>e.target.showPicker?.()} min={new Date().toISOString().split('T')[0]} style={{ width:"100%", padding:"12px 14px", borderRadius: R.md, border:`1.5px solid ${touched&&errs.loadDate?C.err:C.b1}`, background:C.w, color:form.loadDate?C.t1:C.t3, fontSize:16.5, fontFamily:"inherit", outline:"none", boxSizing:"border-box", cursor:"pointer", minHeight:44 }}/>
                 {touched&&<FieldError error={errs.loadDate}/>}
               </div>
               <div>
                 <label htmlFor="freight-time-m" style={{ fontSize:11.6, fontWeight:600, color:C.t2, marginBottom:6, display:"flex", alignItems:"center", gap:4, textTransform:"uppercase", letterSpacing:0.6 }}>{Ic.clk(C.pri,14)} Hora carga</label>
-                <input id="freight-time-m" type="time" value={form.loadTime} onChange={e=>u({loadTime:e.target.value})} onClick={e=>e.target.showPicker?.()} style={{ width:"100%", padding:"12px 14px", borderRadius:10, border:`1.5px solid ${touched&&errs.loadTime?C.err:C.b1}`, background:C.w, color:form.loadTime?C.t1:C.t3, fontSize:16.5, fontFamily:"inherit", outline:"none", boxSizing:"border-box", cursor:"pointer", minHeight:44 }}/>
+                <input id="freight-time-m" type="time" value={form.loadTime} onChange={e=>u({loadTime:e.target.value})} onClick={e=>e.target.showPicker?.()} style={{ width:"100%", padding:"12px 14px", borderRadius: R.md, border:`1.5px solid ${touched&&errs.loadTime?C.err:C.b1}`, background:C.w, color:form.loadTime?C.t1:C.t3, fontSize:16.5, fontFamily:"inherit", outline:"none", boxSizing:"border-box", cursor:"pointer", minHeight:44 }}/>
                 {touched&&<FieldError error={errs.loadTime}/>}
               </div>
             </div>
@@ -926,7 +926,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
             <div style={{ fontSize:13.2, color:C.t2, marginBottom:12 }}>Asignar transporte para este flete</div>
             <div style={{ display:"flex", flexDirection:"column", gap:8, marginBottom:14 }}>
               {user?.hasInternalFleet && (
-                <button onClick={() => { setTransportChoice("ownfleet"); setAssignTruckId(""); setAssignDriverId(""); }} style={{ display:"flex", alignItems:"center", gap:10, padding:"12px 14px", borderRadius:10, border:`1.5px solid ${transportChoice==="ownfleet" ? C.acc : C.b1}`, background:transportChoice==="ownfleet" ? C.accPale : C.w, cursor:"pointer", fontFamily:"inherit", textAlign:"left" }}>
+                <button onClick={() => { setTransportChoice("ownfleet"); setAssignTruckId(""); setAssignDriverId(""); }} style={{ display:"flex", alignItems:"center", gap:10, padding:"12px 14px", borderRadius: R.md, border:`1.5px solid ${transportChoice==="ownfleet" ? C.acc : C.b1}`, background:transportChoice==="ownfleet" ? C.accPale : C.w, cursor:"pointer", fontFamily:"inherit", textAlign:"left" }}>
                   {Ic.truck(transportChoice==="ownfleet" ? C.acc : C.t3, 18)}
                   <div style={{ flex:1 }}>
                     <div style={{ fontSize:14.3, fontWeight:transportChoice==="ownfleet"?700:500, color:transportChoice==="ownfleet"?C.acc:C.t1 }}>Flota propia</div>
@@ -940,7 +940,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
                 const sel = transportChoice === cId;
                 const isConsulta = r.accessLevel === "READONLY";
                 return (
-                  <button key={cId} onClick={() => { setTransportChoice(cId); setAssignTruckId(""); setAssignDriverId(""); }} style={{ display:"flex", alignItems:"center", gap:10, padding:"12px 14px", borderRadius:10, border:`1.5px solid ${sel ? C.pri : C.b1}`, background:sel ? C.priPale : C.w, cursor:"pointer", fontFamily:"inherit", textAlign:"left" }}>
+                  <button key={cId} onClick={() => { setTransportChoice(cId); setAssignTruckId(""); setAssignDriverId(""); }} style={{ display:"flex", alignItems:"center", gap:10, padding:"12px 14px", borderRadius: R.md, border:`1.5px solid ${sel ? C.pri : C.b1}`, background:sel ? C.priPale : C.w, cursor:"pointer", fontFamily:"inherit", textAlign:"left" }}>
                     {Ic.truck(sel ? C.pri : C.t3, 18)}
                     <div style={{ flex:1 }}>
                       <div style={{ fontSize:14.3, fontWeight:sel?700:500, color:sel?C.pri:C.t1 }}>{co.name || "Empresa"}</div>
@@ -953,26 +953,26 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
             </div>
             {transportNeedsTruckDriver && <>
               {transportChoice === "ownfleet"
-                ? <div style={{ padding:"8px 12px", background:`${C.acc}10`, borderRadius:8, fontSize:12.1, color:C.acc, fontWeight:500, marginBottom:10 }}>Seleccioná camión y chofer de tu flota</div>
-                : <div style={{ padding:"8px 12px", background:`${C.warn}15`, borderRadius:8, fontSize:12.1, color:C.warn, fontWeight:500, marginBottom:10 }}>Este transportista está en modo consulta. Se asignará automáticamente.</div>}
+                ? <div style={{ padding:"8px 12px", background:`${C.acc}10`, borderRadius: R.md, fontSize:12.1, color:C.acc, fontWeight:500, marginBottom:10 }}>Seleccioná camión y chofer de tu flota</div>
+                : <div style={{ padding:"8px 12px", background:`${C.warn}15`, borderRadius: R.md, fontSize:12.1, color:C.warn, fontWeight:500, marginBottom:10 }}>Este transportista está en modo consulta. Se asignará automáticamente.</div>}
               <div style={{ marginBottom:8 }}>
                 {loadingAssignTrucks ? <div style={{ fontSize:12, color:C.t3, padding:8 }}>Cargando camiones...</div>
                 : assignTruckOpts.length > 0 ? <>
                   <Select label="Camión" icon={Ic.truck(C.acc,14)} value={assignTruckId} onChange={v=>setAssignTruckId(v)} options={assignTruckOpts} placeholder="Seleccionar camión..."/>
                   {!showNewTruckForm && <button type="button" onClick={()=>setShowNewTruckForm(true)} style={{marginTop:8,background:"none",border:"none",cursor:"pointer",fontSize:12.1,fontWeight:600,color:C.acc,padding:0,fontFamily:"inherit",display:"flex",alignItems:"center",gap:4}}>{Ic.plus(C.acc,13)} Crear camión nuevo</button>}
                 </>
-                : !showNewTruckForm ? <div style={{ padding:"14px 16px", background:`${C.acc}08`, borderRadius:10, border:`1.5px dashed ${C.acc}40`, textAlign:"center" }}>
+                : !showNewTruckForm ? <div style={{ padding:"14px 16px", background:`${C.acc}08`, borderRadius: R.md, border:`1.5px dashed ${C.acc}40`, textAlign:"center" }}>
                   <div style={{ fontSize:13.2, color:C.t2, fontWeight:500, marginBottom:8 }}>{transportChoice === "ownfleet" ? "No hay camiones en tu flota" : `${selectedTransporterName || "El transportista"} no tiene camiones registrados`}</div>
-                  <button onClick={()=>setShowNewTruckForm(true)} style={{ background:C.acc, border:"none", borderRadius:8, padding:"8px 16px", cursor:"pointer", fontFamily:FONT, fontSize:12.7, fontWeight:700, color:C.w }}>{Ic.plus(C.w,13)} Crear camión</button>
+                  <button onClick={()=>setShowNewTruckForm(true)} style={{ background:C.acc, border:"none", borderRadius: R.md, padding:"8px 16px", cursor:"pointer", fontFamily:FONT, fontSize:12.7, fontWeight:700, color:C.w }}>{Ic.plus(C.w,13)} Crear camión</button>
                 </div> : null}
                 {showNewTruckForm && (
-                  <div style={{marginTop:8,background:`${C.acc}08`,borderRadius:10,padding:12,border:`1px solid ${C.acc}30`}}>
+                  <div style={{marginTop:8,background:`${C.acc}08`,borderRadius: R.md,padding:12,border:`1px solid ${C.acc}30`}}>
                     <div style={{fontSize:11,fontWeight:700,color:C.acc,textTransform:"uppercase",letterSpacing:0.5,marginBottom:8}}>Nuevo camión{transportChoice !== "ownfleet" && selectedTransporterName ? ` para ${selectedTransporterName}` : ""}</div>
                     <Field label="Matrícula" value={newTruckPlate} onChange={setNewTruckPlate} placeholder="Ej: ABC 1234"/>
                     <div style={{marginTop:6}}><Field label="Modelo (opcional)" value={newTruckModel} onChange={setNewTruckModel} placeholder="Ej: Scania R500"/></div>
                     <div style={{display:"flex",gap:6,marginTop:10}}>
-                      <button onClick={()=>{setShowNewTruckForm(false);setNewTruckPlate("");setNewTruckModel("");}} style={{padding:"5px 12px",borderRadius:8,border:`1px solid ${C.b2}`,background:C.w,cursor:"pointer",fontFamily:FONT,fontSize:12.1,fontWeight:600,color:C.t2}}>Cancelar</button>
-                      <button onClick={handleCreateTruckInline} disabled={!newTruckPlate.trim()||newTruckSaving} style={{padding:"5px 12px",borderRadius:8,border:"none",background:C.acc,cursor:"pointer",fontFamily:FONT,fontSize:12.1,fontWeight:700,color:C.w,opacity:newTruckPlate.trim()&&!newTruckSaving?1:0.5}}>{newTruckSaving?"Creando...":"Crear camión"}</button>
+                      <button onClick={()=>{setShowNewTruckForm(false);setNewTruckPlate("");setNewTruckModel("");}} style={{padding:"5px 12px",borderRadius: R.md,border:`1px solid ${C.b2}`,background:C.w,cursor:"pointer",fontFamily:FONT,fontSize:12.1,fontWeight:600,color:C.t2}}>Cancelar</button>
+                      <button onClick={handleCreateTruckInline} disabled={!newTruckPlate.trim()||newTruckSaving} style={{padding:"5px 12px",borderRadius: R.md,border:"none",background:C.acc,cursor:"pointer",fontFamily:FONT,fontSize:12.1,fontWeight:700,color:C.w,opacity:newTruckPlate.trim()&&!newTruckSaving?1:0.5}}>{newTruckSaving?"Creando...":"Crear camión"}</button>
                     </div>
                   </div>
                 )}
@@ -980,10 +980,10 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
               {assignTruckId && <div style={{ marginBottom:8 }}>
                 {loadingAssignDrivers ? <div style={{ fontSize:12, color:C.t3, padding:8 }}>Cargando choferes...</div>
                 : assignDriverOpts.length > 0 ? <Select label="Chofer" icon={Ic.user(C.acc,14)} value={assignDriverId} onChange={v=>setAssignDriverId(v)} options={assignDriverOpts} placeholder="Seleccionar chofer..."/>
-                : <div style={{ padding:"10px 14px", background:`${C.acc}08`, borderRadius:8, border:`1.5px dashed ${C.acc}40`, fontSize:12.7, color:C.t2, fontWeight:500, textAlign:"center" }}>Sin choferes registrados</div>}
+                : <div style={{ padding:"10px 14px", background:`${C.acc}08`, borderRadius: R.md, border:`1.5px dashed ${C.acc}40`, fontSize:12.7, color:C.t2, fontWeight:500, textAlign:"center" }}>Sin choferes registrados</div>}
               </div>}
             </>}
-            {transportIsOperator && <div style={{ padding:"10px 14px", background:`${C.info}10`, borderRadius:8, fontSize:13.2, color:C.info, fontWeight:500, marginBottom:10 }}>El transportista confirmará y asignará camión/chofer.</div>}
+            {transportIsOperator && <div style={{ padding:"10px 14px", background:`${C.info}10`, borderRadius: R.md, fontSize:13.2, color:C.info, fontWeight:500, marginBottom:10 }}>El transportista confirmará y asignará camión/chofer.</div>}
             <button onClick={() => { setTransportChoice("skip"); setAssignTruckId(""); setAssignDriverId(""); }} style={{ background:"none", border:"none", cursor:"pointer", fontSize:12.7, fontWeight:600, color:C.t3, padding:"8px 0", fontFamily:"inherit", textDecoration:"underline" }}>Asignar después</button>
             <NextStepBtn complete={transportStepComplete} onClick={openConfirmModal} label="Siguiente" onPrev={prevAvailable()?goToPrev:null}/>
           </>}
@@ -1004,14 +1004,14 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
               const cId = r.granteeCompanyId || co.id;
               const sel = producerCompanyId === cId;
               return (
-                <button key={cId} onClick={() => handleProducerChange(cId)} style={{ display:"flex", alignItems:"center", gap:10, padding:"12px 14px", borderRadius:10, border:`1.5px solid ${sel ? C.pri : C.b1}`, background:sel ? C.priPale : C.w, cursor:"pointer", fontFamily:"inherit", textAlign:"left" }}>
+                <button key={cId} onClick={() => handleProducerChange(cId)} style={{ display:"flex", alignItems:"center", gap:10, padding:"12px 14px", borderRadius: R.md, border:`1.5px solid ${sel ? C.pri : C.b1}`, background:sel ? C.priPale : C.w, cursor:"pointer", fontFamily:"inherit", textAlign:"left" }}>
                   {Ic.user(sel ? C.pri : C.t3, 18)}
                   <div style={{ flex:1 }}>
                     <div style={{ fontSize:14.3, fontWeight:sel?700:500, color:sel?C.pri:C.t1 }}>{co.name || "Empresa"}</div>
                     <div style={{ display:"flex", gap:6, marginTop:2 }}>
-                      {r.accessLevel === "READONLY" && <span style={{ fontSize:10, fontWeight:700, color:C.warn, background:`${C.warn}15`, padding:"1px 6px", borderRadius:4 }}>Consulta</span>}
-                      {r.accessLevel !== "READONLY" && <span style={{ fontSize:10, fontWeight:700, color:C.ok, background:`${C.ok}15`, padding:"1px 6px", borderRadius:4 }}>Uso</span>}
-                      {co.hasInternalFleet && <span style={{ fontSize:10, fontWeight:700, color:C.acc, background:`${C.acc}15`, padding:"1px 6px", borderRadius:4 }}>Flota propia</span>}
+                      {r.accessLevel === "READONLY" && <span style={{ fontSize:10, fontWeight:700, color:C.warn, background:`${C.warn}15`, padding:"1px 6px", borderRadius: R.xs }}>Consulta</span>}
+                      {r.accessLevel !== "READONLY" && <span style={{ fontSize:10, fontWeight:700, color:C.ok, background:`${C.ok}15`, padding:"1px 6px", borderRadius: R.xs }}>Uso</span>}
+                      {co.hasInternalFleet && <span style={{ fontSize:10, fontWeight:700, color:C.acc, background:`${C.acc}15`, padding:"1px 6px", borderRadius: R.xs }}>Flota propia</span>}
                     </div>
                   </div>
                   {sel && Ic.chk(C.pri, 16)}
@@ -1021,11 +1021,11 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
           </div>
           {linkedProducers.length === 0 && !showNewProducer && <div style={{ fontSize:13.2, color:C.t3, textAlign:"center", padding:20 }}>No hay productores vinculados</div>}
           {!showNewProducer ? (
-            <button onClick={() => { setShowNewProducer(true); setProducerErr(""); }} style={{ width:"100%", padding:"10px 12px", borderRadius:10, textAlign:"center", fontFamily:"inherit", border:`1.5px dashed ${C.pri}`, background:"transparent", color:C.pri, fontSize:13, fontWeight:600, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:6, marginTop:8 }}>
+            <button onClick={() => { setShowNewProducer(true); setProducerErr(""); }} style={{ width:"100%", padding:"10px 12px", borderRadius: R.md, textAlign:"center", fontFamily:"inherit", border:`1.5px dashed ${C.pri}`, background:"transparent", color:C.pri, fontSize:13, fontWeight:600, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:6, marginTop:8 }}>
               {Ic.plus(C.pri, 13)} Crear productor
             </button>
           ) : (
-            <div style={{ border:`1.5px solid ${C.pri}`, borderRadius:10, padding:12, marginTop:8, background:`${C.pri}04` }}>
+            <div style={{ border:`1.5px solid ${C.pri}`, borderRadius: R.md, padding:12, marginTop:8, background:`${C.pri}04` }}>
               <div style={{ fontSize:12, fontWeight:700, color:C.pri, marginBottom:8 }}>Nuevo productor</div>
               <div style={{ display:"flex", gap:8, marginBottom:6 }}>
                 <div style={{ flex:1 }}><Field label="Nombre *" value={newProducerName} onChange={v => { setNewProducerName(v); setProducerErr(""); }} placeholder="Juan Pérez" hasError={!!producerErr && !newProducerName.trim()} /></div>
@@ -1034,8 +1034,8 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
               <div style={{ marginBottom:6 }}><Field label="Empresa (opcional)" value={newProducerCompany} onChange={setNewProducerCompany} placeholder="Estancia SA" /></div>
               {producerErr && <div style={{ fontSize:11, color:C.err, fontWeight:600, marginTop:2 }}>{producerErr}</div>}
               <div style={{ display:"flex", gap:6, marginTop:8 }}>
-                <button onClick={() => { setShowNewProducer(false); setNewProducerName(""); setNewProducerPhone(""); setNewProducerCompany(""); setProducerErr(""); }} style={{ flex:1, padding:"8px 0", borderRadius:6, border:`1px solid ${C.b1}`, background:C.w, color:C.t2, fontSize:12, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>Cancelar</button>
-                <button disabled={savingProducer} onClick={handleCreateProducer} style={{ flex:1, padding:"8px 0", borderRadius:6, border:"none", background:C.pri, color:C.tOn, fontSize:12, fontWeight:600, cursor:savingProducer ? "not-allowed" : "pointer", fontFamily:"inherit", opacity:savingProducer ? 0.6 : 1 }}>{savingProducer ? "Creando..." : "Crear"}</button>
+                <button onClick={() => { setShowNewProducer(false); setNewProducerName(""); setNewProducerPhone(""); setNewProducerCompany(""); setProducerErr(""); }} style={{ flex:1, padding:"8px 0", borderRadius: R.sm, border:`1px solid ${C.b1}`, background:C.w, color:C.t2, fontSize:12, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>Cancelar</button>
+                <button disabled={savingProducer} onClick={handleCreateProducer} style={{ flex:1, padding:"8px 0", borderRadius: R.sm, border:"none", background:C.pri, color:C.tOn, fontSize:12, fontWeight:600, cursor:savingProducer ? "not-allowed" : "pointer", fontFamily:"inherit", opacity:savingProducer ? 0.6 : 1 }}>{savingProducer ? "Creando..." : "Crear"}</button>
               </div>
             </div>
           )}
@@ -1047,7 +1047,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
           <div>
             <Field label="Tipo de producto" icon={Ic.grain(C.pri,14)}>
               <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:6 }}>
-                {GRANOS.map(g=><button key={g} onClick={()=>{u({grain:g}); if(g!=="Otros")u({productTypeOther:""});}} style={{ padding:"10px 8px", borderRadius:8, border:`1.5px solid ${form.grain===g?C.pri:C.b1}`, background:form.grain===g?C.priPale:C.w, color:form.grain===g?C.pri:C.t2, cursor:"pointer", fontSize:13.2, fontWeight:600, fontFamily:"inherit" }}>{g}</button>)}
+                {GRANOS.map(g=><button key={g} onClick={()=>{u({grain:g}); if(g!=="Otros")u({productTypeOther:""});}} style={{ padding:"10px 8px", borderRadius: R.md, border:`1.5px solid ${form.grain===g?C.pri:C.b1}`, background:form.grain===g?C.priPale:C.w, color:form.grain===g?C.pri:C.t2, cursor:"pointer", fontSize:13.2, fontWeight:600, fontFamily:"inherit" }}>{g}</button>)}
               </div>
             </Field>
             {touched&&<FieldError error={errs.grain}/>}
@@ -1071,7 +1071,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
             <div>
               <label style={{ fontSize:11.6, fontWeight:600, color:C.t2, marginBottom:6, display:"flex", alignItems:"center", gap:4, textTransform:"uppercase", letterSpacing:0.6 }}>Unidad</label>
               <div style={{ display:"flex", gap:4 }}>
-                {UNITS.map(uu=><button key={uu.v} onClick={()=>u({unit:uu.v})} style={{ flex:1, padding:"10px 4px", borderRadius:8, border:`1.5px solid ${form.unit===uu.v?C.pri:C.b1}`, background:form.unit===uu.v?C.priPale:C.w, color:form.unit===uu.v?C.pri:C.t2, cursor:"pointer", fontSize:11, fontWeight:600, fontFamily:"inherit" }}>{uu.l}</button>)}
+                {UNITS.map(uu=><button key={uu.v} onClick={()=>u({unit:uu.v})} style={{ flex:1, padding:"10px 4px", borderRadius: R.md, border:`1.5px solid ${form.unit===uu.v?C.pri:C.b1}`, background:form.unit===uu.v?C.priPale:C.w, color:form.unit===uu.v?C.pri:C.t2, cursor:"pointer", fontSize:11, fontWeight:600, fontFamily:"inherit" }}>{uu.l}</button>)}
               </div>
             </div>
           </div>
@@ -1085,7 +1085,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
         {/* ORIGIN SECTION */}
         {activeSection === "origin" && <Sec label="Origen" complete={secComplete.origin} isExpanded={true} onFocus={()=>{}} secRef={secRefs.origin}>
           {/* Toggle: Campo / Mapa */}
-          <div style={{ display:"flex", gap:0, marginBottom:14, borderRadius:10, overflow:"hidden", border:`1.5px solid ${C.b1}` }}>
+          <div style={{ display:"flex", gap:0, marginBottom:14, borderRadius: R.md, overflow:"hidden", border:`1.5px solid ${C.b1}` }}>
             {[{k:"field",l:"Seleccionar campo"},{k:"map",l:"Indicar en mapa"}].map(m=>(
               <button key={m.k} type="button" onClick={()=>{setOriginMode(m.k);if(m.k==="map"){u({fieldId:"",lotId:""});}else{setCustomOrigin({name:"",lat:null,lng:null});}}} style={{ flex:1, padding:"9px 0", fontSize:12.7, fontWeight:700, border:"none", cursor:"pointer", fontFamily:"inherit", background:originMode===m.k?C.pri:C.w, color:originMode===m.k?C.w:C.t2, transition:"all 0.2s ease" }}>{m.l}</button>
             ))}
@@ -1093,9 +1093,9 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
           {originMode==="field" ? (<>
             <div>
               {isPlantUser && producerCompanyId && fieldOpts.length === 0 && !showNewFieldForm ? (
-                <div style={{ padding:"14px 16px", background:`${C.ok}08`, borderRadius:10, border:`1.5px dashed ${C.ok}40`, textAlign:"center" }}>
+                <div style={{ padding:"14px 16px", background:`${C.ok}08`, borderRadius: R.md, border:`1.5px dashed ${C.ok}40`, textAlign:"center" }}>
                   <div style={{ fontSize:13.2, color:C.t2, fontWeight:500, marginBottom:8 }}>{selectedProducerName || "El productor"} no tiene campos cargados</div>
-                  <button onClick={()=>setShowNewFieldForm(true)} style={{ background:C.ok, border:"none", borderRadius:8, padding:"8px 16px", cursor:"pointer", fontFamily:FONT, fontSize:12.7, fontWeight:700, color:C.w }}>{Ic.plus(C.w,13)} Crear campo para {selectedProducerName || "el productor"}</button>
+                  <button onClick={()=>setShowNewFieldForm(true)} style={{ background:C.ok, border:"none", borderRadius: R.md, padding:"8px 16px", cursor:"pointer", fontFamily:FONT, fontSize:12.7, fontWeight:700, color:C.w }}>{Ic.plus(C.w,13)} Crear campo para {selectedProducerName || "el productor"}</button>
                 </div>
               ) : (
                 <Select label="Campo" icon={Ic.field(C.ok,14)} value={form.fieldId} onChange={v=>{u({fieldId:v,lotId:""});}} options={fieldOpts} placeholder="Seleccionar campo..."/>
@@ -1104,15 +1104,15 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
                 <button type="button" onClick={()=>setShowNewFieldForm(true)} style={{marginTop:8,background:"none",border:"none",cursor:"pointer",fontSize:12.1,fontWeight:600,color:C.ok,padding:0,fontFamily:"inherit",display:"flex",alignItems:"center",gap:4}}>{Ic.plus(C.ok,13)} Crear campo nuevo</button>
               )}
               {showNewFieldForm && (
-                <div style={{marginTop:8,background:`${C.ok}08`,borderRadius:10,padding:12,border:`1px solid ${C.ok}30`}}>
+                <div style={{marginTop:8,background:`${C.ok}08`,borderRadius: R.md,padding:12,border:`1px solid ${C.ok}30`}}>
                   <div style={{fontSize:11,fontWeight:700,color:C.ok,textTransform:"uppercase",letterSpacing:0.5,marginBottom:8}}>Nuevo campo para {selectedProducerName || "el productor"}</div>
                   <Field label="Nombre del campo" value={newFieldName} onChange={setNewFieldName} placeholder="Ej: Campo Norte"/>
                   <div style={{marginTop:8}}>
                     <SafeZone><LocationPicker label="Ubicación (opcional)" value={newFieldLoc} onChange={setNewFieldLoc}/></SafeZone>
                   </div>
                   <div style={{display:"flex",gap:6,marginTop:10}}>
-                    <button onClick={()=>{setShowNewFieldForm(false);setNewFieldName("");setNewFieldLoc(null);}} style={{padding:"5px 12px",borderRadius:8,border:`1px solid ${C.b2}`,background:C.w,cursor:"pointer",fontFamily:FONT,fontSize:12.1,fontWeight:600,color:C.t2}}>Cancelar</button>
-                    <button onClick={handleCreateFieldInline} disabled={!newFieldName.trim()||newFieldSaving} style={{padding:"5px 12px",borderRadius:8,border:"none",background:C.ok,cursor:"pointer",fontFamily:FONT,fontSize:12.1,fontWeight:700,color:C.w,opacity:newFieldName.trim()&&!newFieldSaving?1:0.5}}>{newFieldSaving?"Creando...":"Crear campo"}</button>
+                    <button onClick={()=>{setShowNewFieldForm(false);setNewFieldName("");setNewFieldLoc(null);}} style={{padding:"5px 12px",borderRadius: R.md,border:`1px solid ${C.b2}`,background:C.w,cursor:"pointer",fontFamily:FONT,fontSize:12.1,fontWeight:600,color:C.t2}}>Cancelar</button>
+                    <button onClick={handleCreateFieldInline} disabled={!newFieldName.trim()||newFieldSaving} style={{padding:"5px 12px",borderRadius: R.md,border:"none",background:C.ok,cursor:"pointer",fontFamily:FONT,fontSize:12.1,fontWeight:700,color:C.w,opacity:newFieldName.trim()&&!newFieldSaving?1:0.5}}>{newFieldSaving?"Creando...":"Crear campo"}</button>
                   </div>
                 </div>
               )}
@@ -1121,10 +1121,10 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
               {loadingLots && <div style={{padding:8,color:'#888',fontSize:13}}>Cargando lotes...</div>}
               <Select label={hasLots ? "Origen (lote)" : "Origen (lote · opcional)"} icon={Ic.lot(C.pri,14)} value={form.lotId} onChange={v=>u({lotId:v})} options={lotOpts} placeholder={loadingLots?"Cargando lotes...":form.fieldId?(hasLots?"Seleccionar lote...":"Sin lotes — se usará el campo"):"Primero seleccioná un campo"}/>
               {touched&&<FieldError error={errs.lotId}/>}
-              {selectedLot && selectedLot.lat && <div style={{ display:"flex", alignItems:"center", gap:6, padding:"6px 10px", background:C.priPale, borderRadius:8, marginTop:6 }}>{Ic.chk(C.pri,14)}<span style={{fontSize:11.6,color:C.pri,fontWeight:500}}>{selectedLot.lat}, {selectedLot.lng}</span></div>}
+              {selectedLot && selectedLot.lat && <div style={{ display:"flex", alignItems:"center", gap:6, padding:"6px 10px", background:C.priPale, borderRadius: R.md, marginTop:6 }}>{Ic.chk(C.pri,14)}<span style={{fontSize:11.6,color:C.pri,fontWeight:500}}>{selectedLot.lat}, {selectedLot.lng}</span></div>}
               {form.fieldId && !newLot && <button type="button" onClick={()=>setNewLot(true)} style={{marginTop:8,background:"none",border:"none",cursor:"pointer",fontSize:12.1,fontWeight:600,color:C.pri,padding:0,fontFamily:"inherit",display:"flex",alignItems:"center",gap:4}}>{Ic.plus(C.pri,13)} Crear lote nuevo</button>}
               {newLot && (
-                <div style={{marginTop:8,background:C.priPale,borderRadius:10,padding:12}}>
+                <div style={{marginTop:8,background:C.priPale,borderRadius: R.md,padding:12}}>
                   <div style={{display:"flex",gap:8,alignItems:"flex-end"}}>
                     <div style={{flex:1}}>
                       <Field label="Nombre del lote" value={newLotName} onChange={setNewLotName} placeholder="Ej: Lote 3"/>
@@ -1135,7 +1135,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
                   <div style={{marginTop:10}}>
                     <SafeZone><LocationPicker label="Ubicación del lote" value={newLotLoc} onChange={setNewLotLoc} defaultCenter={(() => { const sf = (fields||[]).find(f=>f.id===form.fieldId); return sf?.lat&&sf?.lng ? {lat:Number(sf.lat),lng:Number(sf.lng)} : null; })()}/></SafeZone>
                   </div>
-                  {newLotLoc && <div style={{display:"flex",alignItems:"center",gap:6,padding:"6px 10px",background:C.w,borderRadius:8,marginTop:6}}>{Ic.chk(C.pri,14)}<span style={{fontSize:11.6,color:C.pri,fontWeight:500}}>{newLotLoc.lat.toFixed(4)}, {newLotLoc.lng.toFixed(4)}</span></div>}
+                  {newLotLoc && <div style={{display:"flex",alignItems:"center",gap:6,padding:"6px 10px",background:C.w,borderRadius: R.md,marginTop:6}}>{Ic.chk(C.pri,14)}<span style={{fontSize:11.6,color:C.pri,fontWeight:500}}>{newLotLoc.lat.toFixed(4)}, {newLotLoc.lng.toFixed(4)}</span></div>}
                 </div>
               )}
             </div>
@@ -1144,8 +1144,8 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
             <div style={{ marginTop:10 }}>
               <SafeZone><LocationPicker label="Ubicación en mapa" value={customOrigin.lat?{lat:customOrigin.lat,lng:customOrigin.lng}:null} onChange={loc=>setCustomOrigin(p=>({...p,lat:loc?.lat||null,lng:loc?.lng||null}))} confirmLabel="Confirmar origen" onConfirm={()=>{if(isEditing)confirmEdit();else advanceToNext();}}/></SafeZone>
             </div>
-            {touched&&errs.customOrigin&&<div style={{padding:"6px 10px",borderRadius:8,marginTop:6,fontSize:12.1,fontWeight:600,color:C.err,background:C.errPale}}>{errs.customOrigin}</div>}
-            {customOrigin.lat && <div style={{ display:"flex", alignItems:"center", gap:6, padding:"6px 10px", background:C.priPale, borderRadius:8, marginTop:6 }}>{Ic.chk(C.pri,14)}<span style={{fontSize:11.6,color:C.pri,fontWeight:500}}>{customOrigin.lat.toFixed(4)}, {customOrigin.lng.toFixed(4)}</span></div>}
+            {touched&&errs.customOrigin&&<div style={{padding:"6px 10px",borderRadius: R.md,marginTop:6,fontSize:12.1,fontWeight:600,color:C.err,background:C.errPale}}>{errs.customOrigin}</div>}
+            {customOrigin.lat && <div style={{ display:"flex", alignItems:"center", gap:6, padding:"6px 10px", background:C.priPale, borderRadius: R.md, marginTop:6 }}>{Ic.chk(C.pri,14)}<span style={{fontSize:11.6,color:C.pri,fontWeight:500}}>{customOrigin.lat.toFixed(4)}, {customOrigin.lng.toFixed(4)}</span></div>}
           </>)}
           <NextStepBtn complete={secComplete.origin} onClick={isEditing?confirmEdit:advanceToNext} label={isEditing?"Confirmar edición":undefined} onPrev={prevAvailable()?goToPrev:null}/>
         </Sec>}
@@ -1155,14 +1155,14 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
           <Sec label={form.fleetChoice==="own"?"Flota propia":form.fleetChoice==="delegate"?"Delegar a planta":"Transporte"} complete={!!form.fleetChoice} isExpanded={true} onFocus={()=>{}} secRef={secRefs.ownfleet}>
             <div style={{ fontSize:13.2, color:C.t2, marginBottom:12 }}>¿Cómo desea transportar este flete?</div>
             <div style={{ display:"flex", gap:8, marginBottom:14 }}>
-              <button type="button" onClick={()=>u({fleetChoice:"own"})} style={{ flex:1, padding:"12px 8px", borderRadius:10, border:`1.5px solid ${form.fleetChoice==="own"?C.acc:C.b1}`, background:form.fleetChoice==="own"?C.accPale:C.w, color:form.fleetChoice==="own"?C.acc:C.t2, cursor:"pointer", fontSize:14.3, fontWeight:form.fleetChoice==="own"?700:500, fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>{Ic.truck(form.fleetChoice==="own"?C.acc:C.t3,16)} Flota propia</button>
-              <button type="button" onClick={()=>u({fleetChoice:"delegate",truckId:"",driverId:""})} style={{ flex:1, padding:"12px 8px", borderRadius:10, border:`1.5px solid ${form.fleetChoice==="delegate"?C.pri:C.b1}`, background:form.fleetChoice==="delegate"?C.priPale:C.w, color:form.fleetChoice==="delegate"?C.pri:C.t2, cursor:"pointer", fontSize:14.3, fontWeight:form.fleetChoice==="delegate"?700:500, fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>{Ic.plant(form.fleetChoice==="delegate"?C.pri:C.t3,16)} Delegar a planta</button>
+              <button type="button" onClick={()=>u({fleetChoice:"own"})} style={{ flex:1, padding:"12px 8px", borderRadius: R.md, border:`1.5px solid ${form.fleetChoice==="own"?C.acc:C.b1}`, background:form.fleetChoice==="own"?C.accPale:C.w, color:form.fleetChoice==="own"?C.acc:C.t2, cursor:"pointer", fontSize:14.3, fontWeight:form.fleetChoice==="own"?700:500, fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>{Ic.truck(form.fleetChoice==="own"?C.acc:C.t3,16)} Flota propia</button>
+              <button type="button" onClick={()=>u({fleetChoice:"delegate",truckId:"",driverId:""})} style={{ flex:1, padding:"12px 8px", borderRadius: R.md, border:`1.5px solid ${form.fleetChoice==="delegate"?C.pri:C.b1}`, background:form.fleetChoice==="delegate"?C.priPale:C.w, color:form.fleetChoice==="delegate"?C.pri:C.t2, cursor:"pointer", fontSize:14.3, fontWeight:form.fleetChoice==="delegate"?700:500, fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>{Ic.plant(form.fleetChoice==="delegate"?C.pri:C.t3,16)} Delegar a planta</button>
             </div>
             {form.fleetChoice==="own" && <>
               {truckOpts.length > 0 ? <>
                 <Select label="Camión" icon={Ic.truck(C.acc,14)} value={form.truckId} onChange={v=>u({truckId:v})} options={truckOpts} placeholder="Seleccionar camión..."/>
-                {!form.truckId && <div style={{ marginTop:8, padding:"8px 12px", background:`${C.acc}10`, borderRadius:8, fontSize:12.1, color:C.acc, fontWeight:500 }}>Seleccioná un camión de tu flota</div>}
-              </> : <div style={{ padding:"14px 16px", background:`${C.acc}08`, borderRadius:10, border:`1.5px dashed ${C.acc}40`, textAlign:"center" }}>
+                {!form.truckId && <div style={{ marginTop:8, padding:"8px 12px", background:`${C.acc}10`, borderRadius: R.md, fontSize:12.1, color:C.acc, fontWeight:500 }}>Seleccioná un camión de tu flota</div>}
+              </> : <div style={{ padding:"14px 16px", background:`${C.acc}08`, borderRadius: R.md, border:`1.5px dashed ${C.acc}40`, textAlign:"center" }}>
                 <div style={{ fontSize:13.2, color:C.t2, fontWeight:500, marginBottom:8 }}>No tenés camiones registrados.</div>
                 <a href="/trucks" style={{ fontSize:13.2, fontWeight:700, color:C.acc, textDecoration:"none" }}>Registrá uno desde Camiones →</a>
               </div>}
@@ -1170,11 +1170,11 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
                 {loadingDrivers ? <div style={{ fontSize:12, color:C.t3, padding:8, textAlign:"center" }}>Cargando choferes...</div>
                 : driverOpts.length > 0 ? <>
                   <Select label="Chofer" icon={Ic.user(C.acc,14)} value={form.driverId} onChange={v=>u({driverId:v})} options={driverOpts} placeholder="Seleccionar chofer..."/>
-                  {!form.driverId && <div style={{ marginTop:8, padding:"8px 12px", background:`${C.acc}10`, borderRadius:8, fontSize:12.1, color:C.acc, fontWeight:500 }}>Seleccioná un chofer</div>}
-                </> : <div style={{ padding:"10px 14px", background:`${C.acc}08`, borderRadius:8, border:`1.5px dashed ${C.acc}40`, textAlign:"center", fontSize:13.2, color:C.t2, fontWeight:500 }}>No hay choferes registrados</div>}
+                  {!form.driverId && <div style={{ marginTop:8, padding:"8px 12px", background:`${C.acc}10`, borderRadius: R.md, fontSize:12.1, color:C.acc, fontWeight:500 }}>Seleccioná un chofer</div>}
+                </> : <div style={{ padding:"10px 14px", background:`${C.acc}08`, borderRadius: R.md, border:`1.5px dashed ${C.acc}40`, textAlign:"center", fontSize:13.2, color:C.t2, fontWeight:500 }}>No hay choferes registrados</div>}
               </div>}
             </>}
-            {form.fleetChoice==="delegate" && <div style={{ padding:"10px 14px", background:`${C.info}10`, borderRadius:8, fontSize:13.2, color:C.info, fontWeight:500 }}>La planta de destino asignará el transportista</div>}
+            {form.fleetChoice==="delegate" && <div style={{ padding:"10px 14px", background:`${C.info}10`, borderRadius: R.md, fontSize:13.2, color:C.info, fontWeight:500 }}>La planta de destino asignará el transportista</div>}
             <NextStepBtn complete={!!form.fleetChoice && (form.fleetChoice!=="own" || (!!form.truckId && !!form.driverId))} onClick={isEditing?confirmEdit:advanceToNext} label={isEditing?"Confirmar edición":undefined} onPrev={prevAvailable()?goToPrev:null}/>
           </Sec>
         )}
@@ -1183,8 +1183,8 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
         {activeSection === "destination" && <Sec label="Destino" complete={secComplete.destination} isExpanded={true} onFocus={()=>{}} secRef={secRefs.destination}>
           <label style={{ fontSize:11.6, fontWeight:600, color:C.t2, marginBottom:6, display:"flex", alignItems:"center", gap:4, textTransform:"uppercase", letterSpacing:0.6 }}>{Ic.plant(C.t2,14)} Destino</label>
           <div style={{ display:"flex", gap:6, marginBottom:10 }}>
-            <button onClick={()=>{setDestMode("plant"); setCustomDest({name:"",lat:null,lng:null}); setConfirmMode("none"); setConfirmPlantId("");}} style={{ flex:1, padding:"10px 8px", borderRadius:8, border:`1.5px solid ${destMode==="plant"?C.pri:C.b1}`, background:destMode==="plant"?C.priPale:C.w, color:destMode==="plant"?C.pri:C.t2, cursor:"pointer", fontSize:13.2, fontWeight:600, fontFamily:"inherit" }}>Planta</button>
-            <button onClick={()=>{setDestMode("custom"); u({plantId:""}); setConfirmMode("none"); setConfirmPlantId("");}} style={{ flex:1, padding:"10px 8px", borderRadius:8, border:`1.5px solid ${destMode==="custom"?C.acc:C.b1}`, background:destMode==="custom"?C.accPale:C.w, color:destMode==="custom"?C.acc:C.t2, cursor:"pointer", fontSize:13.2, fontWeight:600, fontFamily:"inherit" }}>Personalizado</button>
+            <button onClick={()=>{setDestMode("plant"); setCustomDest({name:"",lat:null,lng:null}); setConfirmMode("none"); setConfirmPlantId("");}} style={{ flex:1, padding:"10px 8px", borderRadius: R.md, border:`1.5px solid ${destMode==="plant"?C.pri:C.b1}`, background:destMode==="plant"?C.priPale:C.w, color:destMode==="plant"?C.pri:C.t2, cursor:"pointer", fontSize:13.2, fontWeight:600, fontFamily:"inherit" }}>Planta</button>
+            <button onClick={()=>{setDestMode("custom"); u({plantId:""}); setConfirmMode("none"); setConfirmPlantId("");}} style={{ flex:1, padding:"10px 8px", borderRadius: R.md, border:`1.5px solid ${destMode==="custom"?C.acc:C.b1}`, background:destMode==="custom"?C.accPale:C.w, color:destMode==="custom"?C.acc:C.t2, cursor:"pointer", fontSize:13.2, fontWeight:600, fontFamily:"inherit" }}>Personalizado</button>
           </div>
           {destMode==="plant" && (
             <>
@@ -1204,12 +1204,12 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
               <div style={{ marginTop:8 }}>
                 <LocationPicker label="Ubicación del destino" value={customDest.lat?{lat:customDest.lat,lng:customDest.lng}:null} onChange={loc=>setCustomDest(p=>({...p,lat:loc.lat,lng:loc.lng}))} confirmLabel="Confirmar destino" onConfirm={()=>{if(isEditing)confirmEdit();else advanceToNext();}}/>
               </div>
-              {touched&&errs.customDestLoc&&<div style={{padding:"6px 10px",borderRadius:8,marginTop:6,fontSize:12.1,fontWeight:600,color:C.err,background:C.errPale}}>{errs.customDestLoc}</div>}
+              {touched&&errs.customDestLoc&&<div style={{padding:"6px 10px",borderRadius: R.md,marginTop:6,fontSize:12.1,fontWeight:600,color:C.err,background:C.errPale}}>{errs.customDestLoc}</div>}
               <div style={{marginTop:14}}>
                 <label style={{fontSize:11.6,fontWeight:600,color:C.t2,marginBottom:6,display:"flex",alignItems:"center",gap:4,textTransform:"uppercase",letterSpacing:0.6}}>{Ic.chk(C.t2,14)} ¿Quién debe confirmar el viaje?</label>
                 <div style={{display:"flex",gap:6,marginBottom:confirmMode==="plant"?10:0}}>
-                  <button onClick={()=>setConfirmMode("plant")} style={{flex:1,padding:"10px 8px",borderRadius:8,border:`1.5px solid ${confirmMode==="plant"?C.pri:C.b1}`,background:confirmMode==="plant"?C.priPale:C.w,color:confirmMode==="plant"?C.pri:C.t2,cursor:"pointer",fontSize:13.2,fontWeight:600,fontFamily:"inherit"}}>Planta</button>
-                  <button onClick={()=>{setConfirmMode("none");setConfirmPlantId("");}} style={{flex:1,padding:"10px 8px",borderRadius:8,border:`1.5px solid ${confirmMode==="none"?C.ok:C.b1}`,background:confirmMode==="none"?C.okPale:C.w,color:confirmMode==="none"?C.ok:C.t2,cursor:"pointer",fontSize:13.2,fontWeight:600,fontFamily:"inherit"}}>Nadie</button>
+                  <button onClick={()=>setConfirmMode("plant")} style={{flex:1,padding:"10px 8px",borderRadius: R.md,border:`1.5px solid ${confirmMode==="plant"?C.pri:C.b1}`,background:confirmMode==="plant"?C.priPale:C.w,color:confirmMode==="plant"?C.pri:C.t2,cursor:"pointer",fontSize:13.2,fontWeight:600,fontFamily:"inherit"}}>Planta</button>
+                  <button onClick={()=>{setConfirmMode("none");setConfirmPlantId("");}} style={{flex:1,padding:"10px 8px",borderRadius: R.md,border:`1.5px solid ${confirmMode==="none"?C.ok:C.b1}`,background:confirmMode==="none"?C.okPale:C.w,color:confirmMode==="none"?C.ok:C.t2,cursor:"pointer",fontSize:13.2,fontWeight:600,fontFamily:"inherit"}}>Nadie</button>
                 </div>
                 {confirmMode==="plant" && (
                   <>
@@ -1231,7 +1231,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
             <div>
               <label htmlFor="freight-date" style={{ fontSize:11.6, fontWeight:600, color:C.t2, marginBottom:6, display:"flex", alignItems:"center", gap:4, textTransform:"uppercase", letterSpacing:0.6 }}>{Ic.cal(C.pri,14)} Fecha carga</label>
               <div style={{ position:"relative" }}>
-                <input id="freight-date" type="date" value={form.loadDate} onChange={e=>u({loadDate:e.target.value})} onClick={e=>e.target.showPicker?.()} min={new Date().toISOString().split('T')[0]} onFocus={e=>{e.target.style.borderColor=touched&&errs.loadDate?C.err:C.bFocus;e.target.parentElement.querySelector('.tv-dt-icon').style.color=C.bFocus}} onBlur={e=>{e.target.style.borderColor=touched&&errs.loadDate?C.err:C.b1;e.target.parentElement.querySelector('.tv-dt-icon').style.color=C.t3}} style={{ width:"100%", padding:"12px 42px 12px 14px", borderRadius:10, border:`1.5px solid ${touched&&errs.loadDate?C.err:C.b1}`, background:C.w, color:form.loadDate?C.t1:C.t3, fontSize:16.5, fontFamily:"inherit", outline:"none", boxSizing:"border-box", cursor:"pointer", minHeight:44, transition:"border-color 0.15s" }}/>
+                <input id="freight-date" type="date" value={form.loadDate} onChange={e=>u({loadDate:e.target.value})} onClick={e=>e.target.showPicker?.()} min={new Date().toISOString().split('T')[0]} onFocus={e=>{e.target.style.borderColor=touched&&errs.loadDate?C.err:C.bFocus;e.target.parentElement.querySelector('.tv-dt-icon').style.color=C.bFocus}} onBlur={e=>{e.target.style.borderColor=touched&&errs.loadDate?C.err:C.b1;e.target.parentElement.querySelector('.tv-dt-icon').style.color=C.t3}} style={{ width:"100%", padding:"12px 42px 12px 14px", borderRadius: R.md, border:`1.5px solid ${touched&&errs.loadDate?C.err:C.b1}`, background:C.w, color:form.loadDate?C.t1:C.t3, fontSize:16.5, fontFamily:"inherit", outline:"none", boxSizing:"border-box", cursor:"pointer", minHeight:44, transition:"border-color 0.15s" }}/>
                 <div className="tv-dt-icon" style={{ position:"absolute", right:12, top:"50%", transform:"translateY(-50%)", pointerEvents:"none", display:"flex", color:C.t3, transition:"color 0.15s" }}>{Ic.cal(C.t3,17)}</div>
               </div>
               {touched&&<FieldError error={errs.loadDate}/>}
@@ -1239,7 +1239,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
             <div>
               <label htmlFor="freight-time" style={{ fontSize:11.6, fontWeight:600, color:C.t2, marginBottom:6, display:"flex", alignItems:"center", gap:4, textTransform:"uppercase", letterSpacing:0.6 }}>{Ic.clk(C.pri,14)} Hora carga</label>
               <div style={{ position:"relative" }}>
-                <input id="freight-time" type="time" value={form.loadTime} onChange={e=>u({loadTime:e.target.value})} onClick={e=>e.target.showPicker?.()} onFocus={e=>{e.target.style.borderColor=touched&&errs.loadTime?C.err:C.bFocus;e.target.parentElement.querySelector('.tv-dt-icon').style.color=C.bFocus}} onBlur={e=>{e.target.style.borderColor=touched&&errs.loadTime?C.err:C.b1;e.target.parentElement.querySelector('.tv-dt-icon').style.color=C.t3}} style={{ width:"100%", padding:"12px 42px 12px 14px", borderRadius:10, border:`1.5px solid ${touched&&errs.loadTime?C.err:C.b1}`, background:C.w, color:form.loadTime?C.t1:C.t3, fontSize:16.5, fontFamily:"inherit", outline:"none", boxSizing:"border-box", cursor:"pointer", minHeight:44, transition:"border-color 0.15s" }}/>
+                <input id="freight-time" type="time" value={form.loadTime} onChange={e=>u({loadTime:e.target.value})} onClick={e=>e.target.showPicker?.()} onFocus={e=>{e.target.style.borderColor=touched&&errs.loadTime?C.err:C.bFocus;e.target.parentElement.querySelector('.tv-dt-icon').style.color=C.bFocus}} onBlur={e=>{e.target.style.borderColor=touched&&errs.loadTime?C.err:C.b1;e.target.parentElement.querySelector('.tv-dt-icon').style.color=C.t3}} style={{ width:"100%", padding:"12px 42px 12px 14px", borderRadius: R.md, border:`1.5px solid ${touched&&errs.loadTime?C.err:C.b1}`, background:C.w, color:form.loadTime?C.t1:C.t3, fontSize:16.5, fontFamily:"inherit", outline:"none", boxSizing:"border-box", cursor:"pointer", minHeight:44, transition:"border-color 0.15s" }}/>
                 <div className="tv-dt-icon" style={{ position:"absolute", right:12, top:"50%", transform:"translateY(-50%)", pointerEvents:"none", display:"flex", color:C.t3, transition:"color 0.15s" }}>{Ic.clk(C.t3,17)}</div>
               </div>
               {touched&&<FieldError error={errs.loadTime}/>}
@@ -1254,7 +1254,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
             <div style={{ fontSize:13.2, color:C.t2, marginBottom:12 }}>Asignar transporte para este flete</div>
             <div style={{ display:"flex", flexDirection:"column", gap:8, marginBottom:14 }}>
               {user?.hasInternalFleet && (
-                <button onClick={() => { setTransportChoice("ownfleet"); setAssignTruckId(""); setAssignDriverId(""); }} style={{ display:"flex", alignItems:"center", gap:10, padding:"12px 14px", borderRadius:10, border:`1.5px solid ${transportChoice==="ownfleet" ? C.acc : C.b1}`, background:transportChoice==="ownfleet" ? C.accPale : C.w, cursor:"pointer", fontFamily:"inherit", textAlign:"left" }}>
+                <button onClick={() => { setTransportChoice("ownfleet"); setAssignTruckId(""); setAssignDriverId(""); }} style={{ display:"flex", alignItems:"center", gap:10, padding:"12px 14px", borderRadius: R.md, border:`1.5px solid ${transportChoice==="ownfleet" ? C.acc : C.b1}`, background:transportChoice==="ownfleet" ? C.accPale : C.w, cursor:"pointer", fontFamily:"inherit", textAlign:"left" }}>
                   {Ic.truck(transportChoice==="ownfleet" ? C.acc : C.t3, 18)}
                   <div style={{ flex:1 }}>
                     <div style={{ fontSize:14.3, fontWeight:transportChoice==="ownfleet"?700:500, color:transportChoice==="ownfleet"?C.acc:C.t1 }}>Flota propia</div>
@@ -1268,7 +1268,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
                 const sel = transportChoice === cId;
                 const isConsulta = r.accessLevel === "READONLY";
                 return (
-                  <button key={cId} onClick={() => { setTransportChoice(cId); setAssignTruckId(""); setAssignDriverId(""); }} style={{ display:"flex", alignItems:"center", gap:10, padding:"12px 14px", borderRadius:10, border:`1.5px solid ${sel ? C.pri : C.b1}`, background:sel ? C.priPale : C.w, cursor:"pointer", fontFamily:"inherit", textAlign:"left" }}>
+                  <button key={cId} onClick={() => { setTransportChoice(cId); setAssignTruckId(""); setAssignDriverId(""); }} style={{ display:"flex", alignItems:"center", gap:10, padding:"12px 14px", borderRadius: R.md, border:`1.5px solid ${sel ? C.pri : C.b1}`, background:sel ? C.priPale : C.w, cursor:"pointer", fontFamily:"inherit", textAlign:"left" }}>
                     {Ic.truck(sel ? C.pri : C.t3, 18)}
                     <div style={{ flex:1 }}>
                       <div style={{ fontSize:14.3, fontWeight:sel?700:500, color:sel?C.pri:C.t1 }}>{co.name || "Empresa"}</div>
@@ -1281,26 +1281,26 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
             </div>
             {transportNeedsTruckDriver && <>
               {transportChoice === "ownfleet"
-                ? <div style={{ padding:"8px 12px", background:`${C.acc}10`, borderRadius:8, fontSize:12.1, color:C.acc, fontWeight:500, marginBottom:10 }}>Seleccioná camión y chofer de tu flota</div>
-                : <div style={{ padding:"8px 12px", background:`${C.warn}15`, borderRadius:8, fontSize:12.1, color:C.warn, fontWeight:500, marginBottom:10 }}>Este transportista está en modo consulta. Se asignará automáticamente.</div>}
+                ? <div style={{ padding:"8px 12px", background:`${C.acc}10`, borderRadius: R.md, fontSize:12.1, color:C.acc, fontWeight:500, marginBottom:10 }}>Seleccioná camión y chofer de tu flota</div>
+                : <div style={{ padding:"8px 12px", background:`${C.warn}15`, borderRadius: R.md, fontSize:12.1, color:C.warn, fontWeight:500, marginBottom:10 }}>Este transportista está en modo consulta. Se asignará automáticamente.</div>}
               <div style={{ marginBottom:8 }}>
                 {loadingAssignTrucks ? <div style={{ fontSize:12, color:C.t3, padding:8 }}>Cargando camiones...</div>
                 : assignTruckOpts.length > 0 ? <>
                   <Select label="Camión" icon={Ic.truck(C.acc,14)} value={assignTruckId} onChange={v=>setAssignTruckId(v)} options={assignTruckOpts} placeholder="Seleccionar camión..."/>
                   {!showNewTruckForm && <button type="button" onClick={()=>setShowNewTruckForm(true)} style={{marginTop:8,background:"none",border:"none",cursor:"pointer",fontSize:12.1,fontWeight:600,color:C.acc,padding:0,fontFamily:"inherit",display:"flex",alignItems:"center",gap:4}}>{Ic.plus(C.acc,13)} Crear camión nuevo</button>}
                 </>
-                : !showNewTruckForm ? <div style={{ padding:"14px 16px", background:`${C.acc}08`, borderRadius:10, border:`1.5px dashed ${C.acc}40`, textAlign:"center" }}>
+                : !showNewTruckForm ? <div style={{ padding:"14px 16px", background:`${C.acc}08`, borderRadius: R.md, border:`1.5px dashed ${C.acc}40`, textAlign:"center" }}>
                   <div style={{ fontSize:13.2, color:C.t2, fontWeight:500, marginBottom:8 }}>{transportChoice === "ownfleet" ? "No hay camiones en tu flota" : `${selectedTransporterName || "El transportista"} no tiene camiones registrados`}</div>
-                  <button onClick={()=>setShowNewTruckForm(true)} style={{ background:C.acc, border:"none", borderRadius:8, padding:"8px 16px", cursor:"pointer", fontFamily:FONT, fontSize:12.7, fontWeight:700, color:C.w }}>{Ic.plus(C.w,13)} Crear camión</button>
+                  <button onClick={()=>setShowNewTruckForm(true)} style={{ background:C.acc, border:"none", borderRadius: R.md, padding:"8px 16px", cursor:"pointer", fontFamily:FONT, fontSize:12.7, fontWeight:700, color:C.w }}>{Ic.plus(C.w,13)} Crear camión</button>
                 </div> : null}
                 {showNewTruckForm && (
-                  <div style={{marginTop:8,background:`${C.acc}08`,borderRadius:10,padding:12,border:`1px solid ${C.acc}30`}}>
+                  <div style={{marginTop:8,background:`${C.acc}08`,borderRadius: R.md,padding:12,border:`1px solid ${C.acc}30`}}>
                     <div style={{fontSize:11,fontWeight:700,color:C.acc,textTransform:"uppercase",letterSpacing:0.5,marginBottom:8}}>Nuevo camión{transportChoice !== "ownfleet" && selectedTransporterName ? ` para ${selectedTransporterName}` : ""}</div>
                     <Field label="Matrícula" value={newTruckPlate} onChange={setNewTruckPlate} placeholder="Ej: ABC 1234"/>
                     <div style={{marginTop:6}}><Field label="Modelo (opcional)" value={newTruckModel} onChange={setNewTruckModel} placeholder="Ej: Scania R500"/></div>
                     <div style={{display:"flex",gap:6,marginTop:10}}>
-                      <button onClick={()=>{setShowNewTruckForm(false);setNewTruckPlate("");setNewTruckModel("");}} style={{padding:"5px 12px",borderRadius:8,border:`1px solid ${C.b2}`,background:C.w,cursor:"pointer",fontFamily:FONT,fontSize:12.1,fontWeight:600,color:C.t2}}>Cancelar</button>
-                      <button onClick={handleCreateTruckInline} disabled={!newTruckPlate.trim()||newTruckSaving} style={{padding:"5px 12px",borderRadius:8,border:"none",background:C.acc,cursor:"pointer",fontFamily:FONT,fontSize:12.1,fontWeight:700,color:C.w,opacity:newTruckPlate.trim()&&!newTruckSaving?1:0.5}}>{newTruckSaving?"Creando...":"Crear camión"}</button>
+                      <button onClick={()=>{setShowNewTruckForm(false);setNewTruckPlate("");setNewTruckModel("");}} style={{padding:"5px 12px",borderRadius: R.md,border:`1px solid ${C.b2}`,background:C.w,cursor:"pointer",fontFamily:FONT,fontSize:12.1,fontWeight:600,color:C.t2}}>Cancelar</button>
+                      <button onClick={handleCreateTruckInline} disabled={!newTruckPlate.trim()||newTruckSaving} style={{padding:"5px 12px",borderRadius: R.md,border:"none",background:C.acc,cursor:"pointer",fontFamily:FONT,fontSize:12.1,fontWeight:700,color:C.w,opacity:newTruckPlate.trim()&&!newTruckSaving?1:0.5}}>{newTruckSaving?"Creando...":"Crear camión"}</button>
                     </div>
                   </div>
                 )}
@@ -1308,10 +1308,10 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
               {assignTruckId && <div style={{ marginBottom:8 }}>
                 {loadingAssignDrivers ? <div style={{ fontSize:12, color:C.t3, padding:8 }}>Cargando choferes...</div>
                 : assignDriverOpts.length > 0 ? <Select label="Chofer" icon={Ic.user(C.acc,14)} value={assignDriverId} onChange={v=>setAssignDriverId(v)} options={assignDriverOpts} placeholder="Seleccionar chofer..."/>
-                : <div style={{ padding:"10px 14px", background:`${C.acc}08`, borderRadius:10, border:`1.5px dashed ${C.acc}40`, fontSize:12.7, color:C.t2, fontWeight:500, textAlign:"center" }}>Sin choferes registrados</div>}
+                : <div style={{ padding:"10px 14px", background:`${C.acc}08`, borderRadius: R.md, border:`1.5px dashed ${C.acc}40`, fontSize:12.7, color:C.t2, fontWeight:500, textAlign:"center" }}>Sin choferes registrados</div>}
               </div>}
             </>}
-            {transportIsOperator && <div style={{ padding:"10px 14px", background:`${C.info}10`, borderRadius:8, fontSize:13.2, color:C.info, fontWeight:500, marginBottom:10 }}>El transportista confirmará y asignará camión/chofer.</div>}
+            {transportIsOperator && <div style={{ padding:"10px 14px", background:`${C.info}10`, borderRadius: R.md, fontSize:13.2, color:C.info, fontWeight:500, marginBottom:10 }}>El transportista confirmará y asignará camión/chofer.</div>}
             <button onClick={() => { setTransportChoice("skip"); setAssignTruckId(""); setAssignDriverId(""); }} style={{ background:"none", border:"none", cursor:"pointer", fontSize:12.7, fontWeight:600, color:C.t3, padding:"8px 0", fontFamily:"inherit", textDecoration:"underline" }}>Asignar después</button>
             <NextStepBtn complete={transportStepComplete} onClick={openConfirmModal} label="Siguiente" onPrev={prevAvailable()?goToPrev:null}/>
           </Sec>
@@ -1343,7 +1343,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
               <div style={{ flex:1, minWidth:0 }}>
                 {/* Duplicate warning */}
                 {duplicateWarning && duplicateWarning.length > 0 && (
-                  <div style={{ background:C.warnPale, border:`1px solid ${C.warn}40`, borderRadius:10, padding:"10px 14px", marginBottom:12 }}>
+                  <div style={{ background:C.warnPale, border:`1px solid ${C.warn}40`, borderRadius: R.md, padding:"10px 14px", marginBottom:12 }}>
                     <div style={{ fontSize:13, fontWeight:700, color:C.warn, marginBottom:4 }}>Ya tenés {duplicateWarning.length === 1 ? "un flete similar" : `${duplicateWarning.length} fletes similares`} para esta fecha:</div>
                     {duplicateWarning.slice(0, 3).map(f => (
                       <div key={f.id} style={{ fontSize:12, color:C.t2, marginTop:2, fontFamily:FONT }}>
@@ -1366,7 +1366,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
                     ...(secSummary.transport ? [{ icon: Ic.truck(C.acc,14), label:"Transporte", value:secSummary.transport, sec:"transport" }] : []),
                   ].filter(r=>r.value).map((r,i)=>(
                     <div key={i} style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 0", borderBottom:`1px solid ${C.b1}` }}>
-                      <div style={{ display:"flex", alignItems:"center", justifyContent:"center", width:28, height:28, borderRadius:8, background:C.priPale, flexShrink:0 }}>{r.icon}</div>
+                      <div style={{ display:"flex", alignItems:"center", justifyContent:"center", width:28, height:28, borderRadius: R.md, background:C.priPale, flexShrink:0 }}>{r.icon}</div>
                       <div style={{ flex:1, minWidth:0 }}>
                         <div style={{ fontSize:11, fontWeight:600, color:C.t3, textTransform:"uppercase", letterSpacing:0.4 }}>{r.label}</div>
                         <div style={{ fontSize:13.5, fontWeight:500, color:C.t1, marginTop:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{r.value}</div>
@@ -1383,21 +1383,21 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
                 {_isDesktop ? (<>
                   <div style={{ marginTop:16 }}>
                     <label style={{ fontSize:11.6, fontWeight:600, color:C.t2, marginBottom:6, display:"block", textTransform:"uppercase", letterSpacing:0.6 }}>Notas (opcional)</label>
-                    <textarea value={form.notes} onChange={e=>u({notes:e.target.value})} placeholder="Indicaciones, horarios especiales..." rows={2} style={{ width:"100%", padding:"10px 12px", borderRadius:10, border:`1.5px solid ${C.b1}`, background:C.w, color:C.t1, fontSize:14.3, fontFamily:"inherit", outline:"none", resize:"none", boxSizing:"border-box" }}/>
+                    <textarea value={form.notes} onChange={e=>u({notes:e.target.value})} placeholder="Indicaciones, horarios especiales..." rows={2} style={{ width:"100%", padding:"10px 12px", borderRadius: R.md, border:`1.5px solid ${C.b1}`, background:C.w, color:C.t1, fontSize:14.3, fontFamily:"inherit", outline:"none", resize:"none", boxSizing:"border-box" }}/>
                   </div>
                   <div style={{ marginTop:12 }}>
                     <label style={{ fontSize:11.6, fontWeight:600, color:C.t2, marginBottom:6, display:"flex", alignItems:"center", gap:4, textTransform:"uppercase", letterSpacing:0.6 }}>{Ic.clip(C.acc,14)} Adjuntar (opcional)</label>
                     {photos.length > 0 && (
                       <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:8 }}>
                         {photos.map((p,i)=>(
-                          <div key={i} style={{ position:"relative", width:56, height:56, borderRadius:8, overflow:"hidden", border:`1px solid ${C.b1}` }}>
+                          <div key={i} style={{ position:"relative", width:56, height:56, borderRadius: R.md, overflow:"hidden", border:`1px solid ${C.b1}` }}>
                             {p.preview ? <img src={p.preview} alt="" loading="lazy" style={{ width:"100%", height:"100%", objectFit:"cover" }}/> : <div style={{ width:"100%", height:"100%", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", background:C.bg, padding:2 }}>{Ic.doc(C.pri,14)}<span style={{fontSize:7,color:C.t3,textAlign:"center",marginTop:1,wordBreak:"break-all"}}>{(p.name||"").slice(-10)}</span></div>}
-                            <button onClick={()=>removePhoto(i)} aria-label="Eliminar foto" style={{ position:"absolute", top:1, right:1, width:18, height:18, borderRadius:9, background:C.err, border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>{Ic.cross(C.w,10)}</button>
+                            <button onClick={()=>removePhoto(i)} aria-label="Eliminar foto" style={{ position:"absolute", top:1, right:1, width:18, height:18, borderRadius: R.md, background:C.err, border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>{Ic.cross(C.w,10)}</button>
                           </div>
                         ))}
                       </div>
                     )}
-                    <button onClick={()=>setShowAttach(true)} style={{ display:"inline-flex", alignItems:"center", gap:5, padding:"8px 12px", borderRadius:8, border:`1.5px dashed ${C.b1}`, background:C.bg, cursor:"pointer", fontFamily:"inherit", fontSize:12.1, fontWeight:600, color:C.t2 }}>
+                    <button onClick={()=>setShowAttach(true)} style={{ display:"inline-flex", alignItems:"center", gap:5, padding:"8px 12px", borderRadius: R.md, border:`1.5px dashed ${C.b1}`, background:C.bg, cursor:"pointer", fontFamily:"inherit", fontSize:12.1, fontWeight:600, color:C.t2 }}>
                       {Ic.clip(C.t2,14)} Adjuntar
                     </button>
                     <AttachMenu open={showAttach} onClose={()=>setShowAttach(false)} onCamera={()=>nfCamRef.current?.click()} onGallery={()=>nfGalRef.current?.click()} onFiles={()=>nfDocRef.current?.click()} />
@@ -1405,24 +1405,24 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
                 </>) : (<>
                   {/* Mobile: two buttons in one row */}
                   <div style={{ display:"flex", gap:8, marginTop:14 }}>
-                    <button onClick={()=>setShowModalNotes(v=>!v)} style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", gap:6, padding:"10px 0", borderRadius:10, border:`1.5px solid ${showModalNotes?C.pri:C.b1}`, background:showModalNotes?C.priPale:C.w, color:showModalNotes?C.pri:C.t2, cursor:"pointer", fontFamily:"inherit", fontSize:12.7, fontWeight:600 }}>
+                    <button onClick={()=>setShowModalNotes(v=>!v)} style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", gap:6, padding:"10px 0", borderRadius: R.md, border:`1.5px solid ${showModalNotes?C.pri:C.b1}`, background:showModalNotes?C.priPale:C.w, color:showModalNotes?C.pri:C.t2, cursor:"pointer", fontFamily:"inherit", fontSize:12.7, fontWeight:600 }}>
                       {Ic.doc(showModalNotes?C.pri:C.t2,14)} Notas {form.notes?"✓":""}
                     </button>
-                    <button onClick={()=>setShowAttach(true)} style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", gap:6, padding:"10px 0", borderRadius:10, border:`1.5px solid ${photos.length>0?C.pri:C.b1}`, background:photos.length>0?C.priPale:C.w, color:photos.length>0?C.pri:C.t2, cursor:"pointer", fontFamily:"inherit", fontSize:12.7, fontWeight:600 }}>
+                    <button onClick={()=>setShowAttach(true)} style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", gap:6, padding:"10px 0", borderRadius: R.md, border:`1.5px solid ${photos.length>0?C.pri:C.b1}`, background:photos.length>0?C.priPale:C.w, color:photos.length>0?C.pri:C.t2, cursor:"pointer", fontFamily:"inherit", fontSize:12.7, fontWeight:600 }}>
                       {Ic.clip(photos.length>0?C.pri:C.t2,14)} Adjuntar {photos.length>0?`(${photos.length})`:""}
                     </button>
                   </div>
                   {showModalNotes && (
                     <div style={{ marginTop:8 }}>
-                      <textarea value={form.notes} onChange={e=>u({notes:e.target.value})} placeholder="Indicaciones, horarios especiales..." rows={2} style={{ width:"100%", padding:"10px 12px", borderRadius:10, border:`1.5px solid ${C.b1}`, background:C.w, color:C.t1, fontSize:14.3, fontFamily:"inherit", outline:"none", resize:"none", boxSizing:"border-box" }}/>
+                      <textarea value={form.notes} onChange={e=>u({notes:e.target.value})} placeholder="Indicaciones, horarios especiales..." rows={2} style={{ width:"100%", padding:"10px 12px", borderRadius: R.md, border:`1.5px solid ${C.b1}`, background:C.w, color:C.t1, fontSize:14.3, fontFamily:"inherit", outline:"none", resize:"none", boxSizing:"border-box" }}/>
                     </div>
                   )}
                   {photos.length > 0 && (
                     <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginTop:8 }}>
                       {photos.map((p,i)=>(
-                        <div key={i} style={{ position:"relative", width:48, height:48, borderRadius:8, overflow:"hidden", border:`1px solid ${C.b1}` }}>
+                        <div key={i} style={{ position:"relative", width:48, height:48, borderRadius: R.md, overflow:"hidden", border:`1px solid ${C.b1}` }}>
                           {p.preview ? <img src={p.preview} alt="" loading="lazy" style={{ width:"100%", height:"100%", objectFit:"cover" }}/> : <div style={{ width:"100%", height:"100%", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", background:C.bg, padding:2 }}>{Ic.doc(C.pri,12)}<span style={{fontSize:6,color:C.t3,textAlign:"center",marginTop:1,wordBreak:"break-all"}}>{(p.name||"").slice(-8)}</span></div>}
-                          <button onClick={()=>removePhoto(i)} aria-label="Eliminar" style={{ position:"absolute", top:1, right:1, width:16, height:16, borderRadius:8, background:C.err, border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>{Ic.cross(C.w,8)}</button>
+                          <button onClick={()=>removePhoto(i)} aria-label="Eliminar" style={{ position:"absolute", top:1, right:1, width:16, height:16, borderRadius: R.md, background:C.err, border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>{Ic.cross(C.w,8)}</button>
                         </div>
                       ))}
                     </div>
@@ -1439,7 +1439,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
               {/* Right column: route map (desktop only, when coords available) */}
               {_isDesktop && finalOrigin && finalDest && (
                 <div style={{ flex:1, minWidth:0, alignSelf:"flex-start" }}>
-                  <div style={{ background:C.w, border:`1px solid ${C.b1}`, borderRadius:12, overflow:"hidden", boxShadow:C.sh }}>
+                  <div style={{ background:C.w, border:`1px solid ${C.b1}`, borderRadius: R.lg, overflow:"hidden", boxShadow:C.sh }}>
                     <div style={{ display:"flex", alignItems:"center", gap:6, padding:"10px 14px" }}>
                       {Ic.pin(C.pri,14)}
                       <span style={{ fontSize:11.6, fontWeight:700, color:C.t2, textTransform:"uppercase", letterSpacing:0.5 }}>Vista previa del recorrido</span>

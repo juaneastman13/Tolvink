@@ -4,6 +4,7 @@
 // =====================================================================
 
 import { useState, useEffect, useRef } from "react";
+import { R } from "../theme";
 import { loadGMaps, mkFieldIcon, mkPlantIcon, mkTruckIcon, mkPinIcon } from "../maps";
 import { API_URL } from "../api";
 import log from "../logger";
@@ -319,7 +320,7 @@ export default function TrackFreightScreen({ code: codeProp } = {}) {
       <div style={S.header}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <span style={{ fontSize: 22, fontWeight: 800, color: COLORS.pri, letterSpacing: -1 }}>tolvink</span>
-          <span style={{ width: 6, height: 6, borderRadius: 3, background: COLORS.acc, display: "inline-block" }} />
+          <span style={{ width: 6, height: 6, borderRadius: R.xs, background: COLORS.acc, display: "inline-block" }} />
         </div>
         <div style={{ fontSize: 13.2, color: COLORS.t3, fontWeight: 500 }}>Seguimiento en vivo</div>
       </div>
@@ -328,7 +329,7 @@ export default function TrackFreightScreen({ code: codeProp } = {}) {
       <div style={S.info}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
           <span style={{ fontWeight: 800, fontSize: 16.5, color: COLORS.t1 }}>{freight.code}</span>
-          <span style={{ padding: "2px 8px", borderRadius: 6, fontSize: 12.1, fontWeight: 700,
+          <span style={{ padding: "2px 8px", borderRadius: R.sm, fontSize: 12.1, fontWeight: 700,
                          background: sc.color + "18", color: sc.color }}>{sc.label}</span>
         </div>
         <div style={{ fontSize: 13.2, color: COLORS.t2, marginTop: 4 }}>
@@ -358,16 +359,16 @@ export default function TrackFreightScreen({ code: codeProp } = {}) {
       <div style={S.footer}>
         <div style={{ display: "flex", gap: 12, fontSize: 12.1, flexWrap: "wrap", alignItems: "center" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-            <span style={{ width: 8, height: 8, borderRadius: 4, background: "#1A6B37", display: "inline-block" }} />
+            <span style={{ width: 8, height: 8, borderRadius: R.xs, background: "#1A6B37", display: "inline-block" }} />
             <span style={{ color: COLORS.t2 }}>{freight.originName}</span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-            <span style={{ width: 8, height: 8, borderRadius: 4, background: "#003882", display: "inline-block" }} />
+            <span style={{ width: 8, height: 8, borderRadius: R.xs, background: "#003882", display: "inline-block" }} />
             <span style={{ color: COLORS.t2 }}>{freight.destName}</span>
           </div>
           {isLive && truckPos && (
             <div style={{ display: "flex", alignItems: "center", gap: 4, marginLeft: "auto" }}>
-              <span style={{ width: 8, height: 8, borderRadius: 4, background: "#FF6A00",
+              <span style={{ width: 8, height: 8, borderRadius: R.xs, background: "#FF6A00",
                              display: "inline-block", animation: "pulse 1.5s infinite" }} />
               <span style={{ color: COLORS.acc, fontWeight: 600, fontSize: 11 }}>
                 En vivo{truckPos.speed > 0 ? ` \u00b7 ${Math.max(0, Math.round(parseFloat(truckPos.speed) || 0))} km/h` : ""}
@@ -397,7 +398,7 @@ export default function TrackFreightScreen({ code: codeProp } = {}) {
               const time = p.createdAt ? new Date(p.createdAt).toLocaleTimeString("es-UY", { hour: "2-digit", minute: "2-digit" }) : "";
               return (
                 <div key={p.userId} style={{ display: "flex", alignItems: "center", gap: 3 }}>
-                  <span style={{ width: 7, height: 7, borderRadius: 4, background: color, display: "inline-block" }} />
+                  <span style={{ width: 7, height: 7, borderRadius: R.xs, background: color, display: "inline-block" }} />
                   <span style={{ color: COLORS.t2 }}>{p.userName || "Desconocido"}</span>
                   {time && <span style={{ color: COLORS.t3 }}>{time}</span>}
                 </div>
@@ -413,7 +414,7 @@ export default function TrackFreightScreen({ code: codeProp } = {}) {
 const S = {
   center: { minHeight: "100dvh", display: "flex", alignItems: "center", justifyContent: "center",
             background: COLORS.bg, fontFamily: "'DM Sans', system-ui, -apple-system, sans-serif", padding: 24 },
-  card: { textAlign: "center", padding: 32, background: COLORS.w, borderRadius: 16,
+  card: { textAlign: "center", padding: 32, background: COLORS.w, borderRadius: R.xl,
           maxWidth: 360, boxShadow: "0 4px 14px rgba(0,0,0,0.06)" },
   header: { display: "flex", alignItems: "center", justifyContent: "space-between",
             padding: "10px 16px", background: COLORS.w, borderBottom: `1px solid ${COLORS.b2}`, flexShrink: 0 },

@@ -178,8 +178,8 @@ export function TripProgressBar({ status, ribbon, small }) {
   const sz = small ? 20 : 24;
   const barH = small ? 3 : 4;
   return (
-    <div style={{ position: "relative", height: barH, background: C.b1, borderRadius: 2, flex: 1 }}>
-      <div style={{ position: "absolute", left: 0, top: 0, height: "100%", width: `${pct}%`, background: ribbon, borderRadius: 2, transition: "width 0.3s" }} />
+    <div style={{ position: "relative", height: barH, background: C.b1, borderRadius: R.xs, flex: 1 }}>
+      <div style={{ position: "absolute", left: 0, top: 0, height: "100%", width: `${pct}%`, background: ribbon, borderRadius: R.xs, transition: "width 0.3s" }} />
       {pct > 0 && pct < 100 && (
         <div style={{ position: "absolute", left: `${pct}%`, top: "50%", transform: "translate(-50%, -50%)", width: sz, height: sz, borderRadius: "50%", background: ribbon, display: "flex", alignItems: "center", justifyContent: "center" }}>
           {Ic.truck("#fff", small ? 11 : 13)}
@@ -300,7 +300,7 @@ export const CalendarChip = memo(function CalendarChip({ freight: f }) {
   const grain = f.grain === "Otros" ? (f.productTypeOther || "Otros") : f.grain;
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 2, background: sc.pillBg, padding: "2px 4px", borderRadius: R.xs, marginBottom: 2 }}>
-      <div style={{ width: 3, height: 12, background: sc.ribbon, borderRadius: 1, flexShrink: 0 }} />
+      <div style={{ width: 3, height: 12, background: sc.ribbon, borderRadius: R.xs, flexShrink: 0 }} />
       <span style={{ fontSize: 8, color: sc.pillText, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{grain} {f.tons}t</span>
     </div>
   );

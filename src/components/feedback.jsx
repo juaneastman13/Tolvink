@@ -1,17 +1,17 @@
 import { useState, useEffect, useRef, memo, Component } from "react";
-import { C, Ic } from "../theme";
+import { C, Ic , R} from "../theme";
 import { captureError } from "../sentry";
 
 export function Toast({ msg, type="ok", onClose }) {
   const onCloseRef = useRef(onClose); onCloseRef.current = onClose;
   useEffect(()=>{ const t=setTimeout(()=>onCloseRef.current?.(),3500); return()=>clearTimeout(t); },[msg]);
   const cfg = { ok:{bg:C.pri,ic:Ic.chk(C.w,16)}, err:{bg:C.err,ic:Ic.warn(C.w,16)}, info:{bg:C.info,ic:Ic.bell(C.w,16)} }[type]||{bg:C.pri,ic:Ic.chk(C.w,16)};
-  return <div role="alert" aria-live="assertive" style={{ position:"fixed", top:"max(20px, env(safe-area-inset-top))", left:"50%", transform:"translateX(-50%)", zIndex:300, background:cfg.bg, color:C.w, padding:"11px 22px", borderRadius:12, fontSize:14.3, fontWeight:600, boxShadow:C.shLg, display:"flex", alignItems:"center", gap:8, animation:"fadeIn 0.3s ease", maxWidth:"calc(100vw - 40px)" }}>{cfg.ic} {msg}</div>;
+  return <div role="alert" aria-live="assertive" style={{ position:"fixed", top:"max(20px, env(safe-area-inset-top))", left:"50%", transform:"translateX(-50%)", zIndex:300, background:cfg.bg, color:C.w, padding:"11px 22px", borderRadius: R.lg, fontSize:14.3, fontWeight:600, boxShadow:C.shLg, display:"flex", alignItems:"center", gap:8, animation:"fadeIn 0.3s ease", maxWidth:"calc(100vw - 40px)" }}>{cfg.ic} {msg}</div>;
 }
 
 export const Loader = memo(function Loader() {
   return <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:32, gap:12 }}>
-    <span style={{ width:14, height:14, borderRadius:7, background:C.acc, display:"inline-block", animation:"dotPulse 1.5s ease-in-out infinite" }}></span>
+    <span style={{ width:14, height:14, borderRadius: R.sm, background:C.acc, display:"inline-block", animation:"dotPulse 1.5s ease-in-out infinite" }}></span>
   </div>;
 });
 
@@ -31,7 +31,7 @@ export function LoadingOverlay({ closing=false, closingText="", onClose }) {
       {!closing && (
         <div style={{display:"flex",alignItems:"flex-start",animation:"moLogoIn 0.35s ease-out"}}>
           <span style={{fontSize:62.7,fontWeight:800,color:C.pri,letterSpacing:-2.5,lineHeight:1}}>tolvink</span>
-          <span style={{width:17,height:17,borderRadius:9,background:C.acc,marginLeft:5,marginTop:3,display:"inline-block",animation:"dotPulse 1.5s ease-in-out infinite"}} />
+          <span style={{width:17,height:17,borderRadius: R.md,background:C.acc,marginLeft:5,marginTop:3,display:"inline-block",animation:"dotPulse 1.5s ease-in-out infinite"}} />
         </div>
       )}
       {closing && (
@@ -46,7 +46,7 @@ export function LoadingOverlay({ closing=false, closingText="", onClose }) {
 
 export function EmptyState({ icon, title, subtitle, action }) {
   return <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"40px 24px", textAlign:"center", minHeight:200 }}>
-    {icon && <div style={{ width:56, height:56, borderRadius:16, background:C.priPale, display:"flex", alignItems:"center", justifyContent:"center", marginBottom:16 }}>{icon}</div>}
+    {icon && <div style={{ width:56, height:56, borderRadius: R.xl, background:C.priPale, display:"flex", alignItems:"center", justifyContent:"center", marginBottom:16 }}>{icon}</div>}
     <div style={{ fontSize:16.5, fontWeight:700, color:C.t1, marginBottom:6 }}>{title}</div>
     {subtitle && <div style={{ fontSize:14.3, color:C.t3, lineHeight:1.5, maxWidth:300 }}>{subtitle}</div>}
     {action && <div style={{ marginTop:16 }}>{action}</div>}
@@ -64,7 +64,7 @@ function SkeletonBlock({ w="100%", h=16, r=8, mb=0, style={} }) {
 export function SkeletonCard() {
   return <>
     <style>{shimmerStyle}</style>
-    <div style={{ background:C.w, borderRadius:10, padding:"10px 14px", border:`1px solid ${C.b2}`, borderLeft:`4px solid ${C.b2}`, marginBottom:10 }}>
+    <div style={{ background:C.w, borderRadius: R.md, padding:"10px 14px", border:`1px solid ${C.b2}`, borderLeft:`4px solid ${C.b2}`, marginBottom:10 }}>
       <SkeletonBlock w="45%" h={14} mb={4} />
       <div style={{ display:"flex", alignItems:"center", gap:5, marginBottom:8 }}>
         <SkeletonBlock w="35%" h={12} />
@@ -100,7 +100,7 @@ export function SkeletonDetail() {
           <SkeletonBlock w="35%" h={12} />
         </div>
       </div>
-      {[1,2,3].map(i => <div key={i} style={{ background:C.w, borderRadius:14, padding:16, border:`1px solid ${C.b2}`, marginBottom:12 }}>
+      {[1,2,3].map(i => <div key={i} style={{ background:C.w, borderRadius: R.lg, padding:16, border:`1px solid ${C.b2}`, marginBottom:12 }}>
         <SkeletonBlock w="30%" h={10} mb={10} />
         <SkeletonBlock w="80%" h={14} mb={8} />
         <SkeletonBlock w="60%" h={14} />
@@ -133,13 +133,13 @@ export class ErrorBoundary extends Component {
   render() {
     if (this.state.hasError) {
       return <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", minHeight:"100vh", padding:32, textAlign:"center", background:C.bg, fontFamily:"'DM Sans',sans-serif" }}>
-        <div style={{ width:64, height:64, borderRadius:20, background:C.errPale, display:"flex", alignItems:"center", justifyContent:"center", marginBottom:20 }}>
+        <div style={{ width:64, height:64, borderRadius: R.pill, background:C.errPale, display:"flex", alignItems:"center", justifyContent:"center", marginBottom:20 }}>
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={C.err} strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
         </div>
         <div style={{ fontSize:19.8, fontWeight:700, color:C.t1, marginBottom:8 }}>Algo salió mal</div>
         <div style={{ fontSize:14.3, color:C.t3, marginBottom:20, maxWidth:320, lineHeight:1.5 }}>Ocurrió un error inesperado. Podés intentar recargar la página.</div>
-        {this.state.error && <pre style={{ fontSize:11, textAlign:'left', background:'#fee', padding:8, borderRadius:4, overflowX:'auto', maxHeight:200, overflowY:'auto', maxWidth:400, width:'100%' }}>{this.state.error?.message + '\n' + this.state.error?.stack}</pre>}
-        <button onClick={() => window.location.reload()} style={{ padding:"12px 28px", borderRadius:10, background:C.pri, color:C.w, border:"none", fontSize:15.4, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>Recargar página</button>
+        {this.state.error && <pre style={{ fontSize:11, textAlign:'left', background:'#fee', padding:8, borderRadius: R.xs, overflowX:'auto', maxHeight:200, overflowY:'auto', maxWidth:400, width:'100%' }}>{this.state.error?.message + '\n' + this.state.error?.stack}</pre>}
+        <button onClick={() => window.location.reload()} style={{ padding:"12px 28px", borderRadius: R.md, background:C.pri, color:C.w, border:"none", fontSize:15.4, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>Recargar página</button>
       </div>;
     }
     return this.props.children;

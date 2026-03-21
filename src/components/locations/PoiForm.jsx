@@ -115,7 +115,7 @@ export default function PoiForm({ mode = "create", poi, fields, onSave, onCancel
             {loc ? (
               <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 10px", borderRadius: R.md, background: C.okPale, border: `1px solid ${C.ok}40` }}>
                 <span style={{ flex: 1, fontSize: 12.1, color: C.t1 }}>{`${loc.lat.toFixed(4)}, ${loc.lng.toFixed(4)}`}</span>
-                <button onClick={handleSelectOnMap} style={{ padding: "3px 8px", borderRadius: 6, border: `1px solid ${C.b2}`, background: C.w, cursor: "pointer", fontFamily: FONT, fontSize: 11, fontWeight: 600, color: C.t2 }}>Modificar ubicación</button>
+                <button onClick={handleSelectOnMap} style={{ padding: "3px 8px", borderRadius: R.sm, border: `1px solid ${C.b2}`, background: C.w, cursor: "pointer", fontFamily: FONT, fontSize: 11, fontWeight: 600, color: C.t2 }}>Modificar ubicación</button>
               </div>
             ) : (
               <button onClick={handleSelectOnMap} style={{ display: "flex", alignItems: "center", gap: 6, width: "100%", padding: "8px 10px", borderRadius: R.md, border: `1.5px dashed ${COLOR}`, background: "transparent", cursor: "pointer", fontFamily: FONT, fontSize: 12.1, fontWeight: 600, color: COLOR }}>

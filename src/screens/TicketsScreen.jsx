@@ -100,7 +100,7 @@ export default function TicketsScreen({ user, onBack }) {
                 }}>
                   {/* Main row */}
                   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <div style={{ width: 36, height: 36, borderRadius: 9, background: `${typeColor}14`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <div style={{ width: 36, height: 36, borderRadius: R.md, background: `${typeColor}14`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                       {Ic.doc(typeColor, 18)}
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>

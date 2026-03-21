@@ -1,4 +1,4 @@
-import { C, Ic } from "../theme";
+import { C, Ic , R} from "../theme";
 import { getActions } from "../constants";
 import { destDisplay } from "../hooks";
 
@@ -212,7 +212,7 @@ export function NotifRow({ n, freight, onMarkRead, onTap, isLast }) {
         borderBottom: isLast ? "none" : `1px solid ${C.b2}`,
         WebkitTapHighlightColor:"transparent", touchAction:"manipulation", transition:"background 0.15s"
       }}>
-      <div style={{ width:40, height:40, borderRadius:12, background: n.read ? C.bg : C.priPale, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+      <div style={{ width:40, height:40, borderRadius: R.lg, background: n.read ? C.bg : C.priPale, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
         {icFn(18)}
       </div>
       <div style={{ flex:1, minWidth:0 }}>
@@ -229,17 +229,17 @@ export function NotifRow({ n, freight, onMarkRead, onTap, isLast }) {
           </div>
         )}
       </div>
-      {!n.read && <div style={{ width:8, height:8, borderRadius:4, background:C.pri, flexShrink:0, marginTop:8 }} />}
+      {!n.read && <div style={{ width:8, height:8, borderRadius: R.xs, background:C.pri, flexShrink:0, marginTop:8 }} />}
     </button>
   );
 }
 
 // ======================== ADMIN SHARED ================================
 export const adminStyles = () => {
-  const sel = { width:"100%",padding:"9px 12px",borderRadius:8,border:`1px solid ${C.b1}`,fontSize:14.3,fontFamily:"inherit",background:C.bgInput,color:C.t1,boxSizing:"border-box",appearance:"none",WebkitAppearance:"none",backgroundImage:`url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`,backgroundRepeat:"no-repeat",backgroundPosition:"right 10px center",paddingRight:30,cursor:"pointer",transition:"border-color 0.15s" };
-  const inp = { width:"100%",padding:"9px 12px",borderRadius:8,border:`1px solid ${C.b1}`,fontSize:14.3,fontFamily:"inherit",background:C.bgInput,color:C.t1,boxSizing:"border-box",transition:"border-color 0.15s" };
+  const sel = { width:"100%",padding:"9px 12px",borderRadius: R.md,border:`1px solid ${C.b1}`,fontSize:14.3,fontFamily:"inherit",background:C.bgInput,color:C.t1,boxSizing:"border-box",appearance:"none",WebkitAppearance:"none",backgroundImage:`url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`,backgroundRepeat:"no-repeat",backgroundPosition:"right 10px center",paddingRight:30,cursor:"pointer",transition:"border-color 0.15s" };
+  const inp = { width:"100%",padding:"9px 12px",borderRadius: R.md,border:`1px solid ${C.b1}`,fontSize:14.3,fontFamily:"inherit",background:C.bgInput,color:C.t1,boxSizing:"border-box",transition:"border-color 0.15s" };
   const half = { ...inp, flex:1 };
-  const btnP = (color,dis) => ({ width:"100%",padding:"10px 0",borderRadius:8,background:color,color:"#fff",border:"none",fontSize:14.3,fontWeight:700,cursor:"pointer",fontFamily:"inherit",opacity:dis?0.6:1,transition:"opacity 0.15s" });
+  const btnP = (color,dis) => ({ width:"100%",padding:"10px 0",borderRadius: R.md,background:color,color:"#fff",border:"none",fontSize:14.3,fontWeight:700,cursor:"pointer",fontFamily:"inherit",opacity:dis?0.6:1,transition:"opacity 0.15s" });
   const lbl = { fontSize:12.1,fontWeight:600,color:C.t3,marginBottom:4 };
   return { sel, inp, half, btnP, lbl };
 };

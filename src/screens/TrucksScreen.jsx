@@ -141,7 +141,7 @@ export default function TrucksScreen({ onBack, embedded, user }) {
       )}
 
       {/* Tabs */}
-      <div style={{ display:"flex", gap:0, marginBottom:16, borderRadius:10, overflow:"hidden", border:`1.5px solid ${C.b1}` }}>
+      <div style={{ display:"flex", gap:0, marginBottom:16, borderRadius: R.md, overflow:"hidden", border:`1.5px solid ${C.b1}` }}>
         <button onClick={()=>switchTab("trucks")} style={{ flex:1, padding:"9px 0", fontFamily:"inherit", fontSize:13.8, fontWeight:tab==="trucks"?700:500, background:tab==="trucks"?C.acc:C.w, color:tab==="trucks"?C.w:C.t2, border:"none", cursor:"pointer" }}>Vehículos</button>
         <button onClick={()=>switchTab("drivers")} style={{ flex:1, padding:"9px 0", fontFamily:"inherit", fontSize:13.8, fontWeight:tab==="drivers"?700:500, background:tab==="drivers"?C.acc:C.w, color:tab==="drivers"?C.w:C.t2, border:"none", cursor:"pointer", borderLeft:`1px solid ${C.b1}` }}>Choferes</button>
       </div>

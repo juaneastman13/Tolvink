@@ -316,7 +316,7 @@ export default function AuthScreen({ onLogin, onSignup, onPasswordReset, loading
                         const sel = userTypes.includes(t.k);
                         return (
                           <button key={t.k} onClick={() => toggleType(t.k)} style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 14px", borderRadius: R.md, border: `1.5px solid ${sel ? t.c : C.b1}`, background: sel ? `${t.c}0A` : C.w, cursor: "pointer", fontFamily: "inherit", textAlign: "left", transition: "all 0.15s", width: "100%", minHeight: 44 }}>
-                            <div style={{ width: 36, height: 36, borderRadius: 9, background: sel ? `${t.c}18` : `${t.c}08`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "background 0.15s" }}>
+                            <div style={{ width: 36, height: 36, borderRadius: R.md, background: sel ? `${t.c}18` : `${t.c}08`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "background 0.15s" }}>
                               {t.ic(sel ? t.c : C.t3, 18)}
                             </div>
                             <div style={{ flex: 1 }}>

@@ -405,7 +405,7 @@ export default memo(function HomeScreen({ user, freights, loading, perms, onNav,
         const paOpen = openGroup && openGroup.startsWith("pa_");
         return <>
         {/* Ver todo — shown when any group is expanded, sticky at top */}
-        {openGroup && <div style={{ position:"sticky", top:0, zIndex:11, background:C.bg, paddingTop:4, paddingBottom:4 }}><div style={{ display:"flex", justifyContent:"center" }}><button onClick={() => setOpenGroup(null)} style={{ display:"inline-flex", alignItems:"center", padding:"6px 16px", borderRadius:20, border:`1px solid ${C.b1}`, background:C.w, cursor:"pointer", fontFamily:"inherit", boxShadow:"0 1px 2px rgba(0,0,0,0.04)" }}>
+        {openGroup && <div style={{ position:"sticky", top:0, zIndex:11, background:C.bg, paddingTop:4, paddingBottom:4 }}><div style={{ display:"flex", justifyContent:"center" }}><button onClick={() => setOpenGroup(null)} style={{ display:"inline-flex", alignItems:"center", padding:"6px 16px", borderRadius: R.pill, border:`1px solid ${C.b1}`, background:C.w, cursor:"pointer", fontFamily:"inherit", boxShadow:"0 1px 2px rgba(0,0,0,0.04)" }}>
           <span style={{ fontSize:12.1, fontWeight:600, color:C.t2 }}>Ver todo</span>
         </button></div></div>}
         {/* Date filter — standalone, before pendientes */}

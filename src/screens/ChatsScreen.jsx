@@ -218,7 +218,7 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
     const parts = text.split(/(@\w+)/g);
     return parts.map((part, i) => {
       if (part.startsWith('@')) {
-        return <span key={i} style={{ background: mine ? "rgba(255,255,255,0.25)" : C.accPale, padding: "1px 4px", borderRadius: 4, fontWeight: 600 }}>{part}</span>;
+        return <span key={i} style={{ background: mine ? "rgba(255,255,255,0.25)" : C.accPale, padding: "1px 4px", borderRadius: R.xs, fontWeight: 600 }}>{part}</span>;
       }
       return <span key={i}>{part}</span>;
     });
@@ -560,7 +560,7 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
             <button onClick={() => setChatTab("chat")} style={{ padding: "5px 10px", borderRadius: R.md, border: "none", background: chatTab === "chat" ? C.priPale : "none", color: chatTab === "chat" ? C.pri : C.t3, fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>Chat</button>
             <button onClick={() => setChatTab("files")} style={{ padding: "5px 10px", borderRadius: R.md, border: "none", background: chatTab === "files" ? C.priPale : "none", color: chatTab === "files" ? C.pri : C.t3, fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", position: "relative" }}>
               Archivos
-              {chatFiles.length > 0 && <span style={{ position: "absolute", top: -2, right: -2, minWidth: 14, height: 14, borderRadius: 7, background: C.acc, color: "#fff", fontSize: 8.8, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 3px" }}>{chatFiles.length}</span>}
+              {chatFiles.length > 0 && <span style={{ position: "absolute", top: -2, right: -2, minWidth: 14, height: 14, borderRadius: R.sm, background: C.acc, color: "#fff", fontSize: 8.8, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 3px" }}>{chatFiles.length}</span>}
             </button>
           </div>
         </div>
@@ -576,7 +576,7 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
               {msgHasMore && (
                 <div style={{textAlign:"center",padding:"8px 0 12px"}}>
                   <div style={{fontSize:11,color:C.t3,marginBottom:4}}>{messages.length} mensajes cargados</div>
-                  <button onClick={loadOlderMessages} disabled={loadingOlder} style={{padding:"5px 16px",borderRadius:8,border:`1px solid ${C.b1}`,background:C.bg,color:C.t2,fontSize:12.1,fontWeight:600,cursor:loadingOlder?"default":"pointer",fontFamily:"inherit",opacity:loadingOlder?0.5:1}}>
+                  <button onClick={loadOlderMessages} disabled={loadingOlder} style={{padding:"5px 16px",borderRadius: R.md,border:`1px solid ${C.b1}`,background:C.bg,color:C.t2,fontSize:12.1,fontWeight:600,cursor:loadingOlder?"default":"pointer",fontFamily:"inherit",opacity:loadingOlder?0.5:1}}>
                     {loadingOlder?"Cargando...":"Cargar mensajes anteriores"}
                   </button>
                 </div>
@@ -602,7 +602,7 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
 
                     <div style={{ alignSelf: mine ? "flex-end" : "flex-start", maxWidth: "80%" }}>
                       {!mine && <div style={{ fontSize: 10.5, color: C.t3, marginBottom: 2, marginLeft: 4 }}>{m.sender?.name?.split(" ")[0]}</div>}
-                      <div style={{ position: "relative", padding: fileData ? "6px" : "10px 14px", borderRadius: 14, borderBottomRightRadius: mine ? 4 : 14, borderBottomLeftRadius: mine ? 14 : 4, background: mine ? C.pri : C.w, color: mine ? C.w : C.t1, fontSize: 14.3, border: mine ? "none" : `1px solid ${C.b1}`, boxShadow: C.sh, overflow: "hidden", opacity: m.status === 'pending' ? 0.6 : 1 }}>
+                      <div style={{ position: "relative", padding: fileData ? "6px" : "10px 14px", borderRadius: R.lg, borderBottomRightRadius: mine ? 4 : 14, borderBottomLeftRadius: mine ? 14 : 4, background: mine ? C.pri : C.w, color: mine ? C.w : C.t1, fontSize: 14.3, border: mine ? "none" : `1px solid ${C.b1}`, boxShadow: C.sh, overflow: "hidden", opacity: m.status === 'pending' ? 0.6 : 1 }}>
                         {fileData ? (
                           fileData.type === "image" && fileData.url ? (
                             <button onClick={()=>setViewFile({url:fileData.url,name:fileData.name,type:"image"})} style={{ background:"none", border:"none", cursor:"pointer", padding:0 }}>
@@ -626,7 +626,7 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
                           <div style={{ display: "flex", alignItems: "flex-start", gap: 6 }}>
                             <div style={{ flex: 1 }}>{renderTextWithMentions(m.text, mine)}</div>
                             {!fileData && (
-                              <button onClick={() => copyMessageText(m.text, m.id)} title="Copiar" style={{ background: mine ? "rgba(255,255,255,0.2)" : C.bg, border: "none", borderRadius: 4, padding: "2px 4px", cursor: "pointer", fontSize: 9.9, color: mine ? "#fff" : C.t2, opacity: copiedMsgId === m.id ? 1 : 0.5, transition: "opacity 0.2s" }}>
+                              <button onClick={() => copyMessageText(m.text, m.id)} title="Copiar" style={{ background: mine ? "rgba(255,255,255,0.2)" : C.bg, border: "none", borderRadius: R.xs, padding: "2px 4px", cursor: "pointer", fontSize: 9.9, color: mine ? "#fff" : C.t2, opacity: copiedMsgId === m.id ? 1 : 0.5, transition: "opacity 0.2s" }}>
                               {copiedMsgId === m.id ? Ic.chk(mine ? "#fff" : C.pri, 10) : Ic.doc(mine ? "#fff" : C.t2, 10)}
                             </button>
                             )}
@@ -655,7 +655,7 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
                 return lastOwn ? <div style={{ textAlign:"right", fontSize:10.5, color:C.pri, fontWeight:600, marginRight:4, marginTop:-2 }}>✓✓ Leído</div> : null;
               })()}
               {/* Typing indicator */}
-              {typingUser && <div style={{ alignSelf:"flex-start", padding:"8px 14px", borderRadius:14, background:C.w, border:`1px solid ${C.b1}`, fontSize:13.2, color:C.t3, fontStyle:"italic", animation:"fadeIn 0.2s ease" }}>{typingUser} está escribiendo...</div>}
+              {typingUser && <div style={{ alignSelf:"flex-start", padding:"8px 14px", borderRadius: R.lg, background:C.w, border:`1px solid ${C.b1}`, fontSize:13.2, color:C.t3, fontStyle:"italic", animation:"fadeIn 0.2s ease" }}>{typingUser} está escribiendo...</div>}
               <div ref={msgEndRef} />
             </div>
 
@@ -738,7 +738,7 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
       <div style={{ position:"relative", marginBottom:8 }}>
         <div style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",display:"flex"}}>{Ic.srch(C.t3,16)}</div>
         <input value={searchQ} onChange={e=>{setSearchQ(e.target.value);}} placeholder="Buscar conversación..."
-          style={{width:"100%",padding:"10px 14px 10px 36px",borderRadius:10,border:`1.5px solid ${C.b1}`,background:C.w,color:C.t1,fontSize:14.3,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}/>
+          style={{width:"100%",padding:"10px 14px 10px 36px",borderRadius: R.md,border:`1.5px solid ${C.b1}`,background:C.w,color:C.t1,fontSize:14.3,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}/>
         {searchQ && <button onClick={()=>setSearchQ("")} style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",display:"flex"}}>{Ic.cross(C.t3,16)}</button>}
       </div>
 
@@ -746,7 +746,7 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
       <div style={{ display:"flex", alignItems:"center", gap:4, marginBottom:8, flexWrap:"wrap" }}>
         <span style={{ fontSize:11, fontWeight:600, color:C.t3 }}>Agrupar por</span>
         {[{k:"planta",l:"Planta"},{k:"transportista",l:"Transportista"},{k:"productor",l:"Productor"}].map(o=>(
-          <button key={o.k} onClick={()=>{setGroupBy(o.k);setExpandedGroups({});}} style={{ padding:"4px 10px", borderRadius:6, border:`1px solid ${groupBy===o.k?C.pri:C.b1}`, background:groupBy===o.k?C.priPale:C.w, color:groupBy===o.k?C.pri:C.t2, fontSize:11, fontWeight:groupBy===o.k?700:500, cursor:"pointer", fontFamily:"inherit" }}>{o.l}</button>
+          <button key={o.k} onClick={()=>{setGroupBy(o.k);setExpandedGroups({});}} style={{ padding:"4px 10px", borderRadius: R.sm, border:`1px solid ${groupBy===o.k?C.pri:C.b1}`, background:groupBy===o.k?C.priPale:C.w, color:groupBy===o.k?C.pri:C.t2, fontSize:11, fontWeight:groupBy===o.k?700:500, cursor:"pointer", fontFamily:"inherit" }}>{o.l}</button>
         ))}
       </div>
 
@@ -755,7 +755,7 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
           <Field label="Buscar usuario" value={compSearchQ} onChange={handleCompSearch} placeholder="Escribí el nombre de la persona..."/>
           {compSearching && <div style={{ fontSize:11, color:C.t3, marginTop:4 }}>Buscando...</div>}
           {compResults.length > 0 && (
-            <div style={{ marginTop:6, border:`1px solid ${C.b1}`, borderRadius:8, maxHeight:200, overflow:"auto" }}>
+            <div style={{ marginTop:6, border:`1px solid ${C.b1}`, borderRadius: R.md, maxHeight:200, overflow:"auto" }}>
               {compResults.map(u=>(
                 <button key={u.id} onClick={()=>handleSelectUser(u)} style={{ width:"100%", display:"flex", alignItems:"center", gap:8, padding:"10px 12px", background:newUserId===u.id?C.priPale:C.w, border:"none", borderBottom:`1px solid ${C.b2}`, cursor:"pointer", fontFamily:"inherit", textAlign:"left" }}>
                   {Ic.user(C.pri,16)}
@@ -780,9 +780,9 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {/* Direct conversations (flat, no nesting) */}
             {grouped.directConvs.map(c => (
-              <div key={c.id} style={{ position: "relative", width:"100%", border:`1px solid ${c.unread||c.markedUnread?C.acc+"40":C.b1}`, borderRadius:12, background:c.unread||c.markedUnread?C.accPale+"30":C.w, transition:"all 0.15s", boxShadow:C.sh, overflow: "hidden" }}>
+              <div key={c.id} style={{ position: "relative", width:"100%", border:`1px solid ${c.unread||c.markedUnread?C.acc+"40":C.b1}`, borderRadius: R.lg, background:c.unread||c.markedUnread?C.accPale+"30":C.w, transition:"all 0.15s", boxShadow:C.sh, overflow: "hidden" }}>
                 <button onClick={() => openConv(c)} style={{ width:"100%", padding:"12px 14px", background: "transparent", border: "none", cursor:"pointer", fontFamily:"inherit", textAlign:"left", display:"flex", alignItems:"center", gap:12 }} onMouseEnter={e=>e.currentTarget.style.background=C.priGhost} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
-                  <div style={{ width:36, height:36, borderRadius:18, background:c.unread||c.markedUnread?C.acc:C.accPale, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                  <div style={{ width:36, height:36, borderRadius: R.xl, background:c.unread||c.markedUnread?C.acc:C.accPale, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
                     {Ic.user(c.unread||c.markedUnread?"#fff":C.acc, 16)}
                   </div>
                   <div style={{ flex:1, minWidth:0 }}>
@@ -792,7 +792,7 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
                     {c._companyName && <div style={{ fontSize:11, color:C.t3, marginTop:1 }}>{c._companyName}</div>}
                     <div style={{ fontSize:12.1, color:c.unread||c.markedUnread?C.t1:C.t3, fontWeight:c.unread||c.markedUnread?600:400, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis", marginTop:2 }}>{getLastMsg(c)}</div>
                   </div>
-                  {(c.unread || c.markedUnread) && <div style={{ width:8, height:8, borderRadius:4, background:C.acc, flexShrink:0 }} />}
+                  {(c.unread || c.markedUnread) && <div style={{ width:8, height:8, borderRadius: R.xs, background:C.acc, flexShrink:0 }} />}
                   <span style={{ fontSize:10.5, color:C.t3, flexShrink:0 }}>{getLastMsgTime(c)}</span>
                 </button>
                 {/* Action buttons */}
@@ -813,14 +813,14 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
               return (
                 <div key={companyName} style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: R.lg, overflow: "hidden", boxShadow: C.sh }}>
                   <button onClick={() => toggleGroup(companyName)} style={{ width: "100%", padding: "12px 14px", background: C.w, border: "none", borderBottom: isOpen ? `1px solid ${C.b2}` : "none", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 10, textAlign: "left" }}>
-                    <div style={{ width: 36, height: 36, borderRadius: 18, background: C.priPale, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <div style={{ width: 36, height: 36, borderRadius: R.xl, background: C.priPale, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                       {Ic.truck(C.pri, 16)}
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: 14.3, fontWeight: 700, color: C.t1 }}>{companyName}</div>
                       <div style={{ fontSize: 11.6, color: C.t3 }}>{freightCount} flete{freightCount !== 1 ? "s" : ""}</div>
                     </div>
-                    {unreadCount > 0 && <span style={{ minWidth: 18, height: 18, borderRadius: 9, background: C.acc, color: "#fff", fontSize: 11, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 4px", flexShrink: 0 }}>{unreadCount}</span>}
+                    {unreadCount > 0 && <span style={{ minWidth: 18, height: 18, borderRadius: R.md, background: C.acc, color: "#fff", fontSize: 11, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 4px", flexShrink: 0 }}>{unreadCount}</span>}
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={C.t3} strokeWidth="2.5" style={{ transform: isOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }}><polyline points="6 9 12 15 18 9"/></svg>
                   </button>
 
@@ -828,7 +828,7 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
                     <div style={{ display: "flex", flexDirection: "column" }}>
                       {group.freightConvs.map(c => (
                         <button key={c.id} onClick={() => openConv(c)} style={{ padding: "10px 14px", border: "none", borderTop: `1px solid ${C.b2}`, background: c.unread ? C.accPale+"30" : C.w, cursor: "pointer", fontFamily: "inherit", textAlign: "left", display: "flex", alignItems: "center", gap: 10, width: "100%", transition: "background 0.15s" }} onMouseEnter={e=>e.currentTarget.style.background=C.priGhost} onMouseLeave={e=>e.currentTarget.style.background=c.unread?C.accPale+"30":C.w}>
-                          <div style={{ width: 8, height: 8, borderRadius: 4, background: stColor(c.freight?.status), flexShrink: 0 }} />
+                          <div style={{ width: 8, height: 8, borderRadius: R.xs, background: stColor(c.freight?.status), flexShrink: 0 }} />
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                               <span style={{ fontSize: 13.2, fontWeight: c.unread ? 800 : 700, color: C.t1 }}>{freightTitle(c.freight)}</span>
@@ -836,7 +836,7 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
                             </div>
                             <div style={{ fontSize: 12.1, color: c.unread ? C.t1 : C.t3, fontWeight: c.unread ? 600 : 400, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", marginTop: 2 }}>{getLastMsg(c)}</div>
                           </div>
-                          {c.unread && <div style={{ width: 8, height: 8, borderRadius: 4, background: C.acc, flexShrink: 0 }} />}
+                          {c.unread && <div style={{ width: 8, height: 8, borderRadius: R.xs, background: C.acc, flexShrink: 0 }} />}
                           <span style={{ fontSize: 10.5, color: C.t3, flexShrink: 0 }}>{getLastMsgTime(c)}</span>
                         </button>
                       ))}

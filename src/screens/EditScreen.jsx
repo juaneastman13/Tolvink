@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { C, Ic } from "../theme";
+import { C, Ic , R} from "../theme";
 import { Btn, LoadingOverlay } from "../components";
 import { destDisplay } from "../hooks";
 import { apiListDrivers } from "../api";
@@ -83,7 +83,7 @@ export default function EditScreen({ freight, fields, plants, branches, trucks, 
     if(msg) setDoneMsg(msg);
   };
 
-  const inputSt = {width:"100%",padding:"12px 14px",borderRadius:10,border:`1.5px solid ${C.b1}`,background:C.w,color:C.t1,fontSize:17.6,fontFamily:"inherit",outline:"none",boxSizing:"border-box",cursor:"pointer"};
+  const inputSt = {width:"100%",padding:"12px 14px",borderRadius: R.md,border:`1.5px solid ${C.b1}`,background:C.w,color:C.t1,fontSize:17.6,fontFamily:"inherit",outline:"none",boxSizing:"border-box",cursor:"pointer"};
   const labelSt = {fontSize:11.6,fontWeight:600,color:C.t2,marginBottom:6,display:"flex",alignItems:"center",gap:4,textTransform:"uppercase",letterSpacing:0.6};
 
   // Auto-select driver from truck's assigned user
@@ -102,7 +102,7 @@ export default function EditScreen({ freight, fields, plants, branches, trucks, 
       <div style={{ padding:"0 18px 18px" }}>
       <div style={{ fontSize:13.2, color:C.t2, marginBottom:22 }}>{freight.code} · {freight.grain} · {freight.tons} {freight.unit||"tn"}</div>
 
-      <div style={{ background:C.w, border:`1px solid ${C.b1}`, borderRadius:12, padding:16, boxShadow:C.sh }}>
+      <div style={{ background:C.w, border:`1px solid ${C.b1}`, borderRadius: R.lg, padding:16, boxShadow:C.sh }}>
         {/* Date/Time — only in pending_assignment */}
         {isPending && <div style={{ display:"flex", gap:12, marginBottom:12 }}>
           <div style={{flex:1}}>
@@ -124,9 +124,9 @@ export default function EditScreen({ freight, fields, plants, branches, trucks, 
         {/* useOwnFleet toggle */}
         {canEditFleet && <div style={{marginBottom:16}}>
           <label style={labelSt}>{Ic.truck(C.pri,14)} Flota propia</label>
-          <button onClick={()=>u({useOwnFleet:!form.useOwnFleet, truckId:"", driverId:""})} style={{ display:"flex", alignItems:"center", gap:10, width:"100%", padding:"12px 14px", borderRadius:10, border:`1.5px solid ${form.useOwnFleet?C.ok:C.b1}`, background:form.useOwnFleet?(C.okPale||"#e6f9ec"):C.w, cursor:"pointer", fontFamily:"inherit", fontSize:15.4, color:C.t1 }}>
-            <span style={{ width:36, height:20, borderRadius:10, background:form.useOwnFleet?C.ok:C.b1, position:"relative", display:"inline-block", transition:"background 0.2s" }}>
-              <span style={{ width:16, height:16, borderRadius:8, background:C.w, position:"absolute", top:2, left:form.useOwnFleet?18:2, transition:"left 0.2s", boxShadow:"0 1px 3px #0002" }}/>
+          <button onClick={()=>u({useOwnFleet:!form.useOwnFleet, truckId:"", driverId:""})} style={{ display:"flex", alignItems:"center", gap:10, width:"100%", padding:"12px 14px", borderRadius: R.md, border:`1.5px solid ${form.useOwnFleet?C.ok:C.b1}`, background:form.useOwnFleet?(C.okPale||"#e6f9ec"):C.w, cursor:"pointer", fontFamily:"inherit", fontSize:15.4, color:C.t1 }}>
+            <span style={{ width:36, height:20, borderRadius: R.md, background:form.useOwnFleet?C.ok:C.b1, position:"relative", display:"inline-block", transition:"background 0.2s" }}>
+              <span style={{ width:16, height:16, borderRadius: R.md, background:C.w, position:"absolute", top:2, left:form.useOwnFleet?18:2, transition:"left 0.2s", boxShadow:"0 1px 3px #0002" }}/>
             </span>
             {form.useOwnFleet ? "Sí — usar flota propia" : "No — transporte externo"}
           </button>
@@ -142,11 +142,11 @@ export default function EditScreen({ freight, fields, plants, branches, trucks, 
         </div>}
 
         {/* Driver selector — when own fleet + truck selected */}
-        {canEditFleet && form.useOwnFleet && !driversLoaded && <div style={{padding:"12px 14px",borderRadius:10,border:`1.5px solid ${C.b1}`,background:C.bgInput||C.bg,color:C.t3,fontSize:14.3,marginBottom:16,textAlign:"center"}}>Cargando choferes...</div>}
+        {canEditFleet && form.useOwnFleet && !driversLoaded && <div style={{padding:"12px 14px",borderRadius: R.md,border:`1.5px solid ${C.b1}`,background:C.bgInput||C.bg,color:C.t3,fontSize:14.3,marginBottom:16,textAlign:"center"}}>Cargando choferes...</div>}
         {canEditFleet && form.useOwnFleet && form.truckId && <div style={{marginBottom:16}}>
           <label style={labelSt}>{Ic.user(C.pri,14)} Chofer</label>
           {/* "Yo soy el chofer" shortcut */}
-          <button onClick={()=>u({driverId:user.id})} style={{ display:"flex", alignItems:"center", gap:8, width:"100%", padding:"10px 14px", borderRadius:10, border:`1.5px solid ${form.driverId===user.id?C.pri:C.b1}`, background:form.driverId===user.id?(C.priPale||"#eef0ff"):C.w, cursor:"pointer", fontFamily:"inherit", fontSize:14.3, color:form.driverId===user.id?C.pri:C.t1, marginBottom:8 }}>
+          <button onClick={()=>u({driverId:user.id})} style={{ display:"flex", alignItems:"center", gap:8, width:"100%", padding:"10px 14px", borderRadius: R.md, border:`1.5px solid ${form.driverId===user.id?C.pri:C.b1}`, background:form.driverId===user.id?(C.priPale||"#eef0ff"):C.w, cursor:"pointer", fontFamily:"inherit", fontSize:14.3, color:form.driverId===user.id?C.pri:C.t1, marginBottom:8 }}>
             {Ic.user(form.driverId===user.id?C.pri:C.t2,16)}
             Yo soy el chofer
           </button>
@@ -166,7 +166,7 @@ export default function EditScreen({ freight, fields, plants, branches, trucks, 
               {plants.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
           ) : (
-            <div style={{ padding:"12px 14px", borderRadius:10, border:`1.5px solid ${C.b1}`, background:C.bgInput, color:C.t2, fontSize:15.4 }}>
+            <div style={{ padding:"12px 14px", borderRadius: R.md, border:`1.5px solid ${C.b1}`, background:C.bgInput, color:C.t2, fontSize:15.4 }}>
               {destDisplay(freight) || "Sin destino"}
             </div>
           )}
@@ -184,7 +184,7 @@ export default function EditScreen({ freight, fields, plants, branches, trucks, 
         <Btn full disabled={saving} onClick={save}>{saving?"Guardando...":"Guardar cambios"}</Btn>
       </div>
 
-      <div style={{ marginTop:16, padding:12, background:C.bgInput, borderRadius:10, fontSize:12.1, color:C.t3 }}>
+      <div style={{ marginTop:16, padding:12, background:C.bgInput, borderRadius: R.md, fontSize:12.1, color:C.t3 }}>
         {isPending
           ? "Podés editar fecha, hora, notas, flota propia y planta destino."
           : "Algunos cambios pueden requerir aprobación de la otra parte."}

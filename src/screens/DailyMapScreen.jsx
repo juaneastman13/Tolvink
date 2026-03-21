@@ -4,6 +4,7 @@
 // =====================================================================
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { R } from "../theme";
 import { loadGMaps, mkPinIcon } from "../maps";
 import { API_URL } from "../api";
 import log from "../logger";
@@ -230,7 +231,7 @@ export default function DailyMapScreen() {
       <div style={styles.header}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <span style={{ fontSize: 26.4, fontWeight: 800, color: COLORS.pri, letterSpacing: -1 }}>tolvink</span>
-          <span style={{ width: 8, height: 8, borderRadius: 4, background: COLORS.acc, display: "inline-block" }}></span>
+          <span style={{ width: 8, height: 8, borderRadius: R.xs, background: COLORS.acc, display: "inline-block" }}></span>
         </div>
         <div style={{ fontSize: 14.3, color: COLORS.t3, fontWeight: 500 }}>
           Mapa del día · {visibleCount} flete{visibleCount !== 1 ? "s" : ""}
@@ -265,7 +266,7 @@ export default function DailyMapScreen() {
         <div ref={mapRef} style={{ position: "absolute", inset: 0 }} />
         {freights.length === 0 && (
           <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none" }}>
-            <div style={{ background: COLORS.w, padding: "16px 24px", borderRadius: 12, boxShadow: "0 2px 8px rgba(0,0,0,0.1)", fontSize: 15.4, color: COLORS.t3 }}>
+            <div style={{ background: COLORS.w, padding: "16px 24px", borderRadius: R.lg, boxShadow: "0 2px 8px rgba(0,0,0,0.1)", fontSize: 15.4, color: COLORS.t3 }}>
               No hay fletes programados para hoy
             </div>
           </div>
@@ -289,7 +290,7 @@ const styles = {
     textAlign: "center",
     padding: 32,
     background: COLORS.w,
-    borderRadius: 16,
+    borderRadius: R.xl,
     maxWidth: 360,
     boxShadow: "0 4px 14px rgba(0,0,0,0.06)",
   },
@@ -313,7 +314,7 @@ const styles = {
   },
   chip: {
     padding: "5px 10px",
-    borderRadius: 16,
+    borderRadius: R.xl,
     border: "1.5px solid",
     fontSize: 13.2,
     fontWeight: 600,

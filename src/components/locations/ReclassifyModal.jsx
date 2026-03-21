@@ -50,7 +50,7 @@ export default function ReclassifyModal({ poi, fields, onClose, onReclassified }
               key={opt.key}
               onClick={() => setType(opt.key)}
               style={{
-                flex: 1, padding: "12px 8px", borderRadius: 10,
+                flex: 1, padding: "12px 8px", borderRadius: R.md,
                 border: `2px solid ${type === opt.key ? opt.color : C.b2}`,
                 background: type === opt.key ? `${opt.color}12` : C.w,
                 cursor: "pointer", fontFamily: "inherit",
@@ -69,7 +69,7 @@ export default function ReclassifyModal({ poi, fields, onClose, onReclassified }
             <select
               value={fieldId}
               onChange={e => setFieldId(e.target.value)}
-              style={{ width: "100%", padding: "10px 12px", borderRadius: 10, border: `1.5px solid ${fieldId ? C.ok : C.err}`, background: C.bgInput, fontFamily: "inherit", fontSize: 13.2, color: C.t1, outline: "none", cursor: "pointer", boxSizing: "border-box", marginBottom: 10 }}
+              style={{ width: "100%", padding: "10px 12px", borderRadius: R.md, border: `1.5px solid ${fieldId ? C.ok : C.err}`, background: C.bgInput, fontFamily: "inherit", fontSize: 13.2, color: C.t1, outline: "none", cursor: "pointer", boxSizing: "border-box", marginBottom: 10 }}
             >
               <option value="">— Seleccioná el campo —</option>
               {fields.filter(f => f.id).map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
@@ -79,7 +79,7 @@ export default function ReclassifyModal({ poi, fields, onClose, onReclassified }
               value={hectares}
               onChange={e => setHectares(e.target.value)}
               placeholder="Hectáreas (opcional)"
-              style={{ width: "100%", padding: "10px 12px", borderRadius: 10, border: `1px solid ${C.b2}`, background: C.bgInput, fontFamily: "inherit", fontSize: 13.2, color: C.t1, outline: "none", boxSizing: "border-box", marginBottom: 14 }}
+              style={{ width: "100%", padding: "10px 12px", borderRadius: R.md, border: `1px solid ${C.b2}`, background: C.bgInput, fontFamily: "inherit", fontSize: 13.2, color: C.t1, outline: "none", boxSizing: "border-box", marginBottom: 14 }}
             />
           </>
         )}

@@ -51,7 +51,7 @@ export default function WeighTicketConfirmModal({ freight, action, title, btnLab
       {/* Step 1: Choose whether to add ticket */}
       {step === "choose" && <>
         {icon && <div style={{ display: "flex", justifyContent: "center", marginBottom: 12 }}>
-          <div style={{ width: 48, height: 48, borderRadius: 24, background: `${btnVariant === "acc" ? C.acc : C.pri}12`, display: "flex", alignItems: "center", justifyContent: "center" }}>{icon}</div>
+          <div style={{ width: 48, height: 48, borderRadius: R.pill, background: `${btnVariant === "acc" ? C.acc : C.pri}12`, display: "flex", alignItems: "center", justifyContent: "center" }}>{icon}</div>
         </div>}
         <div style={{ fontSize: 18.7, fontWeight: 700, marginBottom: 6, textAlign: "center" }}>{title}</div>
         <div style={{ fontSize: 13.2, color: C.t2, marginBottom: 16, textAlign: "center", padding: "8px 12px", background: C.bg, borderRadius: R.md, border: `1px solid ${C.b1}` }}>
@@ -64,7 +64,7 @@ export default function WeighTicketConfirmModal({ freight, action, title, btnLab
             ¿Agregar ticket de pesaje?
           </div>
           <button onClick={() => setStep("ticket")}
-            style={{ width: "100%", padding: "12px 14px", borderRadius: 10, border: `1.5px solid ${C.acc}40`, background: `${C.acc}08`, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+            style={{ width: "100%", padding: "12px 14px", borderRadius: R.md, border: `1.5px solid ${C.acc}40`, background: `${C.acc}08`, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
             {Ic.doc(C.acc, 18)}
             <div style={{ textAlign: "left" }}>
               <div style={{ fontSize: 14.3, fontWeight: 700, color: C.acc }}>Sí, registrar pesaje</div>
@@ -72,7 +72,7 @@ export default function WeighTicketConfirmModal({ freight, action, title, btnLab
             </div>
           </button>
           <button onClick={() => setStep("confirm")}
-            style={{ width: "100%", padding: "12px 14px", borderRadius: 10, border: `1.5px solid ${C.b1}`, background: C.w, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 10 }}>
+            style={{ width: "100%", padding: "12px 14px", borderRadius: R.md, border: `1.5px solid ${C.b1}`, background: C.w, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 10 }}>
             {Ic.chk(C.t3, 18)}
             <div style={{ textAlign: "left" }}>
               <div style={{ fontSize: 14.3, fontWeight: 600, color: C.t1 }}>No, confirmar directamente</div>
@@ -109,7 +109,7 @@ export default function WeighTicketConfirmModal({ freight, action, title, btnLab
       {/* Step 3: Final confirmation (same as ConfirmActionModal) */}
       {step === "confirm" && <>
         {icon && <div style={{ display: "flex", justifyContent: "center", marginBottom: 12 }}>
-          <div style={{ width: 48, height: 48, borderRadius: 24, background: `${btnVariant === "acc" ? C.acc : C.pri}12`, display: "flex", alignItems: "center", justifyContent: "center" }}>{icon}</div>
+          <div style={{ width: 48, height: 48, borderRadius: R.pill, background: `${btnVariant === "acc" ? C.acc : C.pri}12`, display: "flex", alignItems: "center", justifyContent: "center" }}>{icon}</div>
         </div>}
         <div style={{ fontSize: 18.7, fontWeight: 700, marginBottom: 6, textAlign: "center" }}>{title}</div>
         <div style={{ fontSize: 13.2, color: C.t2, marginBottom: showTonsInput ? 12 : 8, textAlign: "center", padding: "8px 12px", background: C.bg, borderRadius: R.md, border: `1px solid ${C.b1}` }}>

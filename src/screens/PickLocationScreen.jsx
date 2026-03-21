@@ -4,6 +4,7 @@
 // =====================================================================
 
 import { useState, useEffect, useRef } from "react";
+import { R } from "../theme";
 import { loadGMaps } from "../maps";
 import { API_URL } from "../api";
 import log from "../logger";
@@ -201,7 +202,7 @@ export default function PickLocationScreen({ slug: slugProp } = {}) {
             Puede volver a WhatsApp. El asistente continuará automáticamente.
           </div>
           {address && (
-            <div style={{ fontSize: 13.2, color: COLORS.t3, marginTop: 12, padding: "8px 12px", background: COLORS.bg, borderRadius: 8 }}>
+            <div style={{ fontSize: 13.2, color: COLORS.t3, marginTop: 12, padding: "8px 12px", background: COLORS.bg, borderRadius: R.md }}>
               📍 {address}
             </div>
           )}
@@ -216,7 +217,7 @@ export default function PickLocationScreen({ slug: slugProp } = {}) {
       <div style={styles.header}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <span style={{ fontSize: 26.4, fontWeight: 800, color: COLORS.pri, letterSpacing: -1 }}>tolvink</span>
-          <span style={{ width: 8, height: 8, borderRadius: 4, background: COLORS.acc, display: "inline-block" }}></span>
+          <span style={{ width: 8, height: 8, borderRadius: R.xs, background: COLORS.acc, display: "inline-block" }}></span>
         </div>
         <div style={{ fontSize: 14.3, color: COLORS.t3, fontWeight: 500 }}>Elegir ubicación</div>
       </div>
@@ -247,7 +248,7 @@ export default function PickLocationScreen({ slug: slugProp } = {}) {
       {/* Footer */}
       <div style={styles.footer}>
         {error && (
-          <div style={{ padding: "8px 12px", background: COLORS.errPale, borderRadius: 8, fontSize: 13.2, color: COLORS.err, marginBottom: 8, textAlign: "center" }}>
+          <div style={{ padding: "8px 12px", background: COLORS.errPale, borderRadius: R.md, fontSize: 13.2, color: COLORS.err, marginBottom: 8, textAlign: "center" }}>
             {error}
           </div>
         )}
@@ -291,7 +292,7 @@ const styles = {
     textAlign: "center",
     padding: 32,
     background: COLORS.w,
-    borderRadius: 16,
+    borderRadius: R.xl,
     maxWidth: 360,
     boxShadow: "0 4px 14px rgba(0,0,0,0.06)",
   },
@@ -299,7 +300,7 @@ const styles = {
     textAlign: "center",
     padding: 32,
     background: COLORS.w,
-    borderRadius: 16,
+    borderRadius: R.xl,
     maxWidth: 360,
     boxShadow: "0 4px 14px rgba(0,0,0,0.06)",
   },
@@ -321,7 +322,7 @@ const styles = {
   searchInput: {
     width: "100%",
     padding: "12px 14px",
-    borderRadius: 10,
+    borderRadius: R.md,
     border: `1.5px solid ${COLORS.b1}`,
     fontSize: 15.4,
     fontFamily: "inherit",
@@ -340,7 +341,7 @@ const styles = {
   confirmBtn: {
     width: "100%",
     padding: "14px 24px",
-    borderRadius: 12,
+    borderRadius: R.lg,
     border: "none",
     background: COLORS.pri,
     color: "#FFFFFF",

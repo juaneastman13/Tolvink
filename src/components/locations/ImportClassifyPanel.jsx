@@ -52,7 +52,7 @@ export default function ImportClassifyPanel({
                 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 10px 6px" }}>
                     <div onClick={() => onToggle(i)} style={{
-                      width: 20, height: 20, borderRadius: 5,
+                      width: 20, height: 20, borderRadius: R.sm,
                       border: `2px solid ${sel ? cfg.color : C.b2}`,
                       background: sel ? cfg.color : C.w,
                       display: "flex", alignItems: "center", justifyContent: "center",
@@ -81,7 +81,7 @@ export default function ImportClassifyPanel({
                       title="Ver en mapa"
                       style={{
                         background: `${cfg.color}10`, border: `1px solid ${cfg.color}30`,
-                        borderRadius: 6, cursor: "pointer", padding: "6px 8px",
+                        borderRadius: R.sm, cursor: "pointer", padding: "6px 8px",
                         display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
                       }}
                     >
@@ -98,7 +98,7 @@ export default function ImportClassifyPanel({
                             key={k}
                             onClick={() => onTypeChange(i, k)}
                             style={{
-                              flex: 1, padding: "6px 4px", borderRadius: 6,
+                              flex: 1, padding: "6px 4px", borderRadius: R.sm,
                               border: `2px solid ${active ? c.color : C.b2}`,
                               background: active ? `${c.color}12` : C.w,
                               cursor: "pointer", fontFamily: "inherit",
@@ -119,7 +119,7 @@ export default function ImportClassifyPanel({
                         value={importFieldIds[i] || ""}
                         onChange={e => onFieldIdChange(i, e.target.value)}
                         style={{
-                          padding: "8px 10px", borderRadius: 6,
+                          padding: "8px 10px", borderRadius: R.sm,
                           border: `1.5px solid ${importFieldIds[i] ? C.acc : C.err}`,
                           background: C.bgInput, fontFamily: "inherit", fontSize: 12.1,
                           color: C.t1, outline: "none", cursor: "pointer",
@@ -135,7 +135,7 @@ export default function ImportClassifyPanel({
                       onChange={e => onCommentChange(i, e.target.value)}
                       placeholder="Comentarios (opcional)"
                       style={{
-                        width: "100%", padding: "6px 8px", borderRadius: 6,
+                        width: "100%", padding: "6px 8px", borderRadius: R.sm,
                         border: `1px solid ${C.b2}`, background: C.bgInput,
                         fontFamily: "inherit", fontSize: 11.5, color: C.t1,
                         outline: "none", boxSizing: "border-box",

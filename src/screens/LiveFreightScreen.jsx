@@ -5,6 +5,7 @@
 // =====================================================================
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { R } from "../theme";
 import { loadGMaps, mkFieldIcon, mkPlantIcon, mkPinIcon } from "../maps";
 import { API_URL } from "../api";
 import log from "../logger";
@@ -437,7 +438,7 @@ export default function LiveFreightScreen() {
       <div style={styles.header}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <span style={{ fontSize: 26.4, fontWeight: 800, color: COLORS.pri, letterSpacing: -1 }}>tolvink</span>
-          <span style={{ width: 8, height: 8, borderRadius: 4, background: COLORS.acc, display: "inline-block" }}></span>
+          <span style={{ width: 8, height: 8, borderRadius: R.xs, background: COLORS.acc, display: "inline-block" }}></span>
         </div>
         <div style={{ textAlign: "right" }}>
           {freight && (
@@ -465,7 +466,7 @@ export default function LiveFreightScreen() {
           {shareState === "sharing" ? (
             <>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ width: 10, height: 10, borderRadius: 5, background: "#22C55E", display: "inline-block", animation: "pulse 2s infinite" }}></span>
+                <span style={{ width: 10, height: 10, borderRadius: R.sm, background: "#22C55E", display: "inline-block", animation: "pulse 2s infinite" }}></span>
                 <span style={{ fontSize: 14.3, fontWeight: 600, color: COLORS.pri }}>Compartiendo ubicación</span>
                 {timeLeft && <span style={{ fontSize: 13.2, color: COLORS.t3 }}>{formatTimeLeft(timeLeft)}</span>}
               </div>
@@ -473,7 +474,7 @@ export default function LiveFreightScreen() {
             </>
           ) : shareState === "activating" ? (
             <div style={{ display: "flex", alignItems: "center", gap: 8, width: "100%" }}>
-              <span style={{ width: 10, height: 10, borderRadius: 5, background: "#F59E0B", display: "inline-block", animation: "pulse 1s infinite" }}></span>
+              <span style={{ width: 10, height: 10, borderRadius: R.sm, background: "#F59E0B", display: "inline-block", animation: "pulse 1s infinite" }}></span>
               <span style={{ fontSize: 14.3, fontWeight: 600, color: "#92400E" }}>Activando GPS... Permita el acceso a la ubicación</span>
             </div>
           ) : (
@@ -522,7 +523,7 @@ export default function LiveFreightScreen() {
         <div ref={mapRef} style={{ position: "absolute", inset: 0 }} />
         {locations.length === 0 && shareState !== "sharing" && shareState !== "activating" && (
           <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none" }}>
-            <div style={{ background: COLORS.w, padding: "16px 24px", borderRadius: 12, boxShadow: "0 2px 8px rgba(0,0,0,0.1)", fontSize: 15.4, color: COLORS.t3 }}>
+            <div style={{ background: COLORS.w, padding: "16px 24px", borderRadius: R.lg, boxShadow: "0 2px 8px rgba(0,0,0,0.1)", fontSize: 15.4, color: COLORS.t3 }}>
               Nadie está compartiendo ubicación
             </div>
           </div>
@@ -538,7 +539,7 @@ export default function LiveFreightScreen() {
             const agoText = ago < 1 ? "ahora" : `hace ${ago} min`;
             return (
               <div key={loc.userId} style={styles.participantRow}>
-                <div style={{ width: 28, height: 28, borderRadius: 14, background: cfg.color, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13.2, fontWeight: 700, flexShrink: 0 }}>
+                <div style={{ width: 28, height: 28, borderRadius: R.lg, background: cfg.color, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13.2, fontWeight: 700, flexShrink: 0 }}>
                   {loc.userName?.charAt(0)?.toUpperCase() || "?"}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
@@ -570,7 +571,7 @@ const styles = {
     textAlign: "center",
     padding: 32,
     background: COLORS.w,
-    borderRadius: 16,
+    borderRadius: R.xl,
     maxWidth: 360,
     boxShadow: "0 4px 14px rgba(0,0,0,0.06)",
   },
@@ -586,7 +587,7 @@ const styles = {
   shareBtn: {
     width: "100%",
     padding: "12px 24px",
-    borderRadius: 10,
+    borderRadius: R.md,
     border: "none",
     background: COLORS.pri,
     color: "#fff",
@@ -597,7 +598,7 @@ const styles = {
   },
   stopBtn: {
     padding: "6px 16px",
-    borderRadius: 8,
+    borderRadius: R.md,
     border: `1.5px solid ${COLORS.err}`,
     background: "transparent",
     color: COLORS.err,
@@ -608,7 +609,7 @@ const styles = {
   },
   retryBtn: {
     padding: "8px 20px",
-    borderRadius: 8,
+    borderRadius: R.md,
     border: "none",
     background: COLORS.err,
     color: "#fff",
@@ -620,7 +621,7 @@ const styles = {
   openBrowserBtn: {
     flex: 1,
     padding: "10px 16px",
-    borderRadius: 8,
+    borderRadius: R.md,
     border: "none",
     background: "#92400E",
     color: "#fff",
@@ -631,7 +632,7 @@ const styles = {
   },
   retryBtnSmall: {
     padding: "10px 16px",
-    borderRadius: 8,
+    borderRadius: R.md,
     border: "1.5px solid #92400E",
     background: "transparent",
     color: "#92400E",

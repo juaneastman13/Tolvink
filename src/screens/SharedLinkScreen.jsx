@@ -133,7 +133,7 @@ function StatusTimeline({ freight, auditLogs }) {
                 <div style={{
                   width: 2, height: 24,
                   background: reached && i < currentIdx ? color : C.b2,
-                  borderRadius: 1,
+                  borderRadius: R.xs,
                 }} />
               )}
             </div>
@@ -275,7 +275,7 @@ function FreightView({ data, creatorName, lastRefresh }) {
         <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: 20, flexShrink: 0, paddingTop: 4 }}>
             <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#22C55E", border: "2px solid #fff", boxShadow: "0 0 0 2px #22C55E" }} />
-            <div style={{ width: 2, height: 20, background: C.b2, borderRadius: 1 }} />
+            <div style={{ width: 2, height: 20, background: C.b2, borderRadius: R.xs }} />
             <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#F59E0B", border: "2px solid #fff", boxShadow: "0 0 0 2px #F59E0B" }} />
           </div>
           <div style={{ flex: 1 }}>

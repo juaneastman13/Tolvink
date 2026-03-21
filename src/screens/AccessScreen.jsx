@@ -141,12 +141,12 @@ export default function AccessScreen({ user, onBack, embedded, defaultCompanyId,
   },[activeProducers]);
 
   const FacilityToggle = ({ id, name, address, selected, color, onToggle }) => (
-    <button onClick={()=>onToggle(id)} style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 12px", borderRadius:8, border:`1.5px solid ${selected?color:C.b1}`, background:selected?`${color}0A`:C.w, cursor:"pointer", fontFamily:"inherit", textAlign:"left", transition:"all 0.15s", width:"100%" }}>
+    <button onClick={()=>onToggle(id)} style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 12px", borderRadius: R.md, border:`1.5px solid ${selected?color:C.b1}`, background:selected?`${color}0A`:C.w, cursor:"pointer", fontFamily:"inherit", textAlign:"left", transition:"all 0.15s", width:"100%" }}>
       <div style={{ flex:1 }}>
         <div style={{ fontSize:13.2, fontWeight:selected?700:500, color:selected?color:C.t1 }}>{name}</div>
         {address && <div style={{ fontSize:11, color:C.t3 }}>{address}</div>}
       </div>
-      <div style={{ width:18, height:18, borderRadius:5, border:`2px solid ${selected?color:C.b1}`, background:selected?color:"transparent", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, transition:"all 0.15s" }}>
+      <div style={{ width:18, height:18, borderRadius: R.sm, border:`2px solid ${selected?color:C.b1}`, background:selected?color:"transparent", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, transition:"all 0.15s" }}>
         {selected && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={C.w} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
       </div>
     </button>
@@ -162,7 +162,7 @@ export default function AccessScreen({ user, onBack, embedded, defaultCompanyId,
           </div>
         </>
       ) : (
-        <div style={{ padding:"10px 12px", borderRadius:8, background:C.infoPale, border:`1px solid ${C.info}30`, marginBottom:8 }}>
+        <div style={{ padding:"10px 12px", borderRadius: R.md, background:C.infoPale, border:`1px solid ${C.info}30`, marginBottom:8 }}>
           <div style={{ fontSize:13.2, fontWeight:600, color:C.info }}>El productor tendrá acceso general a tu empresa.</div>
           <div style={{ fontSize:11.6, color:C.t3, marginTop:2 }}>Podés crear plantas desde el panel de administración para habilitar acceso específico.</div>
         </div>
@@ -183,7 +183,7 @@ export default function AccessScreen({ user, onBack, embedded, defaultCompanyId,
           <div>
             <div style={{ display:"flex", alignItems:"center", gap:6 }}>
               <span style={{ fontSize:14.3, fontWeight:700, color:C.t1 }}>{displayName}</span>
-              <span style={{ fontSize:9.9, fontWeight:700, color:isCompanyWide?C.ok:C.info, background:isCompanyWide?`${C.ok}15`:`${C.info}15`, padding:"1px 6px", borderRadius:4 }}>{isCompanyWide?"EMPRESA":"USUARIO"}</span>
+              <span style={{ fontSize:9.9, fontWeight:700, color:isCompanyWide?C.ok:C.info, background:isCompanyWide?`${C.ok}15`:`${C.info}15`, padding:"1px 6px", borderRadius: R.xs }}>{isCompanyWide?"EMPRESA":"USUARIO"}</span>
             </div>
             {companyName && <div style={{ fontSize:11, color:C.t2 }}>{companyName}</div>}
             {isAdmin && !selCompanyId && p.plantCompany?.name && <div style={{ fontSize:11, color:C.sec }}>{Ic.plant(C.sec,10)} {p.plantCompany.name}</div>}
@@ -191,7 +191,7 @@ export default function AccessScreen({ user, onBack, embedded, defaultCompanyId,
             {nPlants===0 && <div style={{ fontSize:11, color:C.t3 }}>Acceso general</div>}
           </div>
         </button>
-        <button onClick={()=>setConfirmRevoke(p)} style={{ background:"none", border:"none", cursor:"pointer", padding:6, borderRadius:6, display:"flex", alignItems:"center" }}>
+        <button onClick={()=>setConfirmRevoke(p)} style={{ background:"none", border:"none", cursor:"pointer", padding:6, borderRadius: R.sm, display:"flex", alignItems:"center" }}>
           {Ic.cross(C.err,16)}
         </button>
       </div>
@@ -212,7 +212,7 @@ export default function AccessScreen({ user, onBack, embedded, defaultCompanyId,
       {isAdmin && allCompanies.length > 0 && !defaultCompanyId && (
         <div style={{ marginBottom:14, display:"flex", alignItems:"center", gap:10 }}>
           <span style={{ fontSize:13.2, fontWeight:600, color:C.t2, whiteSpace:"nowrap" }}>Empresa:</span>
-          <select value={selCompanyId} onChange={e=>{const cId=e.target.value;const comp=allCompanies.find(c=>c.id===cId);setSelCompanyId(cId);setSelCompanyType(comp?.type||"");setLoading(true);setShowGrant(false);setEditingAccess(null);}} style={{ flex:1, padding:"8px 10px", borderRadius:8, border:`1px solid ${C.b1}`, fontSize:13.2, fontFamily:"inherit", background:C.w, color:C.t1 }}>
+          <select value={selCompanyId} onChange={e=>{const cId=e.target.value;const comp=allCompanies.find(c=>c.id===cId);setSelCompanyId(cId);setSelCompanyType(comp?.type||"");setLoading(true);setShowGrant(false);setEditingAccess(null);}} style={{ flex:1, padding:"8px 10px", borderRadius: R.md, border:`1px solid ${C.b1}`, fontSize:13.2, fontFamily:"inherit", background:C.w, color:C.t1 }}>
             <option value="">Todas las empresas</option>
             {allCompanies.filter(c=>c.type==="plant").length>0 && <optgroup label="Plantas">{allCompanies.filter(c=>c.type==="plant").map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</optgroup>}
             {allCompanies.filter(c=>c.type==="producer").length>0 && <optgroup label="Productores">{allCompanies.filter(c=>c.type==="producer").map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</optgroup>}
@@ -229,8 +229,8 @@ export default function AccessScreen({ user, onBack, embedded, defaultCompanyId,
           <div style={{ fontSize:17.6, fontWeight:700, marginBottom:8 }}>Revocar acceso</div>
           <div style={{ fontSize:14.3, color:C.t2, marginBottom:16 }}>¿Revocar el acceso de <b>{confirmRevoke.producerUser?.name||confirmRevoke.producerCompany?.name}</b>? No podrá enviar fletes a tus plantas.</div>
           <div style={{ display:"flex", gap:8 }}>
-            <button onClick={()=>setConfirmRevoke(null)} style={{ flex:1, padding:"10px 14px", borderRadius:8, border:`1px solid ${C.b1}`, background:C.w, cursor:"pointer", fontFamily:"inherit", fontSize:14.3, fontWeight:600, color:C.t2 }}>Cancelar</button>
-            <button disabled={saving||!!revokeClosing} onClick={()=>handleRevoke(confirmRevoke.id)} style={{ flex:1, padding:"10px 14px", borderRadius:8, border:"none", background:saving?C.muted:C.err, cursor:saving?"not-allowed":"pointer", fontFamily:"inherit", fontSize:14.3, fontWeight:600, color:C.w, opacity:saving?0.7:1 }}>{saving?"Revocando...":"Revocar"}</button>
+            <button onClick={()=>setConfirmRevoke(null)} style={{ flex:1, padding:"10px 14px", borderRadius: R.md, border:`1px solid ${C.b1}`, background:C.w, cursor:"pointer", fontFamily:"inherit", fontSize:14.3, fontWeight:600, color:C.t2 }}>Cancelar</button>
+            <button disabled={saving||!!revokeClosing} onClick={()=>handleRevoke(confirmRevoke.id)} style={{ flex:1, padding:"10px 14px", borderRadius: R.md, border:"none", background:saving?C.muted:C.err, cursor:saving?"not-allowed":"pointer", fontFamily:"inherit", fontSize:14.3, fontWeight:600, color:C.w, opacity:saving?0.7:1 }}>{saving?"Revocando...":"Revocar"}</button>
           </div>
         </ModalOverlay>
       )}
@@ -256,13 +256,13 @@ export default function AccessScreen({ user, onBack, embedded, defaultCompanyId,
           {/* Type toggle */}
           <div style={{ display:"flex", gap:6, marginBottom:8 }}>
             {[{k:"producer",l:"Productor"},{k:"transporter",l:"Transportista"}].map(t=>(
-              <button key={t.k} onClick={()=>{if(grantType!==t.k){setGrantType(t.k);setSearchQ("");setSearchResults([]);setSelectedProducer(null);setSelectedCompany(null);setSelectedPlantIds([]);}}} style={{flex:1,padding:"8px 0",borderRadius:8,border:`1px solid ${grantType===t.k?C.pri:C.b1}`,background:grantType===t.k?`${C.pri}12`:C.w,color:grantType===t.k?C.pri:C.t2,fontWeight:600,fontSize:13.2,cursor:"pointer",fontFamily:"inherit"}}>{t.l}</button>
+              <button key={t.k} onClick={()=>{if(grantType!==t.k){setGrantType(t.k);setSearchQ("");setSearchResults([]);setSelectedProducer(null);setSelectedCompany(null);setSelectedPlantIds([]);}}} style={{flex:1,padding:"8px 0",borderRadius: R.md,border:`1px solid ${grantType===t.k?C.pri:C.b1}`,background:grantType===t.k?`${C.pri}12`:C.w,color:grantType===t.k?C.pri:C.t2,fontWeight:600,fontSize:13.2,cursor:"pointer",fontFamily:"inherit"}}>{t.l}</button>
             ))}
           </div>
           {/* Search mode toggle: company / user */}
           <div style={{ display:"flex", gap:6, marginBottom:12 }}>
             {[{k:"company",l:"Por empresa"},{k:"user",l:"Por usuario"}].map(m=>(
-              <button key={m.k} onClick={()=>{if(searchMode!==m.k){setSearchMode(m.k);setSearchQ("");setSearchResults([]);setSelectedProducer(null);setSelectedCompany(null);setSelectedPlantIds([]);}}} style={{flex:1,padding:"6px 0",borderRadius:6,border:`1px solid ${searchMode===m.k?C.acc:C.b2}`,background:searchMode===m.k?`${C.acc}12`:C.bg,color:searchMode===m.k?C.acc:C.t3,fontWeight:600,fontSize:12.1,cursor:"pointer",fontFamily:"inherit"}}>{m.l}</button>
+              <button key={m.k} onClick={()=>{if(searchMode!==m.k){setSearchMode(m.k);setSearchQ("");setSearchResults([]);setSelectedProducer(null);setSelectedCompany(null);setSelectedPlantIds([]);}}} style={{flex:1,padding:"6px 0",borderRadius: R.sm,border:`1px solid ${searchMode===m.k?C.acc:C.b2}`,background:searchMode===m.k?`${C.acc}12`:C.bg,color:searchMode===m.k?C.acc:C.t3,fontWeight:600,fontSize:12.1,cursor:"pointer",fontFamily:"inherit"}}>{m.l}</button>
             ))}
           </div>
           <div style={{ fontSize:12.1, fontWeight:600, color:C.t2, marginBottom:4 }}>{searchMode==="company"?(grantType==="producer"?"Habilitar una empresa productora. Todos sus usuarios tendrán acceso.":"Habilitar una empresa transportista. Todos sus usuarios podrán recibir asignaciones."):(grantType==="producer"?"Habilitar un usuario productor específico.":"Habilitar un usuario transportista específico.")}</div>
@@ -271,7 +271,7 @@ export default function AccessScreen({ user, onBack, embedded, defaultCompanyId,
 
           {/* Search results — company mode */}
           {searchMode==="company" && searchResults.length > 0 && !selectedCompany && (
-            <div style={{ marginTop:8, border:`1px solid ${C.b1}`, borderRadius:8, overflow:"hidden", maxHeight:240, overflowY:"auto" }}>
+            <div style={{ marginTop:8, border:`1px solid ${C.b1}`, borderRadius: R.md, overflow:"hidden", maxHeight:240, overflowY:"auto" }}>
               {searchResults.map(c => (
                 <button key={c.companyId} onClick={() => handleSelectCompany(c)} style={{ width:"100%", display:"flex", alignItems:"center", gap:10, padding:"10px 12px", background:C.w, border:"none", borderBottom:`1px solid ${C.b2}`, cursor:"pointer", fontFamily:"inherit", textAlign:"left" }}>
                   {Ic.plant(C.pri,18)}
@@ -286,7 +286,7 @@ export default function AccessScreen({ user, onBack, embedded, defaultCompanyId,
 
           {/* Search results — user mode */}
           {searchMode==="user" && searchResults.length > 0 && !selectedProducer && (
-            <div style={{ marginTop:8, border:`1px solid ${C.b1}`, borderRadius:8, overflow:"hidden", maxHeight:240, overflowY:"auto" }}>
+            <div style={{ marginTop:8, border:`1px solid ${C.b1}`, borderRadius: R.md, overflow:"hidden", maxHeight:240, overflowY:"auto" }}>
               {searchResults.map(p => {
                 const pType = p.producerCompanyType || p.companyType || grantType;
                 const TYPE_L = {plant:"Planta",transporter:"Transp.",producer:"Productor"};
@@ -297,7 +297,7 @@ export default function AccessScreen({ user, onBack, embedded, defaultCompanyId,
                   <div style={{ flex:1 }}>
                     <div style={{ display:"flex", alignItems:"center", gap:6 }}>
                       <span style={{ fontSize:14.3, fontWeight:600, color:C.t1 }}>{p.userName}</span>
-                      {pType && <span style={{ fontSize:9.9, fontWeight:700, color:TYPE_C[pType]||C.t3, background:`${TYPE_C[pType]||C.t3}15`, padding:"1px 6px", borderRadius:4, textTransform:"uppercase", letterSpacing:0.3 }}>{TYPE_L[pType]||pType}</span>}
+                      {pType && <span style={{ fontSize:9.9, fontWeight:700, color:TYPE_C[pType]||C.t3, background:`${TYPE_C[pType]||C.t3}15`, padding:"1px 6px", borderRadius: R.xs, textTransform:"uppercase", letterSpacing:0.3 }}>{TYPE_L[pType]||pType}</span>}
                     </div>
                     <div style={{ fontSize:11.6, color:C.t3 }}>{p.producerCompanyName}{p.phone ? ` · ${p.phone}` : ""}{p.email ? ` · ${p.email}` : ""}</div>
                   </div>
@@ -313,7 +313,7 @@ export default function AccessScreen({ user, onBack, embedded, defaultCompanyId,
 
           {/* Selected company — show plant selector + grant button */}
           {selectedCompany && (
-            <div style={{ marginTop:12, background:`${C.pri}08`, border:`1.5px solid ${C.pri}30`, borderRadius:10, padding:14 }}>
+            <div style={{ marginTop:12, background:`${C.pri}08`, border:`1.5px solid ${C.pri}30`, borderRadius: R.md, padding:14 }}>
               <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:8 }}>
                 {Ic.plant(C.pri,20)}
                 <div style={{ flex:1 }}>
@@ -331,7 +331,7 @@ export default function AccessScreen({ user, onBack, embedded, defaultCompanyId,
 
           {/* Selected user — show plant selector + grant button */}
           {selectedProducer && (
-            <div style={{ marginTop:12, background:grantType==="producer"?C.priPale:`${C.acc}0A`, border:`1.5px solid ${grantType==="producer"?C.pri:C.acc}30`, borderRadius:10, padding:14 }}>
+            <div style={{ marginTop:12, background:grantType==="producer"?C.priPale:`${C.acc}0A`, border:`1.5px solid ${grantType==="producer"?C.pri:C.acc}30`, borderRadius: R.md, padding:14 }}>
               <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:8 }}>
                 {grantType==="producer"?Ic.user(C.pri,20):Ic.truck(C.acc,20)}
                 <div style={{ flex:1 }}>

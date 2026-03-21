@@ -64,7 +64,7 @@ export default function DriverQueueModal({ driverId, driverName, onClose }) {
                   {q.destName && <div style={{ fontSize: 12.1, color: C.t2, marginTop: 2 }}>{q.destName}</div>}
                   <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 3 }}>
                     <span style={{ fontSize: 10, fontWeight: 600, fontFamily: MONO, color: C.t3 }}>{q.code}</span>
-                    <span style={{ fontSize: 9.9, fontWeight: 700, color: st.color, background: st.bg, padding: "1px 6px", borderRadius: 4 }}>{st.label}</span>
+                    <span style={{ fontSize: 9.9, fontWeight: 700, color: st.color, background: st.bg, padding: "1px 6px", borderRadius: R.xs }}>{st.label}</span>
                   </div>
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 2, flexShrink: 0 }}>

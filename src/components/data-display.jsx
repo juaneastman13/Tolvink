@@ -1,5 +1,5 @@
 import { memo } from "react";
-import { C } from "../theme";
+import { C , R} from "../theme";
 import { stCfg } from "../constants";
 
 export const Av = memo(function Av({ letters, size=36, color=C.pri }) {
@@ -7,11 +7,11 @@ export const Av = memo(function Av({ letters, size=36, color=C.pri }) {
 });
 
 export const Bd = memo(function Bd({ children, color=C.pri, bg, small }) {
-  return <span style={{ display:"inline-flex", alignItems:"center", gap:4, padding:small?"2px 8px":"4px 10px", borderRadius:6, fontSize:small?12.8:12.1, fontWeight:600, background:bg||`${color}0D`, color, whiteSpace:"nowrap", letterSpacing:0.2 }}>{children}</span>;
+  return <span style={{ display:"inline-flex", alignItems:"center", gap:4, padding:small?"2px 8px":"4px 10px", borderRadius: R.sm, fontSize:small?12.8:12.1, fontWeight:600, background:bg||`${color}0D`, color, whiteSpace:"nowrap", letterSpacing:0.2 }}>{children}</span>;
 });
 
 export const Tabs = memo(function Tabs({ items, active, onChange }) {
-  return <div style={{ display:"flex", gap:2, background:C.bgInput, borderRadius:10, padding:3 }}>{items.map(t=><button key={t.k} onClick={()=>onChange(t.k)} style={{ flex:1, padding:"8px 4px", borderRadius:8, border:"none", fontFamily:"inherit", fontSize:12.1, fontWeight:active===t.k?700:500, cursor:"pointer", background:active===t.k?C.w:"transparent", color:active===t.k?C.pri:C.t3, boxShadow:active===t.k?C.sh:"none", transition:"all 0.15s" }}>{t.l}</button>)}</div>;
+  return <div style={{ display:"flex", gap:2, background:C.bgInput, borderRadius: R.md, padding:3 }}>{items.map(t=><button key={t.k} onClick={()=>onChange(t.k)} style={{ flex:1, padding:"8px 4px", borderRadius: R.md, border:"none", fontFamily:"inherit", fontSize:12.1, fontWeight:active===t.k?700:500, cursor:"pointer", background:active===t.k?C.w:"transparent", color:active===t.k?C.pri:C.t3, boxShadow:active===t.k?C.sh:"none", transition:"all 0.15s" }}>{t.l}</button>)}</div>;
 });
 
 export function SortTh({ label, colKey, sortCol, sortDir, onSort }) {

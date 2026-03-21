@@ -9,8 +9,8 @@ function ScoreBar({ score }) {
   const fill = score >= 70 ? C.pri : score >= 40 ? "#F59E0B" : C.err;
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-      <div style={{ width: 60, height: 6, borderRadius: 3, background: C.bgAlt, overflow: "hidden" }}>
-        <div style={{ width: `${score}%`, height: "100%", borderRadius: 3, background: fill, transition: "width 0.3s" }} />
+      <div style={{ width: 60, height: 6, borderRadius: R.xs, background: C.bgAlt, overflow: "hidden" }}>
+        <div style={{ width: `${score}%`, height: "100%", borderRadius: R.xs, background: fill, transition: "width 0.3s" }} />
       </div>
       <span style={{ fontSize: 12, fontWeight: 700, color: fill, minWidth: 28, textAlign: "right" }}>{score}</span>
     </div>
@@ -100,12 +100,12 @@ export default function AssignmentSuggestions({ freight, user, onAssign, onRefre
             const isAssigning = assigningId === (s.truckId || s.companyId);
             const isFirst = i === 0;
             return (
-              <div key={s.truckId || s.companyId} style={{ position: "relative", background: C.w, border: `1px solid ${C.b1}`, borderRadius: 10, padding: 14, transition: "background 0.15s" }}
+              <div key={s.truckId || s.companyId} style={{ position: "relative", background: C.w, border: `1px solid ${C.b1}`, borderRadius: R.md, padding: 14, transition: "background 0.15s" }}
                 onPointerEnter={e => e.currentTarget.style.background = C.bgAlt}
                 onPointerLeave={e => e.currentTarget.style.background = C.w}>
                 {/* Recommended badge */}
                 {isFirst && (
-                  <div style={{ position: "absolute", top: 8, right: 10, background: C.priPale, color: C.pri, fontSize: 11, fontWeight: 600, textTransform: "uppercase", borderRadius: 4, padding: "2px 8px" }}>
+                  <div style={{ position: "absolute", top: 8, right: 10, background: C.priPale, color: C.pri, fontSize: 11, fontWeight: 600, textTransform: "uppercase", borderRadius: R.xs, padding: "2px 8px" }}>
                     Recomendado
                   </div>
                 )}

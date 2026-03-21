@@ -297,7 +297,7 @@ export function WeighTicketSummary({ tickets, label }) {
           {t.humidity != null && <span style={{ fontSize: 11.5, color: C.t2 }}>Hum: {Number(t.humidity)}%</span>}
           {t.impurities != null && <span style={{ fontSize: 11.5, color: C.t2 }}>Imp: {Number(t.impurities)}%</span>}
           {t.photoUrl && <span style={{ fontSize: 11, color: C.info, display: "flex", alignItems: "center", gap: 3 }}>{Ic.cam(C.info, 10)} Foto</span>}
-          {t.ocrConfidence != null && <span style={{ fontSize: 10.4, color: C.t3, background: `${C.info}15`, padding: "1px 6px", borderRadius: 4 }}>OCR {Math.round(Number(t.ocrConfidence) * 100)}%</span>}
+          {t.ocrConfidence != null && <span style={{ fontSize: 10.4, color: C.t3, background: `${C.info}15`, padding: "1px 6px", borderRadius: R.xs }}>OCR {Math.round(Number(t.ocrConfidence) * 100)}%</span>}
         </div>
       ))}
     </div>

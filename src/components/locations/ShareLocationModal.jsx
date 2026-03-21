@@ -112,7 +112,7 @@ export default function ShareLocationModal({ entityType, entity, fieldId, onClos
                     <div style={{ fontSize: 13.2, fontWeight: 600, color: C.t1 }}>{s.sharedWith?.name || "Usuario"}</div>
                     <div style={{ fontSize: 11, color: C.t3 }}>{s.sharedWith?.email}</div>
                   </div>
-                  <button onClick={() => handleUnshare(s.sharedWith?.id, s.sharedWith?.name || "usuario")} style={{ padding: "4px 10px", borderRadius: 6, border: `1px solid ${C.err}40`, background: C.errPale, cursor: "pointer", fontFamily: FONT, fontSize: 11.5, fontWeight: 600, color: C.err }}>
+                  <button onClick={() => handleUnshare(s.sharedWith?.id, s.sharedWith?.name || "usuario")} style={{ padding: "4px 10px", borderRadius: R.sm, border: `1px solid ${C.err}40`, background: C.errPale, cursor: "pointer", fontFamily: FONT, fontSize: 11.5, fontWeight: 600, color: C.err }}>
                     Quitar
                   </button>
                 </div>

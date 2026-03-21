@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { C, Ic } from "../theme";
+import { C, Ic , R} from "../theme";
 import { originDisplay, destDisplay } from "../hooks";
 
 const NOTIF_ICONS = {
@@ -39,7 +39,7 @@ function _NotifRow({ n, freight, onMarkRead, onTap, isLast }) {
         borderBottom: isLast ? "none" : `1px solid ${C.b2}`,
         WebkitTapHighlightColor:"transparent", touchAction:"manipulation", transition:"background 0.15s"
       }}>
-      <div style={{ width:40, height:40, borderRadius:12, background: n.read ? C.bg : C.priPale, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+      <div style={{ width:40, height:40, borderRadius: R.lg, background: n.read ? C.bg : C.priPale, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
         {icFn(18)}
       </div>
       <div style={{ flex:1, minWidth:0 }}>
@@ -59,7 +59,7 @@ function _NotifRow({ n, freight, onMarkRead, onTap, isLast }) {
           </div>
         )}
       </div>
-      {!n.read && <div style={{ width:8, height:8, borderRadius:4, background:C.pri, flexShrink:0, marginTop:8 }} />}
+      {!n.read && <div style={{ width:8, height:8, borderRadius: R.xs, background:C.pri, flexShrink:0, marginTop:8 }} />}
     </button>
   );
 }
@@ -80,7 +80,7 @@ export default function NotificationsScreen({ notifications=[], freights=[], loa
           {unread.length > 0 && <span style={{ fontSize:13.2, color:C.t3, fontWeight:500 }}>{unread.length} sin leer</span>}
         </div>
         {unread.length > 0 && (
-          <button onClick={onMarkAllRead} style={{ border:"none", background:C.priPale, cursor:"pointer", fontSize:13.2, fontWeight:600, color:C.pri, fontFamily:"inherit", padding:"8px 14px", borderRadius:8 }}
+          <button onClick={onMarkAllRead} style={{ border:"none", background:C.priPale, cursor:"pointer", fontSize:13.2, fontWeight:600, color:C.pri, fontFamily:"inherit", padding:"8px 14px", borderRadius: R.md }}
             onMouseEnter={e=>e.currentTarget.style.background=C.priGhost} onMouseLeave={e=>e.currentTarget.style.background=C.priPale}>
             Marcar todas leídas
           </button>
@@ -98,7 +98,7 @@ export default function NotificationsScreen({ notifications=[], freights=[], loa
         {unread.length > 0 && (
           <div style={{ marginBottom:20 }}>
             <div style={{ fontSize:12.1, fontWeight:700, color:C.t3, textTransform:"uppercase", letterSpacing:0.5, padding:"0 4px", marginBottom:8 }}>Nuevas</div>
-            <div style={{ background:C.w, borderRadius:14, border:`1px solid ${C.b2}`, overflow:"hidden" }}>
+            <div style={{ background:C.w, borderRadius: R.lg, border:`1px solid ${C.b2}`, overflow:"hidden" }}>
               {unread.map((n, i) => <_NotifRow key={n.id} n={n} freight={freightMap[n.entityId]} onMarkRead={onMarkRead} onTap={onTap} isLast={i === unread.length - 1} />)}
             </div>
           </div>
@@ -108,7 +108,7 @@ export default function NotificationsScreen({ notifications=[], freights=[], loa
         {read.length > 0 && (
           <div>
             <div style={{ fontSize:12.1, fontWeight:700, color:C.t3, textTransform:"uppercase", letterSpacing:0.5, padding:"0 4px", marginBottom:8 }}>Anteriores</div>
-            <div style={{ background:C.w, borderRadius:14, border:`1px solid ${C.b2}`, overflow:"hidden" }}>
+            <div style={{ background:C.w, borderRadius: R.lg, border:`1px solid ${C.b2}`, overflow:"hidden" }}>
               {read.map((n, i) => <_NotifRow key={n.id} n={n} freight={freightMap[n.entityId]} onMarkRead={onMarkRead} onTap={onTap} isLast={i === read.length - 1} />)}
             </div>
           </div>

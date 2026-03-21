@@ -6,6 +6,7 @@
 // =====================================================================
 
 import { useState, useEffect, useRef } from "react";
+import { R } from "../theme";
 import { loadGMaps, mkFieldIcon, mkPlantIcon } from "../maps";
 
 const C = {
@@ -128,7 +129,7 @@ export default function ViewMapScreen() {
       {/* Header */}
       <div style={{ position: "absolute", top: 0, left: 0, right: 0, zIndex: 10, background: "rgba(255,255,255,0.95)", backdropFilter: "blur(8px)", padding: "12px 16px", display: "flex", alignItems: "center", gap: 10, boxShadow: "0 1px 4px rgba(0,0,0,0.1)" }}>
         <span style={{ fontSize: 24.2, fontWeight: 800, color: C.pri, letterSpacing: -1 }}>tolvink</span>
-        <span style={{ width: 6, height: 6, borderRadius: 3, background: C.acc, marginTop: -8 }}></span>
+        <span style={{ width: 6, height: 6, borderRadius: R.xs, background: C.acc, marginTop: -8 }}></span>
         <span style={{ marginLeft: "auto", fontSize: 15.4, color: C.t2, fontWeight: 500, maxWidth: "60%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           📍 {name}{hasDest ? ` → ${dname}` : ""}
         </span>
@@ -150,7 +151,7 @@ export default function ViewMapScreen() {
           href={hasDest ? `https://www.google.com/maps/dir/?api=1&origin=${lat},${lng}&destination=${dlat},${dlng}` : `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`}
           target="_blank"
           rel="noopener noreferrer"
-          style={{ display: "block", textAlign: "center", background: C.pri, color: "#fff", padding: "14px 0", borderRadius: 12, fontSize: 17.6, fontWeight: 700, textDecoration: "none", boxShadow: "0 4px 12px rgba(26,107,55,0.3)" }}
+          style={{ display: "block", textAlign: "center", background: C.pri, color: "#fff", padding: "14px 0", borderRadius: R.lg, fontSize: 17.6, fontWeight: 700, textDecoration: "none", boxShadow: "0 4px 12px rgba(26,107,55,0.3)" }}
         >
           ▶ Navegar al destino
         </a>

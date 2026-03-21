@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, Fragment } from "react";
-import { C, Ic, FONT } from "../theme";
+import { C, Ic, FONT , R} from "../theme";
 import { Btn, Bd, LoadingOverlay } from "../components";
 import { apiUpdateMe, apiChangePassword } from "../api";
 import { adminStyles, typeColors, typeLabels, adminBackBtn } from "../utils/freight-helpers";
@@ -63,7 +63,7 @@ export default function MyDataScreen({ user, onBack, onUserUpdate }) {
       <div style={{padding:"0 18px 18px"}}>
       <div style={{fontSize:19.8,fontWeight:800,color:C.t1,marginBottom:4}}>Mis datos</div>
       <div style={{fontSize:12.1,color:C.t3,marginBottom:14}}>Editá tu información personal</div>
-      <div style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius:10,padding:14,boxShadow:C.sh,marginBottom:16}}>
+      <div style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius: R.md,padding:14,boxShadow:C.sh,marginBottom:16}}>
         <div style={s.lbl}>Nombre:</div>
         <input value={form.name} onChange={e=>setForm(p=>({...p,name:e.target.value}))} placeholder="Nombre completo" style={{...s.inp,marginBottom:10}} />
         <div style={s.lbl}>Email:</div>
@@ -75,7 +75,7 @@ export default function MyDataScreen({ user, onBack, onUserUpdate }) {
 
       {companies.length>0 && <>
       <div style={{fontSize:16.5,fontWeight:700,color:C.t1,marginBottom:8}}>Mis empresas</div>
-      <div style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius:10,overflow:"hidden",boxShadow:C.sh}}>
+      <div style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius: R.md,overflow:"hidden",boxShadow:C.sh}}>
         <table style={{width:"100%",borderCollapse:"collapse",fontSize:13.2,fontFamily:"inherit"}}>
           <thead>
             <tr style={{background:C.bg,borderBottom:`2px solid ${C.b1}`}}>
@@ -95,7 +95,7 @@ export default function MyDataScreen({ user, onBack, onUserUpdate }) {
                   <td style={{padding:"10px 12px",fontWeight:600,color:C.t1}}>
                     <div style={{display:"flex",alignItems:"center",gap:6}}>
                       {c.companyName||user.entity}
-                      {isActive && <span style={{fontSize:8.8,background:C.pri,color:C.w,borderRadius:4,padding:"1px 5px",fontWeight:700}}>Activa</span>}
+                      {isActive && <span style={{fontSize:8.8,background:C.pri,color:C.w,borderRadius: R.xs,padding:"1px 5px",fontWeight:700}}>Activa</span>}
                     </div>
                   </td>
                   <td style={{padding:"10px 12px"}}><Bd color={tColor}>{typeLabels[c.companyType]||c.companyType}</Bd></td>
@@ -104,7 +104,7 @@ export default function MyDataScreen({ user, onBack, onUserUpdate }) {
                 {isExp && <tr><td colSpan={3} style={{padding:"8px 12px 12px",background:`${C.pri}04`,borderTop:`1px dashed ${C.b2}`}}>
                   <div style={{fontSize:11,fontWeight:700,color:C.t3,textTransform:"uppercase",marginBottom:6}}>Permisos</div>
                   <div style={{display:"flex",flexWrap:"wrap",gap:4}}>
-                    {permsByRole(c.role).map((p,j)=><div key={j} style={{display:"flex",alignItems:"center",gap:4,fontSize:12.1,color:C.t1,padding:"3px 8px",background:C.w,borderRadius:6,border:`1px solid ${C.b2}`}}>{Ic.chk(C.pri,11)} {p}</div>)}
+                    {permsByRole(c.role).map((p,j)=><div key={j} style={{display:"flex",alignItems:"center",gap:4,fontSize:12.1,color:C.t1,padding:"3px 8px",background:C.w,borderRadius: R.sm,border:`1px solid ${C.b2}`}}>{Ic.chk(C.pri,11)} {p}</div>)}
                   </div>
                 </td></tr>}
               </Fragment>);
@@ -115,7 +115,7 @@ export default function MyDataScreen({ user, onBack, onUserUpdate }) {
       </>}
 
       <div style={{fontSize:16.5,fontWeight:700,color:C.t1,marginBottom:8,marginTop:16}}>Cambiar contraseña</div>
-      <div style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius:10,padding:14,boxShadow:C.sh}}>
+      <div style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius: R.md,padding:14,boxShadow:C.sh}}>
         <div style={s.lbl}>Contraseña actual:</div>
         <input value={pwForm.current} onChange={e=>setPwForm(p=>({...p,current:e.target.value}))} placeholder="Contraseña actual" type="password" style={{...s.inp,marginBottom:10}} />
         <div style={s.lbl}>Nueva contraseña:</div>
@@ -128,12 +128,12 @@ export default function MyDataScreen({ user, onBack, onUserUpdate }) {
         }} disabled={pwSaving} style={s.btnP(C.pri,pwSaving)}>{pwSaving?"Guardando...":"Cambiar contraseña"}</button>
       </div>
 
-      {msg&&<div style={{padding:"8px 12px",borderRadius:8,background:msg.k==="ok"?C.okPale:`${C.err}15`,color:msg.k==="ok"?C.ok:C.err,fontSize:13.2,marginTop:10}}>{msg.t}</div>}
+      {msg&&<div style={{padding:"8px 12px",borderRadius: R.md,background:msg.k==="ok"?C.okPale:`${C.err}15`,color:msg.k==="ok"?C.ok:C.err,fontSize:13.2,marginTop:10}}>{msg.t}</div>}
       </div>
 
       {confirmModal && (
         <div style={{position:"fixed",inset:0,background:C.bgOverlay,display:"flex",alignItems:"center",justifyContent:"center",zIndex:9999}}>
-          <div style={{background:C.bgCard,borderRadius:12,padding:24,maxWidth:400,width:"90%",boxShadow:C.shLg}}>
+          <div style={{background:C.bgCard,borderRadius: R.lg,padding:24,maxWidth:400,width:"90%",boxShadow:C.shLg}}>
             <div style={{fontFamily:FONT,fontSize:16.5,fontWeight:700,color:C.t1,marginBottom:8}}>Confirmar cambios</div>
             <div style={{fontFamily:FONT,fontSize:14.3,color:C.t2,marginBottom:16,lineHeight:1.5}}>Para confirmar los cambios, ingresá tu contraseña actual.</div>
             <input
@@ -143,12 +143,12 @@ export default function MyDataScreen({ user, onBack, onUserUpdate }) {
               onChange={e => { setConfirmPw(e.target.value); setConfirmErr(false); }}
               onKeyDown={e => e.key === "Enter" && confirmPw && !saving && doSave(confirmPw)}
               autoFocus
-              style={{width:"100%",padding:"10px 12px",borderRadius:8,border:`1.5px solid ${confirmErr?C.err:C.b1}`,fontFamily:FONT,fontSize:14.3,background:C.bgInput,color:C.t1,outline:"none",boxSizing:"border-box"}}
+              style={{width:"100%",padding:"10px 12px",borderRadius: R.md,border:`1.5px solid ${confirmErr?C.err:C.b1}`,fontFamily:FONT,fontSize:14.3,background:C.bgInput,color:C.t1,outline:"none",boxSizing:"border-box"}}
             />
             {confirmErr && <div style={{color:C.err,fontSize:12.1,fontFamily:FONT,marginTop:4}}>Contraseña incorrecta</div>}
             <div style={{display:"flex",gap:8,marginTop:16,justifyContent:"flex-end"}}>
-              <button onClick={()=>{setConfirmModal(false);setConfirmPw("");setConfirmErr(false);}} style={{padding:"8px 16px",borderRadius:8,border:`1px solid ${C.b2}`,background:C.w,cursor:"pointer",fontFamily:FONT,fontSize:13.2,fontWeight:600,color:C.t2}}>Cancelar</button>
-              <button onClick={()=>doSave(confirmPw)} disabled={!confirmPw||saving} style={{padding:"8px 16px",borderRadius:8,border:"none",background:C.pri,cursor:"pointer",fontFamily:FONT,fontSize:13.2,fontWeight:700,color:C.w,opacity:confirmPw&&!saving?1:0.5}}>
+              <button onClick={()=>{setConfirmModal(false);setConfirmPw("");setConfirmErr(false);}} style={{padding:"8px 16px",borderRadius: R.md,border:`1px solid ${C.b2}`,background:C.w,cursor:"pointer",fontFamily:FONT,fontSize:13.2,fontWeight:600,color:C.t2}}>Cancelar</button>
+              <button onClick={()=>doSave(confirmPw)} disabled={!confirmPw||saving} style={{padding:"8px 16px",borderRadius: R.md,border:"none",background:C.pri,cursor:"pointer",fontFamily:FONT,fontSize:13.2,fontWeight:700,color:C.w,opacity:confirmPw&&!saving?1:0.5}}>
                 {saving?"Confirmando...":"Confirmar"}
               </button>
             </div>

@@ -111,20 +111,20 @@ export function DocsGallery({ documents, onViewFile, freightId, canDelete, onDel
                     <div style={{ fontSize: 12.1, fontWeight: 600, color: C.t1, wordBreak: "break-all" }}>{d.name || "Archivo"}</div>
                     <div style={{ fontSize: 11, color: C.t3, marginTop: 2, display:"flex", alignItems:"center", gap:4, flexWrap:"wrap" }}>
                       <span>{stepLabels[d.step] || d.type || "Doc"}{d.createdAt && ` · ${new Date(d.createdAt).toLocaleDateString("es", { day: "2-digit", month: "short" })}`}{d.uploadedBy?.name && ` · ${d.uploadedBy.name.split(" ")[0]}`}</span>
-                      {d.ocrData?._editMeta && <span style={{ fontSize:9, fontWeight:700, color:C.acc, background:`${C.acc}15`, padding:"1px 5px", borderRadius:6 }}>Editado</span>}
+                      {d.ocrData?._editMeta && <span style={{ fontSize:9, fontWeight:700, color:C.acc, background:`${C.acc}15`, padding:"1px 5px", borderRadius: R.sm }}>Editado</span>}
                     </div>
                   </div>
                 </button>
-                {d.ocrData && onViewOcr && <button onClick={()=>onViewOcr(d.ocrData, d.id)} title="Ver datos extraídos" aria-label="Ver datos extraídos" style={{ padding:6, minWidth:36, minHeight:36, borderRadius:6, border:`1px solid ${C.pri}`, background:C.okPale, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{Ic.eye(C.pri,14)}</button>}
-                {isImg && onOcr && !d.ocrData && <button onClick={()=>onOcr({url:d.url,name:d.name||"Archivo",type:d.type,id:d.id})} disabled={ocrLoading} title="Extraer datos (OCR)" aria-label="Extraer datos (OCR)" style={{ padding:6, minWidth:36, minHeight:36, borderRadius:6, border:`1px solid ${C.pri}40`, background:C.priPale, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, opacity:ocrLoading?0.5:1 }}>{Ic.doc(C.pri,14)}</button>}
-                {canDelete && <button onClick={()=>setConfirm(d.id)} disabled={!!deleting} aria-label="Eliminar archivo" style={{ padding:6, minWidth:36, minHeight:36, borderRadius:6, border:`1px solid ${C.err}40`, background:C.errPale||"#fef2f2", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{Ic.cross(C.err,14)}</button>}
+                {d.ocrData && onViewOcr && <button onClick={()=>onViewOcr(d.ocrData, d.id)} title="Ver datos extraídos" aria-label="Ver datos extraídos" style={{ padding:6, minWidth:36, minHeight:36, borderRadius: R.sm, border:`1px solid ${C.pri}`, background:C.okPale, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{Ic.eye(C.pri,14)}</button>}
+                {isImg && onOcr && !d.ocrData && <button onClick={()=>onOcr({url:d.url,name:d.name||"Archivo",type:d.type,id:d.id})} disabled={ocrLoading} title="Extraer datos (OCR)" aria-label="Extraer datos (OCR)" style={{ padding:6, minWidth:36, minHeight:36, borderRadius: R.sm, border:`1px solid ${C.pri}40`, background:C.priPale, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, opacity:ocrLoading?0.5:1 }}>{Ic.doc(C.pri,14)}</button>}
+                {canDelete && <button onClick={()=>setConfirm(d.id)} disabled={!!deleting} aria-label="Eliminar archivo" style={{ padding:6, minWidth:36, minHeight:36, borderRadius: R.sm, border:`1px solid ${C.err}40`, background:C.errPale||"#fef2f2", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{Ic.cross(C.err,14)}</button>}
               </div>
               {confirm===d.id && (
-                <div style={{ position:"absolute", right:0, top:"100%", zIndex:20, background:C.w, border:`1px solid ${C.b1}`, borderRadius:10, padding:12, boxShadow:C.shMd, minWidth:180, marginTop:4 }}>
+                <div style={{ position:"absolute", right:0, top:"100%", zIndex:20, background:C.w, border:`1px solid ${C.b1}`, borderRadius: R.md, padding:12, boxShadow:C.shMd, minWidth:180, marginTop:4 }}>
                   <div style={{ fontSize:12.1, color:C.t1, fontWeight:600, marginBottom:8 }}>Eliminar este archivo?</div>
                   <div style={{ display:"flex", gap:8 }}>
-                    <button onClick={()=>setConfirm(null)} style={{ flex:1, padding:"6px 0", borderRadius:6, border:`1px solid ${C.b1}`, background:C.bg, cursor:"pointer", fontSize:12.1, fontWeight:600, color:C.t2, fontFamily:"inherit" }}>No</button>
-                    <button onClick={()=>handleDelete(d.id)} disabled={deleting===d.id} style={{ flex:1, padding:"6px 0", borderRadius:6, border:"none", background:C.err, color:"#fff", cursor:"pointer", fontSize:12.1, fontWeight:600, fontFamily:"inherit", opacity:deleting===d.id?0.6:1 }}>{deleting===d.id?"...":"Sí, eliminar"}</button>
+                    <button onClick={()=>setConfirm(null)} style={{ flex:1, padding:"6px 0", borderRadius: R.sm, border:`1px solid ${C.b1}`, background:C.bg, cursor:"pointer", fontSize:12.1, fontWeight:600, color:C.t2, fontFamily:"inherit" }}>No</button>
+                    <button onClick={()=>handleDelete(d.id)} disabled={deleting===d.id} style={{ flex:1, padding:"6px 0", borderRadius: R.sm, border:"none", background:C.err, color:"#fff", cursor:"pointer", fontSize:12.1, fontWeight:600, fontFamily:"inherit", opacity:deleting===d.id?0.6:1 }}>{deleting===d.id?"...":"Sí, eliminar"}</button>
                   </div>
                 </div>
               )}
@@ -273,34 +273,34 @@ export function OcrResultModal({ result, onClose, freightId, docId, onSaved, sta
       <div onClick={e=>e.stopPropagation()} style={{ background:C.w, borderRadius:mobile?"14px 14px 0 0":14, boxShadow:mobile?"0 -4px 32px rgba(0,0,0,0.3)":"0 8px 40px rgba(0,0,0,0.25)", maxWidth:480, width:"100%", maxHeight:mobile?"85vh":"75vh", display:"flex", flexDirection:"column" }}>
         {/* Drag handle — mobile only */}
         {mobile && <div onClick={editing ? undefined : onClose} style={{ display:"flex", justifyContent:"center", padding:"10px 0 4px", cursor:"pointer", flexShrink:0 }}>
-          <div style={{ width:36, height:4, borderRadius:2, background:C.b1 }}/>
+          <div style={{ width:36, height:4, borderRadius: R.xs, background:C.b1 }}/>
         </div>}
         {/* Header */}
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:mobile?"4px 16px 10px":"12px 16px", borderBottom:`1px solid ${C.b2}`, flexShrink:0, gap:8 }}>
           <div style={{ display:"flex", alignItems:"center", gap:6, flex:1, minWidth:0, flexWrap:"wrap" }}>
             {Ic.doc(C.pri,16)}
             <span style={{ fontSize:14.3, fontWeight:700, color:C.t1 }}>{editing ? "Editar datos" : "Datos extraídos"}</span>
-            {result.tipoDocumento && <span style={{ fontSize:9.9, color:C.t3, fontWeight:500, background:C.bg, padding:"2px 6px", borderRadius:8, whiteSpace:"nowrap" }}>{result.tipoDocumento}{result.confianza ? ` · ${Math.round(result.confianza*100)}%` : ""}</span>}
-            {editMeta && !editing && <span style={{ fontSize:9.9, color:C.acc, fontWeight:700, background:`${C.acc}15`, padding:"2px 8px", borderRadius:8, whiteSpace:"nowrap" }}>Editado</span>}
+            {result.tipoDocumento && <span style={{ fontSize:9.9, color:C.t3, fontWeight:500, background:C.bg, padding:"2px 6px", borderRadius: R.md, whiteSpace:"nowrap" }}>{result.tipoDocumento}{result.confianza ? ` · ${Math.round(result.confianza*100)}%` : ""}</span>}
+            {editMeta && !editing && <span style={{ fontSize:9.9, color:C.acc, fontWeight:700, background:`${C.acc}15`, padding:"2px 8px", borderRadius: R.md, whiteSpace:"nowrap" }}>Editado</span>}
           </div>
           <div style={{ display:"flex", gap:6, alignItems:"center", flexShrink:0 }}>
-            {!editing && entries.length > 0 && <button onClick={copyAll} style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:4, padding:"6px 12px", borderRadius:8, border:"none", background:C.pri, cursor:"pointer", fontSize:12.1, fontWeight:700, color:"#fff", fontFamily:"inherit", whiteSpace:"nowrap" }}>{Ic.doc("#fff",13)} Copiar</button>}
-            {!editing && canEdit && entries.length > 0 && <button onClick={startEdit} style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:4, padding:"6px 12px", borderRadius:8, border:`1px solid ${C.acc}`, background:`${C.acc}10`, cursor:"pointer", fontSize:12.1, fontWeight:700, color:C.acc, fontFamily:"inherit", whiteSpace:"nowrap" }}>Editar</button>}
-            <button onClick={editing ? cancelEdit : onClose} style={{ display:"flex", alignItems:"center", justifyContent:"center", width:36, height:36, borderRadius:8, background:C.err, border:"none", cursor:"pointer", flexShrink:0 }}>{Ic.cross("#fff",16)}</button>
+            {!editing && entries.length > 0 && <button onClick={copyAll} style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:4, padding:"6px 12px", borderRadius: R.md, border:"none", background:C.pri, cursor:"pointer", fontSize:12.1, fontWeight:700, color:"#fff", fontFamily:"inherit", whiteSpace:"nowrap" }}>{Ic.doc("#fff",13)} Copiar</button>}
+            {!editing && canEdit && entries.length > 0 && <button onClick={startEdit} style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:4, padding:"6px 12px", borderRadius: R.md, border:`1px solid ${C.acc}`, background:`${C.acc}10`, cursor:"pointer", fontSize:12.1, fontWeight:700, color:C.acc, fontFamily:"inherit", whiteSpace:"nowrap" }}>Editar</button>}
+            <button onClick={editing ? cancelEdit : onClose} style={{ display:"flex", alignItems:"center", justifyContent:"center", width:36, height:36, borderRadius: R.md, background:C.err, border:"none", cursor:"pointer", flexShrink:0 }}>{Ic.cross("#fff",16)}</button>
           </div>
         </div>
         {/* Content */}
         <div style={{ flex:1, overflow:"auto", padding:"14px 18px" }}>
           {/* Edit metadata info */}
           {editMeta && !editing && (
-            <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:10, padding:"6px 10px", background:`${C.acc}08`, borderRadius:8, border:`1px solid ${C.acc}20` }}>
+            <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:10, padding:"6px 10px", background:`${C.acc}08`, borderRadius: R.md, border:`1px solid ${C.acc}20` }}>
               <span style={{ fontSize:11, color:C.acc, fontWeight:600 }}>Editado {editMeta.editedByName ? `por ${editMeta.editedByName}` : ""} · {new Date(editMeta.editedAt).toLocaleDateString("es",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"})}</span>
               {editHistory.length > 0 && <button onClick={()=>setShowHistory(v=>!v)} style={{ marginLeft:"auto", fontSize:10, color:C.t3, fontWeight:600, background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", textDecoration:"underline" }}>{showHistory ? "Ocultar historial" : `Ver historial (${editHistory.length})`}</button>}
             </div>
           )}
           {/* History panel */}
           {showHistory && editHistory.length > 0 && !editing && (
-            <div style={{ marginBottom:12, padding:10, background:C.bg, borderRadius:8, border:`1px solid ${C.b2}`, maxHeight:150, overflow:"auto" }}>
+            <div style={{ marginBottom:12, padding:10, background:C.bg, borderRadius: R.md, border:`1px solid ${C.b2}`, maxHeight:150, overflow:"auto" }}>
               <div style={{ fontSize:10, fontWeight:700, color:C.t2, marginBottom:6, textTransform:"uppercase", letterSpacing:0.5 }}>Historial de ediciones</div>
               {[...editHistory].reverse().map((h, i) => (
                 <div key={i} style={{ fontSize:11, color:C.t3, padding:"4px 0", borderBottom:i < editHistory.length-1 ? `1px solid ${C.b2}` : "none" }}>
@@ -319,7 +319,7 @@ export function OcrResultModal({ result, onClose, freightId, docId, onSaved, sta
                   <input
                     value={editValues[key] || ""}
                     onChange={e => setEditValues(prev => ({ ...prev, [key]: e.target.value }))}
-                    style={{ padding:"8px 10px", borderRadius:8, border:`1.5px solid ${C.b1}`, fontSize:13.2, fontFamily:"inherit", color:C.t1, background:C.bg, outline:"none", transition:"border-color 0.15s" }}
+                    style={{ padding:"8px 10px", borderRadius: R.md, border:`1.5px solid ${C.b1}`, fontSize:13.2, fontFamily:"inherit", color:C.t1, background:C.bg, outline:"none", transition:"border-color 0.15s" }}
                     onFocus={e => e.target.style.borderColor = C.pri}
                     onBlur={e => e.target.style.borderColor = C.b1}
                   />
@@ -341,8 +341,8 @@ export function OcrResultModal({ result, onClose, freightId, docId, onSaved, sta
         {/* Edit footer */}
         {editing && (
           <div style={{ display:"flex", gap:8, padding:"12px 18px", borderTop:`1px solid ${C.b2}`, flexShrink:0 }}>
-            <button onClick={cancelEdit} disabled={saving} style={{ flex:1, padding:"10px 0", borderRadius:10, border:`1px solid ${C.b1}`, background:C.w, cursor:"pointer", fontSize:13.2, fontWeight:600, color:C.t2, fontFamily:"inherit" }}>Cancelar</button>
-            <button onClick={handleSave} disabled={saving} style={{ flex:1, padding:"10px 0", borderRadius:10, border:"none", background:C.pri, cursor:saving?"wait":"pointer", fontSize:13.2, fontWeight:700, color:"#fff", fontFamily:"inherit", opacity:saving?0.7:1 }}>{saving ? "Guardando..." : "Guardar"}</button>
+            <button onClick={cancelEdit} disabled={saving} style={{ flex:1, padding:"10px 0", borderRadius: R.md, border:`1px solid ${C.b1}`, background:C.w, cursor:"pointer", fontSize:13.2, fontWeight:600, color:C.t2, fontFamily:"inherit" }}>Cancelar</button>
+            <button onClick={handleSave} disabled={saving} style={{ flex:1, padding:"10px 0", borderRadius: R.md, border:"none", background:C.pri, cursor:saving?"wait":"pointer", fontSize:13.2, fontWeight:700, color:"#fff", fontFamily:"inherit", opacity:saving?0.7:1 }}>{saving ? "Guardando..." : "Guardar"}</button>
           </div>
         )}
       </div>
@@ -384,7 +384,7 @@ export function UploadOverlay({ uploading, done, total, current, label }) {
         <>
           <div style={{ display: "flex", alignItems: "flex-start", marginBottom: 12 }}>
             <span style={{ fontSize: 30.8, fontWeight: 800, color: C.pri, letterSpacing: -1.5, lineHeight: 1 }}>tolvink</span>
-            <span style={{ width: 10, height: 10, borderRadius: 5, background: C.acc, marginLeft: 3, marginTop: 2, display: "inline-block", animation: "uplPulse 1.2s ease-in-out infinite" }} />
+            <span style={{ width: 10, height: 10, borderRadius: R.sm, background: C.acc, marginLeft: 3, marginTop: 2, display: "inline-block", animation: "uplPulse 1.2s ease-in-out infinite" }} />
           </div>
           {total > 1 && <div style={{ fontSize: 12.1, color: "#fff", fontWeight: 600 }}>{label || "Subiendo"} {current}/{total}...</div>}
           {total <= 1 && <div style={{ fontSize: 12.1, color: "#fff", fontWeight: 600 }}>{label || "Subiendo"}...</div>}
@@ -505,9 +505,9 @@ export function FreightFileUpload({ freightId, step, onUploaded }) {
                   <span style={{ fontSize: 8.8, color: C.t3, textAlign: "center", marginTop: 2, wordBreak: "break-all", lineHeight: 1.1 }}>{f.name?.slice(-12)}</span>
                 </div>
               )}
-              {f.done && <div style={{ position: "absolute", top: 3, right: 3, width: 18, height: 18, borderRadius: 9, background: C.ok, display: "flex", alignItems: "center", justifyContent: "center" }}>{Ic.chk("#fff", 12)}</div>}
+              {f.done && <div style={{ position: "absolute", top: 3, right: 3, width: 18, height: 18, borderRadius: R.md, background: C.ok, display: "flex", alignItems: "center", justifyContent: "center" }}>{Ic.chk("#fff", 12)}</div>}
               {f.uploading && <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center" }}><div style={{ width: 20, height: 20, border: "2px solid rgba(255,255,255,0.3)", borderTopColor: "#fff", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} /></div>}
-              {!f.done && !f.uploading && !f.error && <button onClick={() => removeFile(i)} style={{ position: "absolute", top: -2, right: -2, width: 26, height: 26, borderRadius: 13, background: C.err, border: "2px solid #fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>{Ic.cross("#fff", 11)}</button>}
+              {!f.done && !f.uploading && !f.error && <button onClick={() => removeFile(i)} style={{ position: "absolute", top: -2, right: -2, width: 26, height: 26, borderRadius: R.lg, background: C.err, border: "2px solid #fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>{Ic.cross("#fff", 11)}</button>}
               {f.error && <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: C.err, color: C.w, fontSize: 8.8, textAlign: "center", padding: 2 }}>Error</div>}
             </div>
           ))}

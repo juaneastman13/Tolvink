@@ -11,6 +11,7 @@ import MapPreviewModal from "../modals/MapPreviewModal";
 import { useCatalogStore } from "../store";
 import { loadGMaps, mkFieldIcon, mkLotIcon, mkPoiIcon } from "../maps";
 import { useIsDesktop } from "../hooks/useResponsive";
+import { useAccessLevel } from "../hooks/useAccessLevel";
 import {
   RowMenu, FieldForm, LotForm, PoiForm,
   ShareLocationModal, ReclassifyModal, ImportClassifyPanel,
@@ -59,6 +60,8 @@ export default function LocationsScreen({ onBack, user }) {
   const isDesktop = useIsDesktop(768);
   const navigate = useNavigate();
   const isManager = ["admin","gerente","platform_admin"].includes(user?.role);
+  const { isConsulta } = useAccessLevel(user);
+  const canWrite = !isConsulta;
 
   // ── Plant filter: company dropdown ──
   const [ownerFilter, setOwnerFilter] = useState(""); // "" = all, "mine" = own, uuid = specific company
@@ -666,7 +669,7 @@ export default function LocationsScreen({ onBack, user }) {
         onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = C.bgCard; }}
         onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = "transparent"; }}
       >
-        <div style={{ width: 28, height: 28, borderRadius: 7, background: `${LOC_COLORS.poi}18`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{Ic.poi(LOC_COLORS.poi, 14)}</div>
+        <div style={{ width: 28, height: 28, borderRadius: R.sm, background: `${LOC_COLORS.poi}18`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{Ic.poi(LOC_COLORS.poi, 14)}</div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 15, fontWeight: 600, color: C.t1, overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", whiteSpace: "normal" }}>{p.name}</div>
           {p.comments && <div style={{ fontSize: 11, color: C.t3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginTop: 4 }}>{p.comments}</div>}
@@ -676,9 +679,9 @@ export default function LocationsScreen({ onBack, user }) {
           <RowMenu id={p.id} items={[
             ...(hasCoords ? [{ icon: Ic.nav(C.t3, 14), label: "Ver en mapa", onClick: () => focusOnMap(id, Number(p.lat), Number(p.lng)) }] : []),
             ...(!isShared ? [{ icon: Ic.share(C.t3, 14), label: "Compartir", onClick: () => setSharingEntity({ type: "poi", entity: p }) }] : []),
-            ...(!isShared ? [{ icon: Ic.pin(C.t3, 14), label: "Reclasificar", onClick: () => setReclassifyPoi(p) }] : []),
-            ...(!isShared ? [{ icon: Ic.edit(C.t3, 14), label: "Editar", onClick: () => setEditingPoi(p) }] : []),
-            { icon: Ic.cross(C.err, 14), label: isShared ? "Quitar" : "Eliminar", onClick: () => setDeletingPoi(p.id), danger: true },
+            ...(canWrite && !isShared ? [{ icon: Ic.pin(C.t3, 14), label: "Reclasificar", onClick: () => setReclassifyPoi(p) }] : []),
+            ...(canWrite && !isShared ? [{ icon: Ic.edit(C.t3, 14), label: "Editar", onClick: () => setEditingPoi(p) }] : []),
+            ...(canWrite ? [{ icon: Ic.cross(C.err, 14), label: isShared ? "Quitar" : "Eliminar", onClick: () => setDeletingPoi(p.id), danger: true }] : []),
           ]} />
         </div>
       </div>
@@ -718,7 +721,7 @@ export default function LocationsScreen({ onBack, user }) {
           onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = C.bgCard; }}
           onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = "transparent"; }}
         >
-          <div style={{ width: 28, height: 28, borderRadius: 7, background: `${C.pri}12`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{Ic.field(C.pri, 14)}</div>
+          <div style={{ width: 28, height: 28, borderRadius: R.sm, background: `${C.pri}12`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{Ic.field(C.pri, 14)}</div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 15, fontWeight: 600, color: C.t1, overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", whiteSpace: "normal" }}>{f.name}</div>
             {f.address && <div style={{ fontSize: 11, color: C.t3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginTop: 4 }}>{f.address}</div>}
@@ -729,12 +732,12 @@ export default function LocationsScreen({ onBack, user }) {
           <span style={{ display: "inline-flex", transition: "transform 200ms", transform: isExpanded ? "rotate(0)" : "rotate(-90deg)" }}>{Ic.down(C.t3, 14)}</span>
           <div style={{ marginLeft: 4 }} onClick={e => e.stopPropagation()}>
             <RowMenu id={f.id} items={[
-              { icon: Ic.truck(C.acc, 14), label: "Solicitar flete", onClick: () => navigate(`/new?originFieldId=${f.id}`) },
+              ...(canWrite ? [{ icon: Ic.truck(C.acc, 14), label: "Solicitar flete", onClick: () => navigate(`/new?originFieldId=${f.id}`) }] : []),
               { icon: Ic.doc(C.t3, 14), label: "Ver fletes", onClick: () => navigate(`/list?search=${encodeURIComponent(f.name)}&fromLocations=1`) },
               ...(hasCoords ? [{ icon: Ic.nav(C.t3, 14), label: "Ver en mapa", onClick: () => focusOnMap(id, Number(f.lat), Number(f.lng)) }] : []),
               ...(!isShared ? [{ icon: Ic.share(C.t3, 14), label: "Compartir", onClick: () => setSharingEntity({ type: "field", entity: f }) }] : []),
-              ...(!isShared ? [{ icon: Ic.edit(C.t3, 14), label: "Editar ubicación", onClick: () => setEditField(editField === f.id ? null : f.id) }] : []),
-              { icon: Ic.cross(C.err, 14), label: isShared ? "Quitar" : "Eliminar", onClick: () => setDeletingField(f.id), danger: true },
+              ...(canWrite && !isShared ? [{ icon: Ic.edit(C.t3, 14), label: "Editar ubicación", onClick: () => setEditField(editField === f.id ? null : f.id) }] : []),
+              ...(canWrite ? [{ icon: Ic.cross(C.err, 14), label: isShared ? "Quitar" : "Eliminar", onClick: () => setDeletingField(f.id), danger: true }] : []),
             ]} />
           </div>
         </div>
@@ -780,12 +783,12 @@ export default function LocationsScreen({ onBack, user }) {
                 </div>
                 <div style={{ marginLeft: 4 }} onClick={e => e.stopPropagation()}>
                   <RowMenu id={l.id} items={[
-                    { icon: Ic.truck(C.acc, 14), label: "Solicitar flete", onClick: () => navigate(`/new?originFieldId=${f.id}&originLotId=${l.id}`) },
+                    ...(canWrite ? [{ icon: Ic.truck(C.acc, 14), label: "Solicitar flete", onClick: () => navigate(`/new?originFieldId=${f.id}&originLotId=${l.id}`) }] : []),
                     { icon: Ic.doc(C.t3, 14), label: "Ver fletes", onClick: () => navigate(`/list?search=${encodeURIComponent(l.name)}&fromLocations=1`) },
                     ...(lotHasCoords ? [{ icon: Ic.nav(C.t3, 14), label: "Ver en mapa", onClick: () => focusOnMap(lotId, Number(l.lat), Number(l.lng)) }] : []),
                     ...(!isShared ? [{ icon: Ic.share(C.t3, 14), label: "Compartir", onClick: () => setSharingEntity({ type: "lot", entity: l, fieldId: f.id }) }] : []),
-                    ...(!isShared ? [{ icon: Ic.edit(C.t3, 14), label: "Editar", onClick: () => setEditLot(editLot?.lotId === l.id ? null : { fieldId: f.id, lotId: l.id }) }] : []),
-                    { icon: Ic.cross(C.err, 14), label: "Eliminar", onClick: () => setDeletingLot({ fieldId: f.id, lotId: l.id }), danger: true },
+                    ...(canWrite && !isShared ? [{ icon: Ic.edit(C.t3, 14), label: "Editar", onClick: () => setEditLot(editLot?.lotId === l.id ? null : { fieldId: f.id, lotId: l.id }) }] : []),
+                    ...(canWrite ? [{ icon: Ic.cross(C.err, 14), label: "Eliminar", onClick: () => setDeletingLot({ fieldId: f.id, lotId: l.id }), danger: true }] : []),
                   ]} />
                 </div>
               </div>
@@ -796,7 +799,7 @@ export default function LocationsScreen({ onBack, user }) {
         {isExpanded && (
           creatingLotForField === f.id
             ? <SlideIn><LotForm mode="create" fieldId={f.id} fieldName={f.name} defaultCenter={f.lat && f.lng ? { lat: Number(f.lat), lng: Number(f.lng) } : null} saving={saving} onSave={(data) => handleCreateLot(f.id, data)} onCancel={() => setCreatingLotForField(null)} onSelectOnMap={startMapSelect} /></SlideIn>
-            : <button onClick={() => setCreatingLotForField(f.id)} style={{ display: "flex", alignItems: "center", gap: 6, padding: "10px 16px 10px 40px", width: "100%", background: "none", border: "none", borderBottom: `1px solid ${C.b2}`, cursor: "pointer", fontFamily: FONT, fontSize: 12.7, fontWeight: 600, color: C.acc }}>{Ic.plus(C.acc, 13)} Agregar lote</button>
+            : canWrite && <button onClick={() => setCreatingLotForField(f.id)} style={{ display: "flex", alignItems: "center", gap: 6, padding: "10px 16px 10px 40px", width: "100%", background: "none", border: "none", borderBottom: `1px solid ${C.b2}`, cursor: "pointer", fontFamily: FONT, fontSize: 12.7, fontWeight: 600, color: C.acc }}>{Ic.plus(C.acc, 13)} Agregar lote</button>
         )}
       </div>
     );
@@ -890,9 +893,9 @@ export default function LocationsScreen({ onBack, user }) {
               </button>
             ) : (
               <div style={{ position: "relative" }}>
-                <button onClick={() => { setAddMenuOpen(!addMenuOpen); setAddMenuSub(null); }} style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 12px", borderRadius: R.md, background: C.pri, border: "none", cursor: "pointer", fontFamily: FONT, fontSize: 12.7, fontWeight: 700, color: C.w }}>
+                {canWrite && <button onClick={() => { setAddMenuOpen(!addMenuOpen); setAddMenuSub(null); }} style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 12px", borderRadius: R.md, background: C.pri, border: "none", cursor: "pointer", fontFamily: FONT, fontSize: 12.7, fontWeight: 700, color: C.w }}>
                   {Ic.plus(C.w, 14)} Agregar
-                </button>
+                </button>}
                 {addMenuOpen && <>
                   <div onClick={() => { setAddMenuOpen(false); setAddMenuSub(null); }} style={{ position: "fixed", inset: 0, zIndex: 19 }} />
                   <div style={{ position: "absolute", top: "calc(100% + 4px)", right: 0, minWidth: 220, background: C.bgCard, border: `1px solid ${C.b1}`, borderRadius: R.md, boxShadow: C.shMd, zIndex: 20, overflow: "hidden" }}>
@@ -1089,7 +1092,7 @@ export default function LocationsScreen({ onBack, user }) {
         </>}
 
         {!isDesktop && !drawerOpen && (
-          <button onClick={onBack} style={{ position: "absolute", top: 62, left: 12, zIndex: 5, width: 44, height: 44, borderRadius: 22, background: C.w, border: `1px solid ${C.b1}`, boxShadow: C.sh, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <button onClick={onBack} style={{ position: "absolute", top: 62, left: 12, zIndex: 5, width: 44, height: 44, borderRadius: R.pill, background: C.w, border: `1px solid ${C.b1}`, boxShadow: C.sh, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
             {Ic.chev(C.pri, 20)}
           </button>
         )}
@@ -1106,10 +1109,10 @@ export default function LocationsScreen({ onBack, user }) {
               <div style={{ marginBottom: 8 }}>{Ic.poi(C.t3, 28)}</div>
               <div style={{ fontSize: 15.4, fontWeight: 700, color: C.t1, marginBottom: 4 }}>Sin ubicaciones</div>
               <div style={{ fontSize: 12.7, color: C.t3, marginBottom: 12 }}>Creá campos, lotes o importá desde Google Maps</div>
-              <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
+              {canWrite && <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
                 <Btn sm onClick={() => { if (!isDesktop) setDrawerOpen(true); setCreatingField(true); if (!sectionOpen.fields) setSectionOpen(p => ({ ...p, fields: true })); }}>Crear campo</Btn>
                 <Btn sm v="ghost" onClick={() => { if (!isDesktop) setDrawerOpen(true); setImportStep(1); }}>Importar</Btn>
-              </div>
+              </div>}
             </div>
           </div>
         )}

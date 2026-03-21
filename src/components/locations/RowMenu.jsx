@@ -31,7 +31,7 @@ export default function RowMenu({ id, items }) {
           left: pos.left,
           ...(pos.above ? { bottom: window.innerHeight - pos.top + 4 } : { top: pos.top }),
           minWidth: 180, background: C.w,
-          border: `1px solid ${C.b1}`, borderRadius: 10,
+          border: `1px solid ${C.b1}`, borderRadius: R.md,
           boxShadow: C.shMd, padding: "4px 0",
           zIndex: 9999,
           animation: "rowMenuIn 150ms ease-out",

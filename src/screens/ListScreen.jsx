@@ -327,7 +327,7 @@ export default memo(function ListScreen({ freights, loading, onNav, onRefresh, c
     const origin = originDisplay(f);
     const dest = destDisplay(f) || "Sin destino";
     return (
-      <div ref={adjustPreviewPos} style={{ position:"fixed", left:hoverPos.x, top:hoverPos.y, zIndex:9999, width:340, background:C.w, border:`1px solid ${C.b1}`, borderLeft:`5px solid ${st.color}`, borderRadius:14, boxShadow:C.shLg, padding:18, pointerEvents:"none", fontFamily:FONT, animation:"tvPreviewIn 0.15s ease-out" }}>
+      <div ref={adjustPreviewPos} style={{ position:"fixed", left:hoverPos.x, top:hoverPos.y, zIndex:9999, width:340, background:C.w, border:`1px solid ${C.b1}`, borderLeft:`5px solid ${st.color}`, borderRadius: R.lg, boxShadow:C.shLg, padding:18, pointerEvents:"none", fontFamily:FONT, animation:"tvPreviewIn 0.15s ease-out" }}>
         {/* Header: code + status */}
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:10 }}>
           <span style={{ fontFamily:MONO, fontWeight:700, fontSize:13.2, color:C.t2 }}>{f.code}</span>
@@ -359,7 +359,7 @@ export default memo(function ListScreen({ freights, loading, onNav, onRefresh, c
         {/* Transporter + truck */}
         <div style={{ display:"flex", alignItems:"center", gap:6, fontSize:12.5, color:C.t2, marginBottom:4 }}>
           {Ic.truck(C.t3, 12)} <span>{f.transporterName || "Sin asignar"}</span>
-          {f.isOwnFleet && <span style={{ fontSize:10, color:C.acc, fontWeight:700, background:C.accPale, padding:"1px 5px", borderRadius:4 }}>Flota propia</span>}
+          {f.isOwnFleet && <span style={{ fontSize:10, color:C.acc, fontWeight:700, background:C.accPale, padding:"1px 5px", borderRadius: R.xs }}>Flota propia</span>}
         </div>
         {/* Truck plate + driver */}
         {(f.truckPlate || f.driverName) && (
@@ -370,13 +370,13 @@ export default memo(function ListScreen({ freights, loading, onNav, onRefresh, c
         )}
         {/* Multi-truck info */}
         {f.isMultiTruck && (
-          <div style={{ marginTop:8, padding:"5px 8px", background:C.infoPale, borderRadius:6, fontSize:11.5, fontWeight:600, color:C.info, display:"inline-flex", alignItems:"center", gap:4 }}>
+          <div style={{ marginTop:8, padding:"5px 8px", background:C.infoPale, borderRadius: R.sm, fontSize:11.5, fontWeight:600, color:C.info, display:"inline-flex", alignItems:"center", gap:4 }}>
             {Ic.truck(C.info, 12)} {f.assignedTruckCount}/{f.truckCount} camiones asignados
           </div>
         )}
         {/* Overdue */}
         {f.isOverdue && (
-          <div style={{ marginTop:8, padding:"4px 8px", background:"#FEE2E2", borderRadius:6, fontSize:11.5, fontWeight:700, color:"#DC2626", display:"inline-flex", alignItems:"center", gap:4 }}>
+          <div style={{ marginTop:8, padding:"4px 8px", background:"#FEE2E2", borderRadius: R.sm, fontSize:11.5, fontWeight:700, color:"#DC2626", display:"inline-flex", alignItems:"center", gap:4 }}>
             {Ic.warn("#DC2626", 12)} Retrasado
           </div>
         )}
@@ -405,7 +405,7 @@ export default memo(function ListScreen({ freights, loading, onNav, onRefresh, c
     const pa = pendingMap.get(f.id);
     const waitText = !pa ? getWaitingOnText(f, effectiveTypeKanban(f)) : null;
     return wrapHover(f,
-      <div className="tv-card" onClick={()=>onNav("detail",f.id)} style={{ display:"flex", borderRadius:6, border:`0.5px solid ${pa ? pa.color + "30" : C.b1}`, overflow:"hidden", cursor:"pointer", background:C.w, transition:"border-color 0.15s", contentVisibility:"auto", containIntrinsicSize:"0 90px" }}>
+      <div className="tv-card" onClick={()=>onNav("detail",f.id)} style={{ display:"flex", borderRadius: R.sm, border:`0.5px solid ${pa ? pa.color + "30" : C.b1}`, overflow:"hidden", cursor:"pointer", background:C.w, transition:"border-color 0.15s", contentVisibility:"auto", containIntrinsicSize:"0 90px" }}>
         <div style={{ width:5, background:sc.ribbon, flexShrink:0 }} />
         <div style={{ padding:"8px 10px", flex:1, minWidth:0 }}>
           {/* Line 1: code - date */}
@@ -445,7 +445,7 @@ export default memo(function ListScreen({ freights, loading, onNav, onRefresh, c
         {/* Quick action button (plant only) */}
         {isPlantUser && onAction && pa && pa.actionKey && (
           <div style={{ display:"flex", alignItems:"center", paddingRight:6, flexShrink:0 }}>
-            <button onClick={(e)=>{e.stopPropagation();onAction(f.id, pa.actionKey, pa.assignmentId);}} title={pa.action} style={{ width:32, height:32, borderRadius:8, border:`1.5px solid ${pa.color}30`, background:`${pa.color}10`, color:pa.color, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", flexShrink:0 }}>
+            <button onClick={(e)=>{e.stopPropagation();onAction(f.id, pa.actionKey, pa.assignmentId);}} title={pa.action} style={{ width:32, height:32, borderRadius: R.md, border:`1.5px solid ${pa.color}30`, background:`${pa.color}10`, color:pa.color, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", flexShrink:0 }}>
               {pa.icon === "assign" ? Ic.truck(pa.color,15) : pa.icon === "confirm" ? Ic.chk(pa.color,15) : pa.icon === "authorize" ? Ic.chk(pa.color,15) : Ic.nav(pa.color,15)}
             </button>
           </div>
@@ -459,7 +459,7 @@ export default memo(function ListScreen({ freights, loading, onNav, onRefresh, c
     <div style={{ display:"flex", gap:6, marginBottom:10, alignItems:"center" }}>
       <span style={{ fontSize:12.1, fontWeight:600, color:C.t3, whiteSpace:"nowrap" }}>Agrupar por:</span>
       {kanbanGroupOptions.map(o => (
-        <button key={o.key} onClick={() => setKanbanGroup(o.key)} style={{ padding:"5px 10px", borderRadius:7, border:`1.5px solid ${kanbanGroup === o.key ? C.pri : C.b1}`, background: kanbanGroup === o.key ? C.priPale : C.w, color: kanbanGroup === o.key ? C.pri : C.t2, fontSize:12.1, fontWeight: kanbanGroup === o.key ? 700 : 500, cursor:"pointer", fontFamily:"inherit", whiteSpace:"nowrap" }}>{o.label}</button>
+        <button key={o.key} onClick={() => setKanbanGroup(o.key)} style={{ padding:"5px 10px", borderRadius: R.sm, border:`1.5px solid ${kanbanGroup === o.key ? C.pri : C.b1}`, background: kanbanGroup === o.key ? C.priPale : C.w, color: kanbanGroup === o.key ? C.pri : C.t2, fontSize:12.1, fontWeight: kanbanGroup === o.key ? 700 : 500, cursor:"pointer", fontFamily:"inherit", whiteSpace:"nowrap" }}>{o.label}</button>
       ))}
     </div>
   );
@@ -505,7 +505,7 @@ export default memo(function ListScreen({ freights, loading, onNav, onRefresh, c
             {f.loadDate && <span style={{ display: "flex", alignItems: "center", gap: 3 }}>{Ic.cal(C.t3, 9)} {formatFreightDate(f.loadDate)}{f.loadTime ? ` · ${f.loadTime}` : ""}</span>}
             <span style={{ fontFamily: MONO, fontWeight: 600 }}>{f.code}</span>
             <Bd color={st.color} bg={st.bg} small>{st.label}</Bd>
-            {f.isOverdue && <span style={{ display:"inline-flex", alignItems:"center", justifyContent:"center", width:16, height:16, borderRadius:4, background:"#FEE2E2", flexShrink:0, fontSize:10, fontWeight:800, color:"#DC2626", lineHeight:1 }} title="Retrasado">R</span>}
+            {f.isOverdue && <span style={{ display:"inline-flex", alignItems:"center", justifyContent:"center", width:16, height:16, borderRadius: R.xs, background:"#FEE2E2", flexShrink:0, fontSize:10, fontWeight:800, color:"#DC2626", lineHeight:1 }} title="Retrasado">R</span>}
           </div>
         </div>
       );
@@ -518,20 +518,20 @@ export default memo(function ListScreen({ freights, loading, onNav, onRefresh, c
         <div style={{ position:"relative", marginBottom:8 }}>
           <div style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",display:"flex"}}>{Ic.srch(C.t3,14)}</div>
           <input value={searchQ} onChange={e=>setSearchQ(e.target.value)} placeholder="Buscar flete..."
-            style={{width:"100%",padding:"8px 12px 8px 32px",borderRadius:10,border:`1.5px solid ${C.b1}`,background:C.w,color:C.t1,fontSize:14.3,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}/>
+            style={{width:"100%",padding:"8px 12px 8px 32px",borderRadius: R.md,border:`1.5px solid ${C.b1}`,background:C.w,color:C.t1,fontSize:14.3,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}/>
           {searchQ && <button onClick={()=>setSearchQ("")} aria-label="Limpiar busqueda" style={{position:"absolute",right:8,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",display:"flex"}}>{Ic.cross(C.t3,14)}</button>}
         </div>
         {/* Filters */}
         <div style={{ display:"flex", gap:6, marginBottom:12, flexWrap:"wrap", alignItems:"center" }}>
-          <select aria-label={simpleFilter1.label} value={simpleFilter1.value} onChange={e=>simpleFilter1.set(e.target.value)} style={{padding:"7px 10px",borderRadius:8,border:`1.5px solid ${simpleFilter1.value?C.pri:C.b1}`,background:simpleFilter1.value?C.priPale:C.w,color:simpleFilter1.value?C.pri:C.t3,fontSize:13.2,fontFamily:"inherit",outline:"none",cursor:"pointer",minWidth:0,flex:"1 1 120px",maxWidth:200}}>
+          <select aria-label={simpleFilter1.label} value={simpleFilter1.value} onChange={e=>simpleFilter1.set(e.target.value)} style={{padding:"7px 10px",borderRadius: R.md,border:`1.5px solid ${simpleFilter1.value?C.pri:C.b1}`,background:simpleFilter1.value?C.priPale:C.w,color:simpleFilter1.value?C.pri:C.t3,fontSize:13.2,fontFamily:"inherit",outline:"none",cursor:"pointer",minWidth:0,flex:"1 1 120px",maxWidth:200}}>
             <option value="">{simpleFilter1.label}</option>
             {simpleFilter1.options.map(o=><option key={o} value={o}>{o}</option>)}
           </select>
-          <select aria-label={simpleFilter2.label} value={simpleFilter2.value} onChange={e=>simpleFilter2.set(e.target.value)} style={{padding:"7px 10px",borderRadius:8,border:`1.5px solid ${simpleFilter2.value?C.pri:C.b1}`,background:simpleFilter2.value?C.priPale:C.w,color:simpleFilter2.value?C.pri:C.t3,fontSize:13.2,fontFamily:"inherit",outline:"none",cursor:"pointer",minWidth:0,flex:"1 1 120px",maxWidth:200}}>
+          <select aria-label={simpleFilter2.label} value={simpleFilter2.value} onChange={e=>simpleFilter2.set(e.target.value)} style={{padding:"7px 10px",borderRadius: R.md,border:`1.5px solid ${simpleFilter2.value?C.pri:C.b1}`,background:simpleFilter2.value?C.priPale:C.w,color:simpleFilter2.value?C.pri:C.t3,fontSize:13.2,fontFamily:"inherit",outline:"none",cursor:"pointer",minWidth:0,flex:"1 1 120px",maxWidth:200}}>
             <option value="">{simpleFilter2.label}</option>
             {simpleFilter2.options.map(o=><option key={o} value={o}>{o}</option>)}
           </select>
-          {simpleHasFilters && <button onClick={()=>{setSearchQ("");setServerData(null);simpleFilter1.set("");simpleFilter2.set("");}} style={{padding:"6px 10px",borderRadius:7,border:`1px solid ${C.err}40`,background:C.errPale,color:C.err,fontSize:12.1,fontWeight:600,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap",flexShrink:0}}>Limpiar</button>}
+          {simpleHasFilters && <button onClick={()=>{setSearchQ("");setServerData(null);simpleFilter1.set("");simpleFilter2.set("");}} style={{padding:"6px 10px",borderRadius: R.sm,border:`1px solid ${C.err}40`,background:C.errPale,color:C.err,fontSize:12.1,fontWeight:600,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap",flexShrink:0}}>Limpiar</button>}
         </div>
         {loading && freights.length === 0 && <SkeletonList count={5} />}
         {!loading && freights.length === 0 && <EmptyState icon={Ic.truck(C.t3, 28)} title="Sin fletes todavia" subtitle="Los fletes que solicites o te asignen apareceran aca" />}
@@ -570,7 +570,7 @@ export default memo(function ListScreen({ freights, loading, onNav, onRefresh, c
   return (
     <div ref={containerRef} style={{ flex:1, overflow:"auto", padding:18, WebkitOverflowScrolling:"touch" }}>
       {indicator}
-      {fromLocations && <button onClick={() => onNav("locations")} style={{ background:C.priPale, border:`1px solid ${C.pri}40`, borderRadius:8, cursor:"pointer", fontFamily:FONT, fontSize:14, fontWeight:600, color:C.pri, padding:"10px 14px", marginBottom:12, display:"flex", alignItems:"center", gap:6, width:"100%" }}>{Ic.chev(C.pri, 16)} Volver al mapa de ubicaciones</button>}
+      {fromLocations && <button onClick={() => onNav("locations")} style={{ background:C.priPale, border:`1px solid ${C.pri}40`, borderRadius: R.md, cursor:"pointer", fontFamily:FONT, fontSize:14, fontWeight:600, color:C.pri, padding:"10px 14px", marginBottom:12, display:"flex", alignItems:"center", gap:6, width:"100%" }}>{Ic.chev(C.pri, 16)} Volver al mapa de ubicaciones</button>}
       {/* Desktop: original filters layout */}
       {!fromLocations && (isDesktop ? (<>
       {/* Search bar -- line 1 */}
@@ -578,75 +578,75 @@ export default memo(function ListScreen({ freights, loading, onNav, onRefresh, c
         <div style={{ position:"relative", flex:1, minWidth:0 }}>
           <div style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",display:"flex"}}>{Ic.srch(C.t3,14)}</div>
           <input value={searchQ} onChange={e=>setSearchQ(e.target.value)} placeholder="Buscar flete..."
-            style={{width:"100%",padding:"8px 12px 8px 32px",borderRadius:8,border:`1.5px solid ${C.b1}`,background:C.w,color:C.t1,fontSize:13.2,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}/>
+            style={{width:"100%",padding:"8px 12px 8px 32px",borderRadius: R.md,border:`1.5px solid ${C.b1}`,background:C.w,color:C.t1,fontSize:13.2,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}/>
           {searchQ && <button onClick={()=>setSearchQ("")} aria-label="Limpiar busqueda" style={{position:"absolute",right:8,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",display:"flex"}}>{Ic.cross(C.t3,14)}</button>}
         </div>
-        {hasFilters && <button onClick={clearAll} style={{padding:"6px 10px",borderRadius:6,border:`1px solid ${C.err}40`,background:C.errPale,color:C.err,fontSize:12.1,fontWeight:600,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap",flexShrink:0}}>Limpiar</button>}
+        {hasFilters && <button onClick={clearAll} style={{padding:"6px 10px",borderRadius: R.sm,border:`1px solid ${C.err}40`,background:C.errPale,color:C.err,fontSize:12.1,fontWeight:600,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap",flexShrink:0}}>Limpiar</button>}
       </div>
       {/* Entity filters + date toggle -- line 2 */}
       <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:dateFilterOpen?6:12 }}>
-        <button onClick={()=>setFilterRequiresAction(p=>!p)} style={{padding:"6px 10px",borderRadius:8,border:`1.5px solid ${filterRequiresAction?C.acc:C.b1}`,background:filterRequiresAction?`${C.acc}15`:C.w,color:filterRequiresAction?C.acc:C.t2,fontSize:12.1,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:5,whiteSpace:"nowrap"}}>
+        <button onClick={()=>setFilterRequiresAction(p=>!p)} style={{padding:"6px 10px",borderRadius: R.md,border:`1.5px solid ${filterRequiresAction?C.acc:C.b1}`,background:filterRequiresAction?`${C.acc}15`:C.w,color:filterRequiresAction?C.acc:C.t2,fontSize:12.1,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:5,whiteSpace:"nowrap"}}>
           {filterRequiresAction ? Ic.chk(C.acc,12) : Ic.warn(C.t3,12)} Mi acción
         </button>
-        <button onClick={()=>setDateFilterOpen(p=>!p)} style={{padding:"6px 10px",borderRadius:8,border:`1.5px solid ${(dateFrom||dateTo)?C.pri:C.b1}`,background:(dateFrom||dateTo)?C.priPale:C.w,color:(dateFrom||dateTo)?C.pri:C.t2,fontSize:12.1,fontWeight:600,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:5,whiteSpace:"nowrap"}}>
+        <button onClick={()=>setDateFilterOpen(p=>!p)} style={{padding:"6px 10px",borderRadius: R.md,border:`1.5px solid ${(dateFrom||dateTo)?C.pri:C.b1}`,background:(dateFrom||dateTo)?C.priPale:C.w,color:(dateFrom||dateTo)?C.pri:C.t2,fontSize:12.1,fontWeight:600,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:5,whiteSpace:"nowrap"}}>
           {Ic.cal((dateFrom||dateTo)?C.pri:C.t3,13)} {dateFilterOpen?"Ocultar fechas":"Filtrar por fecha"}{(dateFrom||dateTo)?" (activo)":""}
         </button>
-        <select value={fPlant} onChange={e=>setFPlant(e.target.value)} style={{padding:"6px 8px",borderRadius:8,border:`1.5px solid ${fPlant?C.pri:C.b1}`,background:fPlant?C.priPale:C.w,color:fPlant?C.pri:C.t3,fontSize:12.1,fontFamily:"inherit",outline:"none",cursor:"pointer"}}>
+        <select value={fPlant} onChange={e=>setFPlant(e.target.value)} style={{padding:"6px 8px",borderRadius: R.md,border:`1.5px solid ${fPlant?C.pri:C.b1}`,background:fPlant?C.priPale:C.w,color:fPlant?C.pri:C.t3,fontSize:12.1,fontFamily:"inherit",outline:"none",cursor:"pointer"}}>
           <option value="">Planta</option>
           {plantOptions.map(p=><option key={p} value={p}>{p}</option>)}
         </select>
-        <select value={fProducer} onChange={e=>setFProducer(e.target.value)} style={{padding:"6px 8px",borderRadius:8,border:`1.5px solid ${fProducer?C.pri:C.b1}`,background:fProducer?C.priPale:C.w,color:fProducer?C.pri:C.t3,fontSize:12.1,fontFamily:"inherit",outline:"none",cursor:"pointer"}}>
+        <select value={fProducer} onChange={e=>setFProducer(e.target.value)} style={{padding:"6px 8px",borderRadius: R.md,border:`1.5px solid ${fProducer?C.pri:C.b1}`,background:fProducer?C.priPale:C.w,color:fProducer?C.pri:C.t3,fontSize:12.1,fontFamily:"inherit",outline:"none",cursor:"pointer"}}>
           <option value="">{secondFilterLabel}</option>
           {secondFilterOptions.map(p=><option key={p} value={p}>{p}</option>)}
         </select>
-        <select value={fTransporter} onChange={e=>setFTransporter(e.target.value)} style={{padding:"6px 8px",borderRadius:8,border:`1.5px solid ${fTransporter?C.pri:C.b1}`,background:fTransporter?C.priPale:C.w,color:fTransporter?C.pri:C.t3,fontSize:12.1,fontFamily:"inherit",outline:"none",cursor:"pointer"}}>
+        <select value={fTransporter} onChange={e=>setFTransporter(e.target.value)} style={{padding:"6px 8px",borderRadius: R.md,border:`1.5px solid ${fTransporter?C.pri:C.b1}`,background:fTransporter?C.priPale:C.w,color:fTransporter?C.pri:C.t3,fontSize:12.1,fontFamily:"inherit",outline:"none",cursor:"pointer"}}>
           <option value="">Transportista</option>
           {transporterOptions.map(p=><option key={p} value={p}>{p}</option>)}
         </select>
         {isPlantUser && producerCompanyOptions.length > 0 && (
-          <select value={fProducerCompany} onChange={e=>setFProducerCompany(e.target.value)} style={{padding:"6px 8px",borderRadius:8,border:`1.5px solid ${fProducerCompany?C.pri:C.b1}`,background:fProducerCompany?C.priPale:C.w,color:fProducerCompany?C.pri:C.t3,fontSize:12.1,fontFamily:"inherit",outline:"none",cursor:"pointer"}}>
+          <select value={fProducerCompany} onChange={e=>setFProducerCompany(e.target.value)} style={{padding:"6px 8px",borderRadius: R.md,border:`1.5px solid ${fProducerCompany?C.pri:C.b1}`,background:fProducerCompany?C.priPale:C.w,color:fProducerCompany?C.pri:C.t3,fontSize:12.1,fontFamily:"inherit",outline:"none",cursor:"pointer"}}>
             <option value="">Productor</option>
             {producerCompanyOptions.map(p=><option key={p} value={p}>{p}</option>)}
           </select>
         )}
         <div style={{marginLeft:"auto",display:"flex",gap:4}}>
           {[{k:"kanban",l:"Estados",ic:Ic.home},{k:"seguimiento",l:"Seguimiento",ic:Ic.user},{k:"tabla",l:"Tabla",ic:Ic.doc},{k:"mapa",l:"Mapa",ic:Ic.pin}].map(v=>(
-            <button key={v.k} onClick={()=>setView(v.k)} style={{padding:"5px 10px",borderRadius:8,border:`1.5px solid ${view===v.k?C.pri:C.b1}`,background:view===v.k?C.priPale:C.w,color:view===v.k?C.pri:C.t2,fontSize:12.1,fontWeight:view===v.k?700:500,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:4,whiteSpace:"nowrap"}}>
+            <button key={v.k} onClick={()=>setView(v.k)} style={{padding:"5px 10px",borderRadius: R.md,border:`1.5px solid ${view===v.k?C.pri:C.b1}`,background:view===v.k?C.priPale:C.w,color:view===v.k?C.pri:C.t2,fontSize:12.1,fontWeight:view===v.k?700:500,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:4,whiteSpace:"nowrap"}}>
               {v.ic(view===v.k?C.pri:C.t3,12)} {v.l}
             </button>
           ))}
         </div>
       </div>
       {/* Collapsible date filters */}
-      {dateFilterOpen && <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:12, padding:"8px 12px", background:C.bg, borderRadius:10, border:`1px solid ${C.b1}` }}>
+      {dateFilterOpen && <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:12, padding:"8px 12px", background:C.bg, borderRadius: R.md, border:`1px solid ${C.b1}` }}>
         <span style={{fontSize:11,color:C.t2,fontWeight:600}}>Desde</span>
-        <input type="date" value={dateFrom} onChange={e=>{setDateFrom(e.target.value);setDatePreset("custom");}} onClick={e=>e.target.showPicker?.()} style={{padding:"5px 8px",borderRadius:6,border:`1px solid ${C.b1}`,background:C.w,color:dateFrom?C.t1:C.t3,fontSize:12.1,fontFamily:"inherit",outline:"none",boxSizing:"border-box",cursor:"pointer"}}/>
+        <input type="date" value={dateFrom} onChange={e=>{setDateFrom(e.target.value);setDatePreset("custom");}} onClick={e=>e.target.showPicker?.()} style={{padding:"5px 8px",borderRadius: R.sm,border:`1px solid ${C.b1}`,background:C.w,color:dateFrom?C.t1:C.t3,fontSize:12.1,fontFamily:"inherit",outline:"none",boxSizing:"border-box",cursor:"pointer"}}/>
         <span style={{fontSize:11,color:C.t2,fontWeight:600}}>Hasta</span>
-        <input type="date" value={dateTo} onChange={e=>{setDateTo(e.target.value);setDatePreset("custom");}} onClick={e=>e.target.showPicker?.()} style={{padding:"5px 8px",borderRadius:6,border:`1px solid ${C.b1}`,background:C.w,color:dateTo?C.t1:C.t3,fontSize:12.1,fontFamily:"inherit",outline:"none",boxSizing:"border-box",cursor:"pointer"}}/>
+        <input type="date" value={dateTo} onChange={e=>{setDateTo(e.target.value);setDatePreset("custom");}} onClick={e=>e.target.showPicker?.()} style={{padding:"5px 8px",borderRadius: R.sm,border:`1px solid ${C.b1}`,background:C.w,color:dateTo?C.t1:C.t3,fontSize:12.1,fontFamily:"inherit",outline:"none",boxSizing:"border-box",cursor:"pointer"}}/>
         {(dateFrom||dateTo)&&<button onClick={()=>{setDateFrom("");setDateTo("");setDatePreset("");}} aria-label="Limpiar fechas" style={{background:"none",border:"none",cursor:"pointer",display:"flex",padding:2}}>{Ic.cross(C.t3,14)}</button>}
         {[{k:"today",l:"Hoy"},{k:"week",l:"Semana"},{k:"month",l:"Mes"}].map(p=>(
-          <button key={p.k} onClick={()=>applyDatePreset(p.k)} style={{padding:"5px 10px",borderRadius:6,border:`1px solid ${datePreset===p.k?C.pri:C.b1}`,background:datePreset===p.k?C.priPale:C.w,color:datePreset===p.k?C.pri:C.t2,fontSize:12.1,fontWeight:600,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>{p.l}</button>
+          <button key={p.k} onClick={()=>applyDatePreset(p.k)} style={{padding:"5px 10px",borderRadius: R.sm,border:`1px solid ${datePreset===p.k?C.pri:C.b1}`,background:datePreset===p.k?C.priPale:C.w,color:datePreset===p.k?C.pri:C.t2,fontSize:12.1,fontWeight:600,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>{p.l}</button>
         ))}
       </div>}
       </>) : (<>
       {/* Mobile: collapsible filters layout */}
       {/* Toggle button */}
       <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
-        <button onClick={()=>setFiltersOpen(p=>!p)} style={{padding:"8px 14px",borderRadius:8,border:`1.5px solid ${hasFilters?C.pri:C.b1}`,background:hasFilters?C.priPale:C.w,color:hasFilters?C.pri:C.t2,fontSize:13.2,fontWeight:600,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:5,minHeight:44}}>
+        <button onClick={()=>setFiltersOpen(p=>!p)} style={{padding:"8px 14px",borderRadius: R.md,border:`1.5px solid ${hasFilters?C.pri:C.b1}`,background:hasFilters?C.priPale:C.w,color:hasFilters?C.pri:C.t2,fontSize:13.2,fontWeight:600,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:5,minHeight:44}}>
           {Ic.srch(hasFilters?C.pri:C.t3,12)} {filtersOpen?"Ocultar filtros":"Ver filtros"}{hasFilters?" (activos)":""}
         </button>
-        {hasFilters && <button onClick={clearAll} style={{padding:"8px 12px",borderRadius:6,border:`1px solid ${C.err}40`,background:C.errPale,color:C.err,fontSize:13.2,fontWeight:600,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap",flexShrink:0,minHeight:44}}>Limpiar</button>}
+        {hasFilters && <button onClick={clearAll} style={{padding:"8px 12px",borderRadius: R.sm,border:`1px solid ${C.err}40`,background:C.errPale,color:C.err,fontSize:13.2,fontWeight:600,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap",flexShrink:0,minHeight:44}}>Limpiar</button>}
       </div>
       {/* "Requiere mi acción" chip (mobile) */}
       <div style={{ display:"flex", gap:6, marginBottom:8 }}>
-        <button onClick={()=>setFilterRequiresAction(p=>!p)} style={{padding:"7px 12px",borderRadius:8,border:`1.5px solid ${filterRequiresAction?C.acc:C.b1}`,background:filterRequiresAction?`${C.acc}15`:C.w,color:filterRequiresAction?C.acc:C.t2,fontSize:13.2,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:5,whiteSpace:"nowrap",minHeight:36}}>
+        <button onClick={()=>setFilterRequiresAction(p=>!p)} style={{padding:"7px 12px",borderRadius: R.md,border:`1.5px solid ${filterRequiresAction?C.acc:C.b1}`,background:filterRequiresAction?`${C.acc}15`:C.w,color:filterRequiresAction?C.acc:C.t2,fontSize:13.2,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:5,whiteSpace:"nowrap",minHeight:36}}>
           {filterRequiresAction ? Ic.chk(C.acc,12) : Ic.warn(C.t3,12)} Mi acción
         </button>
       </div>
       {/* View mode buttons */}
       <div style={{ display:"flex", gap:4, marginBottom:10, overflowX:"auto", WebkitOverflowScrolling:"touch", paddingBottom:2 }}>
         {[{k:"kanban",l:"Estados",ic:Ic.home},{k:"seguimiento",l:"Transportistas",ic:Ic.user},{k:"mapa",l:"Mapa",ic:Ic.pin}].map(v=>(
-          <button key={v.k} onClick={()=>setView(v.k)} style={{padding:"8px 10px",borderRadius:7,border:`1.5px solid ${view===v.k?C.pri:C.b1}`,background:view===v.k?C.priPale:C.w,color:view===v.k?C.pri:C.t2,fontSize:12.1,fontWeight:view===v.k?700:500,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:3,whiteSpace:"nowrap",minHeight:36,flexShrink:0}}>
+          <button key={v.k} onClick={()=>setView(v.k)} style={{padding:"8px 10px",borderRadius: R.sm,border:`1.5px solid ${view===v.k?C.pri:C.b1}`,background:view===v.k?C.priPale:C.w,color:view===v.k?C.pri:C.t2,fontSize:12.1,fontWeight:view===v.k?700:500,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:3,whiteSpace:"nowrap",minHeight:36,flexShrink:0}}>
             {v.ic(view===v.k?C.pri:C.t3,11)} {v.l}
           </button>
         ))}
@@ -656,33 +656,33 @@ export default memo(function ListScreen({ freights, loading, onNav, onRefresh, c
       <div style={{ position:"relative", marginBottom:6 }}>
         <div style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",display:"flex"}}>{Ic.srch(C.t3,14)}</div>
         <input value={searchQ} onChange={e=>setSearchQ(e.target.value)} placeholder="Buscar..."
-          style={{width:"100%",padding:"7px 12px 7px 30px",borderRadius:8,border:`1.5px solid ${C.b1}`,background:C.w,color:C.t1,fontSize:13.2,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}/>
+          style={{width:"100%",padding:"7px 12px 7px 30px",borderRadius: R.md,border:`1.5px solid ${C.b1}`,background:C.w,color:C.t1,fontSize:13.2,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}/>
         {searchQ && <button onClick={()=>setSearchQ("")} aria-label="Limpiar busqueda" style={{position:"absolute",right:8,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",display:"flex"}}>{Ic.cross(C.t3,12)}</button>}
       </div>
       <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:6 }}>
         <span style={{fontSize:11,color:C.t2,fontWeight:600}}>Desde</span>
-        <input type="date" value={dateFrom} onChange={e=>{setDateFrom(e.target.value);setDatePreset("custom");}} onClick={e=>e.target.showPicker?.()} style={{padding:"5px 8px",borderRadius:6,border:`1px solid ${C.b1}`,background:C.w,color:dateFrom?C.t1:C.t3,fontSize:12.1,fontFamily:"inherit",outline:"none",boxSizing:"border-box",cursor:"pointer",flex:1,minWidth:0}}/>
+        <input type="date" value={dateFrom} onChange={e=>{setDateFrom(e.target.value);setDatePreset("custom");}} onClick={e=>e.target.showPicker?.()} style={{padding:"5px 8px",borderRadius: R.sm,border:`1px solid ${C.b1}`,background:C.w,color:dateFrom?C.t1:C.t3,fontSize:12.1,fontFamily:"inherit",outline:"none",boxSizing:"border-box",cursor:"pointer",flex:1,minWidth:0}}/>
         <span style={{fontSize:11,color:C.t2,fontWeight:600}}>Hasta</span>
-        <input type="date" value={dateTo} onChange={e=>{setDateTo(e.target.value);setDatePreset("custom");}} onClick={e=>e.target.showPicker?.()} style={{padding:"5px 8px",borderRadius:6,border:`1px solid ${C.b1}`,background:C.w,color:dateTo?C.t1:C.t3,fontSize:12.1,fontFamily:"inherit",outline:"none",boxSizing:"border-box",cursor:"pointer",flex:1,minWidth:0}}/>
+        <input type="date" value={dateTo} onChange={e=>{setDateTo(e.target.value);setDatePreset("custom");}} onClick={e=>e.target.showPicker?.()} style={{padding:"5px 8px",borderRadius: R.sm,border:`1px solid ${C.b1}`,background:C.w,color:dateTo?C.t1:C.t3,fontSize:12.1,fontFamily:"inherit",outline:"none",boxSizing:"border-box",cursor:"pointer",flex:1,minWidth:0}}/>
         {(dateFrom||dateTo)&&<button onClick={()=>{setDateFrom("");setDateTo("");setDatePreset("");}} aria-label="Limpiar fechas" style={{background:"none",border:"none",cursor:"pointer",display:"flex",padding:2,flexShrink:0}}>{Ic.cross(C.t3,14)}</button>}
       </div>
       <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:6 }}>
-        <select aria-label="Planta" value={fPlant} onChange={e=>setFPlant(e.target.value)} style={{flex:1,padding:"6px 8px",borderRadius:8,border:`1.5px solid ${fPlant?C.pri:C.b1}`,background:fPlant?C.priPale:C.w,color:fPlant?C.pri:C.t3,fontSize:12.1,fontFamily:"inherit",outline:"none",cursor:"pointer",minWidth:0}}>
+        <select aria-label="Planta" value={fPlant} onChange={e=>setFPlant(e.target.value)} style={{flex:1,padding:"6px 8px",borderRadius: R.md,border:`1.5px solid ${fPlant?C.pri:C.b1}`,background:fPlant?C.priPale:C.w,color:fPlant?C.pri:C.t3,fontSize:12.1,fontFamily:"inherit",outline:"none",cursor:"pointer",minWidth:0}}>
           <option value="">Planta</option>
           {plantOptions.map(p=><option key={p} value={p}>{p}</option>)}
         </select>
-        <select aria-label={secondFilterLabel} value={fProducer} onChange={e=>setFProducer(e.target.value)} style={{flex:1,padding:"6px 8px",borderRadius:8,border:`1.5px solid ${fProducer?C.pri:C.b1}`,background:fProducer?C.priPale:C.w,color:fProducer?C.pri:C.t3,fontSize:12.1,fontFamily:"inherit",outline:"none",cursor:"pointer",minWidth:0}}>
+        <select aria-label={secondFilterLabel} value={fProducer} onChange={e=>setFProducer(e.target.value)} style={{flex:1,padding:"6px 8px",borderRadius: R.md,border:`1.5px solid ${fProducer?C.pri:C.b1}`,background:fProducer?C.priPale:C.w,color:fProducer?C.pri:C.t3,fontSize:12.1,fontFamily:"inherit",outline:"none",cursor:"pointer",minWidth:0}}>
           <option value="">{secondFilterLabel}</option>
           {secondFilterOptions.map(p=><option key={p} value={p}>{p}</option>)}
         </select>
       </div>
       <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:12 }}>
-        <select aria-label="Transportista" value={fTransporter} onChange={e=>setFTransporter(e.target.value)} style={{flex:1,padding:"6px 8px",borderRadius:8,border:`1.5px solid ${fTransporter?C.pri:C.b1}`,background:fTransporter?C.priPale:C.w,color:fTransporter?C.pri:C.t3,fontSize:12.1,fontFamily:"inherit",outline:"none",cursor:"pointer",minWidth:0}}>
+        <select aria-label="Transportista" value={fTransporter} onChange={e=>setFTransporter(e.target.value)} style={{flex:1,padding:"6px 8px",borderRadius: R.md,border:`1.5px solid ${fTransporter?C.pri:C.b1}`,background:fTransporter?C.priPale:C.w,color:fTransporter?C.pri:C.t3,fontSize:12.1,fontFamily:"inherit",outline:"none",cursor:"pointer",minWidth:0}}>
           <option value="">Transportista</option>
           {transporterOptions.map(p=><option key={p} value={p}>{p}</option>)}
         </select>
         {isPlantUser && producerCompanyOptions.length > 0 && (
-          <select aria-label="Productor" value={fProducerCompany} onChange={e=>setFProducerCompany(e.target.value)} style={{flex:1,padding:"6px 8px",borderRadius:8,border:`1.5px solid ${fProducerCompany?C.pri:C.b1}`,background:fProducerCompany?C.priPale:C.w,color:fProducerCompany?C.pri:C.t3,fontSize:12.1,fontFamily:"inherit",outline:"none",cursor:"pointer",minWidth:0}}>
+          <select aria-label="Productor" value={fProducerCompany} onChange={e=>setFProducerCompany(e.target.value)} style={{flex:1,padding:"6px 8px",borderRadius: R.md,border:`1.5px solid ${fProducerCompany?C.pri:C.b1}`,background:fProducerCompany?C.priPale:C.w,color:fProducerCompany?C.pri:C.t3,fontSize:12.1,fontFamily:"inherit",outline:"none",cursor:"pointer",minWidth:0}}>
             <option value="">Productor</option>
             {producerCompanyOptions.map(p=><option key={p} value={p}>{p}</option>)}
           </select>
@@ -711,7 +711,7 @@ export default memo(function ListScreen({ freights, loading, onNav, onRefresh, c
           {GROUPS.map(group => {
             const items = grouped[group.key];
             return (
-              <div key={group.key} style={{ minWidth:200, flex:"1 1 0", background:C.bg, borderRadius:12, border:`1px solid ${C.b1}`, overflow:"hidden", borderTop:`4px solid ${group.color}` }}>
+              <div key={group.key} style={{ minWidth:200, flex:"1 1 0", background:C.bg, borderRadius: R.lg, border:`1px solid ${C.b1}`, overflow:"hidden", borderTop:`4px solid ${group.color}` }}>
                 <div style={{ padding:"10px 12px", display:"flex", alignItems:"center", gap:6 }}>
                   <span style={{ display:"flex", flexShrink:0 }}>{group.icon(group.color, 14)}</span>
                   <span style={{ fontSize:12.1, fontWeight:700, color:group.color }}>{group.label}</span>
@@ -752,7 +752,7 @@ export default memo(function ListScreen({ freights, loading, onNav, onRefresh, c
         isDesktop ? (
         <div style={{ display:"flex", gap:12, overflowX:"auto", alignItems:"flex-start", paddingBottom:8 }}>
           {entityGrouped.map(col => (
-            <div key={col.name} style={{ minWidth:220, flex:"1 1 0", background:C.bg, borderRadius:12, border:`1px solid ${C.b1}`, overflow:"hidden" }}>
+            <div key={col.name} style={{ minWidth:220, flex:"1 1 0", background:C.bg, borderRadius: R.lg, border:`1px solid ${C.b1}`, overflow:"hidden" }}>
               <div style={{ padding:"10px 12px", borderBottom:`2px solid ${col.isFallback ? C.t3 : C.pri}`, display:"flex", alignItems:"center", gap:6 }}>
                 <span style={{ fontSize:12.1, fontWeight:700, color: col.isFallback ? C.t3 : C.t1 }}>{col.name}</span>
                 <span style={{ fontSize:11, fontWeight:600, color:C.t3, marginLeft:"auto" }}>{col.items.length}</span>
@@ -792,15 +792,15 @@ export default memo(function ListScreen({ freights, loading, onNav, onRefresh, c
 
       {/* View: Tabla */}
       {view==="tabla" && (
-        <div style={{ background:C.w, border:`1px solid ${C.b1}`, borderRadius:12, overflow:"hidden", boxShadow:"0 1px 4px rgba(0,0,0,0.06)" }}>
+        <div style={{ background:C.w, border:`1px solid ${C.b1}`, borderRadius: R.lg, overflow:"hidden", boxShadow:"0 1px 4px rgba(0,0,0,0.06)" }}>
           <div style={{ display:"flex", alignItems:"center", gap:6, padding:"10px 12px", flexWrap:"wrap" }}>
             {/* Status filter pills */}
             {[{k:"all",label:"Todos",color:C.t2},...GROUPS.map(g=>({k:g.key,label:g.label,color:g.color}))].map(s => (
-              <button key={s.k} onClick={() => setTableStatusFilter(s.k)} style={{ padding:"4px 10px", borderRadius:6, border:`1px solid ${tableStatusFilter === s.k ? s.color : C.b1}`, background: tableStatusFilter === s.k ? `${s.color}15` : "transparent", color: tableStatusFilter === s.k ? s.color : C.t3, fontSize:11, fontWeight: tableStatusFilter === s.k ? 700 : 500, cursor:"pointer", fontFamily:"inherit", whiteSpace:"nowrap" }}>{s.label}</button>
+              <button key={s.k} onClick={() => setTableStatusFilter(s.k)} style={{ padding:"4px 10px", borderRadius: R.sm, border:`1px solid ${tableStatusFilter === s.k ? s.color : C.b1}`, background: tableStatusFilter === s.k ? `${s.color}15` : "transparent", color: tableStatusFilter === s.k ? s.color : C.t3, fontSize:11, fontWeight: tableStatusFilter === s.k ? 700 : 500, cursor:"pointer", fontFamily:"inherit", whiteSpace:"nowrap" }}>{s.label}</button>
             ))}
             <div style={{ marginLeft:"auto", display:"flex", gap:6 }}>
-              <button onClick={()=>exportCSV(tableFiltered,"tolvink-fletes.csv")} style={{padding:"5px 12px",borderRadius:8,border:`1.5px solid ${C.t3}`,background:C.bg,color:C.t2,fontSize:12.1,fontWeight:600,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:5}}>{Ic.doc(C.t3,13)} CSV</button>
-              <button onClick={()=>exportExcel(tableFiltered,"tolvink-fletes.xls")} style={{padding:"5px 12px",borderRadius:8,border:`1.5px solid ${C.pri}`,background:C.okPale,color:C.pri,fontSize:12.1,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:5}}>{Ic.doc(C.pri,13)} Excel</button>
+              <button onClick={()=>exportCSV(tableFiltered,"tolvink-fletes.csv")} style={{padding:"5px 12px",borderRadius: R.md,border:`1.5px solid ${C.t3}`,background:C.bg,color:C.t2,fontSize:12.1,fontWeight:600,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:5}}>{Ic.doc(C.t3,13)} CSV</button>
+              <button onClick={()=>exportExcel(tableFiltered,"tolvink-fletes.xls")} style={{padding:"5px 12px",borderRadius: R.md,border:`1.5px solid ${C.pri}`,background:C.okPale,color:C.pri,fontSize:12.1,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:5}}>{Ic.doc(C.pri,13)} Excel</button>
             </div>
           </div>
           <div style={{ overflowX:"auto" }}>
@@ -847,7 +847,7 @@ export default memo(function ListScreen({ freights, loading, onNav, onRefresh, c
                       <td style={{ padding:"10px 12px", color:C.t2, whiteSpace:"nowrap" }}>{f.driverPhone||"\u2014"}</td>
                       <td style={{ padding:"8px 12px", whiteSpace:"nowrap" }}>
                         {tpa && tpa.actionKey && onAction ? (
-                          <button onClick={(e)=>{e.stopPropagation();onAction(f.id, tpa.actionKey, tpa.assignmentId);}} style={{padding:"4px 10px",borderRadius:6,border:`1px solid ${tpa.color}40`,background:`${tpa.color}10`,color:tpa.color,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>{tpa.action}</button>
+                          <button onClick={(e)=>{e.stopPropagation();onAction(f.id, tpa.actionKey, tpa.assignmentId);}} style={{padding:"4px 10px",borderRadius: R.sm,border:`1px solid ${tpa.color}40`,background:`${tpa.color}10`,color:tpa.color,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>{tpa.action}</button>
                         ) : tpa ? (
                           <span style={{ fontSize:11, color:tpa.color, fontWeight:600 }}>{tpa.action}</span>
                         ) : (
@@ -874,7 +874,7 @@ export default memo(function ListScreen({ freights, loading, onNav, onRefresh, c
             const groupIcon = entityCfg?.icon === "plant" ? Ic.plant : entityCfg?.icon === "user" ? Ic.user : Ic.truck;
             const isCollapsed = !segExpanded[g.name];
             return (
-              <div key={g.name} style={{ background:C.w, border:`1px solid ${C.b1}`, borderRadius:14, overflow:"hidden", boxShadow:C.sh }}>
+              <div key={g.name} style={{ background:C.w, border:`1px solid ${C.b1}`, borderRadius: R.lg, overflow:"hidden", boxShadow:C.sh }}>
                 <div onClick={() => setSegExpanded(p => ({...p, [g.name]: !p[g.name]}))} style={{ padding:"12px 16px", borderBottom:isCollapsed?"none":`2px solid ${groupColor}`, display:"flex", alignItems:"center", gap:8, background:`${groupColor}08`, cursor:"pointer", userSelect:"none" }}>
                   {g.isFallback ? Ic.warn(C.t3,16) : groupIcon(groupColor,16)}
                   <span style={{ fontSize:14.3, fontWeight:700, color:g.isFallback ? C.t2 : groupColor }}>{g.name}</span>
@@ -885,12 +885,12 @@ export default memo(function ListScreen({ freights, loading, onNav, onRefresh, c
                   {g.items.map(f => {
                     const st = stCfg(f.status);
                     return (
-                      <div key={f.id} onClick={() => onNav("detail",f.id)} onMouseEnter={(e)=>handleCardMouseEnter(f,e)} onMouseLeave={handleCardMouseLeave} style={{ display:"flex", alignItems:"center", gap:10, padding:"8px 12px", borderRadius:10, border:`1px solid ${C.b1}`, borderLeft:`3px solid ${st.color}`, background:C.bg, cursor:"pointer", transition:"background 0.15s" }}>
+                      <div key={f.id} onClick={() => onNav("detail",f.id)} onMouseEnter={(e)=>handleCardMouseEnter(f,e)} onMouseLeave={handleCardMouseLeave} style={{ display:"flex", alignItems:"center", gap:10, padding:"8px 12px", borderRadius: R.md, border:`1px solid ${C.b1}`, borderLeft:`3px solid ${st.color}`, background:C.bg, cursor:"pointer", transition:"background 0.15s" }}>
                         <div style={{ flex:1, minWidth:0 }}>
                           <div style={{ display:"flex", alignItems:"center", gap:6 }}>
                             <span style={{ fontSize:12.1, fontWeight:700, fontFamily:MONO, color:C.t2 }}>{f.code}</span>
                             <Bd color={st.color} bg={st.bg} small>{st.label}</Bd>
-                            {f.isOverdue && <span style={{ display:"inline-flex", alignItems:"center", justifyContent:"center", width:16, height:16, borderRadius:4, background:"#FEE2E2", flexShrink:0, fontSize:10, fontWeight:800, color:"#DC2626", lineHeight:1 }} title="Retrasado">R</span>}
+                            {f.isOverdue && <span style={{ display:"inline-flex", alignItems:"center", justifyContent:"center", width:16, height:16, borderRadius: R.xs, background:"#FEE2E2", flexShrink:0, fontSize:10, fontWeight:800, color:"#DC2626", lineHeight:1 }} title="Retrasado">R</span>}
                           </div>
                           <div style={{ fontSize:13.2, fontWeight:600, color:C.t1, marginTop:2 }}>{f.grain==="Otros"?f.productTypeOther||"Otros":f.grain} · {f.tons} {f.unit||"tn"}</div>
                           {f.loadDate && <div style={{ fontSize:12.1, color:C.t3, fontWeight:500, marginTop:2 }}>{Ic.cal(C.t3,9)} {formatFreightDate(f.loadDate)}{f.loadTime?` · ${f.loadTime}`:""}</div>}
@@ -914,7 +914,7 @@ export default memo(function ListScreen({ freights, loading, onNav, onRefresh, c
             const totalFreights = driverList.reduce((s,d)=>s+d.freights.length,0) + t.noDriver.length;
             const isCollapsed = !segExpanded[t.id];
             return (
-              <div key={t.id} style={{ background:C.w, border:`1px solid ${C.b1}`, borderRadius:14, overflow:"hidden", boxShadow:C.sh }}>
+              <div key={t.id} style={{ background:C.w, border:`1px solid ${C.b1}`, borderRadius: R.lg, overflow:"hidden", boxShadow:C.sh }}>
                 {/* Transporter header -- clickable to collapse */}
                 <div onClick={()=>setSegExpanded(p=>({...p,[t.id]:!p[t.id]}))} style={{ padding:"12px 16px", borderBottom:isCollapsed?"none":`2px solid ${C.info}`, display:"flex", alignItems:"center", gap:8, background:`${C.info}08`, cursor:"pointer", userSelect:"none" }}>
                   {Ic.truck(C.info,16)}
@@ -931,21 +931,21 @@ export default memo(function ListScreen({ freights, loading, onNav, onRefresh, c
                         {Ic.user(C.pri,14)}
                         <span style={{ fontSize:13.2, fontWeight:700, color:C.t1 }}>{d.name}</span>
                         {d.phone && <span style={{ fontSize:11.6, color:C.t3 }}>{d.phone}</span>}
-                        <span style={{ fontSize:11, fontWeight:600, color:C.info, background:`${C.info}12`, padding:"2px 8px", borderRadius:6 }}>{d.freights.length} en cola</span>
-                        {onAction && d.id && <button onClick={()=>onAction(d.freights[0]?.id,"driver_queue")} style={{ marginLeft:"auto", fontSize:11, fontWeight:700, color:C.info, background:`${C.info}12`, border:`1px solid ${C.info}30`, borderRadius:6, padding:"8px 12px", cursor:"pointer", fontFamily:"inherit", minHeight:36 }}>Ver cola</button>}
+                        <span style={{ fontSize:11, fontWeight:600, color:C.info, background:`${C.info}12`, padding:"2px 8px", borderRadius: R.sm }}>{d.freights.length} en cola</span>
+                        {onAction && d.id && <button onClick={()=>onAction(d.freights[0]?.id,"driver_queue")} style={{ marginLeft:"auto", fontSize:11, fontWeight:700, color:C.info, background:`${C.info}12`, border:`1px solid ${C.info}30`, borderRadius: R.sm, padding:"8px 12px", cursor:"pointer", fontFamily:"inherit", minHeight:36 }}>Ver cola</button>}
                       </div>
                       {/* Freight cards */}
                       <div style={{ display:"flex", flexDirection:"column", gap:6, paddingLeft:22 }}>
                         {d.freights.map((f,i)=>{
                           const st = stCfg(f.status);
                           return (
-                            <div key={f.id} onClick={()=>onNav("detail",f.id)} onMouseEnter={(e)=>handleCardMouseEnter(f,e)} onMouseLeave={handleCardMouseLeave} style={{ display:"flex", alignItems:"center", gap:10, padding:"8px 12px", borderRadius:10, border:`1px solid ${C.b1}`, borderLeft:`3px solid ${st.color}`, background:i===0?`${C.pri}06`:C.bg, cursor:"pointer", transition:"background 0.15s" }}>
-                              <div style={{ width:22, height:22, borderRadius:11, background:i===0?C.pri:C.b1, color:i===0?C.w:C.t3, display:"flex", alignItems:"center", justifyContent:"center", fontSize:11, fontWeight:800, flexShrink:0 }}>{i+1}</div>
+                            <div key={f.id} onClick={()=>onNav("detail",f.id)} onMouseEnter={(e)=>handleCardMouseEnter(f,e)} onMouseLeave={handleCardMouseLeave} style={{ display:"flex", alignItems:"center", gap:10, padding:"8px 12px", borderRadius: R.md, border:`1px solid ${C.b1}`, borderLeft:`3px solid ${st.color}`, background:i===0?`${C.pri}06`:C.bg, cursor:"pointer", transition:"background 0.15s" }}>
+                              <div style={{ width:22, height:22, borderRadius: R.lg, background:i===0?C.pri:C.b1, color:i===0?C.w:C.t3, display:"flex", alignItems:"center", justifyContent:"center", fontSize:11, fontWeight:800, flexShrink:0 }}>{i+1}</div>
                               <div style={{ flex:1, minWidth:0 }}>
                                 <div style={{ display:"flex", alignItems:"center", gap:6 }}>
                                   <span style={{ fontSize:12.7, fontWeight:700, fontFamily:MONO, color:C.t2 }}>{f.code}</span>
                                   <Bd color={st.color} bg={st.bg} small>{st.label}</Bd>
-                                  {f.isOverdue && <span style={{ display:"inline-flex", alignItems:"center", justifyContent:"center", width:16, height:16, borderRadius:4, background:"#FEE2E2", flexShrink:0, fontSize:10, fontWeight:800, color:"#DC2626", lineHeight:1 }} title="Retrasado">R</span>}
+                                  {f.isOverdue && <span style={{ display:"inline-flex", alignItems:"center", justifyContent:"center", width:16, height:16, borderRadius: R.xs, background:"#FEE2E2", flexShrink:0, fontSize:10, fontWeight:800, color:"#DC2626", lineHeight:1 }} title="Retrasado">R</span>}
                                 </div>
                                 <div style={{ fontSize:13.2, fontWeight:600, color:C.t1, marginTop:2 }}>{f.grain==="Otros"?f.productTypeOther||"Otros":f.grain} · {f.tons} {f.unit||"tn"}</div>
                                 {f.loadDate && <div style={{ fontSize:12.7, color:C.t3, fontWeight:500, marginTop:2 }}>{Ic.cal(C.t3,9)} {formatFreightDate(f.loadDate)}{f.loadTime?` · ${f.loadTime}`:""}</div>}
@@ -965,18 +965,18 @@ export default memo(function ListScreen({ freights, loading, onNav, onRefresh, c
                       <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
                         {Ic.user(C.t3,14)}
                         <span style={{ fontSize:13.2, fontWeight:600, color:C.t3, fontStyle:"italic" }}>Sin chofer asignado</span>
-                        <span style={{ fontSize:11, fontWeight:600, color:C.t3, background:`${C.t3}12`, padding:"2px 8px", borderRadius:6 }}>{t.noDriver.length}</span>
+                        <span style={{ fontSize:11, fontWeight:600, color:C.t3, background:`${C.t3}12`, padding:"2px 8px", borderRadius: R.sm }}>{t.noDriver.length}</span>
                       </div>
                       <div style={{ display:"flex", flexDirection:"column", gap:6, paddingLeft:22 }}>
                         {t.noDriver.map(f=>{
                           const st = stCfg(f.status);
                           return (
-                            <div key={f.id} onClick={()=>onNav("detail",f.id)} onMouseEnter={(e)=>handleCardMouseEnter(f,e)} onMouseLeave={handleCardMouseLeave} style={{ display:"flex", alignItems:"center", gap:10, padding:"8px 12px", borderRadius:10, border:`1px dashed ${C.b1}`, background:C.bg, cursor:"pointer" }}>
+                            <div key={f.id} onClick={()=>onNav("detail",f.id)} onMouseEnter={(e)=>handleCardMouseEnter(f,e)} onMouseLeave={handleCardMouseLeave} style={{ display:"flex", alignItems:"center", gap:10, padding:"8px 12px", borderRadius: R.md, border:`1px dashed ${C.b1}`, background:C.bg, cursor:"pointer" }}>
                               <div style={{ flex:1, minWidth:0 }}>
                                 <div style={{ display:"flex", alignItems:"center", gap:6 }}>
                                   <span style={{ fontSize:12.7, fontWeight:700, fontFamily:MONO, color:C.t2 }}>{f.code}</span>
                                   <Bd color={st.color} bg={st.bg} small>{st.label}</Bd>
-                                  {f.isOverdue && <span style={{ display:"inline-flex", alignItems:"center", justifyContent:"center", width:16, height:16, borderRadius:4, background:"#FEE2E2", flexShrink:0, fontSize:10, fontWeight:800, color:"#DC2626", lineHeight:1 }} title="Retrasado">R</span>}
+                                  {f.isOverdue && <span style={{ display:"inline-flex", alignItems:"center", justifyContent:"center", width:16, height:16, borderRadius: R.xs, background:"#FEE2E2", flexShrink:0, fontSize:10, fontWeight:800, color:"#DC2626", lineHeight:1 }} title="Retrasado">R</span>}
                                 </div>
                                 <div style={{ fontSize:13.2, fontWeight:600, color:C.t1, marginTop:2 }}>{f.grain==="Otros"?f.productTypeOther||"Otros":f.grain} · {f.tons} {f.unit||"tn"}</div>
                               </div>
@@ -995,7 +995,7 @@ export default memo(function ListScreen({ freights, loading, onNav, onRefresh, c
           })}
           {/* Unassigned freights */}
           {trackingGroups.unassigned.length>0 && (
-            <div style={{ background:C.w, border:`1px solid ${C.b1}`, borderRadius:14, overflow:"hidden", boxShadow:C.sh }}>
+            <div style={{ background:C.w, border:`1px solid ${C.b1}`, borderRadius: R.lg, overflow:"hidden", boxShadow:C.sh }}>
               <div style={{ padding:"12px 16px", borderBottom:`2px solid ${C.t3}`, display:"flex", alignItems:"center", gap:8, background:`${C.t3}08` }}>
                 {Ic.warn(C.t3,16)}
                 <span style={{ fontSize:14.3, fontWeight:700, color:C.t2 }}>Sin asignar</span>
@@ -1005,12 +1005,12 @@ export default memo(function ListScreen({ freights, loading, onNav, onRefresh, c
                 {trackingGroups.unassigned.map(f=>{
                   const st = stCfg(f.status);
                   return (
-                    <div key={f.id} onClick={()=>onNav("detail",f.id)} onMouseEnter={(e)=>handleCardMouseEnter(f,e)} onMouseLeave={handleCardMouseLeave} style={{ display:"flex", alignItems:"center", gap:10, padding:"8px 12px", borderRadius:10, border:`1px dashed ${C.b1}`, borderLeft:`3px solid ${st.color}`, background:C.bg, cursor:"pointer" }}>
+                    <div key={f.id} onClick={()=>onNav("detail",f.id)} onMouseEnter={(e)=>handleCardMouseEnter(f,e)} onMouseLeave={handleCardMouseLeave} style={{ display:"flex", alignItems:"center", gap:10, padding:"8px 12px", borderRadius: R.md, border:`1px dashed ${C.b1}`, borderLeft:`3px solid ${st.color}`, background:C.bg, cursor:"pointer" }}>
                       <div style={{ flex:1, minWidth:0 }}>
                         <div style={{ display:"flex", alignItems:"center", gap:6 }}>
                           <span style={{ fontSize:11, fontWeight:700, fontFamily:MONO, color:C.t2 }}>{f.code}</span>
                           <Bd color={st.color} bg={st.bg} small>{st.label}</Bd>
-                          {f.isOverdue && <span style={{ display:"inline-flex", alignItems:"center", justifyContent:"center", width:16, height:16, borderRadius:4, background:"#FEE2E2", flexShrink:0, fontSize:10, fontWeight:800, color:"#DC2626", lineHeight:1 }} title="Retrasado">R</span>}
+                          {f.isOverdue && <span style={{ display:"inline-flex", alignItems:"center", justifyContent:"center", width:16, height:16, borderRadius: R.xs, background:"#FEE2E2", flexShrink:0, fontSize:10, fontWeight:800, color:"#DC2626", lineHeight:1 }} title="Retrasado">R</span>}
                         </div>
                         <div style={{ fontSize:13.2, fontWeight:600, color:C.t1, marginTop:2 }}>{f.grain==="Otros"?f.productTypeOther||"Otros":f.grain} · {f.tons} {f.unit||"tn"}</div>
                       </div>
@@ -1038,7 +1038,7 @@ export default memo(function ListScreen({ freights, loading, onNav, onRefresh, c
           {serverData !== null && serverHasMore && (
             <div style={{textAlign:"center",padding:"16px 0 24px"}}>
               {serverTotal>0 && <div style={{fontSize:11,color:C.t3,marginBottom:6}}>Mostrando {filteredFinal.length} de {serverTotal}</div>}
-              <button onClick={loadMoreServer} disabled={serverLoadingMore} style={{padding:"8px 24px",borderRadius:10,border:`1.5px solid ${C.pri}`,background:C.w,color:C.pri,fontSize:13.2,fontWeight:700,cursor:serverLoadingMore?"default":"pointer",fontFamily:"inherit",opacity:serverLoadingMore?0.5:1}}>
+              <button onClick={loadMoreServer} disabled={serverLoadingMore} style={{padding:"8px 24px",borderRadius: R.md,border:`1.5px solid ${C.pri}`,background:C.w,color:C.pri,fontSize:13.2,fontWeight:700,cursor:serverLoadingMore?"default":"pointer",fontFamily:"inherit",opacity:serverLoadingMore?0.5:1}}>
                 {serverLoadingMore?"Cargando...":"Cargar mas resultados"}
               </button>
             </div>
@@ -1046,7 +1046,7 @@ export default memo(function ListScreen({ freights, loading, onNav, onRefresh, c
           {serverData === null && hasMore && (
             <div style={{textAlign:"center",padding:"16px 0 24px"}}>
               {total>0 && <div style={{fontSize:11,color:C.t3,marginBottom:6}}>Mostrando {visibleCount} de {total}</div>}
-              <button onClick={loadMore} disabled={loadingMore} style={{padding:"8px 24px",borderRadius:10,border:`1.5px solid ${C.pri}`,background:C.w,color:C.pri,fontSize:13.2,fontWeight:700,cursor:loadingMore?"default":"pointer",fontFamily:"inherit",opacity:loadingMore?0.5:1}}>
+              <button onClick={loadMore} disabled={loadingMore} style={{padding:"8px 24px",borderRadius: R.md,border:`1.5px solid ${C.pri}`,background:C.w,color:C.pri,fontSize:13.2,fontWeight:700,cursor:loadingMore?"default":"pointer",fontFamily:"inherit",opacity:loadingMore?0.5:1}}>
                 {loadingMore?"Cargando...":"Cargar mas fletes"}
               </button>
             </div>

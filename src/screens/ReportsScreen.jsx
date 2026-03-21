@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useEffect } from "react";
-import { C, Ic, FONT, MONO, STATUS_COLORS } from "../theme";
+import { C, Ic, FONT, MONO, STATUS_COLORS , R} from "../theme";
 import { stCfg } from "../constants";
 import { originDisplay, destDisplay } from "../hooks";
 import { Bd, Btn, Field, Select, exportExcel, exportPDF, FileViewer, FreightCard } from "../components";
@@ -135,7 +135,7 @@ export default function ReportsScreen({ onBack, freights, isDesktop, embedded, o
       {!embedded && (
         <div style={{ display:"flex", gap:6, marginBottom:12 }}>
           {[{k:"stats",l:"Estadísticas",ic:Ic.doc},{k:"reports",l:"Reportes PDF",ic:Ic.download}].map(v=>(
-            <button key={v.k} onClick={()=>setActiveView(v.k)} style={{ flex:1, padding:"10px 0", borderRadius:8, border:`1.5px solid ${activeView===v.k?C.pri:C.b1}`, background:activeView===v.k?C.priPale:C.w, color:activeView===v.k?C.pri:C.t2, fontSize:13.5, fontWeight:600, cursor:"pointer", fontFamily:FONT, display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
+            <button key={v.k} onClick={()=>setActiveView(v.k)} style={{ flex:1, padding:"10px 0", borderRadius: R.md, border:`1.5px solid ${activeView===v.k?C.pri:C.b1}`, background:activeView===v.k?C.priPale:C.w, color:activeView===v.k?C.pri:C.t2, fontSize:13.5, fontWeight:600, cursor:"pointer", fontFamily:FONT, display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
               {v.ic(activeView===v.k?C.pri:C.t3,15)} {v.l}
             </button>
           ))}
@@ -156,7 +156,7 @@ export default function ReportsScreen({ onBack, freights, isDesktop, embedded, o
         const maxTl = stats?.timeline ? Math.max(...stats.timeline.map(t=>t.count),1) : 1;
 
         const StatsTable = ({title,items,cols}) => (
-          <div style={{ background:C.bgCard, borderRadius:12, padding:"12px 14px", boxShadow:C.sh, marginBottom:10, overflowX:"auto" }}>
+          <div style={{ background:C.bgCard, borderRadius: R.lg, padding:"12px 14px", boxShadow:C.sh, marginBottom:10, overflowX:"auto" }}>
             <div style={{ fontSize:12, fontWeight:700, color:C.t2, marginBottom:8, textTransform:"uppercase", letterSpacing:0.3 }}>{title}</div>
             {(!items||items.length===0)?<div style={{fontSize:12,color:C.t3}}>Sin datos</div>:(
               <table style={{ width:"100%", borderCollapse:"collapse", fontSize:12.5 }}>
@@ -172,26 +172,26 @@ export default function ReportsScreen({ onBack, freights, isDesktop, embedded, o
             {/* Config bar */}
             <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:10, flexWrap:"wrap" }}>
               {periodOpts.map(p=>(
-                <button key={p.k} onClick={()=>updatePrefs({period:p.k})} style={{ padding:"5px 10px", borderRadius:16, border:`1.5px solid ${prefs.period===p.k?C.pri:C.b1}`, background:prefs.period===p.k?C.priPale:C.w, color:prefs.period===p.k?C.pri:C.t2, fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:FONT }}>{p.l}</button>
+                <button key={p.k} onClick={()=>updatePrefs({period:p.k})} style={{ padding:"5px 10px", borderRadius: R.xl, border:`1.5px solid ${prefs.period===p.k?C.pri:C.b1}`, background:prefs.period===p.k?C.priPale:C.w, color:prefs.period===p.k?C.pri:C.t2, fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:FONT }}>{p.l}</button>
               ))}
-              <button onClick={()=>setShowStatsConfig(v=>!v)} style={{ padding:"5px 10px", borderRadius:16, border:`1.5px solid ${showStatsConfig?C.sec:C.b1}`, background:showStatsConfig?C.secPale:C.w, color:showStatsConfig?C.sec:C.t3, fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:FONT, marginLeft:"auto" }}>
+              <button onClick={()=>setShowStatsConfig(v=>!v)} style={{ padding:"5px 10px", borderRadius: R.xl, border:`1.5px solid ${showStatsConfig?C.sec:C.b1}`, background:showStatsConfig?C.secPale:C.w, color:showStatsConfig?C.sec:C.t3, fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:FONT, marginLeft:"auto" }}>
                 {Ic.filter(showStatsConfig?C.sec:C.t3,12)} Configurar
               </button>
             </div>
             {prefs.period==="custom" && (
-              <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:10, padding:"8px 12px", background:C.bg, borderRadius:10, border:`1px solid ${C.b1}` }}>
+              <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:10, padding:"8px 12px", background:C.bg, borderRadius: R.md, border:`1px solid ${C.b1}` }}>
                 <span style={{fontSize:11,color:C.t2,fontWeight:600}}>Desde</span>
-                <input type="date" value={statsDateFrom} onChange={e=>setStatsDateFrom(e.target.value)} onClick={e=>e.target.showPicker?.()} style={{padding:"5px 8px",borderRadius:6,border:`1px solid ${C.b1}`,background:C.w,color:C.t1,fontSize:12,fontFamily:"inherit",outline:"none",cursor:"pointer"}}/>
+                <input type="date" value={statsDateFrom} onChange={e=>setStatsDateFrom(e.target.value)} onClick={e=>e.target.showPicker?.()} style={{padding:"5px 8px",borderRadius: R.sm,border:`1px solid ${C.b1}`,background:C.w,color:C.t1,fontSize:12,fontFamily:"inherit",outline:"none",cursor:"pointer"}}/>
                 <span style={{fontSize:11,color:C.t2,fontWeight:600}}>Hasta</span>
-                <input type="date" value={statsDateTo} onChange={e=>setStatsDateTo(e.target.value)} onClick={e=>e.target.showPicker?.()} style={{padding:"5px 8px",borderRadius:6,border:`1px solid ${C.b1}`,background:C.w,color:C.t1,fontSize:12,fontFamily:"inherit",outline:"none",cursor:"pointer"}}/>
+                <input type="date" value={statsDateTo} onChange={e=>setStatsDateTo(e.target.value)} onClick={e=>e.target.showPicker?.()} style={{padding:"5px 8px",borderRadius: R.sm,border:`1px solid ${C.b1}`,background:C.w,color:C.t1,fontSize:12,fontFamily:"inherit",outline:"none",cursor:"pointer"}}/>
               </div>
             )}
             {showStatsConfig && (
-              <div style={{ display:"flex", gap:6, marginBottom:10, flexWrap:"wrap", padding:"8px 12px", background:C.bg, borderRadius:10, border:`1px solid ${C.b1}` }}>
+              <div style={{ display:"flex", gap:6, marginBottom:10, flexWrap:"wrap", padding:"8px 12px", background:C.bg, borderRadius: R.md, border:`1px solid ${C.b1}` }}>
                 <div style={{ display:"flex", gap:4, alignItems:"center", marginRight:12 }}>
                   <span style={{fontSize:11,color:C.t2,fontWeight:600}}>Agrupar:</span>
                   {groupOpts.map(g=>(
-                    <button key={g.k} onClick={()=>updatePrefs({groupBy:g.k})} style={{ padding:"3px 8px", borderRadius:12, border:`1px solid ${prefs.groupBy===g.k?C.sec:C.b1}`, background:prefs.groupBy===g.k?C.secPale:C.w, color:prefs.groupBy===g.k?C.sec:C.t3, fontSize:10.5, fontWeight:600, cursor:"pointer", fontFamily:FONT }}>{g.l}</button>
+                    <button key={g.k} onClick={()=>updatePrefs({groupBy:g.k})} style={{ padding:"3px 8px", borderRadius: R.lg, border:`1px solid ${prefs.groupBy===g.k?C.sec:C.b1}`, background:prefs.groupBy===g.k?C.secPale:C.w, color:prefs.groupBy===g.k?C.sec:C.t3, fontSize:10.5, fontWeight:600, cursor:"pointer", fontFamily:FONT }}>{g.l}</button>
                   ))}
                 </div>
                 {sectionOpts.map(s=>(
@@ -206,7 +206,7 @@ export default function ReportsScreen({ onBack, freights, isDesktop, embedded, o
             {/* Loading */}
             {statsLoading && (
               <div style={{ display:"grid", gridTemplateColumns:isDesktop?"repeat(4,1fr)":"repeat(2,1fr)", gap:10, marginBottom:12 }}>
-                {[1,2,3,4].map(i=><div key={i} style={{ background:C.bgCard, borderRadius:12, padding:"14px 16px", boxShadow:C.sh, height:72 }}><div style={{ width:"60%", height:12, background:C.bgInput, borderRadius:4, marginBottom:8 }}/><div style={{ width:"40%", height:24, background:C.bgInput, borderRadius:4 }}/></div>)}
+                {[1,2,3,4].map(i=><div key={i} style={{ background:C.bgCard, borderRadius: R.lg, padding:"14px 16px", boxShadow:C.sh, height:72 }}><div style={{ width:"60%", height:12, background:C.bgInput, borderRadius: R.xs, marginBottom:8 }}/><div style={{ width:"40%", height:24, background:C.bgInput, borderRadius: R.xs }}/></div>)}
               </div>
             )}
 
@@ -231,7 +231,7 @@ export default function ReportsScreen({ onBack, freights, isDesktop, embedded, o
                     if(sec.timeline&&s.timeline?.length){body+=`<h2>Timeline</h2><table>${tblHead(["Período","Fletes","Tons","Completados","Cancelados"])}${s.timeline.map(t=>tblRow([t.label,t.count,t.tons+"t",t.completed,t.canceled])).join("")}</table>`;}
                     const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Informe de Operaciones</title><style>@page{size:landscape;margin:10mm}*{box-sizing:border-box;margin:0;padding:0}body{font-family:system-ui,sans-serif;font-size:10px;color:#1a1a1a;padding:8mm}h1{font-size:16px;margin-bottom:2px}h2{font-size:12px;margin:10px 0 4px;color:#333}.sub{font-size:10px;color:#666;margin-bottom:10px}.cards{display:flex;gap:8px;margin:8px 0}table{width:100%;border-collapse:collapse;font-size:9px;margin-bottom:8px}th{background:#1A6B37;color:#fff;padding:4px;text-align:left;font-size:8px}td{padding:3px 4px;border-bottom:1px solid #e0e0e0}tr:nth-child(even){background:#f8f9fa}.cards div{border:1px solid #ddd;border-radius:6px;padding:8px 12px;text-align:center;flex:1}.cards b{font-size:16px;color:#1A6B37}</style></head><body>${body}<div style="margin-top:10px;font-size:8px;color:#999;text-align:right">tolvink.com</div><script>window.onload=()=>setTimeout(()=>window.print(),300)</script></body></html>`;
                     const w=window.open("","_blank"); if(w){w.document.write(html);w.document.close();}
-                  }} style={{ padding:"6px 14px", borderRadius:8, border:`1.5px solid ${C.err}`, background:C.errPale, color:C.err, fontSize:11.5, fontWeight:700, cursor:"pointer", fontFamily:FONT, display:"flex", alignItems:"center", gap:5 }}>
+                  }} style={{ padding:"6px 14px", borderRadius: R.md, border:`1.5px solid ${C.err}`, background:C.errPale, color:C.err, fontSize:11.5, fontWeight:700, cursor:"pointer", fontFamily:FONT, display:"flex", alignItems:"center", gap:5 }}>
                     {Ic.download(C.err,13)} Exportar PDF
                   </button>
                 </div>
@@ -245,7 +245,7 @@ export default function ReportsScreen({ onBack, freights, isDesktop, embedded, o
                     { label:"Prom. completado", value:ov.avgCompletionTimeHours?`${ov.avgCompletionTimeHours}h`:"-", color:C.sec },
                     { label:"Multi-camión", value:ov.multiTruckFreights, color:C.info },
                   ].map((m,i)=>(
-                    <div key={i} style={{ background:C.bgCard, borderRadius:12, padding:"12px 14px", textAlign:"center", boxShadow:C.sh }}>
+                    <div key={i} style={{ background:C.bgCard, borderRadius: R.lg, padding:"12px 14px", textAlign:"center", boxShadow:C.sh }}>
                       <div style={{ fontSize:24, fontWeight:800, color:m.color }}>{m.value}</div>
                       <div style={{ fontSize:10.5, color:C.t3, marginTop:2, textTransform:"uppercase", letterSpacing:0.3 }}>{m.label}</div>
                     </div>
@@ -254,7 +254,7 @@ export default function ReportsScreen({ onBack, freights, isDesktop, embedded, o
 
                 {/* Timeline */}
                 {sec.timeline && stats.timeline?.length>0 && (
-                  <div id="stats-timeline" style={{ background:C.bgCard, borderRadius:12, padding:"12px 14px", boxShadow:C.sh, marginBottom:10 }}>
+                  <div id="stats-timeline" style={{ background:C.bgCard, borderRadius: R.lg, padding:"12px 14px", boxShadow:C.sh, marginBottom:10 }}>
                     <div style={{ fontSize:12, fontWeight:700, color:C.t2, marginBottom:10, textTransform:"uppercase", letterSpacing:0.3 }}>Timeline</div>
                     <div style={{ display:"flex", gap:4, alignItems:"flex-end", overflowX:"auto", minHeight:140 }}>
                       {stats.timeline.map((t,i)=>(
@@ -273,7 +273,7 @@ export default function ReportsScreen({ onBack, freights, isDesktop, embedded, o
                     <div style={{ display:"flex", gap:12, marginTop:8, justifyContent:"center" }}>
                       {[{c:C.pri,l:"Completados"},{c:C.acc,l:"En curso"},{c:C.err,l:"Cancelados"}].map(lg=>(
                         <div key={lg.l} style={{ display:"flex", alignItems:"center", gap:4, fontSize:10, color:C.t3 }}>
-                          <div style={{ width:10, height:10, borderRadius:2, background:lg.c }}/>{lg.l}
+                          <div style={{ width:10, height:10, borderRadius: R.xs, background:lg.c }}/>{lg.l}
                         </div>
                       ))}
                     </div>
@@ -316,7 +316,7 @@ export default function ReportsScreen({ onBack, freights, isDesktop, embedded, o
 
                 {/* Delays */}
                 {sec.delays && stats.delays && (stats.delays.totalDelayed>0 ? (
-                  <div style={{ background:stats.delays.delayedPercentage>20?C.errPale:stats.delays.delayedPercentage>10?C.warnPale:C.bgCard, border:`1px solid ${stats.delays.delayedPercentage>20?`${C.err}40`:stats.delays.delayedPercentage>10?`${C.warn}40`:C.b1}`, borderRadius:12, padding:"12px 14px", marginBottom:10 }}>
+                  <div style={{ background:stats.delays.delayedPercentage>20?C.errPale:stats.delays.delayedPercentage>10?C.warnPale:C.bgCard, border:`1px solid ${stats.delays.delayedPercentage>20?`${C.err}40`:stats.delays.delayedPercentage>10?`${C.warn}40`:C.b1}`, borderRadius: R.lg, padding:"12px 14px", marginBottom:10 }}>
                     <div style={{ fontSize:13, fontWeight:700, color:stats.delays.delayedPercentage>20?C.err:C.warn, marginBottom:4 }}>{stats.delays.totalDelayed} fletes retrasados ({stats.delays.delayedPercentage}%)</div>
                     <div style={{ fontSize:12, color:C.t2, marginBottom:6 }}>Demora promedio: {stats.delays.avgDelayHours}h</div>
                     {stats.delays.topDelayedRoutes?.length>0 && (
@@ -329,7 +329,7 @@ export default function ReportsScreen({ onBack, freights, isDesktop, embedded, o
                     )}
                   </div>
                 ) : (
-                  <div style={{ background:C.okPale, border:`1px solid ${C.ok}30`, borderRadius:12, padding:"12px 14px", marginBottom:10, fontSize:12.5, color:C.ok, fontWeight:600 }}>Sin fletes retrasados en este período</div>
+                  <div style={{ background:C.okPale, border:`1px solid ${C.ok}30`, borderRadius: R.lg, padding:"12px 14px", marginBottom:10, fontSize:12.5, color:C.ok, fontWeight:600 }}>Sin fletes retrasados en este período</div>
                 ))}
 
                 {/* Empty state */}
@@ -346,37 +346,37 @@ export default function ReportsScreen({ onBack, freights, isDesktop, embedded, o
         <div style={{ position:"relative", flex:1, minWidth:0 }}>
           <div style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",display:"flex"}}>{Ic.srch(C.t3,14)}</div>
           <input value={searchQ} onChange={e=>setSearchQ(e.target.value)} placeholder="Buscar flete..."
-            style={{width:"100%",padding:"8px 12px 8px 32px",borderRadius:8,border:`1.5px solid ${C.b1}`,background:C.w,color:C.t1,fontSize:13.2,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}/>
+            style={{width:"100%",padding:"8px 12px 8px 32px",borderRadius: R.md,border:`1.5px solid ${C.b1}`,background:C.w,color:C.t1,fontSize:13.2,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}/>
           {searchQ && <button aria-label="Limpiar búsqueda" onClick={()=>setSearchQ("")} style={{position:"absolute",right:8,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",display:"flex"}}>{Ic.cross(C.t3,14)}</button>}
         </div>
-        {(searchQ||hasEntityFilters||dateFrom||dateTo) && <button onClick={()=>{setSearchQ("");setFPlant("");setFField("");setFTransporter("");setDateFrom("");setDateTo("");}} style={{padding:"6px 10px",borderRadius:6,border:`1px solid ${C.err}40`,background:C.errPale,color:C.err,fontSize:12.1,fontWeight:600,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap",flexShrink:0}}>Limpiar</button>}
+        {(searchQ||hasEntityFilters||dateFrom||dateTo) && <button onClick={()=>{setSearchQ("");setFPlant("");setFField("");setFTransporter("");setDateFrom("");setDateTo("");}} style={{padding:"6px 10px",borderRadius: R.sm,border:`1px solid ${C.err}40`,background:C.errPale,color:C.err,fontSize:12.1,fontWeight:600,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap",flexShrink:0}}>Limpiar</button>}
       </div>
 
       {/* Entity filters row — matching ListScreen style */}
       <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:6, flexWrap:"wrap" }}>
-        <button onClick={()=>{const el=document.getElementById("rpt-date-row");if(el)el.style.display=el.style.display==="none"?"flex":"none";}} style={{padding:"6px 10px",borderRadius:8,border:`1.5px solid ${(dateFrom||dateTo)?C.pri:C.b1}`,background:(dateFrom||dateTo)?C.priPale:C.w,color:(dateFrom||dateTo)?C.pri:C.t2,fontSize:12.1,fontWeight:600,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:5,whiteSpace:"nowrap"}}>
+        <button onClick={()=>{const el=document.getElementById("rpt-date-row");if(el)el.style.display=el.style.display==="none"?"flex":"none";}} style={{padding:"6px 10px",borderRadius: R.md,border:`1.5px solid ${(dateFrom||dateTo)?C.pri:C.b1}`,background:(dateFrom||dateTo)?C.priPale:C.w,color:(dateFrom||dateTo)?C.pri:C.t2,fontSize:12.1,fontWeight:600,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:5,whiteSpace:"nowrap"}}>
           {Ic.cal((dateFrom||dateTo)?C.pri:C.t3,13)} Filtrar por fecha{(dateFrom||dateTo)?" (activo)":""}
         </button>
-        <select value={fPlant} onChange={e=>setFPlant(e.target.value)} style={{padding:"6px 8px",borderRadius:8,border:`1.5px solid ${fPlant?C.pri:C.b1}`,background:fPlant?C.priPale:C.w,color:fPlant?C.pri:C.t3,fontSize:12.1,fontFamily:"inherit",outline:"none",cursor:"pointer"}}>
+        <select value={fPlant} onChange={e=>setFPlant(e.target.value)} style={{padding:"6px 8px",borderRadius: R.md,border:`1.5px solid ${fPlant?C.pri:C.b1}`,background:fPlant?C.priPale:C.w,color:fPlant?C.pri:C.t3,fontSize:12.1,fontFamily:"inherit",outline:"none",cursor:"pointer"}}>
           <option value="">Planta</option>
           {plantOptions.map(p=><option key={p} value={p}>{p}</option>)}
         </select>
-        <select value={fField} onChange={e=>setFField(e.target.value)} style={{padding:"6px 8px",borderRadius:8,border:`1.5px solid ${fField?C.pri:C.b1}`,background:fField?C.priPale:C.w,color:fField?C.pri:C.t3,fontSize:12.1,fontFamily:"inherit",outline:"none",cursor:"pointer"}}>
+        <select value={fField} onChange={e=>setFField(e.target.value)} style={{padding:"6px 8px",borderRadius: R.md,border:`1.5px solid ${fField?C.pri:C.b1}`,background:fField?C.priPale:C.w,color:fField?C.pri:C.t3,fontSize:12.1,fontFamily:"inherit",outline:"none",cursor:"pointer"}}>
           <option value="">Campo</option>
           {fieldOptions.map(p=><option key={p} value={p}>{p}</option>)}
         </select>
-        <select value={fTransporter} onChange={e=>setFTransporter(e.target.value)} style={{padding:"6px 8px",borderRadius:8,border:`1.5px solid ${fTransporter?C.pri:C.b1}`,background:fTransporter?C.priPale:C.w,color:fTransporter?C.pri:C.t3,fontSize:12.1,fontFamily:"inherit",outline:"none",cursor:"pointer"}}>
+        <select value={fTransporter} onChange={e=>setFTransporter(e.target.value)} style={{padding:"6px 8px",borderRadius: R.md,border:`1.5px solid ${fTransporter?C.pri:C.b1}`,background:fTransporter?C.priPale:C.w,color:fTransporter?C.pri:C.t3,fontSize:12.1,fontFamily:"inherit",outline:"none",cursor:"pointer"}}>
           <option value="">Transportista</option>
           {transporterOptions.map(p=><option key={p} value={p}>{p}</option>)}
         </select>
       </div>
 
       {/* Collapsible date filters */}
-      <div id="rpt-date-row" style={{ display:(dateFrom||dateTo)?"flex":"none", alignItems:"center", gap:6, marginBottom:6, padding:"8px 12px", background:C.bg, borderRadius:10, border:`1px solid ${C.b1}` }}>
+      <div id="rpt-date-row" style={{ display:(dateFrom||dateTo)?"flex":"none", alignItems:"center", gap:6, marginBottom:6, padding:"8px 12px", background:C.bg, borderRadius: R.md, border:`1px solid ${C.b1}` }}>
         <span style={{fontSize:11,color:C.t2,fontWeight:600}}>Desde</span>
-        <input type="date" value={dateFrom} onChange={e=>setDateFrom(e.target.value)} onClick={e=>e.target.showPicker?.()} style={{padding:"5px 8px",borderRadius:6,border:`1px solid ${C.b1}`,background:C.w,color:dateFrom?C.t1:C.t3,fontSize:12.1,fontFamily:"inherit",outline:"none",boxSizing:"border-box",cursor:"pointer"}}/>
+        <input type="date" value={dateFrom} onChange={e=>setDateFrom(e.target.value)} onClick={e=>e.target.showPicker?.()} style={{padding:"5px 8px",borderRadius: R.sm,border:`1px solid ${C.b1}`,background:C.w,color:dateFrom?C.t1:C.t3,fontSize:12.1,fontFamily:"inherit",outline:"none",boxSizing:"border-box",cursor:"pointer"}}/>
         <span style={{fontSize:11,color:C.t2,fontWeight:600}}>Hasta</span>
-        <input type="date" value={dateTo} onChange={e=>setDateTo(e.target.value)} onClick={e=>e.target.showPicker?.()} style={{padding:"5px 8px",borderRadius:6,border:`1px solid ${C.b1}`,background:C.w,color:dateTo?C.t1:C.t3,fontSize:12.1,fontFamily:"inherit",outline:"none",boxSizing:"border-box",cursor:"pointer"}}/>
+        <input type="date" value={dateTo} onChange={e=>setDateTo(e.target.value)} onClick={e=>e.target.showPicker?.()} style={{padding:"5px 8px",borderRadius: R.sm,border:`1px solid ${C.b1}`,background:C.w,color:dateTo?C.t1:C.t3,fontSize:12.1,fontFamily:"inherit",outline:"none",boxSizing:"border-box",cursor:"pointer"}}/>
         {(dateFrom||dateTo)&&<button aria-label="Limpiar filtro de fechas" onClick={()=>{setDateFrom("");setDateTo("");}} style={{background:"none",border:"none",cursor:"pointer",display:"flex",padding:2}}>{Ic.cross(C.t3,14)}</button>}
       </div>
 
@@ -384,23 +384,23 @@ export default function ReportsScreen({ onBack, freights, isDesktop, embedded, o
       {isDesktop ? (
       <div style={{ display:"flex", gap:6, marginBottom:12, flexWrap:"wrap", alignItems:"center" }}>
         {[{k:"all",l:"Todos"},{k:"solicitado",l:"Solicitado"},{k:"en_curso",l:"En curso"},{k:"finalizados",l:"Finalizados"},{k:"cancelados",l:"Cancelados"}].map(opt=>(
-          <button key={opt.k} onClick={()=>setFilterStatus(opt.k)} style={{ padding:"6px 14px", borderRadius:20, border:`1.5px solid ${filterStatus===opt.k?C.pri:C.b1}`, background:filterStatus===opt.k?C.priPale:C.w, color:filterStatus===opt.k?C.pri:C.t2, fontSize:12.1, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>{opt.l}</button>
+          <button key={opt.k} onClick={()=>setFilterStatus(opt.k)} style={{ padding:"6px 14px", borderRadius: R.pill, border:`1.5px solid ${filterStatus===opt.k?C.pri:C.b1}`, background:filterStatus===opt.k?C.priPale:C.w, color:filterStatus===opt.k?C.pri:C.t2, fontSize:12.1, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>{opt.l}</button>
         ))}
         <div style={{ marginLeft:"auto", display:"flex", gap:6, alignItems:"center" }}>
-          {selected.size>0 && <button onClick={()=>setSelected(new Set())} style={{padding:"5px 10px",borderRadius:8,border:`1.5px solid ${C.pri}`,background:C.priPale,color:C.pri,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:4}}>
+          {selected.size>0 && <button onClick={()=>setSelected(new Set())} style={{padding:"5px 10px",borderRadius: R.md,border:`1.5px solid ${C.pri}`,background:C.priPale,color:C.pri,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:4}}>
             {selected.size} seleccionado{selected.size!==1?"s":""} {Ic.cross(C.pri,10)}
           </button>}
-          <button aria-label="Exportar a Excel" onClick={()=>exportExcel(exportData,"tolvink-fletes.xls")} style={{padding:"5px 10px",borderRadius:8,border:`1.5px solid ${C.ok}`,background:C.okPale,color:C.ok,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:4}}>
+          <button aria-label="Exportar a Excel" onClick={()=>exportExcel(exportData,"tolvink-fletes.xls")} style={{padding:"5px 10px",borderRadius: R.md,border:`1.5px solid ${C.ok}`,background:C.okPale,color:C.ok,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:4}}>
             {Ic.doc(C.ok,12)} Excel
           </button>
-          <button aria-label="Exportar a PDF" onClick={()=>exportPDF(exportData,"Informe de Fletes")} style={{padding:"5px 10px",borderRadius:8,border:`1.5px solid ${C.err}`,background:C.errPale,color:C.err,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:4}}>
+          <button aria-label="Exportar a PDF" onClick={()=>exportPDF(exportData,"Informe de Fletes")} style={{padding:"5px 10px",borderRadius: R.md,border:`1.5px solid ${C.err}`,background:C.errPale,color:C.err,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:4}}>
             {Ic.doc(C.err,12)} PDF
           </button>
         </div>
       </div>
       ) : (<>
       <div style={{ display:"flex", gap:6, marginBottom:6, flexWrap:"wrap", alignItems:"center" }}>
-        <select value={filterStatus} onChange={e=>setFilterStatus(e.target.value)} style={{padding:"6px 10px",borderRadius:8,border:`1.5px solid ${filterStatus!=="all"?C.pri:C.b1}`,background:filterStatus!=="all"?C.priPale:C.w,color:filterStatus!=="all"?C.pri:C.t2,fontSize:12.1,fontFamily:"inherit",cursor:"pointer",outline:"none"}}>
+        <select value={filterStatus} onChange={e=>setFilterStatus(e.target.value)} style={{padding:"6px 10px",borderRadius: R.md,border:`1.5px solid ${filterStatus!=="all"?C.pri:C.b1}`,background:filterStatus!=="all"?C.priPale:C.w,color:filterStatus!=="all"?C.pri:C.t2,fontSize:12.1,fontFamily:"inherit",cursor:"pointer",outline:"none"}}>
           <option value="all">Todos los estados</option>
           <option value="solicitado">Solicitado</option>
           <option value="en_curso">En curso</option>
@@ -408,13 +408,13 @@ export default function ReportsScreen({ onBack, freights, isDesktop, embedded, o
           <option value="cancelados">Cancelados</option>
         </select>
         <div style={{ marginLeft:"auto", display:"flex", gap:6, alignItems:"center" }}>
-          {selected.size>0 && <button onClick={()=>setSelected(new Set())} style={{padding:"5px 10px",borderRadius:8,border:`1.5px solid ${C.pri}`,background:C.priPale,color:C.pri,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:4}}>
+          {selected.size>0 && <button onClick={()=>setSelected(new Set())} style={{padding:"5px 10px",borderRadius: R.md,border:`1.5px solid ${C.pri}`,background:C.priPale,color:C.pri,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:4}}>
             {selected.size} seleccionado{selected.size!==1?"s":""} {Ic.cross(C.pri,10)}
           </button>}
-          <button aria-label="Exportar a Excel" onClick={()=>exportExcel(exportData,"tolvink-fletes.xls")} style={{padding:"5px 10px",borderRadius:8,border:`1.5px solid ${C.ok}`,background:C.okPale,color:C.ok,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:4}}>
+          <button aria-label="Exportar a Excel" onClick={()=>exportExcel(exportData,"tolvink-fletes.xls")} style={{padding:"5px 10px",borderRadius: R.md,border:`1.5px solid ${C.ok}`,background:C.okPale,color:C.ok,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:4}}>
             {Ic.doc(C.ok,12)} Excel
           </button>
-          <button aria-label="Exportar a PDF" onClick={()=>exportPDF(exportData,"Informe de Fletes")} style={{padding:"5px 10px",borderRadius:8,border:`1.5px solid ${C.err}`,background:C.errPale,color:C.err,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:4}}>
+          <button aria-label="Exportar a PDF" onClick={()=>exportPDF(exportData,"Informe de Fletes")} style={{padding:"5px 10px",borderRadius: R.md,border:`1.5px solid ${C.err}`,background:C.errPale,color:C.err,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:4}}>
             {Ic.doc(C.err,12)} PDF
           </button>
         </div>
@@ -437,7 +437,7 @@ export default function ReportsScreen({ onBack, freights, isDesktop, embedded, o
       {groups.map(group=>(
         <div key={group.key} style={{ marginBottom:16 }}>
           <div style={{ fontSize:11.6, fontWeight:700, color:C.t2, textTransform:"uppercase", letterSpacing:0.5, marginBottom:8, display:"flex", alignItems:"center", gap:6 }}>
-            <span style={{width:8,height:8,borderRadius:4,background:group.color}}/>
+            <span style={{width:8,height:8,borderRadius: R.xs,background:group.color}}/>
             {group.label} ({group.items.length})
           </div>
 
@@ -455,7 +455,7 @@ export default function ReportsScreen({ onBack, freights, isDesktop, embedded, o
                   onClick={()=>toggle(f.id)}
                   selected={isSel}
                   checkbox={
-                    <span onClick={(e)=>toggleSel(f.id,e)} style={{width:20,height:20,borderRadius:4,border:`1.5px solid ${isSel?'#1A6B37':C.b2}`,background:isSel?'#1A6B37':"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,cursor:"pointer",transition:"all 0.15s"}}>
+                    <span onClick={(e)=>toggleSel(f.id,e)} style={{width:20,height:20,borderRadius: R.xs,border:`1.5px solid ${isSel?'#1A6B37':C.b2}`,background:isSel?'#1A6B37':"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,cursor:"pointer",transition:"all 0.15s"}}>
                       {isSel && Ic.chk(C.w,12)}
                     </span>
                   }
@@ -476,7 +476,7 @@ export default function ReportsScreen({ onBack, freights, isDesktop, embedded, o
                         generateFreightPDF(dc?.data ? { ...f, documents: dc.data.documents } : f, logs);
                       } catch(err) { log.error('PDF', err); useUIStore.getState().show('Error al generar PDF', 'err'); }
                       finally { setPdfLoadingId(null); }
-                    }} style={{ width:"100%", padding:"8px 10px", marginBottom:8, borderRadius:8, border:`1.5px solid ${C.b1}`, background:C.w, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:8, opacity:pdfLoadingId===f.id?0.6:1 }}>
+                    }} style={{ width:"100%", padding:"8px 10px", marginBottom:8, borderRadius: R.md, border:`1.5px solid ${C.b1}`, background:C.w, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:8, opacity:pdfLoadingId===f.id?0.6:1 }}>
                       {Ic.doc(C.pri,16)}<span style={{fontSize:12.1,fontWeight:600,color:C.pri}}>{pdfLoadingId===f.id?'Generando...':'Descargar informe PDF'}</span>
                     </button>
 
@@ -486,24 +486,24 @@ export default function ReportsScreen({ onBack, freights, isDesktop, embedded, o
                       return (
                       <div key={d.id||i} style={{ display:"flex", alignItems:"center", gap:10, padding:"8px 0", borderBottom:i<docs.length-1?`1px solid ${C.b2}`:"none" }}>
                         {d.type==="photo" ? (
-                          <button onClick={()=>setViewFile({url:d.url,name:d.name||"Foto",type:"photo",id:d.id,ocrData:d.ocrData,freightId:f.id})} style={{ width:48, height:48, borderRadius:8, overflow:"hidden", flexShrink:0, border:`1px solid ${C.b1}`, padding:0, background:"none", cursor:"pointer" }}>
+                          <button onClick={()=>setViewFile({url:d.url,name:d.name||"Foto",type:"photo",id:d.id,ocrData:d.ocrData,freightId:f.id})} style={{ width:48, height:48, borderRadius: R.md, overflow:"hidden", flexShrink:0, border:`1px solid ${C.b1}`, padding:0, background:"none", cursor:"pointer" }}>
                             <img src={thumb(d.url)} alt="" loading="lazy" style={{ width:"100%", height:"100%", objectFit:"cover" }}/>
                           </button>
                         ) : (
-                          <div style={{ width:48, height:48, borderRadius:8, background:C.secPale, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                          <div style={{ width:48, height:48, borderRadius: R.md, background:C.secPale, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
                             {Ic.doc(C.sec,20)}
                           </div>
                         )}
                         <div style={{ flex:1, minWidth:0 }}>
                           <div style={{ fontSize:13.2, fontWeight:600, color:C.t1, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis", display:"flex", alignItems:"center", gap:4 }}>
                             {d.name||"Documento"}
-                            {d.ocrData && <span style={{width:7,height:7,borderRadius:4,background:C.ok,flexShrink:0}} title="Datos OCR disponibles"/>}
+                            {d.ocrData && <span style={{width:7,height:7,borderRadius: R.xs,background:C.ok,flexShrink:0}} title="Datos OCR disponibles"/>}
                           </div>
                           <div style={{ fontSize:11, color:C.t3 }}>{d.step==="request"?"Solicitud":d.step==="load_confirmation"?"Carga":d.step==="assignment"?"Asignación":"Otro"} · {d.createdAt?new Date(d.createdAt).toLocaleDateString("es",{day:"2-digit",month:"short"}):""}</div>
                         </div>
-                        {d.ocrData && <button onClick={()=>setOcrResult(d.ocrData)} title="Ver datos extraídos" style={{ display:"flex", alignItems:"center", justifyContent:"center", minWidth:44, minHeight:44, padding:6, borderRadius:8, border:`1px solid ${C.ok}`, background:C.okPale, cursor:"pointer" }}>{Ic.eye(C.ok,14)}</button>}
-                        {isImg && !d.ocrData && <button onClick={()=>handleOcr({url:d.url,name:d.name,type:d.type,id:d.id},f.id)} disabled={ocrLoading} title="Extraer datos (OCR)" style={{ display:"flex", alignItems:"center", justifyContent:"center", minWidth:44, minHeight:44, padding:6, borderRadius:8, border:`1px solid ${C.pri}40`, background:C.priPale, cursor:"pointer", opacity:ocrLoading?0.5:1 }}>{Ic.doc(C.pri,14)}</button>}
-                        <button onClick={()=>setViewFile({url:d.url,name:d.name||"Documento",type:d.type,id:d.id,ocrData:d.ocrData,freightId:f.id})} style={{ display:"flex", alignItems:"center", justifyContent:"center", minWidth:44, minHeight:44, padding:6, borderRadius:8, background:C.secPale, border:"none", cursor:"pointer" }}>
+                        {d.ocrData && <button onClick={()=>setOcrResult(d.ocrData)} title="Ver datos extraídos" style={{ display:"flex", alignItems:"center", justifyContent:"center", minWidth:44, minHeight:44, padding:6, borderRadius: R.md, border:`1px solid ${C.ok}`, background:C.okPale, cursor:"pointer" }}>{Ic.eye(C.ok,14)}</button>}
+                        {isImg && !d.ocrData && <button onClick={()=>handleOcr({url:d.url,name:d.name,type:d.type,id:d.id},f.id)} disabled={ocrLoading} title="Extraer datos (OCR)" style={{ display:"flex", alignItems:"center", justifyContent:"center", minWidth:44, minHeight:44, padding:6, borderRadius: R.md, border:`1px solid ${C.pri}40`, background:C.priPale, cursor:"pointer", opacity:ocrLoading?0.5:1 }}>{Ic.doc(C.pri,14)}</button>}
+                        <button onClick={()=>setViewFile({url:d.url,name:d.name||"Documento",type:d.type,id:d.id,ocrData:d.ocrData,freightId:f.id})} style={{ display:"flex", alignItems:"center", justifyContent:"center", minWidth:44, minHeight:44, padding:6, borderRadius: R.md, background:C.secPale, border:"none", cursor:"pointer" }}>
                           {Ic.eye(C.sec,16)}
                         </button>
                       </div>
@@ -525,11 +525,11 @@ export default function ReportsScreen({ onBack, freights, isDesktop, embedded, o
                           const preview = Object.entries(datos).filter(([,v]) => v != null && v !== "" && typeof v !== "object").slice(0, 3);
                           return (
                             <button key={d.id} onClick={() => setOcrResult(ocr)} style={{ width:"100%", display:"flex", alignItems:"center", gap:10, padding:"6px 0", marginBottom:2, background:"transparent", border:"none", cursor:"pointer", fontFamily:"inherit", textAlign:"left" }}>
-                              <div style={{ width:6, height:6, borderRadius:3, background:C.ok, flexShrink:0 }}/>
+                              <div style={{ width:6, height:6, borderRadius: R.xs, background:C.ok, flexShrink:0 }}/>
                               <div style={{ flex:1, minWidth:0 }}>
                                 <div style={{ display:"flex", alignItems:"center", gap:6 }}>
                                   <span style={{ fontSize:12.1, fontWeight:700, color:C.t1, textTransform:"capitalize" }}>{tipo}</span>
-                                  {conf != null && <span style={{ fontSize:9.9, color:C.ok, fontWeight:600, background:C.okPale, padding:"1px 6px", borderRadius:8 }}>{conf}%</span>}
+                                  {conf != null && <span style={{ fontSize:9.9, color:C.ok, fontWeight:600, background:C.okPale, padding:"1px 6px", borderRadius: R.md }}>{conf}%</span>}
                                   <span style={{ fontSize:9.9, color:C.t3 }}>{d.name}</span>
                                 </div>
                                 <div style={{ fontSize:11, color:C.t2, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
