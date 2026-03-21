@@ -610,6 +610,7 @@ export default function DocumentsScreen({ user, onBack, onNavigate }) {
           onClose={() => setOcrEditDoc(null)}
           freightId={ocrEditDoc._freight?.id}
           docId={ocrEditDoc._source === "document" ? ocrEditDoc.id : null}
+          startInEditMode
           onSaved={() => {
             // Reload docs to get updated ocrData
             if (tab === "company" && selCompany) loadCompanyDocs(selCompany.companyId || selCompany.id);

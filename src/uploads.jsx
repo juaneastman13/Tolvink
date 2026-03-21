@@ -138,11 +138,12 @@ export function DocsGallery({ documents, onViewFile, freightId, canDelete, onDel
 
 // ======================== OCR RESULT MODAL (floating) ====================
 
-export function OcrResultModal({ result, onClose, freightId, docId, onSaved }) {
+export function OcrResultModal({ result, onClose, freightId, docId, onSaved, startInEditMode }) {
   const show = useUIStore(s => s.show);
   const [mobile, setMobile] = useState(() => window.innerWidth < 768);
   const [editing, setEditing] = useState(false);
   const [editValues, setEditValues] = useState({});
+  const [didAutoEdit, setDidAutoEdit] = useState(false);
   const [saving, setSaving] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
 
@@ -164,6 +165,15 @@ export function OcrResultModal({ result, onClose, freightId, docId, onSaved }) {
   const datos = result.datos || {};
   const entries = Object.entries(datos).filter(([,v]) => v != null && v !== "");
   const canEdit = !!(freightId && docId);
+
+  // Auto-enter edit mode when startInEditMode is set
+  if (startInEditMode && canEdit && !editing && !didAutoEdit && entries.length > 0) {
+    const vals = {};
+    entries.forEach(([k, v]) => { vals[k] = typeof v === "object" ? JSON.stringify(v) : String(v); });
+    setEditValues(vals);
+    setEditing(true);
+    setDidAutoEdit(true);
+  }
 
   const startEdit = () => {
     const vals = {};
