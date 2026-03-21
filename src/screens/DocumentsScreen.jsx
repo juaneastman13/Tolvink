@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { C, Ic, STATUS_COLORS } from "../theme";
 import { Loader, EmptyState } from "../components";
-import { apiGetCompanyAccess, apiListFreights, apiGetWeighTickets, apiGetFreight, apiOcrAnalyze, apiSaveOcrData, apiClearOcrData } from "../api";
+import { apiGetCompanyAccess, apiListFreights, apiGetWeighTickets, apiGetFreight, apiOcrAnalyze, apiSaveOcrData, apiClearOcrData, apiEditOcrData } from "../api";
+import { OcrResultModal } from "../uploads";
 
 const API_URL = import.meta.env.VITE_API_URL || "";
 const DOC_TYPE_ICONS = {
@@ -55,6 +56,7 @@ export default function DocumentsScreen({ user, onBack, onNavigate }) {
   const [clearingOcr, setClearingOcr] = useState(null); // doc id
   const [confirmClear, setConfirmClear] = useState(null); // doc to confirm clear
   const [viewerDoc, setViewerDoc] = useState(null); // doc for viewer modal
+  const [ocrEditDoc, setOcrEditDoc] = useState(null); // doc for OCR edit modal
 
   const companyId = user?.activeCompanyId || user?.companyId;
   const isManager = ["admin", "gerente", "platform_admin"].includes(user?.role);
@@ -312,6 +314,7 @@ export default function DocumentsScreen({ user, onBack, onNavigate }) {
               <span style={{ fontSize: 14.3, fontWeight: 700, color: C.t1 }}>{doc._name || doc.name || doc._type}</span>
               <span style={{ padding: "2px 7px", borderRadius: 6, fontSize: 10, fontWeight: 600, background: `${C.t3}12`, color: C.t3 }}>{doc._type}</span>
               {doc._hasOcr && <span style={{ padding: "2px 7px", borderRadius: 6, fontSize: 10, fontWeight: 700, background: C.priPale, color: C.pri }}>{doc._ocrData?.structured !== false ? "OCR" : "OCR libre"}</span>}
+              {doc._hasOcr && doc._ocrData?._editMeta && <span style={{ padding: "2px 6px", borderRadius: 6, fontSize: 9, fontWeight: 700, background: `${C.acc}15`, color: C.acc }}>Editado</span>}
             </div>
             <div style={{ fontSize: 12.1, color: C.t3, marginTop: 2 }}>
               {fmtDate(doc._date)} {doc._freight?.code ? `· ${doc._freight.code}` : ""}
@@ -383,7 +386,17 @@ export default function DocumentsScreen({ user, onBack, onNavigate }) {
                     <span style={{ fontSize: 11, fontWeight: 700, color: C.pri, textTransform: "uppercase", letterSpacing: 0.4 }}>Datos OCR</span>
                     <span style={{ fontSize: 10, color: C.t3, fontStyle: "italic" }}>{isStructured ? "Estructurado" : "Libre"}</span>
                     {raw?.confianza != null && <span style={{ fontSize: 10, color: C.t3 }}>({Math.round((raw.confianza || 0) * 100)}%)</span>}
+                    {raw?._editMeta && <span style={{ fontSize: 9, fontWeight: 700, color: C.acc, background: `${C.acc}15`, padding: "1px 5px", borderRadius: 6 }}>Editado</span>}
                     <span style={{ flex: 1 }} />
+                    {doc._source === "document" && (
+                      <button onClick={e => { e.stopPropagation(); setOcrEditDoc(doc); }} style={{
+                        padding: "3px 8px", borderRadius: 6, border: `1px solid ${C.acc}`, background: `${C.acc}10`,
+                        cursor: "pointer", fontFamily: "inherit", fontSize: 10.5, fontWeight: 700, color: C.acc,
+                        display: "flex", alignItems: "center", gap: 4,
+                      }}>
+                        Editar
+                      </button>
+                    )}
                     {doc._source === "document" && (
                       <button onClick={e => { e.stopPropagation(); setConfirmClear(doc); }} disabled={clearingOcr === doc.id} style={{
                         padding: "3px 8px", borderRadius: 6, border: `1px solid #EF4444`, background: "#FEF2F2",
@@ -588,6 +601,22 @@ export default function DocumentsScreen({ user, onBack, onNavigate }) {
             </div>
           </div>
         </div>
+      )}
+
+      {/* OCR Edit Modal */}
+      {ocrEditDoc && ocrEditDoc._ocrData && (
+        <OcrResultModal
+          result={typeof ocrEditDoc._ocrData === "string" ? JSON.parse(ocrEditDoc._ocrData) : ocrEditDoc._ocrData}
+          onClose={() => setOcrEditDoc(null)}
+          freightId={ocrEditDoc._freight?.id}
+          docId={ocrEditDoc._source === "document" ? ocrEditDoc.id : null}
+          onSaved={() => {
+            // Reload docs to get updated ocrData
+            if (tab === "company" && selCompany) loadCompanyDocs(selCompany.companyId || selCompany.id);
+            else if (tab === "freight" && selFreight) loadFreightDocs(selFreight.id);
+            setOcrEditDoc(null);
+          }}
+        />
       )}
 
       {/* Document Viewer Modal */}
