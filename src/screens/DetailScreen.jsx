@@ -426,7 +426,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
                 const phone = clean.startsWith("0") ? "598" + clean.slice(1) : clean;
                 window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, "_blank");
               }} style={{ padding:"6px 10px", borderRadius: R.sm, border:"none", background:"#25D366", color:C.w, fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"inherit", whiteSpace:"nowrap", display:"flex", alignItems:"center", gap:4 }}>
-                WhatsApp
+                Enviar por WhatsApp
               </button>
               <button onClick={()=>{ navigator.clipboard.writeText(shareLink.url); setShareLink(s=>({...s,copied:true})); setTimeout(()=>setShareLink(s=>s?{...s,copied:false}:null),2000); }} style={{ padding:"6px 10px", borderRadius: R.sm, border:"none", background:shareLink.copied?C.ok:C.pri, color:C.w, fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"inherit", whiteSpace:"nowrap" }}>
                 {shareLink.copied ? "Copiado!" : "Copiar"}

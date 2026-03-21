@@ -225,7 +225,7 @@ export default function LinkedCompaniesScreen({ user, embedded, onBack, onNav })
                   window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, "_blank");
                 } catch (e) { show(e.message || "Error", "err"); }
               }} style={{ display: "flex", alignItems: "center", gap: 4, padding: "5px 10px", borderRadius: R.sm, border: "none", background: "#25D366", cursor: "pointer", fontFamily: FONT, fontSize: 11.6, fontWeight: 700, color: "#fff" }}>
-                WhatsApp
+                Enviar por WhatsApp
               </button>
               {!isLegacy && <button onClick={() => handleToggleActive(r)} disabled={saving} style={{ background: "none", border: "none", fontSize: 11.6, color: C.err, fontWeight: 600, cursor: "pointer", padding: 0 }}>
                 Desactivar vinculación
