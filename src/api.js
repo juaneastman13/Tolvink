@@ -438,6 +438,8 @@ export async function apiUpdateAccessLevel(id, level) { return api(`/company-acc
 export async function apiUpdateAccessPermissions(id, permissions) { return api(`/company-access/${id}/permissions`,{method:'PATCH',body:{permissions}}); }
 export async function apiToggleAccess(id) { return api(`/company-access/${id}/toggle`,{method:'PATCH',body:{}}); }
 export async function apiCreateLinkedCompany(b) { return api('/company-access/create-company',{body:b}); }
+export async function apiSearchCompanies(search) { return api(`/company-access/search-companies?search=${encodeURIComponent(search)}`); }
+export async function apiLinkExistingCompany(b) { return api('/company-access/link-existing',{body:b}); }
 export async function apiCreateLinkedUser(b) { return api('/company-access/create-user',{body:b}); }
 
 // Shared links
