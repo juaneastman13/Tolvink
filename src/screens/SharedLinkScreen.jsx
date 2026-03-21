@@ -81,12 +81,14 @@ function SectionLabel({ icon, label }) {
 function MetricCard({ value, label, color, icon }) {
   return (
     <div style={{
-      flex: "1 1 140px", background: C.w, borderRadius: R.lg, padding: "18px 14px",
-      border: `1px solid ${C.b2}`, boxShadow: C.sh, textAlign: "center", minWidth: 0,
+      flex: "1 1 140px", background: C.w, borderRadius: R.lg, padding: "14px 16px",
+      border: `1px solid ${C.b2}`, boxShadow: C.sh, minWidth: 0,
     }}>
-      {icon && <div style={{ marginBottom: 6 }}>{icon}</div>}
-      <div style={{ fontSize: 28, fontWeight: 800, color: color || C.pri, letterSpacing: -0.5 }}>{value}</div>
-      <div style={{ fontSize: 11.5, fontWeight: 600, color: C.t3, marginTop: 2 }}>{label}</div>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+        {icon}
+        <span style={{ fontSize: 26, fontWeight: 800, color: color || C.pri, letterSpacing: -0.5 }}>{value}</span>
+      </div>
+      <div style={{ fontSize: 11.5, fontWeight: 600, color: C.t3 }}>{label}</div>
     </div>
   );
 }
@@ -543,8 +545,7 @@ function PortalView({ data, creatorName, targetName, onSelectFreight }) {
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 10, marginBottom: 14 }}>
         <MetricCard value={data.totalFreights || 0} label="Fletes totales" color={C.pri} icon={Ic.truck(C.pri, 22)} />
         <MetricCard value={data.activeFreights || 0} label="Activos" color={C.acc} icon={Ic.nav(C.acc, 22)} />
-        <MetricCard value={data.totalTons != null ? `${Number(data.totalTons).toLocaleString("es-UY")}` : "—"} label="Toneladas" color={C.sec} icon={Ic.grain(C.sec, 22)} />
-        {data.lastFreightAt && <MetricCard value={fmtDateShort(data.lastFreightAt)} label="Último flete" color={C.t1} icon={Ic.cal(C.t1, 22)} />}
+        <MetricCard value={data.totalTons != null ? `${Number(data.totalTons).toLocaleString("es-UY")}` : "—"} label="Toneladas totales" color={C.sec} icon={Ic.grain(C.sec, 22)} />
       </div>
 
       {/* Status filter pills */}
