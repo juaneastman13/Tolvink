@@ -1,12 +1,14 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { C, Ic, FONT, MONO, R, STATUS_COLORS } from "../theme";
 import { FreightCard, StatusPill } from "../components/FreightCard";
 import { Loader, EmptyState } from "../components";
 import { apiResolveSharedLink } from "../api";
+import { formatFreightDate } from "../constants";
 
 // =====================================================================
 // TOLVINK — SharedLinkScreen (Public)
-// Visually identical to the authenticated app, reusing real components.
+// Visually identical to the authenticated app. Reuses real components.
+// Full-width layout (max 1400px), natural scroll, no overflow hidden.
 // =====================================================================
 
 // ---------- Polyline decode ----------
@@ -47,12 +49,21 @@ function timeSince(d) {
   if (s < 3600) return `hace ${Math.floor(s / 60)} min`;
   return `hace ${Math.floor(s / 3600)}h`;
 }
+function useIsDesktop(bp = 768) {
+  const [d, setD] = useState(typeof window !== "undefined" ? window.innerWidth >= bp : false);
+  useEffect(() => {
+    const h = () => setD(window.innerWidth >= bp);
+    window.addEventListener("resize", h);
+    return () => window.removeEventListener("resize", h);
+  }, [bp]);
+  return d;
+}
 
-// ---------- Shared layout components ----------
+// ---------- Shared layout primitives ----------
 
-function Card({ children, style }) {
+function Card({ children, style, onClick }) {
   return (
-    <div style={{ background: C.w, borderRadius: R.lg, padding: 18, marginBottom: 12, border: `1px solid ${C.b2}`, boxShadow: C.sh, ...style }}>
+    <div onClick={onClick} style={{ background: C.w, borderRadius: R.lg, padding: 18, marginBottom: 12, border: `1px solid ${C.b2}`, boxShadow: C.sh, ...style }}>
       {children}
     </div>
   );
@@ -67,28 +78,10 @@ function SectionLabel({ icon, label }) {
   );
 }
 
-function InfoCell({ label, value, bold, mono }) {
-  return (
-    <div style={{ padding: "6px 10px", borderRadius: R.md, background: C.bg }}>
-      <div style={{ fontSize: 10.5, fontWeight: 700, color: C.t3, textTransform: "uppercase", letterSpacing: 0.3, marginBottom: 1 }}>{label}</div>
-      <div style={{ fontSize: 13, fontWeight: bold ? 700 : 500, color: C.t1, fontFamily: mono ? MONO : "inherit" }}>{value || "—"}</div>
-    </div>
-  );
-}
-
-function WeightCell({ label, value, highlight }) {
-  return (
-    <div style={{ textAlign: "center", padding: "10px 6px", borderRadius: R.md, background: highlight ? C.priPale : C.bg }}>
-      <div style={{ fontSize: 10.5, fontWeight: 700, color: C.t3, textTransform: "uppercase", letterSpacing: 0.3, marginBottom: 2 }}>{label}</div>
-      <div style={{ fontSize: 16, fontWeight: 700, color: highlight ? C.pri : C.t1 }}>{value}</div>
-    </div>
-  );
-}
-
 function MetricCard({ value, label, color, icon }) {
   return (
     <div style={{
-      flex: "1 1 100px", background: C.w, borderRadius: R.lg, padding: "18px 14px",
+      flex: "1 1 140px", background: C.w, borderRadius: R.lg, padding: "18px 14px",
       border: `1px solid ${C.b2}`, boxShadow: C.sh, textAlign: "center", minWidth: 0,
     }}>
       {icon && <div style={{ marginBottom: 6 }}>{icon}</div>}
@@ -108,72 +101,83 @@ function FilterPill({ active, onClick, label, color }) {
   );
 }
 
-// ======================== STATUS TIMELINE =============================
-// Identical to DetailScreen audit timeline visual pattern
+// ======================== PROGRESS STEPPER ============================
+// Identical to DetailScreen: 3-node circular stepper (Pendiente → En viaje → Finalizado)
 
-const STATUS_STEPS = [
-  { key: "pending_assignment", label: "Solicitado", icon: (c) => Ic.clk(c, 14) },
-  { key: "assigned", label: "Asignado", icon: (c) => Ic.truck(c, 14) },
-  { key: "accepted", label: "Aceptado", icon: (c) => Ic.chk(c, 14) },
-  { key: "in_progress", label: "A campo", icon: (c) => Ic.nav(c, 14) },
-  { key: "loaded", label: "A planta", icon: (c) => Ic.grain(c, 14) },
-  { key: "finished", label: "Finalizado", icon: (c) => Ic.chk(c, 14) },
-];
+function ProgressStepper({ freight, auditLogs }) {
+  const steps = ["pending_assignment", "assigned", "accepted", "in_progress", "loaded", "finished"];
+  const curIdx = steps.indexOf(freight.status);
+  const isCanceled = freight.status === "canceled";
+  const visualIdx = isCanceled ? (curIdx >= 1 ? (curIdx >= 3 ? 2 : 1) : 0) : curIdx === 0 ? 0 : curIdx <= 4 ? 1 : 2;
 
-function StatusTimeline({ freight, auditLogs }) {
-  const currentIdx = STATUS_STEPS.findIndex(s => s.key === freight.status);
-  const logMap = {};
-  for (const log of (auditLogs || [])) {
-    const key = log.toValue || log.action;
-    if (!logMap[key]) logMap[key] = log.createdAt;
-  }
+  const subLabels = { assigned: "Asignado", accepted: "Asignado", in_progress: "A campo", loaded: "A planta" };
+  const singleSub = [1, 2, 3, 4].includes(curIdx) || isCanceled ? subLabels[freight.status] || subLabels[steps[curIdx]] : null;
+
+  const visualSteps = [
+    { label: "Pendiente", color: STATUS_COLORS.pending_assignment.ribbon, icon: (c, s) => Ic.clk(c, s) },
+    { label: "En viaje", color: STATUS_COLORS.in_progress.ribbon, sub: singleSub, icon: (c, s) => Ic.truck(c, s) },
+    { label: isCanceled ? "Cancelado" : "Finalizado", color: isCanceled ? STATUS_COLORS.canceled.ribbon : STATUS_COLORS.finished.ribbon, icon: (c, s) => isCanceled ? Ic.cross(c, s) : Ic.chk(c, s) },
+  ];
+
+  const fmtD = (d) => { try { const dt = new Date(d); return dt.toLocaleDateString("es-AR", { day: "2-digit", month: "short" }) + " " + dt.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit", hour12: false }); } catch { return ""; } };
+
+  const stepAuditActions = {
+    pending_assignment: ["created"],
+    assigned: ["assigned", "assigned_multi"],
+    accepted: ["accepted", "authorized"],
+    in_progress: ["started", "trip_started", "auto_started"],
+    loaded: ["confirm_loaded", "trip_confirm_loaded", "auto_loaded"],
+    finished: ["confirm_finished", "finished", "trip_confirm_finished", "trip_finished", "canceled", "auto_transporter_confirmed"],
+  };
+  const visualAuditMap = [["pending_assignment"], ["assigned", "accepted", "in_progress", "loaded"], ["finished"]];
+
+  const getStepDate = (backendSteps) => {
+    if (!auditLogs) return null;
+    const logs = backendSteps.flatMap(s => (auditLogs || []).filter(l => (stepAuditActions[s] || []).includes(l.action)));
+    if (logs.length === 0) return null;
+    return logs[logs.length - 1].createdAt;
+  };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
-      {STATUS_STEPS.map((step, i) => {
-        const sc = STATUS_COLORS[step.key] || {};
-        const reached = i <= currentIdx;
-        const isCurrent = i === currentIdx;
-        const date = logMap[step.key] || (step.key === "pending_assignment" ? freight.createdAt : null);
-        const color = reached ? (sc.ribbon || C.pri) : C.b2;
-        return (
-          <div key={step.key} style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: 28, flexShrink: 0 }}>
+    <Card>
+      <div style={{ display: "flex", alignItems: "center", marginBottom: 14 }}>
+        <span style={{ fontSize: 12.2, fontWeight: 700, color: C.t2, textTransform: "uppercase", letterSpacing: 0.5 }}>Progreso</span>
+      </div>
+      <div style={{ display: "flex", alignItems: "flex-start", position: "relative", padding: "0 4px" }}>
+        {visualSteps.map((vs, i) => {
+          const done = i < visualIdx;
+          const active = i === visualIdx && !isCanceled;
+          const isCancelStep = i === 2 && isCanceled;
+          const nodeColor = done ? C.pri : active ? vs.color : isCancelStep ? C.err : C.b1;
+          const nodeIcon = vs.icon(done || active || isCancelStep ? C.w : C.t3, 17);
+          const stepDate = getStepDate(visualAuditMap[i]);
+          return (
+            <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", position: "relative", minWidth: 0 }}>
+              {i > 0 && <div style={{ position: "absolute", top: 15, right: "50%", left: 0, height: 2, background: done || active || isCancelStep ? C.pri : C.b1, zIndex: 0, transform: "translateX(-4px)" }} />}
+              {i < 2 && <div style={{ position: "absolute", top: 15, left: "50%", right: 0, height: 2, background: done ? (i + 1 <= visualIdx ? C.pri : C.b1) : C.b1, zIndex: 0, transform: "translateX(4px)" }} />}
               <div style={{
-                width: isCurrent ? 28 : 22, height: isCurrent ? 28 : 22, borderRadius: "50%",
-                background: reached ? color : C.bg, border: `2px solid ${reached ? color : C.b2}`,
+                width: 31, height: 31, borderRadius: R.xl, background: nodeColor,
                 display: "flex", alignItems: "center", justifyContent: "center",
-                boxShadow: isCurrent ? `0 0 0 4px ${color}20` : "none",
+                position: "relative", zIndex: 1,
+                boxShadow: active ? `0 0 0 3px ${vs.color}25` : isCancelStep ? `0 0 0 3px ${C.err}25` : "none",
                 transition: "all 0.2s",
               }}>
-                {reached ? (i < currentIdx ? Ic.chk("#fff", 12) : step.icon("#fff")) : step.icon(C.t3)}
+                {nodeIcon}
               </div>
-              {i < STATUS_STEPS.length - 1 && (
-                <div style={{
-                  width: 2, height: 24,
-                  background: reached && i < currentIdx ? color : C.b2,
-                  borderRadius: R.xs,
-                }} />
-              )}
+              <span style={{ fontSize: 13, fontWeight: (active || isCancelStep) ? 700 : done ? 600 : 500, color: (active || isCancelStep) ? vs.color : done ? C.t1 : C.t3, textAlign: "center", lineHeight: 1.2, marginTop: 6 }}>{vs.label}</span>
+              {active && vs.sub && <span style={{ fontSize: 11.5, color: C.t3, fontStyle: "italic", textAlign: "center", lineHeight: 1.2, marginTop: 1 }}>({vs.sub})</span>}
+              {(done || active || isCancelStep) && stepDate && <span style={{ fontSize: 10.7, color: C.t3, marginTop: 2, textAlign: "center", lineHeight: 1.2 }}>{fmtD(stepDate)}</span>}
             </div>
-            <div style={{ paddingBottom: 8, minWidth: 0 }}>
-              <div style={{ fontSize: 13.5, fontWeight: isCurrent ? 700 : reached ? 600 : 400, color: reached ? C.t1 : C.t3 }}>
-                {step.label}
-              </div>
-              {date && reached && (
-                <div style={{ fontSize: 11, color: C.t3, marginTop: 1 }}>{fmtDate(date)}</div>
-              )}
-            </div>
-          </div>
-        );
-      })}
-    </div>
+          );
+        })}
+      </div>
+    </Card>
   );
 }
 
 // ======================== FREIGHT MAP ================================
 
-function FreightMap({ freight }) {
+function FreightMap({ freight, style }) {
   const oLat = freight.originLat != null ? Number(freight.originLat) : null;
   const oLng = freight.originLng != null ? Number(freight.originLng) : null;
   const dLat = freight.destLat != null ? Number(freight.destLat) : null;
@@ -231,11 +235,9 @@ function FreightMap({ freight }) {
 
   if (mapError) {
     return (
-      <Card style={{ textAlign: "center" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-          {Ic.pin(C.pri, 16)}
-          <span style={{ fontSize: 13, color: C.t2 }}>{freight.originName || "Origen"} → {freight.destName || "Destino"}</span>
-        </div>
+      <Card style={{ textAlign: "center", height: "100%", boxSizing: "border-box", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", ...style }}>
+        {Ic.pin(C.pri, 16)}
+        <span style={{ fontSize: 13, color: C.t2, marginTop: 8 }}>{freight.originName || "Origen"} → {freight.destName || "Destino"}</span>
         {freight.routeDistanceKm && (
           <div style={{ fontSize: 12, color: C.t3, marginTop: 4 }}>{freight.routeDistanceKm} km · ~{freight.routeDurationMin} min</div>
         )}
@@ -244,8 +246,8 @@ function FreightMap({ freight }) {
   }
 
   return (
-    <div ref={containerRef} style={{ background: C.w, borderRadius: R.lg, overflow: "hidden", marginBottom: 12, border: `1px solid ${C.b2}`, boxShadow: C.sh, position: "relative" }}>
-      <div ref={mapRef} style={{ width: "100%", height: 280 }}>
+    <div ref={containerRef} style={{ background: C.w, borderRadius: R.lg, overflow: "hidden", border: `1px solid ${C.b2}`, boxShadow: C.sh, position: "relative", height: "100%", minHeight: 300, ...style }}>
+      <div ref={mapRef} style={{ width: "100%", height: "100%", minHeight: 300 }}>
         {!loaded && (
           <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", background: C.bg }}>
             <div style={{ fontSize: 13, color: C.t3 }}>Cargando mapa...</div>
@@ -262,114 +264,134 @@ function FreightMap({ freight }) {
 }
 
 // ======================== FREIGHT VIEW ===============================
-// Mirrors DetailScreen: StatusPill hero, route card, map, info grid, timeline
+// Mirrors DetailScreen EXACTLY: same section order, same layout
 
-function FreightView({ data, creatorName, lastRefresh }) {
+function FreightView({ data, creatorName, lastRefresh, isDesktop, onBack }) {
   const f = data;
   if (!f) return null;
   const grain = f.items?.[0]?.grain || f.grainType || "Producto";
   const tons = f.items?.[0]?.tons || f.tonnage || "—";
   const sc = STATUS_COLORS[f.status] || {};
-  const assignment = f.assignments?.[0];
+  const assignments = f.assignments || [];
   const isTerminal = ["finished", "canceled"].includes(f.status);
+  const originName = f.field?.name || f.originName || f.originCompany?.name || "—";
+  const destName = f.destPlant?.name || f.destName || f.destCompany?.name || "—";
+
+  // Build info rows identical to DetailScreen
+  const InfoRow = ({ ic, label, val, isLast }) => (
+    <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 0", borderBottom: isLast ? "none" : `1px solid ${C.b2}` }}>
+      <span style={{ display: "flex", flexShrink: 0 }}>{ic}</span>
+      <span style={{ fontSize: 13.3, color: C.t2, minWidth: 85 }}>{label}</span>
+      <span style={{ fontSize: 13.9, fontWeight: 600, color: C.t1, marginLeft: "auto", textAlign: "right" }}>{val}</span>
+    </div>
+  );
+
+  const infoRows = [
+    [Ic.grain(C.t2, 15), "Producto", `${grain} · ${tons} tn`],
+    f.originCompany?.name && [Ic.user(C.pri, 15), "Empresa", f.originCompany.name],
+    f.producerCompany?.name && [Ic.user(C.acc, 15), "Productor", f.producerCompany.name],
+    [Ic.field(C.ok, 15), "Campo", originName],
+    [Ic.plant(C.t2, 15), "Destino", destName],
+    [Ic.cal(C.t2, 15), "Fecha carga", f.loadDate ? formatFreightDate(f.loadDate) : fmtDateShort(f.createdAt)],
+    f.loadTime && [Ic.clk(C.t2, 15), "Hora carga", f.loadTime],
+  ].filter(Boolean);
 
   return (
     <div>
-      {/* Hero — identical to DetailScreen header */}
-      <Card style={{ borderLeft: `4px solid ${sc.ribbon || C.t3}`, padding: "20px 18px" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+      {/* 1. Header — identical to DetailScreen sticky header */}
+      <div style={{ padding: "18px 0 8px" }}>
+        {onBack && (
+          <div style={{ marginBottom: 14 }}>
+            <button onClick={onBack} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", fontSize: 15, fontWeight: 600, color: C.pri, padding: 0, display: "flex", alignItems: "center", gap: 4 }}>{Ic.chev(C.pri, 18)} Volver</button>
+          </div>
+        )}
+        <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 4 }}>
           <StatusPill status={f.status} />
-          <span style={{ fontFamily: MONO, fontSize: 13, color: C.t3 }}>{f.code}</span>
+          <span style={{ fontSize: 24, fontWeight: 800, color: C.t1, letterSpacing: -0.3 }}>{grain} · {tons} tn</span>
+          <span style={{ fontFamily: MONO, fontSize: 14, color: C.t1, marginLeft: 4 }}>{f.code}</span>
+          {f.loadDate && <><span style={{ fontSize: 14, color: C.t1 }}>-</span><span style={{ fontSize: 14, color: C.t1 }}>{formatFreightDate(f.loadDate)}</span></>}
         </div>
-        <div style={{ fontSize: 22, fontWeight: 800, color: C.t1, letterSpacing: -0.5 }}>
-          {grain} · {tons} tn
-        </div>
-        {f.loadDate && <div style={{ fontSize: 12, color: C.t3, marginTop: 4 }}>{fmtDateShort(f.loadDate)}</div>}
+        {f.producerCompany?.name && (
+          <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 3 }}>
+            {Ic.user(C.acc, 13)}
+            <span style={{ fontSize: 12.5, color: C.acc, fontWeight: 600 }}>{f.producerCompany.name}</span>
+          </div>
+        )}
         {!isTerminal && lastRefresh && (
-          <div style={{ fontSize: 11, color: C.t3, marginTop: 8, fontStyle: "italic" }}>
+          <div style={{ fontSize: 11, color: C.t3, marginTop: 6, fontStyle: "italic" }}>
             Actualizado {timeSince(lastRefresh)}
           </div>
         )}
-      </Card>
+      </div>
 
-      {/* Origin → Destination route */}
-      <Card>
-        <SectionLabel icon={Ic.pin(C.pri, 14)} label="Ruta" />
-        <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: 20, flexShrink: 0, paddingTop: 4 }}>
-            <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#22C55E", border: "2px solid #fff", boxShadow: "0 0 0 2px #22C55E" }} />
-            <div style={{ width: 2, height: 20, background: C.b2, borderRadius: R.xs }} />
-            <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#F59E0B", border: "2px solid #fff", boxShadow: "0 0 0 2px #F59E0B" }} />
+      {/* 2. Progress stepper — identical 3-node from DetailScreen */}
+      <ProgressStepper freight={f} auditLogs={f.auditLogs} />
+
+      {/* 3. Truck assignments — identical to DetailScreen "Camiones" section */}
+      {assignments.length > 0 && f.status !== "canceled" && (
+        <Card>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: assignments.length > 0 ? 12 : 0 }}>
+            <span style={{ display: "flex" }}>{Ic.truck(C.t2, 16)}</span>
+            <span style={{ fontSize: 12.2, fontWeight: 700, color: C.t2, textTransform: "uppercase", letterSpacing: 0.5 }}>Camiones</span>
+            <span style={{ flex: 1 }} />
+            <span style={{ fontSize: 14, fontWeight: 600, color: C.info }}>{assignments.length} asignado{assignments.length > 1 ? "s" : ""}</span>
           </div>
-          <div style={{ flex: 1 }}>
-            <div style={{ marginBottom: 10 }}>
-              <div style={{ fontSize: 11, color: C.t3, fontWeight: 600 }}>Origen</div>
-              <div style={{ fontSize: 14.5, fontWeight: 700, color: C.t1 }}>{f.field?.name || f.originName || f.originCompany?.name || "—"}</div>
-            </div>
-            <div>
-              <div style={{ fontSize: 11, color: C.t3, fontWeight: 600 }}>Destino</div>
-              <div style={{ fontSize: 14.5, fontWeight: 700, color: C.t1 }}>{f.destPlant?.name || f.destName || f.destCompany?.name || "—"}</div>
-            </div>
-          </div>
-        </div>
-      </Card>
-
-      {/* Map */}
-      <FreightMap freight={f} />
-
-      {/* Truck / Assignment — mirrors DetailScreen truck cards */}
-      {assignment && (
-        <Card style={{ borderLeft: `3px solid ${sc.ribbon || C.info}` }}>
-          <SectionLabel icon={Ic.truck(C.info, 14)} label="Transporte" />
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <div style={{ width: 36, height: 36, borderRadius: "50%", background: sc.ribbon ? `${sc.ribbon}18` : C.bg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-              {Ic.truck(sc.ribbon || C.info, 18)}
-            </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                {assignment.plate && <span style={{ fontSize: 15, fontWeight: 700, color: C.t1 }}>{assignment.plate}</span>}
-                {assignment.driverName && <span style={{ fontSize: 13, color: C.t2 }}>{assignment.driverName}</span>}
+          {assignments.map(a => {
+            const tripSc = STATUS_COLORS[a.tripStatus] || STATUS_COLORS[f.status] || {};
+            const tColor = tripSc.ribbon || C.info;
+            return (
+              <div key={a.id} style={{ display: "flex", borderRadius: R.sm, border: `0.5px solid ${C.b1}`, overflow: "hidden", background: C.w, marginBottom: 8 }}>
+                <div style={{ width: 20, background: tColor, flexShrink: 0 }} />
+                <div style={{ padding: "8px 10px", flex: 1, minWidth: 0 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                    {assignments.length > 1 && <span style={{ fontSize: 12, fontWeight: 500, color: C.t2, marginRight: 2 }}>#{a.tripNumber}</span>}
+                    <span style={{ fontFamily: MONO, fontSize: 14, fontWeight: 500, color: C.t1 }}>{a.plate || "Sin camión"}</span>
+                    {a.transportCompany?.name && <span style={{ fontSize: 12, color: C.t2 }}>- {a.transportCompany.name}</span>}
+                    {a.driverName && <span style={{ fontSize: 12, color: C.t2 }}>- {a.driverName}</span>}
+                    <span style={{ flex: 1 }} />
+                    <StatusPill status={a.tripStatus || f.status} small />
+                  </div>
+                </div>
               </div>
-              {assignment.transportCompany?.name && (
-                <div style={{ fontSize: 12, color: C.t3, marginTop: 2 }}>{assignment.transportCompany.name}</div>
-              )}
-            </div>
-          </div>
+            );
+          })}
         </Card>
       )}
 
-      {/* Info grid — identical pattern to DetailScreen */}
-      <Card>
-        <SectionLabel icon={Ic.doc(C.pri, 14)} label="Información" />
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-          <InfoCell label="Producto" value={grain} />
-          <InfoCell label="Toneladas" value={`${tons} tn`} bold />
-          {f.originCompany?.name && <InfoCell label="Empresa" value={f.originCompany.name} />}
-          {f.field?.name && <InfoCell label="Campo" value={f.field.name} />}
-          <InfoCell label="Creado" value={fmtDateShort(f.createdAt)} />
-          {f.loadDate && <InfoCell label="Fecha carga" value={fmtDateShort(f.loadDate)} />}
+      {/* 4. Info + Map side by side — identical to DetailScreen layout */}
+      <div style={{ display: "flex", flexDirection: isDesktop ? "row" : "column", gap: 12, marginBottom: 12, alignItems: isDesktop ? "stretch" : undefined }}>
+        <div style={{ flex: "1 1 0%", minWidth: 0 }}>
+          <div style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: R.lg, padding: 16, boxShadow: C.sh, height: "100%", boxSizing: "border-box" }}>
+            {infoRows.map(([ic, label, val], i) => <InfoRow key={i} ic={ic} label={label} val={val} isLast={i === infoRows.length - 1} />)}
+          </div>
         </div>
-      </Card>
+        <div style={{ flex: "1 1 0%", minWidth: 0 }}>
+          <FreightMap freight={f} />
+        </div>
+      </div>
 
-      {/* Timeline */}
-      <Card>
-        <SectionLabel icon={Ic.clk(C.pri, 14)} label="Seguimiento" />
-        <StatusTimeline freight={f} auditLogs={f.auditLogs} />
-      </Card>
+      {/* 5. Notes — if present */}
+      {f.notes && (
+        <div style={{ background: C.warnPale, border: `1px solid ${C.warn}30`, borderLeft: `3px solid ${C.warn}`, borderRadius: R.lg, padding: 14, marginBottom: 12 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
+            {Ic.doc(C.warn, 14)}
+            <span style={{ fontSize: 12.2, fontWeight: 700, color: C.warn, textTransform: "uppercase", letterSpacing: 0.5 }}>Observaciones</span>
+          </div>
+          <div style={{ fontSize: 14.5, color: C.t1, lineHeight: 1.5, whiteSpace: "pre-wrap" }}>{f.notes}</div>
+        </div>
+      )}
     </div>
   );
 }
 
 // ======================== TICKET VIEW ================================
-// Mirrors DocumentsScreen layout for weigh ticket display
 
-function TicketView({ data, creatorName }) {
+function TicketView({ data, creatorName, onViewFreight }) {
   if (!data) return null;
   const [photoExpanded, setPhotoExpanded] = useState(false);
 
   return (
     <div>
-      {/* Header card */}
       <Card style={{ textAlign: "center", padding: 24 }}>
         <div style={{ display: "flex", justifyContent: "center", marginBottom: 16 }}>
           <div style={{ width: 48, height: 48, borderRadius: "50%", background: C.priPale, display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -381,7 +403,6 @@ function TicketView({ data, creatorName }) {
         {data.registeredAt && <div style={{ fontSize: 12, color: C.t3, marginTop: 4 }}>{fmtDate(data.registeredAt)}</div>}
       </Card>
 
-      {/* Weights */}
       <Card>
         <SectionLabel icon={Ic.grain(C.pri, 14)} label="Pesaje" />
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
@@ -397,20 +418,9 @@ function TicketView({ data, creatorName }) {
         )}
       </Card>
 
-      {/* Photo — expandable */}
       {data.photoUrl && (
         <Card style={{ padding: 0, overflow: "hidden", cursor: "pointer" }} onClick={() => setPhotoExpanded(!photoExpanded)}>
-          <img
-            src={data.photoUrl}
-            alt="Ticket de pesaje"
-            style={{
-              width: "100%",
-              maxHeight: photoExpanded ? "none" : 300,
-              objectFit: photoExpanded ? "contain" : "cover",
-              background: C.bg,
-              transition: "max-height 0.3s",
-            }}
-          />
+          <img src={data.photoUrl} alt="Ticket de pesaje" style={{ width: "100%", maxHeight: photoExpanded ? "none" : 300, objectFit: photoExpanded ? "contain" : "cover", background: C.bg, transition: "max-height 0.3s" }} />
           {!photoExpanded && (
             <div style={{ padding: "8px 14px", fontSize: 11, color: C.t3, textAlign: "center", borderTop: `1px solid ${C.b2}` }}>
               {Ic.expand(C.t3, 12)} Tocar para ampliar
@@ -419,7 +429,6 @@ function TicketView({ data, creatorName }) {
         </Card>
       )}
 
-      {/* OCR data */}
       {data.ocrData && (() => {
         const ocr = typeof data.ocrData === "string" ? JSON.parse(data.ocrData) : data.ocrData;
         const fields = ocr?.datos || ocr?.data || ocr || {};
@@ -429,17 +438,22 @@ function TicketView({ data, creatorName }) {
           <Card>
             <SectionLabel icon={Ic.doc(C.acc, 14)} label="Datos extraídos (OCR)" />
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-              {entries.map(([k, v]) => <InfoCell key={k} label={k} value={typeof v === "object" ? JSON.stringify(v) : String(v)} />)}
+              {entries.map(([k, v]) => (
+                <div key={k} style={{ padding: "6px 10px", borderRadius: R.md, background: C.bg }}>
+                  <div style={{ fontSize: 10.5, fontWeight: 700, color: C.t3, textTransform: "uppercase", letterSpacing: 0.3, marginBottom: 1 }}>{k}</div>
+                  <div style={{ fontSize: 13, fontWeight: 500, color: C.t1 }}>{typeof v === "object" ? JSON.stringify(v) : String(v)}</div>
+                </div>
+              ))}
             </div>
           </Card>
         );
       })()}
 
-      {/* Linked freight — uses real FreightCard */}
+      {/* Linked freight — real FreightCard, click navigates to detail */}
       {data.freight && (
         <div style={{ marginTop: 4 }}>
           <SectionLabel icon={Ic.truck(C.pri, 14)} label="Flete asociado" />
-          <FreightCard freight={mapApiFreightToCard(data.freight)} />
+          <FreightCard freight={mapApiFreightToCard(data.freight)} onClick={onViewFreight ? () => onViewFreight(data.freight) : undefined} />
         </div>
       )}
     </div>
@@ -447,12 +461,11 @@ function TicketView({ data, creatorName }) {
 }
 
 // ======================== PORTAL VIEW ================================
-// Mirrors HomeScreen metrics + ListScreen freight cards
+// Mirrors HomeScreen metrics + ListScreen freight list. Full width.
 
-function PortalView({ data, creatorName, targetName }) {
+function PortalView({ data, creatorName, targetName, onSelectFreight }) {
   if (!data) return null;
   const [statusFilter, setStatusFilter] = useState("all");
-  const [expandedId, setExpandedId] = useState(null);
 
   const freights = data.freights || [];
   const filteredFreights = useMemo(() => {
@@ -468,19 +481,15 @@ function PortalView({ data, creatorName, targetName }) {
 
   return (
     <div>
-      {/* Metric cards — identical to HomeScreen */}
-      <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 14 }}>
+      {/* Metric cards — full width grid */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 10, marginBottom: 14 }}>
         <MetricCard value={data.totalFreights || 0} label="Fletes totales" color={C.pri} icon={Ic.truck(C.pri, 22)} />
         <MetricCard value={data.activeFreights || 0} label="Activos" color={C.acc} icon={Ic.nav(C.acc, 22)} />
         <MetricCard value={data.totalTons != null ? `${Number(data.totalTons).toLocaleString("es-UY")}` : "—"} label="Toneladas" color={C.sec} icon={Ic.grain(C.sec, 22)} />
+        {data.lastFreightAt && <MetricCard value={fmtDateShort(data.lastFreightAt)} label="Último flete" color={C.t1} icon={Ic.cal(C.t1, 22)} />}
       </div>
-      {data.lastFreightAt && (
-        <div style={{ fontSize: 12, color: C.t3, textAlign: "center", marginBottom: 16 }}>
-          Último flete: {fmtDate(data.lastFreightAt)}
-        </div>
-      )}
 
-      {/* Status filter pills — same as ListScreen */}
+      {/* Status filter pills */}
       {statusOptions.length > 1 && (
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 14 }}>
           <FilterPill active={statusFilter === "all"} onClick={() => setStatusFilter("all")} label={`Todos (${freights.length})`} />
@@ -490,7 +499,7 @@ function PortalView({ data, creatorName, targetName }) {
         </div>
       )}
 
-      {/* Freight list — uses real FreightCard */}
+      {/* Freight list — real FreightCard, click navigates to detail */}
       {filteredFreights.length === 0 ? (
         <EmptyState
           icon={Ic.truck(C.t3, 28)}
@@ -499,38 +508,13 @@ function PortalView({ data, creatorName, targetName }) {
         />
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {filteredFreights.map(f => {
-            const cardF = mapApiFreightToCard(f);
-            const isExp = expandedId === f.id;
-            const assignment = f.assignments?.[0];
-            const grain = f.items?.[0]?.grain || f.grainType || "";
-            const tons = f.items?.[0]?.tons || f.tonnage || "";
-            return (
-              <div key={f.id}>
-                <FreightCard
-                  freight={cardF}
-                  onClick={() => setExpandedId(isExp ? null : f.id)}
-                  style={{ borderRadius: isExp ? `${R.sm}px ${R.sm}px 0 0` : undefined }}
-                />
-                {isExp && (
-                  <div style={{
-                    background: C.w, borderRadius: `0 0 ${R.sm}px ${R.sm}px`,
-                    border: `0.5px solid ${C.b1}`, borderTop: `1px solid ${C.b2}`,
-                    padding: "12px 16px",
-                  }}>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                      {grain && <InfoCell label="Producto" value={grain} />}
-                      {tons && <InfoCell label="Toneladas" value={`${tons} tn`} bold />}
-                      {assignment?.transportCompany?.name && <InfoCell label="Transporte" value={assignment.transportCompany.name} />}
-                      {assignment?.plate && <InfoCell label="Patente" value={assignment.plate} mono />}
-                      {assignment?.driverName && <InfoCell label="Chofer" value={assignment.driverName} />}
-                      <InfoCell label="Creado" value={fmtDateShort(f.createdAt)} />
-                    </div>
-                  </div>
-                )}
-              </div>
-            );
-          })}
+          {filteredFreights.map(f => (
+            <FreightCard
+              key={f.id}
+              freight={mapApiFreightToCard(f)}
+              onClick={() => onSelectFreight && onSelectFreight(f)}
+            />
+          ))}
         </div>
       )}
     </div>
@@ -560,7 +544,7 @@ function ErrorView({ error }) {
       <a href="https://tolvink.com" style={{
         display: "inline-flex", alignItems: "center", gap: 6, padding: "10px 24px",
         borderRadius: R.lg, background: C.pri, color: "#fff", textDecoration: "none",
-        fontFamily: "inherit", fontSize: 14, fontWeight: 700, transition: "opacity 0.15s",
+        fontFamily: "inherit", fontSize: 14, fontWeight: 700,
       }}>
         Ir a Tolvink {Ic.nav("#fff", 14)}
       </a>
@@ -569,7 +553,6 @@ function ErrorView({ error }) {
 }
 
 // ======================== PUBLIC HEADER ===============================
-// Identical to app header: same height (56px), logo, background, shadow
 
 function PublicHeader({ data }) {
   const subtitle = data
@@ -584,28 +567,19 @@ function PublicHeader({ data }) {
       height: 56, display: "flex", alignItems: "center", gap: 12, boxShadow: C.sh,
       position: "sticky", top: 0, zIndex: 100,
     }}>
-      {/* Logo — identical to Sidebar */}
       <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
         {Ic.seedling(C.pri, 26)}
         <span style={{ fontSize: 22, fontWeight: 800, color: C.pri, letterSpacing: -0.8 }}>tolvink</span>
       </div>
-
-      {/* Separator */}
       {data?.creatorCompanyName && <div style={{ width: 1, height: 24, background: C.b2, flexShrink: 0 }} />}
-
-      {/* Company name + subtitle */}
       <div style={{ flex: 1, minWidth: 0, overflow: "hidden" }}>
         {data?.creatorCompanyName && (
           <div style={{ fontSize: 13.5, fontWeight: 700, color: C.t1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {data.creatorCompanyName}
           </div>
         )}
-        {subtitle && (
-          <div style={{ fontSize: 11, color: C.t3, fontWeight: 500 }}>{subtitle}</div>
-        )}
+        {subtitle && <div style={{ fontSize: 11, color: C.t3, fontWeight: 500 }}>{subtitle}</div>}
       </div>
-
-      {/* Badge — same style as app badges */}
       <div className="tv-shared-badge" style={{
         display: "flex", alignItems: "center", gap: 4, padding: "4px 10px",
         borderRadius: R.md, background: C.priPale, flexShrink: 0,
@@ -647,7 +621,15 @@ function PublicFooter({ creatorName }) {
 
 // ======================== HELPERS ====================================
 
-// Map API freight shape (from shared-links backend) to FreightCard expected shape
+function WeightCell({ label, value, highlight }) {
+  return (
+    <div style={{ textAlign: "center", padding: "10px 6px", borderRadius: R.md, background: highlight ? C.priPale : C.bg }}>
+      <div style={{ fontSize: 10.5, fontWeight: 700, color: C.t3, textTransform: "uppercase", letterSpacing: 0.3, marginBottom: 2 }}>{label}</div>
+      <div style={{ fontSize: 16, fontWeight: 700, color: highlight ? C.pri : C.t1 }}>{value}</div>
+    </div>
+  );
+}
+
 function mapApiFreightToCard(f) {
   const assignment = f.assignments?.[0];
   const grain = f.items?.[0]?.grain || f.grainType || "Producto";
@@ -685,12 +667,25 @@ export default function SharedLinkScreen({ token }) {
   const [loading, setLoading] = useState(true);
   const [lastRefresh, setLastRefresh] = useState(null);
   const refreshRef = useRef(null);
+  const isDesktop = useIsDesktop(768);
+
+  // Navigation: portal can drill into freight detail
+  const [selectedFreight, setSelectedFreight] = useState(null);
+
+  const handleSelectFreight = useCallback((f) => {
+    setSelectedFreight(f);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, []);
+
+  const handleBack = useCallback(() => {
+    setSelectedFreight(null);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, []);
 
   useEffect(() => {
     if (!token) { setError("Token inválido"); setLoading(false); return; }
     let mounted = true;
 
-    // Set meta tags
     const setMeta = (name, content) => {
       let el = document.querySelector(`meta[property="${name}"],meta[name="${name}"]`);
       if (!el) { el = document.createElement("meta"); el.setAttribute(name.startsWith("og:") ? "property" : "name", name); document.head.appendChild(el); }
@@ -708,7 +703,6 @@ export default function SharedLinkScreen({ token }) {
         } else {
           setData(result);
           setLastRefresh(new Date());
-          // Dynamic meta tags
           if (result.linkType === "FREIGHT" && result.data?.code) {
             document.title = `Seguimiento ${result.data.code} — Tolvink`;
             setMeta("og:title", `Seguimiento de Flete ${result.data.code} — Tolvink`);
@@ -731,14 +725,13 @@ export default function SharedLinkScreen({ token }) {
     };
     load();
 
-    // Auto-refresh every 30s (cleared if terminal)
+    // Auto-refresh every 30s, stops for terminal states
     refreshRef.current = setInterval(() => {
       if (document.hidden) return;
       apiResolveSharedLink(token).then(r => {
         if (!mounted || !r.valid) return;
         setData(r);
         setLastRefresh(new Date());
-        // Stop polling if terminal
         if (r.linkType === "FREIGHT" && ["finished", "canceled"].includes(r.data?.status)) {
           clearInterval(refreshRef.current);
         }
@@ -747,6 +740,10 @@ export default function SharedLinkScreen({ token }) {
 
     return () => { mounted = false; clearInterval(refreshRef.current); };
   }, [token]);
+
+  // Determine what view to render
+  const showFreightDetail = selectedFreight || (data?.linkType === "FREIGHT");
+  const freightData = selectedFreight || (data?.linkType === "FREIGHT" ? data?.data : null);
 
   return (
     <div style={{ minHeight: "100dvh", background: C.bg, fontFamily: FONT, display: "flex", flexDirection: "column" }}>
@@ -763,11 +760,9 @@ export default function SharedLinkScreen({ token }) {
         }
       `}</style>
 
-      {/* Header — identical to app header */}
       <PublicHeader data={data} />
 
-      {/* Content */}
-      <div style={{ flex: 1, maxWidth: 600, width: "100%", margin: "0 auto", padding: "20px 16px 0" }}>
+      <main style={{ flex: 1, width: "100%", maxWidth: 1400, margin: "0 auto", padding: "24px 16px" }}>
         {loading && (
           <div style={{ padding: "60px 0" }}>
             <Loader />
@@ -776,18 +771,37 @@ export default function SharedLinkScreen({ token }) {
 
         {error && <ErrorView error={error} />}
 
-        {data && data.linkType === "FREIGHT" && (
-          <FreightView data={data.data} creatorName={data.creatorCompanyName} lastRefresh={lastRefresh} />
+        {/* Freight detail — direct link or drilled down from portal/ticket */}
+        {!loading && !error && showFreightDetail && (
+          <FreightView
+            data={freightData}
+            creatorName={data?.creatorCompanyName}
+            lastRefresh={lastRefresh}
+            isDesktop={isDesktop}
+            onBack={selectedFreight ? handleBack : null}
+          />
         )}
-        {data && data.linkType === "TICKET" && (
-          <TicketView data={data.data} creatorName={data.creatorCompanyName} />
-        )}
-        {data && data.linkType === "PORTAL" && (
-          <PortalView data={data.data} creatorName={data.creatorCompanyName} targetName={data.targetCompanyName} />
-        )}
-      </div>
 
-      {/* Footer */}
+        {/* Portal list — only when no freight is selected */}
+        {!loading && !error && data?.linkType === "PORTAL" && !selectedFreight && (
+          <PortalView
+            data={data.data}
+            creatorName={data.creatorCompanyName}
+            targetName={data.targetCompanyName}
+            onSelectFreight={handleSelectFreight}
+          />
+        )}
+
+        {/* Ticket — only when no freight is selected */}
+        {!loading && !error && data?.linkType === "TICKET" && !selectedFreight && (
+          <TicketView
+            data={data.data}
+            creatorName={data.creatorCompanyName}
+            onViewFreight={data.data?.freight ? (f) => handleSelectFreight(f) : null}
+          />
+        )}
+      </main>
+
       {!loading && <PublicFooter creatorName={data?.creatorCompanyName} />}
     </div>
   );
