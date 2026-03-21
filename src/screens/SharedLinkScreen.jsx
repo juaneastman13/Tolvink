@@ -182,7 +182,7 @@ function FreightMap({ freight, style }) {
   const oLng = freight.originLng != null ? Number(freight.originLng) : null;
   const dLat = freight.destLat != null ? Number(freight.destLat) : null;
   const dLng = freight.destLng != null ? Number(freight.destLng) : null;
-  if (!oLat || !oLng || !dLat || !dLng) return null;
+  const hasCoords = oLat && oLng && dLat && dLng;
 
   const mapRef = useRef(null);
   const containerRef = useRef(null);
@@ -191,15 +191,16 @@ function FreightMap({ freight, style }) {
   const [mapError, setMapError] = useState(false);
 
   useEffect(() => {
+    if (!hasCoords) return;
     const el = containerRef.current;
     if (!el) return;
     const obs = new IntersectionObserver(([entry]) => { if (entry.isIntersecting) { setVisible(true); obs.disconnect(); } }, { threshold: 0.1 });
     obs.observe(el);
     return () => obs.disconnect();
-  }, []);
+  }, [hasCoords]);
 
   useEffect(() => {
-    if (!visible || loaded) return;
+    if (!hasCoords || !visible || loaded) return;
     const key = import.meta.env.VITE_GMAPS_KEY || "";
     if (!key) { setMapError(true); return; }
     const init = () => {
@@ -223,9 +224,7 @@ function FreightMap({ freight, style }) {
       map.fitBounds(bounds, 40);
       setLoaded(true);
     };
-    // Reuse Google Maps if already loaded (by app or previous render)
     if (window.google?.maps) { init(); return; }
-    // Check for existing script tag
     const existing = document.querySelector('script[src*="maps.googleapis.com"]');
     if (existing) { existing.addEventListener("load", init); return; }
     const script = document.createElement("script");
@@ -235,15 +234,18 @@ function FreightMap({ freight, style }) {
     script.onload = init;
     script.onerror = () => setMapError(true);
     document.head.appendChild(script);
-  }, [visible]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [hasCoords, visible]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  if (mapError) {
+  // Fallback when no coordinates or map error
+  if (!hasCoords || mapError) {
     return (
-      <Card style={{ textAlign: "center", height: "100%", boxSizing: "border-box", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", ...style }}>
-        {Ic.pin(C.pri, 16)}
-        <span style={{ fontSize: 13, color: C.t2, marginTop: 8 }}>{freight.originName || "Origen"} → {freight.destName || "Destino"}</span>
+      <Card style={{ textAlign: "center", height: "100%", boxSizing: "border-box", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: 180, ...style }}>
+        {Ic.pin(C.pri, 22)}
+        <span style={{ fontSize: 14, fontWeight: 600, color: C.t1, marginTop: 10 }}>{freight.originName || "Origen"}</span>
+        <span style={{ fontSize: 13, color: C.t3, margin: "2px 0" }}>{Ic.nav(C.t3, 12)}</span>
+        <span style={{ fontSize: 14, fontWeight: 600, color: C.t1 }}>{freight.destName || "Destino"}</span>
         {freight.routeDistanceKm && (
-          <div style={{ fontSize: 12, color: C.t3, marginTop: 4 }}>{freight.routeDistanceKm} km · ~{freight.routeDurationMin} min</div>
+          <div style={{ fontSize: 12, color: C.pri, fontWeight: 700, marginTop: 8 }}>{freight.routeDistanceKm} km · ~{freight.routeDurationMin} min</div>
         )}
       </Card>
     );

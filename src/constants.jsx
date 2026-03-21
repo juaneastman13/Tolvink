@@ -63,7 +63,9 @@ export const POLL_INTERVALS = {
 const MESES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
 export function formatFreightDate(dateStr) {
   if (!dateStr) return "";
-  const parts = dateStr.split("-");
+  // Handle ISO datetime strings (e.g. "2026-03-22T00:00:00.000Z")
+  const dateOnly = String(dateStr).split("T")[0];
+  const parts = dateOnly.split("-");
   if (parts.length < 3) return dateStr;
   const day = parts[2].padStart(2, "0");
   const monthIdx = parseInt(parts[1], 10) - 1;
