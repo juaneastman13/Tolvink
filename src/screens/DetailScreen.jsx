@@ -419,19 +419,19 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
             <div style={{ fontSize:11, color:C.t3, fontWeight:600, marginBottom:6 }}>Link de seguimiento</div>
             <div style={{ display:"flex", gap:6 }}>
               <input readOnly value={shareLink.url} style={{ flex:1, padding:"6px 8px", borderRadius: R.sm, border:`1px solid ${C.b2}`, fontSize:12, fontFamily:"inherit", color:C.t1, background:C.bgInput, outline:"none" }} />
+              <button onClick={()=>{
+                const msg = `Hola, te comparto el seguimiento de tu flete de ${freight.grain==="Otros"?freight.productTypeOther||"Otros":freight.grain} (${freight.code}): ${shareLink.url}`;
+                const raw = freight.producerCompanyPhone || freight.producerCompany?.phone || "";
+                const clean = raw.replace(/[\s\-\(\)]/g, "").replace(/^\+/, "");
+                const phone = clean.startsWith("0") ? "598" + clean.slice(1) : clean;
+                window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, "_blank");
+              }} style={{ padding:"6px 10px", borderRadius: R.sm, border:"none", background:"#25D366", color:C.w, fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"inherit", whiteSpace:"nowrap", display:"flex", alignItems:"center", gap:4 }}>
+                WhatsApp
+              </button>
               <button onClick={()=>{ navigator.clipboard.writeText(shareLink.url); setShareLink(s=>({...s,copied:true})); setTimeout(()=>setShareLink(s=>s?{...s,copied:false}:null),2000); }} style={{ padding:"6px 10px", borderRadius: R.sm, border:"none", background:shareLink.copied?C.ok:C.pri, color:C.w, fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"inherit", whiteSpace:"nowrap" }}>
                 {shareLink.copied ? "Copiado!" : "Copiar"}
               </button>
             </div>
-            <button onClick={()=>{
-              const msg = `Hola, te comparto el seguimiento de tu flete de ${freight.grain==="Otros"?freight.productTypeOther||"Otros":freight.grain} (${freight.code}): ${shareLink.url}`;
-              const raw = freight.producerCompanyPhone || freight.producerCompany?.phone || "";
-              const clean = raw.replace(/[\s\-\(\)]/g, "").replace(/^\+/, "");
-              const phone = clean.startsWith("0") ? "598" + clean.slice(1) : clean;
-              window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, "_blank");
-            }} style={{ display:"flex", alignItems:"center", gap:4, marginTop:6, background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", fontSize:11, fontWeight:600, color:"#25D366" }}>
-              Enviar por WhatsApp
-            </button>
           </div>
         )}
         <div style={{ display:"flex", alignItems:"center", flexWrap:"wrap", gap:4 }}>
