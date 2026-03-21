@@ -177,12 +177,27 @@ function ProgressStepper({ freight, auditLogs }) {
 
 // ======================== FREIGHT MAP ================================
 
+function infoWindowHtml(title, subtitle, lat, lng, color) {
+  const url = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
+  return `<div style="font-family:${FONT};min-width:160px;max-width:240px">` +
+    `<div style="font-size:14px;font-weight:700;color:#1a1a1a;margin-bottom:2px">${title}</div>` +
+    (subtitle ? `<div style="font-size:12px;font-weight:600;color:${color};margin-bottom:6px">${subtitle}</div>` : '') +
+    `<a href="${url}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:4px;font-size:11.5px;font-weight:600;color:${C.pri};text-decoration:none;padding:4px 0">` +
+    `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="${C.pri}" stroke-width="2.5" stroke-linecap="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>` +
+    `Ver en Google Maps</a></div>`;
+}
+
 function FreightMap({ freight, style }) {
   const oLat = freight.originLat != null ? Number(freight.originLat) : null;
   const oLng = freight.originLng != null ? Number(freight.originLng) : null;
   const dLat = freight.destLat != null ? Number(freight.destLat) : null;
   const dLng = freight.destLng != null ? Number(freight.destLng) : null;
   const hasCoords = oLat && oLng && dLat && dLng;
+
+  const originLabel = freight.field?.name || freight.originName || "Origen";
+  const destLabel = freight.destPlant?.name ? `${freight.destCompany?.name || freight.destName || "Destino"} — ${freight.destPlant.name}` : (freight.destName || "Destino");
+  const producerLabel = freight.producerCompany?.name || null;
+  const routeUrl = hasCoords ? `https://www.google.com/maps/dir/?api=1&origin=${oLat},${oLng}&destination=${dLat},${dLng}&travelmode=driving` : null;
 
   const mapRef = useRef(null);
   const containerRef = useRef(null);
@@ -211,10 +226,30 @@ function FreightMap({ freight, style }) {
         disableDefaultUI: true, zoomControl: true, gestureHandling: "cooperative",
         styles: [{ featureType: "poi", stylers: [{ visibility: "off" }] }],
       });
-      new maps.Marker({ position: { lat: oLat, lng: oLng }, map, title: freight.originName || "Origen",
-        icon: { path: maps.SymbolPath.CIRCLE, scale: 8, fillColor: "#22C55E", fillOpacity: 1, strokeColor: "#fff", strokeWeight: 2 } });
-      new maps.Marker({ position: { lat: dLat, lng: dLng }, map, title: freight.destName || "Destino",
-        icon: { path: maps.SymbolPath.CIRCLE, scale: 8, fillColor: "#F59E0B", fillOpacity: 1, strokeColor: "#fff", strokeWeight: 2 } });
+
+      // Shared InfoWindow — only one open at a time
+      const iw = new maps.InfoWindow();
+
+      // Origin marker
+      const originMarker = new maps.Marker({
+        position: { lat: oLat, lng: oLng }, map, title: originLabel,
+        icon: { path: maps.SymbolPath.CIRCLE, scale: 8, fillColor: "#22C55E", fillOpacity: 1, strokeColor: "#fff", strokeWeight: 2 },
+      });
+      originMarker.addListener("click", () => {
+        iw.setContent(infoWindowHtml(originLabel, producerLabel, oLat, oLng, C.acc));
+        iw.open(map, originMarker);
+      });
+
+      // Destination marker
+      const destMarker = new maps.Marker({
+        position: { lat: dLat, lng: dLng }, map, title: destLabel,
+        icon: { path: maps.SymbolPath.CIRCLE, scale: 8, fillColor: "#F59E0B", fillOpacity: 1, strokeColor: "#fff", strokeWeight: 2 },
+      });
+      destMarker.addListener("click", () => {
+        iw.setContent(infoWindowHtml(destLabel, null, dLat, dLng, C.t2));
+        iw.open(map, destMarker);
+      });
+
       if (freight.routePolyline) {
         new maps.Polyline({ path: decodePolyline(freight.routePolyline), map, strokeColor: C.pri, strokeWeight: 3, strokeOpacity: 0.8 });
       }
@@ -241,9 +276,9 @@ function FreightMap({ freight, style }) {
     return (
       <Card style={{ textAlign: "center", height: "100%", boxSizing: "border-box", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: 180, ...style }}>
         {Ic.pin(C.pri, 22)}
-        <span style={{ fontSize: 14, fontWeight: 600, color: C.t1, marginTop: 10 }}>{freight.originName || "Origen"}</span>
+        <span style={{ fontSize: 14, fontWeight: 600, color: C.t1, marginTop: 10 }}>{originLabel}</span>
         <span style={{ fontSize: 13, color: C.t3, margin: "2px 0" }}>{Ic.nav(C.t3, 12)}</span>
-        <span style={{ fontSize: 14, fontWeight: 600, color: C.t1 }}>{freight.destName || "Destino"}</span>
+        <span style={{ fontSize: 14, fontWeight: 600, color: C.t1 }}>{destLabel}</span>
         {freight.routeDistanceKm && (
           <div style={{ fontSize: 12, color: C.pri, fontWeight: 700, marginTop: 8 }}>{freight.routeDistanceKm} km · ~{freight.routeDurationMin} min</div>
         )}
@@ -252,17 +287,35 @@ function FreightMap({ freight, style }) {
   }
 
   return (
-    <div ref={containerRef} style={{ background: C.w, borderRadius: R.lg, overflow: "hidden", border: `1px solid ${C.b2}`, boxShadow: C.sh, position: "relative", height: "100%", minHeight: 300, ...style }}>
-      <div ref={mapRef} style={{ width: "100%", height: "100%", minHeight: 300 }} />
-      {!loaded && (
-        <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: C.bg, zIndex: 1 }}>
-          <div style={{ fontSize: 13, color: C.t3 }}>Cargando mapa...</div>
-        </div>
-      )}
-      {freight.routeDistanceKm && (
-        <div style={{ position: "absolute", bottom: 10, left: 10, background: "rgba(255,255,255,0.92)", borderRadius: R.md, padding: "5px 12px", fontSize: 12, fontWeight: 700, color: C.t1, boxShadow: C.shMd, backdropFilter: "blur(4px)" }}>
-          {Ic.nav(C.pri, 13)} {freight.routeDistanceKm} km · ~{freight.routeDurationMin} min
-        </div>
+    <div style={{ display: "flex", flexDirection: "column", height: "100%", ...style }}>
+      <div ref={containerRef} style={{ background: C.w, borderRadius: `${R.lg} ${R.lg} 0 0`, overflow: "hidden", border: `1px solid ${C.b2}`, borderBottom: "none", position: "relative", flex: 1, minHeight: 300 }}>
+        <div ref={mapRef} style={{ width: "100%", height: "100%", minHeight: 300 }} />
+        {!loaded && (
+          <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: C.bg, zIndex: 1 }}>
+            <div style={{ fontSize: 13, color: C.t3 }}>Cargando mapa...</div>
+          </div>
+        )}
+        {freight.routeDistanceKm && (
+          <div style={{ position: "absolute", bottom: 10, left: 10, background: "rgba(255,255,255,0.92)", borderRadius: R.md, padding: "5px 12px", fontSize: 12, fontWeight: 700, color: C.t1, boxShadow: C.shMd, backdropFilter: "blur(4px)" }}>
+            {Ic.nav(C.pri, 13)} {freight.routeDistanceKm} km · ~{freight.routeDurationMin} min
+          </div>
+        )}
+      </div>
+      {routeUrl && (
+        <a href={routeUrl} target="_blank" rel="noopener noreferrer" style={{
+          display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
+          padding: "10px 16px", background: C.w, border: `1px solid ${C.b2}`,
+          borderRadius: `0 0 ${R.lg} ${R.lg}`, textDecoration: "none",
+          fontFamily: FONT, fontSize: 13.5, fontWeight: 700, color: C.pri,
+          cursor: "pointer", transition: "background 0.15s",
+        }}
+          onMouseEnter={e => e.currentTarget.style.background = C.priPale}
+          onMouseLeave={e => e.currentTarget.style.background = C.w}
+        >
+          {Ic.nav(C.pri, 15)}
+          Ver ruta en Google Maps
+          <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke={C.pri} strokeWidth="2.5" strokeLinecap="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        </a>
       )}
     </div>
   );
