@@ -257,8 +257,11 @@ export default function AppLayout({ fh, catalog, online, notif, isDesktop }) {
   const { isConsulta: _isConsulta } = useAccessLevel(auth.user);
   const perms = useMemo(()=>{
     const p = permsFor(auth.user);
-    // CONSULTA users: override all write permissions to false
-    if (_isConsulta) return { ...p, canRequest:false, canApprove:false, canAssign:false, canAssignDriver:false, canCancel:false, canReject:false };
+    // CONSULTA users: override write permissions to false (but producers can still create freights)
+    if (_isConsulta) {
+      const userType = auth.user?.userType;
+      return { ...p, canRequest: userType === "producer" || userType === "plant", canApprove:false, canAssign:false, canAssignDriver:false, canCancel:false, canReject:false };
+    }
     return p;
   },[auth.user, _isConsulta]);
   const _resolveType = useCallback((f) => resolveUserTypeForFreight(f, auth.user), [auth.user]);
