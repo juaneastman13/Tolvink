@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { C, Ic, STATUS_COLORS } from "../theme";
 import { Loader, EmptyState } from "../components";
 import { apiGetCompanyAccess, apiListFreights, apiGetWeighTickets, apiGetFreight, apiOcrAnalyze, apiSaveOcrData, apiClearOcrData, apiEditOcrData } from "../api";
-import { OcrResultModal } from "../uploads";
+import { OcrResultModal, ocrLabel } from "../uploads";
 
 const API_URL = import.meta.env.VITE_API_URL || "";
 const DOC_TYPE_ICONS = {
@@ -379,7 +379,7 @@ export default function DocumentsScreen({ user, onBack, onNavigate }) {
                 ? Object.entries(data).filter(([k, v]) => v != null && v !== "" && !k.startsWith("_"))
                 : Object.entries(rawFields).filter(([, v]) => v != null && v !== "");
               if (mainEntries.length === 0 && !data.documentType && !data.summary) return null;
-              const STRUCTURED_LABELS = { documentNumber:"Nº Documento", date:"Fecha", origin:"Origen", destination:"Destino", product:"Producto", quantity:"Cantidad", quantityUnit:"Unidad", producer:"Productor", transporter:"Transportista", grossWeight:"Peso Bruto", tareWeight:"Tara", netWeight:"Peso Neto", truckPlate:"Patente", driverName:"Chofer" };
+              // Labels handled by shared ocrLabel()
               return (
                 <div style={{ marginBottom: 10 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
@@ -411,7 +411,7 @@ export default function DocumentsScreen({ user, onBack, onNavigate }) {
                   {!isStructured && data.documentType && <div style={{ fontSize: 12.6, color: C.t2, fontWeight: 600, marginBottom: 4 }}>{data.documentType}</div>}
                   {!isStructured && data.summary && <div style={{ fontSize: 12.1, color: C.t3, marginBottom: 6, fontStyle: "italic" }}>{data.summary}</div>}
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 6 }}>
-                    {mainEntries.map(([k, v]) => <DCell key={k} label={STRUCTURED_LABELS[k] || k} value={typeof v === "object" ? JSON.stringify(v) : String(v)} />)}
+                    {mainEntries.map(([k, v]) => <DCell key={k} label={ocrLabel(k)} value={typeof v === "object" ? JSON.stringify(v) : String(v)} />)}
                   </div>
                 </div>
               );

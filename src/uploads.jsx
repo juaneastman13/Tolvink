@@ -136,6 +136,55 @@ export function DocsGallery({ documents, onViewFile, freightId, canDelete, onDel
   );
 }
 
+// ======================== OCR LABELS & ORDER =============================
+
+const OCR_LABELS = {
+  documentNumber: "Nº Documento", numero: "Nº Documento",
+  date: "Fecha", fecha: "Fecha",
+  origin: "Origen", origen: "Origen",
+  destination: "Destino", destino: "Destino",
+  producer: "Productor", productor: "Productor",
+  driverName: "Chofer", chofer: "Chofer",
+  transporter: "Empresa", transportista: "Empresa",
+  truckPlate: "Patente", patente: "Patente",
+  product: "Producto", producto: "Producto",
+  quantity: "Cantidad", cantidad: "Cantidad",
+  quantityUnit: "Unidad", unidad: "Unidad",
+  grossWeight: "Peso Bruto", pesoBruto: "Peso Bruto",
+  tareWeight: "Tara", tara: "Tara",
+  netWeight: "Peso Neto", pesoNeto: "Peso Neto",
+};
+
+const OCR_FIELD_ORDER = [
+  "documentNumber", "numero",
+  "origin", "origen",
+  "destination", "destino",
+  "producer", "productor",
+  "driverName", "chofer",
+  "transporter", "transportista",
+  "truckPlate", "patente",
+  "product", "producto",
+  "quantity", "cantidad",
+  "quantityUnit", "unidad",
+  "date", "fecha",
+  "grossWeight", "pesoBruto",
+  "tareWeight", "tara",
+  "netWeight", "pesoNeto",
+];
+
+export function ocrLabel(key) { return OCR_LABELS[key] || key.replace(/([A-Z])/g, ' $1').trim(); }
+
+function sortOcrEntries(entries) {
+  return [...entries].sort((a, b) => {
+    const ia = OCR_FIELD_ORDER.indexOf(a[0]);
+    const ib = OCR_FIELD_ORDER.indexOf(b[0]);
+    if (ia === -1 && ib === -1) return 0;
+    if (ia === -1) return 1;
+    if (ib === -1) return -1;
+    return ia - ib;
+  });
+}
+
 // ======================== OCR RESULT MODAL (floating) ====================
 
 export function OcrResultModal({ result, onClose, freightId, docId, onSaved, startInEditMode }) {
@@ -163,7 +212,7 @@ export function OcrResultModal({ result, onClose, freightId, docId, onSaved, sta
   const editMeta = result._editMeta || null;
   const editHistory = result._editHistory || [];
   const datos = result.datos || {};
-  const entries = Object.entries(datos).filter(([,v]) => v != null && v !== "");
+  const entries = sortOcrEntries(Object.entries(datos).filter(([k,v]) => v != null && v !== "" && !k.startsWith("_")));
   const canEdit = !!(freightId && docId);
 
   // Auto-enter edit mode when startInEditMode is set
@@ -174,6 +223,8 @@ export function OcrResultModal({ result, onClose, freightId, docId, onSaved, sta
     setEditing(true);
     setDidAutoEdit(true);
   }
+
+  const sortedEditKeys = sortOcrEntries(Object.entries(editValues)).map(([k]) => k);
 
   const startEdit = () => {
     const vals = {};
@@ -262,11 +313,11 @@ export function OcrResultModal({ result, onClose, freightId, docId, onSaved, sta
           {/* Fields */}
           <div style={{ display:"flex", flexDirection:"column", gap:editing?10:8 }}>
             {editing ? (
-              Object.entries(editValues).map(([key, val]) => (
+              sortedEditKeys.map(key => (
                 <div key={key} style={{ display:"flex", flexDirection:"column", gap:3 }}>
-                  <label style={{ fontWeight:700, color:C.t2, fontSize:11.6, textTransform:"capitalize" }}>{key.replace(/([A-Z])/g, ' $1').trim()}</label>
+                  <label style={{ fontWeight:700, color:C.t2, fontSize:11.6 }}>{ocrLabel(key)}</label>
                   <input
-                    value={val}
+                    value={editValues[key] || ""}
                     onChange={e => setEditValues(prev => ({ ...prev, [key]: e.target.value }))}
                     style={{ padding:"8px 10px", borderRadius:8, border:`1.5px solid ${C.b1}`, fontSize:13.2, fontFamily:"inherit", color:C.t1, background:C.bg, outline:"none", transition:"border-color 0.15s" }}
                     onFocus={e => e.target.style.borderColor = C.pri}
@@ -278,7 +329,7 @@ export function OcrResultModal({ result, onClose, freightId, docId, onSaved, sta
               <>
                 {entries.map(([key, val]) => (
                   <div key={key} style={{ display:"flex", gap:10, fontSize:13.2, lineHeight:1.5, padding:"6px 0", borderBottom:`1px solid ${C.b2}` }}>
-                    <span style={{ fontWeight:700, color:C.t2, minWidth:100, flexShrink:0, textTransform:"capitalize" }}>{key.replace(/([A-Z])/g, ' $1').trim()}</span>
+                    <span style={{ fontWeight:700, color:C.t2, minWidth:100, flexShrink:0 }}>{ocrLabel(key)}</span>
                     <span style={{ color:C.t1, wordBreak:"break-word" }}>{typeof val === "object" ? JSON.stringify(val, null, 2) : String(val)}</span>
                   </div>
                 ))}
