@@ -4,8 +4,7 @@ import { Btn, Field, Loader, LoadingOverlay } from "../components";
 import { Select } from "../components/form";
 import {
   apiGetUnifiedAccess, apiUpdateAccessLevel, apiToggleAccess,
-  apiCreateLinkedCompany, apiCreateLinkedUser, apiAdminListUsers,
-  apiGetLinkedStats, apiCreateSharedLink,
+  apiCreateLinkedCompany, apiGetLinkedStats, apiCreateSharedLink,
 } from "../api";
 
 // =====================================================================
@@ -17,7 +16,7 @@ import {
 const TYPE_COLORS = { PRODUCER: "#F59E0B", TRANSPORTER: "#14B8A6" };
 const TYPE_LABELS = { PRODUCER: "Productor", TRANSPORTER: "Transportista" };
 const LEVEL_LABELS = { OPERATOR: "USO", READONLY: "CONSULTA" };
-const ROLE_LABELS = { gerente: "Gerente", operario: "Operario", chofer: "Chofer" };
+
 
 function timeAgo(dateStr) {
   if (!dateStr) return null;
@@ -51,12 +50,6 @@ export default function LinkedCompaniesScreen({ user, embedded, onBack, onNav })
 
   // Expanded company detail
   const [expandedId, setExpandedId] = useState(null);
-  const [companyUsers, setCompanyUsers] = useState([]);
-  const [loadingUsers, setLoadingUsers] = useState(false);
-
-  // New user form
-  const [showNewUser, setShowNewUser] = useState(false);
-  const [uf, setUf] = useState({ name: "", phone: "", email: "", role: "operario" });
 
   const msgTimer = useRef(null);
   const show = (t, k = "ok") => { setMsg({ t, k }); clearTimeout(msgTimer.current); msgTimer.current = setTimeout(() => setMsg(null), 4000); };
@@ -77,18 +70,12 @@ export default function LinkedCompaniesScreen({ user, embedded, onBack, onNav })
 
   useEffect(() => { load(); }, [load]);
 
-  const toggleExpand = async (accessRecord) => {
-    const companyId = accessRecord.granteeCompanyId || accessRecord.granteeCompany?.id;
+  const toggleExpand = (accessRecord) => {
     if (expandedId === accessRecord.id) {
-      setExpandedId(null); setCompanyUsers([]); setShowNewUser(false);
+      setExpandedId(null);
       return;
     }
     setExpandedId(accessRecord.id);
-    setShowNewUser(false);
-    setLoadingUsers(true);
-    try { const users = await apiAdminListUsers(undefined, companyId); setCompanyUsers(users || []); }
-    catch { setCompanyUsers([]); }
-    finally { setLoadingUsers(false); }
   };
 
   const handleToggleLevel = async (record) => {
@@ -125,17 +112,6 @@ export default function LinkedCompaniesScreen({ user, embedded, onBack, onNav })
       });
       setCf({ name: "", type: "PRODUCER", rut: "", contactEmail: "", hasInternalFleet: false, accessLevel: "OPERATOR" });
       setShowNewCompany(false); setDoneMsg("Empresa creada y vinculada"); await load();
-    } catch (e) { show(e.message, "err"); }
-    finally { setSaving(false); }
-  };
-
-  const handleCreateUser = async (targetCompanyId) => {
-    if (!uf.name.trim()) return show("Nombre obligatorio", "err");
-    setSaving(true);
-    try {
-      await apiCreateLinkedUser({ targetCompanyId, name: uf.name.trim(), phone: uf.phone.trim() || undefined, email: uf.email.trim() || undefined, role: uf.role });
-      setUf({ name: "", phone: "", email: "", role: "operario" }); setShowNewUser(false); setDoneMsg("Usuario creado");
-      const users = await apiAdminListUsers(undefined, targetCompanyId); setCompanyUsers(users || []);
     } catch (e) { show(e.message, "err"); }
     finally { setSaving(false); }
   };
@@ -243,60 +219,6 @@ export default function LinkedCompaniesScreen({ user, embedded, onBack, onNav })
               </button>}
             </div>
 
-            {/* Users section */}
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-              <div style={{ fontSize: 13.8, fontWeight: 700, color: C.t1 }}>Usuarios</div>
-              {!isLegacy && <button onClick={() => { setShowNewUser(!showNewUser); setUf({ name: "", phone: "", email: "", role: "operario" }); }} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", fontSize: 12.1, fontWeight: 600, color: C.pri }}>
-                {showNewUser ? "Cancelar" : "+ Crear usuario"}
-              </button>}
-            </div>
-
-            {/* New user form */}
-            {showNewUser && !isLegacy && (
-              <div style={{ background: C.bg, border: `1px solid ${C.b2}`, borderRadius: 10, padding: 14, marginBottom: 12 }}>
-                <Field label="Nombre" value={uf.name} onChange={v => setUf(p => ({ ...p, name: v }))} placeholder="Nombre completo" />
-                <div style={{ height: 8 }} />
-                <Field label="Teléfono" value={uf.phone} onChange={v => setUf(p => ({ ...p, phone: v }))} placeholder="09X XXX XXX" />
-                <div style={{ height: 8 }} />
-                <Field label="Email (opcional)" value={uf.email} onChange={v => setUf(p => ({ ...p, email: v }))} placeholder="usuario@email.com" />
-                <div style={{ height: 8 }} />
-                <div style={{ display: "flex", gap: 6 }}>
-                  {["gerente", "operario", "chofer"].map(r => (
-                    <button key={r} onClick={() => setUf(p => ({ ...p, role: r }))} style={{
-                      flex: 1, padding: "7px 0", borderRadius: 6, fontFamily: "inherit", fontSize: 12.1, fontWeight: 600, cursor: "pointer",
-                      border: `1.5px solid ${uf.role === r ? C.pri : C.b1}`,
-                      background: uf.role === r ? `${C.pri}12` : C.w,
-                      color: uf.role === r ? C.pri : C.t3,
-                    }}>{ROLE_LABELS[r]}</button>
-                  ))}
-                </div>
-                <div style={{ height: 10 }} />
-                <Btn full v="acc" disabled={saving} onClick={() => handleCreateUser(companyId)}>
-                  {saving ? "Creando..." : "Crear usuario"}
-                </Btn>
-              </div>
-            )}
-
-            {/* Users list */}
-            {loadingUsers ? <Loader /> : companyUsers.length === 0 ? (
-              <div style={{ fontSize: 12.1, color: C.t3, textAlign: "center", padding: 16 }}>Sin usuarios registrados</div>
-            ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                {companyUsers.map(u => (
-                  <div key={u.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", background: C.bg, borderRadius: 8 }}>
-                    {Ic.user(C.t2, 16)}
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 13.2, fontWeight: 600, color: C.t1 }}>{u.name}</div>
-                      <div style={{ fontSize: 11, color: C.t3 }}>
-                        {u.phone || u.email || ""}
-                        {u.role && <span style={{ marginLeft: 6, fontWeight: 600, color: C.t2 }}>{ROLE_LABELS[u.role] || u.role}</span>}
-                      </div>
-                    </div>
-                    {!u.active && <span style={{ fontSize: 9.9, fontWeight: 700, color: C.err, background: C.errPale, padding: "1px 6px", borderRadius: 4 }}>Inactivo</span>}
-                  </div>
-                ))}
-              </div>
-            )}
           </div>
         )}
       </div>
