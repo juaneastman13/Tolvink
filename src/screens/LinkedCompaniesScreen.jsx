@@ -46,7 +46,7 @@ export default function LinkedCompaniesScreen({ user, embedded, onBack, onNav })
 
   // New company form
   const [showNewCompany, setShowNewCompany] = useState(false);
-  const [cf, setCf] = useState({ name: "", type: allowedGranteeTypes[0], rut: "", contactEmail: "", hasInternalFleet: false, accessLevel: "OPERATOR" });
+  const [cf, setCf] = useState({ name: "", type: allowedGranteeTypes[0], phone: "", rut: "", contactEmail: "", hasInternalFleet: false, accessLevel: "OPERATOR" });
 
   // Expanded company detail
   const [expandedId, setExpandedId] = useState(null);
@@ -103,14 +103,15 @@ export default function LinkedCompaniesScreen({ user, embedded, onBack, onNav })
 
   const handleCreateCompany = async () => {
     if (!cf.name.trim()) return show("Nombre obligatorio", "err");
+    if (!/^09\d{7}$/.test(cf.phone)) return show("Celular obligatorio (09XXXXXXX)", "err");
     setSaving(true);
     try {
       await apiCreateLinkedCompany({
-        name: cf.name.trim(), type: cf.type,
+        name: cf.name.trim(), type: cf.type, phone: cf.phone,
         rut: cf.rut.trim() || undefined, contactEmail: cf.contactEmail.trim() || undefined,
         hasInternalFleet: cf.type === "PRODUCER" ? cf.hasInternalFleet : false, accessLevel: cf.accessLevel,
       });
-      setCf({ name: "", type: "PRODUCER", rut: "", contactEmail: "", hasInternalFleet: false, accessLevel: "OPERATOR" });
+      setCf({ name: "", type: "PRODUCER", phone: "", rut: "", contactEmail: "", hasInternalFleet: false, accessLevel: "OPERATOR" });
       setShowNewCompany(false); setDoneMsg("Empresa creada y vinculada"); await load();
     } catch (e) { show(e.message, "err"); }
     finally { setSaving(false); }
@@ -270,6 +271,8 @@ export default function LinkedCompaniesScreen({ user, embedded, onBack, onNav })
         <div style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: R.lg, padding: 16, marginBottom: 16, boxShadow: C.sh }}>
           <div style={{ fontSize: 15.4, fontWeight: 700, marginBottom: 12 }}>Nueva empresa vinculada</div>
           <Field label="Nombre" value={cf.name} onChange={v => setCf(p => ({ ...p, name: v }))} placeholder="Nombre de la empresa" />
+          <div style={{ height: 10 }} />
+          <Field label="Celular (obligatorio)" value={cf.phone} onChange={v => setCf(p => ({ ...p, phone: v.replace(/\D/g, "").slice(0, 9) }))} placeholder="09XXXXXXX" inputMode="tel" hasError={cf.phone.length > 0 && !/^09\d{7}$/.test(cf.phone)} />
           <div style={{ height: 10 }} />
           <div style={{ display: "flex", gap: 8 }}>
             {allowedGranteeTypes.map(t => (

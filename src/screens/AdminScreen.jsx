@@ -126,6 +126,7 @@ export default function AdminScreen({ user, onBack }) {
   const openEditCompany = (c) => { setCompanyForm({name:c.name,type:c.type,phone:c.phone||"",email:c.email||"",rut:c.rut||"",hasInternalFleet:!!c.hasInternalFleet,lat:c.lat?Number(c.lat):null,lng:c.lng?Number(c.lng):null,address:c.address||""}); setEditCompanyId(c.id); setView("companyForm"); };
   const handleSaveCompany = async () => {
     if(!companyForm.name.trim()) return show("Nombre requerido","err");
+    if(!/^09\d{7}$/.test(companyForm.phone)) return show("Celular obligatorio (09XXXXXXX)","err");
     setSaving(true);
     try {
       if(editCompanyId) { await apiAdminUpdateCompany(editCompanyId, companyForm); setDoneMsg("Empresa actualizada"); }
@@ -315,7 +316,7 @@ export default function AdminScreen({ user, onBack }) {
           </div>
           <div style={{display:"flex",gap:8,marginBottom:10}}>
             <div style={{flex:1}}><div style={s.lbl}>Email:</div><input value={companyForm.email} onChange={e=>setCompanyForm(p=>({...p,email:e.target.value}))} placeholder="Email" style={s.inp} /></div>
-            <div style={{flex:1}}><div style={s.lbl}>Teléfono:</div><input value={companyForm.phone} onChange={e=>setCompanyForm(p=>({...p,phone:e.target.value}))} placeholder="Teléfono" style={s.inp} /></div>
+            <div style={{flex:1}}><div style={s.lbl}>Celular: <span style={{fontWeight:400,color:C.t3}}>(obligatorio)</span></div><input value={companyForm.phone} onChange={e=>{ const v=e.target.value.replace(/\D/g,"").slice(0,9); setCompanyForm(p=>({...p,phone:v})); }} placeholder="09XXXXXXX" maxLength={9} inputMode="tel" style={{...s.inp, borderColor: companyForm.phone && !/^09\d{7}$/.test(companyForm.phone) ? C.err : undefined }} /></div>
           </div>
           <div style={s.lbl}>RUT:</div>
           <input value={companyForm.rut} onChange={e=>setCompanyForm(p=>({...p,rut:e.target.value}))} placeholder="RUT" style={{...s.inp,marginBottom:10}} />
