@@ -744,11 +744,33 @@ export default function SharedLinkScreen({ token }) {
     return () => { mounted = false; clearInterval(refreshRef.current); };
   }, [token]);
 
-  // Enable body scroll (app.css sets overflow-y:hidden for the authenticated shell)
+  // Enable natural scroll (index.html + app.css lock body for the auth shell)
   useEffect(() => {
-    document.body.style.overflowY = "auto";
+    const root = document.getElementById("root");
+    const saved = {
+      htmlH: document.documentElement.style.height, htmlO: document.documentElement.style.overflow,
+      bodyH: document.body.style.height, bodyO: document.body.style.overflow, bodyOY: document.body.style.overflowY,
+      bodyPos: document.body.style.position, bodyW: document.body.style.width,
+      rootH: root?.style.height, rootO: root?.style.overflow,
+    };
     document.documentElement.style.height = "auto";
-    return () => { document.body.style.overflowY = ""; document.documentElement.style.height = ""; };
+    document.documentElement.style.overflow = "visible";
+    document.body.style.height = "auto";
+    document.body.style.overflow = "visible";
+    document.body.style.overflowY = "auto";
+    document.body.style.position = "static";
+    document.body.style.width = "100%";
+    if (root) { root.style.height = "auto"; root.style.overflow = "visible"; }
+    return () => {
+      document.documentElement.style.height = saved.htmlH;
+      document.documentElement.style.overflow = saved.htmlO;
+      document.body.style.height = saved.bodyH;
+      document.body.style.overflow = saved.bodyO;
+      document.body.style.overflowY = saved.bodyOY;
+      document.body.style.position = saved.bodyPos;
+      document.body.style.width = saved.bodyW;
+      if (root) { root.style.height = saved.rootH; root.style.overflow = saved.rootO; }
+    };
   }, []);
 
   // Determine what view to render
