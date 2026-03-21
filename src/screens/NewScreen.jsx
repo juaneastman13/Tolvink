@@ -248,16 +248,18 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
     if (savingProducer) return;
     const name = newProducerName.trim();
     if (!name) { setProducerErr("Nombre obligatorio"); return; }
-    if (!newProducerPhone.trim()) { setProducerErr("Celular obligatorio"); return; }
+    const phoneCleaned = newProducerPhone.trim().replace(/[\s\-()]/g, "");
+    if (!phoneCleaned) { setProducerErr("Celular obligatorio"); return; }
+    if (!/^09\d{7}$/.test(phoneCleaned)) { setProducerErr("Formato: 09XXXXXXX (9 dígitos)"); return; }
     setSavingProducer(true); setProducerErr("");
     try {
       // Create company (use company name or person name as fallback)
       const companyName = newProducerCompany.trim() || name;
-      const res = await apiCreateLinkedCompany({ name: companyName, type: "PRODUCER", accessLevel: "READONLY" });
+      const res = await apiCreateLinkedCompany({ name: companyName, type: "PRODUCER", phone: phoneCleaned, accessLevel: "READONLY" });
       const newId = res?.company?.id || res?.companyAccess?.granteeCompanyId || res?.id;
       // Create user inside the new company
       if (newId) {
-        try { await apiCreateLinkedUser({ targetCompanyId: newId, name, phone: newProducerPhone.trim() }); } catch {}
+        try { await apiCreateLinkedUser({ targetCompanyId: newId, name, phone: phoneCleaned }); } catch {}
       }
       const newRecord = { granteeCompanyId: newId, granteeCompany: { id: newId, name: companyName }, accessLevel: "READONLY", isActive: true };
       setLinkedProducers(prev => [...prev, newRecord]);
