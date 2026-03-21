@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
-import { C, Ic } from "../theme";
+import { C, Ic, R } from "../theme";
 import { Btn, Bd, Field, Loader, LoadingOverlay, ModalOverlay } from "../components";
 import { apiGrantAccess, apiRevokeAccess, apiListAccessProducers, apiListAccessPlants, apiSearchProducer, apiSearchCompany, apiGetMyFacilities, apiAdminListCompanies } from "../api";
 import { useCatalogStore } from "../store";
@@ -221,7 +221,7 @@ export default function AccessScreen({ user, onBack, embedded, defaultCompanyId,
         </div>
       )}
 
-      {msg && <div style={{ padding: "10px 14px", borderRadius: 12, marginBottom: 12, fontSize: 13.2, fontWeight: 600, background: msg.k === "ok" ? C.okPale : C.errPale, color: msg.k === "ok" ? C.ok : C.err }}>{msg.t}</div>}
+      {msg && <div style={{ padding: "10px 14px", borderRadius: R.lg, marginBottom: 12, fontSize: 13.2, fontWeight: 600, background: msg.k === "ok" ? C.okPale : C.errPale, color: msg.k === "ok" ? C.ok : C.err }}>{msg.t}</div>}
 
       {/* Confirm revoke modal */}
       {confirmRevoke && (
@@ -237,7 +237,7 @@ export default function AccessScreen({ user, onBack, embedded, defaultCompanyId,
 
       {/* Edit access panel */}
       {editingAccess && (
-        <div style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: 12, padding: 16, marginBottom: 16, boxShadow: C.sh }}>
+        <div style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: R.lg, padding: 16, marginBottom: 16, boxShadow: C.sh }}>
           <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:12 }}>
             <div>
               <div style={{ fontSize:15.4, fontWeight:700 }}>Editar: {editingAccess.producerUser?.name||editingAccess.producerCompany?.name}</div>
@@ -252,7 +252,7 @@ export default function AccessScreen({ user, onBack, embedded, defaultCompanyId,
 
       {/* Grant new access */}
       {showGrant && !editingAccess && (
-        <div style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: 12, padding: 16, marginBottom: 16, boxShadow: C.sh }}>
+        <div style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: R.lg, padding: 16, marginBottom: 16, boxShadow: C.sh }}>
           {/* Type toggle */}
           <div style={{ display:"flex", gap:6, marginBottom:8 }}>
             {[{k:"producer",l:"Productor"},{k:"transporter",l:"Transportista"}].map(t=>(
@@ -364,7 +364,7 @@ export default function AccessScreen({ user, onBack, embedded, defaultCompanyId,
                 byPlantCo.get(pcId).records.push(p);
               }
               return Array.from(byPlantCo.entries()).map(([pcId, { name, records }]) => (
-                <div key={pcId} style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: 12, boxShadow: C.sh, overflow:"hidden" }}>
+                <div key={pcId} style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: R.lg, boxShadow: C.sh, overflow:"hidden" }}>
                   <div style={{ padding:"12px 14px", background:`${C.pri}08`, borderBottom:`1px solid ${C.b2}`, display:"flex", alignItems:"center", gap:8 }}>
                     {Ic.plant(C.pri,16)}
                     <div style={{ fontSize:14.3, fontWeight:700, color:C.pri }}>{name}</div>
@@ -390,7 +390,7 @@ export default function AccessScreen({ user, onBack, embedded, defaultCompanyId,
                     const prods = grouped.producers.byPlant[plant.id];
                     if (!prods || prods.length === 0) return null;
                     return (
-                      <div key={plant.id} style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: 12, boxShadow: C.sh, overflow:"hidden" }}>
+                      <div key={plant.id} style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: R.lg, boxShadow: C.sh, overflow:"hidden" }}>
                         <div style={{ padding:"10px 14px", background:`${C.pri}08`, borderBottom:`1px solid ${C.b2}`, display:"flex", alignItems:"center", gap:8 }}>
                           {Ic.plant(C.pri,14)}
                           <div style={{ fontSize:13.2, fontWeight:700, color:C.pri }}>{plant.name}</div>
@@ -403,7 +403,7 @@ export default function AccessScreen({ user, onBack, embedded, defaultCompanyId,
                     );
                   })}
                   {grouped.producers.general.length > 0 && (
-                    <div style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: 12, boxShadow: C.sh, overflow:"hidden" }}>
+                    <div style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: R.lg, boxShadow: C.sh, overflow:"hidden" }}>
                       <div style={{ padding:"10px 14px", background:`${C.t2}08`, borderBottom:`1px solid ${C.b2}`, display:"flex", alignItems:"center", gap:8 }}>
                         {Ic.user(C.t2,14)}
                         <div style={{ fontSize:13.2, fontWeight:600, color:C.t2 }}>Acceso general</div>
@@ -425,7 +425,7 @@ export default function AccessScreen({ user, onBack, embedded, defaultCompanyId,
                     const trans = grouped.transporters.byPlant[plant.id];
                     if (!trans || trans.length === 0) return null;
                     return (
-                      <div key={plant.id} style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: 12, boxShadow: C.sh, overflow:"hidden" }}>
+                      <div key={plant.id} style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: R.lg, boxShadow: C.sh, overflow:"hidden" }}>
                         <div style={{ padding:"10px 14px", background:`${C.acc}08`, borderBottom:`1px solid ${C.b2}`, display:"flex", alignItems:"center", gap:8 }}>
                           {Ic.plant(C.acc,14)}
                           <div style={{ fontSize:13.2, fontWeight:700, color:C.acc }}>{plant.name}</div>
@@ -438,7 +438,7 @@ export default function AccessScreen({ user, onBack, embedded, defaultCompanyId,
                     );
                   })}
                   {grouped.transporters.general.length > 0 && (
-                    <div style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: 12, boxShadow: C.sh, overflow:"hidden" }}>
+                    <div style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: R.lg, boxShadow: C.sh, overflow:"hidden" }}>
                       <div style={{ padding:"10px 14px", background:`${C.t2}08`, borderBottom:`1px solid ${C.b2}`, display:"flex", alignItems:"center", gap:8 }}>
                         {Ic.truck(C.t2,14)}
                         <div style={{ fontSize:13.2, fontWeight:600, color:C.t2 }}>Acceso general</div>

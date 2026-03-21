@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { C, FONT, Ic } from "../theme";
+import { C, FONT, Ic, R } from "../theme";
 import { V, validate, SCHEMAS, FieldError } from "../validation";
 import { Btn, Field } from "../components";
 import { RoutesBackground } from "../routes-bg";
@@ -8,7 +8,7 @@ import { apiIdentifyForReset, apiRequestCode, apiVerifyCode, apiResetPassword } 
 // Compact summary chip for a completed signup field
 function CompletedField({ icon, value, onClick }) {
   return (
-    <button onClick={onClick} style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 12px", minHeight: 44, borderRadius: 8, border: `1px solid ${C.b2}`, background: C.bg, cursor: "pointer", fontFamily: "inherit", textAlign: "left", width: "100%", transition: "all 0.15s" }}>
+    <button onClick={onClick} style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 12px", minHeight: 44, borderRadius: R.md, border: `1px solid ${C.b2}`, background: C.bg, cursor: "pointer", fontFamily: "inherit", textAlign: "left", width: "100%", transition: "all 0.15s" }}>
       {icon}
       <span style={{ flex: 1, fontSize: 14.3, fontWeight: 600, color: C.t1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{value}</span>
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.t3} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
@@ -231,10 +231,10 @@ export default function AuthScreen({ onLogin, onSignup, onPasswordReset, loading
             {onBackToLanding && <button onClick={onBackToLanding} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", fontSize: 14.3, fontWeight: 600, color: C.pri, marginBottom: 14, padding: 0, display: "flex", alignItems: "center", gap: 4, margin: "0 auto 14px" }}>{Ic.chev(C.pri, 18)} Volver</button>}
             <div style={{ display: "inline-flex", alignItems: "flex-start", animation: "fadeUp 0.6s ease-out" }}>
               <span style={{ fontSize: 60.5, fontWeight: 800, color: C.pri, letterSpacing: -2.9, lineHeight: 1 }}>tolvink</span>
-              <span style={{ width: 12, height: 12, borderRadius: 6, background: C.acc, marginLeft: 3, marginTop: 2, display: "inline-block", animation: "dotPulse 1.5s ease-in-out infinite" }} />
+              <span style={{ width: 12, height: 12, borderRadius: R.sm, background: C.acc, marginLeft: 3, marginTop: 2, display: "inline-block", animation: "dotPulse 1.5s ease-in-out infinite" }} />
             </div>
           </div>
-          <div style={{ background: C.w, borderRadius: 16, padding: 22, boxShadow: C.shMd, border: `1px solid ${C.b2}` }}>
+          <div style={{ background: C.w, borderRadius: R.xl, padding: 22, boxShadow: C.shMd, border: `1px solid ${C.b2}` }}>
             <div style={{ fontSize: 18.7, fontWeight: 700, marginBottom: 3, color: C.t1 }}>{titles[mode]}</div>
             <div style={{ fontSize: 13.8, color: C.t2, marginBottom: 18 }}>{subtitles[mode]}</div>
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -257,7 +257,7 @@ export default function AuthScreen({ onLogin, onSignup, onPasswordReset, loading
               {/* === SIGNUP MODE === */}
               {mode === "signup" && (() => {
                 const nextBtn = (field) => canAdvance(field) && editingField === field && (
-                  <button onClick={advanceField} style={{ alignSelf: "flex-end", display: "inline-flex", alignItems: "center", gap: 4, padding: "6px 14px", borderRadius: 8, border: "none", background: C.pri, color: C.w, fontSize: 13.2, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", marginTop: 4, transition: "opacity 0.15s", animation: "fadeUp 0.2s ease-out" }}>
+                  <button onClick={advanceField} style={{ alignSelf: "flex-end", display: "inline-flex", alignItems: "center", gap: 4, padding: "6px 14px", borderRadius: R.md, border: "none", background: C.pri, color: C.w, fontSize: 13.2, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", marginTop: 4, transition: "opacity 0.15s", animation: "fadeUp 0.2s ease-out" }}>
                     Siguiente <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
                   </button>
                 );
@@ -315,7 +315,7 @@ export default function AuthScreen({ onLogin, onSignup, onPasswordReset, loading
                       {typeOptions.map(t => {
                         const sel = userTypes.includes(t.k);
                         return (
-                          <button key={t.k} onClick={() => toggleType(t.k)} style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 14px", borderRadius: 10, border: `1.5px solid ${sel ? t.c : C.b1}`, background: sel ? `${t.c}0A` : C.w, cursor: "pointer", fontFamily: "inherit", textAlign: "left", transition: "all 0.15s", width: "100%", minHeight: 44 }}>
+                          <button key={t.k} onClick={() => toggleType(t.k)} style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 14px", borderRadius: R.md, border: `1.5px solid ${sel ? t.c : C.b1}`, background: sel ? `${t.c}0A` : C.w, cursor: "pointer", fontFamily: "inherit", textAlign: "left", transition: "all 0.15s", width: "100%", minHeight: 44 }}>
                             <div style={{ width: 36, height: 36, borderRadius: 9, background: sel ? `${t.c}18` : `${t.c}08`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "background 0.15s" }}>
                               {t.ic(sel ? t.c : C.t3, 18)}
                             </div>
@@ -323,7 +323,7 @@ export default function AuthScreen({ onLogin, onSignup, onPasswordReset, loading
                               <div style={{ fontSize: 14.3, fontWeight: sel ? 700 : 600, color: sel ? t.c : C.t1 }}>{t.l}</div>
                               <div style={{ fontSize: 11.6, color: C.t3, marginTop: 1 }}>{t.desc}</div>
                             </div>
-                            <div style={{ width: 20, height: 20, borderRadius: 6, border: `2px solid ${sel ? t.c : C.b1}`, background: sel ? t.c : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "all 0.15s" }}>
+                            <div style={{ width: 20, height: 20, borderRadius: R.sm, border: `2px solid ${sel ? t.c : C.b1}`, background: sel ? t.c : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "all 0.15s" }}>
                               {sel && <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={C.w} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>}
                             </div>
                           </button>
@@ -374,7 +374,7 @@ export default function AuthScreen({ onLogin, onSignup, onPasswordReset, loading
                 </div>
               </>}
 
-              {displayError && <div style={{ padding: "10px 14px", background: C.errPale, borderRadius: 8, fontSize: 13.8, color: C.err, fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.err} strokeWidth="2.5"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>{displayError}</div>}
+              {displayError && <div style={{ padding: "10px 14px", background: C.errPale, borderRadius: R.md, fontSize: 13.8, color: C.err, fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.err} strokeWidth="2.5"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>{displayError}</div>}
               <Btn full onClick={submit} disabled={anyLoading}>{anyLoading ? "Cargando..." : btnLabels[mode]}</Btn>
               <div ref={bottomRef} />
             </div>

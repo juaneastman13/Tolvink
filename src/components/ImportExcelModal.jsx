@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from "react";
-import { C, Ic } from "../theme";
+import { C, Ic, R } from "../theme";
 import { typeLabels } from "../utils/freight-helpers";
 
 const TYPE_MAP = { planta: "plant", productor: "producer", transportista: "transporter" };
@@ -185,7 +185,7 @@ export default function ImportExcelModal({ mode, onClose, onImport, existingComp
         {/* Result view */}
         {result && (
           <div>
-            <div style={{ padding: 16, borderRadius: 12, background: result.imported > 0 ? C.okPale : C.errPale, marginBottom: 12 }}>
+            <div style={{ padding: 16, borderRadius: R.lg, background: result.imported > 0 ? C.okPale : C.errPale, marginBottom: 12 }}>
               <div style={{ fontSize: 15, fontWeight: 700, color: result.imported > 0 ? C.ok : C.err }}>
                 {result.imported > 0 ? `${result.imported} ${isCompanies ? "empresas" : "usuarios"} importados` : "No se importó ningún registro"}
               </div>
@@ -200,7 +200,7 @@ export default function ImportExcelModal({ mode, onClose, onImport, existingComp
                 ))}
               </div>
             )}
-            <button onClick={onClose} style={{ width: "100%", padding: "12px 0", borderRadius: 10, border: "none", background: C.pri, color: C.tOn, fontSize: 15, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>
+            <button onClick={onClose} style={{ width: "100%", padding: "12px 0", borderRadius: R.md, border: "none", background: C.pri, color: C.tOn, fontSize: 15, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>
               Cerrar
             </button>
           </div>
@@ -217,7 +217,7 @@ export default function ImportExcelModal({ mode, onClose, onImport, existingComp
               a.href = "/Tolvink_-_Modelo_carga.xlsx";
               a.download = "Tolvink_-_Modelo_carga.xlsx";
               a.click();
-            }} style={{ background: "transparent", border: `1px solid ${C.pri}`, color: C.pri, borderRadius: 8, padding: "8px 16px", fontSize: 13, cursor: "pointer", fontFamily: "inherit", fontWeight: 600, marginBottom: 16, display: "inline-flex", alignItems: "center", gap: 6 }}>
+            }} style={{ background: "transparent", border: `1px solid ${C.pri}`, color: C.pri, borderRadius: R.md, padding: "8px 16px", fontSize: 13, cursor: "pointer", fontFamily: "inherit", fontWeight: 600, marginBottom: 16, display: "inline-flex", alignItems: "center", gap: 6 }}>
               {Ic.doc(C.pri, 14)} Descargar modelo Excel
             </button>
 
@@ -232,7 +232,7 @@ export default function ImportExcelModal({ mode, onClose, onImport, existingComp
               onDrop={handleDrop}
               style={{
                 border: `2px dashed ${isDragging ? C.pri : C.b1 || "#ccc"}`,
-                borderRadius: 12, padding: "40px 20px", textAlign: "center", cursor: "pointer",
+                borderRadius: R.lg, padding: "40px 20px", textAlign: "center", cursor: "pointer",
                 background: isDragging ? C.priPale : "transparent", transition: "all 0.2s",
               }}
             >
@@ -246,7 +246,7 @@ export default function ImportExcelModal({ mode, onClose, onImport, existingComp
             </div>
 
             {parseError && (
-              <div style={{ padding: "8px 12px", borderRadius: 8, background: C.errPale, color: C.err, fontSize: 13, marginTop: 10 }}>
+              <div style={{ padding: "8px 12px", borderRadius: R.md, background: C.errPale, color: C.err, fontSize: 13, marginTop: 10 }}>
                 {parseError}
               </div>
             )}
@@ -274,7 +274,7 @@ export default function ImportExcelModal({ mode, onClose, onImport, existingComp
                 const canToggle = (hasWarn || isClean) && !isDup;
 
                 return (
-                  <div key={i} style={{ background: bg, borderRadius: 8, padding: "8px 12px", marginBottom: 4, display: "flex", alignItems: "center", gap: 8, opacity: isDup ? 0.6 : 1 }}>
+                  <div key={i} style={{ background: bg, borderRadius: R.md, padding: "8px 12px", marginBottom: 4, display: "flex", alignItems: "center", gap: 8, opacity: isDup ? 0.6 : 1 }}>
                     {/* Checkbox for toggleable rows */}
                     {canToggle ? (
                       <input type="checkbox" checked={r._include} onChange={() => toggleRow(i)}
@@ -313,12 +313,12 @@ export default function ImportExcelModal({ mode, onClose, onImport, existingComp
 
             <div style={{ display: "flex", gap: 8 }}>
               <button onClick={() => { setStep("upload"); setRows([]); }}
-                style={{ flex: 1, padding: "12px 0", borderRadius: 10, border: `1px solid ${C.b1 || "#ccc"}`, background: C.w, color: C.t2, fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>
+                style={{ flex: 1, padding: "12px 0", borderRadius: R.md, border: `1px solid ${C.b1 || "#ccc"}`, background: C.w, color: C.t2, fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>
                 Cancelar
               </button>
               <button disabled={importableCount === 0 || importing} onClick={handleImport}
                 style={{
-                  flex: 2, padding: "12px 0", borderRadius: 10, border: "none",
+                  flex: 2, padding: "12px 0", borderRadius: R.md, border: "none",
                   background: importableCount > 0 ? C.pri : (C.b1 || "#ccc"),
                   color: importableCount > 0 ? C.tOn : C.t3,
                   fontSize: 15, fontWeight: 600, cursor: importableCount > 0 ? "pointer" : "default",

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { C, Ic } from "../../theme";
+import { C, Ic, R } from "../../theme";
 import { Btn } from "../../components";
 import { ModalOverlay } from "../../components/overlays";
 import { apiReclassifyPoi } from "../../api";

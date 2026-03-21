@@ -1,4 +1,4 @@
-import { C, Ic } from "../../theme";
+import { C, Ic, R } from "../../theme";
 import { Btn, Bd } from "../../components";
 
 const TYPE_CFG = {
@@ -15,12 +15,12 @@ export default function ImportClassifyPanel({
   onSelectAll, onSelectNone, onPreview, onClose, onConfirm,
 }) {
   return (
-    <div style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: 12, padding: 14, boxShadow: C.sh }}>
+    <div style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: R.lg, padding: 14, boxShadow: C.sh }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
         <div style={{ fontSize: 14.3, fontWeight: 700 }}>{Ic.pin(C.pri, 14)} {importListName || "Ubicaciones encontradas"}</div>
         <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }}>{Ic.cross(C.t3, 14)}</button>
       </div>
-      {importWarning && <div style={{ padding: "6px 10px", borderRadius: 8, marginBottom: 8, fontSize: 11, fontWeight: 500, background: C.warnPale, color: C.warn, border: `1px solid ${C.warn}30` }}>{importWarning}</div>}
+      {importWarning && <div style={{ padding: "6px 10px", borderRadius: R.md, marginBottom: 8, fontSize: 11, fontWeight: 500, background: C.warnPale, color: C.warn, border: `1px solid ${C.warn}30` }}>{importWarning}</div>}
 
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
         <div style={{ display: "flex", gap: 8, fontSize: 12.1, color: C.t2 }}>
@@ -45,7 +45,7 @@ export default function ImportClassifyPanel({
               const cfg = TYPE_CFG[t];
               return (
                 <div key={i} style={{
-                  borderRadius: 10, border: `1.5px solid ${sel ? cfg.color : C.b1}`,
+                  borderRadius: R.md, border: `1.5px solid ${sel ? cfg.color : C.b1}`,
                   borderLeft: sel ? `3px solid ${cfg.color}` : `3px solid ${C.b1}`,
                   background: sel ? `${cfg.color}04` : C.bg,
                   transition: "all 0.15s", overflow: "hidden",

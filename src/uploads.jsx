@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { uploadPhoto, apiAddDocument, apiDeleteDocument, apiEditOcrData, thumb } from "./api";
-import { C, Ic } from "./theme";
+import { C, Ic, R } from "./theme";
 import { AttachMenu, Btn } from "./components";
 import { useUIStore } from "./store";
 import log from "./logger";
@@ -43,15 +43,15 @@ export function PhotoUpload({ freightId, step, label, onUploaded }) {
     <div style={{ marginBottom: 10 }}>
       <input ref={inputRef} type="file" accept="image/*" capture="environment" onChange={handleFile} style={{ display: "none" }} />
       {preview ? (
-        <div style={{ position: "relative", borderRadius: 10, overflow: "hidden", border: `1px solid ${C.b1}` }}>
+        <div style={{ position: "relative", borderRadius: R.md, overflow: "hidden", border: `1px solid ${C.b1}` }}>
           <img src={preview} alt="foto" style={{ width: "100%", height: 120, objectFit: "cover", display: "block" }} />
           {uploading && <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center", color: C.w, fontSize: 13.2, fontWeight: 600 }}>Subiendo...</div>}
-          {done && <div style={{ position: "absolute", top: 6, right: 6, background: C.ok, borderRadius: 12, padding: "2px 8px", fontSize: 11, color: C.w, fontWeight: 600 }}>Guardada</div>}
+          {done && <div style={{ position: "absolute", top: 6, right: 6, background: C.ok, borderRadius: R.lg, padding: "2px 8px", fontSize: 11, color: C.w, fontWeight: 600 }}>Guardada</div>}
 
         </div>
       ) : (
         <button onClick={() => inputRef.current?.click()} disabled={uploading}
-          style={{ width: "100%", padding: "16px 14px", borderRadius: 10, border: `1.5px dashed ${C.b1}`, background: C.bg, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+          style={{ width: "100%", padding: "16px 14px", borderRadius: R.md, border: `1.5px dashed ${C.b1}`, background: C.bg, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
           {Ic.cam(C.acc, 20)}
           <span style={{ fontSize: 13.2, fontWeight: 600, color: C.t2 }}>{label || "Adjuntar foto"}</span>
         </button>
@@ -88,7 +88,7 @@ export function DocsGallery({ documents, onViewFile, freightId, canDelete, onDel
   };
 
   return (
-    <div style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: 12, padding: 14, boxShadow: C.sh, width:"100%", boxSizing:"border-box" }}>
+    <div style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: R.lg, padding: 14, boxShadow: C.sh, width:"100%", boxSizing:"border-box" }}>
       <button onClick={()=>setOpen(v=>!v)} style={{ display:"flex", alignItems:"center", gap:6, width:"100%", background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", padding:0, marginBottom:open?10:0 }}>
         {Ic.img(C.pri, 16)}
         <span style={{ fontSize: 11.6, fontWeight: 700, color: C.t2, textTransform: "uppercase", letterSpacing: 0.5, flex:1, textAlign:"left" }}>Archivos del flete ({documents.length})</span>
@@ -100,12 +100,12 @@ export function DocsGallery({ documents, onViewFile, freightId, canDelete, onDel
           const isImg = d.type === "photo" || d.url?.match(/\.(jpg|jpeg|png|webp|gif)$/i);
           return (
             <div key={d.id} style={{ position:"relative" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 8, background: C.bg, border: `1px solid ${C.b2}`, borderRadius: 8, width:"100%" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 8, background: C.bg, border: `1px solid ${C.b2}`, borderRadius: R.md, width:"100%" }}>
                 <button onClick={()=>onViewFile?onViewFile({url:d.url,name:d.name||"Archivo",type:d.type,id:d.id,ocrData:d.ocrData}):null} style={{ display: "flex", alignItems: "center", gap: 10, flex:1, minWidth:0, background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", textAlign:"left", padding:0 }}>
                   {isImg ? (
-                    <img src={thumb(d.url)} alt={d.name} loading="lazy" style={{ width: 48, height: 48, borderRadius: 6, objectFit: "cover", flexShrink: 0 }} onError={e => { e.target.style.display = "none"; }} />
+                    <img src={thumb(d.url)} alt={d.name} loading="lazy" style={{ width: 48, height: 48, borderRadius: R.sm, objectFit: "cover", flexShrink: 0 }} onError={e => { e.target.style.display = "none"; }} />
                   ) : (
-                    <div style={{ width: 48, height: 48, borderRadius: 6, background: C.priPale, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{Ic.doc(C.pri, 20)}</div>
+                    <div style={{ width: 48, height: 48, borderRadius: R.sm, background: C.priPale, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{Ic.doc(C.pri, 20)}</div>
                   )}
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 12.1, fontWeight: 600, color: C.t1, wordBreak: "break-all" }}>{d.name || "Archivo"}</div>
@@ -374,7 +374,7 @@ export function UploadOverlay({ uploading, done, total, current, label }) {
   if (stage === "idle") return null;
 
   return (
-    <div style={{ position: "absolute", inset: 0, borderRadius: 12, background: C.bgOverlay, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", zIndex: 5, transition: "opacity 0.35s ease", opacity: stage === "fadeout" ? 0 : 1 }}>
+    <div style={{ position: "absolute", inset: 0, borderRadius: R.lg, background: C.bgOverlay, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", zIndex: 5, transition: "opacity 0.35s ease", opacity: stage === "fadeout" ? 0 : 1 }}>
       <style>{`
 @keyframes uplPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.5)}}
 @keyframes uplCircleIn{from{transform:scale(0);opacity:0}to{transform:scale(1);opacity:1}}
@@ -485,7 +485,7 @@ export function FreightFileUpload({ freightId, step, onUploaded }) {
   const pendingCount = pending.length;
 
   return (
-    <div style={{ position: "relative", background: C.w, border: `1px solid ${C.b1}`, borderRadius: 12, padding: 14, boxShadow: C.sh, overflow: "hidden", width:"100%", boxSizing:"border-box" }}>
+    <div style={{ position: "relative", background: C.w, border: `1px solid ${C.b1}`, borderRadius: R.lg, padding: 14, boxShadow: C.sh, overflow: "hidden", width:"100%", boxSizing:"border-box" }}>
       <UploadOverlay uploading={uploadingAll} done={uploadDone} total={pendingCount || 1} current={currentIdx} />
 
       <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
@@ -496,7 +496,7 @@ export function FreightFileUpload({ freightId, step, onUploaded }) {
       {files.length > 0 && (
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
           {files.map((f, i) => (
-            <div key={i} style={{ position: "relative", width: 72, height: 72, borderRadius: 10, overflow: "hidden", border: `1px solid ${f.done ? C.ok : f.error ? C.err : C.b1}` }}>
+            <div key={i} style={{ position: "relative", width: 72, height: 72, borderRadius: R.md, overflow: "hidden", border: `1px solid ${f.done ? C.ok : f.error ? C.err : C.b1}` }}>
               {f.preview ? (
                 <img src={f.preview} alt="" loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
               ) : (
@@ -520,7 +520,7 @@ export function FreightFileUpload({ freightId, step, onUploaded }) {
       <input ref={docRef} type="file" accept="image/*,.pdf,.doc,.docx,.xlsx" multiple onChange={e => { if (e.target.files?.length) addFiles(e.target.files); e.target.value = ""; }} style={{ display: "none" }} />
 
       <div>
-        <button onClick={() => setShowAttach(true)} disabled={uploadingAll} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "10px 16px", borderRadius: 10, border: `1.5px dashed ${C.b1}`, background: C.bg, cursor: uploadingAll ? "default" : "pointer", fontFamily: "inherit", fontSize: 13.2, fontWeight: 600, color: C.t2, opacity: uploadingAll ? 0.5 : 1 }}>
+        <button onClick={() => setShowAttach(true)} disabled={uploadingAll} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "10px 16px", borderRadius: R.md, border: `1.5px dashed ${C.b1}`, background: C.bg, cursor: uploadingAll ? "default" : "pointer", fontFamily: "inherit", fontSize: 13.2, fontWeight: 600, color: C.t2, opacity: uploadingAll ? 0.5 : 1 }}>
           {Ic.clip(C.t2, 16)} Adjuntar archivo
         </button>
       </div>

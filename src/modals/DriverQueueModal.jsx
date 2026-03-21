@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { C, Ic, MONO } from "../theme";
+import { C, Ic, MONO, R } from "../theme";
 import { Btn, ModalOverlay } from "../components";
 import { stCfg } from "../constants";
 import { apiGetDriverQueue, apiReorderDriverQueue } from "../api";
@@ -57,8 +57,8 @@ export default function DriverQueueModal({ driverId, driverName, onClose }) {
           {queue.map((q, i) => {
             const st = stCfg(q.status);
             return (
-              <div key={q.assignmentId} style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 12px", borderRadius: 12, border: `1.5px solid ${i === 0 ? C.pri : C.b1}`, background: i === 0 ? C.priPale : C.w }}>
-                <div style={{ width: 24, height: 24, borderRadius: 12, background: i === 0 ? C.pri : C.b1, color: i === 0 ? C.w : C.t2, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12.1, fontWeight: 800, flexShrink: 0 }}>{i + 1}</div>
+              <div key={q.assignmentId} style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 12px", borderRadius: R.lg, border: `1.5px solid ${i === 0 ? C.pri : C.b1}`, background: i === 0 ? C.priPale : C.w }}>
+                <div style={{ width: 24, height: 24, borderRadius: R.lg, background: i === 0 ? C.pri : C.b1, color: i === 0 ? C.w : C.t2, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12.1, fontWeight: 800, flexShrink: 0 }}>{i + 1}</div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 13.2, fontWeight: 700, color: C.t1 }}>{q.grain} {q.tons ? `· ${q.tons}tn` : ""}</div>
                   {q.destName && <div style={{ fontSize: 12.1, color: C.t2, marginTop: 2 }}>{q.destName}</div>}
@@ -68,8 +68,8 @@ export default function DriverQueueModal({ driverId, driverName, onClose }) {
                   </div>
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 2, flexShrink: 0 }}>
-                  <button aria-label="Subir" disabled={i === 0} onClick={() => move(i, -1)} style={{ width: 44, height: 44, borderRadius: 8, border: `1px solid ${C.b1}`, background: i === 0 ? C.bg : C.w, cursor: i === 0 ? "default" : "pointer", fontSize: 17.6, fontFamily: "inherit", color: i === 0 ? C.t3 : C.t1, display: "flex", alignItems: "center", justifyContent: "center" }}>{"\u25B2"}</button>
-                  <button aria-label="Bajar" disabled={i === queue.length - 1} onClick={() => move(i, 1)} style={{ width: 44, height: 44, borderRadius: 8, border: `1px solid ${C.b1}`, background: i === queue.length - 1 ? C.bg : C.w, cursor: i === queue.length - 1 ? "default" : "pointer", fontSize: 17.6, fontFamily: "inherit", color: i === queue.length - 1 ? C.t3 : C.t1, display: "flex", alignItems: "center", justifyContent: "center" }}>{"\u25BC"}</button>
+                  <button aria-label="Subir" disabled={i === 0} onClick={() => move(i, -1)} style={{ width: 44, height: 44, borderRadius: R.md, border: `1px solid ${C.b1}`, background: i === 0 ? C.bg : C.w, cursor: i === 0 ? "default" : "pointer", fontSize: 17.6, fontFamily: "inherit", color: i === 0 ? C.t3 : C.t1, display: "flex", alignItems: "center", justifyContent: "center" }}>{"\u25B2"}</button>
+                  <button aria-label="Bajar" disabled={i === queue.length - 1} onClick={() => move(i, 1)} style={{ width: 44, height: 44, borderRadius: R.md, border: `1px solid ${C.b1}`, background: i === queue.length - 1 ? C.bg : C.w, cursor: i === queue.length - 1 ? "default" : "pointer", fontSize: 17.6, fontFamily: "inherit", color: i === queue.length - 1 ? C.t3 : C.t1, display: "flex", alignItems: "center", justifyContent: "center" }}>{"\u25BC"}</button>
                 </div>
               </div>
             );

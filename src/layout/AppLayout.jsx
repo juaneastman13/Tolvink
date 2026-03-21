@@ -602,7 +602,7 @@ export default function AppLayout({ fh, catalog, online, notif, isDesktop }) {
         {screen==="mydata" && <MyDataScreen user={auth.user} onBack={()=>navigate("/menu")} onUserUpdate={auth.patchUser}/>}
         {screen==="reports" && <ReportsScreen onBack={()=>navigate(isDesktop?"/reports":"/menu")} freights={viewFreights} isDesktop={isDesktop}/>}
         {screen==="chats" && <ChatsScreen user={auth.user} openConvId={chatConvId} onConvOpened={()=>setChatConvId(null)} isDesktop={isDesktop} sseMsg={sseMsg} onSseMsgHandled={()=>setSseMsg(null)} sseTyping={sseTyping} sseRead={sseRead} sseConnected={sse.connected}/>}
-        {screen==="notifs" && <NotificationsScreen notifications={notif.notifications} freights={viewFreights} onMarkRead={notif.markRead} onMarkAllRead={notif.markAllRead} onTap={handleNotifTap} />}
+        {screen==="notifs" && <NotificationsScreen notifications={notif.notifications} freights={viewFreights} loading={notif.loading} onMarkRead={notif.markRead} onMarkAllRead={notif.markAllRead} onTap={handleNotifTap} />}
         </Suspense></ErrorBoundary>
         </div>
         </div>

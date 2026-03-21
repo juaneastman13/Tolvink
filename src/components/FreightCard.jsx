@@ -1,5 +1,5 @@
 import { memo } from "react";
-import { C, Ic, MONO, STATUS_COLORS } from "../theme";
+import { C, Ic, MONO, R, STATUS_COLORS } from "../theme";
 import { formatFreightDate } from "../constants";
 import { originDisplay, destDisplay } from "../hooks";
 
@@ -32,7 +32,7 @@ function StatusPill({ status, small }) {
   const pad = small ? "2px 8px" : "3px 10px";
   const fs = small ? 10 : 11;
   return (
-    <span style={{ display: "inline-flex", alignItems: "center", gap: 4, background: sc.pillBg, padding: pad, borderRadius: 20, flexShrink: 0 }}>
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 4, background: sc.pillBg, padding: pad, borderRadius: R.pill, flexShrink: 0 }}>
       {sc.pulse && <PulseDot color={sc.ribbon} size={small ? 5 : 6} />}
       <span style={{ fontSize: fs, fontWeight: 500, color: sc.pillText, whiteSpace: "nowrap" }}>{sc.label}</span>
     </span>
@@ -62,7 +62,7 @@ export const FreightCard = memo(function FreightCard({ freight: f, onClick, styl
       aria-label={`Flete ${f.code}`}
       onKeyDown={onClick ? (e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick(); } }) : undefined}
       style={{
-        display: "flex", borderRadius: 6, border: selected ? "1.5px solid #1A6B37" : `0.5px solid ${C.b1}`,
+        display: "flex", borderRadius: R.sm, border: selected ? "1.5px solid #1A6B37" : `0.5px solid ${C.b1}`,
         overflow: "hidden", cursor: onClick ? "pointer" : "default",
         background: selected ? "#F5FBF7" : C.w, transition: "border-color 0.15s",
         ...style,
@@ -134,7 +134,7 @@ export const FreightCardCompact = memo(function FreightCardCompact({ freight: f,
       aria-label={`Flete ${f.code}`}
       onKeyDown={onClick ? (e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick(); } }) : undefined}
       style={{
-        display: "flex", borderRadius: 6, border: `0.5px solid ${C.b1}`,
+        display: "flex", borderRadius: R.sm, border: `0.5px solid ${C.b1}`,
         overflow: "hidden", cursor: onClick ? "pointer" : "default",
         background: C.w, transition: "border-color 0.15s",
         ...style,
@@ -202,7 +202,7 @@ export const ActiveTripCard = memo(function ActiveTripCard({ freight: f, onClick
   const isMulti = aa.length > 1;
 
   return (
-    <div className="tv-card" onClick={onClick} role="button" tabIndex={0} aria-label={`Flete ${f.code}`} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick?.(); } }} style={{ display: "flex", borderRadius: 6, border: `0.5px solid ${C.b1}`, overflow: "hidden", cursor: "pointer", background: C.w }}>
+    <div className="tv-card" onClick={onClick} role="button" tabIndex={0} aria-label={`Flete ${f.code}`} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick?.(); } }} style={{ display: "flex", borderRadius: R.sm, border: `0.5px solid ${C.b1}`, overflow: "hidden", cursor: "pointer", background: C.w }}>
       <div style={{ width: 20, background: sc.ribbon, flexShrink: 0 }} />
       <div style={{ padding: "12px 14px", flex: 1, minWidth: 0 }}>
         {/* Header */}
@@ -246,7 +246,7 @@ export const ActiveTripCard = memo(function ActiveTripCard({ freight: f, onClick
                 );
               })}
             </div>
-            <div style={{ background: C.bgCardAlt, borderRadius: 6, padding: "7px 10px", marginTop: 10, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div style={{ background: C.bgCardAlt, borderRadius: R.sm, padding: "7px 10px", marginTop: 10, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <span style={{ fontSize: 12, color: C.t2 }}>
                 {aa.filter(a => a.tripStatus === "in_progress").length} a campo · {aa.filter(a => a.tripStatus === "loaded").length} a planta
               </span>
@@ -277,7 +277,7 @@ export const ActiveTripCard = memo(function ActiveTripCard({ freight: f, onClick
               </div>
             </div>
             {/* Footer */}
-            <div style={{ background: C.bgCardAlt, borderRadius: 6, padding: "7px 10px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div style={{ background: C.bgCardAlt, borderRadius: R.sm, padding: "7px 10px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 <div style={{ width: 22, height: 22, borderRadius: "50%", background: sc.ribbon, display: "flex", alignItems: "center", justifyContent: "center" }}>
                   {Ic.user("#fff", 11)}
@@ -299,7 +299,7 @@ export const CalendarChip = memo(function CalendarChip({ freight: f }) {
   const sc = STATUS_COLORS[f.status] || STATUS_COLORS.pending_assignment;
   const grain = f.grain === "Otros" ? (f.productTypeOther || "Otros") : f.grain;
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 2, background: sc.pillBg, padding: "2px 4px", borderRadius: 4, marginBottom: 2 }}>
+    <div style={{ display: "flex", alignItems: "center", gap: 2, background: sc.pillBg, padding: "2px 4px", borderRadius: R.xs, marginBottom: 2 }}>
       <div style={{ width: 3, height: 12, background: sc.ribbon, borderRadius: 1, flexShrink: 0 }} />
       <span style={{ fontSize: 8, color: sc.pillText, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{grain} {f.tons}t</span>
     </div>

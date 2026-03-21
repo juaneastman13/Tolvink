@@ -36,6 +36,7 @@ export default function PickLocationScreen({ slug: slugProp } = {}) {
   const [saving, setSaving] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState(null);
+  const [mapLoading, setMapLoading] = useState(true);
 
   // Extract token from URL (legacy) or use slug prop (clean URL)
   const params = new URLSearchParams(window.location.search);
@@ -52,6 +53,7 @@ export default function PickLocationScreen({ slug: slugProp } = {}) {
         const maps = await loadGMaps();
         if (cancelled || !mapRef.current) return;
 
+        setMapLoading(false);
         const map = new maps.Map(mapRef.current, {
           zoom: 7,
           center: URUGUAY_CENTER,
@@ -129,6 +131,7 @@ export default function PickLocationScreen({ slug: slugProp } = {}) {
         }
       } catch (err) {
         log.error("PickLocation", err);
+        setMapLoading(false);
         setError("No se pudo cargar el mapa. Recargá la página.");
       }
     })();
@@ -232,6 +235,13 @@ export default function PickLocationScreen({ slug: slugProp } = {}) {
       {/* Map */}
       <div style={{ flex: 1, minHeight: 0, position: "relative" }}>
         <div ref={mapRef} style={{ position: "absolute", inset: 0 }} />
+        {mapLoading && (
+          <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: COLORS.bg, zIndex: 5 }}>
+            <div style={{ textAlign: "center", color: COLORS.t3 }}>
+              <div style={{ fontSize: 15.4, fontWeight: 600 }}>Cargando mapa...</div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Footer */}

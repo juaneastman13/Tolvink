@@ -3,10 +3,6 @@ import { C, Ic } from "../theme";
 import { Av, Bd, Btn } from "../components";
 
 export default function MenuScreen({ user, perms, onLogout, onNav, isDesktop, onSwitchCompany, onRefresh, simpleMode, onToggleSimple }) {
-  const TYPE_LABELS = {plant:"Planta de Acopio",transporter:"Transportista",producer:"Productor"};
-  const TYPE_COLORS = {plant:C.pri,transporter:C.info||C.sec,producer:C.acc};
-  const tc = TYPE_COLORS[user.userType]||C.pri;
-  const pl = []; if(perms.canRequest)pl.push("Solicitar fletes"); if(perms.canApprove)pl.push("Aprobar fletes"); if(perms.canAssignDriver)pl.push("Asignar choferes"); if(perms.canCancel)pl.push("Cancelar fletes"); if(perms.canReject)pl.push("Rechazar viajes");
   const [switching, setSwitching] = useState(null);
   const [canInstall, setCanInstall] = useState(false);
   useEffect(() => {
@@ -14,6 +10,14 @@ export default function MenuScreen({ user, perms, onLogout, onNav, isDesktop, on
     window.addEventListener('pwa-install-available', h);
     return () => window.removeEventListener('pwa-install-available', h);
   }, []);
+  const [showProfile, setShowProfile] = useState(false);
+
+  if (!user) return <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",padding:40,color:"#8A9C90",fontSize:15.4,fontWeight:600}}>Cargando...</div>;
+
+  const TYPE_LABELS = {plant:"Planta de Acopio",transporter:"Transportista",producer:"Productor"};
+  const TYPE_COLORS = {plant:C.pri,transporter:C.info||C.sec,producer:C.acc};
+  const tc = TYPE_COLORS[user.userType]||C.pri;
+  const pl = []; if(perms.canRequest)pl.push("Solicitar fletes"); if(perms.canApprove)pl.push("Aprobar fletes"); if(perms.canAssignDriver)pl.push("Asignar choferes"); if(perms.canCancel)pl.push("Cancelar fletes"); if(perms.canReject)pl.push("Rechazar viajes");
 
   // Use new companies array from backend memberships
   const companies = (user.companies && user.companies.length > 0) ? user.companies.map(c => ({
@@ -181,8 +185,6 @@ export default function MenuScreen({ user, perms, onLogout, onNav, isDesktop, on
       <Btn full v="err" onClick={onLogout} icon={Ic.out(C.err,16)}>Cerrar sesión</Btn>
     </div>
   );
-
-  const [showProfile, setShowProfile] = useState(false);
 
   return (
     <div style={{flex:1,overflow:"auto",padding:18}}>

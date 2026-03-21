@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { C, Ic, FONT } from "../theme";
+import { C, Ic, FONT, R } from "../theme";
 import { Btn, Field, Loader, LoadingOverlay } from "../components";
 import { Select } from "../components/form";
 import {
@@ -135,18 +135,18 @@ export default function LinkedCompaniesScreen({ user, embedded, onBack, onNav })
     const levelColor = r.accessLevel === "OPERATOR" ? C.ok : C.info;
 
     return (
-      <div style={{ background: C.w, border: `1px solid ${C.b1}`, borderLeft: `3px solid ${typeColor}`, borderRadius: 12, boxShadow: C.sh, overflow: "hidden" }}>
+      <div style={{ background: C.w, border: `1px solid ${C.b1}`, borderLeft: `3px solid ${typeColor}`, borderRadius: R.lg, boxShadow: C.sh, overflow: "hidden" }}>
         <div style={{ padding: "12px 14px", display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }} onClick={() => toggleExpand(r)}>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginBottom: 2 }}>
               <span style={{ fontSize: 15.4, fontWeight: 700, color: C.t1 }}>{co.name || "Empresa"}</span>
-              <span style={{ fontSize: 9.9, fontWeight: 700, color: typeColor, background: `${typeColor}15`, padding: "1px 6px", borderRadius: 4 }}>
+              <span style={{ fontSize: 9.9, fontWeight: 700, color: typeColor, background: `${typeColor}15`, padding: "1px 6px", borderRadius: R.xs }}>
                 {TYPE_LABELS[r.granteeType] || r.granteeType}
               </span>
-              <span style={{ fontSize: 9.9, fontWeight: 700, color: levelColor, background: `${levelColor}18`, padding: "1px 6px", borderRadius: 4 }}>
+              <span style={{ fontSize: 9.9, fontWeight: 700, color: levelColor, background: `${levelColor}18`, padding: "1px 6px", borderRadius: R.xs }}>
                 {LEVEL_LABELS[r.accessLevel] || r.accessLevel}
               </span>
-              {isLegacy && <span style={{ fontSize: 8.8, fontWeight: 600, color: C.t3, background: `${C.t3}12`, padding: "1px 5px", borderRadius: 4 }}>Legacy</span>}
+              {isLegacy && <span style={{ fontSize: 8.8, fontWeight: 600, color: C.t3, background: `${C.t3}12`, padding: "1px 5px", borderRadius: R.xs }}>Legacy</span>}
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 11.6, color: C.t3 }}>
               {st.activeFreights > 0 ? (
@@ -160,7 +160,7 @@ export default function LinkedCompaniesScreen({ user, embedded, onBack, onNav })
           {/* Toggle USO/CONSULTA */}
           {!isLegacy && (
             <button onClick={e => { e.stopPropagation(); handleToggleLevel(r); }} disabled={saving}
-              style={{ padding: "5px 10px", borderRadius: 6, fontFamily: "inherit", fontSize: 11.6, fontWeight: 700, cursor: saving ? "not-allowed" : "pointer", border: "none", background: `${levelColor}18`, color: levelColor }}>
+              style={{ padding: "5px 10px", borderRadius: R.sm, fontFamily: "inherit", fontSize: 11.6, fontWeight: 700, cursor: saving ? "not-allowed" : "pointer", border: "none", background: `${levelColor}18`, color: levelColor }}>
               {LEVEL_LABELS[r.accessLevel] || r.accessLevel}
             </button>
           )}
@@ -183,12 +183,12 @@ export default function LinkedCompaniesScreen({ user, embedded, onBack, onNav })
 
             {/* Level toggle row */}
             {!isLegacy && (
-              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12, padding: "8px 12px", background: C.bg, borderRadius: 8 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12, padding: "8px 12px", background: C.bg, borderRadius: R.md }}>
                 <span style={{ fontSize: 12.1, fontWeight: 600, color: C.t2, flex: 1 }}>Nivel de acceso:</span>
                 {["OPERATOR", "READONLY"].map(l => (
                   <button key={l} onClick={() => { if (r.accessLevel !== l) handleToggleLevel(r); }} disabled={saving}
                     style={{
-                      padding: "5px 12px", borderRadius: 6, fontFamily: "inherit", fontSize: 11.6, fontWeight: 700, cursor: saving ? "not-allowed" : "pointer",
+                      padding: "5px 12px", borderRadius: R.sm, fontFamily: "inherit", fontSize: 11.6, fontWeight: 700, cursor: saving ? "not-allowed" : "pointer",
                       border: `1.5px solid ${r.accessLevel === l ? (l === "OPERATOR" ? C.ok : C.info) : C.b1}`,
                       background: r.accessLevel === l ? (l === "OPERATOR" ? `${C.ok}12` : `${C.info}12`) : C.w,
                       color: r.accessLevel === l ? (l === "OPERATOR" ? C.ok : C.info) : C.t3,
@@ -201,7 +201,7 @@ export default function LinkedCompaniesScreen({ user, embedded, onBack, onNav })
 
             {/* Action buttons */}
             <div style={{ display: "flex", gap: 8, marginBottom: 14, flexWrap: "wrap" }}>
-              {onNav && <button onClick={() => onNav("list", { filterCompany: co.name })} style={{ display: "flex", alignItems: "center", gap: 4, padding: "5px 10px", borderRadius: 6, border: `1px solid ${C.pri}30`, background: `${C.pri}08`, cursor: "pointer", fontFamily: FONT, fontSize: 11.6, fontWeight: 600, color: C.pri }}>
+              {onNav && <button onClick={() => onNav("list", { filterCompany: co.name })} style={{ display: "flex", alignItems: "center", gap: 4, padding: "5px 10px", borderRadius: R.sm, border: `1px solid ${C.pri}30`, background: `${C.pri}08`, cursor: "pointer", fontFamily: FONT, fontSize: 11.6, fontWeight: 600, color: C.pri }}>
                 {Ic.truck(C.pri, 13)} Ver fletes
               </button>}
               <button onClick={async () => {
@@ -211,7 +211,7 @@ export default function LinkedCompaniesScreen({ user, embedded, onBack, onNav })
                   await navigator.clipboard.writeText(url);
                   show("Link de portal copiado");
                 } catch (e) { show(e.message || "Error", "err"); }
-              }} style={{ display: "flex", alignItems: "center", gap: 4, padding: "5px 10px", borderRadius: 6, border: `1px solid ${C.info}30`, background: `${C.info}08`, cursor: "pointer", fontFamily: FONT, fontSize: 11.6, fontWeight: 600, color: C.info }}>
+              }} style={{ display: "flex", alignItems: "center", gap: 4, padding: "5px 10px", borderRadius: R.sm, border: `1px solid ${C.info}30`, background: `${C.info}08`, cursor: "pointer", fontFamily: FONT, fontSize: 11.6, fontWeight: 600, color: C.info }}>
                 {Ic.doc(C.info, 13)} Link de portal
               </button>
               {!isLegacy && <button onClick={() => handleToggleActive(r)} disabled={saving} style={{ background: "none", border: "none", fontSize: 11.6, color: C.err, fontWeight: 600, cursor: "pointer", padding: 0 }}>
@@ -255,7 +255,7 @@ export default function LinkedCompaniesScreen({ user, embedded, onBack, onNav })
       {/* Search — always show when there are records */}
       {records.filter(r => r.isActive).length > 0 && (
         <div style={{ marginBottom: 12 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 10px", borderRadius: 8, background: C.bgInput || C.bg, border: `1.5px solid ${search ? C.bFocus || C.pri : C.b2}` }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 10px", borderRadius: R.md, background: C.bgInput || C.bg, border: `1.5px solid ${search ? C.bFocus || C.pri : C.b2}` }}>
             {Ic.srch(C.t3, 14)}
             <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar empresa..." style={{ flex: 1, border: "none", background: "transparent", outline: "none", fontSize: 13.2, color: C.t1, fontFamily: FONT, padding: 0 }} />
             {search && <button onClick={() => setSearch("")} style={{ display: "flex", border: "none", background: "none", cursor: "pointer", padding: 0 }}>{Ic.cross(C.t3, 12)}</button>}
@@ -263,18 +263,18 @@ export default function LinkedCompaniesScreen({ user, embedded, onBack, onNav })
         </div>
       )}
 
-      {msg && <div style={{ padding: "10px 14px", borderRadius: 12, marginBottom: 12, fontSize: 13.2, fontWeight: 600, background: msg.k === "ok" ? C.okPale : C.errPale, color: msg.k === "ok" ? C.ok : C.err }}>{msg.t}</div>}
+      {msg && <div style={{ padding: "10px 14px", borderRadius: R.lg, marginBottom: 12, fontSize: 13.2, fontWeight: 600, background: msg.k === "ok" ? C.okPale : C.errPale, color: msg.k === "ok" ? C.ok : C.err }}>{msg.t}</div>}
 
       {/* New company form */}
       {showNewCompany && (
-        <div style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: 12, padding: 16, marginBottom: 16, boxShadow: C.sh }}>
+        <div style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: R.lg, padding: 16, marginBottom: 16, boxShadow: C.sh }}>
           <div style={{ fontSize: 15.4, fontWeight: 700, marginBottom: 12 }}>Nueva empresa vinculada</div>
           <Field label="Nombre" value={cf.name} onChange={v => setCf(p => ({ ...p, name: v }))} placeholder="Nombre de la empresa" />
           <div style={{ height: 10 }} />
           <div style={{ display: "flex", gap: 8 }}>
             {allowedGranteeTypes.map(t => (
               <button key={t} onClick={() => setCf(p => ({ ...p, type: t }))} style={{
-                flex: 1, padding: "9px 0", borderRadius: 8, fontFamily: "inherit", fontSize: 13.2, fontWeight: 600, cursor: "pointer",
+                flex: 1, padding: "9px 0", borderRadius: R.md, fontFamily: "inherit", fontSize: 13.2, fontWeight: 600, cursor: "pointer",
                 border: `1.5px solid ${cf.type === t ? TYPE_COLORS[t] : C.b1}`,
                 background: cf.type === t ? `${TYPE_COLORS[t]}12` : C.w,
                 color: cf.type === t ? TYPE_COLORS[t] : C.t2,
@@ -285,7 +285,7 @@ export default function LinkedCompaniesScreen({ user, embedded, onBack, onNav })
           <div style={{ display: "flex", gap: 8 }}>
             {["OPERATOR", "READONLY"].map(l => (
               <button key={l} onClick={() => setCf(p => ({ ...p, accessLevel: l }))} style={{
-                flex: 1, padding: "8px 0", borderRadius: 8, fontFamily: "inherit", fontSize: 12.1, fontWeight: 600, cursor: "pointer",
+                flex: 1, padding: "8px 0", borderRadius: R.md, fontFamily: "inherit", fontSize: 12.1, fontWeight: 600, cursor: "pointer",
                 border: `1.5px solid ${cf.accessLevel === l ? (l === "OPERATOR" ? C.ok : C.info) : C.b1}`,
                 background: cf.accessLevel === l ? (l === "OPERATOR" ? `${C.ok}12` : `${C.info}12`) : C.w,
                 color: cf.accessLevel === l ? (l === "OPERATOR" ? C.ok : C.info) : C.t3,
@@ -342,10 +342,10 @@ export default function LinkedCompaniesScreen({ user, embedded, onBack, onNav })
                 const co = r.granteeCompany || {};
                 const typeColor = TYPE_COLORS[r.granteeType] || C.t3;
                 return (
-                  <div key={r.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", background: C.mutedPale || C.bg, borderRadius: 8, marginBottom: 6, opacity: 0.7 }}>
+                  <div key={r.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", background: C.mutedPale || C.bg, borderRadius: R.md, marginBottom: 6, opacity: 0.7 }}>
                     <div style={{ flex: 1 }}>
                       <span style={{ fontSize: 13.8, fontWeight: 600, color: C.t2 }}>{co.name || "Empresa"}</span>
-                      <span style={{ fontSize: 9.9, marginLeft: 8, fontWeight: 700, color: typeColor, background: `${typeColor}15`, padding: "1px 6px", borderRadius: 4 }}>{TYPE_LABELS[r.granteeType] || ""}</span>
+                      <span style={{ fontSize: 9.9, marginLeft: 8, fontWeight: 700, color: typeColor, background: `${typeColor}15`, padding: "1px 6px", borderRadius: R.xs }}>{TYPE_LABELS[r.granteeType] || ""}</span>
                     </div>
                     {r.accessSource !== "plant_producer_access" && (
                       <button onClick={() => handleToggleActive(r)} disabled={saving} style={{ background: "none", border: "none", fontSize: 11.6, color: C.pri, fontWeight: 600, cursor: "pointer" }}>

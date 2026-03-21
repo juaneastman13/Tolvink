@@ -8,8 +8,6 @@ import DetailScreen from "./DetailScreen";
 
 export default function CalendarScreen({ freights, perms, onNav, isDesktop, user, onAction, onTripAction, onEditTrip, actionLoading, onChat, onRefresh, onDuplicate, onEdit, goToMap }) {
   const [selectedId, setSelectedId] = useState(null);
-  const selFreightObj = selectedId ? freights.find(f => f.id === selectedId) : null;
-  const calDetailUser = selFreightObj ? { ...user, userType: resolveUserTypeForFreight(selFreightObj, user) } : user;
   const [calMonth, setCalMonth] = useState(()=>{const d=new Date();return{y:d.getFullYear(),m:d.getMonth()}});
   const [calSelDay, setCalSelDay] = useState(null);
   const [calSelMonth, setCalSelMonth] = useState(null);
@@ -18,6 +16,7 @@ export default function CalendarScreen({ freights, perms, onNav, isDesktop, user
 
   const STATUS_GROUPS_CAL = { solicitado:["pending_assignment"], en_curso:["assigned","accepted","in_progress","loaded"], finalizados:["finished"], cancelados:["canceled"] };
   const filtered = useMemo(()=>{
+    if (!freights) return [];
     let ff = freights.filter(f=>f.status!=="draft");
     if(fStatus) ff = ff.filter(f=>(STATUS_GROUPS_CAL[fStatus]||[]).includes(f.status));
     return ff;
@@ -52,6 +51,11 @@ export default function CalendarScreen({ freights, perms, onNav, isDesktop, user
     }
     return result;
   },[calMonth,monthsToShow,freightsByDate]);
+
+  const selFreightObj = selectedId && freights ? freights.find(f => f.id === selectedId) : null;
+  const calDetailUser = selFreightObj ? { ...user, userType: resolveUserTypeForFreight(selFreightObj, user) } : user;
+
+  if (!freights) return <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",padding:40,color:"#8A9C90",fontSize:15.4,fontWeight:600}}>Cargando calendario...</div>;
 
   const activeMonth = calSelMonth!==null ? months[calSelMonth] : months[0];
   const selFreights = calSelDay && activeMonth ? (activeMonth.byDay[calSelDay]||[]) : [];

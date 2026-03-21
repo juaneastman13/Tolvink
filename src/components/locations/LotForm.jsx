@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { C, Ic, FONT } from "../../theme";
+import { C, Ic, FONT, R } from "../../theme";
 import { SafeZone, LocationPicker } from "../../maps";
 
 export default function LotForm({ mode = "create", lot, fieldId, fieldName, fields, defaultCenter, onSave, onCancel, saving, onSelectOnMap }) {
@@ -70,7 +70,7 @@ export default function LotForm({ mode = "create", lot, fieldId, fieldName, fiel
       {isGeneralCreate && (
         <div style={{ marginBottom: 6 }}>
           <label style={{ fontSize: 11, fontWeight: 600, color: C.t2, display: "block", marginBottom: 4 }}>Campo</label>
-          <select value={selectedFieldId} onChange={e => setSelectedFieldId(e.target.value)} style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: `1.5px solid ${selectedFieldId ? C.bFocus : C.b2}`, background: C.bgInput, fontFamily: FONT, fontSize: 13.2, color: C.t1, outline: "none", boxSizing: "border-box", appearance: "auto" }}>
+          <select value={selectedFieldId} onChange={e => setSelectedFieldId(e.target.value)} style={{ width: "100%", padding: "8px 10px", borderRadius: R.md, border: `1.5px solid ${selectedFieldId ? C.bFocus : C.b2}`, background: C.bgInput, fontFamily: FONT, fontSize: 13.2, color: C.t1, outline: "none", boxSizing: "border-box", appearance: "auto" }}>
             <option value="">Seleccionar campo...</option>
             {fields.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
           </select>
@@ -78,24 +78,24 @@ export default function LotForm({ mode = "create", lot, fieldId, fieldName, fiel
       )}
       {!noFields && mode === "create" && (
         <div style={{ marginBottom: 6 }}>
-          <input autoFocus value={name} onChange={e => setName(e.target.value)} onKeyDown={handleKeyDown} placeholder="Nombre del lote" style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: `1.5px solid ${C.bFocus}`, background: C.bgInput, fontFamily: FONT, fontSize: 13.2, fontWeight: 700, color: C.t1, outline: "none", boxSizing: "border-box" }} />
+          <input autoFocus value={name} onChange={e => setName(e.target.value)} onKeyDown={handleKeyDown} placeholder="Nombre del lote" style={{ width: "100%", padding: "8px 10px", borderRadius: R.md, border: `1.5px solid ${C.bFocus}`, background: C.bgInput, fontFamily: FONT, fontSize: 13.2, fontWeight: 700, color: C.t1, outline: "none", boxSizing: "border-box" }} />
         </div>
       )}
       {!noFields && (
         <div style={{ marginBottom: 6 }}>
           <label style={{ fontSize: 11, fontWeight: 600, color: C.t2, display: "block", marginBottom: 4 }}>Hectáreas</label>
-          <input value={ha} onChange={e => setHa(e.target.value)} onKeyDown={handleKeyDown} placeholder="Ej: 150" type="number" style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: `1px solid ${C.b2}`, background: C.bgInput, fontFamily: FONT, fontSize: 13.2, color: C.t1, outline: "none", boxSizing: "border-box" }} />
+          <input value={ha} onChange={e => setHa(e.target.value)} onKeyDown={handleKeyDown} placeholder="Ej: 150" type="number" style={{ width: "100%", padding: "8px 10px", borderRadius: R.md, border: `1px solid ${C.b2}`, background: C.bgInput, fontFamily: FONT, fontSize: 13.2, color: C.t1, outline: "none", boxSizing: "border-box" }} />
         </div>
       )}
       {!noFields && onSelectOnMap ? (
         <div style={{ marginBottom: 6 }}>
           {loc ? (
-            <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 10px", borderRadius: 8, background: C.okPale, border: `1px solid ${C.ok}40` }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 10px", borderRadius: R.md, background: C.okPale, border: `1px solid ${C.ok}40` }}>
               <span style={{ flex: 1, fontSize: 12.1, color: C.t1 }}>{`${loc.lat.toFixed(4)}, ${loc.lng.toFixed(4)}`}</span>
               <button onClick={handleSelectOnMap} style={{ padding: "3px 8px", borderRadius: 6, border: `1px solid ${C.b2}`, background: C.w, cursor: "pointer", fontFamily: FONT, fontSize: 11, fontWeight: 600, color: C.t2 }}>Modificar ubicación</button>
             </div>
           ) : (
-            <button onClick={handleSelectOnMap} style={{ display: "flex", alignItems: "center", gap: 6, width: "100%", padding: "8px 10px", borderRadius: 8, border: `1.5px dashed ${C.b2}`, background: "transparent", cursor: "pointer", fontFamily: FONT, fontSize: 12.1, fontWeight: 600, color: C.t3 }}>
+            <button onClick={handleSelectOnMap} style={{ display: "flex", alignItems: "center", gap: 6, width: "100%", padding: "8px 10px", borderRadius: R.md, border: `1.5px dashed ${C.b2}`, background: "transparent", cursor: "pointer", fontFamily: FONT, fontSize: 12.1, fontWeight: 600, color: C.t3 }}>
               {Ic.pin(C.t3, 14)} Seleccionar ubicación en mapa
             </button>
           )}
@@ -104,8 +104,8 @@ export default function LotForm({ mode = "create", lot, fieldId, fieldName, fiel
         <SafeZone><LocationPicker label="Ubicación del lote" value={loc} onChange={setLoc} defaultCenter={resolvedCenter} /></SafeZone>
       ) : null}
       <div style={{ display: "flex", gap: 6, marginTop: 10 }}>
-        <button onClick={onCancel} style={{ padding: "5px 12px", borderRadius: 8, border: `1px solid ${C.b2}`, background: C.w, cursor: "pointer", fontFamily: FONT, fontSize: 12.1, fontWeight: 600, color: C.t2 }}>Cancelar</button>
-        {!noFields && <button onClick={handleSave} disabled={saving || !canSave} style={{ padding: "5px 12px", borderRadius: 8, border: "none", background: C.acc, cursor: "pointer", fontFamily: FONT, fontSize: 12.1, fontWeight: 700, color: C.w, opacity: (!canSave || saving) ? 0.5 : 1 }}>{saving ? "..." : mode === "edit" ? "Guardar" : "Crear lote"}</button>}
+        <button onClick={onCancel} style={{ padding: "5px 12px", borderRadius: R.md, border: `1px solid ${C.b2}`, background: C.w, cursor: "pointer", fontFamily: FONT, fontSize: 12.1, fontWeight: 600, color: C.t2 }}>Cancelar</button>
+        {!noFields && <button onClick={handleSave} disabled={saving || !canSave} style={{ padding: "5px 12px", borderRadius: R.md, border: "none", background: C.acc, cursor: "pointer", fontFamily: FONT, fontSize: 12.1, fontWeight: 700, color: C.w, opacity: (!canSave || saving) ? 0.5 : 1 }}>{saving ? "..." : mode === "edit" ? "Guardar" : "Crear lote"}</button>}
       </div>
     </div>
   );

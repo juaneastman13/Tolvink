@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { C, Ic, FONT } from "../theme";
+import { C, Ic, FONT, R } from "../theme";
 import { Btn, Bd, Loader, LoadingOverlay } from "../components";
 import {
   apiGetFields, apiGetFieldOwnersSummary, apiCreateField, apiCreateLot, apiUpdateField, apiUpdateLot,
@@ -652,8 +652,8 @@ export default function LocationsScreen({ onBack, user }) {
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
             <span style={{ fontSize: 12.1, fontWeight: 600, color: C.err, flex: 1 }}>{isShared ? `¿Quitar "${p.name}"?` : `¿Eliminar "${p.name}"?`}</span>
             <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
-              <button onClick={() => setDeletingPoi(null)} style={{ padding: "5px 10px", borderRadius: 8, border: `1px solid ${C.b2}`, background: C.w, cursor: "pointer", fontFamily: "inherit", fontSize: 12.1, fontWeight: 600, color: C.t2 }}>No</button>
-              <button onClick={() => handleDeletePoi(p.id)} style={{ padding: "5px 10px", borderRadius: 8, border: "none", background: C.err, cursor: "pointer", fontFamily: "inherit", fontSize: 12.1, fontWeight: 700, color: C.w }}>{isShared ? "Quitar" : "Sí"}</button>
+              <button onClick={() => setDeletingPoi(null)} style={{ padding: "5px 10px", borderRadius: R.md, border: `1px solid ${C.b2}`, background: C.w, cursor: "pointer", fontFamily: "inherit", fontSize: 12.1, fontWeight: 600, color: C.t2 }}>No</button>
+              <button onClick={() => handleDeletePoi(p.id)} style={{ padding: "5px 10px", borderRadius: R.md, border: "none", background: C.err, cursor: "pointer", fontFamily: "inherit", fontSize: 12.1, fontWeight: 700, color: C.w }}>{isShared ? "Quitar" : "Sí"}</button>
             </div>
           </div>
         </div>
@@ -701,8 +701,8 @@ export default function LocationsScreen({ onBack, user }) {
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
               <span style={{ fontSize: 12.1, fontWeight: 600, color: C.err, flex: 1 }}>{isShared ? `¿Quitar "${f.name}"?` : `¿Eliminar "${f.name}" y sus ${lots.length} lote${lots.length !== 1 ? "s" : ""}?`}</span>
               <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
-                <button onClick={() => setDeletingField(null)} style={{ padding: "5px 10px", borderRadius: 8, border: `1px solid ${C.b2}`, background: C.w, cursor: "pointer", fontFamily: "inherit", fontSize: 12.1, fontWeight: 600, color: C.t2 }}>No</button>
-                <button onClick={() => handleDeleteField(f.id)} style={{ padding: "5px 10px", borderRadius: 8, border: "none", background: C.err, cursor: "pointer", fontFamily: "inherit", fontSize: 12.1, fontWeight: 700, color: C.w }}>{isShared ? "Quitar" : "Sí"}</button>
+                <button onClick={() => setDeletingField(null)} style={{ padding: "5px 10px", borderRadius: R.md, border: `1px solid ${C.b2}`, background: C.w, cursor: "pointer", fontFamily: "inherit", fontSize: 12.1, fontWeight: 600, color: C.t2 }}>No</button>
+                <button onClick={() => handleDeleteField(f.id)} style={{ padding: "5px 10px", borderRadius: R.md, border: "none", background: C.err, cursor: "pointer", fontFamily: "inherit", fontSize: 12.1, fontWeight: 700, color: C.w }}>{isShared ? "Quitar" : "Sí"}</button>
               </div>
             </div>
           </div>
@@ -753,8 +753,8 @@ export default function LocationsScreen({ onBack, user }) {
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
                     <span style={{ fontSize: 12.1, fontWeight: 600, color: C.err, flex: 1 }}>¿Eliminar "{l.name}"?</span>
                     <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
-                      <button onClick={() => setDeletingLot(null)} style={{ padding: "5px 10px", borderRadius: 8, border: `1px solid ${C.b2}`, background: C.w, cursor: "pointer", fontFamily: "inherit", fontSize: 12.1, fontWeight: 600, color: C.t2 }}>No</button>
-                      <button onClick={() => handleDeleteLot(f.id, l.id)} style={{ padding: "5px 10px", borderRadius: 8, border: "none", background: C.err, cursor: "pointer", fontFamily: "inherit", fontSize: 12.1, fontWeight: 700, color: C.w }}>Sí</button>
+                      <button onClick={() => setDeletingLot(null)} style={{ padding: "5px 10px", borderRadius: R.md, border: `1px solid ${C.b2}`, background: C.w, cursor: "pointer", fontFamily: "inherit", fontSize: 12.1, fontWeight: 600, color: C.t2 }}>No</button>
+                      <button onClick={() => handleDeleteLot(f.id, l.id)} style={{ padding: "5px 10px", borderRadius: R.md, border: "none", background: C.err, cursor: "pointer", fontFamily: "inherit", fontSize: 12.1, fontWeight: 700, color: C.w }}>Sí</button>
                     </div>
                   </div>
                 </div>
@@ -773,7 +773,7 @@ export default function LocationsScreen({ onBack, user }) {
                 onMouseEnter={e => { if (!lotActive) e.currentTarget.style.background = C.bgCard; }}
                 onMouseLeave={e => { if (!lotActive) e.currentTarget.style.background = "transparent"; }}
               >
-                <div style={{ width: 24, height: 24, borderRadius: 6, background: `${LOC_COLORS.lot}18`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{Ic.lot(LOC_COLORS.lot, 12)}</div>
+                <div style={{ width: 24, height: 24, borderRadius: R.sm, background: `${LOC_COLORS.lot}18`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{Ic.lot(LOC_COLORS.lot, 12)}</div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <span style={{ fontSize: 14, fontWeight: 500, color: C.t1 }}>{l.name}</span>
                   {l.hectares && <span style={{ fontSize: 11, color: C.t3, marginLeft: 6 }}>{l.hectares} ha</span>}
@@ -885,17 +885,17 @@ export default function LocationsScreen({ onBack, user }) {
               <span style={{ fontSize: 18, fontWeight: 600, color: C.t1 }}>Ubicaciones</span>
             </div>
             {creationMode ? null : importStep ? (
-              <button onClick={() => { setImportStep(0); closeImport(); }} style={{ width: 32, height: 32, borderRadius: 8, background: "transparent", border: `1px solid ${C.b1}`, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <button onClick={() => { setImportStep(0); closeImport(); }} style={{ width: 32, height: 32, borderRadius: R.md, background: "transparent", border: `1px solid ${C.b1}`, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 {Ic.cross(C.t3, 16)}
               </button>
             ) : (
               <div style={{ position: "relative" }}>
-                <button onClick={() => { setAddMenuOpen(!addMenuOpen); setAddMenuSub(null); }} style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 12px", borderRadius: 8, background: C.pri, border: "none", cursor: "pointer", fontFamily: FONT, fontSize: 12.7, fontWeight: 700, color: C.w }}>
+                <button onClick={() => { setAddMenuOpen(!addMenuOpen); setAddMenuSub(null); }} style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 12px", borderRadius: R.md, background: C.pri, border: "none", cursor: "pointer", fontFamily: FONT, fontSize: 12.7, fontWeight: 700, color: C.w }}>
                   {Ic.plus(C.w, 14)} Agregar
                 </button>
                 {addMenuOpen && <>
                   <div onClick={() => { setAddMenuOpen(false); setAddMenuSub(null); }} style={{ position: "fixed", inset: 0, zIndex: 19 }} />
-                  <div style={{ position: "absolute", top: "calc(100% + 4px)", right: 0, minWidth: 220, background: C.bgCard, border: `1px solid ${C.b1}`, borderRadius: 8, boxShadow: C.shMd, zIndex: 20, overflow: "hidden" }}>
+                  <div style={{ position: "absolute", top: "calc(100% + 4px)", right: 0, minWidth: 220, background: C.bgCard, border: `1px solid ${C.b1}`, borderRadius: R.md, boxShadow: C.shMd, zIndex: 20, overflow: "hidden" }}>
                     {!addMenuSub && <>
                       <button onClick={() => setAddMenuSub("manual")} style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "12px 14px", background: "none", border: "none", borderBottom: `1px solid ${C.b2}`, cursor: "pointer", fontFamily: FONT, fontSize: 13.2, fontWeight: 600, color: C.t1, textAlign: "left" }}
                         onMouseEnter={e => e.currentTarget.style.background = C.priPale} onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
@@ -929,7 +929,7 @@ export default function LocationsScreen({ onBack, user }) {
           </div>
           {importStep === 0 && !creationMode && (<>
             {isManager && ownersSummary.length > 0 && (
-              <select value={ownerFilter} onChange={e => setOwnerFilter(e.target.value)} style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: `1px solid ${C.b1}`, fontSize: 12.7, fontFamily: "inherit", background: C.w, color: C.t1, marginBottom: 8 }}>
+              <select value={ownerFilter} onChange={e => setOwnerFilter(e.target.value)} style={{ width: "100%", padding: "8px 10px", borderRadius: R.md, border: `1px solid ${C.b1}`, fontSize: 12.7, fontFamily: "inherit", background: C.w, color: C.t1, marginBottom: 8 }}>
                 <option value="">Todas las empresas</option>
                 <option value="mine">Mis ubicaciones</option>
                 {ownersSummary.map(o => <option key={o.companyId} value={o.companyId}>{o.companyName} ({o.fieldCount} campos)</option>)}
@@ -938,7 +938,7 @@ export default function LocationsScreen({ onBack, user }) {
             <div style={{ position: "relative" }}>
               <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", display: "flex" }}>{Ic.srch(C.t3, 14)}</span>
               <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar ubicación..."
-                style={{ width: "100%", padding: "8px 12px 8px 32px", borderRadius: 10, border: `1.5px solid ${search ? C.bFocus : C.b2}`, background: C.bgInput, fontFamily: "inherit", fontSize: 13.2, color: C.t1, outline: "none", boxSizing: "border-box", transition: "border-color 0.15s" }} />
+                style={{ width: "100%", padding: "8px 12px 8px 32px", borderRadius: R.md, border: `1.5px solid ${search ? C.bFocus : C.b2}`, background: C.bgInput, fontFamily: "inherit", fontSize: 13.2, color: C.t1, outline: "none", boxSizing: "border-box", transition: "border-color 0.15s" }} />
             </div>
           </>)}
         </div>
@@ -974,7 +974,7 @@ export default function LocationsScreen({ onBack, user }) {
               <div style={{ fontSize: 14.3, fontWeight: 700, marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>{Ic.pin(C.pri, 16)} Importar desde Google Maps</div>
               <div style={{ fontSize: 12.1, color: C.t2, lineHeight: 1.5, marginBottom: 12 }}>Abrí Google Maps → <strong>Tus sitios</strong> → Seleccioná una lista → <strong>Compartir</strong> → Copiar enlace</div>
               <input value={importUrl} onChange={e => setImportUrl(e.target.value)} placeholder="https://maps.app.goo.gl/..."
-                style={{ width: "100%", padding: "10px 12px", borderRadius: 10, border: `1.5px solid ${importUrl ? C.bFocus : C.b2}`, background: C.bgInput, fontFamily: "inherit", fontSize: 13.2, color: C.t1, outline: "none", boxSizing: "border-box" }} />
+                style={{ width: "100%", padding: "10px 12px", borderRadius: R.md, border: `1.5px solid ${importUrl ? C.bFocus : C.b2}`, background: C.bgInput, fontFamily: "inherit", fontSize: 13.2, color: C.t1, outline: "none", boxSizing: "border-box" }} />
               {importSlowMsg && <div style={{ marginTop: 8, fontSize: 11, color: C.t3, fontStyle: "italic" }}>Esto puede tardar un momento…</div>}
               <div style={{ marginTop: 10 }}><Btn full v="acc" disabled={saving || !importUrl.trim()} onClick={handleImportList}>{saving ? "Buscando ubicaciones…" : "Buscar ubicaciones"}</Btn></div>
             </div>
@@ -1063,8 +1063,8 @@ export default function LocationsScreen({ onBack, user }) {
               {Ic.pin("#fff", 16)} Tocá el mapa para seleccionar la ubicación
             </div>
             <div style={{ display: "flex", gap: 8, pointerEvents: "auto" }}>
-              <button onClick={cancelMapSelect} style={{ padding: "6px 16px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.4)", background: "rgba(255,255,255,0.15)", cursor: "pointer", fontFamily: FONT, fontSize: 13, fontWeight: 600, color: "#fff" }}>Cancelar</button>
-              <button onClick={confirmMapSelect} disabled={!mapSelectMode.currentPos} style={{ padding: "6px 16px", borderRadius: 8, border: "none", background: C.pri, cursor: "pointer", fontFamily: FONT, fontSize: 13, fontWeight: 700, color: "#fff", opacity: mapSelectMode.currentPos ? 1 : 0.5 }}>Confirmar</button>
+              <button onClick={cancelMapSelect} style={{ padding: "6px 16px", borderRadius: R.md, border: "1px solid rgba(255,255,255,0.4)", background: "rgba(255,255,255,0.15)", cursor: "pointer", fontFamily: FONT, fontSize: 13, fontWeight: 600, color: "#fff" }}>Cancelar</button>
+              <button onClick={confirmMapSelect} disabled={!mapSelectMode.currentPos} style={{ padding: "6px 16px", borderRadius: R.md, border: "none", background: C.pri, cursor: "pointer", fontFamily: FONT, fontSize: 13, fontWeight: 700, color: "#fff", opacity: mapSelectMode.currentPos ? 1 : 0.5 }}>Confirmar</button>
             </div>
           </div>
         )}
@@ -1076,14 +1076,14 @@ export default function LocationsScreen({ onBack, user }) {
               const typeColor = FILTER_COLORS[fc.key];
               return (
                 <button key={fc.key} onClick={() => toggleMapFilter(fc.key)}
-                  style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "6px 12px", borderRadius: 20, background: active ? typeColor : C.bgCard, color: active ? C.tOn : C.t2, border: `1px solid ${active ? "transparent" : C.b1}`, cursor: "pointer", fontFamily: FONT, fontSize: 12.1, fontWeight: 700, boxShadow: C.sh, transition: "all 0.2s" }}>
+                  style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "6px 12px", borderRadius: R.pill, background: active ? typeColor : C.bgCard, color: active ? C.tOn : C.t2, border: `1px solid ${active ? "transparent" : C.b1}`, cursor: "pointer", fontFamily: FONT, fontSize: 12.1, fontWeight: 700, boxShadow: C.sh, transition: "all 0.2s" }}>
                   {fc.icon(active ? C.tOn : typeColor, 14)} {active ? "Ocultar" : "Ver"} {fc.label}
                 </button>
               );
             })}
           </div>
 
-          <button onClick={toggleMapType} style={{ position: "absolute", top: isDesktop ? 52 : 62, right: 12, zIndex: 5, display: "inline-flex", alignItems: "center", gap: 5, padding: "6px 12px", borderRadius: 20, background: mapType === "hybrid" ? C.t1 : C.bgCard, color: mapType === "hybrid" ? "#fff" : C.t2, border: `1px solid ${mapType === "hybrid" ? "transparent" : C.b1}`, cursor: "pointer", fontFamily: FONT, fontSize: 12.1, fontWeight: 700, boxShadow: C.sh, transition: "all 0.2s" }}>
+          <button onClick={toggleMapType} style={{ position: "absolute", top: isDesktop ? 52 : 62, right: 12, zIndex: 5, display: "inline-flex", alignItems: "center", gap: 5, padding: "6px 12px", borderRadius: R.pill, background: mapType === "hybrid" ? C.t1 : C.bgCard, color: mapType === "hybrid" ? "#fff" : C.t2, border: `1px solid ${mapType === "hybrid" ? "transparent" : C.b1}`, cursor: "pointer", fontFamily: FONT, fontSize: 12.1, fontWeight: 700, boxShadow: C.sh, transition: "all 0.2s" }}>
             {mapType === "hybrid" ? "Mapa" : "Satélite"}
           </button>
         </>}
@@ -1095,14 +1095,14 @@ export default function LocationsScreen({ onBack, user }) {
         )}
 
         {!isDesktop && !drawerOpen && (
-          <button onClick={() => setDrawerOpen(true)} style={{ position: "absolute", bottom: 24, left: 16, zIndex: 5, background: C.w, border: `1px solid ${C.b1}`, borderRadius: 12, padding: "10px 16px", boxShadow: C.shMd, cursor: "pointer", display: "flex", alignItems: "center", gap: 6, fontFamily: "inherit", fontSize: 14.3, fontWeight: 700, color: C.t1 }}>
+          <button onClick={() => setDrawerOpen(true)} style={{ position: "absolute", bottom: 24, left: 16, zIndex: 5, background: C.w, border: `1px solid ${C.b1}`, borderRadius: R.lg, padding: "10px 16px", boxShadow: C.shMd, cursor: "pointer", display: "flex", alignItems: "center", gap: 6, fontFamily: "inherit", fontSize: 14.3, fontWeight: 700, color: C.t1 }}>
             {Ic.menu3(C.pri, 16)} Lista
           </button>
         )}
 
         {!loading && allLocations.length === 0 && (
           <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none", zIndex: 2 }}>
-            <div style={{ background: C.w, padding: "20px 28px", borderRadius: 14, boxShadow: C.shMd, textAlign: "center", pointerEvents: "auto" }}>
+            <div style={{ background: C.w, padding: "20px 28px", borderRadius: R.lg, boxShadow: C.shMd, textAlign: "center", pointerEvents: "auto" }}>
               <div style={{ marginBottom: 8 }}>{Ic.poi(C.t3, 28)}</div>
               <div style={{ fontSize: 15.4, fontWeight: 700, color: C.t1, marginBottom: 4 }}>Sin ubicaciones</div>
               <div style={{ fontSize: 12.7, color: C.t3, marginBottom: 12 }}>Creá campos, lotes o importá desde Google Maps</div>

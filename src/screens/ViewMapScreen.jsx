@@ -16,6 +16,7 @@ const C = {
 export default function ViewMapScreen() {
   const mapRef = useRef(null);
   const [error, setError] = useState(null);
+  const [mapLoading, setMapLoading] = useState(true);
 
   const params = new URLSearchParams(window.location.search);
   const lat = parseFloat(params.get("lat"));
@@ -40,6 +41,7 @@ export default function ViewMapScreen() {
           ? { lat: (lat + dlat) / 2, lng: (lng + dlng) / 2 }
           : origin;
 
+        setMapLoading(false);
         const map = new maps.Map(mapRef.current, {
           zoom: hasDest ? 7 : 14,
           center,
@@ -101,6 +103,7 @@ export default function ViewMapScreen() {
           map.fitBounds(bounds, 60);
         }
       } catch (e) {
+        setMapLoading(false);
         setError("No se pudo cargar el mapa");
       }
     })();
@@ -133,6 +136,13 @@ export default function ViewMapScreen() {
 
       {/* Map */}
       <div ref={mapRef} style={{ height: "100%", width: "100%" }} />
+      {mapLoading && (
+        <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: C.bg, zIndex: 5 }}>
+          <div style={{ textAlign: "center", color: C.t3 }}>
+            <div style={{ fontSize: 15.4, fontWeight: 600 }}>Cargando mapa...</div>
+          </div>
+        </div>
+      )}
 
       {/* Bottom nav button */}
       <div style={{ position: "absolute", bottom: 24, left: 16, right: 16, zIndex: 10 }}>

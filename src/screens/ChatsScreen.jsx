@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { C, Ic, FONT } from "../theme";
+import { C, Ic, FONT, R } from "../theme";
 import { Btn, Field, Tabs, Av, Loader, AttachMenu, FileViewer } from "../components";
 import { destDisplay } from "../hooks";
 import { apiSearchUsers, apiStartConversation, apiListConversations, apiGetMessages, apiSendMessage, apiMarkRead, apiTyping, apiToggleMarkUnread, uploadChatFile, thumb } from "../api";
@@ -549,7 +549,7 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
   const chatDetailPanel = activeConv ? (
       <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", animation: isDesktop ? undefined : "fadeIn 0.2s ease" }}>
         <div style={{ padding: "12px 18px", borderBottom: `1px solid ${C.b1}`, background: C.w, display: "flex", alignItems: "center", gap: 10, paddingTop: isDesktop ? 12 : "max(12px, env(safe-area-inset-top))" }}>
-          {!isDesktop && <button onClick={() => { setActiveConv(null); setChatTab("chat"); }} style={{ background: C.priPale, border: `1px solid ${C.pri}20`, borderRadius: 8, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, padding: "6px 10px", fontFamily:"inherit", fontSize:12.1, fontWeight:600, color:C.pri }}>{Ic.chev(C.pri, 16)} Chats</button>}
+          {!isDesktop && <button onClick={() => { setActiveConv(null); setChatTab("chat"); }} style={{ background: C.priPale, border: `1px solid ${C.pri}20`, borderRadius: R.md, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, padding: "6px 10px", fontFamily:"inherit", fontSize:12.1, fontWeight:600, color:C.pri }}>{Ic.chev(C.pri, 16)} Chats</button>}
           {isDesktop && <button onClick={() => { setActiveConv(null); setChatTab("chat"); }} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", padding: 0 }}>{Ic.chev(C.pri, 20)}</button>}
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 15.4, fontWeight: 700, color: C.t1 }}>{activeConv.freight ? freightTitle(activeConv.freight) : "Mensaje directo"}</div>
@@ -557,8 +557,8 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
           </div>
           {/* Chat / Files tabs */}
           <div style={{ display: "flex", gap: 4 }}>
-            <button onClick={() => setChatTab("chat")} style={{ padding: "5px 10px", borderRadius: 8, border: "none", background: chatTab === "chat" ? C.priPale : "none", color: chatTab === "chat" ? C.pri : C.t3, fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>Chat</button>
-            <button onClick={() => setChatTab("files")} style={{ padding: "5px 10px", borderRadius: 8, border: "none", background: chatTab === "files" ? C.priPale : "none", color: chatTab === "files" ? C.pri : C.t3, fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", position: "relative" }}>
+            <button onClick={() => setChatTab("chat")} style={{ padding: "5px 10px", borderRadius: R.md, border: "none", background: chatTab === "chat" ? C.priPale : "none", color: chatTab === "chat" ? C.pri : C.t3, fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>Chat</button>
+            <button onClick={() => setChatTab("files")} style={{ padding: "5px 10px", borderRadius: R.md, border: "none", background: chatTab === "files" ? C.priPale : "none", color: chatTab === "files" ? C.pri : C.t3, fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", position: "relative" }}>
               Archivos
               {chatFiles.length > 0 && <span style={{ position: "absolute", top: -2, right: -2, minWidth: 14, height: 14, borderRadius: 7, background: C.acc, color: "#fff", fontSize: 8.8, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 3px" }}>{chatFiles.length}</span>}
             </button>
@@ -594,7 +594,7 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
                     {/* Date divider */}
                     {showDateDivider && (
                       <div style={{ textAlign: "center", margin: "12px 0", position: "relative" }}>
-                        <div style={{ display: "inline-block", padding: "4px 12px", background: C.bg, borderRadius: 12, fontSize: 11, fontWeight: 600, color: C.t3, border: `1px solid ${C.b1}` }}>
+                        <div style={{ display: "inline-block", padding: "4px 12px", background: C.bg, borderRadius: R.lg, fontSize: 11, fontWeight: 600, color: C.t3, border: `1px solid ${C.b1}` }}>
                           {formatDateDivider(m.createdAt)}
                         </div>
                       </div>
@@ -606,7 +606,7 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
                         {fileData ? (
                           fileData.type === "image" && fileData.url ? (
                             <button onClick={()=>setViewFile({url:fileData.url,name:fileData.name,type:"image"})} style={{ background:"none", border:"none", cursor:"pointer", padding:0 }}>
-                              <img src={fileData.url} alt={fileData.name} loading="lazy" style={{ maxWidth: "min(220px, 70vw)", maxHeight: 200, borderRadius: 10, display: "block" }} />
+                              <img src={fileData.url} alt={fileData.name} loading="lazy" style={{ maxWidth: "min(220px, 70vw)", maxHeight: 200, borderRadius: R.md, display: "block" }} />
                             </button>
                           ) : (
                             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -617,7 +617,7 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
                                   <div style={{ fontSize: 11, opacity: 0.7 }}>{fileData.url ? "Ver archivo" : "Archivo no disponible"}</div>
                                 </div>
                               </button>
-                              {fileData.url && <a href={fileData.url} download={fileData.name} style={{ background: mine ? "rgba(255,255,255,0.2)" : C.priPale, border: "none", borderRadius: 6, padding: 6, display: "flex", alignItems: "center", justifyContent: "center", textDecoration: "none" }} title="Descargar">
+                              {fileData.url && <a href={fileData.url} download={fileData.name} style={{ background: mine ? "rgba(255,255,255,0.2)" : C.priPale, border: "none", borderRadius: R.sm, padding: 6, display: "flex", alignItems: "center", justifyContent: "center", textDecoration: "none" }} title="Descargar">
                                 {Ic.download(mine ? "#fff" : C.pri, 16)}
                               </a>}
                             </div>
@@ -671,7 +671,7 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
             {/* Nuevo mensaje indicator - floating button */}
             {newMsgIndicator && (
               <div style={{ position: "absolute", bottom: keyboardHeight > 0 ? keyboardHeight + 70 : 70, left: "50%", transform: "translateX(-50%)", zIndex: 10, animation: "fadeIn 0.2s ease" }}>
-                <button onClick={scrollToBottom} style={{ padding: "8px 16px", borderRadius: 20, background: C.pri, color: "#fff", border: "none", cursor: "pointer", fontSize: 13.2, fontWeight: 600, display: "flex", alignItems: "center", gap: 6, boxShadow: "0 4px 12px rgba(0,0,0,0.15)", fontFamily: "inherit", transition: "all 0.2s ease" }}>
+                <button onClick={scrollToBottom} style={{ padding: "8px 16px", borderRadius: R.pill, background: C.pri, color: "#fff", border: "none", cursor: "pointer", fontSize: 13.2, fontWeight: 600, display: "flex", alignItems: "center", gap: 6, boxShadow: "0 4px 12px rgba(0,0,0,0.15)", fontFamily: "inherit", transition: "all 0.2s ease" }}>
                   Nuevo mensaje {Ic.down("#fff", 14)}
                 </button>
               </div>
@@ -681,13 +681,13 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
               <input ref={chatCamRef} type="file" accept="image/*" capture="environment" onChange={handleFileUpload} style={{ display: "none" }} />
               <input ref={chatGalRef} type="file" accept="image/jpeg,image/png,image/webp" onChange={handleFileUpload} style={{ display: "none" }} />
               <input ref={chatFileRef} type="file" accept="image/*,.pdf,.doc,.docx,.xlsx,.xls,.txt" onChange={handleFileUpload} style={{ display: "none" }} />
-              <button onClick={() => setShowChatAttach(true)} disabled={uploading} style={{ width: 40, height: 40, borderRadius: 20, background: C.bg, border: `1px solid ${C.b1}`, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              <button onClick={() => setShowChatAttach(true)} disabled={uploading} style={{ width: 40, height: 40, borderRadius: R.pill, background: C.bg, border: `1px solid ${C.b1}`, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                 {Ic.clip(C.t2, 18)}
               </button>
               <AttachMenu open={showChatAttach} onClose={() => setShowChatAttach(false)} onCamera={() => chatCamRef.current?.click()} onGallery={() => chatGalRef.current?.click()} onFiles={() => chatFileRef.current?.click()} />
               <input ref={inputRef} value={msgText} onChange={e => { setMsgText(e.target.value); sendTyping(); }} onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-                placeholder="Escribí un mensaje..." style={{ flex: 1, padding: "10px 14px", borderRadius: 20, border: `1.5px solid ${C.b1}`, background: C.bg, color: C.t1, fontSize: 14.3, fontFamily: "inherit", outline: "none" }} />
-              <button onClick={handleSend} disabled={sending || !msgText.trim()} style={{ width: 40, height: 40, borderRadius: 20, background: msgText.trim() ? C.pri : C.b1, border: "none", cursor: msgText.trim() ? "pointer" : "default", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                placeholder="Escribí un mensaje..." style={{ flex: 1, padding: "10px 14px", borderRadius: R.pill, border: `1.5px solid ${C.b1}`, background: C.bg, color: C.t1, fontSize: 14.3, fontFamily: "inherit", outline: "none" }} />
+              <button onClick={handleSend} disabled={sending || !msgText.trim()} style={{ width: 40, height: 40, borderRadius: R.pill, background: msgText.trim() ? C.pri : C.b1, border: "none", cursor: msgText.trim() ? "pointer" : "default", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                 {Ic.send(C.w, 16)}
               </button>
             </div>
@@ -700,11 +700,11 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 {chatFiles.map(f => (
-                  <button key={f.id} onClick={()=>setViewFile({url:f.url,name:f.name,type:f.type})} style={{ display: "flex", alignItems: "center", gap: 12, padding: 12, background: C.w, border: `1px solid ${C.b1}`, borderRadius: 10, cursor:"pointer", fontFamily:"inherit", textAlign:"left", boxShadow: C.sh, width:"100%" }}>
+                  <button key={f.id} onClick={()=>setViewFile({url:f.url,name:f.name,type:f.type})} style={{ display: "flex", alignItems: "center", gap: 12, padding: 12, background: C.w, border: `1px solid ${C.b1}`, borderRadius: R.md, cursor:"pointer", fontFamily:"inherit", textAlign:"left", boxShadow: C.sh, width:"100%" }}>
                     {f.type === "image" ? (
-                      <img src={thumb(f.url)} alt="" loading="lazy" style={{ width: 48, height: 48, borderRadius: 8, objectFit: "cover", flexShrink: 0 }} />
+                      <img src={thumb(f.url)} alt="" loading="lazy" style={{ width: 48, height: 48, borderRadius: R.md, objectFit: "cover", flexShrink: 0 }} />
                     ) : (
-                      <div style={{ width: 48, height: 48, borderRadius: 8, background: C.priPale, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{Ic.doc(C.pri, 22)}</div>
+                      <div style={{ width: 48, height: 48, borderRadius: R.md, background: C.priPale, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{Ic.doc(C.pri, 22)}</div>
                     )}
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: 13.2, fontWeight: 600, color: C.t1, wordBreak: "break-all" }}>{f.name}</div>
@@ -751,7 +751,7 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
       </div>
 
       {showNew && (
-        <div style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: 12, padding: 16, marginBottom: 14, boxShadow: C.sh }}>
+        <div style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: R.lg, padding: 16, marginBottom: 14, boxShadow: C.sh }}>
           <Field label="Buscar usuario" value={compSearchQ} onChange={handleCompSearch} placeholder="Escribí el nombre de la persona..."/>
           {compSearching && <div style={{ fontSize:11, color:C.t3, marginTop:4 }}>Buscando...</div>}
           {compResults.length > 0 && (
@@ -797,7 +797,7 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
                 </button>
                 {/* Action buttons */}
                 <div style={{ position: "absolute", top: 8, right: 8, display: "flex", gap: 4 }}>
-                  <button onClick={(e) => handleToggleMarkUnread(c.id, e)} title={c.markedUnread ? "Marcar como leída" : "Marcar como no leída"} style={{ background: c.markedUnread ? C.accPale : C.bg, border: `1px solid ${c.markedUnread ? C.acc : C.b1}`, borderRadius: 6, padding: "4px 6px", cursor: "pointer", fontSize: 11, display: "flex", alignItems: "center", opacity: 0.8 }}>
+                  <button onClick={(e) => handleToggleMarkUnread(c.id, e)} title={c.markedUnread ? "Marcar como leída" : "Marcar como no leída"} style={{ background: c.markedUnread ? C.accPale : C.bg, border: `1px solid ${c.markedUnread ? C.acc : C.b1}`, borderRadius: R.sm, padding: "4px 6px", cursor: "pointer", fontSize: 11, display: "flex", alignItems: "center", opacity: 0.8 }}>
                     {c.markedUnread ? Ic.mail(C.acc, 12) : Ic.mail(C.t3, 12)}
                   </button>
                 </div>
@@ -811,7 +811,7 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
               const freightCount = group.freightConvs.length;
               const unreadCount = group.freightConvs.filter(c=>c.unread).length;
               return (
-                <div key={companyName} style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: 12, overflow: "hidden", boxShadow: C.sh }}>
+                <div key={companyName} style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: R.lg, overflow: "hidden", boxShadow: C.sh }}>
                   <button onClick={() => toggleGroup(companyName)} style={{ width: "100%", padding: "12px 14px", background: C.w, border: "none", borderBottom: isOpen ? `1px solid ${C.b2}` : "none", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 10, textAlign: "left" }}>
                     <div style={{ width: 36, height: 36, borderRadius: 18, background: C.priPale, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                       {Ic.truck(C.pri, 16)}

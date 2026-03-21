@@ -8,6 +8,7 @@ import log from "../logger";
 export function useNotifications(user) {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [loading, setLoading] = useState(true);
   const subscribedRef = useRef(false);
 
   // Subscribe to push notifications on first load
@@ -49,12 +50,13 @@ export function useNotifications(user) {
   useEffect(() => {
     if (!user) return;
     const fetchNotifications = async () => {
-      if (!navigator.onLine) return;
+      if (!navigator.onLine) { setLoading(false); return; }
       try {
         const r = await apiGetNotifications();
         setNotifications(r.notifications || []);
         setUnreadCount(r.unreadCount || 0);
       } catch (e) { log.warn('NOTIF', 'Fetch failed:', e.message); }
+      finally { setLoading(false); }
     };
     const t = setTimeout(fetchNotifications, 3000);
     return () => clearTimeout(t);
@@ -84,5 +86,5 @@ export function useNotifications(user) {
     } catch (e) { log.warn('NOTIF', 'Refresh failed:', e.message); }
   }, []);
 
-  return { notifications, unreadCount, markRead, markAllRead, refresh };
+  return { notifications, unreadCount, loading, markRead, markAllRead, refresh };
 }

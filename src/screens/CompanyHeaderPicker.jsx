@@ -4,12 +4,6 @@ import { C, Ic } from "../theme";
 export default function CompanyHeaderPicker({ user, onSwitch }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
-  const TYPE_L = {plant:"Planta",transporter:"Transportista",producer:"Productor"};
-  const TYPE_C = {plant:C.pri,transporter:C.info||C.sec,producer:C.acc};
-  const companies = (user.companies && user.companies.length > 0) ? user.companies : (user.companyId ? [{ companyId:user.companyId, companyName:user.entity||"", companyType:user.userType||"", role:user.role }] : []);
-  const active = companies.find(c=>c.companyId===user.activeCompanyId) || companies[0];
-  const activeName = active?.companyName || user.entity || "";
-  const tColor = TYPE_C[active?.companyType] || C.t2;
 
   useEffect(()=>{
     if(!open) return;
@@ -17,6 +11,15 @@ export default function CompanyHeaderPicker({ user, onSwitch }) {
     const tid = setTimeout(() => document.addEventListener("mousedown",h), 0);
     return () => { clearTimeout(tid); document.removeEventListener("mousedown",h); };
   },[open]);
+
+  if (!user) return null;
+
+  const TYPE_L = {plant:"Planta",transporter:"Transportista",producer:"Productor"};
+  const TYPE_C = {plant:C.pri,transporter:C.info||C.sec,producer:C.acc};
+  const companies = (user.companies && user.companies.length > 0) ? user.companies : (user.companyId ? [{ companyId:user.companyId, companyName:user.entity||"", companyType:user.userType||"", role:user.role }] : []);
+  const active = companies.find(c=>c.companyId===user.activeCompanyId) || companies[0];
+  const activeName = active?.companyName || user.entity || "";
+  const tColor = TYPE_C[active?.companyType] || C.t2;
 
   const now = new Date();
   const dateLabel = now.toLocaleDateString("es-UY",{weekday:"long",day:"numeric",month:"long"});

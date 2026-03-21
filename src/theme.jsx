@@ -24,6 +24,9 @@ export const LIGHT = {
 
 export const C = { ...LIGHT, bgAlt: '#F3F4F6' };
 
+// Border-radius tokens (standardized from audit)
+export const R = { xs: 4, sm: 6, md: 8, lg: 12, xl: 16, pill: 20 };
+
 // Analytics — fire-and-forget to backend
 const _API = import.meta.env.VITE_API_URL || '';
 if (!_API) console.error('[Tolvink] VITE_API_URL not set — analytics will not be sent');

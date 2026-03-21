@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { C, Ic, FONT } from "../theme";
+import { C, Ic, FONT, R } from "../theme";
 import { Btn, SkeletonCard } from "../components";
 import { apiGetAssignmentSuggestions } from "../api";
 
@@ -64,7 +64,7 @@ export default function AssignmentSuggestions({ freight, user, onAssign, onRefre
   };
 
   return (
-    <div style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: 12, padding: 16, marginBottom: 12, boxShadow: C.sh }}>
+    <div style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: R.lg, padding: 16, marginBottom: 12, boxShadow: C.sh }}>
       {/* Header — clickable to expand/collapse */}
       <div onClick={() => setExpanded(e => !e)} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", userSelect: "none" }}>
         <span style={{ display: "flex" }}>{Ic.star ? Ic.star(C.pri, 16) : Ic.chk(C.pri, 16)}</span>

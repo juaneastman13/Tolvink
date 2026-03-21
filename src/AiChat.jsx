@@ -4,7 +4,7 @@
 // =====================================================================
 
 import { useState, useEffect, useRef, useCallback, useMemo, lazy, Suspense } from "react";
-import { C, FONT, Ic } from "./theme";
+import { C, FONT, Ic, R } from "./theme";
 import { apiWebChatSend, apiWebChatHistory, apiWebChatAudio, API_URL } from "./api";
 
 // Lazy-load heavy map components
@@ -207,7 +207,7 @@ function TypingDots() {
 function InlineMap({ mapData, onClose }) {
   return (
     <div style={{
-      borderRadius: 12, overflow: "hidden", border: `1.5px solid ${C.b1}`,
+      borderRadius: R.lg, overflow: "hidden", border: `1.5px solid ${C.b1}`,
       height: 280, margin: "6px 0", position: "relative",
     }}>
       <Suspense fallback={<div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center", background: C.bgCard, color: C.t3, fontSize: 13 }}>Cargando mapa...</div>}>
@@ -256,7 +256,7 @@ function InlineLocPicker({ slug, onDone, onClose }) {
   if (saved) {
     return (
       <div style={{
-        borderRadius: 12, overflow: "hidden", border: `1.5px solid ${C.ok}`,
+        borderRadius: R.lg, overflow: "hidden", border: `1.5px solid ${C.ok}`,
         padding: "16px 20px", margin: "6px 0", background: C.okPale,
         textAlign: "center",
       }}>
@@ -270,7 +270,7 @@ function InlineLocPicker({ slug, onDone, onClose }) {
 
   return (
     <div style={{
-      borderRadius: 12, overflow: "hidden", border: `1.5px solid ${C.pri}`,
+      borderRadius: R.lg, overflow: "hidden", border: `1.5px solid ${C.pri}`,
       height: 340, margin: "6px 0", display: "flex", flexDirection: "column",
     }}>
       <Suspense fallback={<div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center", background: C.bgCard, color: C.t3, fontSize: 13 }}>Cargando mapa...</div>}>
@@ -317,7 +317,7 @@ function MsgBubble({ msg, onSendText }) {
         <div style={{
           maxWidth: "85%",
           padding: isAudio ? "6px 10px" : "9px 14px",
-          borderRadius: 14,
+          borderRadius: R.lg,
           background: isUser ? C.pri : C.bgCard,
           color: isUser ? C.tOn : C.t1,
           fontSize: 14, lineHeight: 1.45, fontFamily: FONT,
@@ -344,7 +344,7 @@ function MsgBubble({ msg, onSendText }) {
           {pu.type === "map" && !expandedMaps.has(idx) && (
             <button onClick={() => toggleMap(idx)} style={{
               display: "flex", alignItems: "center", gap: 8,
-              padding: "10px 14px", margin: "4px 0", borderRadius: 12,
+              padding: "10px 14px", margin: "4px 0", borderRadius: R.lg,
               border: `1.5px solid ${C.pri}`, background: C.priPale,
               cursor: "pointer", fontFamily: FONT, width: "100%", textAlign: "left",
             }}>
@@ -371,7 +371,7 @@ function MsgBubble({ msg, onSendText }) {
           )}
           {pu.type === "location" && locDone.has(idx) && (
             <div style={{
-              borderRadius: 12, overflow: "hidden", border: `1.5px solid ${C.ok}`,
+              borderRadius: R.lg, overflow: "hidden", border: `1.5px solid ${C.ok}`,
               padding: "12px 16px", margin: "6px 0", background: C.okPale,
               display: "flex", alignItems: "center", gap: 8,
             }}>
@@ -393,7 +393,7 @@ function BtnRow({ buttons, onSend, disabled }) {
     <div style={{ display: "flex", flexWrap: "wrap", gap: 6, padding: "4px 0" }}>
       {buttons.map((b) => (
         <button key={b.id} disabled={disabled} onClick={() => onSend(b.title)} style={{
-          padding: "6px 14px", borderRadius: 20,
+          padding: "6px 14px", borderRadius: R.pill,
           border: `1.5px solid ${C.pri}`, background: C.priPale, color: C.pri,
           fontSize: 13, fontWeight: 600, fontFamily: FONT, cursor: disabled ? "default" : "pointer",
           opacity: disabled ? 0.5 : 1, transition: "all 0.15s",
@@ -446,7 +446,7 @@ function SuggestionChips({ onSend, disabled }) {
     <div style={{ display: "flex", flexWrap: "wrap", gap: 6, justifyContent: "center", padding: "8px 0" }}>
       {SUGGESTIONS.map((s) => (
         <button key={s.label} disabled={disabled} onClick={() => onSend(s.text)} style={{
-          padding: "7px 14px", borderRadius: 20,
+          padding: "7px 14px", borderRadius: R.pill,
           border: `1.5px solid ${C.b1}`, background: C.bgCard, color: C.t2,
           fontSize: 12.5, fontWeight: 600, fontFamily: FONT, cursor: disabled ? "default" : "pointer",
           opacity: disabled ? 0.5 : 1, transition: "all 0.15s",
@@ -655,7 +655,7 @@ export default function AiChat({ open, onClose, onNavigate, sseAiResponse, sseAi
       {/* Panel */}
       <div style={{
         width: "100%", maxWidth: 520, height: "100%", maxHeight: "calc(100dvh - 24px)",
-        background: C.bg, borderRadius: 18, overflow: "hidden",
+        background: C.bg, borderRadius: R.xl, overflow: "hidden",
         boxShadow: C.shLg, border: `1px solid ${C.b1}`,
         display: "flex", flexDirection: "column",
         animation: "aiSlideUp 0.2s ease-out",
@@ -680,7 +680,7 @@ export default function AiChat({ open, onClose, onNavigate, sseAiResponse, sseAi
           </div>
           <button onClick={onClose} style={{
             background: "rgba(255,255,255,0.15)", border: "none", cursor: "pointer",
-            padding: "6px 8px", borderRadius: 8,
+            padding: "6px 8px", borderRadius: R.md,
             display: "flex", alignItems: "center",
           }} aria-label="Cerrar chat">
             {Ic.cross(C.tOn, 18)}
@@ -722,7 +722,7 @@ export default function AiChat({ open, onClose, onNavigate, sseAiResponse, sseAi
           {thinking && (
             <div style={{ display: "flex", justifyContent: "flex-start" }}>
               <div style={{
-                background: C.bgCard, borderRadius: 14,
+                background: C.bgCard, borderRadius: R.lg,
                 border: `1px solid ${C.b2}`, boxShadow: C.sh,
               }}>
                 <TypingDots />
@@ -753,12 +753,12 @@ export default function AiChat({ open, onClose, onNavigate, sseAiResponse, sseAi
           }}>
             <audio src={rec.audioUrl} controls preload="metadata" style={{ height: 32, flex: 1 }} />
             <button onClick={rec.discard} style={{
-              background: C.errPale, border: "none", borderRadius: 8,
+              background: C.errPale, border: "none", borderRadius: R.md,
               padding: "4px 10px", cursor: "pointer", fontSize: 12,
               color: C.err, fontWeight: 600, fontFamily: FONT,
             }}>Descartar</button>
             <button onClick={sendAudio} disabled={thinking} style={{
-              background: C.pri, border: "none", borderRadius: 8,
+              background: C.pri, border: "none", borderRadius: R.md,
               padding: "4px 12px", cursor: "pointer", fontSize: 12,
               color: C.tOn, fontWeight: 600, fontFamily: FONT,
               opacity: thinking ? 0.5 : 1,
@@ -780,7 +780,7 @@ export default function AiChat({ open, onClose, onNavigate, sseAiResponse, sseAi
               Grabando... {rec.duration}s
             </span>
             <button onClick={rec.stop} style={{
-              background: C.err, border: "none", borderRadius: 8,
+              background: C.err, border: "none", borderRadius: R.md,
               padding: "6px 12px", cursor: "pointer", display: "flex",
               alignItems: "center", gap: 4,
             }}>
@@ -806,7 +806,7 @@ export default function AiChat({ open, onClose, onNavigate, sseAiResponse, sseAi
               rows={1}
               style={{
                 flex: 1, resize: "none", border: `1.5px solid ${C.b1}`,
-                borderRadius: 12, padding: "9px 12px",
+                borderRadius: R.lg, padding: "9px 12px",
                 fontSize: 14, fontFamily: FONT, lineHeight: 1.4,
                 background: C.bgInput, color: C.t1,
                 outline: "none", maxHeight: 100, overflow: "auto",

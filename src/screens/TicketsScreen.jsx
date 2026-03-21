@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { C, Ic, STATUS_COLORS } from "../theme";
+import { C, Ic, R, STATUS_COLORS } from "../theme";
 import { Btn, Loader, EmptyState } from "../components";
 import { apiGetAllWeighTickets } from "../api";
 
@@ -49,7 +49,7 @@ export default function TicketsScreen({ user, onBack }) {
 
   const StatusPill = ({ status }) => {
     const sc = STATUS_COLORS[status] || { pillBg: C.bg, pillText: C.t3, label: status };
-    return <span style={{ padding: "2px 8px", borderRadius: 6, fontSize: 10.5, fontWeight: 700, background: sc.pillBg, color: sc.pillText }}>{sc.label}</span>;
+    return <span style={{ padding: "2px 8px", borderRadius: R.sm, fontSize: 10.5, fontWeight: 700, background: sc.pillBg, color: sc.pillText }}>{sc.label}</span>;
   };
 
   return (
@@ -66,11 +66,11 @@ export default function TicketsScreen({ user, onBack }) {
         <div style={{ position: "relative", flex: 1, minWidth: 180 }}>
           <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", display: "flex" }}>{Ic.srch(C.t3, 14)}</span>
           <input value={searchInput} onChange={e => setSearchInput(e.target.value)} placeholder="Buscar por nro ticket o código flete..."
-            style={{ width: "100%", padding: "8px 12px 8px 32px", borderRadius: 10, border: `1.5px solid ${searchInput ? C.bFocus : C.b2}`, background: C.bgInput, fontFamily: "inherit", fontSize: 13.2, color: C.t1, outline: "none", boxSizing: "border-box" }} />
+            style={{ width: "100%", padding: "8px 12px 8px 32px", borderRadius: R.md, border: `1.5px solid ${searchInput ? C.bFocus : C.b2}`, background: C.bgInput, fontFamily: "inherit", fontSize: 13.2, color: C.t1, outline: "none", boxSizing: "border-box" }} />
         </div>
         {["", "origin", "destination"].map(t => (
           <button key={t} onClick={() => setTypeFilter(t)} style={{
-            padding: "7px 14px", borderRadius: 8, fontFamily: "inherit", fontSize: 12.7, fontWeight: 600, cursor: "pointer",
+            padding: "7px 14px", borderRadius: R.md, fontFamily: "inherit", fontSize: 12.7, fontWeight: 600, cursor: "pointer",
             border: `1.5px solid ${typeFilter === t ? (t ? TYPE_COLORS[t] : C.pri) : C.b1}`,
             background: typeFilter === t ? (t ? `${TYPE_COLORS[t]}14` : `${C.pri}10`) : C.w,
             color: typeFilter === t ? (t ? TYPE_COLORS[t] : C.pri) : C.t3,
@@ -96,7 +96,7 @@ export default function TicketsScreen({ user, onBack }) {
               return (
                 <div key={t.id} onClick={() => setExpanded(isExp ? null : t.id)} style={{
                   background: C.w, border: `1px solid ${C.b1}`, borderLeft: `3px solid ${typeColor}`,
-                  borderRadius: 12, padding: 14, boxShadow: C.sh, cursor: "pointer", transition: "all 0.15s",
+                  borderRadius: R.lg, padding: 14, boxShadow: C.sh, cursor: "pointer", transition: "all 0.15s",
                 }}>
                   {/* Main row */}
                   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -106,8 +106,8 @@ export default function TicketsScreen({ user, onBack }) {
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                         <span style={{ fontSize: 15.4, fontWeight: 700 }}>{t.ticketNumber || "Sin número"}</span>
-                        <span style={{ padding: "2px 7px", borderRadius: 6, fontSize: 10, fontWeight: 700, background: `${typeColor}18`, color: typeColor }}>{TYPE_LABELS[t.type] || t.type}</span>
-                        {hasOcr && <span style={{ padding: "2px 7px", borderRadius: 6, fontSize: 10, fontWeight: 700, background: C.priPale, color: C.pri }}>OCR {conf}%</span>}
+                        <span style={{ padding: "2px 7px", borderRadius: R.sm, fontSize: 10, fontWeight: 700, background: `${typeColor}18`, color: typeColor }}>{TYPE_LABELS[t.type] || t.type}</span>
+                        {hasOcr && <span style={{ padding: "2px 7px", borderRadius: R.sm, fontSize: 10, fontWeight: 700, background: C.priPale, color: C.pri }}>OCR {conf}%</span>}
                       </div>
                       <div style={{ fontSize: 12.1, color: C.t3, marginTop: 3 }}>
                         {fmtWeight(t.netWeight)} neto · {fmtDate(t.registeredAt)}
@@ -116,7 +116,7 @@ export default function TicketsScreen({ user, onBack }) {
                     {/* Freight badge */}
                     {freight.code && (
                       <button onClick={e => { e.stopPropagation(); navigate(`/freight/${freight.id}`); }} style={{
-                        padding: "4px 10px", borderRadius: 8, border: `1px solid ${C.b1}`, background: C.bg,
+                        padding: "4px 10px", borderRadius: R.md, border: `1px solid ${C.b1}`, background: C.bg,
                         cursor: "pointer", fontFamily: "inherit", fontSize: 11.5, fontWeight: 600, color: C.pri,
                         display: "flex", alignItems: "center", gap: 4, flexShrink: 0,
                       }}>
@@ -141,12 +141,12 @@ export default function TicketsScreen({ user, onBack }) {
                       {t.observations && <div style={{ fontSize: 12.1, color: C.t2, marginBottom: 8 }}>{t.observations}</div>}
                       {t.photoUrl && (
                         <div style={{ marginBottom: 8 }}>
-                          <img src={t.photoUrl} alt="Ticket" style={{ maxWidth: 200, maxHeight: 160, borderRadius: 8, border: `1px solid ${C.b1}`, objectFit: "cover" }} />
+                          <img src={t.photoUrl} alt="Ticket" style={{ maxWidth: 200, maxHeight: 160, borderRadius: R.md, border: `1px solid ${C.b1}`, objectFit: "cover" }} />
                         </div>
                       )}
                       {/* Freight info */}
                       {freight.code && (
-                        <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", borderRadius: 8, background: C.bg, border: `1px solid ${C.b2}` }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", borderRadius: R.md, background: C.bg, border: `1px solid ${C.b2}` }}>
                           {Ic.truck(C.acc, 16)}
                           <div style={{ flex: 1 }}>
                             <span style={{ fontSize: 13.2, fontWeight: 600, color: C.t1 }}>{freight.code}</span>
@@ -170,7 +170,7 @@ export default function TicketsScreen({ user, onBack }) {
 
 function DetailCell({ label, value, bold }) {
   return (
-    <div style={{ padding: "6px 8px", borderRadius: 6, background: C.bg }}>
+    <div style={{ padding: "6px 8px", borderRadius: R.sm, background: C.bg }}>
       <div style={{ fontSize: 10, fontWeight: 700, color: C.t3, textTransform: "uppercase", letterSpacing: 0.4, marginBottom: 2 }}>{label}</div>
       <div style={{ fontSize: 14.3, fontWeight: bold ? 700 : 500, color: C.t1 }}>{value}</div>
     </div>

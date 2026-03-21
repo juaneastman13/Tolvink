@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { C, Ic } from "../theme";
+import { C, Ic, R } from "../theme";
 import { Btn, ModalOverlay, NumericStepper } from "../components";
 import WeighTicketForm from "../components/WeighTicketForm";
 import { apiGetWeighTickets } from "../api";
@@ -54,7 +54,7 @@ export default function WeighTicketConfirmModal({ freight, action, title, btnLab
           <div style={{ width: 48, height: 48, borderRadius: 24, background: `${btnVariant === "acc" ? C.acc : C.pri}12`, display: "flex", alignItems: "center", justifyContent: "center" }}>{icon}</div>
         </div>}
         <div style={{ fontSize: 18.7, fontWeight: 700, marginBottom: 6, textAlign: "center" }}>{title}</div>
-        <div style={{ fontSize: 13.2, color: C.t2, marginBottom: 16, textAlign: "center", padding: "8px 12px", background: C.bg, borderRadius: 8, border: `1px solid ${C.b1}` }}>
+        <div style={{ fontSize: 13.2, color: C.t2, marginBottom: 16, textAlign: "center", padding: "8px 12px", background: C.bg, borderRadius: R.md, border: `1px solid ${C.b1}` }}>
           <div style={{ fontWeight: 700, color: C.t1 }}>{freight.grain} · {freight.tons}{freight.unit || "tn"}</div>
           <div style={{ fontSize: 11, color: C.t3, marginTop: 2 }}>{freight.code}</div>
         </div>
@@ -112,12 +112,12 @@ export default function WeighTicketConfirmModal({ freight, action, title, btnLab
           <div style={{ width: 48, height: 48, borderRadius: 24, background: `${btnVariant === "acc" ? C.acc : C.pri}12`, display: "flex", alignItems: "center", justifyContent: "center" }}>{icon}</div>
         </div>}
         <div style={{ fontSize: 18.7, fontWeight: 700, marginBottom: 6, textAlign: "center" }}>{title}</div>
-        <div style={{ fontSize: 13.2, color: C.t2, marginBottom: showTonsInput ? 12 : 8, textAlign: "center", padding: "8px 12px", background: C.bg, borderRadius: 8, border: `1px solid ${C.b1}` }}>
+        <div style={{ fontSize: 13.2, color: C.t2, marginBottom: showTonsInput ? 12 : 8, textAlign: "center", padding: "8px 12px", background: C.bg, borderRadius: R.md, border: `1px solid ${C.b1}` }}>
           <div style={{ fontWeight: 700, color: C.t1 }}>{freight.grain} · {freight.tons}{freight.unit || "tn"}</div>
           <div style={{ fontSize: 11, color: C.t3, marginTop: 2 }}>{freight.code}</div>
         </div>
         {ticketCreated && (
-          <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 10px", borderRadius: 8, background: `${C.ok}12`, marginBottom: 10 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 10px", borderRadius: R.md, background: `${C.ok}12`, marginBottom: 10 }}>
             {Ic.chk(C.ok, 14)}
             <span style={{ fontSize: 12.7, fontWeight: 600, color: C.ok }}>Ticket de pesaje registrado</span>
           </div>

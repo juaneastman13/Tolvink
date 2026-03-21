@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { C, Ic, STATUS_COLORS } from "../theme";
+import { C, Ic, R, STATUS_COLORS } from "../theme";
 import { Loader, EmptyState } from "../components";
 import { apiGetCompanyAccess, apiListFreights, apiGetWeighTickets, apiGetFreight, apiOcrAnalyze, apiSaveOcrData, apiClearOcrData, apiEditOcrData, apiDeleteDocument, apiRenameDocument } from "../api";
 import { OcrResultModal, ocrLabel, FreightFileUpload } from "../uploads";
@@ -322,7 +322,7 @@ export default function DocumentsScreen({ user, onBack, onNavigate }) {
 
   const StatusPill = ({ status }) => {
     const sc = STATUS_COLORS[status] || { pillBg: C.bg, pillText: C.t3, label: status };
-    return <span style={{ padding: "2px 8px", borderRadius: 6, fontSize: 10.5, fontWeight: 700, background: sc.pillBg, color: sc.pillText }}>{sc.label}</span>;
+    return <span style={{ padding: "2px 8px", borderRadius: R.sm, fontSize: 10.5, fontWeight: 700, background: sc.pillBg, color: sc.pillText }}>{sc.label}</span>;
   };
 
   const DocCard = ({ doc }) => {
@@ -331,13 +331,13 @@ export default function DocumentsScreen({ user, onBack, onNavigate }) {
     return (
       <div onClick={() => setExpanded(isExp ? null : doc.id)} style={{
         background: C.w, border: `1px solid ${C.b1}`, borderLeft: `3px solid ${doc._hasOcr ? C.pri : C.t3}`,
-        borderRadius: 12, padding: 14, boxShadow: C.sh, cursor: "pointer", transition: "all 0.15s",
+        borderRadius: R.lg, padding: 14, boxShadow: C.sh, cursor: "pointer", transition: "all 0.15s",
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           {doc._thumb ? (
-            <img src={doc._thumb} alt="" style={{ width: 40, height: 40, borderRadius: 8, objectFit: "cover", flexShrink: 0, border: `1px solid ${C.b2}` }} />
+            <img src={doc._thumb} alt="" style={{ width: 40, height: 40, borderRadius: R.md, objectFit: "cover", flexShrink: 0, border: `1px solid ${C.b2}` }} />
           ) : (
-            <div style={{ width: 40, height: 40, borderRadius: 8, background: `${C.t3}10`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <div style={{ width: 40, height: 40, borderRadius: R.md, background: `${C.t3}10`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
               {icFn(C.t3, 18)}
             </div>
           )}
@@ -345,16 +345,16 @@ export default function DocumentsScreen({ user, onBack, onNavigate }) {
             <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
               {renamingDoc === doc.id ? (
                 <form onSubmit={e => { e.preventDefault(); e.stopPropagation(); handleRenameDoc(doc, renameValue); }} onClick={e => e.stopPropagation()} style={{ display: "flex", gap: 4, alignItems: "center" }}>
-                  <input value={renameValue} onChange={e => setRenameValue(e.target.value)} autoFocus style={{ padding: "3px 8px", borderRadius: 6, border: `1.5px solid ${C.pri}`, fontSize: 13.2, fontFamily: "inherit", color: C.t1, width: 160, outline: "none" }} />
-                  <button type="submit" style={{ padding: "3px 8px", borderRadius: 6, border: "none", background: C.pri, color: "#fff", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>Ok</button>
-                  <button type="button" onClick={e => { e.stopPropagation(); setRenamingDoc(null); }} style={{ padding: "3px 8px", borderRadius: 6, border: `1px solid ${C.b1}`, background: C.bg, color: C.t3, fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>✕</button>
+                  <input value={renameValue} onChange={e => setRenameValue(e.target.value)} autoFocus style={{ padding: "3px 8px", borderRadius: R.sm, border: `1.5px solid ${C.pri}`, fontSize: 13.2, fontFamily: "inherit", color: C.t1, width: 160, outline: "none" }} />
+                  <button type="submit" style={{ padding: "3px 8px", borderRadius: R.sm, border: "none", background: C.pri, color: "#fff", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>Ok</button>
+                  <button type="button" onClick={e => { e.stopPropagation(); setRenamingDoc(null); }} style={{ padding: "3px 8px", borderRadius: R.sm, border: `1px solid ${C.b1}`, background: C.bg, color: C.t3, fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>✕</button>
                 </form>
               ) : (
                 <span style={{ fontSize: 14.3, fontWeight: 700, color: C.t1 }}>{doc._name || doc.name || doc._type}</span>
               )}
-              <span style={{ padding: "2px 7px", borderRadius: 6, fontSize: 10, fontWeight: 600, background: `${C.t3}12`, color: C.t3 }}>{doc._type}</span>
-              {doc._hasOcr && <span style={{ padding: "2px 7px", borderRadius: 6, fontSize: 10, fontWeight: 700, background: C.priPale, color: C.pri }}>{doc._ocrData?.structured !== false ? "OCR" : "OCR libre"}</span>}
-              {doc._hasOcr && doc._ocrData?._editMeta && <span style={{ padding: "2px 6px", borderRadius: 6, fontSize: 9, fontWeight: 700, background: `${C.acc}15`, color: C.acc }}>Editado</span>}
+              <span style={{ padding: "2px 7px", borderRadius: R.sm, fontSize: 10, fontWeight: 600, background: `${C.t3}12`, color: C.t3 }}>{doc._type}</span>
+              {doc._hasOcr && <span style={{ padding: "2px 7px", borderRadius: R.sm, fontSize: 10, fontWeight: 700, background: C.priPale, color: C.pri }}>{doc._ocrData?.structured !== false ? "OCR" : "OCR libre"}</span>}
+              {doc._hasOcr && doc._ocrData?._editMeta && <span style={{ padding: "2px 6px", borderRadius: R.sm, fontSize: 9, fontWeight: 700, background: `${C.acc}15`, color: C.acc }}>Editado</span>}
             </div>
             <div style={{ fontSize: 12.1, color: C.t3, marginTop: 2 }}>
               {fmtDate(doc._date)} {doc._freight?.code ? `· ${doc._freight.code}` : ""}
@@ -373,7 +373,7 @@ export default function DocumentsScreen({ user, onBack, onNavigate }) {
           <div style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
             {(doc._thumb || doc.photoUrl || doc.url) && (
               <button onClick={e => { e.stopPropagation(); setViewerDoc(doc); }} title="Ver documento" style={{
-                padding: 5, borderRadius: 6, border: `1px solid ${C.b2}`, background: C.bg,
+                padding: 5, borderRadius: R.sm, border: `1px solid ${C.b2}`, background: C.bg,
                 cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
               }}>
                 <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={C.t2} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
@@ -381,7 +381,7 @@ export default function DocumentsScreen({ user, onBack, onNavigate }) {
             )}
             {(doc._thumb || doc.photoUrl || doc.url) && (
               <button onClick={e => { e.stopPropagation(); handleDownload(doc); }} title="Descargar" style={{
-                padding: 5, borderRadius: 6, border: `1px solid ${C.b2}`, background: C.bg,
+                padding: 5, borderRadius: R.sm, border: `1px solid ${C.b2}`, background: C.bg,
                 cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
               }}>
                 {Ic.download(C.t2, 14)}
@@ -389,7 +389,7 @@ export default function DocumentsScreen({ user, onBack, onNavigate }) {
             )}
             {!doc._hasOcr && (doc._thumb || doc.photoUrl || doc.url) && (
               <button onClick={e => { e.stopPropagation(); handleProcessOcr(doc); }} disabled={processingOcr === doc.id} style={{
-                padding: "4px 8px", borderRadius: 6, border: `1px solid ${C.acc}`, background: `${C.acc}10`,
+                padding: "4px 8px", borderRadius: R.sm, border: `1px solid ${C.acc}`, background: `${C.acc}10`,
                 cursor: processingOcr === doc.id ? "wait" : "pointer", fontFamily: "inherit", fontSize: 10.5, fontWeight: 700, color: C.acc,
                 display: "flex", alignItems: "center", gap: 4, opacity: processingOcr === doc.id ? 0.5 : 1,
               }}>
@@ -398,7 +398,7 @@ export default function DocumentsScreen({ user, onBack, onNavigate }) {
             )}
             {doc._source === "document" && (
               <button onClick={e => { e.stopPropagation(); setRenamingDoc(doc.id); setRenameValue(doc._name || doc.name || ""); }} title="Renombrar" style={{
-                padding: 5, borderRadius: 6, border: `1px solid ${C.b2}`, background: C.bg,
+                padding: 5, borderRadius: R.sm, border: `1px solid ${C.b2}`, background: C.bg,
                 cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
               }}>
                 <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={C.t2} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
@@ -406,7 +406,7 @@ export default function DocumentsScreen({ user, onBack, onNavigate }) {
             )}
             {doc._source === "document" && (
               <button onClick={e => { e.stopPropagation(); setConfirmDeleteDoc(doc); }} disabled={deletingDoc === doc.id} title="Eliminar" style={{
-                padding: 5, borderRadius: 6, border: `1px solid ${C.err}40`, background: C.errPale || "#fef2f2",
+                padding: 5, borderRadius: R.sm, border: `1px solid ${C.err}40`, background: C.errPale || "#fef2f2",
                 cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
                 opacity: deletingDoc === doc.id ? 0.5 : 1,
               }}>
@@ -443,11 +443,11 @@ export default function DocumentsScreen({ user, onBack, onNavigate }) {
                     <span style={{ fontSize: 11, fontWeight: 700, color: C.pri, textTransform: "uppercase", letterSpacing: 0.4 }}>Datos OCR</span>
                     <span style={{ fontSize: 10, color: C.t3, fontStyle: "italic" }}>{isStructured ? "Estructurado" : "Libre"}</span>
                     {raw?.confianza != null && <span style={{ fontSize: 10, color: C.t3 }}>({Math.round((raw.confianza || 0) * 100)}%)</span>}
-                    {raw?._editMeta && <span style={{ fontSize: 9, fontWeight: 700, color: C.acc, background: `${C.acc}15`, padding: "1px 5px", borderRadius: 6 }}>Editado</span>}
+                    {raw?._editMeta && <span style={{ fontSize: 9, fontWeight: 700, color: C.acc, background: `${C.acc}15`, padding: "1px 5px", borderRadius: R.sm }}>Editado</span>}
                     <span style={{ flex: 1 }} />
                     {doc._source === "document" && (
                       <button onClick={e => { e.stopPropagation(); setOcrEditDoc(doc); }} style={{
-                        padding: "3px 8px", borderRadius: 6, border: `1px solid ${C.acc}`, background: `${C.acc}10`,
+                        padding: "3px 8px", borderRadius: R.sm, border: `1px solid ${C.acc}`, background: `${C.acc}10`,
                         cursor: "pointer", fontFamily: "inherit", fontSize: 10.5, fontWeight: 700, color: C.acc,
                         display: "flex", alignItems: "center", gap: 4,
                       }}>
@@ -456,7 +456,7 @@ export default function DocumentsScreen({ user, onBack, onNavigate }) {
                     )}
                     {doc._source === "document" && (
                       <button onClick={e => { e.stopPropagation(); setConfirmClear(doc); }} disabled={clearingOcr === doc.id} style={{
-                        padding: "3px 8px", borderRadius: 6, border: `1px solid #EF4444`, background: "#FEF2F2",
+                        padding: "3px 8px", borderRadius: R.sm, border: `1px solid #EF4444`, background: "#FEF2F2",
                         cursor: "pointer", fontFamily: "inherit", fontSize: 10.5, fontWeight: 700, color: "#EF4444",
                         display: "flex", alignItems: "center", gap: 4, opacity: clearingOcr === doc.id ? 0.5 : 1,
                       }}>
@@ -475,18 +475,18 @@ export default function DocumentsScreen({ user, onBack, onNavigate }) {
             })()}
             {doc._thumb && doc._source === "document" && (
               <div style={{ marginBottom: 8 }}>
-                <img src={doc._thumb} alt="" style={{ maxWidth: 240, maxHeight: 180, borderRadius: 8, border: `1px solid ${C.b1}`, objectFit: "contain" }} />
+                <img src={doc._thumb} alt="" style={{ maxWidth: 240, maxHeight: 180, borderRadius: R.md, border: `1px solid ${C.b1}`, objectFit: "contain" }} />
               </div>
             )}
             {doc._freight?.code && (
-              <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", borderRadius: 8, background: C.bg, border: `1px solid ${C.b2}` }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", borderRadius: R.md, background: C.bg, border: `1px solid ${C.b2}` }}>
                 {Ic.truck(C.acc, 16)}
                 <div style={{ flex: 1 }}>
                   <span style={{ fontSize: 13.2, fontWeight: 600 }}>{doc._freight.code}</span>
                   <div style={{ fontSize: 11, color: C.t3 }}>{doc._freight.originName} → {doc._freight.destName}</div>
                 </div>
                 <StatusPill status={doc._freight.status} />
-                <button onClick={e => { e.stopPropagation(); onNavigate?.(doc._freight.id); }} style={{ padding: "4px 10px", borderRadius: 8, border: `1px solid ${C.pri}`, background: "none", cursor: "pointer", fontFamily: "inherit", fontSize: 12.1, fontWeight: 600, color: C.pri }}>Ver</button>
+                <button onClick={e => { e.stopPropagation(); onNavigate?.(doc._freight.id); }} style={{ padding: "4px 10px", borderRadius: R.md, border: `1px solid ${C.pri}`, background: "none", cursor: "pointer", fontFamily: "inherit", fontSize: 12.1, fontWeight: 600, color: C.pri }}>Ver</button>
               </div>
             )}
           </div>
@@ -503,7 +503,7 @@ export default function DocumentsScreen({ user, onBack, onNavigate }) {
         <span style={{ fontSize: 22, fontWeight: 800, letterSpacing: -0.3, flex: 1 }}>Documentos</span>
         {docsWithoutOcr.length > 0 && (selCompany || selFreight) && (
           <button onClick={handleProcessAll} disabled={processingAll} style={{
-            display: "flex", alignItems: "center", gap: 6, padding: "7px 12px", borderRadius: 10,
+            display: "flex", alignItems: "center", gap: 6, padding: "7px 12px", borderRadius: R.md,
             border: `1.5px solid ${C.acc}`, background: `${C.acc}10`, cursor: processingAll ? "wait" : "pointer",
             fontFamily: "inherit", fontSize: 12.1, fontWeight: 700, color: C.acc, opacity: processingAll ? 0.6 : 1,
           }}>
@@ -512,7 +512,7 @@ export default function DocumentsScreen({ user, onBack, onNavigate }) {
         )}
         {ocrDocs.length > 0 && (
           <button onClick={handleExportOcr} disabled={exporting} style={{
-            display: "flex", alignItems: "center", gap: 6, padding: "7px 12px", borderRadius: 10,
+            display: "flex", alignItems: "center", gap: 6, padding: "7px 12px", borderRadius: R.md,
             border: `1.5px solid ${C.pri}`, background: C.priPale, cursor: exporting ? "wait" : "pointer",
             fontFamily: "inherit", fontSize: 12.1, fontWeight: 700, color: C.pri, opacity: exporting ? 0.6 : 1,
           }}>
@@ -522,10 +522,10 @@ export default function DocumentsScreen({ user, onBack, onNavigate }) {
       </div>
 
       {/* Tabs */}
-      <div style={{ display: "flex", gap: 4, marginBottom: 16, background: C.bg, borderRadius: 10, padding: 3 }}>
+      <div style={{ display: "flex", gap: 4, marginBottom: 16, background: C.bg, borderRadius: R.md, padding: 3 }}>
         {[{ k: "freight", l: "Por flete" }, ...(isManager ? [{ k: "company", l: "Por empresa" }] : [])].map(t => (
           <button key={t.k} onClick={() => { setTab(t.k); setSelCompany(null); setSelFreight(null); setExpanded(null); }} style={{
-            flex: 1, padding: "9px 16px", borderRadius: 8, border: "none", fontFamily: "inherit",
+            flex: 1, padding: "9px 16px", borderRadius: R.md, border: "none", fontFamily: "inherit",
             fontSize: 13.8, fontWeight: 700, cursor: "pointer",
             background: tab === t.k ? C.w : "transparent", color: tab === t.k ? C.pri : C.t3,
             boxShadow: tab === t.k ? C.sh : "none", transition: "all 0.15s",
@@ -545,16 +545,16 @@ export default function DocumentsScreen({ user, onBack, onNavigate }) {
             return (
               <button key={c.id} onClick={() => { setSelCompany(c); loadCompanyDocs(comp.id); }} style={{
                 display: "flex", alignItems: "center", gap: 12, padding: 16, background: C.w,
-                border: `1px solid ${C.b1}`, borderRadius: 12, boxShadow: C.sh, cursor: "pointer",
+                border: `1px solid ${C.b1}`, borderRadius: R.lg, boxShadow: C.sh, cursor: "pointer",
                 fontFamily: "inherit", textAlign: "left", width: "100%",
               }}>
-                <div style={{ width: 40, height: 40, borderRadius: 10, background: `${typeColor}14`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <div style={{ width: 40, height: 40, borderRadius: R.md, background: `${typeColor}14`, display: "flex", alignItems: "center", justifyContent: "center" }}>
                   {comp.type === "producer" ? Ic.grain(typeColor, 18) : Ic.truck(typeColor, 18)}
                 </div>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 15.4, fontWeight: 700, color: C.t1 }}>{comp.name}</div>
                   <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 2 }}>
-                    <span style={{ padding: "2px 8px", borderRadius: 6, fontSize: 10.5, fontWeight: 700, background: `${typeColor}14`, color: typeColor }}>{comp.type === "producer" ? "Productor" : "Transportista"}</span>
+                    <span style={{ padding: "2px 8px", borderRadius: R.sm, fontSize: 10.5, fontWeight: 700, background: `${typeColor}14`, color: typeColor }}>{comp.type === "producer" ? "Productor" : "Transportista"}</span>
                     {counts.total > 0 && <span style={{ fontSize: 11.5, color: C.t2, fontWeight: 600 }}>{counts.total} documento{counts.total !== 1 ? "s" : ""}</span>}
                     {counts.ocr > 0 && <span style={{ fontSize: 10.5, color: C.pri, fontWeight: 600 }}>{counts.ocr} con OCR</span>}
                   </div>
@@ -594,7 +594,7 @@ export default function DocumentsScreen({ user, onBack, onNavigate }) {
               <button key={f.id} onClick={() => { setSelFreight(f); loadFreightDocs(f.id); }} style={{
                 display: "flex", alignItems: "center", gap: 12, padding: 14, background: C.w,
                 border: `1px solid ${C.b1}`, borderLeft: `3px solid ${sc.pillBg || C.t3}`,
-                borderRadius: 12, boxShadow: C.sh, cursor: "pointer", fontFamily: "inherit", textAlign: "left", width: "100%",
+                borderRadius: R.lg, boxShadow: C.sh, cursor: "pointer", fontFamily: "inherit", textAlign: "left", width: "100%",
               }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
@@ -644,7 +644,7 @@ export default function DocumentsScreen({ user, onBack, onNavigate }) {
           display: "flex", alignItems: "center", justifyContent: "center", padding: 20,
         }}>
           <div onClick={e => e.stopPropagation()} style={{
-            background: C.w, borderRadius: 16, padding: 24, maxWidth: 340, width: "100%", boxShadow: "0 20px 60px rgba(0,0,0,0.3)",
+            background: C.w, borderRadius: R.xl, padding: 24, maxWidth: 340, width: "100%", boxShadow: "0 20px 60px rgba(0,0,0,0.3)",
           }}>
             <div style={{ fontSize: 16, fontWeight: 800, color: C.t1, marginBottom: 8 }}>Borrar datos OCR</div>
             <div style={{ fontSize: 13.2, color: C.t2, marginBottom: 20, lineHeight: 1.5 }}>
@@ -652,11 +652,11 @@ export default function DocumentsScreen({ user, onBack, onNavigate }) {
             </div>
             <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
               <button onClick={() => setConfirmClear(null)} style={{
-                padding: "8px 18px", borderRadius: 10, border: `1px solid ${C.b2}`, background: C.bg,
+                padding: "8px 18px", borderRadius: R.md, border: `1px solid ${C.b2}`, background: C.bg,
                 cursor: "pointer", fontFamily: "inherit", fontSize: 13.2, fontWeight: 600, color: C.t2,
               }}>Cancelar</button>
               <button onClick={() => handleClearOcr(confirmClear)} disabled={clearingOcr === confirmClear.id} style={{
-                padding: "8px 18px", borderRadius: 10, border: "none", background: "#EF4444",
+                padding: "8px 18px", borderRadius: R.md, border: "none", background: "#EF4444",
                 cursor: "pointer", fontFamily: "inherit", fontSize: 13.2, fontWeight: 700, color: "#fff",
                 opacity: clearingOcr === confirmClear.id ? 0.6 : 1,
               }}>{clearingOcr === confirmClear.id ? "Borrando..." : "Borrar OCR"}</button>
@@ -672,7 +672,7 @@ export default function DocumentsScreen({ user, onBack, onNavigate }) {
           display: "flex", alignItems: "center", justifyContent: "center", padding: 20,
         }}>
           <div onClick={e => e.stopPropagation()} style={{
-            background: C.w, borderRadius: 16, padding: 24, maxWidth: 340, width: "100%", boxShadow: "0 20px 60px rgba(0,0,0,0.3)",
+            background: C.w, borderRadius: R.xl, padding: 24, maxWidth: 340, width: "100%", boxShadow: "0 20px 60px rgba(0,0,0,0.3)",
           }}>
             <div style={{ fontSize: 16, fontWeight: 800, color: C.t1, marginBottom: 8 }}>Eliminar documento</div>
             <div style={{ fontSize: 13.2, color: C.t2, marginBottom: 6, lineHeight: 1.5 }}>
@@ -681,11 +681,11 @@ export default function DocumentsScreen({ user, onBack, onNavigate }) {
             <div style={{ fontSize: 12.1, color: C.t3, marginBottom: 20 }}>Esta acción no se puede deshacer.</div>
             <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
               <button onClick={() => setConfirmDeleteDoc(null)} style={{
-                padding: "8px 18px", borderRadius: 10, border: `1px solid ${C.b2}`, background: C.bg,
+                padding: "8px 18px", borderRadius: R.md, border: `1px solid ${C.b2}`, background: C.bg,
                 cursor: "pointer", fontFamily: "inherit", fontSize: 13.2, fontWeight: 600, color: C.t2,
               }}>Cancelar</button>
               <button onClick={() => handleDeleteDoc(confirmDeleteDoc)} disabled={deletingDoc === confirmDeleteDoc.id} style={{
-                padding: "8px 18px", borderRadius: 10, border: "none", background: "#EF4444",
+                padding: "8px 18px", borderRadius: R.md, border: "none", background: "#EF4444",
                 cursor: "pointer", fontFamily: "inherit", fontSize: 13.2, fontWeight: 700, color: "#fff",
                 opacity: deletingDoc === confirmDeleteDoc.id ? 0.6 : 1,
               }}>{deletingDoc === confirmDeleteDoc.id ? "Eliminando..." : "Eliminar"}</button>
@@ -721,26 +721,26 @@ export default function DocumentsScreen({ user, onBack, onNavigate }) {
             <div style={{ fontSize: 14, fontWeight: 700, color: "#fff" }}>{viewerDoc._name || viewerDoc.name || viewerDoc._type}</div>
             <div style={{ display: "flex", gap: 8 }}>
               <button onClick={e => { e.stopPropagation(); handleDownload(viewerDoc); }} style={{
-                padding: "6px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.3)", background: "rgba(255,255,255,0.1)",
+                padding: "6px 14px", borderRadius: R.md, border: "1px solid rgba(255,255,255,0.3)", background: "rgba(255,255,255,0.1)",
                 cursor: "pointer", fontFamily: "inherit", fontSize: 12.1, fontWeight: 600, color: "#fff",
                 display: "flex", alignItems: "center", gap: 6,
               }}>
                 {Ic.download("#fff", 14)} Descargar
               </button>
               <button onClick={() => setViewerDoc(null)} style={{
-                padding: "6px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.3)", background: "rgba(255,255,255,0.1)",
+                padding: "6px 14px", borderRadius: R.md, border: "1px solid rgba(255,255,255,0.3)", background: "rgba(255,255,255,0.1)",
                 cursor: "pointer", fontFamily: "inherit", fontSize: 12.1, fontWeight: 600, color: "#fff",
               }}>Cerrar</button>
             </div>
           </div>
-          <div onClick={e => e.stopPropagation()} style={{ maxWidth: 900, maxHeight: "calc(100vh - 120px)", overflow: "auto", borderRadius: 12 }}>
+          <div onClick={e => e.stopPropagation()} style={{ maxWidth: 900, maxHeight: "calc(100vh - 120px)", overflow: "auto", borderRadius: R.lg }}>
             {(() => {
               const url = viewerDoc._thumb || viewerDoc.photoUrl || viewerDoc.url || "";
               const isPdf = url.toLowerCase().includes(".pdf");
               if (isPdf) {
-                return <iframe src={url} title="PDF viewer" style={{ width: "min(900px, 90vw)", height: "calc(100vh - 140px)", border: "none", borderRadius: 12, background: "#fff" }} />;
+                return <iframe src={url} title="PDF viewer" style={{ width: "min(900px, 90vw)", height: "calc(100vh - 140px)", border: "none", borderRadius: R.lg, background: "#fff" }} />;
               }
-              return <img src={url} alt="" style={{ maxWidth: "min(900px, 90vw)", maxHeight: "calc(100vh - 140px)", objectFit: "contain", borderRadius: 12, background: "#fff" }} />;
+              return <img src={url} alt="" style={{ maxWidth: "min(900px, 90vw)", maxHeight: "calc(100vh - 140px)", objectFit: "contain", borderRadius: R.lg, background: "#fff" }} />;
             })()}
           </div>
         </div>
@@ -751,7 +751,7 @@ export default function DocumentsScreen({ user, onBack, onNavigate }) {
 
 function DCell({ label, value, bold }) {
   return (
-    <div style={{ padding: "5px 8px", borderRadius: 6, background: C.bg }}>
+    <div style={{ padding: "5px 8px", borderRadius: R.sm, background: C.bg }}>
       <div style={{ fontSize: 10, fontWeight: 700, color: C.t3, textTransform: "uppercase", letterSpacing: 0.4, marginBottom: 2 }}>{label}</div>
       <div style={{ fontSize: 13.2, fontWeight: bold ? 700 : 500, color: C.t1 }}>{value}</div>
     </div>

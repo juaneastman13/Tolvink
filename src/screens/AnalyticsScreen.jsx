@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { C, Ic } from "../theme";
+import { C, Ic, R } from "../theme";
 import { Loader } from "../components";
 import { apiFreightSummary, apiByProducer, apiByProduct, apiByMonth, apiTransporterRanking } from "../api";
 
@@ -13,9 +13,9 @@ const DONUT_COLORS = ["#43A047", "#F59E0B", "#0891B2", "#E53935", "#7C3AED", "#E
 
 function MetricCard({ icon, label, value, sub, color }) {
   return (
-    <div style={{ flex: 1, minWidth: 140, background: C.w, border: `1px solid ${C.b1}`, borderRadius: 12, padding: 16, boxShadow: C.sh }}>
+    <div style={{ flex: 1, minWidth: 140, background: C.w, border: `1px solid ${C.b1}`, borderRadius: R.lg, padding: 16, boxShadow: C.sh }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-        <div style={{ width: 32, height: 32, borderRadius: 8, background: `${color}14`, display: "flex", alignItems: "center", justifyContent: "center" }}>{icon}</div>
+        <div style={{ width: 32, height: 32, borderRadius: R.md, background: `${color}14`, display: "flex", alignItems: "center", justifyContent: "center" }}>{icon}</div>
         <span style={{ fontSize: 12.1, fontWeight: 600, color: C.t3 }}>{label}</span>
       </div>
       <div style={{ fontSize: 28, fontWeight: 800, color: C.t1, letterSpacing: -0.5 }}>{value}</div>
@@ -32,8 +32,8 @@ function BarChart({ data, labelKey, valueKey, color = C.pri, maxItems = 10 }) {
       {items.map((d, i) => (
         <div key={i} style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <div style={{ width: 120, fontSize: 12.1, fontWeight: 600, color: C.t1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flexShrink: 0 }}>{d[labelKey]}</div>
-          <div style={{ flex: 1, height: 22, background: C.bg, borderRadius: 6, overflow: "hidden" }}>
-            <div style={{ width: `${(d[valueKey] / max) * 100}%`, height: "100%", background: color, borderRadius: 6, transition: "width 0.4s ease", minWidth: 2 }} />
+          <div style={{ flex: 1, height: 22, background: C.bg, borderRadius: R.sm, overflow: "hidden" }}>
+            <div style={{ width: `${(d[valueKey] / max) * 100}%`, height: "100%", background: color, borderRadius: R.sm, transition: "width 0.4s ease", minWidth: 2 }} />
           </div>
           <span style={{ fontSize: 12.1, fontWeight: 700, color: C.t1, minWidth: 60, textAlign: "right" }}>{typeof d[valueKey] === "number" ? d[valueKey].toLocaleString("es-UY") : d[valueKey]}</span>
         </div>
@@ -158,7 +158,7 @@ export default function AnalyticsScreen({ user, onBack }) {
       <div style={{ display: "flex", gap: 6, marginBottom: 18 }}>
         {PERIOD_OPTS.map(p => (
           <button key={p.k} onClick={() => setPeriod(p.k)} style={{
-            padding: "7px 16px", borderRadius: 8, fontFamily: "inherit", fontSize: 13.2, fontWeight: 600, cursor: "pointer",
+            padding: "7px 16px", borderRadius: R.md, fontFamily: "inherit", fontSize: 13.2, fontWeight: 600, cursor: "pointer",
             border: `1.5px solid ${period === p.k ? C.pri : C.b1}`,
             background: period === p.k ? `${C.pri}10` : C.w,
             color: period === p.k ? C.pri : C.t3,
@@ -228,7 +228,7 @@ export default function AnalyticsScreen({ user, onBack }) {
 
 function Section({ title, children }) {
   return (
-    <div style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: 12, padding: 16, marginBottom: 16, boxShadow: C.sh }}>
+    <div style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: R.lg, padding: 16, marginBottom: 16, boxShadow: C.sh }}>
       <div style={{ fontSize: 15.4, fontWeight: 700, color: C.t1, marginBottom: 12 }}>{title}</div>
       {children}
     </div>

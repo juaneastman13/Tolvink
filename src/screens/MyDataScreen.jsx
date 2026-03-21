@@ -6,7 +6,7 @@ import { adminStyles, typeColors, typeLabels, adminBackBtn } from "../utils/frei
 
 export default function MyDataScreen({ user, onBack, onUserUpdate }) {
   const s = adminStyles();
-  const [form, setForm] = useState({ name:user.name||"", email:user.email||"", phone:user.phone||"" });
+  const [form, setForm] = useState({ name:user?.name||"", email:user?.email||"", phone:user?.phone||"" });
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState(null);
   const [doneMsg, setDoneMsg] = useState("");
@@ -19,6 +19,9 @@ export default function MyDataScreen({ user, onBack, onUserUpdate }) {
   const msgTimer = useRef(null);
   const show = (t,k="ok") => { setMsg({t,k}); clearTimeout(msgTimer.current); msgTimer.current = setTimeout(()=>setMsg(null),3000); };
   useEffect(() => () => clearTimeout(msgTimer.current), []);
+
+  if (!user) return <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",padding:40,color:"#8A9C90",fontSize:15.4,fontWeight:600}}>Cargando...</div>;
+
   const needsPassword = form.email.trim().toLowerCase() !== (user.email||"").toLowerCase() || form.phone.trim() !== (user.phone||"");
   const doSave = async (password) => {
     setSaving(true);

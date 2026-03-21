@@ -142,6 +142,7 @@ export default function EditScreen({ freight, fields, plants, branches, trucks, 
         </div>}
 
         {/* Driver selector — when own fleet + truck selected */}
+        {canEditFleet && form.useOwnFleet && !driversLoaded && <div style={{padding:"12px 14px",borderRadius:10,border:`1.5px solid ${C.b1}`,background:C.bgInput||C.bg,color:C.t3,fontSize:14.3,marginBottom:16,textAlign:"center"}}>Cargando choferes...</div>}
         {canEditFleet && form.useOwnFleet && form.truckId && <div style={{marginBottom:16}}>
           <label style={labelSt}>{Ic.user(C.pri,14)} Chofer</label>
           {/* "Yo soy el chofer" shortcut */}

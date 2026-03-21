@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { C, Ic } from "../theme";
+import { C, Ic, R } from "../theme";
 import { ModalOverlay } from "../components";
 import { loadGMaps } from "../maps";
 
@@ -69,7 +69,7 @@ export default function MapPreviewModal({ loc, onClose }) {
           style={{
             width: "100%",
             height: 280,
-            borderRadius: 12,
+            borderRadius: R.lg,
             border: `1px solid ${C.b1}`,
             background: C.bgInput,
             overflow: "hidden",

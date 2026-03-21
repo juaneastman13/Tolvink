@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from "react";
-import { C, Ic, FONT, MONO, STATUS_COLORS } from "../theme";
+import { C, Ic, FONT, MONO, R, STATUS_COLORS } from "../theme";
 import { apiResolveSharedLink } from "../api";
 
 // =====================================================================
@@ -49,7 +49,7 @@ function timeSince(d) {
 // Shared card wrapper
 function Card({ children, style }) {
   return (
-    <div style={{ background: C.w, borderRadius: 14, padding: 18, marginBottom: 12, border: `1px solid ${C.b2}`, boxShadow: C.sh, ...style }}>
+    <div style={{ background: C.w, borderRadius: R.lg, padding: 18, marginBottom: 12, border: `1px solid ${C.b2}`, boxShadow: C.sh, ...style }}>
       {children}
     </div>
   );
@@ -69,7 +69,7 @@ function StatusBadge({ status }) {
   return (
     <span style={{
       display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 14px",
-      borderRadius: 20, background: sc.pillBg, fontSize: 13, fontWeight: 700, color: sc.pillText,
+      borderRadius: R.pill, background: sc.pillBg, fontSize: 13, fontWeight: 700, color: sc.pillText,
     }}>
       {sc.pulse && <span style={{ width: 7, height: 7, borderRadius: "50%", background: sc.pillText, animation: "tolvinkPulse 1.5s infinite" }} />}
       {sc.label}
@@ -80,7 +80,7 @@ function StatusBadge({ status }) {
 function MetricCard({ value, label, color, icon }) {
   return (
     <div style={{
-      flex: "1 1 100px", background: C.w, borderRadius: 14, padding: "18px 14px",
+      flex: "1 1 100px", background: C.w, borderRadius: R.lg, padding: "18px 14px",
       border: `1px solid ${C.b2}`, boxShadow: C.sh, textAlign: "center", minWidth: 0,
     }}>
       {icon && <div style={{ marginBottom: 6 }}>{icon}</div>}
@@ -225,7 +225,7 @@ function FreightMap({ freight }) {
   }
 
   return (
-    <div ref={containerRef} style={{ background: C.w, borderRadius: 14, overflow: "hidden", marginBottom: 12, border: `1px solid ${C.b2}`, boxShadow: C.sh, position: "relative" }}>
+    <div ref={containerRef} style={{ background: C.w, borderRadius: R.lg, overflow: "hidden", marginBottom: 12, border: `1px solid ${C.b2}`, boxShadow: C.sh, position: "relative" }}>
       <div ref={mapRef} style={{ width: "100%", height: 280 }}>
         {!loaded && (
           <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", background: C.bg }}>
@@ -234,7 +234,7 @@ function FreightMap({ freight }) {
         )}
       </div>
       {freight.routeDistanceKm && (
-        <div style={{ position: "absolute", bottom: 10, left: 10, background: "rgba(255,255,255,0.92)", borderRadius: 10, padding: "5px 12px", fontSize: 12, fontWeight: 700, color: C.t1, boxShadow: C.shMd, backdropFilter: "blur(4px)" }}>
+        <div style={{ position: "absolute", bottom: 10, left: 10, background: "rgba(255,255,255,0.92)", borderRadius: R.md, padding: "5px 12px", fontSize: 12, fontWeight: 700, color: C.t1, boxShadow: C.shMd, backdropFilter: "blur(4px)" }}>
           {Ic.nav(C.pri, 13)} {freight.routeDistanceKm} km · ~{freight.routeDurationMin} min
         </div>
       )}
@@ -341,7 +341,7 @@ function TicketView({ data, creatorName }) {
           {data.netWeight != null && <WeightCell label="Peso Neto" value={fmtWeight(data.netWeight)} highlight />}
         </div>
         {data.humidity != null && (
-          <div style={{ marginTop: 10, padding: "6px 10px", background: C.bg, borderRadius: 8, fontSize: 12.5 }}>
+          <div style={{ marginTop: 10, padding: "6px 10px", background: C.bg, borderRadius: R.md, fontSize: 12.5 }}>
             <span style={{ color: C.t3, fontWeight: 600 }}>Humedad: </span>
             <span style={{ color: C.t1, fontWeight: 700 }}>{Number(data.humidity)}%</span>
           </div>
@@ -439,7 +439,7 @@ function PortalView({ data, creatorName, targetName }) {
             const assignment = f.assignments?.[0];
             return (
               <div key={f.id} onClick={() => setExpandedId(isExp ? null : f.id)} style={{
-                background: C.w, borderRadius: 14, border: `1px solid ${C.b2}`, borderLeft: `4px solid ${sc.ribbon || C.t3}`,
+                background: C.w, borderRadius: R.lg, border: `1px solid ${C.b2}`, borderLeft: `4px solid ${sc.ribbon || C.t3}`,
                 boxShadow: C.sh, cursor: "pointer", overflow: "hidden", transition: "box-shadow 0.15s",
               }}>
                 <div style={{ padding: "14px 16px", display: "flex", alignItems: "center", gap: 10 }}>
@@ -484,7 +484,7 @@ function PortalView({ data, creatorName, targetName }) {
 
 function InfoCell({ label, value, bold, mono }) {
   return (
-    <div style={{ padding: "6px 10px", borderRadius: 8, background: C.bg }}>
+    <div style={{ padding: "6px 10px", borderRadius: R.md, background: C.bg }}>
       <div style={{ fontSize: 10.5, fontWeight: 700, color: C.t3, textTransform: "uppercase", letterSpacing: 0.3, marginBottom: 1 }}>{label}</div>
       <div style={{ fontSize: 13, fontWeight: bold ? 700 : 500, color: C.t1, fontFamily: mono ? MONO : "inherit" }}>{value || "—"}</div>
     </div>
@@ -493,7 +493,7 @@ function InfoCell({ label, value, bold, mono }) {
 
 function WeightCell({ label, value, highlight }) {
   return (
-    <div style={{ textAlign: "center", padding: "10px 6px", borderRadius: 10, background: highlight ? C.priPale : C.bg }}>
+    <div style={{ textAlign: "center", padding: "10px 6px", borderRadius: R.md, background: highlight ? C.priPale : C.bg }}>
       <div style={{ fontSize: 10.5, fontWeight: 700, color: C.t3, textTransform: "uppercase", letterSpacing: 0.3, marginBottom: 2 }}>{label}</div>
       <div style={{ fontSize: 16, fontWeight: 700, color: highlight ? C.pri : C.t1 }}>{value}</div>
     </div>
@@ -503,7 +503,7 @@ function WeightCell({ label, value, highlight }) {
 function FilterPill({ active, onClick, label, color }) {
   return (
     <button onClick={onClick} style={{
-      padding: "5px 12px", borderRadius: 20, border: active ? `2px solid ${color || C.pri}` : `1px solid ${C.b2}`,
+      padding: "5px 12px", borderRadius: R.pill, border: active ? `2px solid ${color || C.pri}` : `1px solid ${C.b2}`,
       background: active ? `${color || C.pri}12` : C.w, cursor: "pointer", fontFamily: "inherit",
       fontSize: 11.5, fontWeight: 600, color: active ? (color || C.pri) : C.t3,
     }}>{label}</button>
@@ -532,7 +532,7 @@ function ErrorView({ error }) {
       </div>
       <a href="https://tolvink.com" style={{
         display: "inline-flex", alignItems: "center", gap: 6, padding: "10px 24px",
-        borderRadius: 12, background: C.pri, color: "#fff", textDecoration: "none",
+        borderRadius: R.lg, background: C.pri, color: "#fff", textDecoration: "none",
         fontFamily: "inherit", fontSize: 14, fontWeight: 700,
       }}>
         Ir a Tolvink {Ic.nav("#fff", 14)}
@@ -580,7 +580,7 @@ function PublicHeader({ data }) {
       {/* Badge */}
       <div style={{
         display: "flex", alignItems: "center", gap: 4, padding: "4px 10px",
-        borderRadius: 8, background: C.priPale, flexShrink: 0,
+        borderRadius: R.md, background: C.priPale, flexShrink: 0,
       }}>
         {Ic.share(C.pri, 13)}
         <span style={{ fontSize: 11, fontWeight: 700, color: C.pri }}>Vista compartida</span>

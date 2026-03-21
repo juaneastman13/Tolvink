@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { C, Ic, FONT } from "../../theme";
+import { C, Ic, FONT, R } from "../../theme";
 import { Bd } from "../../components";
 import { ModalOverlay } from "../../components/overlays";
 import {
@@ -92,7 +92,7 @@ export default function ShareLocationModal({ entityType, entity, fieldId, onClos
         </div>
 
         {msg && (
-          <div onClick={() => setMsg(null)} style={{ padding: "8px 12px", borderRadius: 8, marginBottom: 10, fontSize: 12.1, fontWeight: 600, background: msg.k === "ok" ? C.okPale : C.errPale, color: msg.k === "ok" ? C.ok : C.err, cursor: "pointer" }}>
+          <div onClick={() => setMsg(null)} style={{ padding: "8px 12px", borderRadius: R.md, marginBottom: 10, fontSize: 12.1, fontWeight: 600, background: msg.k === "ok" ? C.okPale : C.errPale, color: msg.k === "ok" ? C.ok : C.err, cursor: "pointer" }}>
             {msg.t}
           </div>
         )}
@@ -107,7 +107,7 @@ export default function ShareLocationModal({ entityType, entity, fieldId, onClos
           {!loadingShares && shares.length > 0 && (
             <div style={{ display: "flex", flexDirection: "column", gap: 6, maxHeight: 160, overflowY: "auto" }}>
               {shares.map(s => (
-                <div key={s.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 12px", borderRadius: 10, border: `1px solid ${C.b1}`, background: C.w }}>
+                <div key={s.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 12px", borderRadius: R.md, border: `1px solid ${C.b1}`, background: C.w }}>
                   <div>
                     <div style={{ fontSize: 13.2, fontWeight: 600, color: C.t1 }}>{s.sharedWith?.name || "Usuario"}</div>
                     <div style={{ fontSize: 11, color: C.t3 }}>{s.sharedWith?.email}</div>
@@ -128,7 +128,7 @@ export default function ShareLocationModal({ entityType, entity, fieldId, onClos
             value={search}
             onChange={e => handleSearch(e.target.value)}
             placeholder="Buscar por nombre, email o teléfono..."
-            style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: `1.5px solid ${search ? C.bFocus : C.b2}`, background: C.bgInput, fontFamily: FONT, fontSize: 13.2, color: C.t1, outline: "none", boxSizing: "border-box" }}
+            style={{ width: "100%", padding: "10px 14px", borderRadius: R.md, border: `1.5px solid ${search ? C.bFocus : C.b2}`, background: C.bgInput, fontFamily: FONT, fontSize: 13.2, color: C.t1, outline: "none", boxSizing: "border-box" }}
           />
         </div>
 
@@ -136,7 +136,7 @@ export default function ShareLocationModal({ entityType, entity, fieldId, onClos
         {results.length > 0 && (
           <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 8, maxHeight: 180, overflowY: "auto" }}>
             {results.map(u => (
-              <div key={u.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 12px", borderRadius: 10, border: `1px solid ${C.b1}`, background: C.bg }}>
+              <div key={u.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 12px", borderRadius: R.md, border: `1px solid ${C.b1}`, background: C.bg }}>
                 <div>
                   <div style={{ fontSize: 13.5, fontWeight: 700, color: C.t1 }}>{u.name}</div>
                   <div style={{ fontSize: 11.5, color: C.t3 }}>{u.email}</div>
@@ -144,7 +144,7 @@ export default function ShareLocationModal({ entityType, entity, fieldId, onClos
                 {alreadySharedIds.has(u.id) ? (
                   <Bd color={C.ok} small>Compartido</Bd>
                 ) : (
-                  <button onClick={() => handleShare(u.id, u.name, u.email)} style={{ padding: "5px 12px", borderRadius: 8, border: "none", background: C.pri, cursor: "pointer", fontFamily: FONT, fontSize: 12.1, fontWeight: 700, color: C.w }}>
+                  <button onClick={() => handleShare(u.id, u.name, u.email)} style={{ padding: "5px 12px", borderRadius: R.md, border: "none", background: C.pri, cursor: "pointer", fontFamily: FONT, fontSize: 12.1, fontWeight: 700, color: C.w }}>
                     Compartir
                   </button>
                 )}

@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
-import { C, Ic } from "../theme";
+import { C, Ic, R } from "../theme";
 import { Btn, Field, Loader, LoadingOverlay, EmptyState } from "../components";
 import { apiGetTrucks, apiCreateTruck, apiDeactivateTruck, apiListDrivers, apiCreateDriver, apiDeactivateDriver, apiGetCompanyAccess } from "../api";
 
@@ -128,7 +128,7 @@ export default function TrucksScreen({ onBack, embedded, user }) {
           <select
             value={selectedCompanyId}
             onChange={e => handleCompanyChange(e.target.value)}
-            style={{ width: "100%", padding: "9px 12px", borderRadius: 8, border: `1px solid ${C.b1}`, fontSize: 13.2, fontFamily: "inherit", background: C.w, color: C.t1 }}
+            style={{ width: "100%", padding: "9px 12px", borderRadius: R.md, border: `1px solid ${C.b1}`, fontSize: 13.2, fontFamily: "inherit", background: C.w, color: C.t1 }}
           >
             <option value="">Mi flota</option>
             {linkedCompanies.map(r => {
@@ -146,12 +146,12 @@ export default function TrucksScreen({ onBack, embedded, user }) {
         <button onClick={()=>switchTab("drivers")} style={{ flex:1, padding:"9px 0", fontFamily:"inherit", fontSize:13.8, fontWeight:tab==="drivers"?700:500, background:tab==="drivers"?C.acc:C.w, color:tab==="drivers"?C.w:C.t2, border:"none", cursor:"pointer", borderLeft:`1px solid ${C.b1}` }}>Choferes</button>
       </div>
 
-      {msg && <div style={{ padding: "10px 14px", borderRadius: 12, marginBottom: 12, fontSize: 13.2, fontWeight: 600, background: msg.k === "ok" ? C.okPale : C.errPale, color: msg.k === "ok" ? C.ok : C.err }}>{msg.t}</div>}
+      {msg && <div style={{ padding: "10px 14px", borderRadius: R.lg, marginBottom: 12, fontSize: 13.2, fontWeight: 600, background: msg.k === "ok" ? C.okPale : C.errPale, color: msg.k === "ok" ? C.ok : C.err }}>{msg.t}</div>}
 
       {/* ========== TRUCKS TAB ========== */}
       {tab === "trucks" && <>
         {showForm && (
-          <div style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: 12, padding: 16, marginBottom: 16, boxShadow: C.sh }}>
+          <div style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: R.lg, padding: 16, marginBottom: 16, boxShadow: C.sh }}>
             {selectedCompanyId && <div style={{ fontSize: 12.1, fontWeight: 600, color: C.info, marginBottom: 8 }}>Creando para: {selectedCompanyName}</div>}
             <Field label="Patente" value={plate} onChange={setPlate} placeholder="Ej: AB-123-CD" />
             <div style={{ height: 10 }} />
@@ -166,7 +166,7 @@ export default function TrucksScreen({ onBack, embedded, user }) {
               {trucks.map(t => {
                 const ownerName = t.ownerCompanyId && companyNameMap[t.ownerCompanyId];
                 return (
-                  <div key={t.id} style={{ background: C.w, border: `1px solid ${C.b1}`, borderLeft: `3px solid ${C.acc}`, borderRadius: 12, padding: 14, boxShadow: C.sh, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div key={t.id} style={{ background: C.w, border: `1px solid ${C.b1}`, borderLeft: `3px solid ${C.acc}`, borderRadius: R.lg, padding: 14, boxShadow: C.sh, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                       {Ic.truck(C.acc, 20)}
                       <div>
@@ -189,7 +189,7 @@ export default function TrucksScreen({ onBack, embedded, user }) {
       {/* ========== DRIVERS TAB ========== */}
       {tab === "drivers" && <>
         {showForm && (
-          <div style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: 12, padding: 16, marginBottom: 16, boxShadow: C.sh }}>
+          <div style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: R.lg, padding: 16, marginBottom: 16, boxShadow: C.sh }}>
             <Field label="Nombre" value={dName} onChange={setDName} placeholder="Ej: Juan Pérez" />
             <div style={{ height: 10 }} />
             <Field label="Teléfono (opcional)" value={dPhone} onChange={setDPhone} placeholder="Ej: 099123456" />
@@ -201,7 +201,7 @@ export default function TrucksScreen({ onBack, embedded, user }) {
           drivers.length === 0 ? <EmptyState icon={Ic.user(C.t3,28)} title="Sin choferes registrados" subtitle="Agregá choferes para asignarles viajes" action={canEdit && <Btn sm onClick={()=>{switchTab("drivers");setShowForm(true);}}>Registrar chofer</Btn>}/> :
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {drivers.map(d => (
-                <div key={d.id} style={{ background: C.w, border: `1px solid ${C.b1}`, borderLeft: `3px solid ${C.info||C.sec}`, borderRadius: 12, padding: 14, boxShadow: C.sh, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div key={d.id} style={{ background: C.w, border: `1px solid ${C.b1}`, borderLeft: `3px solid ${C.info||C.sec}`, borderRadius: R.lg, padding: 14, boxShadow: C.sh, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                     {Ic.user(C.info||C.sec, 20)}
                     <div>

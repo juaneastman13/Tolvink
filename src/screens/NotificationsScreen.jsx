@@ -64,10 +64,15 @@ function _NotifRow({ n, freight, onMarkRead, onTap, isLast }) {
   );
 }
 
-export default function NotificationsScreen({ notifications=[], freights=[], onMarkRead, onMarkAllRead, onTap }) {
+export default function NotificationsScreen({ notifications=[], freights=[], loading, onMarkRead, onMarkAllRead, onTap }) {
   const freightMap = useMemo(() => { const m = {}; freights.forEach(f => { m[f.id] = f; }); return m; }, [freights]);
   const unread = notifications.filter(n => !n.read);
   const read = notifications.filter(n => n.read);
+  if (loading) return (
+    <div className="tv-pad" style={{ padding:18, flex:1, display:"flex", alignItems:"center", justifyContent:"center" }}>
+      <div style={{ textAlign:"center", color:C.t3, fontSize:15.4, fontWeight:600 }}>Cargando notificaciones...</div>
+    </div>
+  );
   return (
     <div className="tv-pad" style={{ padding:18, flex:1 }}>
       <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:18 }}>

@@ -1,9 +1,10 @@
 import { useState, useEffect, useMemo, useRef, useCallback, lazy, Suspense, memo } from "react";
 import { useSearchParams } from "react-router-dom";
-import { C, Ic, FONT, MONO, STATUS_COLORS } from "../theme";
+import { C, Ic, FONT, MONO, R, STATUS_COLORS } from "../theme";
 import { stCfg, formatFreightDate } from "../constants";
 import { Bd, Btn, Select, SortTh, Tabs, exportExcel, exportCSV, SkeletonList, EmptyState, ErrorBoundary, FreightCard, FreightCardCompact } from "../components";
 import { useTableSort, usePullToRefresh, mapFreight, originDisplay, destDisplay } from "../hooks";
+import { useAccessLevel } from "../hooks/useAccessLevel";
 import { getPendingActions, getWaitingOnText, resolveUserTypeForFreight } from "../utils/freight-helpers";
 import { apiListFreights } from "../api";
 const FreightsOverviewMap = lazy(() => import("../maps").then(m => ({ default: m.FreightsOverviewMap })));
@@ -66,6 +67,7 @@ export default memo(function ListScreen({ freights, loading, onNav, onRefresh, c
   const [tableStatusFilter, setTableStatusFilter] = useState("all");
   // "Requiere mi acción" filter
   const [filterRequiresAction, setFilterRequiresAction] = useState(false);
+  const { isConsulta } = useAccessLevel(user);
 
   // Server-side filtering state
   const [serverData, setServerData] = useState(null); // null = use freights prop
@@ -488,7 +490,7 @@ export default memo(function ListScreen({ freights, loading, onNav, onRefresh, c
       const origin = originDisplay(f);
       const dest = destDisplay(f) || "Sin destino";
       return wrapHover(f,
-        <div key={f.id} onClick={() => onNav("detail", f.id)} style={{ background: C.w, border: `1px solid ${pa ? st.color + "40" : C.b1}`, borderLeft: `4px solid ${st.color}`, borderRadius: 10, padding: "8px 12px", cursor: "pointer", boxShadow: C.sh, transition: "background 0.15s, border-color 0.15s", position: "relative", overflow: "hidden", boxSizing: "border-box" }}>
+        <div key={f.id} onClick={() => onNav("detail", f.id)} style={{ background: C.w, border: `1px solid ${pa ? st.color + "40" : C.b1}`, borderLeft: `4px solid ${st.color}`, borderRadius: R.md, padding: "8px 12px", cursor: "pointer", boxShadow: C.sh, transition: "background 0.15s, border-color 0.15s", position: "relative", overflow: "hidden", boxSizing: "border-box" }}>
           {pa && <div style={{ position: "absolute", top: 8, right: 10, display: "flex", alignItems: "center", gap: 4 }}>
             <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#FF6A00", display: "inline-block", animation: "dotPulse 1.5s ease-in-out infinite", flexShrink: 0 }} />
             <span style={{ fontSize: 11, fontWeight: 700, color: "#FF6A00", whiteSpace: "nowrap" }}>{pa.action}</span>

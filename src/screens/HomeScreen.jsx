@@ -1,8 +1,9 @@
 import { useState, useMemo, useCallback, useRef, useEffect, memo } from "react";
-import { C, Ic, MONO, STATUS_COLORS } from "../theme";
+import { C, Ic, MONO, R, STATUS_COLORS } from "../theme";
 import { stCfg, getActions, formatFreightDate } from "../constants";
 import { Bd, Btn, SkeletonList, SkeletonCard, EmptyState, Tabs, FreightCard, FreightCardCompact, ActiveTripCard } from "../components";
 import { useIsDesktop, mapFreight, originDisplay, destDisplay } from "../hooks";
+import { useAccessLevel } from "../hooks/useAccessLevel";
 import { getPendingActions, resolveUserTypeForFreight, getThirdPartyLabel } from "../utils/freight-helpers";
 import { apiListFreights } from "../api";
 import DetailScreen from "./DetailScreen";
@@ -65,6 +66,7 @@ export default memo(function HomeScreen({ user, freights, loading, perms, onNav,
   const [dateFilterOpen, setDateFilterOpen] = useState(false);
   // Mobile tab: "pending" or "daily"
   const [mobileTab, setMobileTab] = useState("pending");
+  const { isConsulta } = useAccessLevel(user);
 
   const selectFreight = useCallback((id, source) => {
     setSelectedId(id);
@@ -407,27 +409,27 @@ export default memo(function HomeScreen({ user, freights, loading, perms, onNav,
           <span style={{ fontSize:12.1, fontWeight:600, color:C.t2 }}>Ver todo</span>
         </button></div></div>}
         {/* Date filter — standalone, before pendientes */}
-        <div style={{ padding: compact ? "6px 8px" : "8px 12px", borderRadius: 10, border: `1px solid ${hasDateFilter ? C.acc + "40" : C.b1}`, background: hasDateFilter ? `${C.acc}08` : C.w, marginBottom: 8 }}>
+        <div style={{ padding: compact ? "6px 8px" : "8px 12px", borderRadius: R.md, border: `1px solid ${hasDateFilter ? C.acc + "40" : C.b1}`, background: hasDateFilter ? `${C.acc}08` : C.w, marginBottom: 8 }}>
           <div style={{ display: "flex", gap: 4, flexWrap: "wrap", alignItems: "center" }}>
-            <button onClick={() => setDateFilterOpen(p => !p)} style={{ padding: compact ? "3px 6px" : "4px 8px", borderRadius: 6, border: `1px solid ${hasDateFilter ? C.acc : C.b1}`, background: hasDateFilter ? `${C.acc}15` : "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: compact ? 9.9 : 11, fontWeight: 600, color: hasDateFilter ? C.acc : C.t3, display: "flex", alignItems: "center", gap: 3 }}>
+            <button onClick={() => setDateFilterOpen(p => !p)} style={{ padding: compact ? "3px 6px" : "4px 8px", borderRadius: R.sm, border: `1px solid ${hasDateFilter ? C.acc : C.b1}`, background: hasDateFilter ? `${C.acc}15` : "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: compact ? 9.9 : 11, fontWeight: 600, color: hasDateFilter ? C.acc : C.t3, display: "flex", alignItems: "center", gap: 3 }}>
               {Ic.cal(hasDateFilter ? C.acc : C.t3, compact ? 10 : 11)} {dateFilterOpen ? "Ocultar fechas" : "Filtrar por fecha"}{hasDateFilter ? " (activo)" : ""}
             </button>
-            {hasDateFilter && <button onClick={clearDateFilter} style={{ padding: compact ? "3px 6px" : "4px 8px", borderRadius: 6, border: `1px solid ${C.err}40`, background: C.errPale, cursor: "pointer", fontFamily: "inherit", fontSize: compact ? 9.9 : 11, fontWeight: 600, color: C.err }}>Limpiar</button>}
+            {hasDateFilter && <button onClick={clearDateFilter} style={{ padding: compact ? "3px 6px" : "4px 8px", borderRadius: R.sm, border: `1px solid ${C.err}40`, background: C.errPale, cursor: "pointer", fontFamily: "inherit", fontSize: compact ? 9.9 : 11, fontWeight: 600, color: C.err }}>Limpiar</button>}
           </div>
           {dateFilterOpen && <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 6, flexWrap: "wrap" }}>
             <span style={{ fontSize: compact ? 9.9 : 11, color: C.t2, fontWeight: 600 }}>Desde</span>
-            <input type="date" value={dateFrom} onChange={e => { setDateFrom(e.target.value); setDatePreset("custom"); }} onClick={e => e.target.showPicker?.()} style={{ padding: "3px 6px", borderRadius: 6, border: `1px solid ${C.b1}`, background: C.w, color: dateFrom ? C.t1 : C.t3, fontSize: compact ? 9.9 : 11, fontFamily: "inherit", outline: "none", cursor: "pointer" }} />
+            <input type="date" value={dateFrom} onChange={e => { setDateFrom(e.target.value); setDatePreset("custom"); }} onClick={e => e.target.showPicker?.()} style={{ padding: "3px 6px", borderRadius: R.sm, border: `1px solid ${C.b1}`, background: C.w, color: dateFrom ? C.t1 : C.t3, fontSize: compact ? 9.9 : 11, fontFamily: "inherit", outline: "none", cursor: "pointer" }} />
             <span style={{ fontSize: compact ? 9.9 : 11, color: C.t2, fontWeight: 600 }}>Hasta</span>
-            <input type="date" value={dateTo} onChange={e => { setDateTo(e.target.value); setDatePreset("custom"); }} onClick={e => e.target.showPicker?.()} style={{ padding: "3px 6px", borderRadius: 6, border: `1px solid ${C.b1}`, background: C.w, color: dateTo ? C.t1 : C.t3, fontSize: compact ? 9.9 : 11, fontFamily: "inherit", outline: "none", cursor: "pointer" }} />
+            <input type="date" value={dateTo} onChange={e => { setDateTo(e.target.value); setDatePreset("custom"); }} onClick={e => e.target.showPicker?.()} style={{ padding: "3px 6px", borderRadius: R.sm, border: `1px solid ${C.b1}`, background: C.w, color: dateTo ? C.t1 : C.t3, fontSize: compact ? 9.9 : 11, fontFamily: "inherit", outline: "none", cursor: "pointer" }} />
             {[{ k: "today", l: "Hoy" }, { k: "week", l: "Semana" }, { k: "month", l: "Mes" }].map(p => (
-              <button key={p.k} onClick={() => applyDatePreset(p.k)} style={{ padding: compact ? "3px 6px" : "4px 8px", borderRadius: 6, border: `1px solid ${datePreset === p.k ? C.acc : C.b1}`, background: datePreset === p.k ? `${C.acc}15` : "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: compact ? 9.9 : 11, fontWeight: 600, color: datePreset === p.k ? C.acc : C.t3 }}>{p.l}</button>
+              <button key={p.k} onClick={() => applyDatePreset(p.k)} style={{ padding: compact ? "3px 6px" : "4px 8px", borderRadius: R.sm, border: `1px solid ${datePreset === p.k ? C.acc : C.b1}`, background: datePreset === p.k ? `${C.acc}15` : "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: compact ? 9.9 : 11, fontWeight: 600, color: datePreset === p.k ? C.acc : C.t3 }}>{p.l}</button>
             ))}
           </div>}
         </div>
 
         {/* Initial load: show panel structure with skeletons */}
         {isInitialLoad && <>
-          <div style={{ padding: compact ? "8px 10px" : "12px 14px", borderRadius: 12, background: `${C.acc}0D`, marginBottom: 8 }}>
+          <div style={{ padding: compact ? "8px 10px" : "12px 14px", borderRadius: R.lg, background: `${C.acc}0D`, marginBottom: 8 }}>
             <div style={{ display: "flex", alignItems: "center", gap: compact ? 8 : 10 }}>
               {!compact && <span style={{ fontSize: 24.2, fontWeight: 800, color: C.acc, lineHeight: 1, minWidth: 28, textAlign: "center", opacity: 0.4 }}>—</span>}
               {compact && <div style={{ width: 26, height: 26, borderRadius: "50%", background: C.acc, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, opacity: 0.5 }}>
@@ -443,12 +445,12 @@ export default memo(function HomeScreen({ user, freights, loading, perms, onNav,
 
         {/* Pendientes — hidden when a "sin pendientes" group is open */}
         {!isInitialLoad && !smOpen && totalPendingAll > 0 && (<>
-          <div style={{ padding: compact ? "8px 10px" : "12px 14px", borderRadius: 12, background: `${C.acc}0D`, marginBottom: 8 }}>
+          <div style={{ padding: compact ? "8px 10px" : "12px 14px", borderRadius: R.lg, background: `${C.acc}0D`, marginBottom: 8 }}>
             <div style={{ display: "flex", alignItems: "center", gap: compact ? 8 : 10 }}>
               {!compact && <span style={{ fontSize: 24.2, fontWeight: 800, color: C.acc, lineHeight: 1, minWidth: 28, textAlign: "center" }}>{pendingCount}</span>}
               {compact && <div style={{ width: 26, height: 26, borderRadius: "50%", background: C.acc, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, position: "relative" }}>
                 {Ic.bell(C.w, 13)}
-                <div style={{ position: "absolute", top: -3, right: -3, minWidth: 15, height: 15, borderRadius: 8, background: C.err, color: C.w, fontSize: 8.8, fontWeight: 700, padding: "0 3px", display: "flex", alignItems: "center", justifyContent: "center", border: `2px solid ${C.w}` }}>{pendingCount}</div>
+                <div style={{ position: "absolute", top: -3, right: -3, minWidth: 15, height: 15, borderRadius: R.md, background: C.err, color: C.w, fontSize: 8.8, fontWeight: 700, padding: "0 3px", display: "flex", alignItems: "center", justifyContent: "center", border: `2px solid ${C.w}` }}>{pendingCount}</div>
               </div>}
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: compact ? 12.1 : 14.3, fontWeight: 700, color: C.acc }}>{compact ? "Con pendientes de mi parte" : `Acción${pendingCount !== 1 ? "es" : ""} pendiente${pendingCount !== 1 ? "s" : ""}`}</div>
@@ -467,7 +469,7 @@ export default memo(function HomeScreen({ user, freights, loading, perms, onNav,
         {/* Sin pendientes de mi parte — sub-grouped by third-party action */}
         {!isInitialLoad && !paOpen && thirdPartyGroups.length > 0 && <>
         {thirdPartyGroups.length === 1 ? (<>
-          <div style={{ padding: compact ? "8px 10px" : "10px 12px", borderRadius: 12, background: C.okPale, marginBottom: 8 }}>
+          <div style={{ padding: compact ? "8px 10px" : "10px 12px", borderRadius: R.lg, background: C.okPale, marginBottom: 8 }}>
             <div style={{ display: "flex", alignItems: "center", gap: compact ? 8 : 10 }}>
               <div style={{ width: compact ? 22 : 28, height: compact ? 22 : 28, borderRadius: "50%", background: C.ok, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                 {Ic.chk(C.w, compact ? 11 : 14)}
@@ -477,7 +479,7 @@ export default memo(function HomeScreen({ user, freights, loading, perms, onNav,
           </div>
           <div>{renderTpGroup(thirdPartyGroups[0])}</div>
         </>) : (<>
-          <div style={{ padding: compact ? "6px 10px" : "8px 12px", borderRadius: 12, background: C.okPale, marginBottom: 4 }}>
+          <div style={{ padding: compact ? "6px 10px" : "8px 12px", borderRadius: R.lg, background: C.okPale, marginBottom: 4 }}>
             <div style={{ display: "flex", alignItems: "center", gap: compact ? 8 : 10 }}>
               <div style={{ width: compact ? 22 : 28, height: compact ? 22 : 28, borderRadius: "50%", background: C.ok, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                 {Ic.chk(C.w, compact ? 11 : 14)}
@@ -504,7 +506,7 @@ export default memo(function HomeScreen({ user, freights, loading, perms, onNav,
 
       <div style={{ padding: compact ? "0 8px 8px" : "18px 18px 18px" }}>
         {/* Header */}
-        <div style={{ padding: compact ? "8px 10px" : "10px 12px", borderRadius: 12, background: `${C.pri}0D`, marginBottom: 8 }}>
+        <div style={{ padding: compact ? "8px 10px" : "10px 12px", borderRadius: R.lg, background: `${C.pri}0D`, marginBottom: 8 }}>
           <div style={{ display: "flex", alignItems: "center", gap: compact ? 8 : 10 }}>
             <div style={{ width: compact ? 26 : 32, height: compact ? 26 : 32, borderRadius: "50%", background: C.pri, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
               {Ic.cal(C.w, compact ? 13 : 16)}
@@ -584,7 +586,7 @@ export default memo(function HomeScreen({ user, freights, loading, perms, onNav,
     const restSimple = simpleFreights.filter(f => !f._pending);
 
     const simpleDailyPanel = (
-      <div style={{ padding: "14px 16px", borderRadius: 12, background: `${C.pri}08`, border: `1px solid ${C.pri}20` }}>
+      <div style={{ padding: "14px 16px", borderRadius: R.lg, background: `${C.pri}08`, border: `1px solid ${C.pri}20` }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
           <div style={{ width: 28, height: 28, borderRadius: "50%", background: C.pri, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
             {Ic.cal(C.w, 14)}

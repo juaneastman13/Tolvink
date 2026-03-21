@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { C, Ic, MONO } from "../theme";
+import { C, Ic, MONO, R } from "../theme";
 import { uploadPhoto, apiCreateWeighTicket, apiRunWeighTicketOcr } from "../api";
 import { useUIStore } from "../store";
 import log from "../logger";
@@ -27,7 +27,7 @@ function SmallField({ label, value, onChange, placeholder, type = "text", mono }
         onChange={e => onChange(e.target.value)}
         placeholder={placeholder}
         inputMode={type === "number" ? "decimal" : undefined}
-        style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: `1.5px solid ${C.b1}`, background: C.w, color: C.t1, fontSize: 14.3, fontFamily: mono ? MONO : "inherit", outline: "none", boxSizing: "border-box" }}
+        style={{ width: "100%", padding: "8px 10px", borderRadius: R.md, border: `1.5px solid ${C.b1}`, background: C.w, color: C.t1, fontSize: 14.3, fontFamily: mono ? MONO : "inherit", outline: "none", boxSizing: "border-box" }}
         onFocus={e => { e.target.style.borderColor = C.bFocus; }}
         onBlur={e => { e.target.style.borderColor = C.b1; }}
       />
@@ -168,13 +168,13 @@ export default function WeighTicketForm({ freightId, type = "destination", onCre
         </div>
         <div style={{ display: "flex", gap: 8 }}>
           <button onClick={() => { setMode("photo"); setTimeout(() => inputRef.current?.click(), 100); }}
-            style={{ flex: 1, padding: "14px 12px", borderRadius: 10, border: `1.5px solid ${C.acc}40`, background: `${C.acc}08`, cursor: "pointer", fontFamily: "inherit", display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
+            style={{ flex: 1, padding: "14px 12px", borderRadius: R.md, border: `1.5px solid ${C.acc}40`, background: `${C.acc}08`, cursor: "pointer", fontFamily: "inherit", display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
             {Ic.cam(C.acc, 24)}
             <span style={{ fontSize: 13.2, fontWeight: 700, color: C.acc }}>Foto + OCR</span>
             <span style={{ fontSize: 11, color: C.t3 }}>Sacá foto y se extraen los datos</span>
           </button>
           <button onClick={() => setMode("manual")}
-            style={{ flex: 1, padding: "14px 12px", borderRadius: 10, border: `1.5px solid ${C.pri}40`, background: `${C.pri}08`, cursor: "pointer", fontFamily: "inherit", display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
+            style={{ flex: 1, padding: "14px 12px", borderRadius: R.md, border: `1.5px solid ${C.pri}40`, background: `${C.pri}08`, cursor: "pointer", fontFamily: "inherit", display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
             {Ic.edit(C.pri, 24)}
             <span style={{ fontSize: 13.2, fontWeight: 700, color: C.pri }}>Manual</span>
             <span style={{ fontSize: 11, color: C.t3 }}>Ingresá los datos a mano</span>
@@ -204,7 +204,7 @@ export default function WeighTicketForm({ freightId, type = "destination", onCre
       {showPhotoSection && (
         <div style={{ marginBottom: 10 }}>
           {photoPreview ? (
-            <div style={{ position: "relative", borderRadius: 10, overflow: "hidden", border: `1px solid ${C.b1}`, marginBottom: 8 }}>
+            <div style={{ position: "relative", borderRadius: R.md, overflow: "hidden", border: `1px solid ${C.b1}`, marginBottom: 8 }}>
               <img src={photoPreview} alt="ticket" style={{ width: "100%", height: 120, objectFit: "cover", display: "block" }} />
               {(uploading || ocrRunning) && (
                 <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6 }}>
@@ -213,14 +213,14 @@ export default function WeighTicketForm({ freightId, type = "destination", onCre
                 </div>
               )}
               {ocrDone && (
-                <div style={{ position: "absolute", top: 6, right: 6, background: C.ok, borderRadius: 10, padding: "3px 10px", fontSize: 11, color: C.w, fontWeight: 700, display: "flex", alignItems: "center", gap: 4 }}>
+                <div style={{ position: "absolute", top: 6, right: 6, background: C.ok, borderRadius: R.md, padding: "3px 10px", fontSize: 11, color: C.w, fontWeight: 700, display: "flex", alignItems: "center", gap: 4 }}>
                   {Ic.chk(C.w, 11)} Datos extraídos
                 </div>
               )}
             </div>
           ) : (
             <button onClick={() => inputRef.current?.click()} disabled={uploading}
-              style={{ width: "100%", padding: "16px 14px", borderRadius: 10, border: `1.5px dashed ${C.acc}60`, background: `${C.acc}08`, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+              style={{ width: "100%", padding: "16px 14px", borderRadius: R.md, border: `1.5px dashed ${C.acc}60`, background: `${C.acc}08`, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
               {Ic.cam(C.acc, 20)}
               <span style={{ fontSize: 13.2, fontWeight: 600, color: C.acc }}>Tomar foto del ticket</span>
             </button>
@@ -251,14 +251,14 @@ export default function WeighTicketForm({ freightId, type = "destination", onCre
             <SmallField label={FIELD_LABELS.dockage} value={fields.dockage} onChange={v => setField("dockage", v)} placeholder="0" type="number" mono />
             <div style={{ flex: 2, minWidth: 0 }}>
               <div style={{ fontSize: 10.4, fontWeight: 700, color: C.t3, textTransform: "uppercase", letterSpacing: 0.4, marginBottom: 3 }}>{FIELD_LABELS.observations}</div>
-              <input value={fields.observations || ""} onChange={e => setField("observations", e.target.value)} placeholder="Notas..." style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: `1.5px solid ${C.b1}`, background: C.w, color: C.t1, fontSize: 14.3, fontFamily: "inherit", outline: "none", boxSizing: "border-box" }}
+              <input value={fields.observations || ""} onChange={e => setField("observations", e.target.value)} placeholder="Notas..." style={{ width: "100%", padding: "8px 10px", borderRadius: R.md, border: `1.5px solid ${C.b1}`, background: C.w, color: C.t1, fontSize: 14.3, fontFamily: "inherit", outline: "none", boxSizing: "border-box" }}
                 onFocus={e => { e.target.style.borderColor = C.bFocus; }} onBlur={e => { e.target.style.borderColor = C.b1; }} />
             </div>
           </div>
 
           {/* Origin vs Destination comparison */}
           {comparison && (
-            <div style={{ marginTop: 10, padding: "8px 12px", borderRadius: 8, background: Math.abs(comparison.diff) > comparison.originNet * 0.02 ? `${C.warn}12` : `${C.ok}12`, border: `1px solid ${Math.abs(comparison.diff) > comparison.originNet * 0.02 ? C.warn : C.ok}30` }}>
+            <div style={{ marginTop: 10, padding: "8px 12px", borderRadius: R.md, background: Math.abs(comparison.diff) > comparison.originNet * 0.02 ? `${C.warn}12` : `${C.ok}12`, border: `1px solid ${Math.abs(comparison.diff) > comparison.originNet * 0.02 ? C.warn : C.ok}30` }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: C.t2, textTransform: "uppercase", letterSpacing: 0.4, marginBottom: 4 }}>Comparación Origen vs Destino</div>
               <div style={{ display: "flex", gap: 12, fontSize: 12.7 }}>
                 <span style={{ color: C.t2 }}>Origen: <strong style={{ fontFamily: MONO }}>{comparison.originNet.toLocaleString()} kg</strong></span>
@@ -272,7 +272,7 @@ export default function WeighTicketForm({ freightId, type = "destination", onCre
 
           <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
             <button onClick={handleSave} disabled={saving || !hasAnyField}
-              style={{ flex: 1, padding: "10px 14px", borderRadius: 10, border: "none", background: hasAnyField ? C.acc : C.b1, color: hasAnyField ? C.w : C.t3, fontSize: 14.3, fontWeight: 700, cursor: hasAnyField && !saving ? "pointer" : "not-allowed", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, opacity: saving ? 0.6 : 1 }}>
+              style={{ flex: 1, padding: "10px 14px", borderRadius: R.md, border: "none", background: hasAnyField ? C.acc : C.b1, color: hasAnyField ? C.w : C.t3, fontSize: 14.3, fontWeight: 700, cursor: hasAnyField && !saving ? "pointer" : "not-allowed", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, opacity: saving ? 0.6 : 1 }}>
               {saving ? <><span style={{ width: 14, height: 14, border: "2px solid rgba(255,255,255,0.3)", borderTopColor: "#fff", borderRadius: "50%", display: "inline-block", animation: "spin 0.6s linear infinite" }} /> Guardando...</> : <>{Ic.chk(C.w, 14)} Guardar ticket</>}
             </button>
           </div>
@@ -289,7 +289,7 @@ export function WeighTicketSummary({ tickets, label }) {
     <div style={{ marginTop: 8 }}>
       {label && <div style={{ fontSize: 10.4, fontWeight: 700, color: C.t3, textTransform: "uppercase", letterSpacing: 0.4, marginBottom: 4 }}>{label}</div>}
       {tickets.map(t => (
-        <div key={t.id} style={{ padding: "8px 12px", borderRadius: 8, background: C.bg, border: `1px solid ${C.b1}`, marginBottom: 4, display: "flex", flexWrap: "wrap", gap: "4px 12px", alignItems: "center" }}>
+        <div key={t.id} style={{ padding: "8px 12px", borderRadius: R.md, background: C.bg, border: `1px solid ${C.b1}`, marginBottom: 4, display: "flex", flexWrap: "wrap", gap: "4px 12px", alignItems: "center" }}>
           {t.ticketNumber && <span style={{ fontSize: 12.7, fontWeight: 700, color: C.t1, fontFamily: MONO }}>#{t.ticketNumber}</span>}
           {t.grossWeight != null && <span style={{ fontSize: 11.5, color: C.t2 }}>Bruto: <strong style={{ fontFamily: MONO }}>{Number(t.grossWeight).toLocaleString()}</strong></span>}
           {t.tareWeight != null && <span style={{ fontSize: 11.5, color: C.t2 }}>Tara: <strong style={{ fontFamily: MONO }}>{Number(t.tareWeight).toLocaleString()}</strong></span>}

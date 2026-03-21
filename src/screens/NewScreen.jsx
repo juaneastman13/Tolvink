@@ -10,6 +10,7 @@ const SafeZone = lazy(() => import("../maps").then(m => ({ default: m.SafeZone }
 const FreightMap = lazy(() => import("../maps").then(m => ({ default: m.FreightMap })));
 import { uploadPhoto, apiAddDocument, apiGetFieldLots, apiCreateLot, apiGetDrivers, apiGetCompanyAccess, apiGetFields, apiGetTrucks, apiListDrivers, apiCreateField, apiCreateTruck, apiCreateLinkedCompany, apiCreateLinkedUser } from "../api";
 import { useIsDesktop } from "../hooks";
+import { useAccessLevel } from "../hooks/useAccessLevel";
 import { useUIStore } from "../store";
 
 // ======================== SUMMARY CARD ==============================
@@ -141,6 +142,7 @@ function NextStepBtn({ complete, onClick, label, onPrev }) {
 export default function NewScreen({ user, lots, plants, branches, fields, trucks, freights, onBack, onCreate, duplicateFrom }) {
   const dup = duplicateFrom;
   const _isDesktop = useIsDesktop(768);
+  const { isConsulta } = useAccessLevel(user);
   const [searchParams] = useSearchParams();
   const preFieldId = searchParams.get("originFieldId") || "";
   const preLotId = searchParams.get("originLotId") || "";

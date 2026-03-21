@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { createPortal } from "react-dom";
-import { C, FONT } from "../../theme";
+import { C, FONT, R } from "../../theme";
 
 export default function RowMenu({ id, items }) {
   const [open, setOpen] = useState(false);
@@ -68,7 +68,7 @@ export default function RowMenu({ id, items }) {
         ref={btnRef}
         onClick={handleOpen}
         style={{
-          height: 32, borderRadius: 8, padding: "0 10px",
+          height: 32, borderRadius: R.md, padding: "0 10px",
           background: open ? C.bgCard : "transparent",
           border: "none", cursor: "pointer",
           display: "flex", alignItems: "center", justifyContent: "center", gap: 4,
