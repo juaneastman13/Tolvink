@@ -257,9 +257,9 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
       const companyName = newProducerCompany.trim() || name;
       const res = await apiCreateLinkedCompany({ name: companyName, type: "PRODUCER", phone: phoneCleaned, accessLevel: "READONLY" });
       const newId = res?.company?.id || res?.companyAccess?.granteeCompanyId || res?.id;
-      // Create user inside the new company
+      // Create or link user inside the new company
       if (newId) {
-        try { await apiCreateLinkedUser({ targetCompanyId: newId, name, phone: phoneCleaned }); } catch {}
+        try { await apiCreateLinkedUser({ targetCompanyId: newId, name, phone: phoneCleaned }); } catch (ue) { console.warn("createLinkedUser:", ue.message); }
       }
       const newRecord = { granteeCompanyId: newId, granteeCompany: { id: newId, name: companyName }, accessLevel: "READONLY", isActive: true };
       setLinkedProducers(prev => [...prev, newRecord]);
