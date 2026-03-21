@@ -1,14 +1,15 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { C, Ic, FONT, MONO, R, STATUS_COLORS } from "../theme";
+import { FreightCard, StatusPill } from "../components/FreightCard";
+import { Loader, EmptyState } from "../components";
 import { apiResolveSharedLink } from "../api";
 
 // =====================================================================
 // TOLVINK — SharedLinkScreen (Public)
-// Professional public view for shared freight tracking, tickets, portals.
-// Matches HomeScreen visual design with branded header.
+// Visually identical to the authenticated app, reusing real components.
 // =====================================================================
 
-// Decode Google Maps encoded polyline
+// ---------- Polyline decode ----------
 function decodePolyline(encoded) {
   const points = [];
   let index = 0, lat = 0, lng = 0;
@@ -24,6 +25,7 @@ function decodePolyline(encoded) {
   return points;
 }
 
+// ---------- Date formatters ----------
 function fmtDate(d) {
   if (!d) return "";
   const dt = new Date(d);
@@ -46,7 +48,8 @@ function timeSince(d) {
   return `hace ${Math.floor(s / 3600)}h`;
 }
 
-// Shared card wrapper
+// ---------- Shared layout components ----------
+
 function Card({ children, style }) {
   return (
     <div style={{ background: C.w, borderRadius: R.lg, padding: 18, marginBottom: 12, border: `1px solid ${C.b2}`, boxShadow: C.sh, ...style }}>
@@ -64,16 +67,21 @@ function SectionLabel({ icon, label }) {
   );
 }
 
-function StatusBadge({ status }) {
-  const sc = STATUS_COLORS[status] || { pillBg: C.bg, pillText: C.t3, label: status, pulse: false };
+function InfoCell({ label, value, bold, mono }) {
   return (
-    <span style={{
-      display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 14px",
-      borderRadius: R.pill, background: sc.pillBg, fontSize: 13, fontWeight: 700, color: sc.pillText,
-    }}>
-      {sc.pulse && <span style={{ width: 7, height: 7, borderRadius: "50%", background: sc.pillText, animation: "tolvinkPulse 1.5s infinite" }} />}
-      {sc.label}
-    </span>
+    <div style={{ padding: "6px 10px", borderRadius: R.md, background: C.bg }}>
+      <div style={{ fontSize: 10.5, fontWeight: 700, color: C.t3, textTransform: "uppercase", letterSpacing: 0.3, marginBottom: 1 }}>{label}</div>
+      <div style={{ fontSize: 13, fontWeight: bold ? 700 : 500, color: C.t1, fontFamily: mono ? MONO : "inherit" }}>{value || "—"}</div>
+    </div>
+  );
+}
+
+function WeightCell({ label, value, highlight }) {
+  return (
+    <div style={{ textAlign: "center", padding: "10px 6px", borderRadius: R.md, background: highlight ? C.priPale : C.bg }}>
+      <div style={{ fontSize: 10.5, fontWeight: 700, color: C.t3, textTransform: "uppercase", letterSpacing: 0.3, marginBottom: 2 }}>{label}</div>
+      <div style={{ fontSize: 16, fontWeight: 700, color: highlight ? C.pri : C.t1 }}>{value}</div>
+    </div>
   );
 }
 
@@ -90,7 +98,18 @@ function MetricCard({ value, label, color, icon }) {
   );
 }
 
+function FilterPill({ active, onClick, label, color }) {
+  return (
+    <button onClick={onClick} style={{
+      padding: "5px 12px", borderRadius: R.pill, border: active ? `2px solid ${color || C.pri}` : `1px solid ${C.b2}`,
+      background: active ? `${color || C.pri}12` : C.w, cursor: "pointer", fontFamily: "inherit",
+      fontSize: 11.5, fontWeight: 600, color: active ? (color || C.pri) : C.t3,
+    }}>{label}</button>
+  );
+}
+
 // ======================== STATUS TIMELINE =============================
+// Identical to DetailScreen audit timeline visual pattern
 
 const STATUS_STEPS = [
   { key: "pending_assignment", label: "Solicitado", icon: (c) => Ic.clk(c, 14) },
@@ -208,7 +227,7 @@ function FreightMap({ freight }) {
     script.onload = init;
     script.onerror = () => setMapError(true);
     document.head.appendChild(script);
-  }, [visible]);
+  }, [visible]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (mapError) {
     return (
@@ -243,6 +262,7 @@ function FreightMap({ freight }) {
 }
 
 // ======================== FREIGHT VIEW ===============================
+// Mirrors DetailScreen: StatusPill hero, route card, map, info grid, timeline
 
 function FreightView({ data, creatorName, lastRefresh }) {
   const f = data;
@@ -255,13 +275,16 @@ function FreightView({ data, creatorName, lastRefresh }) {
 
   return (
     <div>
-      {/* Hero status */}
-      <Card style={{ textAlign: "center", borderLeft: `4px solid ${sc.ribbon || C.t3}`, padding: 24 }}>
-        <StatusBadge status={f.status} />
-        <div style={{ fontSize: 24, fontWeight: 800, color: C.t1, marginTop: 14, letterSpacing: -0.5 }}>
+      {/* Hero — identical to DetailScreen header */}
+      <Card style={{ borderLeft: `4px solid ${sc.ribbon || C.t3}`, padding: "20px 18px" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+          <StatusPill status={f.status} />
+          <span style={{ fontFamily: MONO, fontSize: 13, color: C.t3 }}>{f.code}</span>
+        </div>
+        <div style={{ fontSize: 22, fontWeight: 800, color: C.t1, letterSpacing: -0.5 }}>
           {grain} · {tons} tn
         </div>
-        <div style={{ fontFamily: MONO, fontSize: 14, color: C.t3, marginTop: 4 }}>{f.code}</div>
+        {f.loadDate && <div style={{ fontSize: 12, color: C.t3, marginTop: 4 }}>{fmtDateShort(f.loadDate)}</div>}
         {!isTerminal && lastRefresh && (
           <div style={{ fontSize: 11, color: C.t3, marginTop: 8, fontStyle: "italic" }}>
             Actualizado {timeSince(lastRefresh)}
@@ -269,7 +292,7 @@ function FreightView({ data, creatorName, lastRefresh }) {
         )}
       </Card>
 
-      {/* Origin → Destination */}
+      {/* Origin → Destination route */}
       <Card>
         <SectionLabel icon={Ic.pin(C.pri, 14)} label="Ruta" />
         <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
@@ -294,16 +317,37 @@ function FreightView({ data, creatorName, lastRefresh }) {
       {/* Map */}
       <FreightMap freight={f} />
 
-      {/* Info grid */}
+      {/* Truck / Assignment — mirrors DetailScreen truck cards */}
+      {assignment && (
+        <Card style={{ borderLeft: `3px solid ${sc.ribbon || C.info}` }}>
+          <SectionLabel icon={Ic.truck(C.info, 14)} label="Transporte" />
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <div style={{ width: 36, height: 36, borderRadius: "50%", background: sc.ribbon ? `${sc.ribbon}18` : C.bg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              {Ic.truck(sc.ribbon || C.info, 18)}
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                {assignment.plate && <span style={{ fontSize: 15, fontWeight: 700, color: C.t1 }}>{assignment.plate}</span>}
+                {assignment.driverName && <span style={{ fontSize: 13, color: C.t2 }}>{assignment.driverName}</span>}
+              </div>
+              {assignment.transportCompany?.name && (
+                <div style={{ fontSize: 12, color: C.t3, marginTop: 2 }}>{assignment.transportCompany.name}</div>
+              )}
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {/* Info grid — identical pattern to DetailScreen */}
       <Card>
         <SectionLabel icon={Ic.doc(C.pri, 14)} label="Información" />
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
           <InfoCell label="Producto" value={grain} />
           <InfoCell label="Toneladas" value={`${tons} tn`} bold />
-          {assignment && <InfoCell label="Transporte" value={assignment.transportCompany?.name || "—"} />}
-          {assignment?.plate && <InfoCell label="Patente" value={assignment.plate} mono />}
-          {assignment?.driverName && <InfoCell label="Chofer" value={assignment.driverName} />}
+          {f.originCompany?.name && <InfoCell label="Empresa" value={f.originCompany.name} />}
+          {f.field?.name && <InfoCell label="Campo" value={f.field.name} />}
           <InfoCell label="Creado" value={fmtDateShort(f.createdAt)} />
+          {f.loadDate && <InfoCell label="Fecha carga" value={fmtDateShort(f.loadDate)} />}
         </div>
       </Card>
 
@@ -317,15 +361,20 @@ function FreightView({ data, creatorName, lastRefresh }) {
 }
 
 // ======================== TICKET VIEW ================================
+// Mirrors DocumentsScreen layout for weigh ticket display
 
 function TicketView({ data, creatorName }) {
   if (!data) return null;
-  const freightSc = data.freight ? (STATUS_COLORS[data.freight.status] || {}) : {};
+  const [photoExpanded, setPhotoExpanded] = useState(false);
+
   return (
     <div>
+      {/* Header card */}
       <Card style={{ textAlign: "center", padding: 24 }}>
         <div style={{ display: "flex", justifyContent: "center", marginBottom: 16 }}>
-          {Ic.doc(C.pri, 28)}
+          <div style={{ width: 48, height: 48, borderRadius: "50%", background: C.priPale, display: "flex", alignItems: "center", justifyContent: "center" }}>
+            {Ic.doc(C.pri, 24)}
+          </div>
         </div>
         <div style={{ fontSize: 22, fontWeight: 800, color: C.t1, marginBottom: 4 }}>Comprobante de Pesaje</div>
         {data.ticketNumber && <div style={{ fontFamily: MONO, fontSize: 14, color: C.t3 }}>#{data.ticketNumber}</div>}
@@ -348,10 +397,25 @@ function TicketView({ data, creatorName }) {
         )}
       </Card>
 
-      {/* Photo */}
+      {/* Photo — expandable */}
       {data.photoUrl && (
-        <Card style={{ padding: 0, overflow: "hidden" }}>
-          <img src={data.photoUrl} alt="Ticket" style={{ width: "100%", maxHeight: 400, objectFit: "contain", background: C.bg }} />
+        <Card style={{ padding: 0, overflow: "hidden", cursor: "pointer" }} onClick={() => setPhotoExpanded(!photoExpanded)}>
+          <img
+            src={data.photoUrl}
+            alt="Ticket de pesaje"
+            style={{
+              width: "100%",
+              maxHeight: photoExpanded ? "none" : 300,
+              objectFit: photoExpanded ? "contain" : "cover",
+              background: C.bg,
+              transition: "max-height 0.3s",
+            }}
+          />
+          {!photoExpanded && (
+            <div style={{ padding: "8px 14px", fontSize: 11, color: C.t3, textAlign: "center", borderTop: `1px solid ${C.b2}` }}>
+              {Ic.expand(C.t3, 12)} Tocar para ampliar
+            </div>
+          )}
         </Card>
       )}
 
@@ -371,21 +435,19 @@ function TicketView({ data, creatorName }) {
         );
       })()}
 
-      {/* Linked freight */}
+      {/* Linked freight — uses real FreightCard */}
       {data.freight && (
-        <Card style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          {Ic.truck(freightSc.ribbon || C.t3, 18)}
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 14, fontWeight: 700, color: C.t1 }}>{data.freight.code}</div>
-            <StatusBadge status={data.freight.status} />
-          </div>
-        </Card>
+        <div style={{ marginTop: 4 }}>
+          <SectionLabel icon={Ic.truck(C.pri, 14)} label="Flete asociado" />
+          <FreightCard freight={mapApiFreightToCard(data.freight)} />
+        </div>
       )}
     </div>
   );
 }
 
 // ======================== PORTAL VIEW ================================
+// Mirrors HomeScreen metrics + ListScreen freight cards
 
 function PortalView({ data, creatorName, targetName }) {
   if (!data) return null;
@@ -406,62 +468,57 @@ function PortalView({ data, creatorName, targetName }) {
 
   return (
     <div>
-      {/* Metrics */}
+      {/* Metric cards — identical to HomeScreen */}
       <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 14 }}>
-        <MetricCard value={data.totalFreights || 0} label="Fletes totales" color={C.pri} />
-        <MetricCard value={data.activeFreights || 0} label="Activos" color={C.acc} />
-        <MetricCard value={data.totalTons != null ? `${Number(data.totalTons).toLocaleString("es-UY")}` : "—"} label="Toneladas" color={C.sec} />
+        <MetricCard value={data.totalFreights || 0} label="Fletes totales" color={C.pri} icon={Ic.truck(C.pri, 22)} />
+        <MetricCard value={data.activeFreights || 0} label="Activos" color={C.acc} icon={Ic.nav(C.acc, 22)} />
+        <MetricCard value={data.totalTons != null ? `${Number(data.totalTons).toLocaleString("es-UY")}` : "—"} label="Toneladas" color={C.sec} icon={Ic.grain(C.sec, 22)} />
       </div>
       {data.lastFreightAt && (
-        <div style={{ fontSize: 12, color: C.t3, textAlign: "center", marginBottom: 16 }}>Último flete: {fmtDate(data.lastFreightAt)}</div>
-      )}
-
-      {/* Status filter pills */}
-      {statusOptions.length > 1 && (
-        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 14 }}>
-          <FilterPill active={statusFilter === "all"} onClick={() => setStatusFilter("all")} label={`Todos (${freights.length})`} />
-          {statusOptions.map(o => <FilterPill key={o.key} active={statusFilter === o.key} onClick={() => setStatusFilter(o.key)} label={`${o.label} (${o.count})`} color={STATUS_COLORS[o.key]?.ribbon} />)}
+        <div style={{ fontSize: 12, color: C.t3, textAlign: "center", marginBottom: 16 }}>
+          Último flete: {fmtDate(data.lastFreightAt)}
         </div>
       )}
 
-      {/* Freight list */}
+      {/* Status filter pills — same as ListScreen */}
+      {statusOptions.length > 1 && (
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 14 }}>
+          <FilterPill active={statusFilter === "all"} onClick={() => setStatusFilter("all")} label={`Todos (${freights.length})`} />
+          {statusOptions.map(o => (
+            <FilterPill key={o.key} active={statusFilter === o.key} onClick={() => setStatusFilter(o.key)} label={`${o.label} (${o.count})`} color={STATUS_COLORS[o.key]?.ribbon} />
+          ))}
+        </div>
+      )}
+
+      {/* Freight list — uses real FreightCard */}
       {filteredFreights.length === 0 ? (
-        <Card style={{ textAlign: "center", padding: 32 }}>
-          <div style={{ fontSize: 14, color: C.t3 }}>Sin fletes{statusFilter !== "all" ? " en este estado" : ""}</div>
-        </Card>
+        <EmptyState
+          icon={Ic.truck(C.t3, 28)}
+          title={`Sin fletes${statusFilter !== "all" ? " en este estado" : ""}`}
+          subtitle="No hay fletes para mostrar"
+        />
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {filteredFreights.map(f => {
-            const sc = STATUS_COLORS[f.status] || {};
+            const cardF = mapApiFreightToCard(f);
             const isExp = expandedId === f.id;
+            const assignment = f.assignments?.[0];
             const grain = f.items?.[0]?.grain || f.grainType || "";
             const tons = f.items?.[0]?.tons || f.tonnage || "";
-            const assignment = f.assignments?.[0];
             return (
-              <div key={f.id} onClick={() => setExpandedId(isExp ? null : f.id)} style={{
-                background: C.w, borderRadius: R.lg, border: `1px solid ${C.b2}`, borderLeft: `4px solid ${sc.ribbon || C.t3}`,
-                boxShadow: C.sh, cursor: "pointer", overflow: "hidden", transition: "box-shadow 0.15s",
-              }}>
-                <div style={{ padding: "14px 16px", display: "flex", alignItems: "center", gap: 10 }}>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                      <span style={{ fontFamily: MONO, fontSize: 13, fontWeight: 700, color: C.t1 }}>{f.code}</span>
-                      <StatusBadge status={f.status} />
-                    </div>
-                    <div style={{ fontSize: 12.5, color: C.t2, marginTop: 3 }}>
-                      {f.originName || "—"} → {f.destName || "—"}
-                    </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 3 }}>
-                      {grain && <span style={{ fontSize: 11.5, color: C.t3, fontWeight: 600 }}>{grain}</span>}
-                      {tons && <span style={{ fontSize: 11.5, color: C.t3 }}>· {tons} tn</span>}
-                      <span style={{ fontSize: 11, color: C.t3 }}>{fmtDateShort(f.loadDate || f.createdAt)}</span>
-                    </div>
-                  </div>
-                  <span style={{ display: "flex", transform: isExp ? "rotate(90deg)" : "rotate(-90deg)", transition: "transform 0.15s" }}>{Ic.chev(C.t3, 16)}</span>
-                </div>
+              <div key={f.id}>
+                <FreightCard
+                  freight={cardF}
+                  onClick={() => setExpandedId(isExp ? null : f.id)}
+                  style={{ borderRadius: isExp ? `${R.sm}px ${R.sm}px 0 0` : undefined }}
+                />
                 {isExp && (
-                  <div style={{ padding: "0 16px 16px", borderTop: `1px solid ${C.b2}` }}>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 12 }}>
+                  <div style={{
+                    background: C.w, borderRadius: `0 0 ${R.sm}px ${R.sm}px`,
+                    border: `0.5px solid ${C.b1}`, borderTop: `1px solid ${C.b2}`,
+                    padding: "12px 16px",
+                  }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
                       {grain && <InfoCell label="Producto" value={grain} />}
                       {tons && <InfoCell label="Toneladas" value={`${tons} tn`} bold />}
                       {assignment?.transportCompany?.name && <InfoCell label="Transporte" value={assignment.transportCompany.name} />}
@@ -480,36 +537,6 @@ function PortalView({ data, creatorName, targetName }) {
   );
 }
 
-// ======================== SMALL COMPONENTS ===========================
-
-function InfoCell({ label, value, bold, mono }) {
-  return (
-    <div style={{ padding: "6px 10px", borderRadius: R.md, background: C.bg }}>
-      <div style={{ fontSize: 10.5, fontWeight: 700, color: C.t3, textTransform: "uppercase", letterSpacing: 0.3, marginBottom: 1 }}>{label}</div>
-      <div style={{ fontSize: 13, fontWeight: bold ? 700 : 500, color: C.t1, fontFamily: mono ? MONO : "inherit" }}>{value || "—"}</div>
-    </div>
-  );
-}
-
-function WeightCell({ label, value, highlight }) {
-  return (
-    <div style={{ textAlign: "center", padding: "10px 6px", borderRadius: R.md, background: highlight ? C.priPale : C.bg }}>
-      <div style={{ fontSize: 10.5, fontWeight: 700, color: C.t3, textTransform: "uppercase", letterSpacing: 0.3, marginBottom: 2 }}>{label}</div>
-      <div style={{ fontSize: 16, fontWeight: 700, color: highlight ? C.pri : C.t1 }}>{value}</div>
-    </div>
-  );
-}
-
-function FilterPill({ active, onClick, label, color }) {
-  return (
-    <button onClick={onClick} style={{
-      padding: "5px 12px", borderRadius: R.pill, border: active ? `2px solid ${color || C.pri}` : `1px solid ${C.b2}`,
-      background: active ? `${color || C.pri}12` : C.w, cursor: "pointer", fontFamily: "inherit",
-      fontSize: 11.5, fontWeight: 600, color: active ? (color || C.pri) : C.t3,
-    }}>{label}</button>
-  );
-}
-
 // ======================== ERROR VIEW =================================
 
 function ErrorView({ error }) {
@@ -517,9 +544,9 @@ function ErrorView({ error }) {
     <div style={{ textAlign: "center", padding: "60px 20px" }}>
       <div style={{ width: 64, height: 64, borderRadius: "50%", background: C.errPale, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px" }}>
         <svg width={28} height={28} viewBox="0 0 24 24" fill="none" stroke={C.err} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
-          <path d="M13.828 10.172a4 4 0 0 0-5.656 0" />
-          <path d="M6 18L18 6" />
+          <circle cx="12" cy="12" r="10" />
+          <line x1="15" y1="9" x2="9" y2="15" />
+          <line x1="9" y1="9" x2="15" y2="15" />
         </svg>
       </div>
       <div style={{ fontSize: 20, fontWeight: 800, color: C.t1, marginBottom: 8 }}>Este link ya no está disponible</div>
@@ -533,7 +560,7 @@ function ErrorView({ error }) {
       <a href="https://tolvink.com" style={{
         display: "inline-flex", alignItems: "center", gap: 6, padding: "10px 24px",
         borderRadius: R.lg, background: C.pri, color: "#fff", textDecoration: "none",
-        fontFamily: "inherit", fontSize: 14, fontWeight: 700,
+        fontFamily: "inherit", fontSize: 14, fontWeight: 700, transition: "opacity 0.15s",
       }}>
         Ir a Tolvink {Ic.nav("#fff", 14)}
       </a>
@@ -541,7 +568,8 @@ function ErrorView({ error }) {
   );
 }
 
-// ======================== HEADER =====================================
+// ======================== PUBLIC HEADER ===============================
+// Identical to app header: same height (56px), logo, background, shadow
 
 function PublicHeader({ data }) {
   const subtitle = data
@@ -556,17 +584,17 @@ function PublicHeader({ data }) {
       height: 56, display: "flex", alignItems: "center", gap: 12, boxShadow: C.sh,
       position: "sticky", top: 0, zIndex: 100,
     }}>
-      {/* Logo */}
-      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+      {/* Logo — identical to Sidebar */}
+      <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
         {Ic.seedling(C.pri, 26)}
         <span style={{ fontSize: 22, fontWeight: 800, color: C.pri, letterSpacing: -0.8 }}>tolvink</span>
       </div>
 
       {/* Separator */}
-      <div style={{ width: 1, height: 24, background: C.b2 }} />
+      {data?.creatorCompanyName && <div style={{ width: 1, height: 24, background: C.b2, flexShrink: 0 }} />}
 
-      {/* Plant name + subtitle */}
-      <div style={{ flex: 1, minWidth: 0 }}>
+      {/* Company name + subtitle */}
+      <div style={{ flex: 1, minWidth: 0, overflow: "hidden" }}>
         {data?.creatorCompanyName && (
           <div style={{ fontSize: 13.5, fontWeight: 700, color: C.t1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {data.creatorCompanyName}
@@ -577,8 +605,8 @@ function PublicHeader({ data }) {
         )}
       </div>
 
-      {/* Badge */}
-      <div style={{
+      {/* Badge — same style as app badges */}
+      <div className="tv-shared-badge" style={{
         display: "flex", alignItems: "center", gap: 4, padding: "4px 10px",
         borderRadius: R.md, background: C.priPale, flexShrink: 0,
       }}>
@@ -589,7 +617,7 @@ function PublicHeader({ data }) {
   );
 }
 
-// ======================== FOOTER =====================================
+// ======================== PUBLIC FOOTER ==============================
 
 function PublicFooter({ creatorName }) {
   return (
@@ -611,10 +639,42 @@ function PublicFooter({ creatorName }) {
         display: "inline-flex", alignItems: "center", gap: 4,
       }}>
         ¿Querés gestionar tu logística? Conocé Tolvink
-        <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke={C.pri} strokeWidth="2.5" strokeLinecap="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke={C.pri} strokeWidth="2.5" strokeLinecap="round"><line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" /></svg>
       </a>
     </div>
   );
+}
+
+// ======================== HELPERS ====================================
+
+// Map API freight shape (from shared-links backend) to FreightCard expected shape
+function mapApiFreightToCard(f) {
+  const assignment = f.assignments?.[0];
+  const grain = f.items?.[0]?.grain || f.grainType || "Producto";
+  const tons = f.items?.[0]?.tons || f.tonnage || 0;
+  return {
+    id: f.id,
+    code: f.code || "",
+    status: f.status || "pending_assignment",
+    grain,
+    tons,
+    unit: f.unit || "toneladas",
+    originCompanyName: f.originCompany?.name || f.originName || "",
+    originFieldName: f.field?.name,
+    originBranchName: f.originBranch?.name,
+    destPlantId: f.destPlant?.id || f.destPlantId,
+    destPlantName: f.destPlant?.name,
+    destBranchName: f.destBranch?.name,
+    destLat: f.destLat,
+    destLng: f.destLng,
+    destName: f.destName,
+    transporterName: assignment?.transportCompany?.name || "Sin asignar",
+    truckPlate: assignment?.plate,
+    driverName: assignment?.driverName,
+    loadDate: f.loadDate,
+    loadTime: f.loadTime,
+    producerCompanyName: f.producerCompany?.name,
+  };
 }
 
 // ======================== MAIN COMPONENT =============================
@@ -637,6 +697,7 @@ export default function SharedLinkScreen({ token }) {
       el.setAttribute("content", content);
     };
     setMeta("robots", "noindex, nofollow");
+    setMeta("og:image", "/icon-192.png");
 
     const load = async () => {
       try {
@@ -670,10 +731,17 @@ export default function SharedLinkScreen({ token }) {
     };
     load();
 
-    // Auto-refresh every 30s for non-terminal states
+    // Auto-refresh every 30s (cleared if terminal)
     refreshRef.current = setInterval(() => {
+      if (document.hidden) return;
       apiResolveSharedLink(token).then(r => {
-        if (mounted && r.valid) { setData(r); setLastRefresh(new Date()); }
+        if (!mounted || !r.valid) return;
+        setData(r);
+        setLastRefresh(new Date());
+        // Stop polling if terminal
+        if (r.linkType === "FREIGHT" && ["finished", "canceled"].includes(r.data?.status)) {
+          clearInterval(refreshRef.current);
+        }
       }).catch(() => {});
     }, 30000);
 
@@ -682,17 +750,27 @@ export default function SharedLinkScreen({ token }) {
 
   return (
     <div style={{ minHeight: "100dvh", background: C.bg, fontFamily: FONT, display: "flex", flexDirection: "column" }}>
-      <style>{`@keyframes tolvinkPulse{0%,100%{opacity:1}50%{opacity:.3}} @keyframes spin{to{transform:rotate(360deg)}}`}</style>
+      <style>{`
+        @keyframes tolvinkPulse{0%,100%{opacity:1}50%{opacity:.3}}
+        @keyframes spin{to{transform:rotate(360deg)}}
+        .tv-card:hover{box-shadow:0 2px 8px rgba(0,0,0,0.08)}
+        @media print{
+          .tv-shared-badge{display:none!important}
+          body{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+        }
+        @media(max-width:480px){
+          .tv-shared-badge span{display:none}
+        }
+      `}</style>
 
-      {/* Header */}
+      {/* Header — identical to app header */}
       <PublicHeader data={data} />
 
       {/* Content */}
       <div style={{ flex: 1, maxWidth: 600, width: "100%", margin: "0 auto", padding: "20px 16px 0" }}>
         {loading && (
-          <div style={{ textAlign: "center", padding: 80 }}>
-            <div style={{ width: 36, height: 36, border: `3px solid ${C.b2}`, borderTopColor: C.pri, borderRadius: "50%", animation: "spin 0.8s linear infinite", margin: "0 auto 16px" }} />
-            <div style={{ fontSize: 14, color: C.t3, fontWeight: 500 }}>Cargando...</div>
+          <div style={{ padding: "60px 0" }}>
+            <Loader />
           </div>
         )}
 
