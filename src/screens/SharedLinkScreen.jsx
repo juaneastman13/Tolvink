@@ -663,16 +663,15 @@ function PublicFooter({ creatorName }) {
         </div>
       )}
       <a href="https://tolvink.com" style={{
-        fontSize: 12.5, color: C.pri, textDecoration: "none", fontWeight: 600,
-        display: "inline-flex", alignItems: "center", gap: 4, marginBottom: 14,
+        fontSize: 12.5, color: C.t3, textDecoration: "none", fontWeight: 500,
+        display: "inline-flex", alignItems: "baseline", gap: 5,
       }}>
-        ¿Querés gestionar tu logística? Conocé tolvink
-        <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke={C.pri} strokeWidth="2.5" strokeLinecap="round"><line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" /></svg>
+        <span>¿Querés gestionar tu logística? Conocé</span>
+        <span style={{ display: "inline-flex", alignItems: "flex-start" }}>
+          <span style={{ fontSize: 18, fontWeight: 800, color: C.pri, letterSpacing: -0.7, lineHeight: 1 }}>tolvink</span>
+          <span style={{ width: 5, height: 5, borderRadius: 3, background: C.acc, display: "inline-block", marginLeft: 1.5, marginTop: 1, animation: "dotPulse 1.5s ease-in-out infinite" }} />
+        </span>
       </a>
-      <div style={{ display: "inline-flex", alignItems: "flex-start", justifyContent: "center" }}>
-        <span style={{ fontSize: 20, fontWeight: 800, color: C.pri, letterSpacing: -0.8, lineHeight: 1 }}>tolvink</span>
-        <span style={{ width: 5.5, height: 5.5, borderRadius: 3, background: C.acc, display: "inline-block", marginLeft: 1.5, marginTop: 1.5, animation: "dotPulse 1.5s ease-in-out infinite" }} />
-      </div>
     </div>
   );
 }
