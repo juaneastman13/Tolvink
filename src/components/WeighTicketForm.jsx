@@ -46,6 +46,7 @@ export default function WeighTicketForm({ freightId, type = "destination", onCre
   const [fields, setFields] = useState({});
   const [ticketId, setTicketId] = useState(null);
   const inputRef = useRef(null);
+  const galleryRef = useRef(null);
   const show = useUIStore(s => s.show);
 
   const setField = (k, v) => setFields(prev => {
@@ -199,6 +200,7 @@ export default function WeighTicketForm({ freightId, type = "destination", onCre
       </div>
 
       <input ref={inputRef} type="file" accept="image/*" capture="environment" onChange={handlePhoto} style={{ display: "none" }} />
+      <input ref={galleryRef} type="file" accept="image/*" onChange={handlePhoto} style={{ display: "none" }} />
 
       {/* Photo preview */}
       {showPhotoSection && (
@@ -219,11 +221,18 @@ export default function WeighTicketForm({ freightId, type = "destination", onCre
               )}
             </div>
           ) : (
-            <button onClick={() => inputRef.current?.click()} disabled={uploading}
-              style={{ width: "100%", padding: "16px 14px", borderRadius: R.md, border: `1.5px dashed ${C.acc}60`, background: `${C.acc}08`, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-              {Ic.cam(C.acc, 20)}
-              <span style={{ fontSize: 13.2, fontWeight: 600, color: C.acc }}>Tomar foto del ticket</span>
-            </button>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button onClick={() => inputRef.current?.click()} disabled={uploading}
+                style={{ flex: 1, padding: "14px 10px", borderRadius: R.md, border: `1.5px dashed ${C.acc}60`, background: `${C.acc}08`, cursor: "pointer", fontFamily: "inherit", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                {Ic.cam(C.acc, 22)}
+                <span style={{ fontSize: 12.7, fontWeight: 600, color: C.acc }}>Tomar foto</span>
+              </button>
+              <button onClick={() => galleryRef.current?.click()} disabled={uploading}
+                style={{ flex: 1, padding: "14px 10px", borderRadius: R.md, border: `1.5px dashed ${C.pri}60`, background: `${C.pri}08`, cursor: "pointer", fontFamily: "inherit", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                {Ic.img(C.pri, 22)}
+                <span style={{ fontSize: 12.7, fontWeight: 600, color: C.pri }}>Cargar foto</span>
+              </button>
+            </div>
           )}
         </div>
       )}
