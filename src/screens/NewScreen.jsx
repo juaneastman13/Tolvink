@@ -199,7 +199,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
   const u = f => setForm(p=>({...p,...f}));
 
   // Hub: producer selection (step 0 for manager users with linked producers)
-  const isPlantUser = ["admin","gerente","platform_admin"].includes(user?.role);
+  const isPlantUser = user?.userType === "plant";
   const [producerCompanyId, setProducerCompanyId] = useState("");
   const [linkedProducers, setLinkedProducers] = useState([]); // CompanyAccess records
   const [producerFields, setProducerFields] = useState(null); // null = not loaded, [] = loaded empty
