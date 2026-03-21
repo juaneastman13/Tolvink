@@ -83,12 +83,11 @@ function MetricCard({ value, label, color, icon }) {
     <div style={{
       flex: "1 1 140px", background: C.w, borderRadius: R.lg, padding: "14px 16px",
       border: `1px solid ${C.b2}`, boxShadow: C.sh, minWidth: 0,
+      display: "flex", alignItems: "center", gap: 8,
     }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-        {icon}
-        <span style={{ fontSize: 26, fontWeight: 800, color: color || C.pri, letterSpacing: -0.5 }}>{value}</span>
-      </div>
-      <div style={{ fontSize: 11.5, fontWeight: 600, color: C.t3 }}>{label}</div>
+      {icon}
+      <span style={{ fontSize: 26, fontWeight: 800, color: color || C.pri, letterSpacing: -0.5 }}>{value}</span>
+      <span style={{ fontSize: 12.5, fontWeight: 600, color: color || C.pri }}>{label}</span>
     </div>
   );
 }
