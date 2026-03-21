@@ -214,7 +214,9 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
   const _isDesktop = useIsDesktop(768);
 
   // Plant-centric: access level for current user + transporter CONSULTA detection
-  const { can, isConsulta } = useAccessLevel(user);
+  const { can, isConsulta: _isConsultaGlobal, isConsultaFor } = useAccessLevel(user);
+  // Per-freight CONSULTA: check against the freight's destination plant
+  const isConsulta = freight?.destCompanyId ? isConsultaFor(freight.destCompanyId) : _isConsultaGlobal;
   const isPlantUser = user?.userType === "plant";
   const [transporterAccessMap, setTransporterAccessMap] = useState({});
   useEffect(() => {

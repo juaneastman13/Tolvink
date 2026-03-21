@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { apiGetMyAccess } from "../api";
 
 // =====================================================================
@@ -53,10 +53,35 @@ export function useAccessLevel(user) {
       .finally(() => setLoading(false));
   }, [user, isPlant, user?.activeCompanyId]);
 
+  // Build access map: plantCompanyId → accessLevel
+  const accessMap = useMemo(() => {
+    const m = new Map();
+    if (accessData) {
+      for (const r of accessData) {
+        if (r.grantorCompanyId) m.set(r.grantorCompanyId, r.accessLevel);
+      }
+    }
+    return m;
+  }, [accessData]);
+
+  // Global isConsulta: true only if ALL access records are READONLY
+  const isConsulta = useMemo(() => {
+    if (isPlant) return false;
+    if (!accessData || accessData.length === 0) return false;
+    return accessData.every(r => r.accessLevel === 'READONLY');
+  }, [isPlant, accessData]);
+
+  // Per-plant access check: is the user CONSULTA for a specific plant?
+  const isConsultaFor = useCallback((plantCompanyId) => {
+    if (isPlant || !plantCompanyId) return false;
+    const level = accessMap.get(plantCompanyId);
+    if (!level) return false; // no relationship = not restricted
+    return level === 'READONLY';
+  }, [isPlant, accessMap]);
+
   // Resolve the accessLevel — pick first active record (typically one plant)
   const record = accessData?.[0] || null;
   const accessLevel = isPlant ? 'OPERATOR' : (record?.accessLevel || null);
-  const isConsulta = accessLevel === 'READONLY';
   const permissions = record?.permissions || {};
 
   const can = useCallback((action) => {
@@ -87,6 +112,7 @@ export function useAccessLevel(user) {
     can,
     isPlant,
     isConsulta,
+    isConsultaFor,
     loading,
     plantCompanyId,
     plantCompanyName,
