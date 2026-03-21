@@ -383,10 +383,7 @@ function FreightView({ data, creatorName, lastRefresh, isDesktop, onBack }) {
         )}
       </div>
 
-      {/* 2. Progress stepper — identical 3-node from DetailScreen */}
-      <ProgressStepper freight={f} auditLogs={f.auditLogs} />
-
-      {/* 3. Truck assignments — identical to DetailScreen "Camiones" section */}
+      {/* 2. Truck assignments — identical to DetailScreen "Camiones" section */}
       {assignments.length > 0 && f.status !== "canceled" && (
         <Card>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: assignments.length > 0 ? 12 : 0 }}>
@@ -439,6 +436,9 @@ function FreightView({ data, creatorName, lastRefresh, isDesktop, onBack }) {
           <div style={{ fontSize: 14.5, color: C.t1, lineHeight: 1.5, whiteSpace: "pre-wrap" }}>{f.notes}</div>
         </div>
       )}
+
+      {/* 6. Progress stepper — at the bottom */}
+      <ProgressStepper freight={f} auditLogs={f.auditLogs} />
     </div>
   );
 }
