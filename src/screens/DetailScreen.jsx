@@ -423,7 +423,13 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
                 {shareLink.copied ? "Copiado!" : "Copiar"}
               </button>
             </div>
-            <button onClick={()=>{ window.open(`https://wa.me/?text=${encodeURIComponent(`Seguimiento de flete ${freight.code}: ${shareLink.url}`)}`, "_blank"); }} style={{ display:"flex", alignItems:"center", gap:4, marginTop:6, background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", fontSize:11, fontWeight:600, color:"#25D366" }}>
+            <button onClick={()=>{
+              const msg = `Hola, te comparto el seguimiento de tu flete de ${freight.grain==="Otros"?freight.productTypeOther||"Otros":freight.grain} (${freight.code}): ${shareLink.url}`;
+              const raw = freight.producerCompanyPhone || freight.producerCompany?.phone || "";
+              const clean = raw.replace(/[\s\-\(\)]/g, "").replace(/^\+/, "");
+              const phone = clean.startsWith("0") ? "598" + clean.slice(1) : clean;
+              window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, "_blank");
+            }} style={{ display:"flex", alignItems:"center", gap:4, marginTop:6, background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", fontSize:11, fontWeight:600, color:"#25D366" }}>
               Enviar por WhatsApp
             </button>
           </div>
