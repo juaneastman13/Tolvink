@@ -200,9 +200,8 @@ function FreightMap({ freight, style }) {
 
   useEffect(() => {
     if (!visible || loaded) return;
-    const key = import.meta.env.VITE_GOOGLE_MAPS_PUBLIC_KEY || import.meta.env.VITE_GOOGLE_MAPS_KEY;
+    const key = import.meta.env.VITE_GMAPS_KEY || "";
     if (!key) { setMapError(true); return; }
-    const existing = document.getElementById("gm-shared");
     const init = () => {
       if (!window.google?.maps || !mapRef.current) return;
       const maps = window.google.maps;
@@ -224,10 +223,15 @@ function FreightMap({ freight, style }) {
       map.fitBounds(bounds, 40);
       setLoaded(true);
     };
-    if (existing) { init(); return; }
+    // Reuse Google Maps if already loaded (by app or previous render)
+    if (window.google?.maps) { init(); return; }
+    // Check for existing script tag
+    const existing = document.querySelector('script[src*="maps.googleapis.com"]');
+    if (existing) { existing.addEventListener("load", init); return; }
     const script = document.createElement("script");
-    script.id = "gm-shared";
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${key}`;
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${key}&libraries=geometry`;
+    script.async = true;
+    script.defer = true;
     script.onload = init;
     script.onerror = () => setMapError(true);
     document.head.appendChild(script);
