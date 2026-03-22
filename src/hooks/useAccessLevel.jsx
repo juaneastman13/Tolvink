@@ -74,10 +74,11 @@ export function useAccessLevel(user) {
   // Per-plant access check: is the user CONSULTA for a specific plant?
   const isConsultaFor = useCallback((plantCompanyId) => {
     if (isPlant || !plantCompanyId) return false;
+    if (!accessData) return true; // not loaded yet = restrictive default
     const level = accessMap.get(plantCompanyId);
-    if (!level) return false; // no relationship = not restricted
+    if (!level) return false; // no relationship with this plant = not restricted
     return level === 'READONLY';
-  }, [isPlant, accessMap]);
+  }, [isPlant, accessData, accessMap]);
 
   // Resolve the accessLevel — pick first active record (typically one plant)
   const record = accessData?.[0] || null;
