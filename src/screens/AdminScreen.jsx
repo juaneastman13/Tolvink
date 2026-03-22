@@ -158,7 +158,7 @@ export default function AdminScreen({ user, onBack }) {
     setDetailTab("branches"); setView("companyDetail");
     try { const b=await apiAdminListBranches(c.id); setBranches(b||[]); } catch(e) { /* silent */ }
     if(c.type==="producer") { try { const f=await apiAdminListFields(c.id); setFields(f||[]); } catch(e) { /* silent */ } }
-    if(c.type==="transporter" || c.hasInternalFleet) { try { const t=await apiAdminListTrucks(c.id); setTrucks(t||[]); } catch(e) { /* silent */ } }
+    if(c.type==="transporter" || c.type==="producer") { try { const t=await apiAdminListTrucks(c.id); setTrucks(t||[]); } catch(e) { /* silent */ } }
   };
   const openNewBranch = () => { setBranchForm({name:"",address:"",reference:"",lat:null,lng:null,locationAddress:""}); setEditBranchId(null); setShowBranchForm(true); };
   const openEditBranch = (b) => { setBranchForm({name:b.name,address:b.address||"",reference:b.reference||"",lat:b.lat?Number(b.lat):null,lng:b.lng?Number(b.lng):null,locationAddress:""}); setEditBranchId(b.id); setShowBranchForm(true); };
@@ -703,7 +703,7 @@ export default function AdminScreen({ user, onBack }) {
     const isTransporter = cType==="transporter";
     const tabs = [{k:"branches",l:"Sucursales",n:branches.length}];
     if(isProducer) tabs.push({k:"fields",l:"Campos",n:fields.length});
-    if(isTransporter || selectedCompany.hasInternalFleet) tabs.push({k:"trucks",l:"Flota",n:trucks.length});
+    if(isTransporter || isProducer) tabs.push({k:"trucks",l:"Flota",n:trucks.length});
     tabs.push({k:"access",l:"Accesos"});
     const curTab = tabs.find(t=>t.k===detailTab) ? detailTab : "branches";
 
@@ -847,8 +847,30 @@ export default function AdminScreen({ user, onBack }) {
           {fields.length===0&&!showFieldForm&&<div style={{textAlign:"center",padding:20,color:C.t3,fontSize:13.2}}>Sin campos</div>}
         </>)}
 
-        {/* ====== TAB: TRUCKS (Transporter / Producer with fleet) ====== */}
-        {curTab==="trucks"&&(isTransporter||selectedCompany.hasInternalFleet)&&(<>
+        {/* ====== TAB: TRUCKS (Transporter / Producer) ====== */}
+        {curTab==="trucks"&&(isTransporter||isProducer)&&(<>
+          {/* Producer without fleet: prompt to activate */}
+          {isProducer && !selectedCompany.hasInternalFleet ? (
+            <div style={{textAlign:"center",padding:32}}>
+              <div style={{fontSize:32,marginBottom:12,opacity:0.3}}>🚛</div>
+              <div style={{fontSize:15.4,fontWeight:700,color:C.t1,marginBottom:6}}>Esta empresa no tiene flota propia</div>
+              <div style={{fontSize:13.2,color:C.t3,marginBottom:16,lineHeight:1.5}}>Activá la flota propia para registrar camiones y choferes propios del productor.</div>
+              <button onClick={async()=>{
+                setSaving(true);
+                try {
+                  await apiAdminUpdateCompany(selectedCompany.id, {hasInternalFleet:true});
+                  setSelectedCompany(p=>({...p,hasInternalFleet:true}));
+                  // Also update in allCompanies
+                  setAllCompanies(prev=>prev.map(c=>c.id===selectedCompany.id?{...c,hasInternalFleet:true}:c));
+                  setCompanies(prev=>prev.map(c=>c.id===selectedCompany.id?{...c,hasInternalFleet:true}:c));
+                  show("Flota propia activada");
+                } catch(e) { show(e.message,"err"); }
+                finally { setSaving(false); }
+              }} disabled={saving} style={{padding:"10px 24px",borderRadius: R.md,border:"none",background:C.pri,color:"#fff",fontSize:14.3,fontWeight:700,cursor:"pointer",fontFamily:"inherit",opacity:saving?0.5:1}}>
+                {saving?"Activando...":"Activar flota propia"}
+              </button>
+            </div>
+          ) : (<>
           <div style={{display:"flex",justifyContent:"flex-end",marginBottom:8}}>
             <button onClick={()=>{showTruckForm?setShowTruckForm(false):openNewTruck();}} style={{padding:"6px 12px",borderRadius: R.sm,border:`1px solid ${typeColors.transporter}`,background:`${typeColors.transporter}12`,color:typeColors.transporter,fontSize:12.1,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>{showTruckForm&&!editTruckId?"Cancelar":"+ Nuevo vehículo"}</button>
           </div>
@@ -885,6 +907,7 @@ export default function AdminScreen({ user, onBack }) {
             </div>
           </div>))}
           {trucks.length===0&&!showTruckForm&&<div style={{textAlign:"center",padding:20,color:C.t3,fontSize:13.2}}>Sin vehículos</div>}
+          </>)}
         </>)}
 
         {/* ====== TAB: ACCESS ====== */}
