@@ -52,7 +52,7 @@ export const LicensePlate = memo(function LicensePlate({ plate, size = "sm" }) {
   const display = normalize(plate);
 
   return (
-    <span style={{ display: "inline-flex", flexDirection: "column", border: "2px solid #1a1a1a", borderRadius: 4, overflow: "hidden", boxShadow: "0 0 0 0.5px #000", verticalAlign: "middle", lineHeight: 1 }}>
+    <span style={{ display: "inline-flex", flexDirection: "column", border: "1px solid #1a1a1a", borderRadius: 4, overflow: "hidden", boxShadow: "0 0 0 0.25px #000", verticalAlign: "middle", lineHeight: 1, transform: "scaleY(0.9)", transformOrigin: "center" }}>
       <span style={{ background: "#003DA5", display: "flex", alignItems: "center", position: "relative", padding: s.hPad }}>
         <span style={{ width: "100%", textAlign: "center", color: "#fff", fontWeight: 700, fontSize: s.uFs, letterSpacing: s.uLs, fontFamily: FONT, lineHeight: 1.2 }}>URUGUAY</span>
         <span style={{ position: "absolute", right: s.fR, top: "50%", transform: "translateY(-50%)", display: "flex" }}>
