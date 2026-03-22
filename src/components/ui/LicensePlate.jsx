@@ -2,9 +2,9 @@ import { memo } from "react";
 import { FONT, MONO } from "../../theme";
 
 const SIZES = {
-  sm: { hPad: "1.5px 6px", uFs: 6, uLs: 1, fW: 10.7, fH: 7.65, fR: 4, bPad: "2px 6px 3px", pFs: 13, pLs: 1.5 },
-  md: { hPad: "2.5px 8px", uFs: 8, uLs: 1.5, fW: 13.8, fH: 9.2, fR: 6, bPad: "3px 10px 5px", pFs: 18, pLs: 2 },
-  lg: { hPad: "3px 10px", uFs: 10, uLs: 2, fW: 18.4, fH: 12.2, fR: 6, bPad: "6px 16px 8px", pFs: 28, pLs: 3 },
+  sm: { hPad: "1.5px 6px", uFs: 6, uLs: 1, fW: 9.1, fH: 6.5, fR: 4, bPad: "2px 6px 3px", pFs: 13, pLs: 1.5 },
+  md: { hPad: "2.5px 8px", uFs: 8, uLs: 1.5, fW: 11.7, fH: 7.8, fR: 6, bPad: "3px 10px 5px", pFs: 18, pLs: 2 },
+  lg: { hPad: "3px 10px", uFs: 10, uLs: 2, fW: 15.6, fH: 10.4, fR: 6, bPad: "6px 16px 8px", pFs: 28, pLs: 3 },
 };
 
 function normalize(plate) {
