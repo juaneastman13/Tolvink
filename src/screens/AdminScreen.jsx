@@ -158,7 +158,7 @@ export default function AdminScreen({ user, onBack }) {
     setDetailTab("branches"); setView("companyDetail");
     try { const b=await apiAdminListBranches(c.id); setBranches(b||[]); } catch(e) { /* silent */ }
     if(c.type==="producer") { try { const f=await apiAdminListFields(c.id); setFields(f||[]); } catch(e) { /* silent */ } }
-    if(c.type==="transporter") { try { const t=await apiAdminListTrucks(c.id); setTrucks(t||[]); } catch(e) { /* silent */ } }
+    if(c.type==="transporter" || c.hasInternalFleet) { try { const t=await apiAdminListTrucks(c.id); setTrucks(t||[]); } catch(e) { /* silent */ } }
   };
   const openNewBranch = () => { setBranchForm({name:"",address:"",reference:"",lat:null,lng:null,locationAddress:""}); setEditBranchId(null); setShowBranchForm(true); };
   const openEditBranch = (b) => { setBranchForm({name:b.name,address:b.address||"",reference:b.reference||"",lat:b.lat?Number(b.lat):null,lng:b.lng?Number(b.lng):null,locationAddress:""}); setEditBranchId(b.id); setShowBranchForm(true); };
@@ -703,7 +703,7 @@ export default function AdminScreen({ user, onBack }) {
     const isTransporter = cType==="transporter";
     const tabs = [{k:"branches",l:"Sucursales",n:branches.length}];
     if(isProducer) tabs.push({k:"fields",l:"Campos",n:fields.length});
-    if(isTransporter) tabs.push({k:"trucks",l:"Flota",n:trucks.length});
+    if(isTransporter || selectedCompany.hasInternalFleet) tabs.push({k:"trucks",l:"Flota",n:trucks.length});
     tabs.push({k:"access",l:"Accesos"});
     const curTab = tabs.find(t=>t.k===detailTab) ? detailTab : "branches";
 
@@ -847,8 +847,8 @@ export default function AdminScreen({ user, onBack }) {
           {fields.length===0&&!showFieldForm&&<div style={{textAlign:"center",padding:20,color:C.t3,fontSize:13.2}}>Sin campos</div>}
         </>)}
 
-        {/* ====== TAB: TRUCKS (Transporter) ====== */}
-        {curTab==="trucks"&&isTransporter&&(<>
+        {/* ====== TAB: TRUCKS (Transporter / Producer with fleet) ====== */}
+        {curTab==="trucks"&&(isTransporter||selectedCompany.hasInternalFleet)&&(<>
           <div style={{display:"flex",justifyContent:"flex-end",marginBottom:8}}>
             <button onClick={()=>{showTruckForm?setShowTruckForm(false):openNewTruck();}} style={{padding:"6px 12px",borderRadius: R.sm,border:`1px solid ${typeColors.transporter}`,background:`${typeColors.transporter}12`,color:typeColors.transporter,fontSize:12.1,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>{showTruckForm&&!editTruckId?"Cancelar":"+ Nuevo vehículo"}</button>
           </div>
