@@ -142,7 +142,7 @@ function NextStepBtn({ complete, onClick, label, onPrev }) {
 export default function NewScreen({ user, lots, plants, branches, fields, trucks, freights, onBack, onCreate, duplicateFrom }) {
   const dup = duplicateFrom;
   const _isDesktop = useIsDesktop(768);
-  const { isConsulta } = useAccessLevel(user);
+  const { isConsulta: _isConsultaGlobal, isConsultaFor } = useAccessLevel(user);
   const [searchParams] = useSearchParams();
   const preFieldId = searchParams.get("originFieldId") || "";
   const preLotId = searchParams.get("originLotId") || "";
@@ -314,8 +314,8 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
     if (!showTransportStep) return;
     const targetCompanyId = transportChoice === "ownfleet" ? plantCompanyId : transportChoice;
     if (!targetCompanyId || targetCompanyId === "skip") { setAssignTrucks([]); return; }
-    const isConsulta = transportChoice === "ownfleet" || selectedTransporterAccess?.accessLevel === "READONLY";
-    if (!isConsulta) { setAssignTrucks([]); return; }
+    const plantManagesTrucks = transportChoice === "ownfleet" || selectedTransporterAccess?.accessLevel === "READONLY";
+    if (!plantManagesTrucks) { setAssignTrucks([]); return; }
     setLoadingAssignTrucks(true);
     apiGetTrucks(targetCompanyId).then(t => setAssignTrucks(t || [])).catch(() => setAssignTrucks([])).finally(() => setLoadingAssignTrucks(false));
   }, [showTransportStep, transportChoice, selectedTransporterAccess?.accessLevel, plantCompanyId]);
@@ -325,8 +325,8 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
     if (!showTransportStep) return;
     const targetCompanyId = transportChoice === "ownfleet" ? plantCompanyId : transportChoice;
     if (!targetCompanyId || targetCompanyId === "skip") { setAssignDriversList([]); return; }
-    const isConsulta = transportChoice === "ownfleet" || selectedTransporterAccess?.accessLevel === "READONLY";
-    if (!isConsulta) { setAssignDriversList([]); return; }
+    const plantManagesDrivers = transportChoice === "ownfleet" || selectedTransporterAccess?.accessLevel === "READONLY";
+    if (!plantManagesDrivers) { setAssignDriversList([]); return; }
     setLoadingAssignDrivers(true);
     apiListDrivers(targetCompanyId).then(d => setAssignDriversList(d || [])).catch(() => setAssignDriversList([])).finally(() => setLoadingAssignDrivers(false));
   }, [showTransportStep, transportChoice, selectedTransporterAccess?.accessLevel, plantCompanyId]);
@@ -436,6 +436,8 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
   const branchOpts = (branches||[]).filter(b=>b.companyId===selectedPlantCompanyId).map(b=>({ value:b.id, label:b.name }));
   const selectedLot = form.lotId === "__field__" ? null : fieldLots.find(l=>l.id===form.lotId);
   const selectedPlant = (plants||[]).find(p=>p.id===form.plantId);
+  // CONSULTA check: block freight creation if user is READONLY for the selected destination
+  const isConsulta = selectedPlantCompanyId ? isConsultaFor(selectedPlantCompanyId) : _isConsultaGlobal;
   const selectedBranch = (branches||[]).find(b=>b.id===form.branchId);
   const truckOpts = (trucks||[]).map(t=>({ value:t.id, label:`${t.plate}${t.model?` · ${t.model}`:""}` }));
   const showTruckSelect = (user.userType==="producer"||(user.userTypes||[]).includes("producer")) && !!user.hasInternalFleet;
@@ -1265,7 +1267,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
             {/* Header */}
             <div style={{ position:"sticky", top:0, zIndex:2, background:C.bg, padding:"16px 20px 12px", borderBottom:`1px solid ${C.b2}`, borderRadius:_isDesktop?"16px 16px 0 0":"16px 16px 0 0", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
               {_isDesktop
-                ? <div style={{ flex:1, marginRight:12 }}><Btn full icon={Ic.chk(C.w,16)} disabled={submitting} onClick={submit}>{submitting?"Enviando...":"Solicitar Flete"}</Btn></div>
+                ? <div style={{ flex:1, marginRight:12 }}><Btn full icon={Ic.chk(C.w,16)} disabled={submitting||isConsulta} onClick={submit}>{submitting?"Enviando...":(isConsulta?"Sin permisos (CONSULTA)":"Solicitar Flete")}</Btn></div>
                 : <span style={{ fontSize:18, fontWeight:800, color:C.t1 }}>Confirmar Flete</span>}
               <button aria-label="Cerrar" onClick={()=>setShowConfirmModal(false)} style={{ background:"none", border:"none", cursor:"pointer", padding:4, minWidth:40, minHeight:40, display:"flex", alignItems:"center", justifyContent:"center" }}>{Ic.cross(C.t3,20)}</button>
             </div>
@@ -1364,7 +1366,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
 
                 {/* Submit button (mobile only — desktop has it in header) */}
                 {!_isDesktop && <div style={{ marginTop:20 }}>
-                  <Btn full icon={Ic.chk(C.w,16)} disabled={submitting} onClick={submit}>{submitting?"Enviando...":"Solicitar Flete"}</Btn>
+                  <Btn full icon={Ic.chk(C.w,16)} disabled={submitting||isConsulta} onClick={submit}>{submitting?"Enviando...":(isConsulta?"Sin permisos (CONSULTA)":"Solicitar Flete")}</Btn>
                 </div>}
               </div>
 

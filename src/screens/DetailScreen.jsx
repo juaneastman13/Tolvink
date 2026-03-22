@@ -634,7 +634,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
       })()}
 
       {/* Assignment suggestions — for plant users when freight needs assignment */}
-      {perms.canApprove && (freight.status === "pending_assignment" || (freight.status === "assigned" && (freight.assignedTruckCount || 0) < (freight.truckCount || 1))) && (
+      {!isConsulta && perms.canApprove && (freight.status === "pending_assignment" || (freight.status === "assigned" && (freight.assignedTruckCount || 0) < (freight.truckCount || 1))) && (
         <AssignmentSuggestions freight={freight} user={user} onAssign={async (body) => { await apiAssignFreight(freight.id, body); if (onRefresh) onRefresh(freight.id); }} onRefreshKey={freight.updatedAt || freight.status} />
       )}
 
