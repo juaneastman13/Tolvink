@@ -1,4 +1,5 @@
 import { memo, useState, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { C, Ic, MONO, R, STATUS_COLORS } from "../theme";
 import { LicensePlate } from "./ui/LicensePlate";
 import { formatFreightDate } from "../constants";
@@ -43,8 +44,8 @@ function StatusPill({ status, small }) {
 // ======================== PLATES POPUP ==================================
 function PlatesPopup({ assignments, onClose }) {
   const plates = (assignments || []).filter(a => a.plate);
-  return (
-    <div onClick={onClose} style={{ position:"fixed", inset:0, zIndex:9999, background:"rgba(0,0,0,0.3)", display:"flex", alignItems:"center", justifyContent:"center" }}>
+  return createPortal(
+    <div onClick={onClose} style={{ position:"fixed", inset:0, zIndex:99999, background:"rgba(0,0,0,0.3)", display:"flex", alignItems:"center", justifyContent:"center" }}>
       <div onClick={e => e.stopPropagation()} style={{ background:C.w, borderRadius: R.lg, padding:"16px 20px", width:"min(300px,85vw)", boxShadow:"0 8px 32px rgba(0,0,0,0.2)" }}>
         <div style={{ fontSize:15, fontWeight:700, color:C.t1, marginBottom:12 }}>Matrículas ({plates.length})</div>
         {plates.length === 0 && <div style={{ fontSize:13, color:C.t3 }}>Sin camiones asignados</div>}
@@ -57,7 +58,8 @@ function PlatesPopup({ assignments, onClose }) {
         ))}
         <button onClick={onClose} style={{ marginTop:12, width:"100%", padding:"8px 0", borderRadius: R.md, border:`1px solid ${C.b1}`, background:C.w, color:C.t2, fontSize:13, fontWeight:500, cursor:"pointer", fontFamily:"inherit" }}>Cerrar</button>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
