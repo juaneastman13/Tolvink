@@ -85,7 +85,7 @@ function validateUserRows(rows, existingCompanies, existingUsers) {
 function mapExcelRow(row, type) {
   if (type === "companies") {
     const rawType = row["TIPO"]?.toString().trim().toLowerCase();
-    const rawAccess = (row["ACCESO"] ?? "").toString().trim().toLowerCase();
+    const rawAccess = (row["ACCESO"] ?? row["ACCESO (USO/CONSULTA)"] ?? "").toString().trim().toLowerCase();
     return {
       name: row["NOMBRE"]?.toString().trim() || "",
       type: rawType || "",
@@ -97,7 +97,7 @@ function mapExcelRow(row, type) {
       hasInternalFleet: (row["FLOTA PROPIA"] ?? "").toString().trim().toUpperCase() === "SI",
     };
   }
-  const rawAccess = (row["ACCESO"] ?? "").toString().trim().toLowerCase();
+  const rawAccess = (row["ACCESO"] ?? row["ACCESO (USO/CONSULTA)"] ?? "").toString().trim().toLowerCase();
   return {
     name: row["NOMBRE"]?.toString().trim() || "",
     email: row["EMAIL"]?.toString().trim() || "",
