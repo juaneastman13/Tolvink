@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&display=swap" rel="stylesheet">
+<title>Manual de Uso — Tolvink</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --pri:#1A6B37;--pri-lt:#228B46;--pri-pale:#E4F3EA;
+  --acc:#FF6A00;--acc-lt:#FF8124;--acc-pale:#FFF3E8;
+  --sec:#0891B2;--sec-pale:#ECFEFF;
+  --bg:#F7F8F7;--bg-card:#FFFFFF;--bg-input:#EDEFED;
+  --t1:#18251C;--t2:#4A6352;--t3:#566B5E;
+  --b1:#DEE4E0;--b2:#ECF0ED;
+  --err:#DC2626;--err-pale:#FEE2E2;
+  --muted:#71717A;--muted-pale:#F4F4F5;
+  --sh:0 1px 3px rgba(0,0,0,0.05),0 1px 2px rgba(0,0,0,0.03);
+  --sh-md:0 4px 14px rgba(0,0,0,0.06);
+  --sidebar-w:260px;--max-content:860px;
+  --font:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+}
+html{scroll-behavior:smooth;font-size:16px}
+body{font-family:var(--font);color:var(--t1);background:var(--bg);line-height:1.65}
+
+@keyframes dotPulse{0%,100%{opacity:.3;transform:scale(0.8)}50%{opacity:1;transform:scale(1.2)}}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* ═══════ ANIMATED BACKGROUND ═══════ */
+.routes-bg{position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.6}
+
+/* ═══════ LAYOUT ═══════ */
+.layout{display:flex;min-height:100vh;position:relative;z-index:1}
+.sidebar{
+  position:fixed;top:0;left:0;bottom:0;width:var(--sidebar-w);
+  background:var(--bg-card);border-right:1px solid var(--b1);
+  overflow-y:auto;z-index:100;padding:20px 0;transition:transform .3s ease;
+}
+.sidebar::-webkit-scrollbar{width:4px}
+.sidebar::-webkit-scrollbar-thumb{background:var(--b1);border-radius:4px}
+.main{margin-left:var(--sidebar-w);flex:1;min-width:0}
+.content{max-width:var(--max-content);margin:0 auto;padding:40px 32px 80px}
+
+/* ═══════ SIDEBAR ═══════ */
+.sidebar-logo{padding:0 20px 16px;border-bottom:1px solid var(--b2);margin-bottom:8px;display:flex;align-items:center;justify-content:center}
+.logo-wrap{display:inline-flex;align-items:flex-start}
+.logo-text{font-weight:800;color:var(--pri);letter-spacing:-2px;line-height:1}
+.logo-dot{border-radius:6px;background:var(--acc);display:inline-block;animation:dotPulse 1.5s ease-in-out infinite}
+.sidebar-logo .logo-text{font-size:38px}
+.sidebar-logo .logo-dot{width:10px;height:10px;margin-left:2.5px;margin-top:2.5px}
+.nav-group{padding:6px 0}
+.nav-group-title{
+  font-size:10px;text-transform:uppercase;letter-spacing:1.2px;
+  padding:6px 20px;color:var(--t3);font-weight:600;opacity:.6;
+}
+.nav-link{
+  display:flex;align-items:center;gap:10px;padding:7px 20px;font-size:13px;color:var(--t2);
+  text-decoration:none;transition:all .15s;border-radius:0;
+}
+.nav-link:hover{background:var(--pri-pale);color:var(--pri)}
+.nav-link.active{background:var(--pri-pale);color:var(--pri);font-weight:600}
+.nav-link svg{flex-shrink:0;opacity:.65}
+.nav-link:hover svg,.nav-link.active svg{opacity:1}
+
+/* ═══════ MOBILE ═══════ */
+.menu-toggle{
+  display:none;position:fixed;top:12px;left:12px;z-index:200;
+  width:44px;height:44px;border-radius:10px;border:none;
+  background:var(--bg-card);color:var(--pri);cursor:pointer;
+  box-shadow:var(--sh-md);align-items:center;justify-content:center;
+}
+.sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(10,20,14,0.4);z-index:99}
+@media(max-width:768px){
+  .menu-toggle{display:flex}
+  .sidebar{transform:translateX(-100%)}
+  .sidebar.open{transform:translateX(0)}
+  .sidebar-overlay.open{display:block}
+  .main{margin-left:0}
+  .content{padding:60px 16px 60px}
+  html{font-size:15px}
+  h2{font-size:21px;margin:32px 0 12px}
+  h3{font-size:16px;margin:22px 0 10px}
+  h4{font-size:14px}
+  .hero{padding:36px 16px}
+  .hero .hero-logo .logo-text{font-size:64px;letter-spacing:-3px}
+  .hero .hero-logo .logo-dot{width:12px;height:12px;margin-left:4px;margin-top:3px}
+  .hero-tagline{font-size:11px;letter-spacing:1.8px}
+  .hero-badge{font-size:12px;padding:5px 14px;margin-top:18px}
+  table{font-size:13px}
+  th{font-size:11px;padding:8px 10px;white-space:nowrap}
+  td{padding:8px 10px}
+  .table-wrap{-webkit-overflow-scrolling:touch}
+  .callout{font-size:13px;padding:12px 14px}
+  .steps li{font-size:13px;padding:10px 14px 10px 46px}
+  .steps li::before{width:24px;height:24px;font-size:12px;left:12px;top:10px}
+  .screenshot img{width:100%!important;max-width:100%!important}
+  .screenshot-pair{flex-direction:column;align-items:center;gap:10px!important}
+  .screenshot-pair img{max-width:100%!important;width:100%!important}
+  .flow{font-size:12px;gap:5px}
+  .flow-step{padding:5px 10px;font-size:11px}
+  .badge{font-size:10px;padding:2px 7px}
+  .tree{padding:14px}
+  .tree-q{font-size:13px}
+  .tree-opt{font-size:12px;padding:5px 12px}
+}
+
+/* ═══════ TYPOGRAPHY ═══════ */
+h2{font-size:26px;font-weight:700;color:var(--t1);margin:48px 0 16px;padding-bottom:8px;border-bottom:1px solid var(--b2)}
+h3{font-size:19px;font-weight:600;color:var(--t1);margin:32px 0 12px}
+h4{font-size:16px;font-weight:600;color:var(--t2);margin:20px 0 8px}
+p{margin:0 0 14px}
+ul,ol{margin:0 0 14px;padding-left:24px}
+li{margin-bottom:6px}
+strong{font-weight:600}
+code{background:var(--bg-input);padding:2px 6px;border-radius:4px;font-size:14px}
+a{color:var(--pri)}
+
+.ic{display:inline-flex;vertical-align:middle;margin:0 3px -3px 0}
+.ic-nav{display:inline-flex;vertical-align:middle;margin:0 2px -2px 0}
+
+/* ═══════ TABLES ═══════ */
+.table-wrap{overflow-x:auto;margin:16px 0 24px;border-radius:10px;border:1px solid var(--b1);background:var(--bg-card);box-shadow:var(--sh)}
+table{width:100%;border-collapse:collapse;font-size:14px}
+thead{background:var(--bg);color:var(--t1)}
+th{padding:10px 14px;text-align:left;font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:var(--t3);border-bottom:1px solid var(--b1)}
+td{padding:10px 14px;border-bottom:1px solid var(--b2)}
+tbody tr:hover{background:var(--pri-pale)}
+
+/* ═══════ CALLOUTS ═══════ */
+.callout{padding:14px 18px;border-radius:10px;margin:16px 0;font-size:14px;border:1px solid}
+.callout-tip{background:#f0fdf4;border-color:#bbf7d0;color:#166534}
+.callout-warn{background:var(--acc-pale);border-color:#fed7aa;color:#9a3412}
+.callout-info{background:var(--sec-pale);border-color:#a5f3fc;color:#0e7490}
+.callout-consulta{background:var(--muted-pale);border-color:#e4e4e7;color:#52525b}
+.callout strong{display:block;margin-bottom:4px}
+.callout .callout-icon{display:inline-flex;vertical-align:middle;margin-right:6px;margin-bottom:-2px}
+
+/* ═══════ STEPS ═══════ */
+.steps{counter-reset:step;list-style:none;padding-left:0;margin:16px 0 24px}
+.steps li{
+  counter-increment:step;position:relative;padding:12px 16px 12px 52px;
+  margin-bottom:8px;background:var(--bg-card);border-radius:10px;
+  border:1px solid var(--b2);font-size:14px;box-shadow:var(--sh);
+}
+.steps li::before{
+  content:counter(step);position:absolute;left:14px;top:12px;
+  width:28px;height:28px;border-radius:50%;background:var(--acc);color:#fff;
+  display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;
+}
+
+/* ═══════ SCREENSHOTS ═══════ */
+.screenshot{display:block;margin:16px 0;border-radius:10px;overflow:hidden;border:1px solid var(--b1);box-shadow:var(--sh-md)}
+.screenshot img{max-width:100%;display:block;margin:0 auto}
+.screenshot.has-img{background:var(--bg-card)}
+
+/* ═══════ BADGES ═══════ */
+.badge{display:inline-block;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:600}
+.badge-pending{background:#FFF3E0;color:#E65100}
+.badge-assigned{background:#ECFEFF;color:#0E7490}
+.badge-progress{background:#E8F5E9;color:#2E7D32}
+.badge-loaded{background:#E0F2E5;color:#1A6B37}
+.badge-finished{background:#F5F5F5;color:#616161}
+.badge-canceled{background:#FFEBEE;color:#C62828}
+.badge-draft{background:#F4F4F5;color:#71717A}
+
+/* ═══════ FLOW ═══════ */
+.flow{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:16px 0 24px;font-size:14px}
+.flow-step{padding:8px 16px;border-radius:8px;font-weight:600;color:#fff;white-space:nowrap}
+.flow-arrow{color:var(--t3);font-size:18px}
+.flow-cancel{border:2px dashed var(--err);color:var(--err);background:var(--err-pale)}
+
+/* ═══════ TREE ═══════ */
+.tree{background:var(--bg-card);border:1px solid var(--b1);border-radius:12px;padding:20px;margin:16px 0 24px;box-shadow:var(--sh)}
+.tree-q{font-weight:600;margin-bottom:8px;font-size:15px}
+.tree-opts{display:flex;gap:12px;flex-wrap:wrap;margin:8px 0 16px}
+.tree-opt{padding:8px 16px;border-radius:8px;font-size:14px;font-weight:600}
+.tree-yes{background:var(--pri-pale);color:var(--pri)}
+
+/* ═══════ HERO ═══════ */
+.hero{
+  color:var(--t1);padding:60px 32px;
+  margin-bottom:40px;text-align:center;position:relative;overflow:hidden;
+}
+.hero .hero-logo{display:inline-flex;align-items:flex-start;margin-bottom:30px}
+.hero .hero-logo .logo-text{font-size:130px;letter-spacing:-5.6px}
+.hero .hero-logo .logo-dot{width:21px;height:21px;margin-left:8px;margin-top:6px;border-radius:11px}
+.hero-tagline{font-size:15.4px;font-weight:700;color:var(--acc);text-transform:uppercase;letter-spacing:2.5px;margin-bottom:14px}
+.hero p{font-size:24px;font-weight:700;color:var(--t2);line-height:1.2;letter-spacing:-0.3px;max-width:600px;margin:0 auto}
+.hero-badge{
+  display:inline-block;background:var(--acc);color:#fff;padding:6px 18px;
+  border-radius:20px;font-size:14px;font-weight:700;margin-top:28px;letter-spacing:0.5px;
+}
+
+/* ═══════ PRINT ═══════ */
+@media print{
+  .sidebar,.menu-toggle,.sidebar-overlay,.routes-bg{display:none!important}
+  .main{margin-left:0!important}
+  .content{max-width:100%;padding:20px}
+  h2{page-break-before:always;margin-top:0}
+  .hero{page-break-after:always}
+  .callout,.table-wrap,.steps li{break-inside:avoid}
+  body{font-size:12px;line-height:1.5;background:#fff}
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════ ANIMATED ROUTES BACKGROUND ═══════ -->
+<div class="routes-bg" id="routesBg"></div>
+<script>
+(function(){
+  var pri="#1A6B37",acc="#FF6A00",sec="#0891B2",bg="#F7F8F7";
+  var R=[
+    {d:"M-30,520 C150,400 350,260 550,180 S800,60 1030,10",c:pri,lo:0.12,to:0.18,td:"26s",dd:"4s",wp:[[180,410],[420,240],[700,110],[900,45]]},
+    {d:"M-30,80 C180,180 380,340 580,400 S830,500 1030,560",c:acc,lo:0.10,to:0.14,td:"32s",dd:"5s",wp:[[160,170],[400,320],[650,420],[880,520]],rev:true},
+    {d:"M1030,300 C820,240 620,320 420,300 S180,340 -30,370",c:sec,lo:0.10,to:0.16,td:"24s",dd:"3.5s",wp:[[870,260],[640,310],[350,310],[120,355]]},
+    {d:"M500,-30 C520,100 470,240 510,370 S480,490 530,630",c:pri,lo:0.08,to:0.12,td:"22s",dd:"4.5s",wp:[[512,80],[480,260],[505,430]]},
+    {d:"M-30,200 C80,150 200,90 340,50 S500,20 600,-20",c:acc,lo:0.09,to:0.13,td:"18s",dd:"3s",wp:[[70,160],[220,85],[420,35]]},
+    {d:"M1030,480 C900,440 780,500 650,520 S480,560 350,590",c:sec,lo:0.07,to:0.11,td:"20s",dd:"4s",wp:[[920,450],[720,500],[530,540]]}
+  ];
+  var svg='<svg viewBox="0 0 1000 600" preserveAspectRatio="xMidYMid slice" style="width:100%;height:100%"><defs><radialGradient id="rmf" cx="50%" cy="48%" rx="38%" ry="36%"><stop offset="0%" stop-color="white" stop-opacity="0.25"/><stop offset="60%" stop-color="white" stop-opacity="0.7"/><stop offset="100%" stop-color="white" stop-opacity="1"/></radialGradient><mask id="rmm"><rect width="1000" height="600" fill="url(#rmf)"/></mask></defs><g mask="url(#rmm)">';
+  R.forEach(function(r){
+    var kp=r.rev?"1;0":"0;1";
+    svg+='<g><path d="'+r.d+'" stroke="'+r.c+'" stroke-width="2" fill="none" stroke-dasharray="14,18" stroke-linecap="round" opacity="'+r.lo+'"><animate attributeName="stroke-dashoffset" from="0" to="'+(r.rev?64:-64)+'" dur="'+r.dd+'" repeatCount="indefinite"/></path>';
+    r.wp.forEach(function(w){
+      svg+='<g opacity="'+(r.lo*1.5).toFixed(3)+'"><path d="M'+w[0]+','+(w[1]-10)+' c-4,0 -7,3 -7,7 c0,4 7,11 7,11 s7,-7 7,-11 c0,-4 -3,-7 -7,-7Z" fill="'+r.c+'"/><circle cx="'+w[0]+'" cy="'+(w[1]-5)+'" r="2.5" fill="'+bg+'" opacity="0.9"/></g>';
+    });
+    svg+='<g opacity="'+r.to+'"><animateMotion path="'+r.d+'" dur="'+r.td+'" repeatCount="indefinite" rotate="auto" keyPoints="'+kp+'" keyTimes="0;1" calcMode="linear"/><rect x="-14" y="-7" width="18" height="14" rx="2" fill="'+r.c+'"/><polygon points="4,-5 10,-5 14,-1 14,7 4,7" fill="'+r.c+'"/><circle cx="-7" cy="8" r="3" fill="'+r.c+'"/><circle cx="-7" cy="8" r="1.5" fill="'+bg+'"/><circle cx="10" cy="8" r="3" fill="'+r.c+'"/><circle cx="10" cy="8" r="1.5" fill="'+bg+'"/><rect x="5" y="-4" width="5" height="5" rx="1" fill="'+bg+'" opacity="0.6"/></g>';
+    svg+='</g>';
+  });
+  svg+='</g></svg>';
+  document.getElementById('routesBg').innerHTML=svg;
+})();
+</script>
+
+<!-- Mobile toggle -->
+<button class="menu-toggle" onclick="toggleSidebar()" aria-label="Menú">
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--pri)" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+</button>
+<div class="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+<div class="layout">
+<!-- ═══════ SIDEBAR ═══════ -->
+<nav class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-wrap">
+      <span class="logo-text">tolvink</span><span class="logo-dot"></span>
+    </div>
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-group-title">Antes de empezar</div>
+    <a class="nav-link" href="#que-es"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>¿Qué es Tolvink?</a>
+    <a class="nav-link" href="#glosario"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Glosario</a>
+    <a class="nav-link" href="#tipo-usuario"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Tipo de usuario</a>
+    <a class="nav-link" href="#dos-formas"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>Dos formas de usar</a>
+    <a class="nav-link" href="#crear-cuenta"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Crear tu cuenta</a>
+  </div>
+  <div class="nav-group">
+    <div class="nav-group-title">Referencia rápida</div>
+    <a class="nav-link" href="#estados"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Estados del flete</a>
+    <a class="nav-link" href="#iconos"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Navegación e íconos</a>
+    <a class="nav-link" href="#atajos"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>Atajos útiles</a>
+  </div>
+  <div class="nav-group">
+    <div class="nav-group-title">Planta de Acopio</div>
+    <a class="nav-link" href="#planta-inicio"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Pantalla de inicio</a>
+    <a class="nav-link" href="#planta-vincular"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20h20"/><path d="M5 20V8l5 4V8l5 4V4h3v16"/></svg>Vincular empresas</a>
+    <a class="nav-link" href="#planta-crear-flete"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>Crear un flete</a>
+    <a class="nav-link" href="#planta-seguimiento"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>Seguimiento</a>
+    <a class="nav-link" href="#planta-asignar"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Asignar transporte</a>
+    <a class="nav-link" href="#planta-docs"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Documentos y OCR</a>
+    <a class="nav-link" href="#planta-compartir"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>Compartir</a>
+    <a class="nav-link" href="#planta-ubicaciones"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>Ubicaciones</a>
+    <a class="nav-link" href="#planta-flota"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>Flota</a>
+    <a class="nav-link" href="#planta-admin"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9V12a2 2 0 0 1 0 4z"/></svg>Administración</a>
+    <a class="nav-link" href="#planta-reportes"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Reportes</a>
+  </div>
+  <div class="nav-group">
+    <div class="nav-group-title">Productor</div>
+    <a class="nav-link" href="#productor-uso"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c0 0-1-4-1-9C11 7 15 3 20 2c0 0-1 7-5 11-2 2-4 3-5 3.5"/><path d="M12 22c0 0 .5-3 .5-7C12.5 9 9 4 4 3c0 0 .5 6 4 10 1.8 2 3.2 3 4 3.5"/></svg>Productor USO</a>
+    <a class="nav-link" href="#productor-consulta"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>Productor CONSULTA</a>
+  </div>
+  <div class="nav-group">
+    <div class="nav-group-title">Transportista</div>
+    <a class="nav-link" href="#transport-uso"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>Transportista USO</a>
+    <a class="nav-link" href="#transport-consulta"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>Transportista CONSULTA</a>
+  </div>
+  <div class="nav-group">
+    <div class="nav-group-title">Chofer</div>
+    <a class="nav-link" href="#chofer"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Guía para chofer</a>
+  </div>
+  <div class="nav-group">
+    <div class="nav-group-title">WhatsApp</div>
+    <a class="nav-link" href="#wa-empezar"><svg width="15" height="15" viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>Cómo empezar</a>
+    <a class="nav-link" href="#wa-preguntar"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Qué preguntar</a>
+    <a class="nav-link" href="#wa-tips"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>Tips y limitaciones</a>
+  </div>
+  <div class="nav-group">
+    <div class="nav-group-title">Ayuda</div>
+    <a class="nav-link" href="#situaciones"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>Situaciones frecuentes</a>
+    <a class="nav-link" href="#contacto"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>Contacto</a>
+  </div>
+</nav>
+
+<!-- ═══════ MAIN ═══════ -->
+<div class="main">
+<div class="content">
+
+<div class="hero">
+  <div class="hero-logo">
+    <span class="logo-text">tolvink</span><span class="logo-dot"></span>
+  </div>
+  <div class="hero-tagline">Logística agrícola simplificada</div>
+  <div class="hero-badge">Manual de Uso — Marzo 2026</div>
+</div>
+
+<!-- ═══════ PARTE 0 — ANTES DE EMPEZAR ═══════ -->
+
+<h2 id="que-es">0.1. ¿Qué es Tolvink?</h2>
+<p><strong>Tolvink es una app que te permite gestionar los fletes de granos desde el celular o la computadora, sin papeles ni llamadas.</strong></p>
+<p>Conecta a todos los actores de la cadena de granos: la <strong>planta</strong> que recibe, el <strong>productor</strong> que envía, el <strong>transportista</strong> que mueve y el <strong>chofer</strong> que maneja. Todos ven la misma información en tiempo real.</p>
+<h4>¿Qué resuelve?</h4>
+<p>Hoy llamás por teléfono para saber si el camión salió. Con Tolvink lo ves en el mapa. Hoy los remitos se pierden en la cabina del camión. Con Tolvink los escaneás y quedan digitalizados para siempre.</p>
+<div class="callout callout-info"><strong>En resumen</strong>Tolvink reemplaza las llamadas, los papeles y las planillas de Excel por una plataforma donde todos ven lo mismo, al instante.</div>
+
+<h2 id="glosario">0.2. Glosario</h2>
+<div class="table-wrap"><table><thead><tr><th>Palabra</th><th>Qué es en Tolvink</th><th>Ejemplo</th></tr></thead><tbody>
+<tr><td><strong>Flete</strong></td><td>Un viaje de grano de un punto A a un punto B</td><td>30tn de soja de Campo La Esperanza a Fomento NH</td></tr>
+<tr><td><strong>Planta</strong></td><td>La empresa que recibe el grano (acopio, silo)</td><td>Fomento NH, que tiene silos en Nueva Helvecia</td></tr>
+<tr><td><strong>Productor</strong></td><td>Quien produce y envía el grano</td><td>Juan Pérez, con campos en Soriano</td></tr>
+<tr><td><strong>Transportista</strong></td><td>La empresa que mueve el grano en camión</td><td>Transportes Colonia SRL</td></tr>
+<tr><td><strong>Chofer</strong></td><td>La persona que maneja el camión</td><td>Carlos, que maneja el Mercedes LAC1234</td></tr>
+<tr><td><strong>Estado</strong></td><td>En qué momento está el flete</td><td>Pendiente, Asignado, A campo, A planta, Finalizado</td></tr>
+<tr><td><strong>CONSULTA</strong></td><td>Nivel de acceso: solo podés ver</td><td>El productor ve sus fletes pero la planta los gestiona</td></tr>
+<tr><td><strong>USO</strong></td><td>Nivel de acceso: podés ver Y operar</td><td>El transportista acepta fletes y asigna camiones</td></tr>
+<tr><td><strong>Campo</strong></td><td>Establecimiento rural de donde sale el grano</td><td>Campo La Esperanza, Ruta 2 km 185</td></tr>
+<tr><td><strong>Lote</strong></td><td>Parcela dentro del campo</td><td>Lote 3 del Campo La Esperanza</td></tr>
+<tr><td><strong>Ticket de pesaje</strong></td><td>Comprobante de la balanza</td><td>Bruto 45.200 kg, Tara 12.700 kg, Neto 32.500 kg</td></tr>
+<tr><td><strong>OCR</strong></td><td>Lectura automática de documentos con IA</td><td>Foto del remito → Tolvink extrae los datos solo</td></tr>
+<tr><td><strong>Link compartible</strong></td><td>Link para ver un flete sin cuenta</td><td>Se lo mandás al productor y ve el camión en el mapa</td></tr>
+<tr><td><strong>Empresa vinculada</strong></td><td>Empresa conectada a la tuya en Tolvink</td><td>Fomento NH vinculó a Transportes Colonia</td></tr>
+</tbody></table></div>
+
+<h2 id="tipo-usuario">0.3. ¿Qué tipo de usuario sos vos?</h2>
+<div class="tree">
+  <div class="tree-q"><span class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22C55E" stroke-width="2"><path d="M2 20h20"/><path d="M5 20V8l5 4V8l5 4V4h3v16"/></svg></span> ¿Recibís grano en tu planta?</div>
+  <div class="tree-opts"><span class="tree-opt tree-yes">Sí → Sos PLANTA</span></div>
+  <div class="tree-q"><span class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="1.8"><path d="M12 22c0 0-1-4-1-9C11 7 15 3 20 2c0 0-1 7-5 11-2 2-4 3-5 3.5"/><path d="M12 22c0 0 .5-3 .5-7C12.5 9 9 4 4 3c0 0 .5 6 4 10 1.8 2 3.2 3 4 3.5"/></svg></span> ¿Producís grano y lo mandás?</div>
+  <div class="tree-opts"><span class="tree-opt tree-yes">Sí → Sos PRODUCTOR</span></div>
+  <div class="tree-q"><span class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0891B2" stroke-width="2"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg></span> ¿Tenés camiones que mueven grano?</div>
+  <div class="tree-opts"><span class="tree-opt tree-yes">Sí → Sos TRANSPORTISTA</span></div>
+  <div class="tree-q"><span class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--t3)" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span> ¿Manejás un camión?</div>
+  <div class="tree-opts"><span class="tree-opt tree-yes">Sí → Sos CHOFER</span></div>
+</div>
+
+<h4>¿Qué puede hacer cada uno?</h4>
+<div class="table-wrap"><table><thead><tr><th>Acción</th><th>Planta</th><th>Prod. USO</th><th>Prod. CONSULTA</th><th>Transp. USO</th><th>Transp. CONSULTA</th><th>Chofer</th></tr></thead><tbody>
+<tr><td>Ver fletes</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td></tr>
+<tr><td>Crear fletes</td><td>✅</td><td>✅</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td></tr>
+<tr><td>Asignar camión</td><td>✅</td><td>✅</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td></tr>
+<tr><td>Aceptar flete</td><td>❌</td><td>❌</td><td>❌</td><td>✅</td><td>❌</td><td>❌</td></tr>
+<tr><td>Marcar "en viaje"</td><td>✅</td><td>✅</td><td>❌</td><td>✅</td><td>❌</td><td>✅</td></tr>
+<tr><td>Gestionar campos</td><td>✅</td><td>✅</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td></tr>
+<tr><td>Gestionar flota</td><td>✅</td><td>✅</td><td>❌</td><td>✅</td><td>❌</td><td>❌</td></tr>
+<tr><td>Compartir por WA</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td><td>❌</td></tr>
+</tbody></table></div>
+<div class="callout callout-consulta"><strong>Si sos CONSULTA</strong>Tu planta gestiona todo por vos. Vos solo mirás cómo va. Es como tener un tablero de control sin botones.</div>
+
+<h2 id="dos-formas">0.4. Dos formas de usar Tolvink</h2>
+<h4>Desde la web/app</h4>
+<p>Entrás a <strong>tolvink.com</strong> desde el celular o la computadora. Funciona como una app: podés instalarla en la pantalla de inicio del celular para acceso rápido.</p>
+<h4>Desde WhatsApp</h4>
+<p>Le escribís al número de Tolvink por WhatsApp y una inteligencia artificial te ayuda. Podés consultar fletes, crear nuevos, y hacer seguimiento — todo por chat, incluso con audios.</p>
+<div class="callout callout-tip"><strong>TIP</strong>Podés usar las dos formas. La web tiene más funciones. WhatsApp es más rápido para consultas puntuales y cuando estás en el campo.</div>
+
+<h2 id="crear-cuenta">0.5. Cómo crear tu cuenta</h2>
+<ol class="steps">
+  <li>Entrá a <strong>tolvink.com</strong> desde tu navegador</li>
+  <li>Tocá <strong>"Registrate"</strong></li>
+  <li>Completá: <strong>nombre, teléfono (09XXXXXXX), email y contraseña</strong></li>
+  <li>Si tu empresa ya existe, seleccionala. Si no, se crea una nueva</li>
+  <li>¡Listo! Ya podés iniciar sesión</li>
+</ol>
+<div class="screenshot has-img"><img src="capturas/1.png" alt="Pantalla de inicio de sesión de Tolvink" style="max-width:380px;margin:0 auto"></div>
+<div class="callout callout-warn"><strong>IMPORTANTE</strong>Si alguien te invitó, vas a recibir un WhatsApp con los datos de acceso. Entrá a tolvink.com e iniciá sesión con el email y contraseña que te mandaron.</div>
+
+<!-- ═══════ REFERENCIA RÁPIDA ═══════ -->
+
+<h2 id="estados">Referencia: Estados del flete</h2>
+<div class="flow">
+  <span class="flow-step" style="background:#71717A">Borrador</span><span class="flow-arrow">→</span>
+  <span class="flow-step" style="background:var(--acc)">Pendiente</span><span class="flow-arrow">→</span>
+  <span class="flow-step" style="background:var(--sec)">Asignado</span><span class="flow-arrow">→</span>
+  <span class="flow-step" style="background:#43A047">A campo</span><span class="flow-arrow">→</span>
+  <span class="flow-step" style="background:var(--pri)">A planta</span><span class="flow-arrow">→</span>
+  <span class="flow-step" style="background:var(--muted)">Finalizado</span>
+</div>
+<div class="flow" style="margin-top:4px"><span class="flow-step flow-cancel">Cancelado (desde cualquier estado)</span></div>
+<div class="table-wrap"><table><thead><tr><th>Estado</th><th>Color</th><th>Qué significa</th><th>¿Quién lo activa?</th></tr></thead><tbody>
+<tr><td><span class="badge badge-draft">Borrador</span></td><td>Gris</td><td>Flete guardado sin confirmar</td><td>Creador</td></tr>
+<tr><td><span class="badge badge-pending">Pendiente</span></td><td>Naranja</td><td>Creado, falta asignar transporte</td><td>Creador</td></tr>
+<tr><td><span class="badge badge-assigned">Asignado</span></td><td>Celeste</td><td>Transporte asignado, esperando aceptación</td><td>Planta o productor</td></tr>
+<tr><td><span class="badge badge-progress">A campo</span></td><td>Verde claro</td><td>Camión en camino al campo</td><td>Transportista, chofer, o auto (CONSULTA)</td></tr>
+<tr><td><span class="badge badge-loaded">A planta</span></td><td>Verde</td><td>Camión cargado, en ruta a la planta</td><td>Chofer o gestión manual</td></tr>
+<tr><td><span class="badge badge-finished">Finalizado</span></td><td>Gris</td><td>Entrega confirmada</td><td>Planta o confirmación de entrega</td></tr>
+<tr><td><span class="badge badge-canceled">Cancelado</span></td><td>Rojo</td><td>Cancelado por cualquier motivo</td><td>Planta, productor o transportista</td></tr>
+</tbody></table></div>
+
+<h2 id="iconos">Referencia: Navegación e íconos</h2>
+<div class="table-wrap"><table><thead><tr><th>Ícono</th><th>Sección</th><th>Qué encontrás</th></tr></thead><tbody>
+<tr><td><span class="ic-nav"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--pri)" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span></td><td><strong>Inicio</strong></td><td>Resumen del día, pendientes, viajes activos</td></tr>
+<tr><td><span class="ic-nav"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--pri)" stroke-width="2"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg></span></td><td><strong>Fletes</strong></td><td>Lista completa con filtros</td></tr>
+<tr><td><span class="ic-nav"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--pri)" stroke-width="2"><path d="M2 20h20"/><path d="M5 20V8l5 4V8l5 4V4h3v16"/></svg></span></td><td><strong>Empresas</strong></td><td>Productores y transportistas vinculados</td></tr>
+<tr><td><span class="ic-nav"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--pri)" stroke-width="2"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg></span></td><td><strong>Mapa</strong></td><td>Campos, plantas y camiones en ruta</td></tr>
+<tr><td><span class="ic-nav"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--pri)" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></span></td><td><strong>Notificaciones</strong></td><td>Alertas de cambios de estado</td></tr>
+<tr><td><span class="ic-nav"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--pri)" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></span></td><td><strong>Menú</strong></td><td>Flota, Documentos, Reportes, Admin, Chat IA</td></tr>
+</tbody></table></div>
+
+<h2 id="atajos">Referencia: Atajos útiles</h2>
+<ul>
+  <li><strong>Duplicar flete:</strong> en el detalle, tocá <strong>"..."</strong> → <strong>Duplicar</strong></li>
+  <li><strong>Filtrar por estado:</strong> en la lista de fletes, tocá un estado para filtrar</li>
+  <li><strong>Crear campo rápido:</strong> durante la creación del flete, en el paso de origen, podés crear un campo nuevo</li>
+  <li><strong>Buscar empresa:</strong> en los select escribí las primeras letras para buscar</li>
+  <li><strong>Instalar como app:</strong> en Chrome mobile, menú (tres puntos) → "Agregar a pantalla de inicio"</li>
+</ul>
+
+<!-- ═══════ PARTE 1 — PLANTA ═══════ -->
+
+<h2 id="planta-inicio">1.1. Tu pantalla de inicio — Planta</h2>
+<p>Cuando entrás a Tolvink como planta, ves tres secciones principales:</p>
+<ul>
+  <li><strong>Pendientes</strong> — Fletes que necesitan tu atención</li>
+  <li><strong>Fletes de hoy</strong> — Viajes programados para la fecha actual</li>
+  <li><strong>Viajes en curso</strong> — Camiones en camino, con seguimiento en mapa</li>
+</ul>
+<div class="screenshot has-img"><img src="capturas/2.png" alt="Pantalla de inicio de planta"></div>
+<div class="callout callout-tip"><strong>TIP</strong>Los números en naranja son cosas que necesitan tu atención. Revisalos antes de cualquier otra cosa.</div>
+
+<h2 id="planta-vincular">1.2. Vincular empresas</h2>
+<p>Vincular es conectar a un productor o transportista a tu planta. Sin esta conexión, no podés crear fletes con esa empresa.</p>
+<h3>Paso a paso</h3>
+<ol class="steps">
+  <li>Andá a <strong>Empresas</strong> en la navegación</li>
+  <li>Tocá <strong>"+ Nueva empresa"</strong></li>
+  <li>Elegí <strong>"Crear nueva"</strong> o <strong>"Vincular existente"</strong></li>
+  <li>Completá <strong>nombre, teléfono, tipo</strong> (productor o transportista) y <strong>nivel</strong> (USO o CONSULTA)</li>
+  <li>Tocá <strong>"Crear y vincular"</strong></li>
+</ol>
+<div class="screenshot has-img"><img src="capturas/3.png" alt="Modal de crear nueva empresa vinculada"></div>
+
+<h3>USO vs CONSULTA</h3>
+<div class="table-wrap"><table><thead><tr><th>Característica</th><th>USO (Operador)</th><th>CONSULTA (Solo lectura)</th></tr></thead><tbody>
+<tr><td><strong>¿Qué puede hacer?</strong></td><td>Ver, crear, modificar, aceptar</td><td>Solo ver</td></tr>
+<tr><td><strong>¿Quién gestiona?</strong></td><td>La empresa gestiona lo suyo</td><td>Tu planta gestiona por ellos</td></tr>
+<tr><td><strong>Ideal para</strong></td><td>Empresas grandes con independencia</td><td>Empresas chicas que prefieren que vos manejes todo</td></tr>
+</tbody></table></div>
+<div class="callout callout-info"><strong>¿Puedo cambiar el nivel después?</strong>Sí. Podés cambiarlo en cualquier momento desde la pantalla de Empresas.</div>
+
+<h2 id="planta-crear-flete">1.3. Crear un flete</h2>
+<p><strong>Tiempo estimado:</strong> 2-3 minutos</p>
+<ol class="steps">
+  <li><strong>Seleccionar productor</strong> — Elegí de la lista de productores vinculados</li>
+  <li><strong>Producto</strong> — Soja, Maíz, Trigo, Girasol, Sorgo, Cebada u Otros</li>
+  <li><strong>Cantidad</strong> — Toneladas estimadas del viaje</li>
+  <li><strong>Origen</strong> — Campo y lote del productor. Podés crear uno nuevo desde acá</li>
+  <li><strong>Destino</strong> — Tu planta o una sucursal</li>
+  <li><strong>Fecha</strong> — Fecha programada</li>
+  <li><strong>Transporte</strong> (si el productor es CONSULTA) — Transportista vinculado, flota propia, o asignar después</li>
+  <li>Revisá el <strong>resumen</strong> y tocá <strong>"Crear flete"</strong></li>
+</ol>
+<h3>¿Qué pasa después de crear?</h3>
+<div class="table-wrap"><table><thead><tr><th>Escenario</th><th>Estado</th><th>¿Qué sigue?</th></tr></thead><tbody>
+<tr><td>Sin transporte</td><td><span class="badge badge-pending">Pendiente</span></td><td>Asigná transporte desde el detalle</td></tr>
+<tr><td>Transportista USO</td><td><span class="badge badge-assigned">Asignado</span></td><td>El transportista acepta y asigna camión</td></tr>
+<tr><td>Transportista CONSULTA</td><td><span class="badge badge-progress">A campo</span></td><td>Avanza automáticamente — solo falta finalizar</td></tr>
+<tr><td>Flota propia</td><td><span class="badge badge-progress">A campo</span></td><td>Avanza automáticamente</td></tr>
+</tbody></table></div>
+
+<h2 id="planta-seguimiento">1.4. Seguimiento de fletes</h2>
+<h3>La lista de fletes</h3>
+<p>En <strong>Fletes</strong> ves todos tus fletes organizados por estado en columnas: Pendientes, En curso, Finalizados y Cancelados. Podés filtrar por fecha, producto, transportista y más.</p>
+<div class="screenshot has-img"><img src="capturas/5.png" alt="Lista de fletes organizada por estado"></div>
+
+<h3>El detalle del flete</h3>
+<p>Tocá cualquier flete para ver: estado actual, barra de progreso, datos del viaje, camión y chofer, mapa con ruta, documentos y botones de acción.</p>
+<div class="screenshot has-img"><img src="capturas/6.png" alt="Detalle de un flete con progreso y mapa"></div>
+
+<h3>Cambiar el estado</h3>
+<div class="table-wrap"><table><thead><tr><th>Si productor es...</th><th>Y transportista es...</th><th>Entonces...</th></tr></thead><tbody>
+<tr><td>CONSULTA</td><td>CONSULTA</td><td>Salta automáticamente hasta "A campo". Solo tocás "Finalizar entrega".</td></tr>
+<tr><td>CONSULTA</td><td>USO</td><td>El transportista acepta, asigna camión/chofer, y marca el progreso.</td></tr>
+<tr><td>USO</td><td>CONSULTA</td><td>El productor gestiona la creación, transporte se asigna directo.</td></tr>
+<tr><td>USO</td><td>USO</td><td>Cada parte gestiona lo suyo.</td></tr>
+</tbody></table></div>
+
+<h2 id="planta-asignar">1.5. Asignar transporte</h2>
+<ol class="steps">
+  <li>Abrí el flete en estado <span class="badge badge-pending">Pendiente</span></li>
+  <li>Tocá <strong>"Asignar transporte"</strong></li>
+  <li>Elegí entre <strong>Empresa</strong> (transportista vinculado) o <strong>Flota propia</strong></li>
+  <li>Seguí el wizard de 3 pasos: <strong>Vehículo → Chofer → Toneladas</strong></li>
+</ol>
+<div class="screenshot has-img screenshot-pair" style="display:flex;gap:16px;flex-wrap:wrap;justify-content:center;padding:16px">
+  <img src="capturas/7.1.png" alt="Selección de empresa transportista" style="max-width:280px;border-radius:10px;border:1px solid var(--b1)">
+  <img src="capturas/7.2.png" alt="Wizard de 3 pasos: Vehículo, Chofer, Toneladas" style="max-width:320px;border-radius:10px;border:1px solid var(--b1)">
+</div>
+
+<h3>Sugerencias de asignación</h3>
+<p>Tolvink recomienda transportistas basándose en 5 factores: <strong>proximidad, capacidad, historial, disponibilidad y confiabilidad</strong>. Si tenés flota propia, tus camiones aparecen con bonus de prioridad.</p>
+
+<h3>Multi-camión</h3>
+<p>Podés asignar varios vehículos al mismo flete, cada uno con su chofer y toneladas. Tocá el botón <strong>"+"</strong> en el detalle para agregar otro viaje.</p>
+
+<h2 id="planta-docs">1.6. Documentos y OCR</h2>
+<p>Todo lo que se adjunta a un flete queda digitalizado: remitos, tickets de pesaje, cartas de porte.</p>
+<h3>Procesar con OCR</h3>
+<ol class="steps">
+  <li>Subí la foto del documento al flete</li>
+  <li>Tocá <strong>"Procesar con OCR"</strong></li>
+  <li>Tolvink extrae: peso bruto, tara, neto, producto, patente, fecha, etc.</li>
+  <li>Revisá, corregí si hace falta, y guardá</li>
+</ol>
+<div class="screenshot has-img"><img src="capturas/8.png" alt="Resultado del OCR con datos extraídos"></div>
+<div class="callout callout-warn"><strong>IMPORTANTE</strong>Si el OCR tiene baja confianza (menos del 15% de campos detectados), te lo indica. Revisá bien los datos en ese caso.</div>
+
+<h2 id="planta-compartir">1.7. Compartir información</h2>
+<div class="table-wrap"><table><thead><tr><th>Tipo de link</th><th>¿Qué muestra?</th><th>Duración</th></tr></thead><tbody>
+<tr><td><strong>Flete</strong></td><td>Detalle completo con mapa</td><td>72 horas</td></tr>
+<tr><td><strong>Portal</strong></td><td>Lista de fletes de una empresa</td><td>30 días</td></tr>
+<tr><td><strong>Ticket</strong></td><td>Ticket de pesaje individual</td><td>7 días</td></tr>
+</tbody></table></div>
+<p>En el detalle del flete, tocá el ícono de compartir. Copiá el link o mandalo directo por WhatsApp al productor. La otra persona ve todo sin necesitar cuenta.</p>
+
+<h2 id="planta-ubicaciones">1.8. Ubicaciones</h2>
+<h3>Crear un campo</h3>
+<ol class="steps">
+  <li>Andá a <strong>Mapa</strong> en la navegación</li>
+  <li>Tocá <strong>"+ Agregar"</strong> → <strong>"Nuevo campo"</strong></li>
+  <li>Ingresá el <strong>nombre</strong>, marcá la <strong>ubicación</strong> en el mapa</li>
+  <li>Seleccioná la <strong>empresa</strong> propietaria</li>
+  <li>Tocá <strong>"Guardar"</strong></li>
+</ol>
+<div class="screenshot has-img"><img src="capturas/9.png" alt="Pantalla de ubicaciones con mapa y campos"></div>
+<p>Como planta, podés gestionar campos para productores vinculados. Un productor CONSULTA los ve pero no puede modificarlos.</p>
+
+<h2 id="planta-flota">1.9. Flota</h2>
+<h3>Crear un camión</h3>
+<ol class="steps">
+  <li>Andá a <strong>Menú → Flota</strong></li>
+  <li>Tocá <strong>"+ Nuevo camión"</strong></li>
+  <li>Completá: <strong>patente, marca, modelo, capacidad</strong></li>
+  <li>Seleccioná la <strong>empresa</strong> propietaria</li>
+</ol>
+<h3>Crear un chofer</h3>
+<ol class="steps">
+  <li>En <strong>Flota → Choferes</strong>, tocá <strong>"+ Nuevo chofer"</strong></li>
+  <li>Completá: <strong>nombre, teléfono, cédula</strong></li>
+</ol>
+<p>Si tu planta tiene <strong>flota propia</strong>, podés asignar tus camiones directamente sin necesidad de un transportista externo.</p>
+
+<h2 id="planta-admin">1.10. Administración</h2>
+<ol class="steps">
+  <li>Andá a <strong>Menú → Admin</strong></li>
+  <li>En <strong>Usuarios</strong>, editá datos, cambiá roles, o desactivá usuarios</li>
+  <li>Podés crear usuarios para empresas vinculadas</li>
+  <li>Para importar masivamente, tocá <strong>"Importar Excel"</strong> y usá la plantilla modelo</li>
+</ol>
+
+<h2 id="planta-reportes">1.11. Reportes</h2>
+<ol class="steps">
+  <li>Andá a <strong>Menú → Reportes</strong></li>
+  <li>Seleccioná el <strong>período</strong> y filtrá por empresa, producto o estado</li>
+  <li>Ves un resumen con totales de toneladas y cantidad de fletes</li>
+  <li>Tocá <strong>"Exportar"</strong> para descargar en Excel o PDF</li>
+</ol>
+
+<!-- ═══════ PARTE 2 — PRODUCTOR ═══════ -->
+
+<h2 id="productor-uso">2.1. Productor USO</h2>
+<p>Tenés control total: creás fletes, elegís transporte, gestionás tus campos y hacés seguimiento.</p>
+<h3>Crear un flete</h3>
+<ol class="steps">
+  <li>Tocá <strong>"Solicitar flete"</strong></li>
+  <li>Elegí <strong>producto, cantidad, origen</strong> (tu campo), <strong>destino</strong> (planta), <strong>fecha</strong></li>
+  <li>Elegí <strong>transporte</strong>: tu flota, un transportista, o delegar a la planta</li>
+  <li>Confirmá y listo</li>
+</ol>
+<div class="callout callout-tip"><strong>TIP</strong>Si tenés un transportista de confianza, lo elegís directamente. Si no, tocá "Delegar a planta" y ellos se encargan.</div>
+
+<h2 id="productor-consulta">2.2. Productor CONSULTA</h2>
+<p>Tu planta se encarga de todo. Vos solo ves cómo van las cosas. <strong>Y está bien</strong> — es la opción ideal si preferís no complicarte.</p>
+<h3>Qué podés hacer</h3>
+<ul><li>✅ Ver tus fletes y su detalle (mapa, camión, documentos)</li><li>✅ Abrir links de seguimiento</li><li>✅ Consultar por WhatsApp</li></ul>
+<h3>Qué NO podés hacer</h3>
+<div class="table-wrap"><table><thead><tr><th>Acción</th><th>¿Quién lo hace?</th></tr></thead><tbody>
+<tr><td>Crear fletes</td><td>La planta</td></tr>
+<tr><td>Asignar camión</td><td>La planta</td></tr>
+<tr><td>Cambiar estado</td><td>La planta o transportista</td></tr>
+<tr><td>Crear campos</td><td>La planta</td></tr>
+</tbody></table></div>
+
+<!-- ═══════ PARTE 3 — TRANSPORTISTA ═══════ -->
+
+<h2 id="transport-uso">3.1. Transportista USO</h2>
+<p>Tolvink te avisa cuando te asignan un flete. Podés aceptarlo, asignar tu camión y chofer, y darle seguimiento hasta la entrega.</p>
+<h3>Aceptar un flete</h3>
+<ol class="steps">
+  <li>Abrí el flete <span class="badge badge-assigned">Asignado</span></li>
+  <li>Tocá <strong>"Aceptar"</strong></li>
+  <li>Elegí <strong>Vehículo → Chofer → Toneladas</strong></li>
+  <li>El flete pasa a <span class="badge badge-progress">A campo</span></li>
+</ol>
+<div class="callout callout-info"><strong>SABÍAS QUE</strong>"Aceptar" como transportista significa asignar tu camión y chofer. Al asignar tu equipo, estás confirmando que tomás el flete.</div>
+<p>Si no podés hacer el viaje, tocá <strong>"Rechazar"</strong> e indicá la razón.</p>
+
+<h2 id="transport-consulta">3.2. Transportista CONSULTA</h2>
+<p>La planta asigna tus camiones, elige los choferes y gestiona los viajes. Vos solo ves la información.</p>
+<ul><li>✅ Ver viajes asignados</li><li>✅ Ver detalles y links de seguimiento</li><li>✅ Consultar por WhatsApp</li></ul>
+<p>Si necesitás más autonomía, pedile a la planta que te cambie a nivel USO.</p>
+
+<!-- ═══════ PARTE 4 — CHOFER ═══════ -->
+
+<h2 id="chofer">4. Guía para chofer</h2>
+<p>Tolvink es tu hoja de ruta digital. Ves qué viaje tenés asignado, tocás un botón cuando salís, otro cuando cargás, y otro cuando entregás.</p>
+<h3>Tu viaje paso a paso</h3>
+<ol class="steps">
+  <li><strong>Ver el viaje</strong> — Te aparece: "Soja · 30tn · Campo La Esperanza → Fomento NH"</li>
+  <li><strong>Iniciar viaje</strong> — Cuando salís, tocá el botón. Todos ven que estás en camino.</li>
+  <li><strong>Confirmar carga</strong> — En la balanza, ingresá las toneladas. Opcionalmente, foto del ticket.</li>
+  <li><strong>Confirmar entrega</strong> — Cuando descargás en la planta. El flete se completa.</li>
+</ol>
+<p>Tocá <strong>"Ver ruta"</strong> para abrir Google Maps con indicaciones hasta el destino.</p>
+<div class="callout callout-consulta"><strong>Si tu empresa es CONSULTA</strong>No vas a ver botones de acción. La planta gestiona todo. Vos solo ves a dónde ir.</div>
+
+<!-- ═══════ PARTE 5 — WHATSAPP ═══════ -->
+
+<h2 id="wa-empezar">5.1. Tolvink por WhatsApp</h2>
+<ol class="steps">
+  <li>Solicitá a la planta el número y agregalo a tus contactos como "Tolvink"</li>
+  <li>Mandále un mensaje: <em>"Hola"</em></li>
+  <li>El asistente te responde al instante — ya podés empezar</li>
+</ol>
+<div class="callout callout-tip"><strong>💡 TIP</strong>No necesitás comandos exactos. Escribí como le hablarías a un compañero.</div>
+
+<h2 id="wa-preguntar">5.2. Qué podés preguntar</h2>
+<h4>🧑‍🤝‍🧑 Todos los usuarios</h4>
+<ul><li><em>"¿Cómo van mis fletes?"</em></li><li><em>"Mostrá mis fletes activos"</em></li><li><em>"Mandame el link de seguimiento del último flete"</em></li></ul>
+<h4>🏭 Planta / Productor USO</h4>
+<ul><li><em>"Quiero crear un flete"</em></li><li><em>"Creá un flete de 30tn de soja desde Campo La Esperanza"</em></li><li><em>"Duplicá el último flete"</em></li></ul>
+<h4>🚛 Transportista USO</h4>
+<ul><li><em>"¿Qué fletes tengo pendientes?"</em></li><li><em>"Aceptar el flete F26-ABC.1234"</em></li></ul>
+<h4>👤 Chofer</h4>
+<ul><li><em>"¿Qué viaje tengo hoy?"</em></li><li><em>"Iniciar viaje"</em></li><li><em>"Confirmar carga de 32 toneladas"</em></li></ul>
+
+<h2 id="wa-tips">5.3. Tips y limitaciones</h2>
+<ul>
+  <li>Escribí como le hablarías a un compañero</li>
+  <li>Podés mandar audios 🎤 — Tolvink los transcribe</li>
+  <li>Sé específico: "flete de soja de hoy" es mejor que "mi flete"</li>
+</ul>
+<h4>Qué NO puede hacer WhatsApp</h4>
+<div class="table-wrap"><table><thead><tr><th>Limitación</th><th>Alternativa</th></tr></thead><tbody>
+<tr><td>Editar ubicaciones en el mapa</td><td>Usá la web</td></tr>
+<tr><td>Importar datos desde Excel</td><td>Web → Admin → Importar</td></tr>
+<tr><td>Ver gráficos de reportes</td><td>Web → Reportes</td></tr>
+<tr><td>Gestionar usuarios y roles</td><td>Web → Admin</td></tr>
+</tbody></table></div>
+
+<!-- ═══════ PARTE 6 — SITUACIONES ═══════ -->
+
+<h2 id="situaciones">6. Situaciones frecuentes</h2>
+<h3>"Creé un flete y me equivoqué"</h3>
+<p>Si está en <span class="badge badge-pending">Pendiente</span> o <span class="badge badge-assigned">Asignado</span>, podés editarlo desde el detalle. Si ya está en viaje, cancelalo y creá uno nuevo.</p>
+<h3>"El camión no llegó y quiero cancelar"</h3>
+<p>En el detalle, tocá <strong>"Cancelar flete"</strong>, ingresá una razón y confirmá.</p>
+<h3>"Quiero digitalizar un remito"</h3>
+<p>Subí la foto al flete → <strong>"Procesar con OCR"</strong> → revisá los datos → guardá.</p>
+<h3>"Quiero ver todos los fletes del mes"</h3>
+<p>En <strong>Fletes</strong>, usá los filtros de fecha y empresa.</p>
+<h3>"Quiero compartir por WhatsApp"</h3>
+<p>En el detalle, tocá el ícono de compartir. Se genera un link que podés mandar por WhatsApp.</p>
+<h3>"No me acuerdo la contraseña"</h3>
+<p>En la pantalla de login, tocá <strong>"¿Olvidaste tu contraseña?"</strong>. Ingresá tu email y recibirás un código.</p>
+<h3>"Quiero ver dónde está el camión"</h3>
+<p>Abrí el detalle de un flete <span class="badge badge-progress">A campo</span> o <span class="badge badge-loaded">A planta</span>. El mapa muestra la ubicación en tiempo real.</p>
+<h3>"Quiero exportar datos"</h3>
+<p><strong>Menú → Reportes</strong>, seleccioná período, tocá <strong>"Exportar"</strong>. Se descarga un Excel completo.</p>
+
+<!-- ═══════ CONTACTO ═══════ -->
+
+<h2 id="contacto">Contacto y soporte</h2>
+<ul>
+  <li><span class="ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--pri)" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg></span> <strong>Teléfono:</strong> +598 98 247 552</li>
+  <li><span class="ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--pri)" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22 6 12 13 2 6"/></svg></span> <strong>Email:</strong> tolvink.uy@gmail.com</li>
+  <li><span class="ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--pri)" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span> <strong>Chat IA:</strong> Botón en la esquina inferior derecha de tolvink.com</li>
+</ul>
+
+<br><br>
+<div style="text-align:center;padding:32px 0;border-top:1px solid var(--b2);color:var(--t3);font-size:13px">
+  <div class="logo-wrap" style="justify-content:center;margin-bottom:8px">
+    <span class="logo-text" style="font-size:28px">tolvink</span><span class="logo-dot" style="width:7px;height:7px;margin-left:2px;margin-top:2px;border-radius:6px"></span>
+  </div>
+  <br>Plataforma de logística agrícola<br>Manual de Uso — Marzo 2026<br><br><em>tolvink.com</em>
+</div>
+
+</div></div></div>
+
+<script>
+function toggleSidebar(){
+  document.getElementById('sidebar').classList.toggle('open');
+  document.querySelector('.sidebar-overlay').classList.toggle('open');
+}
+var navLinks=document.querySelectorAll('.nav-link');
+var observer=new IntersectionObserver(function(entries){
+  entries.forEach(function(e){
+    if(e.isIntersecting){
+      navLinks.forEach(function(l){l.classList.remove('active')});
+      var link=document.querySelector('.nav-link[href="#'+e.target.id+'"]');
+      if(link)link.classList.add('active');
+    }
+  });
+},{rootMargin:'-20% 0px -70% 0px'});
+document.querySelectorAll('h2[id]').forEach(function(h){observer.observe(h)});
+navLinks.forEach(function(l){l.addEventListener('click',function(){
+  if(window.innerWidth<=768){
+    document.getElementById('sidebar').classList.remove('open');
+    document.querySelector('.sidebar-overlay').classList.remove('open');
+  }
+})});
+</script>
+</body>
+</html>
