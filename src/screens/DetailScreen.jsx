@@ -171,9 +171,10 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
     // Optimistic: update display immediately
     setTruckCountLocal(next);
     if (delta > 0) {
-      // Plant/Producer: skip intermediate modal, open AssignModal directly
+      // Plant/Producer: update truckCount in background, open AssignModal immediately
       if (user.userType === "plant" || user.userType === "producer") {
-        commitTruckCount(next).then(() => onAction(freight.id, "assign"));
+        commitTruckCount(next);
+        onAction(freight.id, "assign");
         return;
       }
       setTruckModal({ type: "add", next });
@@ -202,7 +203,8 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
     setTruckModal(null);
     if (!modal) return;
     if (modal.type === "add" && choice === "own_fleet") {
-      commitTruckCount(modal.next).then(() => onAction(freight.id, "assign"));
+      commitTruckCount(modal.next);
+      onAction(freight.id, "assign");
     } else {
       commitTruckCount(modal.next);
     }
