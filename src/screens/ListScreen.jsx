@@ -442,14 +442,6 @@ export default memo(function ListScreen({ freights, loading, onNav, onRefresh, c
           </div>}
           {!pa && waitText && <div style={{ fontSize:11, color:C.t3, marginTop:3 }}>{waitText}</div>}
         </div>
-        {/* Quick action button (plant only) */}
-        {isPlantUser && onAction && pa && pa.actionKey && (
-          <div style={{ display:"flex", alignItems:"center", paddingRight:6, flexShrink:0 }}>
-            <button onClick={(e)=>{e.stopPropagation();onAction(f.id, pa.actionKey, pa.assignmentId);}} title={pa.action} style={{ width:32, height:32, borderRadius: R.md, border:`1.5px solid ${pa.color}30`, background:`${pa.color}10`, color:pa.color, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", flexShrink:0 }}>
-              {pa.icon === "assign" ? Ic.truck(pa.color,15) : pa.icon === "confirm" ? Ic.chk(pa.color,15) : pa.icon === "authorize" ? Ic.chk(pa.color,15) : Ic.nav(pa.color,15)}
-            </button>
-          </div>
-        )}
       </div>
     );
   };
