@@ -36,6 +36,11 @@ export function resolveUserTypeForFreight(freight, user) {
 
 // Multi-truck: find most urgent action across user's assignments
 function getMultiTruckPendingAction(freight, userType, role, user) {
+  // Plant approval takes priority over everything else
+  if (userType === "plant" && freight.needsPlantApproval && !freight.plantApprovedAt) {
+    return { action: "Aprobar flete", color: C.sec, icon: "approve", actionKey: "approve_producer", groupKey: "approve_producer" };
+  }
+
   const aa = freight.activeAssignments || [];
   if (!aa.length) {
     if (userType === "plant" && freight.assignedTruckCount < freight.truckCount) {
@@ -44,11 +49,8 @@ function getMultiTruckPendingAction(freight, userType, role, user) {
     return null;
   }
 
-  // Plant: check plant approval first, then more trucks needed, authorize own-fleet, or confirm
+  // Plant: check if more trucks needed, authorize own-fleet, or confirm
   if (userType === "plant") {
-    if (freight.needsPlantApproval && !freight.plantApprovedAt) {
-      return { action: "Aprobar flete", color: C.sec, icon: "approve", actionKey: "approve_producer", groupKey: "approve_producer" };
-    }
     if (freight.assignedTruckCount < freight.truckCount) {
       return { action: `Asignar ${freight.truckCount - freight.assignedTruckCount} camiones`, color: C.acc, icon: "assign", actionKey: "assign_multi", groupKey: "assign" };
     }
