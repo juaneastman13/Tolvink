@@ -5,6 +5,9 @@ import { typeLabels } from "../utils/freight-helpers";
 const TYPE_MAP = { planta: "plant", productor: "producer", transportista: "transporter" };
 const TYPE_MAP_REVERSE = { plant: "Planta", producer: "Productor", transporter: "Transportista" };
 const VALID_ROLES = ["operario", "gerente", "chofer"];
+const VALID_ACCESS = ["uso", "consulta"];
+const ACCESS_MAP = { uso: "OPERATOR", consulta: "READONLY" };
+const ACCESS_DISPLAY = { uso: "Uso", consulta: "Consulta" };
 const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function validateCompanyRows(rows, existingCompanies) {
@@ -23,6 +26,8 @@ function validateCompanyRows(rows, existingCompanies) {
 
     const rawType = r.type?.toString().trim().toLowerCase();
     if (!rawType || !TYPE_MAP[rawType]) errors.push(`Tipo inválido: ${r.type || "(vacío)"}`);
+    const rawAccess = r.access?.toString().trim().toLowerCase();
+    if (!rawAccess || !VALID_ACCESS.includes(rawAccess)) errors.push(`Acceso inválido: ${r.access || "(vacío)"} — debe ser USO o CONSULTA`);
     if (r.email && !emailRe.test(r.email)) errors.push("Email inválido");
 
     // Partial matches (only if not already a full duplicate)
@@ -62,6 +67,8 @@ function validateUserRows(rows, existingCompanies, existingUsers) {
     if (!companyName) errors.push("Empresa requerida");
     else if (!companyMap.has(companyName.toLowerCase())) errors.push(`Empresa no encontrada: ${companyName}`);
     if (!role || !VALID_ROLES.includes(role)) errors.push(`Rol inválido: ${r.role || "(vacío)"}`);
+    const rawAccess = r.access?.toString().trim().toLowerCase();
+    if (!rawAccess || !VALID_ACCESS.includes(rawAccess)) errors.push(`Acceso inválido: ${r.access || "(vacío)"} — debe ser USO o CONSULTA`);
 
     // Partial matches
     if (!duplicate && name && email) {
@@ -78,15 +85,19 @@ function validateUserRows(rows, existingCompanies, existingUsers) {
 function mapExcelRow(row, type) {
   if (type === "companies") {
     const rawType = row["TIPO"]?.toString().trim().toLowerCase();
+    const rawAccess = (row["ACCESO"] ?? "").toString().trim().toLowerCase();
     return {
       name: row["NOMBRE"]?.toString().trim() || "",
       type: rawType || "",
+      access: rawAccess || "",
+      accessLevel: ACCESS_MAP[rawAccess] || null,
       email: row["EMAIL"]?.toString().trim() || null,
       phone: (row["TELEFONO"] ?? row["TELÉFONO"])?.toString().trim() || null,
       rut: row["RUT"]?.toString().trim() || null,
       hasInternalFleet: (row["FLOTA PROPIA"] ?? "").toString().trim().toUpperCase() === "SI",
     };
   }
+  const rawAccess = (row["ACCESO"] ?? "").toString().trim().toLowerCase();
   return {
     name: row["NOMBRE"]?.toString().trim() || "",
     email: row["EMAIL"]?.toString().trim() || "",
@@ -94,6 +105,8 @@ function mapExcelRow(row, type) {
     password: (row["CONTRASEÑA"] ?? row["CONTRASENA"] ?? row["PASSWORD"])?.toString().trim() || "",
     companyName: row["EMPRESA"]?.toString().trim() || "",
     role: row["ROL"]?.toString().trim().toLowerCase() || "",
+    access: rawAccess || "",
+    accessLevel: ACCESS_MAP[rawAccess] || null,
   };
 }
 
@@ -292,8 +305,8 @@ export default function ImportExcelModal({ mode, onClose, onImport, existingComp
                       </div>
                       <div style={{ fontSize: 11.5, color: C.t2 }}>
                         {isCompanies
-                          ? `${TYPE_MAP_REVERSE[TYPE_MAP[r.type?.toLowerCase()]] || r.type || "?"} ${r.rut ? `· RUT: ${r.rut}` : ""}`
-                          : `${r.companyName || "?"} · ${r.role || "?"}`}
+                          ? `${TYPE_MAP_REVERSE[TYPE_MAP[r.type?.toLowerCase()]] || r.type || "?"} · ${ACCESS_DISPLAY[r.access?.toLowerCase()] || r.access || "?"} ${r.rut ? `· RUT: ${r.rut}` : ""}`
+                          : `${r.companyName || "?"} · ${r.role || "?"} · ${ACCESS_DISPLAY[r.access?.toLowerCase()] || r.access || "?"}`}
                       </div>
                       {isDup && (
                         <div style={{ fontSize: 11, color: C.t3, marginTop: 2 }}>
