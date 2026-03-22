@@ -11,7 +11,7 @@ export default function MyDataScreen({ user, onBack, onUserUpdate }) {
   const [msg, setMsg] = useState(null);
   const [doneMsg, setDoneMsg] = useState("");
   const [expandedCo, setExpandedCo] = useState(null);
-  const [pwForm, setPwForm] = useState({ current:"", next:"" });
+  const [pwForm, setPwForm] = useState({ current:"", next:"", confirm:"" });
   const [pwSaving, setPwSaving] = useState(false);
   const [confirmModal, setConfirmModal] = useState(false);
   const [confirmPw, setConfirmPw] = useState("");
@@ -120,35 +120,41 @@ export default function MyDataScreen({ user, onBack, onUserUpdate }) {
         <input value={pwForm.current} onChange={e=>setPwForm(p=>({...p,current:e.target.value}))} placeholder="Contraseña actual" type="password" style={{...s.inp,marginBottom:10}} />
         <div style={s.lbl}>Nueva contraseña:</div>
         <input value={pwForm.next} onChange={e=>setPwForm(p=>({...p,next:e.target.value}))} placeholder="Mínimo 8 caracteres" type="password" style={{...s.inp,marginBottom:10}} />
+        <div style={s.lbl}>Confirmar nueva contraseña:</div>
+        <input value={pwForm.confirm} onChange={e=>setPwForm(p=>({...p,confirm:e.target.value}))} placeholder="Repetí la nueva contraseña" type="password" style={{...s.inp,marginBottom:10}} />
+        {pwForm.next && pwForm.confirm && pwForm.next !== pwForm.confirm && <div style={{color:C.err,fontSize:12.1,marginBottom:8}}>Las contraseñas no coinciden</div>}
         <button onClick={async()=>{
+          if(!pwForm.current) return show("Ingresá tu contraseña actual","err");
           if(!pwForm.next||pwForm.next.length<8) return show("Mínimo 8 caracteres","err");
+          if(pwForm.next!==pwForm.confirm) return show("Las contraseñas no coinciden","err");
           setPwSaving(true);
-          try { await apiChangePassword(pwForm.current,pwForm.next); setPwForm({current:"",next:""}); show("Contraseña actualizada"); } catch(e) { show(e.message||"Error","err"); }
+          try { await apiChangePassword(pwForm.current,pwForm.next); setPwForm({current:"",next:"",confirm:""}); show("Contraseña actualizada"); } catch(e) { show(e.message||"Error","err"); }
           finally { setPwSaving(false); }
-        }} disabled={pwSaving} style={s.btnP(C.pri,pwSaving)}>{pwSaving?"Guardando...":"Cambiar contraseña"}</button>
+        }} disabled={pwSaving||(!pwForm.next||!pwForm.confirm||pwForm.next!==pwForm.confirm)} style={s.btnP(C.pri,pwSaving||(!pwForm.next||!pwForm.confirm||pwForm.next!==pwForm.confirm))}>{pwSaving?"Guardando...":"Cambiar contraseña"}</button>
       </div>
 
       {msg&&<div style={{padding:"8px 12px",borderRadius: R.md,background:msg.k==="ok"?C.okPale:`${C.err}15`,color:msg.k==="ok"?C.ok:C.err,fontSize:13.2,marginTop:10}}>{msg.t}</div>}
       </div>
 
       {confirmModal && (
-        <div style={{position:"fixed",inset:0,background:C.bgOverlay,display:"flex",alignItems:"center",justifyContent:"center",zIndex:9999}}>
-          <div style={{background:C.bgCard,borderRadius: R.lg,padding:24,maxWidth:400,width:"90%",boxShadow:C.shLg}}>
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:9999}} onClick={e=>{if(e.target===e.currentTarget){setConfirmModal(false);setConfirmPw("");setConfirmErr(false);}}}>
+          <div style={{background:"#fff",borderRadius: R.lg,padding:24,maxWidth:400,width:"90%",boxShadow:"0 8px 32px rgba(0,0,0,0.2)"}}>
             <div style={{fontFamily:FONT,fontSize:16.5,fontWeight:700,color:C.t1,marginBottom:8}}>Confirmar cambios</div>
-            <div style={{fontFamily:FONT,fontSize:14.3,color:C.t2,marginBottom:16,lineHeight:1.5}}>Para confirmar los cambios, ingresá tu contraseña actual.</div>
+            <div style={{fontFamily:FONT,fontSize:14.3,color:C.t2,marginBottom:12,lineHeight:1.5}}>Cambiar email o teléfono requiere tu contraseña actual.</div>
+            <div style={{fontFamily:FONT,fontSize:12.1,fontWeight:600,color:C.t2,marginBottom:4}}>Contraseña actual:</div>
             <input
               type="password"
-              placeholder="Contraseña actual"
+              placeholder="Ingresá tu contraseña"
               value={confirmPw}
               onChange={e => { setConfirmPw(e.target.value); setConfirmErr(false); }}
               onKeyDown={e => e.key === "Enter" && confirmPw && !saving && doSave(confirmPw)}
               autoFocus
-              style={{width:"100%",padding:"10px 12px",borderRadius: R.md,border:`1.5px solid ${confirmErr?C.err:C.b1}`,fontFamily:FONT,fontSize:14.3,background:C.bgInput,color:C.t1,outline:"none",boxSizing:"border-box"}}
+              style={{width:"100%",padding:"10px 12px",borderRadius: R.md,border:`1.5px solid ${confirmErr?"#e53e3e":C.b1}`,fontFamily:FONT,fontSize:14.3,background:"#f8f9fa",color:"#1a1a1a",outline:"none",boxSizing:"border-box"}}
             />
-            {confirmErr && <div style={{color:C.err,fontSize:12.1,fontFamily:FONT,marginTop:4}}>Contraseña incorrecta</div>}
+            {confirmErr && <div style={{color:"#e53e3e",fontSize:12.1,fontFamily:FONT,marginTop:4}}>Contraseña incorrecta</div>}
             <div style={{display:"flex",gap:8,marginTop:16,justifyContent:"flex-end"}}>
               <button onClick={()=>{setConfirmModal(false);setConfirmPw("");setConfirmErr(false);}} style={{padding:"8px 16px",borderRadius: R.md,border:`1px solid ${C.b2}`,background:C.w,cursor:"pointer",fontFamily:FONT,fontSize:13.2,fontWeight:600,color:C.t2}}>Cancelar</button>
-              <button onClick={()=>doSave(confirmPw)} disabled={!confirmPw||saving} style={{padding:"8px 16px",borderRadius: R.md,border:"none",background:C.pri,cursor:"pointer",fontFamily:FONT,fontSize:13.2,fontWeight:700,color:C.w,opacity:confirmPw&&!saving?1:0.5}}>
+              <button onClick={()=>doSave(confirmPw)} disabled={!confirmPw||saving} style={{padding:"8px 16px",borderRadius: R.md,border:"none",background:C.pri,cursor:"pointer",fontFamily:FONT,fontSize:13.2,fontWeight:700,color:"#fff",opacity:confirmPw&&!saving?1:0.5}}>
                 {saving?"Confirmando...":"Confirmar"}
               </button>
             </div>
