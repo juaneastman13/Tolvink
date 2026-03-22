@@ -66,7 +66,7 @@ export default memo(function HomeScreen({ user, freights, loading, perms, onNav,
   const [dateFilterOpen, setDateFilterOpen] = useState(false);
   // Mobile tab: "pending" or "daily"
   const [mobileTab, setMobileTab] = useState("pending");
-  const { isConsulta } = useAccessLevel(user);
+  const { isConsulta, isConsultaFor } = useAccessLevel(user);
 
   const selectFreight = useCallback((id, source) => {
     setSelectedId(id);
@@ -159,11 +159,16 @@ export default memo(function HomeScreen({ user, freights, loading, perms, onNav,
   const effectiveType = useCallback((f) => resolveUserTypeForFreight(f, user), [user]);
 
   // I4: Compute pending actions ONCE per freight, reuse everywhere
+  // CONSULTA check: skip pending actions for freights where user is READONLY
   const pendingMap = useMemo(() => {
     const map = new Map();
-    filteredFreights.forEach(f => { map.set(f.id, getPendingActions(f, effectiveType(f), user.role, user)); });
+    filteredFreights.forEach(f => {
+      // Per-freight CONSULTA: if user is READONLY for this freight's destination, no pending actions
+      if (f.destCompanyId && isConsultaFor(f.destCompanyId)) return;
+      map.set(f.id, getPendingActions(f, effectiveType(f), user.role, user));
+    });
     return map;
-  }, [filteredFreights, effectiveType, user.id, user.role, user.companyId, user.userType, user.activeCompanyId, user.userTypes]);
+  }, [filteredFreights, effectiveType, user.id, user.role, user.companyId, user.userType, user.activeCompanyId, user.userTypes, isConsultaFor]);
 
   // Pending groups — grouped by pending action type
   const pendingByProgress = useMemo(() => {
