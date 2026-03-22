@@ -400,6 +400,7 @@ export async function apiAdminListUsers(search, companyId) {
   if(companyId)p.set('companyId',companyId);
   const q=p.toString(); return api(`/admin/users${q?`?${q}`:''}`);
 }
+export async function apiAdminSearchLinkable(search) { return api(`/admin/users/search-linkable?search=${encodeURIComponent(search)}`); }
 export async function apiAdminCreateUser(b) { return api('/admin/users',{body:b}); }
 export async function apiAdminUpdateUser(id,b) { return api(`/admin/users/${id}`,{method:'PATCH',body:b}); }
 export async function apiAdminAddUserCompany(userId,companyId,role) { return api(`/admin/users/${userId}/companies`,{body:{companyId,role}}); }

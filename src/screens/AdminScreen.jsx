@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { C, Ic, FONT, MONO , R} from "../theme";
 import { Btn, Field, Tabs, Select, Loader, Av, Bd, LoadingOverlay, NumericStepper, LicensePlate } from "../components";
-import { apiAdminStats, apiAdminActivity, apiAdminListCompanies, apiAdminGetCompany, apiAdminCreateCompany, apiAdminUpdateCompany, apiAdminListBranches, apiAdminCreateBranch, apiAdminUpdateBranch, apiAdminDeleteBranch, apiAdminListUsers, apiAdminCreateUser, apiAdminUpdateUser, apiAdminAddUserCompany, apiAdminUpdateUserCompany, apiAdminRemoveUserCompany, apiAdminListFields, apiAdminCreateField, apiAdminUpdateField, apiAdminDeleteField, apiAdminListLots, apiAdminCreateLot, apiAdminUpdateLot, apiAdminDeleteLot, apiAdminListTrucks, apiAdminCreateTruck, apiAdminUpdateTruck, apiAdminDeleteTruck, apiAdminImportCompanies, apiAdminImportUsers } from "../api";
+import { apiAdminStats, apiAdminActivity, apiAdminListCompanies, apiAdminGetCompany, apiAdminCreateCompany, apiAdminUpdateCompany, apiAdminListBranches, apiAdminCreateBranch, apiAdminUpdateBranch, apiAdminDeleteBranch, apiAdminListUsers, apiAdminCreateUser, apiAdminUpdateUser, apiAdminAddUserCompany, apiAdminUpdateUserCompany, apiAdminRemoveUserCompany, apiAdminListFields, apiAdminCreateField, apiAdminUpdateField, apiAdminDeleteField, apiAdminListLots, apiAdminCreateLot, apiAdminUpdateLot, apiAdminDeleteLot, apiAdminListTrucks, apiAdminCreateTruck, apiAdminUpdateTruck, apiAdminDeleteTruck, apiAdminImportCompanies, apiAdminImportUsers, apiAdminSearchLinkable } from "../api";
 import { adminStyles, typeColors, typeLabels, roleLabels, adminBackBtn } from "../utils/freight-helpers";
 import { LocationPicker } from "../maps";
 import AccessScreen from "./AccessScreen";
@@ -32,7 +32,7 @@ export default function AdminScreen({ user, onBack }) {
   const [activityPage, setActivityPage] = useState(1);
   const [activityLoading, setActivityLoading] = useState(false);
 
-  // Views: list | companyForm | companyDetail | userForm | userEdit
+  // Views: list | companyForm | companyDetail | userForm | userEdit | linkUser
   const [view, setView] = useState("list");
   const [companyForm, setCompanyForm] = useState({ name:"",type:"producer",phone:"",email:"",rut:"",hasInternalFleet:false,lat:null,lng:null,address:"" });
   const [editCompanyId, setEditCompanyId] = useState(null);
@@ -73,6 +73,20 @@ export default function AdminScreen({ user, onBack }) {
   const [addCompanyId, setAddCompanyId] = useState("");
   const [addCompanyRole, setAddCompanyRole] = useState("operario");
   const [confirmRemove, setConfirmRemove] = useState(null);
+
+  // Link existing user
+  const [linkSearch, setLinkSearch] = useState("");
+  const [linkResults, setLinkResults] = useState([]);
+  const [linkSearching, setLinkSearching] = useState(false);
+  const [linkRole, setLinkRole] = useState("operario");
+  const linkTimerRef = useRef(null);
+  // Auto-search when redirected from createUser with pre-filled email
+  useEffect(() => {
+    if (view === "linkUser" && linkSearch.trim().length >= 2 && linkResults.length === 0 && !linkSearching) {
+      setLinkSearching(true);
+      apiAdminSearchLinkable(linkSearch.trim()).then(r => setLinkResults(r||[])).catch(() => setLinkResults([])).finally(() => setLinkSearching(false));
+    }
+  }, [view]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Import modal: null | "companies" | "users"
   const [importMode, setImportMode] = useState(null);
@@ -233,6 +247,7 @@ export default function AdminScreen({ user, onBack }) {
   });
 
   const openNewUser = () => { setUserForm({name:"",email:"",phone:"",password:"",userTypes:[],companyByType:{},roleByType:{},_selectedCompanyId:""}); setActiveUserType(null); setView("userForm"); };
+  const openLinkUser = () => { setLinkSearch(""); setLinkResults([]); setLinkRole("operario"); setView("linkUser"); };
 
   const openEditUser = (u) => {
     const cbt = u.companyByType && typeof u.companyByType === "object" ? {...u.companyByType} : {};
@@ -261,7 +276,14 @@ export default function AdminScreen({ user, onBack }) {
     const firstRole = rawRole === "chofer" ? "operator" : rawRole;
     const {_selectedCompanyId, ...payload} = userForm;
     try { await apiAdminCreateUser({...payload, companyId:firstCompanyId, role:firstRole, companyByType:cbt, roleByType:rbt}); setDoneMsg("Usuario creado"); useCatalogStore.getState().clearCache(); setView("list"); await load(); }
-    catch(e) { show(e.message,"err"); }
+    catch(e) {
+      const msg = (e.message||"").toLowerCase();
+      if (msg.includes("email ya registrado") || msg.includes("ya existe")) {
+        if (window.confirm("Ya existe un usuario con ese email. ¿Querés vincularlo a tu empresa?")) {
+          setLinkSearch(userForm.email); setLinkResults([]); setLinkRole("operario"); setView("linkUser");
+        }
+      } else { show(e.message,"err"); }
+    }
     finally { setSaving(false); }
   };
 
@@ -598,6 +620,82 @@ export default function AdminScreen({ user, onBack }) {
     );
   }
 
+  // ===================== LINK EXISTING USER =====================
+  if (view==="linkUser") {
+    const doLinkSearch = (q) => {
+      setLinkSearch(q);
+      clearTimeout(linkTimerRef.current);
+      if (q.trim().length < 2) { setLinkResults([]); setLinkSearching(false); return; }
+      setLinkSearching(true);
+      linkTimerRef.current = setTimeout(async () => {
+        try { const r = await apiAdminSearchLinkable(q.trim()); setLinkResults(r||[]); }
+        catch { setLinkResults([]); }
+        finally { setLinkSearching(false); }
+      }, 400);
+    };
+    const handleLink = async (userId) => {
+      const companyId = user.activeCompanyId || user.companyId;
+      if (!companyId) return show("No tenés empresa activa","err");
+      setSaving(true);
+      try {
+        await apiAdminAddUserCompany(userId, companyId, linkRole);
+        setDoneMsg("Usuario vinculado a tu empresa");
+        useCatalogStore.getState().clearCache();
+        setView("list");
+        await load();
+      } catch(e) { show(e.message,"err"); }
+      finally { setSaving(false); }
+    };
+    return (
+      <div style={{flex:1,overflow:"auto",padding:18}}>
+        {(saving||doneMsg) && <LoadingOverlay closing={!!doneMsg} closingText={doneMsg} onClose={()=>setDoneMsg("")}/>}
+        {adminBackBtn(()=>setView("list"))}
+        <div style={{fontSize:17.6,fontWeight:700,color:C.t1,marginBottom:4}}>Vincular usuario existente</div>
+        <div style={{fontSize:12.7,color:C.t3,marginBottom:14}}>Buscá por nombre, email o teléfono un usuario ya registrado en Tolvink para darle acceso a tu empresa.</div>
+        <div style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius: R.md,padding:14,boxShadow:C.sh,marginBottom:12}}>
+          <div style={s.lbl}>Buscar usuario:</div>
+          <input value={linkSearch} onChange={e=>doLinkSearch(e.target.value)} placeholder="Email, nombre o teléfono..." style={{...s.inp,marginBottom:10}} autoFocus />
+          <div style={s.lbl}>Rol a asignar:</div>
+          <select value={linkRole} onChange={e=>setLinkRole(e.target.value)} style={{...s.sel,marginBottom:10}}>
+            <option value="operario">Operario</option>
+            <option value="gerente">Gerente</option>
+            <option value="chofer">Chofer</option>
+          </select>
+        </div>
+        {linkSearching && <div style={{textAlign:"center",padding:16,color:C.t3,fontSize:13.2}}>Buscando...</div>}
+        {!linkSearching && linkSearch.trim().length >= 2 && linkResults.length === 0 && (
+          <div style={{textAlign:"center",padding:24,color:C.t3,fontSize:13.2}}>No se encontraron usuarios disponibles para vincular.</div>
+        )}
+        <div style={{display:"flex",flexDirection:"column",gap:8}}>
+          {linkResults.map(u => {
+            const currentCompanies = [
+              ...(u.company ? [u.company.name] : []),
+              ...(u.memberships||[]).map(m=>m.company?.name).filter(Boolean),
+            ].filter((v,i,a)=>a.indexOf(v)===i);
+            return (
+              <div key={u.id} style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius: R.md,padding:"12px 14px",boxShadow:C.sh,display:"flex",alignItems:"center",gap:12}}>
+                <div style={{flex:1}}>
+                  <div style={{fontSize:15.4,fontWeight:700,color:C.t1}}>{u.name}</div>
+                  <div style={{fontSize:12.7,color:C.t2}}>{u.email}</div>
+                  {u.phone && <div style={{fontSize:12.1,color:C.t3}}>{u.phone}</div>}
+                  {currentCompanies.length > 0 && (
+                    <div style={{display:"flex",gap:4,marginTop:4,flexWrap:"wrap"}}>
+                      {currentCompanies.map((n,i) => <Bd key={i} color={C.t2}>{n}</Bd>)}
+                    </div>
+                  )}
+                </div>
+                <button onClick={()=>handleLink(u.id)} disabled={saving} style={{padding:"8px 16px",borderRadius: R.md,border:"none",background:C.pri,color:"#fff",fontSize:13.2,fontWeight:700,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap",opacity:saving?0.5:1}}>
+                  Vincular
+                </button>
+              </div>
+            );
+          })}
+        </div>
+        <MsgBar/>
+      </div>
+    );
+  }
+
   // ===================== COMPANY DETAIL =====================
   if (view==="companyDetail" && selectedCompany) {
     const cType = selectedCompany.type;
@@ -889,8 +987,9 @@ export default function AdminScreen({ user, onBack }) {
         )}
 
         {tab==="users"&&(<>
-          <div style={{display:"flex",gap:8,marginBottom:8}}>
-            <button onClick={openNewUser} style={{flex:1,padding:"10px 14px",borderRadius: R.md,border:`1px dashed ${C.acc}`,background:`${C.acc}08`,color:C.acc,fontSize:14.3,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>+ Nuevo Usuario</button>
+          <div style={{display:"flex",gap:8,marginBottom:8,flexWrap:"wrap"}}>
+            <button onClick={openNewUser} style={{flex:1,padding:"10px 14px",borderRadius: R.md,border:`1px dashed ${C.acc}`,background:`${C.acc}08`,color:C.acc,fontSize:13.2,fontWeight:600,cursor:"pointer",fontFamily:"inherit",minWidth:120}}>+ Nuevo Usuario</button>
+            <button onClick={openLinkUser} style={{flex:1,padding:"10px 14px",borderRadius: R.md,border:`1px dashed ${C.pri}`,background:`${C.pri}08`,color:C.pri,fontSize:13.2,fontWeight:600,cursor:"pointer",fontFamily:"inherit",minWidth:120}}>+ Usuario Existente</button>
             <button onClick={()=>setImportMode("users")} style={{padding:"10px 14px",borderRadius: R.md,border:`1px solid ${C.acc}`,background:`${C.acc}08`,color:C.acc,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>Importar Excel</button>
           </div>
           <div style={{display:"flex",flexDirection:"column",gap:8}}>
