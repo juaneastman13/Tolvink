@@ -1,8 +1,8 @@
-import { memo } from "react";
+import { memo, useState, useCallback } from "react";
 import { C, Ic, MONO, R, STATUS_COLORS } from "../theme";
 import { LicensePlate } from "./ui/LicensePlate";
 import { formatFreightDate } from "../constants";
-import { originDisplay, destDisplay } from "../hooks";
+import { originDisplay, destDisplay, useIsDesktop } from "../hooks";
 
 const MESES_SHORT = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
 function fmtDateTime(dateStr, timeStr) {
@@ -40,8 +40,39 @@ function StatusPill({ status, small }) {
   );
 }
 
+// ======================== PLATES POPUP ==================================
+function PlatesPopup({ assignments, onClose }) {
+  const plates = (assignments || []).filter(a => a.plate);
+  return (
+    <div onClick={onClose} style={{ position:"fixed", inset:0, zIndex:9999, background:"rgba(0,0,0,0.3)", display:"flex", alignItems:"center", justifyContent:"center" }}>
+      <div onClick={e => e.stopPropagation()} style={{ background:C.w, borderRadius: R.lg, padding:"16px 20px", width:"min(300px,85vw)", boxShadow:"0 8px 32px rgba(0,0,0,0.2)" }}>
+        <div style={{ fontSize:15, fontWeight:700, color:C.t1, marginBottom:12 }}>Matrículas ({plates.length})</div>
+        {plates.length === 0 && <div style={{ fontSize:13, color:C.t3 }}>Sin camiones asignados</div>}
+        {plates.map((a, i) => (
+          <div key={a.id || i} style={{ display:"flex", alignItems:"center", gap:8, padding:"6px 0", borderBottom: i < plates.length - 1 ? `1px solid ${C.b1}` : "none" }}>
+            <span style={{ fontSize:13, fontWeight:700, color:C.t3, minWidth:20 }}>#{a.tripNumber || i + 1}</span>
+            <LicensePlate plate={a.plate} size="sm" />
+            {a.transporterName && <span style={{ fontSize:11, color:C.t2 }}>{a.transporterName}</span>}
+          </div>
+        ))}
+        <button onClick={onClose} style={{ marginTop:12, width:"100%", padding:"8px 0", borderRadius: R.md, border:`1px solid ${C.b1}`, background:C.w, color:C.t2, fontSize:13, fontWeight:500, cursor:"pointer", fontFamily:"inherit" }}>Cerrar</button>
+      </div>
+    </div>
+  );
+}
+
+function VerMatriculas({ freight }) {
+  const [open, setOpen] = useState(false);
+  const toggle = useCallback((e) => { e.stopPropagation(); setOpen(p => !p); }, []);
+  return <>
+    <span onClick={toggle} style={{ fontSize:11, color:C.info, fontWeight:600, cursor:"pointer", whiteSpace:"nowrap" }}> · Ver matrículas</span>
+    {open && <PlatesPopup assignments={freight.activeAssignments} onClose={toggle} />}
+  </>;
+}
+
 // ======================== FULL CARD ====================================
 export const FreightCard = memo(function FreightCard({ freight: f, onClick, style, selected, checkbox }) {
+  const isDesktop = useIsDesktop();
   const sc = STATUS_COLORS[f.status] || STATUS_COLORS.pending_assignment;
   const origin = originDisplay(f) || f.originCompanyName || "Sin origen";
   const dest = destDisplay(f) || "Sin destino";
@@ -52,6 +83,7 @@ export const FreightCard = memo(function FreightCard({ freight: f, onClick, styl
   const transport = f.transporterName || "Sin asignar";
   const plate = f.truckPlate;
   const driver = f.driverName;
+  const isMulti = f.isMultiTruck && (f.assignedTruckCount || 0) > 1;
   const dateTime = fmtDateTime(f.loadDate, f.loadTime);
 
   return (
@@ -103,8 +135,8 @@ export const FreightCard = memo(function FreightCard({ freight: f, onClick, styl
         <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
           {Ic.truck(C.t2, 13)}
           <span style={{ fontSize: 12, color: C.t1, fontWeight: 500 }}>{transport}</span>
-          {plate && <> · <LicensePlate plate={plate} size="sm" /></>}
-          {driver && <span style={{ fontSize: 11, color: C.t2 }}> · {driver}</span>}
+          {isMulti ? <VerMatriculas freight={f} /> : plate && <> · <LicensePlate plate={plate} size="sm" /></>}
+          {isDesktop && driver && !isMulti && <span style={{ fontSize: 11, color: C.t2 }}> · {driver}</span>}
           {dateTime && <span style={{ fontSize: 11, color: C.t2, marginLeft: "auto", flexShrink: 0 }}>{dateTime}</span>}
         </div>
       </div>
@@ -192,6 +224,7 @@ export function TripProgressBar({ status, ribbon, small }) {
 
 // ======================== ACTIVE TRIP CARD (HomeScreen) ==================
 export const ActiveTripCard = memo(function ActiveTripCard({ freight: f, onClick }) {
+  const isDesktop = useIsDesktop();
   const sc = STATUS_COLORS[f.status] || STATUS_COLORS.in_progress;
   const origin = originDisplay(f) || f.originCompanyName || "Sin origen";
   const dest = destDisplay(f) || "Sin destino";
@@ -239,7 +272,7 @@ export const ActiveTripCard = memo(function ActiveTripCard({ freight: f, onClick
                 return (
                   <div key={a.id}>
                     <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                      <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, fontWeight: 500, color: C.t1 }}>{a.plate ? <LicensePlate plate={a.plate} size="sm" /> : "?"} · {a.driverName || "Sin chofer"}</span>
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, fontWeight: 500, color: C.t1 }}>{a.plate ? <LicensePlate plate={a.plate} size="sm" /> : "?"}{isDesktop && <> · {a.driverName || "Sin chofer"}</>}</span>
                       <span style={{ fontSize: 10, fontWeight: 500, color: tsc.pillText }}>{tsc.label}</span>
                     </div>
                     <TripProgressBar status={a.tripStatus} ribbon={tsc.ribbon} small />
@@ -284,7 +317,7 @@ export const ActiveTripCard = memo(function ActiveTripCard({ freight: f, onClick
                   {Ic.user(C.w, 11)}
                 </div>
                 {f.truckPlate && <LicensePlate plate={f.truckPlate} size="sm" />}
-                {f.driverName && <span style={{ fontSize: 11, color: C.t2 }}>{f.driverName}</span>}
+                {isDesktop && f.driverName && <span style={{ fontSize: 11, color: C.t2 }}>{f.driverName}</span>}
               </div>
               {dateTime && <span style={{ fontSize: 11, color: C.t2 }}>{dateTime}</span>}
             </div>
@@ -307,4 +340,4 @@ export const CalendarChip = memo(function CalendarChip({ freight: f }) {
   );
 });
 
-export { StatusPill, PulseDot };
+export { StatusPill, PulseDot, VerMatriculas, PlatesPopup };
