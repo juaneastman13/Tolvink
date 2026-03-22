@@ -93,7 +93,13 @@ export default memo(function ListScreen({ freights, loading, onNav, onRefresh, c
   const producerOptions = useMemo(()=>[...new Set(freights.map(f=>f.originCompanyName).filter(Boolean))].sort(),[freights]);
   // Plant-centric: filter by producerCompanyName (freights created on behalf of producers)
   const isPlantUser = userType === "plant";
-  const producerCompanyOptions = useMemo(()=>isPlantUser ? [...new Set(freights.map(f=>f.producerCompanyName).filter(Boolean))].sort() : [],[freights, isPlantUser]);
+  // Unified producer options for plant users: merge originCompanyName + producerCompanyName
+  const producerCompanyOptions = useMemo(()=>{
+    if (!isPlantUser) return [];
+    const names = new Set();
+    freights.forEach(f => { if (f.originCompanyName) names.add(f.originCompanyName); if (f.producerCompanyName) names.add(f.producerCompanyName); });
+    return [...names].sort();
+  },[freights, isPlantUser]);
 
   const applyDatePreset = (preset) => {
     setDatePreset(preset);
@@ -178,8 +184,8 @@ export default memo(function ListScreen({ freights, loading, onNav, onRefresh, c
     } else {
       data = freights;
     }
-    // Plant-centric: filter by producerCompanyName
-    if (fProducerCompany) data = data.filter(f => f.producerCompanyName === fProducerCompany);
+    // Plant-centric: unified producer filter (matches originCompanyName OR producerCompanyName)
+    if (fProducerCompany) data = data.filter(f => f.originCompanyName === fProducerCompany || f.producerCompanyName === fProducerCompany);
     return data;
   }, [serverData, freights, isProducerUser, fProducer, fProducerCompany]);
 
@@ -565,7 +571,7 @@ export default memo(function ListScreen({ freights, loading, onNav, onRefresh, c
       {fromLocations && <button onClick={() => onNav("locations")} style={{ background:C.priPale, border:`1px solid ${C.pri}40`, borderRadius: R.md, cursor:"pointer", fontFamily:FONT, fontSize:14, fontWeight:600, color:C.pri, padding:"10px 14px", marginBottom:12, display:"flex", alignItems:"center", gap:6, width:"100%" }}>{Ic.chev(C.pri, 16)} Volver al mapa de ubicaciones</button>}
       {/* Desktop: original filters layout */}
       {!fromLocations && (isDesktop ? (<>
-      {/* Search bar -- line 1 */}
+      {/* Search bar + view tabs -- line 1 */}
       <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:6 }}>
         <div style={{ position:"relative", flex:1, minWidth:0 }}>
           <div style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",display:"flex"}}>{Ic.srch(C.t3,14)}</div>
@@ -574,6 +580,13 @@ export default memo(function ListScreen({ freights, loading, onNav, onRefresh, c
           {searchQ && <button onClick={()=>setSearchQ("")} aria-label="Limpiar busqueda" style={{position:"absolute",right:8,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",display:"flex"}}>{Ic.cross(C.t3,14)}</button>}
         </div>
         {hasFilters && <button onClick={clearAll} style={{padding:"6px 10px",borderRadius: R.sm,border:`1px solid ${C.err}40`,background:C.errPale,color:C.err,fontSize:12.1,fontWeight:600,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap",flexShrink:0}}>Limpiar</button>}
+        <div style={{display:"flex",gap:4,flexShrink:0}}>
+          {[{k:"kanban",l:"Estados",ic:Ic.home},{k:"seguimiento",l:"Seguimiento",ic:Ic.user},{k:"tabla",l:"Tabla",ic:Ic.doc},{k:"mapa",l:"Mapa",ic:Ic.pin}].map(v=>(
+            <button key={v.k} onClick={()=>setView(v.k)} style={{padding:"5px 10px",borderRadius: R.md,border:`1.5px solid ${view===v.k?C.pri:C.b1}`,background:view===v.k?C.priPale:C.w,color:view===v.k?C.pri:C.t2,fontSize:12.1,fontWeight:view===v.k?700:500,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:4,whiteSpace:"nowrap"}}>
+              {v.ic(view===v.k?C.pri:C.t3,12)} {v.l}
+            </button>
+          ))}
+        </div>
       </div>
       {/* Entity filters + date toggle -- line 2 */}
       <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:dateFilterOpen?6:12 }}>
@@ -587,27 +600,22 @@ export default memo(function ListScreen({ freights, loading, onNav, onRefresh, c
           <option value="">Planta</option>
           {plantOptions.map(p=><option key={p} value={p}>{p}</option>)}
         </select>
-        <select value={fProducer} onChange={e=>setFProducer(e.target.value)} style={{padding:"6px 8px",borderRadius: R.md,border:`1.5px solid ${fProducer?C.pri:C.b1}`,background:fProducer?C.priPale:C.w,color:fProducer?C.pri:C.t3,fontSize:12.1,fontFamily:"inherit",outline:"none",cursor:"pointer"}}>
-          <option value="">{secondFilterLabel}</option>
-          {secondFilterOptions.map(p=><option key={p} value={p}>{p}</option>)}
-        </select>
-        <select value={fTransporter} onChange={e=>setFTransporter(e.target.value)} style={{padding:"6px 8px",borderRadius: R.md,border:`1.5px solid ${fTransporter?C.pri:C.b1}`,background:fTransporter?C.priPale:C.w,color:fTransporter?C.pri:C.t3,fontSize:12.1,fontFamily:"inherit",outline:"none",cursor:"pointer"}}>
-          <option value="">Transportista</option>
-          {transporterOptions.map(p=><option key={p} value={p}>{p}</option>)}
-        </select>
-        {isPlantUser && producerCompanyOptions.length > 0 && (
+        {/* Producer/Campo filter: unified for plant, secondFilter for others */}
+        {isPlantUser && producerCompanyOptions.length > 0 ? (
           <select value={fProducerCompany} onChange={e=>setFProducerCompany(e.target.value)} style={{padding:"6px 8px",borderRadius: R.md,border:`1.5px solid ${fProducerCompany?C.pri:C.b1}`,background:fProducerCompany?C.priPale:C.w,color:fProducerCompany?C.pri:C.t3,fontSize:12.1,fontFamily:"inherit",outline:"none",cursor:"pointer"}}>
             <option value="">Productor</option>
             {producerCompanyOptions.map(p=><option key={p} value={p}>{p}</option>)}
           </select>
+        ) : (
+          <select value={fProducer} onChange={e=>setFProducer(e.target.value)} style={{padding:"6px 8px",borderRadius: R.md,border:`1.5px solid ${fProducer?C.pri:C.b1}`,background:fProducer?C.priPale:C.w,color:fProducer?C.pri:C.t3,fontSize:12.1,fontFamily:"inherit",outline:"none",cursor:"pointer"}}>
+            <option value="">{secondFilterLabel}</option>
+            {secondFilterOptions.map(p=><option key={p} value={p}>{p}</option>)}
+          </select>
         )}
-        <div style={{marginLeft:"auto",display:"flex",gap:4}}>
-          {[{k:"kanban",l:"Estados",ic:Ic.home},{k:"seguimiento",l:"Seguimiento",ic:Ic.user},{k:"tabla",l:"Tabla",ic:Ic.doc},{k:"mapa",l:"Mapa",ic:Ic.pin}].map(v=>(
-            <button key={v.k} onClick={()=>setView(v.k)} style={{padding:"5px 10px",borderRadius: R.md,border:`1.5px solid ${view===v.k?C.pri:C.b1}`,background:view===v.k?C.priPale:C.w,color:view===v.k?C.pri:C.t2,fontSize:12.1,fontWeight:view===v.k?700:500,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:4,whiteSpace:"nowrap"}}>
-              {v.ic(view===v.k?C.pri:C.t3,12)} {v.l}
-            </button>
-          ))}
-        </div>
+        <select value={fTransporter} onChange={e=>setFTransporter(e.target.value)} style={{padding:"6px 8px",borderRadius: R.md,border:`1.5px solid ${fTransporter?C.pri:C.b1}`,background:fTransporter?C.priPale:C.w,color:fTransporter?C.pri:C.t3,fontSize:12.1,fontFamily:"inherit",outline:"none",cursor:"pointer"}}>
+          <option value="">Transportista</option>
+          {transporterOptions.map(p=><option key={p} value={p}>{p}</option>)}
+        </select>
       </div>
       {/* Collapsible date filters */}
       {dateFilterOpen && <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:12, padding:"8px 12px", background:C.bg, borderRadius: R.md, border:`1px solid ${C.b1}` }}>
@@ -663,22 +671,23 @@ export default memo(function ListScreen({ freights, loading, onNav, onRefresh, c
           <option value="">Planta</option>
           {plantOptions.map(p=><option key={p} value={p}>{p}</option>)}
         </select>
-        <select aria-label={secondFilterLabel} value={fProducer} onChange={e=>setFProducer(e.target.value)} style={{flex:1,padding:"6px 8px",borderRadius: R.md,border:`1.5px solid ${fProducer?C.pri:C.b1}`,background:fProducer?C.priPale:C.w,color:fProducer?C.pri:C.t3,fontSize:12.1,fontFamily:"inherit",outline:"none",cursor:"pointer",minWidth:0}}>
-          <option value="">{secondFilterLabel}</option>
-          {secondFilterOptions.map(p=><option key={p} value={p}>{p}</option>)}
-        </select>
+        {isPlantUser && producerCompanyOptions.length > 0 ? (
+          <select aria-label="Productor" value={fProducerCompany} onChange={e=>setFProducerCompany(e.target.value)} style={{flex:1,padding:"6px 8px",borderRadius: R.md,border:`1.5px solid ${fProducerCompany?C.pri:C.b1}`,background:fProducerCompany?C.priPale:C.w,color:fProducerCompany?C.pri:C.t3,fontSize:12.1,fontFamily:"inherit",outline:"none",cursor:"pointer",minWidth:0}}>
+            <option value="">Productor</option>
+            {producerCompanyOptions.map(p=><option key={p} value={p}>{p}</option>)}
+          </select>
+        ) : (
+          <select aria-label={secondFilterLabel} value={fProducer} onChange={e=>setFProducer(e.target.value)} style={{flex:1,padding:"6px 8px",borderRadius: R.md,border:`1.5px solid ${fProducer?C.pri:C.b1}`,background:fProducer?C.priPale:C.w,color:fProducer?C.pri:C.t3,fontSize:12.1,fontFamily:"inherit",outline:"none",cursor:"pointer",minWidth:0}}>
+            <option value="">{secondFilterLabel}</option>
+            {secondFilterOptions.map(p=><option key={p} value={p}>{p}</option>)}
+          </select>
+        )}
       </div>
       <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:12 }}>
         <select aria-label="Transportista" value={fTransporter} onChange={e=>setFTransporter(e.target.value)} style={{flex:1,padding:"6px 8px",borderRadius: R.md,border:`1.5px solid ${fTransporter?C.pri:C.b1}`,background:fTransporter?C.priPale:C.w,color:fTransporter?C.pri:C.t3,fontSize:12.1,fontFamily:"inherit",outline:"none",cursor:"pointer",minWidth:0}}>
           <option value="">Transportista</option>
           {transporterOptions.map(p=><option key={p} value={p}>{p}</option>)}
         </select>
-        {isPlantUser && producerCompanyOptions.length > 0 && (
-          <select aria-label="Productor" value={fProducerCompany} onChange={e=>setFProducerCompany(e.target.value)} style={{flex:1,padding:"6px 8px",borderRadius: R.md,border:`1.5px solid ${fProducerCompany?C.pri:C.b1}`,background:fProducerCompany?C.priPale:C.w,color:fProducerCompany?C.pri:C.t3,fontSize:12.1,fontFamily:"inherit",outline:"none",cursor:"pointer",minWidth:0}}>
-            <option value="">Productor</option>
-            {producerCompanyOptions.map(p=><option key={p} value={p}>{p}</option>)}
-          </select>
-        )}
       </div>
       </>}
       </>))}
