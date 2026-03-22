@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { C, Ic, FONT, MONO , R} from "../theme";
+import { LicensePlate } from "./ui/LicensePlate";
 import { stCfg, formatFreightDate } from "../constants";
 import { originDisplay, destDisplay } from "../hooks";
 import { Bd } from "./data-display";
@@ -96,7 +97,7 @@ export function Sidebar({ active, onChange, unread=0, pendingCount=0, notifCount
         </div>
         {(f.truckPlate || f.driverName) && (
           <div style={{ display:"flex", alignItems:"center", gap:8, fontSize:12.1, color:C.t3 }}>
-            {f.truckPlate && <span style={{ fontFamily:MONO, fontWeight:600 }}>{f.truckPlate}</span>}
+            {f.truckPlate && <LicensePlate plate={f.truckPlate} size="sm" />}
             {f.driverName && <span>{Ic.user(C.t3, 11)} {f.driverName}</span>}
           </div>
         )}

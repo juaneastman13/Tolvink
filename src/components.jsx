@@ -6,3 +6,4 @@ export { Toast, Loader, LoadingOverlay, EmptyState, SkeletonCard, SkeletonList, 
 export { ModalOverlay, AttachMenu, FileViewer } from "./components/overlays";
 export { Sidebar, Nav, NotifBell, NotificationsPanel } from "./components/navigation";
 export { FreightCard, FreightCardCompact, ActiveTripCard, CalendarChip, StatusPill, TripProgressBar } from "./components/FreightCard";
+export { LicensePlate } from "./components/ui/LicensePlate";

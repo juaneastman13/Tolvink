@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { C, Ic, FONT, R } from "../theme";
-import { Btn, SkeletonCard } from "../components";
+import { Btn, SkeletonCard, LicensePlate } from "../components";
 import { apiGetAssignmentSuggestions } from "../api";
 
 const AVAIL_DOT = { free: C.ok, busy_other_hours: C.warn, busy_now: C.err };
@@ -121,8 +121,8 @@ export default function AssignmentSuggestions({ freight, user, onAssign, onRefre
                 </div>
                 {/* Row 2: plate + driver */}
                 {(s.plate || s.driverName) && (
-                  <div style={{ fontSize: 12.5, color: C.t2, marginBottom: 4, paddingLeft: 16 }}>
-                    {s.plate}{s.plate && s.driverName ? " · " : ""}{s.driverName}
+                  <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12.5, color: C.t2, marginBottom: 4, paddingLeft: 16 }}>
+                    {s.plate && <LicensePlate plate={s.plate} size="sm" />}{s.plate && s.driverName ? " · " : ""}{s.driverName}
                   </div>
                 )}
                 {!s.plate && !s.driverName && s.type === "transporter" && (

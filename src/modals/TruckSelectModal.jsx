@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { C, Ic , R} from "../theme";
-import { Btn, Field, ModalOverlay } from "../components";
+import { Btn, Field, ModalOverlay, LicensePlate } from "../components";
 import { originDisplay, destDisplay } from "../hooks";
 import { apiCreateTruck, apiGetDrivers, apiCreateDriver } from "../api";
 
@@ -96,7 +96,7 @@ export default function TruckSelectModal({ freight, trucks: initialTrucks, onClo
         {truckList.filter(t=>!truckSearch || t.plate?.toLowerCase().includes(truckSearch.toLowerCase()) || t.model?.toLowerCase().includes(truckSearch.toLowerCase())).map(t=><button key={t.id} onClick={()=>setSel(t.id)} style={{padding:"13px 14px",borderRadius: R.lg,textAlign:"left",fontFamily:"inherit",border:`1.5px solid ${sel===t.id?C.acc:C.b1}`,background:sel===t.id?C.accPale:C.w,color:sel===t.id?C.acc:C.t2,fontSize:14.9,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",gap:10}}>
           {Ic.truck(sel===t.id?C.acc:C.t3,18)}
           <div>
-            <div style={{fontSize:14.3,fontWeight:700,color:sel===t.id?C.acc:C.t1}}>{t.plate}</div>
+            <LicensePlate plate={t.plate} size="md" />
             {t.model && <div style={{fontSize:11.6,fontWeight:400,color:C.t3,marginTop:1}}>{t.model}</div>}
             {t.assignedUser && <div style={{fontSize:11,color:C.t3,marginTop:1}}>Chofer: {t.assignedUser.name}</div>}
           </div>

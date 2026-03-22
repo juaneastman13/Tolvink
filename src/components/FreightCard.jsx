@@ -1,5 +1,6 @@
 import { memo } from "react";
 import { C, Ic, MONO, R, STATUS_COLORS } from "../theme";
+import { LicensePlate } from "./ui/LicensePlate";
 import { formatFreightDate } from "../constants";
 import { originDisplay, destDisplay } from "../hooks";
 
@@ -102,7 +103,7 @@ export const FreightCard = memo(function FreightCard({ freight: f, onClick, styl
         <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
           {Ic.truck(C.t2, 13)}
           <span style={{ fontSize: 12, color: C.t1, fontWeight: 500 }}>{transport}</span>
-          {plate && <span style={{ fontSize: 11, color: C.t2 }}> · {plate}</span>}
+          {plate && <> · <LicensePlate plate={plate} size="sm" /></>}
           {driver && <span style={{ fontSize: 11, color: C.t2 }}> · {driver}</span>}
           {dateTime && <span style={{ fontSize: 11, color: C.t2, marginLeft: "auto", flexShrink: 0 }}>{dateTime}</span>}
         </div>
@@ -238,7 +239,7 @@ export const ActiveTripCard = memo(function ActiveTripCard({ freight: f, onClick
                 return (
                   <div key={a.id}>
                     <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                      <span style={{ fontSize: 11, fontWeight: 500, color: C.t1 }}>{a.plate || "?"} · {a.driverName || "Sin chofer"}</span>
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, fontWeight: 500, color: C.t1 }}>{a.plate ? <LicensePlate plate={a.plate} size="sm" /> : "?"} · {a.driverName || "Sin chofer"}</span>
                       <span style={{ fontSize: 10, fontWeight: 500, color: tsc.pillText }}>{tsc.label}</span>
                     </div>
                     <TripProgressBar status={a.tripStatus} ribbon={tsc.ribbon} small />
@@ -282,7 +283,7 @@ export const ActiveTripCard = memo(function ActiveTripCard({ freight: f, onClick
                 <div style={{ width: 22, height: 22, borderRadius: "50%", background: sc.ribbon, display: "flex", alignItems: "center", justifyContent: "center" }}>
                   {Ic.user(C.w, 11)}
                 </div>
-                {f.truckPlate && <span style={{ fontSize: 12, color: C.t1, fontWeight: 500 }}>{f.truckPlate}</span>}
+                {f.truckPlate && <LicensePlate plate={f.truckPlate} size="sm" />}
                 {f.driverName && <span style={{ fontSize: 11, color: C.t2 }}>{f.driverName}</span>}
               </div>
               {dateTime && <span style={{ fontSize: 11, color: C.t2 }}>{dateTime}</span>}

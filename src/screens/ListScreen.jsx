@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useRef, useCallback, lazy, Suspense, memo
 import { useSearchParams } from "react-router-dom";
 import { C, Ic, FONT, MONO, R, STATUS_COLORS } from "../theme";
 import { stCfg, formatFreightDate } from "../constants";
-import { Bd, Btn, Select, SortTh, Tabs, exportExcel, exportCSV, SkeletonList, EmptyState, ErrorBoundary, FreightCard, FreightCardCompact } from "../components";
+import { Bd, Btn, Select, SortTh, Tabs, exportExcel, exportCSV, SkeletonList, EmptyState, ErrorBoundary, FreightCard, FreightCardCompact, LicensePlate } from "../components";
 import { useTableSort, usePullToRefresh, mapFreight, originDisplay, destDisplay } from "../hooks";
 import { useAccessLevel } from "../hooks/useAccessLevel";
 import { getPendingActions, getWaitingOnText, resolveUserTypeForFreight } from "../utils/freight-helpers";
@@ -364,7 +364,7 @@ export default memo(function ListScreen({ freights, loading, onNav, onRefresh, c
         {/* Truck plate + driver */}
         {(f.truckPlate || f.driverName) && (
           <div style={{ display:"flex", alignItems:"center", gap:8, fontSize:12.1, color:C.t3 }}>
-            {f.truckPlate && <span style={{ fontFamily:MONO, fontWeight:600 }}>{f.truckPlate}</span>}
+            {f.truckPlate && <LicensePlate plate={f.truckPlate} size="sm" />}
             {f.driverName && <span>{Ic.user(C.t3, 11)} {f.driverName}</span>}
           </div>
         )}
@@ -842,7 +842,7 @@ export default memo(function ListScreen({ freights, loading, onNav, onRefresh, c
                       <td style={{ padding:"10px 12px", color:C.t2, whiteSpace:"nowrap" }}>{formatFreightDate(f.loadDate)}</td>
                       <td style={{ padding:"10px 12px", color:C.t3, whiteSpace:"nowrap" }}>{f.loadTime||"\u2014"}</td>
                       <td style={{ padding:"10px 12px", color:C.t2 }}>{f.transporterName||"\u2014"}</td>
-                      <td style={{ padding:"10px 12px", fontFamily:MONO, fontSize:12.1, color:C.t2, whiteSpace:"nowrap" }}>{f.truckPlate||"\u2014"}</td>
+                      <td style={{ padding:"10px 12px", whiteSpace:"nowrap" }}>{f.truckPlate ? <LicensePlate plate={f.truckPlate} size="sm" /> : "\u2014"}</td>
                       <td style={{ padding:"10px 12px", color:C.t2 }}>{f.driverName||"\u2014"}</td>
                       <td style={{ padding:"10px 12px", color:C.t2, whiteSpace:"nowrap" }}>{f.driverPhone||"\u2014"}</td>
                       <td style={{ padding:"8px 12px", whiteSpace:"nowrap" }}>

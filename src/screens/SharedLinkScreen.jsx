@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { C, Ic, FONT, MONO, R, STATUS_COLORS } from "../theme";
 import { FreightCard, StatusPill } from "../components/FreightCard";
-import { Loader, EmptyState } from "../components";
+import { Loader, EmptyState, LicensePlate } from "../components";
 import { apiResolveSharedLink } from "../api";
 import { formatFreightDate } from "../constants";
 
@@ -401,7 +401,7 @@ function FreightView({ data, creatorName, lastRefresh, isDesktop, onBack }) {
                 <div style={{ padding: "8px 10px", flex: 1, minWidth: 0 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
                     {assignments.length > 1 && <span style={{ fontSize: 12, fontWeight: 500, color: C.t2, marginRight: 2 }}>#{a.tripNumber}</span>}
-                    <span style={{ fontFamily: MONO, fontSize: 14, fontWeight: 500, color: C.t1 }}>{a.plate || "Sin camión"}</span>
+                    {a.plate ? <LicensePlate plate={a.plate} size="md" /> : <span style={{ fontSize: 14, color: C.t1 }}>Sin camión</span>}
                     {a.transportCompany?.name && <span style={{ fontSize: 12, color: C.t2 }}>- {a.transportCompany.name}</span>}
                     {a.driverName && <span style={{ fontSize: 12, color: C.t2 }}>- {a.driverName}</span>}
                     <span style={{ flex: 1 }} />

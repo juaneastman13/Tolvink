@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useMemo, lazy, Suspense } from "react";
 import { C, Ic, FONT, MONO, track, STATUS_COLORS , R} from "../theme";
 import { stCfg, getActions, tripStCfg, POLL_INTERVALS, formatFreightDate } from "../constants";
-import { Bd, Btn, Loader, Sec, FileViewer, SkeletonDetail } from "../components";
+import { Bd, Btn, Loader, Sec, FileViewer, SkeletonDetail, LicensePlate } from "../components";
 import { SafeZone } from "../maps";
 const FreightMap = lazy(() => import("../maps").then(m => ({ default: m.FreightMap })));
 import log from "../logger";
@@ -507,7 +507,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
             <div>
               <div style={{ fontSize:15, fontWeight:700, color:C.acc }}>Flota propia del productor</div>
               <div style={{ fontSize:12.7, color:C.t2 }}>
-                {ownFleetAssign.plate || "Sin patente"} — {ownFleetAssign.driverName || "Sin chofer"}. Esperando tu aprobación.
+                <LicensePlate plate={ownFleetAssign.plate} size="sm" /> — {ownFleetAssign.driverName || "Sin chofer"}. Esperando tu aprobación.
               </div>
             </div>
           </div>
@@ -692,7 +692,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
                   {/* Single line: #N plate - empresa - chofer | pill | edit */}
                   <div style={{ display:"flex", alignItems:"center", gap:6 }}>
                     {isMultiTruck && <span style={{ fontSize:12, fontWeight:500, color:C.t2, marginRight:2 }}>#{a.tripNumber}</span>}
-                    <span style={{ fontFamily:MONO, fontSize:14, fontWeight:500, color:C.t1 }}>{hasTruck ? a.plate : "Sin camión"}</span>
+                    {hasTruck ? <LicensePlate plate={a.plate} size="sm" /> : <span style={{ fontSize:14, fontWeight:500, color:C.t1 }}>Sin camión</span>}
                     <span style={{ fontSize:12, color:C.t2 }}>- {a.transporterName || "Sin empresa"}</span>
                     <span style={{ fontSize:12, color:C.t2 }}>- {a.driverName || "Sin chofer"}</span>
                     <span style={{ flex:1 }} />
@@ -1050,7 +1050,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
                         <div style={{ width:7, height:7, borderRadius: R.xs, background:col, flexShrink:0, marginTop:4 }} />
                         <div style={{ minWidth:0 }}>
                           <div style={{ fontSize:13.2, fontWeight:700, color:C.t1 }}>Viaje #{a.tripNumber}</div>
-                          {a.plate && <div style={{ fontSize:13.2, color:C.t2, marginTop:1, lineHeight:1.3 }}>{a.plate}{a.truckModel?` · ${a.truckModel}`:""}</div>}
+                          {a.plate && <div style={{ display:"flex", alignItems:"center", gap:4, marginTop:1, lineHeight:1.3 }}><LicensePlate plate={a.plate} size="sm" />{a.truckModel?<span style={{ fontSize:13.2, color:C.t2 }}> · {a.truckModel}</span>:""}</div>}
                           {a.transporterName && <div style={{ fontSize:12.6, color:C.t3, lineHeight:1.2 }}>{a.transporterName}</div>}
                         </div>
                       </div>
@@ -1088,7 +1088,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
                   {/* Single line: #N plate - empresa - chofer | pill */}
                   <div style={{ display:"flex", alignItems:"center", gap:6 }}>
                     {isMultiTruck && <span style={{ fontSize:13, fontWeight:500, color:C.t2 }}>#{a.tripNumber}</span>}
-                    <span style={{ fontFamily:MONO, fontSize:15, fontWeight:500, color:C.t1 }}>{hasTruck ? a.plate : "Sin camión"}</span>
+                    {hasTruck ? <LicensePlate plate={a.plate} size="sm" /> : <span style={{ fontSize:15, fontWeight:500, color:C.t1 }}>Sin camión</span>}
                     <span style={{ fontSize:13, color:C.t2 }}>- {a.transporterName || "Sin empresa"}</span>
                     <span style={{ fontSize:13, color:C.t2 }}>- {a.driverName || "Sin chofer"}</span>
                     <span style={{ flex:1 }} />
@@ -1174,7 +1174,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
                 <div style={{ width:8, height:8, borderRadius: R.xs, background:stepModal.color, flexShrink:0, marginTop:5 }} />
                 <div style={{ minWidth:0 }}>
                   <div style={{ fontSize:14.6, fontWeight:700, color:C.t1 }}>Viaje #{a.tripNumber}</div>
-                  {a.plate && <div style={{ fontSize:14.6, color:C.t2, marginTop:1 }}>{a.plate}{a.truckModel?` · ${a.truckModel}`:""}</div>}
+                  {a.plate && <div style={{ display:"flex", alignItems:"center", gap:4, marginTop:1 }}><LicensePlate plate={a.plate} size="md" />{a.truckModel?<span style={{ fontSize:14.6, color:C.t2 }}> · {a.truckModel}</span>:""}</div>}
                   {a.transporterName && <div style={{ fontSize:14.0, color:C.t3 }}>{a.transporterName}</div>}
                   {a.driverName && <div style={{ fontSize:14.0, color:C.t3 }}>{a.driverName}</div>}
                 </div>

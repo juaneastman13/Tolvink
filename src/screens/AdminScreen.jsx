@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { C, Ic, FONT, MONO , R} from "../theme";
-import { Btn, Field, Tabs, Select, Loader, Av, Bd, LoadingOverlay, NumericStepper } from "../components";
+import { Btn, Field, Tabs, Select, Loader, Av, Bd, LoadingOverlay, NumericStepper, LicensePlate } from "../components";
 import { apiAdminStats, apiAdminActivity, apiAdminListCompanies, apiAdminGetCompany, apiAdminCreateCompany, apiAdminUpdateCompany, apiAdminListBranches, apiAdminCreateBranch, apiAdminUpdateBranch, apiAdminDeleteBranch, apiAdminListUsers, apiAdminCreateUser, apiAdminUpdateUser, apiAdminAddUserCompany, apiAdminUpdateUserCompany, apiAdminRemoveUserCompany, apiAdminListFields, apiAdminCreateField, apiAdminUpdateField, apiAdminDeleteField, apiAdminListLots, apiAdminCreateLot, apiAdminUpdateLot, apiAdminDeleteLot, apiAdminListTrucks, apiAdminCreateTruck, apiAdminUpdateTruck, apiAdminDeleteTruck, apiAdminImportCompanies, apiAdminImportUsers } from "../api";
 import { adminStyles, typeColors, typeLabels, roleLabels, adminBackBtn } from "../utils/freight-helpers";
 import { LocationPicker } from "../maps";
@@ -774,7 +774,7 @@ export default function AdminScreen({ user, onBack }) {
           {trucks.map(t=>(<div key={t.id} style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius: R.md,padding:"12px 14px",marginBottom:8,boxShadow:C.sh}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
               <div style={{flex:1}}>
-                <div style={{fontSize:15.4,fontWeight:700,color:C.t1,letterSpacing:1}}>{t.plate}</div>
+                <LicensePlate plate={t.plate} size="md" />
                 <div style={{display:"flex",gap:8,fontSize:12.1,color:C.t3,marginTop:2}}>
                   {t.brand&&<span>{t.brand}</span>}{t.model&&<span>{t.model}</span>}{t.capacity&&<span>· {t.capacity}</span>}
                 </div>

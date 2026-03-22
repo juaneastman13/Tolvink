@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { C, Ic , R} from "../theme";
-import { Field, ModalOverlay } from "../components";
+import { Field, ModalOverlay, LicensePlate } from "../components";
 import { apiGetTrucks, apiCreateTruck, apiGetDrivers, apiCreateDriver, apiGetCompanyAccess, apiCreateLinkedCompany, apiUpdateFreight } from "../api";
 
 // ======================== STEPPER (compact) ==============================
@@ -38,7 +38,7 @@ function TruckRow({ tk, selected, onClick }) {
     }}>
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
         <div style={{ display:"flex", alignItems:"center", gap:4, minWidth:0 }}>
-          <span style={{ fontSize:13, fontWeight:500, color:C.t1 }}>{tk.plate}</span>
+          <LicensePlate plate={tk.plate} size="sm" />
           {tk.model && <span style={{ fontSize:12, color:C.t2 }}>· {tk.model}</span>}
         </div>
         <div style={{ display:"flex", alignItems:"center", gap:4, flexShrink:0 }}>

@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from "react";
 import { C, Ic, R } from "../theme";
-import { Btn, Field, Loader, LoadingOverlay, EmptyState } from "../components";
+import { Btn, Field, Loader, LoadingOverlay, EmptyState, LicensePlate } from "../components";
 import { apiGetTrucks, apiCreateTruck, apiDeactivateTruck, apiListDrivers, apiCreateDriver, apiDeactivateDriver, apiGetCompanyAccess } from "../api";
 import { useCatalogStore } from "../store";
 
@@ -174,7 +174,7 @@ export default function TrucksScreen({ onBack, embedded, user }) {
                       {Ic.truck(C.acc, 20)}
                       <div>
                         <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                          <span style={{ fontSize: 15.4, fontWeight: 700 }}>{t.plate}</span>
+                          <LicensePlate plate={t.plate} size="md" />
                           {t.assignedUser && <span style={{ fontSize: 11.5, color: C.pri, fontWeight: 600 }}>{t.assignedUser.name}</span>}
                         </div>
                         {t.model && <div style={{ fontSize: 12.1, color: C.t3, marginTop: 2 }}>{t.model}</div>}
