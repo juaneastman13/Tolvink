@@ -97,6 +97,8 @@ export function mapFreight(f) {
     startedAt: f.startedAt||null,
     loadedAt: f.loadedAt||null,
     finishedAt: f.finishedAt||null,
+    needsPlantApproval: !!f.needsPlantApproval,
+    plantApprovedAt: f.plantApprovedAt||null,
     documents: f.documents||[],
     conversationId: f.conversation?.id||null,
     pendingChanges: f.pendingChanges||[],
