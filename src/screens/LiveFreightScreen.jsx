@@ -5,16 +5,12 @@
 // =====================================================================
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { R } from "../theme";
+import { C, R } from "../theme";
 import { loadGMaps, mkFieldIcon, mkPlantIcon, mkPinIcon } from "../maps";
 import { API_URL } from "../api";
 import log from "../logger";
 
-const COLORS = {
-  pri: "#1A6B37", acc: "#FF6A00", bg: "#F7F8F7", w: "#FFFFFF",
-  t1: "#18251C", t2: "#4A6352", t3: "#8A9C90",
-  b1: "#DEE4E0", b2: "#ECF0ED", err: "#DC2626",
-};
+const COLORS = C;
 
 const ROLE_CFG = {
   producer: { label: "Productor", color: "#1A6B37" },

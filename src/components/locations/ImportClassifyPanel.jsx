@@ -2,9 +2,9 @@ import { C, Ic, R } from "../../theme";
 import { Btn, Bd } from "../../components";
 
 const TYPE_CFG = {
-  field: { label: "Campo", color: "#1A6B37", icon: (c, s) => Ic.field(c, s) },
+  field: { label: "Campo", color: C.pri, icon: (c, s) => Ic.field(c, s) },
   lot:   { label: "Lote",  color: "#2563EB", icon: (c, s) => Ic.lot(c, s) },
-  poi:   { label: "Interés", color: "#0891B2", icon: (c, s) => Ic.poi(c, s) },
+  poi:   { label: "Interés", color: C.sec, icon: (c, s) => Ic.poi(c, s) },
 };
 
 export default function ImportClassifyPanel({

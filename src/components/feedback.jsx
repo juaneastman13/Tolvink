@@ -36,8 +36,8 @@ export function LoadingOverlay({ closing=false, closingText="", onClose }) {
       )}
       {closing && (
         <div style={{width:150,height:150,borderRadius:"50%",background:C.acc,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:6,animation:"moCircleIn 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards",boxShadow:"0 8px 32px rgba(0,0,0,0.18)",pointerEvents:"none"}}>
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-          {closingText && <span style={{color:"#fff",fontSize:15.4,fontWeight:700,textAlign:"center",lineHeight:1.3,padding:"0 16px"}}>{closingText}</span>}
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke={C.w} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          {closingText && <span style={{color:C.w,fontSize:15.4,fontWeight:700,textAlign:"center",lineHeight:1.3,padding:"0 16px"}}>{closingText}</span>}
         </div>
       )}
     </div>
@@ -120,7 +120,7 @@ export class ErrorBoundary extends Component {
     return { hasError: true, error };
   }
   componentDidCatch(error, info) {
-    console.error(error, info);
+    // Error captured by Sentry below — no console.error in production
     try {
       captureError(error, { componentStack: info?.componentStack });
     } catch {}
@@ -138,7 +138,7 @@ export class ErrorBoundary extends Component {
         </div>
         <div style={{ fontSize:19.8, fontWeight:700, color:C.t1, marginBottom:8 }}>Algo salió mal</div>
         <div style={{ fontSize:14.3, color:C.t3, marginBottom:20, maxWidth:320, lineHeight:1.5 }}>Ocurrió un error inesperado. Podés intentar recargar la página.</div>
-        {this.state.error && <pre style={{ fontSize:11, textAlign:'left', background:'#fee', padding:8, borderRadius: R.xs, overflowX:'auto', maxHeight:200, overflowY:'auto', maxWidth:400, width:'100%' }}>{this.state.error?.message + '\n' + this.state.error?.stack}</pre>}
+        {this.state.error && <pre style={{ fontSize:11, textAlign:'left', background:C.errPale, padding:8, borderRadius: R.xs, overflowX:'auto', maxHeight:200, overflowY:'auto', maxWidth:400, width:'100%' }}>{this.state.error?.message + '\n' + this.state.error?.stack}</pre>}
         <button onClick={() => window.location.reload()} style={{ padding:"12px 28px", borderRadius: R.md, background:C.pri, color:C.w, border:"none", fontSize:15.4, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>Recargar página</button>
       </div>;
     }

@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from "react";
 import { C, Ic, R } from "../theme";
 import { Btn, Field, Loader, LoadingOverlay, EmptyState } from "../components";
 import { apiGetTrucks, apiCreateTruck, apiDeactivateTruck, apiListDrivers, apiCreateDriver, apiDeactivateDriver, apiGetCompanyAccess } from "../api";
+import { useCatalogStore } from "../store";
 
 export default function TrucksScreen({ onBack, embedded, user }) {
   const canEdit = !user || user.role !== "chofer";
@@ -59,6 +60,7 @@ export default function TrucksScreen({ onBack, embedded, user }) {
         ...(selectedCompanyId ? { ownerCompanyId: selectedCompanyId } : {}),
       });
       setPlate(""); setModel(""); setShowForm(false); setDoneMsg("Camión registrado");
+      useCatalogStore.getState().clearCache();
       await loadTrucks();
     } catch (e) { setMsg({ t: e.message, k: "err" }); }
     finally { setSaving(false); }
@@ -67,7 +69,7 @@ export default function TrucksScreen({ onBack, embedded, user }) {
   const handleDeactivateTruck = async (id) => {
     if(saving||doneMsg) return;
     setSaving(true);
-    try { await apiDeactivateTruck(id); setDoneMsg("Camión eliminado"); await loadTrucks(); }
+    try { await apiDeactivateTruck(id); setDoneMsg("Camión eliminado"); useCatalogStore.getState().clearCache(); await loadTrucks(); }
     catch (e) { setMsg({ t: e.message, k: "err" }); }
     finally { setSaving(false); }
   };
@@ -78,6 +80,7 @@ export default function TrucksScreen({ onBack, embedded, user }) {
     try {
       await apiCreateDriver({ name: dName.trim(), phone: dPhone.trim() || undefined }, selectedCompanyId || undefined);
       setDName(""); setDPhone(""); setShowForm(false); setDoneMsg("Chofer registrado");
+      useCatalogStore.getState().clearCache();
       await loadDrivers();
     } catch (e) { setMsg({ t: e.message, k: "err" }); }
     finally { setSaving(false); }

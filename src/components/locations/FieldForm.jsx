@@ -2,7 +2,7 @@ import { useState } from "react";
 import { C, Ic, FONT, R } from "../../theme";
 import { SafeZone, LocationPicker } from "../../maps";
 
-const COLOR = "#1A6B37";
+const COLOR = C.pri;
 
 export default function FieldForm({ mode = "create", field, onSave, onCancel, saving, onSelectOnMap, isManager, linkedCompanies, defaultOwnerCompanyId }) {
   const [name, setName] = useState(mode === "edit" ? "" : "");

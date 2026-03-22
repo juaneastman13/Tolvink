@@ -79,10 +79,10 @@ export class SafeZone extends Component {
   componentDidCatch(error, info) { log.error("SafeZone", error, info); }
   render() {
     if (this.state.hasError) {
-      return <div style={{ padding: 12, background: "#FEE2E2", borderRadius: R.md, fontSize: 13.2, color: "#DC2626" }}>
+      return <div style={{ padding: 12, background: C.errPale, borderRadius: R.md, fontSize: 13.2, color: C.err }}>
         <div style={{ fontWeight: 700, marginBottom: 4 }}>Error en este componente</div>
         <div>{this.state.error?.message || "Error desconocido"}</div>
-        <button onClick={() => this.setState({ hasError: false, error: null })} style={{ marginTop: 8, padding: "4px 12px", borderRadius: R.sm, border: "1px solid #DC2626", background: "white", color: "#DC2626", fontSize: 12.1, fontWeight: 600, cursor: "pointer" }}>Reintentar</button>
+        <button onClick={() => this.setState({ hasError: false, error: null })} style={{ marginTop: 8, padding: "4px 12px", borderRadius: R.sm, border: `1px solid ${C.err}`, background: C.w, color: C.err, fontSize: 12.1, fontWeight: 600, cursor: "pointer" }}>Reintentar</button>
       </div>;
     }
     return this.props.children;
@@ -122,7 +122,7 @@ export function LocationPicker({ label, value, onChange, defaultCenter, confirmL
         });
         mapObjRef.current = map;
 
-        const marker = new maps.Marker({ position: startCenter, map, draggable: true, icon: _pinSymbol(maps, "#E53935") });
+        const marker = new maps.Marker({ position: startCenter, map, draggable: true, icon: _pinSymbol(maps, C.err) });
         markerRef.current = marker;
 
         if (!geocoderRef.current) geocoderRef.current = new maps.Geocoder();
@@ -276,7 +276,7 @@ export function LocPickerFullscreen({ value, onChange, defaultCenter, label, onC
         });
         mapObjRef.current = map;
 
-        const marker = new maps.Marker({ position: startCenter, map, draggable: true, icon: _pinSymbol(maps, "#E53935") });
+        const marker = new maps.Marker({ position: startCenter, map, draggable: true, icon: _pinSymbol(maps, C.err) });
         markerRef.current = marker;
 
         if (!geocoderRef.current) geocoderRef.current = new maps.Geocoder();
@@ -367,7 +367,7 @@ export function LocPickerFullscreen({ value, onChange, defaultCenter, label, onC
 // ======================== PARTICIPANT PIN ICONS ========================
 
 const _TYPE_LABEL = { chofer: "Chofer", producer: "Productor", plant: "Planta", transporter: "Transportista", other: "Participante" };
-const _TYPE_COLORS = { chofer: "#FF6A00", producer: "#1A6B37", plant: "#003882", transporter: "#8B5CF6", other: "#6B7280" };
+const _TYPE_COLORS = { chofer: C.acc, producer: C.pri, plant: "#003882", transporter: "#8B5CF6", other: C.t3 };
 const _participantIcon = (type, maps) => {
   const color = _TYPE_COLORS[type] || _TYPE_COLORS.other;
   return _pinSymbol(maps, color, 1.0);
@@ -506,7 +506,7 @@ export function FreightMap({ freightId, originLat, originLng, destLat, destLng, 
             map,
             suppressMarkers: true,
             polylineOptions: {
-              strokeColor: isLiveRef.current ? "#FF6A00" : "#1A6B37",
+              strokeColor: isLiveRef.current ? C.acc : C.pri,
               strokeWeight: 4,
               strokeOpacity: 0.8,
             },
@@ -544,7 +544,7 @@ export function FreightMap({ freightId, originLat, originLng, destLat, destLng, 
   useEffect(() => {
     if (!directionsRef.current) return;
     directionsRef.current.setOptions({
-      polylineOptions: { strokeColor: isLive ? "#FF6A00" : "#1A6B37", strokeWeight: 4, strokeOpacity: 0.8 },
+      polylineOptions: { strokeColor: isLive ? C.acc : C.pri, strokeWeight: 4, strokeOpacity: 0.8 },
     });
   }, [isLive]);
 
@@ -642,7 +642,7 @@ export function FreightMap({ freightId, originLat, originLng, destLat, destLng, 
       )}
       <div style={{ padding:"8px 14px", display: "flex", gap: 12, fontSize: 11.6, flexWrap: "wrap", alignItems: "center", flexShrink:0 }}>
         {hasOrigin && <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-          <span style={{ width: 8, height: 8, borderRadius: R.xs, background: "#1A6B37" }} />
+          <span style={{ width: 8, height: 8, borderRadius: R.xs, background: C.pri }} />
           <span style={{ color: C.t2 }}>{originName}</span>
         </div>}
         {hasDest && <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
@@ -651,7 +651,7 @@ export function FreightMap({ freightId, originLat, originLng, destLat, destLng, 
         </div>}
         {isLive && (truckPos || participants.length > 0) && (
           <div style={{ display: "flex", alignItems: "center", gap: 4, marginLeft: "auto" }}>
-            <span style={{ width: 8, height: 8, borderRadius: R.xs, background: "#FF6A00", animation: "ti 1.5s infinite" }} />
+            <span style={{ width: 8, height: 8, borderRadius: R.xs, background: C.acc, animation: "ti 1.5s infinite" }} />
             <span style={{ color: C.acc, fontWeight: 600, fontSize: 11 }}>En vivo{truckPos?.speed>0?` \u00b7 ${Math.round(parseFloat(truckPos.speed))} km/h`:""}{truckPos?.updatedAt && ` \u00b7 ${new Date(truckPos.updatedAt).toLocaleTimeString("es-UY",{hour:"2-digit",minute:"2-digit"})}`}</span>
           </div>
         )}
@@ -666,13 +666,13 @@ export function FreightMap({ freightId, originLat, originLng, destLat, destLng, 
 // ======================== FREIGHTS OVERVIEW MAP ===========================
 
 const _STATUS_COLOR = s => {
-  if (s === "pending_assignment") return "#FF6A00";
+  if (s === "pending_assignment") return C.acc;
   if (s === "in_progress") return "#43A047";
-  if (s === "loaded") return "#1A6B37";
-  if (["assigned","accepted"].includes(s)) return "#0891B2";
-  if (s === "finished") return "#9E9E9E";
-  if (s === "canceled") return "#E53935";
-  return "#999";
+  if (s === "loaded") return C.pri;
+  if (["assigned","accepted"].includes(s)) return C.sec;
+  if (s === "finished") return C.muted;
+  if (s === "canceled") return C.err;
+  return C.t3;
 };
 const _STATUS_LABEL = { pending_assignment:"Pendiente", assigned:"Asignado", accepted:"Asignado", in_progress:"A campo", loaded:"A planta", finished:"Finalizado", canceled:"Cancelado" };
 
@@ -684,7 +684,7 @@ const _pinSvg = (color, w = 28, h = 40) => {
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 24 34"><path d="M12 0C5.37 0 0 5.37 0 12c0 9 12 22 12 22s12-13 12-22C24 5.37 18.63 0 12 0zm0 16a4 4 0 110-8 4 4 0 010 8z" fill="${color}" stroke="%23fff" stroke-width="1.5"/></svg>`;
   return `data:image/svg+xml,${svg.replace(/#/g, '%23')}`;
 };
-const _pinSymbol = (maps, color = "#E53935", scale = 1.0) => {
+const _pinSymbol = (maps, color = C.err, scale = 1.0) => {
   const w = Math.round(28 * scale), h = Math.round(40 * scale);
   return { url: _pinSvg(color, w, h), scaledSize: new maps.Size(w, h), anchor: new maps.Point(w / 2, h) };
 };
@@ -739,7 +739,7 @@ const _entitySymbol = (maps, type, scale = 1.0) => {
   if (type === "lot") return _lotSymbol(maps, scale);
   if (type === "poi") return _poiSymbol(maps, scale);
   if (type === "plant") return _plantSymbol(maps, scale);
-  return _pinSymbol(maps, "#E53935", scale);
+  return _pinSymbol(maps, C.err, scale);
 };
 // Exported helpers for screens that create their own markers
 export const mkPinIcon = (maps, color, scale = 1.0) => _pinSymbol(maps, color, scale);
@@ -1072,8 +1072,8 @@ export function MapOverlay({ lat, lng, label, destLat, destLng, destLabel, freig
 
   // Build list items
   const items = [];
-  if (lat && lng) items.push({ key: "origin", label: label || "Origen", color: "#1A6B37", type: "Origen", lat: Number(lat), lng: Number(lng), mk: originMk });
-  if (destLat && destLng) items.push({ key: "dest", label: destLabel || "Destino", color: "#0891B2", type: "Destino", lat: Number(destLat), lng: Number(destLng), mk: destMk });
+  if (lat && lng) items.push({ key: "origin", label: label || "Origen", color: C.pri, type: "Origen", lat: Number(lat), lng: Number(lng), mk: originMk });
+  if (destLat && destLng) items.push({ key: "dest", label: destLabel || "Destino", color: C.sec, type: "Destino", lat: Number(destLat), lng: Number(destLng), mk: destMk });
   participants.forEach(p => {
     const pLat = parseFloat(p.lat); const pLng = parseFloat(p.lng);
     if (isNaN(pLat) || isNaN(pLng)) return;

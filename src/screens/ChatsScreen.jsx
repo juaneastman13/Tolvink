@@ -26,6 +26,7 @@ const formatDateDivider = (dateStr) => {
 export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop, sseMsg, onSseMsgHandled, sseTyping, sseRead, sseConnected }) {
   const [convs, setConvs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
   const [activeConv, setActiveConv] = useState(null);
   const [messages, setMessages] = useState([]);
   const [msgText, setMsgText] = useState("");
@@ -101,8 +102,8 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
   // Autofocus input when opening conversation
   useEffect(() => {
     if (activeConv && inputRef.current && chatTab === "chat") {
-      // Small delay to ensure DOM is ready
-      setTimeout(() => inputRef.current?.focus(), 100);
+      const tid = setTimeout(() => inputRef.current?.focus(), 100);
+      return () => clearTimeout(tid);
     }
   }, [activeConv?.id, chatTab]);
 
@@ -122,9 +123,10 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
       const c = await apiListConversations(query);
       const result = Array.isArray(c) ? c : [];
       setConvs(result);
+      setLoadError(null);
       return result;
     } catch (err) {
-      console.warn('[CHATS] loadConvs failed:', err);
+      setLoadError('No se pudieron cargar las conversaciones');
       return [];
     } finally {
       setLoading(false);
@@ -141,9 +143,9 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
       setMessages(msgs);
       setMsgHasMore(Array.isArray(r) ? false : (r?.hasMore || false));
       // Issue #13 fix: log mark-read failures
-      apiMarkRead(conv.id).catch((e) => console.warn('[CHATS] Mark read failed:', e));
+      apiMarkRead(conv.id).catch(() => {});
     } catch (err) {
-      console.warn('[CHATS] openConv failed:', err);
+      setMessages([]);
     }
   }, []); // No dependencies - uses setState which is stable
 
@@ -560,7 +562,7 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
             <button onClick={() => setChatTab("chat")} style={{ padding: "5px 10px", borderRadius: R.md, border: "none", background: chatTab === "chat" ? C.priPale : "none", color: chatTab === "chat" ? C.pri : C.t3, fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>Chat</button>
             <button onClick={() => setChatTab("files")} style={{ padding: "5px 10px", borderRadius: R.md, border: "none", background: chatTab === "files" ? C.priPale : "none", color: chatTab === "files" ? C.pri : C.t3, fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", position: "relative" }}>
               Archivos
-              {chatFiles.length > 0 && <span style={{ position: "absolute", top: -2, right: -2, minWidth: 14, height: 14, borderRadius: R.sm, background: C.acc, color: "#fff", fontSize: 8.8, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 3px" }}>{chatFiles.length}</span>}
+              {chatFiles.length > 0 && <span style={{ position: "absolute", top: -2, right: -2, minWidth: 14, height: 14, borderRadius: R.sm, background: C.acc, color: C.w, fontSize: 8.8, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 3px" }}>{chatFiles.length}</span>}
             </button>
           </div>
         </div>
@@ -610,15 +612,15 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
                             </button>
                           ) : (
                             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                              <button onClick={()=>{ if(fileData.url) setViewFile({url:fileData.url,name:fileData.name}); }} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", color: mine ? "#fff" : C.t1, flex: 1 }}>
-                                {Ic.doc(mine ? "#fff" : C.pri, 20)}
+                              <button onClick={()=>{ if(fileData.url) setViewFile({url:fileData.url,name:fileData.name}); }} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", color: mine ? C.w : C.t1, flex: 1 }}>
+                                {Ic.doc(mine ? C.w : C.pri, 20)}
                                 <div style={{ textAlign:"left" }}>
                                   <div style={{ fontSize: 13.2, fontWeight: 600, wordBreak: "break-all" }}>{fileData.name}</div>
                                   <div style={{ fontSize: 11, opacity: 0.7 }}>{fileData.url ? "Ver archivo" : "Archivo no disponible"}</div>
                                 </div>
                               </button>
                               {fileData.url && <a href={fileData.url} download={fileData.name} style={{ background: mine ? "rgba(255,255,255,0.2)" : C.priPale, border: "none", borderRadius: R.sm, padding: 6, display: "flex", alignItems: "center", justifyContent: "center", textDecoration: "none" }} title="Descargar">
-                                {Ic.download(mine ? "#fff" : C.pri, 16)}
+                                {Ic.download(mine ? C.w : C.pri, 16)}
                               </a>}
                             </div>
                           )
@@ -626,8 +628,8 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
                           <div style={{ display: "flex", alignItems: "flex-start", gap: 6 }}>
                             <div style={{ flex: 1 }}>{renderTextWithMentions(m.text, mine)}</div>
                             {!fileData && (
-                              <button onClick={() => copyMessageText(m.text, m.id)} title="Copiar" style={{ background: mine ? "rgba(255,255,255,0.2)" : C.bg, border: "none", borderRadius: R.xs, padding: "2px 4px", cursor: "pointer", fontSize: 9.9, color: mine ? "#fff" : C.t2, opacity: copiedMsgId === m.id ? 1 : 0.5, transition: "opacity 0.2s" }}>
-                              {copiedMsgId === m.id ? Ic.chk(mine ? "#fff" : C.pri, 10) : Ic.doc(mine ? "#fff" : C.t2, 10)}
+                              <button onClick={() => copyMessageText(m.text, m.id)} title="Copiar" style={{ background: mine ? "rgba(255,255,255,0.2)" : C.bg, border: "none", borderRadius: R.xs, padding: "2px 4px", cursor: "pointer", fontSize: 9.9, color: mine ? C.w : C.t2, opacity: copiedMsgId === m.id ? 1 : 0.5, transition: "opacity 0.2s" }}>
+                              {copiedMsgId === m.id ? Ic.chk(mine ? C.w : C.pri, 10) : Ic.doc(mine ? C.w : C.t2, 10)}
                             </button>
                             )}
                           </div>
@@ -671,8 +673,8 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
             {/* Nuevo mensaje indicator - floating button */}
             {newMsgIndicator && (
               <div style={{ position: "absolute", bottom: keyboardHeight > 0 ? keyboardHeight + 70 : 70, left: "50%", transform: "translateX(-50%)", zIndex: 10, animation: "fadeIn 0.2s ease" }}>
-                <button onClick={scrollToBottom} style={{ padding: "8px 16px", borderRadius: R.pill, background: C.pri, color: "#fff", border: "none", cursor: "pointer", fontSize: 13.2, fontWeight: 600, display: "flex", alignItems: "center", gap: 6, boxShadow: "0 4px 12px rgba(0,0,0,0.15)", fontFamily: "inherit", transition: "all 0.2s ease" }}>
-                  Nuevo mensaje {Ic.down("#fff", 14)}
+                <button onClick={scrollToBottom} style={{ padding: "8px 16px", borderRadius: R.pill, background: C.pri, color: C.w, border: "none", cursor: "pointer", fontSize: 13.2, fontWeight: 600, display: "flex", alignItems: "center", gap: 6, boxShadow: "0 4px 12px rgba(0,0,0,0.15)", fontFamily: "inherit", transition: "all 0.2s ease" }}>
+                  Nuevo mensaje {Ic.down(C.w, 14)}
                 </button>
               </div>
             )}
@@ -776,6 +778,7 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
       )}
 
       {loading ? <Loader/> :
+        loadError && convs.length === 0 ? <div style={{ textAlign: "center", padding: 40, color: C.err, fontSize: 14.3 }}>{loadError}</div> :
         convs.length === 0 ? <div style={{ textAlign: "center", padding: 40, color: C.t3, fontSize: 14.3 }}>Sin conversaciones aún.{!showNew && <><br/><button onClick={()=>setShowNew(true)} style={{background:"none",border:"none",color:C.acc,fontWeight:600,cursor:"pointer",fontFamily:"inherit",fontSize:14.3,marginTop:8}}>Iniciar una nueva</button></>}</div> :
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {/* Direct conversations (flat, no nesting) */}
@@ -783,7 +786,7 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
               <div key={c.id} style={{ position: "relative", width:"100%", border:`1px solid ${c.unread||c.markedUnread?C.acc+"40":C.b1}`, borderRadius: R.lg, background:c.unread||c.markedUnread?C.accPale+"30":C.w, transition:"all 0.15s", boxShadow:C.sh, overflow: "hidden" }}>
                 <button onClick={() => openConv(c)} style={{ width:"100%", padding:"12px 14px", background: "transparent", border: "none", cursor:"pointer", fontFamily:"inherit", textAlign:"left", display:"flex", alignItems:"center", gap:12 }} onMouseEnter={e=>e.currentTarget.style.background=C.priGhost} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
                   <div style={{ width:36, height:36, borderRadius: R.xl, background:c.unread||c.markedUnread?C.acc:C.accPale, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
-                    {Ic.user(c.unread||c.markedUnread?"#fff":C.acc, 16)}
+                    {Ic.user(c.unread||c.markedUnread?C.w:C.acc, 16)}
                   </div>
                   <div style={{ flex:1, minWidth:0 }}>
                     <div style={{ display:"flex", alignItems:"center", gap:6 }}>
@@ -820,7 +823,7 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
                       <div style={{ fontSize: 14.3, fontWeight: 700, color: C.t1 }}>{companyName}</div>
                       <div style={{ fontSize: 11.6, color: C.t3 }}>{freightCount} flete{freightCount !== 1 ? "s" : ""}</div>
                     </div>
-                    {unreadCount > 0 && <span style={{ minWidth: 18, height: 18, borderRadius: R.md, background: C.acc, color: "#fff", fontSize: 11, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 4px", flexShrink: 0 }}>{unreadCount}</span>}
+                    {unreadCount > 0 && <span style={{ minWidth: 18, height: 18, borderRadius: R.md, background: C.acc, color: C.w, fontSize: 11, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 4px", flexShrink: 0 }}>{unreadCount}</span>}
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={C.t3} strokeWidth="2.5" style={{ transform: isOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }}><polyline points="6 9 12 15 18 9"/></svg>
                   </button>
 

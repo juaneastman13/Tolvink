@@ -470,7 +470,7 @@ export default function ReportsScreen({ onBack, freights, isDesktop, embedded, o
                       setPdfLoadingId(f.id);
                       try {
                         let logs = [];
-                        try { logs = await apiGetAuditLog(f.id); } catch(e) { console.warn("Audit logs unavailable:", e?.message); }
+                        try { logs = await apiGetAuditLog(f.id); } catch { /* audit logs optional */ }
                         const { generateFreightPDF } = await loadPdfReport();
                         const dc = useFreightDetailStore.getState().getDetail(f.id);
                         generateFreightPDF(dc?.data ? { ...f, documents: dc.data.documents } : f, logs);

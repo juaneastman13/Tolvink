@@ -31,7 +31,7 @@ export default function MenuScreen({ user, perms, onLogout, onNav, isDesktop, on
       const r = await onSwitchCompany(companyId);
       if (r?.ok && onRefresh) onRefresh();
     } catch (e) {
-      console.warn("switchCompany failed:", e?.message);
+      // switchCompany error — UI already shows current state
     } finally {
       setSwitching(null);
     }

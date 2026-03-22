@@ -62,7 +62,7 @@ export function usePullToRefresh(onRefresh) {
       if (pullingRef.current && !refreshingRef.current) {
         refreshingRef.current = true; setRefreshing(true);
         pullingRef.current = false; setPulling(false);
-        try { await onRefreshRef.current(); } catch(e) { console.warn('Refresh failed:', e?.message); }
+        try { await onRefreshRef.current(); } catch { /* refresh failed — UI recovers */ }
         refreshingRef.current = false; setRefreshing(false);
       }
       startY.current = 0;

@@ -220,7 +220,7 @@ export default function DocumentsScreen({ user, onBack, onNavigate }) {
         XLSX.utils.book_append_sheet(wb, ws, sheetName);
       });
       XLSX.writeFile(wb, `documentos-ocr-${new Date().toISOString().slice(0, 10)}.xlsx`);
-    } catch (e) { console.error("Export error:", e); }
+    } catch { /* export error — UI state handles it */ }
     finally { setExporting(false); }
   }, [ocrDocs]);
 
@@ -241,7 +241,7 @@ export default function DocumentsScreen({ user, onBack, onNavigate }) {
         if (tab === "company") setCompanyDocs(updateDocs);
         else setFreightDocs(updateDocs);
       }
-    } catch (e) { console.error("OCR error:", e); }
+    } catch { /* OCR error — UI state handles it */ }
     finally { setProcessingOcr(null); }
   }, [tab]);
 
@@ -268,7 +268,7 @@ export default function DocumentsScreen({ user, onBack, onNavigate }) {
       const updateDocs = (docs) => docs.map(d => d.id === doc.id ? { ...d, _hasOcr: false, _ocrData: null, ocrData: null } : d);
       if (tab === "company") setCompanyDocs(updateDocs);
       else setFreightDocs(updateDocs);
-    } catch (e) { console.error("Clear OCR error:", e); }
+    } catch { /* clear OCR error — UI state handles it */ }
     finally { setClearingOcr(null); setConfirmClear(null); }
   }, [tab]);
 
@@ -289,7 +289,7 @@ export default function DocumentsScreen({ user, onBack, onNavigate }) {
       a.download = filename;
       a.click();
       URL.revokeObjectURL(a.href);
-    } catch (e) { console.error("Download error:", e); }
+    } catch { /* download error */ }
   }, []);
 
   const reloadDocs = useCallback(() => {
@@ -305,7 +305,7 @@ export default function DocumentsScreen({ user, onBack, onNavigate }) {
       const updateDocs = (docs) => docs.filter(d => d.id !== doc.id);
       if (tab === "company") setCompanyDocs(updateDocs);
       else setFreightDocs(updateDocs);
-    } catch (e) { console.error("Delete doc error:", e); }
+    } catch { /* delete error — UI state handles it */ }
     finally { setDeletingDoc(null); setConfirmDeleteDoc(null); }
   }, [tab]);
 
@@ -316,7 +316,7 @@ export default function DocumentsScreen({ user, onBack, onNavigate }) {
       const updateDocs = (docs) => docs.map(d => d.id === doc.id ? { ...d, name: newName.trim(), _name: newName.trim() } : d);
       if (tab === "company") setCompanyDocs(updateDocs);
       else setFreightDocs(updateDocs);
-    } catch (e) { console.error("Rename doc error:", e); }
+    } catch { /* rename error — UI state handles it */ }
     finally { setRenamingDoc(null); setRenameValue(""); }
   }, [tab]);
 

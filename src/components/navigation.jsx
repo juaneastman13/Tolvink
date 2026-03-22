@@ -8,8 +8,8 @@ import { Bd } from "./data-display";
 // ======================== DESKTOP SIDEBAR =============================
 
 const _TYPE_LABELS = { producer:"Productor", plant:"Planta", transporter:"Transportista" };
-const _TYPE_IC_COLORS = { producer:"#F59E0B", plant:"#22C55E", transporter:"#0891B2" };
-const _typeIcon = (t,s=14) => t==='producer'?Ic.grain('#F59E0B',s):t==='plant'?Ic.plant('#22C55E',s):t==='transporter'?Ic.truck('#0891B2',s):null;
+const _TYPE_IC_COLORS = { producer:"#F59E0B", plant:"#22C55E", transporter:C.sec };
+const _typeIcon = (t,s=14) => t==='producer'?Ic.grain('#F59E0B',s):t==='plant'?Ic.plant('#22C55E',s):t==='transporter'?Ic.truck(C.sec,s):null;
 
 export function Sidebar({ active, onChange, unread=0, pendingCount=0, notifCount=0, canRequest=false, onNew, activeCompany, companies=[], onSwitchCompany, simpleMode=false, onToggleSimple, searchQuery="", onSearchChange, searchResults=[], onSearchSelect, searchHasMore=false, searchLoadingMore=false, onSearchLoadMore, user }) {
   const hasPending = pendingCount > 0;

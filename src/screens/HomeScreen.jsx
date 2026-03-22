@@ -57,7 +57,7 @@ function formatTodayHeader() {
   return `Fletes de hoy \u2014 ${DAY_NAMES[d.getDay()]} ${d.getDate()} de ${MONTH_NAMES[d.getMonth()]}`;
 }
 
-export default memo(function HomeScreen({ user, freights, loading, perms, onNav, catalog, isDesktop, onAction, onTripAction, onEditTrip, actionLoading, onChat, onRefresh, onDuplicate, onEdit, goToMap, simpleMode, statusCounts }) {
+export default memo(function HomeScreen({ user, freights, loading, error, perms, onNav, catalog, isDesktop, onAction, onTripAction, onEditTrip, actionLoading, onChat, onRefresh, onRetry, onDuplicate, onEdit, goToMap, simpleMode, statusCounts }) {
   const [selectedId, setSelectedId] = useState(null);
   // Track which panel originated the selection: "pending" (left) or "daily" (right)
   const [selectionSource, setSelectionSource] = useState(null);
@@ -527,8 +527,16 @@ export default memo(function HomeScreen({ user, freights, loading, perms, onNav,
         {/* Skeleton while loading */}
         {loading && freights.length === 0 && <SkeletonList count={3} />}
 
+        {/* Error state */}
+        {error && !loading && freights.length === 0 && (
+          <div style={{padding:16,textAlign:"center"}}>
+            <div style={{color:C.err,fontSize:14,marginBottom:8}}>Error al cargar fletes: {error}</div>
+            {onRetry && <Btn variant="outline" onClick={onRetry}>Reintentar</Btn>}
+          </div>
+        )}
+
         {/* Empty state */}
-        {todayFreights.length === 0 && !loading && (
+        {todayFreights.length === 0 && !loading && !error && (
           <EmptyState icon={Ic.cal(C.t3, 28)} title="Sin fletes para hoy" subtitle="No hay fletes programados para la fecha de hoy" />
         )}
 

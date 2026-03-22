@@ -225,14 +225,14 @@ export default function AssignModal({ freight, transporters, user, onClose, onCo
     const cid = compId || (mode === "own" ? ownFleetCompanyId : t);
     if (!cid) return;
     setLoadingTrucks(true); setLoadError(null);
-    apiGetTrucks(cid).then(r => setTrucks((r || []).filter(t => t.active !== false))).catch(e => { console.error("AssignModal loadTrucks error:", cid, e); setTrucks([]); setLoadError("No se pudieron cargar los vehículos"); }).finally(() => setLoadingTrucks(false));
+    apiGetTrucks(cid).then(r => setTrucks((r || []).filter(t => t.active !== false))).catch(() => { setTrucks([]); setLoadError("No se pudieron cargar los vehículos"); }).finally(() => setLoadingTrucks(false));
   }, [mode, ownFleetCompanyId, t]);
 
   const loadDriversFn = useCallback((compId) => {
     const cid = compId || (mode === "own" ? ownFleetCompanyId : t);
     if (!cid) return;
     setLoadingDrivers(true); setLoadError(null);
-    apiGetDrivers(cid).then(r => setDrivers(r || [])).catch(e => { console.error("AssignModal loadDrivers error:", cid, e); setDrivers([]); setLoadError("No se pudieron cargar los choferes"); }).finally(() => setLoadingDrivers(false));
+    apiGetDrivers(cid).then(r => setDrivers(r || [])).catch(() => { setDrivers([]); setLoadError("No se pudieron cargar los choferes"); }).finally(() => setLoadingDrivers(false));
   }, [mode, ownFleetCompanyId, t]);
 
   useEffect(() => { if (mode === "own") { loadTrucks(ownFleetCompanyId); loadDriversFn(ownFleetCompanyId); } }, [mode, ownFleetCompanyId, loadTrucks, loadDriversFn]);

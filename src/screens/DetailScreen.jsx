@@ -112,7 +112,9 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
     return () => { cancelled = true; };
   }, [freight?.id]);
 
-  // Fetch weigh tickets
+  // Fetch weigh tickets — refetch when freight status changes (e.g., after confirm-loaded modal creates a ticket)
+  const [wtRefreshKey, setWtRefreshKey] = useState(0);
+  const refreshWeighTickets = useCallback(() => setWtRefreshKey(k => k + 1), []);
   useEffect(() => {
     if (!freight?.id) return;
     let cancelled = false;
@@ -123,7 +125,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
       setWeighTickets({ origin, destination });
     }).catch(() => {});
     return () => { cancelled = true; };
-  }, [freight?.id]);
+  }, [freight?.id, freight?.status, wtRefreshKey]);
 
   const [showProgressModal, setShowProgressModal] = useState(false);
 

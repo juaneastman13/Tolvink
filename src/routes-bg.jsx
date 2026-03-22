@@ -10,6 +10,8 @@ const ROUTES_DATA = [
 ];
 
 let _svgUid = 0;
+// Safe from XSS: all interpolated values come from hardcoded ROUTES_DATA (numeric coords,
+// path strings, color keys) and theme constants — no user-controlled strings are used.
 function buildRoutesSvg({ trucks = true, opacityMul = 1, centerFade = true } = {}) {
   const uid = ++_svgUid;
   const col = k => k === "pri" ? C.pri : k === "acc" ? C.acc : C.sec;

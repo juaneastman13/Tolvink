@@ -457,7 +457,6 @@ export function FreightFileUpload({ freightId, step, onUploaded }) {
         if (filesRef.current[i].preview) URL.revokeObjectURL(filesRef.current[i].preview);
         setFiles(prev => prev.map((f, j) => j === i ? { ...f, uploading: false, done: true, preview: null } : f));
       } catch (err) {
-        console.error("Upload failed:", filesRef.current[i]?.name, err);
         log.error("Upload", `Failed to upload ${filesRef.current[i]?.name}:`, err);
         setFiles(prev => prev.map((f, j) => j === i ? { ...f, uploading: false, error: err.message || "Error" } : f));
         allOk = false;

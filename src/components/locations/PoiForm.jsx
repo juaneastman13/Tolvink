@@ -2,7 +2,7 @@ import { useState } from "react";
 import { C, Ic, FONT, R } from "../../theme";
 import { SafeZone, LocationPicker } from "../../maps";
 
-const COLOR = "#29B6F6";
+const COLOR = C.sec;
 
 // Parse "Campo: X / Lote: Y" or "Campo: X" from comments
 function parseAssoc(comments, fields) {

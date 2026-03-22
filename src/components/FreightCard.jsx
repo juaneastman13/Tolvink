@@ -62,9 +62,9 @@ export const FreightCard = memo(function FreightCard({ freight: f, onClick, styl
       aria-label={`Flete ${f.code}`}
       onKeyDown={onClick ? (e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick(); } }) : undefined}
       style={{
-        display: "flex", borderRadius: R.sm, border: selected ? "1.5px solid #1A6B37" : `0.5px solid ${C.b1}`,
+        display: "flex", borderRadius: R.sm, border: selected ? `1.5px solid ${C.pri}` : `0.5px solid ${C.b1}`,
         overflow: "hidden", cursor: onClick ? "pointer" : "default",
-        background: selected ? "#F5FBF7" : C.w, transition: "border-color 0.15s",
+        background: selected ? C.priPale : C.w, transition: "border-color 0.15s",
         ...style,
       }}
     >
@@ -85,10 +85,10 @@ export const FreightCard = memo(function FreightCard({ freight: f, onClick, styl
         </div>
         {/* Row 2: route */}
         <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 6 }}>
-          {Ic.pin("#888", 13)}
+          {Ic.pin(C.t3, 13)}
           <span style={{ fontSize: 12, color: C.t2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{origin}</span>
           <span style={{ fontSize: 12, color: C.t2, flexShrink: 0 }}>→</span>
-          {isCustomDest ? Ic.pin("#888", 12) : Ic.plant("#666", 12)}
+          {isCustomDest ? Ic.pin(C.t3, 12) : Ic.plant(C.t2, 12)}
           <span style={{ fontSize: 12, color: C.t2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{dest}</span>
         </div>
         {/* Producer badge (plant-centric) */}
@@ -160,10 +160,10 @@ export const FreightCardCompact = memo(function FreightCardCompact({ freight: f,
         )}
         {/* Row 3: route + date */}
         <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-          {Ic.pin("#888", 11)}
+          {Ic.pin(C.t3, 11)}
           <span style={{ fontSize: 11, color: C.t2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{shortOrigin}</span>
           <span style={{ fontSize: 11, color: C.t2, flexShrink: 0 }}>→</span>
-          {isCustomDest ? Ic.pin("#888", 10) : Ic.plant("#666", 10)}
+          {isCustomDest ? Ic.pin(C.t3, 10) : Ic.plant(C.t2, 10)}
           <span style={{ fontSize: 11, color: C.t2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{shortDest}</span>
           {date && <span style={{ fontSize: 10, color: C.t2, marginLeft: "auto", flexShrink: 0 }}>{date}</span>}
         </div>
@@ -182,7 +182,7 @@ export function TripProgressBar({ status, ribbon, small }) {
       <div style={{ position: "absolute", left: 0, top: 0, height: "100%", width: `${pct}%`, background: ribbon, borderRadius: R.xs, transition: "width 0.3s" }} />
       {pct > 0 && pct < 100 && (
         <div style={{ position: "absolute", left: `${pct}%`, top: "50%", transform: "translate(-50%, -50%)", width: sz, height: sz, borderRadius: "50%", background: ribbon, display: "flex", alignItems: "center", justifyContent: "center" }}>
-          {Ic.truck("#fff", small ? 11 : 13)}
+          {Ic.truck(C.w, small ? 11 : 13)}
         </div>
       )}
     </div>
@@ -226,10 +226,10 @@ export const ActiveTripCard = memo(function ActiveTripCard({ freight: f, onClick
           /* Multi-truck: route header + per-truck bars */
           <>
             <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 10 }}>
-              {Ic.pin("#888", 13)}
+              {Ic.pin(C.t3, 13)}
               <span style={{ fontSize: 12, color: C.t2 }}>{origin}</span>
               <span style={{ fontSize: 12, color: C.t2 }}>→</span>
-              {isCustomDest ? Ic.pin("#888", 12) : Ic.plant("#666", 12)}
+              {isCustomDest ? Ic.pin(C.t3, 12) : Ic.plant(C.t2, 12)}
               <span style={{ fontSize: 12, color: C.t2 }}>{dest}</span>
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -260,7 +260,7 @@ export const ActiveTripCard = memo(function ActiveTripCard({ freight: f, onClick
               {/* Origin pictogram */}
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", flexShrink: 0, width: 50 }}>
                 <div style={{ width: 30, height: 30, borderRadius: "50%", background: C.bgCardAlt, border: "1.5px solid #888", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  {Ic.pin("#888", 16)}
+                  {Ic.pin(C.t3, 16)}
                 </div>
                 <span style={{ fontSize: 10, color: C.t3, textAlign: "center", marginTop: 3, lineHeight: 1.2, maxWidth: 60, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{origin.split(/\s*[\/—]\s*/)[0]}</span>
               </div>
@@ -271,7 +271,7 @@ export const ActiveTripCard = memo(function ActiveTripCard({ freight: f, onClick
               {/* Dest pictogram */}
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", flexShrink: 0, width: 50 }}>
                 <div style={{ width: 30, height: 30, borderRadius: "50%", background: C.bgCardAlt, border: "1.5px solid #888", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  {isCustomDest ? Ic.pin("#888", 16) : Ic.plant("#666", 16)}
+                  {isCustomDest ? Ic.pin(C.t3, 16) : Ic.plant(C.t2, 16)}
                 </div>
                 <span style={{ fontSize: 10, color: C.t3, textAlign: "center", marginTop: 3, lineHeight: 1.2, maxWidth: 60, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{dest.split(/\s*[\/—]\s*/)[0]}</span>
               </div>
@@ -280,7 +280,7 @@ export const ActiveTripCard = memo(function ActiveTripCard({ freight: f, onClick
             <div style={{ background: C.bgCardAlt, borderRadius: R.sm, padding: "7px 10px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 <div style={{ width: 22, height: 22, borderRadius: "50%", background: sc.ribbon, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  {Ic.user("#fff", 11)}
+                  {Ic.user(C.w, 11)}
                 </div>
                 {f.truckPlate && <span style={{ fontSize: 12, color: C.t1, fontWeight: 500 }}>{f.truckPlate}</span>}
                 {f.driverName && <span style={{ fontSize: 11, color: C.t2 }}>{f.driverName}</span>}

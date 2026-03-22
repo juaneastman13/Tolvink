@@ -1,15 +1,16 @@
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import QRCode from 'qrcode';
+import { C, STATUS_COLORS as SC } from '../theme';
 
-// ─── Brand colors ───
-const PRI = '#1A6B37';
-const ACC = '#FF6A00';
-const SEC = '#0891B2';
-const T1 = '#18251C';
-const T2 = '#4A6352';
-const T3 = '#8A9C90';
-const B1 = '#DEE4E0';
+// ─── Brand colors (from theme tokens) ───
+const PRI = C.pri;
+const ACC = C.acc;
+const SEC = C.sec;
+const T1 = C.t1;
+const T2 = C.t2;
+const T3 = C.t3;
+const B1 = C.b1;
 const BG_ALT = [247, 248, 247];
 
 const STATUS_LABELS = {
@@ -18,9 +19,10 @@ const STATUS_LABELS = {
   finished:'Finalizado', canceled:'Cancelado',
 };
 const STATUS_COLORS = {
-  draft:'#71717A', pending_assignment:'#FF6A00', assigned:'#0891B2',
-  accepted:'#0891B2', in_progress:'#43A047', loaded:'#1A6B37',
-  finished:'#9E9E9E', canceled:'#E53935',
+  draft: SC.draft.ribbon, pending_assignment: SC.pending_assignment.ribbon,
+  assigned: SC.assigned.ribbon, accepted: SC.accepted.ribbon,
+  in_progress: SC.in_progress.ribbon, loaded: SC.loaded.ribbon,
+  finished: SC.finished.ribbon, canceled: SC.canceled.ribbon,
 };
 
 const hex = h => [parseInt(h.slice(1,3),16), parseInt(h.slice(3,5),16), parseInt(h.slice(5,7),16)];
@@ -86,7 +88,7 @@ export async function generateFreightPDF(freight, auditLog = []) {
   doc.setTextColor(...hex(T1));
   doc.text(freight.code || '—', W-M, y+6, { align:'right' });
 
-  const stColor = STATUS_COLORS[freight.status] || '#71717A';
+  const stColor = STATUS_COLORS[freight.status] || C.muted;
   const stLabel = STATUS_LABELS[freight.status] || freight.status;
   doc.setFontSize(7);
   const stW = doc.getTextWidth(stLabel) + 8;

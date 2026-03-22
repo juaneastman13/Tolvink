@@ -325,7 +325,7 @@ export default function AppLayout({ fh, catalog, online, notif, isDesktop }) {
       const r = await fh.respond(fId, "accepted", undefined, truckId, driverId);
       if(r.ok){ track("freight_accept"); clearActionAfterClose(); return "Flete aceptado"; }
       show(r.error,"err"); setActionLoading(false); return "";
-    } catch { setActionLoading(false); return ""; }
+    } catch(e) { show(e?.message||"Error de conexión","err"); setActionLoading(false); return ""; }
   };
 
   const handleAssign = async (fId, transportCompanyId, truckId, driverId)=>{
@@ -334,7 +334,7 @@ export default function AppLayout({ fh, catalog, online, notif, isDesktop }) {
       const r = await fh.assign(fId, transportCompanyId, truckId, driverId);
       if(r.ok){ track("freight_assign"); clearActionAfterClose(); return "Transportista asignado"; }
       show(r.error,"err"); setActionLoading(false); return "";
-    } catch { setActionLoading(false); return ""; }
+    } catch(e) { show(e?.message||"Error de conexión","err"); setActionLoading(false); return ""; }
   };
 
   const handleAssignMulti = async (trucks)=>{
@@ -344,7 +344,7 @@ export default function AppLayout({ fh, catalog, online, notif, isDesktop }) {
       const r = await fh.assignMulti(modal.freight.id, trucks);
       if(r.ok){ track("freight_assign_multi"); clearActionAfterClose(); return `${trucks.length} camiones asignados`; }
       show(r.error,"err"); setActionLoading(false); return "";
-    } catch { setActionLoading(false); return ""; }
+    } catch(e) { show(e?.message||"Error de conexión","err"); setActionLoading(false); return ""; }
   };
 
   const handleTripAction = useCallback((fId, aId, actionKey)=>{
@@ -379,7 +379,7 @@ export default function AppLayout({ fh, catalog, online, notif, isDesktop }) {
       const r = await fh.respondTrip(fId, aId, {action:"accepted", truckId, driverId});
       if(r.ok){ track("trip_accept"); clearActionAfterClose(); return "Viaje aceptado"; }
       show(r.error,"err"); setActionLoading(false); return "";
-    } catch { setActionLoading(false); return ""; }
+    } catch(e) { show(e?.message||"Error de conexión","err"); setActionLoading(false); return ""; }
   };
 
   const handleTripConfirmAction = async (fId, aId, actionKey, loadedTons)=>{
@@ -392,7 +392,7 @@ export default function AppLayout({ fh, catalog, online, notif, isDesktop }) {
       else if(actionKey==="confirm_trip_finished") r = await fh.confirmTripFinished(fId, aId);
       if(r?.ok){ clearActionAfterClose(); return msgs[actionKey]||"Hecho"; }
       show(r?.error||"Error","err"); setActionLoading(false); return "";
-    } catch { setActionLoading(false); return ""; }
+    } catch(e) { show(e?.message||"Error de conexión","err"); setActionLoading(false); return ""; }
   };
 
   const handleEditTrip = useCallback((fId, assignment)=>{
@@ -418,7 +418,7 @@ export default function AppLayout({ fh, catalog, online, notif, isDesktop }) {
       const r = action==="confirm_loaded" ? await fn(fId, loadedTons) : await fn(fId);
       if(r.ok){ clearActionAfterClose(); return msgs[action]||"Hecho"; }
       show(r.error,"err"); setActionLoading(false); return "";
-    } catch { setActionLoading(false); return ""; }
+    } catch(e) { show(e?.message||"Error de conexión","err"); setActionLoading(false); return ""; }
   };
 
   const handleReasonAction = async (fId,reason,action,extra)=>{
@@ -431,7 +431,7 @@ export default function AppLayout({ fh, catalog, online, notif, isDesktop }) {
       const msg = action==="cancel"?"Flete cancelado":action==="reject_trip"?"Viaje rechazado":"Asignación rechazada";
       if(r?.ok){ clearActionAfterClose(); return msg; }
       show(r?.error||"Error","err"); setActionLoading(false); return "";
-    } catch { setActionLoading(false); return ""; }
+    } catch(e) { show(e?.message||"Error de conexión","err"); setActionLoading(false); return ""; }
   };
 
   const handleCreate = async (form)=>{
@@ -589,12 +589,12 @@ export default function AppLayout({ fh, catalog, online, notif, isDesktop }) {
         <div style={{flex:1,overflow:(screen==="chats"||screen==="calendar")&&isDesktop?"hidden":"auto",display:(mapFocus||locPicker)?"none":"flex",flexDirection:"column",WebkitOverflowScrolling:"touch",overscrollBehavior:"contain"}}>
         <div key={screen} className="tv-page" style={{flex:1,display:"flex",flexDirection:"column",minHeight:0}}>
         <ErrorBoundary><Suspense fallback={<SL/>}>
-        {screen==="home" && <HomeScreen user={auth.user} freights={viewFreights} loading={fh.loading} perms={perms} onNav={nav} catalog={catalog} isDesktop={isDesktop} onAction={handleAction} onTripAction={handleTripAction} onEditTrip={handleEditTrip} actionLoading={actionLoading} onChat={(convId)=>{if(convId){setChatConvId(convId);navigate("/chats");}}} onRefresh={(id)=>fh.refresh(id)} onDuplicate={(f)=>{setDuplicateData(f);navigate("/new");}} onEdit={(f)=>{setEditData(f);navigate("/edit/"+f.id);}} goToMap={goToMap} simpleMode={auth.simpleMode} statusCounts={fh.statusCounts}/>}
+        {screen==="home" && <HomeScreen user={auth.user} freights={viewFreights} loading={fh.loading} error={fh.error} perms={perms} onNav={nav} catalog={catalog} isDesktop={isDesktop} onAction={handleAction} onTripAction={handleTripAction} onEditTrip={handleEditTrip} actionLoading={actionLoading} onChat={(convId)=>{if(convId){setChatConvId(convId);navigate("/chats");}}} onRefresh={(id)=>fh.refresh(id)} onRetry={fh.fetchAll} onDuplicate={(f)=>{setDuplicateData(f);navigate("/new");}} onEdit={(f)=>{setEditData(f);navigate("/edit/"+f.id);}} goToMap={goToMap} simpleMode={auth.simpleMode} statusCounts={fh.statusCounts}/>}
         {screen==="list" && <ListScreen freights={viewFreights} loading={fh.loading} onNav={nav} onRefresh={fh.fetchAll} catalog={catalog} view={listView} setView={setListView} goToMap={goToMap} hasMore={fh.hasMore} loadMore={fh.loadMore} loadingMore={fh.loadingMore} total={fh.total} isDesktop={isDesktop} onAction={handleAction} user={auth.user} simpleMode={auth.simpleMode} statusCounts={fh.statusCounts}/>}
         {screen==="calendar" && <CalendarScreen freights={viewFreights} perms={perms} onNav={nav} isDesktop={isDesktop} user={auth.user} onAction={handleAction} onTripAction={handleTripAction} actionLoading={actionLoading} onChat={(convId)=>{if(convId){setChatConvId(convId);navigate("/chats");}}} onRefresh={(id)=>fh.refresh(id)} onDuplicate={(f)=>{setDuplicateData(f);navigate("/new");}} onEdit={(f)=>{setEditData(f);navigate("/edit/"+f.id);}} goToMap={goToMap}/>}
         {screen==="detail" && <DetailScreen user={curFreight ? {...auth.user, userType: _resolveType(curFreight)} : auth.user} freight={curFreight} perms={perms} onBack={()=>navigate("/list" + listSearchRef.current)} onAction={handleAction} onTripAction={handleTripAction} onEditTrip={handleEditTrip} onCancelAssignment={fh.cancelAssignment} actionLoading={actionLoading} onChat={(convId)=>{if(convId){setChatConvId(convId);navigate("/chats");}}} onRefresh={(id)=>{ useFreightDetailStore.getState().invalidate(id); fh.refresh(id); }} onDuplicate={(f)=>{setDuplicateData(f);navigate("/new");}} onEdit={(f)=>{setEditData(f);navigate("/edit/"+f.id);}} goToMap={goToMap} sseConnected={sse.connected}/>}
         {screen==="new" && <NewScreen user={auth.user} lots={catalog.lots} plants={catalog.plants} branches={catalog.branches} fields={catalog.fields} trucks={catalog.trucks} freights={fh.freights} onBack={()=>{setDuplicateData(null);navigate("/");}} onCreate={handleCreate} submitting={submitting} duplicateFrom={duplicateData}/>}
-        {screen==="edit" && editData && <EditScreen freight={editData} fields={catalog.fields} plants={catalog.plants} branches={catalog.branches} trucks={catalog.trucks} user={auth.user} onBack={()=>{setEditData(null);navigate(-1);}} onSave={async(id,data)=>{const r=await fh.update(id,data);if(r.ok) return r.pending?"Cambio enviado a aprobación":"Flete actualizado"; show(r.error,"err"); return "";}}/>}
+        {screen==="edit" && editData && <EditScreen freight={editData} fields={catalog.fields} plants={catalog.plants} branches={catalog.branches} trucks={catalog.trucks} user={auth.user} onBack={()=>{setEditData(null);navigate(-1);}} onSave={async(id,data)=>{try{const r=await fh.update(id,data);if(r.ok) return r.pending?"Cambio enviado a aprobación":"Flete actualizado"; show(r.error,"err"); return "";}catch(e){show(e?.message||"Error de conexión","err");return "";}}}/>}
         {screen==="menu" && <MenuScreen user={auth.user} perms={perms} onLogout={auth.logout} onNav={nav} isDesktop={isDesktop} onSwitchCompany={async(id)=>{return await auth.switchCompany(id);}} onRefresh={()=>{fh.fetchAll();catalog.refresh();}} simpleMode={auth.simpleMode} onToggleSimple={auth.toggleSimpleMode}/>}
         {screen==="trucks" && <TrucksScreen user={auth.user} onBack={()=>{catalog.refresh();navigate("/menu");}}/>}
         {screen==="tickets" && <TicketsScreen user={auth.user} onBack={()=>navigate("/menu")}/>}

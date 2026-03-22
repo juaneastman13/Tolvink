@@ -5,7 +5,9 @@ export const V = {
   req: (v, f) => (!v || (typeof v==='string' && !v.trim())) ? `${f} es obligatorio` : null,
   email: (v) => { if(!v) return 'Email es obligatorio'; return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)?null:'Email inválido'; },
   min: (n) => (v,f) => { if(!v) return `${f} es obligatorio`; return v.length>=n?null:`${f}: mínimo ${n} caracteres`; },
+  maxLen: (n) => (v,f) => { if(v && typeof v==='string' && v.length>n) return `${f}: máximo ${n} caracteres`; return null; },
   posNum: (v, f) => { if(!v&&v!==0) return `${f} es obligatorio`; return Number(v)>0?null:`${f} debe ser mayor a 0`; },
+  maxNum: (n) => (v,f) => { if(v && Number(v)>n) return `${f}: máximo ${n.toLocaleString()}`; return null; },
   sel: (v, f) => !v ? `Seleccioná ${f}` : null,
   time: (v, f) => { if(!v) return `${f} es obligatorio`; return /^\d{2}:\d{2}$/.test(v)?null:`${f} inválido`; },
   phone: (v) => { if(!v) return 'Teléfono es obligatorio'; const clean=v.replace(/[\s\-()]/g,''); return /^09\d{7}$/.test(clean)?null:'Formato: 09X XXX XXX'; },
@@ -24,7 +26,7 @@ export function validate(vals, schema) {
 export const SCHEMAS = {
   login:   { email:[V.email] },
   signup:  { name:[V.req,V.min(3)], email:[V.email], phone:[V.phone], userTypes:[V.userTypes] },
-  freight: { grain:[v=>V.sel(v,'tipo de grano')], tons:[V.posNum], loadDate:[V.req], loadTime:[V.time] },
+  freight: { grain:[v=>V.sel(v,'tipo de grano')], tons:[V.posNum, V.maxNum(100000)], loadDate:[V.req], loadTime:[V.time], notes:[V.maxLen(1000)] },
 };
 
 // ======================== FILTER ENGINE ===============================

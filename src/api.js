@@ -79,16 +79,23 @@ async function tryRefresh() {
 }
 
 export default async function api(path, opts={}) {
-  const { body, method=body?'POST':'GET', headers={}, signal } = opts;
+  const { body, method=body?'POST':'GET', headers={}, signal, timeout=30000 } = opts;
 
   const doFetch = () => {
     const cfg = { method, credentials: 'include', headers: { 'Content-Type':'application/json', ...headers } };
     if(body) cfg.body = JSON.stringify(body);
-    if(signal) cfg.signal = signal;
+    // Timeout: use caller's signal or create AbortController with timeout
+    if(signal) { cfg.signal = signal; }
+    else if(timeout > 0) { cfg.signal = AbortSignal.timeout(timeout); }
     return fetch(`${API_URL}${path}`, cfg);
   };
 
-  let res = await doFetch();
+  let res;
+  try { res = await doFetch(); }
+  catch(e) {
+    if(e.name === 'TimeoutError' || e.name === 'AbortError') throw new ApiError(0, { message: 'La solicitud tardó demasiado. Verificá tu conexión.' });
+    throw e;
+  }
 
   // On 401 — try silent refresh before failing
   if(res.status===401 && !_isLoggingIn) {

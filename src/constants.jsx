@@ -37,15 +37,15 @@ export function getActions(status, userType, role, isOwnFleet) {
   return map[status]?.[userType] || [];
 }
 
-// Trip-level status (multi-truck v6.0)
-export const TRIP_STATUS_CFG = {
-  pending:     { label:"Sin camión",       color:"#FF6A00", bg:"#FFF3E0" },
-  accepted:    { label:"Asignado",         color:"#0891B2", bg:"#ECFEFF" },
-  in_progress: { label:"A campo",          color:"#43A047", bg:"#E8F5E9" },
-  loaded:      { label:"A planta",         color:"#1A6B37", bg:"#E0F2E5" },
-  finished:    { label:"Finalizado",       color:"#9E9E9E", bg:"#F5F5F5" },
-  canceled:    { label:"Cancelado",        color:"#E53935", bg:"#FFEBEE" },
-};
+// Trip-level status (multi-truck v6.0) — derived from STATUS_COLORS
+const _TRIP_MAP = { pending:'pending_assignment', accepted:'assigned', in_progress:'in_progress', loaded:'loaded', finished:'finished', canceled:'canceled' };
+export const TRIP_STATUS_CFG = Object.fromEntries(
+  Object.entries(_TRIP_MAP).map(([trip, st]) => {
+    const s = STATUS_COLORS[st];
+    const label = trip === 'pending' ? 'Sin camión' : s.label;
+    return [trip, { label, color: s.ribbon, bg: s.pillBg }];
+  })
+);
 export function tripStCfg(s) { return TRIP_STATUS_CFG[s] || TRIP_STATUS_CFG.pending; }
 
 export const GRANOS = ["Soja","Maíz","Trigo","Girasol","Sorgo","Cebada","Otros"];

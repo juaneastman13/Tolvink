@@ -24,12 +24,12 @@ export const LIGHT = {
 
 export const C = { ...LIGHT, bgAlt: '#F3F4F6' };
 
-// Border-radius tokens (standardized from audit)
-export const R = { xs: 4, sm: 6, md: 8, lg: 12, xl: 16, pill: 20 };
+// Border-radius tokens — preferred scale: xs(4) sm(6) md(8) lg(12) xl(16) full(9999)
+export const R = { xs: 4, sm: 6, md: 8, lg: 12, xl: 16, pill: 20, full: 9999 };
 
 // Analytics — fire-and-forget to backend
 const _API = import.meta.env.VITE_API_URL || '';
-if (!_API) console.error('[Tolvink] VITE_API_URL not set — analytics will not be sent');
+if (import.meta.env.DEV && !_API) console.error('[Tolvink] VITE_API_URL not set — analytics will not be sent');
 let _sid = sessionStorage.getItem('tv_sid');
 if (!_sid) { _sid = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : (typeof crypto !== 'undefined' && crypto.getRandomValues ? Array.from(crypto.getRandomValues(new Uint8Array(16)), b => b.toString(16).padStart(2, '0')).join('') : Math.random().toString(36).slice(2) + Date.now().toString(36)); sessionStorage.setItem('tv_sid', _sid); }
 export function track(event, data = {}) {

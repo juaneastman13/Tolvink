@@ -142,9 +142,9 @@ export default function AdminScreen({ user, onBack }) {
     setSelectedCompany(c); setBranches([]); setFields([]); setTrucks([]);
     setShowBranchForm(false); setShowFieldForm(false); setShowTruckForm(false); setShowLotForm(false); setExpandedFieldId(null);
     setDetailTab("branches"); setView("companyDetail");
-    try { const b=await apiAdminListBranches(c.id); setBranches(b||[]); } catch(e) { console.warn('[AdminScreen] Load branches failed:', e.message); }
-    if(c.type==="producer") { try { const f=await apiAdminListFields(c.id); setFields(f||[]); } catch(e) { console.warn('[AdminScreen] Load fields failed:', e.message); } }
-    if(c.type==="transporter") { try { const t=await apiAdminListTrucks(c.id); setTrucks(t||[]); } catch(e) { console.warn('[AdminScreen] Load trucks failed:', e.message); } }
+    try { const b=await apiAdminListBranches(c.id); setBranches(b||[]); } catch(e) { /* silent */ }
+    if(c.type==="producer") { try { const f=await apiAdminListFields(c.id); setFields(f||[]); } catch(e) { /* silent */ } }
+    if(c.type==="transporter") { try { const t=await apiAdminListTrucks(c.id); setTrucks(t||[]); } catch(e) { /* silent */ } }
   };
   const openNewBranch = () => { setBranchForm({name:"",address:"",reference:"",lat:null,lng:null,locationAddress:""}); setEditBranchId(null); setShowBranchForm(true); };
   const openEditBranch = (b) => { setBranchForm({name:b.name,address:b.address||"",reference:b.reference||"",lat:b.lat?Number(b.lat):null,lng:b.lng?Number(b.lng):null,locationAddress:""}); setEditBranchId(b.id); setShowBranchForm(true); };
@@ -441,7 +441,7 @@ export default function AdminScreen({ user, onBack }) {
           </div>
 
           {/* Single save button */}
-          <button disabled={changeCount===0||saving} onClick={handleSaveEditUser} style={{...s.btnP(C.pri,saving||changeCount===0),width:"100%",marginTop:6,opacity:changeCount===0?0.45:1}}>
+          <button disabled={changeCount===0||saving||!!savingField} onClick={handleSaveEditUser} style={{...s.btnP(C.pri,saving||changeCount===0||!!savingField),width:"100%",marginTop:6,opacity:(changeCount===0||!!savingField)?0.45:1}}>
             {saving?"Guardando...":`Guardar cambios${changeCount>0?` (${changeCount})`:""}`}
           </button>
         </div>

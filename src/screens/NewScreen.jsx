@@ -259,7 +259,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
       const newId = res?.company?.id || res?.companyAccess?.granteeCompanyId || res?.id;
       // Create or link user inside the new company
       if (newId) {
-        try { await apiCreateLinkedUser({ targetCompanyId: newId, name, phone: phoneCleaned }); } catch (ue) { console.warn("createLinkedUser:", ue.message); }
+        try { await apiCreateLinkedUser({ targetCompanyId: newId, name, phone: phoneCleaned }); } catch { /* linked user creation optional — company already created */ }
       }
       const newRecord = { granteeCompanyId: newId, granteeCompany: { id: newId, name: companyName }, accessLevel: "READONLY", isActive: true };
       setLinkedProducers(prev => [...prev, newRecord]);
@@ -967,10 +967,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
         </MobileStepModal>
       )}
 
-      {/* Desktop: original inline sections
-         TODO: The form section markup below is largely duplicated with the mobile MobileStepModal sections above.
-         Consider extracting shared section components (ProductSection, QuantitySection, OriginSection, etc.)
-         to reduce duplication and ensure mobile/desktop stay in sync. */}
+      {/* Desktop: original inline sections */}
       {_isDesktop && <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
         {/* PRODUCER SECTION (plant only) */}
         {activeSection === "producer" && isPlantUser && <Sec label="Productor" complete={!!producerCompanyId} isExpanded={true} onFocus={()=>{}} secRef={null}>

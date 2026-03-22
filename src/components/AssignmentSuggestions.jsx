@@ -3,10 +3,10 @@ import { C, Ic, FONT, R } from "../theme";
 import { Btn, SkeletonCard } from "../components";
 import { apiGetAssignmentSuggestions } from "../api";
 
-const AVAIL_DOT = { free: C.ok, busy_other_hours: "#F59E0B", busy_now: C.err };
+const AVAIL_DOT = { free: C.ok, busy_other_hours: C.warn, busy_now: C.err };
 
 function ScoreBar({ score }) {
-  const fill = score >= 70 ? C.pri : score >= 40 ? "#F59E0B" : C.err;
+  const fill = score >= 70 ? C.pri : score >= 40 ? C.warn : C.err;
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
       <div style={{ width: 60, height: 6, borderRadius: R.xs, background: C.bgAlt, overflow: "hidden" }}>

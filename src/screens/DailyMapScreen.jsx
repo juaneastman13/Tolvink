@@ -4,26 +4,16 @@
 // =====================================================================
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { R } from "../theme";
+import { C, R, STATUS_COLORS } from "../theme";
 import { loadGMaps, mkPinIcon } from "../maps";
 import { API_URL } from "../api";
 import log from "../logger";
 
-const COLORS = {
-  pri: "#1A6B37", acc: "#FF6A00", bg: "#F7F8F7", w: "#FFFFFF",
-  t1: "#18251C", t2: "#4A6352", t3: "#8A9C90",
-  b1: "#DEE4E0", b2: "#ECF0ED", err: "#DC2626",
-};
+const COLORS = C;
 
-const STATUS_CFG = {
-  pending_assignment: { label: "Sin asignar", color: "#FF6A00" },
-  assigned: { label: "Asignado", color: "#0891B2" },
-  accepted: { label: "Asignado", color: "#0891B2" },
-  in_progress: { label: "A campo", color: "#43A047" },
-  loaded: { label: "A planta", color: "#1A6B37" },
-  finished: { label: "Finalizado", color: "#9E9E9E" },
-  canceled: { label: "Cancelado", color: "#E53935" },
-};
+const STATUS_CFG = Object.fromEntries(
+  Object.entries(STATUS_COLORS).map(([k, v]) => [k, { label: v.label, color: v.ribbon }])
+);
 
 const URUGUAY_CENTER = { lat: -33.0, lng: -56.0 };
 
