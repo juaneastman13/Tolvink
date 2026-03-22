@@ -3,7 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { C, Ic, FONT, MONO, track , R} from "../theme";
 import { V, validate, SCHEMAS, textMatch, FieldError } from "../validation";
 import { stCfg, GRANOS, UNITS } from "../constants";
-import { Btn, Field, Select, Sec, AttachMenu, NumericStepper } from "../components";
+import { Btn, Field, Select, Sec, AttachMenu, NumericStepper, LicensePlate, VerMatriculas } from "../components";
 import log from "../logger";
 const LocationPicker = lazy(() => import("../maps").then(m => ({ default: m.LocationPicker })));
 const SafeZone = lazy(() => import("../maps").then(m => ({ default: m.SafeZone })));
@@ -26,11 +26,19 @@ function SummaryCard({ secSummary, secComplete, form, showTruckSelect, trucks, o
   if (showTruckSelect && form.fleetChoice && (form.fleetChoice!=="own" || (form.truckId && form.driverId))) {
     const trk = (trucks||[]).find(t=>t.id===form.truckId);
     const drv = (ownFleetDrivers||[]).find(d=>d.id===form.driverId);
-    rows.push({ label: "Transporte", value: form.fleetChoice === "own" ? `Flota propia${trk?` · ${trk.plate}`:""}${drv?` · ${drv.name}`:""}`:"Delegar a planta", section: "ownfleet", icon: ICONS.ownfleet });
+    rows.push({ label: "Transporte", value: form.fleetChoice === "own" ? `Flota propia${drv?` · ${drv.name}`:""}`:"Delegar a planta", section: "ownfleet", icon: ICONS.ownfleet });
+    if (form.fleetChoice === "own" && trk?.plate) {
+      const tc = parseInt(secSummary.truckCount) || 1;
+      rows.push({ label: "Patente", value: tc > 1 ? <VerMatriculas assignments={[{ plate: trk.plate }]} /> : <LicensePlate plate={trk.plate} size="sm" />, section: "ownfleet", icon: ICONS.truckCount, isPlate: true });
+    }
   }
   if (secSummary.destination) rows.push({ label: "Destino", value: secSummary.destination, section: "destination", icon: ICONS.destination });
   if (secSummary.schedule) rows.push({ label: "Fecha/hora", value: secSummary.schedule, section: "schedule", icon: ICONS.schedule });
   if (secSummary.transport) rows.push({ label: "Transporte", value: secSummary.transport, section: "transport", icon: ICONS.ownfleet });
+  if (secSummary.plate) {
+    const tc = parseInt(secSummary.truckCount) || 1;
+    rows.push({ label: "Patente", value: tc > 1 ? <VerMatriculas assignments={[{ plate: secSummary.plate }]} /> : <LicensePlate plate={secSummary.plate} size="sm" />, section: "transport", icon: ICONS.truckCount, isPlate: true });
+  }
   const secKeys = ["product", "quantity", "origin", "destination", "schedule"];
   const filled = secKeys.filter(k => secComplete[k]).length;
   const total = secKeys.length;
@@ -690,21 +698,26 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
     ...(showTransportStep ? { transport: (() => {
       if (transportChoice === "skip") return "Pendiente de asignar";
       if (transportChoice === "ownfleet") {
-        const trk = assignTrucks.find(t => t.id === assignTruckId);
         const drv = assignDriversList.find(d => d.id === assignDriverId);
-        return `Flota propia${trk ? ` · ${trk.plate}` : ""}${drv ? ` · ${drv.name}` : ""}`;
+        return `Flota propia${drv ? ` · ${drv.name}` : ""}`;
       }
       if (transportChoice) {
         const tName = linkedTransporters.find(r => (r.granteeCompanyId || r.granteeCompany?.id) === transportChoice)?.granteeCompany?.name || "Transportista";
         if (transportNeedsTruckDriver) {
-          const trk = assignTrucks.find(t => t.id === assignTruckId);
           const drv = assignDriversList.find(d => d.id === assignDriverId);
-          return `${tName}${trk ? ` · ${trk.plate}` : ""}${drv ? ` · ${drv.name}` : ""}`;
+          return `${tName}${drv ? ` · ${drv.name}` : ""}`;
         }
         return tName;
       }
       return "";
     })() } : {}),
+    plate: (() => {
+      if (showTransportStep && transportChoice && transportChoice !== "skip") {
+        const trk = assignTrucks.find(t => t.id === assignTruckId);
+        return trk?.plate || null;
+      }
+      return null;
+    })(),
   };
 
   return (
@@ -1291,10 +1304,14 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
                     { icon: Ic.grain(C.pri,14), label:"Producto", value:`${secSummary.product}${secSummary.quantity?` · ${secSummary.quantity}`:""}`, sec:"product" },
                     { icon: Ic.truck(C.acc,14), label:"Camiones", value:secSummary.truckCount, sec:"quantity" },
                     { icon: Ic.field(C.ok,14), label:"Origen", value:secSummary.origin, sec:"origin" },
-                    ...(showTruckSelect&&form.fleetChoice ? [{ icon: Ic.truck(C.acc,14), label:"Transporte", value:form.fleetChoice==="own"?`Flota propia${(trucks||[]).find(t=>t.id===form.truckId)?` · ${(trucks||[]).find(t=>t.id===form.truckId).plate}`:""}${(ownFleetDrivers||[]).find(d=>d.id===form.driverId)?` · ${(ownFleetDrivers||[]).find(d=>d.id===form.driverId).name}`:""}`:"Delegar a planta", sec:"ownfleet" }] : []),
+                    ...(showTruckSelect&&form.fleetChoice ? [
+                      { icon: Ic.truck(C.acc,14), label:"Transporte", value:form.fleetChoice==="own"?`Flota propia${(ownFleetDrivers||[]).find(d=>d.id===form.driverId)?` · ${(ownFleetDrivers||[]).find(d=>d.id===form.driverId).name}`:""}`:"Delegar a planta", sec:"ownfleet" },
+                      ...(form.fleetChoice==="own"&&(trucks||[]).find(t=>t.id===form.truckId)?.plate ? [{ icon: Ic.truck(C.acc,14), label:"Patente", value: (() => { const tc = parseInt(secSummary.truckCount)||1; const plate = (trucks||[]).find(t=>t.id===form.truckId).plate; return tc > 1 ? <VerMatriculas assignments={[{plate}]} /> : <LicensePlate plate={plate} size="sm" />; })(), sec:"ownfleet", isPlate:true }] : []),
+                    ] : []),
                     { icon: Ic.plant(C.sec,14), label:"Destino", value:secSummary.destination, sec:"destination" },
                     { icon: Ic.cal(C.pri,14), label:"Fecha y hora", value:secSummary.schedule, sec:"schedule" },
                     ...(secSummary.transport ? [{ icon: Ic.truck(C.acc,14), label:"Transporte", value:secSummary.transport, sec:"transport" }] : []),
+                    ...(secSummary.plate ? [{ icon: Ic.truck(C.acc,14), label:"Patente", value: (() => { const tc = parseInt(secSummary.truckCount)||1; return tc > 1 ? <VerMatriculas assignments={[{plate:secSummary.plate}]} /> : <LicensePlate plate={secSummary.plate} size="sm" />; })(), sec:"transport", isPlate:true }] : []),
                   ].filter(r=>r.value).map((r,i)=>(
                     <div key={i} style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 0", borderBottom:`1px solid ${C.b1}` }}>
                       <div style={{ display:"flex", alignItems:"center", justifyContent:"center", width:28, height:28, borderRadius: R.md, background:C.priPale, flexShrink:0 }}>{r.icon}</div>
