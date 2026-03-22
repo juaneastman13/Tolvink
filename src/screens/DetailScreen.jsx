@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo, lazy, Suspense } from "react";
+import { useState, useRef, useEffect, useMemo, useCallback, lazy, Suspense } from "react";
 import { C, Ic, FONT, MONO, track, STATUS_COLORS , R} from "../theme";
 import { stCfg, getActions, tripStCfg, POLL_INTERVALS, formatFreightDate } from "../constants";
 import { Bd, Btn, Loader, Sec, FileViewer, SkeletonDetail, LicensePlate } from "../components";
