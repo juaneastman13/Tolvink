@@ -109,7 +109,7 @@ export default function DailyMapScreen() {
 
     freights.forEach(f => {
       if (activeStatuses && !activeStatuses.includes(f.status)) return;
-      const cfg = STATUS_CFG[f.status] || { label: f.status, color: "#71717A" };
+      const cfg = STATUS_CFG[f.status] || { label: f.status, color: C.muted };
 
       // Origin marker
       if (f.originLat && f.originLng) {

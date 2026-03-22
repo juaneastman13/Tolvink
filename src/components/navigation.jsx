@@ -106,8 +106,8 @@ export function Sidebar({ active, onChange, unread=0, pendingCount=0, notifCount
           </div>
         )}
         {f.isOverdue && (
-          <div style={{ marginTop:8, padding:"4px 8px", background:"#FEE2E2", borderRadius: R.sm, fontSize:11.5, fontWeight:700, color:"#DC2626", display:"inline-flex", alignItems:"center", gap:4 }}>
-            {Ic.warn("#DC2626", 12)} Retrasado
+          <div style={{ marginTop:8, padding:"4px 8px", background:C.errPale, borderRadius: R.sm, fontSize:11.5, fontWeight:700, color:C.err, display:"inline-flex", alignItems:"center", gap:4 }}>
+            {Ic.warn(C.err, 12)} Retrasado
           </div>
         )}
       </div>

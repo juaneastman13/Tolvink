@@ -259,7 +259,7 @@ export const ActiveTripCard = memo(function ActiveTripCard({ freight: f, onClick
             <div style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 8 }}>
               {/* Origin pictogram */}
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", flexShrink: 0, width: 50 }}>
-                <div style={{ width: 30, height: 30, borderRadius: "50%", background: C.bgCardAlt, border: "1.5px solid #888", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <div style={{ width: 30, height: 30, borderRadius: "50%", background: C.bgCardAlt, border: `1.5px solid ${C.t3}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
                   {Ic.pin(C.t3, 16)}
                 </div>
                 <span style={{ fontSize: 10, color: C.t3, textAlign: "center", marginTop: 3, lineHeight: 1.2, maxWidth: 60, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{origin.split(/\s*[\/—]\s*/)[0]}</span>
@@ -270,7 +270,7 @@ export const ActiveTripCard = memo(function ActiveTripCard({ freight: f, onClick
               </div>
               {/* Dest pictogram */}
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", flexShrink: 0, width: 50 }}>
-                <div style={{ width: 30, height: 30, borderRadius: "50%", background: C.bgCardAlt, border: "1.5px solid #888", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <div style={{ width: 30, height: 30, borderRadius: "50%", background: C.bgCardAlt, border: `1.5px solid ${C.t3}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
                   {isCustomDest ? Ic.pin(C.t3, 16) : Ic.plant(C.t2, 16)}
                 </div>
                 <span style={{ fontSize: 10, color: C.t3, textAlign: "center", marginTop: 3, lineHeight: 1.2, maxWidth: 60, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{dest.split(/\s*[\/—]\s*/)[0]}</span>

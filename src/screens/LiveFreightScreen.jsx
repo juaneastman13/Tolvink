@@ -13,11 +13,11 @@ import log from "../logger";
 const COLORS = C;
 
 const ROLE_CFG = {
-  producer: { label: "Productor", color: "#1A6B37" },
+  producer: { label: "Productor", color: COLORS.pri },
   plant: { label: "Planta", color: "#003882" },
-  transporter: { label: "Transportista", color: "#FF6A00" },
-  chofer: { label: "Chofer", color: "#DC2626" },
-  unknown: { label: "Participante", color: "#71717A" },
+  transporter: { label: "Transportista", color: COLORS.acc },
+  chofer: { label: "Chofer", color: COLORS.err },
+  unknown: { label: "Participante", color: COLORS.muted },
 };
 
 const STATUS_LABELS = {
@@ -481,7 +481,7 @@ export default function LiveFreightScreen() {
 
       {/* Geo error */}
       {geoError && geoError !== "in_app_browser" && (
-        <div style={{ padding: "10px 16px", background: "#FEE2E2", fontSize: 14.3, color: COLORS.err, flexShrink: 0, lineHeight: 1.4 }}>
+        <div style={{ padding: "10px 16px", background: COLORS.errPale, fontSize: 14.3, color: COLORS.err, flexShrink: 0, lineHeight: 1.4 }}>
           {geoError}
           <div style={{ marginTop: 8 }}>
             <button onClick={() => { setGeoError(null); setShareState("idle"); }} style={styles.retryBtn}>
