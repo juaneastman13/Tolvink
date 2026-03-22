@@ -7,8 +7,8 @@ import { captureError } from "./sentry";
 export const API_URL = import.meta.env.VITE_API_URL || '';
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || '';
 
-if (!API_URL) console.error('[Tolvink] VITE_API_URL not set — API calls will fail');
-if (!SUPABASE_URL) console.error('[Tolvink] VITE_SUPABASE_URL not set — uploads will fail');
+if (import.meta.env.DEV && !API_URL) console.error('[Tolvink] VITE_API_URL not set — API calls will fail');
+if (import.meta.env.DEV && !SUPABASE_URL) console.error('[Tolvink] VITE_SUPABASE_URL not set — uploads will fail');
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 const STORAGE_BUCKET = 'freight-docs';
 
@@ -19,11 +19,8 @@ let _refreshPromise = null;
 // User object stays in localStorage (not sensitive)
 export function clearAuth() {
   localStorage.removeItem('tolvink_user');
-  // Clean up legacy token storage if present
-  localStorage.removeItem('tolvink_token');
-  localStorage.removeItem('tolvink_refresh_token');
   // Clear offline queue to prevent stale data leaking across sessions
-  import('./store.js').then(m => m.offlineQueue?.clear?.()).catch(e => { console.warn('Failed to clear offline queue on logout:', e); });
+  import('./store.js').then(m => m.offlineQueue?.clear?.()).catch(() => {});
 }
 export function setAuthFailHandler(fn) { _onAuthFail = fn; }
 export function saveUser(u) {
@@ -179,7 +176,7 @@ export async function apiRegister(b) {
 
 export async function apiLogout() {
   try { await api('/auth/logout', { body: {}, method: 'POST' }); } catch (e) {
-    console.warn("Logout API failed:", e?.message || e);
+    // Logout API call failed — proceeding with local cleanup regardless
   }
   clearAuth();
 }
@@ -243,6 +240,7 @@ export async function apiCancelFreight(id,reason) { return api(`/freights/${id}/
 export async function apiConfirmLoaded(id, loadedTons) { return api(`/freights/${id}/confirm-loaded`,{body:{loadedTons}}); }
 export async function apiConfirmFinished(id) { return api(`/freights/${id}/confirm-finished`,{body:{}}); }
 export async function apiAuthorizeFreight(id) { return api(`/freights/${id}/authorize`,{body:{}}); }
+export async function apiApproveProducerFreight(id) { return api(`/freights/${id}/approve-producer`,{body:{}}); }
 export async function apiGetAssignmentSuggestions(id) { return api(`/freights/${id}/assignment-suggestions`); }
 
 // Multi-truck (v6.0)

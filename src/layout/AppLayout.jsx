@@ -309,6 +309,7 @@ export default function AppLayout({ fh, catalog, online, notif, isDesktop }) {
     }
     else if(action==="start") { setModal({type:"confirm_action",freight:f,title:"Iniciar viaje",btnLabel:"Iniciar viaje",btnVariant:"acc",icon:Ic.truck(C.acc,24),action:"start"}); }
     else if(action==="authorize") { setModal({type:"confirm_action",freight:f,title:"Autorizar viaje",btnLabel:"Autorizar",icon:Ic.chk(C.pri,24),action:"authorize"}); }
+    else if(action==="approve_producer") { setModal({type:"confirm_action",freight:f,title:"Aceptar flete de productor",btnLabel:"Aceptar",icon:Ic.chk(C.pri,24),action:"approve_producer"}); }
     else if(action==="reject_own_fleet") { setModal({type:"reason",freight:f,title:"Rechazar flota propia",btnLabel:"Rechazar",action:"cancel"}); }
     else if(action==="confirm_loaded") { setModal({type:"wt_confirm",freight:f,title:"Confirmar carga",btnLabel:"Confirmar carga",btnVariant:"acc",icon:Ic.chk(C.acc,24),action:"confirm_loaded"}); }
     else if(action==="confirm_finished") { setModal({type:"wt_confirm",freight:f,title:"Confirmar entrega",btnLabel:"Confirmar entrega",icon:Ic.chk(C.pri,24),action:"confirm_finished"}); }
@@ -411,8 +412,8 @@ export default function AppLayout({ fh, catalog, online, notif, isDesktop }) {
   const handleConfirmAction = async (fId, action, loadedTons)=>{
     setActionLoading(true);
     try {
-      const msgs = { start:"Viaje iniciado", authorize:"Viaje autorizado", confirm_loaded:"Carga confirmada", confirm_finished:"Entrega confirmada" };
-      const fn = { start:fh.start, authorize:fh.authorize, confirm_loaded:fh.confirmLoaded, confirm_finished:fh.confirmFinished }[action];
+      const msgs = { start:"Viaje iniciado", authorize:"Viaje autorizado", approve_producer:"Flete aceptado", confirm_loaded:"Carga confirmada", confirm_finished:"Entrega confirmada" };
+      const fn = { start:fh.start, authorize:fh.authorize, approve_producer:fh.approveProducer, confirm_loaded:fh.confirmLoaded, confirm_finished:fh.confirmFinished }[action];
       if(!fn){ setActionLoading(false); return ""; }
       const r = action==="confirm_loaded" ? await fn(fId, loadedTons) : await fn(fId);
       if(r.ok){ clearActionAfterClose(); return msgs[action]||"Hecho"; }

@@ -112,6 +112,8 @@ export function getPendingActions(freight, userType, role, user) {
     return null;
   }
   if (userType === "plant") {
+    // Producer-created freight pending plant approval
+    if (freight.needsPlantApproval && !freight.plantApprovedAt && s !== "canceled" && s !== "finished") return { action: "Aceptar flete de productor", color: C.sec, icon: "approve", actionKey: "approve_producer", groupKey: "approve_producer" };
     if (s === "pending_assignment") return { action: "Asignar transporte", color: C.acc, icon: "assign", actionKey: "assign", groupKey: "assign" };
     if (s === "assigned" && own) return { action: "Autorizar viaje", color: C.sec, icon: "authorize", actionKey: "authorize", groupKey: "authorize" };
     if (s === "loaded" && !freight.plantFinishedConfirmedAt) return { action: "Confirmar entrega", color: C.pri, icon: "confirm", actionKey: "confirm_finished", groupKey: "confirm_finished" };
@@ -125,6 +127,8 @@ export function getPendingActions(freight, userType, role, user) {
     return null;
   }
   if (userType === "producer") {
+    // If plant hasn't approved yet, producer can't act
+    if (freight.needsPlantApproval && !freight.plantApprovedAt) return null;
     if (s === "accepted" && own) return { action: "Iniciar viaje", color: C.pri, icon: "start", actionKey: "start", groupKey: "start" };
     if (s === "in_progress" && own && !freight.transporterLoadedConfirmedAt) return { action: "Confirmar carga", color: C.acc, icon: "confirm", actionKey: "confirm_loaded", groupKey: "confirm_loaded" };
     if (s === "loaded" && !freight.producerLoadedConfirmedAt) return { action: "Confirmar carga", color: C.acc, icon: "confirm", actionKey: "confirm_loaded", groupKey: "confirm_loaded" };
@@ -151,6 +155,7 @@ export function getWaitingOnText(freight, userType) {
     return null;
   }
   if (userType === "producer") {
+    if (freight.needsPlantApproval && !freight.plantApprovedAt) return "Esperando aprobación de planta";
     if (s === "pending_assignment") return "Esperando asignación planta";
     if (s === "assigned") return own ? "Esperando autorización planta" : "Esperando transporte";
     if (s === "accepted") return "Esperando inicio";

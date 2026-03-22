@@ -263,6 +263,10 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
       const extra = tripLifecycle[freight.status];
       if (extra && !acts.includes(extra)) acts = [...acts, extra];
     }
+    // Plant: inject approve_producer action for producer-created freights pending approval
+    if (user.userType === "plant" && freight.needsPlantApproval && !freight.plantApprovedAt) {
+      acts = ["approve_producer", ...acts];
+    }
     return acts;
   }, [freight, isChoferQueued, isConsulta, actions, user, transporterIsConsulta, isMultiTruck]);
 
@@ -320,6 +324,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
   // Compute primary + danger action buttons for ActionFooter (mobile) / inline (desktop)
   const primaryBtns = useMemo(() => {
     const btns = [];
+    if(freight?.needsPlantApproval && !freight?.plantApprovedAt && filteredActions.includes("approve_producer")) btns.push(<Btn key="approve_prod" full icon={Ic.chk(C.w,16)} disabled={actionLoading} onClick={()=>onAction(freight?.id,"approve_producer")}>{actionLoading?"Procesando...":"Aceptar flete de productor"}</Btn>);
     if(filteredActions.includes("authorize")) btns.push(<Btn key="auth" full icon={Ic.chk(C.w,16)} disabled={actionLoading} onClick={()=>onAction(freight?.id,"authorize")}>{actionLoading?"Procesando...":"Autorizar viaje"}</Btn>);
     if(filteredActions.includes("assign")) btns.push(<Btn key="assign" full v="acc" icon={Ic.chk(C.w,16)} disabled={actionLoading} onClick={()=>onAction(freight?.id,"assign")}>Asignar transportista</Btn>);
     if(filteredActions.includes("assign_truck")) btns.push(<Btn key="assign_truck" full icon={Ic.truck(C.w,16)} disabled={actionLoading} onClick={()=>onAction(freight?.id,"assign_truck")}>Asignar camión y chofer</Btn>);
@@ -635,7 +640,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
 
       {/* Assignment suggestions — for plant users when freight needs assignment */}
       {!isConsulta && perms.canApprove && (freight.status === "pending_assignment" || (freight.status === "assigned" && (freight.assignedTruckCount || 0) < (freight.truckCount || 1))) && (
-        <AssignmentSuggestions freight={freight} user={user} onAssign={async (body) => { await apiAssignFreight(freight.id, body); if (onRefresh) onRefresh(freight.id); }} onRefreshKey={freight.updatedAt || freight.status} />
+        <AssignmentSuggestions freight={freight} user={user} onAssign={async (body) => { try { await apiAssignFreight(freight.id, body); if (onRefresh) onRefresh(freight.id); } catch (e) { show(e?.message || 'Error al asignar', 'err'); } }} onRefreshKey={freight.updatedAt || freight.status} />
       )}
 
       {/* Camiones section — always visible */}

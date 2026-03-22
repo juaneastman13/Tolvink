@@ -25,6 +25,7 @@ function GroupSentinel({ gKey, onVisible }) {
 
 // Action groups — grouping pending items by pending action type
 const ACTION_GROUPS = [
+  { key: "approve_producer", label: "Aceptar flete de productor", color: C.sec, priority: 0 },
   { key: "assign", label: "Asignar transporte", color: C.acc, priority: 1 },
   { key: "respond", label: "Aceptar o rechazar", color: C.sec, priority: 2 },
   { key: "authorize", label: "Autorizar viaje", color: C.sec, priority: 3 },
