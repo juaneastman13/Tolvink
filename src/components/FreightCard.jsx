@@ -1,6 +1,6 @@
 import { memo, useState, useCallback } from "react";
 import { createPortal } from "react-dom";
-import { C, Ic, MONO, R, STATUS_COLORS } from "../theme";
+import { C, Ic, FONT, MONO, R, STATUS_COLORS } from "../theme";
 import { LicensePlate } from "./ui/LicensePlate";
 import { formatFreightDate } from "../constants";
 import { originDisplay, destDisplay, useIsDesktop } from "../hooks";
@@ -46,7 +46,7 @@ function PlatesPopup({ assignments, onClose }) {
   const plates = (assignments || []).filter(a => a.plate);
   return createPortal(
     <div onClick={onClose} style={{ position:"fixed", inset:0, zIndex:99999, background:"rgba(0,0,0,0.3)", display:"flex", alignItems:"center", justifyContent:"center" }}>
-      <div onClick={e => e.stopPropagation()} style={{ background:C.w, borderRadius: R.lg, padding:"16px 20px", width:"min(300px,85vw)", boxShadow:"0 8px 32px rgba(0,0,0,0.2)" }}>
+      <div onClick={e => e.stopPropagation()} style={{ background:C.w, borderRadius: R.lg, padding:"16px 20px", width:"min(300px,85vw)", boxShadow:"0 8px 32px rgba(0,0,0,0.2)", fontFamily:FONT }}>
         <div style={{ fontSize:15, fontWeight:700, color:C.t1, marginBottom:12 }}>Matrículas ({plates.length})</div>
         {plates.length === 0 && <div style={{ fontSize:13, color:C.t3 }}>Sin camiones asignados</div>}
         {plates.map((a, i) => (
