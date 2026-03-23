@@ -9,7 +9,7 @@ import LinkedCompaniesScreen from "./LinkedCompaniesScreen";
 import ImportExcelModal from "../components/ImportExcelModal";
 import { useCatalogStore } from "../store";
 
-export default function AdminScreen({ user, onBack }) {
+export default function AdminScreen({ user, onBack, onUserUpdate }) {
   const isPlatform = user.role === "platform_admin" || user.isSuperAdmin === true;
   const isManager = user.role === "admin";
   const isHub = ["admin","gerente","platform_admin"].includes(user.role);
@@ -143,7 +143,14 @@ export default function AdminScreen({ user, onBack }) {
     if(!/^09\d{7}$/.test(companyForm.phone)) return show("Celular obligatorio (09XXXXXXX)","err");
     setSaving(true);
     try {
-      if(editCompanyId) { await apiAdminUpdateCompany(editCompanyId, companyForm); setDoneMsg("Empresa actualizada"); }
+      if(editCompanyId) {
+        await apiAdminUpdateCompany(editCompanyId, companyForm);
+        setDoneMsg("Empresa actualizada");
+        // If edited company is user's active company, update session
+        if (editCompanyId === user.activeCompanyId && onUserUpdate) {
+          onUserUpdate({ hasInternalFleet: !!companyForm.hasInternalFleet });
+        }
+      }
       else { await apiAdminCreateCompany(companyForm); setDoneMsg("Empresa creada"); }
       useCatalogStore.getState().clearCache();
       setView("list"); await load();
@@ -860,9 +867,9 @@ export default function AdminScreen({ user, onBack }) {
                 try {
                   await apiAdminUpdateCompany(selectedCompany.id, {hasInternalFleet:true});
                   setSelectedCompany(p=>({...p,hasInternalFleet:true}));
-                  // Also update in allCompanies
                   setAllCompanies(prev=>prev.map(c=>c.id===selectedCompany.id?{...c,hasInternalFleet:true}:c));
                   setCompanies(prev=>prev.map(c=>c.id===selectedCompany.id?{...c,hasInternalFleet:true}:c));
+                  if (selectedCompany.id === user.activeCompanyId && onUserUpdate) onUserUpdate({ hasInternalFleet: true });
                   show("Flota propia activada");
                 } catch(e) { show(e.message,"err"); }
                 finally { setSaving(false); }

@@ -162,7 +162,7 @@ export function useAuth() {
   }, []);
 
   const patchUser = useCallback((updates) => {
-    const ALLOWED = new Set(['name', 'email', 'phone', 'company', 'activeCompanyId', 'companies', 'isNew']);
+    const ALLOWED = new Set(['name', 'email', 'phone', 'company', 'activeCompanyId', 'companies', 'isNew', 'hasInternalFleet']);
     setUser(prev => {
       if (!prev) return prev;
       const safe = {};

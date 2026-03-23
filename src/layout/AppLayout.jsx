@@ -601,7 +601,7 @@ export default function AppLayout({ fh, catalog, online, notif, isDesktop }) {
         {screen==="documents" && <DocumentsScreen user={auth.user} onBack={()=>navigate("/menu")} onNavigate={(fId)=>{setSelFreight(fId);fh.refresh(fId);navigate(`/freight/${fId}`);}}/>}
         {screen==="analytics" && <AnalyticsScreen user={auth.user} onBack={()=>navigate("/menu")}/>}
         {screen==="locations" && <LocationsScreen user={auth.user} onBack={()=>{catalog.refresh();navigate("/menu");}}/>}
-        {screen==="admin" && (auth.user?.role==="admin"||auth.user?.role==="platform_admin") && <AdminScreen user={auth.user} onBack={()=>navigate("/menu")}/>}
+        {screen==="admin" && (auth.user?.role==="admin"||auth.user?.role==="platform_admin") && <AdminScreen user={auth.user} onBack={()=>navigate("/menu")} onUserUpdate={auth.patchUser}/>}
         {screen==="linked" && <LinkedCompaniesScreen user={auth.user} onBack={()=>navigate(isDesktop?"/linked":"/menu")} onNav={nav}/>}
         {screen==="mydata" && <MyDataScreen user={auth.user} onBack={()=>navigate("/menu")} onUserUpdate={auth.patchUser}/>}
         {screen==="reports" && <ReportsScreen onBack={()=>navigate(isDesktop?"/reports":"/menu")} freights={viewFreights} isDesktop={isDesktop}/>}
