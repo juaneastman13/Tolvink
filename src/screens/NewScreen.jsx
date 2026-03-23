@@ -15,7 +15,7 @@ import { useUIStore } from "../store";
 
 // ======================== SUMMARY CARD ==============================
 
-function SummaryCard({ secSummary, secComplete, form, showTruckSelect, trucks, ownFleetDrivers, isDesktop, compact, onEdit }) {
+function SummaryCard({ secSummary, secComplete, form, showTruckSelect, trucks, ownFleetDrivers, isDesktop, compact, onEdit, user }) {
   const ICONS = { product: Ic.grain(C.pri,14), quantity: Ic.grain(C.t2,14), truckCount: Ic.truck(C.acc,14), origin: Ic.field(C.ok,14), ownfleet: Ic.truck(C.acc,14), destination: Ic.plant(C.sec,14), schedule: Ic.cal(C.pri,14) };
   const rows = [];
   if (secSummary.producer) rows.push({ label: "Productor", value: secSummary.producer, section: "producer", icon: ICONS.origin });
@@ -25,7 +25,7 @@ function SummaryCard({ secSummary, secComplete, form, showTruckSelect, trucks, o
   if (secSummary.origin) rows.push({ label: "Origen", value: secSummary.origin, section: "origin", icon: ICONS.origin });
   if (showTruckSelect && form.fleetChoice && (form.fleetChoice!=="own" || (form.truckId && form.driverId))) {
     const trk = (trucks||[]).find(t=>t.id===form.truckId);
-    const drv = (ownFleetDrivers||[]).find(d=>d.id===form.driverId);
+    const drv = form.driverId === user?.id ? { name: user.name } : (ownFleetDrivers||[]).find(d=>d.id===form.driverId);
     rows.push({ label: "Transporte", value: form.fleetChoice === "own" ? `Flota propia${drv?` · ${drv.name}`:""}`:"Delegar a planta", section: "ownfleet", icon: ICONS.ownfleet });
     if (form.fleetChoice === "own" && trk?.plate) {
       const tc = parseInt(secSummary.truckCount) || 1;
@@ -419,7 +419,10 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
       apiGetDrivers(ownFleetCompanyId).then(r => setOwnFleetDrivers(r || [])).catch(() => setOwnFleetDrivers([])).finally(() => setLoadingDrivers(false));
     }
   }, [form.fleetChoice, ownFleetCompanyId]);
-  const driverOpts = ownFleetDrivers.map(d => ({ value: d.id, label: `${d.name}${d.phone ? ` · ${d.phone}` : ""}` }));
+  const driverOpts = [
+    { value: user.id, label: `Yo soy el chofer (${user.name})`, bold: true },
+    ...ownFleetDrivers.filter(d => d.id !== user.id).map(d => ({ value: d.id, label: `${d.name}${d.phone ? ` · ${d.phone}` : ""}` })),
+  ];
 
   // Section refs for collapsible sections
   const secRefs = { product:useRef(null), quantity:useRef(null), origin:useRef(null), ownfleet:useRef(null), destination:useRef(null), schedule:useRef(null), submit:useRef(null) };
@@ -735,7 +738,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
 
       <div style={{ display:"flex", flexDirection:_isDesktop?"row":"column", gap:_isDesktop?24:0, maxWidth:_isDesktop?1100:"none", margin:"0 auto" }}>
       {/* Mobile: compact summary at top */}
-      {!_isDesktop && <SummaryCard secSummary={secSummary} secComplete={secComplete} form={form} showTruckSelect={showTruckSelect} trucks={trucks} ownFleetDrivers={ownFleetDrivers} isDesktop={false} compact onEdit={(sec)=>{if(!editingFrom)setEditingFrom(activeSection);setActiveSection(sec);}}/>}
+      {!_isDesktop && <SummaryCard secSummary={secSummary} secComplete={secComplete} form={form} showTruckSelect={showTruckSelect} trucks={trucks} ownFleetDrivers={ownFleetDrivers} isDesktop={false} compact onEdit={(sec)=>{if(!editingFrom)setEditingFrom(activeSection);setActiveSection(sec);}} user={user}/>}
       <div style={{ flex:"1 1 0", minWidth:0 }}>
       {/* Mobile: step modal for form sections */}
       {!_isDesktop && (
@@ -1264,7 +1267,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
       </div>}
       </div>
       {_isDesktop && <div style={{ flex:"1 1 0", minWidth:0, position:"sticky", top:70, alignSelf:"flex-start" }}>
-        <SummaryCard secSummary={secSummary} secComplete={secComplete} form={form} showTruckSelect={showTruckSelect} trucks={trucks} ownFleetDrivers={ownFleetDrivers} isDesktop={true} onEdit={(sec)=>{if(!editingFrom)setEditingFrom(activeSection);setActiveSection(sec);}}/>
+        <SummaryCard secSummary={secSummary} secComplete={secComplete} form={form} showTruckSelect={showTruckSelect} trucks={trucks} ownFleetDrivers={ownFleetDrivers} isDesktop={true} onEdit={(sec)=>{if(!editingFrom)setEditingFrom(activeSection);setActiveSection(sec);}} user={user}/>
       </div>}
       </div>
       </div>
@@ -1305,7 +1308,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
                     { icon: Ic.truck(C.acc,14), label:"Camiones", value:secSummary.truckCount, sec:"quantity" },
                     { icon: Ic.field(C.ok,14), label:"Origen", value:secSummary.origin, sec:"origin" },
                     ...(showTruckSelect&&form.fleetChoice ? [
-                      { icon: Ic.truck(C.acc,14), label:"Transporte", value:form.fleetChoice==="own"?`Flota propia${(ownFleetDrivers||[]).find(d=>d.id===form.driverId)?` · ${(ownFleetDrivers||[]).find(d=>d.id===form.driverId).name}`:""}`:"Delegar a planta", sec:"ownfleet" },
+                      { icon: Ic.truck(C.acc,14), label:"Transporte", value:form.fleetChoice==="own"?`Flota propia${form.driverId===user.id?` · ${user.name}`:(ownFleetDrivers||[]).find(d=>d.id===form.driverId)?` · ${(ownFleetDrivers||[]).find(d=>d.id===form.driverId).name}`:""}`:"Delegar a planta", sec:"ownfleet" },
                       ...(form.fleetChoice==="own"&&(trucks||[]).find(t=>t.id===form.truckId)?.plate ? [{ icon: Ic.truck(C.acc,14), label:"Patente", value: (() => { const tc = parseInt(secSummary.truckCount)||1; const plate = (trucks||[]).find(t=>t.id===form.truckId).plate; return tc > 1 ? <VerMatriculas assignments={[{plate}]} /> : <LicensePlate plate={plate} size="sm" />; })(), sec:"ownfleet", isPlate:true }] : []),
                     ] : []),
                     { icon: Ic.plant(C.sec,14), label:"Destino", value:secSummary.destination, sec:"destination" },
