@@ -429,8 +429,8 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
   const SEC_ORDER = isPlantUser ? (showTransportStep ? ["producer","product","quantity","origin","destination","schedule","transport"] : ["producer","product","quantity","origin","destination","schedule"]) : ["product","quantity","origin","destination","schedule"];
   const [activeSection, setActiveSection] = useState(()=>{
     if (isPlantUser) return "producer";
-    const g=!!form.grain&&(form.grain!=="Otros"||!!form.productTypeOther.trim()), q=!!form.tons&&parseFloat(form.tons)>0, o=originMode==="field"?(!!form.fieldId):(!!customOrigin.lat), d=destMode==="plant"?!!form.plantId:!!customDest.lat, s=!!form.loadDate&&/^\d{2}:\d{2}$/.test(form.loadTime);
-    if(!g)return"product";if(!q)return"quantity";if(!o)return"origin";if(!d)return"destination";return"schedule";
+    const g=!!form.grain&&(form.grain!=="Otros"||!!form.productTypeOther.trim()), o=originMode==="field"?(!!form.fieldId):(!!customOrigin.lat), d=destMode==="plant"?!!form.plantId:!!customDest.lat, s=!!form.loadDate&&/^\d{2}:\d{2}$/.test(form.loadTime);
+    if(!g)return"product";if(!o&&!form.tons)return"quantity";if(!o)return"origin";if(!d)return"destination";return"schedule";
   });
   const [showIncomplete, setShowIncomplete] = useState(false);
   const [editingFrom, setEditingFrom] = useState(null);
@@ -451,13 +451,13 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
   const isConsulta = selectedPlantCompanyId ? isConsultaFor(selectedPlantCompanyId) : _isConsultaGlobal;
   const selectedBranch = (branches||[]).find(b=>b.id===form.branchId);
   const truckOpts = (trucks||[]).map(t=>({ value:t.id, label:`${t.plate}${t.model?` · ${t.model}`:""}` }));
-  const showTruckSelect = (user.userType==="producer"||(user.userTypes||[]).includes("producer")) && !!user.hasInternalFleet;
+  const showTruckSelect = !isPlantUser && (user.userType==="producer"||(user.userTypes||[]).includes("producer")) && !!user.hasInternalFleet;
 
   // Section completeness
   const secComplete = useMemo(()=>({
     ...(isPlantUser ? { producer: !!producerCompanyId } : {}),
     product: !!form.grain && (form.grain!=="Otros" || !!form.productTypeOther.trim()),
-    quantity: !!form.tons && parseFloat(form.tons) > 0,
+    quantity: !form.tons || parseFloat(form.tons) > 0,
     origin: originMode==="field" ? (!!form.fieldId && (!hasLots || !!form.lotId)) : (!!customOrigin.lat),
     destination: destMode==="plant" ? (!!form.plantId && (!_hasBranches || !!form.branchId)) : (!!customDest.lat && (confirmMode==="none" || !!confirmPlantId)),
     schedule: !!form.loadDate && /^\d{2}:\d{2}$/.test(form.loadTime),
@@ -697,7 +697,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
     origin: originMode==="field" ? ((fieldOpts.find(f=>f.value===form.fieldId)?.label||"")+(form.lotId==="__field__"?" — Ubicación del campo":selectedLot?` — ${selectedLot.name}`:"")) : (customOrigin.lat ? (customOrigin.name?.trim()||"Ubicación personalizada") : ""),
     destination: destMode==="plant" ? (destDisplayName||"") : (customDest.lat ? ((customDest.name?.trim()||"Ubicación personalizada")+(confirmMode==="plant"&&confirmPlantId?` · Confirma: ${(plants||[]).find(p=>p.id===confirmPlantId)?.name||""}`:"")) : ""),
     schedule: form.loadDate&&form.loadTime ? `${form.loadDate} a las ${form.loadTime}` : "",
-    truckCount: (() => { const tc = form.truckCount || (parseFloat(form.tons)>0 ? String(Math.ceil(parseFloat(form.tons)/30)) : ""); return tc ? `${tc} camión${tc!=="1"?"es":""}` : ""; })(),
+    truckCount: (() => { const tEq = form.unit==="kg"?parseFloat(form.tons)/1000:parseFloat(form.tons); const tc = form.truckCount || (tEq>0 ? String(Math.ceil(tEq/30)) : ""); return tc ? `${tc} camión${tc!=="1"?"es":""}` : ""; })(),
     ...(showTransportStep ? { transport: (() => {
       if (transportChoice === "skip") return "Pendiente de asignar";
       if (transportChoice === "ownfleet") {
@@ -806,8 +806,8 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
               </div>
             </div>
             <div style={{ marginTop:10 }}>
-              <NumericStepper label="Camiones necesarios" icon={Ic.truck(C.acc,14)} value={form.truckCount || (parseFloat(form.tons)>0 ? String(Math.ceil(parseFloat(form.tons)/30)) : "1")} onChange={v=>u({truckCount:v})} min={1} max={50} step={1} />
-              {form.unit==="toneladas" && parseFloat(form.tons)>0 && <span style={{ fontSize:12.1, color:C.t3, marginTop:4, display:"block" }}>~30tn por camión. Podés ajustarlo.</span>}
+              <NumericStepper label="Camiones necesarios" icon={Ic.truck(C.acc,14)} value={form.truckCount || (parseFloat(form.tons)>0 ? String(Math.ceil((form.unit==="kg"?parseFloat(form.tons)/1000:parseFloat(form.tons))/30)) : "1")} onChange={v=>u({truckCount:v})} min={1} max={50} step={1} />
+              {parseFloat(form.tons)>0 && (form.unit==="toneladas"||form.unit==="kg") && <span style={{ fontSize:12.1, color:C.t3, marginTop:4, display:"block" }}>{form.unit==="kg"?`~${(parseFloat(form.tons)/1000).toFixed(1)}tn`:"~30tn por camión"}. Podés ajustarlo.</span>}
             </div>
             <NextStepBtn complete={secComplete.quantity} onClick={isEditing?confirmEdit:advanceToNext} label={isEditing?"Confirmar edición":undefined} onPrev={prevAvailable()?goToPrev:null}/>
           </>}
@@ -1047,8 +1047,8 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
             </div>
           </div>
           <div style={{ marginTop:10 }}>
-            <NumericStepper label="Camiones necesarios" icon={Ic.truck(C.acc,14)} value={form.truckCount || (parseFloat(form.tons)>0 ? String(Math.ceil(parseFloat(form.tons)/30)) : "1")} onChange={v=>u({truckCount:v})} min={1} max={50} step={1} />
-            {form.unit==="toneladas" && parseFloat(form.tons)>0 && <span style={{ fontSize:12.1, color:C.t3, marginTop:4, display:"block" }}>~30tn por camión. Podés ajustarlo.</span>}
+            <NumericStepper label="Camiones necesarios" icon={Ic.truck(C.acc,14)} value={form.truckCount || (parseFloat(form.tons)>0 ? String(Math.ceil((form.unit==="kg"?parseFloat(form.tons)/1000:parseFloat(form.tons))/30)) : "1")} onChange={v=>u({truckCount:v})} min={1} max={50} step={1} />
+            {parseFloat(form.tons)>0 && (form.unit==="toneladas"||form.unit==="kg") && <span style={{ fontSize:12.1, color:C.t3, marginTop:4, display:"block" }}>{form.unit==="kg"?`~${(parseFloat(form.tons)/1000).toFixed(1)}tn`:"~30tn por camión"}. Podés ajustarlo.</span>}
           </div>
           <NextStepBtn complete={secComplete.quantity} onClick={isEditing?confirmEdit:advanceToNext} label={isEditing?"Confirmar edición":undefined} onPrev={prevAvailable()?goToPrev:null}/>
         </Sec>}

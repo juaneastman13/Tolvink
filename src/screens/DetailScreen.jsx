@@ -712,6 +712,11 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
                     {canEditA && onEditTrip && (
                       <button onClick={()=>onEditTrip(freight.id, a)} aria-label="Editar asignación" style={{ width:28, height:28, borderRadius: R.sm, display:"flex", alignItems:"center", justifyContent:"center", background:"transparent", border:"none", cursor:"pointer", flexShrink:0 }}>{Ic.edit(C.t3,14)}</button>
                     )}
+                    {!isExpanded && !a.plate && (a.tripStatus === "pending" || a.tripStatus === "accepted") && (perms.canApprove || (user.userType === "producer" && freight.useOwnFleet)) && !(user.userType === "plant" && a.transportCompanyId && a.transportCompanyId !== freight.originCompanyId) && onEditTrip && (
+                      <button onClick={(e)=>{e.stopPropagation(); onEditTrip(freight.id, a);}} style={{ padding:"6px 10px", borderRadius:7, border:`1px solid ${C.acc}`, background:`${C.acc}0D`, color:C.acc, fontSize:11.5, fontWeight:700, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:4, whiteSpace:"nowrap", flexShrink:0 }}>
+                        {Ic.plus(C.acc,12)} Asignar
+                      </button>
+                    )}
                   </div>
                   {/* Confirmation status (in_progress/loaded) */}
                   {(a.tripStatus === "in_progress" || a.tripStatus === "loaded") && (
@@ -727,13 +732,18 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
                     </div>
                   )}
                   {/* Trip action buttons (multi-truck) */}
-                  {tripBtns.length > 0 && (
+                  {(tripBtns.length > 0 || (user.userType === "plant" && (a.tripStatus === "pending" || a.tripStatus === "accepted") && a.transportCompanyId !== freight.originCompanyId && a.plate && onCancelAssignment)) && (
                     <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginTop:8 }}>
                       {tripBtns.map(b => (
                         <button key={b.key} disabled={actionLoading} onClick={()=>onTripAction && onTripAction(freight.id, a.id, b.key)} style={{ flex:"1 1 auto", padding:"8px 10px", minHeight:36, borderRadius: R.md, border:"none", background:b.color, color:C.w, fontSize:12, fontWeight:700, cursor:actionLoading?"not-allowed":"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:4, opacity:actionLoading?0.6:1 }}>
                           {b.icon} {actionLoading?"...":b.label}
                         </button>
                       ))}
+                      {user.userType === "plant" && (a.tripStatus === "pending" || a.tripStatus === "accepted") && a.transportCompanyId !== freight.originCompanyId && a.plate && onCancelAssignment && (
+                        <button disabled={actionLoading} onClick={(e)=>{e.stopPropagation(); if(confirm("¿Desasignar este camión?")) onCancelAssignment(freight.id, a.id, "Desasignado por planta").then(r=>{if(r?.ok) onRefresh && onRefresh(freight.id);});}} style={{ flex:"1 1 auto", padding:"8px 10px", minHeight:36, borderRadius: R.md, border:`1px solid ${C.err}`, background:`${C.err}08`, color:C.err, fontSize:12, fontWeight:700, cursor:actionLoading?"not-allowed":"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:4, opacity:actionLoading?0.6:1 }}>
+                          {Ic.ban(C.err,12)} Desasignar
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>
@@ -815,7 +825,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
               </div>
             );
             const carga = [
-              [Ic.grain(C.t2,15),"Producto",`${freight.grain==="Otros"?freight.productTypeOther||"Otros":freight.grain} · ${freight.tons} ${freight.unit||"tn"}`],
+              [Ic.grain(C.t2,15),"Producto",`${freight.grain==="Otros"?freight.productTypeOther||"Otros":freight.grain}${freight.tons ? ` · ${freight.tons} ${freight.unit||"tn"}` : ""}`],
               freight.amount>0&&[Ic.grain(C.t2,15),"Importe",`$${Number(freight.amount).toLocaleString()}`],
             ].filter(Boolean);
             const ruta = [
@@ -1136,6 +1146,25 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
                     </div>
                   )}
                 </div>
+                {(tripBtns.length > 0 || (!a.plate && (a.tripStatus === "pending" || a.tripStatus === "accepted") && (perms.canApprove || (user.userType === "producer" && freight.useOwnFleet)) && onEditTrip) || (user.userType === "plant" && (a.tripStatus === "pending" || a.tripStatus === "accepted") && a.transportCompanyId && a.transportCompanyId !== freight.originCompanyId && a.plate && onCancelAssignment)) && (
+                  <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginTop:10 }}>
+                    {tripBtns.map(b => (
+                      <button key={b.key} disabled={actionLoading} onClick={()=>onTripAction && onTripAction(freight.id, a.id, b.key)} style={{ flex:"1 1 auto", padding:"10px 12px", minWidth:80, minHeight:40, borderRadius: R.md, border:"none", background:b.color, color:C.w, fontSize:15.3, fontWeight:700, cursor:actionLoading?"not-allowed":"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:6, opacity:actionLoading?0.6:1 }}>
+                        {b.icon} {actionLoading?"...":b.label}
+                      </button>
+                    ))}
+                    {!a.plate && (a.tripStatus === "pending" || a.tripStatus === "accepted") && (perms.canApprove || (user.userType === "producer" && freight.useOwnFleet)) && !(user.userType === "plant" && a.transportCompanyId && a.transportCompanyId !== freight.originCompanyId) && onEditTrip && (
+                      <button onClick={()=>onEditTrip(freight.id, a)} style={{ flex:"1 1 auto", padding:"10px 12px", minWidth:80, minHeight:40, borderRadius: R.md, border:`1px solid ${C.acc}`, background:`${C.acc}0D`, color:C.acc, fontSize:15.3, fontWeight:700, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
+                        {Ic.plus(C.acc,14)} Asignar
+                      </button>
+                    )}
+                    {user.userType === "plant" && (a.tripStatus === "pending" || a.tripStatus === "accepted") && a.transportCompanyId && a.transportCompanyId !== freight.originCompanyId && a.plate && onCancelAssignment && (
+                      <button disabled={actionLoading} onClick={()=>{if(confirm("¿Desasignar este camión?")) onCancelAssignment(freight.id, a.id, "Desasignado por planta").then(r=>{if(r?.ok) onRefresh && onRefresh(freight.id);});}} style={{ flex:"1 1 auto", padding:"10px 12px", minWidth:80, minHeight:40, borderRadius: R.md, border:`1px solid ${C.err}`, background:`${C.err}08`, color:C.err, fontSize:15.3, fontWeight:700, cursor:actionLoading?"not-allowed":"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:6, opacity:actionLoading?0.6:1 }}>
+                        {Ic.ban(C.err,14)} Desasignar
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>;
             })}
             {Array.from({ length: Math.max(0, truckCount - assignedCount) }, (_, i) => (

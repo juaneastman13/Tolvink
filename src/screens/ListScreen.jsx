@@ -341,7 +341,7 @@ export default memo(function ListScreen({ freights, loading, onNav, onRefresh, c
         </div>
         {/* Product */}
         <div style={{ fontSize:16, fontWeight:700, color:C.t1, marginBottom:8 }}>
-          {Ic.grain(st.color, 16)} <span style={{ marginLeft:4 }}>{f.grain === "Otros" ? f.productTypeOther || "Otros" : f.grain} · {f.tons} {f.unit || "tn"}</span>
+          {Ic.grain(st.color, 16)} <span style={{ marginLeft:4 }}>{f.grain === "Otros" ? f.productTypeOther || "Otros" : f.grain}{f.tons ? ` · ${f.tons} ${f.unit || "tn"}` : ""}</span>
         </div>
         {/* Origin → Destination */}
         <div style={{ display:"flex", flexDirection:"column", gap:5, marginBottom:10, padding:"8px 0", borderTop:`1px solid ${C.b2}`, borderBottom:`1px solid ${C.b2}` }}>
@@ -367,11 +367,10 @@ export default memo(function ListScreen({ freights, loading, onNav, onRefresh, c
           {Ic.truck(C.t3, 12)} <span>{f.transporterName || "Sin asignar"}</span>
           {f.isOwnFleet && <span style={{ fontSize:10, color:C.acc, fontWeight:700, background:C.accPale, padding:"1px 5px", borderRadius: R.xs }}>Flota propia</span>}
         </div>
-        {/* Truck plate + driver */}
-        {(f.truckPlate || f.driverName) && (
+        {/* Truck plate */}
+        {f.truckPlate && (
           <div style={{ display:"flex", alignItems:"center", gap:8, fontSize:12.1, color:C.t3 }}>
             {f.isMultiTruck && (f.assignedTruckCount || 0) > 1 ? <VerMatriculas freight={f} /> : f.truckPlate && <LicensePlate plate={f.truckPlate} size="sm" />}
-            {isDesktop && f.driverName && !(f.isMultiTruck && (f.assignedTruckCount || 0) > 1) && <span>{Ic.user(C.t3, 11)} {f.driverName}</span>}
           </div>
         )}
         {/* Multi-truck info */}
@@ -493,7 +492,7 @@ export default memo(function ListScreen({ freights, loading, onNav, onRefresh, c
             <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#FF6A00", display: "inline-block", animation: "dotPulse 1.5s ease-in-out infinite", flexShrink: 0 }} />
             <span style={{ fontSize: 11, fontWeight: 700, color: "#FF6A00", whiteSpace: "nowrap" }}>{pa.action}</span>
           </div>}
-          <div style={{ fontSize: 13.2, fontWeight: 700, color: C.t1, marginBottom: 2 }}>{f.grain === "Otros" ? f.productTypeOther || "Otros" : f.grain} · {f.tons} {f.unit || "tn"}</div>
+          <div style={{ fontSize: 13.2, fontWeight: 700, color: C.t1, marginBottom: 2 }}>{f.grain === "Otros" ? f.productTypeOther || "Otros" : f.grain}{f.tons ? ` · ${f.tons} ${f.unit || "tn"}` : ""}</div>
           <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11.5, color: C.t2, marginBottom: 4, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>
             <span style={{display:"flex",alignItems:"center",gap:3,overflow:"hidden",whiteSpace:"nowrap",textOverflow:"ellipsis",flexShrink:1,minWidth:0}}>{Ic.pin(C.t3,10)} <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{origin || "Sin origen"}</span></span>
             <span style={{color:C.t3,flexShrink:0}}>→</span>
@@ -835,7 +834,7 @@ export default memo(function ListScreen({ freights, loading, onNav, onRefresh, c
                     <tr key={f.id} className="tv-row" onClick={()=>onNav("detail",f.id)} onMouseEnter={(e)=>handleCardMouseEnter(f,e)} onMouseLeave={handleCardMouseLeave} style={{ borderBottom:`1px solid ${C.b1}`, cursor:"pointer", contentVisibility:"auto", containIntrinsicSize:"0 44px" }}>
                       <td style={{ padding:"10px 12px", fontFamily:MONO, fontWeight:700, fontSize:11.5, color:C.t2, whiteSpace:"nowrap" }}>{f.code}</td>
                       <td style={{ padding:"10px 12px" }}><Bd color={st.color} bg={st.bg} small>{st.label}</Bd>{f.isOverdue && <> <Bd color="#DC2626" bg="#FEE2E2" small>Retrasado</Bd></>}</td>
-                      <td style={{ padding:"10px 12px", fontWeight:600, color:C.t1 }}>{f.grain==="Otros"?f.productTypeOther||"Otros":f.grain} · {f.tons} {f.unit||"tn"}</td>
+                      <td style={{ padding:"10px 12px", fontWeight:600, color:C.t1 }}>{f.grain==="Otros"?f.productTypeOther||"Otros":f.grain}{f.tons ? ` · ${f.tons} ${f.unit||"tn"}` : ""}</td>
                       <td style={{ padding:"10px 12px", color:f.isMultiTruck?C.info:C.t3, fontWeight:f.isMultiTruck?600:400, fontSize:12.1, whiteSpace:"nowrap" }}>{f.isMultiTruck?`${f.assignedTruckCount}/${f.truckCount}`:"1"}</td>
                       <td style={{ padding:"10px 12px", color:C.t2 }}>{f.originCompanyName||originDisplay(f)}{isPlantUser && f.producerCompanyName && <div style={{ fontSize:10.5, color:C.acc, fontWeight:600 }}>{f.producerCompanyName}</div>}</td>
                       <td style={{ padding:"10px 12px", color:C.t2 }}>{campoLote}{f.originLat&&f.originLng&&<span onClick={(e)=>{e.stopPropagation();goToMap(f.originLat,f.originLng,campoLote);}} style={{cursor:"pointer",opacity:0.6,marginLeft:3,fontSize:11}} title="Ver en mapa">{"\uD83D\uDCCD"}</span>}</td>
@@ -893,7 +892,7 @@ export default memo(function ListScreen({ freights, loading, onNav, onRefresh, c
                             <Bd color={st.color} bg={st.bg} small>{st.label}</Bd>
                             {f.isOverdue && <span style={{ display:"inline-flex", alignItems:"center", justifyContent:"center", width:16, height:16, borderRadius: R.xs, background:"#FEE2E2", flexShrink:0, fontSize:10, fontWeight:800, color:"#DC2626", lineHeight:1 }} title="Retrasado">R</span>}
                           </div>
-                          <div style={{ fontSize:13.2, fontWeight:600, color:C.t1, marginTop:2 }}>{f.grain==="Otros"?f.productTypeOther||"Otros":f.grain} · {f.tons} {f.unit||"tn"}</div>
+                          <div style={{ fontSize:13.2, fontWeight:600, color:C.t1, marginTop:2 }}>{f.grain==="Otros"?f.productTypeOther||"Otros":f.grain}{f.tons ? ` · ${f.tons} ${f.unit||"tn"}` : ""}</div>
                           {f.loadDate && <div style={{ fontSize:12.1, color:C.t3, fontWeight:500, marginTop:2 }}>{Ic.cal(C.t3,9)} {formatFreightDate(f.loadDate)}{f.loadTime?` · ${f.loadTime}`:""}</div>}
                           {originDisplay(f) && <div style={{ fontSize:11.5, color:C.t3, marginTop:1, display:"flex", alignItems:"center", gap:3 }}>{Ic.pin(C.t3,9)} <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{originDisplay(f)}</span></div>}
                         </div>
@@ -948,7 +947,7 @@ export default memo(function ListScreen({ freights, loading, onNav, onRefresh, c
                                   <Bd color={st.color} bg={st.bg} small>{st.label}</Bd>
                                   {f.isOverdue && <span style={{ display:"inline-flex", alignItems:"center", justifyContent:"center", width:16, height:16, borderRadius: R.xs, background:"#FEE2E2", flexShrink:0, fontSize:10, fontWeight:800, color:"#DC2626", lineHeight:1 }} title="Retrasado">R</span>}
                                 </div>
-                                <div style={{ fontSize:13.2, fontWeight:600, color:C.t1, marginTop:2 }}>{f.grain==="Otros"?f.productTypeOther||"Otros":f.grain} · {f.tons} {f.unit||"tn"}</div>
+                                <div style={{ fontSize:13.2, fontWeight:600, color:C.t1, marginTop:2 }}>{f.grain==="Otros"?f.productTypeOther||"Otros":f.grain}{f.tons ? ` · ${f.tons} ${f.unit||"tn"}` : ""}</div>
                                 {f.loadDate && <div style={{ fontSize:12.7, color:C.t3, fontWeight:500, marginTop:2 }}>{Ic.cal(C.t3,9)} {formatFreightDate(f.loadDate)}{f.loadTime?` · ${f.loadTime}`:""}</div>}
                               </div>
                               <div style={{ fontSize:12.1, color:C.t3, textAlign:"right", flexShrink:0 }}>
@@ -979,7 +978,7 @@ export default memo(function ListScreen({ freights, loading, onNav, onRefresh, c
                                   <Bd color={st.color} bg={st.bg} small>{st.label}</Bd>
                                   {f.isOverdue && <span style={{ display:"inline-flex", alignItems:"center", justifyContent:"center", width:16, height:16, borderRadius: R.xs, background:"#FEE2E2", flexShrink:0, fontSize:10, fontWeight:800, color:"#DC2626", lineHeight:1 }} title="Retrasado">R</span>}
                                 </div>
-                                <div style={{ fontSize:13.2, fontWeight:600, color:C.t1, marginTop:2 }}>{f.grain==="Otros"?f.productTypeOther||"Otros":f.grain} · {f.tons} {f.unit||"tn"}</div>
+                                <div style={{ fontSize:13.2, fontWeight:600, color:C.t1, marginTop:2 }}>{f.grain==="Otros"?f.productTypeOther||"Otros":f.grain}{f.tons ? ` · ${f.tons} ${f.unit||"tn"}` : ""}</div>
                               </div>
                               <div style={{ fontSize:12.1, color:C.t3, textAlign:"right", flexShrink:0 }}>
                                 {destDisplay(f) && <div>{destDisplay(f)}</div>}
@@ -1013,7 +1012,7 @@ export default memo(function ListScreen({ freights, loading, onNav, onRefresh, c
                           <Bd color={st.color} bg={st.bg} small>{st.label}</Bd>
                           {f.isOverdue && <span style={{ display:"inline-flex", alignItems:"center", justifyContent:"center", width:16, height:16, borderRadius: R.xs, background:"#FEE2E2", flexShrink:0, fontSize:10, fontWeight:800, color:"#DC2626", lineHeight:1 }} title="Retrasado">R</span>}
                         </div>
-                        <div style={{ fontSize:13.2, fontWeight:600, color:C.t1, marginTop:2 }}>{f.grain==="Otros"?f.productTypeOther||"Otros":f.grain} · {f.tons} {f.unit||"tn"}</div>
+                        <div style={{ fontSize:13.2, fontWeight:600, color:C.t1, marginTop:2 }}>{f.grain==="Otros"?f.productTypeOther||"Otros":f.grain}{f.tons ? ` · ${f.tons} ${f.unit||"tn"}` : ""}</div>
                       </div>
                       <div style={{ fontSize:12.1, color:C.t3, textAlign:"right", flexShrink:0 }}>
                         {f.originCompanyName && <div style={{ display:"flex", alignItems:"center", gap:3, justifyContent:"flex-end" }}>{Ic.user(C.t3,10)} {f.originCompanyName}</div>}

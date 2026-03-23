@@ -8,6 +8,7 @@ export const V = {
   maxLen: (n) => (v,f) => { if(v && typeof v==='string' && v.length>n) return `${f}: máximo ${n} caracteres`; return null; },
   posNum: (v, f) => { if(!v&&v!==0) return `${f} es obligatorio`; return Number(v)>0?null:`${f} debe ser mayor a 0`; },
   maxNum: (n) => (v,f) => { if(v && Number(v)>n) return `${f}: máximo ${n.toLocaleString()}`; return null; },
+  optPosNum: (v, f) => { if(!v&&v!==0) return null; return Number(v)>0?null:`${f} debe ser mayor a 0`; },
   sel: (v, f) => !v ? `Seleccioná ${f}` : null,
   time: (v, f) => { if(!v) return `${f} es obligatorio`; return /^\d{2}:\d{2}$/.test(v)?null:`${f} inválido`; },
   phone: (v) => { if(!v) return 'Teléfono es obligatorio'; const clean=v.replace(/[\s\-()]/g,''); return /^09\d{7}$/.test(clean)?null:'Formato: 09X XXX XXX'; },
@@ -26,7 +27,7 @@ export function validate(vals, schema) {
 export const SCHEMAS = {
   login:   { email:[V.email] },
   signup:  { name:[V.req,V.min(3)], email:[V.email], phone:[V.phone], userTypes:[V.userTypes] },
-  freight: { grain:[v=>V.sel(v,'tipo de grano')], tons:[V.posNum, V.maxNum(100000)], loadDate:[V.req], loadTime:[V.time], notes:[V.maxLen(1000)] },
+  freight: { grain:[v=>V.sel(v,'tipo de grano')], tons:[V.optPosNum, V.maxNum(100000)], loadDate:[V.req], loadTime:[V.time], notes:[V.maxLen(1000)] },
 };
 
 // ======================== FILTER ENGINE ===============================

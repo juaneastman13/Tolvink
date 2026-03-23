@@ -80,7 +80,7 @@ export const FreightCard = memo(function FreightCard({ freight: f, onClick, styl
   const dest = destDisplay(f) || "Sin destino";
   const isCustomDest = !f.destPlantId && f.destLat && f.destLng;
   const grain = f.grain === "Otros" ? (f.productTypeOther || "Otros") : f.grain;
-  const title = `${grain} · ${f.tons}${f.unit && f.unit !== "toneladas" ? ` ${f.unit}` : "tn"}`;
+  const title = f.tons ? `${grain} · ${f.tons}${f.unit && f.unit !== "toneladas" ? ` ${f.unit}` : "tn"}` : grain;
 
   const transport = f.transporterName || "Sin asignar";
   const plate = f.truckPlate;
@@ -153,7 +153,7 @@ export const FreightCardCompact = memo(function FreightCardCompact({ freight: f,
   const dest = destDisplay(f) || "Sin destino";
   const isCustomDest = !f.destPlantId && f.destLat && f.destLng;
   const grain = f.grain === "Otros" ? (f.productTypeOther || "Otros") : f.grain;
-  const title = `${grain} · ${f.tons}${f.unit && f.unit !== "toneladas" ? ` ${f.unit}` : "tn"}`;
+  const title = f.tons ? `${grain} · ${f.tons}${f.unit && f.unit !== "toneladas" ? ` ${f.unit}` : "tn"}` : grain;
   const date = showTime ? fmtDateTime(f.loadDate, f.loadTime) : fmtDateOnly(f.loadDate);
 
   // Abbreviated names: take first segment before " / " or " — "
@@ -232,7 +232,7 @@ export const ActiveTripCard = memo(function ActiveTripCard({ freight: f, onClick
   const dest = destDisplay(f) || "Sin destino";
   const isCustomDest = !f.destPlantId && f.destLat && f.destLng;
   const grain = f.grain === "Otros" ? (f.productTypeOther || "Otros") : f.grain;
-  const title = `${grain} · ${f.tons}${f.unit && f.unit !== "toneladas" ? ` ${f.unit}` : "tn"}`;
+  const title = f.tons ? `${grain} · ${f.tons}${f.unit && f.unit !== "toneladas" ? ` ${f.unit}` : "tn"}` : grain;
   const dateTime = fmtDateTime(f.loadDate, f.loadTime);
   const aa = (f.activeAssignments || []).filter(a => a.tripStatus === "in_progress" || a.tripStatus === "loaded");
   const isMulti = aa.length > 1;
@@ -337,7 +337,7 @@ export const CalendarChip = memo(function CalendarChip({ freight: f }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 2, background: sc.pillBg, padding: "2px 4px", borderRadius: R.xs, marginBottom: 2 }}>
       <div style={{ width: 3, height: 12, background: sc.ribbon, borderRadius: R.xs, flexShrink: 0 }} />
-      <span style={{ fontSize: 8, color: sc.pillText, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{grain} {f.tons}t</span>
+      <span style={{ fontSize: 8, color: sc.pillText, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{grain}{f.tons ? ` ${f.tons}t` : ""}</span>
     </div>
   );
 });
