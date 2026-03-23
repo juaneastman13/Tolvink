@@ -712,7 +712,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
                     {canEditA && onEditTrip && (
                       <button onClick={()=>onEditTrip(freight.id, a)} aria-label="Editar asignación" style={{ width:28, height:28, borderRadius: R.sm, display:"flex", alignItems:"center", justifyContent:"center", background:"transparent", border:"none", cursor:"pointer", flexShrink:0 }}>{Ic.edit(C.t3,14)}</button>
                     )}
-                    {!isExpanded && !a.plate && (a.tripStatus === "pending" || a.tripStatus === "accepted") && (perms.canApprove || (user.userType === "producer" && freight.useOwnFleet)) && !(user.userType === "plant" && a.transportCompanyId && a.transportCompanyId !== freight.originCompanyId) && onEditTrip && (
+                    {expandedTrip !== a.id && !a.plate && (a.tripStatus === "pending" || a.tripStatus === "accepted") && (perms.canApprove || (user.userType === "producer" && freight.useOwnFleet)) && !(user.userType === "plant" && a.transportCompanyId && a.transportCompanyId !== freight.originCompanyId) && onEditTrip && (
                       <button onClick={(e)=>{e.stopPropagation(); onEditTrip(freight.id, a);}} style={{ padding:"6px 10px", borderRadius:7, border:`1px solid ${C.acc}`, background:`${C.acc}0D`, color:C.acc, fontSize:11.5, fontWeight:700, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:4, whiteSpace:"nowrap", flexShrink:0 }}>
                         {Ic.plus(C.acc,12)} Asignar
                       </button>
