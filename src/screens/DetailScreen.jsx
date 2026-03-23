@@ -549,7 +549,11 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
         const isCanceled = freight.status === "canceled";
         const subLabels = { assigned:"Asignado", accepted:"Asignado", in_progress:"A campo", loaded:"A planta" };
         const visualIdx = isCanceled ? (curIdx >= 1 ? (curIdx >= 3 ? 2 : 1) : 0) : curIdx === 0 ? 0 : curIdx <= 4 ? 1 : 2;
-        const multiTruckSub = isMultiTruck && [1,2,3,4].includes(curIdx) ? (freight.activeAssignments||[]).map(a => ({ n: a.tripNumber, cfg: tripStCfg(a.tripStatus) })) : null;
+        const multiTruckSub = isMultiTruck && [1,2,3,4].includes(curIdx) ? (freight.activeAssignments||[]).map(a => {
+          const cfg = tripStCfg(a.tripStatus);
+          const needsAuth = a.tripStatus === "pending" && freight.useOwnFleet && freight.needsPlantApproval && !freight.plantApprovedAt;
+          return { n: a.tripNumber, cfg: needsAuth ? { ...cfg, label: "Sin autorización" } : cfg };
+        }) : null;
         const singleSub = [1,2,3,4].includes(curIdx) || isCanceled ? subLabels[freight.status] || subLabels[steps[curIdx]] : null;
         const visualSteps = [
           { label:"Pendiente", color:STATUS_COLORS.pending_assignment.ribbon, icon:(c,s)=>Ic.clk(c,s) },
@@ -698,7 +702,13 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
                     <span style={{ fontSize:12, color:C.t2 }}>- {a.transporterName || "Sin empresa"}</span>
                     <span style={{ fontSize:12, color:C.t2 }}>- {a.driverName || "Sin chofer"}</span>
                     <span style={{ flex:1 }} />
-                    <span style={{ display:"inline-flex", alignItems:"center", gap:4, fontSize:11, fontWeight:500, color:tst.color, background:tst.bg, padding:"2px 8px", borderRadius: R.pill, flexShrink:0 }}>{tst.label}</span>
+                    {(() => {
+                      const needsAuth = a.tripStatus === "pending" && freight.useOwnFleet && freight.needsPlantApproval && !freight.plantApprovedAt;
+                      const pillLabel = needsAuth ? "Sin autorización" : tst.label;
+                      const pillColor = needsAuth ? "#E65100" : tst.color;
+                      const pillBg = needsAuth ? "#FFF3E0" : tst.bg;
+                      return <span style={{ display:"inline-flex", alignItems:"center", gap:4, fontSize:11, fontWeight:500, color:pillColor, background:pillBg, padding:"2px 8px", borderRadius: R.pill, flexShrink:0 }}>{pillLabel}</span>;
+                    })()}
                     {canEditA && onEditTrip && (
                       <button onClick={()=>onEditTrip(freight.id, a)} aria-label="Editar asignación" style={{ width:28, height:28, borderRadius: R.sm, display:"flex", alignItems:"center", justifyContent:"center", background:"transparent", border:"none", cursor:"pointer", flexShrink:0 }}>{Ic.edit(C.t3,14)}</button>
                     )}
@@ -1094,7 +1104,13 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
                     <span style={{ fontSize:13, color:C.t2 }}>- {a.transporterName || "Sin empresa"}</span>
                     <span style={{ fontSize:13, color:C.t2 }}>- {a.driverName || "Sin chofer"}</span>
                     <span style={{ flex:1 }} />
-                    <span style={{ display:"inline-flex", alignItems:"center", gap:4, fontSize:11, fontWeight:500, color:tst.color, background:tst.bg, padding:"2px 8px", borderRadius: R.pill }}>{tst.label}</span>
+                    {(() => {
+                      const needsAuth = a.tripStatus === "pending" && freight.useOwnFleet && freight.needsPlantApproval && !freight.plantApprovedAt;
+                      const pillLabel = needsAuth ? "Sin autorización" : tst.label;
+                      const pillColor = needsAuth ? "#E65100" : tst.color;
+                      const pillBg = needsAuth ? "#FFF3E0" : tst.bg;
+                      return <span style={{ display:"inline-flex", alignItems:"center", gap:4, fontSize:11, fontWeight:500, color:pillColor, background:pillBg, padding:"2px 8px", borderRadius: R.pill }}>{pillLabel}</span>;
+                    })()}
                   </div>
                   {/* Confirmation status */}
                   {(a.tripStatus === "in_progress" || a.tripStatus === "loaded") && (
