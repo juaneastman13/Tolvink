@@ -311,6 +311,7 @@ export async function apiReorderDriverQueue(driverId, orderedFreightIds) { retur
 export async function apiGetQueueBoard() { return api('/freights/queue-board'); }
 export async function apiMoveAssignment(assignmentId, targetFreightId, position) { return api(`/freights/assignments/${assignmentId}/move`,{body:{targetFreightId,position}}); }
 export async function apiReorderAssignments(orderedAssignmentIds) { return api('/freights/queue-board/reorder',{method:'PATCH',body:{orderedAssignmentIds}}); }
+export async function apiGetTruckQueue(truckId) { return api(`/freights/trucks/${truckId}/queue`); }
 export async function apiListDrivers(companyId) { return api(companyId ? `/trucks/drivers?companyId=${encodeURIComponent(companyId)}` : '/trucks/drivers'); }
 export async function apiCreateDriver(b, companyId) { return api(companyId ? `/trucks/drivers?companyId=${encodeURIComponent(companyId)}` : '/trucks/drivers',{body:b}); }
 export async function apiDeactivateDriver(id) { return api(`/trucks/drivers/${id}/deactivate`,{body:{},method:'PATCH'}); }

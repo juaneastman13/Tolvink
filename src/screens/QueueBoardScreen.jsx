@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { C, Ic, FONT, R } from "../theme";
 import { LicensePlate } from "../components";
-import { apiGetQueueBoard, apiMoveAssignment, apiReorderAssignments, apiCancelAssignment, apiAssignTruck, apiAssignFreight } from "../api";
+import { apiGetQueueBoard, apiMoveAssignment, apiReorderAssignments, apiCancelAssignment, apiAssignTruck, apiAssignFreight, apiGetTruckQueue } from "../api";
 import {
   DndContext, closestCenter, rectIntersection, PointerSensor, TouchSensor, useSensor, useSensors, DragOverlay, useDroppable,
 } from "@dnd-kit/core";
@@ -51,29 +51,34 @@ function TruckBlock({ assignment, isOverlay, onUnassign }) {
 }
 
 // ─── Draggable truck card (panel) ───
-function PanelTruckCard({ truck, isOwnFleet, companyName, isOverlay }) {
-  const isBusy = truck.busy;
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: `avail_${truck.id}`, disabled: isBusy });
+function PanelTruckCard({ truck, isOwnFleet, companyName, isOverlay, onShowQueue }) {
+  const assignCount = truck.assignCount || 0;
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: `avail_${truck.id}` });
   const style = {
     transform: CSS.Transform.toString(transform), transition,
-    opacity: isDragging ? 0.4 : isBusy ? 0.45 : 1,
+    opacity: isDragging ? 0.4 : 1,
     display: "flex", alignItems: "center", gap: 8,
     padding: "7px 10px", borderRadius: R.md,
     border: `1px solid ${C.b1}`, borderLeft: `4px solid ${isOwnFleet ? C.pri : C.sec}`,
-    background: isOverlay ? C.w : isBusy ? C.bgCardAlt : C.bgCard,
-    cursor: isBusy ? "default" : "grab", fontFamily: FONT, userSelect: "none",
+    background: isOverlay ? C.w : C.bgCard,
+    cursor: "grab", fontFamily: FONT, userSelect: "none",
     boxShadow: isOverlay ? C.shLg : "none", marginBottom: 3,
   };
   const content = (
     <div style={{ flex: 1, minWidth: 0 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
         <LicensePlate plate={truck.plate} size="sm" />
-        {isBusy && <span style={{ fontSize: 9, fontWeight: 700, color: C.acc, background: C.accPale, padding: "1px 5px", borderRadius: R.xs }}>ASIGNADO</span>}
+        {assignCount > 0 && (
+          <button onClick={(e) => { e.stopPropagation(); onShowQueue && onShowQueue(truck.id, truck.plate); }}
+            style={{ fontSize: 9, fontWeight: 700, color: C.w, background: C.acc, padding: "1px 6px", borderRadius: 8, border: "none", cursor: "pointer", fontFamily: FONT, lineHeight: "14px", minWidth: 16, textAlign: "center" }}>
+            {assignCount}
+          </button>
+        )}
       </div>
     </div>
   );
   if (isOverlay) return <div style={style}>{content}</div>;
-  return <div ref={setNodeRef} style={style} {...(isBusy ? {} : { ...attributes, ...listeners })}>{content}</div>;
+  return <div ref={setNodeRef} style={style} {...attributes} {...listeners}>{content}</div>;
 }
 
 // ─── Draggable company card (panel) ───
@@ -269,7 +274,7 @@ function AvailablePanel({ groups, search, onSearchChange, isDesktop, panelFilter
                   {g.trucks.map(t => (
                     <div key={t.id} onClick={() => onFilter && onFilter(panelFilter?.type === "truck" && panelFilter?.id === t.id ? null : { type: "truck", id: t.id, label: t.plate })}
                       style={{ cursor: "pointer", borderRadius: R.md, outline: panelFilter?.type === "truck" && panelFilter?.id === t.id ? `2px solid ${C.pri}` : "none" }}>
-                      <PanelTruckCard truck={t} isOwnFleet={g.isOwnFleet} companyName={g.companyName} />
+                      <PanelTruckCard truck={t} isOwnFleet={g.isOwnFleet} companyName={g.companyName} onShowQueue={showTruckQueue} />
                     </div>
                   ))}
                 </SortableContext>
@@ -296,6 +301,7 @@ export default function QueueBoardScreen({ user, onBack, onNav, catalog }) {
   const [panelSearch, setPanelSearch] = useState("");
   const [panelOpen, setPanelOpen] = useState(true);
   const [confirmModal, setConfirmModal] = useState(null);
+  const [truckQueueModal, setTruckQueueModal] = useState(null); // { truckId, plate, queue, loading }
   const [assigning, setAssigning] = useState(false);
   const [panelFilter, setPanelFilter] = useState(null); // { type: 'truck', id } or { type: 'company', id }
   const isDesktop = typeof window !== "undefined" && window.innerWidth > 900;
@@ -313,6 +319,14 @@ export default function QueueBoardScreen({ user, onBack, onNav, catalog }) {
   useEffect(() => { load(); }, [load]);
 
   const showToast = (msg, type = "ok") => { setToast({ msg, type }); setTimeout(() => setToast(null), 3000); };
+
+  const showTruckQueue = async (truckId, plate) => {
+    setTruckQueueModal({ truckId, plate, queue: [], loading: true });
+    try {
+      const r = await apiGetTruckQueue(truckId);
+      setTruckQueueModal({ truckId, plate: r.truck?.plate || plate, queue: r.queue || [], loading: false });
+    } catch (e) { setTruckQueueModal(prev => prev ? { ...prev, loading: false, error: e.message } : null); }
+  };
 
   const findFreightForAssignment = useCallback((aId) => data?.freights?.find(f => f.assignments.some(a => a.id === aId)) || null, [data]);
   const findFreightByDroppable = useCallback((did) => {
@@ -497,6 +511,52 @@ export default function QueueBoardScreen({ user, onBack, onNav, catalog }) {
               <button onClick={() => setConfirmModal(null)} disabled={assigning} style={{ flex: 1, padding: "10px 0", borderRadius: R.md, border: `1px solid ${C.b1}`, background: C.w, color: C.t2, fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: FONT }}>Cancelar</button>
               <button onClick={handleConfirmAssign} disabled={assigning} style={{ flex: 1, padding: "10px 0", borderRadius: R.md, border: "none", background: C.pri, color: C.w, fontSize: 13, fontWeight: 600, cursor: assigning ? "not-allowed" : "pointer", fontFamily: FONT, opacity: assigning ? 0.6 : 1 }}>{assigning ? "Asignando..." : "Asignar"}</button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Truck queue modal */}
+      {truckQueueModal && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 9998, display: "flex", alignItems: "center", justifyContent: "center" }}
+          onClick={() => setTruckQueueModal(null)}>
+          <div onClick={e => e.stopPropagation()} style={{ background: C.w, borderRadius: R.lg, padding: 20, maxWidth: 420, width: "90%", boxShadow: C.shLg, maxHeight: "80vh", overflow: "auto" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+              <div>
+                <div style={{ fontSize: 16, fontWeight: 700, color: C.t1 }}>Cola de fletes</div>
+                <div style={{ fontSize: 13, color: C.t2, marginTop: 2 }}>
+                  <LicensePlate plate={truckQueueModal.plate} size="sm" />
+                </div>
+              </div>
+              <button onClick={() => setTruckQueueModal(null)} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }}>{Ic.cross(C.t3, 18)}</button>
+            </div>
+            {truckQueueModal.loading && <div style={{ textAlign: "center", padding: 20, color: C.t3 }}>Cargando cola...</div>}
+            {truckQueueModal.error && <div style={{ color: C.err, fontSize: 13 }}>{truckQueueModal.error}</div>}
+            {!truckQueueModal.loading && truckQueueModal.queue?.length === 0 && (
+              <div style={{ textAlign: "center", padding: 20, color: C.t3, fontSize: 13 }}>Sin fletes asignados</div>
+            )}
+            {!truckQueueModal.loading && truckQueueModal.queue?.map((q, i) => {
+              const st = TRIP_ST[q.tripStatus] || TRIP_ST.pending;
+              const isActive = q.tripStatus === "in_progress" || q.tripStatus === "loaded";
+              return (
+                <div key={q.assignmentId} style={{ display: "flex", gap: 10, padding: "10px 0", borderBottom: i < truckQueueModal.queue.length - 1 ? `1px solid ${C.b2}` : "none", background: isActive ? `${C.info}08` : "transparent", borderRadius: isActive ? R.md : 0, padding: isActive ? 10 : "10px 0" }}>
+                  <div style={{ width: 24, height: 24, borderRadius: 12, background: st.bg, border: `2px solid ${st.color}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: st.color, flexShrink: 0 }}>
+                    {q.position}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <span style={{ fontSize: 12, fontWeight: 700, fontFamily: "monospace", color: C.pri }}>{q.freightCode}</span>
+                      <span style={{ fontSize: 10, color: st.color, background: st.bg, padding: "1px 6px", borderRadius: R.xs, fontWeight: 600 }}>{st.label}</span>
+                    </div>
+                    <div style={{ fontSize: 11, color: C.t2, marginTop: 2 }}>
+                      {q.originName?.split(" ")[0]} → {q.destName?.split(" ")[0]}
+                    </div>
+                    <div style={{ fontSize: 10, color: C.t3, marginTop: 1 }}>
+                      {q.grain}{q.tons ? ` · ${q.tons}t` : ""} · {q.loadDate ? new Date(q.loadDate).toLocaleDateString("es-UY", { day: "2-digit", month: "short" }) : ""}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
