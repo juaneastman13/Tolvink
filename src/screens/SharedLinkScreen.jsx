@@ -262,12 +262,15 @@ function FreightMap({ freight, style }) {
     };
     if (window.google?.maps) { init(); return; }
     const existing = document.querySelector('script[src*="maps.googleapis.com"]');
-    if (existing) { existing.addEventListener("load", init); return; }
+    if (existing) {
+      if (existing.dataset.loaded) { setTimeout(init, 100); } else { existing.addEventListener("load", () => { existing.dataset.loaded = "1"; init(); }); }
+      return;
+    }
     const script = document.createElement("script");
     script.src = `https://maps.googleapis.com/maps/api/js?key=${key}&libraries=geometry`;
     script.async = true;
     script.defer = true;
-    script.onload = init;
+    script.onload = () => { script.dataset.loaded = "1"; init(); };
     script.onerror = () => setMapError(true);
     document.head.appendChild(script);
   }, [hasCoords, visible]); // eslint-disable-line react-hooks/exhaustive-deps
