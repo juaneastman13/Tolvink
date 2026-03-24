@@ -439,7 +439,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
               }} style={{ padding:"6px 10px", borderRadius: R.sm, border:"none", background:"#25D366", color:C.w, fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"inherit", whiteSpace:"nowrap", display:"flex", alignItems:"center", gap:4 }}>
                 Enviar por WhatsApp
               </button>
-              <button onClick={()=>{ navigator.clipboard.writeText(shareLink.url); setShareLink(s=>({...s,copied:true})); setTimeout(()=>setShareLink(s=>s?{...s,copied:false}:null),2000); }} style={{ padding:"6px 10px", borderRadius: R.sm, border:"none", background:shareLink.copied?C.ok:C.pri, color:C.w, fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"inherit", whiteSpace:"nowrap" }}>
+              <button onClick={()=>{ try { navigator.clipboard.writeText(shareLink.url); } catch { const ta=document.createElement("textarea"); ta.value=shareLink.url; ta.style.cssText="position:fixed;opacity:0"; document.body.appendChild(ta); ta.select(); document.execCommand("copy"); document.body.removeChild(ta); } setShareLink(s=>({...s,copied:true})); setTimeout(()=>setShareLink(s=>s?{...s,copied:false}:null),2000); }} style={{ padding:"6px 10px", borderRadius: R.sm, border:"none", background:shareLink.copied?C.ok:C.pri, color:C.w, fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"inherit", whiteSpace:"nowrap" }}>
                 {shareLink.copied ? "Copiado!" : "Copiar"}
               </button>
             </div>

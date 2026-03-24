@@ -238,7 +238,11 @@ export default function LinkedCompaniesScreen({ user, embedded, onBack, onNav })
                 try {
                   const link = await apiCreateSharedLink({ linkType: "PORTAL", targetCompanyId: companyId });
                   const url = `${window.location.origin}/s/${link.token}`;
-                  await navigator.clipboard.writeText(url);
+                  try { await navigator.clipboard.writeText(url); } catch {
+                    const ta = document.createElement("textarea");
+                    ta.value = url; ta.style.cssText = "position:fixed;opacity:0";
+                    document.body.appendChild(ta); ta.select(); document.execCommand("copy"); document.body.removeChild(ta);
+                  }
                   show("Link de portal copiado");
                 } catch (e) { show(e.message || "Error", "err"); }
               }} style={{ display: "flex", alignItems: "center", gap: 4, padding: "5px 10px", borderRadius: R.sm, border: `1px solid ${C.info}30`, background: `${C.info}08`, cursor: "pointer", fontFamily: FONT, fontSize: 11.6, fontWeight: 600, color: C.info }}>
