@@ -682,9 +682,13 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
             const tst = tripStCfg(a.tripStatus);
             const tripBtns = isMultiTruck ? getTripActions(a) : [];
             const hasTruck = !!a.plate;
+            const isExternalTransporter = a.transportCompanyId && a.transportCompanyId !== freight.originCompanyId && a.transportCompanyId !== user.activeCompanyId;
+            const isPlantUser = freight.destCompanyId === user.activeCompanyId && freight.originCompanyId !== user.activeCompanyId;
             const canEditA = (()=>{
               if (isConsulta) return false;
               if (["in_progress","loaded","finished"].includes(a.tripStatus)) return false;
+              // Plant cannot edit external transporter's truck — only desasignar
+              if (isPlantUser && isExternalTransporter) return false;
               if (user.role === "platform_admin" || user.isSuperAdmin) return true;
               if (a.transportCompanyId === user.activeCompanyId) return true;
               if (freight.originCompanyId === user.activeCompanyId && freight.useOwnFleet) return true;
