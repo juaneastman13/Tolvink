@@ -38,15 +38,15 @@ export default function TrucksScreen({ onBack, embedded, user }) {
 
   const loadTrucks = useCallback(async () => {
     try {
-      const t = await apiGetTrucks(selectedCompanyId || undefined);
+      const t = await apiGetTrucks(selectedCompanyId || user?.activeCompanyId || undefined);
       setTrucks(t || []);
     } catch (e) { setMsg({ t: e.message || "Error al cargar flota", k: "err" }); }
     finally { setLoading(false); }
   }, [selectedCompanyId]);
 
   const loadDrivers = useCallback(async () => {
-    try { const d = await apiListDrivers(selectedCompanyId || undefined); setDrivers(d||[]); } catch(e) { setMsg({t:e.message||"Error al cargar choferes",k:"err"}); } finally { setLoading(false); }
-  }, [selectedCompanyId]);
+    try { const d = await apiListDrivers(selectedCompanyId || user?.activeCompanyId || undefined); setDrivers(d||[]); } catch(e) { setMsg({t:e.message||"Error al cargar choferes",k:"err"}); } finally { setLoading(false); }
+  }, [selectedCompanyId, user?.activeCompanyId]);
 
   useEffect(() => { setLoading(true); if(tab==="trucks") loadTrucks(); else loadDrivers(); }, [tab, loadTrucks, loadDrivers]);
 

@@ -67,7 +67,7 @@ function PanelTruckCard({ truck, isOwnFleet, companyName, isOverlay }) {
   const content = (
     <div style={{ flex: 1, minWidth: 0 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-        <span style={{ fontSize: 12.5, fontWeight: 700, fontFamily: "monospace", color: C.t1 }}>{truck.plate}</span>
+        <LicensePlate plate={truck.plate} size="sm" />
         {isBusy && <span style={{ fontSize: 9, fontWeight: 700, color: C.acc, background: C.accPale, padding: "1px 5px", borderRadius: R.xs }}>ASIGNADO</span>}
       </div>
     </div>
@@ -211,7 +211,7 @@ function SummaryView({ data }) {
 }
 
 // ─── Available trucks panel ───
-function AvailablePanel({ groups, search, onSearchChange, isDesktop }) {
+function AvailablePanel({ groups, search, onSearchChange, isDesktop, panelFilter, onFilter }) {
   const [collapsed, setCollapsed] = useState({});
   const totalAll = groups.reduce((s, g) => s + g.trucks.length, 0);
   const totalAvail = groups.reduce((s, g) => s + g.trucks.filter(t => !t.busy).length, 0);
@@ -249,6 +249,10 @@ function AvailablePanel({ groups, search, onSearchChange, isDesktop }) {
                   {g.isOwnFleet ? "Flota propia" : g.companyName}
                 </span>
                 <span style={{ fontSize: 10, color: C.t3 }}>{availCount}/{g.trucks.length}</span>
+                <span onClick={(e) => { e.stopPropagation(); onFilter && onFilter(panelFilter?.type === "company" && panelFilter?.id === g.companyId ? null : { type: "company", id: g.companyId, label: g.isOwnFleet ? "Flota propia" : g.companyName }); }}
+                  style={{ fontSize: 10, color: panelFilter?.type === "company" && panelFilter?.id === g.companyId ? C.pri : C.t3, cursor: "pointer", padding: 2 }}>
+                  {Ic.filter(panelFilter?.type === "company" && panelFilter?.id === g.companyId ? C.pri : C.t3, 11)}
+                </span>
                 <span style={{ fontSize: 10, color: C.t3, transform: isOpen ? "rotate(90deg)" : "rotate(0)", transition: "transform 0.15s" }}>▶</span>
               </button>
 
@@ -262,7 +266,12 @@ function AvailablePanel({ groups, search, onSearchChange, isDesktop }) {
               {/* Truck cards */}
               {isOpen && (
                 <SortableContext items={g.trucks.map(t => `avail_${t.id}`)} strategy={horizontalListSortingStrategy}>
-                  {g.trucks.map(t => <PanelTruckCard key={t.id} truck={t} isOwnFleet={g.isOwnFleet} companyName={g.companyName} />)}
+                  {g.trucks.map(t => (
+                    <div key={t.id} onClick={() => onFilter && onFilter(panelFilter?.type === "truck" && panelFilter?.id === t.id ? null : { type: "truck", id: t.id, label: t.plate })}
+                      style={{ cursor: "pointer", borderRadius: R.md, outline: panelFilter?.type === "truck" && panelFilter?.id === t.id ? `2px solid ${C.pri}` : "none" }}>
+                      <PanelTruckCard truck={t} isOwnFleet={g.isOwnFleet} companyName={g.companyName} />
+                    </div>
+                  ))}
                 </SortableContext>
               )}
             </div>
@@ -288,6 +297,7 @@ export default function QueueBoardScreen({ user, onBack, onNav, catalog }) {
   const [panelOpen, setPanelOpen] = useState(true);
   const [confirmModal, setConfirmModal] = useState(null);
   const [assigning, setAssigning] = useState(false);
+  const [panelFilter, setPanelFilter] = useState(null); // { type: 'truck', id } or { type: 'company', id }
   const isDesktop = typeof window !== "undefined" && window.innerWidth > 900;
 
   const sensors = useSensors(
@@ -501,11 +511,22 @@ export default function QueueBoardScreen({ user, onBack, onNav, catalog }) {
           <DndContext sensors={sensors} collisionDetection={customCollision} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
             <div style={{ flex: 1, minWidth: 0, overflow: "auto" }}>
               {(data.freights || []).length === 0 && <div style={{ textAlign: "center", padding: 40, color: C.t3, fontSize: 14 }}>No hay fletes activos</div>}
-              {(data.freights || []).map(f => <FreightRow key={f.id} freight={f} onUnassign={handleUnassign} />)}
+              {panelFilter && (
+                <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8, padding: "6px 12px", background: C.priPale, borderRadius: R.md, fontSize: 12, color: C.pri, fontWeight: 600 }}>
+                  Filtrando por: {panelFilter.label}
+                  <button onClick={() => setPanelFilter(null)} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex" }}>{Ic.cross(C.pri, 14)}</button>
+                </div>
+              )}
+              {(data.freights || []).filter(f => {
+                if (!panelFilter) return true;
+                if (panelFilter.type === "truck") return f.assignments.some(a => a.truck?.id === panelFilter.id || a.truckId === panelFilter.id);
+                if (panelFilter.type === "company") return f.assignments.some(a => a.transportCompanyId === panelFilter.id);
+                return true;
+              }).map(f => <FreightRow key={f.id} freight={f} onUnassign={handleUnassign} />)}
             </div>
 
             {(isDesktop || panelOpen) && (
-              <AvailablePanel groups={data.availableTrucks || []} search={panelSearch} onSearchChange={setPanelSearch} isDesktop={isDesktop} />
+              <AvailablePanel groups={data.availableTrucks || []} search={panelSearch} onSearchChange={setPanelSearch} isDesktop={isDesktop} panelFilter={panelFilter} onFilter={setPanelFilter} />
             )}
 
             <DragOverlay>
