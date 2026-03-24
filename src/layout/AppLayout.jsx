@@ -16,7 +16,7 @@ import {
   HomeScreen, ListScreen, DetailScreen, NewScreen, EditScreen,
   CalendarScreen, MenuScreen, TrucksScreen, TicketsScreen, DocumentsScreen, AnalyticsScreen,
   LocationsScreen, AdminScreen, MyDataScreen, ReportsScreen,
-  ChatsScreen, NotificationsScreen, LinkedCompaniesScreen,
+  ChatsScreen, NotificationsScreen, LinkedCompaniesScreen, QueueBoardScreen,
   MapOverlay, LocPickerFullscreen,
   ConfirmActionModal, AssignModal, TruckSelectModal, ReasonModal, DriverQueueModal, EditTripModal, WeighTicketConfirmModal,
   AiChat, AiChatFabComp,
@@ -485,7 +485,7 @@ export default function AppLayout({ fh, catalog, online, notif, isDesktop }) {
   // O(1) freight lookup
   const freightMap = useMemo(() => { const m = new Map(); fh.freights.forEach(f => m.set(f.id, f)); return m; }, [fh.freights]);
   const curFreight = freightMap.get(selFreight) || null;
-  const navActive = ["detail"].includes(screen)?"list":["trucks","tickets","documents","analytics","admin","mydata","calendar","reports","chats"].includes(screen)?"menu":["linked","notifs"].includes(screen)&&!isDesktop?"menu":screen;
+  const navActive = ["detail"].includes(screen)?"list":["trucks","tickets","documents","analytics","admin","mydata","calendar","reports","chats"].includes(screen)?"menu":["linked","notifs","queue"].includes(screen)&&!isDesktop?"menu":screen;
 
   // ======================== RENDER =====================================
   return (
@@ -611,6 +611,7 @@ export default function AppLayout({ fh, catalog, online, notif, isDesktop }) {
         {screen==="locations" && <LocationsScreen user={auth.user} onBack={()=>{catalog.refresh();navigate("/menu");}}/>}
         {screen==="admin" && (auth.user?.role==="admin"||auth.user?.role==="platform_admin") && <AdminScreen user={auth.user} onBack={()=>navigate("/menu")} onUserUpdate={auth.patchUser}/>}
         {screen==="linked" && <LinkedCompaniesScreen user={auth.user} onBack={()=>navigate(isDesktop?"/linked":"/menu")} onNav={nav}/>}
+        {screen==="queue" && <QueueBoardScreen user={auth.user} onBack={()=>navigate(isDesktop?"/queue":"/menu")} onNav={nav} catalog={catalog}/>}
         {screen==="mydata" && <MyDataScreen user={auth.user} onBack={()=>navigate("/menu")} onUserUpdate={auth.patchUser}/>}
         {screen==="reports" && <ReportsScreen onBack={()=>navigate(isDesktop?"/reports":"/menu")} freights={viewFreights} isDesktop={isDesktop}/>}
         {screen==="chats" && <ChatsScreen user={auth.user} openConvId={chatConvId} onConvOpened={()=>setChatConvId(null)} isDesktop={isDesktop} sseMsg={sseMsg} onSseMsgHandled={()=>setSseMsg(null)} sseTyping={sseTyping} sseRead={sseRead} sseConnected={sse.connected}/>}
