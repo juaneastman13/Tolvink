@@ -459,8 +459,16 @@ export default function AppLayout({ fh, catalog, online, notif, isDesktop }) {
     let assignError = null;
     if (r.ok && r.freightId && form.assignData) {
       const ad = form.assignData;
-      const ar = await fh.assign(r.freightId, ad.transportCompanyId, ad.truckId, ad.driverId);
-      if (!ar.ok) assignError = ar.error;
+      const tc = parseInt(form.truckCount) || 1;
+      if (tc > 1) {
+        // Multi-truck: create N assignments with same transporter
+        const trucks = Array.from({length: tc}, () => ({ transportCompanyId: ad.transportCompanyId }));
+        const ar = await fh.assignMulti(r.freightId, trucks);
+        if (!ar.ok) assignError = ar.error;
+      } else {
+        const ar = await fh.assign(r.freightId, ad.transportCompanyId, ad.truckId, ad.driverId);
+        if (!ar.ok) assignError = ar.error;
+      }
     }
     setSubmitting(false);
     if(r.ok){
