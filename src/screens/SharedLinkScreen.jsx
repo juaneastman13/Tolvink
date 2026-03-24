@@ -263,7 +263,9 @@ function FreightMap({ freight, style }) {
     if (window.google?.maps) { init(); return; }
     const existing = document.querySelector('script[src*="maps.googleapis.com"]');
     if (existing) {
-      if (existing.dataset.loaded) { setTimeout(init, 100); } else { existing.addEventListener("load", () => { existing.dataset.loaded = "1"; init(); }); }
+      // Script tag exists — either already loaded or still loading
+      const poll = () => { if (window.google?.maps) init(); else setTimeout(poll, 200); };
+      poll();
       return;
     }
     const script = document.createElement("script");
