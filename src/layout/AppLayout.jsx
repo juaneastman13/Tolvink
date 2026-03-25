@@ -490,7 +490,7 @@ export default function AppLayout({ fh, catalog, online, notif, isDesktop }) {
   // ======================== RENDER =====================================
   return (
     <div className="tv-shell" style={{height:"100dvh",background:C.bg,color:C.t1,fontFamily:FONT,display:"flex",flexDirection:isDesktop?"row":"column",width:"100%",position:"relative",overflow:"hidden"}}>
-      <a href="#main-content" style={{position:'absolute',left:'-9999px',top:'auto',width:'1px',height:'1px',overflow:'hidden',zIndex:9999}} onFocus={e=>{e.currentTarget.style.cssText='position:fixed;top:0;left:0;padding:8px 16px;background:#003882;color:#fff;z-index:9999;font-size:14px';}} onBlur={e=>{e.currentTarget.style.cssText='position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden';}}>Ir al contenido principal</a>
+      <a href="#main-content" style={{position:'absolute',left:'-9999px',top:'auto',width:'1px',height:'1px',overflow:'hidden',zIndex:9999}} onFocus={e=>{e.currentTarget.style.cssText=`position:fixed;top:0;left:0;padding:8px 16px;background:${C.pri};color:${C.w};z-index:9999;font-size:14px`;}} onBlur={e=>{e.currentTarget.style.cssText='position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden';}}>Ir al contenido principal</a>
       <style>{`body{background:${C.bg}}input::placeholder,textarea::placeholder{color:${C.t3}}::-webkit-scrollbar-thumb{background:${C.b1}}@media(hover:hover){.tv-card:hover{box-shadow:${C.shMd}!important}.tv-row:hover{background:${C.priGhost}!important}}`}</style>
 
       <RoutesBackground trucks={false} opacityMul={0.4} centerFade={false} />
@@ -573,7 +573,7 @@ export default function AppLayout({ fh, catalog, online, notif, isDesktop }) {
         </div>}
 
         {/* Offline banner */}
-        {!online && <div style={{background:"#f59e0b",color:"#fff",textAlign:"center",padding:"6px 12px",fontSize:14.3,fontWeight:600,flexShrink:0,zIndex:10}}>{Ic.warn("#fff",14)} Sin conexión — mostrando datos guardados</div>}
+        {!online && <div style={{background:C.warn,color:C.w,textAlign:"center",padding:"6px 12px",fontSize:14.3,fontWeight:600,flexShrink:0,zIndex:10}}>{Ic.warn(C.w,14)} Sin conexión — mostrando datos guardados</div>}
 
         {/* Map bar + fullscreen map */}
         {mapFocus && <>

@@ -124,7 +124,7 @@ export default function AdminScreen({ user, onBack, onUserUpdate }) {
     apiAdminActivity(activityPage, 20).then(r => {
       setActivity(prev => activityPage === 1 ? (r.data || []) : [...prev, ...(r.data || [])]);
       setActivityTotal(r.total || 0);
-    }).catch(() => {}).finally(() => setActivityLoading(false));
+    }).catch((e) => { show(e?.message || "Error al cargar actividad", "err"); }).finally(() => setActivityLoading(false));
   }, [tab, activityPage]);
 
   const handleStatsClick = (filter) => {

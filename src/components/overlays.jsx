@@ -77,9 +77,9 @@ export function ModalOverlay({ children, onClose, maxWidth=400, loading=false, c
       {/* Outro: orange circle with result text */}
       {closing && (
         <div style={{width:150,height:150,borderRadius:"50%",background:C.acc,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:6,animation:"moCircleIn 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards",boxShadow:"0 8px 32px rgba(0,0,0,0.18)",pointerEvents:"none"}}>
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke={C.w} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
           {closingText && (
-            <span style={{color:"#fff",fontSize:15.4,fontWeight:700,textAlign:"center",lineHeight:1.3,padding:"0 16px"}}>{closingText}</span>
+            <span style={{color:C.w,fontSize:15.4,fontWeight:700,textAlign:"center",lineHeight:1.3,padding:"0 16px"}}>{closingText}</span>
           )}
         </div>
       )}
@@ -153,7 +153,7 @@ export function FileViewer({ file, onClose, onOcr, ocrLoading, onViewOcr }) {
             {file.ocrData && onViewOcr && <button onClick={()=>onViewOcr(file.ocrData, file.id)} style={{ display:"flex", alignItems:"center", gap:4, padding:"5px 10px", borderRadius: R.md, border:`1px solid ${C.pri}`, background:C.okPale, color:C.pri, fontSize:12.1, fontWeight:700, fontFamily:"inherit", cursor:"pointer" }}>{Ic.eye(C.pri,13)} Ver datos</button>}
             {isImg && onOcr && !file.ocrData && <button onClick={()=>onOcr(file)} disabled={ocrLoading} style={{ display:"flex", alignItems:"center", gap:4, padding:"5px 10px", borderRadius: R.md, border:`1px solid ${C.pri}`, background:C.priPale, color:C.pri, fontSize:12.1, fontWeight:700, fontFamily:"inherit", cursor:"pointer", opacity:ocrLoading?0.6:1 }}>{Ic.doc(C.pri,13)} {ocrLoading ? "Analizando..." : "Extraer datos"}</button>}
             {safeUrl && <a href={safeUrl} download style={{ display:"flex", alignItems:"center", gap:4, padding:"5px 10px", borderRadius: R.md, border:`1px solid ${C.b1}`, background:C.bg, color:C.t1, textDecoration:"none", fontSize:12.1, fontWeight:600, fontFamily:"inherit" }} onClick={e=>e.stopPropagation()}>{Ic.down(C.t2,13)} Descargar</a>}
-            <button onClick={onClose} style={{ display:"flex", alignItems:"center", gap:4, padding:"5px 12px", borderRadius: R.md, background:C.err, border:"none", cursor:"pointer", color:"#fff", fontSize:12.1, fontWeight:700, fontFamily:"inherit" }}>{Ic.cross("#fff",14)} Cerrar</button>
+            <button onClick={onClose} style={{ display:"flex", alignItems:"center", gap:4, padding:"5px 12px", borderRadius: R.md, background:C.err, border:"none", cursor:"pointer", color:C.w, fontSize:12.1, fontWeight:700, fontFamily:"inherit" }}>{Ic.cross(C.w,14)} Cerrar</button>
           </div>
         </div>
         {/* Content */}
@@ -161,12 +161,12 @@ export function FileViewer({ file, onClose, onOcr, ocrLoading, onViewOcr }) {
           {isImg ? (
             <img src={safeUrl} alt={file.name||""} loading="lazy" style={{ maxWidth:"100%", maxHeight:"75vh", objectFit:"contain", borderRadius: R.sm }} />
           ) : isPdf ? (
-            <iframe src={safeUrl} title={file.name||"PDF"} sandbox="allow-scripts allow-same-origin" style={{ width:"100%", height:"75vh", border:"none", borderRadius: R.sm, background:"#fff" }} />
+            <iframe src={safeUrl} title={file.name||"PDF"} sandbox="allow-scripts allow-same-origin" style={{ width:"100%", height:"75vh", border:"none", borderRadius: R.sm, background:C.w }} />
           ) : (
             <div style={{ textAlign:"center", padding:20 }}>
               <div style={{ marginBottom:16 }}>{Ic.doc(C.t3,48)}</div>
               <div style={{ fontSize:17.6, fontWeight:700, color:C.t1, marginBottom:8 }}>{file.name||"Archivo"}</div>
-              {safeUrl && <a href={safeUrl} download style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"10px 20px", borderRadius: R.md, background:C.pri, color:"#fff", textDecoration:"none", fontSize:15.4, fontWeight:600 }} onClick={e=>e.stopPropagation()}>{Ic.down("#fff",16)} Descargar archivo</a>}
+              {safeUrl && <a href={safeUrl} download style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"10px 20px", borderRadius: R.md, background:C.pri, color:C.w, textDecoration:"none", fontSize:15.4, fontWeight:600 }} onClick={e=>e.stopPropagation()}>{Ic.down(C.w,16)} Descargar archivo</a>}
             </div>
           )}
         </div>

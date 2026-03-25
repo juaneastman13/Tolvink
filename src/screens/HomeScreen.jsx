@@ -253,7 +253,8 @@ export default memo(function HomeScreen({ user, freights, loading, error, perms,
           };
         });
       })
-      .catch(() => {
+      .catch((e) => {
+        console.warn("LoadMore failed:", e?.message);
         setExpandedData(d => ({
           ...d,
           [gKey]: { ...(d[gKey] || {}), loading: false, loadingMore: false },

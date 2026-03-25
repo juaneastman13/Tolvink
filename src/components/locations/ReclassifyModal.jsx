@@ -4,7 +4,7 @@ import { Btn } from "../../components";
 import { ModalOverlay } from "../../components/overlays";
 import { apiReclassifyPoi } from "../../api";
 
-const MAP_COLORS = { field: C.pri, lot: "#2563EB" };
+const MAP_COLORS = { field: C.pri, lot: C.info };
 
 export default function ReclassifyModal({ poi, fields, onClose, onReclassified }) {
   const [type, setType] = useState("field");

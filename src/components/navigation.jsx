@@ -9,8 +9,8 @@ import { Bd } from "./data-display";
 // ======================== DESKTOP SIDEBAR =============================
 
 const _TYPE_LABELS = { producer:"Productor", plant:"Planta", transporter:"Transportista" };
-const _TYPE_IC_COLORS = { producer:"#F59E0B", plant:"#22C55E", transporter:C.sec };
-const _typeIcon = (t,s=14) => t==='producer'?Ic.grain('#F59E0B',s):t==='plant'?Ic.plant('#22C55E',s):t==='transporter'?Ic.truck(C.sec,s):null;
+const _TYPE_IC_COLORS = { producer:C.warn, plant:C.ok, transporter:C.sec };
+const _typeIcon = (t,s=14) => t==='producer'?Ic.grain(C.warn,s):t==='plant'?Ic.plant(C.ok,s):t==='transporter'?Ic.truck(C.sec,s):null;
 
 export function Sidebar({ active, onChange, unread=0, pendingCount=0, notifCount=0, canRequest=false, onNew, activeCompany, companies=[], onSwitchCompany, simpleMode=false, onToggleSimple, searchQuery="", onSearchChange, searchResults=[], onSearchSelect, searchHasMore=false, searchLoadingMore=false, onSearchLoadMore, user }) {
   const hasPending = pendingCount > 0;
@@ -160,8 +160,8 @@ export function Sidebar({ active, onChange, unread=0, pendingCount=0, notifCount
         <div style={{ padding:"14px 14px 10px" }}>
           <button onClick={onNew} style={{ width:"100%", display:"flex", alignItems:"center", justifyContent:"center", gap:8, padding:"10px 14px", borderRadius: R.lg, background:C.acc, border:"none", cursor:"pointer", fontFamily:"inherit", boxShadow:`0 2px 8px ${C.acc}30`, transition:"transform 0.15s, box-shadow 0.15s" }} onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-1px)";e.currentTarget.style.boxShadow=`0 4px 12px ${C.acc}40`}} onMouseLeave={e=>{e.currentTarget.style.transform="none";e.currentTarget.style.boxShadow=`0 2px 8px ${C.acc}30`}}>
             <style>{`@keyframes truckDrive{0%{transform:translateX(-10px)}60%{transform:translateX(6px)}100%{transform:translateX(-10px)}}`}</style>
-            <span style={{ display:"inline-flex", animation:"truckDrive 1.5s ease-in-out infinite" }}>{Ic.truck("#fff",16)}</span>
-            <span style={{ fontSize:13.8, fontWeight:700, color:"#fff" }}>Solicitar flete</span>
+            <span style={{ display:"inline-flex", animation:"truckDrive 1.5s ease-in-out infinite" }}>{Ic.truck(C.w,16)}</span>
+            <span style={{ fontSize:13.8, fontWeight:700, color:C.w }}>Solicitar flete</span>
           </button>
         </div>
       )}
@@ -239,8 +239,8 @@ export function Nav({ active, onChange, unread=0, pendingCount=0, notifCount=0, 
             <span style={{ fontSize:9.9, fontWeight:700, color:centerColor, marginTop:1, transition:"color 0.5s ease" }}>{hasPending?"Pendientes":"Al día"}</span>
             {canRequest && (
               <div onClick={e=>{e.stopPropagation();onNew();}} style={{ display:"flex", alignItems:"center", gap:5, marginTop:2, padding:"6px 14px", borderRadius: R.pill, background:C.acc, cursor:"pointer", boxShadow:`0 2px 8px ${C.acc}40` }}>
-                <span style={{ display:"inline-flex", animation:"truckDrive 1.5s ease-in-out infinite" }}>{Ic.truck("#fff",15)}</span>
-                <span style={{ fontSize:12.1, fontWeight:700, color:"#fff", whiteSpace:"nowrap" }}>Solicitar flete</span>
+                <span style={{ display:"inline-flex", animation:"truckDrive 1.5s ease-in-out infinite" }}>{Ic.truck(C.w,15)}</span>
+                <span style={{ fontSize:12.1, fontWeight:700, color:C.w, whiteSpace:"nowrap" }}>Solicitar flete</span>
               </div>
             )}
           </> : <>

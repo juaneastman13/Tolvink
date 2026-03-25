@@ -182,7 +182,7 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
         });
       }
       setMsgHasMore(r.hasMore || false);
-    } catch {} finally { setLoadingOlder(false); }
+    } catch (e) { console.warn("Chat load failed:", e?.message); } finally { setLoadingOlder(false); }
   }, [activeConv, loadingOlder, msgHasMore]);
 
   // Smart scroll: only auto-scroll when at bottom (new messages), NOT when loading older
