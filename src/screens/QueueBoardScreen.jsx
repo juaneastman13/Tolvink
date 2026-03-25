@@ -194,7 +194,7 @@ function FreightRow({ freight, onUnassign, onNav }) {
           <span style={{ fontSize: 11, fontWeight: 600, color: freight.assignments.length >= freight.truckCount ? C.ok : C.acc }}>
             {freight.assignments.length}/{freight.truckCount}
           </span>
-          {freight.originCompany?.name && <span style={{ fontSize: 10, color: C.t3 }}>{freight.originCompany.name}</span>}
+          <span style={{ fontSize: 10, color: C.t2, fontWeight: 600 }}>{freight.originCompany?.name || freight.originName || ""}</span>
         </div>
       </div>
       <div style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 2, alignItems: "center", minHeight: 36 }}>
