@@ -382,7 +382,9 @@ export default function QueueBoardScreen({ user, onBack, onNav, catalog }) {
   }, []);
   useEffect(() => { load(); }, [load]);
 
-  const showToast = (msg, type = "ok") => { setToast({ msg, type }); setTimeout(() => setToast(null), 3000); };
+  const toastTimer = useRef(null);
+  const showToast = (msg, type = "ok") => { clearTimeout(toastTimer.current); setToast({ msg, type }); toastTimer.current = setTimeout(() => setToast(null), 3000); };
+  useEffect(() => () => clearTimeout(toastTimer.current), []);
 
   const showTruckQueue = async (truckId, plate, canEdit = true) => {
     setTruckQueueModal({ truckId, plate, queue: [], loading: true, canEdit });

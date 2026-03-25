@@ -14,7 +14,7 @@ const COLORS = C;
 
 const ROLE_CFG = {
   producer: { label: "Productor", color: COLORS.pri },
-  plant: { label: "Planta", color: "#003882" },
+  plant: { label: "Planta", color: COLORS.sec },
   transporter: { label: "Transportista", color: COLORS.acc },
   chofer: { label: "Chofer", color: COLORS.err },
   unknown: { label: "Participante", color: COLORS.muted },
@@ -192,8 +192,8 @@ export default function LiveFreightScreen() {
         `<div style="font-family:system-ui;font-size:13px;line-height:1.4;max-width:200px">` +
         `<div style="font-weight:700">${esc(loc.userName)}</div>` +
         `<div style="color:${cfg.color};font-size:12px">${esc(cfg.label)}</div>` +
-        `<div style="color:#666;font-size:12px;margin-top:4px">${esc(agoText)}</div>` +
-        (loc.speed ? `<div style="color:#666;font-size:12px">${loc.speed} km/h</div>` : "") +
+        `<div style="color:${COLORS.t3};font-size:12px;margin-top:4px">${esc(agoText)}</div>` +
+        (loc.speed ? `<div style="color:${COLORS.t3};font-size:12px">${loc.speed} km/h</div>` : "") +
         `</div>`;
 
       if (!markersRef.current[key]) {
@@ -452,7 +452,7 @@ export default function LiveFreightScreen() {
       {isShareMode && (
         <div style={{
           padding: "8px 16px",
-          background: shareState === "sharing" ? "#F0FDF4" : shareState === "activating" ? "#FFFBEB" : COLORS.w,
+          background: shareState === "sharing" ? COLORS.okPale : shareState === "activating" ? COLORS.warnPale : COLORS.w,
           borderBottom: `1px solid ${COLORS.b2}`,
           display: "flex",
           alignItems: "center",
@@ -462,7 +462,7 @@ export default function LiveFreightScreen() {
           {shareState === "sharing" ? (
             <>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ width: 10, height: 10, borderRadius: R.sm, background: "#22C55E", display: "inline-block", animation: "pulse 2s infinite" }}></span>
+                <span style={{ width: 10, height: 10, borderRadius: R.sm, background: COLORS.ok, display: "inline-block", animation: "pulse 2s infinite" }}></span>
                 <span style={{ fontSize: 14.3, fontWeight: 600, color: COLORS.pri }}>Compartiendo ubicación</span>
                 {timeLeft && <span style={{ fontSize: 13.2, color: COLORS.t3 }}>{formatTimeLeft(timeLeft)}</span>}
               </div>
@@ -470,8 +470,8 @@ export default function LiveFreightScreen() {
             </>
           ) : shareState === "activating" ? (
             <div style={{ display: "flex", alignItems: "center", gap: 8, width: "100%" }}>
-              <span style={{ width: 10, height: 10, borderRadius: R.sm, background: "#F59E0B", display: "inline-block", animation: "pulse 1s infinite" }}></span>
-              <span style={{ fontSize: 14.3, fontWeight: 600, color: "#92400E" }}>Activando GPS... Permita el acceso a la ubicación</span>
+              <span style={{ width: 10, height: 10, borderRadius: R.sm, background: COLORS.warn, display: "inline-block", animation: "pulse 1s infinite" }}></span>
+              <span style={{ fontSize: 14.3, fontWeight: 600, color: COLORS.warn }}>Activando GPS... Permita el acceso a la ubicación</span>
             </div>
           ) : (
             <button onClick={startSharing} style={styles.shareBtn}>Compartir mi ubicación</button>
@@ -493,11 +493,11 @@ export default function LiveFreightScreen() {
 
       {/* In-app browser error — prominent card with "Open in browser" */}
       {geoError === "in_app_browser" && (
-        <div style={{ padding: "16px", background: "#FEF3C7", flexShrink: 0, borderBottom: `1px solid ${COLORS.b1}` }}>
-          <div style={{ fontSize: 15.4, fontWeight: 700, color: "#92400E", marginBottom: 6 }}>
+        <div style={{ padding: "16px", background: COLORS.warnPale, flexShrink: 0, borderBottom: `1px solid ${COLORS.b1}` }}>
+          <div style={{ fontSize: 15.4, fontWeight: 700, color: COLORS.warn, marginBottom: 6 }}>
             El navegador de WhatsApp no soporta GPS
           </div>
-          <div style={{ fontSize: 14.3, color: "#78350F", lineHeight: 1.4, marginBottom: 12 }}>
+          <div style={{ fontSize: 14.3, color: COLORS.warn, lineHeight: 1.4, marginBottom: 12 }}>
             Para compartir tu ubicación, abrí este link en el navegador del celular (Chrome, Safari, etc.)
           </div>
           <div style={{ display: "flex", gap: 8 }}>
@@ -508,7 +508,7 @@ export default function LiveFreightScreen() {
               Reintentar
             </button>
           </div>
-          <div style={{ fontSize: 12.1, color: "#92400E", marginTop: 8, lineHeight: 1.4 }}>
+          <div style={{ fontSize: 12.1, color: COLORS.warn, marginTop: 8, lineHeight: 1.4 }}>
             También podés copiar el link y pegarlo en el navegador manualmente.
           </div>
         </div>
@@ -535,7 +535,7 @@ export default function LiveFreightScreen() {
             const agoText = ago < 1 ? "ahora" : `hace ${ago} min`;
             return (
               <div key={loc.userId} style={styles.participantRow}>
-                <div style={{ width: 28, height: 28, borderRadius: R.lg, background: cfg.color, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13.2, fontWeight: 700, flexShrink: 0 }}>
+                <div style={{ width: 28, height: 28, borderRadius: R.lg, background: cfg.color, color: COLORS.w, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13.2, fontWeight: 700, flexShrink: 0 }}>
                   {loc.userName?.charAt(0)?.toUpperCase() || "?"}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
@@ -586,7 +586,7 @@ const styles = {
     borderRadius: R.md,
     border: "none",
     background: COLORS.pri,
-    color: "#fff",
+    color: COLORS.w,
     fontSize: 15.4,
     fontWeight: 700,
     fontFamily: "inherit",
@@ -608,7 +608,7 @@ const styles = {
     borderRadius: R.md,
     border: "none",
     background: COLORS.err,
-    color: "#fff",
+    color: COLORS.w,
     fontSize: 14.3,
     fontWeight: 600,
     fontFamily: "inherit",
@@ -619,8 +619,8 @@ const styles = {
     padding: "10px 16px",
     borderRadius: R.md,
     border: "none",
-    background: "#92400E",
-    color: "#fff",
+    background: COLORS.warn,
+    color: COLORS.w,
     fontSize: 15.4,
     fontWeight: 700,
     fontFamily: "inherit",
@@ -631,7 +631,7 @@ const styles = {
     borderRadius: R.md,
     border: "1.5px solid #92400E",
     background: "transparent",
-    color: "#92400E",
+    color: COLORS.warn,
     fontSize: 14.3,
     fontWeight: 600,
     fontFamily: "inherit",
