@@ -248,8 +248,8 @@ function AvailablePanel({ groups, search, onSearchChange, isDesktop, panelFilter
         {filtered.map(g => {
           const isOpen = !collapsed[g.companyId];
           const availCount = g.trucks.filter(t => !t.busy).length;
-          // Own fleet + OPERATOR (USO) = can drag trucks. READONLY (CONSULTA) = view only.
-          const canDrag = g.isOwnFleet || g.accessLevel === 'OPERATOR';
+          // Only own fleet trucks are draggable. External companies (USO/CONSULTA) are view-only.
+          const canDrag = g.isOwnFleet;
           return (
             <div key={g.companyId} style={{ marginBottom: 8 }}>
               {/* Section header */}
