@@ -35,25 +35,26 @@ function TruckBlock({ assignment, isOverlay, onUnassign }) {
     userSelect: "none", boxShadow: isOverlay ? C.shLg : "none",
     whiteSpace: "nowrap", flexShrink: 0, position: "relative",
   };
-  const a = assignment;
-  const borderCol = a.isOwnFleet ? C.pri : C.sec;
+  const tooltipLines = [
+    assignment.transportCompany?.name && `Empresa: ${assignment.transportCompany.name}`,
+    assignment.driverName && `Chofer: ${assignment.driverName}`,
+    assignment.truck?.model && `Modelo: ${assignment.truck.model}`,
+    assignment.tons && `Tons: ${assignment.tons}`,
+    `Estado: ${(TRIP_ST[assignment.tripStatus] || TRIP_ST.pending).label}`,
+  ].filter(Boolean);
   const content = (
     <>
-      <div style={{ width: 4, height: 20, borderRadius: 2, background: borderCol, flexShrink: 0 }} />
-      {a.plate ? <LicensePlate plate={a.plate} size="sm" /> : <span style={{ fontSize: 11, color: C.t3 }}>{a.transportCompany?.name || "Sin camión"}</span>}
+      <div style={{ width: 4, height: 20, borderRadius: 2, background: assignment.isOwnFleet ? C.pri : C.sec, flexShrink: 0 }} />
+      {assignment.plate ? <LicensePlate plate={assignment.plate} size="sm" /> : <span style={{ fontSize: 11, color: C.t3 }}>{assignment.transportCompany?.name || "Sin camión"}</span>}
       {canDrag && onUnassign && (
-        <button onClick={(e) => { e.stopPropagation(); onUnassign(a.id); }}
+        <button onClick={(e) => { e.stopPropagation(); onUnassign(assignment.id); }}
           style={{ background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex", lineHeight: 1 }}>
           {Ic.cross(C.err, 12)}
         </button>
       )}
-      {hover && !isDragging && (
-        <div style={{ position: "absolute", bottom: "calc(100% + 8px)", left: 0, width: 210, background: C.w, border: `1px solid ${C.b1}`, borderLeft: `4px solid ${borderCol}`, borderRadius: R.lg, boxShadow: C.shLg, padding: "10px 12px", pointerEvents: "none", zIndex: 100, fontFamily: FONT, whiteSpace: "normal" }}>
-          {a.transportCompany?.name && <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: C.t1, fontWeight: 600, marginBottom: 4 }}>{Ic.plant(C.t3, 11)} {a.transportCompany.name}{a.isOwnFleet && <span style={{ fontSize: 9, color: C.acc, fontWeight: 700, background: C.accPale, padding: "1px 4px", borderRadius: R.xs }}>Propia</span>}</div>}
-          {a.driverName && <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: C.t2, marginBottom: 3 }}>{Ic.user(C.t3, 11)} {a.driverName}</div>}
-          {a.truck?.model && <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: C.t3, marginBottom: 3 }}>{Ic.truck(C.t3, 11)} {a.truck.model}</div>}
-          {a.tons && <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: C.t3, marginBottom: 3 }}>{Ic.grain(C.t3, 11)} {a.tons}t</div>}
-          <div style={{ marginTop: 2 }}><span style={{ color: st.color, background: st.bg, padding: "1px 6px", borderRadius: R.xs, fontWeight: 600, fontSize: 10 }}>{st.label}</span></div>
+      {hover && !isDragging && tooltipLines.length > 0 && (
+        <div style={{ position: "absolute", bottom: "calc(100% + 6px)", left: "50%", transform: "translateX(-50%)", background: C.t1, color: C.w, padding: "6px 10px", borderRadius: R.md, fontSize: 10, lineHeight: 1.5, whiteSpace: "nowrap", zIndex: 100, boxShadow: C.shLg, pointerEvents: "none" }}>
+          {tooltipLines.map((l, i) => <div key={i}>{l}</div>)}
         </div>
       )}
     </>
@@ -65,18 +66,17 @@ function TruckBlock({ assignment, isOverlay, onUnassign }) {
 // ─── Draggable truck card (panel) ───
 // Truck card — draggable for own fleet and OPERATOR (USO) companies, view-only for READONLY (CONSULTA)
 function PanelTruckCard({ truck, isOwnFleet, canDragTrucks, onShowQueue, isOverlay, companyName }) {
-  const [hover, setHover] = useState(false);
   const assignCount = truck.assignCount || 0;
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: `avail_${truck.id}`, disabled: !canDragTrucks,
   });
-  const borderCol = isOwnFleet ? C.pri : C.sec;
+  const tooltipParts = [truck.model && `Modelo: ${truck.model}`, companyName && `Empresa: ${companyName}`, assignCount > 0 && `${assignCount} flete${assignCount > 1 ? "s" : ""} en cola`].filter(Boolean).join("\n");
   const style = {
     transform: CSS.Transform.toString(transform), transition,
     opacity: isDragging ? 0.4 : canDragTrucks ? 1 : 0.6,
     display: "flex", alignItems: "center", gap: 8,
     padding: "5px 10px 5px 14px", marginBottom: 2,
-    borderRadius: R.sm, position: "relative",
+    borderRadius: R.sm,
     cursor: canDragTrucks ? "grab" : "default",
     fontSize: 11, color: C.t2, fontFamily: FONT, userSelect: "none",
     boxShadow: isOverlay ? C.shLg : "none",
@@ -97,17 +97,10 @@ function PanelTruckCard({ truck, isOwnFleet, canDragTrucks, onShowQueue, isOverl
           ver cola
         </button>
       )}
-      {hover && !isDragging && (
-        <div style={{ position: "absolute", left: "calc(100% + 8px)", top: "50%", transform: "translateY(-50%)", width: 180, background: C.w, border: `1px solid ${C.b1}`, borderLeft: `4px solid ${borderCol}`, borderRadius: R.lg, boxShadow: C.shLg, padding: "8px 10px", pointerEvents: "none", zIndex: 100, fontFamily: FONT }}>
-          {companyName && <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: C.t1, fontWeight: 600, marginBottom: 3 }}>{Ic.plant(C.t3, 10)} {companyName}</div>}
-          {truck.model && <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 10, color: C.t3, marginBottom: 3 }}>{Ic.truck(C.t3, 10)} {truck.model}</div>}
-          {assignCount > 0 && <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 10, color: C.acc, fontWeight: 600 }}>{Ic.doc(C.acc, 10)} {assignCount} flete{assignCount > 1 ? "s" : ""} en cola</div>}
-        </div>
-      )}
     </>
   );
   if (isOverlay) return <div style={style}>{content}</div>;
-  return <div ref={setNodeRef} style={style} {...(canDragTrucks ? { ...attributes, ...listeners } : {})} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}>{content}</div>;
+  return <div ref={setNodeRef} style={style} title={tooltipParts} {...(canDragTrucks ? { ...attributes, ...listeners } : {})}>{content}</div>;
 }
 
 // ─── Draggable company card (panel) ───
