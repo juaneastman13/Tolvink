@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { C, Ic, FONT, R } from "../theme";
 import { LicensePlate } from "../components";
-import { apiGetQueueBoard, apiMoveAssignment, apiReorderAssignments, apiCancelAssignment, apiAssignTruck, apiAssignFreight, apiGetTruckQueue } from "../api";
+import { apiGetQueueBoard, apiMoveAssignment, apiReorderAssignments, apiCancelAssignment, apiAssignTruck, apiAssignFreight, apiGetTruckQueue, apiReorderTruckQueue } from "../api";
 import {
   DndContext, closestCenter, rectIntersection, PointerSensor, TouchSensor, useSensor, useSensors, DragOverlay, useDroppable,
 } from "@dnd-kit/core";
@@ -525,7 +525,7 @@ export default function QueueBoardScreen({ user, onBack, onNav, catalog }) {
         </div>
       )}
 
-      {/* Truck queue modal */}
+      {/* Truck queue modal with reorder */}
       {truckQueueModal && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 9998, display: "flex", alignItems: "center", justifyContent: "center" }}
           onClick={() => setTruckQueueModal(null)}>
@@ -544,18 +544,49 @@ export default function QueueBoardScreen({ user, onBack, onNav, catalog }) {
             {!truckQueueModal.loading && truckQueueModal.queue?.length === 0 && (
               <div style={{ textAlign: "center", padding: 20, color: C.t3, fontSize: 13 }}>Sin fletes asignados</div>
             )}
-            {!truckQueueModal.loading && truckQueueModal.queue?.map((q, i) => {
+            {!truckQueueModal.loading && truckQueueModal.queue?.map((q, i, arr) => {
               const st = TRIP_ST[q.tripStatus] || TRIP_ST.pending;
-              const isActive = q.tripStatus === "in_progress" || q.tripStatus === "loaded";
+              const isStarted = q.tripStatus === "in_progress" || q.tripStatus === "loaded";
+              const canMove = !isStarted;
+              const moveUp = async () => {
+                if (i === 0 || !canMove) return;
+                const newQueue = [...arr];
+                [newQueue[i - 1], newQueue[i]] = [newQueue[i], newQueue[i - 1]];
+                setTruckQueueModal(prev => prev ? { ...prev, queue: newQueue } : null);
+                try { await apiReorderTruckQueue(truckQueueModal.truckId, newQueue.map(q => q.assignmentId)); }
+                catch (e) { showToast(e.message || "Error al reordenar", "err"); showTruckQueue(truckQueueModal.truckId, truckQueueModal.plate); }
+              };
+              const moveDown = async () => {
+                if (i >= arr.length - 1 || !canMove) return;
+                const newQueue = [...arr];
+                [newQueue[i], newQueue[i + 1]] = [newQueue[i + 1], newQueue[i]];
+                setTruckQueueModal(prev => prev ? { ...prev, queue: newQueue } : null);
+                try { await apiReorderTruckQueue(truckQueueModal.truckId, newQueue.map(q => q.assignmentId)); }
+                catch (e) { showToast(e.message || "Error al reordenar", "err"); showTruckQueue(truckQueueModal.truckId, truckQueueModal.plate); }
+              };
               return (
-                <div key={q.assignmentId} style={{ display: "flex", gap: 10, padding: "10px 0", borderBottom: i < truckQueueModal.queue.length - 1 ? `1px solid ${C.b2}` : "none", background: isActive ? `${C.info}08` : "transparent", borderRadius: isActive ? R.md : 0, padding: isActive ? 10 : "10px 0" }}>
-                  <div style={{ width: 24, height: 24, borderRadius: 12, background: st.bg, border: `2px solid ${st.color}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: st.color, flexShrink: 0 }}>
-                    {q.position}
+                <div key={q.assignmentId} style={{ display: "flex", gap: 8, padding: isStarted ? 10 : "10px 0", borderBottom: i < arr.length - 1 ? `1px solid ${C.b2}` : "none", background: isStarted ? `${C.info}08` : "transparent", borderRadius: isStarted ? R.md : 0 }}>
+                  {/* Reorder arrows */}
+                  <div style={{ display: "flex", flexDirection: "column", gap: 2, justifyContent: "center", flexShrink: 0 }}>
+                    <button disabled={!canMove || i === 0} onClick={moveUp}
+                      style={{ background: "none", border: "none", cursor: canMove && i > 0 ? "pointer" : "default", padding: 0, opacity: canMove && i > 0 ? 1 : 0.2, display: "flex" }}>
+                      {Ic.chev(C.pri, 14)}
+                    </button>
+                    <button disabled={!canMove || i >= arr.length - 1} onClick={moveDown}
+                      style={{ background: "none", border: "none", cursor: canMove && i < arr.length - 1 ? "pointer" : "default", padding: 0, opacity: canMove && i < arr.length - 1 ? 1 : 0.2, display: "flex", transform: "rotate(180deg)" }}>
+                      {Ic.chev(C.pri, 14)}
+                    </button>
                   </div>
+                  {/* Position badge */}
+                  <div style={{ width: 24, height: 24, borderRadius: 12, background: st.bg, border: `2px solid ${st.color}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: st.color, flexShrink: 0, alignSelf: "center" }}>
+                    {i + 1}
+                  </div>
+                  {/* Freight info */}
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                       <span style={{ fontSize: 12, fontWeight: 700, fontFamily: "monospace", color: C.pri }}>{q.freightCode}</span>
                       <span style={{ fontSize: 10, color: st.color, background: st.bg, padding: "1px 6px", borderRadius: R.xs, fontWeight: 600 }}>{st.label}</span>
+                      {isStarted && <span style={{ fontSize: 9, color: C.info, fontWeight: 700 }}>EN CURSO</span>}
                     </div>
                     <div style={{ fontSize: 11, color: C.t2, marginTop: 2 }}>
                       {q.originName?.split(" ")[0]} → {q.destName?.split(" ")[0]}
