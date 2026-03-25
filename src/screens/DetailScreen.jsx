@@ -725,11 +725,19 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
                         if (ni < 0 || ni >= reorderable.length) return;
                         const newOrder = reorderable.map(v=>v.id);
                         [newOrder[idx], newOrder[ni]] = [newOrder[ni], newOrder[idx]];
+                        // Optimistic: swap in store immediately
+                        const store = useFreightDetailStore.getState();
+                        const cached = store.details?.[freight.id];
+                        if (cached?.data?.activeAssignments) {
+                          const aa = [...cached.data.activeAssignments];
+                          const ai = aa.findIndex(x=>x.id===reorderable[idx].id);
+                          const bi = aa.findIndex(x=>x.id===reorderable[ni].id);
+                          if (ai !== -1 && bi !== -1) { [aa[ai], aa[bi]] = [aa[bi], aa[ai]]; store.setDetail(freight.id, { ...cached.data, activeAssignments: aa }); }
+                        }
                         try {
                           await apiReorderAssignments(newOrder);
                           show("Orden actualizado", "ok");
-                          onRefresh && onRefresh(freight.id);
-                        } catch (e) { show(e?.message || "Error al reordenar", "err"); }
+                        } catch (e) { show(e?.message || "Error al reordenar", "err"); onRefresh && onRefresh(freight.id); }
                       };
                       return <div style={{ display:"flex", gap:2, flexShrink:0 }}>
                         <button disabled={idx===0} onClick={()=>swap(-1)} style={{ background:"none", border:"none", cursor:idx>0?"pointer":"default", padding:2, opacity:idx>0?1:0.2, display:"flex", transform:"rotate(90deg)" }}>{Ic.chev(C.pri,16)}</button>
