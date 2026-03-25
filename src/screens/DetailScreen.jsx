@@ -725,7 +725,11 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
                         if (ni < 0 || ni >= reorderable.length) return;
                         const newOrder = reorderable.map(v=>v.id);
                         [newOrder[idx], newOrder[ni]] = [newOrder[ni], newOrder[idx]];
-                        try { await apiReorderAssignments(newOrder); onRefresh && onRefresh(freight.id); } catch (e) { console.warn("Reorder failed:", e?.message); }
+                        try {
+                          await apiReorderAssignments(newOrder);
+                          show("Orden actualizado", "ok");
+                          onRefresh && onRefresh(freight.id);
+                        } catch (e) { show(e?.message || "Error al reordenar", "err"); }
                       };
                       return <div style={{ display:"flex", gap:2, flexShrink:0 }}>
                         <button disabled={idx===0} onClick={()=>swap(-1)} style={{ background:"none", border:"none", cursor:idx>0?"pointer":"default", padding:2, opacity:idx>0?1:0.2, display:"flex", transform:"rotate(90deg)" }}>{Ic.chev(C.pri,16)}</button>
