@@ -275,13 +275,17 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
   }, [freight, isChoferQueued, isConsulta, actions, user, transporterIsConsulta, isMultiTruck]);
 
   // Filter assignments visible to this user (works for both single and multi-truck)
+  const [localAssignmentOrder, setLocalAssignmentOrder] = useState(null);
+  // Reset local order when freight changes (new data from server)
+  useEffect(() => { setLocalAssignmentOrder(null); }, [freight?.id, freight?.activeAssignments?.length]);
+
   const visibleAssignments = useMemo(() => {
-    const aa = freight?.activeAssignments || [];
+    const aa = localAssignmentOrder || freight?.activeAssignments || [];
     if (aa.length === 0) return [];
     if (user.role === "chofer") return aa.filter(a => a.driverId === user.id);
     if (user.userType === "transporter") return aa.filter(a => a.transportCompanyId === user.companyId);
-    return aa; // plant/producer see all
-  }, [freight?.activeAssignments, user]);
+    return aa;
+  }, [freight?.activeAssignments, localAssignmentOrder, user]);
 
   // Multi-truck: aggregate top-level actions from all visible trips
   const multiTruckTopActions = useMemo(() => {
@@ -725,19 +729,15 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
                         if (ni < 0 || ni >= reorderable.length) return;
                         const newOrder = reorderable.map(v=>v.id);
                         [newOrder[idx], newOrder[ni]] = [newOrder[ni], newOrder[idx]];
-                        // Optimistic: swap in store immediately
-                        const store = useFreightDetailStore.getState();
-                        const cached = store.details?.[freight.id];
-                        if (cached?.data?.activeAssignments) {
-                          const aa = [...cached.data.activeAssignments];
-                          const ai = aa.findIndex(x=>x.id===reorderable[idx].id);
-                          const bi = aa.findIndex(x=>x.id===reorderable[ni].id);
-                          if (ai !== -1 && bi !== -1) { [aa[ai], aa[bi]] = [aa[bi], aa[ai]]; store.setDetail(freight.id, { ...cached.data, activeAssignments: aa }); }
-                        }
+                        // Optimistic: swap locally for instant UI update
+                        const aa = [...(freight?.activeAssignments || [])];
+                        const ai = aa.findIndex(x=>x.id===reorderable[idx].id);
+                        const bi = aa.findIndex(x=>x.id===reorderable[ni].id);
+                        if (ai !== -1 && bi !== -1) { [aa[ai], aa[bi]] = [aa[bi], aa[ai]]; setLocalAssignmentOrder(aa); }
                         try {
                           await apiReorderAssignments(newOrder);
                           show("Orden actualizado", "ok");
-                        } catch (e) { show(e?.message || "Error al reordenar", "err"); onRefresh && onRefresh(freight.id); }
+                        } catch (e) { show(e?.message || "Error al reordenar", "err"); setLocalAssignmentOrder(null); }
                       };
                       return <div style={{ display:"flex", gap:2, flexShrink:0 }}>
                         <button disabled={idx===0} onClick={()=>swap(-1)} style={{ background:"none", border:"none", cursor:idx>0?"pointer":"default", padding:2, opacity:idx>0?1:0.2, display:"flex", transform:"rotate(90deg)" }}>{Ic.chev(C.pri,16)}</button>
