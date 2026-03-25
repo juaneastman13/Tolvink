@@ -526,8 +526,18 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
       setLoadingLots(false);
       return;
     }
+    // No preloaded lots — could be empty or not loaded yet
+    if(preloaded && (!preloaded.lots || preloaded.lots.length === 0)) {
+      setFieldLots([]);
+      setLoadingLots(false);
+      u({ lotId: "__field__" });
+      return;
+    }
     setLoadingLots(true);
-    apiGetFieldLots(form.fieldId).then(l=>setFieldLots(l||[])).catch(()=>setFieldLots([])).finally(()=>setLoadingLots(false));
+    apiGetFieldLots(form.fieldId).then(l=>{
+      setFieldLots(l||[]);
+      if(!l || l.length === 0) u({ lotId: "__field__" });
+    }).catch(()=>{ setFieldLots([]); u({ lotId: "__field__" }); }).finally(()=>setLoadingLots(false));
   },[form.fieldId, fields]);
 
   const handleCreateLot = async () => {
