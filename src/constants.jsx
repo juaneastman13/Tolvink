@@ -23,7 +23,7 @@ export function getActions(status, userType, role, isOwnFleet) {
     return choferMap[status] || [];
   }
   const map = {
-    pending_assignment: { producer:["cancel"], plant: isOwnFleet ? ["authorize","cancel"] : ["assign","cancel"], transporter:[] },
+    pending_assignment: { producer:["cancel"], plant: isOwnFleet ? ["cancel"] : ["assign","cancel"], transporter:[] },
     // assigned = company delegated, no truck yet. Transporter manager assigns truck/driver.
     assigned:           { producer:["cancel"], plant:["cancel"], transporter:["assign_truck","cancel"] },
     // accepted = truck+driver assigned. Ready to start.
