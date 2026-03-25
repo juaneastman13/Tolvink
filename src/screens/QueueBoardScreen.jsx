@@ -51,15 +51,25 @@ function TruckBlock({ assignment, isOverlay, onUnassign }) {
 }
 
 // ─── Draggable truck card (panel) ───
-// Truck card is informational only (NOT draggable). Assignment is at company level.
-function PanelTruckCard({ truck, isOwnFleet, onShowQueue }) {
+// Truck card — draggable for own fleet and OPERATOR (USO) companies, view-only for READONLY (CONSULTA)
+function PanelTruckCard({ truck, isOwnFleet, canDragTrucks, onShowQueue, isOverlay }) {
   const assignCount = truck.assignCount || 0;
-  return (
-    <div style={{
-      display: "flex", alignItems: "center", gap: 8,
-      padding: "5px 10px 5px 14px", marginBottom: 2,
-      fontSize: 11, color: C.t2, fontFamily: FONT,
-    }}>
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: `avail_${truck.id}`, disabled: !canDragTrucks,
+  });
+  const style = {
+    transform: CSS.Transform.toString(transform), transition,
+    opacity: isDragging ? 0.4 : canDragTrucks ? 1 : 0.6,
+    display: "flex", alignItems: "center", gap: 8,
+    padding: "5px 10px 5px 14px", marginBottom: 2,
+    borderRadius: R.sm,
+    cursor: canDragTrucks ? "grab" : "default",
+    fontSize: 11, color: C.t2, fontFamily: FONT, userSelect: "none",
+    boxShadow: isOverlay ? C.shLg : "none",
+    background: isOverlay ? C.w : "transparent",
+  };
+  const content = (
+    <>
       <LicensePlate plate={truck.plate} size="sm" />
       {assignCount > 0 && (
         <button onClick={(e) => { e.stopPropagation(); onShowQueue && onShowQueue(truck.id, truck.plate); }}
@@ -67,8 +77,10 @@ function PanelTruckCard({ truck, isOwnFleet, onShowQueue }) {
           {assignCount}
         </button>
       )}
-    </div>
+    </>
   );
+  if (isOverlay) return <div style={style}>{content}</div>;
+  return <div ref={setNodeRef} style={style} {...(canDragTrucks ? { ...attributes, ...listeners } : {})}>{content}</div>;
 }
 
 // ─── Draggable company card (panel) ───
@@ -236,6 +248,8 @@ function AvailablePanel({ groups, search, onSearchChange, isDesktop, panelFilter
         {filtered.map(g => {
           const isOpen = !collapsed[g.companyId];
           const availCount = g.trucks.filter(t => !t.busy).length;
+          // Own fleet + OPERATOR (USO) = can drag trucks. READONLY (CONSULTA) = view only.
+          const canDrag = g.isOwnFleet || g.accessLevel === 'OPERATOR';
           return (
             <div key={g.companyId} style={{ marginBottom: 8 }}>
               {/* Section header */}
@@ -243,6 +257,7 @@ function AvailablePanel({ groups, search, onSearchChange, isDesktop, panelFilter
                 <div style={{ width: 4, height: 14, borderRadius: 2, background: g.isOwnFleet ? C.pri : C.sec, flexShrink: 0 }} />
                 <span style={{ fontSize: 12, fontWeight: 700, color: C.t1, flex: 1, textAlign: "left" }}>
                   {g.isOwnFleet ? "Flota propia" : g.companyName}
+                  {!canDrag && <span style={{ fontSize: 8, fontWeight: 700, color: C.t3, background: C.bgCardAlt, padding: "1px 4px", borderRadius: R.xs, marginLeft: 4, verticalAlign: "middle" }}>CONSULTA</span>}
                 </span>
                 <span style={{ fontSize: 10, color: C.t3 }}>{availCount}/{g.trucks.length}</span>
                 <span onClick={(e) => { e.stopPropagation(); onFilter && onFilter(panelFilter?.type === "company" && panelFilter?.id === g.companyId ? null : { type: "company", id: g.companyId, label: g.isOwnFleet ? "Flota propia" : g.companyName }); }}
@@ -259,13 +274,17 @@ function AvailablePanel({ groups, search, onSearchChange, isDesktop, panelFilter
                 </SortableContext>
               )}
 
-              {/* Truck cards (informational, NOT draggable — click to filter) */}
-              {isOpen && g.trucks.map(t => (
-                <div key={t.id} onClick={() => onFilter && onFilter(panelFilter?.type === "truck" && panelFilter?.id === t.id ? null : { type: "truck", id: t.id, label: t.plate })}
-                  style={{ cursor: "pointer", borderRadius: R.md, outline: panelFilter?.type === "truck" && panelFilter?.id === t.id ? `2px solid ${C.pri}` : "none" }}>
-                  <PanelTruckCard truck={t} isOwnFleet={g.isOwnFleet} onShowQueue={onShowQueue} />
-                </div>
-              ))}
+              {/* Truck cards — draggable for own fleet + OPERATOR, view-only for READONLY */}
+              {isOpen && (
+                <SortableContext items={canDrag ? g.trucks.map(t => `avail_${t.id}`) : []} strategy={horizontalListSortingStrategy}>
+                  {g.trucks.map(t => (
+                    <div key={t.id} onClick={() => onFilter && onFilter(panelFilter?.type === "truck" && panelFilter?.id === t.id ? null : { type: "truck", id: t.id, label: t.plate })}
+                      style={{ cursor: "pointer", borderRadius: R.md, outline: panelFilter?.type === "truck" && panelFilter?.id === t.id ? `2px solid ${C.pri}` : "none" }}>
+                      <PanelTruckCard truck={t} isOwnFleet={g.isOwnFleet} canDragTrucks={canDrag} onShowQueue={onShowQueue} />
+                    </div>
+                  ))}
+                </SortableContext>
+              )}
             </div>
           );
         })}
@@ -330,6 +349,13 @@ export default function QueueBoardScreen({ user, onBack, onNav, catalog }) {
       const g = (data.availableTrucks || []).find(g => g.companyId === cid);
       return g ? { type: "company", data: g } : null;
     }
+    if (aid.startsWith("avail_")) {
+      const tid = aid.replace("avail_", "");
+      for (const g of (data.availableTrucks || [])) {
+        const t = g.trucks.find(t => t.id === tid);
+        if (t) return { type: "available", data: { ...t, isOwnFleet: g.isOwnFleet, companyName: g.companyName } };
+      }
+    }
     for (const f of (data.freights || [])) {
       const a = f.assignments.find(a => a.id === activeId);
       if (a) return { type: "assignment", data: a };
@@ -369,6 +395,19 @@ export default function QueueBoardScreen({ user, onBack, onNav, catalog }) {
       return;
     }
 
+    // ─── Available truck dropped on freight (own fleet + USO only) ───
+    if (aid.startsWith("avail_")) {
+      const tid = aid.replace("avail_", "");
+      const target = findFreightByDroppable(oid);
+      if (!target) return;
+      if (target.assignments.length >= target.truckCount) { showToast(`${target.code} ya completo`, "err"); return; }
+      let truckInfo = null, groupInfo = null;
+      for (const g of (data.availableTrucks || [])) { const t = g.trucks.find(t => t.id === tid); if (t) { truckInfo = t; groupInfo = g; break; } }
+      if (!truckInfo || !groupInfo) return;
+      setConfirmModal({ type: "truck", truckId: tid, truckPlate: truckInfo.plate, freightId: target.id, freightCode: target.code, companyId: groupInfo.companyId, companyName: groupInfo.companyName, isOwnFleet: groupInfo.isOwnFleet });
+      return;
+    }
+
     // ─── Assignment reorder / move ───
     if (aid === oid) return;
     const src = findFreightForAssignment(aid);
@@ -403,9 +442,15 @@ export default function QueueBoardScreen({ user, onBack, onNav, catalog }) {
     if (!confirmModal || assigning) return;
     setAssigning(true);
     try {
-      // Always assign at company level (the company assigns specific trucks later)
-      await apiAssignFreight(confirmModal.freightId, { transportCompanyId: confirmModal.companyId });
-      showToast(`${confirmModal.companyName} asignada a ${confirmModal.freightCode}`);
+      if (confirmModal.type === "truck") {
+        // Specific truck assignment (own fleet + USO companies)
+        await apiAssignTruck(confirmModal.freightId, { transportCompanyId: confirmModal.companyId, truckId: confirmModal.truckId });
+        showToast(`${confirmModal.truckPlate} asignado a ${confirmModal.freightCode}`);
+      } else {
+        // Company-level assignment (CONSULTA companies assign their own trucks)
+        await apiAssignFreight(confirmModal.freightId, { transportCompanyId: confirmModal.companyId });
+        showToast(`${confirmModal.companyName} asignada a ${confirmModal.freightCode}`);
+      }
       setConfirmModal(null); load();
     } catch (e) { showToast(e.message || "Error al asignar", "err"); }
     finally { setAssigning(false); }
@@ -467,10 +512,10 @@ export default function QueueBoardScreen({ user, onBack, onNav, catalog }) {
           <div onClick={e => e.stopPropagation()} style={{ background: C.w, borderRadius: R.lg, padding: 24, maxWidth: 360, width: "90%", boxShadow: C.shLg }}>
             <div style={{ fontSize: 16, fontWeight: 700, color: C.t1, marginBottom: 12 }}>Confirmar asignación</div>
             <div style={{ fontSize: 13, color: C.t2, marginBottom: 16 }}>
-              ¿Asignar <strong>{confirmModal.companyName}</strong> al flete <strong style={{ fontFamily: "monospace" }}>{confirmModal.freightCode}</strong>?
-              {confirmModal.isOwnFleet
-                ? <div style={{ fontSize: 11, color: C.t3, marginTop: 4 }}>Se asigna la flota propia. La empresa designará camión y chofer.</div>
-                : <div style={{ fontSize: 11, color: C.t3, marginTop: 4 }}>La empresa transportista asignará camión y chofer.</div>}
+              {confirmModal.type === "truck"
+                ? <>¿Asignar camión <strong style={{ fontFamily: "monospace" }}>{confirmModal.truckPlate}</strong> de {confirmModal.companyName} al flete <strong style={{ fontFamily: "monospace" }}>{confirmModal.freightCode}</strong>?</>
+                : <>¿Asignar <strong>{confirmModal.companyName}</strong> al flete <strong style={{ fontFamily: "monospace" }}>{confirmModal.freightCode}</strong>?
+                  <div style={{ fontSize: 11, color: C.t3, marginTop: 4 }}>La empresa asignará camión y chofer.</div></>}
             </div>
             <div style={{ display: "flex", gap: 8 }}>
               <button onClick={() => setConfirmModal(null)} disabled={assigning} style={{ flex: 1, padding: "10px 0", borderRadius: R.md, border: `1px solid ${C.b1}`, background: C.w, color: C.t2, fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: FONT }}>Cancelar</button>
@@ -556,6 +601,7 @@ export default function QueueBoardScreen({ user, onBack, onNav, catalog }) {
 
             <DragOverlay>
               {activeItem?.type === "assignment" ? <TruckBlock assignment={activeItem.data} isOverlay /> : null}
+              {activeItem?.type === "available" ? <PanelTruckCard truck={activeItem.data} isOwnFleet={activeItem.data.isOwnFleet} canDragTrucks isOverlay /> : null}
               {activeItem?.type === "company" ? <PanelCompanyCard group={activeItem.data} isOverlay /> : null}
             </DragOverlay>
           </DndContext>
