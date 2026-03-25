@@ -22,19 +22,22 @@ const isDraggable = (ts) => ts === "pending" || ts === "accepted";
 // ─── Hover card via portal (avoids overflow clipping) ───
 function TruckHoverCard({ triggerRef, lines }) {
   const [pos, setPos] = useState(null);
+  const cardRef = useRef(null);
+  // Position after first render so we know the real card height
   useEffect(() => {
-    if (!triggerRef.current) return;
+    if (!triggerRef.current || !cardRef.current) return;
     const r = triggerRef.current.getBoundingClientRect();
+    const ch = cardRef.current.offsetHeight;
     const cardW = 210;
-    let x = r.left, y = r.top - 2;
-    if (y < 4) y = r.bottom + 2;
+    let x = r.left, y = r.top - ch - 4;
+    if (y < 4) y = r.bottom + 4;
     if (x + cardW > window.innerWidth - 8) x = window.innerWidth - cardW - 8;
     if (x < 8) x = 8;
     setPos({ x, y });
-  }, [triggerRef]);
-  if (!pos || !lines?.length) return null;
+  });
+  if (!lines?.length) return null;
   return createPortal(
-    <div style={{ position: "fixed", left: pos.x, top: pos.y, width: 210, zIndex: 10000, pointerEvents: "none", background: C.w, border: `1px solid ${C.b1}`, borderRadius: R.lg, boxShadow: C.shLg, padding: "8px 12px", fontFamily: FONT }}>
+    <div ref={cardRef} style={{ position: "fixed", left: pos?.x ?? -9999, top: pos?.y ?? -9999, width: 210, zIndex: 10000, pointerEvents: "none", background: C.w, border: `1px solid ${C.b1}`, borderRadius: R.lg, boxShadow: C.shLg, padding: "8px 12px", fontFamily: FONT, visibility: pos ? "visible" : "hidden" }}>
       {lines.map((l, i) => (
         <div key={i} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: l.color || C.t2, fontWeight: l.bold ? 600 : 400, marginBottom: i < lines.length - 1 ? 3 : 0 }}>
           {l.icon} {l.text}
