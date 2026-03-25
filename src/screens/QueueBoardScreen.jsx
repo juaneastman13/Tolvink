@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { createPortal } from "react-dom";
 import { C, Ic, FONT, R } from "../theme";
 import { LicensePlate } from "../components";
-import { apiGetQueueBoard, apiMoveAssignment, apiReorderAssignments, apiCancelAssignment, apiAssignTruck, apiAssignFreight, apiGetTruckQueue, apiReorderTruckQueue } from "../api";
+import { apiGetQueueBoard, apiMoveAssignment, apiReorderAssignments, apiCancelAssignment, apiAssignTruck, apiAssignFreight, apiAssignMultiTruck, apiGetTruckQueue, apiReorderTruckQueue } from "../api";
 import {
   DndContext, closestCenter, rectIntersection, PointerSensor, TouchSensor, useSensor, useSensors, DragOverlay, useDroppable,
 } from "@dnd-kit/core";
@@ -452,7 +452,7 @@ export default function QueueBoardScreen({ user, onBack, onNav, catalog }) {
       if (target.assignments.length >= target.truckCount) { showToast(`${target.code} ya completo`, "err"); return; }
       const g = (data.availableTrucks || []).find(g => g.companyId === cid);
       if (!g) return;
-      setConfirmModal({ type: "company", companyId: cid, companyName: g.companyName, freightId: target.id, freightCode: target.code });
+      setConfirmModal({ type: "company", companyId: cid, companyName: g.companyName, freightId: target.id, freightCode: target.code, isMultiTruck: target.isMultiTruck || target.truckCount > 1 });
       return;
     }
 
@@ -465,7 +465,7 @@ export default function QueueBoardScreen({ user, onBack, onNav, catalog }) {
       let truckInfo = null, groupInfo = null;
       for (const g of (data.availableTrucks || [])) { const t = g.trucks.find(t => t.id === tid); if (t) { truckInfo = t; groupInfo = g; break; } }
       if (!truckInfo || !groupInfo) return;
-      setConfirmModal({ type: "truck", truckId: tid, truckPlate: truckInfo.plate, freightId: target.id, freightCode: target.code, companyId: groupInfo.companyId, companyName: groupInfo.companyName, isOwnFleet: groupInfo.isOwnFleet });
+      setConfirmModal({ type: "truck", truckId: tid, truckPlate: truckInfo.plate, freightId: target.id, freightCode: target.code, companyId: groupInfo.companyId, companyName: groupInfo.companyName, isOwnFleet: groupInfo.isOwnFleet, isMultiTruck: target.isMultiTruck || target.truckCount > 1 });
       return;
     }
 
@@ -505,11 +505,19 @@ export default function QueueBoardScreen({ user, onBack, onNav, catalog }) {
     try {
       if (confirmModal.type === "truck") {
         // Specific truck assignment (own fleet + USO companies)
-        await apiAssignTruck(confirmModal.freightId, { transportCompanyId: confirmModal.companyId, truckId: confirmModal.truckId });
+        if (confirmModal.isMultiTruck) {
+          await apiAssignMultiTruck(confirmModal.freightId, [{ transportCompanyId: confirmModal.companyId, truckId: confirmModal.truckId }]);
+        } else {
+          await apiAssignTruck(confirmModal.freightId, { transportCompanyId: confirmModal.companyId, truckId: confirmModal.truckId });
+        }
         showToast(`${confirmModal.truckPlate} asignado a ${confirmModal.freightCode}`);
       } else {
-        // Company-level assignment (CONSULTA companies assign their own trucks)
-        await apiAssignFreight(confirmModal.freightId, { transportCompanyId: confirmModal.companyId });
+        // Company-level assignment
+        if (confirmModal.isMultiTruck) {
+          await apiAssignMultiTruck(confirmModal.freightId, [{ transportCompanyId: confirmModal.companyId }]);
+        } else {
+          await apiAssignFreight(confirmModal.freightId, { transportCompanyId: confirmModal.companyId });
+        }
         showToast(`${confirmModal.companyName} asignada a ${confirmModal.freightCode}`);
       }
       setConfirmModal(null); load();
