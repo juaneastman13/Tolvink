@@ -26,15 +26,15 @@ function TruckHoverCard({ triggerRef, lines, borderColor }) {
     if (!triggerRef.current) return;
     const r = triggerRef.current.getBoundingClientRect();
     const cardW = 210, cardH = 100;
-    let x = r.left, y = r.top - cardH - 8;
-    if (y < 8) y = r.bottom + 8;
+    let x = r.left, y = r.top - cardH - 4;
+    if (y < 4) y = r.bottom + 4;
     if (x + cardW > window.innerWidth - 8) x = window.innerWidth - cardW - 8;
     if (x < 8) x = 8;
     setPos({ x, y });
   }, [triggerRef]);
   if (!pos || !lines?.length) return null;
   return createPortal(
-    <div style={{ position: "fixed", left: pos.x, top: pos.y, width: 210, zIndex: 10000, pointerEvents: "none", background: C.w, border: `1px solid ${C.b1}`, borderLeft: `4px solid ${borderColor || C.pri}`, borderRadius: R.lg, boxShadow: C.shLg, padding: "8px 12px", fontFamily: FONT }}>
+    <div style={{ position: "fixed", left: pos.x, top: pos.y, width: 210, zIndex: 10000, pointerEvents: "none", background: C.w, border: `1px solid ${C.b1}`, borderRadius: R.lg, boxShadow: C.shLg, padding: "8px 12px", fontFamily: FONT }}>
       {lines.map((l, i) => (
         <div key={i} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: l.color || C.t2, fontWeight: l.bold ? 600 : 400, marginBottom: i < lines.length - 1 ? 3 : 0 }}>
           {l.icon} {l.text}
