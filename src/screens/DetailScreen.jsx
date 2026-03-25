@@ -6,7 +6,7 @@ import { SafeZone } from "../maps";
 const FreightMap = lazy(() => import("../maps").then(m => ({ default: m.FreightMap })));
 import log from "../logger";
 import { DocsGallery, FreightFileUpload, OcrResultModal, UploadOverlay } from "../uploads";
-import { apiGetAuditLog, apiGetFreight, apiGetFreightDetailExtra, apiSendTracking, apiApprovePendingChange, apiRejectPendingChange, apiOcrAnalyze, apiSaveOcrData, apiUpdateFreight, apiGetWeighTickets, apiAssignFreight, apiGetCompanyAccess, apiCreateSharedLink } from "../api";
+import { apiGetAuditLog, apiGetFreight, apiGetFreightDetailExtra, apiSendTracking, apiApprovePendingChange, apiRejectPendingChange, apiOcrAnalyze, apiSaveOcrData, apiUpdateFreight, apiGetWeighTickets, apiAssignFreight, apiGetCompanyAccess, apiCreateSharedLink, apiReorderAssignments } from "../api";
 import { WeighTicketSummary } from "../components/WeighTicketForm";
 import { useIsDesktop, mapFreight, originDisplay, destDisplay } from "../hooks";
 import { useAccessLevel } from "../hooks/useAccessLevel";
@@ -716,6 +716,20 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
                     {canEditA && onEditTrip && (
                       <button onClick={()=>onEditTrip(freight.id, a)} aria-label="Editar asignación" style={{ width:28, height:28, borderRadius: R.sm, display:"flex", alignItems:"center", justifyContent:"center", background:"transparent", border:"none", cursor:"pointer", flexShrink:0 }}>{Ic.edit(C.t3,14)}</button>
                     )}
+                    {isMultiTruck && !["in_progress","loaded","finished"].includes(a.tripStatus) && visibleAssignments.length > 1 && (()=>{
+                      const idx = visibleAssignments.findIndex(v=>v.id===a.id);
+                      const swap = async (dir) => {
+                        const ni = idx + dir;
+                        if (ni < 0 || ni >= visibleAssignments.length) return;
+                        const newOrder = visibleAssignments.map(v=>v.id);
+                        [newOrder[idx], newOrder[ni]] = [newOrder[ni], newOrder[idx]];
+                        try { await apiReorderAssignments(newOrder); onRefresh && onRefresh(freight.id); } catch {}
+                      };
+                      return <div style={{ display:"flex", gap:2, flexShrink:0 }}>
+                        <button disabled={idx===0} onClick={()=>swap(-1)} style={{ background:"none", border:"none", cursor:idx>0?"pointer":"default", padding:2, opacity:idx>0?1:0.2, display:"flex", transform:"rotate(90deg)" }}>{Ic.chev(C.pri,16)}</button>
+                        <button disabled={idx>=visibleAssignments.length-1} onClick={()=>swap(1)} style={{ background:"none", border:"none", cursor:idx<visibleAssignments.length-1?"pointer":"default", padding:2, opacity:idx<visibleAssignments.length-1?1:0.2, display:"flex", transform:"rotate(-90deg)" }}>{Ic.chev(C.pri,16)}</button>
+                      </div>;
+                    })()}
                     {expandedTrip !== a.id && !a.plate && (a.tripStatus === "pending" || a.tripStatus === "accepted") && (perms.canApprove || (user.userType === "producer" && freight.useOwnFleet)) && !(user.userType === "plant" && a.transportCompanyId && a.transportCompanyId !== freight.originCompanyId) && onEditTrip && (
                       <button onClick={(e)=>{e.stopPropagation(); onEditTrip(freight.id, a);}} style={{ padding:"6px 10px", borderRadius:7, border:`1px solid ${C.acc}`, background:`${C.acc}0D`, color:C.acc, fontSize:11.5, fontWeight:700, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:4, whiteSpace:"nowrap", flexShrink:0 }}>
                         {Ic.plus(C.acc,12)} Asignar
