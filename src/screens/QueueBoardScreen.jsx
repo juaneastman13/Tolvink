@@ -72,9 +72,15 @@ function PanelTruckCard({ truck, isOwnFleet, canDragTrucks, onShowQueue, isOverl
     <>
       <LicensePlate plate={truck.plate} size="sm" />
       {assignCount > 0 && (
-        <button onClick={(e) => { e.stopPropagation(); onShowQueue && onShowQueue(truck.id, truck.plate); }}
+        <button onClick={(e) => { e.stopPropagation(); onShowQueue && onShowQueue(truck.id, truck.plate, canDragTrucks); }}
           style={{ fontSize: 9, fontWeight: 700, color: C.w, background: C.acc, padding: "1px 6px", borderRadius: 8, border: "none", cursor: "pointer", fontFamily: FONT, lineHeight: "14px", minWidth: 16, textAlign: "center" }}>
           {assignCount}
+        </button>
+      )}
+      {assignCount > 0 && !canDragTrucks && (
+        <button onClick={(e) => { e.stopPropagation(); onShowQueue && onShowQueue(truck.id, truck.plate, false); }}
+          style={{ fontSize: 10, fontWeight: 700, color: C.acc, background: "none", border: "none", cursor: "pointer", fontFamily: FONT, padding: 0 }}>
+          ver cola
         </button>
       )}
     </>
@@ -326,11 +332,11 @@ export default function QueueBoardScreen({ user, onBack, onNav, catalog }) {
 
   const showToast = (msg, type = "ok") => { setToast({ msg, type }); setTimeout(() => setToast(null), 3000); };
 
-  const showTruckQueue = async (truckId, plate) => {
-    setTruckQueueModal({ truckId, plate, queue: [], loading: true });
+  const showTruckQueue = async (truckId, plate, canEdit = true) => {
+    setTruckQueueModal({ truckId, plate, queue: [], loading: true, canEdit });
     try {
       const r = await apiGetTruckQueue(truckId);
-      setTruckQueueModal({ truckId, plate: r.truck?.plate || plate, queue: r.queue || [], loading: false });
+      setTruckQueueModal({ truckId, plate: r.truck?.plate || plate, queue: r.queue || [], loading: false, canEdit });
     } catch (e) { setTruckQueueModal(prev => prev ? { ...prev, loading: false, error: e.message } : null); }
   };
 
@@ -547,14 +553,14 @@ export default function QueueBoardScreen({ user, onBack, onNav, catalog }) {
             {!truckQueueModal.loading && truckQueueModal.queue?.map((q, i, arr) => {
               const st = TRIP_ST[q.tripStatus] || TRIP_ST.pending;
               const isStarted = q.tripStatus === "in_progress" || q.tripStatus === "loaded";
-              const canMove = !isStarted;
+              const canMove = truckQueueModal.canEdit && !isStarted;
               const moveUp = async () => {
                 if (i === 0 || !canMove) return;
                 const newQueue = [...arr];
                 [newQueue[i - 1], newQueue[i]] = [newQueue[i], newQueue[i - 1]];
                 setTruckQueueModal(prev => prev ? { ...prev, queue: newQueue } : null);
                 try { await apiReorderTruckQueue(truckQueueModal.truckId, newQueue.map(q => q.assignmentId)); }
-                catch (e) { showToast(e.message || "Error al reordenar", "err"); showTruckQueue(truckQueueModal.truckId, truckQueueModal.plate); }
+                catch (e) { showToast(e.message || "Error al reordenar", "err"); showTruckQueue(truckQueueModal.truckId, truckQueueModal.plate, truckQueueModal.canEdit); }
               };
               const moveDown = async () => {
                 if (i >= arr.length - 1 || !canMove) return;
@@ -562,23 +568,12 @@ export default function QueueBoardScreen({ user, onBack, onNav, catalog }) {
                 [newQueue[i], newQueue[i + 1]] = [newQueue[i + 1], newQueue[i]];
                 setTruckQueueModal(prev => prev ? { ...prev, queue: newQueue } : null);
                 try { await apiReorderTruckQueue(truckQueueModal.truckId, newQueue.map(q => q.assignmentId)); }
-                catch (e) { showToast(e.message || "Error al reordenar", "err"); showTruckQueue(truckQueueModal.truckId, truckQueueModal.plate); }
+                catch (e) { showToast(e.message || "Error al reordenar", "err"); showTruckQueue(truckQueueModal.truckId, truckQueueModal.plate, truckQueueModal.canEdit); }
               };
               return (
-                <div key={q.assignmentId} style={{ display: "flex", gap: 8, padding: isStarted ? 10 : "10px 0", borderBottom: i < arr.length - 1 ? `1px solid ${C.b2}` : "none", background: isStarted ? `${C.info}08` : "transparent", borderRadius: isStarted ? R.md : 0 }}>
-                  {/* Reorder arrows */}
-                  <div style={{ display: "flex", flexDirection: "column", gap: 2, justifyContent: "center", flexShrink: 0 }}>
-                    <button disabled={!canMove || i === 0} onClick={moveUp}
-                      style={{ background: "none", border: "none", cursor: canMove && i > 0 ? "pointer" : "default", padding: 0, opacity: canMove && i > 0 ? 1 : 0.2, display: "flex" }}>
-                      {Ic.chev(C.pri, 14)}
-                    </button>
-                    <button disabled={!canMove || i >= arr.length - 1} onClick={moveDown}
-                      style={{ background: "none", border: "none", cursor: canMove && i < arr.length - 1 ? "pointer" : "default", padding: 0, opacity: canMove && i < arr.length - 1 ? 1 : 0.2, display: "flex", transform: "rotate(180deg)" }}>
-                      {Ic.chev(C.pri, 14)}
-                    </button>
-                  </div>
+                <div key={q.assignmentId} style={{ display: "flex", gap: 8, padding: isStarted ? 10 : "10px 0", borderBottom: i < arr.length - 1 ? `1px solid ${C.b2}` : "none", background: isStarted ? `${C.info}08` : "transparent", borderRadius: isStarted ? R.md : 0, alignItems: "center" }}>
                   {/* Position badge */}
-                  <div style={{ width: 24, height: 24, borderRadius: 12, background: st.bg, border: `2px solid ${st.color}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: st.color, flexShrink: 0, alignSelf: "center" }}>
+                  <div style={{ width: 24, height: 24, borderRadius: 12, background: st.bg, border: `2px solid ${st.color}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: st.color, flexShrink: 0 }}>
                     {i + 1}
                   </div>
                   {/* Freight info */}
@@ -595,6 +590,19 @@ export default function QueueBoardScreen({ user, onBack, onNav, catalog }) {
                       {q.grain}{q.tons ? ` · ${q.tons}t` : ""} · {q.loadDate ? new Date(q.loadDate).toLocaleDateString("es-UY", { day: "2-digit", month: "short" }) : ""}
                     </div>
                   </div>
+                  {/* Reorder arrows — right side, side by side — only if canEdit */}
+                  {truckQueueModal.canEdit && (
+                    <div style={{ display: "flex", gap: 4, flexShrink: 0, alignItems: "center" }}>
+                      <button disabled={!canMove || i === 0} onClick={moveUp}
+                        style={{ background: "none", border: "none", cursor: canMove && i > 0 ? "pointer" : "default", padding: 2, opacity: canMove && i > 0 ? 1 : 0.2, display: "flex", transform: "rotate(90deg)" }}>
+                        {Ic.chev(C.pri, 16)}
+                      </button>
+                      <button disabled={!canMove || i >= arr.length - 1} onClick={moveDown}
+                        style={{ background: "none", border: "none", cursor: canMove && i < arr.length - 1 ? "pointer" : "default", padding: 2, opacity: canMove && i < arr.length - 1 ? 1 : 0.2, display: "flex", transform: "rotate(-90deg)" }}>
+                        {Ic.chev(C.pri, 16)}
+                      </button>
+                    </div>
+                  )}
                 </div>
               );
             })}
