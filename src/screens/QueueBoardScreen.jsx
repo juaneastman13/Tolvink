@@ -189,12 +189,12 @@ function FreightRow({ freight, onUnassign, onNav }) {
           <span style={{ fontSize: 12, color: C.t2 }}>{freight.grain}{freight.tons ? ` · ${freight.tons}t` : ""}</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ fontSize: 11, fontWeight: 700, color: C.pri, textTransform: "uppercase" }}>{freight.originCompany?.name || freight.originName || ""}</span>
           <span style={{ fontSize: 11, color: C.t3 }}>{freight.originName?.split(" ")[0]} → {freight.destName?.split(" ")[0]}</span>
           <span style={{ fontSize: 11, color: C.t3 }}>{freight.loadDate ? new Date(freight.loadDate).toLocaleDateString("es-UY", { day: "2-digit", month: "short" }) : ""}</span>
           <span style={{ fontSize: 11, fontWeight: 600, color: freight.assignments.length >= freight.truckCount ? C.ok : C.acc }}>
             {freight.assignments.length}/{freight.truckCount}
           </span>
-          <span style={{ fontSize: 10, color: C.t2, fontWeight: 600 }}>{freight.originCompany?.name || freight.originName || ""}</span>
         </div>
       </div>
       <div style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 2, alignItems: "center", minHeight: 36 }}>
