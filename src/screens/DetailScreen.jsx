@@ -717,17 +717,19 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
                       <button onClick={()=>onEditTrip(freight.id, a)} aria-label="Editar asignación" style={{ width:28, height:28, borderRadius: R.sm, display:"flex", alignItems:"center", justifyContent:"center", background:"transparent", border:"none", cursor:"pointer", flexShrink:0 }}>{Ic.edit(C.t3,14)}</button>
                     )}
                     {isMultiTruck && !["in_progress","loaded","finished"].includes(a.tripStatus) && visibleAssignments.length > 1 && (()=>{
-                      const idx = visibleAssignments.findIndex(v=>v.id===a.id);
+                      const reorderable = visibleAssignments.filter(v=>!["in_progress","loaded","finished","canceled"].includes(v.tripStatus));
+                      const idx = reorderable.findIndex(v=>v.id===a.id);
+                      if (idx === -1) return null;
                       const swap = async (dir) => {
                         const ni = idx + dir;
-                        if (ni < 0 || ni >= visibleAssignments.length) return;
-                        const newOrder = visibleAssignments.map(v=>v.id);
+                        if (ni < 0 || ni >= reorderable.length) return;
+                        const newOrder = reorderable.map(v=>v.id);
                         [newOrder[idx], newOrder[ni]] = [newOrder[ni], newOrder[idx]];
-                        try { await apiReorderAssignments(newOrder); onRefresh && onRefresh(freight.id); } catch {}
+                        try { await apiReorderAssignments(newOrder); onRefresh && onRefresh(freight.id); } catch (e) { console.warn("Reorder failed:", e?.message); }
                       };
                       return <div style={{ display:"flex", gap:2, flexShrink:0 }}>
                         <button disabled={idx===0} onClick={()=>swap(-1)} style={{ background:"none", border:"none", cursor:idx>0?"pointer":"default", padding:2, opacity:idx>0?1:0.2, display:"flex", transform:"rotate(90deg)" }}>{Ic.chev(C.pri,16)}</button>
-                        <button disabled={idx>=visibleAssignments.length-1} onClick={()=>swap(1)} style={{ background:"none", border:"none", cursor:idx<visibleAssignments.length-1?"pointer":"default", padding:2, opacity:idx<visibleAssignments.length-1?1:0.2, display:"flex", transform:"rotate(-90deg)" }}>{Ic.chev(C.pri,16)}</button>
+                        <button disabled={idx>=reorderable.length-1} onClick={()=>swap(1)} style={{ background:"none", border:"none", cursor:idx<reorderable.length-1?"pointer":"default", padding:2, opacity:idx<reorderable.length-1?1:0.2, display:"flex", transform:"rotate(-90deg)" }}>{Ic.chev(C.pri,16)}</button>
                       </div>;
                     })()}
                     {expandedTrip !== a.id && !a.plate && (a.tripStatus === "pending" || a.tripStatus === "accepted") && (perms.canApprove || (user.userType === "producer" && freight.useOwnFleet)) && !(user.userType === "plant" && a.transportCompanyId && a.transportCompanyId !== freight.originCompanyId) && onEditTrip && (
