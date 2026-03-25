@@ -77,8 +77,8 @@ function PanelTruckCard({ truck, isOwnFleet, canDragTrucks, onShowQueue, isOverl
           {assignCount}
         </button>
       )}
-      {assignCount > 0 && !canDragTrucks && (
-        <button onClick={(e) => { e.stopPropagation(); onShowQueue && onShowQueue(truck.id, truck.plate, false); }}
+      {assignCount > 0 && (
+        <button onClick={(e) => { e.stopPropagation(); onShowQueue && onShowQueue(truck.id, truck.plate, canDragTrucks); }}
           style={{ fontSize: 10, fontWeight: 700, color: C.acc, background: "none", border: "none", cursor: "pointer", fontFamily: FONT, padding: 0 }}>
           ver cola
         </button>
@@ -595,11 +595,11 @@ export default function QueueBoardScreen({ user, onBack, onNav, catalog }) {
                     <div style={{ display: "flex", gap: 4, flexShrink: 0, alignItems: "center" }}>
                       <button disabled={!canMove || i === 0} onClick={moveUp}
                         style={{ background: "none", border: "none", cursor: canMove && i > 0 ? "pointer" : "default", padding: 2, opacity: canMove && i > 0 ? 1 : 0.2, display: "flex", transform: "rotate(90deg)" }}>
-                        {Ic.chev(C.pri, 16)}
+                        {Ic.chev(C.pri, 19)}
                       </button>
                       <button disabled={!canMove || i >= arr.length - 1} onClick={moveDown}
                         style={{ background: "none", border: "none", cursor: canMove && i < arr.length - 1 ? "pointer" : "default", padding: 2, opacity: canMove && i < arr.length - 1 ? 1 : 0.2, display: "flex", transform: "rotate(-90deg)" }}>
-                        {Ic.chev(C.pri, 16)}
+                        {Ic.chev(C.pri, 19)}
                       </button>
                     </div>
                   )}
