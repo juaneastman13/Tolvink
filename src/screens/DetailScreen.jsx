@@ -730,7 +730,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
                         const newOrder = reorderable.map(v=>v.id);
                         [newOrder[idx], newOrder[ni]] = [newOrder[ni], newOrder[idx]];
                         // Optimistic: swap locally for instant UI update
-                        const aa = [...(freight?.activeAssignments || [])];
+                        const aa = [...(localAssignmentOrder || freight?.activeAssignments || [])];
                         const ai = aa.findIndex(x=>x.id===reorderable[idx].id);
                         const bi = aa.findIndex(x=>x.id===reorderable[ni].id);
                         if (ai !== -1 && bi !== -1) { [aa[ai], aa[bi]] = [aa[bi], aa[ai]]; setLocalAssignmentOrder(aa); }
