@@ -20,6 +20,7 @@ const isDraggable = (ts) => ts === "pending" || ts === "accepted";
 
 // ─── Sortable truck block (assignment in freight row) ───
 function TruckBlock({ assignment, isOverlay, onUnassign }) {
+  const [hover, setHover] = useState(false);
   const canDrag = isDraggable(assignment.tripStatus);
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: assignment.id, disabled: !canDrag });
   const st = TRIP_ST[assignment.tripStatus] || TRIP_ST.pending;
@@ -32,8 +33,15 @@ function TruckBlock({ assignment, isOverlay, onUnassign }) {
     cursor: canDrag ? "grab" : "default",
     fontFamily: FONT, fontSize: 12, fontWeight: 600, color: C.t1,
     userSelect: "none", boxShadow: isOverlay ? C.shLg : "none",
-    whiteSpace: "nowrap", flexShrink: 0,
+    whiteSpace: "nowrap", flexShrink: 0, position: "relative",
   };
+  const tooltipLines = [
+    assignment.transportCompany?.name && `Empresa: ${assignment.transportCompany.name}`,
+    assignment.driverName && `Chofer: ${assignment.driverName}`,
+    assignment.truck?.model && `Modelo: ${assignment.truck.model}`,
+    assignment.tons && `Tons: ${assignment.tons}`,
+    `Estado: ${(TRIP_ST[assignment.tripStatus] || TRIP_ST.pending).label}`,
+  ].filter(Boolean);
   const content = (
     <>
       <div style={{ width: 4, height: 20, borderRadius: 2, background: assignment.isOwnFleet ? C.pri : C.sec, flexShrink: 0 }} />
@@ -44,19 +52,25 @@ function TruckBlock({ assignment, isOverlay, onUnassign }) {
           {Ic.cross(C.err, 12)}
         </button>
       )}
+      {hover && !isDragging && tooltipLines.length > 0 && (
+        <div style={{ position: "absolute", bottom: "calc(100% + 6px)", left: "50%", transform: "translateX(-50%)", background: C.t1, color: C.w, padding: "6px 10px", borderRadius: R.md, fontSize: 10, lineHeight: 1.5, whiteSpace: "nowrap", zIndex: 100, boxShadow: C.shLg, pointerEvents: "none" }}>
+          {tooltipLines.map((l, i) => <div key={i}>{l}</div>)}
+        </div>
+      )}
     </>
   );
   if (isOverlay) return <div style={style}>{content}</div>;
-  return <div ref={setNodeRef} style={style} {...(canDrag ? { ...attributes, ...listeners } : {})}>{content}</div>;
+  return <div ref={setNodeRef} style={style} {...(canDrag ? { ...attributes, ...listeners } : {})} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}>{content}</div>;
 }
 
 // ─── Draggable truck card (panel) ───
 // Truck card — draggable for own fleet and OPERATOR (USO) companies, view-only for READONLY (CONSULTA)
-function PanelTruckCard({ truck, isOwnFleet, canDragTrucks, onShowQueue, isOverlay }) {
+function PanelTruckCard({ truck, isOwnFleet, canDragTrucks, onShowQueue, isOverlay, companyName }) {
   const assignCount = truck.assignCount || 0;
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: `avail_${truck.id}`, disabled: !canDragTrucks,
   });
+  const tooltipParts = [truck.model && `Modelo: ${truck.model}`, companyName && `Empresa: ${companyName}`, assignCount > 0 && `${assignCount} flete${assignCount > 1 ? "s" : ""} en cola`].filter(Boolean).join("\n");
   const style = {
     transform: CSS.Transform.toString(transform), transition,
     opacity: isDragging ? 0.4 : canDragTrucks ? 1 : 0.6,
@@ -86,7 +100,7 @@ function PanelTruckCard({ truck, isOwnFleet, canDragTrucks, onShowQueue, isOverl
     </>
   );
   if (isOverlay) return <div style={style}>{content}</div>;
-  return <div ref={setNodeRef} style={style} {...(canDragTrucks ? { ...attributes, ...listeners } : {})}>{content}</div>;
+  return <div ref={setNodeRef} style={style} title={tooltipParts} {...(canDragTrucks ? { ...attributes, ...listeners } : {})}>{content}</div>;
 }
 
 // ─── Draggable company card (panel) ───
@@ -286,7 +300,7 @@ function AvailablePanel({ groups, search, onSearchChange, isDesktop, panelFilter
                   {g.trucks.map(t => (
                     <div key={t.id} onClick={() => onFilter && onFilter(panelFilter?.type === "truck" && panelFilter?.id === t.id ? null : { type: "truck", id: t.id, label: t.plate })}
                       style={{ cursor: "pointer", borderRadius: R.md, outline: panelFilter?.type === "truck" && panelFilter?.id === t.id ? `2px solid ${C.pri}` : "none" }}>
-                      <PanelTruckCard truck={t} isOwnFleet={g.isOwnFleet} canDragTrucks={canDrag} onShowQueue={onShowQueue} />
+                      <PanelTruckCard truck={t} isOwnFleet={g.isOwnFleet} canDragTrucks={canDrag} onShowQueue={onShowQueue} companyName={g.companyName} />
                     </div>
                   ))}
                 </SortableContext>
