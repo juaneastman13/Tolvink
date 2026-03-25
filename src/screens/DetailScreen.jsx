@@ -267,8 +267,8 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
       const extra = tripLifecycle[freight.status];
       if (extra && !acts.includes(extra)) acts = [...acts, extra];
     }
-    // Plant: inject approve_producer action for producer-created freights pending approval
-    if (user.userType === "plant" && freight.needsPlantApproval && !freight.plantApprovedAt) {
+    // Plant: inject approve_producer action only for producer own-fleet freights pending approval
+    if (user.userType === "plant" && freight.useOwnFleet && freight.needsPlantApproval && !freight.plantApprovedAt) {
       acts = ["approve_producer", ...acts];
     }
     return acts;

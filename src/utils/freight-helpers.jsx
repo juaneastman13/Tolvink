@@ -117,8 +117,8 @@ export function getPendingActions(freight, userType, role, user) {
     return null;
   }
   if (userType === "plant") {
-    // Producer-created freight pending plant approval
-    if (freight.needsPlantApproval && !freight.plantApprovedAt && s !== "canceled" && s !== "finished") return { action: "Aceptar flete de productor", color: C.sec, icon: "approve", actionKey: "approve_producer", groupKey: "approve_producer" };
+    // Producer-created freight with own fleet pending plant approval
+    if (own && freight.needsPlantApproval && !freight.plantApprovedAt && s !== "canceled" && s !== "finished") return { action: "Aceptar flete de productor", color: C.sec, icon: "approve", actionKey: "approve_producer", groupKey: "approve_producer" };
     if (s === "pending_assignment") return { action: "Asignar transporte", color: C.acc, icon: "assign", actionKey: "assign", groupKey: "assign" };
     if (s === "assigned" && own) return { action: "Autorizar viaje", color: C.sec, icon: "authorize", actionKey: "authorize", groupKey: "authorize" };
     if (s === "loaded" && !freight.plantFinishedConfirmedAt) return { action: "Confirmar entrega", color: C.pri, icon: "confirm", actionKey: "confirm_finished", groupKey: "confirm_finished" };
