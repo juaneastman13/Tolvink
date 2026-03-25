@@ -27,9 +27,9 @@ export function Sidebar({ active, onChange, unread=0, pendingCount=0, notifCount
   const allItems = [
     { k:"home",    ic:a=>Ic.home(a?C.pri:C.t3,20),  l:"Inicio" },
     { k:"list",    ic:a=>Ic.truck(a?C.pri:C.t3,20),  l:"Fletes" },
-    ...(isManager ? [{ k:"linked", ic:a=>Ic.plant(a?C.pri:C.t3,20), l:"Empresas" }] : []),
     ...((user?.userTypes||[]).includes("plant")||(user?.company?.type==="plant")||((user?.company?.types||[]).includes("plant")) ? [{ k:"queue", ic:a=>Ic.filter(a?C.pri:C.t3,20), l:"Colas" }] : []),
     { k:"locations",ic:a=>Ic.map(a?C.pri:C.t3,20), l:"Mapa" },
+    ...(isManager ? [{ k:"linked", ic:a=>Ic.plant(a?C.pri:C.t3,20), l:"Empresas" }] : []),
     { k:"notifs",  ic:a=>Ic.bell(a?C.pri:C.t3,20),   l:"Notificaciones", bd:notifCount },
     { k:"menu",    ic:a=>Ic.menu3(a?C.pri:C.t3,20),   l:"Menú" },
   ];
