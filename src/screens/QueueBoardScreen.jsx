@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { createPortal } from "react-dom";
 import { C, Ic, FONT, R } from "../theme";
 import { LicensePlate } from "../components";
 import { apiGetQueueBoard, apiMoveAssignment, apiReorderAssignments, apiCancelAssignment, apiAssignTruck, apiAssignFreight, apiGetTruckQueue, apiReorderTruckQueue } from "../api";
@@ -18,9 +19,36 @@ const TRIP_ST = {
 };
 const isDraggable = (ts) => ts === "pending" || ts === "accepted";
 
+// ─── Hover card via portal (avoids overflow clipping) ───
+function TruckHoverCard({ triggerRef, lines, borderColor }) {
+  const [pos, setPos] = useState(null);
+  useEffect(() => {
+    if (!triggerRef.current) return;
+    const r = triggerRef.current.getBoundingClientRect();
+    const cardW = 210, cardH = 100;
+    let x = r.left, y = r.top - cardH - 8;
+    if (y < 8) y = r.bottom + 8;
+    if (x + cardW > window.innerWidth - 8) x = window.innerWidth - cardW - 8;
+    if (x < 8) x = 8;
+    setPos({ x, y });
+  }, [triggerRef]);
+  if (!pos || !lines?.length) return null;
+  return createPortal(
+    <div style={{ position: "fixed", left: pos.x, top: pos.y, width: 210, zIndex: 10000, pointerEvents: "none", background: C.w, border: `1px solid ${C.b1}`, borderLeft: `4px solid ${borderColor || C.pri}`, borderRadius: R.lg, boxShadow: C.shLg, padding: "8px 12px", fontFamily: FONT }}>
+      {lines.map((l, i) => (
+        <div key={i} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: l.color || C.t2, fontWeight: l.bold ? 600 : 400, marginBottom: i < lines.length - 1 ? 3 : 0 }}>
+          {l.icon} {l.text}
+        </div>
+      ))}
+    </div>,
+    document.body
+  );
+}
+
 // ─── Sortable truck block (assignment in freight row) ───
 function TruckBlock({ assignment, isOverlay, onUnassign }) {
   const [hover, setHover] = useState(false);
+  const hoverRef = useRef(null);
   const canDrag = isDraggable(assignment.tripStatus);
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: assignment.id, disabled: !canDrag });
   const st = TRIP_ST[assignment.tripStatus] || TRIP_ST.pending;
@@ -35,42 +63,42 @@ function TruckBlock({ assignment, isOverlay, onUnassign }) {
     userSelect: "none", boxShadow: isOverlay ? C.shLg : "none",
     whiteSpace: "nowrap", flexShrink: 0, position: "relative",
   };
-  const tooltipLines = [
-    assignment.transportCompany?.name && `Empresa: ${assignment.transportCompany.name}`,
-    assignment.driverName && `Chofer: ${assignment.driverName}`,
-    assignment.truck?.model && `Modelo: ${assignment.truck.model}`,
-    assignment.tons && `Tons: ${assignment.tons}`,
-    `Estado: ${(TRIP_ST[assignment.tripStatus] || TRIP_ST.pending).label}`,
+  const a = assignment;
+  const borderCol = a.isOwnFleet ? C.pri : C.sec;
+  const hoverLines = [
+    a.transportCompany?.name && { icon: Ic.plant(C.t3, 11), text: a.transportCompany.name + (a.isOwnFleet ? " (Propia)" : ""), bold: true, color: C.t1 },
+    a.driverName && { icon: Ic.user(C.t3, 11), text: a.driverName },
+    a.truck?.model && { icon: Ic.truck(C.t3, 11), text: a.truck.model, color: C.t3 },
+    a.tons && { icon: Ic.grain(C.t3, 11), text: `${a.tons}t`, color: C.t3 },
+    { icon: null, text: st.label, color: st.color, bold: true },
   ].filter(Boolean);
   const content = (
     <>
-      <div style={{ width: 4, height: 20, borderRadius: 2, background: assignment.isOwnFleet ? C.pri : C.sec, flexShrink: 0 }} />
-      {assignment.plate ? <LicensePlate plate={assignment.plate} size="sm" /> : <span style={{ fontSize: 11, color: C.t3 }}>{assignment.transportCompany?.name || "Sin camión"}</span>}
+      <div style={{ width: 4, height: 20, borderRadius: 2, background: borderCol, flexShrink: 0 }} />
+      {a.plate ? <LicensePlate plate={a.plate} size="sm" /> : <span style={{ fontSize: 11, color: C.t3 }}>{a.transportCompany?.name || "Sin camión"}</span>}
       {canDrag && onUnassign && (
-        <button onClick={(e) => { e.stopPropagation(); onUnassign(assignment.id); }}
+        <button onClick={(e) => { e.stopPropagation(); onUnassign(a.id); }}
           style={{ background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex", lineHeight: 1 }}>
           {Ic.cross(C.err, 12)}
         </button>
       )}
-      {hover && !isDragging && tooltipLines.length > 0 && (
-        <div style={{ position: "absolute", bottom: "calc(100% + 6px)", left: "50%", transform: "translateX(-50%)", background: C.t1, color: C.w, padding: "6px 10px", borderRadius: R.md, fontSize: 10, lineHeight: 1.5, whiteSpace: "nowrap", zIndex: 100, boxShadow: C.shLg, pointerEvents: "none" }}>
-          {tooltipLines.map((l, i) => <div key={i}>{l}</div>)}
-        </div>
-      )}
+      {hover && !isDragging && <TruckHoverCard triggerRef={hoverRef} lines={hoverLines} borderColor={borderCol} />}
     </>
   );
   if (isOverlay) return <div style={style}>{content}</div>;
-  return <div ref={setNodeRef} style={style} {...(canDrag ? { ...attributes, ...listeners } : {})} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}>{content}</div>;
+  return <div ref={(el) => { setNodeRef(el); hoverRef.current = el; }} style={style} {...(canDrag ? { ...attributes, ...listeners } : {})} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}>{content}</div>;
 }
 
 // ─── Draggable truck card (panel) ───
 // Truck card — draggable for own fleet and OPERATOR (USO) companies, view-only for READONLY (CONSULTA)
 function PanelTruckCard({ truck, isOwnFleet, canDragTrucks, onShowQueue, isOverlay, companyName }) {
+  const [hover, setHover] = useState(false);
+  const hoverRef = useRef(null);
   const assignCount = truck.assignCount || 0;
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: `avail_${truck.id}`, disabled: !canDragTrucks,
   });
-  const tooltipParts = [truck.model && `Modelo: ${truck.model}`, companyName && `Empresa: ${companyName}`, assignCount > 0 && `${assignCount} flete${assignCount > 1 ? "s" : ""} en cola`].filter(Boolean).join("\n");
+  const borderCol = isOwnFleet ? C.pri : C.sec;
   const style = {
     transform: CSS.Transform.toString(transform), transition,
     opacity: isDragging ? 0.4 : canDragTrucks ? 1 : 0.6,
@@ -97,10 +125,17 @@ function PanelTruckCard({ truck, isOwnFleet, canDragTrucks, onShowQueue, isOverl
           ver cola
         </button>
       )}
+      {hover && !isDragging && (
+        <TruckHoverCard triggerRef={hoverRef} borderColor={borderCol} lines={[
+          companyName && { icon: Ic.plant(C.t3, 10), text: companyName, bold: true, color: C.t1 },
+          truck.model && { icon: Ic.truck(C.t3, 10), text: truck.model, color: C.t3 },
+          assignCount > 0 && { icon: Ic.doc(C.acc, 10), text: `${assignCount} flete${assignCount > 1 ? "s" : ""} en cola`, color: C.acc, bold: true },
+        ].filter(Boolean)} />
+      )}
     </>
   );
   if (isOverlay) return <div style={style}>{content}</div>;
-  return <div ref={setNodeRef} style={style} title={tooltipParts} {...(canDragTrucks ? { ...attributes, ...listeners } : {})}>{content}</div>;
+  return <div ref={(el) => { setNodeRef(el); hoverRef.current = el; }} style={style} {...(canDragTrucks ? { ...attributes, ...listeners } : {})} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}>{content}</div>;
 }
 
 // ─── Draggable company card (panel) ───
