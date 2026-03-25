@@ -101,7 +101,6 @@ function PanelTruckCard({ truck, isOwnFleet, canDragTrucks, onShowQueue, isOverl
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: `avail_${truck.id}`, disabled: !canDragTrucks,
   });
-  const borderCol = isOwnFleet ? C.pri : C.sec;
   const style = {
     transform: CSS.Transform.toString(transform), transition,
     opacity: isDragging ? 0.4 : canDragTrucks ? 1 : 0.6,
@@ -168,7 +167,7 @@ function PanelCompanyCard({ group, isOverlay }) {
 }
 
 // ─── Droppable freight row ───
-function FreightRow({ freight, onUnassign }) {
+function FreightRow({ freight, onUnassign, onNav }) {
   const draggableIds = freight.assignments.filter(a => isDraggable(a.tripStatus)).map(a => a.id);
   const emptySlots = Math.max(0, freight.truckCount - freight.assignments.length);
   const isEmpty = freight.assignments.length === 0;
@@ -185,6 +184,7 @@ function FreightRow({ freight, onUnassign }) {
     }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6, flexWrap: "wrap", gap: 4 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+          {onNav && <button onClick={() => onNav("detail", freight.id)} style={{ background: "none", border: `1px solid ${C.pri}30`, borderRadius: R.sm, padding: "2px 6px", cursor: "pointer", fontSize: 10, fontWeight: 600, color: C.pri, fontFamily: FONT, whiteSpace: "nowrap" }}>Ver flete</button>}
           <span style={{ fontSize: 12, fontWeight: 700, color: C.pri, fontFamily: "monospace" }}>{freight.code}</span>
           <span style={{ fontSize: 12, color: C.t2 }}>{freight.grain}{freight.tons ? ` · ${freight.tons}t` : ""}</span>
         </div>
@@ -194,6 +194,7 @@ function FreightRow({ freight, onUnassign }) {
           <span style={{ fontSize: 11, fontWeight: 600, color: freight.assignments.length >= freight.truckCount ? C.ok : C.acc }}>
             {freight.assignments.length}/{freight.truckCount}
           </span>
+          {freight.originCompany?.name && <span style={{ fontSize: 10, color: C.t3 }}>{freight.originCompany.name}</span>}
         </div>
       </div>
       <div style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 2, alignItems: "center", minHeight: 36 }}>
@@ -685,7 +686,7 @@ export default function QueueBoardScreen({ user, onBack, onNav, catalog }) {
                 if (panelFilter.type === "truck") return f.assignments.some(a => a.truck?.id === panelFilter.id || a.truckId === panelFilter.id);
                 if (panelFilter.type === "company") return f.assignments.some(a => a.transportCompanyId === panelFilter.id);
                 return true;
-              }).map(f => <FreightRow key={f.id} freight={f} onUnassign={handleUnassign} />)}
+              }).map(f => <FreightRow key={f.id} freight={f} onUnassign={handleUnassign} onNav={onNav} />)}
             </div>
 
             {(isDesktop || panelOpen) && (
