@@ -20,14 +20,14 @@ const TRIP_ST = {
 const isDraggable = (ts) => ts === "pending" || ts === "accepted";
 
 // ─── Hover card via portal (avoids overflow clipping) ───
-function TruckHoverCard({ triggerRef, lines, borderColor }) {
+function TruckHoverCard({ triggerRef, lines }) {
   const [pos, setPos] = useState(null);
   useEffect(() => {
     if (!triggerRef.current) return;
     const r = triggerRef.current.getBoundingClientRect();
-    const cardW = 210, cardH = 100;
-    let x = r.left, y = r.top - cardH - 4;
-    if (y < 4) y = r.bottom + 4;
+    const cardW = 210;
+    let x = r.left, y = r.top - 2;
+    if (y < 4) y = r.bottom + 2;
     if (x + cardW > window.innerWidth - 8) x = window.innerWidth - cardW - 8;
     if (x < 8) x = 8;
     setPos({ x, y });
@@ -82,7 +82,7 @@ function TruckBlock({ assignment, isOverlay, onUnassign }) {
           {Ic.cross(C.err, 12)}
         </button>
       )}
-      {hover && !isDragging && <TruckHoverCard triggerRef={hoverRef} lines={hoverLines} borderColor={borderCol} />}
+      {hover && !isDragging && <TruckHoverCard triggerRef={hoverRef} lines={hoverLines} />}
     </>
   );
   if (isOverlay) return <div style={style}>{content}</div>;
@@ -126,7 +126,7 @@ function PanelTruckCard({ truck, isOwnFleet, canDragTrucks, onShowQueue, isOverl
         </button>
       )}
       {hover && !isDragging && (
-        <TruckHoverCard triggerRef={hoverRef} borderColor={borderCol} lines={[
+        <TruckHoverCard triggerRef={hoverRef} lines={[
           companyName && { icon: Ic.plant(C.t3, 10), text: companyName, bold: true, color: C.t1 },
           truck.model && { icon: Ic.truck(C.t3, 10), text: truck.model, color: C.t3 },
           assignCount > 0 && { icon: Ic.doc(C.acc, 10), text: `${assignCount} flete${assignCount > 1 ? "s" : ""} en cola`, color: C.acc, bold: true },
