@@ -216,7 +216,7 @@ function SummaryView({ data }) {
 }
 
 // ─── Available trucks panel ───
-function AvailablePanel({ groups, search, onSearchChange, isDesktop, panelFilter, onFilter }) {
+function AvailablePanel({ groups, search, onSearchChange, isDesktop, panelFilter, onFilter, onShowQueue }) {
   const [collapsed, setCollapsed] = useState({});
   const totalAll = groups.reduce((s, g) => s + g.trucks.length, 0);
   const totalAvail = groups.reduce((s, g) => s + g.trucks.filter(t => !t.busy).length, 0);
@@ -274,7 +274,7 @@ function AvailablePanel({ groups, search, onSearchChange, isDesktop, panelFilter
                   {g.trucks.map(t => (
                     <div key={t.id} onClick={() => onFilter && onFilter(panelFilter?.type === "truck" && panelFilter?.id === t.id ? null : { type: "truck", id: t.id, label: t.plate })}
                       style={{ cursor: "pointer", borderRadius: R.md, outline: panelFilter?.type === "truck" && panelFilter?.id === t.id ? `2px solid ${C.pri}` : "none" }}>
-                      <PanelTruckCard truck={t} isOwnFleet={g.isOwnFleet} companyName={g.companyName} onShowQueue={showTruckQueue} />
+                      <PanelTruckCard truck={t} isOwnFleet={g.isOwnFleet} companyName={g.companyName} onShowQueue={onShowQueue} />
                     </div>
                   ))}
                 </SortableContext>
@@ -586,7 +586,7 @@ export default function QueueBoardScreen({ user, onBack, onNav, catalog }) {
             </div>
 
             {(isDesktop || panelOpen) && (
-              <AvailablePanel groups={data.availableTrucks || []} search={panelSearch} onSearchChange={setPanelSearch} isDesktop={isDesktop} panelFilter={panelFilter} onFilter={setPanelFilter} />
+              <AvailablePanel groups={data.availableTrucks || []} search={panelSearch} onSearchChange={setPanelSearch} isDesktop={isDesktop} panelFilter={panelFilter} onFilter={setPanelFilter} onShowQueue={showTruckQueue} />
             )}
 
             <DragOverlay>
