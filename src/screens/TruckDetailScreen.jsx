@@ -472,12 +472,15 @@ export default function TruckDetailScreen({ truckId, user, onBack, onNavFreight 
         </div>
 
         {/* Tab bar — grid 3x2 on mobile, flex row on desktop */}
-        <div style={isDesktop
-          ? {display:"flex",gap:0,borderRadius:R.md,overflow:"hidden",border:`1.5px solid ${C.b1}`,marginBottom:0}
-          : {display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:1,background:C.b1,borderRadius:R.md,overflow:"hidden",marginBottom:0}
-        }>
-          {TABS.map(t=><button key={t.key} onClick={()=>{setTab(t.key);setShowForm(false);setEditItem(null);}} style={{padding:isDesktop?"8px 0":"10px 4px",fontFamily:FONT,fontSize:isDesktop?11.5:12,fontWeight:tab===t.key?700:500,background:tab===t.key?C.pri:C.w,color:tab===t.key?C.tOn:C.t2,border:"none",cursor:"pointer",textAlign:"center",minHeight:isDesktop?undefined:44}}>{t.label}</button>)}
-        </div>
+        {isDesktop ? (
+          <div style={{display:"flex",gap:0,borderRadius:R.md,overflow:"hidden",border:`1.5px solid ${C.b1}`,marginBottom:0}}>
+            {TABS.map((t,i)=><button key={t.key} onClick={()=>{setTab(t.key);setShowForm(false);setEditItem(null);}} style={{flex:1,padding:"8px 0",fontFamily:FONT,fontSize:11.5,fontWeight:tab===t.key?700:500,background:tab===t.key?C.pri:C.w,color:tab===t.key?C.tOn:C.t2,border:"none",cursor:"pointer",textAlign:"center",borderLeft:i>0?`1px solid ${C.b1}`:"none"}}>{t.label}</button>)}
+          </div>
+        ) : (
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:1,background:C.b1,borderRadius:R.md,overflow:"hidden",marginBottom:0}}>
+            {TABS.map(t=><button key={t.key} onClick={()=>{setTab(t.key);setShowForm(false);setEditItem(null);}} style={{padding:"10px 4px",fontFamily:FONT,fontSize:12,fontWeight:tab===t.key?700:500,background:tab===t.key?C.pri:C.w,color:tab===t.key?C.tOn:C.t2,border:"none",cursor:"pointer",textAlign:"center",minHeight:44}}>{t.label}</button>)}
+          </div>
+        )}
       </div>
 
       <div style={{ padding:"14px 18px 24px" }}>
