@@ -329,7 +329,7 @@ const MsgBubble = memo(function MsgBubble({ msg, onSendText }) {
           boxShadow: isUser ? "none" : C.sh,
           border: isUser ? "none" : `1px solid ${C.b2}`,
           wordBreak: "break-word",
-          whiteSpace: "pre-wrap",
+          whiteSpace: isUser ? "pre-wrap" : "normal",
         }}>
           {isAudio ? (
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -459,40 +459,68 @@ function renderInline(line, keyPrefix, onCodeClick) {
   });
 }
 
+// Detect bullet lines: - item, • item, emoji item (🌾 text), or numbered (1. text)
+const BULLET_RE = /^[\s]*(?:[-•]|(\p{Emoji_Presentation}|\p{Emoji}\uFE0F?))\s+(.*)/u;
+const NUMBERED_RE = /^[\s]*(\d+)[.)]\s+(.*)/;
+
 function renderMarkdown(text, onCodeClick) {
   if (!text) return text;
   const lines = text.split('\n');
   const result = [];
-  let inList = false;
   let listItems = [];
+  let listType = null; // 'ul' or 'ol'
   const flushList = () => {
     if (listItems.length > 0) {
-      result.push(
-        <ul key={`ul-${result.length}`} style={{ margin: "4px 0", paddingLeft: 18 }}>
-          {listItems.map((li, k) => <li key={k} style={{ marginBottom: 2 }}>{li}</li>)}
-        </ul>
-      );
+      if (listType === 'ol') {
+        result.push(
+          <ol key={`ol-${result.length}`} style={{ margin: "4px 0", paddingLeft: 22, listStyleType: "decimal" }}>
+            {listItems.map((li, k) => <li key={k} style={{ marginBottom: 3 }}>{li}</li>)}
+          </ol>
+        );
+      } else {
+        result.push(
+          <ul key={`ul-${result.length}`} style={{ margin: "4px 0", paddingLeft: 18, listStyleType: "disc" }}>
+            {listItems.map((li, k) => <li key={k} style={{ marginBottom: 3 }}>{li}</li>)}
+          </ul>
+        );
+      }
       listItems = [];
+      listType = null;
     }
-    inList = false;
   };
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
-    // Bullet list: - item or • item
-    const bulletMatch = line.match(/^[\s]*[-•]\s+(.*)/);
-    if (bulletMatch) {
-      inList = true;
-      listItems.push(renderInline(bulletMatch[1], `li-${i}`, onCodeClick));
+    // Numbered list: 1. item or 1) item
+    const numMatch = line.match(NUMBERED_RE);
+    if (numMatch) {
+      if (listType && listType !== 'ol') flushList();
+      listType = 'ol';
+      listItems.push(renderInline(numMatch[2], `li-${i}`, onCodeClick));
       continue;
     }
-    if (inList) flushList();
+    // Bullet list: - item, • item, or emoji-prefixed item
+    const bulletMatch = line.match(BULLET_RE);
+    if (bulletMatch) {
+      if (listType && listType !== 'ul') flushList();
+      listType = 'ul';
+      const emoji = bulletMatch[1] || '';
+      const content = bulletMatch[2] || '';
+      listItems.push(<>{emoji ? `${emoji} ` : ''}{renderInline(content, `li-${i}`, onCodeClick)}</>);
+      continue;
+    }
+    if (listItems.length) flushList();
     // Header: ### text
     const headerMatch = line.match(/^#{1,3}\s+(.*)/);
     if (headerMatch) {
       result.push(<strong key={`h-${i}`} style={{ display: "block", marginTop: 6, marginBottom: 2 }}>{renderInline(headerMatch[1], `h-${i}`, onCodeClick)}</strong>);
       continue;
     }
-    if (i > 0 && !inList) result.push(<br key={`br-${i}`} />);
+    // Empty line = paragraph break
+    if (!line.trim()) {
+      if (result.length > 0) result.push(<div key={`sp-${i}`} style={{ height: 6 }} />);
+      continue;
+    }
+    if (result.length > 0) result.push(<br key={`br-${i}`} />);
     result.push(<span key={`l-${i}`}>{renderInline(line, `l-${i}`, onCodeClick)}</span>);
   }
   flushList();
