@@ -42,7 +42,7 @@ const _TRIP_MAP = { pending:'pending_assignment', accepted:'assigned', in_progre
 export const TRIP_STATUS_CFG = Object.fromEntries(
   Object.entries(_TRIP_MAP).map(([trip, st]) => {
     const s = STATUS_COLORS[st];
-    const label = trip === 'pending' ? 'Sin camión' : s.label;
+    const label = trip === 'pending' ? 'Pendiente' : s.label;
     return [trip, { label, color: s.ribbon, bg: s.pillBg }];
   })
 );
