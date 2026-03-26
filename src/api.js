@@ -316,6 +316,19 @@ export async function apiReorderTruckQueue(truckId, orderedAssignmentIds) { retu
 export async function apiListDrivers(companyId) { return api(companyId ? `/trucks/drivers?companyId=${encodeURIComponent(companyId)}` : '/trucks/drivers'); }
 export async function apiCreateDriver(b, companyId) { return api(companyId ? `/trucks/drivers?companyId=${encodeURIComponent(companyId)}` : '/trucks/drivers',{body:b}); }
 export async function apiDeactivateDriver(id) { return api(`/trucks/drivers/${id}/deactivate`,{body:{},method:'PATCH'}); }
+// Truck Detail
+export async function apiGetTruckDetail(id) { return api(`/trucks/${id}`); }
+export async function apiGetTruckDocuments(id) { return api(`/trucks/${id}/documents`); }
+export async function apiAddTruckDocument(id, body) { return api(`/trucks/${id}/documents`, { body }); }
+export async function apiUpdateTruckDocument(id, docId, body) { return api(`/trucks/${id}/documents/${docId}`, { method: 'PATCH', body }); }
+export async function apiDeleteTruckDocument(id, docId) { return api(`/trucks/${id}/documents/${docId}/delete`, { method: 'PATCH', body: {} }); }
+export async function apiGetExpiringDocs(days = 30) { return api(`/trucks/documents/expiring?days=${days}`); }
+export async function apiGetTruckExpenses(id, from, to) { let q = ''; if (from) q += `&from=${from}`; if (to) q += `&to=${to}`; return api(`/trucks/${id}/expenses${q ? '?' + q.slice(1) : ''}`); }
+export async function apiAddTruckExpense(id, body) { return api(`/trucks/${id}/expenses`, { body }); }
+export async function apiUpdateTruckExpense(id, expId, body) { return api(`/trucks/${id}/expenses/${expId}`, { method: 'PATCH', body }); }
+export async function apiDeleteTruckExpense(id, expId) { return api(`/trucks/${id}/expenses/${expId}/delete`, { method: 'PATCH', body: {} }); }
+export async function apiGetTruckExpenseSummary(id) { return api(`/trucks/${id}/expenses/summary`); }
+export async function apiGetTruckFreights(id, take = 20, skip = 0) { return api(`/trucks/${id}/freights?take=${take}&skip=${skip}`); }
 
 // Fields & Lots
 export async function apiGetFields(ownerCompanyId) { const q = ownerCompanyId ? `?ownerCompanyId=${encodeURIComponent(ownerCompanyId)}` : ''; return api(`/fields${q}`); }
