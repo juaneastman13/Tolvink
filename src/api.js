@@ -330,6 +330,20 @@ export async function apiDeleteTruckExpense(id, expId) { return api(`/trucks/${i
 export async function apiGetTruckExpenseSummary(id) { return api(`/trucks/${id}/expenses/summary`); }
 export async function apiGetTruckFreights(id, take = 20, skip = 0) { return api(`/trucks/${id}/freights?take=${take}&skip=${skip}`); }
 export async function apiGetFleetAlerts() { return api('/trucks/alerts'); }
+// Truck Incomes
+export async function apiGetTruckIncomes(id, from, to, status) { let q = []; if (from) q.push(`from=${from}`); if (to) q.push(`to=${to}`); if (status) q.push(`status=${status}`); return api(`/trucks/${id}/incomes${q.length ? '?' + q.join('&') : ''}`); }
+export async function apiAddTruckIncome(id, body) { return api(`/trucks/${id}/incomes`, { body }); }
+export async function apiUpdateTruckIncome(id, incId, body) { return api(`/trucks/${id}/incomes/${incId}`, { method: 'PATCH', body }); }
+export async function apiDeleteTruckIncome(id, incId) { return api(`/trucks/${id}/incomes/${incId}/delete`, { method: 'PATCH', body: {} }); }
+export async function apiGetTruckIncomeSummary(id) { return api(`/trucks/${id}/incomes/summary`); }
+// Truck Movements
+export async function apiGetTruckMovements(id, from, to, type) { let q = []; if (from) q.push(`from=${from}`); if (to) q.push(`to=${to}`); if (type) q.push(`type=${type}`); return api(`/trucks/${id}/movements${q.length ? '?' + q.join('&') : ''}`); }
+export async function apiAddTruckMovement(id, body) { return api(`/trucks/${id}/movements`, { body }); }
+export async function apiUpdateTruckMovement(id, movId, body) { return api(`/trucks/${id}/movements/${movId}`, { method: 'PATCH', body }); }
+export async function apiDeleteTruckMovement(id, movId) { return api(`/trucks/${id}/movements/${movId}/delete`, { method: 'PATCH', body: {} }); }
+// Trip Data + Economic Summary
+export async function apiUpdateTripData(freightId, assignmentId, body) { return api(`/trucks/${freightId}/assignments/${assignmentId}/trip-data`, { method: 'PATCH', body }); }
+export async function apiGetEconomicSummary(id, from, to) { let q = []; if (from) q.push(`from=${from}`); if (to) q.push(`to=${to}`); return api(`/trucks/${id}/economic-summary${q.length ? '?' + q.join('&') : ''}`); }
 
 // Fields & Lots
 export async function apiGetFields(ownerCompanyId) { const q = ownerCompanyId ? `?ownerCompanyId=${encodeURIComponent(ownerCompanyId)}` : ''; return api(`/fields${q}`); }
