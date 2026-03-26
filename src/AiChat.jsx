@@ -406,7 +406,7 @@ function BtnRow({ buttons, onSend, disabled }) {
 }
 
 // ======================== THINKING TIMEOUT ====================
-const THINKING_TIMEOUT_MS = 90_000;
+const THINKING_TIMEOUT_MS = 30_000;
 
 // ======================== MAIN COMPONENT =====================
 
@@ -478,7 +478,20 @@ export default function AiChat({ open, onClose, onNavigate, sseAiResponse, sseAi
   useEffect(() => {
     if (thinking) {
       clearTimeout(thinkingTimer.current);
-      thinkingTimer.current = setTimeout(() => {
+      thinkingTimer.current = setTimeout(async () => {
+        // SSE may have dropped — try fetching history as fallback
+        try {
+          const data = await apiWebChatHistory();
+          if (data?.messages?.length) {
+            const lastMsg = data.messages[data.messages.length - 1];
+            if (lastMsg?.role === "assistant") {
+              setThinking(false);
+              streamMsgId.current = null;
+              setMessages(data.messages.map(m => ({ ...m, ts: Date.now() })));
+              return;
+            }
+          }
+        } catch {}
         setThinking(false);
         setMessages(prev => [...prev, {
           id: `timeout-${Date.now()}`, role: "assistant",
