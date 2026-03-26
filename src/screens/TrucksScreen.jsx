@@ -217,19 +217,20 @@ export default function TrucksScreen({ onBack, embedded, user, onTruckClick }) {
                 const ownerName = t.ownerCompanyId && companyNameMap[t.ownerCompanyId];
                 const alert = docAlerts[t.id];
                 const truckEco = fleetSummary?.trucks?.find(ft => ft.id === t.id);
+                const isLinked = t.ownerCompanyId && t.companyId !== (user?.activeCompanyId || user?.companyId);
                 return (
-                  <div key={t.id} onClick={() => onTruckClick?.(t.id)} style={{ background: C.w, border: `1px solid ${C.b1}`, borderLeft: `3px solid ${alert?.expired ? C.err : alert?.expiring ? C.warn : C.acc}`, borderRadius: R.lg, padding: 14, boxShadow: C.sh, display: "flex", justifyContent: "space-between", alignItems: "center", cursor: onTruckClick ? "pointer" : "default" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                      {Ic.truck(C.acc, 20)}
+                  <div key={t.id} onClick={() => !isLinked && onTruckClick?.(t.id)} style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: R.lg, padding: 14, boxShadow: C.sh, display: "flex", justifyContent: "space-between", alignItems: "center", cursor: !isLinked && onTruckClick ? "pointer" : "default" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                      <LicensePlate plate={t.plate} size="md" />
                       <div>
-                        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                          <LicensePlate plate={t.plate} size="md" />
+                        <div style={{ display:"flex", alignItems:"center", gap:6, flexWrap:"wrap" }}>
+                          {t.model && <span style={{ fontSize: 13, fontWeight: 600, color: C.t1 }}>{t.model}</span>}
                           {t.assignedUser && <span style={{ fontSize: 11.5, color: C.pri, fontWeight: 600 }}>{t.assignedUser.name}</span>}
-                          {alert?.expired > 0 && <span style={{ fontSize: 10, fontWeight: 700, color: C.err, background: C.errPale, padding: "1px 6px", borderRadius: R.pill }}>{alert.expired} venc.</span>}
-                          {alert?.expiring > 0 && !alert?.expired && <span style={{ fontSize: 10, fontWeight: 700, color: C.warn, background: C.warnPale, padding: "1px 6px", borderRadius: R.pill }}>{alert.expiring} por vencer</span>}
+                          {isLinked && <span style={{ fontSize: 9.5, fontWeight: 700, color: C.sec, background: C.secPale, padding: "1px 6px", borderRadius: R.pill }}>Vinculado</span>}
+                          {!isLinked && alert?.expired > 0 && <span style={{ fontSize: 10, fontWeight: 700, color: C.err, background: C.errPale, padding: "1px 6px", borderRadius: R.pill }}>{alert.expired} venc.</span>}
+                          {!isLinked && alert?.expiring > 0 && !alert?.expired && <span style={{ fontSize: 10, fontWeight: 700, color: C.warn, background: C.warnPale, padding: "1px 6px", borderRadius: R.pill }}>{alert.expiring} por vencer</span>}
                         </div>
-                        {t.model && <div style={{ fontSize: 12.1, color: C.t3, marginTop: 2 }}>{t.model}</div>}
-                        {truckEco && (truckEco.net !== 0 || truckEco.km > 0) && (
+                        {!isLinked && truckEco && (truckEco.net !== 0 || truckEco.km > 0) && (
                           <div style={{ display: "flex", gap: 8, marginTop: 3 }}>
                             {truckEco.net !== 0 && <span style={{ fontSize: 10, fontWeight: 700, color: truckEco.net >= 0 ? C.ok : C.err }}>${Number(truckEco.net).toLocaleString("es-UY")}</span>}
                             {truckEco.km > 0 && <span style={{ fontSize: 10, color: C.t3 }}>{Number(truckEco.km).toLocaleString("es-UY")} km</span>}
@@ -239,8 +240,8 @@ export default function TrucksScreen({ onBack, embedded, user, onTruckClick }) {
                       </div>
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                      {canEdit && <button aria-label="Desactivar camión" disabled={saving} onClick={(e) => { e.stopPropagation(); handleDeactivateTruck(t.id); }} style={{ background: "none", border: "none", cursor: saving?"not-allowed":"pointer", padding: 6, opacity:saving?0.4:1 }}>{Ic.ban(C.err, 18)}</button>}
-                      {onTruckClick && <span style={{ opacity: 0.4 }}>{Ic.chev(C.t3, 14)}</span>}
+                      {canEdit && !isLinked && <button aria-label="Desactivar camión" disabled={saving} onClick={(e) => { e.stopPropagation(); handleDeactivateTruck(t.id); }} style={{ background: "none", border: "none", cursor: saving?"not-allowed":"pointer", padding: 6, opacity:saving?0.4:1 }}>{Ic.ban(C.err, 18)}</button>}
+                      {!isLinked && onTruckClick && <span style={{ opacity: 0.4 }}>{Ic.chev(C.t3, 14)}</span>}
                     </div>
                   </div>
                 );

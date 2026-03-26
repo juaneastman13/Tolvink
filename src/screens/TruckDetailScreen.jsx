@@ -322,6 +322,20 @@ export default function TruckDetailScreen({ truckId, user, onBack, onNavFreight 
   if (loading) return <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",padding:40}}><Loader/></div>;
   if (error && !truck) return <div style={{padding:20}}><button onClick={onBack} style={{background:"none",border:"none",cursor:"pointer",fontFamily:FONT,fontSize:14,fontWeight:600,color:C.pri,marginBottom:14,padding:0,display:"flex",alignItems:"center",gap:4}}>{Ic.chev(C.pri,18)} Volver</button><EmptyState icon={Ic.warn(C.err,28)} title="Error" subtitle={error}/></div>;
 
+  // Linked truck: show basic info only
+  if (truck && truck.isOwn === false) return (
+    <div style={{flex:1,overflow:"auto"}}>
+      <div style={{position:"sticky",top:0,zIndex:10,background:C.bg,padding:"14px 18px 0"}}><button onClick={onBack} style={{background:"none",border:"none",cursor:"pointer",fontFamily:FONT,fontSize:14,fontWeight:600,color:C.pri,marginBottom:8,padding:0,display:"flex",alignItems:"center",gap:4}}>{Ic.chev(C.pri,18)} Flota</button></div>
+      <div style={{padding:"0 18px 24px"}}>
+        <div style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius:R.xl,padding:20,boxShadow:C.shMd}}>
+          <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:12}}><LicensePlate plate={truck.plate} size="lg"/><div><span style={{fontSize:9.5,fontWeight:700,color:C.sec,background:C.secPale,padding:"2px 8px",borderRadius:R.pill}}>Vinculado</span>{truck.model && <div style={{fontSize:13,color:C.t3,marginTop:4}}>{truck.model}</div>}</div></div>
+          {truck.assignedUser && <div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 12px",background:C.bg,borderRadius:R.md}}>{Ic.user(C.pri,16)}<span style={{fontSize:13,fontWeight:600,color:C.t1}}>{truck.assignedUser.name}</span></div>}
+          <div style={{marginTop:12,fontSize:13,color:C.t3}}>Este camión pertenece a otra empresa. Solo podés asignarlo a fletes.</div>
+        </div>
+      </div>
+    </div>
+  );
+
   const docs = truck?.documents || [];
   const docSum = truck?.docsSummary || {};
   const eco = ecoSummary || {};
