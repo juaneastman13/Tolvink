@@ -568,6 +568,7 @@ export async function uploadChatFile(file, conversationId) {
 
 // Web Chat (AI Agent)
 export async function apiWebChatSend(text) { return api('/web-chat/message', { body: { text } }); }
+export async function apiWebChatFile(url, name, type) { return api('/web-chat/file', { body: { url, name, type } }); }
 export async function apiWebChatHistory() { return api('/web-chat/history'); }
 export async function apiWebChatAudio(blob) {
   const mkForm = () => { const f = new FormData(); f.append('audio', blob, 'audio.webm'); return f; };

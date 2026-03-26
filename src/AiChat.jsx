@@ -5,7 +5,7 @@
 
 import { useState, useEffect, useRef, useCallback, useMemo, memo, lazy, Suspense } from "react";
 import { C, FONT, Ic, R } from "./theme";
-import { apiWebChatSend, apiWebChatHistory, apiWebChatAudio, API_URL } from "./api";
+import { apiWebChatSend, apiWebChatHistory, apiWebChatAudio, apiWebChatFile, uploadChatFile, API_URL } from "./api";
 
 // Lazy-load heavy map components
 const MapOverlay = lazy(() => import("./maps").then(m => ({ default: m.MapOverlay })));
@@ -110,6 +110,11 @@ const SparkIcon = (c = C.w, s = 22) => (
 const MapPinIcon = (c = C.pri, s = 16) => (
   <svg width={s} height={s} viewBox="0 0 24 24" fill={c} stroke="none">
     <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z"/>
+  </svg>
+);
+const ClipIcon = (c = C.t3, s = 18) => (
+  <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
   </svg>
 );
 
@@ -411,29 +416,46 @@ const THINKING_TIMEOUT_MS = 30_000;
 // ======================== MAIN COMPONENT =====================
 
 // ======================== SIMPLE MARKDOWN RENDERER ================
-// Supports **bold**, bullet lists (- item / • item), ### headers, and freight code links
+// Supports **bold**, bullet lists (- item / • item), ### headers, freight code links, and URLs
 const FREIGHT_CODE_RE = /\b(F\d{2}-[A-Z]{3}\.\d{4})\b/g;
+const URL_RE = /(https?:\/\/[^\s<>"{}|\\^`\]]+)/g;
+
+function renderPlainSegment(text, keyPrefix, onCodeClick) {
+  // First check for freight codes
+  if (onCodeClick && FREIGHT_CODE_RE.test(text)) {
+    FREIGHT_CODE_RE.lastIndex = 0;
+    const segs = text.split(FREIGHT_CODE_RE);
+    return segs.map((seg, k) => {
+      if (FREIGHT_CODE_RE.test(seg)) {
+        FREIGHT_CODE_RE.lastIndex = 0;
+        return <span key={`${keyPrefix}-c-${k}`} onClick={() => onCodeClick(seg)} style={{ color: C.pri, fontWeight: 600, cursor: "pointer", textDecoration: "underline", textDecorationStyle: "dotted" }}>{seg}</span>;
+      }
+      return seg;
+    });
+  }
+  // Then check for URLs
+  if (URL_RE.test(text)) {
+    URL_RE.lastIndex = 0;
+    const segs = text.split(URL_RE);
+    return segs.map((seg, k) => {
+      if (URL_RE.test(seg)) {
+        URL_RE.lastIndex = 0;
+        return <a key={`${keyPrefix}-u-${k}`} href={seg} target="_blank" rel="noopener noreferrer" style={{ color: C.pri, textDecoration: "underline", wordBreak: "break-all" }}>{seg.length > 50 ? seg.slice(0, 47) + "..." : seg}</a>;
+      }
+      return seg;
+    });
+  }
+  return text;
+}
 
 function renderInline(line, keyPrefix, onCodeClick) {
-  // Split by bold first, then by freight codes
+  // Split by bold first, then process each part for codes/URLs
   const boldParts = line.split(/(\*\*[^*]+\*\*)/g);
   return boldParts.map((part, j) => {
     if (part.startsWith('**') && part.endsWith('**')) {
       return <strong key={`${keyPrefix}-${j}`}>{part.slice(2, -2)}</strong>;
     }
-    // Detect freight codes in plain text
-    if (onCodeClick && FREIGHT_CODE_RE.test(part)) {
-      FREIGHT_CODE_RE.lastIndex = 0;
-      const segs = part.split(FREIGHT_CODE_RE);
-      return segs.map((seg, k) => {
-        if (FREIGHT_CODE_RE.test(seg)) {
-          FREIGHT_CODE_RE.lastIndex = 0;
-          return <span key={`${keyPrefix}-${j}-${k}`} onClick={() => onCodeClick(seg)} style={{ color: C.pri, fontWeight: 600, cursor: "pointer", textDecoration: "underline", textDecorationStyle: "dotted" }}>{seg}</span>;
-        }
-        return seg;
-      });
-    }
-    return part;
+    return renderPlainSegment(part, `${keyPrefix}-${j}`, onCodeClick);
   });
 }
 
@@ -690,6 +712,39 @@ export default function AiChat({ open, onClose, onNavigate, sseAiResponse, sseAi
     });
   }, [rec, thinking]);
 
+  const fileInputRef = useRef(null);
+  const [uploading, setUploading] = useState(false);
+
+  const sendFile = useCallback(async (e) => {
+    const file = e.target.files?.[0];
+    if (fileInputRef.current) fileInputRef.current.value = "";
+    if (!file || uploading || thinking) return;
+    setUploading(true);
+    try {
+      const isImage = file.type.startsWith("image/");
+      const docType = isImage ? "photo" : "document";
+      // Show preview immediately
+      setMessages(prev => [...prev, {
+        id: `u-${Date.now()}`, role: "user",
+        text: `📎 ${file.name}`,
+        ts: Date.now(),
+      }]);
+      setThinking(true);
+      // Upload to Supabase
+      const url = await uploadChatFile(file, "ai-chat");
+      // Notify backend
+      await apiWebChatFile(url, file.name, docType);
+    } catch (err) {
+      setThinking(false);
+      setMessages(prev => [...prev, {
+        id: `err-${Date.now()}`, role: "assistant",
+        text: err.message || "Error al subir archivo. Intentá de nuevo.", ts: Date.now(),
+      }]);
+    } finally {
+      setUploading(false);
+    }
+  }, [uploading, thinking]);
+
   const onKey = useCallback((e) => {
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendText(); }
   }, [sendText]);
@@ -873,6 +928,22 @@ export default function AiChat({ open, onClose, onNavigate, sseAiResponse, sseAi
               onBlur={e => e.target.style.borderColor = C.b1}
               disabled={thinking}
             />
+            {/* File attach button */}
+            <input ref={fileInputRef} type="file" accept="image/*,.pdf,.doc,.docx,.xlsx" style={{ display: "none" }} onChange={sendFile} />
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={thinking || uploading}
+              style={{
+                width: 38, height: 38, borderRadius: "50%",
+                background: "transparent", border: "none", cursor: thinking ? "default" : "pointer",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                opacity: thinking ? 0.4 : 0.7, flexShrink: 0,
+                transition: "all 0.15s",
+              }}
+              aria-label="Adjuntar archivo"
+            >
+              {ClipIcon(C.t3, 18)}
+            </button>
             {/* Mic button */}
             <button
               onClick={rec.start}
