@@ -283,6 +283,20 @@ export default function TruckDetailScreen({ truckId, user, onBack, onNavFreight 
     if (tab === "docs" && !allDocs) apiGetTruckDocuments(truckId).then(d=>setAllDocs(d||[])).catch(()=>setAllDocs([]));
   }, [tab, truck]);
 
+  // Poll for OCR processing completion
+  useEffect(() => {
+    if (tab !== "docs" || !allDocs) return;
+    const hasProcessing = allDocs.some(d => d.ocrStatus === "pending" || d.ocrStatus === "processing");
+    if (!hasProcessing) return;
+    const timer = setInterval(() => {
+      apiGetTruckDocuments(truckId).then(d => {
+        setAllDocs(d || []);
+        if (!d?.some(doc => doc.ocrStatus === "pending" || doc.ocrStatus === "processing")) clearInterval(timer);
+      }).catch(() => {});
+    }, 5000);
+    return () => clearInterval(timer);
+  }, [tab, allDocs, truckId]);
+
   // ======================== CRUD HELPERS ==================================
 
   const crud = (apiFn, refreshKey) => async (body) => {
