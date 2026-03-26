@@ -250,6 +250,7 @@ export default function TruckDetailScreen({ truckId, user, onBack, onNavFreight 
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [tripDataFor, setTripDataFor] = useState(null); // freight being edited for trip data
   const [showMapFor, setShowMapFor] = useState(null); // "origin" or "dest" for map picker in movements
+  const [expandedItem, setExpandedItem] = useState(null); // id of expanded income/expense
 
   // Lazy-loaded data
   const [ecoSummary, setEcoSummary] = useState(null);
@@ -482,16 +483,42 @@ export default function TruckDetailScreen({ truckId, user, onBack, onNavFreight 
           {incomes===null?<Loader/>:incomes.length===0&&!showForm?<EmptyState icon={Ic.doc(C.t3,20)} title="Sin ingresos" subtitle="Registrá el primer ingreso del camión"/>:
             incomes.map(inc=>{
               const st = INC_STATUS[inc.status]||INC_STATUS.PENDING;
-              return <div key={inc.id} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderBottom:`1px solid ${C.b2}`}}>
-                <div style={{flex:1,minWidth:0}}>
-                  <div style={{display:"flex",alignItems:"center",gap:6}}><span style={{fontSize:13,fontWeight:600,color:C.t1}}>{inc.concept}</span><span style={{fontSize:10,fontWeight:700,color:st.color,background:st.bg,padding:"1px 6px",borderRadius:R.pill}}>{st.label}</span></div>
-                  {inc.freight&&<span style={{fontSize:10.5,color:C.pri,fontWeight:600}}>{inc.freight.code}</span>}
-                  <div style={{fontSize:11,color:C.t3,marginTop:2}}>{fmtDate(inc.date)}{inc.invoiceNumber?` · Fact: ${inc.invoiceNumber}`:""}</div>
+              const isExp = expandedItem === `inc-${inc.id}`;
+              const incDocs = (allDocs||[]).filter(d=>d.incomeId===inc.id);
+              return <div key={inc.id} style={{borderBottom:`1px solid ${C.b2}`,background:isExp?C.bg:"transparent",borderRadius:isExp?R.md:0}}>
+                <div onClick={()=>setExpandedItem(isExp?null:`inc-${inc.id}`)} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",cursor:"pointer"}}>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{display:"flex",alignItems:"center",gap:6}}><span style={{fontSize:13,fontWeight:600,color:C.t1}}>{inc.concept}</span><span style={{fontSize:10,fontWeight:700,color:st.color,background:st.bg,padding:"1px 6px",borderRadius:R.pill}}>{st.label}</span></div>
+                    {inc.freight&&<span style={{fontSize:10.5,color:C.pri,fontWeight:600}}>{inc.freight.code}</span>}
+                    <div style={{fontSize:11,color:C.t3,marginTop:2}}>{fmtDate(inc.date)}{inc.invoiceNumber?` · Fact: ${inc.invoiceNumber}`:""}{incDocs.length>0?` · 📎 ${incDocs.length}`:""}</div>
+                  </div>
+                  <span style={{fontSize:14,fontWeight:700,color:st.color,whiteSpace:"nowrap"}}>{fmtMoney(inc.amount,inc.currency)}</span>
+                  <span style={{fontSize:14,color:C.t3,transition:"transform 0.2s",transform:isExp?"rotate(180deg)":"rotate(0deg)"}}>▾</span>
                 </div>
-                <span style={{fontSize:14,fontWeight:700,color:st.color,whiteSpace:"nowrap"}}>{fmtMoney(inc.amount,inc.currency)}</span>
-                {inc.invoiceUrl&&<button onClick={()=>setViewFile({url:inc.invoiceUrl,name:inc.invoiceNumber||"Factura",type:"document"})} style={{background:"none",border:"none",cursor:"pointer",padding:4}}>{Ic.clip(C.pri,14)}</button>}
-                {canEdit&&<button onClick={()=>setEditItem(inc)} style={{background:"none",border:"none",cursor:"pointer",padding:4}}>{Ic.edit(C.t3,14)}</button>}
-                {canEdit&&<button onClick={()=>setConfirmDelete({type:"inc",id:inc.id,label:inc.concept})} style={{background:"none",border:"none",cursor:"pointer",padding:4}}>{Ic.ban(C.err,14)}</button>}
+                {isExp && <div style={{padding:"0 12px 12px"}}>
+                  <div style={{display:"flex",gap:6,marginBottom:8}}>
+                    {canEdit&&<button onClick={()=>setEditItem(inc)} style={{padding:"4px 10px",borderRadius:R.md,border:`1px solid ${C.b1}`,background:C.w,cursor:"pointer",fontSize:11,fontWeight:600,color:C.t2,fontFamily:FONT,display:"flex",alignItems:"center",gap:4}}>{Ic.edit(C.t3,12)} Editar</button>}
+                    {canEdit&&<button onClick={()=>setConfirmDelete({type:"inc",id:inc.id,label:inc.concept})} style={{padding:"4px 10px",borderRadius:R.md,border:`1px solid ${C.err}40`,background:C.errPale,cursor:"pointer",fontSize:11,fontWeight:600,color:C.err,fontFamily:FONT,display:"flex",alignItems:"center",gap:4}}>{Ic.ban(C.err,12)} Eliminar</button>}
+                  </div>
+                  {incDocs.length>0 && <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                    <div style={{fontSize:11,fontWeight:700,color:C.t2,textTransform:"uppercase",letterSpacing:0.5}}>Archivos ({incDocs.length})</div>
+                    {incDocs.map(d=>{
+                      const isImg = d.mimeType?.startsWith("image")||d.fileUrl?.match(/\.(jpg|jpeg|png|webp|gif)$/i);
+                      return <div key={d.id} style={{display:"flex",alignItems:"center",gap:10,padding:8,background:C.w,border:`1px solid ${C.b2}`,borderRadius:R.md}}>
+                        <button onClick={()=>openFile(d)} style={{display:"flex",alignItems:"center",gap:10,flex:1,minWidth:0,background:"none",border:"none",cursor:"pointer",fontFamily:FONT,textAlign:"left",padding:0}}>
+                          {isImg?<img src={d.fileUrl} alt="" style={{width:48,height:48,borderRadius:R.sm,objectFit:"cover",flexShrink:0}}/>:<div style={{width:48,height:48,borderRadius:R.sm,background:C.priPale,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{Ic.doc(C.pri,20)}</div>}
+                          <div style={{flex:1,minWidth:0}}>
+                            <div style={{fontSize:12,fontWeight:600,color:C.t1,wordBreak:"break-all"}}>{d.fileName||"Archivo"}</div>
+                            <div style={{fontSize:10.5,color:C.t3}}>{DOC_TYPE_LABELS[d.type]||d.type} · {fmtDate(d.createdAt)}</div>
+                          </div>
+                        </button>
+                        <button onClick={()=>openFile(d)} style={{padding:6,borderRadius:R.sm,border:`1px solid ${C.b1}`,background:C.bg,cursor:"pointer",display:"flex"}}>{Ic.eye(C.t2,14)}</button>
+                        {d.ocrStatus==="completed"&&<span style={{fontSize:10,color:C.pri}}>✨</span>}
+                      </div>;
+                    })}
+                  </div>}
+                  {incDocs.length===0&&<div style={{fontSize:12,color:C.t3,fontStyle:"italic"}}>Sin archivos adjuntos</div>}
+                </div>}
               </div>;
             })
           }
@@ -504,17 +531,54 @@ export default function TruckDetailScreen({ truckId, user, onBack, onNavFreight 
           {showForm && <ExpForm onSave={handleAddExp} onCancel={()=>setShowForm(false)} saving={saving} activeFreights={truck.activeFreights}/>}
           {editItem && tab==="expenses" && <ExpForm initial={editItem} onSave={handleUpdateExp} onCancel={()=>setEditItem(null)} saving={saving} activeFreights={truck.activeFreights}/>}
           {expenses===null?<Loader/>:expenses.length===0&&!showForm?<EmptyState icon={Ic.doc(C.t3,20)} title="Sin gastos" subtitle="Registrá el primer gasto del camión"/>:
-            expenses.map(e=><div key={e.id} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderBottom:`1px solid ${C.b2}`}}>
-              <div style={{flex:1,minWidth:0}}>
-                <div style={{display:"flex",alignItems:"center",gap:6}}><span style={{fontSize:13,fontWeight:600,color:C.t1}}>{EXP_TYPE_LABELS[e.type]||e.type}</span>{e.freight&&<span style={{fontSize:10.5,color:C.pri,fontWeight:600}}>{e.freight.code}</span>}</div>
-                {e.description&&<div style={{fontSize:11.5,color:C.t3,marginTop:2}}>{e.description}</div>}
-                <div style={{fontSize:11,color:C.t3,marginTop:2}}>{fmtDate(e.date)}</div>
-              </div>
-              <span style={{fontSize:14,fontWeight:700,color:C.t1,whiteSpace:"nowrap"}}>{fmtMoney(e.amount,e.currency)}</span>
-              {e.receiptUrl&&<button onClick={()=>setViewFile({url:e.receiptUrl,name:e.receiptName||"Comprobante",type:"document"})} style={{background:"none",border:"none",cursor:"pointer",padding:4}}>{Ic.clip(C.pri,14)}</button>}
-              {canEdit&&<button onClick={()=>setEditItem(e)} style={{background:"none",border:"none",cursor:"pointer",padding:4}}>{Ic.edit(C.t3,14)}</button>}
-              {canEdit&&<button onClick={()=>setConfirmDelete({type:"exp",id:e.id,label:EXP_TYPE_LABELS[e.type]})} style={{background:"none",border:"none",cursor:"pointer",padding:4}}>{Ic.ban(C.err,14)}</button>}
-            </div>)
+            expenses.map(e=>{
+              const isExp = expandedItem === `exp-${e.id}`;
+              const expDocs = (allDocs||[]).filter(d=>d.expenseId===e.id);
+              return <div key={e.id} style={{borderBottom:`1px solid ${C.b2}`,background:isExp?C.bg:"transparent",borderRadius:isExp?R.md:0}}>
+                <div onClick={()=>setExpandedItem(isExp?null:`exp-${e.id}`)} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",cursor:"pointer"}}>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{display:"flex",alignItems:"center",gap:6}}><span style={{fontSize:13,fontWeight:600,color:C.t1}}>{EXP_TYPE_LABELS[e.type]||e.type}</span>{e.freight&&<span style={{fontSize:10.5,color:C.pri,fontWeight:600}}>{e.freight.code}</span>}</div>
+                    {e.description&&<div style={{fontSize:11.5,color:C.t3,marginTop:2}}>{e.description}</div>}
+                    <div style={{fontSize:11,color:C.t3,marginTop:2}}>{fmtDate(e.date)}{expDocs.length>0?` · 📎 ${expDocs.length}`:""}{e.receiptUrl&&!expDocs.length?" · 📎 1":""}</div>
+                  </div>
+                  <span style={{fontSize:14,fontWeight:700,color:C.t1,whiteSpace:"nowrap"}}>{fmtMoney(e.amount,e.currency)}</span>
+                  <span style={{fontSize:14,color:C.t3,transition:"transform 0.2s",transform:isExp?"rotate(180deg)":"rotate(0deg)"}}>▾</span>
+                </div>
+                {isExp && <div style={{padding:"0 12px 12px"}}>
+                  <div style={{display:"flex",gap:6,marginBottom:8}}>
+                    {canEdit&&<button onClick={()=>setEditItem(e)} style={{padding:"4px 10px",borderRadius:R.md,border:`1px solid ${C.b1}`,background:C.w,cursor:"pointer",fontSize:11,fontWeight:600,color:C.t2,fontFamily:FONT,display:"flex",alignItems:"center",gap:4}}>{Ic.edit(C.t3,12)} Editar</button>}
+                    {canEdit&&<button onClick={()=>setConfirmDelete({type:"exp",id:e.id,label:EXP_TYPE_LABELS[e.type]})} style={{padding:"4px 10px",borderRadius:R.md,border:`1px solid ${C.err}40`,background:C.errPale,cursor:"pointer",fontSize:11,fontWeight:600,color:C.err,fontFamily:FONT,display:"flex",alignItems:"center",gap:4}}>{Ic.ban(C.err,12)} Eliminar</button>}
+                  </div>
+                  {/* Legacy receipt URL */}
+                  {e.receiptUrl&&!expDocs.length&&<div style={{display:"flex",alignItems:"center",gap:10,padding:8,background:C.w,border:`1px solid ${C.b2}`,borderRadius:R.md,marginBottom:6}}>
+                    <button onClick={()=>setViewFile({url:e.receiptUrl,name:e.receiptName||"Comprobante",type:"document"})} style={{display:"flex",alignItems:"center",gap:10,flex:1,background:"none",border:"none",cursor:"pointer",fontFamily:FONT,textAlign:"left",padding:0}}>
+                      <div style={{width:48,height:48,borderRadius:R.sm,background:C.priPale,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{Ic.doc(C.pri,20)}</div>
+                      <div><div style={{fontSize:12,fontWeight:600,color:C.t1}}>{e.receiptName||"Comprobante"}</div><div style={{fontSize:10.5,color:C.t3}}>{fmtDate(e.date)}</div></div>
+                    </button>
+                    <button onClick={()=>setViewFile({url:e.receiptUrl,name:e.receiptName||"Comprobante",type:"document"})} style={{padding:6,borderRadius:R.sm,border:`1px solid ${C.b1}`,background:C.bg,cursor:"pointer",display:"flex"}}>{Ic.eye(C.t2,14)}</button>
+                  </div>}
+                  {/* Linked TruckDocuments */}
+                  {expDocs.length>0&&<div style={{display:"flex",flexDirection:"column",gap:6}}>
+                    <div style={{fontSize:11,fontWeight:700,color:C.t2,textTransform:"uppercase",letterSpacing:0.5}}>Archivos ({expDocs.length})</div>
+                    {expDocs.map(d=>{
+                      const isImg = d.mimeType?.startsWith("image")||d.fileUrl?.match(/\.(jpg|jpeg|png|webp|gif)$/i);
+                      return <div key={d.id} style={{display:"flex",alignItems:"center",gap:10,padding:8,background:C.w,border:`1px solid ${C.b2}`,borderRadius:R.md}}>
+                        <button onClick={()=>openFile(d)} style={{display:"flex",alignItems:"center",gap:10,flex:1,minWidth:0,background:"none",border:"none",cursor:"pointer",fontFamily:FONT,textAlign:"left",padding:0}}>
+                          {isImg?<img src={d.fileUrl} alt="" style={{width:48,height:48,borderRadius:R.sm,objectFit:"cover",flexShrink:0}}/>:<div style={{width:48,height:48,borderRadius:R.sm,background:C.priPale,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{Ic.doc(C.pri,20)}</div>}
+                          <div style={{flex:1,minWidth:0}}>
+                            <div style={{fontSize:12,fontWeight:600,color:C.t1,wordBreak:"break-all"}}>{d.fileName||"Archivo"}</div>
+                            <div style={{fontSize:10.5,color:C.t3}}>{DOC_TYPE_LABELS[d.type]||d.type} · {fmtDate(d.createdAt)}</div>
+                          </div>
+                        </button>
+                        <button onClick={()=>openFile(d)} style={{padding:6,borderRadius:R.sm,border:`1px solid ${C.b1}`,background:C.bg,cursor:"pointer",display:"flex"}}>{Ic.eye(C.t2,14)}</button>
+                        {d.ocrStatus==="completed"&&<span style={{fontSize:10,color:C.pri}}>✨</span>}
+                      </div>;
+                    })}
+                  </div>}
+                  {!expDocs.length&&!e.receiptUrl&&<div style={{fontSize:12,color:C.t3,fontStyle:"italic"}}>Sin archivos adjuntos</div>}
+                </div>}
+              </div>;
+            })
           }
         </>}
 
