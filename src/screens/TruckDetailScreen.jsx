@@ -436,9 +436,9 @@ export default function TruckDetailScreen({ truckId, user, onBack, onNavFreight 
     if (["incomes","expenses","movements","docs"].includes(tab) && !allDocs) apiGetTruckDocuments(truckId).then(d=>setAllDocs(d||[])).catch(()=>setAllDocs([]));
   }, [tab, truck]);
 
-  // Poll for OCR processing completion
+  // Poll for OCR processing completion (any tab that shows docs)
   useEffect(() => {
-    if (tab !== "docs" || !allDocs) return;
+    if (!allDocs) return;
     const hasProcessing = allDocs.some(d => d.ocrStatus === "pending" || d.ocrStatus === "processing");
     if (!hasProcessing) return;
     const timer = setInterval(() => {
@@ -514,8 +514,10 @@ export default function TruckDetailScreen({ truckId, user, onBack, onNavFreight 
     setOcrLoading(true);
     try {
       await apiProcessTruckDocOcr(truckId, file.id);
-      setDoneMsg("Procesando documento con IA...");
-      setAllDocs(null); // refresh to pick up ocrStatus change
+      setDoneMsg("Procesando con IA...");
+      // Reload docs immediately so ocrStatus=processing shows, then polling takes over
+      const freshDocs = await apiGetTruckDocuments(truckId).catch(() => []);
+      setAllDocs(freshDocs);
     } catch (e) { setError(e.message); }
     finally { setOcrLoading(false); }
   };
