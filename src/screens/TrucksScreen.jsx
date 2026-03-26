@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { C, Ic, R } from "../theme";
 import { Btn, Field, Loader, LoadingOverlay, EmptyState, LicensePlate } from "../components";
-import { apiGetTrucks, apiCreateTruck, apiDeactivateTruck, apiListDrivers, apiCreateDriver, apiDeactivateDriver, apiGetCompanyAccess, apiGetExpiringDocs } from "../api";
+import { apiGetTrucks, apiCreateTruck, apiDeactivateTruck, apiListDrivers, apiCreateDriver, apiDeactivateDriver, apiGetCompanyAccess, apiGetExpiringDocs, apiGetFleetSummary } from "../api";
 import { useCatalogStore } from "../store";
 
 export default function TrucksScreen({ onBack, embedded, user, onTruckClick }) {
@@ -22,6 +22,8 @@ export default function TrucksScreen({ onBack, embedded, user, onTruckClick }) {
 
   // Document expiry alerts per truck: { truckId: { expired: N, expiring: N } }
   const [docAlerts, setDocAlerts] = useState({});
+  // Fleet summary
+  const [fleetSummary, setFleetSummary] = useState(null);
 
   // Cross-company: plant selects whose fleet to view
   const [linkedCompanies, setLinkedCompanies] = useState([]);
@@ -41,10 +43,12 @@ export default function TrucksScreen({ onBack, embedded, user, onTruckClick }) {
 
   const loadTrucks = useCallback(async () => {
     try {
-      const [t, expDocs] = await Promise.all([
+      const [t, expDocs, fs] = await Promise.all([
         apiGetTrucks(selectedCompanyId || user?.activeCompanyId || undefined),
         apiGetExpiringDocs(30).catch(() => []),
+        apiGetFleetSummary().catch(() => null),
       ]);
+      setFleetSummary(fs);
       setTrucks(t || []);
       // Build alerts map: truckId → { expired, expiring }
       const alerts = {};
@@ -180,12 +184,39 @@ export default function TrucksScreen({ onBack, embedded, user, onTruckClick }) {
             <Btn full v="acc" disabled={saving} onClick={handleCreateTruck}>{saving ? "Guardando..." : "Registrar camión"}</Btn>
           </div>
         )}
+        {/* Fleet summary card */}
+        {!loading && trucks.length > 0 && fleetSummary && (
+          <div style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: R.lg, padding: 14, marginBottom: 14, boxShadow: C.sh }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: C.t2, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>Resumen del mes</div>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <div style={{ flex: 1, minWidth: 70, textAlign: "center", padding: "6px 4px", background: C.bg, borderRadius: R.md }}>
+                <div style={{ fontSize: 15, fontWeight: 800, color: C.ok }}>${Number(fleetSummary.totalIncome || 0).toLocaleString("es-UY")}</div>
+                <div style={{ fontSize: 10, color: C.t3 }}>Ingresos</div>
+              </div>
+              <div style={{ flex: 1, minWidth: 70, textAlign: "center", padding: "6px 4px", background: C.bg, borderRadius: R.md }}>
+                <div style={{ fontSize: 15, fontWeight: 800, color: C.err }}>${Number(fleetSummary.totalExpense || 0).toLocaleString("es-UY")}</div>
+                <div style={{ fontSize: 10, color: C.t3 }}>Gastos</div>
+              </div>
+              <div style={{ flex: 1, minWidth: 70, textAlign: "center", padding: "6px 4px", background: C.bg, borderRadius: R.md }}>
+                <div style={{ fontSize: 15, fontWeight: 800, color: (fleetSummary.net || 0) >= 0 ? C.ok : C.err }}>${Number(fleetSummary.net || 0).toLocaleString("es-UY")}</div>
+                <div style={{ fontSize: 10, color: C.t3 }}>Resultado</div>
+              </div>
+              <div style={{ flex: 1, minWidth: 60, textAlign: "center", padding: "6px 4px", background: C.bg, borderRadius: R.md }}>
+                <div style={{ fontSize: 15, fontWeight: 800, color: C.t1 }}>{Number(fleetSummary.totalKm || 0).toLocaleString("es-UY")}</div>
+                <div style={{ fontSize: 10, color: C.t3 }}>Km</div>
+              </div>
+            </div>
+            {fleetSummary.bestTruck && <div style={{ fontSize: 11, color: C.pri, fontWeight: 600, marginTop: 8 }}>Mejor resultado: {fleetSummary.bestTruck.plate} (${Number(fleetSummary.bestTruck.net).toLocaleString("es-UY")})</div>}
+          </div>
+        )}
+
         {loading ? <Loader/> :
           trucks.length === 0 ? <EmptyState icon={Ic.truck(C.t3,28)} title="Sin vehículos registrados" subtitle={selectedCompanyId ? "Esta empresa aún no tiene camiones registrados" : "Registrá tu primer camión para recibir asignaciones de flete"} action={canEdit && <Btn sm onClick={()=>setShowForm(true)}>Registrar camión</Btn>}/> :
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {trucks.map(t => {
                 const ownerName = t.ownerCompanyId && companyNameMap[t.ownerCompanyId];
                 const alert = docAlerts[t.id];
+                const truckEco = fleetSummary?.trucks?.find(ft => ft.id === t.id);
                 return (
                   <div key={t.id} onClick={() => onTruckClick?.(t.id)} style={{ background: C.w, border: `1px solid ${C.b1}`, borderLeft: `3px solid ${alert?.expired ? C.err : alert?.expiring ? C.warn : C.acc}`, borderRadius: R.lg, padding: 14, boxShadow: C.sh, display: "flex", justifyContent: "space-between", alignItems: "center", cursor: onTruckClick ? "pointer" : "default" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -198,6 +229,12 @@ export default function TrucksScreen({ onBack, embedded, user, onTruckClick }) {
                           {alert?.expiring > 0 && !alert?.expired && <span style={{ fontSize: 10, fontWeight: 700, color: C.warn, background: C.warnPale, padding: "1px 6px", borderRadius: R.pill }}>{alert.expiring} por vencer</span>}
                         </div>
                         {t.model && <div style={{ fontSize: 12.1, color: C.t3, marginTop: 2 }}>{t.model}</div>}
+                        {truckEco && (truckEco.net !== 0 || truckEco.km > 0) && (
+                          <div style={{ display: "flex", gap: 8, marginTop: 3 }}>
+                            {truckEco.net !== 0 && <span style={{ fontSize: 10, fontWeight: 700, color: truckEco.net >= 0 ? C.ok : C.err }}>${Number(truckEco.net).toLocaleString("es-UY")}</span>}
+                            {truckEco.km > 0 && <span style={{ fontSize: 10, color: C.t3 }}>{Number(truckEco.km).toLocaleString("es-UY")} km</span>}
+                          </div>
+                        )}
                         {ownerName && !selectedCompanyId && <div style={{ fontSize: 10.5, color: C.info, fontWeight: 600, marginTop: 2 }}>{ownerName}</div>}
                       </div>
                     </div>

@@ -330,6 +330,7 @@ export async function apiDeleteTruckExpense(id, expId) { return api(`/trucks/${i
 export async function apiGetTruckExpenseSummary(id) { return api(`/trucks/${id}/expenses/summary`); }
 export async function apiGetTruckFreights(id, take = 20, skip = 0) { return api(`/trucks/${id}/freights?take=${take}&skip=${skip}`); }
 export async function apiGetFleetAlerts() { return api('/trucks/alerts'); }
+export async function apiGetFleetSummary() { return api('/trucks/fleet-summary'); }
 // Truck Incomes
 export async function apiGetTruckIncomes(id, from, to, status) { let q = []; if (from) q.push(`from=${from}`); if (to) q.push(`to=${to}`); if (status) q.push(`status=${status}`); return api(`/trucks/${id}/incomes${q.length ? '?' + q.join('&') : ''}`); }
 export async function apiAddTruckIncome(id, body) { return api(`/trucks/${id}/incomes`, { body }); }
