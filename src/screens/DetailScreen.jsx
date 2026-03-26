@@ -559,8 +559,11 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
           return { n: a.tripNumber, cfg: needsAuth ? { ...cfg, label: "Sin autorización" } : cfg };
         }) : null;
         const singleSub = [1,2,3,4].includes(curIdx) || isCanceled ? subLabels[freight.status] || subLabels[steps[curIdx]] : null;
+        const pendingLabel = freight.useOwnFleet && freight.needsPlantApproval && !freight.plantApprovedAt && (freight.activeAssignments||[]).some(a=>a.plate)
+          ? "Esperando confirmación"
+          : "Pendiente";
         const visualSteps = [
-          { label:"Pendiente", color:STATUS_COLORS.pending_assignment.ribbon, icon:(c,s)=>Ic.clk(c,s) },
+          { label:pendingLabel, color:STATUS_COLORS.pending_assignment.ribbon, icon:(c,s)=>Ic.clk(c,s) },
           { label:"En viaje", color:STATUS_COLORS.in_progress.ribbon, sub: !multiTruckSub ? singleSub : null, multiSub: multiTruckSub, icon:(c,s)=>Ic.truck(c,s) },
           { label: isCanceled ? "Cancelado" : "Finalizado", color: isCanceled ? STATUS_COLORS.canceled.ribbon : STATUS_COLORS.finished.ribbon, icon:(c,s)=> isCanceled ? Ic.cross(c,s) : Ic.chk(c,s) },
         ];
@@ -706,7 +709,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
                   {/* Single line: #N plate - empresa - chofer | pill | edit */}
                   <div style={{ display:"flex", alignItems:"center", gap:6 }}>
                     {isMultiTruck && <span style={{ fontSize:12, fontWeight:500, color:C.t2, marginRight:2 }}>#{a.tripNumber}</span>}
-                    {hasTruck ? <LicensePlate plate={a.plate} size="sm" /> : <span style={{ fontSize:14, fontWeight:500, color:C.t1 }}>Sin camión</span>}
+                    {hasTruck ? <LicensePlate plate={a.plate} size="sm" /> : <span style={{ fontSize:14, fontWeight:500, color:a.transporterName ? C.acc : C.t3 }}>{a.transporterName ? "Esperando camión" : "Sin camión"}</span>}
                     <span style={{ fontSize:12, color:C.t2 }}>- {a.transporterName || "Sin empresa"}</span>
                     <span style={{ fontSize:12, color:C.t2 }}>- {a.driverName || "Sin chofer"}</span>
                     <span style={{ flex:1 }} />
@@ -1142,7 +1145,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
                   {/* Single line: #N plate - empresa - chofer | pill */}
                   <div style={{ display:"flex", alignItems:"center", gap:6 }}>
                     {isMultiTruck && <span style={{ fontSize:13, fontWeight:500, color:C.t2 }}>#{a.tripNumber}</span>}
-                    {hasTruck ? <LicensePlate plate={a.plate} size="sm" /> : <span style={{ fontSize:15, fontWeight:500, color:C.t1 }}>Sin camión</span>}
+                    {hasTruck ? <LicensePlate plate={a.plate} size="sm" /> : <span style={{ fontSize:15, fontWeight:500, color:a.transporterName ? C.acc : C.t3 }}>{a.transporterName ? "Esperando camión" : "Sin camión"}</span>}
                     <span style={{ fontSize:13, color:C.t2 }}>- {a.transporterName || "Sin empresa"}</span>
                     <span style={{ fontSize:13, color:C.t2 }}>- {a.driverName || "Sin chofer"}</span>
                     <span style={{ flex:1 }} />
