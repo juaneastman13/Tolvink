@@ -6,6 +6,7 @@
 import { useState, useEffect, useCallback, lazy, Suspense } from "react";
 import { C, Ic, R, FONT, MONO } from "../theme";
 import { Btn, Field, Loader, EmptyState, LicensePlate, LoadingOverlay, StatusPill } from "../components";
+import { useIsDesktop } from "../hooks/useResponsive";
 import { FileViewer } from "../components/overlays";
 import {
   apiGetTruckDetail, apiAddTruckDocument, apiUpdateTruckDocument, apiDeleteTruckDocument,
@@ -56,7 +57,7 @@ function SecBody({ children }) {
 
 function Stat({ label, value, color=C.t1, sub }) {
   return (
-    <div style={{ flex:1, textAlign:"center", padding:"10px 6px", background:C.bg, borderRadius:R.md, minWidth:0 }}>
+    <div style={{ flex:"1 1 80px", textAlign:"center", padding:"10px 6px", background:C.bg, borderRadius:R.md, minWidth:80 }}>
       <div style={{ fontSize:17, fontWeight:800, color, lineHeight:1.2 }}>{value}</div>
       <div style={{ fontSize:10.5, color:C.t3, marginTop:2 }}>{label}</div>
       {sub && <div style={{ fontSize:10, color:C.t3 }}>{sub}</div>}
@@ -173,24 +174,24 @@ function MovForm({ onSave, onCancel, saving, initial, locations }) {
   return (<div style={{padding:16,background:C.bgCard,border:`1px solid ${C.b2}`,borderRadius:R.lg,marginBottom:12}}>
     <div style={{marginBottom:10}}><label style={lbl("s")}>Tipo</label><select value={type} onChange={e=>setType(e.target.value)} style={sel}>{Object.entries(MOV_TYPE_LABELS).map(([k,v])=><option key={k} value={k}>{v}</option>)}</select></div>
     <Field label="Descripción (opcional)" value={description} onChange={setDescription} placeholder="Detalle"/>
-    <div style={{display:"flex",gap:10,marginTop:10,marginBottom:10}}>
-      <div style={{flex:1}}>
+    <div style={{display:"flex",gap:10,marginTop:10,marginBottom:10,flexWrap:"wrap"}}>
+      <div style={{flex:"1 1 200px",minWidth:0}}>
         {locations?.length>0 && <div style={{marginBottom:4}}><label style={lbl("s")}>Origen (ubicación)</label><select value={originFieldId} onChange={e=>{pickLoc(e.target.value,setOriginFieldId,setOriginName);}} style={{...sel,marginBottom:4}}><option value="">Escribir manualmente</option>{locations.map(l=><option key={l.id} value={l.id}>{l.name}</option>)}</select></div>}
         <Field label={locations?.length?"O escribir" :"Origen"} value={originName} onChange={v=>{setOriginName(v);if(v)setOriginFieldId("");}} placeholder="Ciudad/lugar"/>
-        <button onClick={()=>setMapFor("origin")} style={{marginTop:4,background:"none",border:`1px solid ${C.b1}`,borderRadius:R.md,padding:"3px 8px",cursor:"pointer",fontSize:10,fontWeight:600,color:C.pri,fontFamily:FONT,display:"flex",alignItems:"center",gap:4}}>{Ic.pin(C.pri,12)} Mapa</button>
+        <button onClick={()=>setMapFor("origin")} style={{marginTop:4,background:"none",border:`1px solid ${C.b1}`,borderRadius:R.md,padding:"6px 10px",cursor:"pointer",fontSize:11,fontWeight:600,color:C.pri,fontFamily:FONT,display:"flex",alignItems:"center",gap:4,minHeight:36}}>{Ic.pin(C.pri,12)} Mapa</button>
         {originLat && <span style={{fontSize:10,color:C.t3}}>{Number(originLat).toFixed(4)}, {Number(originLng).toFixed(4)}</span>}
       </div>
-      <div style={{flex:1}}>
+      <div style={{flex:"1 1 200px",minWidth:0}}>
         {locations?.length>0 && <div style={{marginBottom:4}}><label style={lbl("s")}>Destino (ubicación)</label><select value={destFieldId} onChange={e=>{pickLoc(e.target.value,setDestFieldId,setDestName);}} style={{...sel,marginBottom:4}}><option value="">Escribir manualmente</option>{locations.map(l=><option key={l.id} value={l.id}>{l.name}</option>)}</select></div>}
         <Field label={locations?.length?"O escribir":"Destino"} value={destName} onChange={v=>{setDestName(v);if(v)setDestFieldId("");}} placeholder="Ciudad/lugar"/>
-        <button onClick={()=>setMapFor("dest")} style={{marginTop:4,background:"none",border:`1px solid ${C.b1}`,borderRadius:R.md,padding:"3px 8px",cursor:"pointer",fontSize:10,fontWeight:600,color:C.pri,fontFamily:FONT,display:"flex",alignItems:"center",gap:4}}>{Ic.pin(C.pri,12)} Mapa</button>
+        <button onClick={()=>setMapFor("dest")} style={{marginTop:4,background:"none",border:`1px solid ${C.b1}`,borderRadius:R.md,padding:"6px 10px",cursor:"pointer",fontSize:11,fontWeight:600,color:C.pri,fontFamily:FONT,display:"flex",alignItems:"center",gap:4,minHeight:36}}>{Ic.pin(C.pri,12)} Mapa</button>
         {destLat && <span style={{fontSize:10,color:C.t3}}>{Number(destLat).toFixed(4)}, {Number(destLng).toFixed(4)}</span>}
       </div>
     </div>
     {mapFor && <div style={{borderRadius:R.lg,overflow:"hidden",border:`1.5px solid ${C.pri}`,height:280,marginBottom:10}}><Suspense fallback={<div style={{height:"100%",display:"flex",alignItems:"center",justifyContent:"center",background:C.bgCard,color:C.t3,fontSize:13}}>Cargando mapa...</div>}><LocPickerFullscreen value={null} onChange={()=>{}} label={mapFor==="origin"?"Seleccionar origen":"Seleccionar destino"} onClose={()=>setMapFor(null)} confirmLabel="Confirmar" onConfirm={handleMapPick}/></Suspense></div>}
-    <div style={{display:"flex",gap:10,marginBottom:10}}><div style={{flex:1}}><label style={lbl("s")}>Salida</label><input type="datetime-local" value={departureAt} onChange={e=>setDepartureAt(e.target.value)} style={{...sel}}/></div><div style={{flex:1}}><label style={lbl("s")}>Llegada</label><input type="datetime-local" value={arrivalAt} onChange={e=>setArrivalAt(e.target.value)} style={{...sel}}/></div></div>
-    <div style={{display:"flex",gap:10,marginBottom:10}}><div style={{flex:1}}><Field label="Km" value={kmDriven} onChange={setKmDriven} type="number" placeholder="0"/></div><div style={{flex:1}}><Field label="Litros" value={fuelLiters} onChange={setFuelLiters} type="number" placeholder="0"/></div></div>
-    <div style={{display:"flex",gap:10,marginBottom:10}}><div style={{flex:1}}><Field label="Costo combustible" value={fuelCost} onChange={setFuelCost} type="number" placeholder="0"/></div><div style={{flex:1}}><Field label="Peajes" value={tollCost} onChange={setTollCost} type="number" placeholder="0"/></div></div>
+    <div style={{display:"flex",gap:10,marginBottom:10,flexWrap:"wrap"}}><div style={{flex:"1 1 140px"}}><label style={lbl("s")}>Salida</label><input type="datetime-local" value={departureAt} onChange={e=>setDepartureAt(e.target.value)} style={{...sel,minHeight:44}}/></div><div style={{flex:"1 1 140px"}}><label style={lbl("s")}>Llegada</label><input type="datetime-local" value={arrivalAt} onChange={e=>setArrivalAt(e.target.value)} style={{...sel,minHeight:44}}/></div></div>
+    <div style={{display:"flex",gap:10,marginBottom:10,flexWrap:"wrap"}}><div style={{flex:"1 1 120px"}}><Field label="Km" value={kmDriven} onChange={setKmDriven} type="number" placeholder="0" inputMode="decimal"/></div><div style={{flex:"1 1 120px"}}><Field label="Litros" value={fuelLiters} onChange={setFuelLiters} type="number" placeholder="0" inputMode="decimal"/></div></div>
+    <div style={{display:"flex",gap:10,marginBottom:10,flexWrap:"wrap"}}><div style={{flex:"1 1 120px"}}><Field label="Costo combustible" value={fuelCost} onChange={setFuelCost} type="number" placeholder="0" inputMode="decimal"/></div><div style={{flex:"1 1 120px"}}><Field label="Peajes" value={tollCost} onChange={setTollCost} type="number" placeholder="0" inputMode="decimal"/></div></div>
     <Field label="Notas (opcional)" value={notes} onChange={setNotes} placeholder="Observaciones"/>
     <div style={{display:"flex",gap:8,marginTop:12}}><Btn full disabled={saving||!type} onClick={handleSubmit}>{initial?"Guardar":"Registrar movimiento"}</Btn><Btn v="muted" onClick={onCancel}>Cancelar</Btn></div>
   </div>);
@@ -209,19 +210,19 @@ function TripDataForm({ freight, onSave, onCancel, saving }) {
   const kmTotal = (parseFloat(kmLoaded||"0")+parseFloat(kmEmpty||"0"))||"";
   return (<div style={{padding:14,background:C.bgCard,border:`1px solid ${C.b2}`,borderRadius:R.lg,marginBottom:10}}>
     <div style={{fontSize:12,fontWeight:700,color:C.t2,marginBottom:8}}>Datos de viaje — {freight.code}</div>
-    <div style={{display:"flex",gap:8,marginBottom:8}}>
-      <div style={{flex:1}}><Field label="Km con carga" value={kmLoaded} onChange={setKmLoaded} type="number" placeholder="0"/></div>
-      <div style={{flex:1}}><Field label="Km vacío" value={kmEmpty} onChange={setKmEmpty} type="number" placeholder="0"/></div>
-      <div style={{flex:1}}><div style={lbl("s")}>Km total</div><div style={{padding:"8px 10px",borderRadius:R.md,background:C.bg,fontSize:13,color:C.t1,fontWeight:600}}>{kmTotal||"—"}</div></div>
+    <div style={{display:"flex",gap:8,marginBottom:8,flexWrap:"wrap"}}>
+      <div style={{flex:"1 1 100px",minWidth:80}}><Field label="Km con carga" value={kmLoaded} onChange={setKmLoaded} type="number" placeholder="0" inputMode="decimal"/></div>
+      <div style={{flex:"1 1 100px",minWidth:80}}><Field label="Km vacío" value={kmEmpty} onChange={setKmEmpty} type="number" placeholder="0" inputMode="decimal"/></div>
+      <div style={{flex:"1 1 100px",minWidth:80}}><div style={lbl("s")}>Km total</div><div style={{padding:"8px 10px",borderRadius:R.md,background:C.bg,fontSize:13,color:C.t1,fontWeight:600}}>{kmTotal||"—"}</div></div>
     </div>
-    <div style={{display:"flex",gap:8,marginBottom:8}}>
-      <div style={{flex:1}}><Field label="Litros" value={fuelLiters} onChange={setFuelLiters} type="number" placeholder="0"/></div>
-      <div style={{flex:1}}><Field label="$/litro" value={fuelCostPerLiter} onChange={setFuelCostPerLiter} type="number" placeholder="0"/></div>
-      <div style={{flex:1}}><Field label="Peajes" value={tollCost} onChange={setTollCost} type="number" placeholder="0"/></div>
+    <div style={{display:"flex",gap:8,marginBottom:8,flexWrap:"wrap"}}>
+      <div style={{flex:"1 1 100px",minWidth:80}}><Field label="Litros" value={fuelLiters} onChange={setFuelLiters} type="number" placeholder="0" inputMode="decimal"/></div>
+      <div style={{flex:"1 1 100px",minWidth:80}}><Field label="$/litro" value={fuelCostPerLiter} onChange={setFuelCostPerLiter} type="number" placeholder="0" inputMode="decimal"/></div>
+      <div style={{flex:"1 1 100px",minWidth:80}}><Field label="Peajes" value={tollCost} onChange={setTollCost} type="number" placeholder="0" inputMode="decimal"/></div>
     </div>
-    <div style={{display:"flex",gap:8,marginBottom:8}}>
-      <div style={{flex:1}}><Field label="Odómetro inicio" value={odometerStart} onChange={setOdometerStart} type="number" placeholder="0"/></div>
-      <div style={{flex:1}}><Field label="Odómetro fin" value={odometerEnd} onChange={setOdometerEnd} type="number" placeholder="0"/></div>
+    <div style={{display:"flex",gap:8,marginBottom:8,flexWrap:"wrap"}}>
+      <div style={{flex:"1 1 140px",minWidth:120}}><Field label="Odómetro inicio" value={odometerStart} onChange={setOdometerStart} type="number" placeholder="0" inputMode="numeric"/></div>
+      <div style={{flex:"1 1 140px",minWidth:120}}><Field label="Odómetro fin" value={odometerEnd} onChange={setOdometerEnd} type="number" placeholder="0" inputMode="numeric"/></div>
     </div>
     <div style={{display:"flex",gap:8}}>
       <Btn full disabled={saving} onClick={()=>onSave({kmLoaded:parseFloat(kmLoaded)||null,kmEmpty:parseFloat(kmEmpty)||null,kmTotal:parseFloat(kmTotal)||null,fuelLiters:parseFloat(fuelLiters)||null,fuelCostPerLiter:parseFloat(fuelCostPerLiter)||null,tollCost:parseFloat(tollCost)||null,odometerStart:parseInt(odometerStart)||null,odometerEnd:parseInt(odometerEnd)||null})}>{saving?"Guardando...":"Guardar datos"}</Btn>
@@ -251,6 +252,8 @@ export default function TruckDetailScreen({ truckId, user, onBack, onNavFreight 
   const [tripDataFor, setTripDataFor] = useState(null); // freight being edited for trip data
   const [showMapFor, setShowMapFor] = useState(null); // "origin" or "dest" for map picker in movements
   const [expandedItem, setExpandedItem] = useState(null); // id of expanded income/expense
+
+  const isDesktop = useIsDesktop();
 
   // Lazy-loaded data
   const [ecoSummary, setEcoSummary] = useState(null);
@@ -407,17 +410,21 @@ export default function TruckDetailScreen({ truckId, user, onBack, onNavFreight 
         <button onClick={onBack} style={{background:"none",border:"none",cursor:"pointer",fontFamily:FONT,fontSize:14,fontWeight:600,color:C.pri,marginBottom:8,padding:0,display:"flex",alignItems:"center",gap:4}}>{Ic.chev(C.pri,18)} Flota</button>
 
         {/* Header compact */}
-        <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
-          {Ic.truck(C.acc,22)}
-          <LicensePlate plate={truck.plate} size="lg"/>
-          {truck.model && <span style={{fontSize:12,color:C.t3}}>{truck.model}</span>}
-          {truck.currentOdometer && <span style={{fontSize:10,color:C.t3,fontFamily:MONO}}>{Number(truck.currentOdometer).toLocaleString("es-UY")} km</span>}
-          {docSum.expired>0 && <span style={{background:C.errPale,color:C.err,fontSize:10,fontWeight:700,padding:"2px 6px",borderRadius:R.pill}}>{docSum.expired} venc.</span>}
+        <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10,flexWrap:"wrap"}}>
+          <LicensePlate plate={truck.plate} size={isDesktop?"lg":"md"}/>
+          <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
+            {truck.model && <span style={{fontSize:12,color:C.t3}}>{truck.model}</span>}
+            {truck.currentOdometer && <span style={{fontSize:10,color:C.t3,fontFamily:MONO}}>{Number(truck.currentOdometer).toLocaleString("es-UY")} km</span>}
+            {docSum.expired>0 && <span style={{background:C.errPale,color:C.err,fontSize:10,fontWeight:700,padding:"2px 6px",borderRadius:R.pill}}>{docSum.expired} venc.</span>}
+          </div>
         </div>
 
-        {/* Tab bar */}
-        <div style={{display:"flex",gap:0,borderRadius:R.md,overflow:"hidden",border:`1.5px solid ${C.b1}`,marginBottom:0}}>
-          {TABS.map(t=><button key={t.key} onClick={()=>{setTab(t.key);setShowForm(false);setEditItem(null);}} style={{flex:1,padding:"8px 0",fontFamily:FONT,fontSize:11.5,fontWeight:tab===t.key?700:500,background:tab===t.key?C.pri:C.w,color:tab===t.key?C.tOn:C.t2,border:"none",cursor:"pointer",borderLeft:t.key!=="summary"?`1px solid ${C.b1}`:"none"}}>{t.label}</button>)}
+        {/* Tab bar — grid 3x2 on mobile, flex row on desktop */}
+        <div style={isDesktop
+          ? {display:"flex",gap:0,borderRadius:R.md,overflow:"hidden",border:`1.5px solid ${C.b1}`,marginBottom:0}
+          : {display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:1,background:C.b1,borderRadius:R.md,overflow:"hidden",marginBottom:0}
+        }>
+          {TABS.map(t=><button key={t.key} onClick={()=>{setTab(t.key);setShowForm(false);setEditItem(null);}} style={{padding:isDesktop?"8px 0":"10px 4px",fontFamily:FONT,fontSize:isDesktop?11.5:12,fontWeight:tab===t.key?700:500,background:tab===t.key?C.pri:C.w,color:tab===t.key?C.tOn:C.t2,border:"none",cursor:"pointer",textAlign:"center",minHeight:isDesktop?undefined:44}}>{t.label}</button>)}
         </div>
       </div>
 
@@ -426,20 +433,20 @@ export default function TruckDetailScreen({ truckId, user, onBack, onNavFreight 
         {/* ==================== SUMMARY TAB ==================== */}
         {tab === "summary" && (ecoSummary === null ? <Loader/> : <>
           {/* Result row */}
-          <div style={{display:"flex",gap:8,marginBottom:12}}>
+          <div style={{display:"flex",gap:8,marginBottom:12,flexWrap:"wrap"}}>
             <Stat label="Ingresos" value={fmtMoney(eco.income?.paid||0)} color={C.ok}/>
             <Stat label="Gastos" value={fmtMoney(eco.expenses?.total||0)} color={C.err}/>
             <Stat label="Resultado" value={fmtMoney(eco.net||0)} color={(eco.net||0)>=0?C.ok:C.err}/>
           </div>
           {/* Ops row */}
-          <div style={{display:"flex",gap:8,marginBottom:12}}>
+          <div style={{display:"flex",gap:8,marginBottom:12,flexWrap:"wrap"}}>
             <Stat label="Km totales" value={fmtKm(eco.km?.total||0)}/>
             <Stat label="Viajes" value={eco.trips?.total||0}/>
             <Stat label="Horas" value={`${eco.hours||0}h`}/>
             <Stat label="km/litro" value={eco.fuel?.kmPerLiter||"—"}/>
           </div>
           {/* Efficiency */}
-          <div style={{display:"flex",gap:8,marginBottom:12}}>
+          <div style={{display:"flex",gap:8,marginBottom:12,flexWrap:"wrap"}}>
             <Stat label="Costo/km" value={eco.costPerKm?fmtMoney(eco.costPerKm):"—"}/>
             <Stat label="Ingreso/km" value={eco.incomePerKm?fmtMoney(eco.incomePerKm):"—"}/>
             <Stat label="Km productivos" value={eco.km?.productivePercent!=null?`${eco.km.productivePercent}%`:"—"}/>
