@@ -406,6 +406,7 @@ export default function TruckDetailScreen({ truckId, user, onBack, onNavFreight 
   const [tripDataFor, setTripDataFor] = useState(null); // freight being edited for trip data
   const [showMapFor, setShowMapFor] = useState(null); // "origin" or "dest" for map picker in movements
   const [expandedItem, setExpandedItem] = useState(null); // id of expanded income/expense
+  const [searchQ, setSearchQ] = useState(""); // search query for filtering lists
 
   const isDesktop = useIsDesktop();
   const storePath = `truck-docs/${user?.activeCompanyId||"shared"}/${truckId}`;
@@ -567,6 +568,8 @@ export default function TruckDetailScreen({ truckId, user, onBack, onNavFreight 
   const docs = truck?.documents || [];
   const docSum = truck?.docsSummary || {};
   const eco = ecoSummary || {};
+  const sq = searchQ.toLowerCase().trim();
+  const matchQ = (...f) => !sq || f.some(v => v && String(v).toLowerCase().includes(sq));
   const TABS = [
     { key:"summary", label:"Resumen" },
     { key:"freights", label:"Fletes" },
@@ -597,16 +600,25 @@ export default function TruckDetailScreen({ truckId, user, onBack, onNavFreight 
         {/* Tab bar — grid 3x2 on mobile, flex row on desktop */}
         {isDesktop ? (
           <div style={{display:"flex",gap:0,borderRadius:R.md,overflow:"hidden",border:`1.5px solid ${C.b1}`,marginBottom:0}}>
-            {TABS.map((t,i)=><button key={t.key} onClick={()=>{setTab(t.key);setShowForm(false);setEditItem(null);}} style={{flex:1,padding:"8px 0",fontFamily:FONT,fontSize:11.5,fontWeight:tab===t.key?700:500,background:tab===t.key?C.pri:C.w,color:tab===t.key?C.tOn:C.t2,border:"none",cursor:"pointer",textAlign:"center",borderLeft:i>0?`1px solid ${C.b1}`:"none"}}>{t.label}</button>)}
+            {TABS.map((t,i)=><button key={t.key} onClick={()=>{setTab(t.key);setShowForm(false);setEditItem(null);setSearchQ("");}} style={{flex:1,padding:"8px 0",fontFamily:FONT,fontSize:11.5,fontWeight:tab===t.key?700:500,background:tab===t.key?C.pri:C.w,color:tab===t.key?C.tOn:C.t2,border:"none",cursor:"pointer",textAlign:"center",borderLeft:i>0?`1px solid ${C.b1}`:"none"}}>{t.label}</button>)}
           </div>
         ) : (
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:1,background:C.b1,borderRadius:R.md,overflow:"hidden",marginBottom:0}}>
-            {TABS.map(t=><button key={t.key} onClick={()=>{setTab(t.key);setShowForm(false);setEditItem(null);}} style={{padding:"10px 4px",fontFamily:FONT,fontSize:12,fontWeight:tab===t.key?700:500,background:tab===t.key?C.pri:C.w,color:tab===t.key?C.tOn:C.t2,border:"none",cursor:"pointer",textAlign:"center",minHeight:44}}>{t.label}</button>)}
+            {TABS.map(t=><button key={t.key} onClick={()=>{setTab(t.key);setShowForm(false);setEditItem(null);setSearchQ("");}} style={{padding:"10px 4px",fontFamily:FONT,fontSize:12,fontWeight:tab===t.key?700:500,background:tab===t.key?C.pri:C.w,color:tab===t.key?C.tOn:C.t2,border:"none",cursor:"pointer",textAlign:"center",minHeight:44}}>{t.label}</button>)}
           </div>
         )}
       </div>
 
       <div style={{ padding:"14px 18px 24px" }}>
+
+        {/* Search bar — shown on tabs with lists */}
+        {["incomes","expenses","movements","docs"].includes(tab) && (
+          <div style={{ marginBottom:10, position:"relative" }}>
+            <input value={searchQ} onChange={e=>setSearchQ(e.target.value)} placeholder="Buscar..." style={{ width:"100%", padding:"8px 12px 8px 34px", borderRadius:R.md, border:`1.5px solid ${searchQ?C.pri:C.b1}`, fontSize:13, fontFamily:FONT, background:C.w, color:C.t1, outline:"none" }} onFocus={e=>e.target.style.borderColor=C.pri} onBlur={e=>{if(!searchQ)e.target.style.borderColor=C.b1;}} />
+            <span style={{ position:"absolute", left:10, top:"50%", transform:"translateY(-50%)", opacity:0.5 }}>{Ic.srch(C.t3,15)}</span>
+            {searchQ && <button onClick={()=>setSearchQ("")} style={{ position:"absolute", right:8, top:"50%", transform:"translateY(-50%)", background:"none", border:"none", cursor:"pointer", padding:2 }}>{Ic.cross(C.t3,14)}</button>}
+          </div>
+        )}
 
         {/* ==================== SUMMARY TAB ==================== */}
         {tab === "summary" && (ecoSummary === null ? <Loader/> : <>
@@ -682,7 +694,7 @@ export default function TruckDetailScreen({ truckId, user, onBack, onNavFreight 
           {showForm && <IncForm onSave={handleAddInc} onCancel={()=>setShowForm(false)} saving={saving} freights={freightHistory} mobile={!isDesktop} storagePath={storePath}/>}
           {editItem && tab==="incomes" && <IncForm initial={editItem} onSave={handleUpdateInc} onCancel={()=>setEditItem(null)} saving={saving} freights={freightHistory} mobile={!isDesktop} storagePath={storePath}/>}
           {incomes===null?<Loader/>:incomes.length===0&&!showForm?<EmptyState icon={Ic.doc(C.t3,20)} title="Sin ingresos" subtitle="Registrá el primer ingreso del camión"/>:
-            incomes.map(inc=>{
+            incomes.filter(inc=>matchQ(inc.concept,inc.invoiceNumber,inc.freight?.code,fmtDate(inc.date),fmtMoney(inc.amount),inc.status)).map(inc=>{
               const st = INC_STATUS[inc.status]||INC_STATUS.PENDING;
               const isExp = expandedItem === `inc-${inc.id}`;
               const incDocs = (allDocs||[]).filter(d=>d.incomeId===inc.id);
@@ -720,7 +732,7 @@ export default function TruckDetailScreen({ truckId, user, onBack, onNavFreight 
           {showForm && <ExpForm onSave={handleAddExp} onCancel={()=>setShowForm(false)} saving={saving} activeFreights={truck.activeFreights} mobile={!isDesktop} storagePath={storePath}/>}
           {editItem && tab==="expenses" && <ExpForm initial={editItem} onSave={handleUpdateExp} onCancel={()=>setEditItem(null)} saving={saving} activeFreights={truck.activeFreights} mobile={!isDesktop} storagePath={storePath}/>}
           {expenses===null?<Loader/>:expenses.length===0&&!showForm?<EmptyState icon={Ic.doc(C.t3,20)} title="Sin gastos" subtitle="Registrá el primer gasto del camión"/>:
-            expenses.map(e=>{
+            expenses.filter(e=>matchQ(EXP_TYPE_LABELS[e.type],e.description,e.freight?.code,fmtDate(e.date),fmtMoney(e.amount))).map(e=>{
               const isExp = expandedItem === `exp-${e.id}`;
               const expDocs = (allDocs||[]).filter(d=>d.expenseId===e.id);
               return <div key={e.id} style={{borderBottom:`1px solid ${C.b2}`,background:isExp?C.bg:"transparent",borderRadius:isExp?R.md:0}}>
@@ -759,7 +771,7 @@ export default function TruckDetailScreen({ truckId, user, onBack, onNavFreight 
           {showForm && <MovForm onSave={handleAddMov} onCancel={()=>setShowForm(false)} saving={saving} locations={locations} mobile={!isDesktop}/>}
           {editItem && tab==="movements" && <MovForm initial={editItem} onSave={handleUpdateMov} onCancel={()=>setEditItem(null)} saving={saving} locations={locations} mobile={!isDesktop}/>}
           {movements===null?<Loader/>:movements.length===0&&!showForm?<EmptyState icon={Ic.truck(C.t3,20)} title="Sin movimientos" subtitle="Registrá viajes que no son fletes de la plataforma"/>:
-            movements.map(m=>{
+            movements.filter(m=>matchQ(MOV_TYPE_LABELS[m.type],m.originName,m.destName,m.description,m.driver?.name,fmtDate(m.departureAt))).map(m=>{
               const isMExp = expandedItem === `mov-${m.id}`;
               const movDocs = (allDocs||[]).filter(d=>d.movementId===m.id);
               return <div key={m.id} style={{borderBottom:`1px solid ${C.b2}`,background:isMExp?C.bg:"transparent",borderRadius:isMExp?R.md:0}}>
@@ -813,7 +825,7 @@ export default function TruckDetailScreen({ truckId, user, onBack, onNavFreight 
           {showForm && <DocForm onSave={handleAddDoc} onCancel={()=>setShowForm(false)} saving={saving} linkOptions={linkOpts} storagePath={storePath}/>}
           {editItem && tab==="docs" && <DocForm initial={editItem} onSave={handleUpdateDoc} onCancel={()=>setEditItem(null)} saving={saving} linkOptions={linkOpts} storagePath={storePath}/>}
           {displayDocs.length===0&&!showForm?<EmptyState icon={Ic.doc(C.t3,24)} title="Sin documentos" subtitle="Cargá el primer documento del camión"/>:
-            displayDocs.map(d=>{
+            displayDocs.filter(d=>matchQ(d.fileName,d.name,DOC_TYPE_LABELS[d.type],fmtDate(d.createdAt))).map(d=>{
               const lb = LINK_BADGE[d.linkedType||"general"]||LINK_BADGE.general;
               const linkLabel = d.linkedType==="expense"&&d.expense?`${EXP_TYPE_LABELS[d.expense.type]||""} ${fmtDate(d.expense.date)}`:d.linkedType==="income"&&d.income?d.income.concept:d.linkedType==="freight"&&d.freight?d.freight.code:d.linkedType==="movement"&&d.movement?`${MOV_TYPE_LABELS[d.movement.type]||""} ${fmtDate(d.movement.departureAt)}`:"";
               return <div key={d.id} style={{marginBottom:6}}>
