@@ -338,6 +338,22 @@ export default function TruckDetailScreen({ truckId, user, onBack, onNavFreight 
     finally { setSaving(false); }
   };
 
+  // Upload file and link to income/expense/movement
+  const handleInlineUpload = async (file, linkField, linkId) => {
+    if (!file) return;
+    setSaving(true);
+    try {
+      const fileUrl = await uploadPhoto(file, "truck-docs", "doc");
+      await apiAddTruckDocument(truckId, {
+        type: "OTHER", fileUrl, fileName: file.name, mimeType: file.type,
+        [linkField]: linkId,
+      });
+      setDoneMsg("Archivo subido");
+      setAllDocs(null); // refresh docs
+    } catch (e) { setError(e.message); }
+    finally { setSaving(false); }
+  };
+
   const handleOcr = async (file) => {
     if (!file?.id) return;
     setOcrLoading(true);
@@ -496,8 +512,9 @@ export default function TruckDetailScreen({ truckId, user, onBack, onNavFreight 
                   <span style={{fontSize:14,color:C.t3,transition:"transform 0.2s",transform:isExp?"rotate(180deg)":"rotate(0deg)"}}>▾</span>
                 </div>
                 {isExp && <div style={{padding:"0 12px 12px"}}>
-                  <div style={{display:"flex",gap:6,marginBottom:8}}>
+                  <div style={{display:"flex",gap:6,marginBottom:8,flexWrap:"wrap"}}>
                     {canEdit&&<button onClick={()=>setEditItem(inc)} style={{padding:"4px 10px",borderRadius:R.md,border:`1px solid ${C.b1}`,background:C.w,cursor:"pointer",fontSize:11,fontWeight:600,color:C.t2,fontFamily:FONT,display:"flex",alignItems:"center",gap:4}}>{Ic.edit(C.t3,12)} Editar</button>}
+                    {canEdit&&<label style={{padding:"4px 10px",borderRadius:R.md,border:`1px solid ${C.pri}40`,background:C.priPale,cursor:"pointer",fontSize:11,fontWeight:600,color:C.pri,fontFamily:FONT,display:"flex",alignItems:"center",gap:4}}>{Ic.clip(C.pri,12)} Adjuntar<input type="file" accept="image/*,.pdf" style={{display:"none"}} onChange={e=>{if(e.target.files?.[0])handleInlineUpload(e.target.files[0],"incomeId",inc.id);e.target.value="";}}/></label>}
                     {canEdit&&<button onClick={()=>setConfirmDelete({type:"inc",id:inc.id,label:inc.concept})} style={{padding:"4px 10px",borderRadius:R.md,border:`1px solid ${C.err}40`,background:C.errPale,cursor:"pointer",fontSize:11,fontWeight:600,color:C.err,fontFamily:FONT,display:"flex",alignItems:"center",gap:4}}>{Ic.ban(C.err,12)} Eliminar</button>}
                   </div>
                   {incDocs.length>0 && <div style={{display:"flex",flexDirection:"column",gap:6}}>
@@ -545,8 +562,9 @@ export default function TruckDetailScreen({ truckId, user, onBack, onNavFreight 
                   <span style={{fontSize:14,color:C.t3,transition:"transform 0.2s",transform:isExp?"rotate(180deg)":"rotate(0deg)"}}>▾</span>
                 </div>
                 {isExp && <div style={{padding:"0 12px 12px"}}>
-                  <div style={{display:"flex",gap:6,marginBottom:8}}>
+                  <div style={{display:"flex",gap:6,marginBottom:8,flexWrap:"wrap"}}>
                     {canEdit&&<button onClick={()=>setEditItem(e)} style={{padding:"4px 10px",borderRadius:R.md,border:`1px solid ${C.b1}`,background:C.w,cursor:"pointer",fontSize:11,fontWeight:600,color:C.t2,fontFamily:FONT,display:"flex",alignItems:"center",gap:4}}>{Ic.edit(C.t3,12)} Editar</button>}
+                    {canEdit&&<label style={{padding:"4px 10px",borderRadius:R.md,border:`1px solid ${C.pri}40`,background:C.priPale,cursor:"pointer",fontSize:11,fontWeight:600,color:C.pri,fontFamily:FONT,display:"flex",alignItems:"center",gap:4}}>{Ic.clip(C.pri,12)} Adjuntar<input type="file" accept="image/*,.pdf" style={{display:"none"}} onChange={e2=>{if(e2.target.files?.[0])handleInlineUpload(e2.target.files[0],"expenseId",e.id);e2.target.value="";}}/></label>}
                     {canEdit&&<button onClick={()=>setConfirmDelete({type:"exp",id:e.id,label:EXP_TYPE_LABELS[e.type]})} style={{padding:"4px 10px",borderRadius:R.md,border:`1px solid ${C.err}40`,background:C.errPale,cursor:"pointer",fontSize:11,fontWeight:600,color:C.err,fontFamily:FONT,display:"flex",alignItems:"center",gap:4}}>{Ic.ban(C.err,12)} Eliminar</button>}
                   </div>
                   {/* Legacy receipt URL */}
@@ -588,21 +606,49 @@ export default function TruckDetailScreen({ truckId, user, onBack, onNavFreight 
           {showForm && <MovForm onSave={handleAddMov} onCancel={()=>setShowForm(false)} saving={saving} locations={locations}/>}
           {editItem && tab==="movements" && <MovForm initial={editItem} onSave={handleUpdateMov} onCancel={()=>setEditItem(null)} saving={saving} locations={locations}/>}
           {movements===null?<Loader/>:movements.length===0&&!showForm?<EmptyState icon={Ic.truck(C.t3,20)} title="Sin movimientos" subtitle="Registrá viajes que no son fletes de la plataforma"/>:
-            movements.map(m=><div key={m.id} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderBottom:`1px solid ${C.b2}`}}>
-              <div style={{flex:1,minWidth:0}}>
-                <div style={{fontSize:13,fontWeight:600,color:C.t1}}>{MOV_TYPE_LABELS[m.type]||m.type}</div>
-                {(m.originName||m.destName)&&<div style={{fontSize:12,color:C.t2,marginTop:2}}>{m.originName||"?"}→{m.destName||"?"}</div>}
-                {m.description&&<div style={{fontSize:11.5,color:C.t3,marginTop:2}}>{m.description}</div>}
-                <div style={{fontSize:11,color:C.t3,marginTop:2}}>
-                  {fmtDate(m.departureAt)}
-                  {m.kmDriven?` · ${Number(m.kmDriven).toLocaleString("es-UY")} km`:""}
-                  {m.fuelLiters?` · ${m.fuelLiters}L`:""}
+            movements.map(m=>{
+              const isMExp = expandedItem === `mov-${m.id}`;
+              const movDocs = (allDocs||[]).filter(d=>d.movementId===m.id);
+              return <div key={m.id} style={{borderBottom:`1px solid ${C.b2}`,background:isMExp?C.bg:"transparent",borderRadius:isMExp?R.md:0}}>
+                <div onClick={()=>setExpandedItem(isMExp?null:`mov-${m.id}`)} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",cursor:"pointer"}}>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontSize:13,fontWeight:600,color:C.t1}}>{MOV_TYPE_LABELS[m.type]||m.type}</div>
+                    {(m.originName||m.destName)&&<div style={{fontSize:12,color:C.t2,marginTop:2}}>{m.originName||"?"}→{m.destName||"?"}</div>}
+                    <div style={{fontSize:11,color:C.t3,marginTop:2}}>
+                      {fmtDate(m.departureAt)}
+                      {m.kmDriven?` · ${Number(m.kmDriven).toLocaleString("es-UY")} km`:""}
+                      {movDocs.length>0?` · 📎 ${movDocs.length}`:""}
+                    </div>
+                  </div>
+                  {m.driver&&<span style={{fontSize:11,color:C.pri,fontWeight:600}}>{m.driver.name}</span>}
+                  <span style={{fontSize:14,color:C.t3,transition:"transform 0.2s",transform:isMExp?"rotate(180deg)":"rotate(0deg)"}}>▾</span>
                 </div>
-              </div>
-              {m.driver&&<span style={{fontSize:11,color:C.pri,fontWeight:600}}>{m.driver.name}</span>}
-              {canEdit&&<button onClick={()=>setEditItem(m)} style={{background:"none",border:"none",cursor:"pointer",padding:4}}>{Ic.edit(C.t3,14)}</button>}
-              {canEdit&&<button onClick={()=>setConfirmDelete({type:"mov",id:m.id,label:MOV_TYPE_LABELS[m.type]})} style={{background:"none",border:"none",cursor:"pointer",padding:4}}>{Ic.ban(C.err,14)}</button>}
-            </div>)
+                {isMExp && <div style={{padding:"0 12px 12px"}}>
+                  {m.description&&<div style={{fontSize:11.5,color:C.t3,marginBottom:6}}>{m.description}</div>}
+                  {m.fuelLiters&&<div style={{fontSize:11,color:C.t3,marginBottom:6}}>Combustible: {m.fuelLiters}L{m.fuelCost?` · ${fmtMoney(m.fuelCost)}`:""}{m.tollCost?` · Peajes: ${fmtMoney(m.tollCost)}`:""}</div>}
+                  <div style={{display:"flex",gap:6,marginBottom:8,flexWrap:"wrap"}}>
+                    {canEdit&&<button onClick={()=>setEditItem(m)} style={{padding:"4px 10px",borderRadius:R.md,border:`1px solid ${C.b1}`,background:C.w,cursor:"pointer",fontSize:11,fontWeight:600,color:C.t2,fontFamily:FONT,display:"flex",alignItems:"center",gap:4}}>{Ic.edit(C.t3,12)} Editar</button>}
+                    {canEdit&&<label style={{padding:"4px 10px",borderRadius:R.md,border:`1px solid ${C.pri}40`,background:C.priPale,cursor:"pointer",fontSize:11,fontWeight:600,color:C.pri,fontFamily:FONT,display:"flex",alignItems:"center",gap:4}}>{Ic.clip(C.pri,12)} Adjuntar<input type="file" accept="image/*,.pdf" style={{display:"none"}} onChange={e=>{if(e.target.files?.[0])handleInlineUpload(e.target.files[0],"movementId",m.id);e.target.value="";}}/></label>}
+                    {canEdit&&<button onClick={()=>setConfirmDelete({type:"mov",id:m.id,label:MOV_TYPE_LABELS[m.type]})} style={{padding:"4px 10px",borderRadius:R.md,border:`1px solid ${C.err}40`,background:C.errPale,cursor:"pointer",fontSize:11,fontWeight:600,color:C.err,fontFamily:FONT,display:"flex",alignItems:"center",gap:4}}>{Ic.ban(C.err,12)} Eliminar</button>}
+                  </div>
+                  {movDocs.length>0&&<div style={{display:"flex",flexDirection:"column",gap:6}}>
+                    {movDocs.map(d=>{
+                      const isImg = d.mimeType?.startsWith("image")||d.fileUrl?.match(/\.(jpg|jpeg|png|webp|gif)$/i);
+                      return <div key={d.id} style={{display:"flex",alignItems:"center",gap:10,padding:8,background:C.w,border:`1px solid ${C.b2}`,borderRadius:R.md}}>
+                        <button onClick={()=>openFile(d)} style={{display:"flex",alignItems:"center",gap:10,flex:1,minWidth:0,background:"none",border:"none",cursor:"pointer",fontFamily:FONT,textAlign:"left",padding:0}}>
+                          {isImg?<img src={d.fileUrl} alt="" style={{width:48,height:48,borderRadius:R.sm,objectFit:"cover",flexShrink:0}}/>:<div style={{width:48,height:48,borderRadius:R.sm,background:C.priPale,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{Ic.doc(C.pri,20)}</div>}
+                          <div style={{flex:1,minWidth:0}}>
+                            <div style={{fontSize:12,fontWeight:600,color:C.t1,wordBreak:"break-all"}}>{d.fileName||"Archivo"}</div>
+                            <div style={{fontSize:10.5,color:C.t3}}>{fmtDate(d.createdAt)}</div>
+                          </div>
+                        </button>
+                        <button onClick={()=>openFile(d)} style={{padding:6,borderRadius:R.sm,border:`1px solid ${C.b1}`,background:C.bg,cursor:"pointer",display:"flex"}}>{Ic.eye(C.t2,14)}</button>
+                      </div>;
+                    })}
+                  </div>}
+                </div>}
+              </div>;
+            })
           }
         </>}
 
