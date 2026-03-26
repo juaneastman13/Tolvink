@@ -533,6 +533,10 @@ export default function AiChat({ open, onClose, onNavigate, sseAiResponse, sseAi
               setThinking(false);
               streamMsgId.current = null;
               setMessages(data.messages.map(m => ({ ...m, ts: Date.now() })));
+              // Handle navigation from polling fallback
+              if (data.navigate && onNavigate) {
+                onNavigate(data.navigate);
+              }
             }
           }
         } catch {}
