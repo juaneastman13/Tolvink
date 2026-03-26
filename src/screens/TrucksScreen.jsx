@@ -4,7 +4,7 @@ import { Btn, Field, Loader, LoadingOverlay, EmptyState, LicensePlate } from "..
 import { apiGetTrucks, apiCreateTruck, apiDeactivateTruck, apiListDrivers, apiCreateDriver, apiDeactivateDriver, apiGetCompanyAccess } from "../api";
 import { useCatalogStore } from "../store";
 
-export default function TrucksScreen({ onBack, embedded, user }) {
+export default function TrucksScreen({ onBack, embedded, user, onTruckClick }) {
   const canEdit = !user || user.role !== "chofer";
   const isManager = ["admin","gerente","platform_admin"].includes(user?.role);
   const [tab, setTab] = useState("trucks"); // "trucks" | "drivers"
@@ -169,7 +169,7 @@ export default function TrucksScreen({ onBack, embedded, user }) {
               {trucks.map(t => {
                 const ownerName = t.ownerCompanyId && companyNameMap[t.ownerCompanyId];
                 return (
-                  <div key={t.id} style={{ background: C.w, border: `1px solid ${C.b1}`, borderLeft: `3px solid ${C.acc}`, borderRadius: R.lg, padding: 14, boxShadow: C.sh, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div key={t.id} onClick={() => onTruckClick?.(t.id)} style={{ background: C.w, border: `1px solid ${C.b1}`, borderLeft: `3px solid ${C.acc}`, borderRadius: R.lg, padding: 14, boxShadow: C.sh, display: "flex", justifyContent: "space-between", alignItems: "center", cursor: onTruckClick ? "pointer" : "default" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                       {Ic.truck(C.acc, 20)}
                       <div>
@@ -181,7 +181,10 @@ export default function TrucksScreen({ onBack, embedded, user }) {
                         {ownerName && !selectedCompanyId && <div style={{ fontSize: 10.5, color: C.info, fontWeight: 600, marginTop: 2 }}>{ownerName}</div>}
                       </div>
                     </div>
-                    {canEdit && <button aria-label="Desactivar camión" disabled={saving} onClick={() => handleDeactivateTruck(t.id)} style={{ background: "none", border: "none", cursor: saving?"not-allowed":"pointer", padding: 6, opacity:saving?0.4:1 }}>{Ic.ban(C.err, 18)}</button>}
+                    <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                      {canEdit && <button aria-label="Desactivar camión" disabled={saving} onClick={(e) => { e.stopPropagation(); handleDeactivateTruck(t.id); }} style={{ background: "none", border: "none", cursor: saving?"not-allowed":"pointer", padding: 6, opacity:saving?0.4:1 }}>{Ic.ban(C.err, 18)}</button>}
+                      {onTruckClick && <span style={{ opacity: 0.4 }}>{Ic.chev(C.t3, 14)}</span>}
+                    </div>
                   </div>
                 );
               })}

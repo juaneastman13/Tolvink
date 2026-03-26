@@ -14,7 +14,7 @@ import { useSSEContext } from "../providers/SSEProvider";
 import {
   SCREEN_TO_PATH, SL, FREIGHT_SCREENS, useScreen,
   HomeScreen, ListScreen, DetailScreen, NewScreen, EditScreen,
-  CalendarScreen, MenuScreen, TrucksScreen, TicketsScreen, DocumentsScreen, AnalyticsScreen,
+  CalendarScreen, MenuScreen, TrucksScreen, TruckDetailScreen, TicketsScreen, DocumentsScreen, AnalyticsScreen,
   LocationsScreen, AdminScreen, MyDataScreen, ReportsScreen,
   ChatsScreen, NotificationsScreen, LinkedCompaniesScreen, QueueBoardScreen,
   MapOverlay, LocPickerFullscreen,
@@ -485,7 +485,7 @@ export default function AppLayout({ fh, catalog, online, notif, isDesktop }) {
   // O(1) freight lookup
   const freightMap = useMemo(() => { const m = new Map(); fh.freights.forEach(f => m.set(f.id, f)); return m; }, [fh.freights]);
   const curFreight = freightMap.get(selFreight) || null;
-  const navActive = ["detail"].includes(screen)?"list":["trucks","tickets","documents","analytics","admin","mydata","calendar","reports","chats"].includes(screen)?"menu":["linked","notifs","queue"].includes(screen)&&!isDesktop?"menu":screen;
+  const navActive = ["detail"].includes(screen)?"list":["trucks","truckDetail","tickets","documents","analytics","admin","mydata","calendar","reports","chats"].includes(screen)?"menu":["linked","notifs","queue"].includes(screen)&&!isDesktop?"menu":screen;
 
   // ======================== RENDER =====================================
   return (
@@ -604,7 +604,8 @@ export default function AppLayout({ fh, catalog, online, notif, isDesktop }) {
         {screen==="new" && <NewScreen user={auth.user} lots={catalog.lots} plants={catalog.plants} branches={catalog.branches} fields={catalog.fields} trucks={catalog.trucks} freights={fh.freights} onBack={()=>{setDuplicateData(null);navigate(-1);}} onCreate={handleCreate} submitting={submitting} duplicateFrom={duplicateData}/>}
         {screen==="edit" && editData && <EditScreen freight={editData} fields={catalog.fields} plants={catalog.plants} branches={catalog.branches} trucks={catalog.trucks} user={auth.user} onBack={()=>{setEditData(null);navigate(-1);}} onSave={async(id,data)=>{try{const r=await fh.update(id,data);if(r.ok) return r.pending?"Cambio enviado a aprobación":"Flete actualizado"; show(r.error,"err"); return "";}catch(e){show(e?.message||"Error de conexión","err");return "";}}}/>}
         {screen==="menu" && <MenuScreen user={auth.user} perms={perms} onLogout={auth.logout} onNav={nav} isDesktop={isDesktop} onSwitchCompany={async(id)=>{return await auth.switchCompany(id);}} onRefresh={()=>{fh.fetchAll();catalog.refresh();}} simpleMode={auth.simpleMode} onToggleSimple={auth.toggleSimpleMode}/>}
-        {screen==="trucks" && <TrucksScreen user={auth.user} onBack={()=>{catalog.refresh();navigate(-1);}}/>}
+        {screen==="trucks" && <TrucksScreen user={auth.user} onBack={()=>{catalog.refresh();navigate(-1);}} onTruckClick={(id)=>navigate(`/trucks/${id}`)}/>}
+        {screen==="truckDetail" && <TruckDetailScreen truckId={location.pathname.split("/trucks/")[1]} user={auth.user} onBack={()=>{catalog.refresh();navigate(-1);}} onNavFreight={(fId)=>{setSelFreight(fId);fh.refresh(fId);navigate(`/freight/${fId}`);}}/>}
         {screen==="tickets" && <TicketsScreen user={auth.user} onBack={()=>navigate(-1)}/>}
         {screen==="documents" && <DocumentsScreen user={auth.user} onBack={()=>navigate(-1)} onNavigate={(fId)=>{setSelFreight(fId);fh.refresh(fId);navigate(`/freight/${fId}`);}}/>}
         {screen==="analytics" && <AnalyticsScreen user={auth.user} onBack={()=>navigate(-1)}/>}

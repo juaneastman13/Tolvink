@@ -14,6 +14,7 @@ export const EditScreen = lazy(() => import("../screens/EditScreen"));
 export const CalendarScreen = lazy(() => import("../screens/CalendarScreen"));
 export const MenuScreen = lazy(() => import("../screens/MenuScreen"));
 export const TrucksScreen = lazy(() => import("../screens/TrucksScreen"));
+export const TruckDetailScreen = lazy(() => import("../screens/TruckDetailScreen"));
 export const TicketsScreen = lazy(() => import("../screens/TicketsScreen"));
 export const DocumentsScreen = lazy(() => import("../screens/DocumentsScreen"));
 export const AnalyticsScreen = lazy(() => import("../screens/AnalyticsScreen"));
@@ -133,6 +134,7 @@ export function useScreen() {
   return useMemo(() => {
     const p = location.pathname;
     if (p.startsWith("/freight/")) return "detail";
+    if (p.startsWith("/trucks/")) return "truckDetail";
     if (p.startsWith("/edit/")) return "edit";
     if (p.startsWith("/chats/")) return "chats";
     return PATH_TO_SCREEN[p] || "home";
