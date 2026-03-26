@@ -126,7 +126,15 @@ export default function TruckSelectModal({ freight, trucks: initialTrucks, onClo
       <label style={{fontSize:11.6,fontWeight:600,color:C.t2,marginBottom:8,marginTop:6,display:"block",textTransform:"uppercase",letterSpacing:0.6}}>Chofer</label>
       <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:10,maxHeight:160,overflowY:"auto"}}>
         {loadingDrivers && <div style={{fontSize:13.2,color:C.t3,padding:10,textAlign:"center"}}>Cargando choferes...</div>}
-        {!loadingDrivers && drivers.length===0 && !showNewDriver && <div style={{fontSize:13.2,color:C.t3,padding:8,textAlign:"center"}}>No hay choferes registrados</div>}
+        {!loadingDrivers && drivers.length===0 && !showNewDriver && !user?.id && <div style={{fontSize:13.2,color:C.t3,padding:8,textAlign:"center"}}>No hay choferes registrados</div>}
+        {user?.id && !drivers.some(d=>d.id===user.id) && (
+          <button onClick={()=>setDriverId(user.id===driverId?"":user.id)} style={{padding:"11px 14px",borderRadius: R.lg,textAlign:"left",fontFamily:"inherit",border:`1.5px solid ${driverId===user.id?C.info:C.b1}`,background:driverId===user.id?`${C.info}10`:C.w,color:driverId===user.id?C.info:C.t2,fontSize:14.3,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",gap:10}}>
+            {Ic.user(driverId===user.id?C.info:C.t3,16)}
+            <div>
+              <div style={{fontSize:14.3,fontWeight:700,color:driverId===user.id?C.info:C.t1}}>{user.name || "Yo mismo"} <span style={{fontSize:11,fontWeight:400,color:C.t3}}>(yo)</span></div>
+            </div>
+          </button>
+        )}
         {drivers.map(d=>{const qLen=d.activeFreights?.length||0; return <button key={d.id} onClick={()=>setDriverId(d.id===driverId?"":d.id)} style={{padding:"11px 14px",borderRadius: R.lg,textAlign:"left",fontFamily:"inherit",border:`1.5px solid ${driverId===d.id?C.info:C.b1}`,background:driverId===d.id?`${C.info}10`:C.w,color:driverId===d.id?C.info:C.t2,fontSize:14.3,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",gap:10}}>
           {Ic.user(driverId===d.id?C.info:C.t3,16)}
           <div>

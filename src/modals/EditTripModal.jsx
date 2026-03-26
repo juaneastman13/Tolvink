@@ -3,7 +3,7 @@ import { C, Ic, R } from "../theme";
 import { Btn, ModalOverlay } from "../components";
 import { apiGetTrucks, apiGetDrivers } from "../api";
 
-export default function EditTripModal({ freight, assignment, transporters, onClose, onSave }) {
+export default function EditTripModal({ freight, assignment, transporters, onClose, onSave, user }) {
   const [companyId, setCompanyId] = useState(assignment.transportCompanyId || "");
   const [truckId, setTruckId] = useState(assignment.truckId || "");
   const [driverId, setDriverId] = useState(assignment.driverId || "");
@@ -99,6 +99,7 @@ export default function EditTripModal({ freight, assignment, transporters, onClo
       <label style={lbl}>Chofer</label>
       <select value={driverId} onChange={e => setDriverId(e.target.value)} disabled={loadingDrivers || !companyId} style={{ ...sel, marginBottom: 18, opacity: loadingDrivers ? 0.6 : 1 }}>
         <option value="">{loadingDrivers ? "Cargando..." : "Sin chofer asignado"}</option>
+        {user?.id && !drivers.some(d => d.id === user.id) && <option value={user.id}>{user.name || "Yo mismo"} (yo)</option>}
         {drivers.map(d => <option key={d.id} value={d.id}>{d.name}{d.phone ? ` · ${d.phone}` : ""}</option>)}
       </select>
 
