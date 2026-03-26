@@ -349,6 +349,7 @@ export async function apiGetEconomicSummary(id, from, to) { let q = []; if (from
 export async function apiProcessTruckDocOcr(truckId, docId) { return api(`/trucks/${truckId}/documents/${docId}/ocr`, { method: 'POST', body: {} }); }
 export async function apiGetTruckDocOcr(truckId, docId) { return api(`/trucks/${truckId}/documents/${docId}/ocr`); }
 export async function apiUpdateTruckDocOcr(truckId, docId, ocrData) { return api(`/trucks/${truckId}/documents/${docId}/ocr`, { method: 'PATCH', body: { ocrData } }); }
+export async function apiClearTruckDocOcr(truckId, docId) { return api(`/trucks/${truckId}/documents/${docId}/ocr-clear`, { method: 'PATCH', body: {} }); }
 
 // Fields & Lots
 export async function apiGetFields(ownerCompanyId) { const q = ownerCompanyId ? `?ownerCompanyId=${encodeURIComponent(ownerCompanyId)}` : ''; return api(`/fields${q}`); }
