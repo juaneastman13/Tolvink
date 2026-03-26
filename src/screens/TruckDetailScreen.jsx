@@ -5,7 +5,7 @@
 
 import { useState, useEffect, useCallback, lazy, Suspense } from "react";
 import { C, Ic, R, FONT, MONO } from "../theme";
-import { Btn, Field, Loader, EmptyState, LicensePlate, LoadingOverlay } from "../components";
+import { Btn, Field, Loader, EmptyState, LicensePlate, LoadingOverlay, StatusPill } from "../components";
 import {
   apiGetTruckDetail, apiAddTruckDocument, apiUpdateTruckDocument, apiDeleteTruckDocument,
   apiAddTruckExpense, apiUpdateTruckExpense, apiDeleteTruckExpense, apiGetTruckExpenseSummary,
@@ -18,7 +18,10 @@ const LocPickerFullscreen = lazy(() => import("../maps").then(m => ({ default: m
 
 // ======================== CONSTANTS ====================================
 
-const DOC_TYPE_LABELS = { VTV_ITV:"VTV / ITV", INSURANCE:"Seguro", TRANSPORT_LICENSE:"Habilitación de transporte", GREEN_CARD:"Cédula verde", DRIVER_LICENSE:"Licencia de conducir", RUAT:"RUAT", SENASA:"SENASA", FUMIGATION:"Certificado de fumigación", OTHER:"Otro" };
+// All labels (for display of existing docs)
+const DOC_TYPE_LABELS = { VTV_ITV:"ITV", INSURANCE:"Seguro", TRANSPORT_LICENSE:"Habilitación de transporte", GREEN_CARD:"Cédula verde", DRIVER_LICENSE:"Licencia de conducir", RUAT:"RUAT", SENASA:"SENASA", FUMIGATION:"Certificado de fumigación", BPS_DGI:"Habilitaciones BPS-DGI", GET_CERTIFICATE:"GET", CIRCULATION_PERMIT:"Permiso nacional de circulación", OTHER:"Otro" };
+// Active types for new document dropdown (deprecated types hidden)
+const DOC_TYPE_ACTIVE = { VTV_ITV:"ITV", INSURANCE:"Seguro", TRANSPORT_LICENSE:"Habilitación de transporte", DRIVER_LICENSE:"Licencia de conducir", BPS_DGI:"Habilitaciones BPS-DGI", GET_CERTIFICATE:"GET", CIRCULATION_PERMIT:"Permiso nacional de circulación", OTHER:"Otro" };
 const EXP_TYPE_LABELS = { FUEL:"Combustible", TOLL:"Peaje", MAINTENANCE:"Mantenimiento", TIRE:"Neumáticos", INSURANCE:"Seguro", FINE:"Multa", PARKING:"Estacionamiento", MEAL:"Viáticos", OTHER:"Otro" };
 const MOV_TYPE_LABELS = { REPOSITIONING:"Reposicionamiento", MAINTENANCE_TRIP:"Viaje a taller", INTERNAL_TRANSFER:"Traslado interno", PERSONAL:"Uso particular", OTHER:"Otro" };
 const INC_STATUS = { PENDING: { label:"Pendiente", color:C.warn, bg:C.warnPale }, PAID: { label:"Cobrado", color:C.ok, bg:C.okPale }, OVERDUE: { label:"Vencido", color:C.err, bg:C.errPale } };
@@ -75,7 +78,7 @@ function DocForm({ onSave, onCancel, saving, initial, linkOptions }) {
   const handleSubmit = async()=>{if(!initial&&!file)return;setUploading(true);try{let fu=initial?.fileUrl,fn=initial?.fileName,mt=initial?.mimeType;if(file){fu=await uploadPhoto(file,"truck-docs","doc");fn=file.name;mt=file.type;}const linkData = {};if(linkType==="expense")linkData.expenseId=linkId||null;else if(linkType==="income")linkData.incomeId=linkId||null;else if(linkType==="freight")linkData.freightId=linkId||null;else if(linkType==="movement")linkData.movementId=linkId||null;await onSave({type,name:name||null,fileUrl:fu,fileName:fn,mimeType:mt,expiresAt:expiresAt||null,issuedAt:issuedAt||null,notes:notes||null,...linkData});}finally{setUploading(false);}};
   const linkItems = linkType==="expense"?linkOptions?.expenses:linkType==="income"?linkOptions?.incomes:linkType==="freight"?linkOptions?.freights:linkType==="movement"?linkOptions?.movements:[];
   return (<div style={{padding:16,background:C.bgCard,border:`1px solid ${C.b2}`,borderRadius:R.lg,marginBottom:12}}>
-    <div style={{marginBottom:10}}><label style={lbl("s")}>Tipo de documento</label><select value={type} onChange={e=>setType(e.target.value)} style={sel}>{Object.entries(DOC_TYPE_LABELS).map(([k,v])=><option key={k} value={k}>{v}</option>)}</select></div>
+    <div style={{marginBottom:10}}><label style={lbl("s")}>Tipo de documento</label><select value={type} onChange={e=>setType(e.target.value)} style={sel}>{Object.entries(DOC_TYPE_ACTIVE).map(([k,v])=><option key={k} value={k}>{v}</option>)}</select></div>
     {type==="OTHER"&&<Field label="Nombre" value={name} onChange={setName} placeholder="Nombre del documento"/>}
     {!initial&&<div style={{marginBottom:10}}><label style={lbl("s")}>Archivo</label><input type="file" accept="image/*,.pdf" onChange={e=>setFile(e.target.files?.[0]||null)} style={{fontSize:13,fontFamily:FONT}}/></div>}
     <div style={{display:"flex",gap:10,marginBottom:10}}><div style={{flex:1}}><label style={lbl("s")}>Emisión</label><input type="date" value={issuedAt} onChange={e=>setIssuedAt(e.target.value)} style={{...sel}}/></div><div style={{flex:1}}><label style={lbl("s")}>Vencimiento</label><input type="date" value={expiresAt} onChange={e=>setExpiresAt(e.target.value)} style={{...sel}}/></div></div>
@@ -419,7 +422,7 @@ export default function TruckDetailScreen({ truckId, user, onBack, onNavFreight 
           {truck.activeFreights?.length > 0 && <>
             <div style={{fontSize:12,fontWeight:700,color:C.t2,marginBottom:8,textTransform:"uppercase",letterSpacing:0.5}}>Activos</div>
             {truck.activeFreights.map(f=><div key={f.id} onClick={()=>onNavFreight?.(f.id)} style={{padding:"10px 12px",border:`1.5px solid ${C.pri}`,borderRadius:R.md,marginBottom:8,cursor:"pointer",background:C.priPale}}>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}><span style={{fontSize:13.5,fontWeight:700,color:C.pri,fontFamily:MONO}}>{f.code}</span><span style={{fontSize:11,fontWeight:600,color:C.pri,background:C.w,padding:"2px 8px",borderRadius:R.pill}}>{f.tripStatus}</span></div>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}><span style={{fontSize:13.5,fontWeight:700,color:C.pri,fontFamily:MONO}}>{f.code}</span><StatusPill status={f.tripStatus || f.status} small/></div>
               <div style={{fontSize:12,color:C.t2,marginTop:4}}>{f.originName||"?"}→{f.destName||"?"}</div>
             </div>)}
           </>}
