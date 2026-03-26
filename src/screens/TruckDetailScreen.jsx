@@ -13,7 +13,7 @@ import {
   apiAddTruckExpense, apiUpdateTruckExpense, apiDeleteTruckExpense, apiGetTruckExpenseSummary,
   apiGetTruckFreights, apiGetTruckIncomes, apiAddTruckIncome, apiUpdateTruckIncome, apiDeleteTruckIncome,
   apiGetTruckMovements, apiAddTruckMovement, apiUpdateTruckMovement, apiDeleteTruckMovement,
-  apiGetEconomicSummary, apiGetTruckDocuments, apiUpdateTripData, apiProcessTruckDocOcr, uploadPhoto,
+  apiGetEconomicSummary, apiGetTruckDocuments, apiUpdateTripData, apiProcessTruckDocOcr, apiUpdateTruckDocOcr, uploadPhoto,
 } from "../api";
 
 const LocPickerFullscreen = lazy(() => import("../maps").then(m => ({ default: m.LocPickerFullscreen })));
@@ -67,8 +67,11 @@ function Stat({ label, value, color=C.t1, sub }) {
 
 // ======================== DOC ROW (replicates DocumentsScreen DocCard format) ==
 
-function DocRow({ d, onView, onOcr, ocrLoading, onEdit, onDelete, canEdit }) {
+function DocRow({ d, onView, onOcr, ocrLoading, onEdit, onDelete, canEdit, onOcrSave }) {
   const [exp, setExp] = useState(false);
+  const [editingOcr, setEditingOcr] = useState(false);
+  const [ocrFields, setOcrFields] = useState({});
+  const [savingOcr, setSavingOcr] = useState(false);
   const isImg = d.mimeType?.startsWith("image")||d.fileUrl?.match(/\.(jpg|jpeg|png|webp|gif)$/i);
   const hasOcr = d.ocrData || d.ocrStatus === "completed";
   const ab = { padding:5, borderRadius:R.sm, border:`1px solid ${C.b2}`, background:C.bg, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 };
@@ -118,17 +121,35 @@ function DocRow({ d, onView, onOcr, ocrLoading, onEdit, onDelete, canEdit }) {
           const entries = ocrPreview.structured
             ? Object.entries(ocrPreview.data).filter(([k,v]) => v != null && v !== "" && !k.startsWith("_"))
             : Object.entries(ocrPreview.data?.rawFields || {}).filter(([,v]) => v != null && v !== "");
-          if (entries.length === 0) return null;
+          if (entries.length === 0 && !editingOcr) return null;
+          const startEdit = () => { const fields = {}; entries.forEach(([k,v]) => { fields[k] = typeof v === "object" ? JSON.stringify(v) : String(v); }); setOcrFields(fields); setEditingOcr(true); };
+          const saveEdit = async () => {
+            if (!onOcrSave) return;
+            setSavingOcr(true);
+            try {
+              const raw = typeof d.ocrData === "string" ? JSON.parse(d.ocrData) : (d.ocrData || {});
+              const updated = { ...raw, datos: { ...(raw.datos||{}), ...ocrFields }, _editMeta: { editedAt: new Date().toISOString() } };
+              await onOcrSave(d.id, updated);
+              setEditingOcr(false);
+            } catch {} finally { setSavingOcr(false); }
+          };
           return <div style={{ marginBottom:10 }}>
             <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:6 }}>
               <span style={{ fontSize:11, fontWeight:700, color:C.pri, textTransform:"uppercase", letterSpacing:0.4 }}>Datos OCR</span>
               <span style={{ fontSize:10, color:C.t3, fontStyle:"italic" }}>{ocrPreview.structured ? "Estructurado" : "Libre"}{ocrPreview.confidence != null ? ` (${Math.round((ocrPreview.confidence||0)*100)}%)` : ""}</span>
               {ocrPreview.edited && <span style={{ fontSize:9, fontWeight:700, color:C.acc, background:`${C.acc}15`, padding:"1px 5px", borderRadius:R.sm }}>Editado</span>}
+              <span style={{flex:1}}/>
+              {canEdit && !editingOcr && <button onClick={e=>{e.stopPropagation();startEdit();}} style={{ padding:"3px 8px", borderRadius:R.sm, border:`1px solid ${C.acc}`, background:`${C.acc}10`, cursor:"pointer", fontFamily:FONT, fontSize:10.5, fontWeight:700, color:C.acc, display:"flex", alignItems:"center", gap:4 }}>Editar</button>}
+              {editingOcr && <button disabled={savingOcr} onClick={e=>{e.stopPropagation();saveEdit();}} style={{ padding:"3px 8px", borderRadius:R.sm, border:"none", background:C.pri, cursor:"pointer", fontFamily:FONT, fontSize:10.5, fontWeight:700, color:C.w }}>{savingOcr?"Guardando...":"Guardar"}</button>}
+              {editingOcr && <button onClick={e=>{e.stopPropagation();setEditingOcr(false);}} style={{ padding:"3px 8px", borderRadius:R.sm, border:`1px solid ${C.b1}`, background:C.bg, cursor:"pointer", fontFamily:FONT, fontSize:10.5, fontWeight:600, color:C.t3 }}>Cancelar</button>}
             </div>
             <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(140px, 1fr))", gap:6 }}>
-              {entries.map(([k,v]) => <div key={k} style={{ padding:"6px 8px", background:C.bg, borderRadius:R.sm }}>
+              {(editingOcr ? Object.entries(ocrFields) : entries).map(([k,v]) => <div key={k} style={{ padding:"6px 8px", background:editingOcr?C.w:C.bg, borderRadius:R.sm, border:editingOcr?`1px solid ${C.b1}`:"none" }}>
                 <div style={{ fontSize:10, fontWeight:600, color:C.t3, textTransform:"uppercase", letterSpacing:0.3 }}>{k.replace(/([A-Z])/g,' $1').replace(/^./,s=>s.toUpperCase())}</div>
-                <div style={{ fontSize:13, fontWeight:600, color:C.t1, marginTop:2 }}>{typeof v === "object" ? JSON.stringify(v) : String(v)}</div>
+                {editingOcr
+                  ? <input value={ocrFields[k]||""} onChange={e=>{e.stopPropagation();setOcrFields(p=>({...p,[k]:e.target.value}));}} onClick={e=>e.stopPropagation()} style={{ width:"100%", padding:"4px 6px", borderRadius:R.sm, border:`1px solid ${C.b1}`, fontSize:13, fontWeight:600, color:C.t1, fontFamily:FONT, marginTop:2, background:C.w }} />
+                  : <div style={{ fontSize:13, fontWeight:600, color:C.t1, marginTop:2 }}>{typeof v === "object" ? JSON.stringify(v) : String(v)}</div>
+                }
               </div>)}
             </div>
           </div>;
@@ -499,6 +520,13 @@ export default function TruckDetailScreen({ truckId, user, onBack, onNavFreight 
     finally { setOcrLoading(false); }
   };
 
+  const handleOcrSave = async (docId, ocrData) => {
+    await apiUpdateTruckDocOcr(truckId, docId, ocrData);
+    setDoneMsg("Datos OCR actualizados");
+    const freshDocs = await apiGetTruckDocuments(truckId).catch(() => []);
+    setAllDocs(freshDocs);
+  };
+
   const openFile = (d) => setViewFile({ id: d.id, url: d.fileUrl, name: d.fileName || d.name, type: d.mimeType?.startsWith("image") ? "image" : d.mimeType, ocrData: d.ocrData, ocrStatus: d.ocrStatus });
 
   // ======================== RENDER =======================================
@@ -660,7 +688,7 @@ export default function TruckDetailScreen({ truckId, user, onBack, onNavFreight 
                   </div>
                   {incDocs.length>0 && <div style={{display:"flex",flexDirection:"column",gap:6}}>
                     <div style={{fontSize:11,fontWeight:700,color:C.t2,textTransform:"uppercase",letterSpacing:0.5}}>Archivos ({incDocs.length})</div>
-                    {incDocs.map(d=><DocRow key={d.id} d={d} onView={openFile} onOcr={handleOcr} ocrLoading={ocrLoading} canEdit={canEdit} onDelete={dd=>setConfirmDelete({type:"doc",id:dd.id,label:dd.fileName})}/>)}
+                    {incDocs.map(d=><DocRow key={d.id} d={d} onView={openFile} onOcr={handleOcr} ocrLoading={ocrLoading} canEdit={canEdit} onOcrSave={handleOcrSave} onDelete={dd=>setConfirmDelete({type:"doc",id:dd.id,label:dd.fileName})}/>)}
                   </div>}
                   {incDocs.length===0&&<div style={{fontSize:12,color:C.t3,fontStyle:"italic"}}>Sin archivos adjuntos</div>}
                 </div>}
@@ -700,7 +728,7 @@ export default function TruckDetailScreen({ truckId, user, onBack, onNavFreight 
                   {/* Linked TruckDocuments */}
                   {expDocs.length>0&&<div style={{display:"flex",flexDirection:"column",gap:6}}>
                     <div style={{fontSize:11,fontWeight:700,color:C.t2,textTransform:"uppercase",letterSpacing:0.5}}>Archivos ({expDocs.length})</div>
-                    {expDocs.map(d=><DocRow key={d.id} d={d} onView={openFile} onOcr={handleOcr} ocrLoading={ocrLoading} canEdit={canEdit} onDelete={dd=>setConfirmDelete({type:"doc",id:dd.id,label:dd.fileName})}/>)}
+                    {expDocs.map(d=><DocRow key={d.id} d={d} onView={openFile} onOcr={handleOcr} ocrLoading={ocrLoading} canEdit={canEdit} onOcrSave={handleOcrSave} onDelete={dd=>setConfirmDelete({type:"doc",id:dd.id,label:dd.fileName})}/>)}
                   </div>}
                   {!expDocs.length&&!e.receiptUrl&&<div style={{fontSize:12,color:C.t3,fontStyle:"italic"}}>Sin archivos adjuntos</div>}
                 </div>}
@@ -741,7 +769,7 @@ export default function TruckDetailScreen({ truckId, user, onBack, onNavFreight 
                     {canEdit&&<button onClick={()=>setConfirmDelete({type:"mov",id:m.id,label:MOV_TYPE_LABELS[m.type]})} style={{padding:"4px 10px",borderRadius:R.md,border:`1px solid ${C.err}40`,background:C.errPale,cursor:"pointer",fontSize:11,fontWeight:600,color:C.err,fontFamily:FONT,display:"flex",alignItems:"center",gap:4}}>{Ic.ban(C.err,12)} Eliminar</button>}
                   </div>
                   {movDocs.length>0&&<div style={{display:"flex",flexDirection:"column",gap:6}}>
-                    {movDocs.map(d=><DocRow key={d.id} d={d} onView={openFile} onOcr={handleOcr} ocrLoading={ocrLoading} canEdit={canEdit} onDelete={dd=>setConfirmDelete({type:"doc",id:dd.id,label:dd.fileName})}/>)}
+                    {movDocs.map(d=><DocRow key={d.id} d={d} onView={openFile} onOcr={handleOcr} ocrLoading={ocrLoading} canEdit={canEdit} onOcrSave={handleOcrSave} onDelete={dd=>setConfirmDelete({type:"doc",id:dd.id,label:dd.fileName})}/>)}
                   </div>}
                 </div>}
               </div>;
@@ -773,7 +801,7 @@ export default function TruckDetailScreen({ truckId, user, onBack, onNavFreight 
               const lb = LINK_BADGE[d.linkedType||"general"]||LINK_BADGE.general;
               const linkLabel = d.linkedType==="expense"&&d.expense?`${EXP_TYPE_LABELS[d.expense.type]||""} ${fmtDate(d.expense.date)}`:d.linkedType==="income"&&d.income?d.income.concept:d.linkedType==="freight"&&d.freight?d.freight.code:d.linkedType==="movement"&&d.movement?`${MOV_TYPE_LABELS[d.movement.type]||""} ${fmtDate(d.movement.departureAt)}`:"";
               return <div key={d.id} style={{marginBottom:6}}>
-                <DocRow d={{...d, _linkBadge:lb, _linkLabel:linkLabel}} onView={openFile} onOcr={handleOcr} ocrLoading={ocrLoading} canEdit={canEdit} onEdit={dd=>setEditItem(dd)} onDelete={dd=>setConfirmDelete({type:"doc",id:dd.id,label:DOC_TYPE_LABELS[dd.type]})}/>
+                <DocRow d={{...d, _linkBadge:lb, _linkLabel:linkLabel}} onView={openFile} onOcr={handleOcr} ocrLoading={ocrLoading} canEdit={canEdit} onEdit={dd=>setEditItem(dd)} onOcrSave={handleOcrSave} onDelete={dd=>setConfirmDelete({type:"doc",id:dd.id,label:DOC_TYPE_LABELS[dd.type]})}/>
                 {lb.label!=="General"&&<div style={{paddingLeft:58,marginTop:2}}><span style={{fontSize:9.5,fontWeight:700,color:lb.color,background:lb.bg,padding:"1px 5px",borderRadius:R.sm}}>{lb.label}{linkLabel?`: ${linkLabel}`:""}</span></div>}
               </div>;
             })
