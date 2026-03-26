@@ -756,10 +756,9 @@ export default function TruckDetailScreen({ truckId, user, onBack, onNavFreight 
                   </div>
                 </div>
               </button>
-              {/* Action buttons — same order as freight docs: view, download, OCR, edit, delete */}
+              {/* Action buttons: view, download, edit, delete — matching freight docs */}
               <button onClick={()=>openFile(d)} title="Ver" style={{...ab,border:`1px solid ${C.b1}`,background:C.w}}>{Ic.eye(C.t2,14)}</button>
-              <a href={d.fileUrl} download title="Descargar" style={{...ab,border:`1px solid ${C.b1}`,background:C.w,textDecoration:"none"}}>{Ic.down?.(C.t2,14)||Ic.download?.(C.t2,14)||"⬇"}</a>
-              {isImg&&d.ocrStatus!=="completed"?<button onClick={()=>handleOcr(d)} disabled={ocrLoading} title="OCR" style={{...ab,border:`1px solid ${C.pri}40`,background:C.priPale,opacity:ocrLoading?0.5:1}}>{Ic.doc(C.pri,14)}</button>:d.ocrStatus==="completed"?<button onClick={()=>openFile(d)} title="Ver datos IA" style={{...ab,border:`1px solid ${C.pri}`,background:C.okPale}}>{Ic.eye(C.pri,14)}</button>:null}
+              <a href={d.fileUrl} download title="Descargar" style={{...ab,border:`1px solid ${C.b1}`,background:C.w,textDecoration:"none"}}>{Ic.down(C.t2,14)}</a>
               {canEdit&&<button onClick={()=>setEditItem(d)} title="Editar" style={{...ab,border:`1px solid ${C.b1}`,background:C.w}}>{Ic.edit(C.t3,14)}</button>}
               {canEdit&&<button onClick={()=>setConfirmDelete({type:"doc",id:d.id,label:DOC_TYPE_LABELS[d.type]})} title="Eliminar" style={{...ab,border:`1px solid ${C.err}40`,background:C.errPale}}>{Ic.cross(C.err,14)}</button>}
             </div>})
