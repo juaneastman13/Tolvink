@@ -101,7 +101,7 @@ function StepForm({ title, steps, onSubmit, onCancel, saving, submitLabel = "Con
 
 // ======================== FORMS (Doc, Exp reused from before) ============
 
-function DocForm({ onSave, onCancel, saving, initial, linkOptions }) {
+function DocForm({ onSave, onCancel, saving, initial, linkOptions, storagePath }) {
   const [type, setType] = useState(initial?.type||"VTV_ITV");
   const [name, setName] = useState(initial?.name||"");
   const [expiresAt, setExpiresAt] = useState(initial?.expiresAt?new Date(initial.expiresAt).toISOString().split("T")[0]:"");
@@ -111,7 +111,7 @@ function DocForm({ onSave, onCancel, saving, initial, linkOptions }) {
   const [linkId, setLinkId] = useState(initial?.expenseId||initial?.incomeId||initial?.freightId||initial?.movementId||"");
   const [file, setFile] = useState(null);
   const [uploading, setUploading] = useState(false);
-  const handleSubmit = async()=>{if(!initial&&!file)return;setUploading(true);try{let fu=initial?.fileUrl,fn=initial?.fileName,mt=initial?.mimeType;if(file){fu=await uploadPhoto(file,"truck-docs","doc");fn=file.name;mt=file.type;}const linkData = {};if(linkType==="expense")linkData.expenseId=linkId||null;else if(linkType==="income")linkData.incomeId=linkId||null;else if(linkType==="freight")linkData.freightId=linkId||null;else if(linkType==="movement")linkData.movementId=linkId||null;await onSave({type,name:name||null,fileUrl:fu,fileName:fn,mimeType:mt,expiresAt:expiresAt||null,issuedAt:issuedAt||null,notes:notes||null,...linkData});}finally{setUploading(false);}};
+  const handleSubmit = async()=>{if(!initial&&!file)return;setUploading(true);try{let fu=initial?.fileUrl,fn=initial?.fileName,mt=initial?.mimeType;if(file){fu=await uploadPhoto(file,storagePath||"truck-docs","doc");fn=file.name;mt=file.type;}const linkData = {};if(linkType==="expense")linkData.expenseId=linkId||null;else if(linkType==="income")linkData.incomeId=linkId||null;else if(linkType==="freight")linkData.freightId=linkId||null;else if(linkType==="movement")linkData.movementId=linkId||null;await onSave({type,name:name||null,fileUrl:fu,fileName:fn,mimeType:mt,expiresAt:expiresAt||null,issuedAt:issuedAt||null,notes:notes||null,...linkData});}finally{setUploading(false);}};
   const linkItems = linkType==="expense"?linkOptions?.expenses:linkType==="income"?linkOptions?.incomes:linkType==="freight"?linkOptions?.freights:linkType==="movement"?linkOptions?.movements:[];
   return (<div style={{padding:16,background:C.bgCard,border:`1px solid ${C.b2}`,borderRadius:R.lg,marginBottom:12}}>
     <div style={{marginBottom:10}}><label style={lbl("s")}>Tipo de documento</label><select value={type} onChange={e=>setType(e.target.value)} style={sel}>{Object.entries(DOC_TYPE_ACTIVE).map(([k,v])=><option key={k} value={k}>{v}</option>)}</select></div>
@@ -128,7 +128,7 @@ function DocForm({ onSave, onCancel, saving, initial, linkOptions }) {
   </div>);
 }
 
-function ExpForm({ onSave, onCancel, saving, initial, activeFreights, mobile }) {
+function ExpForm({ onSave, onCancel, saving, initial, activeFreights, mobile, storagePath }) {
   const [type, setType] = useState(initial?.type||"FUEL");
   const [amount, setAmount] = useState(initial?.amount?.toString()||"");
   const [currency, setCurrency] = useState(initial?.currency||"UYU");
@@ -137,7 +137,7 @@ function ExpForm({ onSave, onCancel, saving, initial, activeFreights, mobile }) 
   const [freightId, setFreightId] = useState(initial?.freightId||"");
   const [receiptFile, setReceiptFile] = useState(null);
   const [uploading, setUploading] = useState(false);
-  const handleSubmit = async()=>{if(!amount||!date)return;setUploading(true);try{let ru=initial?.receiptUrl,rn=initial?.receiptName;if(receiptFile){ru=await uploadPhoto(receiptFile,"truck-receipts","receipt");rn=receiptFile.name;}await onSave({type,amount:parseFloat(amount),currency,date,description:description||null,freightId:freightId||null,receiptUrl:ru,receiptName:rn});}finally{setUploading(false);}};
+  const handleSubmit = async()=>{if(!amount||!date)return;setUploading(true);try{let ru=initial?.receiptUrl,rn=initial?.receiptName;if(receiptFile){ru=await uploadPhoto(receiptFile,storagePath||"truck-receipts","receipt");rn=receiptFile.name;}await onSave({type,amount:parseFloat(amount),currency,date,description:description||null,freightId:freightId||null,receiptUrl:ru,receiptName:rn});}finally{setUploading(false);}};
   if (mobile) return <StepForm title={initial?"Editar gasto":"Nuevo gasto"} saving={saving||uploading} onSubmit={handleSubmit} onCancel={onCancel} submitLabel={initial?"Guardar":"Registrar"} steps={[
     {title:"Tipo",content:<div><label style={lbl("s")}>Tipo de gasto</label><select value={type} onChange={e=>setType(e.target.value)} style={{...sel,minHeight:48}}>{Object.entries(EXP_TYPE_LABELS).map(([k,v])=><option key={k} value={k}>{v}</option>)}</select></div>},
     {title:"Monto",content:<div><Field label="Monto" value={amount} onChange={setAmount} placeholder="0" type="number" inputMode="decimal"/><div style={{marginTop:10}}><label style={lbl("s")}>Moneda</label><select value={currency} onChange={e=>setCurrency(e.target.value)} style={{...sel,minHeight:48}}><option value="UYU">UYU</option><option value="USD">USD</option><option value="ARS">ARS</option></select></div></div>},
@@ -155,7 +155,7 @@ function ExpForm({ onSave, onCancel, saving, initial, activeFreights, mobile }) 
   </div>);
 }
 
-function IncForm({ onSave, onCancel, saving, initial, freights, mobile }) {
+function IncForm({ onSave, onCancel, saving, initial, freights, mobile, storagePath }) {
   const [concept, setConcept] = useState(initial?.concept||"");
   const [amount, setAmount] = useState(initial?.amount?.toString()||"");
   const [currency, setCurrency] = useState(initial?.currency||"UYU");
@@ -166,7 +166,7 @@ function IncForm({ onSave, onCancel, saving, initial, freights, mobile }) {
   const [invoiceFile, setInvoiceFile] = useState(null);
   const [notes, setNotes] = useState(initial?.notes||"");
   const [uploading, setUploading] = useState(false);
-  const handleSubmit = async()=>{if(!concept||!amount||!date)return;setUploading(true);try{let iu=initial?.invoiceUrl;if(invoiceFile){iu=await uploadPhoto(invoiceFile,"truck-incomes","invoice");}await onSave({concept,amount:parseFloat(amount),currency,date,status,freightId:freightId||null,invoiceNumber:invoiceNumber||null,invoiceUrl:iu,notes:notes||null});}finally{setUploading(false);}};
+  const handleSubmit = async()=>{if(!concept||!amount||!date)return;setUploading(true);try{let iu=initial?.invoiceUrl;if(invoiceFile){iu=await uploadPhoto(invoiceFile,storagePath||"truck-incomes","invoice");}await onSave({concept,amount:parseFloat(amount),currency,date,status,freightId:freightId||null,invoiceNumber:invoiceNumber||null,invoiceUrl:iu,notes:notes||null});}finally{setUploading(false);}};
   if (mobile) return <StepForm title={initial?"Editar ingreso":"Nuevo ingreso"} saving={saving||uploading} onSubmit={handleSubmit} onCancel={onCancel} submitLabel={initial?"Guardar":"Registrar"} steps={[
     {title:"Concepto",content:<div><Field label="Concepto" value={concept} onChange={setConcept} placeholder="Ej: Flete Colonia → Montevideo"/>{freights?.length>0&&<div style={{marginTop:10}}><label style={lbl("s")}>Flete asociado</label><select value={freightId} onChange={e=>{setFreightId(e.target.value);if(e.target.value&&!concept){const f=freights.find(x=>(x.freightId||x.id)===e.target.value);if(f)setConcept(`Flete ${f.origin||"?"} → ${f.dest||"?"}`);}}} style={{...sel,minHeight:48}}><option value="">Sin flete</option>{freights.map(f=><option key={f.freightId||f.id} value={f.freightId||f.id}>{f.code}</option>)}</select></div>}</div>},
     {title:"Monto",content:<div><Field label="Monto" value={amount} onChange={setAmount} placeholder="0" type="number" inputMode="decimal"/><div style={{display:"flex",gap:10,marginTop:10}}><div style={{flex:1}}><label style={lbl("s")}>Moneda</label><select value={currency} onChange={e=>setCurrency(e.target.value)} style={{...sel,minHeight:48}}><option value="UYU">UYU</option><option value="USD">USD</option><option value="ARS">ARS</option></select></div><div style={{flex:1}}><label style={lbl("s")}>Estado</label><select value={status} onChange={e=>setStatus(e.target.value)} style={{...sel,minHeight:48}}>{Object.entries(INC_STATUS).map(([k,v])=><option key={k} value={k}>{v.label}</option>)}</select></div></div></div>},
@@ -306,6 +306,7 @@ export default function TruckDetailScreen({ truckId, user, onBack, onNavFreight 
   const [expandedItem, setExpandedItem] = useState(null); // id of expanded income/expense
 
   const isDesktop = useIsDesktop();
+  const storePath = `truck-docs/${user?.activeCompanyId||"shared"}/${truckId}`;
 
   // Lazy-loaded data
   const [ecoSummary, setEcoSummary] = useState(null);
@@ -398,7 +399,8 @@ export default function TruckDetailScreen({ truckId, user, onBack, onNavFreight 
     if (!file) return;
     setSaving(true);
     try {
-      const fileUrl = await uploadPhoto(file, "truck-docs", "doc");
+      const cid = user?.activeCompanyId || "shared";
+      const fileUrl = await uploadPhoto(file, `truck-docs/${cid}/${truckId}`, "doc");
       await apiAddTruckDocument(truckId, {
         type: "OTHER", fileUrl, fileName: file.name, mimeType: file.type,
         [linkField]: linkId,
@@ -556,8 +558,8 @@ export default function TruckDetailScreen({ truckId, user, onBack, onNavFreight 
         {/* ==================== INCOMES TAB ==================== */}
         {tab === "incomes" && <>
           {canEdit && <div style={{marginBottom:10,textAlign:"right"}}><Btn sm onClick={()=>setShowForm(!showForm)} icon={showForm?Ic.cross(C.w,12):Ic.plus(C.w,12)}>{showForm?"Cerrar":"Nuevo ingreso"}</Btn></div>}
-          {showForm && <IncForm onSave={handleAddInc} onCancel={()=>setShowForm(false)} saving={saving} freights={freightHistory} mobile={!isDesktop}/>}
-          {editItem && tab==="incomes" && <IncForm initial={editItem} onSave={handleUpdateInc} onCancel={()=>setEditItem(null)} saving={saving} freights={freightHistory} mobile={!isDesktop}/>}
+          {showForm && <IncForm onSave={handleAddInc} onCancel={()=>setShowForm(false)} saving={saving} freights={freightHistory} mobile={!isDesktop} storagePath={storePath}/>}
+          {editItem && tab==="incomes" && <IncForm initial={editItem} onSave={handleUpdateInc} onCancel={()=>setEditItem(null)} saving={saving} freights={freightHistory} mobile={!isDesktop} storagePath={storePath}/>}
           {incomes===null?<Loader/>:incomes.length===0&&!showForm?<EmptyState icon={Ic.doc(C.t3,20)} title="Sin ingresos" subtitle="Registrá el primer ingreso del camión"/>:
             incomes.map(inc=>{
               const st = INC_STATUS[inc.status]||INC_STATUS.PENDING;
@@ -607,8 +609,8 @@ export default function TruckDetailScreen({ truckId, user, onBack, onNavFreight 
         {tab === "expenses" && <>
           {canEdit && <div style={{marginBottom:10,textAlign:"right"}}><Btn sm onClick={()=>setShowForm(!showForm)} icon={showForm?Ic.cross(C.w,12):Ic.plus(C.w,12)}>{showForm?"Cerrar":"Nuevo gasto"}</Btn></div>}
           {expSummary && <div style={{display:"flex",gap:10,marginBottom:12}}><Stat label="Este mes" value={fmtMoney(expSummary.thisMonth)}/><Stat label="Mes anterior" value={fmtMoney(expSummary.prevMonth)} color={C.t3}/></div>}
-          {showForm && <ExpForm onSave={handleAddExp} onCancel={()=>setShowForm(false)} saving={saving} activeFreights={truck.activeFreights} mobile={!isDesktop}/>}
-          {editItem && tab==="expenses" && <ExpForm initial={editItem} onSave={handleUpdateExp} onCancel={()=>setEditItem(null)} saving={saving} activeFreights={truck.activeFreights} mobile={!isDesktop}/>}
+          {showForm && <ExpForm onSave={handleAddExp} onCancel={()=>setShowForm(false)} saving={saving} activeFreights={truck.activeFreights} mobile={!isDesktop} storagePath={storePath}/>}
+          {editItem && tab==="expenses" && <ExpForm initial={editItem} onSave={handleUpdateExp} onCancel={()=>setEditItem(null)} saving={saving} activeFreights={truck.activeFreights} mobile={!isDesktop} storagePath={storePath}/>}
           {expenses===null?<Loader/>:expenses.length===0&&!showForm?<EmptyState icon={Ic.doc(C.t3,20)} title="Sin gastos" subtitle="Registrá el primer gasto del camión"/>:
             expenses.map(e=>{
               const isExp = expandedItem === `exp-${e.id}`;
@@ -731,8 +733,8 @@ export default function TruckDetailScreen({ truckId, user, onBack, onNavFreight 
             {docSum.expiringSoon>0&&<span style={{fontSize:11,fontWeight:600,color:C.warn,background:C.warnPale,padding:"3px 10px",borderRadius:R.pill}}>⚠️ {docSum.expiringSoon}</span>}
             {docSum.expired>0&&<span style={{fontSize:11,fontWeight:600,color:C.err,background:C.errPale,padding:"3px 10px",borderRadius:R.pill}}>❌ {docSum.expired}</span>}
           </div>}
-          {showForm && <DocForm onSave={handleAddDoc} onCancel={()=>setShowForm(false)} saving={saving} linkOptions={linkOpts}/>}
-          {editItem && tab==="docs" && <DocForm initial={editItem} onSave={handleUpdateDoc} onCancel={()=>setEditItem(null)} saving={saving} linkOptions={linkOpts}/>}
+          {showForm && <DocForm onSave={handleAddDoc} onCancel={()=>setShowForm(false)} saving={saving} linkOptions={linkOpts} storagePath={storePath}/>}
+          {editItem && tab==="docs" && <DocForm initial={editItem} onSave={handleUpdateDoc} onCancel={()=>setEditItem(null)} saving={saving} linkOptions={linkOpts} storagePath={storePath}/>}
           {displayDocs.length===0&&!showForm?<EmptyState icon={Ic.doc(C.t3,24)} title="Sin documentos" subtitle="Cargá el primer documento del camión"/>:
             displayDocs.map(d=>{
               const lb = LINK_BADGE[d.linkedType||"general"]||LINK_BADGE.general;
