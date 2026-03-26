@@ -329,6 +329,7 @@ export async function apiUpdateTruckExpense(id, expId, body) { return api(`/truc
 export async function apiDeleteTruckExpense(id, expId) { return api(`/trucks/${id}/expenses/${expId}/delete`, { method: 'PATCH', body: {} }); }
 export async function apiGetTruckExpenseSummary(id) { return api(`/trucks/${id}/expenses/summary`); }
 export async function apiGetTruckFreights(id, take = 20, skip = 0) { return api(`/trucks/${id}/freights?take=${take}&skip=${skip}`); }
+export async function apiGetFleetAlerts() { return api('/trucks/alerts'); }
 
 // Fields & Lots
 export async function apiGetFields(ownerCompanyId) { const q = ownerCompanyId ? `?ownerCompanyId=${encodeURIComponent(ownerCompanyId)}` : ''; return api(`/fields${q}`); }

@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { C, Ic, R } from "../theme";
 import { Btn, Field, Loader, LoadingOverlay, EmptyState, LicensePlate } from "../components";
-import { apiGetTrucks, apiCreateTruck, apiDeactivateTruck, apiListDrivers, apiCreateDriver, apiDeactivateDriver, apiGetCompanyAccess } from "../api";
+import { apiGetTrucks, apiCreateTruck, apiDeactivateTruck, apiListDrivers, apiCreateDriver, apiDeactivateDriver, apiGetCompanyAccess, apiGetExpiringDocs } from "../api";
 import { useCatalogStore } from "../store";
 
 export default function TrucksScreen({ onBack, embedded, user, onTruckClick }) {
@@ -19,6 +19,9 @@ export default function TrucksScreen({ onBack, embedded, user, onTruckClick }) {
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState(null);
   const [doneMsg, setDoneMsg] = useState("");
+
+  // Document expiry alerts per truck: { truckId: { expired: N, expiring: N } }
+  const [docAlerts, setDocAlerts] = useState({});
 
   // Cross-company: plant selects whose fleet to view
   const [linkedCompanies, setLinkedCompanies] = useState([]);
@@ -38,8 +41,22 @@ export default function TrucksScreen({ onBack, embedded, user, onTruckClick }) {
 
   const loadTrucks = useCallback(async () => {
     try {
-      const t = await apiGetTrucks(selectedCompanyId || user?.activeCompanyId || undefined);
+      const [t, expDocs] = await Promise.all([
+        apiGetTrucks(selectedCompanyId || user?.activeCompanyId || undefined),
+        apiGetExpiringDocs(30).catch(() => []),
+      ]);
       setTrucks(t || []);
+      // Build alerts map: truckId → { expired, expiring }
+      const alerts = {};
+      const now = new Date();
+      for (const d of (expDocs || [])) {
+        const tid = d.truck?.id || d.truckId;
+        if (!tid) continue;
+        if (!alerts[tid]) alerts[tid] = { expired: 0, expiring: 0 };
+        if (d.expiryStatus === 'expired' || (d.expiresAt && new Date(d.expiresAt) < now)) alerts[tid].expired++;
+        else alerts[tid].expiring++;
+      }
+      setDocAlerts(alerts);
     } catch (e) { setMsg({ t: e.message || "Error al cargar flota", k: "err" }); }
     finally { setLoading(false); }
   }, [selectedCompanyId]);
@@ -168,14 +185,17 @@ export default function TrucksScreen({ onBack, embedded, user, onTruckClick }) {
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {trucks.map(t => {
                 const ownerName = t.ownerCompanyId && companyNameMap[t.ownerCompanyId];
+                const alert = docAlerts[t.id];
                 return (
-                  <div key={t.id} onClick={() => onTruckClick?.(t.id)} style={{ background: C.w, border: `1px solid ${C.b1}`, borderLeft: `3px solid ${C.acc}`, borderRadius: R.lg, padding: 14, boxShadow: C.sh, display: "flex", justifyContent: "space-between", alignItems: "center", cursor: onTruckClick ? "pointer" : "default" }}>
+                  <div key={t.id} onClick={() => onTruckClick?.(t.id)} style={{ background: C.w, border: `1px solid ${C.b1}`, borderLeft: `3px solid ${alert?.expired ? C.err : alert?.expiring ? C.warn : C.acc}`, borderRadius: R.lg, padding: 14, boxShadow: C.sh, display: "flex", justifyContent: "space-between", alignItems: "center", cursor: onTruckClick ? "pointer" : "default" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                       {Ic.truck(C.acc, 20)}
                       <div>
                         <div style={{ display:"flex", alignItems:"center", gap:8 }}>
                           <LicensePlate plate={t.plate} size="md" />
                           {t.assignedUser && <span style={{ fontSize: 11.5, color: C.pri, fontWeight: 600 }}>{t.assignedUser.name}</span>}
+                          {alert?.expired > 0 && <span style={{ fontSize: 10, fontWeight: 700, color: C.err, background: C.errPale, padding: "1px 6px", borderRadius: R.pill }}>{alert.expired} venc.</span>}
+                          {alert?.expiring > 0 && !alert?.expired && <span style={{ fontSize: 10, fontWeight: 700, color: C.warn, background: C.warnPale, padding: "1px 6px", borderRadius: R.pill }}>{alert.expiring} por vencer</span>}
                         </div>
                         {t.model && <div style={{ fontSize: 12.1, color: C.t3, marginTop: 2 }}>{t.model}</div>}
                         {ownerName && !selectedCompanyId && <div style={{ fontSize: 10.5, color: C.info, fontWeight: 600, marginTop: 2 }}>{ownerName}</div>}

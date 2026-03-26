@@ -5,7 +5,7 @@ import { Bd, Btn, SkeletonList, SkeletonCard, EmptyState, Tabs, FreightCard, Fre
 import { useIsDesktop, mapFreight, originDisplay, destDisplay } from "../hooks";
 import { useAccessLevel } from "../hooks/useAccessLevel";
 import { getPendingActions, resolveUserTypeForFreight, getThirdPartyLabel } from "../utils/freight-helpers";
-import { apiListFreights } from "../api";
+import { apiListFreights, apiGetFleetAlerts } from "../api";
 import DetailScreen from "./DetailScreen";
 
 const GROUP_PAGE_SIZE = 5;
@@ -68,6 +68,11 @@ export default memo(function HomeScreen({ user, freights, loading, error, perms,
   // Mobile tab: "pending" or "daily"
   const [mobileTab, setMobileTab] = useState("pending");
   const { isConsulta, isConsultaFor } = useAccessLevel(user);
+  const [fleetAlerts, setFleetAlerts] = useState(null);
+
+  useEffect(() => {
+    apiGetFleetAlerts().then(setFleetAlerts).catch(() => {});
+  }, []);
 
   const selectFreight = useCallback((id, source) => {
     setSelectedId(id);
@@ -433,6 +438,30 @@ export default memo(function HomeScreen({ user, freights, loading, error, perms,
             ))}
           </div>}
         </div>
+
+        {/* Fleet document alerts */}
+        {fleetAlerts?.trucksWithExpired > 0 && !openGroup && (
+          <div onClick={() => onNav?.("trucks")} style={{ padding: compact ? "8px 10px" : "10px 14px", borderRadius: R.lg, background: C.errPale, marginBottom: 8, cursor: "pointer", border: `1px solid ${C.err}20` }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              {Ic.doc(C.err, compact ? 14 : 16)}
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: compact ? 11.5 : 13, fontWeight: 700, color: C.err }}>{fleetAlerts.trucksWithExpired} camión{fleetAlerts.trucksWithExpired > 1 ? "es" : ""} con documentos vencidos</div>
+              </div>
+              <span style={{ opacity: 0.5 }}>{Ic.chev(C.err, 12)}</span>
+            </div>
+          </div>
+        )}
+        {fleetAlerts?.trucksWithExpiring > 0 && !fleetAlerts?.trucksWithExpired && !openGroup && (
+          <div onClick={() => onNav?.("trucks")} style={{ padding: compact ? "8px 10px" : "10px 14px", borderRadius: R.lg, background: C.warnPale, marginBottom: 8, cursor: "pointer", border: `1px solid ${C.warn}20` }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              {Ic.doc(C.warn, compact ? 14 : 16)}
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: compact ? 11.5 : 13, fontWeight: 700, color: C.warn }}>{fleetAlerts.trucksWithExpiring} camión{fleetAlerts.trucksWithExpiring > 1 ? "es" : ""} con documentos por vencer</div>
+              </div>
+              <span style={{ opacity: 0.5 }}>{Ic.chev(C.warn, 12)}</span>
+            </div>
+          </div>
+        )}
 
         {/* Initial load: show panel structure with skeletons */}
         {isInitialLoad && <>
