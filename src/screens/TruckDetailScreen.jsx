@@ -447,9 +447,9 @@ export default function TruckDetailScreen({ truckId, user, onBack, onNavFreight 
   const TABS = [
     { key:"summary", label:"Resumen" },
     { key:"freights", label:"Fletes" },
+    { key:"movements", label:"Movimientos" },
     { key:"incomes", label:"Ingresos" },
     { key:"expenses", label:"Gastos" },
-    { key:"movements", label:"Movimientos" },
     { key:"docs", label:"Documentos" },
   ];
 
