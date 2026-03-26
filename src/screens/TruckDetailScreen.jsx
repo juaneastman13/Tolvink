@@ -742,19 +742,26 @@ export default function TruckDetailScreen({ truckId, user, onBack, onNavFreight 
             displayDocs.map(d=>{
               const lb = LINK_BADGE[d.linkedType||"general"]||LINK_BADGE.general;
               const linkLabel = d.linkedType==="expense"&&d.expense?`${EXP_TYPE_LABELS[d.expense.type]||""} ${fmtDate(d.expense.date)}`:d.linkedType==="income"&&d.income?d.income.concept:d.linkedType==="freight"&&d.freight?d.freight.code:d.linkedType==="movement"&&d.movement?`${MOV_TYPE_LABELS[d.movement.type]||""} ${fmtDate(d.movement.departureAt)}`:"";
-              return <div key={d.id} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",border:`1px solid ${C.b2}`,borderLeft:`3px solid ${EXPIRY_COLORS[d.expiryStatus||"no_expiry"]}`,borderRadius:R.md,marginBottom:8,background:C.w}}>
-              <div style={{flex:1,minWidth:0}}>
-                <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
-                  <span style={{fontSize:13.5,fontWeight:600,color:C.t1}}>{DOC_TYPE_LABELS[d.type]||d.type}{d.name?` — ${d.name}`:""}</span>
-                  <span style={{fontSize:9.5,fontWeight:700,color:lb.color,background:lb.bg,padding:"1px 6px",borderRadius:R.pill}}>{lb.label}{linkLabel?`: ${linkLabel}`:""}</span>
+              const isImg = d.mimeType?.startsWith("image")||d.fileUrl?.match(/\.(jpg|jpeg|png|webp|gif)$/i);
+              const ab = {padding:6,minWidth:36,minHeight:36,borderRadius:R.sm,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}; // action button base
+              return <div key={d.id} style={{display:"flex",alignItems:"center",gap:8,padding:8,background:C.bg,border:`1px solid ${C.b2}`,borderRadius:R.md,marginBottom:6}}>
+              {/* Thumbnail */}
+              <button onClick={()=>openFile(d)} style={{display:"flex",alignItems:"center",gap:10,flex:1,minWidth:0,background:"none",border:"none",cursor:"pointer",fontFamily:FONT,textAlign:"left",padding:0}}>
+                {isImg?<img src={d.fileUrl} alt="" loading="lazy" style={{width:48,height:48,borderRadius:R.sm,objectFit:"cover",flexShrink:0}} onError={e=>{e.target.style.display="none"}}/>:<div style={{width:48,height:48,borderRadius:R.sm,background:C.priPale,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{Ic.doc(C.pri,20)}</div>}
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:12.1,fontWeight:600,color:C.t1,wordBreak:"break-all"}}>{d.fileName||d.name||"Archivo"}</div>
+                  <div style={{fontSize:11,color:C.t3,marginTop:2,display:"flex",alignItems:"center",gap:4,flexWrap:"wrap"}}>
+                    <span>{DOC_TYPE_LABELS[d.type]||d.type}{d.createdAt?` · ${fmtDate(d.createdAt)}`:""}</span>
+                    <span style={{fontSize:9.5,fontWeight:700,color:lb.color,background:lb.bg,padding:"1px 5px",borderRadius:R.sm}}>{lb.label}{linkLabel?`: ${linkLabel}`:""}</span>
+                  </div>
                 </div>
-                <div style={{fontSize:11.5,color:EXPIRY_COLORS[d.expiryStatus||"no_expiry"],fontWeight:600,marginTop:2}}>{EXPIRY_LABELS[d.expiryStatus||"no_expiry"]}{d.expiresAt?` · ${fmtDate(d.expiresAt)}`:""}</div>
-              </div>
-              <button onClick={()=>openFile(d)} style={{background:"none",border:"none",cursor:"pointer",padding:4}}>{Ic.eye(C.pri,16)}</button>
-              {d.ocrStatus==="completed"&&<span style={{fontSize:9,color:C.pri}} title="Procesado con IA">✨</span>}
-              {d.ocrStatus==="processing"&&<span style={{fontSize:9,color:C.warn}} title="Procesando...">⏳</span>}
-              {canEdit&&<button onClick={()=>setEditItem(d)} style={{background:"none",border:"none",cursor:"pointer",padding:4}}>{Ic.edit(C.t3,14)}</button>}
-              {canEdit&&<button onClick={()=>setConfirmDelete({type:"doc",id:d.id,label:DOC_TYPE_LABELS[d.type]})} style={{background:"none",border:"none",cursor:"pointer",padding:4}}>{Ic.ban(C.err,14)}</button>}
+              </button>
+              {/* Action buttons — same order as freight docs: view, download, OCR, edit, delete */}
+              <button onClick={()=>openFile(d)} title="Ver" style={{...ab,border:`1px solid ${C.b1}`,background:C.w}}>{Ic.eye(C.t2,14)}</button>
+              <a href={d.fileUrl} download title="Descargar" style={{...ab,border:`1px solid ${C.b1}`,background:C.w,textDecoration:"none"}}>{Ic.down?.(C.t2,14)||Ic.download?.(C.t2,14)||"⬇"}</a>
+              {isImg&&d.ocrStatus!=="completed"?<button onClick={()=>handleOcr(d)} disabled={ocrLoading} title="OCR" style={{...ab,border:`1px solid ${C.pri}40`,background:C.priPale,opacity:ocrLoading?0.5:1}}>{Ic.doc(C.pri,14)}</button>:d.ocrStatus==="completed"?<button onClick={()=>openFile(d)} title="Ver datos IA" style={{...ab,border:`1px solid ${C.pri}`,background:C.okPale}}>{Ic.eye(C.pri,14)}</button>:null}
+              {canEdit&&<button onClick={()=>setEditItem(d)} title="Editar" style={{...ab,border:`1px solid ${C.b1}`,background:C.w}}>{Ic.edit(C.t3,14)}</button>}
+              {canEdit&&<button onClick={()=>setConfirmDelete({type:"doc",id:d.id,label:DOC_TYPE_LABELS[d.type]})} title="Eliminar" style={{...ab,border:`1px solid ${C.err}40`,background:C.errPale}}>{Ic.cross(C.err,14)}</button>}
             </div>})
           }
         </>})()}
