@@ -337,7 +337,8 @@ export default function TruckDetailScreen({ truckId, user, onBack, onNavFreight 
     if (tab === "incomes" && !incomes) apiGetTruckIncomes(truckId).then(d=>setIncomes(d||[])).catch(()=>setIncomes([]));
     if (tab === "movements" && !movements) { apiGetTruckMovements(truckId).then(d=>setMovements(d||[])).catch(()=>setMovements([])); if (!locations) import("../api").then(a=>a.apiGetFields?.()??a.default?.apiGetFields?.()).catch(()=>null).then(d=>setLocations(d||[])).catch(()=>setLocations([])); }
     if (tab === "freights" && !freightHistory) apiGetTruckFreights(truckId).then(d=>setFreightHistory(d||[])).catch(()=>setFreightHistory([]));
-    if (tab === "docs" && !allDocs) apiGetTruckDocuments(truckId).then(d=>setAllDocs(d||[])).catch(()=>setAllDocs([]));
+    // Load allDocs for any tab that needs them (incomes, expenses, movements, docs)
+    if (["incomes","expenses","movements","docs"].includes(tab) && !allDocs) apiGetTruckDocuments(truckId).then(d=>setAllDocs(d||[])).catch(()=>setAllDocs([]));
   }, [tab, truck]);
 
   // Poll for OCR processing completion
@@ -406,7 +407,9 @@ export default function TruckDetailScreen({ truckId, user, onBack, onNavFreight 
         [linkField]: linkId,
       });
       setDoneMsg("Archivo subido");
-      setAllDocs(null); // refresh docs
+      // Reload docs immediately so the file shows in the expanded item
+      const freshDocs = await apiGetTruckDocuments(truckId).catch(() => []);
+      setAllDocs(freshDocs);
     } catch (e) { setError(e.message); }
     finally { setSaving(false); }
   };
