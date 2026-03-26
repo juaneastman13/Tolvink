@@ -11,7 +11,7 @@ import {
   apiAddTruckExpense, apiUpdateTruckExpense, apiDeleteTruckExpense, apiGetTruckExpenseSummary,
   apiGetTruckFreights, apiGetTruckIncomes, apiAddTruckIncome, apiUpdateTruckIncome, apiDeleteTruckIncome,
   apiGetTruckMovements, apiAddTruckMovement, apiUpdateTruckMovement, apiDeleteTruckMovement,
-  apiGetEconomicSummary, uploadPhoto,
+  apiGetEconomicSummary, apiGetTruckDocuments, uploadPhoto,
 } from "../api";
 
 // ======================== CONSTANTS ====================================
@@ -60,20 +60,28 @@ function Stat({ label, value, color=C.t1, sub }) {
 
 // ======================== FORMS (Doc, Exp reused from before) ============
 
-function DocForm({ onSave, onCancel, saving, initial }) {
+function DocForm({ onSave, onCancel, saving, initial, linkOptions }) {
   const [type, setType] = useState(initial?.type||"VTV_ITV");
   const [name, setName] = useState(initial?.name||"");
   const [expiresAt, setExpiresAt] = useState(initial?.expiresAt?new Date(initial.expiresAt).toISOString().split("T")[0]:"");
   const [issuedAt, setIssuedAt] = useState(initial?.issuedAt?new Date(initial.issuedAt).toISOString().split("T")[0]:"");
   const [notes, setNotes] = useState(initial?.notes||"");
+  const [linkType, setLinkType] = useState(initial?.expenseId?"expense":initial?.incomeId?"income":initial?.freightId?"freight":initial?.movementId?"movement":"none");
+  const [linkId, setLinkId] = useState(initial?.expenseId||initial?.incomeId||initial?.freightId||initial?.movementId||"");
   const [file, setFile] = useState(null);
   const [uploading, setUploading] = useState(false);
-  const handleSubmit = async()=>{if(!initial&&!file)return;setUploading(true);try{let fu=initial?.fileUrl,fn=initial?.fileName,mt=initial?.mimeType;if(file){fu=await uploadPhoto(file,"truck-docs","doc");fn=file.name;mt=file.type;}await onSave({type,name:name||null,fileUrl:fu,fileName:fn,mimeType:mt,expiresAt:expiresAt||null,issuedAt:issuedAt||null,notes:notes||null});}finally{setUploading(false);}};
+  const handleSubmit = async()=>{if(!initial&&!file)return;setUploading(true);try{let fu=initial?.fileUrl,fn=initial?.fileName,mt=initial?.mimeType;if(file){fu=await uploadPhoto(file,"truck-docs","doc");fn=file.name;mt=file.type;}const linkData = {};if(linkType==="expense")linkData.expenseId=linkId||null;else if(linkType==="income")linkData.incomeId=linkId||null;else if(linkType==="freight")linkData.freightId=linkId||null;else if(linkType==="movement")linkData.movementId=linkId||null;await onSave({type,name:name||null,fileUrl:fu,fileName:fn,mimeType:mt,expiresAt:expiresAt||null,issuedAt:issuedAt||null,notes:notes||null,...linkData});}finally{setUploading(false);}};
+  const linkItems = linkType==="expense"?linkOptions?.expenses:linkType==="income"?linkOptions?.incomes:linkType==="freight"?linkOptions?.freights:linkType==="movement"?linkOptions?.movements:[];
   return (<div style={{padding:16,background:C.bgCard,border:`1px solid ${C.b2}`,borderRadius:R.lg,marginBottom:12}}>
     <div style={{marginBottom:10}}><label style={lbl("s")}>Tipo de documento</label><select value={type} onChange={e=>setType(e.target.value)} style={sel}>{Object.entries(DOC_TYPE_LABELS).map(([k,v])=><option key={k} value={k}>{v}</option>)}</select></div>
     {type==="OTHER"&&<Field label="Nombre" value={name} onChange={setName} placeholder="Nombre del documento"/>}
     {!initial&&<div style={{marginBottom:10}}><label style={lbl("s")}>Archivo</label><input type="file" accept="image/*,.pdf" onChange={e=>setFile(e.target.files?.[0]||null)} style={{fontSize:13,fontFamily:FONT}}/></div>}
     <div style={{display:"flex",gap:10,marginBottom:10}}><div style={{flex:1}}><label style={lbl("s")}>Emisión</label><input type="date" value={issuedAt} onChange={e=>setIssuedAt(e.target.value)} style={{...sel}}/></div><div style={{flex:1}}><label style={lbl("s")}>Vencimiento</label><input type="date" value={expiresAt} onChange={e=>setExpiresAt(e.target.value)} style={{...sel}}/></div></div>
+    {linkOptions && <div style={{marginBottom:10}}>
+      <label style={lbl("s")}>Vincular a</label>
+      <select value={linkType} onChange={e=>{setLinkType(e.target.value);setLinkId("");}} style={{...sel,marginBottom:4}}><option value="none">Documento general</option><option value="expense">Gasto</option><option value="income">Ingreso</option><option value="freight">Flete</option><option value="movement">Movimiento</option></select>
+      {linkType!=="none"&&linkItems?.length>0&&<select value={linkId} onChange={e=>setLinkId(e.target.value)} style={sel}><option value="">Seleccionar...</option>{linkItems.map(i=><option key={i.id} value={i.id}>{i.label}</option>)}</select>}
+    </div>}
     <Field label="Notas (opcional)" value={notes} onChange={setNotes} placeholder="Observaciones"/>
     <div style={{display:"flex",gap:8,marginTop:12}}><Btn full disabled={saving||uploading||(!initial&&!file)} onClick={handleSubmit}>{uploading?"Subiendo...":initial?"Guardar":"Agregar documento"}</Btn><Btn v="muted" onClick={onCancel}>Cancelar</Btn></div>
   </div>);
@@ -116,7 +124,7 @@ function IncForm({ onSave, onCancel, saving, initial, freights }) {
     <Field label="Concepto" value={concept} onChange={setConcept} placeholder="Ej: Flete Colonia → Montevideo"/>
     <div style={{display:"flex",gap:10,marginTop:10,marginBottom:10}}><div style={{flex:2}}><Field label="Monto" value={amount} onChange={setAmount} placeholder="0" type="number"/></div><div style={{flex:1}}><label style={lbl("s")}>Moneda</label><select value={currency} onChange={e=>setCurrency(e.target.value)} style={sel}><option value="UYU">UYU</option><option value="USD">USD</option><option value="ARS">ARS</option></select></div></div>
     <div style={{display:"flex",gap:10,marginBottom:10}}><div style={{flex:1}}><label style={lbl("s")}>Fecha</label><input type="date" value={date} onChange={e=>setDate(e.target.value)} style={{...sel}}/></div><div style={{flex:1}}><label style={lbl("s")}>Estado</label><select value={status} onChange={e=>setStatus(e.target.value)} style={sel}>{Object.entries(INC_STATUS).map(([k,v])=><option key={k} value={k}>{v.label}</option>)}</select></div></div>
-    {freights?.length>0&&<div style={{marginBottom:10}}><label style={lbl("s")}>Flete asociado</label><select value={freightId} onChange={e=>setFreightId(e.target.value)} style={sel}><option value="">Sin flete</option>{freights.map(f=><option key={f.freightId||f.id} value={f.freightId||f.id}>{f.code}</option>)}</select></div>}
+    {freights?.length>0&&<div style={{marginBottom:10}}><label style={lbl("s")}>Flete asociado</label><select value={freightId} onChange={e=>{setFreightId(e.target.value);if(e.target.value&&!concept){const f=freights.find(x=>(x.freightId||x.id)===e.target.value);if(f)setConcept(`Flete ${f.origin||"?"} → ${f.dest||"?"}`);}}} style={sel}><option value="">Sin flete</option>{freights.map(f=><option key={f.freightId||f.id} value={f.freightId||f.id}>{f.code} — {f.origin||"?"} → {f.dest||"?"}</option>)}</select></div>}
     <Field label="N° Factura (opcional)" value={invoiceNumber} onChange={setInvoiceNumber} placeholder="Ej: A-0001-00012345"/>
     <div style={{marginTop:10}}><label style={lbl("s")}>Factura (opcional)</label><input type="file" accept="image/*,.pdf" onChange={e=>setInvoiceFile(e.target.files?.[0]||null)} style={{fontSize:13,fontFamily:FONT}}/></div>
     <Field label="Notas (opcional)" value={notes} onChange={setNotes} placeholder="Observaciones"/>
@@ -124,11 +132,13 @@ function IncForm({ onSave, onCancel, saving, initial, freights }) {
   </div>);
 }
 
-function MovForm({ onSave, onCancel, saving, initial }) {
+function MovForm({ onSave, onCancel, saving, initial, locations }) {
   const [type, setType] = useState(initial?.type||"REPOSITIONING");
   const [description, setDescription] = useState(initial?.description||"");
   const [originName, setOriginName] = useState(initial?.originName||"");
+  const [originFieldId, setOriginFieldId] = useState(initial?.originFieldId||"");
   const [destName, setDestName] = useState(initial?.destName||"");
+  const [destFieldId, setDestFieldId] = useState(initial?.destFieldId||"");
   const [departureAt, setDepartureAt] = useState(initial?.departureAt?new Date(initial.departureAt).toISOString().slice(0,16):"");
   const [arrivalAt, setArrivalAt] = useState(initial?.arrivalAt?new Date(initial.arrivalAt).toISOString().slice(0,16):"");
   const [kmDriven, setKmDriven] = useState(initial?.kmDriven?.toString()||"");
@@ -136,11 +146,25 @@ function MovForm({ onSave, onCancel, saving, initial }) {
   const [fuelCost, setFuelCost] = useState(initial?.fuelCost?.toString()||"");
   const [tollCost, setTollCost] = useState(initial?.tollCost?.toString()||"");
   const [notes, setNotes] = useState(initial?.notes||"");
-  const handleSubmit = ()=>onSave({type,description:description||null,originName:originName||null,destName:destName||null,departureAt:departureAt||null,arrivalAt:arrivalAt||null,kmDriven:kmDriven?parseFloat(kmDriven):null,fuelLiters:fuelLiters?parseFloat(fuelLiters):null,fuelCost:fuelCost?parseFloat(fuelCost):null,tollCost:tollCost?parseFloat(tollCost):null,notes:notes||null});
+  const pickLoc = (fieldId, setFieldId, setName) => {
+    if (!fieldId) { setFieldId(""); return; }
+    const loc = locations?.find(l => l.id === fieldId);
+    if (loc) { setFieldId(fieldId); setName(loc.name); }
+  };
+  const handleSubmit = ()=>onSave({type,description:description||null,originName:originName||null,originFieldId:originFieldId||null,destName:destName||null,destFieldId:destFieldId||null,departureAt:departureAt||null,arrivalAt:arrivalAt||null,kmDriven:kmDriven?parseFloat(kmDriven):null,fuelLiters:fuelLiters?parseFloat(fuelLiters):null,fuelCost:fuelCost?parseFloat(fuelCost):null,tollCost:tollCost?parseFloat(tollCost):null,notes:notes||null});
   return (<div style={{padding:16,background:C.bgCard,border:`1px solid ${C.b2}`,borderRadius:R.lg,marginBottom:12}}>
     <div style={{marginBottom:10}}><label style={lbl("s")}>Tipo</label><select value={type} onChange={e=>setType(e.target.value)} style={sel}>{Object.entries(MOV_TYPE_LABELS).map(([k,v])=><option key={k} value={k}>{v}</option>)}</select></div>
     <Field label="Descripción (opcional)" value={description} onChange={setDescription} placeholder="Detalle"/>
-    <div style={{display:"flex",gap:10,marginTop:10,marginBottom:10}}><div style={{flex:1}}><Field label="Origen" value={originName} onChange={setOriginName} placeholder="Ciudad/lugar"/></div><div style={{flex:1}}><Field label="Destino" value={destName} onChange={setDestName} placeholder="Ciudad/lugar"/></div></div>
+    <div style={{display:"flex",gap:10,marginTop:10,marginBottom:10}}>
+      <div style={{flex:1}}>
+        {locations?.length>0 && <div style={{marginBottom:4}}><label style={lbl("s")}>Origen (ubicación)</label><select value={originFieldId} onChange={e=>{pickLoc(e.target.value,setOriginFieldId,setOriginName);}} style={{...sel,marginBottom:4}}><option value="">Escribir manualmente</option>{locations.map(l=><option key={l.id} value={l.id}>{l.name}</option>)}</select></div>}
+        <Field label={locations?.length?"O escribir" :"Origen"} value={originName} onChange={v=>{setOriginName(v);if(v)setOriginFieldId("");}} placeholder="Ciudad/lugar"/>
+      </div>
+      <div style={{flex:1}}>
+        {locations?.length>0 && <div style={{marginBottom:4}}><label style={lbl("s")}>Destino (ubicación)</label><select value={destFieldId} onChange={e=>{pickLoc(e.target.value,setDestFieldId,setDestName);}} style={{...sel,marginBottom:4}}><option value="">Escribir manualmente</option>{locations.map(l=><option key={l.id} value={l.id}>{l.name}</option>)}</select></div>}
+        <Field label={locations?.length?"O escribir":"Destino"} value={destName} onChange={v=>{setDestName(v);if(v)setDestFieldId("");}} placeholder="Ciudad/lugar"/>
+      </div>
+    </div>
     <div style={{display:"flex",gap:10,marginBottom:10}}><div style={{flex:1}}><label style={lbl("s")}>Salida</label><input type="datetime-local" value={departureAt} onChange={e=>setDepartureAt(e.target.value)} style={{...sel}}/></div><div style={{flex:1}}><label style={lbl("s")}>Llegada</label><input type="datetime-local" value={arrivalAt} onChange={e=>setArrivalAt(e.target.value)} style={{...sel}}/></div></div>
     <div style={{display:"flex",gap:10,marginBottom:10}}><div style={{flex:1}}><Field label="Km" value={kmDriven} onChange={setKmDriven} type="number" placeholder="0"/></div><div style={{flex:1}}><Field label="Litros" value={fuelLiters} onChange={setFuelLiters} type="number" placeholder="0"/></div></div>
     <div style={{display:"flex",gap:10,marginBottom:10}}><div style={{flex:1}}><Field label="Costo combustible" value={fuelCost} onChange={setFuelCost} type="number" placeholder="0"/></div><div style={{flex:1}}><Field label="Peajes" value={tollCost} onChange={setTollCost} type="number" placeholder="0"/></div></div>
@@ -173,6 +197,9 @@ export default function TruckDetailScreen({ truckId, user, onBack, onNavFreight 
   const [incomes, setIncomes] = useState(null);
   const [movements, setMovements] = useState(null);
   const [freightHistory, setFreightHistory] = useState(null);
+  const [locations, setLocations] = useState(null);
+  const [allDocs, setAllDocs] = useState(null);
+  const [docFilter, setDocFilter] = useState("all"); // all|general|expense|income|freight|movement
 
   const canEdit = user?.role !== "chofer";
 
@@ -190,8 +217,9 @@ export default function TruckDetailScreen({ truckId, user, onBack, onNavFreight 
     if (tab === "summary" && !ecoSummary) apiGetEconomicSummary(truckId).then(setEcoSummary).catch(() => setEcoSummary({}));
     if (tab === "expenses" && !expenses) { apiGetTruckExpenseSummary(truckId).then(setExpSummary).catch(()=>{}); import("../api").then(a=>a.apiGetTruckExpenses(truckId)).then(d=>setExpenses(d||[])).catch(()=>setExpenses([])); }
     if (tab === "incomes" && !incomes) apiGetTruckIncomes(truckId).then(d=>setIncomes(d||[])).catch(()=>setIncomes([]));
-    if (tab === "movements" && !movements) apiGetTruckMovements(truckId).then(d=>setMovements(d||[])).catch(()=>setMovements([]));
+    if (tab === "movements" && !movements) { apiGetTruckMovements(truckId).then(d=>setMovements(d||[])).catch(()=>setMovements([])); if (!locations) import("../api").then(a=>a.apiGetFields?.()??a.default?.apiGetFields?.()).catch(()=>null).then(d=>setLocations(d||[])).catch(()=>setLocations([])); }
     if (tab === "freights" && !freightHistory) apiGetTruckFreights(truckId).then(d=>setFreightHistory(d||[])).catch(()=>setFreightHistory([]));
+    if (tab === "docs" && !allDocs) apiGetTruckDocuments(truckId).then(d=>setAllDocs(d||[])).catch(()=>setAllDocs([]));
   }, [tab, truck]);
 
   // ======================== CRUD HELPERS ==================================
@@ -202,7 +230,7 @@ export default function TruckDetailScreen({ truckId, user, onBack, onNavFreight 
       if (refreshKey === "inc") setIncomes(null);
       if (refreshKey === "exp") { setExpenses(null); setExpSummary(null); }
       if (refreshKey === "mov") setMovements(null);
-      if (refreshKey === "doc") await load();
+      if (refreshKey === "doc") { await load(); setAllDocs(null); }
       setEcoSummary(null); // refresh summary
     } catch (e) { setError(e.message); } finally { setSaving(false); }
   };
@@ -372,8 +400,8 @@ export default function TruckDetailScreen({ truckId, user, onBack, onNavFreight 
         {/* ==================== MOVEMENTS TAB ==================== */}
         {tab === "movements" && <>
           {canEdit && <div style={{marginBottom:10,textAlign:"right"}}><Btn sm onClick={()=>setShowForm(!showForm)} icon={showForm?Ic.cross(C.w,12):Ic.plus(C.w,12)}>{showForm?"Cerrar":"Nuevo movimiento"}</Btn></div>}
-          {showForm && <MovForm onSave={handleAddMov} onCancel={()=>setShowForm(false)} saving={saving}/>}
-          {editItem && tab==="movements" && <MovForm initial={editItem} onSave={handleUpdateMov} onCancel={()=>setEditItem(null)} saving={saving}/>}
+          {showForm && <MovForm onSave={handleAddMov} onCancel={()=>setShowForm(false)} saving={saving} locations={locations}/>}
+          {editItem && tab==="movements" && <MovForm initial={editItem} onSave={handleUpdateMov} onCancel={()=>setEditItem(null)} saving={saving} locations={locations}/>}
           {movements===null?<Loader/>:movements.length===0&&!showForm?<EmptyState icon={Ic.truck(C.t3,20)} title="Sin movimientos" subtitle="Registrá viajes que no son fletes de la plataforma"/>:
             movements.map(m=><div key={m.id} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderBottom:`1px solid ${C.b2}`}}>
               <div style={{flex:1,minWidth:0}}>
@@ -394,27 +422,42 @@ export default function TruckDetailScreen({ truckId, user, onBack, onNavFreight 
         </>}
 
         {/* ==================== DOCUMENTS TAB ==================== */}
-        {tab === "docs" && <>
-          {canEdit && <div style={{marginBottom:10,textAlign:"right"}}><Btn sm onClick={()=>setShowForm(!showForm)} icon={showForm?Ic.cross(C.w,12):Ic.plus(C.w,12)}>{showForm?"Cerrar":"Nuevo documento"}</Btn></div>}
-          {docs.length>0&&<div style={{display:"flex",gap:8,marginBottom:12,flexWrap:"wrap"}}>
-            {docSum.valid>0&&<span style={{fontSize:11,fontWeight:600,color:C.ok,background:C.okPale,padding:"3px 10px",borderRadius:R.pill}}>✅ {docSum.valid} vigente{docSum.valid>1?"s":""}</span>}
-            {docSum.expiringSoon>0&&<span style={{fontSize:11,fontWeight:600,color:C.warn,background:C.warnPale,padding:"3px 10px",borderRadius:R.pill}}>⚠️ {docSum.expiringSoon} por vencer</span>}
-            {docSum.expired>0&&<span style={{fontSize:11,fontWeight:600,color:C.err,background:C.errPale,padding:"3px 10px",borderRadius:R.pill}}>❌ {docSum.expired} vencido{docSum.expired>1?"s":""}</span>}
+        {tab === "docs" && (()=>{
+          const LINK_BADGE = { general:{label:"General",bg:C.bg,color:C.t3}, expense:{label:"Gasto",bg:C.errPale,color:C.err}, income:{label:"Ingreso",bg:C.okPale,color:C.ok}, freight:{label:"Flete",bg:C.secPale,color:C.sec}, movement:{label:"Movimiento",bg:C.accPale,color:C.acc} };
+          const displayDocs = allDocs ? (docFilter==="all" ? allDocs : allDocs.filter(d=>d.linkedType===(docFilter==="general"?"general":docFilter))) : docs;
+          const linkOpts = { expenses:(expenses||[]).map(e=>({id:e.id,label:`${EXP_TYPE_LABELS[e.type]||e.type} — ${fmtDate(e.date)}`})), incomes:(incomes||[]).map(i=>({id:i.id,label:`${i.concept} — ${fmtDate(i.date)}`})), freights:(freightHistory||[]).map(f=>({id:f.freightId||f.id,label:f.code})), movements:(movements||[]).map(m=>({id:m.id,label:`${MOV_TYPE_LABELS[m.type]||m.type} — ${fmtDate(m.departureAt)}`})) };
+          return <>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+            <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
+              {["all","general","expense","income","freight","movement"].map(f=><button key={f} onClick={()=>setDocFilter(f)} style={{padding:"3px 8px",borderRadius:R.pill,border:`1px solid ${docFilter===f?C.pri:C.b1}`,background:docFilter===f?C.priPale:C.w,color:docFilter===f?C.pri:C.t3,fontSize:10.5,fontWeight:600,cursor:"pointer",fontFamily:FONT}}>{f==="all"?"Todos":f==="general"?"General":f==="expense"?"Gastos":f==="income"?"Ingresos":f==="freight"?"Fletes":"Movimientos"}</button>)}
+            </div>
+            {canEdit && <Btn sm onClick={()=>setShowForm(!showForm)} icon={showForm?Ic.cross(C.w,12):Ic.plus(C.w,12)}>{showForm?"":"Nuevo"}</Btn>}
+          </div>
+          {docSum.valid+docSum.expiringSoon+docSum.expired>0&&<div style={{display:"flex",gap:8,marginBottom:12,flexWrap:"wrap"}}>
+            {docSum.valid>0&&<span style={{fontSize:11,fontWeight:600,color:C.ok,background:C.okPale,padding:"3px 10px",borderRadius:R.pill}}>✅ {docSum.valid}</span>}
+            {docSum.expiringSoon>0&&<span style={{fontSize:11,fontWeight:600,color:C.warn,background:C.warnPale,padding:"3px 10px",borderRadius:R.pill}}>⚠️ {docSum.expiringSoon}</span>}
+            {docSum.expired>0&&<span style={{fontSize:11,fontWeight:600,color:C.err,background:C.errPale,padding:"3px 10px",borderRadius:R.pill}}>❌ {docSum.expired}</span>}
           </div>}
-          {showForm && <DocForm onSave={handleAddDoc} onCancel={()=>setShowForm(false)} saving={saving}/>}
-          {editItem && tab==="docs" && <DocForm initial={editItem} onSave={handleUpdateDoc} onCancel={()=>setEditItem(null)} saving={saving}/>}
-          {docs.length===0&&!showForm?<EmptyState icon={Ic.doc(C.t3,24)} title="Sin documentos" subtitle="Cargá el primer documento del camión"/>:
-            docs.map(d=><div key={d.id} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",border:`1px solid ${C.b2}`,borderLeft:`3px solid ${EXPIRY_COLORS[d.expiryStatus]}`,borderRadius:R.md,marginBottom:8,background:C.w}}>
+          {showForm && <DocForm onSave={handleAddDoc} onCancel={()=>setShowForm(false)} saving={saving} linkOptions={linkOpts}/>}
+          {editItem && tab==="docs" && <DocForm initial={editItem} onSave={handleUpdateDoc} onCancel={()=>setEditItem(null)} saving={saving} linkOptions={linkOpts}/>}
+          {displayDocs.length===0&&!showForm?<EmptyState icon={Ic.doc(C.t3,24)} title="Sin documentos" subtitle="Cargá el primer documento del camión"/>:
+            displayDocs.map(d=>{
+              const lb = LINK_BADGE[d.linkedType||"general"]||LINK_BADGE.general;
+              const linkLabel = d.linkedType==="expense"&&d.expense?`${EXP_TYPE_LABELS[d.expense.type]||""} ${fmtDate(d.expense.date)}`:d.linkedType==="income"&&d.income?d.income.concept:d.linkedType==="freight"&&d.freight?d.freight.code:d.linkedType==="movement"&&d.movement?`${MOV_TYPE_LABELS[d.movement.type]||""} ${fmtDate(d.movement.departureAt)}`:"";
+              return <div key={d.id} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",border:`1px solid ${C.b2}`,borderLeft:`3px solid ${EXPIRY_COLORS[d.expiryStatus||"no_expiry"]}`,borderRadius:R.md,marginBottom:8,background:C.w}}>
               <div style={{flex:1,minWidth:0}}>
-                <div style={{fontSize:13.5,fontWeight:600,color:C.t1}}>{DOC_TYPE_LABELS[d.type]||d.type}{d.name?` — ${d.name}`:""}</div>
-                <div style={{fontSize:11.5,color:EXPIRY_COLORS[d.expiryStatus],fontWeight:600,marginTop:2}}>{EXPIRY_LABELS[d.expiryStatus]}{d.expiresAt?` · ${fmtDate(d.expiresAt)}`:""}</div>
+                <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
+                  <span style={{fontSize:13.5,fontWeight:600,color:C.t1}}>{DOC_TYPE_LABELS[d.type]||d.type}{d.name?` — ${d.name}`:""}</span>
+                  <span style={{fontSize:9.5,fontWeight:700,color:lb.color,background:lb.bg,padding:"1px 6px",borderRadius:R.pill}}>{lb.label}{linkLabel?`: ${linkLabel}`:""}</span>
+                </div>
+                <div style={{fontSize:11.5,color:EXPIRY_COLORS[d.expiryStatus||"no_expiry"],fontWeight:600,marginTop:2}}>{EXPIRY_LABELS[d.expiryStatus||"no_expiry"]}{d.expiresAt?` · ${fmtDate(d.expiresAt)}`:""}</div>
               </div>
               <a href={d.fileUrl} target="_blank" rel="noopener noreferrer" style={{padding:4,color:C.pri}}>{Ic.eye(C.pri,16)}</a>
               {canEdit&&<button onClick={()=>setEditItem(d)} style={{background:"none",border:"none",cursor:"pointer",padding:4}}>{Ic.edit(C.t3,14)}</button>}
               {canEdit&&<button onClick={()=>setConfirmDelete({type:"doc",id:d.id,label:DOC_TYPE_LABELS[d.type]})} style={{background:"none",border:"none",cursor:"pointer",padding:4}}>{Ic.ban(C.err,14)}</button>}
-            </div>)
+            </div>})
           }
-        </>}
+        </>})()}
       </div>
 
       {/* ==================== DELETE CONFIRMATION ==================== */}
