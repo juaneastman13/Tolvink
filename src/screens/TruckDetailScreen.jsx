@@ -3,7 +3,7 @@
 // Sections: Summary | Freights | Incomes | Expenses | Movements | Docs
 // =====================================================================
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, lazy, Suspense } from "react";
 import { C, Ic, R, FONT, MONO } from "../theme";
 import { Btn, Field, Loader, EmptyState, LicensePlate, LoadingOverlay } from "../components";
 import {
@@ -11,8 +11,10 @@ import {
   apiAddTruckExpense, apiUpdateTruckExpense, apiDeleteTruckExpense, apiGetTruckExpenseSummary,
   apiGetTruckFreights, apiGetTruckIncomes, apiAddTruckIncome, apiUpdateTruckIncome, apiDeleteTruckIncome,
   apiGetTruckMovements, apiAddTruckMovement, apiUpdateTruckMovement, apiDeleteTruckMovement,
-  apiGetEconomicSummary, apiGetTruckDocuments, uploadPhoto,
+  apiGetEconomicSummary, apiGetTruckDocuments, apiUpdateTripData, uploadPhoto,
 } from "../api";
+
+const LocPickerFullscreen = lazy(() => import("../maps").then(m => ({ default: m.LocPickerFullscreen })));
 
 // ======================== CONSTANTS ====================================
 
@@ -137,8 +139,12 @@ function MovForm({ onSave, onCancel, saving, initial, locations }) {
   const [description, setDescription] = useState(initial?.description||"");
   const [originName, setOriginName] = useState(initial?.originName||"");
   const [originFieldId, setOriginFieldId] = useState(initial?.originFieldId||"");
+  const [originLat, setOriginLat] = useState(initial?.originLat||null);
+  const [originLng, setOriginLng] = useState(initial?.originLng||null);
   const [destName, setDestName] = useState(initial?.destName||"");
   const [destFieldId, setDestFieldId] = useState(initial?.destFieldId||"");
+  const [destLat, setDestLat] = useState(initial?.destLat||null);
+  const [destLng, setDestLng] = useState(initial?.destLng||null);
   const [departureAt, setDepartureAt] = useState(initial?.departureAt?new Date(initial.departureAt).toISOString().slice(0,16):"");
   const [arrivalAt, setArrivalAt] = useState(initial?.arrivalAt?new Date(initial.arrivalAt).toISOString().slice(0,16):"");
   const [kmDriven, setKmDriven] = useState(initial?.kmDriven?.toString()||"");
@@ -146,12 +152,20 @@ function MovForm({ onSave, onCancel, saving, initial, locations }) {
   const [fuelCost, setFuelCost] = useState(initial?.fuelCost?.toString()||"");
   const [tollCost, setTollCost] = useState(initial?.tollCost?.toString()||"");
   const [notes, setNotes] = useState(initial?.notes||"");
+  const [mapFor, setMapFor] = useState(null); // "origin" or "dest"
   const pickLoc = (fieldId, setFieldId, setName) => {
     if (!fieldId) { setFieldId(""); return; }
     const loc = locations?.find(l => l.id === fieldId);
     if (loc) { setFieldId(fieldId); setName(loc.name); }
   };
-  const handleSubmit = ()=>onSave({type,description:description||null,originName:originName||null,originFieldId:originFieldId||null,destName:destName||null,destFieldId:destFieldId||null,departureAt:departureAt||null,arrivalAt:arrivalAt||null,kmDriven:kmDriven?parseFloat(kmDriven):null,fuelLiters:fuelLiters?parseFloat(fuelLiters):null,fuelCost:fuelCost?parseFloat(fuelCost):null,tollCost:tollCost?parseFloat(tollCost):null,notes:notes||null});
+  const handleMapPick = (loc) => {
+    if (!loc) return;
+    const name = loc.address || `${loc.lat.toFixed(4)}, ${loc.lng.toFixed(4)}`;
+    if (mapFor === "origin") { setOriginName(name); setOriginLat(loc.lat); setOriginLng(loc.lng); setOriginFieldId(""); }
+    else { setDestName(name); setDestLat(loc.lat); setDestLng(loc.lng); setDestFieldId(""); }
+    setMapFor(null);
+  };
+  const handleSubmit = ()=>onSave({type,description:description||null,originName:originName||null,originFieldId:originFieldId||null,originLat,originLng,destName:destName||null,destFieldId:destFieldId||null,destLat,destLng,departureAt:departureAt||null,arrivalAt:arrivalAt||null,kmDriven:kmDriven?parseFloat(kmDriven):null,fuelLiters:fuelLiters?parseFloat(fuelLiters):null,fuelCost:fuelCost?parseFloat(fuelCost):null,tollCost:tollCost?parseFloat(tollCost):null,notes:notes||null});
   return (<div style={{padding:16,background:C.bgCard,border:`1px solid ${C.b2}`,borderRadius:R.lg,marginBottom:12}}>
     <div style={{marginBottom:10}}><label style={lbl("s")}>Tipo</label><select value={type} onChange={e=>setType(e.target.value)} style={sel}>{Object.entries(MOV_TYPE_LABELS).map(([k,v])=><option key={k} value={k}>{v}</option>)}</select></div>
     <Field label="Descripción (opcional)" value={description} onChange={setDescription} placeholder="Detalle"/>
@@ -159,17 +173,56 @@ function MovForm({ onSave, onCancel, saving, initial, locations }) {
       <div style={{flex:1}}>
         {locations?.length>0 && <div style={{marginBottom:4}}><label style={lbl("s")}>Origen (ubicación)</label><select value={originFieldId} onChange={e=>{pickLoc(e.target.value,setOriginFieldId,setOriginName);}} style={{...sel,marginBottom:4}}><option value="">Escribir manualmente</option>{locations.map(l=><option key={l.id} value={l.id}>{l.name}</option>)}</select></div>}
         <Field label={locations?.length?"O escribir" :"Origen"} value={originName} onChange={v=>{setOriginName(v);if(v)setOriginFieldId("");}} placeholder="Ciudad/lugar"/>
+        <button onClick={()=>setMapFor("origin")} style={{marginTop:4,background:"none",border:`1px solid ${C.b1}`,borderRadius:R.md,padding:"3px 8px",cursor:"pointer",fontSize:10,fontWeight:600,color:C.pri,fontFamily:FONT,display:"flex",alignItems:"center",gap:4}}>{Ic.pin(C.pri,12)} Mapa</button>
+        {originLat && <span style={{fontSize:10,color:C.t3}}>{Number(originLat).toFixed(4)}, {Number(originLng).toFixed(4)}</span>}
       </div>
       <div style={{flex:1}}>
         {locations?.length>0 && <div style={{marginBottom:4}}><label style={lbl("s")}>Destino (ubicación)</label><select value={destFieldId} onChange={e=>{pickLoc(e.target.value,setDestFieldId,setDestName);}} style={{...sel,marginBottom:4}}><option value="">Escribir manualmente</option>{locations.map(l=><option key={l.id} value={l.id}>{l.name}</option>)}</select></div>}
         <Field label={locations?.length?"O escribir":"Destino"} value={destName} onChange={v=>{setDestName(v);if(v)setDestFieldId("");}} placeholder="Ciudad/lugar"/>
+        <button onClick={()=>setMapFor("dest")} style={{marginTop:4,background:"none",border:`1px solid ${C.b1}`,borderRadius:R.md,padding:"3px 8px",cursor:"pointer",fontSize:10,fontWeight:600,color:C.pri,fontFamily:FONT,display:"flex",alignItems:"center",gap:4}}>{Ic.pin(C.pri,12)} Mapa</button>
+        {destLat && <span style={{fontSize:10,color:C.t3}}>{Number(destLat).toFixed(4)}, {Number(destLng).toFixed(4)}</span>}
       </div>
     </div>
+    {mapFor && <div style={{borderRadius:R.lg,overflow:"hidden",border:`1.5px solid ${C.pri}`,height:280,marginBottom:10}}><Suspense fallback={<div style={{height:"100%",display:"flex",alignItems:"center",justifyContent:"center",background:C.bgCard,color:C.t3,fontSize:13}}>Cargando mapa...</div>}><LocPickerFullscreen value={null} onChange={()=>{}} label={mapFor==="origin"?"Seleccionar origen":"Seleccionar destino"} onClose={()=>setMapFor(null)} confirmLabel="Confirmar" onConfirm={handleMapPick}/></Suspense></div>}
     <div style={{display:"flex",gap:10,marginBottom:10}}><div style={{flex:1}}><label style={lbl("s")}>Salida</label><input type="datetime-local" value={departureAt} onChange={e=>setDepartureAt(e.target.value)} style={{...sel}}/></div><div style={{flex:1}}><label style={lbl("s")}>Llegada</label><input type="datetime-local" value={arrivalAt} onChange={e=>setArrivalAt(e.target.value)} style={{...sel}}/></div></div>
     <div style={{display:"flex",gap:10,marginBottom:10}}><div style={{flex:1}}><Field label="Km" value={kmDriven} onChange={setKmDriven} type="number" placeholder="0"/></div><div style={{flex:1}}><Field label="Litros" value={fuelLiters} onChange={setFuelLiters} type="number" placeholder="0"/></div></div>
     <div style={{display:"flex",gap:10,marginBottom:10}}><div style={{flex:1}}><Field label="Costo combustible" value={fuelCost} onChange={setFuelCost} type="number" placeholder="0"/></div><div style={{flex:1}}><Field label="Peajes" value={tollCost} onChange={setTollCost} type="number" placeholder="0"/></div></div>
     <Field label="Notas (opcional)" value={notes} onChange={setNotes} placeholder="Observaciones"/>
     <div style={{display:"flex",gap:8,marginTop:12}}><Btn full disabled={saving||!type} onClick={handleSubmit}>{initial?"Guardar":"Registrar movimiento"}</Btn><Btn v="muted" onClick={onCancel}>Cancelar</Btn></div>
+  </div>);
+}
+
+// ======================== TRIP DATA FORM ================================
+
+function TripDataForm({ freight, onSave, onCancel, saving }) {
+  const [kmLoaded, setKmLoaded] = useState(freight.kmLoaded?.toString()||"");
+  const [kmEmpty, setKmEmpty] = useState(freight.kmEmpty?.toString()||"");
+  const [fuelLiters, setFuelLiters] = useState(freight.fuelLiters?.toString()||"");
+  const [fuelCostPerLiter, setFuelCostPerLiter] = useState(freight.fuelCostPerLiter?.toString()||"");
+  const [tollCost, setTollCost] = useState(freight.tollCost?.toString()||"");
+  const [odometerStart, setOdometerStart] = useState(freight.odometerStart?.toString()||"");
+  const [odometerEnd, setOdometerEnd] = useState(freight.odometerEnd?.toString()||"");
+  const kmTotal = (parseFloat(kmLoaded||"0")+parseFloat(kmEmpty||"0"))||"";
+  return (<div style={{padding:14,background:C.bgCard,border:`1px solid ${C.b2}`,borderRadius:R.lg,marginBottom:10}}>
+    <div style={{fontSize:12,fontWeight:700,color:C.t2,marginBottom:8}}>Datos de viaje — {freight.code}</div>
+    <div style={{display:"flex",gap:8,marginBottom:8}}>
+      <div style={{flex:1}}><Field label="Km con carga" value={kmLoaded} onChange={setKmLoaded} type="number" placeholder="0"/></div>
+      <div style={{flex:1}}><Field label="Km vacío" value={kmEmpty} onChange={setKmEmpty} type="number" placeholder="0"/></div>
+      <div style={{flex:1}}><div style={lbl("s")}>Km total</div><div style={{padding:"8px 10px",borderRadius:R.md,background:C.bg,fontSize:13,color:C.t1,fontWeight:600}}>{kmTotal||"—"}</div></div>
+    </div>
+    <div style={{display:"flex",gap:8,marginBottom:8}}>
+      <div style={{flex:1}}><Field label="Litros" value={fuelLiters} onChange={setFuelLiters} type="number" placeholder="0"/></div>
+      <div style={{flex:1}}><Field label="$/litro" value={fuelCostPerLiter} onChange={setFuelCostPerLiter} type="number" placeholder="0"/></div>
+      <div style={{flex:1}}><Field label="Peajes" value={tollCost} onChange={setTollCost} type="number" placeholder="0"/></div>
+    </div>
+    <div style={{display:"flex",gap:8,marginBottom:8}}>
+      <div style={{flex:1}}><Field label="Odómetro inicio" value={odometerStart} onChange={setOdometerStart} type="number" placeholder="0"/></div>
+      <div style={{flex:1}}><Field label="Odómetro fin" value={odometerEnd} onChange={setOdometerEnd} type="number" placeholder="0"/></div>
+    </div>
+    <div style={{display:"flex",gap:8}}>
+      <Btn full disabled={saving} onClick={()=>onSave({kmLoaded:parseFloat(kmLoaded)||null,kmEmpty:parseFloat(kmEmpty)||null,kmTotal:parseFloat(kmTotal)||null,fuelLiters:parseFloat(fuelLiters)||null,fuelCostPerLiter:parseFloat(fuelCostPerLiter)||null,tollCost:parseFloat(tollCost)||null,odometerStart:parseInt(odometerStart)||null,odometerEnd:parseInt(odometerEnd)||null})}>{saving?"Guardando...":"Guardar datos"}</Btn>
+      <Btn v="muted" onClick={onCancel}>Cancelar</Btn>
+    </div>
   </div>);
 }
 
@@ -189,6 +242,8 @@ export default function TruckDetailScreen({ truckId, user, onBack, onNavFreight 
   const [showForm, setShowForm] = useState(false);
   const [editItem, setEditItem] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
+  const [tripDataFor, setTripDataFor] = useState(null); // freight being edited for trip data
+  const [showMapFor, setShowMapFor] = useState(null); // "origin" or "dest" for map picker in movements
 
   // Lazy-loaded data
   const [ecoSummary, setEcoSummary] = useState(null);
@@ -250,6 +305,17 @@ export default function TruckDetailScreen({ truckId, user, onBack, onNavFreight 
   const handleAddMov = crud((b) => apiAddTruckMovement(truckId, b), "mov");
   const handleUpdateMov = crud((b) => apiUpdateTruckMovement(truckId, editItem.id, b), "mov");
   const handleDeleteMov = async (id) => { setSaving(true); try { await apiDeleteTruckMovement(truckId, id); setConfirmDelete(null); setDoneMsg("Eliminado"); setMovements(null); setEcoSummary(null); } catch (e) { setError(e.message); } finally { setSaving(false); } };
+
+  const handleSaveTripData = async (body) => {
+    if (!tripDataFor) return;
+    setSaving(true);
+    try {
+      await apiUpdateTripData(tripDataFor.freightId, tripDataFor.assignmentId, body);
+      setTripDataFor(null); setDoneMsg("Datos de viaje guardados");
+      setFreightHistory(null); setEcoSummary(null); // reload
+    } catch (e) { setError(e.message); }
+    finally { setSaving(false); }
+  };
 
   // ======================== RENDER =======================================
 
@@ -344,13 +410,19 @@ export default function TruckDetailScreen({ truckId, user, onBack, onNavFreight 
             </div>)}
           </>}
           <div style={{fontSize:12,fontWeight:700,color:C.t2,marginBottom:8,marginTop:truck.activeFreights?.length?12:0,textTransform:"uppercase",letterSpacing:0.5}}>Historial</div>
+          {tripDataFor && <TripDataForm freight={tripDataFor} onSave={handleSaveTripData} onCancel={()=>setTripDataFor(null)} saving={saving}/>}
           {freightHistory===null?<Loader/>:freightHistory.length===0?<EmptyState icon={Ic.truck(C.t3,20)} title="Sin historial" subtitle="Este camión aún no completó fletes"/>:
-            freightHistory.map((f,i)=><div key={i} onClick={()=>onNavFreight?.(f.freightId)} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 12px",borderBottom:`1px solid ${C.b2}`,cursor:"pointer"}}>
-              <span style={{fontSize:12.5,fontWeight:700,color:C.pri,fontFamily:MONO,minWidth:110}}>{f.code}</span>
-              <span style={{flex:1,fontSize:12,color:C.t2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.origin||"?"}→{f.dest||"?"}</span>
-              <span style={{fontSize:11,color:C.t3}}>{fmtDate(f.date)}</span>
-              {f.tons&&<span style={{fontSize:11,fontWeight:600,color:C.t2}}>{Number(f.tons).toLocaleString("es-UY")}t</span>}
-              {f.kmTotal?<span style={{fontSize:9,color:C.ok}} title="Datos de viaje cargados">✓</span>:<span style={{fontSize:9,color:C.t3,background:C.bg,padding:"1px 4px",borderRadius:R.pill}} title="Sin datos de viaje">km?</span>}
+            freightHistory.map((f,i)=><div key={i} style={{padding:"8px 12px",borderBottom:`1px solid ${C.b2}`}}>
+              <div style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer"}} onClick={()=>onNavFreight?.(f.freightId)}>
+                <span style={{fontSize:12.5,fontWeight:700,color:C.pri,fontFamily:MONO,minWidth:110}}>{f.code}</span>
+                <span style={{flex:1,fontSize:12,color:C.t2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.origin||"?"}→{f.dest||"?"}</span>
+                <span style={{fontSize:11,color:C.t3}}>{fmtDate(f.date)}</span>
+                {f.tons&&<span style={{fontSize:11,fontWeight:600,color:C.t2}}>{Number(f.tons).toLocaleString("es-UY")}t</span>}
+                {f.kmTotal?<span style={{fontSize:9,color:C.ok}} title="Datos de viaje cargados">✓ {fmtKm(f.kmTotal)}</span>:<span style={{fontSize:9,color:C.t3,background:C.bg,padding:"1px 4px",borderRadius:R.pill}} title="Sin datos de viaje">km?</span>}
+              </div>
+              {canEdit && f.assignmentId && <div style={{marginTop:4}}>
+                <button onClick={e=>{e.stopPropagation();setTripDataFor(tripDataFor?.assignmentId===f.assignmentId?null:f);}} style={{background:"none",border:`1px solid ${C.b1}`,borderRadius:R.md,padding:"3px 8px",cursor:"pointer",fontSize:10.5,fontWeight:600,color:f.kmTotal?C.pri:C.acc,fontFamily:FONT}}>{f.kmTotal?"Editar datos de viaje":"Cargar datos de viaje"}</button>
+              </div>}
             </div>)
           }
         </>}
