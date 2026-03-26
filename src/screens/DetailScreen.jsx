@@ -340,9 +340,9 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
     if(filteredActions.includes("authorize")) btns.push(<Btn key="auth" full icon={Ic.chk(C.w,16)} disabled={actionLoading} onClick={()=>onAction(freight?.id,"authorize")}>{actionLoading?"Procesando...":"Autorizar viaje"}</Btn>);
     if(filteredActions.includes("assign")) btns.push(<Btn key="assign" full v="acc" icon={Ic.chk(C.w,16)} disabled={actionLoading} onClick={()=>onAction(freight?.id,"assign")}>Asignar transportista</Btn>);
     if(filteredActions.includes("assign_truck")) btns.push(<Btn key="assign_truck" full icon={Ic.truck(C.w,16)} disabled={actionLoading} onClick={()=>onAction(freight?.id,"assign_truck")}>Asignar camión y chofer</Btn>);
-    if(filteredActions.includes("start")) btns.push(<Btn key="start" full icon={Ic.truck(C.w,16)} disabled={actionLoading} onClick={()=>onAction(freight?.id,"start")}>{actionLoading?"Procesando...":"Iniciar viaje"}</Btn>);
-    if(filteredActions.includes("confirm_loaded")) btns.push(<Btn key="loaded" full v="acc" icon={Ic.chk(C.w,16)} disabled={actionLoading} onClick={()=>onAction(freight?.id,"confirm_loaded")}>{actionLoading?"Procesando...":"Confirmar carga"}</Btn>);
-    if(filteredActions.includes("confirm_finished")) btns.push(<Btn key="finished" full v="acc" icon={Ic.chk(C.w,16)} disabled={actionLoading} onClick={()=>onAction(freight?.id,"confirm_finished")}>{actionLoading?"Procesando...":"Confirmar entrega"}</Btn>);
+    if(!isMultiTruck && filteredActions.includes("start")) btns.push(<Btn key="start" full icon={Ic.truck(C.w,16)} disabled={actionLoading} onClick={()=>onAction(freight?.id,"start")}>{actionLoading?"Procesando...":"Iniciar viaje"}</Btn>);
+    if(!isMultiTruck && filteredActions.includes("confirm_loaded")) btns.push(<Btn key="loaded" full v="acc" icon={Ic.chk(C.w,16)} disabled={actionLoading} onClick={()=>onAction(freight?.id,"confirm_loaded")}>{actionLoading?"Procesando...":"Confirmar carga"}</Btn>);
+    if(!isMultiTruck && filteredActions.includes("confirm_finished")) btns.push(<Btn key="finished" full v="acc" icon={Ic.chk(C.w,16)} disabled={actionLoading} onClick={()=>onAction(freight?.id,"confirm_finished")}>{actionLoading?"Procesando...":"Confirmar entrega"}</Btn>);
     return btns;
   }, [filteredActions, actionLoading, freight?.id, onAction]);
 
