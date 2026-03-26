@@ -3,7 +3,7 @@
 // Embeds maps and location pickers inline when AI returns map URLs
 // =====================================================================
 
-import { useState, useEffect, useRef, useCallback, useMemo, lazy, Suspense } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo, memo, lazy, Suspense } from "react";
 import { C, FONT, Ic, R } from "./theme";
 import { apiWebChatSend, apiWebChatHistory, apiWebChatAudio, API_URL } from "./api";
 
@@ -290,7 +290,7 @@ function InlineLocPicker({ slug, onDone, onClose }) {
 
 // ======================== MESSAGE BUBBLE ======================
 
-function MsgBubble({ msg, onSendText }) {
+const MsgBubble = memo(function MsgBubble({ msg, onSendText }) {
   const isUser = msg.role === "user";
   const isAudio = msg.audioUrl;
   const parsedUrls = useMemo(() => !isUser ? parseMapUrls(msg.text) : [], [msg.text, isUser]);
@@ -383,7 +383,7 @@ function MsgBubble({ msg, onSendText }) {
       ))}
     </div>
   );
-}
+});
 
 // ======================== BUTTON ROW =========================
 
@@ -572,10 +572,13 @@ export default function AiChat({ open, onClose, onNavigate, sseAiResponse, sseAi
     });
   }, [sseAiTranscription]);
 
-  // Auto-scroll
+  // Auto-scroll (debounced via requestAnimationFrame to avoid layout thrashing)
   useEffect(() => {
-    const el = scrollRef.current;
-    if (el) el.scrollTop = el.scrollHeight;
+    const id = requestAnimationFrame(() => {
+      const el = scrollRef.current;
+      if (el) el.scrollTop = el.scrollHeight;
+    });
+    return () => cancelAnimationFrame(id);
   }, [messages, thinking]);
 
   // Focus input on open
