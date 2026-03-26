@@ -345,6 +345,9 @@ export async function apiDeleteTruckMovement(id, movId) { return api(`/trucks/${
 // Trip Data + Economic Summary
 export async function apiUpdateTripData(freightId, assignmentId, body) { return api(`/trucks/${freightId}/assignments/${assignmentId}/trip-data`, { method: 'PATCH', body }); }
 export async function apiGetEconomicSummary(id, from, to) { let q = []; if (from) q.push(`from=${from}`); if (to) q.push(`to=${to}`); return api(`/trucks/${id}/economic-summary${q.length ? '?' + q.join('&') : ''}`); }
+// Truck Doc OCR
+export async function apiProcessTruckDocOcr(truckId, docId) { return api(`/trucks/${truckId}/documents/${docId}/ocr`, { method: 'POST', body: {} }); }
+export async function apiGetTruckDocOcr(truckId, docId) { return api(`/trucks/${truckId}/documents/${docId}/ocr`); }
 
 // Fields & Lots
 export async function apiGetFields(ownerCompanyId) { const q = ownerCompanyId ? `?ownerCompanyId=${encodeURIComponent(ownerCompanyId)}` : ''; return api(`/fields${q}`); }
