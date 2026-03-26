@@ -541,21 +541,26 @@ export default function AiChat({ open, onClose, onNavigate, sseAiResponse, sseAi
 
   useEffect(() => { injectStyles(); }, []);
 
-  // Thinking timeout
+  // Thinking timeout — poll history as SSE fallback
+  const pollAbort = useRef(null);
   useEffect(() => {
     if (thinking) {
-      // Poll history every 5s as fallback in case SSE dropped the response
       clearInterval(thinkingTimer.current);
+      // AbortController cancels in-flight fetches when thinking stops
+      const ac = new AbortController();
+      pollAbort.current = ac;
       thinkingTimer.current = setInterval(async () => {
+        if (ac.signal.aborted) return;
         try {
           const data = await apiWebChatHistory();
+          // Bail if thinking already resolved via SSE while fetch was in-flight
+          if (ac.signal.aborted) return;
           if (data?.messages?.length) {
             const lastMsg = data.messages[data.messages.length - 1];
             if (lastMsg?.role === "assistant") {
               setThinking(false);
               streamMsgId.current = null;
               setMessages(data.messages.map(m => ({ ...m, ts: Date.now() })));
-              // Handle navigation from polling fallback
               if (data.navigate && onNavigate) {
                 onNavigate(data.navigate);
               }
@@ -565,8 +570,11 @@ export default function AiChat({ open, onClose, onNavigate, sseAiResponse, sseAi
       }, 5000);
     } else {
       clearInterval(thinkingTimer.current);
+      // Abort any in-flight poll so it doesn't overwrite state
+      pollAbort.current?.abort();
+      pollAbort.current = null;
     }
-    return () => clearInterval(thinkingTimer.current);
+    return () => { clearInterval(thinkingTimer.current); pollAbort.current?.abort(); };
   }, [thinking]);
 
   // Load history on first open
