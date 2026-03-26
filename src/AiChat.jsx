@@ -477,9 +477,9 @@ export default function AiChat({ open, onClose, onNavigate, sseAiResponse, sseAi
   // Thinking timeout
   useEffect(() => {
     if (thinking) {
-      clearTimeout(thinkingTimer.current);
-      thinkingTimer.current = setTimeout(async () => {
-        // SSE may have dropped — try fetching history as fallback
+      // Poll history every 5s as fallback in case SSE dropped the response
+      clearInterval(thinkingTimer.current);
+      thinkingTimer.current = setInterval(async () => {
         try {
           const data = await apiWebChatHistory();
           if (data?.messages?.length) {
@@ -488,21 +488,14 @@ export default function AiChat({ open, onClose, onNavigate, sseAiResponse, sseAi
               setThinking(false);
               streamMsgId.current = null;
               setMessages(data.messages.map(m => ({ ...m, ts: Date.now() })));
-              return;
             }
           }
         } catch {}
-        setThinking(false);
-        setMessages(prev => [...prev, {
-          id: `timeout-${Date.now()}`, role: "assistant",
-          text: "La respuesta tardó demasiado. Intentá de nuevo.",
-          error: true, ts: Date.now(),
-        }]);
-      }, THINKING_TIMEOUT_MS);
+      }, 5000);
     } else {
-      clearTimeout(thinkingTimer.current);
+      clearInterval(thinkingTimer.current);
     }
-    return () => clearTimeout(thinkingTimer.current);
+    return () => clearInterval(thinkingTimer.current);
   }, [thinking]);
 
   // Load history on first open
