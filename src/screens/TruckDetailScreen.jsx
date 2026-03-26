@@ -6,12 +6,13 @@
 import { useState, useEffect, useCallback, lazy, Suspense } from "react";
 import { C, Ic, R, FONT, MONO } from "../theme";
 import { Btn, Field, Loader, EmptyState, LicensePlate, LoadingOverlay, StatusPill } from "../components";
+import { FileViewer } from "../components/overlays";
 import {
   apiGetTruckDetail, apiAddTruckDocument, apiUpdateTruckDocument, apiDeleteTruckDocument,
   apiAddTruckExpense, apiUpdateTruckExpense, apiDeleteTruckExpense, apiGetTruckExpenseSummary,
   apiGetTruckFreights, apiGetTruckIncomes, apiAddTruckIncome, apiUpdateTruckIncome, apiDeleteTruckIncome,
   apiGetTruckMovements, apiAddTruckMovement, apiUpdateTruckMovement, apiDeleteTruckMovement,
-  apiGetEconomicSummary, apiGetTruckDocuments, apiUpdateTripData, uploadPhoto,
+  apiGetEconomicSummary, apiGetTruckDocuments, apiUpdateTripData, apiProcessTruckDocOcr, uploadPhoto,
 } from "../api";
 
 const LocPickerFullscreen = lazy(() => import("../maps").then(m => ({ default: m.LocPickerFullscreen })));
@@ -237,6 +238,8 @@ export default function TruckDetailScreen({ truckId, user, onBack, onNavFreight 
   const [error, setError] = useState(null);
   const [saving, setSaving] = useState(false);
   const [doneMsg, setDoneMsg] = useState("");
+  const [viewFile, setViewFile] = useState(null); // file object for FileViewer
+  const [ocrLoading, setOcrLoading] = useState(false);
 
   // Active tab
   const [tab, setTab] = useState("summary");
@@ -319,6 +322,19 @@ export default function TruckDetailScreen({ truckId, user, onBack, onNavFreight 
     } catch (e) { setError(e.message); }
     finally { setSaving(false); }
   };
+
+  const handleOcr = async (file) => {
+    if (!file?.id) return;
+    setOcrLoading(true);
+    try {
+      await apiProcessTruckDocOcr(truckId, file.id);
+      setDoneMsg("Procesando documento con IA...");
+      setAllDocs(null); // refresh to pick up ocrStatus change
+    } catch (e) { setError(e.message); }
+    finally { setOcrLoading(false); }
+  };
+
+  const openFile = (d) => setViewFile({ id: d.id, url: d.fileUrl, name: d.fileName || d.name, type: d.mimeType?.startsWith("image") ? "image" : d.mimeType, ocrData: d.ocrData, ocrStatus: d.ocrStatus });
 
   // ======================== RENDER =======================================
 
@@ -459,7 +475,7 @@ export default function TruckDetailScreen({ truckId, user, onBack, onNavFreight 
                   <div style={{fontSize:11,color:C.t3,marginTop:2}}>{fmtDate(inc.date)}{inc.invoiceNumber?` · Fact: ${inc.invoiceNumber}`:""}</div>
                 </div>
                 <span style={{fontSize:14,fontWeight:700,color:st.color,whiteSpace:"nowrap"}}>{fmtMoney(inc.amount,inc.currency)}</span>
-                {inc.invoiceUrl&&<a href={inc.invoiceUrl} target="_blank" rel="noopener noreferrer" style={{padding:4}}>{Ic.clip(C.pri,14)}</a>}
+                {inc.invoiceUrl&&<button onClick={()=>setViewFile({url:inc.invoiceUrl,name:inc.invoiceNumber||"Factura",type:"document"})} style={{background:"none",border:"none",cursor:"pointer",padding:4}}>{Ic.clip(C.pri,14)}</button>}
                 {canEdit&&<button onClick={()=>setEditItem(inc)} style={{background:"none",border:"none",cursor:"pointer",padding:4}}>{Ic.edit(C.t3,14)}</button>}
                 {canEdit&&<button onClick={()=>setConfirmDelete({type:"inc",id:inc.id,label:inc.concept})} style={{background:"none",border:"none",cursor:"pointer",padding:4}}>{Ic.ban(C.err,14)}</button>}
               </div>;
@@ -481,7 +497,7 @@ export default function TruckDetailScreen({ truckId, user, onBack, onNavFreight 
                 <div style={{fontSize:11,color:C.t3,marginTop:2}}>{fmtDate(e.date)}</div>
               </div>
               <span style={{fontSize:14,fontWeight:700,color:C.t1,whiteSpace:"nowrap"}}>{fmtMoney(e.amount,e.currency)}</span>
-              {e.receiptUrl&&<a href={e.receiptUrl} target="_blank" rel="noopener noreferrer" style={{padding:4}}>{Ic.clip(C.pri,14)}</a>}
+              {e.receiptUrl&&<button onClick={()=>setViewFile({url:e.receiptUrl,name:e.receiptName||"Comprobante",type:"document"})} style={{background:"none",border:"none",cursor:"pointer",padding:4}}>{Ic.clip(C.pri,14)}</button>}
               {canEdit&&<button onClick={()=>setEditItem(e)} style={{background:"none",border:"none",cursor:"pointer",padding:4}}>{Ic.edit(C.t3,14)}</button>}
               {canEdit&&<button onClick={()=>setConfirmDelete({type:"exp",id:e.id,label:EXP_TYPE_LABELS[e.type]})} style={{background:"none",border:"none",cursor:"pointer",padding:4}}>{Ic.ban(C.err,14)}</button>}
             </div>)
@@ -543,13 +559,23 @@ export default function TruckDetailScreen({ truckId, user, onBack, onNavFreight 
                 </div>
                 <div style={{fontSize:11.5,color:EXPIRY_COLORS[d.expiryStatus||"no_expiry"],fontWeight:600,marginTop:2}}>{EXPIRY_LABELS[d.expiryStatus||"no_expiry"]}{d.expiresAt?` · ${fmtDate(d.expiresAt)}`:""}</div>
               </div>
-              <a href={d.fileUrl} target="_blank" rel="noopener noreferrer" style={{padding:4,color:C.pri}}>{Ic.eye(C.pri,16)}</a>
+              <button onClick={()=>openFile(d)} style={{background:"none",border:"none",cursor:"pointer",padding:4}}>{Ic.eye(C.pri,16)}</button>
+              {d.ocrStatus==="completed"&&<span style={{fontSize:9,color:C.pri}} title="Procesado con IA">✨</span>}
+              {d.ocrStatus==="processing"&&<span style={{fontSize:9,color:C.warn}} title="Procesando...">⏳</span>}
               {canEdit&&<button onClick={()=>setEditItem(d)} style={{background:"none",border:"none",cursor:"pointer",padding:4}}>{Ic.edit(C.t3,14)}</button>}
               {canEdit&&<button onClick={()=>setConfirmDelete({type:"doc",id:d.id,label:DOC_TYPE_LABELS[d.type]})} style={{background:"none",border:"none",cursor:"pointer",padding:4}}>{Ic.ban(C.err,14)}</button>}
             </div>})
           }
         </>})()}
       </div>
+
+      {/* ==================== FILE VIEWER ==================== */}
+      <FileViewer
+        file={viewFile}
+        onClose={() => setViewFile(null)}
+        onOcr={handleOcr}
+        ocrLoading={ocrLoading}
+      />
 
       {/* ==================== DELETE CONFIRMATION ==================== */}
       {confirmDelete && (
