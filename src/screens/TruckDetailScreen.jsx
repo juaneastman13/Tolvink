@@ -65,6 +65,35 @@ function Stat({ label, value, color=C.t1, sub }) {
   );
 }
 
+// ======================== DOC ROW (matches DocumentsScreen DocCard format) ==
+
+function DocRow({ d, onView, onOcr, ocrLoading, onEdit, onDelete, canEdit }) {
+  const isImg = d.mimeType?.startsWith("image")||d.fileUrl?.match(/\.(jpg|jpeg|png|webp|gif)$/i);
+  const hasOcr = d.ocrData || d.ocrStatus === "completed";
+  const ab = { padding:5, borderRadius:R.sm, border:`1px solid ${C.b2}`, background:C.bg, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 };
+  return (
+    <div style={{ display:"flex", alignItems:"center", gap:8, padding:8, background:C.bg, border:`1px solid ${C.b2}`, borderRadius:R.md }}>
+      <button onClick={()=>onView(d)} style={{ display:"flex", alignItems:"center", gap:10, flex:1, minWidth:0, background:"none", border:"none", cursor:"pointer", fontFamily:FONT, textAlign:"left", padding:0 }}>
+        {isImg ? <img src={d.fileUrl} alt="" loading="lazy" style={{ width:48, height:48, borderRadius:R.sm, objectFit:"cover", flexShrink:0 }} onError={e=>{e.target.style.display="none"}} /> : <div style={{ width:48, height:48, borderRadius:R.sm, background:C.priPale, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{Ic.doc(C.pri,20)}</div>}
+        <div style={{ flex:1, minWidth:0 }}>
+          <div style={{ fontSize:12.1, fontWeight:600, color:C.t1, wordBreak:"break-all" }}>{d.fileName||d.name||"Archivo"}</div>
+          <div style={{ fontSize:11, color:C.t3, marginTop:2, display:"flex", alignItems:"center", gap:4, flexWrap:"wrap" }}>
+            <span>{DOC_TYPE_LABELS[d.type]||d.type}{d.createdAt?` · ${fmtDate(d.createdAt)}`:""}</span>
+            {hasOcr && <span style={{ padding:"2px 7px", borderRadius:R.sm, fontSize:10, fontWeight:700, background:C.priPale, color:C.pri }}>OCR</span>}
+          </div>
+        </div>
+      </button>
+      {/* Botones: ver, descargar, OCR, editar, eliminar */}
+      <button onClick={()=>onView(d)} title="Ver" style={ab}>{Ic.eye(C.t2,14)}</button>
+      <a href={d.fileUrl} download title="Descargar" style={{...ab, textDecoration:"none"}}>{Ic.download(C.t2,14)}</a>
+      {!hasOcr && isImg && onOcr ? <button onClick={()=>onOcr(d)} disabled={ocrLoading} title="OCR" style={{ padding:"4px 8px", borderRadius:R.sm, border:`1px solid ${C.acc}`, background:`${C.acc}10`, cursor:ocrLoading?"wait":"pointer", fontFamily:FONT, fontSize:10.5, fontWeight:700, color:C.acc, display:"flex", alignItems:"center", gap:4, opacity:d.ocrStatus==="processing"||ocrLoading?0.5:1, flexShrink:0 }}>{Ic.doc(C.acc,12)} OCR</button> : null}
+      {hasOcr && <button onClick={()=>onView(d)} title="Ver datos" style={{...ab, border:`1px solid ${C.pri}`, background:C.okPale}}>{Ic.eye(C.pri,14)}</button>}
+      {canEdit && onEdit && <button onClick={()=>onEdit(d)} title="Editar" style={ab}>{Ic.edit(C.t2,14)}</button>}
+      {canEdit && onDelete && <button onClick={()=>onDelete(d)} title="Eliminar" style={{...ab, border:`1px solid ${C.err}40`, background:C.errPale}}>{Ic.cross(C.err,14)}</button>}
+    </div>
+  );
+}
+
 // ======================== MOBILE STEP FORM ================================
 
 function StepForm({ title, steps, onSubmit, onCancel, saving, submitLabel = "Confirmar" }) {
@@ -586,20 +615,7 @@ export default function TruckDetailScreen({ truckId, user, onBack, onNavFreight 
                   </div>
                   {incDocs.length>0 && <div style={{display:"flex",flexDirection:"column",gap:6}}>
                     <div style={{fontSize:11,fontWeight:700,color:C.t2,textTransform:"uppercase",letterSpacing:0.5}}>Archivos ({incDocs.length})</div>
-                    {incDocs.map(d=>{
-                      const isImg = d.mimeType?.startsWith("image")||d.fileUrl?.match(/\.(jpg|jpeg|png|webp|gif)$/i);
-                      return <div key={d.id} style={{display:"flex",alignItems:"center",gap:10,padding:8,background:C.w,border:`1px solid ${C.b2}`,borderRadius:R.md}}>
-                        <button onClick={()=>openFile(d)} style={{display:"flex",alignItems:"center",gap:10,flex:1,minWidth:0,background:"none",border:"none",cursor:"pointer",fontFamily:FONT,textAlign:"left",padding:0}}>
-                          {isImg?<img src={d.fileUrl} alt="" style={{width:48,height:48,borderRadius:R.sm,objectFit:"cover",flexShrink:0}}/>:<div style={{width:48,height:48,borderRadius:R.sm,background:C.priPale,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{Ic.doc(C.pri,20)}</div>}
-                          <div style={{flex:1,minWidth:0}}>
-                            <div style={{fontSize:12,fontWeight:600,color:C.t1,wordBreak:"break-all"}}>{d.fileName||"Archivo"}</div>
-                            <div style={{fontSize:10.5,color:C.t3}}>{DOC_TYPE_LABELS[d.type]||d.type} · {fmtDate(d.createdAt)}</div>
-                          </div>
-                        </button>
-                        <button onClick={()=>openFile(d)} style={{padding:6,borderRadius:R.sm,border:`1px solid ${C.b1}`,background:C.bg,cursor:"pointer",display:"flex"}}>{Ic.eye(C.t2,14)}</button>
-                        {d.ocrStatus==="completed"&&<span style={{fontSize:10,color:C.pri}}>✨</span>}
-                      </div>;
-                    })}
+                    {incDocs.map(d=><DocRow key={d.id} d={d} onView={openFile} onOcr={handleOcr} ocrLoading={ocrLoading} canEdit={canEdit} onDelete={dd=>setConfirmDelete({type:"doc",id:dd.id,label:dd.fileName})}/>)}
                   </div>}
                   {incDocs.length===0&&<div style={{fontSize:12,color:C.t3,fontStyle:"italic"}}>Sin archivos adjuntos</div>}
                 </div>}
@@ -635,30 +651,11 @@ export default function TruckDetailScreen({ truckId, user, onBack, onNavFreight 
                     {canEdit&&<button onClick={()=>setConfirmDelete({type:"exp",id:e.id,label:EXP_TYPE_LABELS[e.type]})} style={{padding:"4px 10px",borderRadius:R.md,border:`1px solid ${C.err}40`,background:C.errPale,cursor:"pointer",fontSize:11,fontWeight:600,color:C.err,fontFamily:FONT,display:"flex",alignItems:"center",gap:4}}>{Ic.ban(C.err,12)} Eliminar</button>}
                   </div>
                   {/* Legacy receipt URL */}
-                  {e.receiptUrl&&!expDocs.length&&<div style={{display:"flex",alignItems:"center",gap:10,padding:8,background:C.w,border:`1px solid ${C.b2}`,borderRadius:R.md,marginBottom:6}}>
-                    <button onClick={()=>setViewFile({url:e.receiptUrl,name:e.receiptName||"Comprobante",type:"document"})} style={{display:"flex",alignItems:"center",gap:10,flex:1,background:"none",border:"none",cursor:"pointer",fontFamily:FONT,textAlign:"left",padding:0}}>
-                      <div style={{width:48,height:48,borderRadius:R.sm,background:C.priPale,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{Ic.doc(C.pri,20)}</div>
-                      <div><div style={{fontSize:12,fontWeight:600,color:C.t1}}>{e.receiptName||"Comprobante"}</div><div style={{fontSize:10.5,color:C.t3}}>{fmtDate(e.date)}</div></div>
-                    </button>
-                    <button onClick={()=>setViewFile({url:e.receiptUrl,name:e.receiptName||"Comprobante",type:"document"})} style={{padding:6,borderRadius:R.sm,border:`1px solid ${C.b1}`,background:C.bg,cursor:"pointer",display:"flex"}}>{Ic.eye(C.t2,14)}</button>
-                  </div>}
+                  {e.receiptUrl&&!expDocs.length&&<DocRow d={{fileUrl:e.receiptUrl,fileName:e.receiptName||"Comprobante",type:"OTHER",createdAt:e.date}} onView={dd=>setViewFile({url:dd.fileUrl,name:dd.fileName,type:"document"})} canEdit={false}/>}
                   {/* Linked TruckDocuments */}
                   {expDocs.length>0&&<div style={{display:"flex",flexDirection:"column",gap:6}}>
                     <div style={{fontSize:11,fontWeight:700,color:C.t2,textTransform:"uppercase",letterSpacing:0.5}}>Archivos ({expDocs.length})</div>
-                    {expDocs.map(d=>{
-                      const isImg = d.mimeType?.startsWith("image")||d.fileUrl?.match(/\.(jpg|jpeg|png|webp|gif)$/i);
-                      return <div key={d.id} style={{display:"flex",alignItems:"center",gap:10,padding:8,background:C.w,border:`1px solid ${C.b2}`,borderRadius:R.md}}>
-                        <button onClick={()=>openFile(d)} style={{display:"flex",alignItems:"center",gap:10,flex:1,minWidth:0,background:"none",border:"none",cursor:"pointer",fontFamily:FONT,textAlign:"left",padding:0}}>
-                          {isImg?<img src={d.fileUrl} alt="" style={{width:48,height:48,borderRadius:R.sm,objectFit:"cover",flexShrink:0}}/>:<div style={{width:48,height:48,borderRadius:R.sm,background:C.priPale,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{Ic.doc(C.pri,20)}</div>}
-                          <div style={{flex:1,minWidth:0}}>
-                            <div style={{fontSize:12,fontWeight:600,color:C.t1,wordBreak:"break-all"}}>{d.fileName||"Archivo"}</div>
-                            <div style={{fontSize:10.5,color:C.t3}}>{DOC_TYPE_LABELS[d.type]||d.type} · {fmtDate(d.createdAt)}</div>
-                          </div>
-                        </button>
-                        <button onClick={()=>openFile(d)} style={{padding:6,borderRadius:R.sm,border:`1px solid ${C.b1}`,background:C.bg,cursor:"pointer",display:"flex"}}>{Ic.eye(C.t2,14)}</button>
-                        {d.ocrStatus==="completed"&&<span style={{fontSize:10,color:C.pri}}>✨</span>}
-                      </div>;
-                    })}
+                    {expDocs.map(d=><DocRow key={d.id} d={d} onView={openFile} onOcr={handleOcr} ocrLoading={ocrLoading} canEdit={canEdit} onDelete={dd=>setConfirmDelete({type:"doc",id:dd.id,label:dd.fileName})}/>)}
                   </div>}
                   {!expDocs.length&&!e.receiptUrl&&<div style={{fontSize:12,color:C.t3,fontStyle:"italic"}}>Sin archivos adjuntos</div>}
                 </div>}
@@ -699,19 +696,7 @@ export default function TruckDetailScreen({ truckId, user, onBack, onNavFreight 
                     {canEdit&&<button onClick={()=>setConfirmDelete({type:"mov",id:m.id,label:MOV_TYPE_LABELS[m.type]})} style={{padding:"4px 10px",borderRadius:R.md,border:`1px solid ${C.err}40`,background:C.errPale,cursor:"pointer",fontSize:11,fontWeight:600,color:C.err,fontFamily:FONT,display:"flex",alignItems:"center",gap:4}}>{Ic.ban(C.err,12)} Eliminar</button>}
                   </div>
                   {movDocs.length>0&&<div style={{display:"flex",flexDirection:"column",gap:6}}>
-                    {movDocs.map(d=>{
-                      const isImg = d.mimeType?.startsWith("image")||d.fileUrl?.match(/\.(jpg|jpeg|png|webp|gif)$/i);
-                      return <div key={d.id} style={{display:"flex",alignItems:"center",gap:10,padding:8,background:C.w,border:`1px solid ${C.b2}`,borderRadius:R.md}}>
-                        <button onClick={()=>openFile(d)} style={{display:"flex",alignItems:"center",gap:10,flex:1,minWidth:0,background:"none",border:"none",cursor:"pointer",fontFamily:FONT,textAlign:"left",padding:0}}>
-                          {isImg?<img src={d.fileUrl} alt="" style={{width:48,height:48,borderRadius:R.sm,objectFit:"cover",flexShrink:0}}/>:<div style={{width:48,height:48,borderRadius:R.sm,background:C.priPale,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{Ic.doc(C.pri,20)}</div>}
-                          <div style={{flex:1,minWidth:0}}>
-                            <div style={{fontSize:12,fontWeight:600,color:C.t1,wordBreak:"break-all"}}>{d.fileName||"Archivo"}</div>
-                            <div style={{fontSize:10.5,color:C.t3}}>{fmtDate(d.createdAt)}</div>
-                          </div>
-                        </button>
-                        <button onClick={()=>openFile(d)} style={{padding:6,borderRadius:R.sm,border:`1px solid ${C.b1}`,background:C.bg,cursor:"pointer",display:"flex"}}>{Ic.eye(C.t2,14)}</button>
-                      </div>;
-                    })}
+                    {movDocs.map(d=><DocRow key={d.id} d={d} onView={openFile} onOcr={handleOcr} ocrLoading={ocrLoading} canEdit={canEdit} onDelete={dd=>setConfirmDelete({type:"doc",id:dd.id,label:dd.fileName})}/>)}
                   </div>}
                 </div>}
               </div>;
@@ -742,30 +727,11 @@ export default function TruckDetailScreen({ truckId, user, onBack, onNavFreight 
             displayDocs.map(d=>{
               const lb = LINK_BADGE[d.linkedType||"general"]||LINK_BADGE.general;
               const linkLabel = d.linkedType==="expense"&&d.expense?`${EXP_TYPE_LABELS[d.expense.type]||""} ${fmtDate(d.expense.date)}`:d.linkedType==="income"&&d.income?d.income.concept:d.linkedType==="freight"&&d.freight?d.freight.code:d.linkedType==="movement"&&d.movement?`${MOV_TYPE_LABELS[d.movement.type]||""} ${fmtDate(d.movement.departureAt)}`:"";
-              const isImg = d.mimeType?.startsWith("image")||d.fileUrl?.match(/\.(jpg|jpeg|png|webp|gif)$/i);
-              const ab = {padding:6,minWidth:36,minHeight:36,borderRadius:R.sm,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}; // action button base
-              return <div key={d.id} style={{display:"flex",alignItems:"center",gap:8,padding:8,background:C.bg,border:`1px solid ${C.b2}`,borderRadius:R.md,marginBottom:6}}>
-              {/* Thumbnail */}
-              <button onClick={()=>openFile(d)} style={{display:"flex",alignItems:"center",gap:10,flex:1,minWidth:0,background:"none",border:"none",cursor:"pointer",fontFamily:FONT,textAlign:"left",padding:0}}>
-                {isImg?<img src={d.fileUrl} alt="" loading="lazy" style={{width:48,height:48,borderRadius:R.sm,objectFit:"cover",flexShrink:0}} onError={e=>{e.target.style.display="none"}}/>:<div style={{width:48,height:48,borderRadius:R.sm,background:C.priPale,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{Ic.doc(C.pri,20)}</div>}
-                <div style={{flex:1,minWidth:0}}>
-                  <div style={{fontSize:12.1,fontWeight:600,color:C.t1,wordBreak:"break-all"}}>{d.fileName||d.name||"Archivo"}</div>
-                  <div style={{fontSize:11,color:C.t3,marginTop:2,display:"flex",alignItems:"center",gap:4,flexWrap:"wrap"}}>
-                    <span>{DOC_TYPE_LABELS[d.type]||d.type}{d.createdAt?` · ${fmtDate(d.createdAt)}`:""}</span>
-                    <span style={{fontSize:9.5,fontWeight:700,color:lb.color,background:lb.bg,padding:"1px 5px",borderRadius:R.sm}}>{lb.label}{linkLabel?`: ${linkLabel}`:""}</span>
-                  </div>
-                </div>
-              </button>
-              {/* Action buttons: view, download, OCR, edit, delete */}
-              <button onClick={()=>openFile(d)} title="Ver" style={{...ab,border:`1px solid ${C.b1}`,background:C.w}}>{Ic.eye(C.t3,14)}</button>
-              <a href={d.fileUrl} download title="Descargar" style={{...ab,border:`1px solid ${C.b1}`,background:C.w,textDecoration:"none"}}>{Ic.down(C.t3,14)}</a>
-              {d.ocrData||d.ocrStatus==="completed"
-                ?<button onClick={()=>openFile(d)} title="Ver datos extraídos" style={{...ab,border:`1px solid ${C.pri}`,background:C.okPale}}>{Ic.eye(C.pri,14)}</button>
-                :isImg?<button onClick={()=>handleOcr(d)} disabled={ocrLoading} title="Extraer datos (OCR)" style={{...ab,border:`1px solid ${C.pri}40`,background:C.priPale,opacity:d.ocrStatus==="processing"||ocrLoading?0.5:1}}>{Ic.doc(C.pri,14)}</button>
-                :null}
-              {canEdit&&<button onClick={()=>setEditItem(d)} title="Editar" style={{...ab,border:`1px solid ${C.b1}`,background:C.w}}>{Ic.edit(C.t3,14)}</button>}
-              {canEdit&&<button onClick={()=>setConfirmDelete({type:"doc",id:d.id,label:DOC_TYPE_LABELS[d.type]})} title="Eliminar" style={{...ab,border:`1px solid ${C.err}40`,background:C.errPale}}>{Ic.cross(C.err,14)}</button>}
-            </div>})
+              return <div key={d.id} style={{marginBottom:6}}>
+                <DocRow d={{...d, _linkBadge:lb, _linkLabel:linkLabel}} onView={openFile} onOcr={handleOcr} ocrLoading={ocrLoading} canEdit={canEdit} onEdit={dd=>setEditItem(dd)} onDelete={dd=>setConfirmDelete({type:"doc",id:dd.id,label:DOC_TYPE_LABELS[dd.type]})}/>
+                {lb.label!=="General"&&<div style={{paddingLeft:58,marginTop:2}}><span style={{fontSize:9.5,fontWeight:700,color:lb.color,background:lb.bg,padding:"1px 5px",borderRadius:R.sm}}>{lb.label}{linkLabel?`: ${linkLabel}`:""}</span></div>}
+              </div>;
+            })
           }
         </>})()}
       </div>
