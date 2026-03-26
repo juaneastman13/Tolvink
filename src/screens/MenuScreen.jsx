@@ -1,6 +1,7 @@
 import { useState, useEffect, Fragment } from "react";
 import { C, Ic , R} from "../theme";
 import { Av, Bd, Btn } from "../components";
+import { FEATURES } from "../features";
 
 export default function MenuScreen({ user, perms, onLogout, onNav, isDesktop, onSwitchCompany, onRefresh, simpleMode, onToggleSimple }) {
   const [switching, setSwitching] = useState(null);
@@ -46,8 +47,8 @@ export default function MenuScreen({ user, perms, onLogout, onNav, isDesktop, on
     if(ut==="transporter"||ut==="producer"||ut==="plant"||uts.includes("transporter")||uts.includes("producer")||uts.includes("plant")||isGerente) mgmtItems.push({k:"trucks",l:"Mi Flota",ic:Ic.truck(C.t3,18),c:C.t3});
     mgmtItems.push({k:"documents",l:"Documentos",ic:Ic.doc(C.t3,18),c:C.t3});
     mgmtItems.push({k:"calendar",l:"Calendario",ic:Ic.cal(C.t3,18),c:C.t3});
-    mgmtItems.push({k:"chats",l:"Chat",ic:Ic.msg(C.t3,18),c:C.t3});
-    mgmtItems.push({k:"reports",l:"Informes",ic:Ic.doc(C.t3,18),c:C.t3});
+    if(FEATURES.CHAT_ENABLED) mgmtItems.push({k:"chats",l:"Chat",ic:Ic.msg(C.t3,18),c:C.t3});
+    if(FEATURES.REPORTS_ENABLED) mgmtItems.push({k:"reports",l:"Informes",ic:Ic.doc(C.t3,18),c:C.t3});
     mgmtItems.push({k:"analytics",l:"Estadísticas",ic:Ic.chk(C.t3,18),c:C.t3});
     if(user.role==="platform_admin"||user.role==="admin") mgmtItems.push({k:"admin",l:"Administración",ic:Ic.shield(C.t3,18),c:C.t3});
     if(!isDesktop) {
