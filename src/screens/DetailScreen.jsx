@@ -271,6 +271,10 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
     if (user.userType === "plant" && freight.useOwnFleet && freight.needsPlantApproval && !freight.plantApprovedAt) {
       acts = ["approve_producer", ...acts];
     }
+    // Never show confirm_finished if confirm_loaded is still pending — carga must come first
+    if (acts.includes("confirm_loaded") && acts.includes("confirm_finished")) {
+      acts = acts.filter(a => a !== "confirm_finished");
+    }
     return acts;
   }, [freight, isChoferQueued, isConsulta, actions, user, transporterIsConsulta, isMultiTruck]);
 
@@ -390,9 +394,13 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
       if (ts === "loaded" && !a.transporterFinishedConfirmedAt) btns.push({ key:"confirm_trip_finished", label:"Confirmar entrega", color:C.pri, icon:Ic.chk(C.w,14) });
     }
     if (user.userType === "producer" && !isOwnFleetTrip) {
-      if ((ts === "loaded" || ts === "in_progress") && !a.producerLoadedConfirmedAt && !btns.find(b=>b.key==="confirm_trip_loaded"))
+      if (ts === "in_progress" && !a.producerLoadedConfirmedAt && !btns.find(b=>b.key==="confirm_trip_loaded"))
         btns.push({ key:"confirm_trip_loaded", label:"Confirmar carga", color:C.acc, icon:Ic.chk(C.w,14) });
     }
+    // Never show confirm_finished if confirm_loaded is still pending
+    const hasLoad = btns.find(b=>b.key==="confirm_trip_loaded");
+    const hasFinish = btns.find(b=>b.key==="confirm_trip_finished");
+    if (hasLoad && hasFinish) return btns.filter(b=>b.key!=="confirm_trip_finished");
     return btns;
   };
 
