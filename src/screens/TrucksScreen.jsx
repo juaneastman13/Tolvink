@@ -115,6 +115,9 @@ export default function TrucksScreen({ onBack, embedded, user, onTruckClick }) {
     finally { setSaving(false); }
   };
 
+  const [editTruck, setEditTruck] = useState(null); // truck being edited
+  const [confirmDeactivate, setConfirmDeactivate] = useState(false);
+
   const switchTab = (t) => { setTab(t); setShowForm(false); setMsg(null); setLoading(true); };
 
   const handleCompanyChange = (companyId) => {
@@ -219,30 +222,29 @@ export default function TrucksScreen({ onBack, embedded, user, onTruckClick }) {
                 const truckEco = fleetSummary?.trucks?.find(ft => ft.id === t.id);
                 const isLinked = t.ownerCompanyId && t.companyId !== (user?.activeCompanyId || user?.companyId);
                 return (
-                  <div key={t.id} onClick={() => !isLinked && onTruckClick?.(t.id)} style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: R.lg, padding: 14, boxShadow: C.sh, display: "flex", justifyContent: "space-between", alignItems: "center", cursor: !isLinked && onTruckClick ? "pointer" : "default" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                      <LicensePlate plate={t.plate} size="md" />
-                      <div>
-                        <div style={{ display:"flex", alignItems:"center", gap:6, flexWrap:"wrap" }}>
-                          {t.model && <span style={{ fontSize: 13, fontWeight: 600, color: C.t1 }}>{t.model}</span>}
-                          {t.assignedUser && <span style={{ fontSize: 11.5, color: C.pri, fontWeight: 600 }}>{t.assignedUser.name}</span>}
-                          {isLinked && <span style={{ fontSize: 9.5, fontWeight: 700, color: C.sec, background: C.secPale, padding: "1px 6px", borderRadius: R.pill }}>Vinculado</span>}
-                          {!isLinked && alert?.expired > 0 && <span style={{ fontSize: 10, fontWeight: 700, color: C.err, background: C.errPale, padding: "1px 6px", borderRadius: R.pill }}>{alert.expired} venc.</span>}
-                          {!isLinked && alert?.expiring > 0 && !alert?.expired && <span style={{ fontSize: 10, fontWeight: 700, color: C.warn, background: C.warnPale, padding: "1px 6px", borderRadius: R.pill }}>{alert.expiring} por vencer</span>}
-                        </div>
-                        {!isLinked && truckEco && (truckEco.net !== 0 || truckEco.km > 0) && (
-                          <div style={{ display: "flex", gap: 8, marginTop: 3 }}>
-                            {truckEco.net !== 0 && <span style={{ fontSize: 10, fontWeight: 700, color: truckEco.net >= 0 ? C.ok : C.err }}>${Number(truckEco.net).toLocaleString("es-UY")}</span>}
-                            {truckEco.km > 0 && <span style={{ fontSize: 10, color: C.t3 }}>{Number(truckEco.km).toLocaleString("es-UY")} km</span>}
-                          </div>
-                        )}
-                        {ownerName && !selectedCompanyId && <div style={{ fontSize: 10.5, color: C.info, fontWeight: 600, marginTop: 2 }}>{ownerName}</div>}
+                  <div key={t.id} onClick={() => !isLinked && onTruckClick?.(t.id)} style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: R.lg, padding: "12px 14px", boxShadow: C.sh, display: "flex", alignItems: "center", gap: 12, cursor: !isLinked && onTruckClick ? "pointer" : "default" }}>
+                    <LicensePlate plate={t.plate} size="md" />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display:"flex", alignItems:"center", gap:6, flexWrap:"wrap" }}>
+                        {t.model && <span style={{ fontSize: 13.5, fontWeight: 600, color: C.t1 }}>{t.model}</span>}
+                        {isLinked && <span style={{ fontSize: 9.5, fontWeight: 700, color: C.sec, background: C.secPale, padding: "1px 6px", borderRadius: R.pill }}>Vinculado</span>}
                       </div>
+                      <div style={{ display:"flex", alignItems:"center", gap:8, marginTop: 3 }}>
+                        {t.assignedUser && <span style={{ fontSize: 11.5, color: C.pri, fontWeight: 600 }}>{Ic.user(C.pri,11)} {t.assignedUser.name}</span>}
+                        <span style={{ fontSize: 10.5, color: t.active ? C.ok : C.t3 }}>● {t.active ? "Activo" : "Inactivo"}</span>
+                      </div>
+                      {!isLinked && (
+                        <div style={{ display:"flex", alignItems:"center", gap:6, marginTop:3, flexWrap:"wrap" }}>
+                          {alert?.expired > 0 && <span style={{ fontSize: 10, fontWeight: 700, color: C.err, background: C.errPale, padding: "1px 6px", borderRadius: R.pill }}>{alert.expired} venc.</span>}
+                          {alert?.expiring > 0 && !alert?.expired && <span style={{ fontSize: 10, fontWeight: 700, color: C.warn, background: C.warnPale, padding: "1px 6px", borderRadius: R.pill }}>{alert.expiring} por vencer</span>}
+                          {truckEco?.net !== 0 && truckEco && <span style={{ fontSize: 10, fontWeight: 700, color: truckEco.net >= 0 ? C.ok : C.err }}>${Number(truckEco.net).toLocaleString("es-UY")}</span>}
+                          {truckEco?.km > 0 && <span style={{ fontSize: 10, color: C.t3 }}>{Number(truckEco.km).toLocaleString("es-UY")} km</span>}
+                        </div>
+                      )}
+                      {ownerName && !selectedCompanyId && <div style={{ fontSize: 10.5, color: C.info, fontWeight: 600, marginTop: 2 }}>{ownerName}</div>}
                     </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                      {canEdit && !isLinked && <button aria-label="Desactivar camión" disabled={saving} onClick={(e) => { e.stopPropagation(); handleDeactivateTruck(t.id); }} style={{ background: "none", border: "none", cursor: saving?"not-allowed":"pointer", padding: 6, opacity:saving?0.4:1 }}>{Ic.ban(C.err, 18)}</button>}
-                      {!isLinked && onTruckClick && <span style={{ opacity: 0.4 }}>{Ic.chev(C.t3, 14)}</span>}
-                    </div>
+                    {canEdit && !isLinked && <button aria-label="Editar camión" onClick={(e) => { e.stopPropagation(); setEditTruck(t); }} style={{ background: "none", border: "none", cursor: "pointer", padding: 6, opacity: 0.6 }}>{Ic.edit(C.t2, 16)}</button>}
+                    {!isLinked && onTruckClick && <span style={{ opacity: 0.3 }}>{Ic.chev(C.t3, 14)}</span>}
                   </div>
                 );
               })}
@@ -280,6 +282,50 @@ export default function TrucksScreen({ onBack, embedded, user, onTruckClick }) {
         }
       </>}
       </div>
+
+      {/* Edit truck modal */}
+      {editTruck && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center" }} onClick={() => { setEditTruck(null); setConfirmDeactivate(false); }}>
+          <div style={{ background: C.w, borderRadius: R.xl, padding: 24, maxWidth: 380, width: "90%", boxShadow: C.shLg }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+              <div style={{ fontSize: 18, fontWeight: 700 }}>Camión</div>
+              <button onClick={() => { setEditTruck(null); setConfirmDeactivate(false); }} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }}>{Ic.cross(C.t3, 18)}</button>
+            </div>
+
+            <div style={{ display: "flex", justifyContent: "center", marginBottom: 16 }}>
+              <LicensePlate plate={editTruck.plate} size="lg" />
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 12px", background: C.bg, borderRadius: R.md }}>
+                <span style={{ fontSize: 13, color: C.t3 }}>Modelo</span>
+                <span style={{ fontSize: 13, fontWeight: 600 }}>{editTruck.model || "—"}</span>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 12px", background: C.bg, borderRadius: R.md }}>
+                <span style={{ fontSize: 13, color: C.t3 }}>Chofer</span>
+                <span style={{ fontSize: 13, fontWeight: 600 }}>{editTruck.assignedUser?.name || "Sin asignar"}</span>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 12px", background: C.bg, borderRadius: R.md }}>
+                <span style={{ fontSize: 13, color: C.t3 }}>Estado</span>
+                <span style={{ fontSize: 13, fontWeight: 600, color: editTruck.active ? C.ok : C.t3 }}>● {editTruck.active ? "Activo" : "Inactivo"}</span>
+              </div>
+            </div>
+
+            {!confirmDeactivate ? (
+              <button onClick={() => setConfirmDeactivate(true)} style={{ width: "100%", padding: "10px 0", background: "none", border: `1px solid ${C.err}`, borderRadius: R.md, color: C.err, fontWeight: 600, fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}>Desactivar camión</button>
+            ) : (
+              <div style={{ padding: 14, background: C.errPale, borderRadius: R.md, border: `1px solid ${C.err}20` }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: C.err, marginBottom: 6 }}>¿Estás seguro?</div>
+                <div style={{ fontSize: 12, color: C.t3, marginBottom: 10 }}>Esta acción no se puede deshacer. El camión dejará de aparecer en la lista.</div>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button onClick={() => setConfirmDeactivate(false)} style={{ flex: 1, padding: "8px 0", background: C.w, border: `1px solid ${C.b1}`, borderRadius: R.md, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 600, color: C.t2 }}>Cancelar</button>
+                  <button disabled={saving} onClick={async () => { await handleDeactivateTruck(editTruck.id); setEditTruck(null); setConfirmDeactivate(false); }} style={{ flex: 1, padding: "8px 0", background: C.err, border: "none", borderRadius: R.md, cursor: saving ? "not-allowed" : "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 600, color: C.w }}>Confirmar</button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
