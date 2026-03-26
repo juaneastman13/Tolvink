@@ -983,7 +983,29 @@ export default function AiChat({ open, onClose, onNavigate, sseAiResponse, sseAi
 
 // ======================== FLOATING BUTTON ====================
 
+const FAB_ICONS = [
+  (s) => Ic.plant(C.tOn, s),
+  (s) => Ic.seedling(C.tOn, s),
+  (s) => Ic.truck(C.tOn, s),
+];
+const FAB_CYCLE_MS = 2500;
+
 export function AiChatFab({ onClick, open }) {
+  const [idx, setIdx] = useState(0);
+  const [fading, setFading] = useState(false);
+
+  useEffect(() => {
+    if (open) return;
+    const timer = setInterval(() => {
+      setFading(true);
+      setTimeout(() => {
+        setIdx(p => (p + 1) % FAB_ICONS.length);
+        setFading(false);
+      }, 200);
+    }, FAB_CYCLE_MS);
+    return () => clearInterval(timer);
+  }, [open]);
+
   return (
     <button
       onClick={onClick}
@@ -1000,7 +1022,16 @@ export function AiChatFab({ onClick, open }) {
       onMouseEnter={e => { e.currentTarget.style.transform = "scale(1.08)"; }}
       onMouseLeave={e => { e.currentTarget.style.transform = "scale(1)"; }}
     >
-      {open ? Ic.cross(C.tOn, 22) : SparkIcon(C.tOn, 24)}
+      {open ? Ic.cross(C.tOn, 22) : (
+        <div style={{
+          display: "flex", alignItems: "center", justifyContent: "center",
+          opacity: fading ? 0 : 1,
+          transform: fading ? "scale(0.7)" : "scale(1)",
+          transition: "opacity 0.2s ease, transform 0.2s ease",
+        }}>
+          {FAB_ICONS[idx](24)}
+        </div>
+      )}
     </button>
   );
 }
