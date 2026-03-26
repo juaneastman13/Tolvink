@@ -334,7 +334,7 @@ const MsgBubble = memo(function MsgBubble({ msg, onSendText }) {
                 filter: isUser ? "invert(1) brightness(2)" : "none",
               }} />
             </div>
-          ) : (isUser ? displayText : renderMarkdown(displayText))}
+          ) : (isUser ? displayText : renderMarkdown(displayText, (code) => onSendText?.(`Ver flete ${code}`)))}
         </div>
       )}
 
@@ -411,24 +411,69 @@ const THINKING_TIMEOUT_MS = 30_000;
 // ======================== MAIN COMPONENT =====================
 
 // ======================== SIMPLE MARKDOWN RENDERER ================
-// Supports **bold** and bullet lists (- item)
-function renderMarkdown(text) {
+// Supports **bold**, bullet lists (- item / • item), ### headers, and freight code links
+const FREIGHT_CODE_RE = /\b(F\d{2}-[A-Z]{3}\.\d{4})\b/g;
+
+function renderInline(line, keyPrefix, onCodeClick) {
+  // Split by bold first, then by freight codes
+  const boldParts = line.split(/(\*\*[^*]+\*\*)/g);
+  return boldParts.map((part, j) => {
+    if (part.startsWith('**') && part.endsWith('**')) {
+      return <strong key={`${keyPrefix}-${j}`}>{part.slice(2, -2)}</strong>;
+    }
+    // Detect freight codes in plain text
+    if (onCodeClick && FREIGHT_CODE_RE.test(part)) {
+      FREIGHT_CODE_RE.lastIndex = 0;
+      const segs = part.split(FREIGHT_CODE_RE);
+      return segs.map((seg, k) => {
+        if (FREIGHT_CODE_RE.test(seg)) {
+          FREIGHT_CODE_RE.lastIndex = 0;
+          return <span key={`${keyPrefix}-${j}-${k}`} onClick={() => onCodeClick(seg)} style={{ color: C.pri, fontWeight: 600, cursor: "pointer", textDecoration: "underline", textDecorationStyle: "dotted" }}>{seg}</span>;
+        }
+        return seg;
+      });
+    }
+    return part;
+  });
+}
+
+function renderMarkdown(text, onCodeClick) {
   if (!text) return text;
   const lines = text.split('\n');
   const result = [];
+  let inList = false;
+  let listItems = [];
+  const flushList = () => {
+    if (listItems.length > 0) {
+      result.push(
+        <ul key={`ul-${result.length}`} style={{ margin: "4px 0", paddingLeft: 18 }}>
+          {listItems.map((li, k) => <li key={k} style={{ marginBottom: 2 }}>{li}</li>)}
+        </ul>
+      );
+      listItems = [];
+    }
+    inList = false;
+  };
   for (let i = 0; i < lines.length; i++) {
-    if (i > 0) result.push(<br key={`br-${i}`} />);
-    let line = lines[i];
-    // Bold: **text**
-    const parts = line.split(/(\*\*[^*]+\*\*)/g);
-    const rendered = parts.map((part, j) => {
-      if (part.startsWith('**') && part.endsWith('**')) {
-        return <strong key={j}>{part.slice(2, -2)}</strong>;
-      }
-      return part;
-    });
-    result.push(<span key={`l-${i}`}>{rendered}</span>);
+    const line = lines[i];
+    // Bullet list: - item or • item
+    const bulletMatch = line.match(/^[\s]*[-•]\s+(.*)/);
+    if (bulletMatch) {
+      inList = true;
+      listItems.push(renderInline(bulletMatch[1], `li-${i}`, onCodeClick));
+      continue;
+    }
+    if (inList) flushList();
+    // Header: ### text
+    const headerMatch = line.match(/^#{1,3}\s+(.*)/);
+    if (headerMatch) {
+      result.push(<strong key={`h-${i}`} style={{ display: "block", marginTop: 6, marginBottom: 2 }}>{renderInline(headerMatch[1], `h-${i}`, onCodeClick)}</strong>);
+      continue;
+    }
+    if (i > 0 && !inList) result.push(<br key={`br-${i}`} />);
+    result.push(<span key={`l-${i}`}>{renderInline(line, `l-${i}`, onCodeClick)}</span>);
   }
+  flushList();
   return result;
 }
 

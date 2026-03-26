@@ -681,7 +681,9 @@ export default function AppLayout({ fh, catalog, online, notif, isDesktop }) {
           const path = nav.screen === 'detail' && nav.freightId
             ? `/freight/${nav.freightId}`
             : SCREEN_TO_PATH[nav.screen] || '/';
+          if (nav.screen === 'detail' && nav.freightId) { setSelFreight(nav.freightId); fh.refresh(nav.freightId); }
           navigate(path);
+          setAiChatOpen(false); // Minimize chat after navigation
         }} sseAiResponse={sseAiResponse} sseAiTranscription={sseAiTranscription} sseAiChunk={sseAiChunk} sseAiThinking={sseAiThinking} />
       </Suspense>
     </div>
