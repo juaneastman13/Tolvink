@@ -65,31 +65,77 @@ function Stat({ label, value, color=C.t1, sub }) {
   );
 }
 
-// ======================== DOC ROW (matches DocumentsScreen DocCard format) ==
+// ======================== DOC ROW (replicates DocumentsScreen DocCard format) ==
 
 function DocRow({ d, onView, onOcr, ocrLoading, onEdit, onDelete, canEdit }) {
+  const [exp, setExp] = useState(false);
   const isImg = d.mimeType?.startsWith("image")||d.fileUrl?.match(/\.(jpg|jpeg|png|webp|gif)$/i);
   const hasOcr = d.ocrData || d.ocrStatus === "completed";
   const ab = { padding:5, borderRadius:R.sm, border:`1px solid ${C.b2}`, background:C.bg, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 };
+  // Parse OCR data for inline preview
+  const ocrPreview = hasOcr ? (() => {
+    try {
+      const raw = typeof d.ocrData === "string" ? JSON.parse(d.ocrData) : d.ocrData;
+      const data = raw?.datos || raw?.data || raw || {};
+      const lines = [];
+      if (data.documentNumber || data.numero) lines.push(`${data.documentNumber || data.numero}${data.date || data.fecha ? ` — ${data.date || data.fecha}` : ""}`);
+      if (data.origin || data.destination) lines.push(`${data.origin || data.origenLocalidad || "?"} → ${data.destination || data.destinoPlanta || "?"}`);
+      if (data.product || data.grano) lines.push(`${data.product || data.grano}${data.quantity || data.pesoNeto ? ` — ${data.quantity || data.pesoNeto} ${data.quantityUnit || "kg"}` : ""}`);
+      return { raw, data, lines, structured: raw?.structured !== false, confidence: raw?.confianza, edited: !!raw?._editMeta };
+    } catch { return null; }
+  })() : null;
+
   return (
-    <div style={{ display:"flex", alignItems:"center", gap:8, padding:8, background:C.bg, border:`1px solid ${C.b2}`, borderRadius:R.md }}>
-      <button onClick={()=>onView(d)} style={{ display:"flex", alignItems:"center", gap:10, flex:1, minWidth:0, background:"none", border:"none", cursor:"pointer", fontFamily:FONT, textAlign:"left", padding:0 }}>
-        {isImg ? <img src={d.fileUrl} alt="" loading="lazy" style={{ width:48, height:48, borderRadius:R.sm, objectFit:"cover", flexShrink:0 }} onError={e=>{e.target.style.display="none"}} /> : <div style={{ width:48, height:48, borderRadius:R.sm, background:C.priPale, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{Ic.doc(C.pri,20)}</div>}
+    <div onClick={()=>setExp(p=>!p)} style={{ background:C.w, border:`1px solid ${C.b1}`, borderLeft:`3px solid ${hasOcr?C.pri:C.t3}`, borderRadius:R.lg, padding:14, boxShadow:C.sh, cursor:"pointer", transition:"all 0.15s" }}>
+      <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+        {/* Thumbnail */}
+        {isImg ? <img src={d.fileUrl} alt="" loading="lazy" style={{ width:40, height:40, borderRadius:R.md, objectFit:"cover", flexShrink:0, border:`1px solid ${C.b2}` }} onError={e=>{e.target.style.display="none"}} />
+        : <div style={{ width:40, height:40, borderRadius:R.md, background:`${C.t3}10`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{Ic.doc(C.t3,18)}</div>}
+        {/* Content */}
         <div style={{ flex:1, minWidth:0 }}>
-          <div style={{ fontSize:12.1, fontWeight:600, color:C.t1, wordBreak:"break-all" }}>{d.fileName||d.name||"Archivo"}</div>
-          <div style={{ fontSize:11, color:C.t3, marginTop:2, display:"flex", alignItems:"center", gap:4, flexWrap:"wrap" }}>
-            <span>{DOC_TYPE_LABELS[d.type]||d.type}{d.createdAt?` · ${fmtDate(d.createdAt)}`:""}</span>
-            {hasOcr && <span style={{ padding:"2px 7px", borderRadius:R.sm, fontSize:10, fontWeight:700, background:C.priPale, color:C.pri }}>OCR</span>}
+          <div style={{ display:"flex", alignItems:"center", gap:6, flexWrap:"wrap" }}>
+            <span style={{ fontSize:14.3, fontWeight:700, color:C.t1 }}>{d.fileName||d.name||"Archivo"}</span>
+            <span style={{ padding:"2px 7px", borderRadius:R.sm, fontSize:10, fontWeight:600, background:`${C.t3}12`, color:C.t3 }}>{DOC_TYPE_LABELS[d.type]||d.type}</span>
+            {hasOcr && <span style={{ padding:"2px 7px", borderRadius:R.sm, fontSize:10, fontWeight:700, background:C.priPale, color:C.pri }}>{ocrPreview?.structured !== false ? "OCR" : "OCR libre"}</span>}
+            {ocrPreview?.edited && <span style={{ padding:"2px 6px", borderRadius:R.sm, fontSize:9, fontWeight:700, background:`${C.acc}15`, color:C.acc }}>Editado</span>}
           </div>
+          <div style={{ fontSize:12.1, color:C.t3, marginTop:2 }}>{fmtDate(d.createdAt)}{d._linkLabel ? ` · ${d._linkLabel}` : ""}</div>
+          {ocrPreview?.lines?.length > 0 && <div style={{ fontSize:11, color:C.t2, marginTop:3, lineHeight:1.4 }}>{ocrPreview.lines.join(" · ")}</div>}
         </div>
-      </button>
-      {/* Botones: ver, descargar, OCR, editar, eliminar */}
-      <button onClick={()=>onView(d)} title="Ver" style={ab}>{Ic.eye(C.t2,14)}</button>
-      <a href={d.fileUrl} download title="Descargar" style={{...ab, textDecoration:"none"}}>{Ic.download(C.t2,14)}</a>
-      {!hasOcr && isImg && onOcr ? <button onClick={()=>onOcr(d)} disabled={ocrLoading} title="OCR" style={{ padding:"4px 8px", borderRadius:R.sm, border:`1px solid ${C.acc}`, background:`${C.acc}10`, cursor:ocrLoading?"wait":"pointer", fontFamily:FONT, fontSize:10.5, fontWeight:700, color:C.acc, display:"flex", alignItems:"center", gap:4, opacity:d.ocrStatus==="processing"||ocrLoading?0.5:1, flexShrink:0 }}>{Ic.doc(C.acc,12)} OCR</button> : null}
-      {hasOcr && <button onClick={()=>onView(d)} title="Ver datos" style={{...ab, border:`1px solid ${C.pri}`, background:C.okPale}}>{Ic.eye(C.pri,14)}</button>}
-      {canEdit && onEdit && <button onClick={()=>onEdit(d)} title="Editar" style={ab}>{Ic.edit(C.t2,14)}</button>}
-      {canEdit && onDelete && <button onClick={()=>onDelete(d)} title="Eliminar" style={{...ab, border:`1px solid ${C.err}40`, background:C.errPale}}>{Ic.cross(C.err,14)}</button>}
+        {/* Action buttons */}
+        <div style={{ display:"flex", alignItems:"center", gap:4, flexShrink:0 }} onClick={e=>e.stopPropagation()}>
+          <button onClick={()=>onView(d)} title="Ver" style={ab}><svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={C.t2} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+          <a href={d.fileUrl} download title="Descargar" onClick={e=>e.stopPropagation()} style={{...ab, textDecoration:"none"}}>{Ic.download(C.t2,14)}</a>
+          {!hasOcr && isImg && onOcr && <button onClick={()=>onOcr(d)} disabled={ocrLoading} style={{ padding:"4px 8px", borderRadius:R.sm, border:`1px solid ${C.acc}`, background:`${C.acc}10`, cursor:ocrLoading?"wait":"pointer", fontFamily:FONT, fontSize:10.5, fontWeight:700, color:C.acc, display:"flex", alignItems:"center", gap:4, opacity:d.ocrStatus==="processing"||ocrLoading?0.5:1, flexShrink:0 }}>{Ic.doc(C.acc,12)} OCR</button>}
+          {hasOcr && <button onClick={()=>onView(d)} title="Ver datos" style={{...ab, border:`1px solid ${C.pri}`, background:C.okPale}}><svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={C.pri} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>}
+          {canEdit && onEdit && <button onClick={()=>onEdit(d)} title="Editar" style={ab}><svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={C.t2} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>}
+          {canEdit && onDelete && <button onClick={()=>onDelete(d)} title="Eliminar" style={{...ab, border:`1px solid ${C.err}40`, background:C.errPale}}>{Ic.cross(C.err,14)}</button>}
+        </div>
+        <span style={{ display:"flex", transform:exp?"rotate(-90deg)":"rotate(0deg)", transition:"transform 0.15s" }}>{Ic.chev(C.t3,14)}</span>
+      </div>
+      {/* Expanded: OCR data + preview */}
+      {exp && <div style={{ marginTop:12, paddingTop:12, borderTop:`1px solid ${C.b2}` }}>
+        {ocrPreview && (() => {
+          const entries = ocrPreview.structured
+            ? Object.entries(ocrPreview.data).filter(([k,v]) => v != null && v !== "" && !k.startsWith("_"))
+            : Object.entries(ocrPreview.data?.rawFields || {}).filter(([,v]) => v != null && v !== "");
+          if (entries.length === 0) return null;
+          return <div style={{ marginBottom:10 }}>
+            <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:6 }}>
+              <span style={{ fontSize:11, fontWeight:700, color:C.pri, textTransform:"uppercase", letterSpacing:0.4 }}>Datos OCR</span>
+              <span style={{ fontSize:10, color:C.t3, fontStyle:"italic" }}>{ocrPreview.structured ? "Estructurado" : "Libre"}{ocrPreview.confidence != null ? ` (${Math.round((ocrPreview.confidence||0)*100)}%)` : ""}</span>
+              {ocrPreview.edited && <span style={{ fontSize:9, fontWeight:700, color:C.acc, background:`${C.acc}15`, padding:"1px 5px", borderRadius:R.sm }}>Editado</span>}
+            </div>
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(140px, 1fr))", gap:6 }}>
+              {entries.map(([k,v]) => <div key={k} style={{ padding:"6px 8px", background:C.bg, borderRadius:R.sm }}>
+                <div style={{ fontSize:10, fontWeight:600, color:C.t3, textTransform:"uppercase", letterSpacing:0.3 }}>{k.replace(/([A-Z])/g,' $1').replace(/^./,s=>s.toUpperCase())}</div>
+                <div style={{ fontSize:13, fontWeight:600, color:C.t1, marginTop:2 }}>{typeof v === "object" ? JSON.stringify(v) : String(v)}</div>
+              </div>)}
+            </div>
+          </div>;
+        })()}
+        {isImg && <div style={{ marginBottom:8 }}><img src={d.fileUrl} alt="" style={{ maxWidth:240, maxHeight:180, borderRadius:R.md, border:`1px solid ${C.b1}`, objectFit:"contain" }}/></div>}
+      </div>}
     </div>
   );
 }
