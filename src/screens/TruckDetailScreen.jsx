@@ -281,6 +281,7 @@ export default function TruckDetailScreen({ truckId, user, onBack, onNavFreight 
           {Ic.truck(C.acc,22)}
           <LicensePlate plate={truck.plate} size="lg"/>
           {truck.model && <span style={{fontSize:12,color:C.t3}}>{truck.model}</span>}
+          {truck.currentOdometer && <span style={{fontSize:10,color:C.t3,fontFamily:MONO}}>{Number(truck.currentOdometer).toLocaleString("es-UY")} km</span>}
           {docSum.expired>0 && <span style={{background:C.errPale,color:C.err,fontSize:10,fontWeight:700,padding:"2px 6px",borderRadius:R.pill}}>{docSum.expired} venc.</span>}
         </div>
 
@@ -349,6 +350,7 @@ export default function TruckDetailScreen({ truckId, user, onBack, onNavFreight 
               <span style={{flex:1,fontSize:12,color:C.t2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.origin||"?"}→{f.dest||"?"}</span>
               <span style={{fontSize:11,color:C.t3}}>{fmtDate(f.date)}</span>
               {f.tons&&<span style={{fontSize:11,fontWeight:600,color:C.t2}}>{Number(f.tons).toLocaleString("es-UY")}t</span>}
+              {f.kmTotal?<span style={{fontSize:9,color:C.ok}} title="Datos de viaje cargados">✓</span>:<span style={{fontSize:9,color:C.t3,background:C.bg,padding:"1px 4px",borderRadius:R.pill}} title="Sin datos de viaje">km?</span>}
             </div>)
           }
         </>}
