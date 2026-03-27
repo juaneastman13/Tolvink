@@ -563,6 +563,13 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
     }
   },[showTruckSelect, truckOpts.length, form.fleetChoice]); // eslint-disable-line
 
+  // Auto-select current user as driver when choosing own fleet
+  useEffect(()=>{
+    if (form.fleetChoice === "own" && !form.driverId && user?.id) {
+      u({ driverId: user.id });
+    }
+  },[form.fleetChoice, user?.id]); // eslint-disable-line
+
   // Coords for map preview
   const selectedField = (fields||[]).find(f=>f.id===form.fieldId);
   const originCoords = originMode==="field"
