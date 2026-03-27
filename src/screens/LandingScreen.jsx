@@ -188,6 +188,38 @@ a{color:inherit;text-decoration:none}
 @keyframes pulseLine{0%{stroke-dashoffset:40}100%{stroke-dashoffset:0}}
 @media(max-width:768px){.journey{flex-direction:column;align-items:center}.journey-line{width:2px;height:40px;flex:0 0 40px;margin-top:0}.ba-panel{min-width:auto}}
 </style>
+<section class="section" style="position:relative;z-index:1;text-align:center">
+  <div class="tag">Logística agrícola inteligente</div>
+  <h2 class="title">Tu operación de fletes en una sola plataforma</h2>
+  <p class="sub" style="margin:0 auto 32px;text-align:center">Tolvink digitaliza la coordinación de fletes de granos entre plantas, productores y transportistas. Menos llamadas, más control, trazabilidad completa.</p>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;max-width:800px;margin:0 auto;text-align:left">
+    <div style="display:flex;gap:10px;align-items:flex-start">
+      <div class="icon-box" style="background:var(--priPale);width:38px;height:38px;min-width:38px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--pri)" stroke-width="2"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg></div>
+      <div><div style="font-size:14px;font-weight:700;color:var(--t1)">Gestión de fletes</div><p style="font-size:12px;color:var(--t2)">Creación, asignación y seguimiento con trazabilidad completa de campo a planta.</p></div>
+    </div>
+    <div style="display:flex;gap:10px;align-items:flex-start">
+      <div class="icon-box" style="background:var(--accPale);width:38px;height:38px;min-width:38px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--acc)" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></div>
+      <div><div style="font-size:14px;font-weight:700;color:var(--t1)">Tracking GPS en vivo</div><p style="font-size:12px;color:var(--t2)">Sabé dónde está cada camión en tiempo real. Sin llamar a nadie.</p></div>
+    </div>
+    <div style="display:flex;gap:10px;align-items:flex-start">
+      <div class="icon-box" style="background:var(--secPale);width:38px;height:38px;min-width:38px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--sec)" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+      <div><div style="font-size:14px;font-weight:700;color:var(--t1)">Mi Flota</div><p style="font-size:12px;color:var(--t2)">Documentos, gastos, ingresos y resumen económico por camión. OCR automático.</p></div>
+    </div>
+    <div style="display:flex;gap:10px;align-items:flex-start">
+      <div class="icon-box" style="background:var(--priPale);width:38px;height:38px;min-width:38px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--pri)" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg></div>
+      <div><div style="font-size:14px;font-weight:700;color:var(--t1)">Mi Cola</div><p style="font-size:12px;color:var(--t2)">Organizá turnos de carga con drag-and-drop. Asigná camiones desde un panel.</p></div>
+    </div>
+    <div style="display:flex;gap:10px;align-items:flex-start">
+      <div class="icon-box" style="background:var(--accPale);width:38px;height:38px;min-width:38px"><svg width="18" height="18" viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51l-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/></svg></div>
+      <div><div style="font-size:14px;font-weight:700;color:var(--t1)">Agente IA por WhatsApp</div><p style="font-size:12px;color:var(--t2)">Creá fletes, consultá estados y gestioná tu flota por texto o audio. 107 herramientas.</p></div>
+    </div>
+    <div style="display:flex;gap:10px;align-items:flex-start">
+      <div class="icon-box" style="background:var(--secPale);width:38px;height:38px;min-width:38px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--sec)" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg></div>
+      <div><div style="font-size:14px;font-weight:700;color:var(--t1)">Dashboard económico</div><p style="font-size:12px;color:var(--t2)">Costo/km, ingreso/km, margen y rendimiento. Decisiones con datos reales.</p></div>
+    </div>
+  </div>
+</section>
+
 <section class="section" id="problema" style="position:relative;z-index:1">
   <div class="reveal"><div class="tag">El problema actual</div><h2 class="title">La logística agropecuaria es informal y con poca trazabilidad</h2><p class="sub">En Uruguay, la gran mayoría de la coordinación de fletes agrícolas se gestióna por llamada telefónica, WhatsApp informal y planillas Excel.</p><div class="hr"></div></div>
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px">
