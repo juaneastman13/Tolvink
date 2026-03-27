@@ -11,12 +11,13 @@ export default function EditScreen({ freight, fields, plants, branches, trucks, 
 
   // Resolve current dest plant/company in catalog (catalog returns Company IDs for producers)
   const currentDestId = useMemo(() => {
+    if (!freight) return "";
     if (!plants?.length) return "";
     return plants.find(p => p.id === freight.destPlantId)?.id
       || plants.find(p => p.id === freight.destCompanyId)?.id
       || plants.find(p => p.companyId === freight.destCompanyId)?.id
       || "";
-  }, [plants, freight.destPlantId, freight.destCompanyId]);
+  }, [plants, freight?.destPlantId, freight?.destCompanyId]);
 
   // Check if user's company has trucks (own fleet)
   const hasTrucks = (trucks || []).length > 0;

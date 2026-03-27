@@ -230,7 +230,7 @@ export default memo(function ListScreen({ freights, loading, onNav, onRefresh, c
     if (!entityCfg) return null;
     const buckets = {};
     filteredFinal.forEach(f => {
-      const val = f[entityCfg.field] || entityCfg.fallback;
+      const val = f[entityCfg?.field] || entityCfg?.fallback;
       if (!buckets[val]) buckets[val] = [];
       buckets[val].push(f);
     });

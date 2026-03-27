@@ -25,7 +25,7 @@ function SummaryCard({ secSummary, secComplete, form, showTruckSelect, trucks, o
   if (secSummary.origin) rows.push({ label: "Origen", value: secSummary.origin, section: "origin", icon: ICONS.origin });
   if (showTruckSelect && form.fleetChoice && (form.fleetChoice!=="own" || (form.truckId && form.driverId))) {
     const trk = (trucks||[]).find(t=>t.id===form.truckId);
-    const drv = form.driverId === user?.id ? { name: user.name } : (ownFleetDrivers||[]).find(d=>d.id===form.driverId);
+    const drv = form.driverId === user?.id ? { name: user?.name } : (ownFleetDrivers||[]).find(d=>d.id===form.driverId);
     rows.push({ label: "Transporte", value: form.fleetChoice === "own" ? `Flota propia${drv?` · ${drv.name}`:""}`:"Delegar a planta", section: "ownfleet", icon: ICONS.ownfleet });
     if (form.fleetChoice === "own" && trk?.plate) {
       const tc = parseInt(secSummary.truckCount) || 1;
