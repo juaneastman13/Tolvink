@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Tolvink — Logistica agricola inteligente</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+--pri:#1A1A2E;--acc:#2EC4B6;--accDk:#24A099;--ora:#FF6A00;--grn:#43A047;
+--bg:#FAFAFA;--card:#FFFFFF;--t1:#1A1A2E;--t2:#4A5568;--t3:#718096;--b1:#E2E8F0;
+--sh:0 2px 8px rgba(0,0,0,.06);--shLg:0 8px 32px rgba(0,0,0,.1);
+--head:'Plus Jakarta Sans',sans-serif;--body:'DM Sans',sans-serif;
+--nav-h:64px;
+}
+[data-theme="dark"]{
+--bg:#0F0F1A;--card:#1A1A2E;--t1:#F0F0F0;--t2:#A0AEC0;--t3:#718096;--b1:#2D3748;
+--sh:0 2px 8px rgba(0,0,0,.3);--shLg:0 8px 32px rgba(0,0,0,.4);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;scroll-padding-top:var(--nav-h)}
+body{font-family:var(--body);color:var(--t1);background:var(--bg);line-height:1.6;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+h1,h2,h3,h4{font-family:var(--head);line-height:1.15}
+a{color:inherit;text-decoration:none}
+
+/* NAV */
+.nav{position:fixed;top:0;left:0;right:0;height:var(--nav-h);background:var(--bg);border-bottom:1px solid var(--b1);z-index:100;display:flex;align-items:center;padding:0 clamp(16px,4vw,48px);backdrop-filter:blur(12px);background:color-mix(in srgb,var(--bg) 85%,transparent)}
+.nav-logo{font-family:var(--head);font-size:24px;font-weight:800;color:var(--acc);letter-spacing:-1px}
+.nav-logo span{color:var(--ora);font-size:8px;vertical-align:super;margin-left:2px}
+.nav-links{display:flex;gap:6px;margin-left:auto;align-items:center}
+.nav-links a{font-size:13px;font-weight:500;color:var(--t2);padding:6px 12px;border-radius:8px;transition:.2s}
+.nav-links a:hover,.nav-links a.active{color:var(--acc);background:color-mix(in srgb,var(--acc) 8%,transparent)}
+.theme-toggle{width:36px;height:36px;border-radius:10px;border:1px solid var(--b1);background:var(--card);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;margin-left:8px;transition:.2s}
+.theme-toggle:hover{border-color:var(--acc)}
+.hamburger{display:none;width:36px;height:36px;border:1px solid var(--b1);border-radius:10px;background:var(--card);cursor:pointer;flex-direction:column;align-items:center;justify-content:center;gap:4px;margin-left:auto}
+.hamburger span{width:18px;height:2px;background:var(--t1);border-radius:1px;transition:.2s}
+
+/* SECTIONS */
+.section{padding:100px clamp(20px,5vw,64px);max-width:1200px;margin:0 auto}
+.section:first-of-type{padding-top:calc(var(--nav-h)+80px)}
+.tag{font-family:var(--head);font-size:12px;font-weight:700;color:var(--acc);text-transform:uppercase;letter-spacing:3px;margin-bottom:16px;display:inline-block}
+.title{font-size:clamp(32px,5vw,52px);font-weight:800;letter-spacing:-1px;margin-bottom:16px;color:var(--t1)}
+.subtitle{font-size:clamp(16px,2.5vw,20px);color:var(--t2);max-width:640px;line-height:1.65}
+.hr{width:48px;height:3px;border-radius:2px;background:var(--acc);margin:20px 0 32px}
+.grid{display:grid;gap:20px}
+.grid-2{grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+.grid-3{grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+
+/* CARDS */
+.card{background:var(--card);border:1px solid var(--b1);border-radius:16px;padding:28px;box-shadow:var(--sh);transition:.3s}
+.card:hover{box-shadow:var(--shLg);transform:translateY(-2px)}
+.card-icon{width:48px;height:48px;border-radius:14px;display:flex;align-items:center;justify-content:center;margin-bottom:16px;flex-shrink:0}
+.card h3{font-size:18px;font-weight:700;margin-bottom:8px}
+.card p{font-size:15px;color:var(--t2);line-height:1.55}
+
+/* PILL */
+.pill{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:20px;font-size:13px;font-weight:600;white-space:nowrap}
+
+/* BTN */
+.btn{display:inline-flex;align-items:center;gap:8px;padding:14px 32px;border-radius:12px;font-family:var(--head);font-size:16px;font-weight:700;border:none;cursor:pointer;transition:.25s}
+.btn-pri{background:var(--acc);color:#fff}
+.btn-pri:hover{background:var(--accDk);transform:translateY(-1px);box-shadow:0 4px 20px rgba(46,196,182,.3)}
+.btn-sec{background:transparent;color:var(--acc);border:2px solid var(--acc)}
+.btn-sec:hover{background:color-mix(in srgb,var(--acc) 8%,transparent)}
+.btn-ora{background:var(--ora);color:#fff}
+.btn-ora:hover{background:#E55D00;transform:translateY(-1px);box-shadow:0 4px 20px rgba(255,106,0,.3)}
+
+/* HERO */
+.hero{min-height:calc(100vh - var(--nav-h));display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;position:relative;overflow:hidden}
+.hero-bg{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+.hero-bg::before{content:'';position:absolute;width:600px;height:600px;border-radius:50%;background:radial-gradient(circle,color-mix(in srgb,var(--acc) 12%,transparent),transparent 70%);top:-100px;right:-200px;animation:float 8s ease-in-out infinite}
+.hero-bg::after{content:'';position:absolute;width:400px;height:400px;border-radius:50%;background:radial-gradient(circle,color-mix(in srgb,var(--ora) 8%,transparent),transparent 70%);bottom:-100px;left:-100px;animation:float 10s ease-in-out infinite 2s}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(30px)}}
+.hero .title{font-size:clamp(40px,7vw,72px);letter-spacing:-2px}
+.hero .subtitle{max-width:560px;margin:0 auto 40px}
+.hero-features{display:flex;gap:16px;flex-wrap:wrap;justify-content:center;margin-bottom:40px}
+
+/* STEPS */
+.steps{display:flex;gap:8px;flex-wrap:wrap;counter-reset:step}
+.step{flex:1;min-width:180px;text-align:center;position:relative;padding:20px 12px}
+.step-num{width:44px;height:44px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-family:var(--head);font-size:18px;font-weight:800;margin:0 auto 14px;color:#fff}
+.step h4{font-size:15px;margin-bottom:6px}
+.step p{font-size:13px;color:var(--t3)}
+
+/* TABS */
+.tabs{display:flex;gap:4px;margin-bottom:32px;background:var(--card);border:1px solid var(--b1);border-radius:14px;padding:4px;flex-wrap:wrap}
+.tab{flex:1;min-width:120px;padding:10px 16px;border-radius:10px;border:none;background:transparent;font-family:var(--head);font-size:14px;font-weight:600;color:var(--t3);cursor:pointer;transition:.2s;text-align:center}
+.tab.active{background:var(--acc);color:#fff;box-shadow:0 2px 8px rgba(46,196,182,.3)}
+.tab:hover:not(.active){color:var(--t1);background:color-mix(in srgb,var(--acc) 6%,transparent)}
+.tab-content{display:none;animation:fadeUp .4s ease}
+.tab-content.active{display:block}
+
+/* FEATURE EXPAND */
+.feat-card{cursor:pointer}
+.feat-detail{max-height:0;overflow:hidden;transition:max-height .4s ease,padding .3s ease;font-size:14px;color:var(--t2);line-height:1.6}
+.feat-card.open .feat-detail{max-height:200px;padding-top:12px}
+.feat-card.open{border-color:var(--acc);box-shadow:0 0 0 2px color-mix(in srgb,var(--acc) 20%,transparent)}
+
+/* COMPARE */
+.compare{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.compare-col{border-radius:16px;padding:28px}
+.compare-old{background:color-mix(in srgb,#DC2626 6%,var(--card));border:1px solid color-mix(in srgb,#DC2626 20%,var(--b1))}
+.compare-new{background:color-mix(in srgb,var(--acc) 6%,var(--card));border:1px solid color-mix(in srgb,var(--acc) 20%,var(--b1))}
+.compare-col h3{font-size:16px;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.compare-col li{font-size:14px;color:var(--t2);padding:6px 0;list-style:none;display:flex;align-items:flex-start;gap:8px}
+.compare-col li::before{flex-shrink:0;margin-top:2px}
+.compare-old li::before{content:'✕';color:#DC2626;font-weight:700;font-size:12px}
+.compare-new li::before{content:'✓';color:var(--acc);font-weight:700;font-size:14px}
+
+/* COLLAPSIBLE */
+.collapsible-header{cursor:pointer;display:flex;align-items:center;justify-content:space-between;padding:20px 0;border-bottom:1px solid var(--b1)}
+.collapsible-header h2{font-size:28px}
+.collapsible-body{max-height:0;overflow:hidden;transition:max-height .5s ease}
+.collapsible.open .collapsible-body{max-height:2000px}
+.collapsible-arrow{font-size:20px;transition:.3s;color:var(--t3)}
+.collapsible.open .collapsible-arrow{transform:rotate(180deg)}
+
+/* FOOTER */
+.footer{background:var(--pri);color:#fff;padding:60px clamp(20px,5vw,64px);text-align:center}
+.footer a{color:var(--acc)}
+.footer-logo{font-family:var(--head);font-size:32px;font-weight:800;color:var(--acc);margin-bottom:8px}
+.footer-logo span{color:var(--ora)}
+.footer-sub{color:rgba(255,255,255,.6);font-size:14px}
+
+/* ANIMATIONS */
+.reveal{opacity:0;transform:translateY(24px);transition:opacity .6s ease,transform .6s ease}
+.reveal.visible{opacity:1;transform:translateY(0)}
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+
+/* RESPONSIVE */
+@media(max-width:768px){
+.nav-links{display:none;position:absolute;top:var(--nav-h);left:0;right:0;background:var(--bg);border-bottom:1px solid var(--b1);flex-direction:column;padding:12px 16px;gap:2px}
+.nav-links.open{display:flex}
+.hamburger{display:flex}
+.section{padding:60px 20px}
+.hero{min-height:auto;padding-top:calc(var(--nav-h)+60px);padding-bottom:60px}
+.compare{grid-template-columns:1fr}
+.steps{flex-direction:column}
+.step{min-width:auto}
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav" id="navbar">
+  <div class="nav-logo">tolvink<span>.</span></div>
+  <div class="nav-links" id="navLinks">
+    <a href="#problema">Problema</a>
+    <a href="#actores">Actores</a>
+    <a href="#funcionalidades">Plataforma</a>
+    <a href="#diferenciadores">Por que Tolvink</a>
+    <a href="#inversores">Inversores</a>
+    <a href="#contacto">Contacto</a>
+  </div>
+  <button class="theme-toggle" id="themeToggle" title="Cambiar tema">☀</button>
+  <button class="hamburger" id="hamburger" aria-label="Menu">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+
+<!-- HERO -->
+<section class="section hero" id="hero">
+  <div class="hero-bg"></div>
+  <div style="position:relative;z-index:1">
+    <div class="tag">Logistica agricola inteligente</div>
+    <h1 class="title" style="margin-bottom:20px">
+      Sin apps.<br>Sin fricciones.
+    </h1>
+    <p class="subtitle">
+      Conectamos plantas, productores y transportistas en una sola plataforma.
+      Operable desde WhatsApp con inteligencia artificial.
+    </p>
+    <div class="hero-features">
+      <span class="pill" style="background:color-mix(in srgb,var(--acc) 12%,var(--card));color:var(--acc)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+        Fletes
+      </span>
+      <span class="pill" style="background:color-mix(in srgb,var(--ora) 12%,var(--card));color:var(--ora)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        Tracking GPS
+      </span>
+      <span class="pill" style="background:color-mix(in srgb,var(--grn) 12%,var(--card));color:var(--grn)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
+        IA por WhatsApp
+      </span>
+      <span class="pill" style="background:color-mix(in srgb,var(--acc) 12%,var(--card));color:var(--acc)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        Gestion de flota
+      </span>
+    </div>
+    <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+      <a href="#problema" class="btn btn-pri">Conoce mas</a>
+      <a href="https://wa.me/59898247552?text=Hola%2C%20quiero%20informacion%20sobre%20Tolvink" target="_blank" class="btn btn-sec" style="gap:6px">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/></svg>
+        WhatsApp
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- PROBLEMA -->
+<section class="section" id="problema">
+  <div class="reveal">
+    <div class="tag">El problema actual</div>
+    <h2 class="title">La logistica granaria opera con herramientas de los 90</h2>
+    <p class="subtitle" style="margin-bottom:12px">En Uruguay, mas del 80% de la coordinacion de fletes agricolas se gestiona por llamada telefonica, WhatsApp informal y planillas Excel.</p>
+    <div class="hr"></div>
+  </div>
+  <div class="grid grid-2" style="margin-bottom:48px">
+    <div class="card reveal" style="display:flex;gap:16px;align-items:flex-start">
+      <div class="card-icon" style="background:color-mix(in srgb,#DC2626 10%,var(--card))">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#DC2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+      </div>
+      <div><h3 style="font-size:16px">Coordinacion telefonica</h3><p>Decenas de llamadas diarias entre productores, plantas y choferes para confirmar horarios, disponibilidad y estado de cada viaje.</p></div>
+    </div>
+    <div class="card reveal" style="display:flex;gap:16px;align-items:flex-start">
+      <div class="card-icon" style="background:color-mix(in srgb,#DC2626 10%,var(--card))">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#DC2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      </div>
+      <div><h3 style="font-size:16px">Registros manuales</h3><p>Planillas en papel o Excel sin actualizacion en tiempo real. Informacion duplicada, inconsistente o perdida.</p></div>
+    </div>
+    <div class="card reveal" style="display:flex;gap:16px;align-items:flex-start">
+      <div class="card-icon" style="background:color-mix(in srgb,#DC2626 10%,var(--card))">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#DC2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      </div>
+      <div><h3 style="font-size:16px">Cero visibilidad</h3><p>No hay forma de saber donde esta un camion o cuando llega. La respuesta siempre es "llama al chofer".</p></div>
+    </div>
+    <div class="card reveal" style="display:flex;gap:16px;align-items:flex-start">
+      <div class="card-icon" style="background:color-mix(in srgb,#DC2626 10%,var(--card))">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#DC2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+      </div>
+      <div><h3 style="font-size:16px">Flota invisible</h3><p>Documentos vencidos, gastos sin registrar, rendimiento desconocido. Sin visibilidad del costo real por camion ni por kilometro.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ACTORES -->
+<section class="section" id="actores" style="background:var(--card)">
+  <div style="max-width:1200px;margin:0 auto">
+    <div class="reveal" style="text-align:center;margin-bottom:48px">
+      <div class="tag">Tres actores, una plataforma</div>
+      <h2 class="title">Cada rol opera como necesita</h2>
+      <p class="subtitle" style="margin:0 auto">Tolvink se adapta a cada actor de la cadena. Todos pueden operar desde WhatsApp, la app o la web.</p>
+    </div>
+    <div class="tabs" id="actorTabs">
+      <button class="tab active" onclick="switchTab('plantas')">Plantas</button>
+      <button class="tab" onclick="switchTab('productores')">Productores</button>
+      <button class="tab" onclick="switchTab('transportistas')">Transportistas</button>
+    </div>
+    <div class="tab-content active" id="tab-plantas">
+      <div class="card reveal" style="border-left:4px solid var(--acc)">
+        <h3>Planta acopiadora — el centro de la operacion</h3>
+        <div class="grid grid-2" style="margin-top:20px">
+          <div><h4 style="font-size:15px;color:var(--acc);margin-bottom:4px">Agenda digital de ingresos</h4><p style="font-size:14px;color:var(--t2)">Visualizacion de todos los fletes programados por dia, con filtros por estado, grano, origen y transportista.</p></div>
+          <div><h4 style="font-size:15px;color:var(--acc);margin-bottom:4px">Asignacion directa de transporte</h4><p style="font-size:14px;color:var(--t2)">Selecciona transportista y camion desde la plataforma. Notificacion inmediata al chofer.</p></div>
+          <div><h4 style="font-size:15px;color:var(--acc);margin-bottom:4px">Fletes internos</h4><p style="font-size:14px;color:var(--t2)">Move grano entre sucursales o a deposito sin vincular productor externo. Destinos personalizados.</p></div>
+          <div><h4 style="font-size:15px;color:var(--acc);margin-bottom:4px">Control de flota propia</h4><p style="font-size:14px;color:var(--t2)">Documentos con alertas de vencimiento, gastos, ingresos y resumen economico por camion.</p></div>
+        </div>
+        <div style="margin-top:24px;padding:16px 20px;background:color-mix(in srgb,var(--acc) 6%,var(--bg));border-radius:12px;font-size:14px;color:var(--t2)">
+          <strong style="color:var(--acc)">Con Tolvink:</strong> "La planta recibe la solicitud del productor, asigna transportista y camion en 2 clics, y todos los actores reciben notificaciones automaticas. Sin una sola llamada."
+        </div>
+      </div>
+    </div>
+    <div class="tab-content" id="tab-productores">
+      <div class="card reveal" style="border-left:4px solid var(--ora)">
+        <h3>Productor — del campo al seguimiento en tiempo real</h3>
+        <div class="grid grid-2" style="margin-top:20px">
+          <div><h4 style="font-size:15px;color:var(--ora);margin-bottom:4px">Solicitud desde campo o lote</h4><p style="font-size:14px;color:var(--t2)">Selecciona tu campo, el lote, el grano y la cantidad. La planta recibe el pedido al instante.</p></div>
+          <div><h4 style="font-size:15px;color:var(--ora);margin-bottom:4px">Seguimiento en tiempo real</h4><p style="font-size:14px;color:var(--t2)">Sabe donde esta el camion y en que etapa del viaje. Mapa en vivo con estados actualizados.</p></div>
+          <div><h4 style="font-size:15px;color:var(--ora);margin-bottom:4px">Pedi por WhatsApp</h4><p style="font-size:14px;color:var(--t2)">Manda un mensaje de voz o texto al agente de IA. El arma el flete, vos solo confirmas.</p></div>
+          <div><h4 style="font-size:15px;color:var(--ora);margin-bottom:4px">Notificaciones de cada etapa</h4><p style="font-size:14px;color:var(--t2)">Te avisamos cuando el camion confirma, sale, carga y llega. Push en la app y mensaje en WhatsApp.</p></div>
+        </div>
+        <div style="margin-top:24px;padding:16px 20px;background:color-mix(in srgb,var(--ora) 6%,var(--bg));border-radius:12px;font-size:14px;color:var(--t2)">
+          <strong style="color:var(--ora)">Con Tolvink:</strong> "El productor manda un audio por WhatsApp: 'Necesito mover 30 toneladas de soja desde La Rinconada manana a las 8'. La IA arma el flete, la planta asigna camion, y el productor sigue todo desde el celular."
+        </div>
+      </div>
+    </div>
+    <div class="tab-content" id="tab-transportistas">
+      <div class="card reveal" style="border-left:4px solid var(--grn)">
+        <h3>Transportista — tu flota, tus numeros, tu control</h3>
+        <div class="grid grid-2" style="margin-top:20px">
+          <div><h4 style="font-size:15px;color:var(--grn);margin-bottom:4px">Gestion integral de flota</h4><p style="font-size:14px;color:var(--t2)">Gastos, ingresos, documentos y movimientos por camion. Resumen economico con costo/km y rendimiento km/litro.</p></div>
+          <div><h4 style="font-size:15px;color:var(--grn);margin-bottom:4px">Solicitudes en tiempo real</h4><p style="font-size:14px;color:var(--t2)">Recibi pedidos de plantas y productores directo en la app o por WhatsApp. Acepta con un toque.</p></div>
+          <div><h4 style="font-size:15px;color:var(--grn);margin-bottom:4px">Documentos siempre al dia</h4><p style="font-size:14px;color:var(--t2)">Control de vencimientos con semaforo. OCR automatico extrae datos de fotos. Sin papeles perdidos.</p></div>
+          <div><h4 style="font-size:15px;color:var(--grn);margin-bottom:4px">Visibilidad economica real</h4><p style="font-size:14px;color:var(--t2)">Sabe exactamente cuanto ganas o perdes por camion y por mes. Decisiones con datos, no intuicion.</p></div>
+        </div>
+        <div style="margin-top:24px;padding:16px 20px;background:color-mix(in srgb,var(--grn) 6%,var(--bg));border-radius:12px;font-size:14px;color:var(--t2)">
+          <strong style="color:var(--grn)">Con Tolvink:</strong> "El transportista ve en su dashboard que el camion ABC 1234 tiene costo de $87/km, rendimiento 3.2 km/l, y margen del 22%. Toma la decision de aceptar o rechazar el proximo viaje con datos reales."
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- COMO FUNCIONA -->
+<section class="section reveal" style="text-align:center">
+  <div class="tag">Como funciona</div>
+  <h2 class="title">Del campo a la planta en un flujo continuo</h2>
+  <div class="hr" style="margin:20px auto 48px"></div>
+  <div class="steps">
+    <div class="step"><div class="step-num" style="background:#FF6A00">1</div><h4>Solicitud</h4><p>El productor crea el flete con grano, volumen, origen y destino</p><span class="pill" style="background:color-mix(in srgb,#FF6A00 12%,var(--card));color:#FF6A00;font-size:11px;margin-top:8px">Pendiente</span></div>
+    <div class="step"><div class="step-num" style="background:var(--acc)">2</div><h4>Asignacion</h4><p>La planta asigna transportista con flota disponible</p><span class="pill" style="background:color-mix(in srgb,var(--acc) 12%,var(--card));color:var(--acc);font-size:11px;margin-top:8px">Asignado</span></div>
+    <div class="step"><div class="step-num" style="background:#43A047">3</div><h4>A campo</h4><p>El camion sale hacia el campo de carga con GPS activo</p><span class="pill" style="background:color-mix(in srgb,#43A047 12%,var(--card));color:#43A047;font-size:11px;margin-top:8px">En viaje</span></div>
+    <div class="step"><div class="step-num" style="background:#1A6B37">4</div><h4>A planta</h4><p>El camion carga y parte hacia la planta de destino</p><span class="pill" style="background:color-mix(in srgb,#1A6B37 12%,var(--card));color:#1A6B37;font-size:11px;margin-top:8px">Cargado</span></div>
+    <div class="step"><div class="step-num" style="background:#9E9E9E">5</div><h4>Finalizado</h4><p>La planta confirma recepcion. Registro completo.</p><span class="pill" style="background:color-mix(in srgb,#9E9E9E 12%,var(--card));color:#616161;font-size:11px;margin-top:8px">Cerrado</span></div>
+  </div>
+</section>
+
+<!-- FUNCIONALIDADES -->
+<section class="section" id="funcionalidades" style="background:var(--card)">
+  <div style="max-width:1200px;margin:0 auto">
+    <div class="reveal" style="text-align:center;margin-bottom:48px">
+      <div class="tag">La plataforma</div>
+      <h2 class="title">Funcionalidades que transforman la operacion</h2>
+      <p class="subtitle" style="margin:0 auto">Hace click en cada modulo para ver mas detalles.</p>
+    </div>
+    <div class="grid grid-3">
+      <div class="card feat-card reveal" onclick="this.classList.toggle('open')">
+        <div class="card-icon" style="background:color-mix(in srgb,var(--acc) 12%,var(--card))"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--acc)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg></div>
+        <h3>Gestion de fletes</h3>
+        <p>Trazabilidad completa del campo a la planta con estados en tiempo real.</p>
+        <div class="feat-detail">Wizard de creacion paso a paso. Estados visuales con colores. Notificaciones push a cada actor. Confirmaciones cruzadas (planta, productor, transportista). Multi-camion por flete.</div>
+      </div>
+      <div class="card feat-card reveal" onclick="this.classList.toggle('open')">
+        <div class="card-icon" style="background:color-mix(in srgb,var(--ora) 12%,var(--card))"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--ora)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg></div>
+        <h3>Mi Cola</h3>
+        <p>Queue management visual tipo timeline con drag-and-drop.</p>
+        <div class="feat-detail">Panel de camiones disponibles. Vista por dia optimizada para iPad. Asignacion rapida con un toque. Reorganizacion de turnos en tiempo real. Ideal para plantas con alto volumen.</div>
+      </div>
+      <div class="card feat-card reveal" onclick="this.classList.toggle('open')">
+        <div class="card-icon" style="background:color-mix(in srgb,var(--grn) 12%,var(--card))"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--grn)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+        <h3>Mi Flota</h3>
+        <p>Control total de cada camion: documentos, gastos, ingresos, dashboard.</p>
+        <div class="feat-detail">6 pestanas por camion: resumen, fletes, movimientos, ingresos, gastos, documentos. OCR automatico para facturas. Alertas de vencimiento con semaforo. Costo/km, ingreso/km, margen y eficiencia.</div>
+      </div>
+      <div class="card feat-card reveal" onclick="this.classList.toggle('open')">
+        <div class="card-icon" style="background:color-mix(in srgb,#25D366 12%,var(--card))"><svg width="24" height="24" viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51l-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/></svg></div>
+        <h3>Agente IA por WhatsApp</h3>
+        <p>107 herramientas. Texto y audio. Tu asistente operativo 24/7.</p>
+        <div class="feat-detail">Crea fletes con un audio. Consulta estados en lenguaje natural. Registra gastos de flota. Asigna transportistas. Navega la app desde el chat. Sin descargar nada: funciona en el WhatsApp que ya usas.</div>
+      </div>
+      <div class="card feat-card reveal" onclick="this.classList.toggle('open')">
+        <div class="card-icon" style="background:color-mix(in srgb,var(--acc) 12%,var(--card))"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--acc)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></div>
+        <h3>Tracking GPS en vivo</h3>
+        <p>Ubicacion actualizada del chofer. Mapa con todos los fletes activos del dia.</p>
+        <div class="feat-detail">GPS del chofer actualizado automaticamente. Sin llamar "donde estas?". ETA estimado de llegada. Mapa compartible con link publico. Alertas de llegada a destino.</div>
+      </div>
+      <div class="card feat-card reveal" onclick="this.classList.toggle('open')">
+        <div class="card-icon" style="background:color-mix(in srgb,var(--ora) 12%,var(--card))"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--ora)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
+        <h3>Dashboard economico</h3>
+        <p>Decisiones basadas en datos. Costo real por camion y por viaje.</p>
+        <div class="feat-detail">Resumen mensual por camion. Desglose de gastos por tipo (combustible, peaje, mantenimiento). Margen neto. Rendimiento km/litro. Comparativa entre camiones de la flota.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- DIFERENCIADORES -->
+<section class="section" id="diferenciadores">
+  <div class="reveal" style="text-align:center;margin-bottom:48px">
+    <div class="tag">Por que Tolvink</div>
+    <h2 class="title">Lo que nos hace diferentes</h2>
+  </div>
+  <div class="compare reveal">
+    <div class="compare-col compare-old">
+      <h3><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#DC2626" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg> Metodo tradicional</h3>
+      <ul>
+        <li>Coordinacion por telefono y WhatsApp informal</li>
+        <li>Sin trazabilidad ni registro automatico</li>
+        <li>Planillas Excel desactualizadas</li>
+        <li>Documentos vencidos sin aviso</li>
+        <li>Costos de flota desconocidos</li>
+        <li>Cero visibilidad del camion en ruta</li>
+      </ul>
+    </div>
+    <div class="compare-col compare-new">
+      <h3><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--acc)" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Con Tolvink</h3>
+      <ul>
+        <li>IA conversacional por WhatsApp — unico en el mercado</li>
+        <li>Trazabilidad completa del campo a la planta</li>
+        <li>Sin necesidad de descargar ninguna app</li>
+        <li>Alertas automaticas de documentos por vencer</li>
+        <li>Dashboard economico por camion con costo/km</li>
+        <li>GPS en vivo con mapa compartible</li>
+      </ul>
+    </div>
+  </div>
+  <div class="grid grid-3 reveal" style="margin-top:32px">
+    <div style="text-align:center;padding:24px"><div style="font-size:36px;font-weight:800;color:var(--acc);font-family:var(--head)">WhatsApp-first</div><p style="font-size:14px;color:var(--t2);margin-top:6px">No necesitas descargar nada. Opera desde el chat que ya usas.</p></div>
+    <div style="text-align:center;padding:24px"><div style="font-size:36px;font-weight:800;color:var(--ora);font-family:var(--head)">Adopcion organica</div><p style="font-size:14px;color:var(--t2);margin-top:6px">Una planta trae a toda su red de productores y transportistas.</p></div>
+    <div style="text-align:center;padding:24px"><div style="font-size:36px;font-weight:800;color:var(--grn);font-family:var(--head)">Precio SME</div><p style="font-size:14px;color:var(--t2);margin-top:6px">Accesible para PyMEs agropecuarias. No es un ERP enterprise.</p></div>
+  </div>
+</section>
+
+<!-- INVERSORES -->
+<section class="section" id="inversores" style="background:var(--card)">
+  <div style="max-width:1200px;margin:0 auto">
+    <div class="collapsible open" id="investorSection">
+      <div class="collapsible-header" onclick="document.getElementById('investorSection').classList.toggle('open')">
+        <div><div class="tag" style="margin-bottom:4px">Para inversores</div><h2 style="font-size:28px">Oportunidad de mercado</h2></div>
+        <span class="collapsible-arrow">▾</span>
+      </div>
+      <div class="collapsible-body">
+        <div style="padding:32px 0">
+          <div class="grid grid-3" style="margin-bottom:32px">
+            <div class="card" style="text-align:center"><div style="font-size:36px;font-weight:800;color:var(--acc);font-family:var(--head)">18M</div><div style="font-size:14px;color:var(--t2)">Toneladas de granos/ano en Uruguay</div></div>
+            <div class="card" style="text-align:center"><div style="font-size:36px;font-weight:800;color:var(--ora);font-family:var(--head)">35.000+</div><div style="font-size:14px;color:var(--t2)">Productores agricolas activos</div></div>
+            <div class="card" style="text-align:center"><div style="font-size:36px;font-weight:800;color:var(--grn);font-family:var(--head)">5.000+</div><div style="font-size:14px;color:var(--t2)">Camiones graneleros operativos</div></div>
+          </div>
+          <div class="grid grid-2">
+            <div class="card" style="border-left:3px solid var(--acc)">
+              <h3 style="font-size:16px">Modelo de negocio</h3>
+              <p style="font-size:14px;color:var(--t2)">Planta como punto de entrada comercial. Cada planta incorpora organicamente a productores y transportistas de su red. Efecto red defensible.</p>
+            </div>
+            <div class="card" style="border-left:3px solid var(--ora)">
+              <h3 style="font-size:16px">Expansion regional</h3>
+              <p style="font-size:14px;color:var(--t2)">Uruguay (litoral oeste) → Argentina (zona nucleo) → Paraguay → sur de Brasil. Misma plataforma, mismos actores, misma dinamica.</p>
+            </div>
+            <div class="card" style="border-left:3px solid var(--grn)">
+              <h3 style="font-size:16px">Ventaja competitiva</h3>
+              <p style="font-size:14px;color:var(--t2)">Ningun competidor (Humber, Avancargo, FreteBras, Uber Freight) ofrece IA conversacional por WhatsApp. Network effects + datos operativos.</p>
+            </div>
+            <div class="card" style="border-left:3px solid var(--acc)">
+              <h3 style="font-size:16px">Mercado desatendido</h3>
+              <p style="font-size:14px;color:var(--t2)">SMEs agropecuarios excluidos de ERPs enterprise. Sin solucion digital actual para coordinacion de fletes granarios. Greenfield total.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CONTACTO -->
+<section class="section" id="contacto" style="text-align:center">
+  <div class="reveal">
+    <div class="tag">Empeza hoy</div>
+    <h2 class="title" style="margin-bottom:16px">Tu logistica merece tecnologia del siglo XXI</h2>
+    <p class="subtitle" style="margin:0 auto 40px">Hablemos sobre como Tolvink puede transformar la operacion de tu planta, tu campo o tu flota.</p>
+    <div style="display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin-bottom:48px">
+      <a href="https://wa.me/59898247552?text=Hola%2C%20quiero%20informacion%20sobre%20Tolvink" target="_blank" class="btn btn-ora" style="gap:8px">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="#fff"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51l-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/></svg>
+        Contactar por WhatsApp
+      </a>
+      <a href="mailto:info@tolvink.app" class="btn btn-sec">info@tolvink.app</a>
+    </div>
+    <div style="display:flex;gap:32px;justify-content:center;flex-wrap:wrap;color:var(--t3);font-size:14px">
+      <span>+598 98 247 552</span>
+      <span>tolvink.app</span>
+      <span>Uruguay</span>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <div class="footer-logo">tolvink<span>.</span></div>
+  <div class="footer-sub">Logistica agricola inteligente. Hecho en Uruguay, para el agro regional.</div>
+  <div style="margin-top:16px;font-size:12px;opacity:.4">2026 Tolvink. Todos los derechos reservados.</div>
+</footer>
+
+<script>
+// Theme toggle
+const html=document.documentElement,toggle=document.getElementById('themeToggle');
+toggle.onclick=()=>{const dark=html.dataset.theme==='dark';html.dataset.theme=dark?'':'dark';toggle.textContent=dark?'☀':'☾'};
+
+// Hamburger
+const ham=document.getElementById('hamburger'),links=document.getElementById('navLinks');
+ham.onclick=()=>links.classList.toggle('open');
+links.querySelectorAll('a').forEach(a=>a.addEventListener('click',()=>links.classList.remove('open')));
+
+// Active nav link
+const sections=document.querySelectorAll('section[id]'),navLinks=document.querySelectorAll('.nav-links a');
+const obs=new IntersectionObserver(entries=>{entries.forEach(e=>{if(e.isIntersecting){navLinks.forEach(l=>{l.classList.toggle('active',l.getAttribute('href')==='#'+e.target.id)});}});},{rootMargin:'-40% 0px -60% 0px'});
+sections.forEach(s=>obs.observe(s));
+
+// Reveal on scroll
+const revealObs=new IntersectionObserver(entries=>{entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('visible');revealObs.unobserve(e.target);}});},{threshold:.15});
+document.querySelectorAll('.reveal').forEach(el=>revealObs.observe(el));
+
+// Tabs
+function switchTab(id){
+document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+document.getElementById('tab-'+id).classList.add('active');
+event.target.classList.add('active');
+}
+</script>
+</body>
+</html>
