@@ -10,7 +10,7 @@ import { useIsDesktop } from "../hooks/useResponsive";
 import { FileViewer } from "../components/overlays";
 import {
   apiGetTruckDetail, apiAddTruckDocument, apiUpdateTruckDocument, apiDeleteTruckDocument,
-  apiAddTruckExpense, apiUpdateTruckExpense, apiDeleteTruckExpense, apiGetTruckExpenseSummary,
+  apiGetTruckExpenses, apiAddTruckExpense, apiUpdateTruckExpense, apiDeleteTruckExpense, apiGetTruckExpenseSummary,
   apiGetTruckFreights, apiGetTruckIncomes, apiAddTruckIncome, apiUpdateTruckIncome, apiDeleteTruckIncome,
   apiGetTruckMovements, apiAddTruckMovement, apiUpdateTruckMovement, apiDeleteTruckMovement,
   apiGetEconomicSummary, apiGetTruckDocuments, apiUpdateTripData, apiProcessTruckDocOcr, apiUpdateTruckDocOcr, apiClearTruckDocOcr, uploadPhoto,
@@ -554,29 +554,30 @@ export default function TruckDetailScreen({ truckId, user, onBack, onNavFreight 
   const crud = (apiFn, refreshKey) => async (body) => {
     setSaving(true);
     try { await apiFn(body); setShowForm(false); setEditItem(null); setDoneMsg("Listo");
-      if (refreshKey === "inc") setIncomes(null);
-      if (refreshKey === "exp") { setExpenses(null); setExpSummary(null); }
-      if (refreshKey === "mov") setMovements(null);
-      if (refreshKey === "doc") { await load(); setAllDocs(null); }
-      setEcoSummary(null); // refresh summary
+      // Immediate re-fetch instead of lazy invalidation (stays on same tab)
+      if (refreshKey === "inc") apiGetTruckIncomes(truckId).then(d=>setIncomes(d||[])).catch(()=>{});
+      if (refreshKey === "exp") { apiGetTruckExpenses(truckId).then(d=>setExpenses(d||[])).catch(()=>{}); apiGetTruckExpenseSummary(truckId).then(setExpSummary).catch(()=>{}); }
+      if (refreshKey === "mov") apiGetTruckMovements(truckId).then(d=>setMovements(d||[])).catch(()=>{});
+      if (refreshKey === "doc") { await load(); apiGetTruckDocuments(truckId).then(d=>setAllDocs(d||[])).catch(()=>{}); }
+      apiGetEconomicSummary(truckId).then(setEcoSummary).catch(()=>{}); // refresh summary
     } catch (e) { setError(e.message); } finally { setSaving(false); }
   };
 
   const handleAddDoc = crud((b) => apiAddTruckDocument(truckId, b), "doc");
   const handleUpdateDoc = crud((b) => apiUpdateTruckDocument(truckId, editItem.id, b), "doc");
-  const handleDeleteDoc = async (id) => { setSaving(true); try { await apiDeleteTruckDocument(truckId, id); setConfirmDelete(null); setDoneMsg("Eliminado"); await load(); } catch (e) { setError(e.message); } finally { setSaving(false); } };
+  const handleDeleteDoc = async (id) => { setSaving(true); try { await apiDeleteTruckDocument(truckId, id); setConfirmDelete(null); setDoneMsg("Eliminado"); await load(); apiGetTruckDocuments(truckId).then(d=>setAllDocs(d||[])).catch(()=>{}); } catch (e) { setError(e.message); } finally { setSaving(false); } };
 
   const handleAddExp = crud((b) => apiAddTruckExpense(truckId, b), "exp");
   const handleUpdateExp = crud((b) => apiUpdateTruckExpense(truckId, editItem.id, b), "exp");
-  const handleDeleteExp = async (id) => { setSaving(true); try { await apiDeleteTruckExpense(truckId, id); setConfirmDelete(null); setDoneMsg("Eliminado"); setExpenses(null); setExpSummary(null); setEcoSummary(null); } catch (e) { setError(e.message); } finally { setSaving(false); } };
+  const handleDeleteExp = async (id) => { setSaving(true); try { await apiDeleteTruckExpense(truckId, id); setConfirmDelete(null); setDoneMsg("Eliminado"); apiGetTruckExpenses(truckId).then(d=>setExpenses(d||[])).catch(()=>{}); apiGetTruckExpenseSummary(truckId).then(setExpSummary).catch(()=>{}); apiGetEconomicSummary(truckId).then(setEcoSummary).catch(()=>{}); } catch (e) { setError(e.message); } finally { setSaving(false); } };
 
   const handleAddInc = crud((b) => apiAddTruckIncome(truckId, b), "inc");
   const handleUpdateInc = crud((b) => apiUpdateTruckIncome(truckId, editItem.id, b), "inc");
-  const handleDeleteInc = async (id) => { setSaving(true); try { await apiDeleteTruckIncome(truckId, id); setConfirmDelete(null); setDoneMsg("Eliminado"); setIncomes(null); setEcoSummary(null); } catch (e) { setError(e.message); } finally { setSaving(false); } };
+  const handleDeleteInc = async (id) => { setSaving(true); try { await apiDeleteTruckIncome(truckId, id); setConfirmDelete(null); setDoneMsg("Eliminado"); apiGetTruckIncomes(truckId).then(d=>setIncomes(d||[])).catch(()=>{}); apiGetEconomicSummary(truckId).then(setEcoSummary).catch(()=>{}); } catch (e) { setError(e.message); } finally { setSaving(false); } };
 
   const handleAddMov = crud((b) => apiAddTruckMovement(truckId, b), "mov");
   const handleUpdateMov = crud((b) => apiUpdateTruckMovement(truckId, editItem.id, b), "mov");
-  const handleDeleteMov = async (id) => { setSaving(true); try { await apiDeleteTruckMovement(truckId, id); setConfirmDelete(null); setDoneMsg("Eliminado"); setMovements(null); setEcoSummary(null); } catch (e) { setError(e.message); } finally { setSaving(false); } };
+  const handleDeleteMov = async (id) => { setSaving(true); try { await apiDeleteTruckMovement(truckId, id); setConfirmDelete(null); setDoneMsg("Eliminado"); apiGetTruckMovements(truckId).then(d=>setMovements(d||[])).catch(()=>{}); apiGetEconomicSummary(truckId).then(setEcoSummary).catch(()=>{}); } catch (e) { setError(e.message); } finally { setSaving(false); } };
 
   const handleSaveTripData = async (body) => {
     if (!tripDataFor) return;
@@ -584,7 +585,8 @@ export default function TruckDetailScreen({ truckId, user, onBack, onNavFreight 
     try {
       await apiUpdateTripData(tripDataFor.freightId, tripDataFor.assignmentId, body);
       setTripDataFor(null); setDoneMsg("Datos de viaje guardados");
-      setFreightHistory(null); setEcoSummary(null); // reload
+      apiGetTruckFreights(truckId).then(d=>setFreightHistory(d||[])).catch(()=>{});
+      apiGetEconomicSummary(truckId).then(setEcoSummary).catch(()=>{});
     } catch (e) { setError(e.message); }
     finally { setSaving(false); }
   };
