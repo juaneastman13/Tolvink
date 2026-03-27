@@ -21,9 +21,11 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
   const detailEntry = useFreightDetailStore(s => s.details[freight?.id]);
   const detailData = detailEntry?.data || null;
   const isFullDetail = !!detailData?._isFullDetail;
+  const [detailError, setDetailError] = useState(null);
 
   useEffect(() => {
     if (!freight?.id || isFullDetail) return;
+    setDetailError(null);
     const cached = useFreightDetailStore.getState().getDetail(freight.id);
     const hasListData = !!(cached?.data); // Pre-populated from list fetch
     useFreightDetailStore.getState().setLoading(freight.id, true);
@@ -46,8 +48,12 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
         apiGetFreight(freight.id).then(raw => {
           if (cancelled) return;
           useFreightDetailStore.getState().setDetail(freight.id, mapFreight(raw));
-        }).catch(() => {
-          if (!cancelled) useFreightDetailStore.getState().setLoading(freight.id, false);
+        }).catch((e) => {
+          if (cancelled) return;
+          // Mark as full-detail with whatever we have so the screen doesn't shimmer forever
+          const prev = useFreightDetailStore.getState().details[freight.id]?.data || freight;
+          useFreightDetailStore.getState().setDetail(freight.id, { ...prev, _isFullDetail: true });
+          log.error("detail-load", e);
         });
       });
     } else {
@@ -55,8 +61,11 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
       apiGetFreight(freight.id).then(raw => {
         if (cancelled) return;
         useFreightDetailStore.getState().setDetail(freight.id, mapFreight(raw));
-      }).catch(() => {
-        if (!cancelled) useFreightDetailStore.getState().setLoading(freight.id, false);
+      }).catch((e) => {
+        if (cancelled) return;
+        useFreightDetailStore.getState().setLoading(freight.id, false);
+        setDetailError(e?.message || "No se pudo cargar el flete");
+        log.error("detail-load", e);
       });
     }
     return () => { cancelled = true; };
@@ -360,7 +369,14 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
     <div style={{ padding:"12px 18px", display:"flex", alignItems:"center", gap:8, borderBottom:`1px solid ${C.b2}` }}>
       <button onClick={onBack} style={{ display:"flex", alignItems:"center", gap:4, padding:"6px 12px", borderRadius: R.md, border:`1px solid ${C.b1}`, background:C.w, color:C.t2, fontSize:13, cursor:"pointer", fontFamily:"inherit" }}>{Ic.chev(C.t3,14)} Volver</button>
     </div>
-    <SkeletonDetail />
+    {detailError ? (
+      <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:12, padding:32 }}>
+        {Ic.warn(C.err, 32)}
+        <div style={{ fontSize:16, fontWeight:700, color:C.t1, textAlign:"center" }}>No se pudo cargar el flete</div>
+        <div style={{ fontSize:13, color:C.t3, textAlign:"center", maxWidth:320 }}>{detailError}</div>
+        <button onClick={onBack} style={{ marginTop:8, padding:"10px 24px", borderRadius: R.md, border:"none", background:C.pri, color:C.w, fontSize:14, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>Volver</button>
+      </div>
+    ) : <SkeletonDetail />}
   </div>;
 
   // Merge detail-only fields from full detail cache into freight

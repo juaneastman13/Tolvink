@@ -36,22 +36,24 @@ export function useAccessLevel(user) {
 
   const isPlant = user?.userType === 'plant';
 
+  const activeCompanyId = user?.activeCompanyId;
+  const userType = user?.userType;
+
   useEffect(() => {
     if (!user || isPlant) {
       setAccessData(null);
       fetchedRef.current = null;
       return;
     }
-    const companyId = user.activeCompanyId;
-    if (!companyId || fetchedRef.current === companyId) return;
+    if (!activeCompanyId || fetchedRef.current === activeCompanyId) return;
 
-    fetchedRef.current = companyId;
+    fetchedRef.current = activeCompanyId;
     setLoading(true);
     apiGetMyAccess()
       .then(data => setAccessData(data || []))
       .catch(() => setAccessData([]))
       .finally(() => setLoading(false));
-  }, [user, isPlant, user?.activeCompanyId]);
+  }, [isPlant, activeCompanyId, userType]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Build access map: plantCompanyId → accessLevel
   const accessMap = useMemo(() => {
