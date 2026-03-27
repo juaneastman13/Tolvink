@@ -53,8 +53,6 @@ const _cb = sent => ({ maxWidth:"78%", padding:"10px 14px", borderRadius:14, fon
 const _ct = { fontSize:9.9, color:C.t3, marginTop:4 };
 
 /* ── custom inline SVGs (no matching Ic function) ─────────── */
-const SvgProducer = (c,s) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22V8"/><path d="M8 12l4-4 4 4"/><path d="M6 16l6-6 6 6"/><path d="M9 20l3-3 3 3"/></svg>;
-const SvgGrid = (c,s) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg>;
 const SvgMic = (c,s) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg>;
 
 export default function LandingScreen({ onLogin, onSignup, onPasswordReset, loading, error, clearError }) {
@@ -195,7 +193,7 @@ export default function LandingScreen({ onLogin, onSignup, onPasswordReset, load
                   { bg:C.priPale, icon:Ic.msg(C.pri,16), title:"Texto y audio", desc:"Interpreta mensajes escritos y notas de voz con la misma precisión." },
                   { bg:C.accPale, icon:Ic.plus(C.acc,16), title:"Crear solicitudes", desc:"Genera fletes completos a partir de instrucciones en lenguaje natural." },
                   { bg:C.secPale, icon:Ic.truck(C.sec,16), title:"Asignar transportistas", desc:"Selecciona y notifica al transportista adecuado según disponibilidad." },
-                  { bg:"#EFF6FF", icon:Ic.srch("#2563EB",16), title:"Consultar estados", desc:"Responde al instante sobre ubicación, estado y datos de cualquier flete activo." },
+                  { bg:C.infoPale, icon:Ic.srch(C.info,16), title:"Consultar estados", desc:"Responde al instante sobre ubicación, estado y datos de cualquier flete activo." },
                   { bg:C.priPale, icon:Ic.edit(C.pri,16), title:"Modificar y confirmar", desc:"Edita datos, cambia fechas y confirma operaciones sin salir de la conversación." },
                   { bg:C.accPale, icon:Ic.truck(C.acc,16), title:"Gestión de flota", desc:"Registrá gastos, ingresos y movimientos de tus camiones. Consultá resumen económico y alertas de documentos." },
                 ].map((c,i) => (
@@ -222,9 +220,9 @@ export default function LandingScreen({ onLogin, onSignup, onPasswordReset, load
           </p>
           <div className="tv-ld-cards" style={{ display:"flex", flexWrap:"wrap", gap:16, textAlign:"left" }}>
             {[
-              { bg:C.priPale, icon:SvgProducer(C.pri,22), title:"Productor", desc:"Creá fletes por WhatsApp, la app o desde la web. Definí grano, volumen, origen y destino. Seguí el estado en tiempo real y recibí confirmaciones automáticas sin hacer una sola llamada." },
-              { bg:C.accPale, icon:Ic.plant("#FF6A00",22), title:"Planta acopiadora", desc:"Recibí solicitudes, asigná flota, creá fletes de uso interno y controlá documentos con alertas de vencimiento. Gestión integral desde WhatsApp, la app o la web." },
-              { bg:C.secPale, icon:Ic.truck("#0891B2",20), title:"Transportista", desc:"Aceptá viajes, gestioná tu flota con control de gastos, ingresos y rendimiento por camión. Registrá todo por WhatsApp o desde la app. El chofer opera desde el chat que ya usa." },
+              { bg:C.accPale, icon:Ic.seedling(C.acc,22), title:"Productor", desc:"Creá fletes por WhatsApp, la app o desde la web. Definí grano, volumen, origen y destino. Seguí el estado en tiempo real y recibí confirmaciones automáticas sin hacer una sola llamada." },
+              { bg:C.priPale, icon:Ic.plant(C.pri,22), title:"Planta acopiadora", desc:"Recibí solicitudes, asigná flota, creá fletes de uso interno y controlá documentos con alertas de vencimiento. Gestión integral desde WhatsApp, la app o la web." },
+              { bg:C.secPale, icon:Ic.truck(C.sec,20), title:"Transportista", desc:"Aceptá viajes, gestioná tu flota con control de gastos, ingresos y rendimiento por camión. Registrá todo por WhatsApp o desde la app. El chofer opera desde el chat que ya usa." },
             ].map((c,i) => (
               <div key={i} style={{ ..._card, flex:"1 1 250px", minWidth:250 }}>
                 <div style={{ ..._ib, background:c.bg, marginBottom:16 }}>{c.icon}</div>
@@ -248,14 +246,14 @@ export default function LandingScreen({ onLogin, onSignup, onPasswordReset, load
           </p>
           <div className="tv-ld-cards" style={{ display:"flex", flexWrap:"wrap", gap:16, maxWidth:720, margin:"0 auto", textAlign:"left" }}>
             {[
-              { icon:Ic.phone("#DC2626",18), title:"Coordinación telefónica", desc:"Decenas de llamadas diarias entre productores, plantas y choferes para confirmar horarios, disponibilidad y estado de cada viaje." },
-              { icon:Ic.doc("#DC2626",18), title:"Registros manuales", desc:"Planillas en papel o Excel sin actualización en tiempo real. Información duplicada, inconsistente o directamente perdida." },
-              { icon:Ic.clk("#DC2626",18), title:"Cero visibilidad en tiempo real", desc:"No hay forma de saber dónde está un camión, si ya cargó, o cuándo llega. La respuesta siempre es \"llamá al chofer\"." },
-              { icon:Ic.warn("#DC2626",18), title:"Errores y demoras evitables", desc:"Camiones vacíos esperando, cargas duplicadas, destinos equivocados. Cada error tiene un costo directo en la operación." },
-              { icon:Ic.doc("#DC2626",18), title:"Gestión de flota en planillas", desc:"Documentos vencidos, gastos sin registrar, rendimiento desconocido. Sin visibilidad del costo real por camión ni por kilómetro." },
+              { icon:Ic.phone(C.err,18), title:"Coordinación telefónica", desc:"Decenas de llamadas diarias entre productores, plantas y choferes para confirmar horarios, disponibilidad y estado de cada viaje." },
+              { icon:Ic.doc(C.err,18), title:"Registros manuales", desc:"Planillas en papel o Excel sin actualización en tiempo real. Información duplicada, inconsistente o directamente perdida." },
+              { icon:Ic.clk(C.err,18), title:"Cero visibilidad en tiempo real", desc:"No hay forma de saber dónde está un camión, si ya cargó, o cuándo llega. La respuesta siempre es \"llamá al chofer\"." },
+              { icon:Ic.warn(C.err,18), title:"Errores y demoras evitables", desc:"Camiones vacíos esperando, cargas duplicadas, destinos equivocados. Cada error tiene un costo directo en la operación." },
+              { icon:Ic.doc(C.err,18), title:"Gestión de flota en planillas", desc:"Documentos vencidos, gastos sin registrar, rendimiento desconocido. Sin visibilidad del costo real por camión ni por kilómetro." },
             ].map((c,i) => (
               <div key={i} style={{ ..._card, display:"flex", gap:14, alignItems:"flex-start", flex:"1 1 calc(50% - 8px)", minWidth:280 }}>
-                <div style={{ ..._ibs, background:"#FEE2E2" }}>{c.icon}</div>
+                <div style={{ ..._ibs, background:C.errPale }}>{c.icon}</div>
                 <div>
                   <div style={{ fontSize:15.4, fontWeight:700, color:C.t1, marginBottom:4 }}>{c.title}</div>
                   <p style={_sm}>{c.desc}</p>
@@ -275,11 +273,11 @@ export default function LandingScreen({ onLogin, onSignup, onPasswordReset, load
           <div style={{ ..._hr, marginBottom:44 }} />
           <div className="tv-ld-steps" style={{ display:"flex", flexWrap:"wrap", alignItems:"flex-start", width:"100%", maxWidth:820, margin:"0 auto", justifyContent:"center" }}>
             {[
-              { bg:C.priPale, color:C.pri, num:"1", title:"Solicitud", desc:"El productor crea el flete indicando grano, volumen, origen y destino.", badgeBg:C.accPale, badgeC:C.acc, badge:"Pendiente" },
-              { bg:C.secPale, color:C.sec, num:"2", title:"Asignación", desc:"La planta recibe la solicitud y asigna un transportista con flota disponible.", badgeBg:C.secPale, badgeC:C.sec, badge:"Asignado" },
-              { bg:"#E8F5E9", color:"#43A047", num:"3", title:"A campo", desc:"El transportista asigna camión y chofer. El camión sale hacia el campo de carga.", badgeBg:"#E8F5E9", badgeC:"#43A047", badge:"A campo" },
+              { bg:"#FFF3E0", color:"#E65100", num:"1", title:"Solicitud", desc:"El productor crea el flete indicando grano, volumen, origen y destino.", badgeBg:"#FFF3E0", badgeC:"#E65100", badge:"Pendiente" },
+              { bg:C.secPale, color:C.sec, num:"2", title:"Asignación", desc:"La planta recibe la solicitud y asigna un transportista con flota disponible.", badgeBg:C.secPale, badgeC:"#0E7490", badge:"Asignado" },
+              { bg:"#E8F5E9", color:"#2E7D32", num:"3", title:"A campo", desc:"El transportista asigna camión y chofer. El camión sale hacia el campo de carga.", badgeBg:"#E8F5E9", badgeC:"#2E7D32", badge:"A campo" },
               { bg:"#E0F2E5", color:"#1A6B37", num:"4", title:"A planta", desc:"El camión carga en campo y parte hacia la planta de destino.", badgeBg:"#E0F2E5", badgeC:"#1A6B37", badge:"A planta" },
-              { bg:C.priPale, color:C.pri, num:"5", title:"Finalización", desc:"La planta confirma recepción. El flete queda cerrado con registro completo.", badgeBg:C.priPale, badgeC:C.pri, badge:"Finalizado" },
+              { bg:"#F5F5F5", color:"#616161", num:"5", title:"Finalización", desc:"La planta confirma recepción. El flete queda cerrado con registro completo.", badgeBg:"#F5F5F5", badgeC:"#616161", badge:"Finalizado" },
             ].map((s,i) => (
               <div key={i} style={{ flex:"1 1 140px", minWidth:140, display:"flex", flexDirection:"column", alignItems:"center", position:"relative", padding:"0 8px" }}>
                 {i < 4 && <div style={{ position:"absolute", top:24, left:"calc(50% + 28px)", width:"calc(100% - 56px)", height:2, background:C.b1 }} />}
@@ -313,7 +311,7 @@ export default function LandingScreen({ onLogin, onSignup, onPasswordReset, load
                 {/* Producto — completed */}
                 <div style={{ ..._msec, borderLeft:`3px solid ${C.pri}` }}>
                   <div style={{ ..._msh, marginBottom:0 }}>
-                    {Ic.chk("#1A6B37",14)}
+                    {Ic.chk(C.pri,14)}
                     <span style={_msl}>Producto</span>
                     <span style={{ ..._badge, background:C.priPale, color:C.pri, marginLeft:"auto", fontSize:9.9, padding:"2px 7px" }}>Soja</span>
                   </div>
@@ -321,7 +319,7 @@ export default function LandingScreen({ onLogin, onSignup, onPasswordReset, load
                 {/* Cantidad — completed */}
                 <div style={{ ..._msec, borderLeft:`3px solid ${C.pri}` }}>
                   <div style={{ ..._msh, marginBottom:0 }}>
-                    {Ic.chk("#1A6B37",14)}
+                    {Ic.chk(C.pri,14)}
                     <span style={_msl}>Cantidad</span>
                     <span style={{ marginLeft:"auto", fontSize:13.2, fontWeight:600, color:C.t1 }}>30 t</span>
                   </div>
@@ -329,11 +327,11 @@ export default function LandingScreen({ onLogin, onSignup, onPasswordReset, load
                 {/* Origen — active */}
                 <div style={{ ..._msec, borderLeft:`3px solid ${C.acc}` }}>
                   <div style={_msh}>
-                    {Ic.pin("#FF6A00",14)}
+                    {Ic.pin(C.acc,14)}
                     <span style={{ ..._msl, color:C.acc }}>Origen</span>
                   </div>
                   <div style={{ marginBottom:10 }}>
-                    <div style={_lbl}>{SvgGrid(C.t2,12)} Campo</div>
+                    <div style={_lbl}>{Ic.field(C.ok,12)} Campo</div>
                     <div style={_sel}>
                       <span style={{ color:C.t1, fontSize:14.3 }}>Est. La Rinconada</span>
                       {Ic.down(C.t3,14)}
@@ -410,19 +408,26 @@ export default function LandingScreen({ onLogin, onSignup, onPasswordReset, load
                 {Ic.msg(C.t3,18)}
               </div>
               <div style={_pbody}>
-                {/* Freight header */}
-                <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:16 }}>
-                  <div style={{ width:42, height:42, borderRadius:12, display:"flex", alignItems:"center", justifyContent:"center", fontSize:16.5, fontWeight:700, letterSpacing:0.5, flexShrink:0, background:"rgba(26,107,55,0.07)", color:C.pri, border:"1.5px solid rgba(26,107,55,0.13)" }}>GR</div>
-                  <div style={{ flex:1 }}>
-                    <div style={{ fontSize:16.5, fontWeight:700, color:C.t1 }}>Graneros del Sur</div>
-                    <div style={{ fontSize:12.1, color:C.t3, fontFamily:MONO }}>FL-2025-0847</div>
+                {/* Freight header — matches DetailScreen */}
+                <div style={{ marginBottom:14 }}>
+                  <div style={{ display:"flex", alignItems:"center", flexWrap:"wrap", gap:4, marginBottom:4 }}>
+                    <span style={{ display:"inline-flex", alignItems:"center", gap:3, fontSize:10, fontWeight:500, color:"#2E7D32", background:"#E8F5E9", padding:"2px 8px", borderRadius:20 }}>
+                      <span style={{ width:5, height:5, borderRadius:"50%", background:"#43A047", animation:"tolvinkPulse 1.5s infinite" }} />
+                      A campo
+                    </span>
+                    <span style={{ fontSize:18, fontWeight:800, color:C.t1, letterSpacing:-0.3 }}>Soja · 30 tn</span>
+                    <span style={{ fontFamily:MONO, fontSize:11, color:C.t1, marginLeft:2 }}>F-0042</span>
+                    <span style={{ fontSize:11, color:C.t1 }}>- 25/feb</span>
                   </div>
-                  <div style={{ ..._badge, background:"#E8F5E9", color:"#43A047" }}>A campo</div>
+                  <div style={{ display:"flex", alignItems:"center", gap:4 }}>
+                    {Ic.user(C.acc,11)}
+                    <span style={{ fontSize:11, color:C.acc, fontWeight:600 }}>Graneros del Sur</span>
+                  </div>
                 </div>
                 {/* Carga */}
                 <div style={_msec}>
                   <div style={_msh}>
-                    {SvgProducer(C.pri,14)}
+                    {Ic.grain(C.t2,14)}
                     <span style={_msl}>Carga</span>
                   </div>
                   <div style={{ display:"flex", gap:12 }}>
@@ -455,9 +460,15 @@ export default function LandingScreen({ onLogin, onSignup, onPasswordReset, load
                     {Ic.truck(C.sec,14)}
                     <span style={_msl}>Transporte</span>
                   </div>
-                  <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-                    <div style={{ width:32, height:32, borderRadius:9, background:"rgba(8,145,178,0.08)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:13.2, fontWeight:700, color:C.sec, border:"1px solid rgba(8,145,178,0.13)" }}>ML</div>
-                    <div style={{ flex:1 }}><div style={{ fontSize:14.3, fontWeight:600, color:C.t1 }}>Mario López</div><div style={{ fontSize:12.1, color:C.t3 }}>SCO 1234 · Transporte Pérez</div></div>
+                  <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+                    <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                      {Ic.truck(C.t2,13)}
+                      <span style={{ fontSize:13, fontWeight:600, color:C.t1 }}>Transporte Pérez</span>
+                    </div>
+                    <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                      <span style={{ fontFamily:MONO, fontSize:11, color:C.t2, background:C.bgInput, padding:"2px 6px", borderRadius:4 }}>SCO 1234</span>
+                      <span style={{ fontSize:12, color:C.t2 }}>Mario López</span>
+                    </div>
                   </div>
                 </div>
                 {/* Action button */}
@@ -523,7 +534,7 @@ export default function LandingScreen({ onLogin, onSignup, onPasswordReset, load
                       <div style={{ fontSize:13.2, fontWeight:600, color:C.t1 }}>SCO 1234 · Mario López</div>
                       <div style={{ fontSize:11, color:C.t3 }}>En camino · Llegada est. 12:40</div>
                     </div>
-                    <div style={{ ..._badge, background:"#E8F5E9", color:"#43A047", fontSize:9.9, padding:"2px 7px" }}>A campo</div>
+                    <div style={{ ..._badge, background:"#E8F5E9", color:"#2E7D32", fontSize:9.9, padding:"2px 7px" }}>A campo</div>
                   </div>
                 </div>
                 {/* Info bar 2 */}
@@ -711,62 +722,81 @@ export default function LandingScreen({ onLogin, onSignup, onPasswordReset, load
                 {/* En curso group */}
                 <div style={{ marginBottom:14 }}>
                   <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:8, padding:"0 2px" }}>
-                    <div style={{ width:6, height:6, borderRadius:3, background:"#4ADE80" }} />
+                    <div style={{ width:6, height:6, borderRadius:3, background:C.pri }} />
                     <span style={{ fontSize:12.1, fontWeight:700, color:C.t2 }}>En curso</span>
                     <span style={{ fontSize:11, color:C.t3, marginLeft:2 }}>3</span>
                   </div>
-                  {/* Card 1 */}
-                  <div style={_fc}>
-                    <div style={_fh}>
-                      <div style={{ width:42, height:42, borderRadius:12, display:"flex", alignItems:"center", justifyContent:"center", fontSize:14.3, fontWeight:700, letterSpacing:0.5, flexShrink:0, background:"rgba(26,107,55,0.07)", color:C.pri, border:"1.5px solid rgba(26,107,55,0.13)" }}>GR</div>
-                      <div style={{ flex:1 }}>
-                        <div style={{ fontSize:15.4, fontWeight:700, color:C.t1, marginBottom:2 }}>Graneros del Sur</div>
-                        <div style={{ fontSize:12.1, color:C.t3 }}>Soja · 30 t · 25/02 08:00</div>
+                  {/* Card 1 — ribbon style like FreightCard */}
+                  <div style={{ display:"flex", borderRadius:6, border:`0.5px solid ${C.b1}`, overflow:"hidden", background:C.w, marginBottom:8 }}>
+                    <div style={{ width:16, background:"#43A047", flexShrink:0 }} />
+                    <div style={{ padding:"10px 12px", flex:1, minWidth:0 }}>
+                      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:4 }}>
+                        <div style={{ display:"flex", alignItems:"baseline", gap:6, minWidth:0 }}>
+                          <span style={{ fontSize:10, color:C.t2, fontFamily:MONO }}>F-0042</span>
+                          <span style={{ fontSize:13, fontWeight:500, color:C.t1 }}>Soja · 30tn</span>
+                        </div>
+                        <span style={{ display:"inline-flex", alignItems:"center", gap:3, background:"#E8F5E9", padding:"2px 7px", borderRadius:20, fontSize:9.9, fontWeight:500, color:"#2E7D32" }}>
+                          <div style={{ width:5, height:5, borderRadius:"50%", background:"#43A047", animation:"tolvinkPulse 1.5s infinite" }} />
+                          A campo
+                        </span>
                       </div>
-                      <div style={{ ..._badge, background:"#E8F5E9", color:"#43A047", fontSize:9.9, padding:"2px 7px" }}>A campo</div>
-                    </div>
-                    <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
-                      <span style={{ display:"inline-flex", alignItems:"center", gap:4, padding:"3px 8px", borderRadius:6, fontSize:11, fontWeight:600, background:C.secPale, color:C.sec }}>
-                        {Ic.truck(C.sec,10)}
-                        Transp. Pérez
-                      </span>
-                      <span style={{ display:"inline-flex", alignItems:"center", gap:4, padding:"3px 8px", borderRadius:6, fontSize:11, fontWeight:600, background:C.bgInput, color:C.t2 }}>SCO 1234</span>
+                      <div style={{ display:"flex", alignItems:"center", gap:4, marginBottom:4, fontSize:11, color:C.t2 }}>
+                        {Ic.pin(C.t3,11)}<span>La Rinconada</span><span>→</span>{Ic.plant(C.t2,10)}<span>Planta Dolores</span>
+                      </div>
+                      <div style={{ display:"flex", alignItems:"center", gap:4, fontSize:11 }}>
+                        {Ic.truck(C.t2,11)}<span style={{ color:C.t1, fontWeight:500 }}>Transp. Pérez</span><span style={{ fontSize:10, color:C.t2 }}> · </span><span style={{ fontFamily:MONO, fontSize:10, color:C.t2 }}>SCO 1234</span>
+                        <span style={{ fontSize:10, color:C.t2, marginLeft:"auto" }}>25/feb 08:00</span>
+                      </div>
                     </div>
                   </div>
                   {/* Card 2 */}
-                  <div style={_fc}>
-                    <div style={_fh}>
-                      <div style={{ width:42, height:42, borderRadius:12, display:"flex", alignItems:"center", justifyContent:"center", fontSize:14.3, fontWeight:700, letterSpacing:0.5, flexShrink:0, background:"rgba(255,106,0,0.08)", color:C.acc, border:"1.5px solid rgba(255,106,0,0.13)" }}>CA</div>
-                      <div style={{ flex:1 }}>
-                        <div style={{ fontSize:15.4, fontWeight:700, color:C.t1, marginBottom:2 }}>Campos del Litoral</div>
-                        <div style={{ fontSize:12.1, color:C.t3 }}>Trigo · 28 t · 25/02 10:30</div>
+                  <div style={{ display:"flex", borderRadius:6, border:`0.5px solid ${C.b1}`, overflow:"hidden", background:C.w, marginBottom:8 }}>
+                    <div style={{ width:16, background:"#1A6B37", flexShrink:0 }} />
+                    <div style={{ padding:"10px 12px", flex:1, minWidth:0 }}>
+                      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:4 }}>
+                        <div style={{ display:"flex", alignItems:"baseline", gap:6, minWidth:0 }}>
+                          <span style={{ fontSize:10, color:C.t2, fontFamily:MONO }}>F-0039</span>
+                          <span style={{ fontSize:13, fontWeight:500, color:C.t1 }}>Trigo · 28tn</span>
+                        </div>
+                        <span style={{ display:"inline-flex", alignItems:"center", gap:3, background:"#E0F2E5", padding:"2px 7px", borderRadius:20, fontSize:9.9, fontWeight:500, color:"#1A6B37" }}>
+                          <div style={{ width:5, height:5, borderRadius:"50%", background:"#1A6B37", animation:"tolvinkPulse 1.5s infinite" }} />
+                          A planta
+                        </span>
                       </div>
-                      <div style={{ ..._badge, background:"#E0F2E5", color:"#1A6B37", fontSize:9.9, padding:"2px 7px" }}>A planta</div>
-                    </div>
-                    <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
-                      <span style={{ display:"inline-flex", alignItems:"center", gap:4, padding:"3px 8px", borderRadius:6, fontSize:11, fontWeight:600, background:C.secPale, color:C.sec }}>
-                        {Ic.truck(C.sec,10)}
-                        Logística Martínez
-                      </span>
-                      <span style={{ display:"inline-flex", alignItems:"center", gap:4, padding:"3px 8px", borderRadius:6, fontSize:11, fontWeight:600, background:C.bgInput, color:C.t2 }}>SBY 5678</span>
+                      <div style={{ display:"flex", alignItems:"center", gap:4, marginBottom:4, fontSize:11, color:C.t2 }}>
+                        {Ic.pin(C.t3,11)}<span>Campos del Litoral</span><span>→</span>{Ic.plant(C.t2,10)}<span>Planta Dolores</span>
+                      </div>
+                      <div style={{ display:"flex", alignItems:"center", gap:4, fontSize:11 }}>
+                        {Ic.truck(C.t2,11)}<span style={{ color:C.t1, fontWeight:500 }}>Logística Martínez</span><span style={{ fontSize:10, color:C.t2 }}> · </span><span style={{ fontFamily:MONO, fontSize:10, color:C.t2 }}>SBY 5678</span>
+                        <span style={{ fontSize:10, color:C.t2, marginLeft:"auto" }}>25/feb 10:30</span>
+                      </div>
                     </div>
                   </div>
                 </div>
-                {/* Solicitado group */}
+                {/* Pendiente group */}
                 <div>
                   <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:8, padding:"0 2px" }}>
                     <div style={{ width:6, height:6, borderRadius:3, background:C.acc }} />
-                    <span style={{ fontSize:12.1, fontWeight:700, color:C.t2 }}>Solicitado</span>
+                    <span style={{ fontSize:12.1, fontWeight:700, color:C.t2 }}>Pendiente</span>
                     <span style={{ fontSize:11, color:C.t3, marginLeft:2 }}>1</span>
                   </div>
-                  <div style={_fc}>
-                    <div style={{ ..._fh, marginBottom:0 }}>
-                      <div style={{ width:42, height:42, borderRadius:12, display:"flex", alignItems:"center", justifyContent:"center", fontSize:14.3, fontWeight:700, letterSpacing:0.5, flexShrink:0, background:"rgba(202,138,4,0.08)", color:C.warn, border:"1.5px solid rgba(202,138,4,0.13)" }}>AG</div>
-                      <div style={{ flex:1 }}>
-                        <div style={{ fontSize:15.4, fontWeight:700, color:C.t1, marginBottom:2 }}>Agro San José</div>
-                        <div style={{ fontSize:12.1, color:C.t3 }}>Maíz · 25 t · 26/02 07:00</div>
+                  <div style={{ display:"flex", borderRadius:6, border:`0.5px solid ${C.b1}`, overflow:"hidden", background:C.w }}>
+                    <div style={{ width:16, background:"#FF6A00", flexShrink:0 }} />
+                    <div style={{ padding:"10px 12px", flex:1, minWidth:0 }}>
+                      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:4 }}>
+                        <div style={{ display:"flex", alignItems:"baseline", gap:6, minWidth:0 }}>
+                          <span style={{ fontSize:10, color:C.t2, fontFamily:MONO }}>F-0045</span>
+                          <span style={{ fontSize:13, fontWeight:500, color:C.t1 }}>Maíz · 25tn</span>
+                        </div>
+                        <span style={{ display:"inline-flex", alignItems:"center", background:"#FFF3E0", padding:"2px 7px", borderRadius:20, fontSize:9.9, fontWeight:500, color:"#E65100" }}>Pendiente</span>
                       </div>
-                      <div style={{ ..._badge, background:C.accPale, color:C.acc, fontSize:9.9, padding:"2px 7px" }}>Pendiente</div>
+                      <div style={{ display:"flex", alignItems:"center", gap:4, marginBottom:4, fontSize:11, color:C.t2 }}>
+                        {Ic.pin(C.t3,11)}<span>Agro San José</span><span>→</span>{Ic.plant(C.t2,10)}<span>Planta Dolores</span>
+                      </div>
+                      <div style={{ display:"flex", alignItems:"center", gap:4, fontSize:11 }}>
+                        {Ic.truck(C.t2,11)}<span style={{ color:C.t1, fontWeight:500 }}>Sin asignar</span>
+                        <span style={{ fontSize:10, color:C.t2, marginLeft:"auto" }}>26/feb 07:00</span>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -785,10 +815,10 @@ export default function LandingScreen({ onLogin, onSignup, onPasswordReset, load
           <div style={{ ..._hr, marginBottom:44 }} />
           <div className="tv-ld-cards" style={{ display:"flex", flexWrap:"wrap", gap:16, maxWidth:740, margin:"0 auto", textAlign:"left" }}>
             {[
-              { bg:C.priPale, icon:Ic.cal("#1A6B37",18), title:"Agenda de ingresos digital", desc:"Visualización clara de todos los fletes programados por día, con filtros por estado, origen y tipo de grano." },
-              { bg:C.secPale, icon:Ic.truck("#0891B2",18), title:"Asignación directa de flota", desc:"Selección de transportista desde la plataforma con notificación inmediata. Sin intermediarios ni demoras." },
-              { bg:C.accPale, icon:Ic.bell("#FF6A00",18), title:"Notificaciones en tiempo real", desc:"Alertas push cuando un camión confirma, inicia viaje, carga o llega a destino. Sin necesidad de llamar." },
-              { bg:C.priPale, icon:Ic.truck("#1A6B37",18), title:"Gestión integral de flota", desc:"Control de documentos con alertas de vencimiento, registro de gastos e ingresos por camión, y resumen económico con costo por km y rendimiento." },
+              { bg:C.priPale, icon:Ic.cal(C.pri,18), title:"Agenda de ingresos digital", desc:"Visualización clara de todos los fletes programados por día, con filtros por estado, origen y tipo de grano." },
+              { bg:C.secPale, icon:Ic.truck(C.sec,18), title:"Asignación directa de flota", desc:"Selección de transportista desde la plataforma con notificación inmediata. Sin intermediarios ni demoras." },
+              { bg:C.accPale, icon:Ic.bell(C.acc,18), title:"Notificaciones en tiempo real", desc:"Alertas push cuando un camión confirma, inicia viaje, carga o llega a destino. Sin necesidad de llamar." },
+              { bg:C.priPale, icon:Ic.truck(C.pri,18), title:"Gestión integral de flota", desc:"Control de documentos con alertas de vencimiento, registro de gastos e ingresos por camión, y resumen económico con costo por km y rendimiento." },
             ].map((c,i) => (
               <div key={i} style={{ ..._card, display:"flex", gap:14, alignItems:"flex-start", flex:"1 1 calc(50% - 8px)", minWidth:280 }}>
                 <div style={{ ..._ibs, background:c.bg }}>{c.icon}</div>
@@ -843,7 +873,7 @@ export default function LandingScreen({ onLogin, onSignup, onPasswordReset, load
           </p>
           <div className="tv-ld-cards" style={{ display:"flex", flexWrap:"wrap", gap:16, maxWidth:740, margin:"0 auto", textAlign:"left" }}>
             {[
-              { bg:C.priPale, icon:SvgProducer(C.pri,18), title:"Solicitud desde campo o lote", desc:"Seleccioná tu campo, el lote, el grano y la cantidad. La planta recibe el pedido al instante." },
+              { bg:C.accPale, icon:Ic.seedling(C.acc,18), title:"Solicitud desde campo o lote", desc:"Seleccioná tu campo, el lote, el grano y la cantidad. La planta recibe el pedido al instante." },
               { bg:C.secPale, icon:Ic.nav(C.sec,18), title:"Seguimiento en tiempo real", desc:"Sabé dónde está el camión y en qué etapa del viaje. Mapa en vivo con estados actualizados." },
               { bg:C.accPale, icon:SvgMic(C.acc,18), title:"Pedí por WhatsApp o la app", desc:"Mandá un mensaje de voz o texto al agente de IA. Él arma el flete, vos solo confirmás." },
               { bg:C.priPale, icon:Ic.bell(C.pri,18), title:"Notificaciones de cada etapa", desc:"Te avisamos cuando el camión confirma, sale, carga y llega. Push en la app y mensaje en WhatsApp." },
@@ -876,7 +906,7 @@ export default function LandingScreen({ onLogin, onSignup, onPasswordReset, load
               { bg:C.accPale, icon:Ic.chk(C.acc,18), title:"Fletes internos (uso interno)", desc:"Mové grano entre sucursales o a depósito sin vincular productor externo. Ideal para operaciones propias." },
               { bg:C.priPale, icon:Ic.pin(C.pri,18), title:"Destinos personalizados", desc:"Cargá cualquier destino con texto libre. Sin depender de que esté registrado en el sistema." },
               { bg:C.secPale, icon:Ic.truck(C.sec,18), title:"Control de flota propia", desc:"Si tenés camiones, registrá gastos, documentos e ingresos. Resumen económico y alertas de vencimiento." },
-              { bg:C.accPale, icon:Ic.eye(C.acc,18), title:"Mapa en vivo de operaciones", desc:"Visualizá en tiempo real dónde están los camiones y el estado de cada flete activo." },
+              { bg:C.accPale, icon:Ic.mapView(C.acc,18), title:"Mapa en vivo de operaciones", desc:"Visualizá en tiempo real dónde están los camiones y el estado de cada flete activo." },
             ].map((c,i) => (
               <div key={i} style={{ ..._card, display:"flex", gap:14, alignItems:"flex-start", flex:"1 1 calc(50% - 8px)", minWidth:280 }}>
                 <div style={{ ..._ibs, background:c.bg }}>{c.icon}</div>
@@ -921,9 +951,9 @@ export default function LandingScreen({ onLogin, onSignup, onPasswordReset, load
           <div style={{ ..._hr, marginBottom:44 }} />
           <div className="tv-ld-cards" style={{ display:"flex", flexWrap:"wrap", gap:16, maxWidth:820, margin:"0 auto" }}>
             {[
-              { bg:C.priPale, icon:Ic.clk("#1A6B37",22), color:C.pri, stat:"\u221270%", label:"Tiempo de coordinación", desc:"Eliminación de llamadas repetitivas y confirmaciones manuales entre actores." },
-              { bg:C.accPale, icon:Ic.shield("#FF6A00",22), color:C.acc, stat:"100%", label:"Trazabilidad", desc:"Registro completo de cada flete con estados, timestamps y responsables identificados." },
-              { bg:C.secPale, icon:Ic.nav("#0891B2",22), color:C.sec, stat:"Real-time", label:"Visibilidad operativa", desc:"Estado actualizado de cada camión y flete accesible desde cualquier dispositivo móvil." },
+              { bg:C.priPale, icon:Ic.clk(C.pri,22), color:C.pri, stat:"\u221270%", label:"Tiempo de coordinación", desc:"Eliminación de llamadas repetitivas y confirmaciones manuales entre actores." },
+              { bg:C.accPale, icon:Ic.shield(C.acc,22), color:C.acc, stat:"100%", label:"Trazabilidad", desc:"Registro completo de cada flete con estados, timestamps y responsables identificados." },
+              { bg:C.secPale, icon:Ic.nav(C.sec,22), color:C.sec, stat:"Real-time", label:"Visibilidad operativa", desc:"Estado actualizado de cada camión y flete accesible desde cualquier dispositivo móvil." },
             ].map((c,i) => (
               <div key={i} style={{ ..._card, textAlign:"center", padding:"28px 20px", flex:"1 1 250px", minWidth:250 }}>
                 <div style={{ ..._ib, background:c.bg, margin:"0 auto 16px" }}>{c.icon}</div>
