@@ -103,7 +103,10 @@ function DocRow({ d, onView, onOcr, ocrLoading, onEdit, onDelete, canEdit, onOcr
             {hasOcr && <span style={{ padding:"2px 7px", borderRadius:R.sm, fontSize:10, fontWeight:700, background:C.priPale, color:C.pri }}>{ocrPreview?.structured !== false ? "OCR" : "OCR libre"}</span>}
             {ocrPreview?.edited && <span style={{ padding:"2px 6px", borderRadius:R.sm, fontSize:9, fontWeight:700, background:`${C.acc}15`, color:C.acc }}>Editado</span>}
           </div>
-          <div style={{ fontSize:12.1, color:C.t3, marginTop:2 }}>{fmtDate(d.createdAt)}{d._linkLabel ? ` · ${d._linkLabel}` : ""}</div>
+          <div style={{ display:"flex", alignItems:"center", gap:6, marginTop:2, flexWrap:"wrap" }}>
+            <span style={{ fontSize:12.1, color:C.t3 }}>{fmtDate(d.createdAt)}</span>
+            {d._linkBadge && d._linkBadge.label !== "General" && <span style={{ fontSize:9.5, fontWeight:700, color:d._linkBadge.color, background:d._linkBadge.bg, padding:"1px 6px", borderRadius:R.sm }}>{d._linkBadge.label}{d._linkLabel ? `: ${d._linkLabel}` : ""}</span>}
+          </div>
           {ocrPreview?.lines?.length > 0 && <div style={{ fontSize:11, color:C.t2, marginTop:3, lineHeight:1.4 }}>{ocrPreview.lines.join(" · ")}</div>}
         </div>
         {/* Action buttons */}
@@ -830,7 +833,6 @@ export default function TruckDetailScreen({ truckId, user, onBack, onNavFreight 
               const linkLabel = d.linkedType==="expense"&&d.expense?`${EXP_TYPE_LABELS[d.expense.type]||""} ${fmtDate(d.expense.date)}`:d.linkedType==="income"&&d.income?d.income.concept:d.linkedType==="freight"&&d.freight?d.freight.code:d.linkedType==="movement"&&d.movement?`${MOV_TYPE_LABELS[d.movement.type]||""} ${fmtDate(d.movement.departureAt)}`:"";
               return <div key={d.id} style={{marginBottom:6}}>
                 <DocRow d={{...d, _linkBadge:lb, _linkLabel:linkLabel}} onView={openFile} onOcr={handleOcr} ocrLoading={ocrLoading} canEdit={canEdit} onEdit={dd=>setEditItem(dd)} onOcrSave={handleOcrSave} onOcrClear={handleOcrClear} onDelete={dd=>setConfirmDelete({type:"doc",id:dd.id,label:DOC_TYPE_LABELS[dd.type]})}/>
-                {lb.label!=="General"&&<div style={{paddingLeft:58,marginTop:2}}><span style={{fontSize:9.5,fontWeight:700,color:lb.color,background:lb.bg,padding:"1px 5px",borderRadius:R.sm}}>{lb.label}{linkLabel?`: ${linkLabel}`:""}</span></div>}
               </div>;
             })
           }
