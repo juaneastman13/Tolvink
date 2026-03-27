@@ -197,6 +197,7 @@ export default function LandingScreen({ onLogin, onSignup, onPasswordReset, load
                   { bg:C.secPale, icon:Ic.truck(C.sec,16), title:"Asignar transportistas", desc:"Selecciona y notifica al transportista adecuado según disponibilidad." },
                   { bg:"#EFF6FF", icon:Ic.srch("#2563EB",16), title:"Consultar estados", desc:"Responde al instante sobre ubicación, estado y datos de cualquier flete activo." },
                   { bg:C.priPale, icon:Ic.edit(C.pri,16), title:"Modificar y confirmar", desc:"Edita datos, cambia fechas y confirma operaciones sin salir de la conversación." },
+                  { bg:C.accPale, icon:Ic.truck(C.acc,16), title:"Gestión de flota", desc:"Registrá gastos, ingresos y movimientos de tus camiones. Consultá resumen económico y alertas de documentos." },
                 ].map((c,i) => (
                   <div key={i} style={{ display:"flex", gap:12, alignItems:"flex-start" }}>
                     <div style={{ width:36, height:36, borderRadius:10, background:c.bg, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{c.icon}</div>
@@ -222,8 +223,8 @@ export default function LandingScreen({ onLogin, onSignup, onPasswordReset, load
           <div className="tv-ld-cards" style={{ display:"flex", flexWrap:"wrap", gap:16, textAlign:"left" }}>
             {[
               { bg:C.priPale, icon:SvgProducer(C.pri,22), title:"Productor", desc:"Creá fletes por WhatsApp, la app o desde la web. Definí grano, volumen, origen y destino. Seguí el estado en tiempo real y recibí confirmaciones automáticas sin hacer una sola llamada." },
-              { bg:C.accPale, icon:Ic.plant("#FF6A00",22), title:"Planta acopiadora", desc:"Recibí solicitudes, asigná flota y confirmá recepción de mercadería. Todo desde un mensaje de WhatsApp, la app o desde el panel web con vista consolidada de operaciones." },
-              { bg:C.secPale, icon:Ic.truck("#0891B2",20), title:"Transportista", desc:"Aceptá viajes, reportá carga y confirmá entrega directamente por WhatsApp. Sin descargar aplicaciones, sin aprender interfaces nuevas. El chofer opera desde el chat que ya usa todos los días. También puede operar desde la app o web." },
+              { bg:C.accPale, icon:Ic.plant("#FF6A00",22), title:"Planta acopiadora", desc:"Recibí solicitudes, asigná flota, creá fletes de uso interno y controlá documentos con alertas de vencimiento. Gestión integral desde WhatsApp, la app o la web." },
+              { bg:C.secPale, icon:Ic.truck("#0891B2",20), title:"Transportista", desc:"Aceptá viajes, gestioná tu flota con control de gastos, ingresos y rendimiento por camión. Registrá todo por WhatsApp o desde la app. El chofer opera desde el chat que ya usa." },
             ].map((c,i) => (
               <div key={i} style={{ ..._card, flex:"1 1 250px", minWidth:250 }}>
                 <div style={{ ..._ib, background:c.bg, marginBottom:16 }}>{c.icon}</div>
@@ -251,6 +252,7 @@ export default function LandingScreen({ onLogin, onSignup, onPasswordReset, load
               { icon:Ic.doc("#DC2626",18), title:"Registros manuales", desc:"Planillas en papel o Excel sin actualización en tiempo real. Información duplicada, inconsistente o directamente perdida." },
               { icon:Ic.clk("#DC2626",18), title:"Cero visibilidad en tiempo real", desc:"No hay forma de saber dónde está un camión, si ya cargó, o cuándo llega. La respuesta siempre es \"llamá al chofer\"." },
               { icon:Ic.warn("#DC2626",18), title:"Errores y demoras evitables", desc:"Camiones vacíos esperando, cargas duplicadas, destinos equivocados. Cada error tiene un costo directo en la operación." },
+              { icon:Ic.doc("#DC2626",18), title:"Gestión de flota en planillas", desc:"Documentos vencidos, gastos sin registrar, rendimiento desconocido. Sin visibilidad del costo real por camión ni por kilómetro." },
             ].map((c,i) => (
               <div key={i} style={{ ..._card, display:"flex", gap:14, alignItems:"flex-start", flex:"1 1 calc(50% - 8px)", minWidth:280 }}>
                 <div style={{ ..._ibs, background:"#FEE2E2" }}>{c.icon}</div>
@@ -360,6 +362,31 @@ export default function LandingScreen({ onLogin, onSignup, onPasswordReset, load
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+
+      {/* ═══ NEW · Internal Freight + Custom Destination ═══ */}
+      <div className="tv-ld-section" style={_slide(C.bg)}>
+        <div style={_cnt}>
+          <span style={_tag}>Flexibilidad total</span>
+          <h2 style={{ ..._h2, marginBottom:16 }}>Fletes internos y destinos libres</h2>
+          <div style={{ ..._hr, marginBottom:28 }} />
+          <p style={{ ..._p, maxWidth:520, margin:"0 auto 36px" }}>
+            Las plantas pueden crear fletes para uso propio y cualquier ubicación puede ser destino — no solo las plantas registradas.
+          </p>
+          <div className="tv-ld-cards" style={{ display:"flex", flexWrap:"wrap", gap:16, maxWidth:600, margin:"0 auto", textAlign:"left" }}>
+            <div style={{ ..._card, flex:"1 1 250px", minWidth:250 }}>
+              <div style={{ ..._ib, background:C.accPale, marginBottom:16 }}>{Ic.plant(C.acc,22)}</div>
+              <div style={{ fontSize:17.6, fontWeight:700, color:C.t1, marginBottom:6 }}>Uso interno</div>
+              <p style={_sm}>La planta crea el flete para sí misma, sin productor externo. Ideal para mover mercadería entre sucursales o hacia destinos propios.</p>
+            </div>
+            <div style={{ ..._card, flex:"1 1 250px", minWidth:250 }}>
+              <div style={{ ..._ib, background:C.secPale, marginBottom:16 }}>{Ic.pin(C.sec,22)}</div>
+              <div style={{ fontSize:17.6, fontWeight:700, color:C.t1, marginBottom:6 }}>Destino personalizado</div>
+              <p style={_sm}>Cualquier dirección o punto en el mapa como destino. Escribí el nombre o marcalo en el mapa — sin necesidad de una planta registrada.</p>
             </div>
           </div>
         </div>
@@ -517,7 +544,142 @@ export default function LandingScreen({ onLogin, onSignup, onPasswordReset, load
       </div>
 
 
-      {/* ═══ SECTION 9 · Operations Panel ═══ */}
+      {/* ═══ NEW · Fleet Management ═══ */}
+      <div className="tv-ld-section" style={_slide(C.bg)}>
+        <div style={_cnt}>
+          <span style={_tag}>Gestión de flota</span>
+          <h2 style={{ ..._h2, marginBottom:12 }}>Cada camión bajo control total</h2>
+          <p style={{ ..._p, maxWidth:520, margin:"0 auto 36px" }}>
+            Registrá documentos, gastos, ingresos y movimientos por camión. Visualizá el rendimiento económico y las alertas de vencimiento en un solo lugar.
+          </p>
+          <div className="tv-ld-caps" style={{ display:"flex", gap:48, alignItems:"flex-start", justifyContent:"center", flexWrap:"wrap" }}>
+            {/* Phone mockup — truck detail */}
+            <div className="tv-ld-phone" style={{ ..._pf, width:310 }}>
+              <div style={_bar}><span style={{ fontSize:12.1, color:C.t3 }}>9:41</span></div>
+              <div style={_nav}>{Ic.chev(C.pri,18)}<span style={_navT}>Detalle camión</span></div>
+              <div style={_pbody}>
+                {/* Plate mock */}
+                <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:14 }}>
+                  <div style={{ background:"#F0F0F0", borderRadius:8, padding:"6px 14px", border:`2px solid ${C.t3}` }}>
+                    <div style={{ fontSize:7, fontWeight:700, color:C.w, background:"#003882", textAlign:"center", borderRadius:2, padding:"1px 4px", marginBottom:2, letterSpacing:1 }}>URUGUAY</div>
+                    <div style={{ fontFamily:MONO, fontSize:20, fontWeight:800, color:C.t1, letterSpacing:2 }}>ABC 1234</div>
+                  </div>
+                  <div><div style={{ fontSize:14.3, fontWeight:600, color:C.t1 }}>Scania R450</div><div style={{ fontSize:11, color:C.t3 }}>12.450 km</div></div>
+                </div>
+                {/* Tabs mock */}
+                <div style={{ display:"flex", gap:1, marginBottom:14, background:C.b1, borderRadius:6, overflow:"hidden" }}>
+                  {["Resumen","Fletes","Ingresos","Gastos","Movim.","Docs"].map((t,i)=><div key={i} style={{ flex:1, padding:"6px 2px", fontSize:8.8, fontWeight:i===0?700:500, textAlign:"center", background:i===0?C.pri:C.w, color:i===0?C.w:C.t3 }}>{t}</div>)}
+                </div>
+                {/* Summary cards */}
+                <div style={{ display:"flex", gap:8, marginBottom:12 }}>
+                  <div style={{ flex:1, textAlign:"center", padding:"8px 4px", background:C.bg, borderRadius:8 }}><div style={{ fontSize:14.3, fontWeight:800, color:C.ok }}>$450.000</div><div style={{ fontSize:9.9, color:C.t3 }}>Ingresos</div></div>
+                  <div style={{ flex:1, textAlign:"center", padding:"8px 4px", background:C.bg, borderRadius:8 }}><div style={{ fontSize:14.3, fontWeight:800, color:C.err }}>$280.000</div><div style={{ fontSize:9.9, color:C.t3 }}>Gastos</div></div>
+                  <div style={{ flex:1, textAlign:"center", padding:"8px 4px", background:C.bg, borderRadius:8 }}><div style={{ fontSize:14.3, fontWeight:800, color:C.ok }}>+$170.000</div><div style={{ fontSize:9.9, color:C.t3 }}>Neto</div></div>
+                </div>
+                <div style={{ display:"flex", gap:8, marginBottom:12 }}>
+                  <div style={{ flex:1, textAlign:"center", padding:"6px 4px", background:C.bg, borderRadius:8 }}><div style={{ fontSize:13.2, fontWeight:800, color:C.t1 }}>3.200</div><div style={{ fontSize:9.9, color:C.t3 }}>Km</div></div>
+                  <div style={{ flex:1, textAlign:"center", padding:"6px 4px", background:C.bg, borderRadius:8 }}><div style={{ fontSize:13.2, fontWeight:800, color:C.t1 }}>12</div><div style={{ fontSize:9.9, color:C.t3 }}>Viajes</div></div>
+                  <div style={{ flex:1, textAlign:"center", padding:"6px 4px", background:C.bg, borderRadius:8 }}><div style={{ fontSize:13.2, fontWeight:800, color:C.t1 }}>3.2</div><div style={{ fontSize:9.9, color:C.t3 }}>km/l</div></div>
+                </div>
+                {/* Expense breakdown bar */}
+                <div style={{ marginBottom:6 }}><div style={{ fontSize:10, fontWeight:700, color:C.t2, textTransform:"uppercase", letterSpacing:0.5, marginBottom:6 }}>Gastos por tipo</div>
+                  {[{l:"Combustible",pct:55},{l:"Peaje",pct:20},{l:"Mantenimiento",pct:15}].map((b,i)=><div key={i} style={{ display:"flex", alignItems:"center", gap:6, marginBottom:4 }}><span style={{ fontSize:10, color:C.t3, width:80 }}>{b.l}</span><div style={{ flex:1, height:6, background:C.bg, borderRadius:3 }}><div style={{ width:`${b.pct}%`, height:"100%", background:C.acc, borderRadius:3 }}/></div><span style={{ fontSize:10, fontWeight:600, color:C.t1 }}>{b.pct}%</span></div>)}
+                </div>
+              </div>
+            </div>
+            {/* Features */}
+            <div style={{ maxWidth:320, textAlign:"left" }}>
+              <div style={{ fontSize:15.4, fontWeight:700, color:C.t1, marginBottom:20 }}>Funcionalidades por camión</div>
+              <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
+                {[
+                  { bg:C.priPale, icon:Ic.doc(C.pri,16), title:"Control de vencimientos", desc:"Documentos con semáforo: verde vigente, amarillo por vencer, rojo vencido. Alertas automáticas." },
+                  { bg:C.accPale, icon:Ic.chk(C.acc,16), title:"Resumen económico", desc:"Costo por km, ingreso por km, margen, rendimiento km/litro. Todo calculado automáticamente." },
+                  { bg:C.secPale, icon:Ic.truck(C.sec,16), title:"Ingresos y gastos", desc:"Registro con vínculo a fletes. Estados de cobro: pendiente, cobrado, vencido." },
+                  { bg:C.priPale, icon:Ic.pin(C.pri,16), title:"Movimientos extra", desc:"Viajes a taller, reposicionamiento, traslados internos. Con origen/destino y km." },
+                  { bg:C.accPale, icon:Ic.eye(C.acc,16), title:"Carpeta de archivos", desc:"Todos los documentos en un solo lugar. Visor inline con OCR automático que extrae datos." },
+                ].map((c,i) => (
+                  <div key={i} style={{ display:"flex", gap:12, alignItems:"flex-start" }}>
+                    <div style={{ width:36, height:36, borderRadius:10, background:c.bg, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{c.icon}</div>
+                    <div><div style={{ fontSize:14.3, fontWeight:600, color:C.t1, marginBottom:2 }}>{c.title}</div><p style={{ ..._sm, fontSize:13.2 }}>{c.desc}</p></div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+
+      {/* ═══ SECTION 9 · Documents with OCR ═══ */}
+      <div className="tv-ld-section" style={_slide(C.w)}>
+        <div style={_cnt}>
+          <span style={_tag}>Documentación inteligente</span>
+          <h2 style={{ ..._h2, marginBottom:12 }}>Documentos con OCR automático</h2>
+          <p style={{ ..._p, maxWidth:520, margin:"0 auto 36px" }}>
+            Cargá fotos de remitos, facturas o tickets y el sistema extrae los datos automáticamente.
+            Sin tipear. Sin errores de carga manual.
+          </p>
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:48, flexWrap:"wrap" }}>
+            {/* Phone mockup — document viewer with OCR */}
+            <div className="tv-ld-phone" style={_pf}>
+              <div style={_bar}><span style={{ fontSize:12.1, color:C.t3 }}>9:41</span></div>
+              <div style={{ padding:"12px 16px 8px", background:C.w, borderBottom:`1px solid ${C.b2}` }}>
+                <div style={{ fontSize:16.5, fontWeight:800, color:C.t1, marginBottom:2 }}>Documento</div>
+                <div style={{ fontSize:11, color:C.t3 }}>Factura de combustible</div>
+              </div>
+              <div style={_pbody}>
+                {/* Simulated image area */}
+                <div style={{ background:C.bg, borderRadius:10, padding:"24px 16px", marginBottom:12, textAlign:"center", border:`1.5px dashed ${C.b2}` }}>
+                  <div style={{ marginBottom:8 }}>{Ic.doc(C.t3,28)}</div>
+                  <div style={{ fontSize:11, color:C.t3, fontWeight:600 }}>factura_combustible.jpg</div>
+                  <div style={{ fontSize:10, color:C.t3, marginTop:2 }}>420 KB · 1200×900</div>
+                </div>
+                {/* OCR badge */}
+                <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:10 }}>
+                  <div style={{ padding:"3px 8px", borderRadius:6, background:C.accPale, fontSize:10, fontWeight:700, color:C.acc }}>OCR</div>
+                  <span style={{ fontSize:11, color:C.t3 }}>Datos extraídos automáticamente</span>
+                </div>
+                {/* OCR data grid */}
+                <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+                  {[
+                    { label:"Proveedor", value:"ANCAP Estación Ruta 1" },
+                    { label:"Fecha", value:"2026-03-15" },
+                    { label:"Total", value:"$12.450" },
+                    { label:"Litros", value:"185 L" },
+                    { label:"Precio/L", value:"$67,30" },
+                  ].map((r,i) => (
+                    <div key={i} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"6px 10px", background:C.bg, borderRadius:8 }}>
+                      <span style={{ fontSize:10.5, color:C.t3, fontWeight:600 }}>{r.label}</span>
+                      <span style={{ fontSize:11, color:C.t1, fontWeight:700 }}>{r.value}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+            {/* Features */}
+            <div style={{ maxWidth:320, textAlign:"left" }}>
+              <div style={{ fontSize:15.4, fontWeight:700, color:C.t1, marginBottom:20 }}>Carga y extracción automática</div>
+              <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
+                {[
+                  { bg:C.accPale, icon:Ic.eye(C.acc,16), title:"OCR con inteligencia artificial", desc:"Extrae proveedor, fecha, monto, litros y más de cualquier foto de documento. Resultados editables inline." },
+                  { bg:C.priPale, icon:Ic.doc(C.pri,16), title:"8 tipos de documentos", desc:"VTV/ITV, seguro, habilitación de transporte, licencia de conducir, BPS/DGI, certificado GET, permiso de circulación." },
+                  { bg:C.secPale, icon:Ic.clip(C.sec,16), title:"Vinculación automática", desc:"Los documentos se vinculan a gastos, ingresos y movimientos. Todo queda relacionado." },
+                  { bg:C.accPale, icon:Ic.bell(C.acc,16), title:"Alertas de vencimiento", desc:"Semáforo visual: verde vigente, amarillo por vencer (30 días), rojo vencido. Sin sorpresas." },
+                ].map((c,i) => (
+                  <div key={i} style={{ display:"flex", gap:12, alignItems:"flex-start" }}>
+                    <div style={{ width:36, height:36, borderRadius:10, background:c.bg, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{c.icon}</div>
+                    <div><div style={{ fontSize:14.3, fontWeight:600, color:C.t1, marginBottom:2 }}>{c.title}</div><p style={{ ..._sm, fontSize:13.2 }}>{c.desc}</p></div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+
+      {/* ═══ SECTION 10 · Operations Panel ═══ */}
+
       <div className="tv-ld-section" style={_slide(C.bg)}>
         <div style={_cnt}>
           <span style={_tag}>La aplicación</span>
@@ -626,7 +788,7 @@ export default function LandingScreen({ onLogin, onSignup, onPasswordReset, load
               { bg:C.priPale, icon:Ic.cal("#1A6B37",18), title:"Agenda de ingresos digital", desc:"Visualización clara de todos los fletes programados por día, con filtros por estado, origen y tipo de grano." },
               { bg:C.secPale, icon:Ic.truck("#0891B2",18), title:"Asignación directa de flota", desc:"Selección de transportista desde la plataforma con notificación inmediata. Sin intermediarios ni demoras." },
               { bg:C.accPale, icon:Ic.bell("#FF6A00",18), title:"Notificaciones en tiempo real", desc:"Alertas push cuando un camión confirma, inicia viaje, carga o llega a destino. Sin necesidad de llamar." },
-              { bg:C.priPale, icon:Ic.msg("#1A6B37",18), title:"Chat integrado por flete", desc:"Comunicación directa entre todos los actores del flete dentro de la plataforma. Historial completo accesible." },
+              { bg:C.priPale, icon:Ic.truck("#1A6B37",18), title:"Gestión integral de flota", desc:"Control de documentos con alertas de vencimiento, registro de gastos e ingresos por camión, y resumen económico con costo por km y rendimiento." },
             ].map((c,i) => (
               <div key={i} style={{ ..._card, display:"flex", gap:14, alignItems:"flex-start", flex:"1 1 calc(50% - 8px)", minWidth:280 }}>
                 <div style={{ ..._ibs, background:c.bg }}>{c.icon}</div>
@@ -685,8 +847,8 @@ export default function LandingScreen({ onLogin, onSignup, onPasswordReset, load
           </div>
           <div style={{ marginTop:48 }}>
             <p style={{ ..._p, maxWidth:500, margin:"0 auto 20px" }}>
-              Tolvink se adapta a la realidad operativa del agro uruguayo.
-              Sin hardware adicional. Sin capacitación compleja. Funciona desde el celular.
+              Tolvink se adapta a la realidad operativa del agro uruguayo y de empresas de transporte.
+              Gestión de fletes, flota y documentos. Sin hardware adicional. Funciona desde el celular.
             </p>
             <div style={{ display:"inline-flex", alignItems:"flex-start" }}>
               <span style={{ fontSize:35.2, fontWeight:800, color:C.pri, letterSpacing:-1.5, lineHeight:1 }}>tolvink</span>
