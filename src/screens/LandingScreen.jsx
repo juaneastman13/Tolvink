@@ -803,7 +803,95 @@ export default function LandingScreen({ onLogin, onSignup, onPasswordReset, load
       </div>
 
 
-      {/* ═══ SECTION 11 · Security ═══ */}
+      {/* ═══ USER TYPE · Transportistas ═══ */}
+      <div className="tv-ld-section" style={_slide(C.bg)}>
+        <div style={_cnt}>
+          <span style={_tag}>Para transportistas</span>
+          <h2 style={{ ..._h2, marginBottom:12 }}>Tu flota, tus números, tu control</h2>
+          <p style={{ ..._p, maxWidth:520, margin:"0 auto 36px" }}>
+            Gestioná cada camión con datos reales. Sabé cuánto cuesta cada viaje, controlá documentos y respondé solicitudes de flete sin llamadas.
+          </p>
+          <div className="tv-ld-cards" style={{ display:"flex", flexWrap:"wrap", gap:16, maxWidth:740, margin:"0 auto", textAlign:"left" }}>
+            {[
+              { bg:C.secPale, icon:Ic.truck(C.sec,18), title:"Gestión integral de flota", desc:"Gastos, ingresos, documentos y movimientos por camión. Resumen económico con costo/km y rendimiento km/litro." },
+              { bg:C.accPale, icon:Ic.bell(C.acc,18), title:"Solicitudes de flete en tiempo real", desc:"Recibí pedidos de plantas y productores directo en la app o por WhatsApp. Aceptá con un toque y asigná camión." },
+              { bg:C.priPale, icon:Ic.doc(C.pri,18), title:"Documentos siempre al día", desc:"Control de vencimientos con semáforo. OCR automático extrae datos de fotos. Sin papeles perdidos." },
+              { bg:C.secPale, icon:Ic.chk(C.sec,18), title:"Datos de viaje completos", desc:"Km cargado, km vacío, combustible, peaje, odómetro. Todo vinculado al flete y al camión." },
+              { bg:C.accPale, icon:Ic.eye(C.acc,18), title:"Visibilidad económica real", desc:"Sabé exactamente cuánto ganás o perdés por camión y por mes. Tomá decisiones con datos, no intuición." },
+              { bg:C.priPale, icon:Ic.nav(C.pri,18), title:"Sin intermediarios", desc:"La planta solicita, vos confirmás. Sin llamadas, sin cadenas de WhatsApp manuales. Todo queda registrado." },
+            ].map((c,i) => (
+              <div key={i} style={{ ..._card, display:"flex", gap:14, alignItems:"flex-start", flex:"1 1 calc(50% - 8px)", minWidth:280 }}>
+                <div style={{ ..._ibs, background:c.bg }}>{c.icon}</div>
+                <div>
+                  <div style={{ fontSize:15.4, fontWeight:700, color:C.t1, marginBottom:4 }}>{c.title}</div>
+                  <p style={_sm}>{c.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+
+      {/* ═══ USER TYPE · Productores ═══ */}
+      <div className="tv-ld-section" style={_slide(C.w)}>
+        <div style={_cnt}>
+          <span style={_tag}>Para productores</span>
+          <h2 style={{ ..._h2, marginBottom:12 }}>Pedí flete y seguí la carga desde el celular</h2>
+          <p style={{ ..._p, maxWidth:520, margin:"0 auto 36px" }}>
+            Solicitá flete a la planta en segundos. Seguí cada camión en tiempo real. Sin llamar, sin esperar.
+          </p>
+          <div className="tv-ld-cards" style={{ display:"flex", flexWrap:"wrap", gap:16, maxWidth:740, margin:"0 auto", textAlign:"left" }}>
+            {[
+              { bg:C.priPale, icon:SvgProducer(C.pri,18), title:"Solicitud desde campo o lote", desc:"Seleccioná tu campo, el lote, el grano y la cantidad. La planta recibe el pedido al instante." },
+              { bg:C.secPale, icon:Ic.nav(C.sec,18), title:"Seguimiento en tiempo real", desc:"Sabé dónde está el camión y en qué etapa del viaje. Mapa en vivo con estados actualizados." },
+              { bg:C.accPale, icon:SvgMic(C.acc,18), title:"Pedí por WhatsApp o la app", desc:"Mandá un mensaje de voz o texto al agente de IA. Él arma el flete, vos solo confirmás." },
+              { bg:C.priPale, icon:Ic.bell(C.pri,18), title:"Notificaciones de cada etapa", desc:"Te avisamos cuando el camión confirma, sale, carga y llega. Push en la app y mensaje en WhatsApp." },
+            ].map((c,i) => (
+              <div key={i} style={{ ..._card, display:"flex", gap:14, alignItems:"flex-start", flex:"1 1 calc(50% - 8px)", minWidth:280 }}>
+                <div style={{ ..._ibs, background:c.bg }}>{c.icon}</div>
+                <div>
+                  <div style={{ fontSize:15.4, fontWeight:700, color:C.t1, marginBottom:4 }}>{c.title}</div>
+                  <p style={_sm}>{c.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+
+      {/* ═══ USER TYPE · Plantas ═══ */}
+      <div className="tv-ld-section" style={_slide(C.bg)}>
+        <div style={_cnt}>
+          <span style={_tag}>Para plantas</span>
+          <h2 style={{ ..._h2, marginBottom:12 }}>Agenda digital de ingresos y flota propia</h2>
+          <p style={{ ..._p, maxWidth:520, margin:"0 auto 36px" }}>
+            Coordiná fletes con productores y transportistas desde un solo panel. Gestioná tu flota, documentos y operaciones internas.
+          </p>
+          <div className="tv-ld-cards" style={{ display:"flex", flexWrap:"wrap", gap:16, maxWidth:740, margin:"0 auto", textAlign:"left" }}>
+            {[
+              { bg:C.priPale, icon:Ic.cal(C.pri,18), title:"Agenda de ingresos por día", desc:"Visualización de todos los fletes programados con filtros por estado, grano, origen y transportista." },
+              { bg:C.secPale, icon:Ic.truck(C.sec,18), title:"Asignación directa de transporte", desc:"Seleccioná transportista y camión desde la plataforma. Notificación inmediata al chofer." },
+              { bg:C.accPale, icon:Ic.chk(C.acc,18), title:"Fletes internos (uso interno)", desc:"Mové grano entre sucursales o a depósito sin vincular productor externo. Ideal para operaciones propias." },
+              { bg:C.priPale, icon:Ic.pin(C.pri,18), title:"Destinos personalizados", desc:"Cargá cualquier destino con texto libre. Sin depender de que esté registrado en el sistema." },
+              { bg:C.secPale, icon:Ic.truck(C.sec,18), title:"Control de flota propia", desc:"Si tenés camiones, registrá gastos, documentos e ingresos. Resumen económico y alertas de vencimiento." },
+              { bg:C.accPale, icon:Ic.eye(C.acc,18), title:"Mapa en vivo de operaciones", desc:"Visualizá en tiempo real dónde están los camiones y el estado de cada flete activo." },
+            ].map((c,i) => (
+              <div key={i} style={{ ..._card, display:"flex", gap:14, alignItems:"flex-start", flex:"1 1 calc(50% - 8px)", minWidth:280 }}>
+                <div style={{ ..._ibs, background:c.bg }}>{c.icon}</div>
+                <div>
+                  <div style={{ fontSize:15.4, fontWeight:700, color:C.t1, marginBottom:4 }}>{c.title}</div>
+                  <p style={_sm}>{c.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+
+      {/* ═══ SECTION · Security ═══ */}
       <div className="tv-ld-section" style={{ ..._slide(C.bg), padding:"48px 32px" }}>
         <div style={_cnt}>
           <div className="tv-ld-sec11" style={{ display:"flex", gap:40, justifyContent:"center", flexWrap:"wrap", maxWidth:800, margin:"0 auto" }}>
