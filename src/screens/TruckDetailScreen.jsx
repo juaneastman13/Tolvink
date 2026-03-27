@@ -574,6 +574,7 @@ export default function TruckDetailScreen({ truckId, user, onBack, onNavFreight 
   const handleAddInc = crud((b) => apiAddTruckIncome(truckId, b), "inc");
   const handleUpdateInc = crud((b) => apiUpdateTruckIncome(truckId, editItem.id, b), "inc");
   const handleDeleteInc = async (id) => { setSaving(true); try { await apiDeleteTruckIncome(truckId, id); setConfirmDelete(null); setDoneMsg("Eliminado"); apiGetTruckIncomes(truckId).then(d=>setIncomes(d||[])).catch(()=>{}); apiGetEconomicSummary(truckId).then(setEcoSummary).catch(()=>{}); } catch (e) { setError(e.message); } finally { setSaving(false); } };
+  const handleIncStatus = async (id, newStatus) => { try { await apiUpdateTruckIncome(truckId, id, { status: newStatus }); apiGetTruckIncomes(truckId).then(d=>setIncomes(d||[])).catch(()=>{}); apiGetEconomicSummary(truckId).then(setEcoSummary).catch(()=>{}); } catch (e) { setError(e.message); } };
 
   const handleAddMov = crud((b) => apiAddTruckMovement(truckId, b), "mov");
   const handleUpdateMov = crud((b) => apiUpdateTruckMovement(truckId, editItem.id, b), "mov");
@@ -816,6 +817,10 @@ export default function TruckDetailScreen({ truckId, user, onBack, onNavFreight 
                   <span style={{fontSize:14,color:C.t3,transition:"transform 0.2s",transform:isExp?"rotate(180deg)":"rotate(0deg)"}}>▾</span>
                 </div>
                 {isExp && <div style={{padding:"0 12px 12px"}}>
+                  {/* Quick status toggle */}
+                  {canEdit&&<div style={{display:"inline-flex",borderRadius:R.md,overflow:"hidden",border:`1.5px solid ${C.b1}`,marginBottom:8}}>
+                    {Object.entries(INC_STATUS).map(([k,v])=><button key={k} onClick={e=>{e.stopPropagation();if(inc.status!==k)handleIncStatus(inc.id,k);}} style={{padding:"4px 12px",fontSize:11,fontWeight:inc.status===k?700:500,background:inc.status===k?v.bg:"transparent",color:inc.status===k?v.color:C.t3,border:"none",borderRight:`1px solid ${C.b1}`,cursor:inc.status===k?"default":"pointer",fontFamily:FONT,transition:"all 0.15s"}}>{v.label}</button>)}
+                  </div>}
                   <div style={{display:"flex",gap:6,marginBottom:8,flexWrap:"wrap"}}>
                     {canEdit&&<button onClick={()=>setEditItem(inc)} style={{padding:"4px 10px",borderRadius:R.md,border:`1px solid ${C.b1}`,background:C.w,cursor:"pointer",fontSize:11,fontWeight:600,color:C.t2,fontFamily:FONT,display:"flex",alignItems:"center",gap:4}}>{Ic.edit(C.t3,12)} Editar</button>}
                     {canEdit&&<label style={{padding:"4px 10px",borderRadius:R.md,border:`1px solid ${C.pri}40`,background:C.priPale,cursor:"pointer",fontSize:11,fontWeight:600,color:C.pri,fontFamily:FONT,display:"flex",alignItems:"center",gap:4}}>{Ic.clip(C.pri,12)} Adjuntar<input type="file" accept="image/*,.pdf" style={{display:"none"}} onChange={e=>{if(e.target.files?.[0])handleInlineUpload(e.target.files[0],"incomeId",inc.id);e.target.value="";}}/></label>}
