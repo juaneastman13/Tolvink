@@ -186,7 +186,7 @@ function FleetWizard({ title, steps, summaryRows, onSubmit, onCancel, saving, su
   return (
     <div role="dialog" aria-modal="true" aria-label={title} style={{ position:"fixed", inset:0, zIndex:1000, display:"flex", alignItems:"center", justifyContent:"center", padding:12 }}>
       <div onClick={onCancel} style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.4)" }} />
-      <div style={{ position:"relative", background:C.bg, borderRadius:R.xl, width:"100%", maxWidth:500, maxHeight:"calc(100vh - 24px)", display:"flex", flexDirection:"column", animation:"slideUp 0.25s ease", overflow:"hidden" }}>
+      <div style={{ position:"relative", background:C.bg, borderRadius:R.xl, width:"100%", maxWidth:560, maxHeight:"calc(100vh - 24px)", display:"flex", flexDirection:"column", animation:"slideUp 0.25s ease", overflow:"hidden" }}>
         <style>{`@keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}`}</style>
 
         {/* Header */}
@@ -268,7 +268,7 @@ function DocForm({ onSave, onCancel, saving, initial, linkOptions, storagePath, 
   const handleSubmit = async()=>{if(!initial&&!file)return;setUploading(true);try{let fu=initial?.fileUrl,fn=initial?.fileName,mt=initial?.mimeType;if(file){fu=await uploadPhoto(file,storagePath||"truck-docs","doc");fn=file.name;mt=file.type;}const linkData = {};if(linkType==="expense")linkData.expenseId=linkId||null;else if(linkType==="income")linkData.incomeId=linkId||null;else if(linkType==="freight")linkData.freightId=linkId||null;else if(linkType==="movement")linkData.movementId=linkId||null;await onSave({type,name:name||null,fileUrl:fu,fileName:fn,mimeType:mt,expiresAt:expiresAt||null,issuedAt:issuedAt||null,notes:notes||null,...linkData});}finally{setUploading(false);}};
   const linkItems = linkType==="expense"?linkOptions?.expenses:linkType==="income"?linkOptions?.incomes:linkType==="freight"?linkOptions?.freights:linkType==="movement"?linkOptions?.movements:[];
   const linkLabel = linkType!=="none"&&linkId ? (linkItems||[]).find(i=>i.id===linkId)?.label||linkId : null;
-  if (mobile) return <FleetWizard title={initial?"Editar documento":"Nuevo documento"} saving={saving||uploading} onSubmit={handleSubmit} onCancel={onCancel} submitLabel={initial?"Guardar":"Agregar"} summaryRows={[
+  return <FleetWizard title={initial?"Editar documento":"Nuevo documento"} saving={saving||uploading} onSubmit={handleSubmit} onCancel={onCancel} submitLabel={initial?"Guardar":"Agregar"} summaryRows={[
     {label:"Tipo",value:DOC_TYPE_ACTIVE[type]||(type==="OTHER"?name||"Otro":DOC_TYPE_LABELS[type]||type),icon:Ic.doc(C.pri,14),step:0},
     ...(file?[{label:"Archivo",value:file.name,step:1}]:[]),
     ...(issuedAt?[{label:"Emisión",value:issuedAt,icon:Ic.cal(C.sec,14),step:2}]:[]),
@@ -280,19 +280,6 @@ function DocForm({ onSave, onCancel, saving, initial, linkOptions, storagePath, 
     {title:"Archivo",complete:!!initial||!!file,content:<div>{!initial&&<div><label style={lbl("s")}>Archivo</label><input type="file" accept="image/*,.pdf" onChange={e=>setFile(e.target.files?.[0]||null)} style={{fontSize:14,fontFamily:FONT,minHeight:48}}/></div>}{initial&&<div style={{fontSize:13,color:C.t2}}>Archivo actual: {initial.fileName||"adjunto"}</div>}</div>},
     {title:"Detalles",complete:true,content:<div><div style={{display:"flex",gap:10,marginBottom:10}}><div style={{flex:1}}><label style={lbl("s")}>Emisión</label><input type="date" value={issuedAt} onChange={e=>setIssuedAt(e.target.value)} style={{...sel,minHeight:48}}/></div><div style={{flex:1}}><label style={lbl("s")}>Vencimiento</label><input type="date" value={expiresAt} onChange={e=>setExpiresAt(e.target.value)} style={{...sel,minHeight:48}}/></div></div>{linkOptions&&<div style={{marginBottom:10}}><label style={lbl("s")}>Vincular a</label><select value={linkType} onChange={e=>{setLinkType(e.target.value);setLinkId("");}} style={{...sel,minHeight:48,marginBottom:4}}><option value="none">Documento general</option><option value="expense">Gasto</option><option value="income">Ingreso</option><option value="freight">Flete</option><option value="movement">Movimiento</option></select>{linkType!=="none"&&linkItems?.length>0&&<select value={linkId} onChange={e=>setLinkId(e.target.value)} style={{...sel,minHeight:48}}><option value="">Seleccionar...</option>{linkItems.map(i=><option key={i.id} value={i.id}>{i.label}</option>)}</select>}</div>}<Field label="Notas (opcional)" value={notes} onChange={setNotes} placeholder="Observaciones"/></div>},
   ]}/>;
-  return (<div style={{padding:16,background:C.bgCard,border:`1px solid ${C.b2}`,borderRadius:R.lg,marginBottom:12}}>
-    <div style={{marginBottom:10}}><label style={lbl("s")}>Tipo de documento</label><select value={type} onChange={e=>setType(e.target.value)} style={sel}>{Object.entries(DOC_TYPE_ACTIVE).map(([k,v])=><option key={k} value={k}>{v}</option>)}</select></div>
-    {type==="OTHER"&&<Field label="Nombre" value={name} onChange={setName} placeholder="Nombre del documento"/>}
-    {!initial&&<div style={{marginBottom:10}}><label style={lbl("s")}>Archivo</label><input type="file" accept="image/*,.pdf" onChange={e=>setFile(e.target.files?.[0]||null)} style={{fontSize:13,fontFamily:FONT}}/></div>}
-    <div style={{display:"flex",gap:10,marginBottom:10}}><div style={{flex:1}}><label style={lbl("s")}>Emisión</label><input type="date" value={issuedAt} onChange={e=>setIssuedAt(e.target.value)} style={{...sel}}/></div><div style={{flex:1}}><label style={lbl("s")}>Vencimiento</label><input type="date" value={expiresAt} onChange={e=>setExpiresAt(e.target.value)} style={{...sel}}/></div></div>
-    {linkOptions && <div style={{marginBottom:10}}>
-      <label style={lbl("s")}>Vincular a</label>
-      <select value={linkType} onChange={e=>{setLinkType(e.target.value);setLinkId("");}} style={{...sel,marginBottom:4}}><option value="none">Documento general</option><option value="expense">Gasto</option><option value="income">Ingreso</option><option value="freight">Flete</option><option value="movement">Movimiento</option></select>
-      {linkType!=="none"&&linkItems?.length>0&&<select value={linkId} onChange={e=>setLinkId(e.target.value)} style={sel}><option value="">Seleccionar...</option>{linkItems.map(i=><option key={i.id} value={i.id}>{i.label}</option>)}</select>}
-    </div>}
-    <Field label="Notas (opcional)" value={notes} onChange={setNotes} placeholder="Observaciones"/>
-    <div style={{display:"flex",gap:8,marginTop:12}}><Btn full disabled={saving||uploading||(!initial&&!file)} onClick={handleSubmit}>{uploading?"Subiendo...":initial?"Guardar":"Agregar documento"}</Btn><Btn v="muted" onClick={onCancel}>Cancelar</Btn></div>
-  </div>);
 }
 
 function ExpForm({ onSave, onCancel, saving, initial, activeFreights, mobile, storagePath }) {
@@ -307,7 +294,7 @@ function ExpForm({ onSave, onCancel, saving, initial, activeFreights, mobile, st
   const handleSubmit = async()=>{if(!amount||!date)return;setUploading(true);try{let ru=initial?.receiptUrl,rn=initial?.receiptName;if(receiptFile){ru=await uploadPhoto(receiptFile,storagePath||"truck-receipts","receipt");rn=receiptFile.name;}await onSave({type,amount:parseFloat(amount),currency,date,description:description||null,freightId:freightId||null,receiptUrl:ru,receiptName:rn});}finally{setUploading(false);}};
   const fmtCur = currency==="USD"?"US$":"$";
   const freightLabel = freightId ? (activeFreights||[]).find(f=>f.id===freightId)?.code||freightId : null;
-  if (mobile) return <FleetWizard title={initial?"Editar gasto":"Nuevo gasto"} saving={saving||uploading} onSubmit={handleSubmit} onCancel={onCancel} submitLabel={initial?"Guardar":"Registrar"} summaryRows={[
+  return <FleetWizard title={initial?"Editar gasto":"Nuevo gasto"} saving={saving||uploading} onSubmit={handleSubmit} onCancel={onCancel} submitLabel={initial?"Guardar":"Registrar"} summaryRows={[
     {label:"Tipo",value:EXP_TYPE_LABELS[type]||type,icon:Ic.doc(C.pri,14),step:0},
     {label:"Monto",value:`${fmtCur}${amount||"0"} ${currency}`,icon:Ic.grain(C.acc,14),step:1},
     {label:"Fecha",value:date||"—",icon:Ic.cal(C.sec,14),step:2},
@@ -320,15 +307,6 @@ function ExpForm({ onSave, onCancel, saving, initial, activeFreights, mobile, st
     {title:"Detalles",complete:!!date,content:<div><div style={{marginBottom:10}}><label style={lbl("s")}>Fecha</label><input type="date" value={date} onChange={e=>setDate(e.target.value)} style={{...sel,minHeight:48}}/></div><Field label="Descripción (opcional)" value={description} onChange={setDescription} placeholder="Detalle"/>{activeFreights?.length>0&&<div style={{marginTop:10}}><label style={lbl("s")}>Flete asociado</label><select value={freightId} onChange={e=>setFreightId(e.target.value)} style={{...sel,minHeight:48}}><option value="">Sin flete</option>{activeFreights.map(f=><option key={f.id} value={f.id}>{f.code}</option>)}</select></div>}</div>},
     {title:"Comprobante",complete:true,content:<div><label style={lbl("s")}>Comprobante (opcional)</label><input type="file" accept="image/*,.pdf" onChange={e=>setReceiptFile(e.target.files?.[0]||null)} style={{fontSize:14,fontFamily:FONT,minHeight:48}}/></div>},
   ]}/>;
-  return (<div style={{padding:16,background:C.bgCard,border:`1px solid ${C.b2}`,borderRadius:R.lg,marginBottom:12}}>
-    <div style={{marginBottom:10}}><label style={lbl("s")}>Tipo de gasto</label><select value={type} onChange={e=>setType(e.target.value)} style={sel}>{Object.entries(EXP_TYPE_LABELS).map(([k,v])=><option key={k} value={k}>{v}</option>)}</select></div>
-    <div style={{display:"flex",gap:10,marginBottom:10,flexWrap:"wrap"}}><div style={{flex:"2 1 140px"}}><Field label="Monto" value={amount} onChange={setAmount} placeholder="0" type="number" inputMode="decimal"/></div><div style={{flex:"1 1 80px"}}><label style={lbl("s")}>Moneda</label><select value={currency} onChange={e=>setCurrency(e.target.value)} style={sel}><option value="UYU">UYU</option><option value="USD">USD</option><option value="ARS">ARS</option></select></div></div>
-    <div style={{marginBottom:10}}><label style={lbl("s")}>Fecha</label><input type="date" value={date} onChange={e=>setDate(e.target.value)} style={{...sel}}/></div>
-    <Field label="Descripción (opcional)" value={description} onChange={setDescription} placeholder="Detalle del gasto"/>
-    {activeFreights?.length>0&&<div style={{marginTop:10}}><label style={lbl("s")}>Flete asociado</label><select value={freightId} onChange={e=>setFreightId(e.target.value)} style={sel}><option value="">Sin flete</option>{activeFreights.map(f=><option key={f.id} value={f.id}>{f.code}</option>)}</select></div>}
-    <div style={{marginTop:10}}><label style={lbl("s")}>Comprobante</label><input type="file" accept="image/*,.pdf" onChange={e=>setReceiptFile(e.target.files?.[0]||null)} style={{fontSize:13,fontFamily:FONT}}/></div>
-    <div style={{display:"flex",gap:8,marginTop:12}}><Btn full disabled={saving||uploading||!amount||!date} onClick={handleSubmit}>{uploading?"Guardando...":initial?"Guardar":"Registrar gasto"}</Btn><Btn v="muted" onClick={onCancel}>Cancelar</Btn></div>
-  </div>);
 }
 
 function IncForm({ onSave, onCancel, saving, initial, freights, mobile, storagePath }) {
@@ -345,7 +323,7 @@ function IncForm({ onSave, onCancel, saving, initial, freights, mobile, storageP
   const handleSubmit = async()=>{if(!concept||!amount||!date)return;setUploading(true);try{let iu=initial?.invoiceUrl;if(invoiceFile){iu=await uploadPhoto(invoiceFile,storagePath||"truck-incomes","invoice");}await onSave({concept,amount:parseFloat(amount),currency,date,status,freightId:freightId||null,invoiceNumber:invoiceNumber||null,invoiceUrl:iu,notes:notes||null});}finally{setUploading(false);}};
   const fmtCur = currency==="USD"?"US$":"$";
   const freightLabel = freightId ? (freights||[]).find(f=>(f.freightId||f.id)===freightId)?.code||freightId : null;
-  if (mobile) return <FleetWizard title={initial?"Editar ingreso":"Nuevo ingreso"} saving={saving||uploading} onSubmit={handleSubmit} onCancel={onCancel} submitLabel={initial?"Guardar":"Registrar"} summaryRows={[
+  return <FleetWizard title={initial?"Editar ingreso":"Nuevo ingreso"} saving={saving||uploading} onSubmit={handleSubmit} onCancel={onCancel} submitLabel={initial?"Guardar":"Registrar"} summaryRows={[
     {label:"Concepto",value:concept||"—",icon:Ic.doc(C.pri,14),step:0},
     {label:"Monto",value:`${fmtCur}${amount||"0"} ${currency}`,icon:Ic.grain(C.acc,14),step:1},
     {label:"Estado",value:INC_STATUS[status]?.label||status,step:1},
@@ -360,16 +338,6 @@ function IncForm({ onSave, onCancel, saving, initial, freights, mobile, storageP
     {title:"Detalles",complete:!!date,content:<div><div style={{marginBottom:10}}><label style={lbl("s")}>Fecha</label><input type="date" value={date} onChange={e=>setDate(e.target.value)} style={{...sel,minHeight:48}}/></div><Field label="N° Factura (opcional)" value={invoiceNumber} onChange={setInvoiceNumber} placeholder="A-0001-00012345"/><Field label="Notas (opcional)" value={notes} onChange={setNotes} placeholder="Observaciones"/></div>},
     {title:"Factura",complete:true,content:<div><label style={lbl("s")}>Adjuntar factura (opcional)</label><input type="file" accept="image/*,.pdf" onChange={e=>setInvoiceFile(e.target.files?.[0]||null)} style={{fontSize:14,fontFamily:FONT,minHeight:48}}/></div>},
   ]}/>;
-  return (<div style={{padding:16,background:C.bgCard,border:`1px solid ${C.b2}`,borderRadius:R.lg,marginBottom:12}}>
-    <Field label="Concepto" value={concept} onChange={setConcept} placeholder="Ej: Flete Colonia → Montevideo"/>
-    <div style={{display:"flex",gap:10,marginTop:10,marginBottom:10,flexWrap:"wrap"}}><div style={{flex:"2 1 140px"}}><Field label="Monto" value={amount} onChange={setAmount} placeholder="0" type="number" inputMode="decimal"/></div><div style={{flex:"1 1 80px"}}><label style={lbl("s")}>Moneda</label><select value={currency} onChange={e=>setCurrency(e.target.value)} style={sel}><option value="UYU">UYU</option><option value="USD">USD</option><option value="ARS">ARS</option></select></div></div>
-    <div style={{display:"flex",gap:10,marginBottom:10,flexWrap:"wrap"}}><div style={{flex:"1 1 140px"}}><label style={lbl("s")}>Fecha</label><input type="date" value={date} onChange={e=>setDate(e.target.value)} style={{...sel}}/></div><div style={{flex:"1 1 140px"}}><label style={lbl("s")}>Estado</label><select value={status} onChange={e=>setStatus(e.target.value)} style={sel}>{Object.entries(INC_STATUS).map(([k,v])=><option key={k} value={k}>{v.label}</option>)}</select></div></div>
-    {freights?.length>0&&<div style={{marginBottom:10}}><label style={lbl("s")}>Flete asociado</label><select value={freightId} onChange={e=>{setFreightId(e.target.value);if(e.target.value&&!concept){const f=freights.find(x=>(x.freightId||x.id)===e.target.value);if(f)setConcept(`Flete ${f.origin||"?"} → ${f.dest||"?"}`);}}} style={sel}><option value="">Sin flete</option>{freights.map(f=><option key={f.freightId||f.id} value={f.freightId||f.id}>{f.code} — {f.origin||"?"} → {f.dest||"?"}</option>)}</select></div>}
-    <Field label="N° Factura (opcional)" value={invoiceNumber} onChange={setInvoiceNumber} placeholder="Ej: A-0001-00012345"/>
-    <div style={{marginTop:10}}><label style={lbl("s")}>Factura (opcional)</label><input type="file" accept="image/*,.pdf" onChange={e=>setInvoiceFile(e.target.files?.[0]||null)} style={{fontSize:13,fontFamily:FONT}}/></div>
-    <Field label="Notas (opcional)" value={notes} onChange={setNotes} placeholder="Observaciones"/>
-    <div style={{display:"flex",gap:8,marginTop:12}}><Btn full disabled={saving||uploading||!concept||!amount||!date} onClick={handleSubmit}>{uploading?"Guardando...":initial?"Guardar":"Registrar ingreso"}</Btn><Btn v="muted" onClick={onCancel}>Cancelar</Btn></div>
-  </div>);
 }
 
 function MovForm({ onSave, onCancel, saving, initial, locations, mobile }) {
@@ -404,7 +372,7 @@ function MovForm({ onSave, onCancel, saving, initial, locations, mobile }) {
     setMapFor(null);
   };
   const handleSubmit = ()=>onSave({type,description:description||null,originName:originName||null,originFieldId:originFieldId||null,originLat,originLng,destName:destName||null,destFieldId:destFieldId||null,destLat,destLng,departureAt:departureAt||null,arrivalAt:arrivalAt||null,kmDriven:kmDriven?parseFloat(kmDriven):null,fuelLiters:fuelLiters?parseFloat(fuelLiters):null,fuelCost:fuelCost?parseFloat(fuelCost):null,tollCost:tollCost?parseFloat(tollCost):null,notes:notes||null});
-  if (mobile) return <FleetWizard title={initial?"Editar movimiento":"Nuevo movimiento"} saving={saving} onSubmit={handleSubmit} onCancel={onCancel} submitLabel={initial?"Guardar":"Registrar"} summaryRows={[
+  return <FleetWizard title={initial?"Editar movimiento":"Nuevo movimiento"} saving={saving} onSubmit={handleSubmit} onCancel={onCancel} submitLabel={initial?"Guardar":"Registrar"} summaryRows={[
     {label:"Tipo",value:MOV_TYPE_LABELS[type]||type,icon:Ic.truck(C.pri,14),step:0},
     ...(description?[{label:"Descripción",value:description,step:0}]:[]),
     ...(originName?[{label:"Origen",value:originName,icon:Ic.pin(C.ok,14),step:1}]:[]),
@@ -419,30 +387,6 @@ function MovForm({ onSave, onCancel, saving, initial, locations, mobile }) {
     {title:"Destino",complete:true,content:<div>{locations?.length>0&&<div style={{marginBottom:8}}><label style={lbl("s")}>Ubicación guardada</label><select value={destFieldId} onChange={e=>{pickLoc(e.target.value,setDestFieldId,setDestName);}} style={{...sel,minHeight:48}}><option value="">Escribir manualmente</option>{locations.map(l=><option key={l.id} value={l.id}>{l.name}</option>)}</select></div>}<Field label="Destino" value={destName} onChange={v=>{setDestName(v);if(v)setDestFieldId("");}} placeholder="Ciudad/lugar"/></div>},
     {title:"Datos",complete:true,content:<div><Field label="Km recorridos" value={kmDriven} onChange={setKmDriven} type="number" placeholder="0" inputMode="decimal"/><div style={{display:"flex",gap:10,marginTop:10}}><div style={{flex:1}}><Field label="Litros" value={fuelLiters} onChange={setFuelLiters} type="number" inputMode="decimal"/></div><div style={{flex:1}}><Field label="Peajes" value={tollCost} onChange={setTollCost} type="number" inputMode="decimal"/></div></div><div style={{display:"flex",gap:10,marginTop:10}}><div style={{flex:1}}><label style={lbl("s")}>Salida</label><input type="datetime-local" value={departureAt} onChange={e=>setDepartureAt(e.target.value)} style={{...sel,minHeight:44}}/></div><div style={{flex:1}}><label style={lbl("s")}>Llegada</label><input type="datetime-local" value={arrivalAt} onChange={e=>setArrivalAt(e.target.value)} style={{...sel,minHeight:44}}/></div></div></div>},
   ]}/>;
-  return (<div style={{padding:16,background:C.bgCard,border:`1px solid ${C.b2}`,borderRadius:R.lg,marginBottom:12}}>
-    <div style={{marginBottom:10}}><label style={lbl("s")}>Tipo</label><select value={type} onChange={e=>setType(e.target.value)} style={sel}>{Object.entries(MOV_TYPE_LABELS).map(([k,v])=><option key={k} value={k}>{v}</option>)}</select></div>
-    <Field label="Descripción (opcional)" value={description} onChange={setDescription} placeholder="Detalle"/>
-    <div style={{display:"flex",gap:10,marginTop:10,marginBottom:10,flexWrap:"wrap"}}>
-      <div style={{flex:"1 1 200px",minWidth:0}}>
-        {locations?.length>0 && <div style={{marginBottom:4}}><label style={lbl("s")}>Origen (ubicación)</label><select value={originFieldId} onChange={e=>{pickLoc(e.target.value,setOriginFieldId,setOriginName);}} style={{...sel,marginBottom:4}}><option value="">Escribir manualmente</option>{locations.map(l=><option key={l.id} value={l.id}>{l.name}</option>)}</select></div>}
-        <Field label={locations?.length?"O escribir" :"Origen"} value={originName} onChange={v=>{setOriginName(v);if(v)setOriginFieldId("");}} placeholder="Ciudad/lugar"/>
-        <button onClick={()=>setMapFor("origin")} style={{marginTop:4,background:"none",border:`1px solid ${C.b1}`,borderRadius:R.md,padding:"6px 10px",cursor:"pointer",fontSize:11,fontWeight:600,color:C.pri,fontFamily:FONT,display:"flex",alignItems:"center",gap:4,minHeight:36}}>{Ic.pin(C.pri,12)} Mapa</button>
-        {originLat && <span style={{fontSize:10,color:C.t3}}>{Number(originLat).toFixed(4)}, {Number(originLng).toFixed(4)}</span>}
-      </div>
-      <div style={{flex:"1 1 200px",minWidth:0}}>
-        {locations?.length>0 && <div style={{marginBottom:4}}><label style={lbl("s")}>Destino (ubicación)</label><select value={destFieldId} onChange={e=>{pickLoc(e.target.value,setDestFieldId,setDestName);}} style={{...sel,marginBottom:4}}><option value="">Escribir manualmente</option>{locations.map(l=><option key={l.id} value={l.id}>{l.name}</option>)}</select></div>}
-        <Field label={locations?.length?"O escribir":"Destino"} value={destName} onChange={v=>{setDestName(v);if(v)setDestFieldId("");}} placeholder="Ciudad/lugar"/>
-        <button onClick={()=>setMapFor("dest")} style={{marginTop:4,background:"none",border:`1px solid ${C.b1}`,borderRadius:R.md,padding:"6px 10px",cursor:"pointer",fontSize:11,fontWeight:600,color:C.pri,fontFamily:FONT,display:"flex",alignItems:"center",gap:4,minHeight:36}}>{Ic.pin(C.pri,12)} Mapa</button>
-        {destLat && <span style={{fontSize:10,color:C.t3}}>{Number(destLat).toFixed(4)}, {Number(destLng).toFixed(4)}</span>}
-      </div>
-    </div>
-    {mapFor && <div style={{borderRadius:R.lg,overflow:"hidden",border:`1.5px solid ${C.pri}`,height:280,marginBottom:10}}><Suspense fallback={<div style={{height:"100%",display:"flex",alignItems:"center",justifyContent:"center",background:C.bgCard,color:C.t3,fontSize:13}}>Cargando mapa...</div>}><LocPickerFullscreen value={null} onChange={()=>{}} label={mapFor==="origin"?"Seleccionar origen":"Seleccionar destino"} onClose={()=>setMapFor(null)} confirmLabel="Confirmar" onConfirm={handleMapPick}/></Suspense></div>}
-    <div style={{display:"flex",gap:10,marginBottom:10,flexWrap:"wrap"}}><div style={{flex:"1 1 140px"}}><label style={lbl("s")}>Salida</label><input type="datetime-local" value={departureAt} onChange={e=>setDepartureAt(e.target.value)} style={{...sel,minHeight:44}}/></div><div style={{flex:"1 1 140px"}}><label style={lbl("s")}>Llegada</label><input type="datetime-local" value={arrivalAt} onChange={e=>setArrivalAt(e.target.value)} style={{...sel,minHeight:44}}/></div></div>
-    <div style={{display:"flex",gap:10,marginBottom:10,flexWrap:"wrap"}}><div style={{flex:"1 1 120px"}}><Field label="Km" value={kmDriven} onChange={setKmDriven} type="number" placeholder="0" inputMode="decimal"/></div><div style={{flex:"1 1 120px"}}><Field label="Litros" value={fuelLiters} onChange={setFuelLiters} type="number" placeholder="0" inputMode="decimal"/></div></div>
-    <div style={{display:"flex",gap:10,marginBottom:10,flexWrap:"wrap"}}><div style={{flex:"1 1 120px"}}><Field label="Costo combustible" value={fuelCost} onChange={setFuelCost} type="number" placeholder="0" inputMode="decimal"/></div><div style={{flex:"1 1 120px"}}><Field label="Peajes" value={tollCost} onChange={setTollCost} type="number" placeholder="0" inputMode="decimal"/></div></div>
-    <Field label="Notas (opcional)" value={notes} onChange={setNotes} placeholder="Observaciones"/>
-    <div style={{display:"flex",gap:8,marginTop:12}}><Btn full disabled={saving||!type} onClick={handleSubmit}>{initial?"Guardar":"Registrar movimiento"}</Btn><Btn v="muted" onClick={onCancel}>Cancelar</Btn></div>
-  </div>);
 }
 
 // ======================== TRIP DATA FORM ================================
