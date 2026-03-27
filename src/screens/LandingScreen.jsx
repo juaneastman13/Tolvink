@@ -738,7 +738,8 @@ export default function LandingScreen({ onLogin, onSignup, onPasswordReset, load
 
       {/* ═══ SECTION 2 · WhatsApp + AI Agent ═══ */}
       <div id="tv-details" className="tv-ld-section" style={_slide(C.w)}>
-        <div style={_cnt}>
+        <RoutesBackground opacityMul={0.3} />
+        <div style={{..._cnt,position:"relative",zIndex:1}}>
           <span style={_tag}>Operación por WhatsApp</span>
           <h2 style={{ ..._h2, marginBottom:12 }}>Un agente inteligente como interfaz principal</h2>
           <p style={{ ..._p, maxWidth:520, margin:"0 auto 40px" }}>
@@ -826,7 +827,8 @@ export default function LandingScreen({ onLogin, onSignup, onPasswordReset, load
 
       {/* ═══ SECTION 3 · Three Actors ═══ */}
       <div className="tv-ld-section" style={_slide(C.bg)}>
-        <div style={_cnt}>
+        <RoutesBackground opacityMul={0.25} />
+        <div style={{..._cnt,position:"relative",zIndex:1}}>
           <span style={_tag}>Tres actores, una plataforma</span>
           <h2 style={{ ..._h2, marginBottom:16 }}>Cada rol opera como necesita</h2>
           <div style={{ ..._hr, marginBottom:28 }} />
@@ -852,7 +854,8 @@ export default function LandingScreen({ onLogin, onSignup, onPasswordReset, load
 
       {/* ═══ SECTION 4 · The Problem ═══ */}
       <div className="tv-ld-section" style={_slide(C.w)}>
-        <div style={_cnt}>
+        <RoutesBackground opacityMul={0.3} />
+        <div style={{..._cnt,position:"relative",zIndex:1}}>
           <span style={_tag}>La solución al problema actual</span>
           <h2 style={{ ..._h2, marginBottom:16 }}>Eliminá la improvisación</h2>
           <div style={{ ..._hr, marginBottom:28 }} />
@@ -881,7 +884,8 @@ export default function LandingScreen({ onLogin, onSignup, onPasswordReset, load
 
       {/* ═══ SECTION 5 · How It Works ═══ */}
       <div className="tv-ld-section" style={_slide(C.bg)}>
-        <div style={_cnt}>
+        <RoutesBackground opacityMul={0.25} />
+        <div style={{..._cnt,position:"relative",zIndex:1}}>
           <span style={_tag}>Cómo funciona</span>
           <h2 style={{ ..._h2, marginBottom:16 }}>Del campo a la planta, en un flujo continuo</h2>
           <div style={{ ..._hr, marginBottom:44 }} />
@@ -908,7 +912,8 @@ export default function LandingScreen({ onLogin, onSignup, onPasswordReset, load
 
       {/* ═══ SECTION 6 · Trip Request ═══ */}
       <div className="tv-ld-section" style={_slide(C.w)}>
-        <div style={_cnt}>
+        <RoutesBackground opacityMul={0.3} />
+        <div style={{..._cnt,position:"relative",zIndex:1}}>
           <span style={_tag}>La aplicación</span>
           <h2 style={{ ..._h2, marginBottom:12 }}>Solicitud de viaje</h2>
           <p style={{ ..._p, maxWidth:480, margin:"0 auto 36px" }}>
@@ -982,7 +987,8 @@ export default function LandingScreen({ onLogin, onSignup, onPasswordReset, load
 
       {/* ═══ SECTION 7 · Freight Detail ═══ */}
       <div className="tv-ld-section" style={_slide(C.bg)}>
-        <div style={_cnt}>
+        <RoutesBackground opacityMul={0.25} />
+        <div style={{..._cnt,position:"relative",zIndex:1}}>
           <span style={_tag}>La aplicación</span>
           <h2 style={{ ..._h2, marginBottom:12 }}>Detalle y gestión del flete</h2>
           <p style={{ ..._p, maxWidth:480, margin:"0 auto 36px" }}>
@@ -1063,7 +1069,8 @@ export default function LandingScreen({ onLogin, onSignup, onPasswordReset, load
 
       {/* ═══ SECTION 8 · Live Tracking ═══ */}
       <div className="tv-ld-section" style={_slide(C.w)}>
-        <div style={_cnt}>
+        <RoutesBackground opacityMul={0.3} />
+        <div style={{..._cnt,position:"relative",zIndex:1}}>
           <span style={_tag}>Seguimiento en tiempo real</span>
           <h2 style={{ ..._h2, marginBottom:12 }}>Sabé dónde está cada camión en todo momento</h2>
           <p style={{ ..._p, maxWidth:480, margin:"0 auto 36px" }}>
@@ -1133,7 +1140,8 @@ export default function LandingScreen({ onLogin, onSignup, onPasswordReset, load
 
       {/* ═══ SECTION 9 · Operations Panel ═══ */}
       <div className="tv-ld-section" style={_slide(C.bg)}>
-        <div style={_cnt}>
+        <RoutesBackground opacityMul={0.25} />
+        <div style={{..._cnt,position:"relative",zIndex:1}}>
           <span style={_tag}>La aplicación</span>
           <h2 style={{ ..._h2, marginBottom:12 }}>Panel de operaciones</h2>
           <p style={{ ..._p, maxWidth:480, margin:"0 auto 36px" }}>
@@ -1231,7 +1239,8 @@ export default function LandingScreen({ onLogin, onSignup, onPasswordReset, load
 
       {/* ═══ SECTION 10 · Plant Benefits ═══ */}
       <div className="tv-ld-section" style={_slide(C.w)}>
-        <div style={_cnt}>
+        <RoutesBackground opacityMul={0.3} />
+        <div style={{..._cnt,position:"relative",zIndex:1}}>
           <span style={_tag}>Beneficios para la planta</span>
           <h2 style={{ ..._h2, marginBottom:16 }}>Control total de la operativa de ingreso</h2>
           <div style={{ ..._hr, marginBottom:44 }} />
@@ -1257,7 +1266,8 @@ export default function LandingScreen({ onLogin, onSignup, onPasswordReset, load
 
       {/* ═══ SECTION 11 · Security ═══ */}
       <div className="tv-ld-section" style={{ ..._slide(C.bg), padding:"48px 32px" }}>
-        <div style={_cnt}>
+        <RoutesBackground opacityMul={0.25} />
+        <div style={{..._cnt,position:"relative",zIndex:1}}>
           <div className="tv-ld-sec11" style={{ display:"flex", gap:40, justifyContent:"center", flexWrap:"wrap", maxWidth:800, margin:"0 auto" }}>
             {[
               { bg:C.priPale, icon:Ic.shield(C.pri,18), title:"Autenticación segura", sub:"Sesiones protegidas con cookies HttpOnly" },
@@ -1279,7 +1289,8 @@ export default function LandingScreen({ onLogin, onSignup, onPasswordReset, load
 
       {/* ═══ SECTION 12 · Benefits + Closing ═══ */}
       <div className="tv-ld-section" style={_slide(C.w)}>
-        <div style={_cnt}>
+        <RoutesBackground opacityMul={0.3} />
+        <div style={{..._cnt,position:"relative",zIndex:1}}>
           <span style={_tag}>Beneficios operativos y económicos</span>
           <h2 style={{ ..._h2, marginBottom:16 }}>Menos fricción, más eficiencia</h2>
           <div style={{ ..._hr, marginBottom:44 }} />
