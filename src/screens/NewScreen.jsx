@@ -220,10 +220,11 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
       .catch(() => {});
   }, [isPlantUser, user?.activeCompanyId]);
 
-  // Load fields for selected producer
+  // Load fields for selected producer (or plant's own fields for internal use)
   useEffect(() => {
     if (!isPlantUser || !producerCompanyId) { setProducerFields(null); return; }
-    apiGetFields(producerCompanyId).then(f => setProducerFields(f || [])).catch(() => setProducerFields([]));
+    const companyToLoad = producerCompanyId === "__internal__" ? (user?.activeCompanyId || user?.companyId) : producerCompanyId;
+    apiGetFields(companyToLoad).then(f => setProducerFields(f || [])).catch(() => setProducerFields([]));
   }, [isPlantUser, producerCompanyId]);
 
   // Pre-select plant as destination for plant users
@@ -302,7 +303,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
 
   // Resolve access level when producer changes
   useEffect(() => {
-    if (!isPlantUser || !producerCompanyId) { setSelectedProducerAccess(null); return; }
+    if (!isPlantUser || !producerCompanyId || producerCompanyId === "__internal__") { setSelectedProducerAccess(null); return; }
     const rec = linkedProducers.find(r => (r.granteeCompanyId || r.granteeCompany?.id) === producerCompanyId);
     setSelectedProducerAccess(rec || null);
   }, [isPlantUser, producerCompanyId, linkedProducers]);
@@ -343,12 +344,15 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
   const assignDriverOpts = assignDriversList.map(d => ({ value: d.id, label: `${d.name}${d.phone ? ` · ${d.phone}` : ""}` }));
 
   // Options for producer/transporter Select dropdowns
-  const producerOpts = linkedProducers.map(r => {
-    const co = r.granteeCompany || {};
-    const cId = r.granteeCompanyId || co.id;
-    const tags = [r.accessLevel === "READONLY" ? "Consulta" : "Uso", co.hasInternalFleet ? "Flota propia" : ""].filter(Boolean).join(" · ");
-    return { value: cId, label: co.name || "Empresa", sub: tags };
-  });
+  const producerOpts = [
+    { value: "__internal__", label: "Uso interno", sub: "Flete propio de la planta", bold: true },
+    ...linkedProducers.map(r => {
+      const co = r.granteeCompany || {};
+      const cId = r.granteeCompanyId || co.id;
+      const tags = [r.accessLevel === "READONLY" ? "Consulta" : "Uso", co.hasInternalFleet ? "Flota propia" : ""].filter(Boolean).join(" · ");
+      return { value: cId, label: co.name || "Empresa", sub: tags };
+    }),
+  ];
   const transporterOpts = [
     ...(user?.hasInternalFleet ? [{ value: "ownfleet", label: "Flota propia", bold: true }] : []),
     ...linkedTransporters.map(r => {
@@ -369,7 +373,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
   const [newFieldName, setNewFieldName] = useState("");
   const [newFieldLoc, setNewFieldLoc] = useState(null);
   const [newFieldSaving, setNewFieldSaving] = useState(false);
-  const selectedProducerName = linkedProducers.find(r => (r.granteeCompanyId || r.granteeCompany?.id) === producerCompanyId)?.granteeCompany?.name || "";
+  const selectedProducerName = producerCompanyId === "__internal__" ? "Uso interno" : (linkedProducers.find(r => (r.granteeCompanyId || r.granteeCompany?.id) === producerCompanyId)?.granteeCompany?.name || "");
 
   const handleCreateFieldInline = async () => {
     if (!newFieldName.trim() || !producerCompanyId || newFieldSaving) return;
@@ -455,11 +459,11 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
 
   // Section completeness
   const secComplete = useMemo(()=>({
-    ...(isPlantUser ? { producer: !!producerCompanyId } : {}),
+    ...(isPlantUser ? { producer: !!producerCompanyId } : {}), // __internal__ counts as selected
     product: !!form.grain && (form.grain!=="Otros" || !!form.productTypeOther.trim()),
     quantity: !form.tons || parseFloat(form.tons) > 0,
     origin: originMode==="field" ? (!!form.fieldId && (!hasLots || !!form.lotId)) : (!!customOrigin.lat),
-    destination: destMode==="plant" ? (!!form.plantId && (!_hasBranches || !!form.branchId)) : (!!customDest.lat && (confirmMode==="none" || !!confirmPlantId)),
+    destination: destMode==="plant" ? (!!form.plantId && (!_hasBranches || !!form.branchId)) : ((!!customDest.lat || !!customDest.name?.trim()) && (confirmMode==="none" || !!confirmPlantId)),
     schedule: !!form.loadDate && /^\d{2}:\d{2}$/.test(form.loadTime),
     ...(showTransportStep ? { transport: transportStepComplete } : {}),
   }),[form, originMode, customOrigin, destMode, customDest, confirmMode, confirmPlantId, _hasBranches, isPlantUser, producerCompanyId, showTransportStep, transportStepComplete]);
@@ -585,7 +589,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
     if(originMode==="map" && !customOrigin.lat) { e.customOrigin="Indicá una ubicación en el mapa"; }
     if(destMode==="plant" && !form.plantId) { e.plantId="Seleccioná una planta"; }
     if(destMode==="plant" && form.plantId && branchOpts.length > 0 && !form.branchId) { e.branchId="Seleccioná una sucursal"; }
-    if(destMode==="custom" && !customDest.lat) { e.customDestLoc="Indicá una ubicación en el mapa"; }
+    if(destMode==="custom" && !customDest.lat && !customDest.name?.trim()) { e.customDestLoc="Indicá un nombre o ubicación en el mapa"; }
     if(showTruckSelect && form.fleetChoice==="own" && !form.truckId) { e.truckId="Seleccioná un camión de tu flota"; }
     if(showTruckSelect && form.fleetChoice==="own" && !form.driverId) { e.driverId="Seleccioná un chofer"; }
     setErrs(e);
@@ -628,7 +632,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
       originNameForPayload = customOrigin.name?.trim() || undefined;
     }
     const payload = {...form, photos: photos.map(p=>p.preview), useOwnFleet: showTruckSelect && form.fleetChoice ? (form.fleetChoice==="own") : undefined,
-      ...(isPlantUser && producerCompanyId ? { producerCompanyId } : {}),
+      ...(isPlantUser && producerCompanyId && producerCompanyId !== "__internal__" ? { producerCompanyId } : {}),
       overrideOriginLat: originMode==="map" ? customOrigin.lat : (overrideOrigin?.lat || undefined),
       overrideOriginLng: originMode==="map" ? customOrigin.lng : (overrideOrigin?.lng || undefined),
       customOriginName: originNameForPayload || undefined,
