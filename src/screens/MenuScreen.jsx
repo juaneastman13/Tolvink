@@ -167,6 +167,9 @@ export default function MenuScreen({ user, perms, onLogout, onNav, isDesktop, on
       <a href="/manual.html" target="_blank" rel="noopener noreferrer" style={{width:"100%",padding:"10px 16px",minHeight:40,borderRadius: R.md,border:`1px solid ${C.b1}`,background:C.bg,color:C.t2,fontSize:12.1,fontWeight:600,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:6,textDecoration:"none",marginTop:6}}>
         {Ic.doc(C.t3,14)} Manual de uso
       </a>
+      <a href="/presentacion.html" target="_blank" rel="noopener noreferrer" style={{width:"100%",padding:"8px 16px",minHeight:32,borderRadius: R.md,border:"none",background:"transparent",color:C.t3,fontSize:11,fontWeight:500,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:5,textDecoration:"none",marginTop:2}}>
+        {Ic.share(C.t3,12)} Presentacion comercial
+      </a>
     </div>
   );
 
