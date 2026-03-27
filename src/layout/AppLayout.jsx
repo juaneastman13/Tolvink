@@ -486,7 +486,7 @@ export default function AppLayout({ fh, catalog, online, notif, isDesktop }) {
   // O(1) freight lookup
   const freightMap = useMemo(() => { const m = new Map(); fh.freights.forEach(f => m.set(f.id, f)); return m; }, [fh.freights]);
   const curFreight = freightMap.get(selFreight) || null;
-  const navActive = ["detail"].includes(screen)?"list":["trucks","truckDetail","tickets","documents","analytics","admin","mydata","calendar","reports","chats"].includes(screen)?"menu":["linked","notifs","queue"].includes(screen)&&!isDesktop?"menu":screen;
+  const navActive = ["detail"].includes(screen)?"list":["trucks","truckDetail"].includes(screen)?"trucks":["tickets","documents","analytics","admin","mydata","calendar","reports","chats"].includes(screen)?"menu":["linked","notifs","queue"].includes(screen)&&!isDesktop?"menu":screen;
 
   // ======================== RENDER =====================================
   return (
