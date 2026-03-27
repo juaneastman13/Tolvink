@@ -115,6 +115,36 @@ a{color:inherit;text-decoration:none}
 </style>
 </head>
 <body>
+<div id="routesBg" style="position:fixed;inset:0;pointer-events:none;z-index:0;opacity:0.4">
+<svg viewBox="0 0 1000 600" preserveAspectRatio="xMidYMid slice" style="width:100%;height:100%">
+<defs>
+<radialGradient id="rf" cx="50%" cy="48%" rx="30%" ry="28%">
+<stop offset="0%" stop-color="white" stop-opacity="0.15"/>
+<stop offset="70%" stop-color="white" stop-opacity="0.6"/>
+<stop offset="100%" stop-color="white" stop-opacity="1"/>
+</radialGradient>
+<mask id="rm"><rect width="1000" height="600" fill="url(#rf)"/></mask>
+</defs>
+<g mask="url(#rm)">
+<!-- Route 1: pri -->
+<g><path d="M-30,520 C150,400 350,260 550,180 S800,60 1030,10" stroke="#1A6B37" stroke-width="2" fill="none" stroke-dasharray="14,18" stroke-linecap="round" opacity="0.12"><animate attributeName="stroke-dashoffset" from="0" to="-64" dur="4s" repeatCount="indefinite"/></path>
+<g opacity="0.19"><path d="M180,400 c-4,0 -7,3 -7,7 c0,4 7,11 7,11 s7,-7 7,-11 c0,-4 -3,-7 -7,-7Z" fill="#1A6B37"/><circle cx="180" cy="405" r="2.5" fill="#F7F8F7" opacity="0.9"/></g>
+<g opacity="0.19"><path d="M420,230 c-4,0 -7,3 -7,7 c0,4 7,11 7,11 s7,-7 7,-11 c0,-4 -3,-7 -7,-7Z" fill="#1A6B37"/><circle cx="420" cy="235" r="2.5" fill="#F7F8F7" opacity="0.9"/></g>
+<g opacity="0.19"><path d="M700,100 c-4,0 -7,3 -7,7 c0,4 7,11 7,11 s7,-7 7,-11 c0,-4 -3,-7 -7,-7Z" fill="#1A6B37"/><circle cx="700" cy="105" r="2.5" fill="#F7F8F7" opacity="0.9"/></g>
+<g opacity="0.20"><animateMotion path="M-30,520 C150,400 350,260 550,180 S800,60 1030,10" dur="26s" repeatCount="indefinite" rotate="auto" keyPoints="0;1" keyTimes="0;1" calcMode="linear"/><rect x="-14" y="-7" width="18" height="14" rx="2" fill="#1A6B37"/><polygon points="4,-5 10,-5 14,-1 14,7 4,7" fill="#1A6B37"/><circle cx="-7" cy="8" r="3" fill="#1A6B37"/><circle cx="-7" cy="8" r="1.5" fill="#F7F8F7"/><circle cx="10" cy="8" r="3" fill="#1A6B37"/><circle cx="10" cy="8" r="1.5" fill="#F7F8F7"/><rect x="5" y="-4" width="5" height="5" rx="1" fill="#F7F8F7" opacity="0.6"/></g></g>
+<!-- Route 2: acc (reversed) -->
+<g><path d="M-30,80 C180,180 380,340 580,400 S830,500 1030,560" stroke="#FF6A00" stroke-width="2" fill="none" stroke-dasharray="14,18" stroke-linecap="round" opacity="0.10"><animate attributeName="stroke-dashoffset" from="0" to="64" dur="5s" repeatCount="indefinite"/></path>
+<g opacity="0.16"><path d="M160,160 c-4,0 -7,3 -7,7 c0,4 7,11 7,11 s7,-7 7,-11 c0,-4 -3,-7 -7,-7Z" fill="#FF6A00"/><circle cx="160" cy="165" r="2.5" fill="#F7F8F7" opacity="0.9"/></g>
+<g opacity="0.16"><path d="M400,310 c-4,0 -7,3 -7,7 c0,4 7,11 7,11 s7,-7 7,-11 c0,-4 -3,-7 -7,-7Z" fill="#FF6A00"/><circle cx="400" cy="315" r="2.5" fill="#F7F8F7" opacity="0.9"/></g>
+<g opacity="0.16"><animateMotion path="M-30,80 C180,180 380,340 580,400 S830,500 1030,560" dur="32s" repeatCount="indefinite" rotate="auto" keyPoints="1;0" keyTimes="0;1" calcMode="linear"/><rect x="-14" y="-7" width="18" height="14" rx="2" fill="#FF6A00"/><polygon points="4,-5 10,-5 14,-1 14,7 4,7" fill="#FF6A00"/><circle cx="-7" cy="8" r="3" fill="#FF6A00"/><circle cx="-7" cy="8" r="1.5" fill="#F7F8F7"/><circle cx="10" cy="8" r="3" fill="#FF6A00"/><circle cx="10" cy="8" r="1.5" fill="#F7F8F7"/><rect x="5" y="-4" width="5" height="5" rx="1" fill="#F7F8F7" opacity="0.6"/></g></g>
+<!-- Route 3: sec -->
+<g><path d="M1030,300 C820,240 620,320 420,300 S180,340 -30,370" stroke="#0891B2" stroke-width="2" fill="none" stroke-dasharray="14,18" stroke-linecap="round" opacity="0.10"><animate attributeName="stroke-dashoffset" from="0" to="-64" dur="3.5s" repeatCount="indefinite"/></path>
+<g opacity="0.16"><path d="M870,250 c-4,0 -7,3 -7,7 c0,4 7,11 7,11 s7,-7 7,-11 c0,-4 -3,-7 -7,-7Z" fill="#0891B2"/><circle cx="870" cy="255" r="2.5" fill="#F7F8F7" opacity="0.9"/></g>
+<g opacity="0.18"><animateMotion path="M1030,300 C820,240 620,320 420,300 S180,340 -30,370" dur="24s" repeatCount="indefinite" rotate="auto" keyPoints="0;1" keyTimes="0;1" calcMode="linear"/><rect x="-14" y="-7" width="18" height="14" rx="2" fill="#0891B2"/><polygon points="4,-5 10,-5 14,-1 14,7 4,7" fill="#0891B2"/><circle cx="-7" cy="8" r="3" fill="#0891B2"/><circle cx="-7" cy="8" r="1.5" fill="#F7F8F7"/><circle cx="10" cy="8" r="3" fill="#0891B2"/><circle cx="10" cy="8" r="1.5" fill="#F7F8F7"/><rect x="5" y="-4" width="5" height="5" rx="1" fill="#F7F8F7" opacity="0.6"/></g></g>
+</g>
+</svg>
+</div>
+
 <nav class="nav">
   <div class="nav-logo">tolvink<div class="nav-dot"></div></div>
   <div class="nav-links" id="navLinks">
@@ -128,7 +158,7 @@ a{color:inherit;text-decoration:none}
   <button class="hamburger" id="hamburger" aria-label="Menu"><span></span><span></span><span></span></button>
 </nav>
 
-<section class="section hero" id="hero">
+<section class="section hero" id="hero" style="position:relative;z-index:1">
   <div class="hero-bg"></div>
   <div style="position:relative;z-index:1">
     <div class="tag">Logística agrícola inteligente</div>
@@ -147,7 +177,7 @@ a{color:inherit;text-decoration:none}
   </div>
 </section>
 
-<section class="section" id="problema">
+<section class="section" id="problema" style="position:relative;z-index:1">
   <div class="reveal"><div class="tag">El problema actual</div><h2 class="title">La logística agropecuaria es informal y con poca trazabilidad</h2><p class="sub">En Uruguay, la gran mayoría de la coordinación de fletes agrícolas se gestióna por llamada telefónica, WhatsApp informal y planillas Excel.</p><div class="hr"></div></div>
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px">
     <div class="card reveal" style="display:flex;gap:14px;align-items:flex-start"><div class="icon-box" style="background:var(--errPale)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--err)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg></div><div><h3 style="font-size:15px;margin-bottom:4px">Coordinacion telefónica</h3><p style="font-size:13px;color:var(--t2)">Decenas de llamadas diarias entre productores, plantas y choferes para confirmar cada viaje.</p></div></div>
@@ -157,7 +187,7 @@ a{color:inherit;text-decoration:none}
   </div>
 </section>
 
-<section class="section" id="actores" style="background:var(--card);padding-left:0;padding-right:0">
+<section class="section" id="actores" style="background:var(--card);padding-left:0;padding-right:0;position:relative;z-index:1">
   <div style="max-width:1100px;margin:0 auto;padding:0 clamp(20px,5vw,56px)">
     <div class="reveal" style="text-align:center;margin-bottom:36px"><div class="tag">Tres actores, una plataforma</div><h2 class="title">Cada rol opera como necesita</h2><p class="sub" style="margin:0 auto">Plataforma web, app móvil y WhatsApp. Cada actor elige cómo operar.</p></div>
     <div class="tabs"><button class="tab active" onclick="switchTab('plantas')">Plantas</button><button class="tab" onclick="switchTab('productores')">Productores</button><button class="tab" onclick="switchTab('transportistas')">Transportistas</button></div>
@@ -167,10 +197,13 @@ a{color:inherit;text-decoration:none}
   </div>
 </section>
 
-<section class="section" id="funcionalidades">
+<section class="section" id="funcionalidades" style="position:relative;z-index:1">
   <div class="reveal" style="text-align:center;margin-bottom:40px"><div class="tag">La plataforma</div><h2 class="title">Así se ve tu operación en Tolvink</h2></div>
   <div class="reveal" style="margin-bottom:48px">
-    <h3 style="font-size:18px;margin-bottom:16px">Listado de fletes con trazabilidad completa</h3>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px">
+      <h3 style="font-size:18px;margin:0">Listado de fletes con trazabilidad completa</h3>
+      <span class="pill" style="background:var(--priPale);color:var(--pri);font-size:11px">Para plantas</span>
+    </div>
     <div class="mockup-row" style="display:flex;gap:32px;align-items:flex-start;flex-wrap:wrap">
       <div class="phone"><div class="phone-bar"><span>9:41</span></div><div class="phone-nav"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--pri)" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg><span style="font-size:16px;font-weight:700;color:var(--t1);flex:1">Fletes de hoy</span></div>
         <div class="phone-body">
@@ -194,7 +227,10 @@ a{color:inherit;text-decoration:none}
   </div>
 
   <div class="reveal" style="margin-bottom:48px">
-    <h3 style="font-size:18px;margin-bottom:16px">Mi Flota — dashboard económico por camión</h3>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px">
+      <h3 style="font-size:18px;margin:0">Mi Flota — dashboard económico por camión</h3>
+      <span class="pill" style="background:var(--secPale);color:var(--sec);font-size:11px">Para transportistas</span>
+    </div>
     <div class="mockup-row" style="display:flex;gap:32px;align-items:flex-start;flex-wrap:wrap">
       <div class="phone"><div class="phone-bar"><span>9:41</span></div><div class="phone-nav"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--pri)" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg><span style="font-size:16px;font-weight:700;color:var(--t1);flex:1">Detalle camión</span></div>
         <div class="phone-body">
@@ -221,9 +257,74 @@ a{color:inherit;text-decoration:none}
       </div>
     </div>
   </div>
+
+  <div class="reveal" style="margin-bottom:48px">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px">
+      <h3 style="font-size:18px;margin:0">Documentos con OCR automático</h3>
+      <span class="pill" style="background:var(--secPale);color:var(--sec);font-size:11px">Para transportistas</span>
+    </div>
+    <div class="mockup-row" style="display:flex;gap:32px;align-items:flex-start;flex-wrap:wrap">
+      <div class="phone">
+        <div class="phone-bar"><span>9:41</span></div>
+        <div class="phone-nav"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--pri)" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg><span style="font-size:16px;font-weight:700;color:var(--t1);flex:1">Documento</span></div>
+        <div class="phone-body">
+          <!-- Simulated scanned document -->
+          <div style="background:var(--cardAlt);border-radius:10px;padding:20px 14px;margin-bottom:10px;text-align:center;border:1.5px dashed var(--b1);transform:rotate(-0.5deg)">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--t3)" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            <div style="font-size:11px;font-weight:600;color:var(--t3);margin-top:6px">cedula_verde_LAF1234.jpg</div>
+            <div style="font-size:9px;color:var(--t3)">380 KB · 1200×900</div>
+          </div>
+          <!-- Arrow -->
+          <div style="text-align:center;margin:8px 0;font-size:10px;font-weight:700;color:var(--acc)">▼ Extracción automática con IA ▼</div>
+          <!-- OCR badge -->
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
+            <span style="padding:2px 8px;border-radius:6px;background:var(--accPale);font-size:10px;font-weight:700;color:var(--acc)">OCR</span>
+            <span style="font-size:10px;color:var(--t3)">Datos extraídos</span>
+          </div>
+          <!-- OCR data grid -->
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <div style="display:flex;justify-content:space-between;padding:5px 8px;background:var(--bg);border-radius:6px"><span style="font-size:10px;color:var(--t3);font-weight:600">Tipo</span><span style="font-size:11px;color:var(--t1);font-weight:700">Cédula Verde</span></div>
+            <div style="display:flex;justify-content:space-between;padding:5px 8px;background:var(--bg);border-radius:6px"><span style="font-size:10px;color:var(--t3);font-weight:600">Placa</span><span style="font-size:11px;color:var(--t1);font-weight:700;font-family:var(--mono)">LAF 1234</span></div>
+            <div style="display:flex;justify-content:space-between;padding:5px 8px;background:var(--bg);border-radius:6px"><span style="font-size:10px;color:var(--t3);font-weight:600">Titular</span><span style="font-size:11px;color:var(--t1);font-weight:700">Juan Pérez</span></div>
+            <div style="display:flex;justify-content:space-between;padding:5px 8px;background:var(--bg);border-radius:6px"><span style="font-size:10px;color:var(--t3);font-weight:600">Vencimiento</span><span style="font-size:11px;color:var(--ok);font-weight:700">15/08/2026</span></div>
+            <div style="display:flex;justify-content:space-between;padding:5px 8px;background:var(--bg);border-radius:6px"><span style="font-size:10px;color:var(--t3);font-weight:600">Confianza</span><span style="font-size:11px;color:var(--pri);font-weight:700">94%</span></div>
+          </div>
+        </div>
+      </div>
+      <div style="flex:1;min-width:260px">
+        <h4 style="font-size:16px;margin-bottom:8px">Subís la foto, nosotros hacemos el resto</h4>
+        <p style="font-size:14px;color:var(--t2);margin-bottom:16px">Cargá los documentos de tu flota desde el celular. La IA extrae los datos automáticamente y te avisa antes de que venzan.</p>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div style="display:flex;gap:10px;align-items:flex-start"><div class="icon-box" style="background:var(--accPale);width:36px;height:36px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--acc)" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></div><div><div style="font-size:13px;font-weight:600">Foto → datos en segundos</div><p style="font-size:12px;color:var(--t2)">Claude Vision extrae tipo, placa, titular y vencimiento.</p></div></div>
+          <div style="display:flex;gap:10px;align-items:flex-start"><div class="icon-box" style="background:var(--priPale);width:36px;height:36px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--pri)" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></div><div><div style="font-size:13px;font-weight:600">Editable inline</div><p style="font-size:12px;color:var(--t2)">Corregí cualquier dato directamente en la app.</p></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="reveal" style="margin-bottom:48px">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px">
+      <h3 style="font-size:18px;margin:0">Control de vencimientos</h3>
+      <span class="pill" style="background:var(--secPale);color:var(--sec);font-size:11px">Para transportistas</span>
+    </div>
+    <div style="background:var(--card);border:1px solid var(--b2);border-radius:14px;padding:16px;box-shadow:var(--sh);max-width:500px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+        <span class="plate" style="transform:scaleY(.9)"><span class="plate-top"><span>URUGUAY</span></span><span class="plate-bot" style="font-size:14px;padding:2px 8px 3px">LAF 1234</span></span>
+        <span style="font-size:13px;font-weight:600;color:var(--t1)">Scania R450</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;background:var(--bg)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span style="flex:1;font-size:12px;font-weight:500">ITV / VTV</span><span style="font-size:11px;color:var(--t3)">Vence 12/11/2026</span><span style="font-size:10px;font-weight:600;color:var(--ok);background:var(--okPale);padding:2px 7px;border-radius:20px">Vigente</span></div>
+        <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;background:var(--bg)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--warn)" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span style="flex:1;font-size:12px;font-weight:500">Seguro obligatorio</span><span style="font-size:11px;color:var(--t3)">Vence 18/04/2026</span><span style="font-size:10px;font-weight:600;color:var(--warn);background:var(--warnPale);padding:2px 7px;border-radius:20px">Pronto</span></div>
+        <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;background:var(--bg)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--err)" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span style="flex:1;font-size:12px;font-weight:500">Habilitación MTOP</span><span style="font-size:11px;color:var(--t3)">Venció 02/03/2026</span><span style="font-size:10px;font-weight:600;color:var(--err);background:var(--errPale);padding:2px 7px;border-radius:20px">Vencido</span></div>
+        <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;background:var(--bg)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span style="flex:1;font-size:12px;font-weight:500">Licencia de conducir</span><span style="font-size:11px;color:var(--t3)">Vence 30/09/2027</span><span style="font-size:10px;font-weight:600;color:var(--ok);background:var(--okPale);padding:2px 7px;border-radius:20px">Vigente</span></div>
+        <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;background:var(--bg)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span style="flex:1;font-size:12px;font-weight:500">Permiso de circulación</span><span style="font-size:11px;color:var(--t3)">Vence 15/01/2027</span><span style="font-size:10px;font-weight:600;color:var(--ok);background:var(--okPale);padding:2px 7px;border-radius:20px">Vigente</span></div>
+      </div>
+      <div style="margin-top:10px;font-size:11px;color:var(--t3);text-align:center">Nunca más una multa por documento vencido</div>
+    </div>
+  </div>
 </section>
 
-<section class="section" id="whatsapp" style="background:var(--card);padding-left:0;padding-right:0">
+<section class="section" id="whatsapp" style="background:var(--card);padding-left:0;padding-right:0;position:relative;z-index:1">
   <div style="max-width:1100px;margin:0 auto;padding:0 clamp(20px,5vw,56px)">
     <div class="reveal" style="text-align:center;margin-bottom:40px"><div class="tag">Agente IA por WhatsApp</div><h2 class="title">Tu logística por WhatsApp, como hablar<br>con tu mejor operador</h2><p class="sub" style="margin:0 auto">107 herramientas de IA. Texto y audio. Crea fletes, consulta estados, registra gastos. Todo desde el chat.</p></div>
     <div class="mockup-row reveal" style="display:flex;gap:32px;align-items:flex-start;justify-content:center;flex-wrap:wrap">
@@ -252,7 +353,7 @@ a{color:inherit;text-decoration:none}
   </div>
 </section>
 
-<section class="section" id="diferenciadores">
+<section class="section" id="diferenciadores" style="position:relative;z-index:1">
   <div class="reveal" style="text-align:center;margin-bottom:40px"><div class="tag">Por que Tolvink</div><h2 class="title">Lo que nos hace diferentes</h2></div>
   <div class="compare reveal">
     <div class="compare-old"><h3 style="font-size:16px;display:flex;align-items:center;gap:8px;margin-bottom:14px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--err)" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>Metodo tradicional</h3><ul style="padding:0"><li style="list-style:none;display:flex;gap:6px;padding:5px 0;font-size:13px;color:var(--t2)"><span style="color:var(--err);font-weight:700;flex-shrink:0">✕</span>Coordinacion por telefono</li><li style="list-style:none;display:flex;gap:6px;padding:5px 0;font-size:13px;color:var(--t2)"><span style="color:var(--err);font-weight:700;flex-shrink:0">✕</span>Sin trazabilidad</li><li style="list-style:none;display:flex;gap:6px;padding:5px 0;font-size:13px;color:var(--t2)"><span style="color:var(--err);font-weight:700;flex-shrink:0">✕</span>Planillas desactualizadas</li><li style="list-style:none;display:flex;gap:6px;padding:5px 0;font-size:13px;color:var(--t2)"><span style="color:var(--err);font-weight:700;flex-shrink:0">✕</span>Documentos vencidos sin aviso</li><li style="list-style:none;display:flex;gap:6px;padding:5px 0;font-size:13px;color:var(--t2)"><span style="color:var(--err);font-weight:700;flex-shrink:0">✕</span>Costos de flota desconocidos</li></ul></div>
@@ -265,14 +366,14 @@ a{color:inherit;text-decoration:none}
   </div>
 </section>
 
-<section class="section" id="contacto" style="text-align:center">
+<section class="section" id="contacto" style="text-align:center;position:relative;z-index:1">
   <div class="reveal"><div class="tag">Empezá hoy</div><h2 class="title">Logística agrícola simplificada</h2><p class="sub" style="margin:0 auto 32px">Hablemos sobre cómo Tolvink puede transformar tu operación.</p>
     <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-bottom:40px"><a href="https://wa.me/59898247552?text=Hola%2C%20quiero%20información%20sobre%20Tolvink" target="_blank" class="btn btn-acc" style="gap:6px"><svg width="18" height="18" viewBox="0 0 24 24" fill="#fff"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51l-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/></svg>Contactar por WhatsApp</a><a href="mailto:tolvink.uy@gmail.com" class="btn btn-sec">tolvink.uy@gmail.com</a></div>
     <div style="display:flex;gap:28px;justify-content:center;flex-wrap:wrap;color:var(--t3);font-size:13px"><span>+598 98 247 552</span><span>tolvink.com</span><span>Uruguay</span></div>
   </div>
 </section>
 
-<footer style="background:var(--t1);color:#fff;padding:40px;text-align:center">
+<footer style="background:var(--t1);color:#fff;padding:40px;text-align:center;position:relative;z-index:1">
   <div style="font-family:var(--head);font-size:28px;font-weight:800;color:var(--pri);margin-bottom:6px;display:inline-flex;align-items:flex-start">tolvink<span style="width:7px;height:7px;border-radius:4px;background:var(--acc);margin-left:2px;margin-top:3px;display:inline-block"></span></div>
   <div style="color:rgba(255,255,255,.5);font-size:13px;margin-bottom:12px">Logística agrícola inteligente. Hecho en Uruguay.</div>
   <div style="font-size:11px;opacity:.3">2026 Tolvink. Todos los derechos reservados.</div>
