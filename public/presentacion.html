@@ -321,6 +321,197 @@ a{color:inherit;text-decoration:none}
       </div>
       <div style="margin-top:10px;font-size:11px;color:var(--t3);text-align:center">Nunca más una multa por documento vencido</div>
     </div>
+  <!-- MAP MOCKUP -->
+  <div class="reveal" style="margin-bottom:48px">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px">
+      <h3 style="font-size:18px;margin:0">Toda tu operación en un mapa</h3>
+      <span class="pill" style="background:var(--priPale);color:var(--pri);font-size:11px">Para plantas</span>
+    </div>
+    <p style="font-size:14px;color:var(--t2);margin-bottom:20px;max-width:560px">Visualizá en tiempo real dónde está cada camión, qué flete transporta y cuándo llega. Sin llamar a nadie.</p>
+    <div style="background:var(--card);border-radius:20px;box-shadow:var(--shLg);overflow:hidden;border:1px solid var(--b1)">
+      <div style="height:36px;background:var(--card);border-bottom:1px solid var(--b2);display:flex;align-items:center;padding:0 14px;gap:8px;font-size:11px;color:var(--t3)"><span>9:41</span><span style="margin-left:auto">Mapa del día</span></div>
+      <!-- SVG Map -->
+      <div style="position:relative;height:380px;background:linear-gradient(135deg,#E8F5E9 0%,#F1F8E9 30%,#FAFAFA 60%,#E3F2FD 100%);overflow:hidden">
+        <svg viewBox="0 0 800 380" style="width:100%;height:100%;position:absolute;inset:0">
+          <!-- River Uruguay (west side) -->
+          <path d="M0,0 C30,60 10,120 25,180 S15,280 30,380" stroke="#90CAF9" stroke-width="40" fill="none" opacity="0.4"/>
+          <path d="M0,0 C30,60 10,120 25,180 S15,280 30,380" stroke="#BBDEFB" stroke-width="20" fill="none" opacity="0.5"/>
+          <!-- Roads -->
+          <path d="M60,190 L300,160 L520,140 L750,100" stroke="#CFD8DC" stroke-width="2" fill="none" opacity="0.6"/>
+          <path d="M60,250 L200,280 L400,300 L650,260" stroke="#CFD8DC" stroke-width="2" fill="none" opacity="0.6"/>
+          <path d="M300,60 L300,160 L280,320" stroke="#CFD8DC" stroke-width="1.5" fill="none" opacity="0.5"/>
+          <!-- Active route 1: animated dashed -->
+          <path d="M180,290 C280,260 380,200 520,140" stroke="#43A047" stroke-width="2.5" fill="none" stroke-dasharray="8,6" opacity="0.7"><animate attributeName="stroke-dashoffset" from="0" to="-28" dur="2s" repeatCount="indefinite"/></path>
+          <!-- Active route 2: animated dashed -->
+          <path d="M400,310 C480,270 560,200 660,160" stroke="#1A6B37" stroke-width="2.5" fill="none" stroke-dasharray="8,6" opacity="0.7"><animate attributeName="stroke-dashoffset" from="0" to="-28" dur="2s" repeatCount="indefinite"/></path>
+          <!-- Plant markers (navy blue silo icon) -->
+          <g transform="translate(520,130)"><circle r="14" fill="#003882" opacity="0.9"/><path d="M-5,-6 L-5,6 L5,6 L5,-6 Z M-7,-6 L0,-10 L7,-6 Z" fill="#fff" transform="scale(0.7)"/></g>
+          <text x="540" y="128" font-family="DM Sans,sans-serif" font-size="9" font-weight="600" fill="#003882">CADOL Young</text>
+          <g transform="translate(660,155)"><circle r="14" fill="#003882" opacity="0.9"/><path d="M-5,-6 L-5,6 L5,6 L5,-6 Z M-7,-6 L0,-10 L7,-6 Z" fill="#fff" transform="scale(0.7)"/></g>
+          <text x="680" y="153" font-family="DM Sans,sans-serif" font-size="9" font-weight="600" fill="#003882">Calmer Mercedes</text>
+          <g transform="translate(120,190)"><circle r="12" fill="#003882" opacity="0.9"/><path d="M-5,-6 L-5,6 L5,6 L5,-6 Z M-7,-6 L0,-10 L7,-6 Z" fill="#fff" transform="scale(0.7)"/></g>
+          <text x="136" y="188" font-family="DM Sans,sans-serif" font-size="9" font-weight="600" fill="#003882">Fray Bentos</text>
+          <!-- Field markers (green pins) -->
+          <g transform="translate(180,290)"><path d="M0,-14 c-5,0 -9,4 -9,9 c0,5 9,14 9,14 s9,-9 9,-14 c0,-5 -4,-9 -9,-9Z" fill="#1A6B37"/><circle cy="-7" r="3" fill="#fff" opacity="0.9"/></g>
+          <text x="194" y="290" font-family="DM Sans,sans-serif" font-size="8.5" font-weight="500" fill="#1A6B37">Est. La Esperanza</text>
+          <g transform="translate(400,310)"><path d="M0,-14 c-5,0 -9,4 -9,9 c0,5 9,14 9,14 s9,-9 9,-14 c0,-5 -4,-9 -9,-9Z" fill="#1A6B37"/><circle cy="-7" r="3" fill="#fff" opacity="0.9"/></g>
+          <text x="414" y="310" font-family="DM Sans,sans-serif" font-size="8.5" font-weight="500" fill="#1A6B37">Campo San Pedro</text>
+          <!-- Truck 1: En viaje a campo -->
+          <g transform="translate(330,230)">
+            <rect x="-18" y="-10" width="36" height="20" rx="6" fill="#43A047" opacity="0.9"/>
+            <rect x="-11" y="-5" width="14" height="10" rx="1.5" fill="#fff" opacity="0.3"/>
+            <polygon points="3,-4 8,-4 11,-1 11,5 3,5" fill="#fff" opacity="0.3"/>
+            <circle cx="-5" cy="6" r="2" fill="#fff" opacity="0.5"/><circle cx="8" cy="6" r="2" fill="#fff" opacity="0.5"/>
+          </g>
+          <text x="310" y="255" font-family="JetBrains Mono,monospace" font-size="8" font-weight="700" fill="#43A047">LAF 1234</text>
+          <!-- Truck 2: En viaje a planta -->
+          <g transform="translate(560,200)">
+            <rect x="-18" y="-10" width="36" height="20" rx="6" fill="#1A6B37" opacity="0.9"/>
+            <rect x="-11" y="-5" width="14" height="10" rx="1.5" fill="#fff" opacity="0.3"/>
+            <polygon points="3,-4 8,-4 11,-1 11,5 3,5" fill="#fff" opacity="0.3"/>
+            <circle cx="-5" cy="6" r="2" fill="#fff" opacity="0.5"/><circle cx="8" cy="6" r="2" fill="#fff" opacity="0.5"/>
+          </g>
+          <text x="540" y="225" font-family="JetBrains Mono,monospace" font-size="8" font-weight="700" fill="#1A6B37">MER 5678</text>
+          <!-- City labels -->
+          <text x="80" y="345" font-family="DM Sans,sans-serif" font-size="8" fill="#90A4AE">N. Palmira</text>
+          <text x="250" y="85" font-family="DM Sans,sans-serif" font-size="8" fill="#90A4AE">Dolores</text>
+          <text x="680" y="310" font-family="DM Sans,sans-serif" font-size="8" fill="#90A4AE">Carmelo</text>
+        </svg>
+        <!-- Popup over truck 2 -->
+        <div style="position:absolute;left:56%;top:28%;background:var(--card);border-radius:10px;padding:10px 12px;box-shadow:var(--shLg);border:1px solid var(--b1);font-size:11px;width:180px;z-index:2">
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px"><span class="plate" style="transform:scaleY(.85)"><span class="plate-top"><span style="font-size:4.5px">URUGUAY</span></span><span class="plate-bot" style="font-size:10px;padding:1px 5px 2px;letter-spacing:1px">MER 5678</span></span><span class="status-pill" style="background:#E0F2E5;color:#1A6B37;font-size:8px"><span class="pulse-dot" style="background:#1A6B37;width:4px;height:4px"></span>A planta</span></div>
+          <div style="font-size:10px;color:var(--t1);font-weight:600;margin-bottom:2px">Soja · 30tn</div>
+          <div style="font-size:9px;color:var(--t2)">Campo San Pedro → Calmer Mercedes</div>
+          <div style="font-size:9px;color:var(--sec);font-weight:600;margin-top:3px">ETA: 45 min</div>
+        </div>
+        <!-- Legend -->
+        <div style="position:absolute;bottom:10px;left:10px;background:rgba(255,255,255,.9);border-radius:8px;padding:8px 10px;font-size:9px;display:flex;gap:10px;border:1px solid var(--b2)">
+          <span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:50%;background:#003882"></span>Planta</span>
+          <span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:50%;background:#1A6B37"></span>Campo</span>
+          <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:7px;border-radius:3px;background:#43A047"></span>Camión</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- QUEUE / MI COLA MOCKUP -->
+  <div class="reveal" style="margin-bottom:48px">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+      <h3 style="font-size:18px;margin:0">Tu cola de espera. Tu control total.</h3>
+      <span class="pill" style="background:var(--priPale);color:var(--pri);font-size:11px">Para plantas</span>
+    </div>
+    <p style="font-size:14px;color:var(--t2);margin-bottom:20px;max-width:600px">Organizá, reasigná y controlá cada flete del día con drag-and-drop. Sabé qué camión llega, cuándo y con qué carga — todo desde una sola pantalla.</p>
+    <div style="background:var(--card);border-radius:16px;box-shadow:var(--shLg);overflow:hidden;border:1px solid var(--b1)">
+      <!-- Header bar -->
+      <div style="padding:10px 16px;border-bottom:1px solid var(--b2);display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <span style="font-size:16px;font-weight:700;color:var(--t1);font-family:var(--head)">Colas de Camiones</span>
+        <span style="font-size:12px;color:var(--t2);background:var(--bg);padding:4px 10px;border-radius:6px">Hoy — Vie 28 Mar 2026</span>
+        <div style="margin-left:auto;display:flex;gap:6px">
+          <span style="font-size:9px;display:flex;align-items:center;gap:3px"><span style="width:8px;height:8px;border-radius:3px;border:2px solid #71717A;background:rgba(113,113,122,0.1)"></span>Pendiente</span>
+          <span style="font-size:9px;display:flex;align-items:center;gap:3px"><span style="width:8px;height:8px;border-radius:3px;border:2px solid #FF6A00;background:#FFF3E8"></span>Aceptado</span>
+          <span style="font-size:9px;display:flex;align-items:center;gap:3px"><span style="width:8px;height:8px;border-radius:3px;border:2px solid #0891B2;background:#ECFEFF"></span>En viaje</span>
+          <span style="font-size:9px;display:flex;align-items:center;gap:3px"><span style="width:8px;height:8px;border-radius:3px;border:2px solid #1A6B37;background:#E4F3EA"></span>Finalizado</span>
+        </div>
+      </div>
+      <!-- Board -->
+      <div style="display:flex;min-height:320px">
+        <!-- Freight rows -->
+        <div style="flex:1;padding:10px;overflow-x:auto">
+          <!-- Row 1: assigned, trucks inside -->
+          <div style="background:var(--bg);border:1.5px solid var(--b1);border-radius:12px;padding:10px 12px;margin-bottom:8px">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap">
+              <span style="font-family:var(--mono);font-size:11px;font-weight:700;color:var(--pri)">F-0087</span>
+              <span style="font-size:11px;font-weight:500;color:var(--t1)">Trigo · 28tn</span>
+              <span style="font-size:10px;color:var(--t2)">EST. LA ESPERANZA</span>
+              <span style="font-size:10px;color:var(--t3)">→ CADOL Young</span>
+              <span style="font-size:10px;color:var(--t3);margin-left:auto">07:00</span>
+              <span style="font-size:10px;font-weight:600;color:var(--pri)">1/1</span>
+            </div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap">
+              <div style="display:inline-flex;align-items:center;gap:5px;padding:5px 9px;border-radius:8px;border:2px solid #0891B2;background:#ECFEFF;font-size:11px;font-weight:600"><div style="width:3px;height:16px;border-radius:2px;background:var(--pri)"></div><span class="plate" style="transform:scaleY(.85)"><span class="plate-top"><span style="font-size:4px">URUGUAY</span></span><span class="plate-bot" style="font-size:9px;padding:1px 4px 2px;letter-spacing:1px">LAF 1234</span></span></div>
+            </div>
+          </div>
+          <!-- Row 2: being dragged TO (drop zone active) -->
+          <div style="background:var(--priPale);border:1.5px solid var(--pri);border-radius:12px;padding:10px 12px;margin-bottom:8px;box-shadow:0 0 0 2px rgba(26,107,55,0.15)">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap">
+              <span style="font-family:var(--mono);font-size:11px;font-weight:700;color:var(--pri)">F-0089</span>
+              <span style="font-size:11px;font-weight:500;color:var(--t1)">Soja · 30tn</span>
+              <span style="font-size:10px;color:var(--t2)">CAMPO SAN PEDRO</span>
+              <span style="font-size:10px;color:var(--t3)">→ Calmer Mercedes</span>
+              <span style="font-size:10px;color:var(--t3);margin-left:auto">08:00</span>
+              <span style="font-size:10px;font-weight:600;color:var(--acc)">0/1</span>
+            </div>
+            <div style="display:flex;gap:6px;align-items:center">
+              <div style="border:1.5px dashed var(--pri);background:rgba(26,107,55,0.06);border-radius:8px;padding:5px 12px;font-size:10px;color:var(--pri);font-weight:600">Soltar para asignar</div>
+              <!-- Assign tooltip -->
+              <div style="background:var(--card);border:1px solid var(--b1);border-radius:8px;padding:8px 10px;box-shadow:var(--shMd);font-size:10px;margin-left:8px">
+                <div style="font-weight:600;color:var(--t1);margin-bottom:3px">¿Asignar Scania R450 (MER 5678)?</div>
+                <div style="color:var(--t3);margin-bottom:6px">Soja 30tn — San Pedro → Calmer</div>
+                <div style="display:flex;gap:4px"><span style="padding:3px 10px;border-radius:6px;background:var(--pri);color:#fff;font-weight:600;font-size:9px">Confirmar</span><span style="padding:3px 10px;border-radius:6px;background:var(--bg);color:var(--t3);font-size:9px">Cancelar</span></div>
+              </div>
+            </div>
+          </div>
+          <!-- Row 3: completed -->
+          <div style="background:var(--bg);border:1.5px solid var(--b1);border-radius:12px;padding:10px 12px;margin-bottom:8px;opacity:0.6">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap">
+              <span style="font-family:var(--mono);font-size:11px;font-weight:700;color:var(--t3)">F-0085</span>
+              <span style="font-size:11px;font-weight:500;color:var(--t2)">Cebada · 25tn</span>
+              <span style="font-size:10px;color:var(--t3)">CAMPOS DEL LITORAL → Calmer</span>
+              <span style="font-size:10px;color:var(--t3);margin-left:auto">06:00</span>
+              <span style="font-size:10px;font-weight:600;color:var(--ok)">1/1 ✓</span>
+            </div>
+            <div style="display:flex;gap:6px"><div style="display:inline-flex;align-items:center;gap:5px;padding:5px 9px;border-radius:8px;border:2px solid #1A6B37;background:#E4F3EA;font-size:11px;font-weight:600"><div style="width:3px;height:16px;border-radius:2px;background:var(--pri)"></div><span class="plate" style="transform:scaleY(.85)"><span class="plate-top"><span style="font-size:4px">URUGUAY</span></span><span class="plate-bot" style="font-size:9px;padding:1px 4px 2px;letter-spacing:1px">SBY 4321</span></span></div></div>
+          </div>
+          <!-- Row 4: pending, empty -->
+          <div style="background:var(--bg);border:1.5px solid var(--b1);border-radius:12px;padding:10px 12px">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap">
+              <span style="font-family:var(--mono);font-size:11px;font-weight:700;color:var(--acc)">F-0091</span>
+              <span style="font-size:11px;font-weight:500;color:var(--t1)">Sorgo · 32tn</span>
+              <span style="font-size:10px;color:var(--t2)">LA RINCONADA</span>
+              <span style="font-size:10px;color:var(--t3)">→ CADOL Young</span>
+              <span style="font-size:10px;color:var(--t3);margin-left:auto">10:00</span>
+              <span style="font-size:10px;font-weight:600;color:var(--acc)">0/2</span>
+            </div>
+            <div style="display:flex;gap:6px"><div style="border:1.5px dashed var(--b1);border-radius:8px;padding:5px 12px;font-size:10px;color:var(--t3)">Arrastrá camiones o empresas aquí</div><div style="border:1.5px dashed var(--b1);border-radius:8px;padding:5px 12px;font-size:10px;color:var(--t3)">Slot 2</div></div>
+          </div>
+        </div>
+        <!-- Truck panel (right) -->
+        <div style="width:200px;border-left:1px solid var(--b2);padding:10px;flex-shrink:0;background:var(--bg)">
+          <div style="font-size:11px;font-weight:700;color:var(--t2);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Camiones disponibles</div>
+          <input placeholder="Buscar patente..." style="width:100%;padding:5px 8px;border-radius:6px;border:1px solid var(--b1);font-size:10px;font-family:var(--body);margin-bottom:8px;background:var(--card);outline:none"/>
+          <!-- Own fleet -->
+          <div style="margin-bottom:10px">
+            <div style="font-size:10px;font-weight:600;color:var(--pri);margin-bottom:4px;display:flex;align-items:center;gap:4px"><div style="width:3px;height:10px;border-radius:2px;background:var(--pri)"></div>Flota propia</div>
+            <div style="background:var(--card);border:1px solid var(--b1);border-radius:8px;padding:6px 8px;margin-bottom:4px;cursor:grab;font-size:10px;display:flex;align-items:center;gap:6px">
+              <span class="plate" style="transform:scaleY(.85)"><span class="plate-top"><span style="font-size:4px">URUGUAY</span></span><span class="plate-bot" style="font-size:8px;padding:1px 4px;letter-spacing:1px">KAP 8909</span></span>
+              <span style="font-size:9px;color:var(--ok);font-weight:600">Disponible</span>
+            </div>
+          </div>
+          <!-- External -->
+          <div>
+            <div style="font-size:10px;font-weight:600;color:var(--sec);margin-bottom:4px;display:flex;align-items:center;gap:4px"><div style="width:3px;height:10px;border-radius:2px;background:var(--sec)"></div>Transp. García</div>
+            <!-- Truck being dragged -->
+            <div style="background:var(--card);border:1px solid var(--pri);border-radius:8px;padding:6px 8px;margin-bottom:4px;opacity:0.4;font-size:10px;display:flex;align-items:center;gap:6px;border-style:dashed">
+              <span class="plate" style="transform:scaleY(.85)"><span class="plate-top"><span style="font-size:4px">URUGUAY</span></span><span class="plate-bot" style="font-size:8px;padding:1px 4px;letter-spacing:1px">MER 5678</span></span>
+              <span style="font-size:9px;color:var(--t3)">Arrastrando...</span>
+            </div>
+            <div style="background:var(--card);border:1px solid var(--b1);border-radius:8px;padding:6px 8px;font-size:10px;display:flex;align-items:center;gap:6px;cursor:grab">
+              <span class="plate" style="transform:scaleY(.85)"><span class="plate-top"><span style="font-size:4px">URUGUAY</span></span><span class="plate-bot" style="font-size:8px;padding:1px 4px;letter-spacing:1px">ABC 7890</span></span>
+              <span style="font-size:9px;color:var(--ok);font-weight:600">Disponible</span>
+            </div>
+          </div>
+          <div style="margin-top:10px;font-size:9px;color:var(--t3);text-align:center">3 disponibles / 5 total</div>
+        </div>
+      </div>
+    </div>
+    <!-- Feature pills -->
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px;justify-content:center">
+      <span class="pill" style="background:var(--priPale);color:var(--pri);font-size:11px">Drag-and-drop para reorganizar</span>
+      <span class="pill" style="background:var(--accPale);color:var(--acc);font-size:11px">Asignación directa desde el panel</span>
+      <span class="pill" style="background:var(--secPale);color:var(--sec);font-size:11px">Vista por día con estado en vivo</span>
+    </div>
+  </div>
+
   </div>
 </section>
 
