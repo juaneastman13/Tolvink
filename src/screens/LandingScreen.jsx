@@ -67,7 +67,7 @@ export default function LandingScreen({ onLogin, onSignup, onPasswordReset, load
 
       {/* ═══ HERO ═══ */}
       <div style={{ flex:"none", minHeight:"100dvh", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"40px 24px", textAlign:"center", paddingTop:"max(40px, env(safe-area-inset-top))", position:"relative", zIndex:1 }}>
-        <RoutesBackground trucks centerFade />
+        <RoutesBackground trucks opacityMul={1.8} centerFade />
 
         {/* Big logo */}
         <div style={{ animation:"splashIn 0.8s ease-out", marginBottom:30 }}>
@@ -83,22 +83,14 @@ export default function LandingScreen({ onLogin, onSignup, onPasswordReset, load
             Logística agrícola simplificada
           </div>
           <h1 className="tv-ld-h1" style={{ fontSize:24.2, fontWeight:700, color:C.t2, lineHeight:1.2, letterSpacing:-0.3 }}>
-            Gestioná tus fletes desde WhatsApp con inteligencia artificial
+            Menos llamadas. Más control. Cada flete rastreado de campo a planta.
           </h1>
         </div>
 
         {/* 4 Features inline */}
-        <div className="tv-ld-feat" style={{ display:"flex", gap:24, justifyContent:"center", marginBottom:38, animation:"fadeUp 1s ease-out", flexWrap:"wrap" }}>
-          {[
-            { icon: Ic.truck(C.pri,20), label:"Fletes" },
-            { icon: Ic.pin(C.acc,20), label:"Tracking" },
-            { icon: Ic.chk(C.ok,20), label:"Confirmaciones" },
-            { icon: Ic.nav(C.sec,20), label:"Rutas" },
-          ].map((f,i) => (
-            <div key={i} style={{ display:"flex", alignItems:"center", gap:6 }}>
-              {f.icon}
-              <span style={{ fontSize:12.1, fontWeight:600, color:C.t2 }}>{f.label}</span>
-            </div>
+        <div className="tv-ld-feat" style={{ display:"flex", gap:16, justifyContent:"center", marginBottom:32, animation:"fadeUp 1s ease-out", flexWrap:"wrap", opacity:0.6 }}>
+          {["Fletes","Tracking GPS","Gestión de flota","IA por WhatsApp"].map((l,i) => (
+            <span key={i} style={{ fontSize:11, fontWeight:500, color:C.t3, letterSpacing:0.3 }}>{l}{i<3?" ·":""}</span>
           ))}
         </div>
 
@@ -112,10 +104,50 @@ export default function LandingScreen({ onLogin, onSignup, onPasswordReset, load
           </a>
 
           {/* Scroll hint */}
-          <button onClick={()=>document.getElementById("tv-details")?.scrollIntoView({behavior:"smooth"})} style={{ marginTop:12, display:"flex", flexDirection:"column", alignItems:"center", gap:4, opacity:0.5, animation:"fadeUp 1.2s ease-out, bounceDown 2s ease-in-out 2s infinite", background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", padding:0 }}>
+          <button onClick={()=>document.getElementById("tv-details")?.scrollIntoView({behavior:"smooth"})} style={{ marginTop:8, display:"flex", flexDirection:"column", alignItems:"center", gap:4, opacity:0.5, animation:"fadeUp 1.2s ease-out, bounceDown 2s ease-in-out 2s infinite", background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", padding:0 }}>
             <span style={{ fontSize:12.1, color:C.t3 }}>Bajá para ver detalles</span>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={C.t3} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
           </button>
+        </div>
+
+        {/* Floating app mockup */}
+        <div className="tv-ld-phone" style={{ marginTop:32, width:340, background:C.bg, borderRadius:24, overflow:"hidden", border:`1px solid ${C.b1}`, boxShadow:C.shLg, animation:"fadeUp 1.4s ease-out", transform:"perspective(1200px) rotateX(2deg) rotateY(-1deg)" }}>
+          <div style={{ padding:"10px 14px 6px", background:C.w, borderBottom:`1px solid ${C.b2}` }}>
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:6 }}>
+              <div><div style={{ fontSize:11, color:C.t3 }}>Planta Dolores</div><div style={{ fontSize:16, fontWeight:800, color:C.t1 }}>Hoy</div></div>
+            </div>
+          </div>
+          <div style={{ padding:"8px 10px" }}>
+            {[
+              { code:"F-0087", grain:"Trigo · 28tn", from:"La Rinconada", to:"Planta Dolores", plate:"LAF 1234", transp:"Transp. Pérez", ribbonC:"#43A047", pillBg:"#E8F5E9", pillC:"#2E7D32", label:"A campo", pulse:true, time:"07:00" },
+              { code:"F-0089", grain:"Soja · 30tn", from:"Campo San Pedro", to:"Calmer Mercedes", plate:null, transp:"Sin asignar", ribbonC:"#FF6A00", pillBg:"#FFF3E0", pillC:"#E65100", label:"Pendiente", pulse:false, time:"08:00" },
+              { code:"F-0085", grain:"Cebada · 25tn", from:"Campos del Litoral", to:"Calmer Mercedes", plate:"MER 5678", transp:"Log. Martínez", ribbonC:"#9E9E9E", pillBg:"#F5F5F5", pillC:"#616161", label:"Finalizado", pulse:false, time:"06:00" },
+            ].map((f,i) => (
+              <div key={i} style={{ display:"flex", borderRadius:6, border:`0.5px solid ${C.b1}`, overflow:"hidden", background:C.w, marginBottom:6 }}>
+                <div style={{ width:14, background:f.ribbonC, flexShrink:0 }} />
+                <div style={{ padding:"7px 9px", flex:1, minWidth:0 }}>
+                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:2 }}>
+                    <div style={{ display:"flex", alignItems:"baseline", gap:4 }}>
+                      <span style={{ fontSize:9, color:C.t2, fontFamily:MONO }}>{f.code}</span>
+                      <span style={{ fontSize:11, fontWeight:500, color:C.t1 }}>{f.grain}</span>
+                    </div>
+                    <span style={{ display:"inline-flex", alignItems:"center", gap:2, background:f.pillBg, padding:"1px 6px", borderRadius:20, fontSize:8, fontWeight:500, color:f.pillC }}>
+                      {f.pulse && <span style={{ width:4, height:4, borderRadius:"50%", background:f.ribbonC, animation:"tolvinkPulse 1.5s infinite" }} />}
+                      {f.label}
+                    </span>
+                  </div>
+                  <div style={{ display:"flex", alignItems:"center", gap:3, fontSize:9, color:C.t2, marginBottom:2 }}>
+                    {Ic.pin(C.t3,9)}<span>{f.from}</span><span>→</span>{Ic.plant(C.t2,8)}<span>{f.to}</span>
+                  </div>
+                  <div style={{ display:"flex", alignItems:"center", gap:3, fontSize:9 }}>
+                    {Ic.truck(C.t2,9)}<span style={{ color:C.t1, fontWeight:500 }}>{f.transp}</span>
+                    {f.plate && <><span style={{ color:C.t3 }}> · </span><span style={{ fontFamily:MONO, fontSize:8, color:C.t2 }}>{f.plate}</span></>}
+                    <span style={{ marginLeft:"auto", fontSize:8, color:C.t2 }}>{f.time}</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
