@@ -16,8 +16,55 @@ function CompletedField({ icon, value, onClick }) {
   );
 }
 
+// TEMPORALMENTE DESHABILITADO — Registro controlado por ventas. Reactivar cuando se abra registro público.
+// Para reactivar: cambiar showSalesPopup por toggle() en el botón "Registrate" (línea ~390)
+// y descomentar mode === "signup" en el router de modos.
+
+function SalesContactPopup({ onClose }) {
+  useEffect(() => {
+    const handleKey = (e) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("keydown", handleKey);
+    return () => document.removeEventListener("keydown", handleKey);
+  }, [onClose]);
+  return (
+    <div onClick={onClose} style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.45)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20, animation: "fadeUp 0.2s ease-out" }}>
+      <div onClick={e => e.stopPropagation()} style={{ background: C.w, borderRadius: 16, padding: "28px 24px", maxWidth: 380, width: "100%", boxShadow: C.shMd, position: "relative", fontFamily: FONT }}>
+        <button onClick={onClose} aria-label="Cerrar" style={{ position: "absolute", top: 12, right: 12, background: "none", border: "none", cursor: "pointer", padding: 4, lineHeight: 1 }}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={C.t3} strokeWidth="2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+        <div style={{ textAlign: "center", marginBottom: 20 }}>
+          <div style={{ fontSize: 22, fontWeight: 800, color: C.t1, marginBottom: 6 }}>¿Querés usar Tolvink?</div>
+          <div style={{ fontSize: 14.3, color: C.t2, lineHeight: 1.5 }}>Contactate con nuestro equipo de ventas para activar tu cuenta.</div>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <a href="https://wa.me/59898247552" target="_blank" rel="noopener noreferrer" style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", borderRadius: 12, border: `1.5px solid ${C.b1}`, background: C.bg, textDecoration: "none", transition: "border-color 0.15s" }}>
+            <div style={{ width: 40, height: 40, borderRadius: 10, background: "#25D36612", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+            </div>
+            <div>
+              <div style={{ fontSize: 13.2, fontWeight: 600, color: C.t2 }}>WhatsApp</div>
+              <div style={{ fontSize: 15.4, fontWeight: 700, color: C.t1 }}>098 247 552</div>
+            </div>
+          </a>
+          <a href="mailto:Tolvink.uy@gmail.com" style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", borderRadius: 12, border: `1.5px solid ${C.b1}`, background: C.bg, textDecoration: "none", transition: "border-color 0.15s" }}>
+            <div style={{ width: 40, height: 40, borderRadius: 10, background: `${C.pri}12`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              {Ic.mail(C.pri, 20)}
+            </div>
+            <div>
+              <div style={{ fontSize: 13.2, fontWeight: 600, color: C.t2 }}>Email</div>
+              <div style={{ fontSize: 15.4, fontWeight: 700, color: C.t1 }}>Tolvink.uy@gmail.com</div>
+            </div>
+          </a>
+        </div>
+        <button onClick={onClose} style={{ marginTop: 18, width: "100%", padding: "12px 0", borderRadius: 12, border: `1.5px solid ${C.b1}`, background: C.w, color: C.t2, fontSize: 14.3, fontWeight: 600, cursor: "pointer", fontFamily: FONT }}>Cerrar</button>
+      </div>
+    </div>
+  );
+}
+
 export default function AuthScreen({ onLogin, onSignup, onPasswordReset, loading, error, clearError, onBackToLanding }) {
   const [mode, setMode] = useState("login");
+  const [showSalesContact, setShowSalesContact] = useState(false);
   const [loginId, setLoginId] = useState("");
   const [password, setPassword] = useState("");
   const [email, setEmail] = useState("");
@@ -382,7 +429,8 @@ export default function AuthScreen({ onLogin, onSignup, onPasswordReset, loading
           <div style={{ textAlign: "center", marginTop: 16 }}>
             {!isResetMode && <>
               <span style={{ fontSize: 14.3, color: C.t2 }}>{mode === "login" ? "¿No tenés cuenta? " : "¿Ya tenés cuenta? "}</span>
-              <button onClick={toggle} style={{ background: "none", border: "none", color: C.pri, fontWeight: 700, fontSize: 14.3, cursor: "pointer", fontFamily: "inherit" }}>{mode === "login" ? "Registrate" : "Iniciá sesión"}</button>
+              {/* TEMPORALMENTE DESHABILITADO — Registro controlado por ventas. Reactivar: onClick={toggle} */}
+              <button onClick={mode === "login" ? () => setShowSalesContact(true) : toggle} style={{ background: "none", border: "none", color: C.pri, fontWeight: 700, fontSize: 14.3, cursor: "pointer", fontFamily: "inherit" }}>{mode === "login" ? "Registrate" : "Iniciá sesión"}</button>
             </>}
             {isResetMode && <>
               <button onClick={() => switchMode("login")} style={{ background: "none", border: "none", color: C.pri, fontWeight: 700, fontSize: 14.3, cursor: "pointer", fontFamily: "inherit" }}>Volver a iniciar sesión</button>
@@ -391,6 +439,7 @@ export default function AuthScreen({ onLogin, onSignup, onPasswordReset, loading
           {canInstall && <button onClick={() => window.installPWA?.()} style={{ marginTop: 10, background: "none", border: "none", color: C.t3, fontSize: 12.1, fontWeight: 500, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 4, width: "100%" }}>{Ic.plus(C.t3, 12)} Instalar app</button>}
         </div>
       </div>
+      {showSalesContact && <SalesContactPopup onClose={() => setShowSalesContact(false)} />}
     </div>
   );
 }
