@@ -253,6 +253,56 @@ function FleetWizard({ title, steps, summaryRows, onSubmit, onCancel, saving, su
   );
 }
 
+// ======================== FREIGHT PICKER (searchable, rich detail) ========
+
+function FreightPicker({ freights, value, onChange, label="Flete asociado" }) {
+  const [open, setOpen] = useState(false);
+  const [q, setQ] = useState("");
+  const sel = value ? (freights||[]).find(f=>(f.freightId||f.id)===value) : null;
+  const norm = s => s ? String(s).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"") : "";
+  const sq = norm(q);
+  const filtered = (freights||[]).filter(f => !sq || [f.code,f.originName,f.destName,f.origin,f.dest,f.plate,f.items?.map(i=>i.grain).join(" ")].some(v=>v&&norm(v).includes(sq)));
+  if (!freights?.length) return null;
+  return <div style={{marginTop:10}}>
+    <label style={lbl("s")}>{label}</label>
+    {!open ? (
+      <button type="button" onClick={()=>setOpen(true)} style={{width:"100%",padding:"8px 12px",borderRadius:R.md,border:`1.5px solid ${value?C.pri:C.b1}`,background:C.w,cursor:"pointer",fontFamily:FONT,fontSize:13,textAlign:"left",display:"flex",alignItems:"center",gap:8,minHeight:48}}>
+        {sel ? <>
+          <span style={{fontWeight:700,color:C.pri,fontFamily:MONO}}>{sel.code}</span>
+          <span style={{flex:1,fontSize:12,color:C.t2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{sel.originName||sel.origin||"?"} → {sel.destName||sel.dest||"?"}</span>
+          {sel.plate&&<LicensePlate plate={sel.plate} size="sm"/>}
+        </> : <span style={{color:C.t3}}>Sin flete</span>}
+        <span style={{color:C.t3,fontSize:12}}>▾</span>
+      </button>
+    ) : (
+      <div style={{border:`1.5px solid ${C.pri}`,borderRadius:R.md,background:C.w,overflow:"hidden",maxHeight:280}}>
+        <div style={{padding:"6px 10px",borderBottom:`1px solid ${C.b2}`,display:"flex",alignItems:"center",gap:6}}>
+          {Ic.srch(C.t3,14)}
+          <input autoFocus value={q} onChange={e=>setQ(e.target.value)} placeholder="Buscar flete..." style={{flex:1,border:"none",outline:"none",fontSize:13,fontFamily:FONT,padding:"4px 0",background:"transparent"}}/>
+          <button type="button" onClick={()=>{setOpen(false);setQ("");}} style={{background:"none",border:"none",cursor:"pointer",padding:2}}>{Ic.cross(C.t3,14)}</button>
+        </div>
+        <div style={{overflowY:"auto",maxHeight:230}}>
+          <button type="button" onClick={()=>{onChange("");setOpen(false);setQ("");}} style={{width:"100%",padding:"8px 12px",background:!value?C.priPale:C.w,border:"none",borderBottom:`1px solid ${C.b2}`,cursor:"pointer",fontFamily:FONT,fontSize:13,color:C.t3,textAlign:"left"}}>Sin flete</button>
+          {filtered.map(f=>{
+            const fid = f.freightId||f.id;
+            const active = fid===value;
+            return <button type="button" key={fid} onClick={()=>{onChange(fid);setOpen(false);setQ("");}} style={{width:"100%",padding:"8px 12px",background:active?C.priPale:C.w,border:"none",borderBottom:`1px solid ${C.b2}`,cursor:"pointer",fontFamily:FONT,textAlign:"left",display:"flex",flexDirection:"column",gap:2}}>
+              <div style={{display:"flex",alignItems:"center",gap:8}}>
+                <span style={{fontWeight:700,color:C.pri,fontFamily:MONO,fontSize:12}}>{f.code}</span>
+                {f.tripStatus&&<StatusPill status={f.tripStatus} small/>}
+                {f.status&&!f.tripStatus&&<StatusPill status={f.status} small/>}
+                {f.plate&&<LicensePlate plate={f.plate} size="sm"/>}
+              </div>
+              <div style={{fontSize:11,color:C.t2}}>{f.originName||f.origin||"?"} → {f.destName||f.dest||"?"}{f.items?.length?` · ${f.items.map(i=>i.grain).join(", ")}`:""}</div>
+            </button>;
+          })}
+          {filtered.length===0&&<div style={{padding:12,textAlign:"center",fontSize:12,color:C.t3}}>Sin resultados</div>}
+        </div>
+      </div>
+    )}
+  </div>;
+}
+
 // ======================== FORMS (Doc, Exp reused from before) ============
 
 function DocForm({ onSave, onCancel, saving, initial, linkOptions, storagePath, mobile }) {
@@ -286,25 +336,26 @@ function ExpForm({ onSave, onCancel, saving, initial, activeFreights, mobile, st
   const [type, setType] = useState(initial?.type||"FUEL");
   const [amount, setAmount] = useState(initial?.amount?.toString()||"");
   const [currency, setCurrency] = useState(initial?.currency||"UYU");
+  const [exchangeRate, setExchangeRate] = useState(initial?.exchangeRate?.toString()||"40");
   const [date, setDate] = useState(initial?.date?new Date(initial.date).toISOString().split("T")[0]:new Date().toISOString().split("T")[0]);
   const [description, setDescription] = useState(initial?.description||"");
   const [freightId, setFreightId] = useState(initial?.freightId||"");
   const [receiptFile, setReceiptFile] = useState(null);
   const [uploading, setUploading] = useState(false);
-  const handleSubmit = async()=>{if(!amount||!date)return;setUploading(true);try{let ru=initial?.receiptUrl,rn=initial?.receiptName;if(receiptFile){ru=await uploadPhoto(receiptFile,storagePath||"truck-receipts","receipt");rn=receiptFile.name;}await onSave({type,amount:parseFloat(amount),currency,date,description:description||null,freightId:freightId||null,receiptUrl:ru,receiptName:rn});}finally{setUploading(false);}};
+  const handleSubmit = async()=>{if(!amount||!date)return;setUploading(true);try{let ru=initial?.receiptUrl,rn=initial?.receiptName;if(receiptFile){ru=await uploadPhoto(receiptFile,storagePath||"truck-receipts","receipt");rn=receiptFile.name;}await onSave({type,amount:parseFloat(amount),currency,exchangeRate:currency!=="UYU"?parseFloat(exchangeRate)||40:null,date,description:description||null,freightId:freightId||null,receiptUrl:ru,receiptName:rn});}finally{setUploading(false);}};
   const fmtCur = currency==="USD"?"US$":"$";
-  const freightLabel = freightId ? (activeFreights||[]).find(f=>f.id===freightId)?.code||freightId : null;
+  const freightSel = freightId ? (activeFreights||[]).find(f=>(f.freightId||f.id)===freightId) : null;
   return <FleetWizard title={initial?"Editar gasto":"Nuevo gasto"} saving={saving||uploading} onSubmit={handleSubmit} onCancel={onCancel} submitLabel={initial?"Guardar":"Registrar"} summaryRows={[
     {label:"Tipo",value:EXP_TYPE_LABELS[type]||type,icon:Ic.doc(C.pri,14),step:0},
-    {label:"Monto",value:`${fmtCur}${amount||"0"} ${currency}`,icon:Ic.grain(C.acc,14),step:1},
+    {label:"Monto",value:`${fmtCur}${amount||"0"} ${currency}${currency!=="UYU"?` (TC: ${exchangeRate})`:""}`,icon:Ic.grain(C.acc,14),step:1},
     {label:"Fecha",value:date||"—",icon:Ic.cal(C.sec,14),step:2},
     ...(description?[{label:"Descripción",value:description,step:2}]:[]),
-    ...(freightLabel?[{label:"Flete",value:freightLabel,icon:Ic.truck(C.pri,14),step:2}]:[]),
+    ...(freightSel?[{label:"Flete",value:`${freightSel.code} — ${freightSel.originName||freightSel.origin||"?"} → ${freightSel.destName||freightSel.dest||"?"}`,icon:Ic.truck(C.pri,14),step:2}]:[]),
     ...(receiptFile?[{label:"Comprobante",value:receiptFile.name}]:[]),
   ]} steps={[
     {title:"Tipo",complete:true,content:<div><label style={lbl("s")}>Tipo de gasto</label><select value={type} onChange={e=>setType(e.target.value)} style={{...sel,minHeight:48}}>{Object.entries(EXP_TYPE_LABELS).map(([k,v])=><option key={k} value={k}>{v}</option>)}</select></div>},
-    {title:"Monto",complete:!!amount,content:<div><Field label="Monto" value={amount} onChange={setAmount} placeholder="0" type="number" inputMode="decimal"/><div style={{marginTop:10}}><label style={lbl("s")}>Moneda</label><select value={currency} onChange={e=>setCurrency(e.target.value)} style={{...sel,minHeight:48}}><option value="UYU">UYU</option><option value="USD">USD</option><option value="ARS">ARS</option></select></div></div>},
-    {title:"Detalles",complete:!!date,content:<div><div style={{marginBottom:10}}><label style={lbl("s")}>Fecha</label><input type="date" value={date} onChange={e=>setDate(e.target.value)} style={{...sel,minHeight:48}}/></div><Field label="Descripción (opcional)" value={description} onChange={setDescription} placeholder="Detalle"/>{activeFreights?.length>0&&<div style={{marginTop:10}}><label style={lbl("s")}>Flete asociado</label><select value={freightId} onChange={e=>setFreightId(e.target.value)} style={{...sel,minHeight:48}}><option value="">Sin flete</option>{activeFreights.map(f=><option key={f.id} value={f.id}>{f.code}</option>)}</select></div>}</div>},
+    {title:"Monto",complete:!!amount,content:<div><Field label="Monto" value={amount} onChange={setAmount} placeholder="0" type="number" inputMode="decimal"/><div style={{display:"flex",gap:10,marginTop:10}}><div style={{flex:1}}><label style={lbl("s")}>Moneda</label><select value={currency} onChange={e=>setCurrency(e.target.value)} style={{...sel,minHeight:48}}><option value="UYU">UYU</option><option value="USD">USD</option></select></div>{currency!=="UYU"&&<div style={{flex:1}}><Field label="Tipo de cambio" value={exchangeRate} onChange={setExchangeRate} placeholder="40" type="number" inputMode="decimal"/></div>}</div></div>},
+    {title:"Detalles",complete:!!date,content:<div><div style={{marginBottom:10}}><label style={lbl("s")}>Fecha</label><input type="date" value={date} onChange={e=>setDate(e.target.value)} style={{...sel,minHeight:48}}/></div><Field label="Descripción (opcional)" value={description} onChange={setDescription} placeholder="Detalle"/><FreightPicker freights={activeFreights} value={freightId} onChange={setFreightId}/></div>},
     {title:"Comprobante",complete:true,content:<div><label style={lbl("s")}>Comprobante (opcional)</label><input type="file" accept="image/*,.pdf" onChange={e=>setReceiptFile(e.target.files?.[0]||null)} style={{fontSize:14,fontFamily:FONT,minHeight:48}}/></div>},
   ]}/>;
 }
@@ -313,6 +364,7 @@ function IncForm({ onSave, onCancel, saving, initial, freights, mobile, storageP
   const [concept, setConcept] = useState(initial?.concept||"");
   const [amount, setAmount] = useState(initial?.amount?.toString()||"");
   const [currency, setCurrency] = useState(initial?.currency||"UYU");
+  const [exchangeRate, setExchangeRate] = useState(initial?.exchangeRate?.toString()||"40");
   const [date, setDate] = useState(initial?.date?new Date(initial.date).toISOString().split("T")[0]:new Date().toISOString().split("T")[0]);
   const [status, setStatus] = useState(initial?.status||"PENDING");
   const [freightId, setFreightId] = useState(initial?.freightId||"");
@@ -320,21 +372,21 @@ function IncForm({ onSave, onCancel, saving, initial, freights, mobile, storageP
   const [invoiceFile, setInvoiceFile] = useState(null);
   const [notes, setNotes] = useState(initial?.notes||"");
   const [uploading, setUploading] = useState(false);
-  const handleSubmit = async()=>{if(!concept||!amount||!date)return;setUploading(true);try{let iu=initial?.invoiceUrl;if(invoiceFile){iu=await uploadPhoto(invoiceFile,storagePath||"truck-incomes","invoice");}await onSave({concept,amount:parseFloat(amount),currency,date,status,freightId:freightId||null,invoiceNumber:invoiceNumber||null,invoiceUrl:iu,notes:notes||null});}finally{setUploading(false);}};
+  const handleSubmit = async()=>{if(!concept||!amount||!date)return;setUploading(true);try{let iu=initial?.invoiceUrl;if(invoiceFile){iu=await uploadPhoto(invoiceFile,storagePath||"truck-incomes","invoice");}await onSave({concept,amount:parseFloat(amount),currency,exchangeRate:currency!=="UYU"?parseFloat(exchangeRate)||40:null,date,status,freightId:freightId||null,invoiceNumber:invoiceNumber||null,invoiceUrl:iu,notes:notes||null});}finally{setUploading(false);}};
   const fmtCur = currency==="USD"?"US$":"$";
-  const freightLabel = freightId ? (freights||[]).find(f=>(f.freightId||f.id)===freightId)?.code||freightId : null;
+  const freightSel = freightId ? (freights||[]).find(f=>(f.freightId||f.id)===freightId) : null;
   return <FleetWizard title={initial?"Editar ingreso":"Nuevo ingreso"} saving={saving||uploading} onSubmit={handleSubmit} onCancel={onCancel} submitLabel={initial?"Guardar":"Registrar"} summaryRows={[
     {label:"Concepto",value:concept||"—",icon:Ic.doc(C.pri,14),step:0},
-    {label:"Monto",value:`${fmtCur}${amount||"0"} ${currency}`,icon:Ic.grain(C.acc,14),step:1},
+    {label:"Monto",value:`${fmtCur}${amount||"0"} ${currency}${currency!=="UYU"?` (TC: ${exchangeRate})`:""}`,icon:Ic.grain(C.acc,14),step:1},
     {label:"Estado",value:INC_STATUS[status]?.label||status,step:1},
     {label:"Fecha",value:date||"—",icon:Ic.cal(C.sec,14),step:2},
-    ...(freightLabel?[{label:"Flete",value:freightLabel,icon:Ic.truck(C.pri,14),step:0}]:[]),
+    ...(freightSel?[{label:"Flete",value:`${freightSel.code} — ${freightSel.originName||freightSel.origin||"?"} → ${freightSel.destName||freightSel.dest||"?"}`,icon:Ic.truck(C.pri,14),step:0}]:[]),
     ...(invoiceNumber?[{label:"Factura",value:invoiceNumber,step:2}]:[]),
     ...(invoiceFile?[{label:"Adjunto",value:invoiceFile.name}]:[]),
     ...(notes?[{label:"Notas",value:notes,step:2}]:[]),
   ]} steps={[
-    {title:"Concepto",complete:!!concept,content:<div><Field label="Concepto" value={concept} onChange={setConcept} placeholder="Ej: Flete Colonia → Montevideo"/>{freights?.length>0&&<div style={{marginTop:10}}><label style={lbl("s")}>Flete asociado</label><select value={freightId} onChange={e=>{setFreightId(e.target.value);if(e.target.value&&!concept){const f=freights.find(x=>(x.freightId||x.id)===e.target.value);if(f)setConcept(`Flete ${f.origin||"?"} → ${f.dest||"?"}`);}}} style={{...sel,minHeight:48}}><option value="">Sin flete</option>{freights.map(f=><option key={f.freightId||f.id} value={f.freightId||f.id}>{f.code}</option>)}</select></div>}</div>},
-    {title:"Monto",complete:!!amount,content:<div><Field label="Monto" value={amount} onChange={setAmount} placeholder="0" type="number" inputMode="decimal"/><div style={{display:"flex",gap:10,marginTop:10}}><div style={{flex:1}}><label style={lbl("s")}>Moneda</label><select value={currency} onChange={e=>setCurrency(e.target.value)} style={{...sel,minHeight:48}}><option value="UYU">UYU</option><option value="USD">USD</option><option value="ARS">ARS</option></select></div><div style={{flex:1}}><label style={lbl("s")}>Estado</label><select value={status} onChange={e=>setStatus(e.target.value)} style={{...sel,minHeight:48}}>{Object.entries(INC_STATUS).map(([k,v])=><option key={k} value={k}>{v.label}</option>)}</select></div></div></div>},
+    {title:"Concepto",complete:!!concept,content:<div><Field label="Concepto" value={concept} onChange={setConcept} placeholder="Ej: Flete Colonia → Montevideo"/><FreightPicker freights={freights} value={freightId} onChange={v=>{setFreightId(v);if(v&&!concept){const f=(freights||[]).find(x=>(x.freightId||x.id)===v);if(f)setConcept(`Flete ${f.originName||f.origin||"?"} → ${f.destName||f.dest||"?"}`);}}} /></div>},
+    {title:"Monto",complete:!!amount,content:<div><Field label="Monto" value={amount} onChange={setAmount} placeholder="0" type="number" inputMode="decimal"/><div style={{display:"flex",gap:10,marginTop:10}}><div style={{flex:1}}><label style={lbl("s")}>Moneda</label><select value={currency} onChange={e=>setCurrency(e.target.value)} style={{...sel,minHeight:48}}><option value="UYU">UYU</option><option value="USD">USD</option></select></div>{currency!=="UYU"&&<div style={{flex:1}}><Field label="Tipo de cambio" value={exchangeRate} onChange={setExchangeRate} placeholder="40" type="number" inputMode="decimal"/></div>}<div style={{flex:1}}><label style={lbl("s")}>Estado</label><select value={status} onChange={e=>setStatus(e.target.value)} style={{...sel,minHeight:48}}>{Object.entries(INC_STATUS).map(([k,v])=><option key={k} value={k}>{v.label}</option>)}</select></div></div></div>},
     {title:"Detalles",complete:!!date,content:<div><div style={{marginBottom:10}}><label style={lbl("s")}>Fecha</label><input type="date" value={date} onChange={e=>setDate(e.target.value)} style={{...sel,minHeight:48}}/></div><Field label="N° Factura (opcional)" value={invoiceNumber} onChange={setInvoiceNumber} placeholder="A-0001-00012345"/><Field label="Notas (opcional)" value={notes} onChange={setNotes} placeholder="Observaciones"/></div>},
     {title:"Factura",complete:true,content:<div><label style={lbl("s")}>Adjuntar factura (opcional)</label><input type="file" accept="image/*,.pdf" onChange={e=>setInvoiceFile(e.target.files?.[0]||null)} style={{fontSize:14,fontFamily:FONT,minHeight:48}}/></div>},
   ]}/>;
@@ -383,8 +435,8 @@ function MovForm({ onSave, onCancel, saving, initial, locations, mobile }) {
     ...(departureAt?[{label:"Salida",value:departureAt.replace("T"," "),icon:Ic.cal(C.pri,14),step:3}]:[]),
   ]} steps={[
     {title:"Tipo",complete:true,content:<div><label style={lbl("s")}>Tipo de movimiento</label><select value={type} onChange={e=>setType(e.target.value)} style={{...sel,minHeight:48}}>{Object.entries(MOV_TYPE_LABELS).map(([k,v])=><option key={k} value={k}>{v}</option>)}</select><div style={{marginTop:10}}><Field label="Descripción (opcional)" value={description} onChange={setDescription} placeholder="Detalle"/></div></div>},
-    {title:"Origen",complete:true,content:<div>{locations?.length>0&&<div style={{marginBottom:8}}><label style={lbl("s")}>Ubicación guardada</label><select value={originFieldId} onChange={e=>{pickLoc(e.target.value,setOriginFieldId,setOriginName);}} style={{...sel,minHeight:48}}><option value="">Escribir manualmente</option>{locations.map(l=><option key={l.id} value={l.id}>{l.name}</option>)}</select></div>}<Field label="Origen" value={originName} onChange={v=>{setOriginName(v);if(v)setOriginFieldId("");}} placeholder="Ciudad/lugar"/></div>},
-    {title:"Destino",complete:true,content:<div>{locations?.length>0&&<div style={{marginBottom:8}}><label style={lbl("s")}>Ubicación guardada</label><select value={destFieldId} onChange={e=>{pickLoc(e.target.value,setDestFieldId,setDestName);}} style={{...sel,minHeight:48}}><option value="">Escribir manualmente</option>{locations.map(l=><option key={l.id} value={l.id}>{l.name}</option>)}</select></div>}<Field label="Destino" value={destName} onChange={v=>{setDestName(v);if(v)setDestFieldId("");}} placeholder="Ciudad/lugar"/></div>},
+    {title:"Origen",complete:true,content:<div>{locations?.length>0&&<div style={{marginBottom:8}}><label style={lbl("s")}>Ubicación guardada</label><select value={originFieldId} onChange={e=>{pickLoc(e.target.value,setOriginFieldId,setOriginName);}} style={{...sel,minHeight:48}}><option value="">Escribir manualmente</option>{locations.map(l=><option key={l.id} value={l.id}>{l.name}</option>)}</select></div>}<Field label="Origen" value={originName} onChange={v=>{setOriginName(v);if(v)setOriginFieldId("");}} placeholder="Ciudad/lugar"/>{originLat&&<div style={{fontSize:11,color:C.t3,marginTop:4}}>{Ic.pin(C.ok,12)} {Number(originLat).toFixed(4)}, {Number(originLng).toFixed(4)}</div>}<button type="button" onClick={()=>setMapFor("origin")} style={{marginTop:8,padding:"8px 14px",borderRadius:R.md,border:`1.5px solid ${C.pri}40`,background:C.priPale,cursor:"pointer",fontFamily:FONT,fontSize:13,fontWeight:600,color:C.pri,display:"flex",alignItems:"center",gap:6}}>{Ic.pin(C.pri,14)} Elegir en mapa</button>{mapFor==="origin"&&<Suspense fallback={<Loader/>}><div style={{position:"fixed",inset:0,zIndex:1100}}><LocPickerFullscreen value={originLat?{lat:originLat,lng:originLng}:null} label="Seleccionar origen" confirmLabel="Confirmar origen" onChange={handleMapPick} onClose={()=>setMapFor(null)} onConfirm={handleMapPick}/></div></Suspense>}</div>},
+    {title:"Destino",complete:true,content:<div>{locations?.length>0&&<div style={{marginBottom:8}}><label style={lbl("s")}>Ubicación guardada</label><select value={destFieldId} onChange={e=>{pickLoc(e.target.value,setDestFieldId,setDestName);}} style={{...sel,minHeight:48}}><option value="">Escribir manualmente</option>{locations.map(l=><option key={l.id} value={l.id}>{l.name}</option>)}</select></div>}<Field label="Destino" value={destName} onChange={v=>{setDestName(v);if(v)setDestFieldId("");}} placeholder="Ciudad/lugar"/>{destLat&&<div style={{fontSize:11,color:C.t3,marginTop:4}}>{Ic.pin(C.sec,12)} {Number(destLat).toFixed(4)}, {Number(destLng).toFixed(4)}</div>}<button type="button" onClick={()=>setMapFor("dest")} style={{marginTop:8,padding:"8px 14px",borderRadius:R.md,border:`1.5px solid ${C.sec}40`,background:C.secPale,cursor:"pointer",fontFamily:FONT,fontSize:13,fontWeight:600,color:C.sec,display:"flex",alignItems:"center",gap:6}}>{Ic.pin(C.sec,14)} Elegir en mapa</button>{mapFor==="dest"&&<Suspense fallback={<Loader/>}><div style={{position:"fixed",inset:0,zIndex:1100}}><LocPickerFullscreen value={destLat?{lat:destLat,lng:destLng}:null} label="Seleccionar destino" confirmLabel="Confirmar destino" onChange={handleMapPick} onClose={()=>setMapFor(null)} onConfirm={handleMapPick}/></div></Suspense>}</div>},
     {title:"Datos",complete:true,content:<div><Field label="Km recorridos" value={kmDriven} onChange={setKmDriven} type="number" placeholder="0" inputMode="decimal"/><div style={{display:"flex",gap:10,marginTop:10}}><div style={{flex:1}}><Field label="Litros" value={fuelLiters} onChange={setFuelLiters} type="number" inputMode="decimal"/></div><div style={{flex:1}}><Field label="Peajes" value={tollCost} onChange={setTollCost} type="number" inputMode="decimal"/></div></div><div style={{display:"flex",gap:10,marginTop:10}}><div style={{flex:1}}><label style={lbl("s")}>Salida</label><input type="datetime-local" value={departureAt} onChange={e=>setDepartureAt(e.target.value)} style={{...sel,minHeight:44}}/></div><div style={{flex:1}}><label style={lbl("s")}>Llegada</label><input type="datetime-local" value={arrivalAt} onChange={e=>setArrivalAt(e.target.value)} style={{...sel,minHeight:44}}/></div></div></div>},
   ]}/>;
 }
@@ -445,6 +497,7 @@ export default function TruckDetailScreen({ truckId, user, onBack, onNavFreight 
   const [showMapFor, setShowMapFor] = useState(null); // "origin" or "dest" for map picker in movements
   const [expandedItem, setExpandedItem] = useState(null); // id of expanded income/expense
   const [searchQ, setSearchQ] = useState(""); // search query for filtering lists
+  const [dashCurrency, setDashCurrency] = useState("UYU"); // toggle for dashboard display currency
 
   const isDesktop = useIsDesktop();
   const storePath = `truck-docs/${user?.activeCompanyId||"shared"}/${truckId}`;
@@ -660,25 +713,34 @@ export default function TruckDetailScreen({ truckId, user, onBack, onNavFreight 
         )}
 
         {/* ==================== SUMMARY TAB ==================== */}
-        {tab === "summary" && (ecoSummary === null ? <Loader/> : <>
+        {tab === "summary" && (ecoSummary === null ? <Loader/> : (() => {
+          // Currency conversion: backend returns all values in UYU; convert to USD if toggled
+          const rate = eco.exchangeRate || 40;
+          const cv = v => dashCurrency === "USD" ? (Number(v)||0) / rate : Number(v)||0;
+          const dm = v => fmtMoney(cv(v), dashCurrency);
+          return <>
+          {/* Currency toggle */}
+          <div style={{display:"flex",justifyContent:"flex-end",marginBottom:10}}>
+            <div style={{display:"inline-flex",borderRadius:R.md,overflow:"hidden",border:`1.5px solid ${C.b1}`}}>
+              {["UYU","USD"].map(c=><button key={c} onClick={()=>setDashCurrency(c)} style={{padding:"5px 14px",fontFamily:FONT,fontSize:12,fontWeight:dashCurrency===c?700:500,background:dashCurrency===c?C.pri:C.w,color:dashCurrency===c?C.tOn:C.t2,border:"none",cursor:"pointer"}}>{c==="USD"?"US$":c}</button>)}
+            </div>
+          </div>
           {/* Result row */}
           <div style={{display:"flex",gap:8,marginBottom:12,flexWrap:"wrap"}}>
-            <Stat label="Ingresos" value={fmtMoney(eco.income?.paid||0)} color={C.ok}/>
-            <Stat label="Gastos" value={fmtMoney(eco.expenses?.total||0)} color={C.err}/>
-            <Stat label="Resultado" value={fmtMoney(eco.net||0)} color={(eco.net||0)>=0?C.ok:C.err}/>
+            <Stat label="Ingresos" value={dm(eco.income?.paid||0)} color={C.ok}/>
+            <Stat label="Gastos" value={dm(eco.expenses?.total||0)} color={C.err}/>
+            <Stat label="Resultado" value={dm(eco.net||0)} color={(eco.net||0)>=0?C.ok:C.err}/>
           </div>
           {/* Ops row */}
           <div style={{display:"flex",gap:8,marginBottom:12,flexWrap:"wrap"}}>
             <Stat label="Km totales" value={fmtKm(eco.km?.total||0)}/>
             <Stat label="Viajes" value={eco.trips?.total||0}/>
-            <Stat label="Horas" value={`${eco.hours||0}h`}/>
             <Stat label="km/litro" value={eco.fuel?.kmPerLiter||"—"}/>
           </div>
           {/* Efficiency */}
           <div style={{display:"flex",gap:8,marginBottom:12,flexWrap:"wrap"}}>
-            <Stat label="Costo/km" value={eco.costPerKm?fmtMoney(eco.costPerKm):"—"}/>
-            <Stat label="Ingreso/km" value={eco.incomePerKm?fmtMoney(eco.incomePerKm):"—"}/>
-            <Stat label="Km productivos" value={eco.km?.productivePercent!=null?`${eco.km.productivePercent}%`:"—"}/>
+            <Stat label="Costo/km" value={eco.costPerKm?dm(eco.costPerKm):"—"}/>
+            <Stat label="Ingreso/km" value={eco.incomePerKm?dm(eco.incomePerKm):"—"}/>
           </div>
           {/* Expense breakdown */}
           {eco.expenses?.byType?.length > 0 && <>
@@ -688,17 +750,18 @@ export default function TruckDetailScreen({ truckId, user, onBack, onNavFreight 
               return <div key={t.type} style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
                 <span style={{fontSize:12,color:C.t2,minWidth:100}}>{EXP_TYPE_LABELS[t.type]||t.type}</span>
                 <div style={{flex:1,height:8,background:C.bg,borderRadius:4,overflow:"hidden"}}><div style={{width:`${pct}%`,height:"100%",background:C.acc,borderRadius:4}}/></div>
-                <span style={{fontSize:11,fontWeight:600,color:C.t1,minWidth:70,textAlign:"right"}}>{fmtMoney(t.total)} ({pct}%)</span>
+                <span style={{fontSize:11,fontWeight:600,color:C.t1,minWidth:70,textAlign:"right"}}>{dm(t.total)} ({pct}%)</span>
               </div>;
             })}
           </>}
           {/* Income status */}
           {(eco.income?.pending>0||eco.income?.overdue>0) && <div style={{display:"flex",gap:8,marginTop:12}}>
-            <Stat label="Pendiente" value={fmtMoney(eco.income?.pending||0)} color={C.warn}/>
-            <Stat label="Vencido" value={fmtMoney(eco.income?.overdue||0)} color={C.err}/>
+            <Stat label="Pendiente" value={dm(eco.income?.pending||0)} color={C.warn}/>
+            <Stat label="Vencido" value={dm(eco.income?.overdue||0)} color={C.err}/>
           </div>}
           {!eco.km?.total && !eco.income?.total && <EmptyState icon={Ic.truck(C.t3,24)} title="Sin datos" subtitle="Registrá ingresos, gastos y datos de viaje para ver el rendimiento"/>}
-        </>)}
+        </>;
+        })())}
 
         {/* ==================== FREIGHTS TAB ==================== */}
         {tab === "freights" && <>
@@ -768,8 +831,8 @@ export default function TruckDetailScreen({ truckId, user, onBack, onNavFreight 
         {tab === "expenses" && <>
           {canEdit && <div style={{marginBottom:10,textAlign:"right"}}><Btn sm onClick={()=>setShowForm(!showForm)} icon={showForm?Ic.cross(C.w,12):Ic.plus(C.w,12)}>{showForm?"Cerrar":"Nuevo gasto"}</Btn></div>}
           {expSummary && <div style={{display:"flex",gap:10,marginBottom:12}}><Stat label="Este mes" value={fmtMoney(expSummary.thisMonth)}/><Stat label="Mes anterior" value={fmtMoney(expSummary.prevMonth)} color={C.t3}/></div>}
-          {showForm && <ExpForm onSave={handleAddExp} onCancel={()=>setShowForm(false)} saving={saving} activeFreights={truck.activeFreights} mobile={!isDesktop} storagePath={storePath}/>}
-          {editItem && tab==="expenses" && <ExpForm initial={editItem} onSave={handleUpdateExp} onCancel={()=>setEditItem(null)} saving={saving} activeFreights={truck.activeFreights} mobile={!isDesktop} storagePath={storePath}/>}
+          {showForm && <ExpForm onSave={handleAddExp} onCancel={()=>setShowForm(false)} saving={saving} activeFreights={[...(truck.activeFreights||[]),...(freightHistory||[])]} mobile={!isDesktop} storagePath={storePath}/>}
+          {editItem && tab==="expenses" && <ExpForm initial={editItem} onSave={handleUpdateExp} onCancel={()=>setEditItem(null)} saving={saving} activeFreights={[...(truck.activeFreights||[]),...(freightHistory||[])]} mobile={!isDesktop} storagePath={storePath}/>}
           {expenses===null?<Loader/>:expenses.length===0&&!showForm?<EmptyState icon={Ic.doc(C.t3,20)} title="Sin gastos" subtitle="Registrá el primer gasto del camión"/>:
             expenses.filter(e=>matchQ(EXP_TYPE_LABELS[e.type],e.description,e.freight?.code,e.freight?.originName,e.freight?.destName,fmtDate(e.date),fmtMoney(e.amount),e.provider,...(allDocs||[]).filter(d=>d.expenseId===e.id).map(d=>d.fileName))).map(e=>{
               const isExp = expandedItem === `exp-${e.id}`;
