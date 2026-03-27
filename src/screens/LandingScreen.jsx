@@ -60,9 +60,11 @@ export default function LandingScreen({ onLogin, onSignup, onPasswordReset, load
   /* Fetch presentacion.html and extract style+body */
   useEffect(() => {
     fetch("/presentacion.html").then(r=>r.text()).then(html=>{
-      const style = (html.match(/<style[^>]*>([\s\S]*?)<\/style>/i)||[])[1]||"";
-      const body = (html.match(/<body[^>]*>([\s\S]*?)<\/body>/i)||[])[1]||"";
-      setPresHTML("<style>"+style+"</style>"+body);
+      const style = (html.match(/<style[^>]*>([\s\S]+)<\/style>/i)||[])[1]||"";
+      const body = (html.match(/<body[^>]*>([\s\S]+)<\/body>/i)||[])[1]||"";
+      // Strip <script> tags — we run the logic in React useEffect instead
+      const cleaned = body.replace(/<script[\s\S]*?<\/script>/gi, "");
+      setPresHTML("<style>"+style+"</style>"+cleaned);
     }).catch(()=>{});
   }, []);
 
@@ -90,7 +92,7 @@ export default function LandingScreen({ onLogin, onSignup, onPasswordReset, load
       if (window.event && window.event.target) window.event.target.classList.add('active');
     };
     return () => { observers.forEach(o => o.disconnect()); delete window.switchTab; };
-  }, [showAuth]);
+  }, [showAuth, presHTML]);
 
   if (showAuth) return <AuthScreen onLogin={onLogin} onSignup={onSignup} onPasswordReset={onPasswordReset} loading={loading} error={error} clearError={clearError} onBackToLanding={()=>setShowAuth(false)} />;
 
