@@ -272,7 +272,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
       }
       const newRecord = { granteeCompanyId: newId, granteeCompany: { id: newId, name: companyName }, accessLevel: "READONLY", isActive: true };
       setLinkedProducers(prev => [...prev, newRecord]);
-      setShowNewProducer(false); setNewProducerName(""); setNewProducerPhone(""); setNewProducerCompany("");
+      setProducerErr(""); setShowNewProducer(false); setNewProducerName(""); setNewProducerPhone(""); setNewProducerCompany("");
       if (newId) handleProducerChange(newId);
     } catch (e) { setProducerErr(e.message || "Error al crear"); }
     finally { setSavingProducer(false); }

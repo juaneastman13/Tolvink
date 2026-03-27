@@ -71,7 +71,7 @@ export default memo(function HomeScreen({ user, freights, loading, error, perms,
   const [fleetAlerts, setFleetAlerts] = useState(null);
 
   useEffect(() => {
-    apiGetFleetAlerts().then(setFleetAlerts).catch(() => {});
+    apiGetFleetAlerts().then(setFleetAlerts).catch(() => setFleetAlerts([]));
   }, []);
 
   const selectFreight = useCallback((id, source) => {

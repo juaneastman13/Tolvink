@@ -48,7 +48,7 @@ export const TRIP_STATUS_CFG = Object.fromEntries(
 );
 export function tripStCfg(s) { return TRIP_STATUS_CFG[s] || TRIP_STATUS_CFG.pending; }
 
-export const GRANOS = ["Soja","Maíz","Trigo","Girasol","Sorgo","Cebada","Otros"];
+export const GRANOS = ["Soja","Maiz","Trigo","Girasol","Sorgo","Cebada","Otros"];
 export const UNITS = [{v:"toneladas",l:"Toneladas"},{v:"kg",l:"Kg"},{v:"cantidad",l:"Cantidad"},{v:"metros",l:"Metros"},{v:"m3",l:"M³"}];
 
 // Polling intervals (ms)

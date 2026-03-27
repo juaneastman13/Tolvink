@@ -134,7 +134,7 @@ export default function AuthScreen({ onLogin, onSignup, onPasswordReset, loading
       try {
         const result = await apiIdentifyForReset(resetIdentifier.trim());
         setMaskedPhone(result.maskedPhone);
-        setMode("reset_confirm");
+        setResetError(null); setMode("reset_confirm");
       } catch (e) { setResetError(e.message || "No se encontró la cuenta"); }
       finally { setResetLoading(false); }
 
@@ -146,7 +146,7 @@ export default function AuthScreen({ onLogin, onSignup, onPasswordReset, loading
       try {
         await apiRequestCode(resetIdentifier.trim(), cleanPhone);
         setCodeSent(true);
-        setMode("reset_code");
+        setResetError(null); setMode("reset_code");
       } catch (e) { setResetError(e.message || "Error al enviar código"); }
       finally { setResetLoading(false); }
 
@@ -157,7 +157,7 @@ export default function AuthScreen({ onLogin, onSignup, onPasswordReset, loading
       try {
         const result = await apiVerifyCode(resetPhone.replace(/[\s\-()]/g, ''), resetCode);
         setResetToken(result.resetToken);
-        setMode("reset_password");
+        setResetError(null); setMode("reset_password");
       } catch (e) { setResetError(e.message || "Código inválido"); }
       finally { setResetLoading(false); }
 
