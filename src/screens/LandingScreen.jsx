@@ -54,7 +54,17 @@ const _ct = { fontSize:9.9, color:C.t3, marginTop:4 };
 
 export default function LandingScreen({ onLogin, onSignup, onPasswordReset, loading, error, clearError }) {
   const [showAuth, setShowAuth] = useState(false);
+  const [presHTML, setPresHTML] = useState("");
   useUnlockScroll();
+
+  /* Fetch presentacion.html and extract style+body */
+  useEffect(() => {
+    fetch("/presentacion.html").then(r=>r.text()).then(html=>{
+      const style = (html.match(/<style[^>]*>([\s\S]*?)<\/style>/i)||[])[1]||"";
+      const body = (html.match(/<body[^>]*>([\s\S]*?)<\/body>/i)||[])[1]||"";
+      setPresHTML("<style>"+style+"</style>"+body);
+    }).catch(()=>{});
+  }, []);
 
   /* Activate reveal animations + switchTab for embedded presentation HTML */
   useEffect(() => {
@@ -142,8 +152,8 @@ export default function LandingScreen({ onLogin, onSignup, onPasswordReset, load
         </div>
       </div>
 
-      {/* ═══ PRESENTATION (full page from presentacion.html) ═══ */}
-      <iframe id="tv-details" src="/presentacion.html" style={{width:"100%",border:"none",minHeight:"100vh"}} title="Presentación Tolvink" onLoad={e=>{try{const h=e.target.contentDocument.documentElement.scrollHeight;e.target.style.height=h+"px";}catch(ex){}}} />
+      {/* ═══ PRESENTATION (loaded from presentacion.html) ═══ */}
+      {presHTML && <div id="tv-details" dangerouslySetInnerHTML={{__html: presHTML}} />}
     </div>
   );
 }
