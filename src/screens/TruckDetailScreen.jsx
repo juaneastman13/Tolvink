@@ -714,22 +714,23 @@ export default function TruckDetailScreen({ truckId, user, onBack, onNavFreight 
 
         {/* ==================== SUMMARY TAB ==================== */}
         {tab === "summary" && (ecoSummary === null ? <Loader/> : (() => {
-          // Currency conversion: backend returns all values in UYU; convert to USD if toggled
-          const rate = eco.exchangeRate || 40;
-          const cv = v => dashCurrency === "USD" ? (Number(v)||0) / rate : Number(v)||0;
-          const dm = v => fmtMoney(cv(v), dashCurrency);
+          // Backend returns {uyu, usd} for all monetary values
+          const cur = dashCurrency.toLowerCase(); // "uyu" or "usd"
+          const v = obj => Number(obj?.[cur]) || 0; // pick the right currency value
+          const dm = obj => fmtMoney(v(obj), dashCurrency);
           return <>
           {/* Currency toggle */}
-          <div style={{display:"flex",justifyContent:"flex-end",marginBottom:10}}>
+          <div style={{display:"flex",justifyContent:"flex-end",marginBottom:10,alignItems:"center",gap:8}}>
+            {eco.exchangeRate && <span style={{fontSize:11,color:C.t3}}>TC: {eco.exchangeRate}</span>}
             <div style={{display:"inline-flex",borderRadius:R.md,overflow:"hidden",border:`1.5px solid ${C.b1}`}}>
               {["UYU","USD"].map(c=><button key={c} onClick={()=>setDashCurrency(c)} style={{padding:"5px 14px",fontFamily:FONT,fontSize:12,fontWeight:dashCurrency===c?700:500,background:dashCurrency===c?C.pri:C.w,color:dashCurrency===c?C.tOn:C.t2,border:"none",cursor:"pointer"}}>{c==="USD"?"US$":c}</button>)}
             </div>
           </div>
           {/* Result row */}
           <div style={{display:"flex",gap:8,marginBottom:12,flexWrap:"wrap"}}>
-            <Stat label="Ingresos" value={dm(eco.income?.paid||0)} color={C.ok}/>
-            <Stat label="Gastos" value={dm(eco.expenses?.total||0)} color={C.err}/>
-            <Stat label="Resultado" value={dm(eco.net||0)} color={(eco.net||0)>=0?C.ok:C.err}/>
+            <Stat label="Ingresos" value={dm(eco.income?.paid)} color={C.ok}/>
+            <Stat label="Gastos" value={dm(eco.expenses?.total)} color={C.err}/>
+            <Stat label="Resultado" value={dm(eco.net)} color={v(eco.net)>=0?C.ok:C.err}/>
           </div>
           {/* Ops row */}
           <div style={{display:"flex",gap:8,marginBottom:12,flexWrap:"wrap"}}>
@@ -739,27 +740,29 @@ export default function TruckDetailScreen({ truckId, user, onBack, onNavFreight 
           </div>
           {/* Efficiency */}
           <div style={{display:"flex",gap:8,marginBottom:12,flexWrap:"wrap"}}>
-            <Stat label="Costo/km" value={eco.costPerKm?dm(eco.costPerKm):"—"}/>
-            <Stat label="Ingreso/km" value={eco.incomePerKm?dm(eco.incomePerKm):"—"}/>
+            <Stat label="Costo/km" value={v(eco.costPerKm)?dm(eco.costPerKm):"—"}/>
+            <Stat label="Ingreso/km" value={v(eco.incomePerKm)?dm(eco.incomePerKm):"—"}/>
           </div>
           {/* Expense breakdown */}
           {eco.expenses?.byType?.length > 0 && <>
             <div style={{fontSize:12,fontWeight:700,color:C.t2,marginBottom:6,textTransform:"uppercase",letterSpacing:0.5}}>Desglose de gastos</div>
-            {eco.expenses.byType.sort((a,b)=>Number(b.total)-Number(a.total)).map(t=>{
-              const pct = eco.expenses.total > 0 ? Math.round(Number(t.total)/Number(eco.expenses.total)*100) : 0;
+            {eco.expenses.byType.sort((a,b)=>(Number(b[cur])||0)-(Number(a[cur])||0)).map(t=>{
+              const total = Number(eco.expenses.total?.[cur])||1;
+              const val = Number(t[cur])||0;
+              const pct = Math.round(val/total*100);
               return <div key={t.type} style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
                 <span style={{fontSize:12,color:C.t2,minWidth:100}}>{EXP_TYPE_LABELS[t.type]||t.type}</span>
                 <div style={{flex:1,height:8,background:C.bg,borderRadius:4,overflow:"hidden"}}><div style={{width:`${pct}%`,height:"100%",background:C.acc,borderRadius:4}}/></div>
-                <span style={{fontSize:11,fontWeight:600,color:C.t1,minWidth:70,textAlign:"right"}}>{dm(t.total)} ({pct}%)</span>
+                <span style={{fontSize:11,fontWeight:600,color:C.t1,minWidth:70,textAlign:"right"}}>{fmtMoney(val,dashCurrency)} ({pct}%)</span>
               </div>;
             })}
           </>}
           {/* Income status */}
-          {(eco.income?.pending>0||eco.income?.overdue>0) && <div style={{display:"flex",gap:8,marginTop:12}}>
-            <Stat label="Pendiente" value={dm(eco.income?.pending||0)} color={C.warn}/>
-            <Stat label="Vencido" value={dm(eco.income?.overdue||0)} color={C.err}/>
+          {(v(eco.income?.pending)>0||v(eco.income?.overdue)>0) && <div style={{display:"flex",gap:8,marginTop:12}}>
+            <Stat label="Pendiente" value={dm(eco.income?.pending)} color={C.warn}/>
+            <Stat label="Vencido" value={dm(eco.income?.overdue)} color={C.err}/>
           </div>}
-          {!eco.km?.total && !eco.income?.total && <EmptyState icon={Ic.truck(C.t3,24)} title="Sin datos" subtitle="Registrá ingresos, gastos y datos de viaje para ver el rendimiento"/>}
+          {!eco.km?.total && !v(eco.income?.total) && <EmptyState icon={Ic.truck(C.t3,24)} title="Sin datos" subtitle="Registrá ingresos, gastos y datos de viaje para ver el rendimiento"/>}
         </>;
         })())}
 
