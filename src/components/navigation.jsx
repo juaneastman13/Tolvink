@@ -32,8 +32,7 @@ export function Sidebar({ active, onChange, unread=0, pendingCount=0, notifCount
     { k:"locations",ic:a=>Ic.map(a?C.pri:C.t3,20), l:"Mapa" },
     { k:"trucks",   ic:a=>Ic.truck(a?C.pri:C.t3,20), l:"Mi Flota" },
     ...(isManager ? [{ k:"linked", ic:a=>Ic.plant(a?C.pri:C.t3,20), l:"Empresas" }] : []),
-    { k:"notifs",  ic:a=>Ic.bell(a?C.pri:C.t3,20),   l:"Notificaciones", bd:notifCount },
-    { k:"menu",    ic:a=>Ic.menu3(a?C.pri:C.t3,20),   l:"Menú" },
+    { k:"menu",    ic:a=>Ic.menu3(a?C.pri:C.t3,20),   l:"Menú", bd:notifCount },
   ];
   const simpleKeys = new Set(["home","list","locations","chats","menu"]);
   const items = simpleMode ? allItems.filter(it => simpleKeys.has(it.k)) : allItems;
@@ -119,9 +118,9 @@ export function Sidebar({ active, onChange, unread=0, pendingCount=0, notifCount
   })() : null;
 
   return (
-    <div style={{ width:220, minWidth:220, height:"100%", background:C.w, borderRight:`1px solid ${C.b2}`, display:"flex", flexDirection:"column", flexShrink:0, overflow:"hidden" }}>
+    <div style={{ width:220, minWidth:220, height:"100%", background:C.w, borderRight:`1px solid ${C.b2}`, display:"flex", flexDirection:"column", flexShrink:0 }}>
       {/* Logo */}
-      <div style={{ padding:"20px 0", borderBottom:`1px solid ${C.b2}`, display:"flex", alignItems:"center", justifyContent:"center" }}>
+      <div style={{ padding:"20px 0", borderBottom:`1px solid ${C.b2}`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
         <div style={{ display:"inline-flex", alignItems:"flex-start" }}>
           <span style={{ fontSize:54.6, fontWeight:800, color:C.pri, letterSpacing:-2, lineHeight:1 }}>tolvink</span>
           <span style={{ width:12.6, height:12.6, borderRadius: R.sm, background:C.acc, display:"inline-block", marginLeft:3.2, marginTop:3.2, animation:"dotPulse 1.5s ease-in-out infinite" }}></span>
@@ -130,7 +129,7 @@ export function Sidebar({ active, onChange, unread=0, pendingCount=0, notifCount
 
       {/* Company selector — dropdown if multiple */}
       {activeCompany && activeCompany.name && (
-        <div ref={compRef} style={{ padding:"8px 14px", borderBottom:`1px solid ${C.b2}`, position:"relative" }}>
+        <div ref={compRef} style={{ padding:"8px 14px", borderBottom:`1px solid ${C.b2}`, position:"relative", flexShrink:0 }}>
           <button onClick={() => hasMultiple && setCompOpen(!compOpen)} style={{ display:"flex", alignItems:"center", gap:6, padding:"6px 8px", borderRadius: R.sm, background:`${(_TYPE_IC_COLORS[activeCompany.type]||C.t2)}0A`, border:`1px solid ${(_TYPE_IC_COLORS[activeCompany.type]||C.t2)+'30'}`, width:"100%", cursor:hasMultiple?"pointer":"default", fontFamily:"inherit", textAlign:"left" }}>
             <span style={{ display:"flex", flexShrink:0 }}>{_typeIcon(activeCompany.type,14) || <span style={{width:7,height:7,borderRadius: R.xs,background:C.t2}}/>}</span>
             <div style={{ flex:1, minWidth:0, display:"flex", alignItems:"baseline", gap:5, overflow:"hidden", whiteSpace:"nowrap" }}>
@@ -159,7 +158,7 @@ export function Sidebar({ active, onChange, unread=0, pendingCount=0, notifCount
 
       {/* Solicitar */}
       {canRequest && (
-        <div style={{ padding:"14px 14px 10px" }}>
+        <div style={{ padding:"14px 14px 10px", flexShrink:0 }}>
           <button onClick={onNew} style={{ width:"100%", display:"flex", alignItems:"center", justifyContent:"center", gap:8, padding:"10px 14px", borderRadius: R.lg, background:C.acc, border:"none", cursor:"pointer", fontFamily:"inherit", boxShadow:`0 2px 8px ${C.acc}30`, transition:"transform 0.15s, box-shadow 0.15s" }} onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-1px)";e.currentTarget.style.boxShadow=`0 4px 12px ${C.acc}40`}} onMouseLeave={e=>{e.currentTarget.style.transform="none";e.currentTarget.style.boxShadow=`0 2px 8px ${C.acc}30`}}>
             <style>{`@keyframes truckDrive{0%{transform:translateX(-10px)}60%{transform:translateX(6px)}100%{transform:translateX(-10px)}}`}</style>
             <span style={{ display:"inline-flex", animation:"truckDrive 1.5s ease-in-out infinite" }}>{Ic.truck(C.w,16)}</span>
@@ -169,7 +168,7 @@ export function Sidebar({ active, onChange, unread=0, pendingCount=0, notifCount
       )}
 
       {/* Global search */}
-      {onSearchChange && <div style={{ padding:"0 12px 6px", position:"relative" }}>
+      {onSearchChange && <div style={{ padding:"0 12px 6px", position:"relative", flexShrink:0 }}>
         <div style={{ display:"flex", alignItems:"center", gap:6, padding:"7px 10px", borderRadius: R.md, background:C.bgInput, border:`1.5px solid ${searchQuery?C.bFocus:C.b2}`, transition:"border-color 0.15s" }}>
           <span style={{ display:"flex", flexShrink:0 }}>{Ic.srch(C.t3,14)}</span>
           <input value={searchQuery} onChange={e=>onSearchChange(e.target.value)} placeholder="Buscar flete..." style={{ flex:1, border:"none", background:"transparent", outline:"none", fontSize:12.5, color:C.t1, fontFamily:"inherit", padding:0 }} />
@@ -188,7 +187,7 @@ export function Sidebar({ active, onChange, unread=0, pendingCount=0, notifCount
       </div>}
 
       {/* Nav items */}
-      <nav aria-label="Menú principal" style={{ flex:1, padding:"4px 8px", display:"flex", flexDirection:"column", gap:2 }}>
+      <nav aria-label="Menú principal" style={{ flex:1, padding:"4px 8px", display:"flex", flexDirection:"column", gap:2, overflowY:"auto", overflowX:"hidden", minHeight:0 }}>
         {items.map(it => {
           const isActive = active === it.k;
           return (
@@ -203,7 +202,7 @@ export function Sidebar({ active, onChange, unread=0, pendingCount=0, notifCount
       </nav>
 
       {/* Mode toggle + Theme toggle */}
-      <div style={{ borderTop:`1px solid ${C.b2}`, padding:"8px 12px", display:"flex", flexDirection:"column", gap:6 }}>
+      <div style={{ borderTop:`1px solid ${C.b2}`, padding:"8px 12px", display:"flex", flexDirection:"column", gap:6, flexShrink:0 }}>
         {FEATURES.SIMPLE_MODE_TOGGLE && onToggleSimple && <div style={{ position:"relative", display:"flex", borderRadius: R.sm, background:C.b2, padding:2, cursor:"pointer" }} onClick={onToggleSimple}>
           <div style={{ position:"absolute", top:2, left:simpleMode?"50%":2, width:"calc(50% - 2px)", height:"calc(100% - 4px)", borderRadius: R.sm, background:C.t3, transition:"left 0.25s ease", boxShadow:"0 1px 3px rgba(0,0,0,0.1)" }} />
           <span style={{ flex:1, textAlign:"center", fontSize:9.9, fontWeight:700, padding:"4px 0", position:"relative", zIndex:1, color:simpleMode?C.t3:C.w, transition:"color 0.2s", userSelect:"none" }}>Completo</span>
