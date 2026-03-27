@@ -831,8 +831,9 @@ export default function TruckDetailScreen({ truckId, user, onBack, onNavFreight 
             displayDocs.filter(d=>matchQ(d.fileName,d.name,DOC_TYPE_LABELS[d.type],fmtDate(d.createdAt))).map(d=>{
               const lb = LINK_BADGE[d.linkedType||"general"]||LINK_BADGE.general;
               const linkLabel = d.linkedType==="expense"&&d.expense?`${EXP_TYPE_LABELS[d.expense.type]||""} ${fmtDate(d.expense.date)}`:d.linkedType==="income"&&d.income?d.income.concept:d.linkedType==="freight"&&d.freight?d.freight.code:d.linkedType==="movement"&&d.movement?`${MOV_TYPE_LABELS[d.movement.type]||""} ${fmtDate(d.movement.departureAt)}`:"";
+              const isFreightDoc = !!d._fromFreightDoc;
               return <div key={d.id} style={{marginBottom:6}}>
-                <DocRow d={{...d, _linkBadge:lb, _linkLabel:linkLabel}} onView={openFile} onOcr={handleOcr} ocrLoading={ocrLoading} canEdit={canEdit} onEdit={dd=>setEditItem(dd)} onOcrSave={handleOcrSave} onOcrClear={handleOcrClear} onDelete={dd=>setConfirmDelete({type:"doc",id:dd.id,label:DOC_TYPE_LABELS[dd.type]})}/>
+                <DocRow d={{...d, _linkBadge:lb, _linkLabel:linkLabel}} onView={openFile} onOcr={isFreightDoc?null:handleOcr} ocrLoading={ocrLoading} canEdit={isFreightDoc?false:canEdit} onEdit={isFreightDoc?null:dd=>setEditItem(dd)} onOcrSave={isFreightDoc?null:handleOcrSave} onOcrClear={isFreightDoc?null:handleOcrClear} onDelete={isFreightDoc?null:dd=>setConfirmDelete({type:"doc",id:dd.id,label:DOC_TYPE_LABELS[dd.type]})}/>
               </div>;
             })
           }
