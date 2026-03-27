@@ -170,35 +170,84 @@ function DocRow({ d, onView, onOcr, ocrLoading, onEdit, onDelete, canEdit, onOcr
   );
 }
 
-// ======================== MOBILE STEP FORM ================================
+// ======================== FLEET WIZARD (matches NewScreen pattern) =========
 
-function StepForm({ title, steps, onSubmit, onCancel, saving, submitLabel = "Confirmar" }) {
+function FleetWizard({ title, steps, summaryRows, onSubmit, onCancel, saving, submitLabel = "Confirmar" }) {
+  /* steps: [{ title, content, complete }]
+     summaryRows: [{ label, value, icon?, step? }] — shown in confirmation step
+     step.complete: boolean — enables/disables "Siguiente" */
   const [step, setStep] = useState(0);
   const total = steps.length;
-  const isLast = step === total - 1;
+  const isConfirm = step === total; // extra confirmation step after all form steps
+  const current = steps[step] || {};
+  const canAdvance = current.complete !== false;
+  const goTo = (i) => setStep(i);
+
   return (
-    <div style={{ position:"fixed", inset:0, zIndex:9998, background:C.bg, display:"flex", flexDirection:"column", animation:"slideUp 0.25s ease" }}>
-      <style>{`@keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}`}</style>
-      {/* Header */}
-      <div style={{ display:"flex", alignItems:"center", gap:10, padding:"14px 16px", borderBottom:`1px solid ${C.b1}`, background:C.w, flexShrink:0 }}>
-        <button onClick={step > 0 ? () => setStep(s => s - 1) : onCancel} style={{ background:"none", border:"none", cursor:"pointer", padding:4 }}>{Ic.chev(C.pri, 18)}</button>
-        <span style={{ flex:1, fontSize:15, fontWeight:700, color:C.t1 }}>{title}</span>
-        <button onClick={onCancel} style={{ background:"none", border:"none", cursor:"pointer", padding:4 }}>{Ic.cross(C.t3, 18)}</button>
-      </div>
-      {/* Progress */}
-      <div style={{ display:"flex", gap:4, padding:"10px 16px", flexShrink:0 }}>
-        {steps.map((_, i) => <div key={i} style={{ flex:1, height:4, borderRadius:2, background:i <= step ? C.pri : C.b1, transition:"background 0.2s" }} />)}
-      </div>
-      <div style={{ padding:"4px 16px 0", fontSize:12, color:C.t3, flexShrink:0 }}>Paso {step + 1} de {total}{steps[step].title ? ` · ${steps[step].title}` : ""}</div>
-      {/* Content */}
-      <div style={{ flex:1, overflow:"auto", padding:"12px 16px" }}>
-        {steps[step].content}
-      </div>
-      {/* Sticky footer */}
-      <div style={{ padding:"12px 16px", borderTop:`1px solid ${C.b1}`, background:C.w, flexShrink:0 }}>
-        <button disabled={saving} onClick={isLast ? onSubmit : () => setStep(s => s + 1)} style={{ width:"100%", padding:"14px 0", borderRadius:R.md, border:"none", background:isLast ? C.pri : C.acc, color:C.w, fontSize:15, fontWeight:700, fontFamily:FONT, cursor:saving ? "not-allowed" : "pointer", opacity:saving ? 0.6 : 1, minHeight:48 }}>
-          {saving ? "Guardando..." : isLast ? submitLabel : "Siguiente →"}
-        </button>
+    <div role="dialog" aria-modal="true" aria-label={title} style={{ position:"fixed", inset:0, zIndex:1000, display:"flex", alignItems:"center", justifyContent:"center", padding:12 }}>
+      <div onClick={onCancel} style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.4)" }} />
+      <div style={{ position:"relative", background:C.bg, borderRadius:R.xl, width:"100%", maxWidth:500, maxHeight:"calc(100vh - 24px)", display:"flex", flexDirection:"column", animation:"slideUp 0.25s ease", overflow:"hidden" }}>
+        <style>{`@keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}`}</style>
+
+        {/* Header */}
+        <div style={{ position:"sticky", top:0, zIndex:2, background:C.bg, padding:"16px 20px 8px", borderBottom:`1px solid ${C.b2}`, flexShrink:0 }}>
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+            <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+              {step > 0 && <button aria-label="Anterior" onClick={() => setStep(s => s - 1)} style={{ background:"none", border:"none", cursor:"pointer", padding:4, minWidth:36, minHeight:36, display:"flex", alignItems:"center", justifyContent:"center" }}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={C.t2} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>}
+              <span style={{ fontSize:17.6, fontWeight:800, color:C.t1 }}>{isConfirm ? "Confirmación" : title}</span>
+            </div>
+            <button aria-label="Cerrar" onClick={onCancel} style={{ background:"none", border:"none", cursor:"pointer", padding:4, minWidth:44, minHeight:44, display:"flex", alignItems:"center", justifyContent:"center" }}>{Ic.cross(C.t3, 20)}</button>
+          </div>
+          <div style={{ display:"flex", alignItems:"center", gap:8, marginTop:6 }}>
+            <span style={{ fontSize:12.1, fontWeight:600, color:C.t3 }}>Paso {Math.min(step + 1, total)} de {total}</span>
+            <div style={{ flex:1, height:3, borderRadius:R.xs, background:C.b1, overflow:"hidden" }}>
+              <div style={{ height:"100%", width:`${((isConfirm ? total : step + 1) / total) * 100}%`, background:isConfirm ? C.ok : C.pri, borderRadius:R.xs, transition:"width 0.3s ease" }} />
+            </div>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div style={{ flex:1, overflow:"auto", padding:"16px 20px 24px" }}>
+          {isConfirm ? (
+            <div>
+              <div style={{ fontSize:14.3, fontWeight:700, color:C.t1, marginBottom:12 }}>Resumen</div>
+              <div style={{ display:"flex", flexDirection:"column", gap:0 }}>
+                {(summaryRows || []).map((r, i) => (
+                  <div key={i} style={{ display:"flex", alignItems:"center", gap:10, padding:"9px 0", borderBottom:`1px solid ${C.b1}` }}>
+                    {r.icon && <div style={{ display:"flex", alignItems:"center", justifyContent:"center", width:28, height:28, borderRadius:R.md, background:C.priPale, flexShrink:0 }}>{r.icon}</div>}
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <div style={{ fontSize:11, fontWeight:600, color:C.t3, textTransform:"uppercase", letterSpacing:0.4 }}>{r.label}</div>
+                      <div style={{ fontSize:13, fontWeight:500, color:C.t1, marginTop:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{r.value}</div>
+                    </div>
+                    {r.step != null && <button onClick={() => goTo(r.step)} style={{ background:"none", border:"none", cursor:"pointer", padding:"4px 8px", fontSize:12, fontWeight:700, color:C.pri, fontFamily:"inherit", flexShrink:0 }}>Editar</button>}
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            current.content
+          )}
+        </div>
+
+        {/* Footer — NextStepBtn pattern */}
+        <div style={{ padding:"12px 20px", borderTop:`1px solid ${C.b1}`, background:C.w, flexShrink:0 }}>
+          <div style={{ display:"flex", justifyContent:step > 0 ? "space-between" : "flex-end", gap:8 }}>
+            {step > 0 && (
+              <button type="button" onClick={() => setStep(s => s - 1)} style={{ padding:"11px 20px", borderRadius:R.md, border:`1.5px solid ${C.b1}`, background:C.w, color:C.t2, cursor:"pointer", fontSize:14.3, fontWeight:700, fontFamily:FONT, display:"flex", alignItems:"center", gap:8, transition:"all 0.2s ease" }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg> Anterior
+              </button>
+            )}
+            {isConfirm ? (
+              <button type="button" disabled={saving} onClick={onSubmit} style={{ padding:"11px 28px", borderRadius:R.md, border:"none", background:saving ? C.b1 : C.ok, color:C.w, cursor:saving ? "not-allowed" : "pointer", fontSize:14.3, fontWeight:700, fontFamily:FONT, display:"flex", alignItems:"center", gap:8, opacity:saving ? 0.6 : 1, transition:"all 0.2s ease" }}>
+                {saving ? "Guardando..." : submitLabel} <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              </button>
+            ) : (
+              <button type="button" disabled={!canAdvance} onClick={() => setStep(s => s + 1)} style={{ padding:"11px 28px", borderRadius:R.md, border:"none", background:canAdvance ? C.pri : C.b1, color:canAdvance ? C.w : C.t3, cursor:canAdvance ? "pointer" : "default", fontSize:14.3, fontWeight:700, fontFamily:FONT, display:"flex", alignItems:"center", gap:8, opacity:canAdvance ? 1 : 0.5, transition:"all 0.2s ease" }}>
+                Siguiente <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -206,7 +255,7 @@ function StepForm({ title, steps, onSubmit, onCancel, saving, submitLabel = "Con
 
 // ======================== FORMS (Doc, Exp reused from before) ============
 
-function DocForm({ onSave, onCancel, saving, initial, linkOptions, storagePath }) {
+function DocForm({ onSave, onCancel, saving, initial, linkOptions, storagePath, mobile }) {
   const [type, setType] = useState(initial?.type||"VTV_ITV");
   const [name, setName] = useState(initial?.name||"");
   const [expiresAt, setExpiresAt] = useState(initial?.expiresAt?new Date(initial.expiresAt).toISOString().split("T")[0]:"");
@@ -218,6 +267,19 @@ function DocForm({ onSave, onCancel, saving, initial, linkOptions, storagePath }
   const [uploading, setUploading] = useState(false);
   const handleSubmit = async()=>{if(!initial&&!file)return;setUploading(true);try{let fu=initial?.fileUrl,fn=initial?.fileName,mt=initial?.mimeType;if(file){fu=await uploadPhoto(file,storagePath||"truck-docs","doc");fn=file.name;mt=file.type;}const linkData = {};if(linkType==="expense")linkData.expenseId=linkId||null;else if(linkType==="income")linkData.incomeId=linkId||null;else if(linkType==="freight")linkData.freightId=linkId||null;else if(linkType==="movement")linkData.movementId=linkId||null;await onSave({type,name:name||null,fileUrl:fu,fileName:fn,mimeType:mt,expiresAt:expiresAt||null,issuedAt:issuedAt||null,notes:notes||null,...linkData});}finally{setUploading(false);}};
   const linkItems = linkType==="expense"?linkOptions?.expenses:linkType==="income"?linkOptions?.incomes:linkType==="freight"?linkOptions?.freights:linkType==="movement"?linkOptions?.movements:[];
+  const linkLabel = linkType!=="none"&&linkId ? (linkItems||[]).find(i=>i.id===linkId)?.label||linkId : null;
+  if (mobile) return <FleetWizard title={initial?"Editar documento":"Nuevo documento"} saving={saving||uploading} onSubmit={handleSubmit} onCancel={onCancel} submitLabel={initial?"Guardar":"Agregar"} summaryRows={[
+    {label:"Tipo",value:DOC_TYPE_ACTIVE[type]||(type==="OTHER"?name||"Otro":DOC_TYPE_LABELS[type]||type),icon:Ic.doc(C.pri,14),step:0},
+    ...(file?[{label:"Archivo",value:file.name,step:1}]:[]),
+    ...(issuedAt?[{label:"Emisión",value:issuedAt,icon:Ic.cal(C.sec,14),step:2}]:[]),
+    ...(expiresAt?[{label:"Vencimiento",value:expiresAt,icon:Ic.cal(C.warn,14),step:2}]:[]),
+    ...(linkLabel?[{label:"Vinculado a",value:linkLabel,step:2}]:[]),
+    ...(notes?[{label:"Notas",value:notes,step:2}]:[]),
+  ]} steps={[
+    {title:"Tipo",complete:true,content:<div><label style={lbl("s")}>Tipo de documento</label><select value={type} onChange={e=>setType(e.target.value)} style={{...sel,minHeight:48}}>{Object.entries(DOC_TYPE_ACTIVE).map(([k,v])=><option key={k} value={k}>{v}</option>)}</select>{type==="OTHER"&&<div style={{marginTop:10}}><Field label="Nombre" value={name} onChange={setName} placeholder="Nombre del documento"/></div>}</div>},
+    {title:"Archivo",complete:!!initial||!!file,content:<div>{!initial&&<div><label style={lbl("s")}>Archivo</label><input type="file" accept="image/*,.pdf" onChange={e=>setFile(e.target.files?.[0]||null)} style={{fontSize:14,fontFamily:FONT,minHeight:48}}/></div>}{initial&&<div style={{fontSize:13,color:C.t2}}>Archivo actual: {initial.fileName||"adjunto"}</div>}</div>},
+    {title:"Detalles",complete:true,content:<div><div style={{display:"flex",gap:10,marginBottom:10}}><div style={{flex:1}}><label style={lbl("s")}>Emisión</label><input type="date" value={issuedAt} onChange={e=>setIssuedAt(e.target.value)} style={{...sel,minHeight:48}}/></div><div style={{flex:1}}><label style={lbl("s")}>Vencimiento</label><input type="date" value={expiresAt} onChange={e=>setExpiresAt(e.target.value)} style={{...sel,minHeight:48}}/></div></div>{linkOptions&&<div style={{marginBottom:10}}><label style={lbl("s")}>Vincular a</label><select value={linkType} onChange={e=>{setLinkType(e.target.value);setLinkId("");}} style={{...sel,minHeight:48,marginBottom:4}}><option value="none">Documento general</option><option value="expense">Gasto</option><option value="income">Ingreso</option><option value="freight">Flete</option><option value="movement">Movimiento</option></select>{linkType!=="none"&&linkItems?.length>0&&<select value={linkId} onChange={e=>setLinkId(e.target.value)} style={{...sel,minHeight:48}}><option value="">Seleccionar...</option>{linkItems.map(i=><option key={i.id} value={i.id}>{i.label}</option>)}</select>}</div>}<Field label="Notas (opcional)" value={notes} onChange={setNotes} placeholder="Observaciones"/></div>},
+  ]}/>;
   return (<div style={{padding:16,background:C.bgCard,border:`1px solid ${C.b2}`,borderRadius:R.lg,marginBottom:12}}>
     <div style={{marginBottom:10}}><label style={lbl("s")}>Tipo de documento</label><select value={type} onChange={e=>setType(e.target.value)} style={sel}>{Object.entries(DOC_TYPE_ACTIVE).map(([k,v])=><option key={k} value={k}>{v}</option>)}</select></div>
     {type==="OTHER"&&<Field label="Nombre" value={name} onChange={setName} placeholder="Nombre del documento"/>}
@@ -243,11 +305,20 @@ function ExpForm({ onSave, onCancel, saving, initial, activeFreights, mobile, st
   const [receiptFile, setReceiptFile] = useState(null);
   const [uploading, setUploading] = useState(false);
   const handleSubmit = async()=>{if(!amount||!date)return;setUploading(true);try{let ru=initial?.receiptUrl,rn=initial?.receiptName;if(receiptFile){ru=await uploadPhoto(receiptFile,storagePath||"truck-receipts","receipt");rn=receiptFile.name;}await onSave({type,amount:parseFloat(amount),currency,date,description:description||null,freightId:freightId||null,receiptUrl:ru,receiptName:rn});}finally{setUploading(false);}};
-  if (mobile) return <StepForm title={initial?"Editar gasto":"Nuevo gasto"} saving={saving||uploading} onSubmit={handleSubmit} onCancel={onCancel} submitLabel={initial?"Guardar":"Registrar"} steps={[
-    {title:"Tipo",content:<div><label style={lbl("s")}>Tipo de gasto</label><select value={type} onChange={e=>setType(e.target.value)} style={{...sel,minHeight:48}}>{Object.entries(EXP_TYPE_LABELS).map(([k,v])=><option key={k} value={k}>{v}</option>)}</select></div>},
-    {title:"Monto",content:<div><Field label="Monto" value={amount} onChange={setAmount} placeholder="0" type="number" inputMode="decimal"/><div style={{marginTop:10}}><label style={lbl("s")}>Moneda</label><select value={currency} onChange={e=>setCurrency(e.target.value)} style={{...sel,minHeight:48}}><option value="UYU">UYU</option><option value="USD">USD</option><option value="ARS">ARS</option></select></div></div>},
-    {title:"Detalles",content:<div><div style={{marginBottom:10}}><label style={lbl("s")}>Fecha</label><input type="date" value={date} onChange={e=>setDate(e.target.value)} style={{...sel,minHeight:48}}/></div><Field label="Descripción (opcional)" value={description} onChange={setDescription} placeholder="Detalle"/>{activeFreights?.length>0&&<div style={{marginTop:10}}><label style={lbl("s")}>Flete asociado</label><select value={freightId} onChange={e=>setFreightId(e.target.value)} style={{...sel,minHeight:48}}><option value="">Sin flete</option>{activeFreights.map(f=><option key={f.id} value={f.id}>{f.code}</option>)}</select></div>}</div>},
-    {title:"Comprobante",content:<div><label style={lbl("s")}>Comprobante (opcional)</label><input type="file" accept="image/*,.pdf" onChange={e=>setReceiptFile(e.target.files?.[0]||null)} style={{fontSize:14,fontFamily:FONT,minHeight:48}}/></div>},
+  const fmtCur = currency==="USD"?"US$":"$";
+  const freightLabel = freightId ? (activeFreights||[]).find(f=>f.id===freightId)?.code||freightId : null;
+  if (mobile) return <FleetWizard title={initial?"Editar gasto":"Nuevo gasto"} saving={saving||uploading} onSubmit={handleSubmit} onCancel={onCancel} submitLabel={initial?"Guardar":"Registrar"} summaryRows={[
+    {label:"Tipo",value:EXP_TYPE_LABELS[type]||type,icon:Ic.doc(C.pri,14),step:0},
+    {label:"Monto",value:`${fmtCur}${amount||"0"} ${currency}`,icon:Ic.grain(C.acc,14),step:1},
+    {label:"Fecha",value:date||"—",icon:Ic.cal(C.sec,14),step:2},
+    ...(description?[{label:"Descripción",value:description,step:2}]:[]),
+    ...(freightLabel?[{label:"Flete",value:freightLabel,icon:Ic.truck(C.pri,14),step:2}]:[]),
+    ...(receiptFile?[{label:"Comprobante",value:receiptFile.name}]:[]),
+  ]} steps={[
+    {title:"Tipo",complete:true,content:<div><label style={lbl("s")}>Tipo de gasto</label><select value={type} onChange={e=>setType(e.target.value)} style={{...sel,minHeight:48}}>{Object.entries(EXP_TYPE_LABELS).map(([k,v])=><option key={k} value={k}>{v}</option>)}</select></div>},
+    {title:"Monto",complete:!!amount,content:<div><Field label="Monto" value={amount} onChange={setAmount} placeholder="0" type="number" inputMode="decimal"/><div style={{marginTop:10}}><label style={lbl("s")}>Moneda</label><select value={currency} onChange={e=>setCurrency(e.target.value)} style={{...sel,minHeight:48}}><option value="UYU">UYU</option><option value="USD">USD</option><option value="ARS">ARS</option></select></div></div>},
+    {title:"Detalles",complete:!!date,content:<div><div style={{marginBottom:10}}><label style={lbl("s")}>Fecha</label><input type="date" value={date} onChange={e=>setDate(e.target.value)} style={{...sel,minHeight:48}}/></div><Field label="Descripción (opcional)" value={description} onChange={setDescription} placeholder="Detalle"/>{activeFreights?.length>0&&<div style={{marginTop:10}}><label style={lbl("s")}>Flete asociado</label><select value={freightId} onChange={e=>setFreightId(e.target.value)} style={{...sel,minHeight:48}}><option value="">Sin flete</option>{activeFreights.map(f=><option key={f.id} value={f.id}>{f.code}</option>)}</select></div>}</div>},
+    {title:"Comprobante",complete:true,content:<div><label style={lbl("s")}>Comprobante (opcional)</label><input type="file" accept="image/*,.pdf" onChange={e=>setReceiptFile(e.target.files?.[0]||null)} style={{fontSize:14,fontFamily:FONT,minHeight:48}}/></div>},
   ]}/>;
   return (<div style={{padding:16,background:C.bgCard,border:`1px solid ${C.b2}`,borderRadius:R.lg,marginBottom:12}}>
     <div style={{marginBottom:10}}><label style={lbl("s")}>Tipo de gasto</label><select value={type} onChange={e=>setType(e.target.value)} style={sel}>{Object.entries(EXP_TYPE_LABELS).map(([k,v])=><option key={k} value={k}>{v}</option>)}</select></div>
@@ -272,11 +343,22 @@ function IncForm({ onSave, onCancel, saving, initial, freights, mobile, storageP
   const [notes, setNotes] = useState(initial?.notes||"");
   const [uploading, setUploading] = useState(false);
   const handleSubmit = async()=>{if(!concept||!amount||!date)return;setUploading(true);try{let iu=initial?.invoiceUrl;if(invoiceFile){iu=await uploadPhoto(invoiceFile,storagePath||"truck-incomes","invoice");}await onSave({concept,amount:parseFloat(amount),currency,date,status,freightId:freightId||null,invoiceNumber:invoiceNumber||null,invoiceUrl:iu,notes:notes||null});}finally{setUploading(false);}};
-  if (mobile) return <StepForm title={initial?"Editar ingreso":"Nuevo ingreso"} saving={saving||uploading} onSubmit={handleSubmit} onCancel={onCancel} submitLabel={initial?"Guardar":"Registrar"} steps={[
-    {title:"Concepto",content:<div><Field label="Concepto" value={concept} onChange={setConcept} placeholder="Ej: Flete Colonia → Montevideo"/>{freights?.length>0&&<div style={{marginTop:10}}><label style={lbl("s")}>Flete asociado</label><select value={freightId} onChange={e=>{setFreightId(e.target.value);if(e.target.value&&!concept){const f=freights.find(x=>(x.freightId||x.id)===e.target.value);if(f)setConcept(`Flete ${f.origin||"?"} → ${f.dest||"?"}`);}}} style={{...sel,minHeight:48}}><option value="">Sin flete</option>{freights.map(f=><option key={f.freightId||f.id} value={f.freightId||f.id}>{f.code}</option>)}</select></div>}</div>},
-    {title:"Monto",content:<div><Field label="Monto" value={amount} onChange={setAmount} placeholder="0" type="number" inputMode="decimal"/><div style={{display:"flex",gap:10,marginTop:10}}><div style={{flex:1}}><label style={lbl("s")}>Moneda</label><select value={currency} onChange={e=>setCurrency(e.target.value)} style={{...sel,minHeight:48}}><option value="UYU">UYU</option><option value="USD">USD</option><option value="ARS">ARS</option></select></div><div style={{flex:1}}><label style={lbl("s")}>Estado</label><select value={status} onChange={e=>setStatus(e.target.value)} style={{...sel,minHeight:48}}>{Object.entries(INC_STATUS).map(([k,v])=><option key={k} value={k}>{v.label}</option>)}</select></div></div></div>},
-    {title:"Detalles",content:<div><div style={{marginBottom:10}}><label style={lbl("s")}>Fecha</label><input type="date" value={date} onChange={e=>setDate(e.target.value)} style={{...sel,minHeight:48}}/></div><Field label="N° Factura (opcional)" value={invoiceNumber} onChange={setInvoiceNumber} placeholder="A-0001-00012345"/><Field label="Notas (opcional)" value={notes} onChange={setNotes} placeholder="Observaciones"/></div>},
-    {title:"Factura",content:<div><label style={lbl("s")}>Adjuntar factura (opcional)</label><input type="file" accept="image/*,.pdf" onChange={e=>setInvoiceFile(e.target.files?.[0]||null)} style={{fontSize:14,fontFamily:FONT,minHeight:48}}/></div>},
+  const fmtCur = currency==="USD"?"US$":"$";
+  const freightLabel = freightId ? (freights||[]).find(f=>(f.freightId||f.id)===freightId)?.code||freightId : null;
+  if (mobile) return <FleetWizard title={initial?"Editar ingreso":"Nuevo ingreso"} saving={saving||uploading} onSubmit={handleSubmit} onCancel={onCancel} submitLabel={initial?"Guardar":"Registrar"} summaryRows={[
+    {label:"Concepto",value:concept||"—",icon:Ic.doc(C.pri,14),step:0},
+    {label:"Monto",value:`${fmtCur}${amount||"0"} ${currency}`,icon:Ic.grain(C.acc,14),step:1},
+    {label:"Estado",value:INC_STATUS[status]?.label||status,step:1},
+    {label:"Fecha",value:date||"—",icon:Ic.cal(C.sec,14),step:2},
+    ...(freightLabel?[{label:"Flete",value:freightLabel,icon:Ic.truck(C.pri,14),step:0}]:[]),
+    ...(invoiceNumber?[{label:"Factura",value:invoiceNumber,step:2}]:[]),
+    ...(invoiceFile?[{label:"Adjunto",value:invoiceFile.name}]:[]),
+    ...(notes?[{label:"Notas",value:notes,step:2}]:[]),
+  ]} steps={[
+    {title:"Concepto",complete:!!concept,content:<div><Field label="Concepto" value={concept} onChange={setConcept} placeholder="Ej: Flete Colonia → Montevideo"/>{freights?.length>0&&<div style={{marginTop:10}}><label style={lbl("s")}>Flete asociado</label><select value={freightId} onChange={e=>{setFreightId(e.target.value);if(e.target.value&&!concept){const f=freights.find(x=>(x.freightId||x.id)===e.target.value);if(f)setConcept(`Flete ${f.origin||"?"} → ${f.dest||"?"}`);}}} style={{...sel,minHeight:48}}><option value="">Sin flete</option>{freights.map(f=><option key={f.freightId||f.id} value={f.freightId||f.id}>{f.code}</option>)}</select></div>}</div>},
+    {title:"Monto",complete:!!amount,content:<div><Field label="Monto" value={amount} onChange={setAmount} placeholder="0" type="number" inputMode="decimal"/><div style={{display:"flex",gap:10,marginTop:10}}><div style={{flex:1}}><label style={lbl("s")}>Moneda</label><select value={currency} onChange={e=>setCurrency(e.target.value)} style={{...sel,minHeight:48}}><option value="UYU">UYU</option><option value="USD">USD</option><option value="ARS">ARS</option></select></div><div style={{flex:1}}><label style={lbl("s")}>Estado</label><select value={status} onChange={e=>setStatus(e.target.value)} style={{...sel,minHeight:48}}>{Object.entries(INC_STATUS).map(([k,v])=><option key={k} value={k}>{v.label}</option>)}</select></div></div></div>},
+    {title:"Detalles",complete:!!date,content:<div><div style={{marginBottom:10}}><label style={lbl("s")}>Fecha</label><input type="date" value={date} onChange={e=>setDate(e.target.value)} style={{...sel,minHeight:48}}/></div><Field label="N° Factura (opcional)" value={invoiceNumber} onChange={setInvoiceNumber} placeholder="A-0001-00012345"/><Field label="Notas (opcional)" value={notes} onChange={setNotes} placeholder="Observaciones"/></div>},
+    {title:"Factura",complete:true,content:<div><label style={lbl("s")}>Adjuntar factura (opcional)</label><input type="file" accept="image/*,.pdf" onChange={e=>setInvoiceFile(e.target.files?.[0]||null)} style={{fontSize:14,fontFamily:FONT,minHeight:48}}/></div>},
   ]}/>;
   return (<div style={{padding:16,background:C.bgCard,border:`1px solid ${C.b2}`,borderRadius:R.lg,marginBottom:12}}>
     <Field label="Concepto" value={concept} onChange={setConcept} placeholder="Ej: Flete Colonia → Montevideo"/>
@@ -322,11 +404,20 @@ function MovForm({ onSave, onCancel, saving, initial, locations, mobile }) {
     setMapFor(null);
   };
   const handleSubmit = ()=>onSave({type,description:description||null,originName:originName||null,originFieldId:originFieldId||null,originLat,originLng,destName:destName||null,destFieldId:destFieldId||null,destLat,destLng,departureAt:departureAt||null,arrivalAt:arrivalAt||null,kmDriven:kmDriven?parseFloat(kmDriven):null,fuelLiters:fuelLiters?parseFloat(fuelLiters):null,fuelCost:fuelCost?parseFloat(fuelCost):null,tollCost:tollCost?parseFloat(tollCost):null,notes:notes||null});
-  if (mobile) return <StepForm title={initial?"Editar movimiento":"Nuevo movimiento"} saving={saving} onSubmit={handleSubmit} onCancel={onCancel} submitLabel={initial?"Guardar":"Registrar"} steps={[
-    {title:"Tipo",content:<div><label style={lbl("s")}>Tipo de movimiento</label><select value={type} onChange={e=>setType(e.target.value)} style={{...sel,minHeight:48}}>{Object.entries(MOV_TYPE_LABELS).map(([k,v])=><option key={k} value={k}>{v}</option>)}</select><div style={{marginTop:10}}><Field label="Descripción (opcional)" value={description} onChange={setDescription} placeholder="Detalle"/></div></div>},
-    {title:"Origen",content:<div>{locations?.length>0&&<div style={{marginBottom:8}}><label style={lbl("s")}>Ubicación guardada</label><select value={originFieldId} onChange={e=>{pickLoc(e.target.value,setOriginFieldId,setOriginName);}} style={{...sel,minHeight:48}}><option value="">Escribir manualmente</option>{locations.map(l=><option key={l.id} value={l.id}>{l.name}</option>)}</select></div>}<Field label="Origen" value={originName} onChange={v=>{setOriginName(v);if(v)setOriginFieldId("");}} placeholder="Ciudad/lugar"/></div>},
-    {title:"Destino",content:<div>{locations?.length>0&&<div style={{marginBottom:8}}><label style={lbl("s")}>Ubicación guardada</label><select value={destFieldId} onChange={e=>{pickLoc(e.target.value,setDestFieldId,setDestName);}} style={{...sel,minHeight:48}}><option value="">Escribir manualmente</option>{locations.map(l=><option key={l.id} value={l.id}>{l.name}</option>)}</select></div>}<Field label="Destino" value={destName} onChange={v=>{setDestName(v);if(v)setDestFieldId("");}} placeholder="Ciudad/lugar"/></div>},
-    {title:"Datos",content:<div><Field label="Km recorridos" value={kmDriven} onChange={setKmDriven} type="number" placeholder="0" inputMode="decimal"/><div style={{display:"flex",gap:10,marginTop:10}}><div style={{flex:1}}><Field label="Litros" value={fuelLiters} onChange={setFuelLiters} type="number" inputMode="decimal"/></div><div style={{flex:1}}><Field label="Peajes" value={tollCost} onChange={setTollCost} type="number" inputMode="decimal"/></div></div><div style={{display:"flex",gap:10,marginTop:10}}><div style={{flex:1}}><label style={lbl("s")}>Salida</label><input type="datetime-local" value={departureAt} onChange={e=>setDepartureAt(e.target.value)} style={{...sel,minHeight:44}}/></div><div style={{flex:1}}><label style={lbl("s")}>Llegada</label><input type="datetime-local" value={arrivalAt} onChange={e=>setArrivalAt(e.target.value)} style={{...sel,minHeight:44}}/></div></div></div>},
+  if (mobile) return <FleetWizard title={initial?"Editar movimiento":"Nuevo movimiento"} saving={saving} onSubmit={handleSubmit} onCancel={onCancel} submitLabel={initial?"Guardar":"Registrar"} summaryRows={[
+    {label:"Tipo",value:MOV_TYPE_LABELS[type]||type,icon:Ic.truck(C.pri,14),step:0},
+    ...(description?[{label:"Descripción",value:description,step:0}]:[]),
+    ...(originName?[{label:"Origen",value:originName,icon:Ic.pin(C.ok,14),step:1}]:[]),
+    ...(destName?[{label:"Destino",value:destName,icon:Ic.pin(C.sec,14),step:2}]:[]),
+    ...(kmDriven?[{label:"Km",value:`${kmDriven} km`,icon:Ic.nav(C.acc,14),step:3}]:[]),
+    ...(fuelLiters?[{label:"Combustible",value:`${fuelLiters} L`,step:3}]:[]),
+    ...(tollCost?[{label:"Peajes",value:`$${tollCost}`,step:3}]:[]),
+    ...(departureAt?[{label:"Salida",value:departureAt.replace("T"," "),icon:Ic.cal(C.pri,14),step:3}]:[]),
+  ]} steps={[
+    {title:"Tipo",complete:true,content:<div><label style={lbl("s")}>Tipo de movimiento</label><select value={type} onChange={e=>setType(e.target.value)} style={{...sel,minHeight:48}}>{Object.entries(MOV_TYPE_LABELS).map(([k,v])=><option key={k} value={k}>{v}</option>)}</select><div style={{marginTop:10}}><Field label="Descripción (opcional)" value={description} onChange={setDescription} placeholder="Detalle"/></div></div>},
+    {title:"Origen",complete:true,content:<div>{locations?.length>0&&<div style={{marginBottom:8}}><label style={lbl("s")}>Ubicación guardada</label><select value={originFieldId} onChange={e=>{pickLoc(e.target.value,setOriginFieldId,setOriginName);}} style={{...sel,minHeight:48}}><option value="">Escribir manualmente</option>{locations.map(l=><option key={l.id} value={l.id}>{l.name}</option>)}</select></div>}<Field label="Origen" value={originName} onChange={v=>{setOriginName(v);if(v)setOriginFieldId("");}} placeholder="Ciudad/lugar"/></div>},
+    {title:"Destino",complete:true,content:<div>{locations?.length>0&&<div style={{marginBottom:8}}><label style={lbl("s")}>Ubicación guardada</label><select value={destFieldId} onChange={e=>{pickLoc(e.target.value,setDestFieldId,setDestName);}} style={{...sel,minHeight:48}}><option value="">Escribir manualmente</option>{locations.map(l=><option key={l.id} value={l.id}>{l.name}</option>)}</select></div>}<Field label="Destino" value={destName} onChange={v=>{setDestName(v);if(v)setDestFieldId("");}} placeholder="Ciudad/lugar"/></div>},
+    {title:"Datos",complete:true,content:<div><Field label="Km recorridos" value={kmDriven} onChange={setKmDriven} type="number" placeholder="0" inputMode="decimal"/><div style={{display:"flex",gap:10,marginTop:10}}><div style={{flex:1}}><Field label="Litros" value={fuelLiters} onChange={setFuelLiters} type="number" inputMode="decimal"/></div><div style={{flex:1}}><Field label="Peajes" value={tollCost} onChange={setTollCost} type="number" inputMode="decimal"/></div></div><div style={{display:"flex",gap:10,marginTop:10}}><div style={{flex:1}}><label style={lbl("s")}>Salida</label><input type="datetime-local" value={departureAt} onChange={e=>setDepartureAt(e.target.value)} style={{...sel,minHeight:44}}/></div><div style={{flex:1}}><label style={lbl("s")}>Llegada</label><input type="datetime-local" value={arrivalAt} onChange={e=>setArrivalAt(e.target.value)} style={{...sel,minHeight:44}}/></div></div></div>},
   ]}/>;
   return (<div style={{padding:16,background:C.bgCard,border:`1px solid ${C.b2}`,borderRadius:R.lg,marginBottom:12}}>
     <div style={{marginBottom:10}}><label style={lbl("s")}>Tipo</label><select value={type} onChange={e=>setType(e.target.value)} style={sel}>{Object.entries(MOV_TYPE_LABELS).map(([k,v])=><option key={k} value={k}>{v}</option>)}</select></div>
@@ -826,8 +917,8 @@ export default function TruckDetailScreen({ truckId, user, onBack, onNavFreight 
             {docSum.expiringSoon>0&&<span style={{fontSize:11,fontWeight:600,color:C.warn,background:C.warnPale,padding:"3px 10px",borderRadius:R.pill}}>⚠️ {docSum.expiringSoon}</span>}
             {docSum.expired>0&&<span style={{fontSize:11,fontWeight:600,color:C.err,background:C.errPale,padding:"3px 10px",borderRadius:R.pill}}>❌ {docSum.expired}</span>}
           </div>}
-          {showForm && <DocForm onSave={handleAddDoc} onCancel={()=>setShowForm(false)} saving={saving} linkOptions={linkOpts} storagePath={storePath}/>}
-          {editItem && tab==="docs" && <DocForm initial={editItem} onSave={handleUpdateDoc} onCancel={()=>setEditItem(null)} saving={saving} linkOptions={linkOpts} storagePath={storePath}/>}
+          {showForm && <DocForm onSave={handleAddDoc} onCancel={()=>setShowForm(false)} saving={saving} linkOptions={linkOpts} storagePath={storePath} mobile={!isDesktop}/>}
+          {editItem && tab==="docs" && <DocForm initial={editItem} onSave={handleUpdateDoc} onCancel={()=>setEditItem(null)} saving={saving} linkOptions={linkOpts} storagePath={storePath} mobile={!isDesktop}/>}
           {displayDocs.length===0&&!showForm?<EmptyState icon={Ic.doc(C.t3,24)} title="Sin documentos" subtitle="Cargá el primer documento del camión"/>:
             displayDocs.filter(d=>matchQ(d.fileName,d.name,DOC_TYPE_LABELS[d.type],fmtDate(d.createdAt),fmtDate(d.expiresAt),d.expiryStatus==="expired"?"vencido":d.expiryStatus==="expiring_soon"?"por vencer":"",d.freight?.code,d.expense?EXP_TYPE_LABELS[d.expense.type]:"",d.income?.concept,d.movement?MOV_TYPE_LABELS[d.movement.type]:"",d.linkedType==="freight"?"flete":d.linkedType==="expense"?"gasto":d.linkedType==="income"?"ingreso":d.linkedType==="movement"?"movimiento":"")).map(d=>{
               const lb = LINK_BADGE[d.linkedType||"general"]||LINK_BADGE.general;
