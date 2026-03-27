@@ -53,6 +53,8 @@ const _cb = sent => ({ maxWidth:"78%", padding:"10px 14px", borderRadius:14, fon
 const _ct = { fontSize:9.9, color:C.t3, marginTop:4 };
 
 /* ── custom inline SVGs (no matching Ic function) ─────────── */
+const SvgProducer = (c,s) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22V8"/><path d="M8 12l4-4 4 4"/><path d="M6 16l6-6 6 6"/><path d="M9 20l3-3 3 3"/></svg>;
+const SvgGrid = (c,s) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg>;
 const SvgMic = (c,s) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg>;
 
 /* ── Presentation HTML (from presentacion.html) ─────────── */
