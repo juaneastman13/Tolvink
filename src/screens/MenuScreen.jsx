@@ -164,6 +164,9 @@ export default function MenuScreen({ user, perms, onLogout, onNav, isDesktop, on
       <button onClick={()=>onNav("mydata")} style={{width:"100%",padding:"12px 16px",minHeight:44,borderRadius: R.md,border:`1px solid ${C.pri}`,background:`${C.pri}08`,color:C.pri,fontSize:13.2,fontWeight:600,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
         {Ic.edit(C.pri,14)} Administrar mis datos
       </button>
+      <a href="/manual.html" target="_blank" rel="noopener noreferrer" style={{width:"100%",padding:"10px 16px",minHeight:40,borderRadius: R.md,border:`1px solid ${C.b1}`,background:C.bg,color:C.t2,fontSize:12.1,fontWeight:600,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:6,textDecoration:"none",marginTop:6}}>
+        {Ic.doc(C.t3,14)} Manual de uso
+      </a>
     </div>
   );
 
