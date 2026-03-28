@@ -1,12 +1,12 @@
 import { useState, useRef, useEffect, useMemo, useCallback, lazy, Suspense } from "react";
 import { C, Ic, FONT, MONO, track, STATUS_COLORS , R} from "../theme";
 import { stCfg, getActions, tripStCfg, POLL_INTERVALS, formatFreightDate } from "../constants";
-import { Bd, Btn, Loader, Sec, FileViewer, SkeletonDetail, LicensePlate } from "../components";
+import { Bd, Btn, Field, Loader, Sec, FileViewer, SkeletonDetail, LicensePlate } from "../components";
 import { SafeZone } from "../maps";
 const FreightMap = lazy(() => import("../maps").then(m => ({ default: m.FreightMap })));
 import log from "../logger";
 import { DocsGallery, FreightFileUpload, OcrResultModal, UploadOverlay } from "../uploads";
-import { apiGetAuditLog, apiGetFreight, apiGetFreightDetailExtra, apiSendTracking, apiApprovePendingChange, apiRejectPendingChange, apiOcrAnalyze, apiSaveOcrData, apiUpdateFreight, apiGetWeighTickets, apiAssignFreight, apiGetCompanyAccess, apiCreateSharedLink, apiReorderAssignments } from "../api";
+import { apiGetAuditLog, apiGetFreight, apiGetFreightDetailExtra, apiSendTracking, apiApprovePendingChange, apiRejectPendingChange, apiOcrAnalyze, apiSaveOcrData, apiUpdateFreight, apiGetWeighTickets, apiAssignFreight, apiGetCompanyAccess, apiCreateSharedLink, apiReorderAssignments, apiUpdateTripData } from "../api";
 import { WeighTicketSummary } from "../components/WeighTicketForm";
 import { useIsDesktop, mapFreight, originDisplay, destDisplay } from "../hooks";
 import { useAccessLevel } from "../hooks/useAccessLevel";
@@ -14,6 +14,39 @@ import { useUIStore, useFreightDetailStore } from "../store";
 import AssignmentSuggestions from "../components/AssignmentSuggestions";
 // PDF report loaded lazily to avoid bundle bloat
 const loadPdfReport = () => import("../utils/pdf-report");
+
+function TripDataInline({ freight, assignment: a, saving, onSave, onCancel }) {
+  const [kmLoaded, setKmLoaded] = useState(a.kmLoaded?.toString()||"");
+  const [kmEmpty, setKmEmpty] = useState(a.kmEmpty?.toString()||"");
+  const [fuelLiters, setFuelLiters] = useState(a.fuelLiters?.toString()||"");
+  const [fuelCostPerLiter, setFuelCostPerLiter] = useState(a.fuelCostPerLiter?.toString()||"");
+  const [tollCost, setTollCost] = useState(a.tollCost?.toString()||"");
+  const [odometerStart, setOdometerStart] = useState(a.odometerStart?.toString()||"");
+  const [odometerEnd, setOdometerEnd] = useState(a.odometerEnd?.toString()||"");
+  const kmTotal = (parseFloat(kmLoaded||"0")+parseFloat(kmEmpty||"0"))||"";
+  const lbl = { fontSize:11, fontWeight:600, color:C.t2, marginBottom:3 };
+  return (<div style={{padding:14,background:C.bgCard,border:`1px solid ${C.b2}`,borderRadius:R.lg,marginBottom:10}}>
+    <div style={{fontSize:12,fontWeight:700,color:C.t2,marginBottom:8}}>Datos de viaje{a.plate ? ` — ${a.plate}` : ""}</div>
+    <div style={{display:"flex",gap:8,marginBottom:8,flexWrap:"wrap"}}>
+      <div style={{flex:"1 1 100px",minWidth:80}}><Field label="Km con carga" value={kmLoaded} onChange={setKmLoaded} type="number" placeholder="0" inputMode="decimal"/></div>
+      <div style={{flex:"1 1 100px",minWidth:80}}><Field label="Km vacío" value={kmEmpty} onChange={setKmEmpty} type="number" placeholder="0" inputMode="decimal"/></div>
+      <div style={{flex:"1 1 100px",minWidth:80}}><div style={lbl}>Km total</div><div style={{padding:"8px 10px",borderRadius:R.md,background:C.bg,fontSize:13,color:C.t1,fontWeight:600}}>{kmTotal||"—"}</div></div>
+    </div>
+    <div style={{display:"flex",gap:8,marginBottom:8,flexWrap:"wrap"}}>
+      <div style={{flex:"1 1 100px",minWidth:80}}><Field label="Litros" value={fuelLiters} onChange={setFuelLiters} type="number" placeholder="0" inputMode="decimal"/></div>
+      <div style={{flex:"1 1 100px",minWidth:80}}><Field label="$/litro" value={fuelCostPerLiter} onChange={setFuelCostPerLiter} type="number" placeholder="0" inputMode="decimal"/></div>
+      <div style={{flex:"1 1 100px",minWidth:80}}><Field label="Peajes" value={tollCost} onChange={setTollCost} type="number" placeholder="0" inputMode="decimal"/></div>
+    </div>
+    <div style={{display:"flex",gap:8,marginBottom:8,flexWrap:"wrap"}}>
+      <div style={{flex:"1 1 140px",minWidth:120}}><Field label="Odómetro inicio" value={odometerStart} onChange={setOdometerStart} type="number" placeholder="0" inputMode="numeric"/></div>
+      <div style={{flex:"1 1 140px",minWidth:120}}><Field label="Odómetro fin" value={odometerEnd} onChange={setOdometerEnd} type="number" placeholder="0" inputMode="numeric"/></div>
+    </div>
+    <div style={{display:"flex",gap:8}}>
+      <Btn full disabled={saving} onClick={()=>onSave({kmLoaded:parseFloat(kmLoaded)||null,kmEmpty:parseFloat(kmEmpty)||null,kmTotal:parseFloat(kmTotal)||null,fuelLiters:parseFloat(fuelLiters)||null,fuelCostPerLiter:parseFloat(fuelCostPerLiter)||null,tollCost:parseFloat(tollCost)||null,odometerStart:parseInt(odometerStart)||null,odometerEnd:parseInt(odometerEnd)||null})}>{saving?"Guardando...":"Guardar datos"}</Btn>
+      <Btn v="muted" onClick={onCancel}>Cancelar</Btn>
+    </div>
+  </div>);
+}
 
 export default function DetailScreen({ user, freight, perms, onBack, onAction, onTripAction, onEditTrip, onCancelAssignment, actionLoading, onChat, onRefresh, onDuplicate, onEdit, goToMap, sseConnected }) {
   // === ALL HOOKS MUST BE BEFORE ANY EARLY RETURN (React rules of hooks) ===
@@ -79,6 +112,8 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
   const [ocrDocId, setOcrDocId] = useState(null);
   const [pdfLoading, setPdfLoading] = useState(false);
   const [pcLoading, setPcLoading] = useState(null);
+  const [tripDataOpen, setTripDataOpen] = useState(false);
+  const [tripSaving, setTripSaving] = useState(false);
   const auditRef = useRef(null);
   const show = useUIStore(s => s.show);
 
@@ -310,11 +345,16 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
       const aTransporterIsConsulta = isPlantUser && a.transportCompanyId && transporterAccessMap[a.transportCompanyId] === "READONLY";
       const entries = [];
       if (user.userType === "plant") {
-        if (ts === "loaded" && !a.plantFinishedConfirmedAt) entries.push({ key:"confirm_trip_finished", label:"Confirmar entrega", color:C.pri, icon:Ic.chk(C.w,16) });
+        // Own-fleet: plant acts as transporter — authorize pending, then start/confirm lifecycle
+        if (isOwn && ts === "pending") entries.push({ key:"respond_trip", label:"Autorizar viaje", color:C.sec, icon:Ic.chk(C.w,16) });
+        if (isOwn && ts === "accepted") entries.push({ key:"start_trip", label:"Iniciar viaje", color:C.pri, icon:Ic.truck(C.w,16) });
+        if (isOwn && ts === "in_progress" && !a.transporterLoadedConfirmedAt) entries.push({ key:"confirm_trip_loaded", label:"Confirmar carga", color:C.acc, icon:Ic.chk(C.w,16) });
+        if (isOwn && ts === "loaded" && !a.transporterFinishedConfirmedAt) entries.push({ key:"confirm_trip_finished", label:"Confirmar entrega", color:C.pri, icon:Ic.chk(C.w,16) });
+        if (!isOwn && ts === "loaded" && !a.plantFinishedConfirmedAt) entries.push({ key:"confirm_trip_finished", label:"Confirmar entrega", color:C.pri, icon:Ic.chk(C.w,16) });
         // Plant absorbs trip lifecycle when this assignment's transporter is CONSULTA
         if (aTransporterIsConsulta) {
-          if (ts === "accepted") entries.push({ key:"start_trip", label:"Iniciar viaje", color:C.pri, icon:Ic.truck(C.w,16) });
-          if (ts === "in_progress" && !a.transporterLoadedConfirmedAt) entries.push({ key:"confirm_trip_loaded", label:"Confirmar carga", color:C.acc, icon:Ic.chk(C.w,16) });
+          if (ts === "accepted" && !entries.find(e=>e.key==="start_trip")) entries.push({ key:"start_trip", label:"Iniciar viaje", color:C.pri, icon:Ic.truck(C.w,16) });
+          if (ts === "in_progress" && !a.transporterLoadedConfirmedAt && !entries.find(e=>e.key==="confirm_trip_loaded")) entries.push({ key:"confirm_trip_loaded", label:"Confirmar carga", color:C.acc, icon:Ic.chk(C.w,16) });
           if (ts === "loaded" && !a.transporterFinishedConfirmedAt && !entries.find(e=>e.key==="confirm_trip_finished")) entries.push({ key:"confirm_trip_finished", label:"Confirmar entrega", color:C.pri, icon:Ic.chk(C.w,16) });
         }
       } else if (user.role !== "chofer" && user.userType === "producer" && !isOwn) {
@@ -391,7 +431,11 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
     const ts = a.tripStatus;
     const isOwnFleetTrip = a.transportCompanyId === freight.originCompanyId;
     if (user.userType === "plant") {
-      if (ts === "loaded" && !a.plantFinishedConfirmedAt) btns.push({ key:"confirm_trip_finished", label:"Confirmar entrega", color:C.pri, icon:Ic.chk(C.w,14) });
+      if (isOwnFleetTrip && ts === "pending") btns.push({ key:"respond_trip", label:"Autorizar", color:C.sec, icon:Ic.chk(C.w,14) });
+      if (isOwnFleetTrip && ts === "accepted") btns.push({ key:"start_trip", label:"Iniciar viaje", color:C.pri, icon:Ic.truck(C.w,14) });
+      if (isOwnFleetTrip && ts === "in_progress" && !a.transporterLoadedConfirmedAt) btns.push({ key:"confirm_trip_loaded", label:"Confirmar carga", color:C.acc, icon:Ic.chk(C.w,14) });
+      if (isOwnFleetTrip && ts === "loaded" && !a.transporterFinishedConfirmedAt) btns.push({ key:"confirm_trip_finished", label:"Confirmar entrega", color:C.pri, icon:Ic.chk(C.w,14) });
+      if (!isOwnFleetTrip && ts === "loaded" && !a.plantFinishedConfirmedAt) btns.push({ key:"confirm_trip_finished", label:"Confirmar entrega", color:C.pri, icon:Ic.chk(C.w,14) });
     } else if (user.role !== "chofer" && user.userType === "producer" && !isOwnFleetTrip) {
       if (ts === "loaded" && !a.plantFinishedConfirmedAt) btns.push({ key:"confirm_trip_finished", label:"Confirmar entrega", color:C.pri, icon:Ic.chk(C.w,14) });
     }
@@ -988,26 +1032,43 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
         );
       })()}
 
-      {/* Chat + PDF compact row */}
-      <div style={{ display:"flex", gap:8, marginBottom:12 }}>
-        <button onClick={()=>onChat(fullConvId)} disabled={!fullConvId}
-          style={{ flex:1, background:C.priPale, borderRadius: R.md, padding:"10px 12px", display:"flex", alignItems:"center", justifyContent:"center", gap:7, border:`1.5px solid ${C.pri}30`, cursor:fullConvId?"pointer":"default", fontFamily:"inherit" }}>
-          {Ic.msg(C.pri,16)}<span style={{ fontSize:13.9, fontWeight:700, color:C.pri }}>Chat</span>
-        </button>
-        <button disabled={pdfLoading} onClick={async()=>{
-          if(pdfLoading) return;
-          setPdfLoading(true);
+      {/* Trip Data + PDF compact row */}
+      {(()=>{
+        const tripAssign = visibleAssignments.find(a => a.plate);
+        return <div style={{ display:"flex", gap:8, marginBottom:12 }}>
+          {tripAssign && <button onClick={()=>setTripDataOpen(!tripDataOpen)}
+            style={{ flex:1, background:C.accPale, borderRadius: R.md, padding:"10px 12px", display:"flex", alignItems:"center", justifyContent:"center", gap:7, border:`1.5px solid ${C.acc}30`, cursor:"pointer", fontFamily:"inherit" }}>
+            {Ic.truck(C.acc,16)}<span style={{ fontSize:13.9, fontWeight:700, color:C.acc }}>{tripDataOpen?"Cerrar":"Datos de viaje"}</span>
+          </button>}
+          <button disabled={pdfLoading} onClick={async()=>{
+            if(pdfLoading) return;
+            setPdfLoading(true);
+            try {
+              let logs = auditLog;
+              if(!logs) { try { logs = await apiGetAuditLog(freight.id); setAuditLog(logs); } catch(e) { logs = []; } }
+              const { generateFreightPDF } = await loadPdfReport();
+              generateFreightPDF({ ...freight, documents: fullDocs, conversationId: fullConvId, pendingChanges: fullPendingChanges }, logs || []);
+            } catch(e) { log.error('PDF', e); useUIStore.getState().show('Error al generar PDF: ' + (e?.message || e), 'err'); }
+            finally { setPdfLoading(false); }
+          }} style={{ flex:1, background:C.w, borderRadius: R.md, padding:"10px 12px", display:"flex", alignItems:"center", justifyContent:"center", gap:7, border:`1.5px solid ${C.b1}`, cursor:"pointer", fontFamily:"inherit", opacity:pdfLoading?0.6:1 }}>
+            {Ic.doc(C.t2,16)}<span style={{ fontSize:13.9, fontWeight:700, color:C.t1 }}>{pdfLoading?'Generando...':'PDF'}</span>
+          </button>
+        </div>;
+      })()}
+
+      {/* Trip Data Form (inline) */}
+      {tripDataOpen && visibleAssignments.filter(a => a.plate).map(a =>
+        <TripDataInline key={a.id} freight={freight} assignment={a} saving={tripSaving} onSave={async (body) => {
+          setTripSaving(true);
           try {
-            let logs = auditLog;
-            if(!logs) { try { logs = await apiGetAuditLog(freight.id); setAuditLog(logs); } catch(e) { logs = []; } }
-            const { generateFreightPDF } = await loadPdfReport();
-            generateFreightPDF({ ...freight, documents: fullDocs, conversationId: fullConvId, pendingChanges: fullPendingChanges }, logs || []);
-          } catch(e) { log.error('PDF', e); useUIStore.getState().show('Error al generar PDF: ' + (e?.message || e), 'err'); }
-          finally { setPdfLoading(false); }
-        }} style={{ flex:1, background:C.w, borderRadius: R.md, padding:"10px 12px", display:"flex", alignItems:"center", justifyContent:"center", gap:7, border:`1.5px solid ${C.b1}`, cursor:"pointer", fontFamily:"inherit", opacity:pdfLoading?0.6:1 }}>
-          {Ic.doc(C.t2,16)}<span style={{ fontSize:13.9, fontWeight:700, color:C.t1 }}>{pdfLoading?'Generando...':'PDF'}</span>
-        </button>
-      </div>
+            await apiUpdateTripData(freight.id, a.id, body);
+            show("Datos de viaje guardados", "ok");
+            setTripDataOpen(false);
+            if (onRefresh) onRefresh(freight.id);
+          } catch (e) { show(e.message || "Error al guardar", "err"); }
+          finally { setTripSaving(false); }
+        }} onCancel={()=>setTripDataOpen(false)} />
+      )}
 
       {/* Edit action (neutral) — hidden for CONSULTA */}
       {!isConsulta && ["pending_assignment","assigned","accepted","in_progress","loaded"].includes(freight.status) && (perms.canRequest || perms.canApprove) && (
