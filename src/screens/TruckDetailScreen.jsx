@@ -785,25 +785,29 @@ export default function TruckDetailScreen({ truckId, user, onBack, onNavFreight 
         })())}
 
         {/* ==================== FREIGHTS TAB ==================== */}
-        {tab === "freights" && <>
-          {truck.activeFreights?.length > 0 && <>
-            <div style={{fontSize:12,fontWeight:700,color:C.t2,marginBottom:8,textTransform:"uppercase",letterSpacing:0.5}}>Activos</div>
-            {truck.activeFreights.map(f=><div key={f.id} style={{marginBottom:8}}>
-              <FreightCard freight={f} onClick={()=>onNavFreight?.(f.id)} action={canEdit && f.assignmentId ?
-                <button onClick={e=>{e.stopPropagation();setTripDataFor(tripDataFor?.assignmentId===f.assignmentId?null:f);}} style={{background:"none",border:`1px solid ${C.b1}`,borderRadius:R.md,padding:"4px 10px",cursor:"pointer",fontSize:10.5,fontWeight:600,color:f.kmTotal?C.pri:C.acc,fontFamily:FONT,whiteSpace:"nowrap"}}>{f.kmTotal?"Editar viaje":"Datos de viaje"}</button>
-              : null}/>
-            </div>)}
-          </>}
-          <div style={{fontSize:12,fontWeight:700,color:C.t2,marginBottom:8,marginTop:truck.activeFreights?.length?12:0,textTransform:"uppercase",letterSpacing:0.5}}>Historial</div>
-          {tripDataFor && <TripDataForm freight={tripDataFor} onSave={handleSaveTripData} onCancel={()=>setTripDataFor(null)} saving={saving}/>}
-          {freightHistory===null?<Loader/>:freightHistory.length===0?<EmptyState icon={Ic.truck(C.t3,20)} title="Sin historial" subtitle="Este camión aún no tiene fletes finalizados o cancelados"/>:
-            freightHistory.map((f,i)=><div key={f.assignmentId||i} style={{marginBottom:8,opacity:f.status==="canceled"||f.tripStatus==="canceled"?0.55:1}}>
-              <FreightCard freight={f} onClick={()=>onNavFreight?.(f.freightId||f.id)} action={canEdit && f.assignmentId && f.status!=="canceled" ?
-                <button onClick={e=>{e.stopPropagation();setTripDataFor(tripDataFor?.assignmentId===f.assignmentId?null:f);}} style={{background:"none",border:`1px solid ${C.b1}`,borderRadius:R.md,padding:"4px 10px",cursor:"pointer",fontSize:10.5,fontWeight:600,color:f.kmTotal?C.pri:C.acc,fontFamily:FONT,whiteSpace:"nowrap"}}>{f.kmTotal?"Editar viaje":"Datos de viaje"}</button>
-              : null}/>
-            </div>)
-          }
-        </>}
+        {tab === "freights" && (()=>{
+          const tripBtn = (f) => canEdit && f.assignmentId ?
+            <button onClick={e=>{e.stopPropagation();setTripDataFor(tripDataFor?.assignmentId===f.assignmentId?null:f);}} style={{background:"none",border:`1px solid ${C.b1}`,borderRadius:R.md,padding:"4px 10px",cursor:"pointer",fontSize:10.5,fontWeight:600,color:f.kmTotal?C.pri:C.acc,fontFamily:FONT,whiteSpace:"nowrap"}}>{f.kmTotal?"Ver datos del viaje":"Datos de viaje"}</button>
+            : null;
+          const tripForm = (f) => tripDataFor?.assignmentId===f.assignmentId ?
+            <TripDataForm freight={tripDataFor} onSave={handleSaveTripData} onCancel={()=>setTripDataFor(null)} saving={saving}/> : null;
+          return <>
+            {truck.activeFreights?.length > 0 && <>
+              <div style={{fontSize:12,fontWeight:700,color:C.t2,marginBottom:8,textTransform:"uppercase",letterSpacing:0.5}}>Activos</div>
+              {truck.activeFreights.map(f=><div key={f.id} style={{marginBottom:8}}>
+                <FreightCard freight={f} onClick={()=>onNavFreight?.(f.id)} action={tripBtn(f)}/>
+                {tripForm(f)}
+              </div>)}
+            </>}
+            <div style={{fontSize:12,fontWeight:700,color:C.t2,marginBottom:8,marginTop:truck.activeFreights?.length?12:0,textTransform:"uppercase",letterSpacing:0.5}}>Historial</div>
+            {freightHistory===null?<Loader/>:freightHistory.length===0?<EmptyState icon={Ic.truck(C.t3,20)} title="Sin historial" subtitle="Este camión aún no tiene fletes finalizados o cancelados"/>:
+              freightHistory.map((f,i)=><div key={f.assignmentId||i} style={{marginBottom:8,opacity:f.status==="canceled"||f.tripStatus==="canceled"?0.55:1}}>
+                <FreightCard freight={f} onClick={()=>onNavFreight?.(f.freightId||f.id)} action={f.status!=="canceled" ? tripBtn(f) : null}/>
+                {tripForm(f)}
+              </div>)
+            }
+          </>;
+        })()}
 
         {/* ==================== INCOMES TAB ==================== */}
         {tab === "incomes" && <>
