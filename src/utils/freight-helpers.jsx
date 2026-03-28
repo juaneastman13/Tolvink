@@ -140,7 +140,7 @@ export function getPendingActions(freight, userType, role, user) {
     return null;
   }
   if (userType === "transporter") {
-    if (s === "assigned" && !own) return { action: "Aceptar o rechazar", color: C.sec, icon: "respond", actionKey: "respond", groupKey: "respond" };
+    if (s === "assigned" && !own) return { action: "Asignar camión", color: C.pri, icon: "truck", actionKey: "assign_truck", groupKey: "assign" };
     if (s === "accepted") return { action: "Iniciar viaje", color: C.pri, icon: "start", actionKey: "start", groupKey: "start" };
     if (s === "in_progress" && !freight.transporterLoadedConfirmedAt) return { action: "Confirmar carga", color: C.acc, icon: "confirm", actionKey: "confirm_loaded", groupKey: "confirm_loaded" };
     if (s === "loaded" && !freight.transporterFinishedConfirmedAt) return { action: "Confirmar entrega", color: C.pri, icon: "confirm", actionKey: "confirm_finished", groupKey: "confirm_finished" };

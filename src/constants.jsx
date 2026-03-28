@@ -25,10 +25,10 @@ export function getActions(status, userType, role, isOwnFleet) {
   const map = {
     pending_assignment: { producer:["cancel"], plant: isOwnFleet ? ["cancel"] : ["assign","cancel"], transporter:[] },
     // assigned = company delegated, no truck yet. Transporter manager assigns truck/driver.
-    assigned:           { producer:["cancel"], plant:["cancel"], transporter:["assign_truck","cancel"] },
+    assigned:           { producer:["cancel"], plant: isOwnFleet ? ["authorize","cancel"] : ["cancel"], transporter:["assign_truck","cancel"] },
     // accepted = truck+driver assigned. Ready to start.
-    accepted:           { producer: isOwnFleet ? ["start","cancel"] : ["cancel"], plant:["cancel"], transporter: isOwnFleet ? [] : ["start","cancel"] },
-    in_progress:        { producer: isOwnFleet ? ["confirm_loaded"] : [], plant:[], transporter: isOwnFleet ? [] : ["confirm_loaded"] },
+    accepted:           { producer: isOwnFleet ? ["start","cancel"] : ["cancel"], plant: isOwnFleet ? ["start","cancel"] : ["cancel"], transporter: isOwnFleet ? [] : ["start","cancel"] },
+    in_progress:        { producer: isOwnFleet ? ["confirm_loaded"] : [], plant: isOwnFleet ? ["confirm_loaded"] : [], transporter: isOwnFleet ? [] : ["confirm_loaded"] },
     loaded:             { producer: isOwnFleet ? ["confirm_loaded","confirm_finished"] : ["confirm_loaded"], plant:["confirm_finished"], transporter: isOwnFleet ? [] : ["confirm_finished"] },
     finished:           { producer:[], plant:[], transporter:[] },
     canceled:           { producer:[], plant:[], transporter:[] },
