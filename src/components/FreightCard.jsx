@@ -73,7 +73,7 @@ function VerMatriculas({ freight }) {
 }
 
 // ======================== FULL CARD ====================================
-export const FreightCard = memo(function FreightCard({ freight: f, onClick, style, selected, checkbox }) {
+export const FreightCard = memo(function FreightCard({ freight: f, onClick, style, selected, checkbox, footer }) {
   const isDesktop = useIsDesktop();
   const sc = STATUS_COLORS[f.status] || STATUS_COLORS.pending_assignment;
   const origin = originDisplay(f) || f.originCompanyName || "Sin origen";
@@ -141,6 +141,7 @@ export const FreightCard = memo(function FreightCard({ freight: f, onClick, styl
           {isDesktop && driver && !isMulti && <span style={{ fontSize: 11, color: C.t2 }}> · {driver}</span>}
           {dateTime && <span style={{ fontSize: 11, color: C.t2, marginLeft: "auto", flexShrink: 0 }}>{dateTime}</span>}
         </div>
+        {footer && <div style={{ marginTop: 6 }}>{footer}</div>}
       </div>
     </div>
   );
