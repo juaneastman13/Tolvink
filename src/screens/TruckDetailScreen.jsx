@@ -14,6 +14,7 @@ import {
   apiGetTruckFreights, apiGetTruckIncomes, apiAddTruckIncome, apiUpdateTruckIncome, apiDeleteTruckIncome,
   apiGetTruckMovements, apiAddTruckMovement, apiUpdateTruckMovement, apiDeleteTruckMovement,
   apiGetEconomicSummary, apiGetTruckDocuments, apiUpdateTripData, apiProcessTruckDocOcr, apiUpdateTruckDocOcr, apiClearTruckDocOcr, uploadPhoto,
+  apiExportFleetReport,
 } from "../api";
 
 const LocPickerFullscreen = lazy(() => import("../maps").then(m => ({ default: m.LocPickerFullscreen })));
@@ -487,6 +488,7 @@ export default function TruckDetailScreen({ truckId, user, onBack, onNavFreight 
   const [error, setError] = useState(null);
   const [saving, setSaving] = useState(false);
   const [doneMsg, setDoneMsg] = useState("");
+  const [exporting, setExporting] = useState(false);
   const [viewFile, setViewFile] = useState(null); // file object for FileViewer
   const [ocrLoading, setOcrLoading] = useState(false);
 
@@ -669,6 +671,13 @@ export default function TruckDetailScreen({ truckId, user, onBack, onNavFreight 
   const norm = s => s ? String(s).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") : "";
   const sq = norm(searchQ).trim();
   const matchQ = (...f) => !sq || f.some(v => v && norm(v).includes(sq));
+  const handleExportTruck = async () => {
+    setExporting(true);
+    try { await apiExportFleetReport(truckId); setDoneMsg("Informe descargado"); }
+    catch (e) { setError(e.message || "Error al exportar"); }
+    finally { setExporting(false); }
+  };
+
   const TABS = [
     { key:"summary", label:"Resumen" },
     { key:"freights", label:"Fletes" },
@@ -689,11 +698,12 @@ export default function TruckDetailScreen({ truckId, user, onBack, onNavFreight 
         {/* Header compact */}
         <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10,flexWrap:"wrap"}}>
           <LicensePlate plate={truck.plate} size={isDesktop?"lg":"md"}/>
-          <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
+          <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap",flex:1}}>
             {truck.model && <span style={{fontSize:12,color:C.t3}}>{truck.model}</span>}
             {truck.currentOdometer && <span style={{fontSize:10,color:C.t3,fontFamily:MONO}}>{Number(truck.currentOdometer).toLocaleString("es-UY")} km</span>}
             {docSum.expired>0 && <span style={{background:C.errPale,color:C.err,fontSize:10,fontWeight:700,padding:"2px 6px",borderRadius:R.pill}}>{docSum.expired} venc.</span>}
           </div>
+          <button onClick={handleExportTruck} disabled={exporting} style={{display:"flex",alignItems:"center",gap:5,padding:"6px 12px",borderRadius:R.lg,border:`1.5px solid ${C.b1}`,background:C.w,color:C.t1,fontFamily:FONT,fontSize:12.5,fontWeight:600,cursor:exporting?"wait":"pointer",opacity:exporting?0.6:1,whiteSpace:"nowrap"}}>{exporting ? "..." : Ic.download(C.pri,14)} {exporting ? "Exportando..." : "Excel"}</button>
         </div>
 
         {/* Tab bar — grid 3x2 on mobile, flex row on desktop */}

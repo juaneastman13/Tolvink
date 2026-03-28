@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { C, Ic, R } from "../theme";
 import { Btn, Field, Loader, LoadingOverlay, EmptyState, LicensePlate } from "../components";
-import { apiGetTrucks, apiCreateTruck, apiDeactivateTruck, apiListDrivers, apiCreateDriver, apiDeactivateDriver, apiGetCompanyAccess, apiGetExpiringDocs, apiGetFleetSummary } from "../api";
+import { apiGetTrucks, apiCreateTruck, apiDeactivateTruck, apiListDrivers, apiCreateDriver, apiDeactivateDriver, apiGetCompanyAccess, apiGetExpiringDocs, apiGetFleetSummary, apiExportFleetReport } from "../api";
 import { useCatalogStore } from "../store";
 
 export default function TrucksScreen({ onBack, embedded, user, onTruckClick }) {
@@ -24,6 +24,7 @@ export default function TrucksScreen({ onBack, embedded, user, onTruckClick }) {
   const [docAlerts, setDocAlerts] = useState({});
   // Fleet summary
   const [fleetSummary, setFleetSummary] = useState(null);
+  const [exporting, setExporting] = useState(false);
 
   // Cross-company: plant selects whose fleet to view
   const [linkedCompanies, setLinkedCompanies] = useState([]);
@@ -139,6 +140,13 @@ export default function TrucksScreen({ onBack, embedded, user, onTruckClick }) {
     if (cId) companyNameMap[cId] = r.granteeCompany?.name || "";
   }
 
+  const handleExportFleet = async () => {
+    setExporting(true);
+    try { await apiExportFleetReport(); setMsg({ k: "ok", t: "Informe descargado" }); }
+    catch (e) { setMsg({ k: "err", t: e.message || "Error al exportar" }); }
+    finally { setExporting(false); }
+  };
+
   return (
     <div style={{ flex: embedded?undefined:1, overflow: embedded?"visible":"auto", padding: embedded?0:undefined }}>
       {(saving||doneMsg) && <LoadingOverlay closing={!!doneMsg} closingText={doneMsg} onClose={()=>setDoneMsg("")}/>}
@@ -146,7 +154,10 @@ export default function TrucksScreen({ onBack, embedded, user, onTruckClick }) {
       <div style={{ padding: embedded?0:"0 18px 18px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
         <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: -0.3 }}>{selectedCompanyId ? "Flota" : "Mi Flota"}</div>
-        {canEdit && <Btn sm onClick={() => { setShowForm(!showForm); setMsg(null); }} icon={showForm ? Ic.cross(C.w, 14) : Ic.plus(C.w, 14)}>{showForm ? "Cerrar" : "Agregar"}</Btn>}
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          {trucks.length > 0 && <button onClick={handleExportFleet} disabled={exporting} style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 12px", borderRadius: R.lg, border: `1.5px solid ${C.b1}`, background: C.w, color: C.t1, fontFamily: "inherit", fontSize: 12.5, fontWeight: 600, cursor: exporting ? "wait" : "pointer", opacity: exporting ? 0.6 : 1 }}>{exporting ? Ic.loader?.(C.t2, 14) || "..." : Ic.download(C.pri, 14)} {exporting ? "Exportando..." : "Excel"}</button>}
+          {canEdit && <Btn sm onClick={() => { setShowForm(!showForm); setMsg(null); }} icon={showForm ? Ic.cross(C.w, 14) : Ic.plus(C.w, 14)}>{showForm ? "Cerrar" : "Agregar"}</Btn>}
+        </div>
       </div>
 
       {/* Plant: company dropdown */}

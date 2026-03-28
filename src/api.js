@@ -351,6 +351,20 @@ export async function apiGetTruckDocOcr(truckId, docId) { return api(`/trucks/${
 export async function apiUpdateTruckDocOcr(truckId, docId, ocrData) { return api(`/trucks/${truckId}/documents/${docId}/ocr`, { method: 'PATCH', body: { ocrData } }); }
 export async function apiClearTruckDocOcr(truckId, docId) { return api(`/trucks/${truckId}/documents/${docId}/ocr-clear`, { method: 'PATCH', body: {} }); }
 
+// Fleet Excel Report
+export async function apiExportFleetReport(truckId, from, to) {
+  const q = []; if (truckId) q.push(`truckId=${truckId}`); if (from) q.push(`from=${from}`); if (to) q.push(`to=${to}`);
+  const url = `${API_URL}/trucks/export-report${q.length ? '?' + q.join('&') : ''}`;
+  const res = await fetch(url, { credentials: 'include', signal: AbortSignal.timeout(60000) });
+  if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err.message || 'Error al generar informe'); }
+  const blob = await res.blob();
+  const cd = res.headers.get('content-disposition') || '';
+  const match = cd.match(/filename="?([^"]+)"?/);
+  const filename = match?.[1] || `Informe_Flota_${new Date().toISOString().slice(0,10)}.xlsx`;
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = filename; a.click();
+  URL.revokeObjectURL(a.href);
+}
+
 // Fields & Lots
 export async function apiGetFields(ownerCompanyId) { const q = ownerCompanyId ? `?ownerCompanyId=${encodeURIComponent(ownerCompanyId)}` : ''; return api(`/fields${q}`); }
 export async function apiGetFieldOwnersSummary() { return api('/fields/owners-summary'); }
