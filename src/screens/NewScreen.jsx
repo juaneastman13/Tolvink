@@ -19,8 +19,10 @@ function SummaryCard({ secSummary, secComplete, form, showTruckSelect, trucks, o
   const ICONS = { product: Ic.grain(C.pri,14), quantity: Ic.grain(C.t2,14), truckCount: Ic.truck(C.acc,14), origin: Ic.field(C.ok,14), ownfleet: Ic.truck(C.acc,14), destination: Ic.plant(C.sec,14), schedule: Ic.cal(C.pri,14) };
   const rows = [];
   if (secSummary.producer) rows.push({ label: "Productor", value: secSummary.producer, section: "producer", icon: ICONS.origin });
-  if (secSummary.product) rows.push({ label: "Producto", value: secSummary.product, section: "product", icon: ICONS.product });
-  if (secSummary.quantity) rows.push({ label: "Cantidad", value: secSummary.quantity, section: "quantity", icon: ICONS.quantity });
+  if (secSummary.product) {
+    rows.push({ label: "Producto", value: secSummary.product, section: "product", icon: ICONS.product });
+    rows.push({ label: "Cantidad", value: secSummary.quantity || "A definir", section: "quantity", icon: ICONS.quantity });
+  }
   if (secSummary.truckCount) rows.push({ label: "Camiones", value: secSummary.truckCount, section: "quantity", icon: ICONS.truckCount });
   if (secSummary.origin) rows.push({ label: "Origen", value: secSummary.origin, section: "origin", icon: ICONS.origin });
   if (showTruckSelect && form.fleetChoice && (form.fleetChoice!=="own" || (form.truckId && form.driverId))) {
@@ -341,7 +343,10 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
   }, [showTransportStep, transportChoice, selectedTransporterAccess?.accessLevel, plantCompanyId]);
 
   const assignTruckOpts = assignTrucks.map(t => ({ value: t.id, label: `${t.plate}${t.model ? ` · ${t.model}` : ""}` }));
-  const assignDriverOpts = assignDriversList.map(d => ({ value: d.id, label: `${d.name}${d.phone ? ` · ${d.phone}` : ""}` }));
+  const assignDriverOpts = [
+    ...(transportChoice === "ownfleet" ? [{ value: user.id, label: `Yo soy el chofer (${user.name})`, bold: true }] : []),
+    ...assignDriversList.filter(d => d.id !== user.id).map(d => ({ value: d.id, label: `${d.name}${d.phone ? ` · ${d.phone}` : ""}` })),
+  ];
 
   // Options for producer/transporter Select dropdowns
   const producerOpts = [
@@ -714,11 +719,11 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
   const secSummary = {
     ...(isPlantUser ? { producer: selectedProducerName || "" } : {}),
     product: form.grain ? (form.grain==="Otros" ? `Otros: ${form.productTypeOther}` : form.grain) : "",
-    quantity: form.tons ? `${form.tons} ${form.unit}` : "",
+    quantity: form.tons && parseFloat(form.tons) > 0 ? `${form.tons} ${form.unit}` : (form.grain ? "A definir" : ""),
     origin: originMode==="field" ? ((fieldOpts.find(f=>f.value===form.fieldId)?.label||"")+(form.lotId==="__field__"?" — Ubicación del campo":selectedLot?` — ${selectedLot.name}`:"")) : (customOrigin.lat ? (customOrigin.name?.trim()||"Ubicación personalizada") : ""),
     destination: destMode==="plant" ? (destDisplayName||"") : (customDest.lat ? ((customDest.name?.trim()||"Ubicación personalizada")+(confirmMode==="plant"&&confirmPlantId?` · Confirma: ${(plants||[]).find(p=>p.id===confirmPlantId)?.name||""}`:"")) : ""),
     schedule: form.loadDate&&form.loadTime ? `${form.loadDate} a las ${form.loadTime}` : "",
-    truckCount: (() => { const tEq = form.unit==="kg"?parseFloat(form.tons)/1000:parseFloat(form.tons); const tc = form.truckCount || (tEq>0 ? String(Math.ceil(tEq/30)) : ""); return tc ? `${tc} camión${tc!=="1"?"es":""}` : ""; })(),
+    truckCount: (() => { const tEq = form.unit==="kg"?parseFloat(form.tons)/1000:parseFloat(form.tons); const tc = form.truckCount || (tEq>0 ? String(Math.ceil(tEq/30)) : (form.grain ? "1" : "")); return tc ? `${tc} camión${tc!=="1"?"es":""}` : ""; })(),
     ...(showTransportStep ? { transport: (() => {
       if (transportChoice === "skip") return "Pendiente de asignar";
       if (transportChoice === "ownfleet") {
