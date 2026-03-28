@@ -8,7 +8,8 @@ import { originDisplay, destDisplay, useIsDesktop } from "../hooks";
 const MESES_SHORT = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
 function fmtDateTime(dateStr, timeStr) {
   if (!dateStr) return "";
-  const p = dateStr.split("-");
+  const iso = String(dateStr).slice(0, 10); // handle ISO "2026-03-28T00:00:00.000Z"
+  const p = iso.split("-");
   if (p.length < 3) return dateStr;
   const d = p[2].padStart(2, "0");
   const m = parseInt(p[1], 10) - 1;
@@ -20,7 +21,8 @@ function fmtDateTime(dateStr, timeStr) {
 
 function fmtDateOnly(dateStr) {
   if (!dateStr) return "";
-  const p = dateStr.split("-");
+  const iso = String(dateStr).slice(0, 10);
+  const p = iso.split("-");
   if (p.length < 3) return dateStr;
   return `${p[2].padStart(2, "0")}/${MESES_SHORT[parseInt(p[1], 10) - 1] || p[1]}`;
 }
@@ -73,7 +75,7 @@ function VerMatriculas({ freight }) {
 }
 
 // ======================== FULL CARD ====================================
-export const FreightCard = memo(function FreightCard({ freight: f, onClick, style, selected, checkbox, footer }) {
+export const FreightCard = memo(function FreightCard({ freight: f, onClick, style, selected, checkbox, footer, action }) {
   const isDesktop = useIsDesktop();
   const sc = STATUS_COLORS[f.status] || STATUS_COLORS.pending_assignment;
   const origin = originDisplay(f) || f.originCompanyName || "Sin origen";
@@ -114,6 +116,7 @@ export const FreightCard = memo(function FreightCard({ freight: f, onClick, styl
             <span style={{ fontSize: 15, fontWeight: 500, color: C.t1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{title}</span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 6, marginLeft: 8, flexShrink: 0 }}>
+            {action}
             <StatusPill status={f.status} />
             {checkbox}
           </div>
