@@ -5,7 +5,7 @@
 
 import { useState, useEffect, useCallback, lazy, Suspense } from "react";
 import { C, Ic, R, FONT, MONO } from "../theme";
-import { Btn, Field, Loader, EmptyState, LicensePlate, LoadingOverlay, StatusPill } from "../components";
+import { Btn, Field, Loader, EmptyState, LicensePlate, LoadingOverlay, StatusPill, FreightCard } from "../components";
 import { useIsDesktop } from "../hooks/useResponsive";
 import { FileViewer } from "../components/overlays";
 import {
@@ -787,25 +787,20 @@ export default function TruckDetailScreen({ truckId, user, onBack, onNavFreight 
         {tab === "freights" && <>
           {truck.activeFreights?.length > 0 && <>
             <div style={{fontSize:12,fontWeight:700,color:C.t2,marginBottom:8,textTransform:"uppercase",letterSpacing:0.5}}>Activos</div>
-            {truck.activeFreights.map(f=><div key={f.id} onClick={()=>onNavFreight?.(f.id)} style={{padding:"10px 12px",border:`1.5px solid ${C.pri}`,borderRadius:R.md,marginBottom:8,cursor:"pointer",background:C.priPale}}>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}><span style={{fontSize:13.5,fontWeight:700,color:C.pri,fontFamily:MONO}}>{f.code}</span><StatusPill status={f.tripStatus || f.status} small/></div>
-              <div style={{fontSize:12,color:C.t2,marginTop:4}}>{f.originName||"?"}→{f.destName||"?"}</div>
+            {truck.activeFreights.map(f=><div key={f.id} style={{marginBottom:8}}>
+              <FreightCard freight={f} onClick={()=>onNavFreight?.(f.id)}/>
+              {canEdit && f.assignmentId && <div style={{marginTop:4,paddingLeft:24}}>
+                <button onClick={e=>{e.stopPropagation();setTripDataFor(tripDataFor?.assignmentId===f.assignmentId?null:f);}} style={{background:"none",border:`1px solid ${C.b1}`,borderRadius:R.md,padding:"4px 10px",cursor:"pointer",fontSize:10.5,fontWeight:600,color:f.kmTotal?C.pri:C.acc,fontFamily:FONT}}>{f.kmTotal?"Editar datos de viaje":"Cargar datos de viaje"}</button>
+              </div>}
             </div>)}
           </>}
           <div style={{fontSize:12,fontWeight:700,color:C.t2,marginBottom:8,marginTop:truck.activeFreights?.length?12:0,textTransform:"uppercase",letterSpacing:0.5}}>Historial</div>
           {tripDataFor && <TripDataForm freight={tripDataFor} onSave={handleSaveTripData} onCancel={()=>setTripDataFor(null)} saving={saving}/>}
           {freightHistory===null?<Loader/>:freightHistory.length===0?<EmptyState icon={Ic.truck(C.t3,20)} title="Sin historial" subtitle="Este camión aún no tiene fletes finalizados o cancelados"/>:
-            freightHistory.map((f,i)=><div key={i} style={{padding:"8px 12px",borderBottom:`1px solid ${C.b2}`,opacity:f.status==="canceled"||f.tripStatus==="canceled"?0.55:1}}>
-              <div style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer"}} onClick={()=>onNavFreight?.(f.freightId)}>
-                <span style={{fontSize:12.5,fontWeight:700,color:f.status==="canceled"?C.err:C.pri,fontFamily:MONO,minWidth:110}}>{f.code}</span>
-                <span style={{flex:1,fontSize:12,color:C.t2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.origin||"?"}→{f.dest||"?"}</span>
-                {(f.status==="canceled"||f.tripStatus==="canceled")&&<span style={{fontSize:9.5,fontWeight:700,color:C.err,background:C.errPale,padding:"1px 6px",borderRadius:R.pill}}>Cancelado</span>}
-                <span style={{fontSize:11,color:C.t3}}>{fmtDate(f.date)}</span>
-                {f.tons&&<span style={{fontSize:11,fontWeight:600,color:C.t2}}>{Number(f.tons).toLocaleString("es-UY")}t</span>}
-                {f.status!=="canceled"&&(f.kmTotal?<span style={{fontSize:9,color:C.ok}} title="Datos de viaje cargados">✓ {fmtKm(f.kmTotal)}</span>:<span style={{fontSize:9,color:C.t3,background:C.bg,padding:"1px 4px",borderRadius:R.pill}} title="Sin datos de viaje">km?</span>)}
-              </div>
-              {canEdit && f.assignmentId && <div style={{marginTop:4}}>
-                <button onClick={e=>{e.stopPropagation();setTripDataFor(tripDataFor?.assignmentId===f.assignmentId?null:f);}} style={{background:"none",border:`1px solid ${C.b1}`,borderRadius:R.md,padding:"3px 8px",cursor:"pointer",fontSize:10.5,fontWeight:600,color:f.kmTotal?C.pri:C.acc,fontFamily:FONT}}>{f.kmTotal?"Editar datos de viaje":"Cargar datos de viaje"}</button>
+            freightHistory.map((f,i)=><div key={f.assignmentId||i} style={{marginBottom:8,opacity:f.status==="canceled"||f.tripStatus==="canceled"?0.55:1}}>
+              <FreightCard freight={f} onClick={()=>onNavFreight?.(f.freightId||f.id)}/>
+              {canEdit && f.assignmentId && f.status!=="canceled" && <div style={{marginTop:4,paddingLeft:24}}>
+                <button onClick={e=>{e.stopPropagation();setTripDataFor(tripDataFor?.assignmentId===f.assignmentId?null:f);}} style={{background:"none",border:`1px solid ${C.b1}`,borderRadius:R.md,padding:"4px 10px",cursor:"pointer",fontSize:10.5,fontWeight:600,color:f.kmTotal?C.pri:C.acc,fontFamily:FONT}}>{f.kmTotal?"Editar datos de viaje":"Cargar datos de viaje"}</button>
               </div>}
             </div>)
           }
