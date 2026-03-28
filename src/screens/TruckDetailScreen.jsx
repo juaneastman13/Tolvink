@@ -4,6 +4,7 @@
 // =====================================================================
 
 import { useState, useEffect, useCallback, lazy, Suspense } from "react";
+import { createPortal } from "react-dom";
 import { C, Ic, R, FONT, MONO } from "../theme";
 import { Btn, Field, Loader, EmptyState, LicensePlate, LoadingOverlay, StatusPill, FreightCard } from "../components";
 import { useIsDesktop } from "../hooks/useResponsive";
@@ -449,35 +450,59 @@ function MovForm({ onSave, onCancel, saving, initial, locations, mobile }) {
 // ======================== TRIP DATA FORM ================================
 
 function TripDataForm({ freight, onSave, onCancel, saving }) {
-  const [kmLoaded, setKmLoaded] = useState(freight.kmLoaded?.toString()||"");
-  const [kmEmpty, setKmEmpty] = useState(freight.kmEmpty?.toString()||"");
-  const [fuelLiters, setFuelLiters] = useState(freight.fuelLiters?.toString()||"");
-  const [fuelCostPerLiter, setFuelCostPerLiter] = useState(freight.fuelCostPerLiter?.toString()||"");
-  const [tollCost, setTollCost] = useState(freight.tollCost?.toString()||"");
-  const [odometerStart, setOdometerStart] = useState(freight.odometerStart?.toString()||"");
-  const [odometerEnd, setOdometerEnd] = useState(freight.odometerEnd?.toString()||"");
+  const f = freight;
+  const hasOld = !!(f.kmTotal || f.fuelLiters || f.odometerEnd || f.tollCost);
+  const [kmLoaded, setKmLoaded] = useState(f.kmLoaded?.toString()||"");
+  const [kmEmpty, setKmEmpty] = useState(f.kmEmpty?.toString()||"");
+  const [fuelLiters, setFuelLiters] = useState(f.fuelLiters?.toString()||"");
+  const [fuelCostPerLiter, setFuelCostPerLiter] = useState(f.fuelCostPerLiter?.toString()||"");
+  const [tollCost, setTollCost] = useState(f.tollCost?.toString()||"");
+  const [odometerStart, setOdometerStart] = useState(f.odometerStart?.toString()||"");
+  const [odometerEnd, setOdometerEnd] = useState(f.odometerEnd?.toString()||"");
   const kmTotal = (parseFloat(kmLoaded||"0")+parseFloat(kmEmpty||"0"))||"";
-  return (<div style={{padding:14,background:C.bgCard,border:`1px solid ${C.b2}`,borderRadius:R.lg,marginBottom:10}}>
-    <div style={{fontSize:12,fontWeight:700,color:C.t2,marginBottom:8}}>Datos de viaje — {freight.code}</div>
-    <div style={{display:"flex",gap:8,marginBottom:8,flexWrap:"wrap"}}>
-      <div style={{flex:"1 1 100px",minWidth:80}}><Field label="Km con carga" value={kmLoaded} onChange={setKmLoaded} type="number" placeholder="0" inputMode="decimal"/></div>
-      <div style={{flex:"1 1 100px",minWidth:80}}><Field label="Km vacío" value={kmEmpty} onChange={setKmEmpty} type="number" placeholder="0" inputMode="decimal"/></div>
-      <div style={{flex:"1 1 100px",minWidth:80}}><div style={lbl("s")}>Km total</div><div style={{padding:"8px 10px",borderRadius:R.md,background:C.bg,fontSize:13,color:C.t1,fontWeight:600}}>{kmTotal||"—"}</div></div>
-    </div>
-    <div style={{display:"flex",gap:8,marginBottom:8,flexWrap:"wrap"}}>
-      <div style={{flex:"1 1 100px",minWidth:80}}><Field label="Litros" value={fuelLiters} onChange={setFuelLiters} type="number" placeholder="0" inputMode="decimal"/></div>
-      <div style={{flex:"1 1 100px",minWidth:80}}><Field label="$/litro" value={fuelCostPerLiter} onChange={setFuelCostPerLiter} type="number" placeholder="0" inputMode="decimal"/></div>
-      <div style={{flex:"1 1 100px",minWidth:80}}><Field label="Peajes" value={tollCost} onChange={setTollCost} type="number" placeholder="0" inputMode="decimal"/></div>
-    </div>
-    <div style={{display:"flex",gap:8,marginBottom:8,flexWrap:"wrap"}}>
-      <div style={{flex:"1 1 140px",minWidth:120}}><Field label="Odómetro inicio" value={odometerStart} onChange={setOdometerStart} type="number" placeholder="0" inputMode="numeric"/></div>
-      <div style={{flex:"1 1 140px",minWidth:120}}><Field label="Odómetro fin" value={odometerEnd} onChange={setOdometerEnd} type="number" placeholder="0" inputMode="numeric"/></div>
-    </div>
-    <div style={{display:"flex",gap:8}}>
-      <Btn full disabled={saving} onClick={()=>onSave({kmLoaded:parseFloat(kmLoaded)||null,kmEmpty:parseFloat(kmEmpty)||null,kmTotal:parseFloat(kmTotal)||null,fuelLiters:parseFloat(fuelLiters)||null,fuelCostPerLiter:parseFloat(fuelCostPerLiter)||null,tollCost:parseFloat(tollCost)||null,odometerStart:parseInt(odometerStart)||null,odometerEnd:parseInt(odometerEnd)||null})}>{saving?"Guardando...":"Guardar datos"}</Btn>
-      <Btn v="muted" onClick={onCancel}>Cancelar</Btn>
-    </div>
-  </div>);
+  const fmtV = (v) => v != null && v !== "" && v !== 0 ? Number(v).toLocaleString("es-UY") : "—";
+  return createPortal(
+    <div onClick={onCancel} style={{position:"fixed",inset:0,zIndex:99999,background:"rgba(0,0,0,0.45)",display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
+      <div onClick={e=>e.stopPropagation()} style={{background:C.w,borderRadius:R.lg,padding:20,width:"min(440px,92vw)",maxHeight:"85vh",overflow:"auto",boxShadow:C.shLg,fontFamily:FONT}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+          <div style={{fontSize:15,fontWeight:700,color:C.t1}}>{hasOld ? "Editar datos de viaje" : "Cargar datos de viaje"}{f.code ? ` — ${f.code}` : ""}</div>
+          <button onClick={onCancel} style={{background:"none",border:"none",cursor:"pointer",padding:4}}>{Ic.cross(C.t3,18)}</button>
+        </div>
+        <div style={{display:"flex",gap:8,marginBottom:10,flexWrap:"wrap"}}>
+          <div style={{flex:"1 1 100px",minWidth:80}}><Field label="Km con carga" value={kmLoaded} onChange={setKmLoaded} type="number" placeholder="0" inputMode="decimal"/></div>
+          <div style={{flex:"1 1 100px",minWidth:80}}><Field label="Km vacío" value={kmEmpty} onChange={setKmEmpty} type="number" placeholder="0" inputMode="decimal"/></div>
+          <div style={{flex:"1 1 100px",minWidth:80}}><div style={{fontSize:11,fontWeight:600,color:C.t2,marginBottom:3}}>Km total</div><div style={{padding:"8px 10px",borderRadius:R.md,background:C.bg,fontSize:13,color:C.t1,fontWeight:600}}>{kmTotal||"—"}</div></div>
+        </div>
+        <div style={{display:"flex",gap:8,marginBottom:10,flexWrap:"wrap"}}>
+          <div style={{flex:"1 1 100px",minWidth:80}}><Field label="Litros" value={fuelLiters} onChange={setFuelLiters} type="number" placeholder="0" inputMode="decimal"/></div>
+          <div style={{flex:"1 1 100px",minWidth:80}}><Field label="$/litro" value={fuelCostPerLiter} onChange={setFuelCostPerLiter} type="number" placeholder="0" inputMode="decimal"/></div>
+          <div style={{flex:"1 1 100px",minWidth:80}}><Field label="Peajes" value={tollCost} onChange={setTollCost} type="number" placeholder="0" inputMode="decimal"/></div>
+        </div>
+        <div style={{display:"flex",gap:8,marginBottom:14,flexWrap:"wrap"}}>
+          <div style={{flex:"1 1 140px",minWidth:120}}><Field label="Odómetro inicio" value={odometerStart} onChange={setOdometerStart} type="number" placeholder="0" inputMode="numeric"/></div>
+          <div style={{flex:"1 1 140px",minWidth:120}}><Field label="Odómetro fin" value={odometerEnd} onChange={setOdometerEnd} type="number" placeholder="0" inputMode="numeric"/></div>
+        </div>
+        {hasOld && <div style={{background:C.bg,borderRadius:R.md,padding:"10px 12px",marginBottom:14,border:`1px solid ${C.b2}`}}>
+          <div style={{fontSize:10.5,fontWeight:700,color:C.t3,marginBottom:6,textTransform:"uppercase",letterSpacing:0.5}}>Valores actuales</div>
+          <div style={{display:"flex",gap:12,flexWrap:"wrap",fontSize:12,color:C.t2}}>
+            {f.kmLoaded != null && <span>Km carga: <b>{fmtV(f.kmLoaded)}</b></span>}
+            {f.kmEmpty != null && <span>Km vacío: <b>{fmtV(f.kmEmpty)}</b></span>}
+            {f.kmTotal != null && <span>Km total: <b>{fmtV(f.kmTotal)}</b></span>}
+            {f.fuelLiters != null && <span>Litros: <b>{fmtV(f.fuelLiters)}</b></span>}
+            {f.fuelCostPerLiter != null && <span>$/L: <b>{fmtV(f.fuelCostPerLiter)}</b></span>}
+            {f.tollCost != null && <span>Peajes: <b>{fmtV(f.tollCost)}</b></span>}
+            {f.odometerStart != null && <span>Odm inicio: <b>{fmtV(f.odometerStart)}</b></span>}
+            {f.odometerEnd != null && <span>Odm fin: <b>{fmtV(f.odometerEnd)}</b></span>}
+          </div>
+        </div>}
+        <div style={{display:"flex",gap:8}}>
+          <Btn full disabled={saving} onClick={()=>onSave({kmLoaded:parseFloat(kmLoaded)||null,kmEmpty:parseFloat(kmEmpty)||null,kmTotal:parseFloat(kmTotal)||null,fuelLiters:parseFloat(fuelLiters)||null,fuelCostPerLiter:parseFloat(fuelCostPerLiter)||null,tollCost:parseFloat(tollCost)||null,odometerStart:parseInt(odometerStart)||null,odometerEnd:parseInt(odometerEnd)||null})}>{saving?"Guardando...":"Guardar"}</Btn>
+          <Btn v="muted" onClick={onCancel}>Cancelar</Btn>
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
 }
 
 // ======================== MAIN SCREEN ===================================
