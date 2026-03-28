@@ -590,8 +590,9 @@ export default function TruckDetailScreen({ truckId, user, onBack, onNavFreight 
     if (!tripDataFor) return;
     setSaving(true);
     try {
-      await apiUpdateTripData(tripDataFor.freightId, tripDataFor.assignmentId, body);
+      await apiUpdateTripData(tripDataFor.freightId || tripDataFor.id, tripDataFor.assignmentId, body);
       setTripDataFor(null); setDoneMsg("Datos de viaje guardados");
+      apiGetTruckDetail(truckId).then(d=>{if(d)setTruck(d);}).catch(()=>{});
       apiGetTruckFreights(truckId).then(d=>setFreightHistory(d||[])).catch(()=>{});
       apiGetEconomicSummary(truckId).then(setEcoSummary).catch(()=>{});
     } catch (e) { setError(e.message); }
