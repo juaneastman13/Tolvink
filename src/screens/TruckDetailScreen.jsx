@@ -92,7 +92,7 @@ function DocRow({ d, onView, onOcr, ocrLoading, onEdit, onDelete, canEdit, onOcr
   })() : null;
 
   return (
-    <div onClick={()=>setExp(p=>!p)} style={{ background:C.w, border:`1px solid ${C.b1}`, borderLeft:`3px solid ${hasOcr?C.pri:C.t3}`, borderRadius:R.lg, padding:14, boxShadow:C.sh, cursor:"pointer", transition:"all 0.15s" }}>
+    <div onClick={()=>setExp(p=>!p)} style={{ background:C.w, border:`1px solid ${d.expiryStatus==="expired"?C.err+"40":d.expiryStatus==="expiring_soon"?C.warn+"40":C.b1}`, borderLeft:`3px solid ${d.expiryStatus==="expired"?C.err:d.expiryStatus==="expiring_soon"?C.warn:hasOcr?C.pri:C.t3}`, borderRadius:R.lg, padding:14, boxShadow:C.sh, cursor:"pointer", transition:"all 0.15s" }}>
       <div style={{ display:"flex", alignItems:"center", gap:10 }}>
         {/* Thumbnail */}
         {isImg ? <img src={d.fileUrl} alt="" loading="lazy" style={{ width:40, height:40, borderRadius:R.md, objectFit:"cover", flexShrink:0, border:`1px solid ${C.b2}` }} onError={e=>{e.target.style.display="none"}} />
@@ -107,6 +107,7 @@ function DocRow({ d, onView, onOcr, ocrLoading, onEdit, onDelete, canEdit, onOcr
           </div>
           <div style={{ display:"flex", alignItems:"center", gap:6, marginTop:2, flexWrap:"wrap" }}>
             <span style={{ fontSize:12.1, color:C.t3 }}>{fmtDate(d.createdAt)}</span>
+            {d.expiryStatus && d.expiryStatus !== "no_expiry" && <span style={{ fontSize:9.5, fontWeight:700, color:EXPIRY_COLORS[d.expiryStatus], background:d.expiryStatus==="expired"?C.errPale:d.expiryStatus==="expiring_soon"?C.warnPale:C.okPale, padding:"2px 7px", borderRadius:R.pill }}>{EXPIRY_LABELS[d.expiryStatus]}{d.expiresAt ? ` · ${fmtDate(d.expiresAt)}` : ""}</span>}
             {d._linkBadge && d._linkBadge.label !== "General" && <span style={{ fontSize:9.5, fontWeight:700, color:d._linkBadge.color, background:d._linkBadge.bg, padding:"1px 6px", borderRadius:R.sm }}>{d._linkBadge.label}{d._linkLabel ? `: ${d._linkLabel}` : ""}</span>}
           </div>
           {ocrPreview?.lines?.length > 0 && <div style={{ fontSize:11, color:C.t2, marginTop:3, lineHeight:1.4 }}>{ocrPreview.lines.join(" · ")}</div>}
@@ -967,11 +968,6 @@ export default function TruckDetailScreen({ truckId, user, onBack, onNavFreight 
             </div>
             {canEdit && <Btn sm onClick={()=>setShowForm(!showForm)} icon={showForm?Ic.cross(C.w,12):Ic.plus(C.w,12)}>{showForm?"":"Nuevo"}</Btn>}
           </div>
-          {docSum.valid+docSum.expiringSoon+docSum.expired>0&&<div style={{display:"flex",gap:8,marginBottom:12,flexWrap:"wrap"}}>
-            {docSum.valid>0&&<span style={{fontSize:11,fontWeight:600,color:C.ok,background:C.okPale,padding:"3px 10px",borderRadius:R.pill}}>✅ {docSum.valid}</span>}
-            {docSum.expiringSoon>0&&<span style={{fontSize:11,fontWeight:600,color:C.warn,background:C.warnPale,padding:"3px 10px",borderRadius:R.pill}}>⚠️ {docSum.expiringSoon}</span>}
-            {docSum.expired>0&&<span style={{fontSize:11,fontWeight:600,color:C.err,background:C.errPale,padding:"3px 10px",borderRadius:R.pill}}>❌ {docSum.expired}</span>}
-          </div>}
           {showForm && <DocForm onSave={handleAddDoc} onCancel={()=>setShowForm(false)} saving={saving} linkOptions={linkOpts} storagePath={storePath} mobile={!isDesktop}/>}
           {editItem && tab==="docs" && <DocForm initial={editItem} onSave={handleUpdateDoc} onCancel={()=>setEditItem(null)} saving={saving} linkOptions={linkOpts} storagePath={storePath} mobile={!isDesktop}/>}
           {displayDocs.length===0&&!showForm?<EmptyState icon={Ic.doc(C.t3,24)} title="Sin documentos" subtitle="Cargá el primer documento del camión"/>:
