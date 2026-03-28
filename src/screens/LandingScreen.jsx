@@ -161,6 +161,7 @@ a{color:inherit;text-decoration:none}
 .section{padding:50px 18px}
 .hero{min-height:auto;padding-top:40px;padding-bottom:40px}
 .compare{grid-template-columns:1fr}
+.intro-grid{grid-template-columns:1fr!important}
 .phone,.wa-frame{width:100%;max-width:320px}
 .mockup-row{flex-direction:column!important;align-items:center!important}
 }
@@ -192,7 +193,7 @@ a{color:inherit;text-decoration:none}
   <div class="tag">Logística agrícola inteligente</div>
   <h2 class="title">Tu operación de fletes en una sola plataforma</h2>
   <p class="sub" style="margin:0 auto 32px;text-align:center">Tolvink digitaliza la coordinación de fletes de granos entre plantas, productores y transportistas. Menos llamadas, más control, trazabilidad completa.</p>
-  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;max-width:800px;margin:0 auto;text-align:left">
+  <div class="intro-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;max-width:800px;margin:0 auto;text-align:left">
     <div style="display:flex;gap:10px;align-items:flex-start">
       <div class="icon-box" style="background:var(--priPale);width:38px;height:38px;min-width:38px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--pri)" stroke-width="2"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg></div>
       <div><div style="font-size:14px;font-weight:700;color:var(--t1)">Gestión de fletes</div><p style="font-size:12px;color:var(--t2)">Creación, asignación y seguimiento con trazabilidad completa de campo a planta.</p></div>
