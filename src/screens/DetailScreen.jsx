@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useMemo, useCallback, lazy, Suspense } from "react";
+import { createPortal } from "react-dom";
 import { C, Ic, FONT, MONO, track, STATUS_COLORS , R} from "../theme";
 import { stCfg, getActions, tripStCfg, POLL_INTERVALS, formatFreightDate } from "../constants";
 import { Bd, Btn, Field, Loader, Sec, FileViewer, SkeletonDetail, LicensePlate } from "../components";
@@ -15,7 +16,7 @@ import AssignmentSuggestions from "../components/AssignmentSuggestions";
 // PDF report loaded lazily to avoid bundle bloat
 const loadPdfReport = () => import("../utils/pdf-report");
 
-function TripDataInline({ freight, assignment: a, saving, onSave, onCancel }) {
+function TripDataModal({ assignment: a, saving, onSave, onClose }) {
   const [kmLoaded, setKmLoaded] = useState(a.kmLoaded?.toString()||"");
   const [kmEmpty, setKmEmpty] = useState(a.kmEmpty?.toString()||"");
   const [fuelLiters, setFuelLiters] = useState(a.fuelLiters?.toString()||"");
@@ -25,27 +26,35 @@ function TripDataInline({ freight, assignment: a, saving, onSave, onCancel }) {
   const [odometerEnd, setOdometerEnd] = useState(a.odometerEnd?.toString()||"");
   const kmTotal = (parseFloat(kmLoaded||"0")+parseFloat(kmEmpty||"0"))||"";
   const lbl = { fontSize:11, fontWeight:600, color:C.t2, marginBottom:3 };
-  return (<div style={{padding:14,background:C.bgCard,border:`1px solid ${C.b2}`,borderRadius:R.lg,marginBottom:10}}>
-    <div style={{fontSize:12,fontWeight:700,color:C.t2,marginBottom:8}}>Datos de viaje{a.plate ? ` — ${a.plate}` : ""}</div>
-    <div style={{display:"flex",gap:8,marginBottom:8,flexWrap:"wrap"}}>
-      <div style={{flex:"1 1 100px",minWidth:80}}><Field label="Km con carga" value={kmLoaded} onChange={setKmLoaded} type="number" placeholder="0" inputMode="decimal"/></div>
-      <div style={{flex:"1 1 100px",minWidth:80}}><Field label="Km vacío" value={kmEmpty} onChange={setKmEmpty} type="number" placeholder="0" inputMode="decimal"/></div>
-      <div style={{flex:"1 1 100px",minWidth:80}}><div style={lbl}>Km total</div><div style={{padding:"8px 10px",borderRadius:R.md,background:C.bg,fontSize:13,color:C.t1,fontWeight:600}}>{kmTotal||"—"}</div></div>
-    </div>
-    <div style={{display:"flex",gap:8,marginBottom:8,flexWrap:"wrap"}}>
-      <div style={{flex:"1 1 100px",minWidth:80}}><Field label="Litros" value={fuelLiters} onChange={setFuelLiters} type="number" placeholder="0" inputMode="decimal"/></div>
-      <div style={{flex:"1 1 100px",minWidth:80}}><Field label="$/litro" value={fuelCostPerLiter} onChange={setFuelCostPerLiter} type="number" placeholder="0" inputMode="decimal"/></div>
-      <div style={{flex:"1 1 100px",minWidth:80}}><Field label="Peajes" value={tollCost} onChange={setTollCost} type="number" placeholder="0" inputMode="decimal"/></div>
-    </div>
-    <div style={{display:"flex",gap:8,marginBottom:8,flexWrap:"wrap"}}>
-      <div style={{flex:"1 1 140px",minWidth:120}}><Field label="Odómetro inicio" value={odometerStart} onChange={setOdometerStart} type="number" placeholder="0" inputMode="numeric"/></div>
-      <div style={{flex:"1 1 140px",minWidth:120}}><Field label="Odómetro fin" value={odometerEnd} onChange={setOdometerEnd} type="number" placeholder="0" inputMode="numeric"/></div>
-    </div>
-    <div style={{display:"flex",gap:8}}>
-      <Btn full disabled={saving} onClick={()=>onSave({kmLoaded:parseFloat(kmLoaded)||null,kmEmpty:parseFloat(kmEmpty)||null,kmTotal:parseFloat(kmTotal)||null,fuelLiters:parseFloat(fuelLiters)||null,fuelCostPerLiter:parseFloat(fuelCostPerLiter)||null,tollCost:parseFloat(tollCost)||null,odometerStart:parseInt(odometerStart)||null,odometerEnd:parseInt(odometerEnd)||null})}>{saving?"Guardando...":"Guardar datos"}</Btn>
-      <Btn v="muted" onClick={onCancel}>Cancelar</Btn>
-    </div>
-  </div>);
+  return createPortal(
+    <div onClick={onClose} style={{position:"fixed",inset:0,zIndex:99999,background:"rgba(0,0,0,0.45)",display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
+      <div onClick={e=>e.stopPropagation()} style={{background:C.w,borderRadius:R.lg,padding:20,width:"min(420px,92vw)",maxHeight:"85vh",overflow:"auto",boxShadow:C.shLg,fontFamily:FONT}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+          <div style={{fontSize:15,fontWeight:700,color:C.t1}}>Datos de viaje{a.plate ? ` — ${a.plate}` : ""}</div>
+          <button onClick={onClose} style={{background:"none",border:"none",cursor:"pointer",padding:4}}>{Ic.cross(C.t3,18)}</button>
+        </div>
+        <div style={{display:"flex",gap:8,marginBottom:10,flexWrap:"wrap"}}>
+          <div style={{flex:"1 1 100px",minWidth:80}}><Field label="Km con carga" value={kmLoaded} onChange={setKmLoaded} type="number" placeholder="0" inputMode="decimal"/></div>
+          <div style={{flex:"1 1 100px",minWidth:80}}><Field label="Km vacío" value={kmEmpty} onChange={setKmEmpty} type="number" placeholder="0" inputMode="decimal"/></div>
+          <div style={{flex:"1 1 100px",minWidth:80}}><div style={lbl}>Km total</div><div style={{padding:"8px 10px",borderRadius:R.md,background:C.bg,fontSize:13,color:C.t1,fontWeight:600}}>{kmTotal||"—"}</div></div>
+        </div>
+        <div style={{display:"flex",gap:8,marginBottom:10,flexWrap:"wrap"}}>
+          <div style={{flex:"1 1 100px",minWidth:80}}><Field label="Litros" value={fuelLiters} onChange={setFuelLiters} type="number" placeholder="0" inputMode="decimal"/></div>
+          <div style={{flex:"1 1 100px",minWidth:80}}><Field label="$/litro" value={fuelCostPerLiter} onChange={setFuelCostPerLiter} type="number" placeholder="0" inputMode="decimal"/></div>
+          <div style={{flex:"1 1 100px",minWidth:80}}><Field label="Peajes" value={tollCost} onChange={setTollCost} type="number" placeholder="0" inputMode="decimal"/></div>
+        </div>
+        <div style={{display:"flex",gap:8,marginBottom:14,flexWrap:"wrap"}}>
+          <div style={{flex:"1 1 140px",minWidth:120}}><Field label="Odómetro inicio" value={odometerStart} onChange={setOdometerStart} type="number" placeholder="0" inputMode="numeric"/></div>
+          <div style={{flex:"1 1 140px",minWidth:120}}><Field label="Odómetro fin" value={odometerEnd} onChange={setOdometerEnd} type="number" placeholder="0" inputMode="numeric"/></div>
+        </div>
+        <div style={{display:"flex",gap:8}}>
+          <Btn full disabled={saving} onClick={()=>onSave({kmLoaded:parseFloat(kmLoaded)||null,kmEmpty:parseFloat(kmEmpty)||null,kmTotal:parseFloat(kmTotal)||null,fuelLiters:parseFloat(fuelLiters)||null,fuelCostPerLiter:parseFloat(fuelCostPerLiter)||null,tollCost:parseFloat(tollCost)||null,odometerStart:parseInt(odometerStart)||null,odometerEnd:parseInt(odometerEnd)||null})}>{saving?"Guardando...":"Guardar"}</Btn>
+          <Btn v="muted" onClick={onClose}>Cancelar</Btn>
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
 }
 
 export default function DetailScreen({ user, freight, perms, onBack, onAction, onTripAction, onEditTrip, onCancelAssignment, actionLoading, onChat, onRefresh, onDuplicate, onEdit, goToMap, sseConnected }) {
@@ -112,7 +121,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
   const [ocrDocId, setOcrDocId] = useState(null);
   const [pdfLoading, setPdfLoading] = useState(false);
   const [pcLoading, setPcLoading] = useState(null);
-  const [tripDataOpen, setTripDataOpen] = useState(false);
+  const [tripDataOpen, setTripDataOpen] = useState(null); // assignment object or null
   const [tripSaving, setTripSaving] = useState(false);
   const auditRef = useRef(null);
   const show = useUIStore(s => s.show);
@@ -1034,41 +1043,55 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
 
       {/* Trip Data + PDF compact row */}
       {(()=>{
-        const tripAssign = visibleAssignments.find(a => a.plate);
-        return <div style={{ display:"flex", gap:8, marginBottom:12 }}>
-          {tripAssign && <button onClick={()=>setTripDataOpen(!tripDataOpen)}
-            style={{ flex:1, background:C.accPale, borderRadius: R.md, padding:"10px 12px", display:"flex", alignItems:"center", justifyContent:"center", gap:7, border:`1.5px solid ${C.acc}30`, cursor:"pointer", fontFamily:"inherit" }}>
-            {Ic.truck(C.acc,16)}<span style={{ fontSize:13.9, fontWeight:700, color:C.acc }}>{tripDataOpen?"Cerrar":"Datos de viaje"}</span>
-          </button>}
-          <button disabled={pdfLoading} onClick={async()=>{
-            if(pdfLoading) return;
-            setPdfLoading(true);
-            try {
-              let logs = auditLog;
-              if(!logs) { try { logs = await apiGetAuditLog(freight.id); setAuditLog(logs); } catch(e) { logs = []; } }
-              const { generateFreightPDF } = await loadPdfReport();
-              generateFreightPDF({ ...freight, documents: fullDocs, conversationId: fullConvId, pendingChanges: fullPendingChanges }, logs || []);
-            } catch(e) { log.error('PDF', e); useUIStore.getState().show('Error al generar PDF: ' + (e?.message || e), 'err'); }
-            finally { setPdfLoading(false); }
-          }} style={{ flex:1, background:C.w, borderRadius: R.md, padding:"10px 12px", display:"flex", alignItems:"center", justifyContent:"center", gap:7, border:`1.5px solid ${C.b1}`, cursor:"pointer", fontFamily:"inherit", opacity:pdfLoading?0.6:1 }}>
-            {Ic.doc(C.t2,16)}<span style={{ fontSize:13.9, fontWeight:700, color:C.t1 }}>{pdfLoading?'Generando...':'PDF'}</span>
-          </button>
-        </div>;
+        const tripAssigns = visibleAssignments.filter(a => a.plate);
+        const hasData = tripAssigns.some(a => a.kmTotal || a.fuelLiters || a.odometerEnd);
+        return <>
+          <div style={{ display:"flex", gap:8, marginBottom: hasData && tripAssigns.length > 0 ? 6 : 12 }}>
+            {tripAssigns.length > 0 && <button onClick={()=>setTripDataOpen(tripAssigns[0])}
+              style={{ flex:1, background: hasData ? C.priPale : C.accPale, borderRadius: R.md, padding:"10px 12px", display:"flex", alignItems:"center", justifyContent:"center", gap:7, border:`1.5px solid ${hasData ? C.pri : C.acc}30`, cursor:"pointer", fontFamily:"inherit" }}>
+              {Ic.truck(hasData ? C.pri : C.acc,16)}<span style={{ fontSize:13.9, fontWeight:700, color: hasData ? C.pri : C.acc }}>{hasData ? "Ver datos de viaje" : "Cargar datos de viaje"}</span>
+            </button>}
+            <button disabled={pdfLoading} onClick={async()=>{
+              if(pdfLoading) return;
+              setPdfLoading(true);
+              try {
+                let logs = auditLog;
+                if(!logs) { try { logs = await apiGetAuditLog(freight.id); setAuditLog(logs); } catch(e) { logs = []; } }
+                const { generateFreightPDF } = await loadPdfReport();
+                generateFreightPDF({ ...freight, documents: fullDocs, conversationId: fullConvId, pendingChanges: fullPendingChanges }, logs || []);
+              } catch(e) { log.error('PDF', e); useUIStore.getState().show('Error al generar PDF: ' + (e?.message || e), 'err'); }
+              finally { setPdfLoading(false); }
+            }} style={{ flex:1, background:C.w, borderRadius: R.md, padding:"10px 12px", display:"flex", alignItems:"center", justifyContent:"center", gap:7, border:`1.5px solid ${C.b1}`, cursor:"pointer", fontFamily:"inherit", opacity:pdfLoading?0.6:1 }}>
+              {Ic.doc(C.t2,16)}<span style={{ fontSize:13.9, fontWeight:700, color:C.t1 }}>{pdfLoading?'Generando...':'PDF'}</span>
+            </button>
+          </div>
+          {/* Data summary chips */}
+          {hasData && <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:12 }}>
+            {tripAssigns.map(a => {
+              if (!a.kmTotal && !a.fuelLiters && !a.odometerEnd) return null;
+              return <div key={a.id} onClick={()=>setTripDataOpen(a)} style={{ display:"flex", gap:8, padding:"5px 10px", background:C.bg, borderRadius:R.md, fontSize:11, color:C.t2, cursor:"pointer", alignItems:"center", border:`1px solid ${C.b2}` }}>
+                {a.plate && <span style={{fontWeight:700,color:C.t1}}>{a.plate}</span>}
+                {a.kmTotal != null && <span>{Number(a.kmTotal).toLocaleString("es-UY")} km</span>}
+                {a.fuelLiters != null && <span>{Number(a.fuelLiters)} L</span>}
+                {a.odometerEnd != null && <span>Odm: {Number(a.odometerEnd).toLocaleString("es-UY")}</span>}
+                {Ic.edit(C.t3,11)}
+              </div>;
+            })}
+          </div>}
+        </>;
       })()}
 
-      {/* Trip Data Form (inline) */}
-      {tripDataOpen && visibleAssignments.filter(a => a.plate).map(a =>
-        <TripDataInline key={a.id} freight={freight} assignment={a} saving={tripSaving} onSave={async (body) => {
-          setTripSaving(true);
-          try {
-            await apiUpdateTripData(freight.id, a.id, body);
-            show("Datos de viaje guardados", "ok");
-            setTripDataOpen(false);
-            if (onRefresh) onRefresh(freight.id);
-          } catch (e) { show(e.message || "Error al guardar", "err"); }
-          finally { setTripSaving(false); }
-        }} onCancel={()=>setTripDataOpen(false)} />
-      )}
+      {/* Trip Data Modal */}
+      {tripDataOpen && <TripDataModal assignment={tripDataOpen} saving={tripSaving} onSave={async (body) => {
+        setTripSaving(true);
+        try {
+          await apiUpdateTripData(freight.id, tripDataOpen.id, body);
+          show("Datos de viaje guardados", "ok");
+          setTripDataOpen(null);
+          if (onRefresh) onRefresh(freight.id);
+        } catch (e) { show(e.message || "Error al guardar", "err"); }
+        finally { setTripSaving(false); }
+      }} onClose={()=>setTripDataOpen(null)} />}
 
       {/* Edit action (neutral) — hidden for CONSULTA */}
       {!isConsulta && ["pending_assignment","assigned","accepted","in_progress","loaded"].includes(freight.status) && (perms.canRequest || perms.canApprove) && (
