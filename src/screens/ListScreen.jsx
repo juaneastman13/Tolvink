@@ -47,7 +47,8 @@ function fmtKanbanDate(dateStr, timeStr) {
   return timeStr?.trim() ? `${base} ${timeStr.trim().slice(0,5)}` : base;
 }
 
-export default memo(function ListScreen({ freights, loading, onNav, onRefresh, catalog, view, setView, goToMap, hasMore, loadMore, loadingMore, total, isDesktop, onAction, user, simpleMode, statusCounts }) {
+const TRIP_ACTION_KEYS = new Set(["start_trip","confirm_trip_loaded","confirm_trip_finished","respond_trip","edit_trip"]);
+export default memo(function ListScreen({ freights, loading, onNav, onRefresh, catalog, view, setView, goToMap, hasMore, loadMore, loadingMore, total, isDesktop, onAction, onTripAction, user, simpleMode, statusCounts }) {
   const [sp] = useSearchParams();
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [searchQ, setSearchQ] = useState(sp.get("search") || "");
@@ -846,8 +847,8 @@ export default memo(function ListScreen({ freights, loading, onNav, onRefresh, c
                       <td style={{ padding:"10px 12px", color:C.t2 }}>{f.driverName||"\u2014"}</td>
                       <td style={{ padding:"10px 12px", color:C.t2, whiteSpace:"nowrap" }}>{f.driverPhone||"\u2014"}</td>
                       <td style={{ padding:"8px 12px", whiteSpace:"nowrap" }}>
-                        {tpa && tpa.actionKey && onAction ? (
-                          <button onClick={(e)=>{e.stopPropagation();onAction(f.id, tpa.actionKey, tpa.assignmentId);}} style={{padding:"4px 10px",borderRadius: R.sm,border:`1px solid ${tpa.color}40`,background:`${tpa.color}10`,color:tpa.color,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>{tpa.action}</button>
+                        {tpa && tpa.actionKey && (onAction || onTripAction) ? (
+                          <button onClick={(e)=>{e.stopPropagation();const isTripKey=TRIP_ACTION_KEYS.has(tpa.actionKey)||tpa.actionKey==="assign_multi";if(isTripKey && tpa.actionKey!=="assign_multi" && onTripAction && tpa.assignmentId){onTripAction(f.id, tpa.assignmentId, tpa.actionKey);}else if(tpa.actionKey==="assign_multi" && onAction){onAction(f.id,"assign");}else if(onAction){onAction(f.id, tpa.actionKey);}}} style={{padding:"4px 10px",borderRadius: R.sm,border:`1px solid ${tpa.color}40`,background:`${tpa.color}10`,color:tpa.color,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>{tpa.action}</button>
                         ) : tpa ? (
                           <span style={{ fontSize:11, color:tpa.color, fontWeight:600 }}>{tpa.action}</span>
                         ) : (

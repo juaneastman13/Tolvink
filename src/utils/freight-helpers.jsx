@@ -55,7 +55,7 @@ function getMultiTruckPendingAction(freight, userType, role, user) {
       return { action: `Asignar ${freight.truckCount - freight.assignedTruckCount} camiones`, color: C.acc, icon: "assign", actionKey: "assign_multi", groupKey: "assign" };
     }
     // Own-fleet trips pending plant authorization
-    const needsAuth = aa.find(a => a.transportCompanyId === freight.originCompanyId && a.tripStatus === "pending");
+    const needsAuth = aa.find(a => a.transportCompanyId === freight.originCompanyId && a.tripStatus === "pending" && a.truckId);
     if (needsAuth) return { action: `Autorizar viaje #${needsAuth.tripNumber}`, color: C.sec, icon: "authorize", actionKey: "respond_trip", groupKey: "authorize", assignmentId: needsAuth.id };
     // Own-fleet: plant acts as transporter — show transporter actions
     const ownTrips = aa.filter(a => a.transportCompanyId === freight.originCompanyId);
@@ -120,7 +120,7 @@ export function getPendingActions(freight, userType, role, user) {
   if (role === "chofer" || userType === "chofer") {
     const qp = freight.queuePosition || 0;
     if (qp > 1) return { action: `En cola #${qp}`, color: C.t3, icon: "queue", actionKey: null, isQueue: true };
-    if (s === "assigned") return { action: "Aceptar o rechazar", color: C.sec, icon: "respond", actionKey: "respond", groupKey: "respond" };
+    // Chofer assignments are auto-accepted — skip "assigned" status, go straight to start when accepted
     if (s === "accepted") return { action: "Iniciar viaje", color: C.pri, icon: "start", actionKey: "start", groupKey: "start" };
     if (s === "in_progress") return { action: "Confirmar carga", color: C.acc, icon: "confirm", actionKey: "confirm_loaded", groupKey: "confirm_loaded" };
     if (s === "loaded") return { action: "Confirmar entrega", color: C.pri, icon: "confirm", actionKey: "confirm_finished", groupKey: "confirm_finished" };

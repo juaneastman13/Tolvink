@@ -355,6 +355,7 @@ export default function AppLayout({ fh, catalog, online, notif, isDesktop }) {
     if(!f) return;
     const isPlant = auth.user?.userType === "plant" || (auth.user?.userTypes||[]).includes("plant");
     const cfgs = {
+      respond_trip: { title:"Autorizar viaje", btnLabel:"Autorizar", icon:Ic.chk(C.pri,24), btnVariant:"pri" },
       start_trip: { title:"Iniciar viaje", btnLabel:"Iniciar viaje", icon:Ic.truck(C.acc,24), btnVariant:"acc" },
       confirm_trip_loaded: { title:"Confirmar carga", btnLabel:"Confirmar carga", icon:Ic.chk(C.acc,24), btnVariant:"acc" },
       confirm_trip_finished: { title:"Confirmar entrega", btnLabel:"Confirmar entrega", icon:Ic.chk(C.pri,24), btnVariant:"pri" },
@@ -386,9 +387,10 @@ export default function AppLayout({ fh, catalog, online, notif, isDesktop }) {
   const handleTripConfirmAction = async (fId, aId, actionKey, loadedTons)=>{
     setActionLoading(true);
     try {
-      const msgs = { start_trip:"Viaje iniciado", confirm_trip_loaded:"Carga confirmada", confirm_trip_finished:"Entrega confirmada" };
+      const msgs = { respond_trip:"Viaje autorizado", start_trip:"Viaje iniciado", confirm_trip_loaded:"Carga confirmada", confirm_trip_finished:"Entrega confirmada" };
       let r;
-      if(actionKey==="start_trip") r = await fh.startTrip(fId, aId);
+      if(actionKey==="respond_trip") r = await fh.authorize(fId);
+      else if(actionKey==="start_trip") r = await fh.startTrip(fId, aId);
       else if(actionKey==="confirm_trip_loaded") r = await fh.confirmTripLoaded(fId, aId, loadedTons);
       else if(actionKey==="confirm_trip_finished") r = await fh.confirmTripFinished(fId, aId);
       if(r?.ok){ clearActionAfterClose(); return msgs[actionKey]||"Hecho"; }
@@ -599,7 +601,7 @@ export default function AppLayout({ fh, catalog, online, notif, isDesktop }) {
         <div key={screen} className="tv-page" style={{flex:1,display:"flex",flexDirection:"column",minHeight:0}}>
         <ErrorBoundary><Suspense fallback={<SL/>}>
         {screen==="home" && <HomeScreen user={auth.user} freights={viewFreights} loading={fh.loading} error={fh.error} perms={perms} onNav={nav} catalog={catalog} isDesktop={isDesktop} onAction={handleAction} onTripAction={handleTripAction} onEditTrip={handleEditTrip} actionLoading={actionLoading} onChat={(convId)=>{if(convId){setChatConvId(convId);navigate("/chats");}}} onRefresh={(id)=>fh.refresh(id)} onRetry={fh.fetchAll} onDuplicate={(f)=>{setDuplicateData(f);navigate("/new");}} onEdit={(f)=>{setEditData(f);navigate("/edit/"+f.id);}} goToMap={goToMap} simpleMode={auth.simpleMode} statusCounts={fh.statusCounts}/>}
-        {screen==="list" && <ListScreen freights={viewFreights} loading={fh.loading} onNav={nav} onRefresh={fh.fetchAll} catalog={catalog} view={listView} setView={setListView} goToMap={goToMap} hasMore={fh.hasMore} loadMore={fh.loadMore} loadingMore={fh.loadingMore} total={fh.total} isDesktop={isDesktop} onAction={handleAction} user={auth.user} simpleMode={auth.simpleMode} statusCounts={fh.statusCounts}/>}
+        {screen==="list" && <ListScreen freights={viewFreights} loading={fh.loading} onNav={nav} onRefresh={fh.fetchAll} catalog={catalog} view={listView} setView={setListView} goToMap={goToMap} hasMore={fh.hasMore} loadMore={fh.loadMore} loadingMore={fh.loadingMore} total={fh.total} isDesktop={isDesktop} onAction={handleAction} onTripAction={handleTripAction} user={auth.user} simpleMode={auth.simpleMode} statusCounts={fh.statusCounts}/>}
         {screen==="calendar" && <CalendarScreen freights={viewFreights} perms={perms} onNav={nav} isDesktop={isDesktop} user={auth.user} onAction={handleAction} onTripAction={handleTripAction} actionLoading={actionLoading} onChat={(convId)=>{if(convId){setChatConvId(convId);navigate("/chats");}}} onRefresh={(id)=>fh.refresh(id)} onDuplicate={(f)=>{setDuplicateData(f);navigate("/new");}} onEdit={(f)=>{setEditData(f);navigate("/edit/"+f.id);}} goToMap={goToMap}/>}
         {screen==="detail" && <DetailScreen user={curFreight ? {...auth.user, userType: _resolveType(curFreight)} : auth.user} freight={curFreight} perms={perms} onBack={()=>navigate(-1)} onAction={handleAction} onTripAction={handleTripAction} onEditTrip={handleEditTrip} onCancelAssignment={fh.cancelAssignment} actionLoading={actionLoading} onChat={(convId)=>{if(convId){setChatConvId(convId);navigate("/chats");}}} onRefresh={(id)=>{ useFreightDetailStore.getState().invalidate(id); fh.refresh(id); }} onDuplicate={(f)=>{setDuplicateData(f);navigate("/new");}} onEdit={(f)=>{setEditData(f);navigate("/edit/"+f.id);}} goToMap={goToMap} sseConnected={sse.connected}/>}
         {screen==="new" && <NewScreen user={auth.user} lots={catalog.lots} plants={catalog.plants} branches={catalog.branches} fields={catalog.fields} trucks={catalog.trucks} freights={fh.freights} onBack={()=>{setDuplicateData(null);navigate(-1);}} onCreate={handleCreate} submitting={submitting} duplicateFrom={duplicateData}/>}

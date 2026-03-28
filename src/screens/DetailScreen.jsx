@@ -355,7 +355,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
       const entries = [];
       if (user.userType === "plant") {
         // Own-fleet: plant acts as transporter — authorize pending, then start/confirm lifecycle
-        if (isOwn && ts === "pending") entries.push({ key:"respond_trip", label:"Autorizar viaje", color:C.sec, icon:Ic.chk(C.w,16) });
+        if (isOwn && ts === "pending" && a.truckId) entries.push({ key:"respond_trip", label:"Autorizar viaje", color:C.sec, icon:Ic.chk(C.w,16) });
         if (isOwn && ts === "accepted") entries.push({ key:"start_trip", label:"Iniciar viaje", color:C.pri, icon:Ic.truck(C.w,16) });
         if (isOwn && ts === "in_progress" && !a.transporterLoadedConfirmedAt) entries.push({ key:"confirm_trip_loaded", label:"Confirmar carga", color:C.acc, icon:Ic.chk(C.w,16) });
         if (isOwn && ts === "loaded" && !a.transporterFinishedConfirmedAt) entries.push({ key:"confirm_trip_finished", label:"Confirmar entrega", color:C.pri, icon:Ic.chk(C.w,16) });
@@ -440,7 +440,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
     const ts = a.tripStatus;
     const isOwnFleetTrip = a.transportCompanyId === freight.originCompanyId;
     if (user.userType === "plant") {
-      if (isOwnFleetTrip && ts === "pending") btns.push({ key:"respond_trip", label:"Autorizar", color:C.sec, icon:Ic.chk(C.w,14) });
+      if (isOwnFleetTrip && ts === "pending" && a.truckId) btns.push({ key:"respond_trip", label:"Autorizar", color:C.sec, icon:Ic.chk(C.w,14) });
       if (isOwnFleetTrip && ts === "accepted") btns.push({ key:"start_trip", label:"Iniciar viaje", color:C.pri, icon:Ic.truck(C.w,14) });
       if (isOwnFleetTrip && ts === "in_progress" && !a.transporterLoadedConfirmedAt) btns.push({ key:"confirm_trip_loaded", label:"Confirmar carga", color:C.acc, icon:Ic.chk(C.w,14) });
       if (isOwnFleetTrip && ts === "loaded" && !a.transporterFinishedConfirmedAt) btns.push({ key:"confirm_trip_finished", label:"Confirmar entrega", color:C.pri, icon:Ic.chk(C.w,14) });
