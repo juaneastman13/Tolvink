@@ -57,12 +57,13 @@ function getMultiTruckPendingAction(freight, userType, role, user) {
     // Own-fleet trips pending plant authorization
     const needsAuth = aa.find(a => a.transportCompanyId === freight.originCompanyId && a.tripStatus === "pending" && a.truckId);
     if (needsAuth) return { action: `Autorizar viaje #${needsAuth.tripNumber}`, color: C.sec, icon: "authorize", actionKey: "respond_trip", groupKey: "authorize", assignmentId: needsAuth.id };
-    // Own-fleet: plant acts as transporter — show transporter actions
+    // Own-fleet: only show start/confirm_loaded as pending if the user IS the assigned driver
+    // Otherwise the chofer handles it and the plant sees it as "waiting"
     const ownTrips = aa.filter(a => a.transportCompanyId === freight.originCompanyId);
     if (ownTrips.length) {
-      const ownAccepted = ownTrips.find(a => a.tripStatus === "accepted");
+      const ownAccepted = ownTrips.find(a => a.tripStatus === "accepted" && a.driverId === user?.id);
       if (ownAccepted) return { action: `Iniciar viaje #${ownAccepted.tripNumber}`, color: C.pri, icon: "start", actionKey: "start_trip", groupKey: "start", assignmentId: ownAccepted.id };
-      const ownInProgress = ownTrips.find(a => a.tripStatus === "in_progress" && !a.transporterLoadedConfirmedAt);
+      const ownInProgress = ownTrips.find(a => a.tripStatus === "in_progress" && !a.transporterLoadedConfirmedAt && a.driverId === user?.id);
       if (ownInProgress) return { action: `Confirmar carga #${ownInProgress.tripNumber}`, color: C.acc, icon: "confirm", actionKey: "confirm_trip_loaded", groupKey: "confirm_loaded", assignmentId: ownInProgress.id };
       const ownNeedsFinish = ownTrips.find(a => a.tripStatus === "loaded" && !a.transporterFinishedConfirmedAt);
       if (ownNeedsFinish) return { action: `Confirmar entrega #${ownNeedsFinish.tripNumber}`, color: C.pri, icon: "confirm", actionKey: "confirm_trip_finished", groupKey: "confirm_finished", assignmentId: ownNeedsFinish.id };
@@ -75,12 +76,12 @@ function getMultiTruckPendingAction(freight, userType, role, user) {
 
   // Producer: check own-fleet trips AND cross-confirmation pending on any trip
   if (userType === "producer") {
-    // Own-fleet trips: producer acts as transporter
+    // Own-fleet trips: only show start/confirm_loaded as pending if the user IS the driver
     const ownTrips = aa.filter(a => a.transportCompanyId === freight.originCompanyId);
     if (ownTrips.length) {
-      const accepted = ownTrips.find(a => a.tripStatus === "accepted");
+      const accepted = ownTrips.find(a => a.tripStatus === "accepted" && a.driverId === user?.id);
       if (accepted) return { action: `Iniciar viaje #${accepted.tripNumber}`, color: C.pri, icon: "start", actionKey: "start_trip", groupKey: "start", assignmentId: accepted.id };
-      const inProgress = ownTrips.find(a => a.tripStatus === "in_progress" && !a.transporterLoadedConfirmedAt);
+      const inProgress = ownTrips.find(a => a.tripStatus === "in_progress" && !a.transporterLoadedConfirmedAt && a.driverId === user?.id);
       if (inProgress) return { action: `Confirmar carga #${inProgress.tripNumber}`, color: C.acc, icon: "confirm", actionKey: "confirm_trip_loaded", groupKey: "confirm_loaded", assignmentId: inProgress.id };
       const needsFinishOwn = ownTrips.find(a => a.tripStatus === "loaded" && !a.transporterFinishedConfirmedAt);
       if (needsFinishOwn) return { action: `Confirmar entrega #${needsFinishOwn.tripNumber}`, color: C.pri, icon: "confirm", actionKey: "confirm_trip_finished", groupKey: "confirm_finished", assignmentId: needsFinishOwn.id };
@@ -131,9 +132,11 @@ export function getPendingActions(freight, userType, role, user) {
     if (own && freight.needsPlantApproval && !freight.plantApprovedAt && s !== "canceled" && s !== "finished") return { action: "Aceptar flete de productor", color: C.sec, icon: "approve", actionKey: "approve_producer", groupKey: "approve_producer" };
     if (s === "pending_assignment") return { action: "Asignar transporte", color: C.acc, icon: "assign", actionKey: "assign", groupKey: "assign" };
     if (s === "assigned" && own) return { action: "Autorizar viaje", color: C.sec, icon: "authorize", actionKey: "authorize", groupKey: "authorize" };
-    // Own fleet: plant acts as transporter — show transporter actions
-    if (s === "accepted" && own) return { action: "Iniciar viaje", color: C.pri, icon: "start", actionKey: "start", groupKey: "start" };
-    if (s === "in_progress" && own && !freight.transporterLoadedConfirmedAt) return { action: "Confirmar carga", color: C.acc, icon: "confirm", actionKey: "confirm_loaded", groupKey: "confirm_loaded" };
+    // Own fleet: only show start/confirm_loaded as pending if the user IS the assigned driver
+    // Otherwise the chofer handles it and the plant sees it as "waiting"
+    const isOwnDriver = own && freight.driverId === user?.id;
+    if (s === "accepted" && own && isOwnDriver) return { action: "Iniciar viaje", color: C.pri, icon: "start", actionKey: "start", groupKey: "start" };
+    if (s === "in_progress" && own && isOwnDriver && !freight.transporterLoadedConfirmedAt) return { action: "Confirmar carga", color: C.acc, icon: "confirm", actionKey: "confirm_loaded", groupKey: "confirm_loaded" };
     if (s === "loaded" && own && !freight.transporterFinishedConfirmedAt) return { action: "Confirmar entrega", color: C.pri, icon: "confirm", actionKey: "confirm_finished", groupKey: "confirm_finished" };
     // Non-own-fleet: plant confirms delivery reception
     if (s === "loaded" && !own && !freight.plantFinishedConfirmedAt) return { action: "Confirmar entrega", color: C.pri, icon: "confirm", actionKey: "confirm_finished", groupKey: "confirm_finished" };
@@ -149,8 +152,10 @@ export function getPendingActions(freight, userType, role, user) {
   if (userType === "producer") {
     // If plant hasn't approved yet, producer can't act
     if (freight.needsPlantApproval && !freight.plantApprovedAt) return null;
-    if (s === "accepted" && own) return { action: "Iniciar viaje", color: C.pri, icon: "start", actionKey: "start", groupKey: "start" };
-    if (s === "in_progress" && own && !freight.transporterLoadedConfirmedAt) return { action: "Confirmar carga", color: C.acc, icon: "confirm", actionKey: "confirm_loaded", groupKey: "confirm_loaded" };
+    // Own fleet: only show start/confirm_loaded as pending if the user IS the assigned driver
+    const isProdOwnDriver = own && freight.driverId === user?.id;
+    if (s === "accepted" && own && isProdOwnDriver) return { action: "Iniciar viaje", color: C.pri, icon: "start", actionKey: "start", groupKey: "start" };
+    if (s === "in_progress" && own && isProdOwnDriver && !freight.transporterLoadedConfirmedAt) return { action: "Confirmar carga", color: C.acc, icon: "confirm", actionKey: "confirm_loaded", groupKey: "confirm_loaded" };
     if (s === "loaded" && !freight.producerLoadedConfirmedAt) return { action: "Confirmar carga", color: C.acc, icon: "confirm", actionKey: "confirm_loaded", groupKey: "confirm_loaded" };
     if (s === "loaded" && own && freight.producerLoadedConfirmedAt && !freight.transporterFinishedConfirmedAt) return { action: "Confirmar entrega", color: C.pri, icon: "confirm", actionKey: "confirm_finished", groupKey: "confirm_finished" };
     return null;
