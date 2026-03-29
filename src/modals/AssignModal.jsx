@@ -291,8 +291,12 @@ export default function AssignModal({ freight, transporters, user, onClose, onCo
     setLoading(true);
     if (multiTruck) {
       const compId = mode === "own" ? ownFleetCompanyId : t;
-      const all = [...truckList, { transportCompanyId: compId, truckId: truckId || undefined, driverId: driverId || undefined, tons }];
-      const msg = await onAssignMulti(all.map(e => ({ transportCompanyId: e.transportCompanyId, truckId: e.truckId, driverId: e.driverId, tons: e.tons })));
+      const currentTruck = mode === "external" ? null : { transportCompanyId: compId, truckId: truckId || undefined, driverId: driverId || undefined, tons };
+      const all = [...truckList, ...(currentTruck ? [currentTruck] : [])];
+      const msg = await onAssignMulti(all.map(e => e.isExternal
+        ? { isExternal: true, plate: e.plate, externalCompanyName: e.externalCompanyName, externalDriverName: e.externalDriverName, tons: e.tons }
+        : { transportCompanyId: e.transportCompanyId, truckId: e.truckId, driverId: e.driverId, tons: e.tons }
+      ));
       setLoading(false);
       if (msg) { setClosingText(msg); setClosing(true); }
     } else {
@@ -358,9 +362,9 @@ export default function AssignModal({ freight, transporters, user, onClose, onCo
         {/* Mode toggle */}
         {hasOwnFleet && !forceMode && mode !== "delegate" && (
           <div style={{ display:"flex", gap:0, marginBottom:12, borderRadius: R.md, overflow:"hidden", border:`1.5px solid ${C.b1}` }}>
-            <button onClick={() => { setMode("company"); setTruckId(""); setDriverId(""); setStep(0); setT(""); }} style={{ flex:1, padding:"8px 0", fontFamily:"inherit", fontSize:13, fontWeight:mode === "company" ? 700 : 500, background:mode === "company" ? C.pri : C.w, color:mode === "company" ? C.w : C.t2, border:"none", cursor:"pointer" }}>Empresa</button>
-            <button onClick={() => { setMode("own"); setT(""); setStep(0); }} style={{ flex:1, padding:"8px 0", fontFamily:"inherit", fontSize:13, fontWeight:mode === "own" ? 700 : 500, background:mode === "own" ? C.acc : C.w, color:mode === "own" ? C.w : C.t2, border:"none", cursor:"pointer", borderLeft:`1px solid ${C.b1}` }}>Flota propia</button>
-            <button onClick={() => { setMode("external"); setT(""); setTruckId(""); setDriverId(""); setStep(0); }} style={{ flex:1, padding:"8px 0", fontFamily:"inherit", fontSize:13, fontWeight:mode === "external" ? 700 : 500, background:mode === "external" ? C.sec : C.w, color:mode === "external" ? C.w : C.t2, border:"none", cursor:"pointer", borderLeft:`1px solid ${C.b1}` }}>Externo</button>
+            <button onClick={() => { setMode("company"); setTruckId(""); setDriverId(""); setStep(0); setT(""); setExtPlate(""); setExtCompanyName(""); setExtDriverName(""); }} style={{ flex:1, padding:"8px 0", fontFamily:"inherit", fontSize:13, fontWeight:mode === "company" ? 700 : 500, background:mode === "company" ? C.pri : C.w, color:mode === "company" ? C.w : C.t2, border:"none", cursor:"pointer" }}>Empresa</button>
+            <button onClick={() => { setMode("own"); setT(""); setStep(0); setExtPlate(""); setExtCompanyName(""); setExtDriverName(""); }} style={{ flex:1, padding:"8px 0", fontFamily:"inherit", fontSize:13, fontWeight:mode === "own" ? 700 : 500, background:mode === "own" ? C.acc : C.w, color:mode === "own" ? C.w : C.t2, border:"none", cursor:"pointer", borderLeft:`1px solid ${C.b1}` }}>Flota propia</button>
+            <button onClick={() => { setMode("external"); setT(""); setTruckId(""); setDriverId(""); setStep(0); setExtPlate(""); setExtCompanyName(""); setExtDriverName(""); }} style={{ flex:1, padding:"8px 0", fontFamily:"inherit", fontSize:13, fontWeight:mode === "external" ? 700 : 500, background:mode === "external" ? C.sec : C.w, color:mode === "external" ? C.w : C.t2, border:"none", cursor:"pointer", borderLeft:`1px solid ${C.b1}` }}>Externo</button>
             {canDelegate && (
               <button onClick={() => { setMode("delegate"); setT(""); setTruckId(""); setDriverId(""); setStep(0); }} style={{ flex:1, padding:"8px 0", fontFamily:"inherit", fontSize:13, fontWeight:mode === "delegate" ? 700 : 500, background:mode === "delegate" ? C.info : C.w, color:mode === "delegate" ? C.w : C.t2, border:"none", cursor:"pointer", borderLeft:`1px solid ${C.b1}` }}>Delegar</button>
             )}
