@@ -972,14 +972,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
               )}
             </>)}
             {destMode==="custom" && (<>
-              <Field label="Nombre del destino (opcional)" value={customDest.name} onChange={v=>setCustomDest(p=>({...p,name:v}))} placeholder="Ej: Acopio Central, Puerto Rosario... (opcional)"/>
-              <div style={{ marginTop:8 }}>
-                <Suspense fallback={<div style={{padding:20,textAlign:"center",color:C.t3}}>Cargando mapa...</div>}>
-                  <LocationPicker label="Ubicación del destino" value={customDest.lat?{lat:customDest.lat,lng:customDest.lng}:null} onChange={loc=>setCustomDest(p=>({...p,lat:loc.lat,lng:loc.lng}))} confirmLabel="Confirmar destino" onConfirm={()=>{if(isEditing)confirmEdit();else advanceToNext();}}/>
-                </Suspense>
-              </div>
-              {touched&&errs.customDestLoc&&<div style={{padding:"6px 10px",borderRadius: R.md,marginTop:6,fontSize:12.1,fontWeight:600,color:C.err,background:C.errPale}}>{errs.customDestLoc}</div>}
-              <div style={{marginTop:14}}>
+              <div style={{marginBottom:14}}>
                 <label style={{fontSize:11.6,fontWeight:600,color:C.t2,marginBottom:6,display:"flex",alignItems:"center",gap:4,textTransform:"uppercase",letterSpacing:0.6}}>{Ic.chk(C.t2,14)} ¿Quién debe confirmar el viaje?</label>
                 <div style={{display:"flex",gap:6,marginBottom:confirmMode==="plant"?10:0}}>
                   <button onClick={()=>setConfirmMode("plant")} style={{flex:1,padding:"10px 8px",borderRadius: R.md,border:`1.5px solid ${confirmMode==="plant"?C.pri:C.b1}`,background:confirmMode==="plant"?C.priPale:C.w,color:confirmMode==="plant"?C.pri:C.t2,cursor:"pointer",fontSize:13.2,fontWeight:600,fontFamily:"inherit"}}>Planta</button>
@@ -989,7 +982,15 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
                   <Select value={confirmPlantId} onChange={v=>setConfirmPlantId(v)} options={plantOpts} placeholder="Seleccionar planta que confirma..."/>
                   {touched&&!confirmPlantId&&<FieldError error="Seleccioná una planta que confirme el viaje"/>}
                 </>)}
+                {confirmMode==="none" && <div style={{fontSize:11,color:C.t3,marginTop:6}}>El flete no requiere confirmación externa</div>}
               </div>
+              <Field label="Nombre del destino (opcional)" value={customDest.name} onChange={v=>setCustomDest(p=>({...p,name:v}))} placeholder="Ej: Acopio Central, Puerto Rosario... (opcional)"/>
+              <div style={{ marginTop:8 }}>
+                <Suspense fallback={<div style={{padding:20,textAlign:"center",color:C.t3}}>Cargando mapa...</div>}>
+                  <LocationPicker label="Ubicación del destino" value={customDest.lat?{lat:customDest.lat,lng:customDest.lng}:null} onChange={loc=>setCustomDest(p=>({...p,lat:loc.lat,lng:loc.lng}))} confirmLabel="Confirmar destino" onConfirm={()=>{if(isEditing)confirmEdit();else advanceToNext();}}/>
+                </Suspense>
+              </div>
+              {touched&&errs.customDestLoc&&<div style={{padding:"6px 10px",borderRadius: R.md,marginTop:6,fontSize:12.1,fontWeight:600,color:C.err,background:C.errPale}}>{errs.customDestLoc}</div>}
             </>)}
             <NextStepBtn complete={secComplete.destination} onClick={isEditing?confirmEdit:advanceToNext} label={isEditing?"Confirmar edición":undefined} onPrev={prevAvailable()?goToPrev:null}/>
           </>}
@@ -1253,12 +1254,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
           )}
           {destMode==="custom" && (
             <>
-              <Field label="Nombre del destino (opcional)" value={customDest.name} onChange={v=>setCustomDest(p=>({...p,name:v}))} placeholder="Ej: Acopio Central, Puerto Rosario... (opcional)"/>
-              <div style={{ marginTop:8 }}>
-                <LocationPicker label="Ubicación del destino" value={customDest.lat?{lat:customDest.lat,lng:customDest.lng}:null} onChange={loc=>setCustomDest(p=>({...p,lat:loc.lat,lng:loc.lng}))} confirmLabel="Confirmar destino" onConfirm={()=>{if(isEditing)confirmEdit();else advanceToNext();}}/>
-              </div>
-              {touched&&errs.customDestLoc&&<div style={{padding:"6px 10px",borderRadius: R.md,marginTop:6,fontSize:12.1,fontWeight:600,color:C.err,background:C.errPale}}>{errs.customDestLoc}</div>}
-              <div style={{marginTop:14}}>
+              <div style={{marginBottom:14}}>
                 <label style={{fontSize:11.6,fontWeight:600,color:C.t2,marginBottom:6,display:"flex",alignItems:"center",gap:4,textTransform:"uppercase",letterSpacing:0.6}}>{Ic.chk(C.t2,14)} ¿Quién debe confirmar el viaje?</label>
                 <div style={{display:"flex",gap:6,marginBottom:confirmMode==="plant"?10:0}}>
                   <button onClick={()=>setConfirmMode("plant")} style={{flex:1,padding:"10px 8px",borderRadius: R.md,border:`1.5px solid ${confirmMode==="plant"?C.pri:C.b1}`,background:confirmMode==="plant"?C.priPale:C.w,color:confirmMode==="plant"?C.pri:C.t2,cursor:"pointer",fontSize:13.2,fontWeight:600,fontFamily:"inherit"}}>Planta</button>
@@ -1273,6 +1269,11 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
                 )}
                 {confirmMode==="none" && <div style={{fontSize:11,color:C.t3,marginTop:6}}>El flete no requiere confirmación externa</div>}
               </div>
+              <Field label="Nombre del destino (opcional)" value={customDest.name} onChange={v=>setCustomDest(p=>({...p,name:v}))} placeholder="Ej: Acopio Central, Puerto Rosario... (opcional)"/>
+              <div style={{ marginTop:8 }}>
+                <LocationPicker label="Ubicación del destino" value={customDest.lat?{lat:customDest.lat,lng:customDest.lng}:null} onChange={loc=>setCustomDest(p=>({...p,lat:loc.lat,lng:loc.lng}))} confirmLabel="Confirmar destino" onConfirm={()=>{if(isEditing)confirmEdit();else advanceToNext();}}/>
+              </div>
+              {touched&&errs.customDestLoc&&<div style={{padding:"6px 10px",borderRadius: R.md,marginTop:6,fontSize:12.1,fontWeight:600,color:C.err,background:C.errPale}}>{errs.customDestLoc}</div>}
             </>
           )}
           <NextStepBtn complete={secComplete.destination} onClick={isEditing?confirmEdit:advanceToNext} label={isEditing?"Confirmar edición":undefined} onPrev={prevAvailable()?goToPrev:null}/>
