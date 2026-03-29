@@ -317,20 +317,11 @@ export const ActiveTripCard = memo(function ActiveTripCard({ freight: f, onClick
               </div>
             </div>
             {/* Footer */}
-            <div style={{ background: C.bgCardAlt, borderRadius: R.sm, padding: "7px 10px", display: "flex", flexDirection: "column", gap: 4 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  {f.truckPlate && <LicensePlate plate={f.truckPlate} size="sm" />}
-                </div>
-                {dateTime && <span style={{ fontSize: 11, color: C.t2 }}>{dateTime}</span>}
+            <div style={{ background: C.bgCardAlt, borderRadius: R.sm, padding: "7px 10px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                {f.truckPlate && <LicensePlate plate={f.truckPlate} size="sm" />}
               </div>
-              {(f.producerCompanyName || f.transporterName || f.driverName) && (
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 4, fontSize: 11, color: C.t2 }}>
-                  {f.producerCompanyName && <span style={{ display: "inline-flex", alignItems: "center", gap: 3 }}>{Ic.user(C.t3, 10)} {f.producerCompanyName}</span>}
-                  {f.transporterName && f.transporterName !== f.producerCompanyName && <span style={{ display: "inline-flex", alignItems: "center", gap: 3 }}>{Ic.truck(C.t3, 10)} {f.transporterName}</span>}
-                  {f.driverName && <span style={{ display: "inline-flex", alignItems: "center", gap: 3 }}>{Ic.nav(C.t3, 10)} {f.driverName}</span>}
-                </div>
-              )}
+              {dateTime && <span style={{ fontSize: 11, color: C.t2 }}>{dateTime}</span>}
             </div>
           </>
         )}
