@@ -10,12 +10,12 @@ import { SortableContext, horizontalListSortingStrategy, useSortable } from "@dn
 import { CSS } from "@dnd-kit/utilities";
 
 const TRIP_ST = {
-  pending:     { color: C.muted, bg: `${C.muted}18`, label: "Pendiente" },
-  accepted:    { color: C.acc,   bg: C.accPale,       label: "Aceptado" },
-  in_progress: { color: C.info,  bg: C.infoPale,      label: "En viaje" },
-  loaded:      { color: C.sec,   bg: C.secPale,       label: "Cargado" },
-  finished:    { color: C.ok,    bg: C.okPale,         label: "Finalizado" },
-  canceled:    { color: C.err,   bg: C.errPale,        label: "Cancelado" },
+  pending:     { color: '#FF6A00', bg: '#FFF3E0', label: "Pendiente" },
+  accepted:    { color: '#0891B2', bg: '#ECFEFF',  label: "Aceptado" },
+  in_progress: { color: '#43A047', bg: '#E8F5E9', label: "En viaje" },
+  loaded:      { color: '#1A6B37', bg: '#E0F2E5', label: "Cargado" },
+  finished:    { color: '#9E9E9E', bg: '#F5F5F5', label: "Finalizado" },
+  canceled:    { color: '#E53935', bg: '#FFEBEE', label: "Cancelado" },
 };
 const isDraggable = (ts) => ts === "pending" || ts === "accepted";
 
