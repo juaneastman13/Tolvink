@@ -566,7 +566,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
         </div>
       </div>}
 
-      {freight.status === "pending_assignment" && user.userType === "producer" && freight.useOwnFleet === false && (
+      {freight.status === "pending_assignment" && user.userType === "producer" && freight.useOwnFleet === false && freight.destCompanyId && (
         <div style={{ background:`${C.info}10`, border:`1.5px solid ${C.info}30`, borderRadius: R.lg, padding:"12px 16px", marginBottom:12, display:"flex", alignItems:"center", gap:10 }}>
           <span style={{ display:"flex" }}>{Ic.plant(C.info,20)}</span>
           <div>
