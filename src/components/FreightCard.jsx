@@ -318,8 +318,10 @@ export const ActiveTripCard = memo(function ActiveTripCard({ freight: f, onClick
             </div>
             {/* Footer */}
             <div style={{ background: C.bgCardAlt, borderRadius: R.sm, padding: "7px 10px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0, overflow: "hidden" }}>
                 {f.truckPlate && <LicensePlate plate={f.truckPlate} size="sm" />}
+                {f.transporterName && <span style={{ fontSize: 11, color: C.t2, display: "inline-flex", alignItems: "center", gap: 3, flexShrink: 0 }}>{Ic.truck(C.t3, 10)} {f.transporterName}</span>}
+                {f.driverName && <span style={{ fontSize: 11, color: C.t2, display: "inline-flex", alignItems: "center", gap: 3, flexShrink: 0 }}>{Ic.nav(C.t3, 10)} {f.driverName}</span>}
               </div>
               {dateTime && <span style={{ fontSize: 11, color: C.t2 }}>{dateTime}</span>}
             </div>
