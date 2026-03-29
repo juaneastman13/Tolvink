@@ -484,10 +484,10 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
   const buildFlow = () => {
     const flow = [];
     if (isPlantUser) flow.push("producer");
-    flow.push("product", "quantity", "origin");
+    flow.push("product", "quantity", "origin", "destination");
     if (showTruckSelect) flow.push("ownfleet");
-    flow.push("destination", "schedule");
     if (showTransportStep) flow.push("transport");
+    flow.push("schedule");
     return flow;
   };
   const advanceToNext = () => {
@@ -1007,7 +1007,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
                 {touched&&<FieldError error={errs.loadTime}/>}
               </div>
             </div>
-            <NextStepBtn complete={secComplete.schedule} onClick={()=>{if(isEditing){confirmEdit();}else if(showTransportStep){advanceToNext();}else{openConfirmModal();}}} label={isEditing?"Confirmar edición":"Siguiente"} onPrev={prevAvailable()?goToPrev:null}/>
+            <NextStepBtn complete={secComplete.schedule} onClick={isEditing?confirmEdit:openConfirmModal} label={isEditing?"Confirmar edición":"Siguiente"} onPrev={prevAvailable()?goToPrev:null}/>
           </>}
           {activeSection === "transport" && showTransportStep && <>
             <div style={{ fontSize:13.2, color:C.t2, marginBottom:12 }}>Asignar transporte para este flete</div>
@@ -1054,7 +1054,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
               <div style={{marginTop:8}}><Field label="Nombre del chofer (opcional)" value={externalDriverName} onChange={setExternalDriverName} placeholder="Nombre del chofer"/></div>
             </div>}
             <button onClick={() => { setTransportChoice("skip"); setAssignTruckId(""); setAssignDriverId(""); setExternalPlate(""); }} style={{ background:"none", border:"none", cursor:"pointer", fontSize:12.7, fontWeight:600, color:C.t3, padding:"8px 0", fontFamily:"inherit", textDecoration:"underline" }}>Asignar después</button>
-            <NextStepBtn complete={transportStepComplete} onClick={openConfirmModal} label="Siguiente" onPrev={prevAvailable()?goToPrev:null}/>
+            <NextStepBtn complete={transportStepComplete} onClick={isEditing?confirmEdit:advanceToNext} label={isEditing?"Confirmar edición":"Siguiente"} onPrev={prevAvailable()?goToPrev:null}/>
           </>}
         </MobileStepModal>
       )}
@@ -1299,7 +1299,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
               {touched&&<FieldError error={errs.loadTime}/>}
             </div>
           </div>
-          <NextStepBtn complete={secComplete.schedule} onClick={isEditing?confirmEdit:(showTransportStep?advanceToNext:openConfirmModal)} label={isEditing?"Confirmar edición":"Siguiente"} onPrev={prevAvailable()?goToPrev:null}/>
+          <NextStepBtn complete={secComplete.schedule} onClick={isEditing?confirmEdit:openConfirmModal} label={isEditing?"Confirmar edición":"Siguiente"} onPrev={prevAvailable()?goToPrev:null}/>
         </Sec>}
 
         {/* TRANSPORT STEP (plant + CONSULTA producer) */}
@@ -1349,7 +1349,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
               <div style={{marginTop:8}}><Field label="Nombre del chofer (opcional)" value={externalDriverName} onChange={setExternalDriverName} placeholder="Nombre del chofer"/></div>
             </div>}
             <button onClick={() => { setTransportChoice("skip"); setAssignTruckId(""); setAssignDriverId(""); setExternalPlate(""); }} style={{ background:"none", border:"none", cursor:"pointer", fontSize:12.7, fontWeight:600, color:C.t3, padding:"8px 0", fontFamily:"inherit", textDecoration:"underline" }}>Asignar después</button>
-            <NextStepBtn complete={transportStepComplete} onClick={openConfirmModal} label="Siguiente" onPrev={prevAvailable()?goToPrev:null}/>
+            <NextStepBtn complete={transportStepComplete} onClick={isEditing?confirmEdit:advanceToNext} label={isEditing?"Confirmar edición":"Siguiente"} onPrev={prevAvailable()?goToPrev:null}/>
           </Sec>
         )}
 
