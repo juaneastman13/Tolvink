@@ -713,8 +713,17 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
         };
       }
     }
-    // Include transport assignment data if selected (plant transport step)
-    if (showTransportStep && transportChoice && transportChoice !== "skip") {
+    // Multi-truck plant: send entries array
+    if (showTransportStep && isMultiTruckWizard && transportEntries.length > 0) {
+      payload.assignDataList = transportEntries.map(e => {
+        if (e.type === "own") return { transportCompanyId: e.transportCompanyId || plantCompanyId, truckId: e.truckId, driverId: e.driverId };
+        if (e.type === "external") return { isExternal: true, plate: e.plate, externalCompanyName: e.externalCompanyName, externalDriverName: e.externalDriverName };
+        if (e.type === "operator") return { transportCompanyId: e.transportCompanyId };
+        return null;
+      }).filter(Boolean);
+    }
+    // Single-truck plant: send single assignData
+    else if (showTransportStep && transportChoice && transportChoice !== "skip") {
       if (transportChoice === "external") {
         if (externalPlate.trim()) {
           payload.assignData = {
@@ -1057,7 +1066,23 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
             <NextStepBtn complete={secComplete.schedule} onClick={isEditing?confirmEdit:openConfirmModal} label={isEditing?"Confirmar edición":"Siguiente"} onPrev={prevAvailable()?goToPrev:null}/>
           </>}
           {activeSection === "transport" && showTransportStep && <>
-            <div style={{ fontSize:13.2, color:C.t2, marginBottom:12 }}>Asignar transporte para este flete</div>
+            <div style={{ fontSize:13.2, color:C.t2, marginBottom:12 }}>Asignar transporte para este flete{isMultiTruckWizard && <span style={{ fontWeight:600 }}> ({effectiveTruckCount} camiones)</span>}</div>
+            {/* Multi-truck: show entries list */}
+            {isMultiTruckWizard && transportEntries.length > 0 && (
+              <div style={{ marginBottom:12 }}>
+                {transportEntries.map((e, i) => (
+                  <div key={i} style={{ display:"flex", alignItems:"center", gap:8, padding:"8px 10px", borderRadius:R.sm, border:`1px solid ${C.b1}`, marginBottom:6, background:C.w }}>
+                    <span style={{ fontSize:12, fontWeight:700, color:C.t2 }}>#{i+1}</span>
+                    {e.type === "own" && <>{e.plate && <LicensePlate plate={e.plate} size="sm"/>}<span style={{ fontSize:12, color:C.t2 }}>Flota propia{e.driverLabel ? ` · ${e.driverLabel}` : ""}</span></>}
+                    {e.type === "external" && <><span style={{ fontSize:12, color:C.sec, fontWeight:600 }}>Terceros</span>{e.plate && <LicensePlate plate={e.plate} size="sm"/>}</>}
+                    {e.type === "operator" && <span style={{ fontSize:12, color:C.info, fontWeight:600 }}>{e.companyName || "Transportista"}</span>}
+                    <span style={{ flex:1 }}/>
+                    <button onClick={()=>removeTransportEntry(i)} style={{ background:"none", border:"none", cursor:"pointer", padding:2 }}>{Ic.cross(C.err,14)}</button>
+                  </div>
+                ))}
+                <div style={{ fontSize:12, color:C.t3, marginBottom:8 }}>{transportEntries.length}/{effectiveTruckCount} asignados{transportEntries.length < effectiveTruckCount ? " — podés asignar los restantes después" : ""}</div>
+              </div>
+            )}
             <div style={{ marginBottom:14 }}>
               <Select label="Empresa transportista" icon={Ic.truck(C.pri,14)} value={transportChoice} onChange={v=>{setTransportChoice(v);setAssignTruckId("");setAssignDriverId("");}} options={transporterOpts} placeholder="Seleccionar transportista..." searchable />
             </div>
@@ -1093,12 +1118,23 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
                 : <div style={{ padding:"10px 14px", background:`${C.acc}08`, borderRadius: R.md, border:`1.5px dashed ${C.acc}40`, fontSize:12.7, color:C.t2, fontWeight:500, textAlign:"center" }}>Sin choferes registrados</div>}
               </div>}
             </>}
-            {transportIsOperator && <div style={{ padding:"10px 14px", background:`${C.info}10`, borderRadius: R.md, fontSize:13.2, color:C.info, fontWeight:500, marginBottom:10 }}>El transportista confirmará y asignará camión/chofer.</div>}
+            {transportNeedsTruckDriver && isMultiTruckWizard && assignTruckId && (
+              <button type="button" onClick={() => { const trk=assignTrucks.find(t=>t.id===assignTruckId); const drv=assignDriversList.find(d=>d.id===assignDriverId); const compId=transportChoice==="ownfleet"?plantCompanyId:transportChoice; addTransportEntry({type:"own",truckId:assignTruckId,driverId:assignDriverId||null,plate:trk?.plate,driverLabel:drv?.name||"",transportCompanyId:compId}); setAssignTruckId(""); setAssignDriverId(""); }} style={{ marginBottom:10, width:"100%", padding:"10px 0", borderRadius:R.md, border:"none", background:C.acc, color:C.w, fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>Agregar camión</button>
+            )}
+            {transportIsOperator && <>
+              <div style={{ padding:"10px 14px", background:`${C.info}10`, borderRadius: R.md, fontSize:13.2, color:C.info, fontWeight:500, marginBottom:10 }}>El transportista confirmará y asignará camión/chofer.</div>
+              {isMultiTruckWizard && (
+                <button type="button" onClick={() => { const tName=linkedTransporters.find(r=>(r.granteeCompanyId||r.granteeCompany?.id)===transportChoice)?.granteeCompany?.name; addTransportEntry({type:"operator",transportCompanyId:transportChoice,companyName:tName||"Transportista"}); setTransportChoice(""); }} style={{ marginBottom:10, width:"100%", padding:"10px 0", borderRadius:R.md, border:"none", background:C.info, color:C.w, fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>Agregar transportista</button>
+              )}
+            </>}
             {transportIsExternal && <div style={{ marginBottom:10 }}>
               <div style={{ padding:"8px 12px", background:`${C.sec}10`, borderRadius: R.md, fontSize:12.1, color:C.sec, fontWeight:500, marginBottom:10 }}>Camión no registrado en el sistema. Ingresá los datos manualmente.</div>
               <Field label="Matrícula (opcional)" value={externalPlate} onChange={v=>setExternalPlate(v.toUpperCase())} placeholder="Ej: ABC 1234"/>
               <div style={{marginTop:8}}><Field label="Empresa transportista (opcional)" value={externalCompanyName} onChange={setExternalCompanyName} placeholder="Nombre de la empresa"/></div>
               <div style={{marginTop:8}}><Field label="Nombre del chofer (opcional)" value={externalDriverName} onChange={setExternalDriverName} placeholder="Nombre del chofer"/></div>
+              {isMultiTruckWizard && (
+                <button type="button" onClick={() => { addTransportEntry({type:"external",plate:externalPlate.trim().toUpperCase()||null,externalCompanyName:externalCompanyName.trim()||null,externalDriverName:externalDriverName.trim()||null}); setExternalPlate(""); setExternalCompanyName(""); setExternalDriverName(""); }} style={{ marginTop:10, width:"100%", padding:"10px 0", borderRadius:R.md, border:"none", background:C.sec, color:C.w, fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>Agregar camión externo</button>
+              )}
             </div>}
             <button onClick={() => { setTransportChoice("skip"); setAssignTruckId(""); setAssignDriverId(""); setExternalPlate(""); }} style={{ background:"none", border:"none", cursor:"pointer", fontSize:12.7, fontWeight:600, color:C.t3, padding:"8px 0", fontFamily:"inherit", textDecoration:"underline" }}>Asignar después</button>
             <NextStepBtn complete={transportStepComplete} onClick={isEditing?confirmEdit:advanceToNext} label={isEditing?"Confirmar edición":"Siguiente"} onPrev={prevAvailable()?goToPrev:null}/>
@@ -1399,12 +1435,23 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
                 : <div style={{ padding:"10px 14px", background:`${C.acc}08`, borderRadius: R.md, border:`1.5px dashed ${C.acc}40`, fontSize:12.7, color:C.t2, fontWeight:500, textAlign:"center" }}>Sin choferes registrados</div>}
               </div>}
             </>}
-            {transportIsOperator && <div style={{ padding:"10px 14px", background:`${C.info}10`, borderRadius: R.md, fontSize:13.2, color:C.info, fontWeight:500, marginBottom:10 }}>El transportista confirmará y asignará camión/chofer.</div>}
+            {transportNeedsTruckDriver && isMultiTruckWizard && assignTruckId && (
+              <button type="button" onClick={() => { const trk=assignTrucks.find(t=>t.id===assignTruckId); const drv=assignDriversList.find(d=>d.id===assignDriverId); const compId=transportChoice==="ownfleet"?plantCompanyId:transportChoice; addTransportEntry({type:"own",truckId:assignTruckId,driverId:assignDriverId||null,plate:trk?.plate,driverLabel:drv?.name||"",transportCompanyId:compId}); setAssignTruckId(""); setAssignDriverId(""); }} style={{ marginBottom:10, width:"100%", padding:"10px 0", borderRadius:R.md, border:"none", background:C.acc, color:C.w, fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>Agregar camión</button>
+            )}
+            {transportIsOperator && <>
+              <div style={{ padding:"10px 14px", background:`${C.info}10`, borderRadius: R.md, fontSize:13.2, color:C.info, fontWeight:500, marginBottom:10 }}>El transportista confirmará y asignará camión/chofer.</div>
+              {isMultiTruckWizard && (
+                <button type="button" onClick={() => { const tName=linkedTransporters.find(r=>(r.granteeCompanyId||r.granteeCompany?.id)===transportChoice)?.granteeCompany?.name; addTransportEntry({type:"operator",transportCompanyId:transportChoice,companyName:tName||"Transportista"}); setTransportChoice(""); }} style={{ marginBottom:10, width:"100%", padding:"10px 0", borderRadius:R.md, border:"none", background:C.info, color:C.w, fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>Agregar transportista</button>
+              )}
+            </>}
             {transportIsExternal && <div style={{ marginBottom:10 }}>
               <div style={{ padding:"8px 12px", background:`${C.sec}10`, borderRadius: R.md, fontSize:12.1, color:C.sec, fontWeight:500, marginBottom:10 }}>Camión no registrado en el sistema. Ingresá los datos manualmente.</div>
               <Field label="Matrícula (opcional)" value={externalPlate} onChange={v=>setExternalPlate(v.toUpperCase())} placeholder="Ej: ABC 1234"/>
               <div style={{marginTop:8}}><Field label="Empresa transportista (opcional)" value={externalCompanyName} onChange={setExternalCompanyName} placeholder="Nombre de la empresa"/></div>
               <div style={{marginTop:8}}><Field label="Nombre del chofer (opcional)" value={externalDriverName} onChange={setExternalDriverName} placeholder="Nombre del chofer"/></div>
+              {isMultiTruckWizard && (
+                <button type="button" onClick={() => { addTransportEntry({type:"external",plate:externalPlate.trim().toUpperCase()||null,externalCompanyName:externalCompanyName.trim()||null,externalDriverName:externalDriverName.trim()||null}); setExternalPlate(""); setExternalCompanyName(""); setExternalDriverName(""); }} style={{ marginTop:10, width:"100%", padding:"10px 0", borderRadius:R.md, border:"none", background:C.sec, color:C.w, fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>Agregar camión externo</button>
+              )}
             </div>}
             <button onClick={() => { setTransportChoice("skip"); setAssignTruckId(""); setAssignDriverId(""); setExternalPlate(""); }} style={{ background:"none", border:"none", cursor:"pointer", fontSize:12.7, fontWeight:600, color:C.t3, padding:"8px 0", fontFamily:"inherit", textDecoration:"underline" }}>Asignar después</button>
             <NextStepBtn complete={transportStepComplete} onClick={isEditing?confirmEdit:advanceToNext} label={isEditing?"Confirmar edición":"Siguiente"} onPrev={prevAvailable()?goToPrev:null}/>
