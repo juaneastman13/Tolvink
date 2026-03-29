@@ -152,6 +152,8 @@ export function getPendingActions(freight, userType, role, user) {
   if (userType === "producer") {
     // If plant hasn't approved yet, producer can't act
     if (freight.needsPlantApproval && !freight.plantApprovedAt) return null;
+    // Pending assignment without dest company: producer must assign truck (no plant to delegate to)
+    if (s === "pending_assignment" && !freight.destCompanyId) return { action: "Indicar camión", color: C.acc, icon: "assign", actionKey: "assign", groupKey: "assign" };
     // Own fleet: only show start/confirm_loaded as pending if the user IS the assigned driver
     const isProdOwnDriver = own && freight.driverId === user?.id;
     if (s === "accepted" && own && isProdOwnDriver) return { action: "Iniciar viaje", color: C.pri, icon: "start", actionKey: "start", groupKey: "start" };
@@ -181,7 +183,7 @@ export function getWaitingOnText(freight, userType) {
   }
   if (userType === "producer") {
     if (freight.needsPlantApproval && !freight.plantApprovedAt) return "Esperando aprobación de planta";
-    if (s === "pending_assignment") return "Esperando asignación planta";
+    if (s === "pending_assignment" && freight.destCompanyId) return "Esperando asignación planta";
     if (s === "assigned") return own ? "Esperando autorización planta" : "Esperando transporte";
     if (s === "accepted") return "Esperando inicio";
     if (s === "in_progress") return "En tránsito";
