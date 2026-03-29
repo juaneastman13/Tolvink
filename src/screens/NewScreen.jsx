@@ -1376,8 +1376,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
                 const plantName = (plants||[]).find(p=>p.id===delegatePlant)?.name || "";
                 const remaining = Math.max(1, effectiveTruckCount - totalEntryCount);
                 return <button type="button" disabled={!delegatePlant} onClick={() => { addTransportEntry({type:"delegate",count:remaining,delegatePlantId:delegatePlant,plantName}); u({fleetChoice:""}); setDelegatePlantId(""); }} style={{ marginTop:10, width:"100%", padding:"10px 0", borderRadius:R.md, border:"none", background:delegatePlant?C.pri:`${C.pri}50`, color:C.w, fontSize:13, fontWeight:700, cursor:delegatePlant?"pointer":"not-allowed", fontFamily:"inherit" }}>Delegar {remaining} camión{remaining!==1?"es":""}{plantName ? ` a ${plantName}` : " a planta"}</button>;
-              })()
-              )}
+              })()}
             </>}
             <NextStepBtn complete={isMultiTruckWizard ? true : (!!form.fleetChoice && (form.fleetChoice==="delegate" || form.fleetChoice==="external" ? true : (!!form.truckId && !!form.driverId)))} onClick={isEditing?confirmEdit:advanceToNext} label={isEditing?"Confirmar edición":undefined} onPrev={prevAvailable()?goToPrev:null}/>
           </Sec>
