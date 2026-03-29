@@ -67,18 +67,25 @@ function TruckBlock({ assignment, isOverlay, onUnassign }) {
     whiteSpace: "nowrap", flexShrink: 0, position: "relative",
   };
   const a = assignment;
-  const borderCol = a.isOwnFleet ? C.pri : C.sec;
+  const isExt = a.isExternal;
+  const borderCol = isExt ? '#9E9E9E' : a.isOwnFleet ? C.pri : C.sec;
   const hoverLines = [
-    a.transportCompany?.name && { icon: Ic.plant(C.t3, 11), text: a.transportCompany.name + (a.isOwnFleet ? " (Propia)" : ""), bold: true, color: C.t1 },
-    a.driverName && { icon: Ic.user(C.t3, 11), text: a.driverName },
-    a.truck?.model && { icon: Ic.truck(C.t3, 11), text: a.truck.model, color: C.t3 },
+    isExt
+      ? { icon: Ic.plant(C.t3, 11), text: a.externalCompanyName || "Tercero", bold: true, color: C.t1 }
+      : a.transportCompany?.name && { icon: Ic.plant(C.t3, 11), text: a.transportCompany.name + (a.isOwnFleet ? " (Propia)" : ""), bold: true, color: C.t1 },
+    isExt
+      ? a.externalDriverName && { icon: Ic.user(C.t3, 11), text: a.externalDriverName }
+      : a.driverName && { icon: Ic.user(C.t3, 11), text: a.driverName },
+    !isExt && a.truck?.model && { icon: Ic.truck(C.t3, 11), text: a.truck.model, color: C.t3 },
     a.tons && { icon: Ic.grain(C.t3, 11), text: `${a.tons}t`, color: C.t3 },
+    isExt && { icon: null, text: "Externo", color: C.sec, bold: true },
     { icon: null, text: st.label, color: st.color, bold: true },
   ].filter(Boolean);
   const content = (
     <>
       <div style={{ width: 4, height: 20, borderRadius: 2, background: borderCol, flexShrink: 0 }} />
-      {a.plate ? <LicensePlate plate={a.plate} size="sm" /> : <span style={{ fontSize: 11, color: C.t3 }}>{a.transportCompany?.name || "Sin camión"}</span>}
+      {a.plate ? <LicensePlate plate={a.plate} size="sm" /> : <span style={{ fontSize: 11, color: C.t3 }}>{isExt ? "Externo" : (a.transportCompany?.name || "Sin camión")}</span>}
+      {isExt && <span style={{ fontSize: 8, fontWeight: 700, color: C.sec, background: `${C.sec}15`, padding: "1px 4px", borderRadius: R.pill }}>EXT</span>}
       {canDrag && onUnassign && (
         <button onClick={(e) => { e.stopPropagation(); onUnassign(a.id); }}
           style={{ background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex", lineHeight: 1 }}>
