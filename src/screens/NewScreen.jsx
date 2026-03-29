@@ -290,6 +290,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
   // Multi-truck transport entries (each entry = one truck assignment)
   const [transportEntries, setTransportEntries] = useState([]);
   const [delegatePlantId, setDelegatePlantId] = useState(""); // plant to delegate to when dest is not a plant
+  const [delegateCount, setDelegateCount] = useState(0); // how many trucks to delegate
   const [selectedTransporterAccess, setSelectedTransporterAccess] = useState(null);
   const [assignTruckId, setAssignTruckId] = useState("");
   const [assignDriverId, setAssignDriverId] = useState("");
@@ -996,7 +997,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
             <div style={{ display:"flex", gap:8, marginBottom:14, flexWrap:"wrap" }}>
               <button type="button" onClick={()=>u({fleetChoice:"own"})} style={{ flex:"1 1 30%", padding:"12px 8px", borderRadius: R.md, border:`1.5px solid ${form.fleetChoice==="own"?C.acc:C.b1}`, background:form.fleetChoice==="own"?C.accPale:C.w, color:form.fleetChoice==="own"?C.acc:C.t2, cursor:"pointer", fontSize:13.2, fontWeight:form.fleetChoice==="own"?700:500, fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>{Ic.truck(form.fleetChoice==="own"?C.acc:C.t3,16)} Flota propia</button>
               <button type="button" onClick={()=>{u({fleetChoice:"external",truckId:"",driverId:""});setExternalPlate("");setExternalCompanyName("");setExternalDriverName("");}} style={{ flex:"1 1 30%", padding:"12px 8px", borderRadius: R.md, border:`1.5px solid ${form.fleetChoice==="external"?C.sec:C.b1}`, background:form.fleetChoice==="external"?C.secPale:C.w, color:form.fleetChoice==="external"?C.sec:C.t2, cursor:"pointer", fontSize:13.2, fontWeight:form.fleetChoice==="external"?700:500, fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>{Ic.truck(form.fleetChoice==="external"?C.sec:C.t3,16)} Terceros</button>
-              <button type="button" onClick={()=>u({fleetChoice:"delegate",truckId:"",driverId:""})} style={{ flex:"1 1 30%", padding:"12px 8px", borderRadius: R.md, border:`1.5px solid ${form.fleetChoice==="delegate"?C.pri:C.b1}`, background:form.fleetChoice==="delegate"?C.priPale:C.w, color:form.fleetChoice==="delegate"?C.pri:C.t2, cursor:"pointer", fontSize:13.2, fontWeight:form.fleetChoice==="delegate"?700:500, fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>{Ic.plant(form.fleetChoice==="delegate"?C.pri:C.t3,16)} Delegar a planta</button>
+              <button type="button" onClick={()=>{u({fleetChoice:"delegate",truckId:"",driverId:""});setDelegateCount(0);}} style={{ flex:"1 1 30%", padding:"12px 8px", borderRadius: R.md, border:`1.5px solid ${form.fleetChoice==="delegate"?C.pri:C.b1}`, background:form.fleetChoice==="delegate"?C.priPale:C.w, color:form.fleetChoice==="delegate"?C.pri:C.t2, cursor:"pointer", fontSize:13.2, fontWeight:form.fleetChoice==="delegate"?700:500, fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>{Ic.plant(form.fleetChoice==="delegate"?C.pri:C.t3,16)} Delegar a planta</button>
             </div>
             {/* Flota propia form */}
             {form.fleetChoice==="own" && <>
@@ -1036,7 +1037,18 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
                 const delegatePlant = destMode === "plant" && form.plantId ? form.plantId : delegatePlantId;
                 const plantName = (plants||[]).find(p=>p.id===delegatePlant)?.name || "";
                 const remaining = Math.max(1, effectiveTruckCount - totalEntryCount);
-                return <button type="button" disabled={!delegatePlant} onClick={() => { addTransportEntry({type:"delegate",count:remaining,delegatePlantId:delegatePlant,plantName}); u({fleetChoice:""}); setDelegatePlantId(""); }} style={{ marginTop:10, width:"100%", padding:"10px 0", borderRadius:R.md, border:"none", background:delegatePlant?C.pri:`${C.pri}50`, color:C.w, fontSize:13, fontWeight:700, cursor:delegatePlant?"pointer":"not-allowed", fontFamily:"inherit" }}>Delegar {remaining} camión{remaining!==1?"es":""}{plantName ? ` a ${plantName}` : " a planta"}</button>;
+                const dc = delegateCount || remaining;
+                return <>
+                  <div style={{ display:"flex", alignItems:"center", gap:10, marginTop:10, marginBottom:8 }}>
+                    <span style={{ fontSize:13, color:C.t2 }}>Cantidad de camiones:</span>
+                    <div style={{ display:"flex", alignItems:"center", gap:4 }}>
+                      <button type="button" onClick={()=>setDelegateCount(Math.max(1,dc-1))} disabled={dc<=1} style={{ width:28, height:28, borderRadius:R.sm, border:`1px solid ${C.b1}`, background:C.w, cursor:dc<=1?"default":"pointer", display:"flex", alignItems:"center", justifyContent:"center", fontSize:16, fontWeight:700, color:C.t2, opacity:dc<=1?0.3:1 }}>−</button>
+                      <span style={{ fontSize:15, fontWeight:700, color:C.t1, minWidth:24, textAlign:"center" }}>{dc}</span>
+                      <button type="button" onClick={()=>setDelegateCount(Math.min(remaining,dc+1))} disabled={dc>=remaining} style={{ width:28, height:28, borderRadius:R.sm, border:`1px solid ${C.b1}`, background:C.w, cursor:dc>=remaining?"default":"pointer", display:"flex", alignItems:"center", justifyContent:"center", fontSize:16, fontWeight:700, color:C.t2, opacity:dc>=remaining?0.3:1 }}>+</button>
+                    </div>
+                  </div>
+                  <button type="button" disabled={!delegatePlant||dc<1} onClick={() => { addTransportEntry({type:"delegate",count:dc,delegatePlantId:delegatePlant,plantName}); u({fleetChoice:""}); setDelegatePlantId(""); setDelegateCount(0); }} style={{ width:"100%", padding:"10px 0", borderRadius:R.md, border:"none", background:(delegatePlant&&dc>0)?C.pri:`${C.pri}50`, color:C.w, fontSize:13, fontWeight:700, cursor:(delegatePlant&&dc>0)?"pointer":"not-allowed", fontFamily:"inherit" }}>Delegar {dc} camión{dc!==1?"es":""}{plantName ? ` a ${plantName}` : " a planta"}</button>
+                </>;
               })()}
             </>}
             <NextStepBtn complete={isMultiTruckWizard ? true : (!!form.fleetChoice && (form.fleetChoice==="delegate" || form.fleetChoice==="external" ? true : (!!form.truckId && !!form.driverId)))} onClick={isEditing?confirmEdit:advanceToNext} label={isEditing?"Confirmar edición":undefined} onPrev={prevAvailable()?goToPrev:null}/>
@@ -1342,7 +1354,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
             <div style={{ display:"flex", gap:8, marginBottom:14, flexWrap:"wrap" }}>
               <button type="button" onClick={()=>u({fleetChoice:"own"})} style={{ flex:"1 1 30%", padding:"12px 8px", borderRadius: R.md, border:`1.5px solid ${form.fleetChoice==="own"?C.acc:C.b1}`, background:form.fleetChoice==="own"?C.accPale:C.w, color:form.fleetChoice==="own"?C.acc:C.t2, cursor:"pointer", fontSize:13.2, fontWeight:form.fleetChoice==="own"?700:500, fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>{Ic.truck(form.fleetChoice==="own"?C.acc:C.t3,16)} Flota propia</button>
               <button type="button" onClick={()=>{u({fleetChoice:"external",truckId:"",driverId:""});setExternalPlate("");setExternalCompanyName("");setExternalDriverName("");}} style={{ flex:"1 1 30%", padding:"12px 8px", borderRadius: R.md, border:`1.5px solid ${form.fleetChoice==="external"?C.sec:C.b1}`, background:form.fleetChoice==="external"?C.secPale:C.w, color:form.fleetChoice==="external"?C.sec:C.t2, cursor:"pointer", fontSize:13.2, fontWeight:form.fleetChoice==="external"?700:500, fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>{Ic.truck(form.fleetChoice==="external"?C.sec:C.t3,16)} Terceros</button>
-              <button type="button" onClick={()=>u({fleetChoice:"delegate",truckId:"",driverId:""})} style={{ flex:"1 1 30%", padding:"12px 8px", borderRadius: R.md, border:`1.5px solid ${form.fleetChoice==="delegate"?C.pri:C.b1}`, background:form.fleetChoice==="delegate"?C.priPale:C.w, color:form.fleetChoice==="delegate"?C.pri:C.t2, cursor:"pointer", fontSize:13.2, fontWeight:form.fleetChoice==="delegate"?700:500, fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>{Ic.plant(form.fleetChoice==="delegate"?C.pri:C.t3,16)} Delegar a planta</button>
+              <button type="button" onClick={()=>{u({fleetChoice:"delegate",truckId:"",driverId:""});setDelegateCount(0);}} style={{ flex:"1 1 30%", padding:"12px 8px", borderRadius: R.md, border:`1.5px solid ${form.fleetChoice==="delegate"?C.pri:C.b1}`, background:form.fleetChoice==="delegate"?C.priPale:C.w, color:form.fleetChoice==="delegate"?C.pri:C.t2, cursor:"pointer", fontSize:13.2, fontWeight:form.fleetChoice==="delegate"?700:500, fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>{Ic.plant(form.fleetChoice==="delegate"?C.pri:C.t3,16)} Delegar a planta</button>
             </div>
             {form.fleetChoice==="own" && <>
               {truckOpts.length > 0 ? <Select label="Camión" icon={Ic.truck(C.acc,14)} value={form.truckId} onChange={v=>u({truckId:v})} options={truckOpts} placeholder="Seleccionar camión..."/>
@@ -1375,7 +1387,18 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
                 const delegatePlant = destMode === "plant" && form.plantId ? form.plantId : delegatePlantId;
                 const plantName = (plants||[]).find(p=>p.id===delegatePlant)?.name || "";
                 const remaining = Math.max(1, effectiveTruckCount - totalEntryCount);
-                return <button type="button" disabled={!delegatePlant} onClick={() => { addTransportEntry({type:"delegate",count:remaining,delegatePlantId:delegatePlant,plantName}); u({fleetChoice:""}); setDelegatePlantId(""); }} style={{ marginTop:10, width:"100%", padding:"10px 0", borderRadius:R.md, border:"none", background:delegatePlant?C.pri:`${C.pri}50`, color:C.w, fontSize:13, fontWeight:700, cursor:delegatePlant?"pointer":"not-allowed", fontFamily:"inherit" }}>Delegar {remaining} camión{remaining!==1?"es":""}{plantName ? ` a ${plantName}` : " a planta"}</button>;
+                const dc = delegateCount || remaining;
+                return <>
+                  <div style={{ display:"flex", alignItems:"center", gap:10, marginTop:10, marginBottom:8 }}>
+                    <span style={{ fontSize:13, color:C.t2 }}>Cantidad de camiones:</span>
+                    <div style={{ display:"flex", alignItems:"center", gap:4 }}>
+                      <button type="button" onClick={()=>setDelegateCount(Math.max(1,dc-1))} disabled={dc<=1} style={{ width:28, height:28, borderRadius:R.sm, border:`1px solid ${C.b1}`, background:C.w, cursor:dc<=1?"default":"pointer", display:"flex", alignItems:"center", justifyContent:"center", fontSize:16, fontWeight:700, color:C.t2, opacity:dc<=1?0.3:1 }}>−</button>
+                      <span style={{ fontSize:15, fontWeight:700, color:C.t1, minWidth:24, textAlign:"center" }}>{dc}</span>
+                      <button type="button" onClick={()=>setDelegateCount(Math.min(remaining,dc+1))} disabled={dc>=remaining} style={{ width:28, height:28, borderRadius:R.sm, border:`1px solid ${C.b1}`, background:C.w, cursor:dc>=remaining?"default":"pointer", display:"flex", alignItems:"center", justifyContent:"center", fontSize:16, fontWeight:700, color:C.t2, opacity:dc>=remaining?0.3:1 }}>+</button>
+                    </div>
+                  </div>
+                  <button type="button" disabled={!delegatePlant||dc<1} onClick={() => { addTransportEntry({type:"delegate",count:dc,delegatePlantId:delegatePlant,plantName}); u({fleetChoice:""}); setDelegatePlantId(""); setDelegateCount(0); }} style={{ width:"100%", padding:"10px 0", borderRadius:R.md, border:"none", background:(delegatePlant&&dc>0)?C.pri:`${C.pri}50`, color:C.w, fontSize:13, fontWeight:700, cursor:(delegatePlant&&dc>0)?"pointer":"not-allowed", fontFamily:"inherit" }}>Delegar {dc} camión{dc!==1?"es":""}{plantName ? ` a ${plantName}` : " a planta"}</button>
+                </>;
               })()}
             </>}
             <NextStepBtn complete={isMultiTruckWizard ? true : (!!form.fleetChoice && (form.fleetChoice==="delegate" || form.fleetChoice==="external" ? true : (!!form.truckId && !!form.driverId)))} onClick={isEditing?confirmEdit:advanceToNext} label={isEditing?"Confirmar edición":undefined} onPrev={prevAvailable()?goToPrev:null}/>
