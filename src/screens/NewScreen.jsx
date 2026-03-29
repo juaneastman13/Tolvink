@@ -363,12 +363,12 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
   ];
   const transporterOpts = [
     ...(user?.hasInternalFleet ? [{ value: "ownfleet", label: "Flota propia", bold: true }] : []),
+    { value: "external", label: "Camión de terceros", sub: "No registrado" },
     ...linkedTransporters.map(r => {
       const co = r.granteeCompany || {};
       const cId = r.granteeCompanyId || co.id;
       return { value: cId, label: co.name || "Empresa", sub: r.accessLevel === "READONLY" ? "Consulta" : "" };
     }),
-    { value: "external", label: "Camión de terceros", sub: "No registrado" },
   ];
 
   // Is the selected transporter CONSULTA or own fleet (needs truck+driver inline)?
