@@ -460,15 +460,19 @@ export default function AppLayout({ fh, catalog, online, notif, isDesktop }) {
     }
     // After creating, assign transport if assignData was included
     let assignError = null;
-    if (r.ok && r.freightId && form.assignData) {
+    // Multi-truck mixed assignments (from wizard transportEntries)
+    if (r.ok && r.freightId && form.assignDataList && form.assignDataList.length > 0) {
+      const ar = await fh.assignMulti(r.freightId, form.assignDataList);
+      if (!ar.ok) assignError = ar.error;
+    }
+    // Single assignment
+    else if (r.ok && r.freightId && form.assignData) {
       const ad = form.assignData;
       if (ad.isExternal) {
-        // External truck: send full body directly
         try { await apiAssignFreight(r.freightId, ad); await fh.refresh(r.freightId); } catch(e) { assignError = e.message; }
       } else {
         const tc = parseInt(form.truckCount) || 1;
         if (tc > 1) {
-          // Multi-truck: create N assignments with same transporter
           const trucks = Array.from({length: tc}, () => ({ transportCompanyId: ad.transportCompanyId }));
           const ar = await fh.assignMulti(r.freightId, trucks);
           if (!ar.ok) assignError = ar.error;

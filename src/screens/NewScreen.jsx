@@ -287,6 +287,8 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
   const [externalPlate, setExternalPlate] = useState("");
   const [externalCompanyName, setExternalCompanyName] = useState("");
   const [externalDriverName, setExternalDriverName] = useState("");
+  // Multi-truck transport entries (each entry = one truck assignment)
+  const [transportEntries, setTransportEntries] = useState([]);
   const [selectedTransporterAccess, setSelectedTransporterAccess] = useState(null);
   const [assignTruckId, setAssignTruckId] = useState("");
   const [assignDriverId, setAssignDriverId] = useState("");
@@ -376,7 +378,16 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
   const transportNeedsTruckDriver = !transportIsExternal && (transportChoice === "ownfleet" || (transportChoice && transportChoice !== "skip" && selectedTransporterAccess?.accessLevel === "READONLY"));
   const transportIsOperator = !transportIsExternal && transportChoice && transportChoice !== "skip" && transportChoice !== "ownfleet" && selectedTransporterAccess?.accessLevel !== "READONLY";
 
-  const transportStepComplete = !showTransportStep || transportChoice === "skip" || transportIsOperator || (transportNeedsTruckDriver && !!assignTruckId) || transportIsExternal;
+  // Multi-truck: effective truck count
+  const effectiveTruckCount = parseInt(form.truckCount) || (parseFloat(form.tons) > 0 ? Math.ceil((form.unit === "kg" ? parseFloat(form.tons) / 1000 : parseFloat(form.tons)) / 30) : 1);
+  const isMultiTruckWizard = effectiveTruckCount > 1;
+
+  // Multi-truck transport uses entries list; single-truck uses legacy transportChoice
+  const transportStepComplete = !showTransportStep || (isMultiTruckWizard ? true : (transportChoice === "skip" || transportIsOperator || (transportNeedsTruckDriver && !!assignTruckId) || transportIsExternal));
+
+  // Helper: add an entry to multi-truck transport list
+  const addTransportEntry = (entry) => setTransportEntries(p => [...p, entry]);
+  const removeTransportEntry = (idx) => setTransportEntries(p => p.filter((_, i) => i !== idx));
 
   // On-the-fly field creation (for producers with no fields)
   const [showNewFieldForm, setShowNewFieldForm] = useState(false);
@@ -683,8 +694,16 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
     // Map frontend lotId to backend originLotId
     if(payload.lotId) { payload.originLotId = payload.lotId; }
     delete payload.lotId;
-    // Producer external truck: send assignData only if plate provided (can be added later from detail)
-    if (showTruckSelect && form.fleetChoice === "external") {
+    // Multi-truck producer: send entries array
+    if (showTruckSelect && isMultiTruckWizard && transportEntries.length > 0) {
+      payload.assignDataList = transportEntries.map(e => {
+        if (e.type === "own") return { transportCompanyId: user.activeCompanyId || user.companyId, truckId: e.truckId, driverId: e.driverId };
+        if (e.type === "external") return { isExternal: true, plate: e.plate, externalCompanyName: e.externalCompanyName, externalDriverName: e.externalDriverName };
+        return null; // delegate = no assignment
+      }).filter(Boolean);
+    }
+    // Single-truck producer external: send assignData only if plate provided
+    else if (showTruckSelect && form.fleetChoice === "external") {
       if (externalPlate.trim()) {
         payload.assignData = {
           isExternal: true,
@@ -924,7 +943,24 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
             <NextStepBtn complete={secComplete.origin} onClick={isEditing?confirmEdit:advanceToNext} label={isEditing?"Confirmar edición":undefined} onPrev={prevAvailable()?goToPrev:null}/>
           </>}
           {activeSection === "ownfleet" && showTruckSelect && <>
-            <div style={{ fontSize:13.2, color:C.t2, marginBottom:12 }}>¿Cómo desea transportar este flete?</div>
+            <div style={{ fontSize:13.2, color:C.t2, marginBottom:12 }}>¿Cómo desea transportar este flete?{isMultiTruckWizard && <span style={{ fontWeight:600 }}> ({effectiveTruckCount} camiones)</span>}</div>
+            {/* Multi-truck: show entries list */}
+            {isMultiTruckWizard && transportEntries.length > 0 && (
+              <div style={{ marginBottom:12 }}>
+                {transportEntries.map((e, i) => (
+                  <div key={i} style={{ display:"flex", alignItems:"center", gap:8, padding:"8px 10px", borderRadius:R.sm, border:`1px solid ${C.b1}`, marginBottom:6, background:C.w }}>
+                    <span style={{ fontSize:12, fontWeight:700, color:C.t2 }}>#{i+1}</span>
+                    {e.type === "own" && <>{e.plate && <LicensePlate plate={e.plate} size="sm"/>}<span style={{ fontSize:12, color:C.t2 }}>Flota propia{e.driverLabel ? ` · ${e.driverLabel}` : ""}</span></>}
+                    {e.type === "external" && <><span style={{ fontSize:12, color:C.sec, fontWeight:600 }}>Terceros</span>{e.plate && <LicensePlate plate={e.plate} size="sm"/>}</>}
+                    {e.type === "delegate" && <span style={{ fontSize:12, color:C.pri, fontWeight:600 }}>Delegar a planta</span>}
+                    <span style={{ flex:1 }}/>
+                    <button onClick={()=>removeTransportEntry(i)} style={{ background:"none", border:"none", cursor:"pointer", padding:2 }}>{Ic.cross(C.err,14)}</button>
+                  </div>
+                ))}
+                <div style={{ fontSize:12, color:C.t3, marginBottom:8 }}>{transportEntries.length}/{effectiveTruckCount} asignados{transportEntries.length < effectiveTruckCount ? " — podés asignar los restantes después" : ""}</div>
+              </div>
+            )}
+            {/* Add buttons (multi-truck: always show if slots remain; single-truck: mode selector) */}
             <div style={{ display:"flex", gap:8, marginBottom:14, flexWrap:"wrap" }}>
               <button type="button" onClick={()=>u({fleetChoice:"own"})} style={{ flex:"1 1 30%", padding:"12px 8px", borderRadius: R.md, border:`1.5px solid ${form.fleetChoice==="own"?C.acc:C.b1}`, background:form.fleetChoice==="own"?C.accPale:C.w, color:form.fleetChoice==="own"?C.acc:C.t2, cursor:"pointer", fontSize:13.2, fontWeight:form.fleetChoice==="own"?700:500, fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>{Ic.truck(form.fleetChoice==="own"?C.acc:C.t3,16)} Flota propia</button>
               <button type="button" onClick={()=>{u({fleetChoice:"external",truckId:"",driverId:""});setExternalPlate("");setExternalCompanyName("");setExternalDriverName("");}} style={{ flex:"1 1 30%", padding:"12px 8px", borderRadius: R.md, border:`1.5px solid ${form.fleetChoice==="external"?C.sec:C.b1}`, background:form.fleetChoice==="external"?C.secPale:C.w, color:form.fleetChoice==="external"?C.sec:C.t2, cursor:"pointer", fontSize:13.2, fontWeight:form.fleetChoice==="external"?700:500, fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>{Ic.truck(form.fleetChoice==="external"?C.sec:C.t3,16)} Terceros</button>
@@ -932,7 +968,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
             </div>
             {form.fleetChoice==="own" && <>
               {truckOpts.length > 0 ? <>
-                <Select label="Camión" icon={Ic.truck(C.acc,14)} value={form.truckId} onChange={v=>u({truckId:v})} options={truckOpts} placeholder="Seleccionar camión..."/>
+                <Select label="Camión" icon={Ic.truck(C.acc,14)} value={form.truckId} onChange={v=>u({truckId:v})} options={truckOpts.filter(t => !transportEntries.some(e => e.truckId === t.value))} placeholder="Seleccionar camión..."/>
                 {!form.truckId && <div style={{ marginTop:8, padding:"8px 12px", background:`${C.acc}10`, borderRadius: R.md, fontSize:12.1, color:C.acc, fontWeight:500 }}>Seleccioná un camión de tu flota</div>}
               </> : <div style={{ padding:"14px 16px", background:`${C.acc}08`, borderRadius: R.md, border:`1.5px dashed ${C.acc}40`, textAlign:"center" }}>
                 <div style={{ fontSize:13.2, color:C.t2, fontWeight:500, marginBottom:8 }}>No tenés camiones registrados.</div>
@@ -945,15 +981,26 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
                   {!form.driverId && <div style={{ marginTop:8, padding:"8px 12px", background:`${C.acc}10`, borderRadius: R.md, fontSize:12.1, color:C.acc, fontWeight:500 }}>Seleccioná un chofer</div>}
                 </> : <div style={{ padding:"10px 14px", background:`${C.acc}08`, borderRadius: R.md, border:`1.5px dashed ${C.acc}40`, textAlign:"center", fontSize:13.2, color:C.t2, fontWeight:500 }}>No hay choferes registrados</div>}
               </div>}
+              {isMultiTruckWizard && form.truckId && form.driverId && (
+                <button type="button" onClick={() => { const trk=(trucks||[]).find(t=>t.id===form.truckId); const drv=(ownFleetDrivers||[]).find(d=>d.id===form.driverId); addTransportEntry({type:"own",truckId:form.truckId,driverId:form.driverId,plate:trk?.plate,driverLabel:drv?.name||""}); u({truckId:"",driverId:""}); }} style={{ marginTop:10, width:"100%", padding:"10px 0", borderRadius:R.md, border:"none", background:C.acc, color:C.w, fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>Agregar camión</button>
+              )}
             </>}
             {form.fleetChoice==="external" && <div style={{ marginBottom:10 }}>
               <div style={{ padding:"8px 12px", background:`${C.sec}10`, borderRadius: R.md, fontSize:12.1, color:C.sec, fontWeight:500, marginBottom:10 }}>Ingresá los datos del camión manualmente.</div>
               <Field label="Matrícula (opcional)" value={externalPlate} onChange={v=>setExternalPlate(v.toUpperCase())} placeholder="Ej: ABC 1234"/>
               <div style={{marginTop:8}}><Field label="Empresa transportista (opcional)" value={externalCompanyName} onChange={setExternalCompanyName} placeholder="Nombre de la empresa"/></div>
               <div style={{marginTop:8}}><Field label="Nombre del chofer (opcional)" value={externalDriverName} onChange={setExternalDriverName} placeholder="Nombre del chofer"/></div>
+              {isMultiTruckWizard && (
+                <button type="button" onClick={() => { addTransportEntry({type:"external",plate:externalPlate.trim().toUpperCase()||null,externalCompanyName:externalCompanyName.trim()||null,externalDriverName:externalDriverName.trim()||null}); setExternalPlate(""); setExternalCompanyName(""); setExternalDriverName(""); }} style={{ marginTop:10, width:"100%", padding:"10px 0", borderRadius:R.md, border:"none", background:C.sec, color:C.w, fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>Agregar camión externo</button>
+              )}
             </div>}
-            {form.fleetChoice==="delegate" && <div style={{ padding:"10px 14px", background:`${C.info}10`, borderRadius: R.md, fontSize:13.2, color:C.info, fontWeight:500 }}>La planta de destino asignará el transportista</div>}
-            <NextStepBtn complete={!!form.fleetChoice && (form.fleetChoice==="delegate" || form.fleetChoice==="external" ? true : (!!form.truckId && !!form.driverId))} onClick={isEditing?confirmEdit:advanceToNext} label={isEditing?"Confirmar edición":undefined} onPrev={prevAvailable()?goToPrev:null}/>
+            {form.fleetChoice==="delegate" && <>
+              <div style={{ padding:"10px 14px", background:`${C.info}10`, borderRadius: R.md, fontSize:13.2, color:C.info, fontWeight:500 }}>La planta de destino asignará el transportista</div>
+              {isMultiTruckWizard && (
+                <button type="button" onClick={() => { addTransportEntry({type:"delegate"}); u({fleetChoice:""}); }} style={{ marginTop:10, width:"100%", padding:"10px 0", borderRadius:R.md, border:"none", background:C.pri, color:C.w, fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>Agregar delegación</button>
+              )}
+            </>}
+            <NextStepBtn complete={isMultiTruckWizard ? true : (!!form.fleetChoice && (form.fleetChoice==="delegate" || form.fleetChoice==="external" ? true : (!!form.truckId && !!form.driverId)))} onClick={isEditing?confirmEdit:advanceToNext} label={isEditing?"Confirmar edición":undefined} onPrev={prevAvailable()?goToPrev:null}/>
           </>}
           {activeSection === "destination" && <>
             <label style={{ fontSize:11.6, fontWeight:600, color:C.t2, marginBottom:6, display:"flex", alignItems:"center", gap:4, textTransform:"uppercase", letterSpacing:0.6 }}>{Ic.plant(C.t2,14)} Destino</label>
@@ -1208,7 +1255,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
             </div>
             {form.fleetChoice==="own" && <>
               {truckOpts.length > 0 ? <>
-                <Select label="Camión" icon={Ic.truck(C.acc,14)} value={form.truckId} onChange={v=>u({truckId:v})} options={truckOpts} placeholder="Seleccionar camión..."/>
+                <Select label="Camión" icon={Ic.truck(C.acc,14)} value={form.truckId} onChange={v=>u({truckId:v})} options={truckOpts.filter(t => !transportEntries.some(e => e.truckId === t.value))} placeholder="Seleccionar camión..."/>
                 {!form.truckId && <div style={{ marginTop:8, padding:"8px 12px", background:`${C.acc}10`, borderRadius: R.md, fontSize:12.1, color:C.acc, fontWeight:500 }}>Seleccioná un camión de tu flota</div>}
               </> : <div style={{ padding:"14px 16px", background:`${C.acc}08`, borderRadius: R.md, border:`1.5px dashed ${C.acc}40`, textAlign:"center" }}>
                 <div style={{ fontSize:13.2, color:C.t2, fontWeight:500, marginBottom:8 }}>No tenés camiones registrados.</div>
@@ -1221,15 +1268,26 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
                   {!form.driverId && <div style={{ marginTop:8, padding:"8px 12px", background:`${C.acc}10`, borderRadius: R.md, fontSize:12.1, color:C.acc, fontWeight:500 }}>Seleccioná un chofer</div>}
                 </> : <div style={{ padding:"10px 14px", background:`${C.acc}08`, borderRadius: R.md, border:`1.5px dashed ${C.acc}40`, textAlign:"center", fontSize:13.2, color:C.t2, fontWeight:500 }}>No hay choferes registrados</div>}
               </div>}
+              {isMultiTruckWizard && form.truckId && form.driverId && (
+                <button type="button" onClick={() => { const trk=(trucks||[]).find(t=>t.id===form.truckId); const drv=(ownFleetDrivers||[]).find(d=>d.id===form.driverId); addTransportEntry({type:"own",truckId:form.truckId,driverId:form.driverId,plate:trk?.plate,driverLabel:drv?.name||""}); u({truckId:"",driverId:""}); }} style={{ marginTop:10, width:"100%", padding:"10px 0", borderRadius:R.md, border:"none", background:C.acc, color:C.w, fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>Agregar camión</button>
+              )}
             </>}
             {form.fleetChoice==="external" && <div style={{ marginBottom:10 }}>
               <div style={{ padding:"8px 12px", background:`${C.sec}10`, borderRadius: R.md, fontSize:12.1, color:C.sec, fontWeight:500, marginBottom:10 }}>Ingresá los datos del camión manualmente.</div>
               <Field label="Matrícula (opcional)" value={externalPlate} onChange={v=>setExternalPlate(v.toUpperCase())} placeholder="Ej: ABC 1234"/>
               <div style={{marginTop:8}}><Field label="Empresa transportista (opcional)" value={externalCompanyName} onChange={setExternalCompanyName} placeholder="Nombre de la empresa"/></div>
               <div style={{marginTop:8}}><Field label="Nombre del chofer (opcional)" value={externalDriverName} onChange={setExternalDriverName} placeholder="Nombre del chofer"/></div>
+              {isMultiTruckWizard && (
+                <button type="button" onClick={() => { addTransportEntry({type:"external",plate:externalPlate.trim().toUpperCase()||null,externalCompanyName:externalCompanyName.trim()||null,externalDriverName:externalDriverName.trim()||null}); setExternalPlate(""); setExternalCompanyName(""); setExternalDriverName(""); }} style={{ marginTop:10, width:"100%", padding:"10px 0", borderRadius:R.md, border:"none", background:C.sec, color:C.w, fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>Agregar camión externo</button>
+              )}
             </div>}
-            {form.fleetChoice==="delegate" && <div style={{ padding:"10px 14px", background:`${C.info}10`, borderRadius: R.md, fontSize:13.2, color:C.info, fontWeight:500 }}>La planta de destino asignará el transportista</div>}
-            <NextStepBtn complete={!!form.fleetChoice && (form.fleetChoice==="delegate" || form.fleetChoice==="external" ? true : (!!form.truckId && !!form.driverId))} onClick={isEditing?confirmEdit:advanceToNext} label={isEditing?"Confirmar edición":undefined} onPrev={prevAvailable()?goToPrev:null}/>
+            {form.fleetChoice==="delegate" && <>
+              <div style={{ padding:"10px 14px", background:`${C.info}10`, borderRadius: R.md, fontSize:13.2, color:C.info, fontWeight:500 }}>La planta de destino asignará el transportista</div>
+              {isMultiTruckWizard && (
+                <button type="button" onClick={() => { addTransportEntry({type:"delegate"}); u({fleetChoice:""}); }} style={{ marginTop:10, width:"100%", padding:"10px 0", borderRadius:R.md, border:"none", background:C.pri, color:C.w, fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>Agregar delegación</button>
+              )}
+            </>}
+            <NextStepBtn complete={isMultiTruckWizard ? true : (!!form.fleetChoice && (form.fleetChoice==="delegate" || form.fleetChoice==="external" ? true : (!!form.truckId && !!form.driverId)))} onClick={isEditing?confirmEdit:advanceToNext} label={isEditing?"Confirmar edición":undefined} onPrev={prevAvailable()?goToPrev:null}/>
           </Sec>
         )}
 
