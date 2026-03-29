@@ -376,7 +376,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
   const transportNeedsTruckDriver = !transportIsExternal && (transportChoice === "ownfleet" || (transportChoice && transportChoice !== "skip" && selectedTransporterAccess?.accessLevel === "READONLY"));
   const transportIsOperator = !transportIsExternal && transportChoice && transportChoice !== "skip" && transportChoice !== "ownfleet" && selectedTransporterAccess?.accessLevel !== "READONLY";
 
-  const transportStepComplete = !showTransportStep || transportChoice === "skip" || transportIsOperator || (transportNeedsTruckDriver && !!assignTruckId) || (transportIsExternal && !!externalPlate.trim());
+  const transportStepComplete = !showTransportStep || transportChoice === "skip" || transportIsOperator || (transportNeedsTruckDriver && !!assignTruckId) || transportIsExternal;
 
   // On-the-fly field creation (for producers with no fields)
   const [showNewFieldForm, setShowNewFieldForm] = useState(false);
@@ -683,25 +683,29 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
     // Map frontend lotId to backend originLotId
     if(payload.lotId) { payload.originLotId = payload.lotId; }
     delete payload.lotId;
-    // Producer external truck: send assignData
-    if (showTruckSelect && form.fleetChoice === "external" && externalPlate.trim()) {
-      payload.assignData = {
-        isExternal: true,
-        plate: externalPlate.trim(),
-        ...(externalCompanyName.trim() ? { externalCompanyName: externalCompanyName.trim() } : {}),
-        ...(externalDriverName.trim() ? { externalDriverName: externalDriverName.trim() } : {}),
-      };
+    // Producer external truck: send assignData only if plate provided (can be added later from detail)
+    if (showTruckSelect && form.fleetChoice === "external") {
       payload.useOwnFleet = false;
-    }
-    // Include transport assignment data if selected (plant transport step)
-    if (showTransportStep && transportChoice && transportChoice !== "skip") {
-      if (transportChoice === "external") {
+      if (externalPlate.trim()) {
         payload.assignData = {
           isExternal: true,
           plate: externalPlate.trim(),
           ...(externalCompanyName.trim() ? { externalCompanyName: externalCompanyName.trim() } : {}),
           ...(externalDriverName.trim() ? { externalDriverName: externalDriverName.trim() } : {}),
         };
+      }
+    }
+    // Include transport assignment data if selected (plant transport step)
+    if (showTransportStep && transportChoice && transportChoice !== "skip") {
+      if (transportChoice === "external") {
+        if (externalPlate.trim()) {
+          payload.assignData = {
+            isExternal: true,
+            plate: externalPlate.trim(),
+            ...(externalCompanyName.trim() ? { externalCompanyName: externalCompanyName.trim() } : {}),
+            ...(externalDriverName.trim() ? { externalDriverName: externalDriverName.trim() } : {}),
+          };
+        }
       } else {
         const transportCompanyId = transportChoice === "ownfleet" ? plantCompanyId : transportChoice;
         payload.assignData = {
@@ -945,12 +949,12 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
             </>}
             {form.fleetChoice==="external" && <div style={{ marginBottom:10 }}>
               <div style={{ padding:"8px 12px", background:`${C.sec}10`, borderRadius: R.md, fontSize:12.1, color:C.sec, fontWeight:500, marginBottom:10 }}>Ingresá los datos del camión manualmente.</div>
-              <Field label="Matrícula *" value={externalPlate} onChange={v=>setExternalPlate(v.toUpperCase())} placeholder="Ej: ABC 1234"/>
+              <Field label="Matrícula (opcional)" value={externalPlate} onChange={v=>setExternalPlate(v.toUpperCase())} placeholder="Ej: ABC 1234"/>
               <div style={{marginTop:8}}><Field label="Empresa transportista (opcional)" value={externalCompanyName} onChange={setExternalCompanyName} placeholder="Nombre de la empresa"/></div>
               <div style={{marginTop:8}}><Field label="Nombre del chofer (opcional)" value={externalDriverName} onChange={setExternalDriverName} placeholder="Nombre del chofer"/></div>
             </div>}
             {form.fleetChoice==="delegate" && <div style={{ padding:"10px 14px", background:`${C.info}10`, borderRadius: R.md, fontSize:13.2, color:C.info, fontWeight:500 }}>La planta de destino asignará el transportista</div>}
-            <NextStepBtn complete={!!form.fleetChoice && (form.fleetChoice==="delegate" || form.fleetChoice==="external" ? (form.fleetChoice==="external" ? !!externalPlate.trim() : true) : (!!form.truckId && !!form.driverId))} onClick={isEditing?confirmEdit:advanceToNext} label={isEditing?"Confirmar edición":undefined} onPrev={prevAvailable()?goToPrev:null}/>
+            <NextStepBtn complete={!!form.fleetChoice && (form.fleetChoice==="delegate" || form.fleetChoice==="external" ? true : (!!form.truckId && !!form.driverId))} onClick={isEditing?confirmEdit:advanceToNext} label={isEditing?"Confirmar edición":undefined} onPrev={prevAvailable()?goToPrev:null}/>
           </>}
           {activeSection === "destination" && <>
             <label style={{ fontSize:11.6, fontWeight:600, color:C.t2, marginBottom:6, display:"flex", alignItems:"center", gap:4, textTransform:"uppercase", letterSpacing:0.6 }}>{Ic.plant(C.t2,14)} Destino</label>
@@ -1045,7 +1049,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
             {transportIsOperator && <div style={{ padding:"10px 14px", background:`${C.info}10`, borderRadius: R.md, fontSize:13.2, color:C.info, fontWeight:500, marginBottom:10 }}>El transportista confirmará y asignará camión/chofer.</div>}
             {transportIsExternal && <div style={{ marginBottom:10 }}>
               <div style={{ padding:"8px 12px", background:`${C.sec}10`, borderRadius: R.md, fontSize:12.1, color:C.sec, fontWeight:500, marginBottom:10 }}>Camión no registrado en el sistema. Ingresá los datos manualmente.</div>
-              <Field label="Matrícula *" value={externalPlate} onChange={v=>setExternalPlate(v.toUpperCase())} placeholder="Ej: ABC 1234"/>
+              <Field label="Matrícula (opcional)" value={externalPlate} onChange={v=>setExternalPlate(v.toUpperCase())} placeholder="Ej: ABC 1234"/>
               <div style={{marginTop:8}}><Field label="Empresa transportista (opcional)" value={externalCompanyName} onChange={setExternalCompanyName} placeholder="Nombre de la empresa"/></div>
               <div style={{marginTop:8}}><Field label="Nombre del chofer (opcional)" value={externalDriverName} onChange={setExternalDriverName} placeholder="Nombre del chofer"/></div>
             </div>}
@@ -1220,12 +1224,12 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
             </>}
             {form.fleetChoice==="external" && <div style={{ marginBottom:10 }}>
               <div style={{ padding:"8px 12px", background:`${C.sec}10`, borderRadius: R.md, fontSize:12.1, color:C.sec, fontWeight:500, marginBottom:10 }}>Ingresá los datos del camión manualmente.</div>
-              <Field label="Matrícula *" value={externalPlate} onChange={v=>setExternalPlate(v.toUpperCase())} placeholder="Ej: ABC 1234"/>
+              <Field label="Matrícula (opcional)" value={externalPlate} onChange={v=>setExternalPlate(v.toUpperCase())} placeholder="Ej: ABC 1234"/>
               <div style={{marginTop:8}}><Field label="Empresa transportista (opcional)" value={externalCompanyName} onChange={setExternalCompanyName} placeholder="Nombre de la empresa"/></div>
               <div style={{marginTop:8}}><Field label="Nombre del chofer (opcional)" value={externalDriverName} onChange={setExternalDriverName} placeholder="Nombre del chofer"/></div>
             </div>}
             {form.fleetChoice==="delegate" && <div style={{ padding:"10px 14px", background:`${C.info}10`, borderRadius: R.md, fontSize:13.2, color:C.info, fontWeight:500 }}>La planta de destino asignará el transportista</div>}
-            <NextStepBtn complete={!!form.fleetChoice && (form.fleetChoice==="delegate" || form.fleetChoice==="external" ? (form.fleetChoice==="external" ? !!externalPlate.trim() : true) : (!!form.truckId && !!form.driverId))} onClick={isEditing?confirmEdit:advanceToNext} label={isEditing?"Confirmar edición":undefined} onPrev={prevAvailable()?goToPrev:null}/>
+            <NextStepBtn complete={!!form.fleetChoice && (form.fleetChoice==="delegate" || form.fleetChoice==="external" ? true : (!!form.truckId && !!form.driverId))} onClick={isEditing?confirmEdit:advanceToNext} label={isEditing?"Confirmar edición":undefined} onPrev={prevAvailable()?goToPrev:null}/>
           </Sec>
         )}
 
@@ -1340,7 +1344,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
             {transportIsOperator && <div style={{ padding:"10px 14px", background:`${C.info}10`, borderRadius: R.md, fontSize:13.2, color:C.info, fontWeight:500, marginBottom:10 }}>El transportista confirmará y asignará camión/chofer.</div>}
             {transportIsExternal && <div style={{ marginBottom:10 }}>
               <div style={{ padding:"8px 12px", background:`${C.sec}10`, borderRadius: R.md, fontSize:12.1, color:C.sec, fontWeight:500, marginBottom:10 }}>Camión no registrado en el sistema. Ingresá los datos manualmente.</div>
-              <Field label="Matrícula *" value={externalPlate} onChange={v=>setExternalPlate(v.toUpperCase())} placeholder="Ej: ABC 1234"/>
+              <Field label="Matrícula (opcional)" value={externalPlate} onChange={v=>setExternalPlate(v.toUpperCase())} placeholder="Ej: ABC 1234"/>
               <div style={{marginTop:8}}><Field label="Empresa transportista (opcional)" value={externalCompanyName} onChange={setExternalCompanyName} placeholder="Nombre de la empresa"/></div>
               <div style={{marginTop:8}}><Field label="Nombre del chofer (opcional)" value={externalDriverName} onChange={setExternalDriverName} placeholder="Nombre del chofer"/></div>
             </div>}
