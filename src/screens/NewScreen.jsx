@@ -289,6 +289,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
   const [externalDriverName, setExternalDriverName] = useState("");
   // Multi-truck transport entries (each entry = one truck assignment)
   const [transportEntries, setTransportEntries] = useState([]);
+  const [delegatePlantId, setDelegatePlantId] = useState(""); // plant to delegate to when dest is not a plant
   const [selectedTransporterAccess, setSelectedTransporterAccess] = useState(null);
   const [assignTruckId, setAssignTruckId] = useState("");
   const [assignDriverId, setAssignDriverId] = useState("");
@@ -977,7 +978,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
                   <div key={i} style={{ display:"flex", alignItems:"center", gap:6, padding:"8px 10px", borderRadius:R.sm, border:`1px solid ${C.b1}`, marginBottom:6, background:C.w }}>
                     {e.type === "own" && <>{e.plate && <LicensePlate plate={e.plate} size="sm"/>}<span style={{ fontSize:12, color:C.t2 }}>Flota propia{e.driverLabel ? ` · ${e.driverLabel}` : ""}</span></>}
                     {e.type === "external" && <><span style={{ fontSize:12, color:C.sec, fontWeight:600 }}>Terceros</span>{e.plate && <LicensePlate plate={e.plate} size="sm"/>}</>}
-                    {e.type === "delegate" && <span style={{ fontSize:12, color:C.pri, fontWeight:600 }}>Delegar a planta</span>}
+                    {e.type === "delegate" && <span style={{ fontSize:12, color:C.pri, fontWeight:600 }}>Delegar a {e.plantName || "planta"}</span>}
                     {e.type === "operator" && <span style={{ fontSize:12, color:C.info, fontWeight:600 }}>{e.companyName || "Transportista"}</span>}
                     <span style={{ flex:1 }}/>
                     <div style={{ display:"flex", alignItems:"center", gap:2 }}>
@@ -1025,10 +1026,18 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
             </div>}
             {/* Delegar form */}
             {form.fleetChoice==="delegate" && <>
-              <div style={{ padding:"10px 14px", background:`${C.info}10`, borderRadius: R.md, fontSize:13.2, color:C.info, fontWeight:500 }}>La planta de destino asignará el transportista</div>
-              {isMultiTruckWizard && (
-                <button type="button" onClick={() => { const remaining = effectiveTruckCount - transportEntries.length; addTransportEntry({type:"delegate",count:remaining}); u({fleetChoice:""}); }} style={{ marginTop:10, width:"100%", padding:"10px 0", borderRadius:R.md, border:"none", background:C.pri, color:C.w, fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>Delegar {effectiveTruckCount - transportEntries.length} camión{(effectiveTruckCount - transportEntries.length) !== 1 ? "es" : ""} a planta</button>
+              <div style={{ padding:"10px 14px", background:`${C.info}10`, borderRadius: R.md, fontSize:13.2, color:C.info, fontWeight:500, marginBottom: (destMode !== "plant" || !form.plantId) ? 10 : 0 }}>
+                {destMode === "plant" && form.plantId ? "La planta de destino asignará el transportista" : "Seleccioná a qué planta delegar el transporte"}
+              </div>
+              {destMode !== "plant" && !form.plantId && (
+                <Select label="Planta" icon={Ic.plant(C.pri,14)} value={delegatePlantId} onChange={v=>setDelegatePlantId(v)} options={plantOpts} placeholder="Seleccionar planta..." searchable />
               )}
+              {isMultiTruckWizard && (() => {
+                const delegatePlant = destMode === "plant" && form.plantId ? form.plantId : delegatePlantId;
+                const plantName = (plants||[]).find(p=>p.id===delegatePlant)?.name || "";
+                const remaining = Math.max(1, effectiveTruckCount - totalEntryCount);
+                return <button type="button" disabled={!delegatePlant} onClick={() => { addTransportEntry({type:"delegate",count:remaining,delegatePlantId:delegatePlant,plantName}); u({fleetChoice:""}); setDelegatePlantId(""); }} style={{ marginTop:10, width:"100%", padding:"10px 0", borderRadius:R.md, border:"none", background:delegatePlant?C.pri:`${C.pri}50`, color:C.w, fontSize:13, fontWeight:700, cursor:delegatePlant?"pointer":"not-allowed", fontFamily:"inherit" }}>Delegar {remaining} camión{remaining!==1?"es":""}{plantName ? ` a ${plantName}` : " a planta"}</button>;
+              })()}
             </>}
             <NextStepBtn complete={isMultiTruckWizard ? true : (!!form.fleetChoice && (form.fleetChoice==="delegate" || form.fleetChoice==="external" ? true : (!!form.truckId && !!form.driverId)))} onClick={isEditing?confirmEdit:advanceToNext} label={isEditing?"Confirmar edición":undefined} onPrev={prevAvailable()?goToPrev:null}/>
           </>}
@@ -1316,7 +1325,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
                   <div key={i} style={{ display:"flex", alignItems:"center", gap:6, padding:"8px 10px", borderRadius:R.sm, border:`1px solid ${C.b1}`, marginBottom:6, background:C.w }}>
                     {e.type === "own" && <>{e.plate && <LicensePlate plate={e.plate} size="sm"/>}<span style={{ fontSize:12, color:C.t2 }}>Flota propia{e.driverLabel ? ` · ${e.driverLabel}` : ""}</span></>}
                     {e.type === "external" && <><span style={{ fontSize:12, color:C.sec, fontWeight:600 }}>Terceros</span>{e.plate && <LicensePlate plate={e.plate} size="sm"/>}</>}
-                    {e.type === "delegate" && <span style={{ fontSize:12, color:C.pri, fontWeight:600 }}>Delegar a planta</span>}
+                    {e.type === "delegate" && <span style={{ fontSize:12, color:C.pri, fontWeight:600 }}>Delegar a {e.plantName || "planta"}</span>}
                     {e.type === "operator" && <span style={{ fontSize:12, color:C.info, fontWeight:600 }}>{e.companyName || "Transportista"}</span>}
                     <span style={{ flex:1 }}/>
                     <div style={{ display:"flex", alignItems:"center", gap:2 }}>
@@ -1356,9 +1365,18 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
               )}
             </div>}
             {form.fleetChoice==="delegate" && <>
-              <div style={{ padding:"10px 14px", background:`${C.info}10`, borderRadius: R.md, fontSize:13.2, color:C.info, fontWeight:500 }}>La planta de destino asignará el transportista</div>
-              {isMultiTruckWizard && (
-                <button type="button" onClick={() => { const remaining=Math.max(1,effectiveTruckCount-totalEntryCount); addTransportEntry({type:"delegate",count:remaining}); u({fleetChoice:""}); }} style={{ marginTop:10, width:"100%", padding:"10px 0", borderRadius:R.md, border:"none", background:C.pri, color:C.w, fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>Delegar {Math.max(1,effectiveTruckCount-totalEntryCount)} camión{Math.max(1,effectiveTruckCount-totalEntryCount)!==1?"es":""} a planta</button>
+              <div style={{ padding:"10px 14px", background:`${C.info}10`, borderRadius: R.md, fontSize:13.2, color:C.info, fontWeight:500, marginBottom: (destMode !== "plant" || !form.plantId) ? 10 : 0 }}>
+                {destMode === "plant" && form.plantId ? "La planta de destino asignará el transportista" : "Seleccioná a qué planta delegar el transporte"}
+              </div>
+              {destMode !== "plant" && !form.plantId && (
+                <Select label="Planta" icon={Ic.plant(C.pri,14)} value={delegatePlantId} onChange={v=>setDelegatePlantId(v)} options={plantOpts} placeholder="Seleccionar planta..." searchable />
+              )}
+              {isMultiTruckWizard && (() => {
+                const delegatePlant = destMode === "plant" && form.plantId ? form.plantId : delegatePlantId;
+                const plantName = (plants||[]).find(p=>p.id===delegatePlant)?.name || "";
+                const remaining = Math.max(1, effectiveTruckCount - totalEntryCount);
+                return <button type="button" disabled={!delegatePlant} onClick={() => { addTransportEntry({type:"delegate",count:remaining,delegatePlantId:delegatePlant,plantName}); u({fleetChoice:""}); setDelegatePlantId(""); }} style={{ marginTop:10, width:"100%", padding:"10px 0", borderRadius:R.md, border:"none", background:delegatePlant?C.pri:`${C.pri}50`, color:C.w, fontSize:13, fontWeight:700, cursor:delegatePlant?"pointer":"not-allowed", fontFamily:"inherit" }}>Delegar {remaining} camión{remaining!==1?"es":""}{plantName ? ` a ${plantName}` : " a planta"}</button>;
+              })()
               )}
             </>}
             <NextStepBtn complete={isMultiTruckWizard ? true : (!!form.fleetChoice && (form.fleetChoice==="delegate" || form.fleetChoice==="external" ? true : (!!form.truckId && !!form.driverId)))} onClick={isEditing?confirmEdit:advanceToNext} label={isEditing?"Confirmar edición":undefined} onPrev={prevAvailable()?goToPrev:null}/>
