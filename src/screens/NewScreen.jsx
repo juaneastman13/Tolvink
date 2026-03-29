@@ -1105,7 +1105,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
                 {touched&&<FieldError error={errs.loadTime}/>}
               </div>
             </div>
-            <NextStepBtn complete={secComplete.schedule} onClick={isEditing?confirmEdit:openConfirmModal} label={isEditing?"Confirmar edición":"Siguiente"} onPrev={prevAvailable()?goToPrev:null}/>
+            <NextStepBtn complete={secComplete.schedule} onClick={isEditing?confirmEdit:openConfirmModal} label={isEditing?"Confirmar edición":"Confirmar"} onPrev={prevAvailable()?goToPrev:null}/>
           </>}
           {activeSection === "transport" && showTransportStep && <>
             <div style={{ fontSize:13.2, color:C.t2, marginBottom:12 }}>Asignar transporte para este flete{isMultiTruckWizard && <span style={{ fontWeight:600 }}> ({effectiveTruckCount} camiones)</span>}</div>
