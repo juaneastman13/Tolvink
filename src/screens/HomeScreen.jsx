@@ -184,6 +184,8 @@ export default memo(function HomeScreen({ user, freights, loading, error, perms,
           const pa = pendingMap.get(f.id);
           if (!pa) return false;
           if (!matchDate(f.loadDate)) return false;
+          // Multi-truck: freight can appear in multiple groups via groupKeys array
+          if (pa.groupKeys) return pa.groupKeys.includes(g.key);
           return pa.groupKey === g.key;
         })
         .map(f => ({ ...f, pendingAction: pendingMap.get(f.id) }))
@@ -191,7 +193,7 @@ export default memo(function HomeScreen({ user, freights, loading, error, perms,
       return { ...g, icon: g.key==="assign"?Ic.truck:g.key==="respond"?Ic.info:g.key==="authorize"?Ic.chk:g.key==="start"?Ic.nav:g.key==="confirm_loaded"?Ic.warn:Ic.ok, items };
     }).filter(g => g.items.length > 0);
   }, [filteredFreights, pendingMap, dateFrom, dateTo]);
-  const pendingCount = pendingByProgress.reduce((s, g) => s + g.items.length, 0);
+  const pendingCount = new Set(pendingByProgress.flatMap(g => g.items.map(f => f.id))).size;
   const hasPending = pendingCount > 0;
 
   // Total pending (unfiltered) to know if section should show
