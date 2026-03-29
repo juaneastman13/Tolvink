@@ -341,6 +341,7 @@ export default function AssignModal({ freight, transporters, user, onClose, onCo
     ? linkedTs.filter(x => x.id !== freight.originCompanyId)
     : ts.filter(x => x.id !== freight.originCompanyId);
   const remainingSlots = multiTruck ? Math.max(0, needed - truckList.length) : 1;
+  const isExternalMode = mode === "external";
   const stepLabels = isDelegation ? ["Toneladas"] : ["Vehículo", "Chofer", "Toneladas"];
   const isConsultaFlow = mode === "company" && transporterIsConsulta;
 
@@ -504,10 +505,10 @@ export default function AssignModal({ freight, transporters, user, onClose, onCo
               </div>
             )}
 
-            {!isDelegation && <Stepper steps={stepLabels} current={step} />}
+            {!isDelegation && !isExternalMode && <Stepper steps={stepLabels} current={step} />}
 
             {/* =================== STEP 0: VEHICLE (own fleet only) =================== */}
-            {!isDelegation && step === 0 && (
+            {!isDelegation && !isExternalMode && step === 0 && (
               <div>
                 <div style={{ fontSize:14, fontWeight:700, color:C.t1, marginBottom:8 }}>Seleccionar vehículo</div>
                 <div style={{ display:"flex", flexDirection:"column", gap:0, maxHeight:320, overflowY:"auto", marginBottom:6 }}>
@@ -546,7 +547,7 @@ export default function AssignModal({ freight, transporters, user, onClose, onCo
             )}
 
             {/* =================== STEP 1: DRIVER (own fleet only) =================== */}
-            {!isDelegation && step === 1 && (
+            {!isDelegation && !isExternalMode && step === 1 && (
               <div>
                 <div style={{ fontSize:14, fontWeight:700, color:C.t1, marginBottom:8 }}>Seleccionar chofer</div>
 
@@ -585,7 +586,7 @@ export default function AssignModal({ freight, transporters, user, onClose, onCo
             )}
 
             {/* =================== TONS + CONFIRM (delegation: step 0, own fleet: step 2) =================== */}
-            {((isDelegation && step === 0) || (!isDelegation && step === 2)) && (
+            {((isDelegation && step === 0) || (!isDelegation && !isExternalMode && step === 2)) && (
               <div>
                 <div style={{ fontSize:14, fontWeight:700, color:C.t1, marginBottom:10 }}>Toneladas</div>
 
