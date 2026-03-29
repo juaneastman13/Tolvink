@@ -389,13 +389,6 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
   const addTransportEntry = (entry) => setTransportEntries(p => [...p, entry]);
   const removeTransportEntry = (idx) => setTransportEntries(p => p.filter((_, i) => i !== idx));
 
-  // Multi-truck: preselect "delegate" when arriving at transport step
-  useEffect(() => {
-    if (isMultiTruckWizard && activeSection === "ownfleet" && !form.fleetChoice && transportEntries.length === 0) {
-      u({ fleetChoice: "delegate" });
-    }
-  }, [activeSection, isMultiTruckWizard]);
-
   // On-the-fly field creation (for producers with no fields)
   const [showNewFieldForm, setShowNewFieldForm] = useState(false);
   const [newFieldName, setNewFieldName] = useState("");
@@ -499,6 +492,13 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
   // Next section to fill (highlight it when collapsed)
   const nextToFill = SEC_ORDER.find(s => !secComplete[s]);
   const allComplete = !nextToFill;
+
+  // Multi-truck: preselect "delegate" when arriving at transport step
+  useEffect(() => {
+    if (isMultiTruckWizard && (activeSection === "ownfleet" || activeSection === "transport") && !form.fleetChoice && transportEntries.length === 0) {
+      u({ fleetChoice: "delegate" });
+    }
+  }, [activeSection, isMultiTruckWizard]);
   const buildFlow = () => {
     const flow = [];
     if (isPlantUser) flow.push("producer");
