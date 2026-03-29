@@ -497,10 +497,13 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
   const nextToFill = SEC_ORDER.find(s => !secComplete[s]);
   const allComplete = !nextToFill;
 
-  // Multi-truck: preselect "delegate" when arriving at transport step
+  // Multi-truck: preselect "delegate" for producer, "external" for plant when arriving at transport step
   useEffect(() => {
-    if (isMultiTruckWizard && (activeSection === "ownfleet" || activeSection === "transport") && !form.fleetChoice && transportEntries.length === 0) {
+    if (isMultiTruckWizard && activeSection === "ownfleet" && !form.fleetChoice && transportEntries.length === 0) {
       u({ fleetChoice: "delegate" });
+    }
+    if (isMultiTruckWizard && activeSection === "transport" && !transportChoice && transportEntries.length === 0) {
+      setTransportChoice("external");
     }
   }, [activeSection, isMultiTruckWizard]);
   const buildFlow = () => {
@@ -1108,23 +1111,34 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
             <NextStepBtn complete={secComplete.schedule} onClick={isEditing?confirmEdit:openConfirmModal} label={isEditing?"Confirmar edición":"Confirmar"} onPrev={prevAvailable()?goToPrev:null}/>
           </>}
           {activeSection === "transport" && showTransportStep && <>
-            <div style={{ fontSize:13.2, color:C.t2, marginBottom:12 }}>Asignar transporte para este flete{isMultiTruckWizard && <span style={{ fontWeight:600 }}> ({effectiveTruckCount} camiones)</span>}</div>
-            {/* Multi-truck: show entries list */}
+            {/* Multi-truck header */}
+            {isMultiTruckWizard && (
+              <div style={{ background:`${C.info}10`, border:`1px solid ${C.info}30`, borderRadius:R.md, padding:"10px 14px", marginBottom:14 }}>
+                <div style={{ fontSize:14, fontWeight:700, color:C.info }}>Se necesitan {effectiveTruckCount} camiones</div>
+                <div style={{ fontSize:12, color:C.t2, marginTop:2 }}>{totalEntryCount}/{effectiveTruckCount} camiones agregados</div>
+              </div>
+            )}
+            {/* Multi-truck: entries list */}
             {isMultiTruckWizard && transportEntries.length > 0 && (
               <div style={{ marginBottom:12 }}>
                 {transportEntries.map((e, i) => (
-                  <div key={i} style={{ display:"flex", alignItems:"center", gap:8, padding:"8px 10px", borderRadius:R.sm, border:`1px solid ${C.b1}`, marginBottom:6, background:C.w }}>
-                    <span style={{ fontSize:12, fontWeight:700, color:C.t2 }}>#{i+1}</span>
+                  <div key={i} style={{ display:"flex", alignItems:"center", gap:6, padding:"8px 10px", borderRadius:R.sm, border:`1px solid ${C.b1}`, marginBottom:6, background:C.w }}>
                     {e.type === "own" && <>{e.plate && <LicensePlate plate={e.plate} size="sm"/>}<span style={{ fontSize:12, color:C.t2 }}>Flota propia{e.driverLabel ? ` · ${e.driverLabel}` : ""}</span></>}
                     {e.type === "external" && <><span style={{ fontSize:12, color:C.sec, fontWeight:600 }}>Terceros</span>{e.plate && <LicensePlate plate={e.plate} size="sm"/>}</>}
                     {e.type === "operator" && <span style={{ fontSize:12, color:C.info, fontWeight:600 }}>{e.companyName || "Transportista"}</span>}
+                    {e.type === "delegate" && <span style={{ fontSize:12, color:C.pri, fontWeight:600 }}>Delegar a {e.plantName || "planta"}</span>}
                     <span style={{ flex:1 }}/>
+                    <div style={{ display:"flex", alignItems:"center", gap:2 }}>
+                      <button onClick={()=>updateEntryCount(i,-1)} disabled={(e.count||1)<=1} style={{ width:24, height:24, borderRadius:R.sm, border:`1px solid ${C.b1}`, background:C.w, cursor:(e.count||1)<=1?"default":"pointer", display:"flex", alignItems:"center", justifyContent:"center", opacity:(e.count||1)<=1?0.3:1 }}>−</button>
+                      <span style={{ fontSize:13, fontWeight:700, color:C.t1, minWidth:20, textAlign:"center" }}>{e.count||1}</span>
+                      <button onClick={()=>updateEntryCount(i,1)} style={{ width:24, height:24, borderRadius:R.sm, border:`1px solid ${C.b1}`, background:C.w, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>+</button>
+                    </div>
                     <button onClick={()=>removeTransportEntry(i)} style={{ background:"none", border:"none", cursor:"pointer", padding:2 }}>{Ic.cross(C.err,14)}</button>
                   </div>
                 ))}
-                <div style={{ fontSize:12, color:C.t3, marginBottom:8 }}>{transportEntries.length}/{effectiveTruckCount} asignados{transportEntries.length < effectiveTruckCount ? " — podés asignar los restantes después" : ""}</div>
               </div>
             )}
+            <div style={{ fontSize:13.2, color:C.t2, marginBottom:8 }}>{isMultiTruckWizard ? "Agregar camión:" : "Asignar transporte para este flete"}</div>
             <div style={{ marginBottom:14 }}>
               <Select label="Empresa transportista" icon={Ic.truck(C.pri,14)} value={transportChoice} onChange={v=>{setTransportChoice(v);setAssignTruckId("");setAssignDriverId("");}} options={transporterOpts} placeholder="Seleccionar transportista..." searchable />
             </div>
@@ -1471,13 +1485,38 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
               {touched&&<FieldError error={errs.loadTime}/>}
             </div>
           </div>
-          <NextStepBtn complete={secComplete.schedule} onClick={isEditing?confirmEdit:openConfirmModal} label={isEditing?"Confirmar edición":"Siguiente"} onPrev={prevAvailable()?goToPrev:null}/>
+          <NextStepBtn complete={secComplete.schedule} onClick={isEditing?confirmEdit:openConfirmModal} label={isEditing?"Confirmar edición":"Confirmar"} onPrev={prevAvailable()?goToPrev:null}/>
         </Sec>}
 
         {/* TRANSPORT STEP (plant + CONSULTA producer) */}
         {activeSection === "transport" && showTransportStep && (
-          <Sec label="Asignar transporte" complete={transportStepComplete} isExpanded={true} onFocus={()=>{}} secRef={null}>
-            <div style={{ fontSize:13.2, color:C.t2, marginBottom:12 }}>Asignar transporte para este flete</div>
+          <Sec label={isMultiTruckWizard ? `Transporte (${totalEntryCount}/${effectiveTruckCount})` : "Asignar transporte"} complete={transportStepComplete} isExpanded={true} onFocus={()=>{}} secRef={null}>
+            {isMultiTruckWizard && (
+              <div style={{ background:`${C.info}10`, border:`1px solid ${C.info}30`, borderRadius:R.md, padding:"10px 14px", marginBottom:14 }}>
+                <div style={{ fontSize:14, fontWeight:700, color:C.info }}>Se necesitan {effectiveTruckCount} camiones</div>
+                <div style={{ fontSize:12, color:C.t2, marginTop:2 }}>{totalEntryCount}/{effectiveTruckCount} camiones agregados</div>
+              </div>
+            )}
+            {isMultiTruckWizard && transportEntries.length > 0 && (
+              <div style={{ marginBottom:12 }}>
+                {transportEntries.map((e, i) => (
+                  <div key={i} style={{ display:"flex", alignItems:"center", gap:6, padding:"8px 10px", borderRadius:R.sm, border:`1px solid ${C.b1}`, marginBottom:6, background:C.w }}>
+                    {e.type === "own" && <>{e.plate && <LicensePlate plate={e.plate} size="sm"/>}<span style={{ fontSize:12, color:C.t2 }}>Flota propia{e.driverLabel ? ` · ${e.driverLabel}` : ""}</span></>}
+                    {e.type === "external" && <><span style={{ fontSize:12, color:C.sec, fontWeight:600 }}>Terceros</span>{e.plate && <LicensePlate plate={e.plate} size="sm"/>}</>}
+                    {e.type === "operator" && <span style={{ fontSize:12, color:C.info, fontWeight:600 }}>{e.companyName || "Transportista"}</span>}
+                    {e.type === "delegate" && <span style={{ fontSize:12, color:C.pri, fontWeight:600 }}>Delegar a {e.plantName || "planta"}</span>}
+                    <span style={{ flex:1 }}/>
+                    <div style={{ display:"flex", alignItems:"center", gap:2 }}>
+                      <button onClick={()=>updateEntryCount(i,-1)} disabled={(e.count||1)<=1} style={{ width:24, height:24, borderRadius:R.sm, border:`1px solid ${C.b1}`, background:C.w, cursor:(e.count||1)<=1?"default":"pointer", display:"flex", alignItems:"center", justifyContent:"center", opacity:(e.count||1)<=1?0.3:1 }}>−</button>
+                      <span style={{ fontSize:13, fontWeight:700, color:C.t1, minWidth:20, textAlign:"center" }}>{e.count||1}</span>
+                      <button onClick={()=>updateEntryCount(i,1)} style={{ width:24, height:24, borderRadius:R.sm, border:`1px solid ${C.b1}`, background:C.w, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>+</button>
+                    </div>
+                    <button onClick={()=>removeTransportEntry(i)} style={{ background:"none", border:"none", cursor:"pointer", padding:2 }}>{Ic.cross(C.err,14)}</button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div style={{ fontSize:13.2, color:C.t2, marginBottom:8 }}>{isMultiTruckWizard ? "Agregar camión:" : "Asignar transporte para este flete"}</div>
             <div style={{ marginBottom:14 }}>
               <Select label="Empresa transportista" icon={Ic.truck(C.pri,14)} value={transportChoice} onChange={v=>{setTransportChoice(v);setAssignTruckId("");setAssignDriverId("");}} options={transporterOpts} placeholder="Seleccionar transportista..." searchable />
             </div>
