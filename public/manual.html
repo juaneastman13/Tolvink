@@ -270,6 +270,7 @@ tbody tr:hover{background:var(--pri-pale)}
     <a class="nav-link" href="#planta-crear-flete"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>Crear un flete</a>
     <a class="nav-link" href="#planta-seguimiento"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>Seguimiento</a>
     <a class="nav-link" href="#planta-asignar"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Asignar transporte</a>
+    <a class="nav-link" href="#planta-colas"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>Cola de camiones</a>
     <a class="nav-link" href="#planta-docs"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Documentos y OCR</a>
     <a class="nav-link" href="#planta-compartir"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>Compartir</a>
     <a class="nav-link" href="#planta-ubicaciones"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>Ubicaciones</a>
@@ -351,6 +352,9 @@ tbody tr:hover{background:var(--pri-pale)}
 <tr><td><strong>Camión de terceros</strong></td><td>Camión no registrado en el sistema, identificado solo por matrícula</td><td>Camión ABC 1234 de Transportes López — coordinado por teléfono</td></tr>
 <tr><td><strong>Multi-camión</strong></td><td>Flete que requiere más de un camión, pudiendo combinar tipos</td><td>2 camiones propios + 1 externo + 1 delegado a planta</td></tr>
 <tr><td><strong>Delegar a planta</strong></td><td>Dejar que la planta asigne el transporte por vos</td><td>El productor delega 3 camiones a Fomento NH</td></tr>
+<tr><td><strong>Asistente IA</strong></td><td>Chat inteligente que entiende lenguaje natural (disponible en WhatsApp y en la web)</td><td>"Creá un flete de 30tn de soja" → el asistente guía el proceso</td></tr>
+<tr><td><strong>Cola de camiones</strong></td><td>Pantalla de gestión visual donde se organizan los camiones asignados a cada flete</td><td>Arrastrar camión LAC 1234 del flete A al flete B</td></tr>
+<tr><td><strong>Autorizar viaje</strong></td><td>Aprobación de la planta para que un camión de flota propia pueda iniciar el viaje</td><td>Planta autoriza viaje #1 del flete F26-ABC.1234</td></tr>
 </tbody></table></div>
 
 <h2 id="tipo-usuario">0.3. ¿Qué tipo de usuario sos vos?</h2>
@@ -377,6 +381,8 @@ tbody tr:hover{background:var(--pri-pale)}
 <tr><td>Confirmar carga/entrega</td><td>✅</td><td>✅</td><td>❌</td><td>✅</td><td>❌</td><td>✅</td></tr>
 <tr><td>Gestionar campos</td><td>✅</td><td>✅</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td></tr>
 <tr><td>Gestionar flota</td><td>✅</td><td>✅</td><td>❌</td><td>✅</td><td>❌</td><td>❌</td></tr>
+<tr><td>Autorizar viaje (flota propia)</td><td>✅</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td></tr>
+<tr><td>Aprobar flete de productor</td><td>✅</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td></tr>
 <tr><td>Delegar a planta</td><td>❌</td><td>✅</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td></tr>
 <tr><td>Compartir por WA</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td><td>❌</td></tr>
 </tbody></table></div>
@@ -534,7 +540,10 @@ tbody tr:hover{background:var(--pri-pale)}
 <tr><td>CONSULTA</td><td>USO</td><td>El transportista acepta, asigna camión/chofer, y marca el progreso.</td></tr>
 <tr><td>USO</td><td>CONSULTA</td><td>El productor gestiona la creación, transporte se asigna directo.</td></tr>
 <tr><td>USO</td><td>USO</td><td>Cada parte gestiona lo suyo.</td></tr>
+<tr><td colspan="2"><strong>Flota propia</strong></td><td>La planta debe <strong>Autorizar viaje</strong> antes de que el chofer pueda iniciar. Luego el chofer inicia, confirma carga y confirma entrega.</td></tr>
+<tr><td colspan="2"><strong>Camión de terceros</strong></td><td>El creador controla todo: iniciar viaje, confirmar carga, confirmar entrega. Todo se auto-confirma sin aprobaciones cruzadas.</td></tr>
 </tbody></table></div>
+<div class="callout callout-info"><strong>¿Qué es "Autorizar viaje"?</strong>Cuando un productor crea un flete con flota propia, la planta destino debe autorizar el viaje antes de que pueda iniciarse. Es una capa de aprobación que permite a la planta controlar qué camiones entran a sus instalaciones. Si el camión no tiene chofer o camión asignado, el botón no aparece.</div>
 
 <h2 id="planta-asignar">1.5. Asignar transporte</h2>
 <p>Desde el detalle del flete, tocá <strong>"Asignar transporte"</strong>. El modal te ofrece 4 modos:</p>
@@ -560,6 +569,34 @@ tbody tr:hover{background:var(--pri-pale)}
 
 <h3>Editar camión de terceros</h3>
 <p>Desde el detalle del flete, tocá el ícono de edición ✏️ en la tarjeta del camión externo para cambiar matrícula, empresa o nombre del chofer. Solo el creador de la asignación puede editarla.</p>
+
+<h2 id="planta-colas">1.5b. Cola de camiones</h2>
+<p>La <strong>Cola de camiones</strong> (accedé desde <strong>Colas</strong> en el menú lateral) es una vista de gestión visual donde organizás los camiones asignados a tus fletes.</p>
+
+<h3>¿Qué ves?</h3>
+<ul style="line-height:1.7">
+  <li><strong>Filas</strong> — Cada fila es un flete activo, mostrando código, producto, toneladas y destino</li>
+  <li><strong>Bloques de camión</strong> — Cada camión asignado es un bloque con matrícula, color de estado y badge (EXT para externos)</li>
+  <li><strong>Panel lateral</strong> — Tus camiones disponibles y empresas vinculadas, listos para arrastrar</li>
+</ul>
+
+<h3>¿Qué podés hacer?</h3>
+<ol class="steps">
+  <li><strong>Arrastrar camión al flete</strong> — Desde el panel lateral, arrastrá un camión o empresa al flete para asignarlo</li>
+  <li><strong>Reordenar camiones</strong> — Arrastrá un bloque de camión dentro del mismo flete para cambiar el orden de prioridad</li>
+  <li><strong>Mover entre fletes</strong> — Arrastrá un camión de un flete a otro para reasignarlo</li>
+  <li><strong>Desasignar</strong> — Tocá la ✕ en un bloque para quitar la asignación</li>
+</ol>
+
+<h3>Colores de estado</h3>
+<div class="table-wrap"><table><thead><tr><th>Color</th><th>Estado</th><th>¿Se puede arrastrar?</th></tr></thead><tbody>
+<tr><td style="color:#FF6A00">⬤ Naranja</td><td>Pendiente</td><td>Sí</td></tr>
+<tr><td style="color:#0891B2">⬤ Celeste</td><td>Asignado</td><td>Sí</td></tr>
+<tr><td style="color:#43A047">⬤ Verde claro</td><td>A campo</td><td>No — viaje en curso</td></tr>
+<tr><td style="color:#1A6B37">⬤ Verde oscuro</td><td>A planta</td><td>No — camión cargado</td></tr>
+<tr><td style="color:#9E9E9E">⬤ Gris</td><td>Finalizado</td><td>No</td></tr>
+</tbody></table></div>
+<div class="callout callout-tip"><strong>TIP</strong>Los camiones de terceros aparecen con badge <strong>EXT</strong> y borde gris. Al pasar el mouse, ves la empresa y chofer externo.</div>
 
 <h2 id="planta-docs">1.6. Documentos y OCR</h2>
 <p>Todo lo que se adjunta a un flete queda digitalizado: remitos, tickets de pesaje, cartas de porte.</p>
@@ -592,6 +629,11 @@ tbody tr:hover{background:var(--pri-pale)}
 </ol>
 <div class="screenshot has-img"><img src="capturas/9.png" alt="Pantalla de ubicaciones con mapa y campos"></div>
 <p>Como planta, podés gestionar campos para productores vinculados. Un productor CONSULTA los ve pero no puede modificarlos.</p>
+
+<h3>Mapa en vivo</h3>
+<p>Desde <strong>Mapa</strong> en la navegación, además de ver tus campos y ubicaciones, podés ver en tiempo real la posición de los camiones que están en viaje. Cada camión activo aparece como un pin de color según su estado. Tocá el pin para ver el detalle del flete.</p>
+<p>También podés acceder al mapa en vivo desde el <strong>detalle del flete</strong> — muestra la ruta entre origen y destino, y la posición actual del camión.</p>
+<div class="callout callout-tip"><strong>TIP — Compartir ubicación</strong>El chofer o cualquier participante puede compartir su ubicación en vivo desde WhatsApp o desde el botón "Compartir mi ubicación" en el detalle del flete. Las posiciones se actualizan cada 20 segundos.</div>
 
 <h2 id="planta-flota">1.9. Flota y gestión de camiones</h2>
 <p>La sección de flota permite registrar camiones y choferes, y gestionar toda la operativa de cada vehículo: documentos con control de vencimiento, gastos, ingresos, movimientos y un resumen económico.</p>
@@ -746,7 +788,7 @@ tbody tr:hover{background:var(--pri-pale)}
 <p>Cada camión en la lista tiene botones <strong>+/−</strong> para ajustar cantidad. Si el destino no es una planta registrada, al delegar te pide seleccionar a qué planta delegar.</p>
 
 <div class="callout callout-tip"><strong>TIP — Camión de terceros</strong>Si coordinás camiones por teléfono, elegí "Terceros" e ingresá la matrícula. Podés dejarla vacía y agregarla después desde el detalle del flete.</div>
-<div class="callout callout-tip"><strong>TIP — Delegar</strong>Si no, tocá "Delegar a planta" y ellos se encargan. Para multi-camión, podés delegar solo una parte (ej: 2 propios + 2 delegados).</div>
+<div class="callout callout-tip"><strong>TIP — Delegar</strong>Si no, tocá "Delegar a planta" y ellos se encargan. Para multi-camión, podés delegar solo una parte (ej: 2 propios + 2 delegados). Al llegar al paso de transporte con multi-camión, la opción "Delegar a planta" viene preseleccionada con todos los camiones restantes.</div>
 
 <h2 id="productor-consulta">2.2. Productor CONSULTA</h2>
 <p>Tu planta se encarga de todo. Vos solo ves cómo van las cosas. <strong>Y está bien</strong> — es la opción ideal si preferís no complicarte.</p>
@@ -810,6 +852,10 @@ tbody tr:hover{background:var(--pri-pale)}
 </ol>
 <p>Tocá <strong>"Ver ruta"</strong> para abrir Google Maps con indicaciones hasta el destino.</p>
 <div class="callout callout-consulta"><strong>Si tu empresa es CONSULTA</strong>No vas a ver botones de acción. La planta gestiona todo. Vos solo ves a dónde ir.</div>
+<div class="callout callout-info"><strong>Camiones de terceros</strong>Si fuiste asignado a un camión externo (terceros), no tenés botones de acción — el creador del flete controla todo el ciclo. Solo ves la información del viaje.</div>
+
+<h3>Cola del chofer</h3>
+<p>Si tenés más de un viaje asignado, ves una cola ordenada por prioridad. El flete en posición #1 es el próximo a iniciar. Tu gerente o la planta pueden reordenar la cola.</p>
 
 <!-- ═══════ PARTE 5 — WHATSAPP ═══════ -->
 
