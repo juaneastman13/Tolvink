@@ -348,6 +348,9 @@ tbody tr:hover{background:var(--pri-pale)}
 <tr><td><strong>Movimiento</strong></td><td>Viaje de un camión que no es un flete</td><td>Reposicionamiento, viaje a taller, traslado</td></tr>
 <tr><td><strong>Resumen económico</strong></td><td>Dashboard de ingresos, gastos y eficiencia del camión</td><td>Costo por km, km/litro, resultado neto</td></tr>
 <tr><td><strong>Vencimiento</strong></td><td>Fecha límite de un documento del camión</td><td>VTV vence el 15/04 → badge amarillo</td></tr>
+<tr><td><strong>Camión de terceros</strong></td><td>Camión no registrado en el sistema, identificado solo por matrícula</td><td>Camión ABC 1234 de Transportes López — coordinado por teléfono</td></tr>
+<tr><td><strong>Multi-camión</strong></td><td>Flete que requiere más de un camión, pudiendo combinar tipos</td><td>2 camiones propios + 1 externo + 1 delegado a planta</td></tr>
+<tr><td><strong>Delegar a planta</strong></td><td>Dejar que la planta asigne el transporte por vos</td><td>El productor delega 3 camiones a Fomento NH</td></tr>
 </tbody></table></div>
 
 <h2 id="tipo-usuario">0.3. ¿Qué tipo de usuario sos vos?</h2>
@@ -366,11 +369,15 @@ tbody tr:hover{background:var(--pri-pale)}
 <div class="table-wrap"><table><thead><tr><th>Acción</th><th>Planta</th><th>Prod. USO</th><th>Prod. CONSULTA</th><th>Transp. USO</th><th>Transp. CONSULTA</th><th>Chofer</th></tr></thead><tbody>
 <tr><td>Ver fletes</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td></tr>
 <tr><td>Crear fletes</td><td>✅</td><td>✅</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td></tr>
-<tr><td>Asignar camión</td><td>✅</td><td>✅</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td></tr>
+<tr><td>Asignar camión propio</td><td>✅</td><td>✅</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td></tr>
+<tr><td>Asignar camión de terceros</td><td>✅</td><td>✅</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td></tr>
+<tr><td>Asignar transportista</td><td>✅</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td></tr>
 <tr><td>Aceptar flete</td><td>❌</td><td>❌</td><td>❌</td><td>✅</td><td>❌</td><td>❌</td></tr>
 <tr><td>Marcar "en viaje"</td><td>✅</td><td>✅</td><td>❌</td><td>✅</td><td>❌</td><td>✅</td></tr>
+<tr><td>Confirmar carga/entrega</td><td>✅</td><td>✅</td><td>❌</td><td>✅</td><td>❌</td><td>✅</td></tr>
 <tr><td>Gestionar campos</td><td>✅</td><td>✅</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td></tr>
 <tr><td>Gestionar flota</td><td>✅</td><td>✅</td><td>❌</td><td>✅</td><td>❌</td><td>❌</td></tr>
+<tr><td>Delegar a planta</td><td>❌</td><td>✅</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td></tr>
 <tr><td>Compartir por WA</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td><td>❌</td></tr>
 </tbody></table></div>
 <div class="callout callout-consulta"><strong>Si sos CONSULTA</strong>Tu planta gestiona todo por vos. Vos solo mirás cómo va. Es como tener un tablero de control sin botones.</div>
@@ -414,6 +421,9 @@ tbody tr:hover{background:var(--pri-pale)}
 <tr><td><span class="badge badge-finished">Finalizado</span></td><td>Gris</td><td>Entrega confirmada</td><td>Planta o confirmación de entrega</td></tr>
 <tr><td><span class="badge badge-canceled">Cancelado</span></td><td>Rojo</td><td>Cancelado por cualquier motivo</td><td>Planta, productor o transportista</td></tr>
 </tbody></table></div>
+
+<div class="callout callout-info"><strong>Multi-camión</strong>En fletes con varios camiones, cada camión tiene su propio estado (Pendiente → Asignado → A campo → A planta → Finalizado). El estado del flete refleja el camión que va más atrás: si un camión está "A campo" y otro "Finalizado", el flete muestra "A campo".</div>
+<div class="callout callout-tip"><strong>Camiones de terceros</strong>Los camiones externos siguen el mismo ciclo de estados, pero el creador del flete controla manualmente todas las transiciones (iniciar, cargar, finalizar). No hay aprobación ni confirmación cruzada — todo se auto-confirma.</div>
 
 <h2 id="iconos">Referencia: Navegación e íconos</h2>
 <div class="table-wrap"><table><thead><tr><th>Ícono</th><th>Sección</th><th>Qué encontrás</th></tr></thead><tbody>
@@ -471,21 +481,42 @@ tbody tr:hover{background:var(--pri-pale)}
 <ol class="steps">
   <li><strong>Seleccionar productor</strong> — Elegí de la lista de productores vinculados, o seleccioná <strong>"Uso interno"</strong> para crear un flete propio de la planta (sin productor externo)</li>
   <li><strong>Producto</strong> — Soja, Maíz, Trigo, Girasol, Sorgo, Cebada u Otros</li>
-  <li><strong>Cantidad</strong> — Toneladas estimadas del viaje</li>
+  <li><strong>Cantidad</strong> — Toneladas estimadas y cantidad de camiones necesarios</li>
   <li><strong>Origen</strong> — Campo y lote del productor (o de la planta si es uso interno). Podés crear uno nuevo desde acá</li>
-  <li><strong>Destino</strong> — Tu planta, una sucursal, o un <strong>destino personalizado</strong> (cualquier ubicación libre: escribí el nombre o seleccioná un punto en el mapa)</li>
-  <li><strong>Fecha</strong> — Fecha programada</li>
-  <li><strong>Transporte</strong> — Transportista vinculado, flota propia, o asignar después</li>
-  <li>Revisá el <strong>resumen</strong> y tocá <strong>"Crear flete"</strong></li>
+  <li><strong>Destino</strong> — Tu planta, una sucursal, o un <strong>destino personalizado</strong>. Si es personalizado, indicá quién debe confirmar el viaje (Planta o Nadie)</li>
+  <li><strong>Transporte</strong> — Elegí cómo transportar:
+    <ul style="margin:6px 0 0 16px;font-size:14px;line-height:1.5">
+      <li><strong>Flota propia</strong> — Seleccioná camión y chofer de tu flota</li>
+      <li><strong>Camión de terceros</strong> — Ingresá matrícula, empresa y chofer manualmente (camión no registrado)</li>
+      <li><strong>Transportista vinculado</strong> — Seleccioná una empresa de tu lista</li>
+      <li><strong>Asignar después</strong> — Dejá el transporte pendiente</li>
+    </ul>
+  </li>
+  <li><strong>Fecha y hora</strong> — Fecha y hora de carga programada</li>
+  <li>Revisá el <strong>resumen</strong> y tocá <strong>"Confirmar"</strong></li>
 </ol>
+
+<h4>Multi-camión: asignación combinada</h4>
+<p>Si el flete necesita más de un camión, el paso de transporte muestra un cabezal <strong>"Se necesitan X camiones"</strong> con un contador de progreso. Podés combinar distintos tipos:</p>
+<ul style="margin:8px 0 12px 16px;line-height:1.7">
+  <li>Agregar camiones de <strong>flota propia</strong> (seleccioná camión + chofer, tocá "Agregar camión")</li>
+  <li>Agregar <strong>camiones de terceros</strong> (ingresá matrícula, tocá "Agregar camión externo")</li>
+  <li><strong>Delegar a planta</strong> los restantes (indicá cantidad y a qué planta)</li>
+</ul>
+<p>Cada camión agregado aparece en una lista con botones <strong>+/−</strong> para ajustar cantidad y <strong>✕</strong> para eliminar. Podés avanzar sin completar todos los camiones — se asignan después desde el detalle del flete.</p>
+
 <div class="callout callout-tip"><strong>TIP — Uso interno</strong>Si necesitás mover mercadería entre tus propias sucursales o a un destino no registrado como planta, seleccioná "Uso interno" en el paso de productor. El flete se crea como propio de tu empresa.</div>
-<div class="callout callout-info"><strong>Destino personalizado</strong>Podés indicar cualquier dirección o lugar como destino, sin que sea una planta registrada. Solo escribí el nombre del destino. Opcionalmente podés marcar la ubicación en el mapa.</div>
+<div class="callout callout-info"><strong>Destino personalizado</strong>Podés indicar cualquier dirección o lugar como destino. Si elegís "Nadie" en la confirmación, el flete no necesita aprobación de otra planta.</div>
+<div class="callout callout-tip"><strong>TIP — Camiones de terceros</strong>Para camiones coordinados por teléfono o WhatsApp que no están registrados en el sistema, usá la opción "Camión de terceros". Solo necesitás la matrícula (incluso eso es opcional — podés agregarla después).</div>
+
 <h3>¿Qué pasa después de crear?</h3>
 <div class="table-wrap"><table><thead><tr><th>Escenario</th><th>Estado</th><th>¿Qué sigue?</th></tr></thead><tbody>
 <tr><td>Sin transporte</td><td><span class="badge badge-pending">Pendiente</span></td><td>Asigná transporte desde el detalle</td></tr>
 <tr><td>Transportista USO</td><td><span class="badge badge-assigned">Asignado</span></td><td>El transportista acepta y asigna camión</td></tr>
 <tr><td>Transportista CONSULTA</td><td><span class="badge badge-progress">A campo</span></td><td>Avanza automáticamente — solo falta finalizar</td></tr>
-<tr><td>Flota propia</td><td><span class="badge badge-progress">A campo</span></td><td>Avanza automáticamente</td></tr>
+<tr><td>Flota propia</td><td><span class="badge badge-assigned">Asignado</span></td><td>Autorizá el viaje, luego el chofer inicia</td></tr>
+<tr><td>Camión de terceros</td><td><span class="badge badge-assigned">Asignado</span></td><td>Controlás todo el ciclo manualmente (iniciar, cargar, finalizar)</td></tr>
+<tr><td>Multi-camión mixto</td><td><span class="badge badge-assigned">Asignado</span></td><td>Cada camión avanza independientemente</td></tr>
 </tbody></table></div>
 
 <h2 id="planta-seguimiento">1.4. Seguimiento de fletes</h2>
@@ -506,22 +537,29 @@ tbody tr:hover{background:var(--pri-pale)}
 </tbody></table></div>
 
 <h2 id="planta-asignar">1.5. Asignar transporte</h2>
+<p>Desde el detalle del flete, tocá <strong>"Asignar transporte"</strong>. El modal te ofrece 4 modos:</p>
 <ol class="steps">
-  <li>Abrí el flete en estado <span class="badge badge-pending">Pendiente</span></li>
-  <li>Tocá <strong>"Asignar transporte"</strong></li>
-  <li>Elegí entre <strong>Empresa</strong> (transportista vinculado) o <strong>Flota propia</strong></li>
-  <li>Seguí el wizard de 3 pasos: <strong>Vehículo → Chofer → Toneladas</strong></li>
+  <li><strong>Empresa</strong> — Seleccioná un transportista vinculado. Si es USO, el transportista asigna camión. Si es CONSULTA, vos elegís camión y chofer.</li>
+  <li><strong>Flota propia</strong> — Elegí camión y chofer de tu propia flota.</li>
+  <li><strong>Externo</strong> — Ingresá manualmente matrícula, empresa y chofer para un <strong>camión de terceros</strong> no registrado en el sistema.</li>
+  <li><strong>Delegar</strong> — Para productores: delega la asignación a la planta destino.</li>
 </ol>
-<div class="screenshot has-img screenshot-pair" style="display:flex;gap:16px;flex-wrap:wrap;justify-content:center;padding:16px">
-  <img src="capturas/7.1.png" alt="Selección de empresa transportista" style="max-width:280px;border-radius:10px;border:1px solid var(--b1)">
-  <img src="capturas/7.2.png" alt="Wizard de 3 pasos: Vehículo, Chofer, Toneladas" style="max-width:320px;border-radius:10px;border:1px solid var(--b1)">
-</div>
+<div class="callout callout-tip"><strong>Camión de terceros</strong>Usá el modo "Externo" para camiones coordinados por teléfono/WhatsApp. Solo necesitás la matrícula. El camión aparece con badge <strong>EXTERNO</strong> en el detalle y en la cola. Vos controlás todo el ciclo de vida (iniciar, cargar, finalizar).</div>
 
 <h3>Sugerencias de asignación</h3>
 <p>Tolvink recomienda transportistas basándose en 5 factores: <strong>proximidad, capacidad, historial, disponibilidad y confiabilidad</strong>. Si tenés flota propia, tus camiones aparecen con bonus de prioridad.</p>
 
 <h3>Multi-camión</h3>
-<p>Podés asignar varios vehículos al mismo flete, cada uno con su chofer y toneladas. Tocá el botón <strong>"+"</strong> en el detalle para agregar otro viaje.</p>
+<p>Podés asignar varios vehículos al mismo flete. Desde el detalle, tocá el botón <strong>"+"</strong> para agregar otro viaje. Cada asignación puede ser de un tipo diferente:</p>
+<ul style="margin:8px 0 12px 16px;line-height:1.7">
+  <li>Flota propia (camión + chofer registrado)</li>
+  <li>Transportista vinculado (empresa USO u CONSULTA)</li>
+  <li>Camión de terceros (matrícula manual)</li>
+</ul>
+<p>En la pantalla de inicio, los fletes multi-camión pueden aparecer en <strong>múltiples grupos</strong> a la vez. Por ejemplo, si un camión está listo para iniciar y otro está pendiente de asignar, el flete aparece en "Iniciar viaje" y en "Asignar transporte" simultáneamente.</p>
+
+<h3>Editar camión de terceros</h3>
+<p>Desde el detalle del flete, tocá el ícono de edición ✏️ en la tarjeta del camión externo para cambiar matrícula, empresa o nombre del chofer. Solo el creador de la asignación puede editarla.</p>
 
 <h2 id="planta-docs">1.6. Documentos y OCR</h2>
 <p>Todo lo que se adjunta a un flete queda digitalizado: remitos, tickets de pesaje, cartas de porte.</p>
@@ -686,11 +724,29 @@ tbody tr:hover{background:var(--pri-pale)}
 <h3>Crear un flete</h3>
 <ol class="steps">
   <li>Tocá <strong>"Solicitar flete"</strong></li>
-  <li>Elegí <strong>producto, cantidad, origen</strong> (tu campo), <strong>destino</strong> (planta), <strong>fecha</strong></li>
-  <li>Elegí <strong>transporte</strong>: tu flota, un transportista, o delegar a la planta</li>
-  <li>Confirmá y listo</li>
+  <li>Completá <strong>producto, cantidad, origen</strong> (tu campo y lote), <strong>destino</strong> (planta o personalizado)</li>
+  <li>Elegí <strong>transporte</strong> — tres opciones:
+    <ul style="margin:6px 0 0 16px;font-size:14px;line-height:1.5">
+      <li><strong>Flota propia</strong> — Seleccioná camión y chofer de tu flota</li>
+      <li><strong>Terceros</strong> — Ingresá matrícula de un camión no registrado (empresa y chofer opcionales)</li>
+      <li><strong>Delegar a planta</strong> — La planta asigna el transporte</li>
+    </ul>
+  </li>
+  <li>Ingresá <strong>fecha y hora</strong> de carga</li>
+  <li>Revisá el resumen y tocá <strong>"Confirmar"</strong></li>
 </ol>
-<div class="callout callout-tip"><strong>TIP</strong>Si tenés un transportista de confianza, lo elegís directamente. Si no, tocá "Delegar a planta" y ellos se encargan.</div>
+
+<h4>Multi-camión</h4>
+<p>Si el flete necesita más de un camión, el paso de transporte te permite <strong>combinar tipos</strong>:</p>
+<ul style="margin:8px 0 12px 16px;line-height:1.7">
+  <li>Agregá camiones de flota propia (con botón "Agregar camión")</li>
+  <li>Agregá camiones de terceros (con botón "Agregar camión externo")</li>
+  <li>Delegá los restantes a la planta (con botón "Delegar N camiones a [Planta]")</li>
+</ul>
+<p>Cada camión en la lista tiene botones <strong>+/−</strong> para ajustar cantidad. Si el destino no es una planta registrada, al delegar te pide seleccionar a qué planta delegar.</p>
+
+<div class="callout callout-tip"><strong>TIP — Camión de terceros</strong>Si coordinás camiones por teléfono, elegí "Terceros" e ingresá la matrícula. Podés dejarla vacía y agregarla después desde el detalle del flete.</div>
+<div class="callout callout-tip"><strong>TIP — Delegar</strong>Si no, tocá "Delegar a planta" y ellos se encargan. Para multi-camión, podés delegar solo una parte (ej: 2 propios + 2 delegados).</div>
 
 <h2 id="productor-consulta">2.2. Productor CONSULTA</h2>
 <p>Tu planta se encarga de todo. Vos solo ves cómo van las cosas. <strong>Y está bien</strong> — es la opción ideal si preferís no complicarte.</p>
@@ -769,7 +825,16 @@ tbody tr:hover{background:var(--pri-pale)}
 <h4>🧑‍🤝‍🧑 Todos los usuarios</h4>
 <ul><li><em>"¿Cómo van mis fletes?"</em></li><li><em>"Mostrá mis fletes activos"</em></li><li><em>"Mandame el link de seguimiento del último flete"</em></li></ul>
 <h4>🏭 Planta / Productor USO</h4>
-<ul><li><em>"Quiero crear un flete"</em></li><li><em>"Creá un flete de 30tn de soja desde Campo La Esperanza"</em></li><li><em>"Duplicá el último flete"</em></li></ul>
+<ul>
+  <li><em>"Quiero crear un flete"</em></li>
+  <li><em>"Creá un flete de 30tn de soja desde Campo La Esperanza"</em></li>
+  <li><em>"Duplicá el último flete"</em></li>
+  <li><em>"Asigná el camión ABC 1234 al flete F26-ABC.1234"</em> — asigna camión externo (terceros)</li>
+  <li><em>"Cambiá la matrícula del camión externo a XYZ 9876"</em> — edita asignación externa</li>
+  <li><em>"Asigná 2 camiones de mi flota y 1 externo al flete"</em> — asignación mixta multi-camión</li>
+  <li><em>"Generá un link para compartir el flete F26-ABC.1234"</em> — link público con seguimiento</li>
+  <li><em>"Renombrá el documento del flete como 'Remito origen'"</em> — renombrar documento</li>
+</ul>
 <h4>🚛 Transportista USO</h4>
 <ul><li><em>"¿Qué fletes tengo pendientes?"</em></li><li><em>"Aceptar el flete F26-ABC.1234"</em></li></ul>
 <h4>👤 Chofer</h4>
@@ -796,13 +861,22 @@ tbody tr:hover{background:var(--pri-pale)}
   <li>Podés mandar audios 🎤 — Tolvink los transcribe</li>
   <li>Sé específico: "flete de soja de hoy" es mejor que "mi flete"</li>
 </ul>
+<h4>Qué SÍ puede hacer WhatsApp (novedades)</h4>
+<div class="table-wrap"><table><thead><tr><th>Funcionalidad</th><th>Ejemplo</th></tr></thead><tbody>
+<tr><td>Asignar camión de terceros</td><td><em>"Asigná el ABC 1234 al flete"</em></td></tr>
+<tr><td>Asignación mixta multi-camión</td><td><em>"Asigná 2 de mi flota y 1 externo"</em></td></tr>
+<tr><td>Editar camión externo</td><td><em>"Cambiá la matrícula a XYZ 9876"</em></td></tr>
+<tr><td>Renombrar documentos</td><td><em>"Renombrá el documento como Remito"</em></td></tr>
+<tr><td>Generar link compartible</td><td><em>"Generá un link de seguimiento"</em></td></tr>
+</tbody></table></div>
 <h4>Qué NO puede hacer WhatsApp</h4>
 <div class="table-wrap"><table><thead><tr><th>Limitación</th><th>Alternativa</th></tr></thead><tbody>
-<tr><td>Editar ubicaciones en el mapa</td><td>Usá la web</td></tr>
+<tr><td>Drag-and-drop en cola de camiones</td><td>Web → Colas</td></tr>
 <tr><td>Importar datos desde Excel</td><td>Web → Admin → Importar</td></tr>
-<tr><td>Gestionar usuarios y roles</td><td>Web → Admin</td></tr>
+<tr><td>Gestionar POIs (puntos de interés)</td><td>Web → Ubicaciones</td></tr>
 <tr><td>Subir documentos del camión</td><td>Web → Flota → Detalle → Documentos</td></tr>
 <tr><td>Ver resumen económico visual</td><td>Web → Flota → Detalle → Resumen</td></tr>
+<tr><td>Ver calendario de fletes</td><td>Web → Calendario</td></tr>
 </tbody></table></div>
 
 <!-- ═══════ PARTE 6 — SITUACIONES ═══════ -->
@@ -837,6 +911,15 @@ tbody tr:hover{background:var(--pri-pale)}
 <p>En la <strong>lista de fletes</strong>, usá los filtros y tocá el ícono de descarga para exportar a Excel.</p>
 <h3>"Quiero crear un flete interno"</h3>
 <p>En el wizard de creación, seleccioná <strong>"Uso interno"</strong> como primer paso. El origen se carga desde tus propias ubicaciones y podés elegir cualquier destino.</p>
+
+<h3>"Tengo un camión coordinado por teléfono, ¿cómo lo registro?"</h3>
+<p>Usá la opción <strong>"Camión de terceros"</strong> o <strong>"Terceros"</strong> en el wizard de creación o desde el modal de asignación. Solo necesitás la matrícula (opcional) — la empresa y chofer también son opcionales. El camión aparece con badge <strong>EXTERNO</strong> y vos controlás todo el ciclo (iniciar, cargar, finalizar).</p>
+
+<h3>"Necesito 4 camiones: 2 propios y 2 de terceros"</h3>
+<p>En el wizard, cuando la cantidad es más de un camión, el paso de transporte te permite agregar camiones de diferentes tipos. Seleccioná "Flota propia" y agregá 2, luego "Terceros" y agregá 2 más. Cada uno aparece en la lista con botones +/− para ajustar cantidad.</p>
+
+<h3>"Un flete aparece en dos grupos del inicio, ¿es un error?"</h3>
+<p>No. Si un flete multi-camión tiene un camión listo para iniciar y otro pendiente de asignar, aparece en ambos grupos (<strong>"Iniciar viaje"</strong> y <strong>"Asignar transporte"</strong>) para que no se te escape ninguna acción.</p>
 
 <!-- ═══════ CONTACTO ═══════ -->
 
