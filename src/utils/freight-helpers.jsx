@@ -169,7 +169,7 @@ export function getWaitingOnText(freight, userType) {
   const own = freight.isOwnFleet;
   if (userType === "plant") {
     if (s === "assigned" && !own) return "Esperando transporte";
-    if (s === "accepted") return own ? "Esperando inicio" : "Esperando inicio transporte";
+    if (s === "accepted") return "Esperando inicio";
     if (s === "in_progress") return "En tránsito";
     return null;
   }
