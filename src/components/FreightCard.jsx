@@ -319,11 +319,7 @@ export const ActiveTripCard = memo(function ActiveTripCard({ freight: f, onClick
             {/* Footer */}
             <div style={{ background: C.bgCardAlt, borderRadius: R.sm, padding: "7px 10px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <div style={{ width: 22, height: 22, borderRadius: "50%", background: sc.ribbon, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  {Ic.user(C.w, 11)}
-                </div>
                 {f.truckPlate && <LicensePlate plate={f.truckPlate} size="sm" />}
-                {isDesktop && f.driverName && <span style={{ fontSize: 11, color: C.t2 }}>{f.driverName}</span>}
               </div>
               {dateTime && <span style={{ fontSize: 11, color: C.t2 }}>{dateTime}</span>}
             </div>
