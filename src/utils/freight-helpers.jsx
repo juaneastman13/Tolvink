@@ -55,9 +55,10 @@ function getMultiTruckPendingAction(freight, userType, role, user) {
   // Collect ALL distinct groupKeys for multi-truck (freight appears in multiple groups)
   const allGroupKeys = new Set();
 
-  // Plant: check if more trucks needed, authorize own-fleet, or confirm
+  // Plant: check if more trucks needed or any trip needs truck/driver, authorize own-fleet, or confirm
   if (userType === "plant") {
     if (freight.assignedTruckCount < freight.truckCount) allGroupKeys.add("assign");
+    if (aa.some(a => a.tripStatus === "pending" && !a.truckId && !a.isExternal)) allGroupKeys.add("assign");
     const needsAuth = aa.find(a => a.transportCompanyId === freight.originCompanyId && a.tripStatus === "pending" && (a.truckId || a.isExternal));
     if (needsAuth) allGroupKeys.add("authorize");
     const ownOrExt = aa.filter(a => a.transportCompanyId === freight.originCompanyId || a.isExternal);
