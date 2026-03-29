@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo, Suspense } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { uploadPhoto, apiAddDocument, apiListConversations, apiSearchFreights } from "../api";
+import { uploadPhoto, apiAddDocument, apiListConversations, apiSearchFreights, apiAssignFreight } from "../api";
 import { C, track, FONT, Ic , R} from "../theme";
 import { POLL_INTERVALS, stCfg } from "../constants";
 import { FEATURES } from "../features";
@@ -462,15 +462,20 @@ export default function AppLayout({ fh, catalog, online, notif, isDesktop }) {
     let assignError = null;
     if (r.ok && r.freightId && form.assignData) {
       const ad = form.assignData;
-      const tc = parseInt(form.truckCount) || 1;
-      if (tc > 1) {
-        // Multi-truck: create N assignments with same transporter
-        const trucks = Array.from({length: tc}, () => ({ transportCompanyId: ad.transportCompanyId }));
-        const ar = await fh.assignMulti(r.freightId, trucks);
-        if (!ar.ok) assignError = ar.error;
+      if (ad.isExternal) {
+        // External truck: send full body directly
+        try { await apiAssignFreight(r.freightId, ad); await fh.refresh(r.freightId); } catch(e) { assignError = e.message; }
       } else {
-        const ar = await fh.assign(r.freightId, ad.transportCompanyId, ad.truckId, ad.driverId);
-        if (!ar.ok) assignError = ar.error;
+        const tc = parseInt(form.truckCount) || 1;
+        if (tc > 1) {
+          // Multi-truck: create N assignments with same transporter
+          const trucks = Array.from({length: tc}, () => ({ transportCompanyId: ad.transportCompanyId }));
+          const ar = await fh.assignMulti(r.freightId, trucks);
+          if (!ar.ok) assignError = ar.error;
+        } else {
+          const ar = await fh.assign(r.freightId, ad.transportCompanyId, ad.truckId, ad.driverId);
+          if (!ar.ok) assignError = ar.error;
+        }
       }
     }
     setSubmitting(false);

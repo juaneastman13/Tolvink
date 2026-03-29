@@ -283,7 +283,10 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
   // Plant transport step: linked transporters + access levels
   const [linkedTransporters, setLinkedTransporters] = useState([]);
   const [selectedProducerAccess, setSelectedProducerAccess] = useState(null); // CompanyAccess record for selected producer
-  const [transportChoice, setTransportChoice] = useState(""); // "" | "skip" | companyId | "ownfleet"
+  const [transportChoice, setTransportChoice] = useState(""); // "" | "skip" | companyId | "ownfleet" | "external"
+  const [externalPlate, setExternalPlate] = useState("");
+  const [externalCompanyName, setExternalCompanyName] = useState("");
+  const [externalDriverName, setExternalDriverName] = useState("");
   const [selectedTransporterAccess, setSelectedTransporterAccess] = useState(null);
   const [assignTruckId, setAssignTruckId] = useState("");
   const [assignDriverId, setAssignDriverId] = useState("");
@@ -365,13 +368,15 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
       const cId = r.granteeCompanyId || co.id;
       return { value: cId, label: co.name || "Empresa", sub: r.accessLevel === "READONLY" ? "Consulta" : "" };
     }),
+    { value: "external", label: "Camión de terceros", sub: "No registrado" },
   ];
 
   // Is the selected transporter CONSULTA or own fleet (needs truck+driver inline)?
-  const transportNeedsTruckDriver = transportChoice === "ownfleet" || (transportChoice && transportChoice !== "skip" && selectedTransporterAccess?.accessLevel === "READONLY");
-  const transportIsOperator = transportChoice && transportChoice !== "skip" && transportChoice !== "ownfleet" && selectedTransporterAccess?.accessLevel !== "READONLY";
+  const transportIsExternal = transportChoice === "external";
+  const transportNeedsTruckDriver = !transportIsExternal && (transportChoice === "ownfleet" || (transportChoice && transportChoice !== "skip" && selectedTransporterAccess?.accessLevel === "READONLY"));
+  const transportIsOperator = !transportIsExternal && transportChoice && transportChoice !== "skip" && transportChoice !== "ownfleet" && selectedTransporterAccess?.accessLevel !== "READONLY";
 
-  const transportStepComplete = !showTransportStep || transportChoice === "skip" || transportIsOperator || (transportNeedsTruckDriver && !!assignTruckId);
+  const transportStepComplete = !showTransportStep || transportChoice === "skip" || transportIsOperator || (transportNeedsTruckDriver && !!assignTruckId) || (transportIsExternal && !!externalPlate.trim());
 
   // On-the-fly field creation (for producers with no fields)
   const [showNewFieldForm, setShowNewFieldForm] = useState(false);
@@ -680,12 +685,21 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
     delete payload.lotId;
     // Include transport assignment data if selected
     if (showTransportStep && transportChoice && transportChoice !== "skip") {
-      const transportCompanyId = transportChoice === "ownfleet" ? plantCompanyId : transportChoice;
-      payload.assignData = {
-        transportCompanyId,
-        ...(transportNeedsTruckDriver && assignTruckId ? { truckId: assignTruckId } : {}),
-        ...(transportNeedsTruckDriver && assignDriverId ? { driverId: assignDriverId } : {}),
-      };
+      if (transportChoice === "external") {
+        payload.assignData = {
+          isExternal: true,
+          plate: externalPlate.trim(),
+          ...(externalCompanyName.trim() ? { externalCompanyName: externalCompanyName.trim() } : {}),
+          ...(externalDriverName.trim() ? { externalDriverName: externalDriverName.trim() } : {}),
+        };
+      } else {
+        const transportCompanyId = transportChoice === "ownfleet" ? plantCompanyId : transportChoice;
+        payload.assignData = {
+          transportCompanyId,
+          ...(transportNeedsTruckDriver && assignTruckId ? { truckId: assignTruckId } : {}),
+          ...(transportNeedsTruckDriver && assignDriverId ? { driverId: assignDriverId } : {}),
+        };
+      }
     }
     try { await onCreate(payload); } finally { setSubmitting(false); submitGuard.current = false; setShowConfirmModal(false); }
   };
@@ -726,6 +740,12 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
     truckCount: (() => { const tEq = form.unit==="kg"?parseFloat(form.tons)/1000:parseFloat(form.tons); const tc = form.truckCount || (tEq>0 ? String(Math.ceil(tEq/30)) : (form.grain ? "1" : "")); return tc ? `${tc} camión${tc!=="1"?"es":""}` : ""; })(),
     ...(showTransportStep ? { transport: (() => {
       if (transportChoice === "skip") return "Pendiente de asignar";
+      if (transportChoice === "external") {
+        const parts = ["Camión de terceros"];
+        if (externalCompanyName.trim()) parts.push(externalCompanyName.trim());
+        if (externalDriverName.trim()) parts.push(externalDriverName.trim());
+        return parts.join(" · ");
+      }
       if (transportChoice === "ownfleet") {
         const drv = assignDriversList.find(d => d.id === assignDriverId);
         return `Flota propia${drv ? ` · ${drv.name}` : ""}`;
@@ -741,7 +761,10 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
       return "";
     })() } : {}),
     plate: (() => {
-      if (showTransportStep && transportChoice && transportChoice !== "skip") {
+      if (showTransportStep && transportChoice === "external" && externalPlate.trim()) {
+        return externalPlate.trim();
+      }
+      if (showTransportStep && transportChoice && transportChoice !== "skip" && transportChoice !== "external") {
         const trk = assignTrucks.find(t => t.id === assignTruckId);
         return trk?.plate || null;
       }
@@ -1003,7 +1026,13 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
               </div>}
             </>}
             {transportIsOperator && <div style={{ padding:"10px 14px", background:`${C.info}10`, borderRadius: R.md, fontSize:13.2, color:C.info, fontWeight:500, marginBottom:10 }}>El transportista confirmará y asignará camión/chofer.</div>}
-            <button onClick={() => { setTransportChoice("skip"); setAssignTruckId(""); setAssignDriverId(""); }} style={{ background:"none", border:"none", cursor:"pointer", fontSize:12.7, fontWeight:600, color:C.t3, padding:"8px 0", fontFamily:"inherit", textDecoration:"underline" }}>Asignar después</button>
+            {transportIsExternal && <div style={{ marginBottom:10 }}>
+              <div style={{ padding:"8px 12px", background:`${C.sec}10`, borderRadius: R.md, fontSize:12.1, color:C.sec, fontWeight:500, marginBottom:10 }}>Camión no registrado en el sistema. Ingresá los datos manualmente.</div>
+              <Field label="Matrícula *" value={externalPlate} onChange={v=>setExternalPlate(v.toUpperCase())} placeholder="Ej: ABC 1234"/>
+              <div style={{marginTop:8}}><Field label="Empresa transportista (opcional)" value={externalCompanyName} onChange={setExternalCompanyName} placeholder="Nombre de la empresa"/></div>
+              <div style={{marginTop:8}}><Field label="Nombre del chofer (opcional)" value={externalDriverName} onChange={setExternalDriverName} placeholder="Nombre del chofer"/></div>
+            </div>}
+            <button onClick={() => { setTransportChoice("skip"); setAssignTruckId(""); setAssignDriverId(""); setExternalPlate(""); }} style={{ background:"none", border:"none", cursor:"pointer", fontSize:12.7, fontWeight:600, color:C.t3, padding:"8px 0", fontFamily:"inherit", textDecoration:"underline" }}>Asignar después</button>
             <NextStepBtn complete={transportStepComplete} onClick={openConfirmModal} label="Siguiente" onPrev={prevAvailable()?goToPrev:null}/>
           </>}
         </MobileStepModal>
@@ -1285,7 +1314,13 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
               </div>}
             </>}
             {transportIsOperator && <div style={{ padding:"10px 14px", background:`${C.info}10`, borderRadius: R.md, fontSize:13.2, color:C.info, fontWeight:500, marginBottom:10 }}>El transportista confirmará y asignará camión/chofer.</div>}
-            <button onClick={() => { setTransportChoice("skip"); setAssignTruckId(""); setAssignDriverId(""); }} style={{ background:"none", border:"none", cursor:"pointer", fontSize:12.7, fontWeight:600, color:C.t3, padding:"8px 0", fontFamily:"inherit", textDecoration:"underline" }}>Asignar después</button>
+            {transportIsExternal && <div style={{ marginBottom:10 }}>
+              <div style={{ padding:"8px 12px", background:`${C.sec}10`, borderRadius: R.md, fontSize:12.1, color:C.sec, fontWeight:500, marginBottom:10 }}>Camión no registrado en el sistema. Ingresá los datos manualmente.</div>
+              <Field label="Matrícula *" value={externalPlate} onChange={v=>setExternalPlate(v.toUpperCase())} placeholder="Ej: ABC 1234"/>
+              <div style={{marginTop:8}}><Field label="Empresa transportista (opcional)" value={externalCompanyName} onChange={setExternalCompanyName} placeholder="Nombre de la empresa"/></div>
+              <div style={{marginTop:8}}><Field label="Nombre del chofer (opcional)" value={externalDriverName} onChange={setExternalDriverName} placeholder="Nombre del chofer"/></div>
+            </div>}
+            <button onClick={() => { setTransportChoice("skip"); setAssignTruckId(""); setAssignDriverId(""); setExternalPlate(""); }} style={{ background:"none", border:"none", cursor:"pointer", fontSize:12.7, fontWeight:600, color:C.t3, padding:"8px 0", fontFamily:"inherit", textDecoration:"underline" }}>Asignar después</button>
             <NextStepBtn complete={transportStepComplete} onClick={openConfirmModal} label="Siguiente" onPrev={prevAvailable()?goToPrev:null}/>
           </Sec>
         )}
