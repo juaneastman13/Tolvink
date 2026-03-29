@@ -295,7 +295,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
   const [loadingAssignTrucks, setLoadingAssignTrucks] = useState(false);
   const [loadingAssignDrivers, setLoadingAssignDrivers] = useState(false);
 
-  const showTransportStep = isPlantUser && (linkedTransporters.length > 0 || !!user?.hasInternalFleet);
+  const showTransportStep = isPlantUser;
   const plantCompanyId = user?.activeCompanyId || user?.companyId;
 
   // Load linked transporters for plant
