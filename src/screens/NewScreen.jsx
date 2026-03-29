@@ -385,9 +385,11 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
   // Multi-truck transport uses entries list; single-truck uses legacy transportChoice
   const transportStepComplete = !showTransportStep || (isMultiTruckWizard ? true : (transportChoice === "skip" || transportIsOperator || (transportNeedsTruckDriver && !!assignTruckId) || transportIsExternal));
 
-  // Helper: add an entry to multi-truck transport list
-  const addTransportEntry = (entry) => setTransportEntries(p => [...p, entry]);
+  // Helper: add/remove/update entries in multi-truck transport list
+  const addTransportEntry = (entry) => setTransportEntries(p => [...p, { count: 1, ...entry }]);
   const removeTransportEntry = (idx) => setTransportEntries(p => p.filter((_, i) => i !== idx));
+  const updateEntryCount = (idx, delta) => setTransportEntries(p => p.map((e, i) => i === idx ? { ...e, count: Math.max(1, (e.count || 1) + delta) } : e));
+  const totalEntryCount = transportEntries.reduce((s, e) => s + (e.count || 1), 0);
 
   // On-the-fly field creation (for producers with no fields)
   const [showNewFieldForm, setShowNewFieldForm] = useState(false);
@@ -701,13 +703,14 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
     // Map frontend lotId to backend originLotId
     if(payload.lotId) { payload.originLotId = payload.lotId; }
     delete payload.lotId;
-    // Multi-truck producer: send entries array
+    // Multi-truck producer: send entries array (expand count > 1 into N entries)
     if (showTruckSelect && isMultiTruckWizard && transportEntries.length > 0) {
-      payload.assignDataList = transportEntries.map(e => {
-        if (e.type === "own") return { transportCompanyId: user.activeCompanyId || user.companyId, truckId: e.truckId, driverId: e.driverId };
-        if (e.type === "external") return { isExternal: true, plate: e.plate, externalCompanyName: e.externalCompanyName, externalDriverName: e.externalDriverName };
-        return null; // delegate = no assignment
-      }).filter(Boolean);
+      payload.assignDataList = transportEntries.flatMap(e => {
+        const n = e.count || 1;
+        if (e.type === "own") return Array.from({length:n}, () => ({ transportCompanyId: user.activeCompanyId || user.companyId, truckId: e.truckId, driverId: e.driverId }));
+        if (e.type === "external") return Array.from({length:n}, () => ({ isExternal: true, plate: e.plate, externalCompanyName: e.externalCompanyName, externalDriverName: e.externalDriverName }));
+        return []; // delegate = no assignment
+      });
     }
     // Single-truck producer external: send assignData only if plate provided
     else if (showTruckSelect && form.fleetChoice === "external") {
@@ -720,13 +723,14 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
         };
       }
     }
-    // Multi-truck plant: send entries array
+    // Multi-truck plant: send entries array (expand count > 1 into N entries)
     if (showTransportStep && isMultiTruckWizard && transportEntries.length > 0) {
-      payload.assignDataList = transportEntries.map(e => {
-        if (e.type === "own") return { transportCompanyId: e.transportCompanyId || plantCompanyId, truckId: e.truckId, driverId: e.driverId };
-        if (e.type === "external") return { isExternal: true, plate: e.plate, externalCompanyName: e.externalCompanyName, externalDriverName: e.externalDriverName };
-        if (e.type === "operator") return { transportCompanyId: e.transportCompanyId };
-        return null;
+      payload.assignDataList = transportEntries.flatMap(e => {
+        const n = e.count || 1;
+        if (e.type === "own") return Array.from({length:n}, () => ({ transportCompanyId: e.transportCompanyId || plantCompanyId, truckId: e.truckId, driverId: e.driverId }));
+        if (e.type === "external") return Array.from({length:n}, () => ({ isExternal: true, plate: e.plate, externalCompanyName: e.externalCompanyName, externalDriverName: e.externalDriverName }));
+        if (e.type === "operator") return Array.from({length:n}, () => ({ transportCompanyId: e.transportCompanyId }));
+        return [];
       }).filter(Boolean);
     }
     // Single-truck plant: send single assignData
@@ -963,19 +967,24 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
             {isMultiTruckWizard && (
               <div style={{ background:`${C.info}10`, border:`1px solid ${C.info}30`, borderRadius:R.md, padding:"10px 14px", marginBottom:14 }}>
                 <div style={{ fontSize:14, fontWeight:700, color:C.info }}>Se necesitan {effectiveTruckCount} camiones</div>
-                <div style={{ fontSize:12, color:C.t2, marginTop:2 }}>{transportEntries.length}/{effectiveTruckCount} camiones agregados</div>
+                <div style={{ fontSize:12, color:C.t2, marginTop:2 }}>{totalEntryCount}/{effectiveTruckCount} camiones agregados</div>
               </div>
             )}
             {/* Entries list */}
             {isMultiTruckWizard && transportEntries.length > 0 && (
               <div style={{ marginBottom:12 }}>
                 {transportEntries.map((e, i) => (
-                  <div key={i} style={{ display:"flex", alignItems:"center", gap:8, padding:"8px 10px", borderRadius:R.sm, border:`1px solid ${C.b1}`, marginBottom:6, background:C.w }}>
-                    <span style={{ fontSize:12, fontWeight:700, color:C.t2 }}>#{i+1}</span>
+                  <div key={i} style={{ display:"flex", alignItems:"center", gap:6, padding:"8px 10px", borderRadius:R.sm, border:`1px solid ${C.b1}`, marginBottom:6, background:C.w }}>
                     {e.type === "own" && <>{e.plate && <LicensePlate plate={e.plate} size="sm"/>}<span style={{ fontSize:12, color:C.t2 }}>Flota propia{e.driverLabel ? ` · ${e.driverLabel}` : ""}</span></>}
                     {e.type === "external" && <><span style={{ fontSize:12, color:C.sec, fontWeight:600 }}>Terceros</span>{e.plate && <LicensePlate plate={e.plate} size="sm"/>}</>}
-                    {e.type === "delegate" && <span style={{ fontSize:12, color:C.pri, fontWeight:600 }}>Delegar a planta{e.count > 1 ? ` (×${e.count})` : ""}</span>}
+                    {e.type === "delegate" && <span style={{ fontSize:12, color:C.pri, fontWeight:600 }}>Delegar a planta</span>}
+                    {e.type === "operator" && <span style={{ fontSize:12, color:C.info, fontWeight:600 }}>{e.companyName || "Transportista"}</span>}
                     <span style={{ flex:1 }}/>
+                    <div style={{ display:"flex", alignItems:"center", gap:2 }}>
+                      <button onClick={()=>updateEntryCount(i,-1)} disabled={(e.count||1)<=1} style={{ width:24, height:24, borderRadius:R.sm, border:`1px solid ${C.b1}`, background:C.w, cursor:(e.count||1)<=1?"default":"pointer", display:"flex", alignItems:"center", justifyContent:"center", opacity:(e.count||1)<=1?0.3:1 }}>−</button>
+                      <span style={{ fontSize:13, fontWeight:700, color:C.t1, minWidth:20, textAlign:"center" }}>{e.count||1}</span>
+                      <button onClick={()=>updateEntryCount(i,1)} style={{ width:24, height:24, borderRadius:R.sm, border:`1px solid ${C.b1}`, background:C.w, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>+</button>
+                    </div>
                     <button onClick={()=>removeTransportEntry(i)} style={{ background:"none", border:"none", cursor:"pointer", padding:2 }}>{Ic.cross(C.err,14)}</button>
                   </div>
                 ))}
@@ -991,7 +1000,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
             {/* Flota propia form */}
             {form.fleetChoice==="own" && <>
               {truckOpts.length > 0 ? <>
-                <Select label="Camión" icon={Ic.truck(C.acc,14)} value={form.truckId} onChange={v=>u({truckId:v})} options={truckOpts.filter(t => !transportEntries.some(e => e.truckId === t.value))} placeholder="Seleccionar camión..."/>
+                <Select label="Camión" icon={Ic.truck(C.acc,14)} value={form.truckId} onChange={v=>u({truckId:v})} options={truckOpts} placeholder="Seleccionar camión..."/>
               </> : <div style={{ padding:"14px 16px", background:`${C.acc}08`, borderRadius: R.md, border:`1.5px dashed ${C.acc}40`, textAlign:"center" }}>
                 <div style={{ fontSize:13.2, color:C.t2, fontWeight:500, marginBottom:8 }}>No tenés camiones registrados.</div>
                 <a href="/trucks" style={{ fontSize:13.2, fontWeight:700, color:C.acc, textDecoration:"none" }}>Registrá uno desde Camiones →</a>
@@ -1294,22 +1303,27 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
 
         {/* OWN FLEET — explicit binary choice */}
         {activeSection === "ownfleet" && showTruckSelect && (
-          <Sec label={isMultiTruckWizard ? `Transporte (${transportEntries.length}/${effectiveTruckCount})` : (form.fleetChoice==="own"?"Flota propia":form.fleetChoice==="delegate"?"Delegar a planta":"Transporte")} complete={isMultiTruckWizard ? true : !!form.fleetChoice} isExpanded={true} onFocus={()=>{}} secRef={secRefs.ownfleet}>
+          <Sec label={isMultiTruckWizard ? `Transporte (${totalEntryCount}/${effectiveTruckCount})` : (form.fleetChoice==="own"?"Flota propia":form.fleetChoice==="delegate"?"Delegar a planta":"Transporte")} complete={isMultiTruckWizard ? true : !!form.fleetChoice} isExpanded={true} onFocus={()=>{}} secRef={secRefs.ownfleet}>
             {isMultiTruckWizard && (
               <div style={{ background:`${C.info}10`, border:`1px solid ${C.info}30`, borderRadius:R.md, padding:"10px 14px", marginBottom:14 }}>
                 <div style={{ fontSize:14, fontWeight:700, color:C.info }}>Se necesitan {effectiveTruckCount} camiones</div>
-                <div style={{ fontSize:12, color:C.t2, marginTop:2 }}>{transportEntries.length}/{effectiveTruckCount} camiones agregados</div>
+                <div style={{ fontSize:12, color:C.t2, marginTop:2 }}>{totalEntryCount}/{effectiveTruckCount} camiones agregados</div>
               </div>
             )}
             {isMultiTruckWizard && transportEntries.length > 0 && (
               <div style={{ marginBottom:12 }}>
                 {transportEntries.map((e, i) => (
-                  <div key={i} style={{ display:"flex", alignItems:"center", gap:8, padding:"8px 10px", borderRadius:R.sm, border:`1px solid ${C.b1}`, marginBottom:6, background:C.w }}>
-                    <span style={{ fontSize:12, fontWeight:700, color:C.t2 }}>#{i+1}</span>
+                  <div key={i} style={{ display:"flex", alignItems:"center", gap:6, padding:"8px 10px", borderRadius:R.sm, border:`1px solid ${C.b1}`, marginBottom:6, background:C.w }}>
                     {e.type === "own" && <>{e.plate && <LicensePlate plate={e.plate} size="sm"/>}<span style={{ fontSize:12, color:C.t2 }}>Flota propia{e.driverLabel ? ` · ${e.driverLabel}` : ""}</span></>}
                     {e.type === "external" && <><span style={{ fontSize:12, color:C.sec, fontWeight:600 }}>Terceros</span>{e.plate && <LicensePlate plate={e.plate} size="sm"/>}</>}
-                    {e.type === "delegate" && <span style={{ fontSize:12, color:C.pri, fontWeight:600 }}>Delegar a planta{e.count > 1 ? ` (×${e.count})` : ""}</span>}
+                    {e.type === "delegate" && <span style={{ fontSize:12, color:C.pri, fontWeight:600 }}>Delegar a planta</span>}
+                    {e.type === "operator" && <span style={{ fontSize:12, color:C.info, fontWeight:600 }}>{e.companyName || "Transportista"}</span>}
                     <span style={{ flex:1 }}/>
+                    <div style={{ display:"flex", alignItems:"center", gap:2 }}>
+                      <button onClick={()=>updateEntryCount(i,-1)} disabled={(e.count||1)<=1} style={{ width:24, height:24, borderRadius:R.sm, border:`1px solid ${C.b1}`, background:C.w, cursor:(e.count||1)<=1?"default":"pointer", display:"flex", alignItems:"center", justifyContent:"center", opacity:(e.count||1)<=1?0.3:1 }}>−</button>
+                      <span style={{ fontSize:13, fontWeight:700, color:C.t1, minWidth:20, textAlign:"center" }}>{e.count||1}</span>
+                      <button onClick={()=>updateEntryCount(i,1)} style={{ width:24, height:24, borderRadius:R.sm, border:`1px solid ${C.b1}`, background:C.w, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>+</button>
+                    </div>
                     <button onClick={()=>removeTransportEntry(i)} style={{ background:"none", border:"none", cursor:"pointer", padding:2 }}>{Ic.cross(C.err,14)}</button>
                   </div>
                 ))}
@@ -1322,7 +1336,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
               <button type="button" onClick={()=>u({fleetChoice:"delegate",truckId:"",driverId:""})} style={{ flex:"1 1 30%", padding:"12px 8px", borderRadius: R.md, border:`1.5px solid ${form.fleetChoice==="delegate"?C.pri:C.b1}`, background:form.fleetChoice==="delegate"?C.priPale:C.w, color:form.fleetChoice==="delegate"?C.pri:C.t2, cursor:"pointer", fontSize:13.2, fontWeight:form.fleetChoice==="delegate"?700:500, fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>{Ic.plant(form.fleetChoice==="delegate"?C.pri:C.t3,16)} Delegar a planta</button>
             </div>
             {form.fleetChoice==="own" && <>
-              {truckOpts.length > 0 ? <Select label="Camión" icon={Ic.truck(C.acc,14)} value={form.truckId} onChange={v=>u({truckId:v})} options={truckOpts.filter(t => !transportEntries.some(e => e.truckId === t.value))} placeholder="Seleccionar camión..."/>
+              {truckOpts.length > 0 ? <Select label="Camión" icon={Ic.truck(C.acc,14)} value={form.truckId} onChange={v=>u({truckId:v})} options={truckOpts} placeholder="Seleccionar camión..."/>
               : <div style={{ padding:"14px 16px", background:`${C.acc}08`, borderRadius: R.md, border:`1.5px dashed ${C.acc}40`, textAlign:"center" }}><div style={{ fontSize:13.2, color:C.t2, fontWeight:500, marginBottom:8 }}>No tenés camiones registrados.</div><a href="/trucks" style={{ fontSize:13.2, fontWeight:700, color:C.acc, textDecoration:"none" }}>Registrá uno desde Camiones →</a></div>}
               {form.truckId && <div style={{ marginTop:10 }}>
                 {loadingDrivers ? <div style={{ fontSize:12, color:C.t3, padding:8, textAlign:"center" }}>Cargando choferes...</div>
@@ -1344,7 +1358,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
             {form.fleetChoice==="delegate" && <>
               <div style={{ padding:"10px 14px", background:`${C.info}10`, borderRadius: R.md, fontSize:13.2, color:C.info, fontWeight:500 }}>La planta de destino asignará el transportista</div>
               {isMultiTruckWizard && (
-                <button type="button" onClick={() => { const remaining=effectiveTruckCount-transportEntries.length; addTransportEntry({type:"delegate",count:remaining}); u({fleetChoice:""}); }} style={{ marginTop:10, width:"100%", padding:"10px 0", borderRadius:R.md, border:"none", background:C.pri, color:C.w, fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>Delegar {effectiveTruckCount-transportEntries.length} camión{(effectiveTruckCount-transportEntries.length)!==1?"es":""} a planta</button>
+                <button type="button" onClick={() => { const remaining=Math.max(1,effectiveTruckCount-totalEntryCount); addTransportEntry({type:"delegate",count:remaining}); u({fleetChoice:""}); }} style={{ marginTop:10, width:"100%", padding:"10px 0", borderRadius:R.md, border:"none", background:C.pri, color:C.w, fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>Delegar {Math.max(1,effectiveTruckCount-totalEntryCount)} camión{Math.max(1,effectiveTruckCount-totalEntryCount)!==1?"es":""} a planta</button>
               )}
             </>}
             <NextStepBtn complete={isMultiTruckWizard ? true : (!!form.fleetChoice && (form.fleetChoice==="delegate" || form.fleetChoice==="external" ? true : (!!form.truckId && !!form.driverId)))} onClick={isEditing?confirmEdit:advanceToNext} label={isEditing?"Confirmar edición":undefined} onPrev={prevAvailable()?goToPrev:null}/>
