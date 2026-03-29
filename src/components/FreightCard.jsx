@@ -316,6 +316,14 @@ export const ActiveTripCard = memo(function ActiveTripCard({ freight: f, onClick
                 <span style={{ fontSize: 10, color: C.t3, textAlign: "center", marginTop: 3, lineHeight: 1.2, maxWidth: 60, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{dest.split(/\s*[\/—]\s*/)[0]}</span>
               </div>
             </div>
+            {/* Info: producer, transporter, driver */}
+            {(f.producerCompanyName || f.transporterName || f.driverName) && (
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 6, fontSize: 11, color: C.t2 }}>
+                {f.producerCompanyName && <span style={{ display: "inline-flex", alignItems: "center", gap: 3 }}>{Ic.user(C.t3, 10)} {f.producerCompanyName}</span>}
+                {f.transporterName && f.transporterName !== f.producerCompanyName && <span style={{ display: "inline-flex", alignItems: "center", gap: 3 }}>{Ic.truck(C.t3, 10)} {f.transporterName}</span>}
+                {f.driverName && <span style={{ display: "inline-flex", alignItems: "center", gap: 3 }}>{Ic.nav(C.t3, 10)} {f.driverName}</span>}
+              </div>
+            )}
             {/* Footer */}
             <div style={{ background: C.bgCardAlt, borderRadius: R.sm, padding: "7px 10px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
