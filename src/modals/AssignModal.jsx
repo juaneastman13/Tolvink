@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { C, Ic , R} from "../theme";
 import { Field, ModalOverlay, LicensePlate } from "../components";
-import { apiGetTrucks, apiCreateTruck, apiGetDrivers, apiCreateDriver, apiGetCompanyAccess, apiCreateLinkedCompany, apiUpdateFreight } from "../api";
+import { apiGetTrucks, apiCreateTruck, apiGetDrivers, apiCreateDriver, apiGetCompanyAccess, apiCreateLinkedCompany, apiUpdateFreight, apiAssignFreight } from "../api";
 
 // ======================== STEPPER (compact) ==============================
 function Stepper({ steps, current }) {
@@ -103,6 +103,10 @@ export default function AssignModal({ freight, transporters, user, onClose, onCo
     if (_producerOnlyDelegate) return "delegate";
     return freight.useOwnFleet === true ? "own" : "company";
   });
+  // External truck state
+  const [extPlate, setExtPlate] = useState("");
+  const [extCompanyName, setExtCompanyName] = useState("");
+  const [extDriverName, setExtDriverName] = useState("");
   const [t, setT] = useState("");
   const [truckId, setTruckId] = useState("");
   const [driverId, setDriverId] = useState("");
@@ -355,6 +359,7 @@ export default function AssignModal({ freight, transporters, user, onClose, onCo
           <div style={{ display:"flex", gap:0, marginBottom:12, borderRadius: R.md, overflow:"hidden", border:`1.5px solid ${C.b1}` }}>
             <button onClick={() => { setMode("company"); setTruckId(""); setDriverId(""); setStep(0); setT(""); }} style={{ flex:1, padding:"8px 0", fontFamily:"inherit", fontSize:13, fontWeight:mode === "company" ? 700 : 500, background:mode === "company" ? C.pri : C.w, color:mode === "company" ? C.w : C.t2, border:"none", cursor:"pointer" }}>Empresa</button>
             <button onClick={() => { setMode("own"); setT(""); setStep(0); }} style={{ flex:1, padding:"8px 0", fontFamily:"inherit", fontSize:13, fontWeight:mode === "own" ? 700 : 500, background:mode === "own" ? C.acc : C.w, color:mode === "own" ? C.w : C.t2, border:"none", cursor:"pointer", borderLeft:`1px solid ${C.b1}` }}>Flota propia</button>
+            <button onClick={() => { setMode("external"); setT(""); setTruckId(""); setDriverId(""); setStep(0); }} style={{ flex:1, padding:"8px 0", fontFamily:"inherit", fontSize:13, fontWeight:mode === "external" ? 700 : 500, background:mode === "external" ? C.sec : C.w, color:mode === "external" ? C.w : C.t2, border:"none", cursor:"pointer", borderLeft:`1px solid ${C.b1}` }}>Externo</button>
             {canDelegate && (
               <button onClick={() => { setMode("delegate"); setT(""); setTruckId(""); setDriverId(""); setStep(0); }} style={{ flex:1, padding:"8px 0", fontFamily:"inherit", fontSize:13, fontWeight:mode === "delegate" ? 700 : 500, background:mode === "delegate" ? C.info : C.w, color:mode === "delegate" ? C.w : C.t2, border:"none", cursor:"pointer", borderLeft:`1px solid ${C.b1}` }}>Delegar</button>
             )}
@@ -381,8 +386,38 @@ export default function AssignModal({ freight, transporters, user, onClose, onCo
           </div>
         )}
 
+        {/* External truck */}
+        {mode === "external" && (
+          <div>
+            <div style={{ padding:"8px 12px", background:`${C.sec}10`, borderRadius: R.md, fontSize:12.1, color:C.sec, fontWeight:500, marginBottom:10 }}>Camión no registrado. Ingresá los datos manualmente.</div>
+            <Field label="Matrícula *" value={extPlate} onChange={v=>setExtPlate(v.toUpperCase())} placeholder="Ej: ABC 1234"/>
+            <div style={{marginTop:8}}><Field label="Empresa (opcional)" value={extCompanyName} onChange={setExtCompanyName} placeholder="Nombre de la empresa"/></div>
+            <div style={{marginTop:8}}><Field label="Chofer (opcional)" value={extDriverName} onChange={setExtDriverName} placeholder="Nombre del chofer"/></div>
+            {multiTruck && <div style={{marginTop:8}}><Field label="Toneladas (opcional)" value={tonsInput} onChange={setTonsInput} type="number" placeholder="0" inputMode="decimal"/></div>}
+            <div style={{ display:"flex", gap:8, marginTop:14 }}>
+              <button onClick={safeClose} style={{ flex:1, padding:"10px 0", borderRadius: R.md, border:`1px solid ${C.b1}`, background:C.w, color:C.t2, fontSize:13, fontWeight:500, cursor:"pointer", fontFamily:"inherit" }}>Cancelar</button>
+              <button disabled={!extPlate.trim() || loading} onClick={async ()=>{
+                setLoading(true);
+                try {
+                  const body = { isExternal:true, plate:extPlate.trim(), externalCompanyName:extCompanyName.trim()||undefined, externalDriverName:extDriverName.trim()||undefined };
+                  if (multiTruck) {
+                    // Add to truckList for batch
+                    setTruckList(p=>[...p, { ...body, tons: parseFloat(tonsInput)||undefined, _extLabel: `${extPlate.trim()} (Externo)` }]);
+                    setExtPlate(""); setExtCompanyName(""); setExtDriverName(""); setTonsInput("");
+                    setLoading(false);
+                    return;
+                  }
+                  await apiAssignFreight(freight.id, body);
+                  if (onRefresh) onRefresh(freight.id);
+                  setClosingText("Camión externo asignado"); setClosing(true);
+                } catch(e) { setLoading(false); alert(e.message||"Error"); }
+              }} style={{ flex:1, padding:"10px 0", borderRadius: R.md, border:"none", background:C.sec, color:C.w, fontSize:13, fontWeight:700, cursor:(!extPlate.trim()||loading)?"not-allowed":"pointer", fontFamily:"inherit", opacity:(!extPlate.trim()||loading)?0.5:1 }}>{loading?"Asignando...": multiTruck ? "Agregar" : "Asignar"}</button>
+            </div>
+          </div>
+        )}
+
         {/* Multi-truck header */}
-        {multiTruck && mode !== "delegate" && (
+        {multiTruck && mode !== "delegate" && mode !== "external" && (
           <div style={{ background:`${C.info}10`, border:`1px solid ${C.info}30`, borderRadius: R.md, padding:"8px 10px", marginBottom:10, display:"flex", alignItems:"center", gap:8 }}>
             {Ic.truck(C.info, 16)}
             <div>

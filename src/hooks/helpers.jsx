@@ -96,6 +96,10 @@ export function mapFreight(f) {
       tollCost: x.tollCost ? parseFloat(x.tollCost) : null,
       odometerStart: x.odometerStart || null,
       odometerEnd: x.odometerEnd || null,
+      // External truck fields
+      isExternal: x.isExternal || false,
+      externalCompanyName: x.externalCompanyName || null,
+      externalDriverName: x.externalDriverName || null,
     })),
     producerCompanyId:f.producerCompanyId||null, producerCompanyName:f.producerCompany?.name||null, producerCompanyPhone:f.producerCompany?.phone||null,
     notes:f.notes||"", cancelReason:f.cancelReason||"", createdAt:f.createdAt,

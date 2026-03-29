@@ -314,8 +314,9 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
       if(a==="confirm_finished" && user.userType==="producer" && freight?.isOwnFleet && freight?.transporterFinishedConfirmedAt) return false;
       return true;
     });
-    // Plant absorbs trip lifecycle when transporter is CONSULTA
-    if (transporterIsConsulta && !isMultiTruck) {
+    // Plant absorbs trip lifecycle when transporter is CONSULTA or assignment is external
+    const hasExternalAssignment = (freight?.activeAssignments || []).some(a => a.isExternal);
+    if ((transporterIsConsulta || hasExternalAssignment) && !isMultiTruck) {
       const tripLifecycle = { accepted: "start", in_progress: "confirm_loaded", loaded: "confirm_finished" };
       const extra = tripLifecycle[freight.status];
       if (extra && !acts.includes(extra)) acts = [...acts, extra];
@@ -351,15 +352,16 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
     for (const a of visibleAssignments) {
       const ts = a.tripStatus;
       const isOwn = a.transportCompanyId === freight?.originCompanyId;
-      const aTransporterIsConsulta = isPlantUser && a.transportCompanyId && transporterAccessMap[a.transportCompanyId] === "READONLY";
+      const isExt = a.isExternal;
+      const aTransporterIsConsulta = !isExt && isPlantUser && a.transportCompanyId && transporterAccessMap[a.transportCompanyId] === "READONLY";
       const entries = [];
       if (user.userType === "plant") {
-        // Own-fleet: plant acts as transporter — authorize pending, then start/confirm lifecycle
-        if (isOwn && ts === "pending" && a.truckId) entries.push({ key:"respond_trip", label:"Autorizar viaje", color:C.sec, icon:Ic.chk(C.w,16) });
-        if (isOwn && ts === "accepted") entries.push({ key:"start_trip", label:"Iniciar viaje", color:C.pri, icon:Ic.truck(C.w,16) });
-        if (isOwn && ts === "in_progress" && !a.transporterLoadedConfirmedAt) entries.push({ key:"confirm_trip_loaded", label:"Confirmar carga", color:C.acc, icon:Ic.chk(C.w,16) });
-        if (isOwn && ts === "loaded" && !a.transporterFinishedConfirmedAt) entries.push({ key:"confirm_trip_finished", label:"Confirmar entrega", color:C.pri, icon:Ic.chk(C.w,16) });
-        if (!isOwn && ts === "loaded" && !a.plantFinishedConfirmedAt) entries.push({ key:"confirm_trip_finished", label:"Confirmar entrega", color:C.pri, icon:Ic.chk(C.w,16) });
+        // Own-fleet or external: plant controls lifecycle
+        if ((isOwn || isExt) && ts === "pending" && (a.truckId || isExt)) entries.push({ key:"respond_trip", label:"Autorizar viaje", color:C.sec, icon:Ic.chk(C.w,16) });
+        if ((isOwn || isExt) && ts === "accepted") entries.push({ key:"start_trip", label:"Iniciar viaje", color:C.pri, icon:Ic.truck(C.w,16) });
+        if ((isOwn || isExt) && ts === "in_progress" && !a.transporterLoadedConfirmedAt) entries.push({ key:"confirm_trip_loaded", label:"Confirmar carga", color:C.acc, icon:Ic.chk(C.w,16) });
+        if ((isOwn || isExt) && ts === "loaded" && !a.transporterFinishedConfirmedAt) entries.push({ key:"confirm_trip_finished", label:"Confirmar entrega", color:C.pri, icon:Ic.chk(C.w,16) });
+        if (!isOwn && !isExt && ts === "loaded" && !a.plantFinishedConfirmedAt) entries.push({ key:"confirm_trip_finished", label:"Confirmar entrega", color:C.pri, icon:Ic.chk(C.w,16) });
         // Plant absorbs trip lifecycle when this assignment's transporter is CONSULTA
         if (aTransporterIsConsulta) {
           if (ts === "accepted" && !entries.find(e=>e.key==="start_trip")) entries.push({ key:"start_trip", label:"Iniciar viaje", color:C.pri, icon:Ic.truck(C.w,16) });
@@ -441,13 +443,14 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
     const ts = a.tripStatus;
     const isOwnFleetTrip = a.transportCompanyId === freight.originCompanyId;
     if (user.userType === "plant") {
-      if (isOwnFleetTrip && ts === "pending" && a.truckId) btns.push({ key:"respond_trip", label:"Autorizar", color:C.sec, icon:Ic.chk(C.w,14) });
-      if (isOwnFleetTrip && ts === "accepted") btns.push({ key:"start_trip", label:"Iniciar viaje", color:C.pri, icon:Ic.truck(C.w,14) });
-      if (isOwnFleetTrip && ts === "in_progress" && !a.transporterLoadedConfirmedAt) btns.push({ key:"confirm_trip_loaded", label:"Confirmar carga", color:C.acc, icon:Ic.chk(C.w,14) });
-      if (isOwnFleetTrip && ts === "loaded" && !a.transporterFinishedConfirmedAt) btns.push({ key:"confirm_trip_finished", label:"Confirmar entrega", color:C.pri, icon:Ic.chk(C.w,14) });
-      if (!isOwnFleetTrip && ts === "loaded" && !a.plantFinishedConfirmedAt) btns.push({ key:"confirm_trip_finished", label:"Confirmar entrega", color:C.pri, icon:Ic.chk(C.w,14) });
+      const isExtTrip = a.isExternal;
+      if ((isOwnFleetTrip || isExtTrip) && ts === "pending" && (a.truckId || isExtTrip)) btns.push({ key:"respond_trip", label:"Autorizar", color:C.sec, icon:Ic.chk(C.w,14) });
+      if ((isOwnFleetTrip || isExtTrip) && ts === "accepted") btns.push({ key:"start_trip", label:"Iniciar viaje", color:C.pri, icon:Ic.truck(C.w,14) });
+      if ((isOwnFleetTrip || isExtTrip) && ts === "in_progress" && !a.transporterLoadedConfirmedAt) btns.push({ key:"confirm_trip_loaded", label:"Confirmar carga", color:C.acc, icon:Ic.chk(C.w,14) });
+      if ((isOwnFleetTrip || isExtTrip) && ts === "loaded" && !a.transporterFinishedConfirmedAt) btns.push({ key:"confirm_trip_finished", label:"Confirmar entrega", color:C.pri, icon:Ic.chk(C.w,14) });
+      if (!isOwnFleetTrip && !isExtTrip && ts === "loaded" && !a.plantFinishedConfirmedAt) btns.push({ key:"confirm_trip_finished", label:"Confirmar entrega", color:C.pri, icon:Ic.chk(C.w,14) });
       // Plant absorbs trip lifecycle when this assignment's transporter is CONSULTA
-      const aConsulta = isPlantUser && a.transportCompanyId && transporterAccessMap[a.transportCompanyId] === "READONLY";
+      const aConsulta = !isExtTrip && isPlantUser && a.transportCompanyId && transporterAccessMap[a.transportCompanyId] === "READONLY";
       if (aConsulta) {
         if (ts === "accepted" && !btns.find(b=>b.key==="start_trip")) btns.push({ key:"start_trip", label:"Iniciar viaje", color:C.pri, icon:Ic.truck(C.w,14) });
         if (ts === "in_progress" && !a.transporterLoadedConfirmedAt && !btns.find(b=>b.key==="confirm_trip_loaded")) btns.push({ key:"confirm_trip_loaded", label:"Confirmar carga", color:C.acc, icon:Ic.chk(C.w,14) });
@@ -779,6 +782,8 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
             const canEditA = (()=>{
               if (isConsulta) return false;
               if (["in_progress","loaded","finished"].includes(a.tripStatus)) return false;
+              // External assignment: creator (owner of transportCompanyId) can always edit
+              if (a.isExternal) return a.transportCompanyId === user.activeCompanyId || user.role === "platform_admin" || user.isSuperAdmin;
               // Plant cannot edit external transporter's truck — only desasignar
               if (isPlantUser && isExternalTransporter) return false;
               if (user.role === "platform_admin" || user.isSuperAdmin) return true;
@@ -795,8 +800,17 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
                   <div style={{ display:"flex", alignItems:"center", gap:6 }}>
                     {isMultiTruck && <span style={{ fontSize:12, fontWeight:500, color:C.t2, marginRight:2 }}>#{a.tripNumber}</span>}
                     {hasTruck ? <LicensePlate plate={a.plate} size="sm" /> : <span style={{ fontSize:14, fontWeight:500, color:a.transporterName ? C.acc : C.t3 }}>{a.transporterName ? "Esperando camión" : "Sin camión"}</span>}
-                    <span style={{ fontSize:12, color:C.t2 }}>- {a.transporterName || "Sin empresa"}</span>
-                    <span style={{ fontSize:12, color:C.t2 }}>- {a.driverName || "Sin chofer"}</span>
+                    {a.isExternal
+                      ? <>
+                          <span style={{ fontSize:12, color:C.t2 }}>- {a.externalCompanyName || "Tercero"}</span>
+                          <span style={{ fontSize:12, color:C.t2 }}>- {a.externalDriverName || "Sin chofer"}</span>
+                          <span style={{ fontSize:9.5, fontWeight:600, color:C.sec, background:`${C.sec}15`, padding:"1px 5px", borderRadius:R.pill, flexShrink:0 }}>EXTERNO</span>
+                        </>
+                      : <>
+                          <span style={{ fontSize:12, color:C.t2 }}>- {a.transporterName || "Sin empresa"}</span>
+                          <span style={{ fontSize:12, color:C.t2 }}>- {a.driverName || "Sin chofer"}</span>
+                        </>
+                    }
                     <span style={{ flex:1 }} />
                     {(() => {
                       const needsAuth = a.tripStatus === "pending" && freight.useOwnFleet && freight.needsPlantApproval && !freight.plantApprovedAt;
