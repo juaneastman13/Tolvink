@@ -648,7 +648,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
     } else {
       originNameForPayload = customOrigin.name?.trim() || undefined;
     }
-    const payload = {...form, photos: photos.map(p=>p.preview), useOwnFleet: showTruckSelect && form.fleetChoice ? (form.fleetChoice==="own") : undefined,
+    const payload = {...form, photos: photos.map(p=>p.preview), useOwnFleet: showTruckSelect && form.fleetChoice && form.fleetChoice !== "external" ? (form.fleetChoice==="own") : undefined,
       ...(isPlantUser && producerCompanyId && producerCompanyId !== "__internal__" ? { producerCompanyId } : {}),
       overrideOriginLat: originMode==="map" ? customOrigin.lat : (overrideOrigin?.lat || undefined),
       overrideOriginLng: originMode==="map" ? customOrigin.lng : (overrideOrigin?.lng || undefined),
@@ -685,7 +685,6 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
     delete payload.lotId;
     // Producer external truck: send assignData only if plate provided (can be added later from detail)
     if (showTruckSelect && form.fleetChoice === "external") {
-      payload.useOwnFleet = false;
       if (externalPlate.trim()) {
         payload.assignData = {
           isExternal: true,
