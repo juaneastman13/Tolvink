@@ -176,11 +176,11 @@ export function useFreights(user, isAuthInitialized) {
     try { await apiRespondFreight(fId,{action,reason,truckId,driverId}); await refresh(fId); return {ok:true}; }
     catch(e) { if(prevStatus) setFreights(p=>{ const next=p.map(f=>f.id===fId?{...f,status:prevStatus}:f); freightsRef.current=next; return next; }); refresh(fId); return {ok:false,error:e.message}; }
   },[refresh]);
-  const start = useCallback(async (fId)=>{
+  const start = useCallback(async (fId, force)=>{
     const prevStatus = freightsRef.current.find(f=>f.id===fId)?.status || null;
     setFreights(p=>{ const next=p.map(f=>f.id===fId?{...f,status:"in_progress"}:f); freightsRef.current=next; return next; });
-    try { await apiStartFreight(fId); await refresh(fId); return {ok:true}; }
-    catch(e) { if(prevStatus) setFreights(p=>{ const next=p.map(f=>f.id===fId?{...f,status:prevStatus}:f); freightsRef.current=next; return next; }); refresh(fId); return {ok:false,error:e.message}; }
+    try { await apiStartFreight(fId, force); await refresh(fId); return {ok:true}; }
+    catch(e) { if(prevStatus) setFreights(p=>{ const next=p.map(f=>f.id===fId?{...f,status:prevStatus}:f); freightsRef.current=next; return next; }); refresh(fId); return {ok:false,error:e.message,truckBusy:e.data?.truckBusy,busyFreightCode:e.data?.busyFreightCode}; }
   },[refresh]);
   const finish = useCallback(async (fId)=>{ try { await apiFinishFreight(fId); await refresh(fId); return {ok:true}; } catch(e) { return {ok:false,error:e.message}; } },[refresh]);
   const cancel = useCallback(async (fId,reason)=>{ try { await apiCancelFreight(fId,reason); await refresh(fId); return {ok:true}; } catch(e) { return {ok:false,error:e.message}; } },[refresh]);
@@ -204,7 +204,7 @@ export function useFreights(user, isAuthInitialized) {
   const cancelAssignment = useCallback(async (fId, aId, reason)=>{ try { await apiCancelAssignment(fId, aId, reason); await refresh(fId); return {ok:true}; } catch(e) { return {ok:false,error:e.message}; } },[refresh]);
   const updateAssignment = useCallback(async (fId, aId, data)=>{ try { await apiUpdateAssignment(fId, aId, data); await refresh(fId); return {ok:true}; } catch(e) { return {ok:false,error:e.message}; } },[refresh]);
   const respondTrip = useCallback(async (fId, aId, body)=>{ try { await apiRespondTrip(fId, aId, body); await refresh(fId); return {ok:true}; } catch(e) { return {ok:false,error:e.message}; } },[refresh]);
-  const startTrip = useCallback(async (fId, aId)=>{ try { await apiStartTrip(fId, aId); await refresh(fId); return {ok:true}; } catch(e) { return {ok:false,error:e.message}; } },[refresh]);
+  const startTrip = useCallback(async (fId, aId, force)=>{ try { await apiStartTrip(fId, aId, force); await refresh(fId); return {ok:true}; } catch(e) { return {ok:false,error:e.message,truckBusy:e.data?.truckBusy,busyFreightCode:e.data?.busyFreightCode}; } },[refresh]);
   const confirmTripLoaded = useCallback(async (fId, aId, loadedTons)=>{ try { await apiConfirmTripLoaded(fId, aId, loadedTons); await refresh(fId); return {ok:true}; } catch(e) { return {ok:false,error:e.message}; } },[refresh]);
   const confirmTripFinished = useCallback(async (fId, aId)=>{ try { await apiConfirmTripFinished(fId, aId); await refresh(fId); return {ok:true}; } catch(e) { return {ok:false,error:e.message}; } },[refresh]);
   return { freights, loading, loadingMore, error, hasMore, total, statusCounts, fetchAll, loadMore, refresh, refreshLight, create, assign, respond, start, finish, cancel, confirmLoaded, confirmFinished, authorize, approveProducer, update, assignMulti, assignTruckCb, cancelAssignment, updateAssignment, respondTrip, startTrip, confirmTripLoaded, confirmTripFinished };

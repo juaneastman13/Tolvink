@@ -241,7 +241,7 @@ export async function apiGetFreightDetailExtra(id) { return api(`/freights/${id}
 export async function apiCreateFreight(b) { return api('/freights',{body:b}); }
 export async function apiAssignFreight(id,b) { return api(`/freights/${id}/assign`,{body:b}); }
 export async function apiRespondFreight(id,b) { return api(`/freights/${id}/respond`,{body:b}); }
-export async function apiStartFreight(id) { return api(`/freights/${id}/start`,{body:{}}); }
+export async function apiStartFreight(id, force) { return api(`/freights/${id}/start`,{body: force ? {force:true} : {}}); }
 export async function apiFinishFreight(id) { return api(`/freights/${id}/finish`,{body:{}}); }
 export async function apiCancelFreight(id,reason) { return api(`/freights/${id}/cancel`,{body:{reason}}); }
 export async function apiConfirmLoaded(id, loadedTons) { return api(`/freights/${id}/confirm-loaded`,{body:{loadedTons}}); }
@@ -256,7 +256,7 @@ export async function apiAssignTruck(id, truckData) { return api(`/freights/${id
 export async function apiCancelAssignment(freightId, assignmentId, reason) { return api(`/freights/${freightId}/assignments/${assignmentId}/cancel`,{body:{reason}}); }
 export async function apiUpdateAssignment(freightId, assignmentId, data) { return api(`/freights/${freightId}/assignments/${assignmentId}`,{method:'PATCH',body:data}); }
 export async function apiRespondTrip(freightId, assignmentId, body) { return api(`/freights/${freightId}/assignments/${assignmentId}/respond`,{body}); }
-export async function apiStartTrip(freightId, assignmentId) { return api(`/freights/${freightId}/assignments/${assignmentId}/start`,{body:{}}); }
+export async function apiStartTrip(freightId, assignmentId, force) { return api(`/freights/${freightId}/assignments/${assignmentId}/start`,{body: force ? {force:true} : {}}); }
 export async function apiConfirmTripLoaded(freightId, assignmentId, loadedTons) { return api(`/freights/${freightId}/assignments/${assignmentId}/confirm-loaded`,{body:{loadedTons}}); }
 export async function apiConfirmTripFinished(freightId, assignmentId) { return api(`/freights/${freightId}/assignments/${assignmentId}/confirm-finished`,{body:{}}); }
 
