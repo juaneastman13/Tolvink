@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
-import { C, R, FONT } from "../../theme";
+import { C, R, FONT, MONO, Ic } from "../../theme";
 import { apiGetPublicDiagnostic } from "../../api";
 
 export default function PublicDiagnosticScreen() {
@@ -67,6 +67,19 @@ export default function PublicDiagnosticScreen() {
                 </div>
               )}
               {msg.content}
+              {msg.suggestedParts?.length > 0 && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 10 }}>
+                  {msg.suggestedParts.map((part, pi) => (
+                    <div key={pi} style={{ padding: 10, borderRadius: R.md, border: `1px solid ${C.b1}`, background: C.bgCardAlt }}>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: C.t1, marginBottom: 4 }}>{part.description}</div>
+                      <div style={{ fontSize: 13, fontFamily: MONO, fontWeight: 700, color: C.pri }}>{part.partNumber} ({part.brand})</div>
+                      {part.sourceUrl && <a href={part.sourceUrl} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: C.info }}>Ver en catálogo →</a>}
+                      {part.crossReferences?.length > 0 && <div style={{ fontSize: 12, color: C.t2, marginTop: 4 }}>Alt: {part.crossReferences.map(cr => `${cr.brand} ${cr.partNumber}`).join(" · ")}</div>}
+                      {part.price && <div style={{ fontSize: 12, color: C.t3, marginTop: 2 }}>Precio ref: USD {part.price}</div>}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         ))}

@@ -170,6 +170,13 @@ export default function DiagnosticSessionScreen() {
                 </div>
               )}
               {msg.content}
+              {msg.suggestedParts?.length > 0 && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 10 }}>
+                  {msg.suggestedParts.map((part, pi) => (
+                    <PartCard key={pi} part={part} onImageClick={setLightboxUrl} />
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         ))}
@@ -287,6 +294,42 @@ export default function DiagnosticSessionScreen() {
             <div style={{ fontSize: 12, color: C.t3, marginTop: 12 }}>Este link vence en 72 horas</div>
             <button onClick={() => setShowShare(false)} style={{ marginTop: 16, width: "100%", padding: "10px", borderRadius: R.md, border: `1px solid ${C.b1}`, background: C.bgCard, color: C.t2, fontSize: 13, cursor: "pointer", fontFamily: FONT }}>Cerrar</button>
           </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PartCard({ part, onImageClick }) {
+  return (
+    <div style={{
+      padding: 12, borderRadius: R.md, border: `1px solid ${C.b1}`, background: C.bgCardAlt,
+    }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
+        {Ic.gear(C.pri, 16)}
+        <span style={{ fontSize: 13, fontWeight: 600, color: C.t1 }}>{part.description}</span>
+      </div>
+      <div style={{ fontSize: 13, fontFamily: MONO, fontWeight: 700, color: C.pri, marginBottom: 4 }}>
+        {part.partNumber} ({part.brand})
+      </div>
+      {part.sourceUrl && (
+        <a href={part.sourceUrl} target="_blank" rel="noopener noreferrer"
+          style={{ fontSize: 12, color: C.info, fontWeight: 500, textDecoration: "none" }}>
+          Ver en catálogo →
+        </a>
+      )}
+      {part.diagramUrl && (
+        <img src={part.diagramUrl} alt="Diagrama" onClick={() => onImageClick?.(part.diagramUrl)}
+          style={{ maxWidth: "100%", maxHeight: 160, borderRadius: R.sm, marginTop: 8, cursor: "pointer", objectFit: "contain" }} />
+      )}
+      {part.crossReferences?.length > 0 && (
+        <div style={{ marginTop: 6, fontSize: 12, color: C.t2 }}>
+          Alternativas: {part.crossReferences.map(cr => `${cr.brand} ${cr.partNumber}`).join(" · ")}
+        </div>
+      )}
+      {part.price && (
+        <div style={{ marginTop: 4, fontSize: 12, color: C.t3 }}>
+          Precio ref: USD {part.price}{part.source ? ` (${part.source})` : ""}
         </div>
       )}
     </div>
