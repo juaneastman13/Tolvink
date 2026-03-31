@@ -1103,15 +1103,15 @@ export default function LocationsScreen({ onBack, user }) {
                 style={{ width: "100%", padding: "10px 12px 10px 32px", borderRadius: R.lg, border: `1px solid ${C.b1}`, background: C.w, fontFamily: "inherit", fontSize: 13.2, color: C.t1, outline: "none", boxSizing: "border-box", boxShadow: C.shMd }} />
             </div>
           </div>
-          {/* Floating action buttons */}
-          <div style={{ position: "absolute", bottom: 80, right: 12, zIndex: 5, display: "flex", flexDirection: "column", gap: 8 }}>
-            {canWrite && <button onClick={() => { setDrawerOpen(true); setAddMenuOpen(true); }} style={{ width: 48, height: 48, borderRadius: R.pill, background: C.pri, border: "none", boxShadow: C.shMd, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              {Ic.plus(C.w, 22)}
+          {/* Floating buttons — right side under satellite */}
+          <div style={{ position: "absolute", top: 110, right: 12, zIndex: 5, display: "flex", flexDirection: "column", gap: 8 }}>
+            <button onClick={() => setDrawerOpen(true)} style={{ width: 42, height: 42, borderRadius: R.lg, background: C.w, border: `1px solid ${C.b1}`, boxShadow: C.shMd, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              {Ic.menu3(C.pri, 18)}
+            </button>
+            {canWrite && <button onClick={() => { setDrawerOpen(true); setAddMenuOpen(true); }} style={{ width: 42, height: 42, borderRadius: R.lg, background: C.pri, border: "none", boxShadow: C.shMd, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              {Ic.plus(C.w, 20)}
             </button>}
           </div>
-          <button onClick={() => setDrawerOpen(true)} style={{ position: "absolute", bottom: 80, left: 12, zIndex: 5, background: C.w, border: `1px solid ${C.b1}`, borderRadius: R.lg, padding: "10px 16px", boxShadow: C.shMd, cursor: "pointer", display: "flex", alignItems: "center", gap: 6, fontFamily: "inherit", fontSize: 14.3, fontWeight: 700, color: C.t1 }}>
-            {Ic.menu3(C.pri, 16)} Lista
-          </button>
         </>)}
 
         {!loading && allLocations.length === 0 && (
