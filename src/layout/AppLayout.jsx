@@ -553,7 +553,7 @@ export default function AppLayout({ fh, catalog, online, notif, isDesktop }) {
             </button>
             {compDropOpen && <>
               <div onClick={()=>setCompDropOpen(false)} style={{position:"fixed",inset:0,zIndex:99}}/>
-              <div style={{position:"absolute",top:"100%",right:0,marginTop:4,background:C.w,border:`1px solid ${C.b1}`,borderRadius: R.lg,boxShadow:C.shMd,zIndex:100,minWidth:200,overflow:"hidden"}}>
+              <div style={{position:"fixed",top:"auto",right:12,left:12,marginTop:4,background:C.w,border:`1px solid ${C.b1}`,borderRadius: R.lg,boxShadow:C.shMd,zIndex:100,overflow:"hidden",maxHeight:"70vh",overflowY:"auto"}}>
                 {auth.user.companies?.length > 1 && <>
                   <div style={{padding:"8px 14px 4px",fontSize:10,fontWeight:700,color:C.t3,textTransform:"uppercase",letterSpacing:0.5}}>Empresa</div>
                   {auth.user.companies.map(c=>{

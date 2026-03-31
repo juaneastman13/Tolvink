@@ -497,8 +497,12 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
   return (
     <div style={{ flex:1, position:"relative" }}>
     <div style={{ position:"absolute", inset:0, overflow:"auto", animation:"slideUp 0.25s ease" }}>
-      {/* Sticky header — back + product title */}
-      <div style={{ position:"sticky", top:0, zIndex:10, padding:"18px 18px 8px", background:C.bg }}>
+      {/* Sticky header — back + action button + share */}
+      <div style={{ position:"sticky", top:0, zIndex:10, padding:"12px 18px 8px", background:C.bg }}>
+        {/* Mobile: primary action in header */}
+        {!_isDesktop && primaryBtns.length > 0 && (
+          <div style={{ marginBottom:8 }}>{primaryBtns[0]}</div>
+        )}
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
           <button onClick={onBack} style={{ background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", fontSize:15, fontWeight:600, color:C.pri, padding:0, display:"flex", alignItems:"center", gap:4 }}>{Ic.chev(C.pri,18)} Volver</button>
           {freight.producerCompanyId && (
@@ -1121,14 +1125,12 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
           <Btn sm v="ghost" icon={Ic.edit(C.t2,14)} onClick={()=>onEdit(freight)} style={{width:"100%"}}>Editar flete</Btn>
         </div>
       )}
-      {/* Danger zone — cancel/reject (desktop: inline, mobile: ActionFooter below) */}
-      {_isDesktop && dangerBtns.length > 0 && (
+      {/* Danger zone — cancel/reject (inline for both desktop and mobile) */}
+      {dangerBtns.length > 0 && (
         <div style={{ background:`${C.err}06`, border:`1px solid ${C.err}15`, borderRadius: R.md, padding:10, marginBottom:8 }}>
           <div style={{ display:"flex", gap:8 }}>{dangerBtns}</div>
         </div>
       )}
-      {/* Mobile: spacer for fixed ActionFooter */}
-      {hasFooterActions && <div style={{ height:80 }} />}
       </div>
       <FileViewer file={viewFile} onClose={()=>setViewFile(null)} onOcr={handleOcr} ocrLoading={ocrLoading} onViewOcr={handleViewOcr}/>
       {ocrLoading && <div style={{ position:"fixed", inset:0, zIndex:250 }}><UploadOverlay uploading={ocrLoading} done={false} total={1} current={1} label="Extrayendo datos"/></div>}
@@ -1136,22 +1138,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
 
     </div>
 
-    {/* Mobile ActionFooter — sticky at bottom */}
-    {hasFooterActions && (
-      <div style={{
-        position:"sticky", bottom:0, left:0, right:0, zIndex:20,
-        background:C.w, borderTop:`1px solid ${C.b2}`,
-        padding:"10px 18px",
-        boxShadow:"0 -2px 12px rgba(0,0,0,0.08)",
-      }}>
-        {primaryBtns.length > 0 && (
-          <div style={{ display:"flex", flexDirection:"column", gap:8 }}>{primaryBtns}</div>
-        )}
-        {dangerBtns.length > 0 && (
-          <div style={{ display:"flex", gap:8, marginTop: primaryBtns.length > 0 ? 8 : 0 }}>{dangerBtns}</div>
-        )}
-      </div>
-    )}
+    {/* Mobile ActionFooter removed — primary action in sticky header, cancel/reject inline */}
 
     {/* Progress detail popup — centered in detail panel */}
       {showProgressModal && (()=>{
