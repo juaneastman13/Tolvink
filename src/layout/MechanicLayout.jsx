@@ -7,6 +7,7 @@ import { SL } from "../routing/Router";
 const ACCENT = "#475569"; // slate-600
 
 // Lazy-loaded mechanic screens
+const MechanicDashboardScreen = lazy(() => import("../screens/mechanic/MechanicDashboardScreen"));
 const MachinesListScreen = lazy(() => import("../screens/mechanic/MachinesListScreen"));
 const MachineWizard = lazy(() => import("../screens/mechanic/MachineWizard"));
 const MachineDetailScreen = lazy(() => import("../screens/mechanic/MachineDetailScreen"));
@@ -27,17 +28,6 @@ const SwapIcon = (c = C.t3, s = 18) => (
     <polyline points="7 23 3 19 7 15" /><path d="M21 13v2a4 4 0 0 1-4 4H3" />
   </svg>
 );
-
-// Placeholder screen factory
-function Placeholder({ title }) {
-  return (
-    <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 12, padding: 40 }}>
-      {WrenchIcon(C.muted, 48)}
-      <h2 style={{ fontSize: 18, fontWeight: 700, color: C.t1, fontFamily: FONT }}>{title}</h2>
-      <p style={{ fontSize: 14, color: C.t3, fontFamily: FONT }}>Próximamente</p>
-    </div>
-  );
-}
 
 const NAV_ITEMS = [
   { key: "dashboard", path: "/mechanic/dashboard", label: "Dashboard", icon: (c) => Ic.home(c, 20) },
@@ -181,7 +171,7 @@ export default function MechanicLayout() {
         {/* Page content */}
         <main style={{ flex: 1, overflow: "auto" }}>
           <Suspense fallback={<SL />}>
-            {currentKey === "dashboard" && <Placeholder title="Dashboard" />}
+            {currentKey === "dashboard" && <MechanicDashboardScreen />}
             {currentKey === "machines" && <MachinesListScreen />}
             {currentKey === "machineNew" && <MachineWizard />}
             {currentKey === "machineDetail" && <MachineDetailScreen />}

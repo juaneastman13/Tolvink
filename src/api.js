@@ -684,3 +684,6 @@ export async function apiSendDiagnosticMessage(sessionId, b) { return api(`/diag
 export async function apiResolveDiagnosticSession(id, b) { return api(`/diagnostic-sessions/${id}/resolve`, { body: b, method: 'PATCH' }); }
 export async function apiShareDiagnosticSession(id) { return api(`/diagnostic-sessions/${id}/share`, { body: {} }); }
 export async function apiGetPublicDiagnostic(shareToken) { return api(`/public/diagnostic-sessions/${shareToken}`); }
+
+// ── Mechanic Dashboard ──
+export async function apiGetMechanicDashboard() { return api('/mechanic/dashboard'); }
