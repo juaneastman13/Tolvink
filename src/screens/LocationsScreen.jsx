@@ -1091,16 +1091,13 @@ export default function LocationsScreen({ onBack, user }) {
           </button>
         </>}
 
-        {!isDesktop && !drawerOpen && (
-          <button onClick={onBack} style={{ position: "absolute", top: 62, left: 12, zIndex: 5, width: 44, height: 44, borderRadius: R.pill, background: C.w, border: `1px solid ${C.b1}`, boxShadow: C.sh, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            {Ic.chev(C.pri, 20)}
-          </button>
-        )}
-
         {!isDesktop && !drawerOpen && (<>
-          {/* Floating search bar */}
-          <div style={{ position: "absolute", top: 62, left: 60, right: 12, zIndex: 5 }}>
-            <div style={{ position: "relative" }}>
+          {/* Floating search bar with back button */}
+          <div style={{ position: "absolute", top: 12, left: 12, right: 12, zIndex: 5, display: "flex", gap: 8, alignItems: "center" }}>
+            <button onClick={onBack} style={{ width: 42, height: 42, borderRadius: R.lg, background: C.w, border: `1px solid ${C.b1}`, boxShadow: C.shMd, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              {Ic.chev(C.pri, 18)}
+            </button>
+            <div style={{ position: "relative", flex: 1 }}>
               <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", display: "flex" }}>{Ic.srch(C.t3, 14)}</span>
               <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar..."
                 style={{ width: "100%", padding: "10px 12px 10px 32px", borderRadius: R.lg, border: `1px solid ${C.b1}`, background: C.w, fontFamily: "inherit", fontSize: 13.2, color: C.t1, outline: "none", boxSizing: "border-box", boxShadow: C.shMd }} />
