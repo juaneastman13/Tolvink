@@ -1047,8 +1047,8 @@ export function AiChatFab({ onClick, open }) {
       onClick={onClick}
       aria-label={open ? "Cerrar asistente" : "Abrir asistente IA"}
       style={{
-        position: "fixed", bottom: 80, right: 20, zIndex: 9999,
-        width: 56, height: 56, borderRadius: "50%",
+        position: "fixed", bottom: 80, right: 16, zIndex: 9999,
+        width: window.innerWidth < 768 ? 40 : 56, height: window.innerWidth < 768 ? 40 : 56, borderRadius: "50%",
         background: `linear-gradient(135deg, ${C.pri}, ${C.priLt})`,
         border: "none", cursor: "pointer",
         boxShadow: `0 4px 16px rgba(26,107,55,0.35)`,
@@ -1058,14 +1058,14 @@ export function AiChatFab({ onClick, open }) {
       onMouseEnter={e => { e.currentTarget.style.transform = "scale(1.08)"; }}
       onMouseLeave={e => { e.currentTarget.style.transform = "scale(1)"; }}
     >
-      {open ? Ic.cross(C.tOn, 22) : (
+      {open ? Ic.cross(C.tOn, window.innerWidth < 768 ? 16 : 22) : (
         <div style={{
           display: "flex", alignItems: "center", justifyContent: "center",
           opacity: fading ? 0 : 1,
           transform: fading ? "scale(0.7)" : "scale(1)",
           transition: "opacity 0.2s ease, transform 0.2s ease",
         }}>
-          {FAB_ICONS[idx](24)}
+          {FAB_ICONS[idx](window.innerWidth < 768 ? 18 : 24)}
         </div>
       )}
     </button>
