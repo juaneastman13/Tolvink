@@ -1589,11 +1589,9 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
           <div onClick={()=>setShowConfirmModal(false)} style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.45)" }}/>
           <div style={{ position:"relative", background:C.bg, borderRadius:_isDesktop?16:0, width:"100%", maxWidth:_isDesktop?720:"none", maxHeight:_isDesktop?"calc(100vh - 48px)":"none", height:_isDesktop?"auto":"100%", overflow:"auto", animation:"slideUp 0.25s ease", boxShadow:_isDesktop?"0 -4px 32px rgba(0,0,0,0.18)":"none" }}>
             {/* Header */}
-            <div style={{ position:"sticky", top:0, zIndex:2, background:C.bg, padding:"16px 20px 12px", borderBottom:`1px solid ${C.b2}`, borderRadius:_isDesktop?"16px 16px 0 0":"16px 16px 0 0", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-              {_isDesktop
-                ? <div style={{ flex:1, marginRight:12 }}><Btn full icon={Ic.chk(C.w,16)} disabled={submitting||isConsulta} onClick={submit}>{submitting?"Enviando...":(isConsulta?"Sin permisos (CONSULTA)":"Solicitar Flete")}</Btn></div>
-                : <span style={{ fontSize:18, fontWeight:800, color:C.t1 }}>Confirmar Flete</span>}
-              <button aria-label="Cerrar" onClick={()=>setShowConfirmModal(false)} style={{ background:"none", border:"none", cursor:"pointer", padding:4, minWidth:40, minHeight:40, display:"flex", alignItems:"center", justifyContent:"center" }}>{Ic.cross(C.t3,20)}</button>
+            <div style={{ position:"sticky", top:0, zIndex:2, background:C.bg, padding:"12px 20px", borderBottom:`1px solid ${C.b2}`, borderRadius:"16px 16px 0 0", display:"flex", alignItems:"center", gap:8 }}>
+              <div style={{ flex:1, minWidth:0 }}><Btn full icon={Ic.chk(C.w,16)} disabled={submitting||isConsulta} onClick={submit}>{submitting?"Enviando...":(isConsulta?"Sin permisos (CONSULTA)":"Solicitar Flete")}</Btn></div>
+              <button aria-label="Cerrar" onClick={()=>setShowConfirmModal(false)} style={{ background:"none", border:"none", cursor:"pointer", padding:4, minWidth:40, minHeight:40, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{Ic.cross(C.t3,20)}</button>
             </div>
 
             <div style={{ padding:"16px 20px 24px", display:"flex", flexDirection:_isDesktop&&finalOrigin&&finalDest?"row":"column", gap:_isDesktop?20:0 }}>
