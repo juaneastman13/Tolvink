@@ -125,7 +125,7 @@ function MobileStepModal({ open, title, summary, children, onClose, onPrev, step
           )}
         </div>
         {summary && <div style={{ padding:"10px 20px", background:C.priPale, fontSize:12.1, color:C.pri, fontWeight:600 }}>{summary}</div>}
-        <div style={{ padding:"16px 20px 24px" }}>
+        <div style={{ padding:"16px 20px 8px" }}>
           {children}
         </div>
       </div>
@@ -136,7 +136,7 @@ function MobileStepModal({ open, title, summary, children, onClose, onPrev, step
 function NextStepBtn({ complete, onClick, label, onPrev }) {
   const isConfirm = !!label;
   return (
-    <div style={{ marginTop:16, display:"flex", justifyContent:onPrev?"space-between":"flex-end", gap:8 }}>
+    <div style={{ position:"sticky", bottom:0, zIndex:2, background:C.bg, padding:"12px 0 4px", marginTop:16, borderTop:`1px solid ${C.b2}`, display:"flex", justifyContent:onPrev?"space-between":"flex-end", gap:8 }}>
       {onPrev && <button type="button" onClick={onPrev} style={{ padding:"11px 20px", borderRadius: R.md, border:`1.5px solid ${C.b1}`, background:C.w, color:C.t2, cursor:"pointer", fontSize:14.3, fontWeight:700, fontFamily:"inherit", display:"flex", alignItems:"center", gap:8, transition:"all 0.2s ease" }}>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg> Anterior
       </button>}
