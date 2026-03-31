@@ -369,7 +369,7 @@ export default function QueueBoardScreen({ user, onBack, onNav, catalog }) {
   const [error, setError] = useState(null);
   const [activeId, setActiveId] = useState(null);
   const [toast, setToast] = useState(null);
-  const [view, setView] = useState(typeof window !== "undefined" && window.innerWidth > 900 ? "queue" : "summary");
+  const [view, setView] = useState(typeof window !== "undefined" && window.innerWidth > 900 ? "queue" : "panel");
   const [panelSearch, setPanelSearch] = useState("");
   const [panelOpen, setPanelOpen] = useState(typeof window !== "undefined" && window.innerWidth > 900);
   const [confirmModal, setConfirmModal] = useState(null);
@@ -686,6 +686,12 @@ export default function QueueBoardScreen({ user, onBack, onNav, catalog }) {
 
         {data && view === "summary" && <div style={{ flex: 1 }}><SummaryView data={data} /></div>}
 
+        {data && view === "panel" && (
+          <div style={{ flex: 1 }}>
+            <AvailablePanel groups={data.availableTrucks || []} search={panelSearch} onSearchChange={setPanelSearch} isDesktop={false} panelFilter={panelFilter} onFilter={setPanelFilter} onShowQueue={showTruckQueue} />
+          </div>
+        )}
+
         {data && view === "queue" && (
           <DndContext sensors={sensors} collisionDetection={customCollision} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
             <div style={{ flex: 1, minWidth: 0, overflow: "auto" }}>
@@ -706,18 +712,6 @@ export default function QueueBoardScreen({ user, onBack, onNav, catalog }) {
 
             {isDesktop && (
               <AvailablePanel groups={data.availableTrucks || []} search={panelSearch} onSearchChange={setPanelSearch} isDesktop={isDesktop} panelFilter={panelFilter} onFilter={setPanelFilter} onShowQueue={showTruckQueue} />
-            )}
-            {!isDesktop && panelOpen && (
-              <div style={{ position:"fixed", inset:0, zIndex:200, display:"flex", flexDirection:"column", justifyContent:"flex-end" }}>
-                <div onClick={() => setPanelOpen(false)} style={{ flex:1, background:"rgba(0,0,0,0.3)" }} />
-                <div style={{ background:C.w, borderRadius:"16px 16px 0 0", maxHeight:"60vh", overflow:"auto", boxShadow:"0 -4px 20px rgba(0,0,0,0.15)" }}>
-                  <div style={{ padding:"12px 18px 8px", borderBottom:`1px solid ${C.b2}`, display:"flex", justifyContent:"space-between", alignItems:"center", position:"sticky", top:0, background:C.w, zIndex:1 }}>
-                    <span style={{ fontSize:15, fontWeight:700, color:C.t1 }}>Camiones disponibles</span>
-                    <button onClick={() => setPanelOpen(false)} style={{ background:"none", border:"none", cursor:"pointer", padding:4 }}>{Ic.cross(C.t3, 18)}</button>
-                  </div>
-                  <AvailablePanel groups={data.availableTrucks || []} search={panelSearch} onSearchChange={setPanelSearch} isDesktop={false} panelFilter={panelFilter} onFilter={setPanelFilter} onShowQueue={showTruckQueue} />
-                </div>
-              </div>
             )}
 
             <DragOverlay>
