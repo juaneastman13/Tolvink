@@ -1097,11 +1097,25 @@ export default function LocationsScreen({ onBack, user }) {
           </button>
         )}
 
-        {!isDesktop && !drawerOpen && (
-          <button onClick={() => setDrawerOpen(true)} style={{ position: "absolute", bottom: 24, left: 16, zIndex: 5, background: C.w, border: `1px solid ${C.b1}`, borderRadius: R.lg, padding: "10px 16px", boxShadow: C.shMd, cursor: "pointer", display: "flex", alignItems: "center", gap: 6, fontFamily: "inherit", fontSize: 14.3, fontWeight: 700, color: C.t1 }}>
+        {!isDesktop && !drawerOpen && (<>
+          {/* Floating search bar */}
+          <div style={{ position: "absolute", top: 62, left: 60, right: 12, zIndex: 5 }}>
+            <div style={{ position: "relative" }}>
+              <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", display: "flex" }}>{Ic.srch(C.t3, 14)}</span>
+              <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar..."
+                style={{ width: "100%", padding: "10px 12px 10px 32px", borderRadius: R.lg, border: `1px solid ${C.b1}`, background: C.w, fontFamily: "inherit", fontSize: 13.2, color: C.t1, outline: "none", boxSizing: "border-box", boxShadow: C.shMd }} />
+            </div>
+          </div>
+          {/* Floating action buttons */}
+          <div style={{ position: "absolute", bottom: 80, right: 12, zIndex: 5, display: "flex", flexDirection: "column", gap: 8 }}>
+            {canWrite && <button onClick={() => { setDrawerOpen(true); setAddMenuOpen(true); }} style={{ width: 48, height: 48, borderRadius: R.pill, background: C.pri, border: "none", boxShadow: C.shMd, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              {Ic.plus(C.w, 22)}
+            </button>}
+          </div>
+          <button onClick={() => setDrawerOpen(true)} style={{ position: "absolute", bottom: 80, left: 12, zIndex: 5, background: C.w, border: `1px solid ${C.b1}`, borderRadius: R.lg, padding: "10px 16px", boxShadow: C.shMd, cursor: "pointer", display: "flex", alignItems: "center", gap: 6, fontFamily: "inherit", fontSize: 14.3, fontWeight: 700, color: C.t1 }}>
             {Ic.menu3(C.pri, 16)} Lista
           </button>
-        )}
+        </>)}
 
         {!loading && allLocations.length === 0 && (
           <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none", zIndex: 2 }}>
