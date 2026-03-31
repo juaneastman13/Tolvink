@@ -852,7 +852,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
           open={true}
           title={{producer:"Productor",product:"Producto",quantity:"Cantidad",origin:"Origen",ownfleet:"Transporte",destination:"Destino",schedule:"Fecha y hora",transport:"Asignar transporte"}[activeSection]||""}
           summary={secSummary[activeSection]||undefined}
-          onClose={()=>{ const flow=buildFlow(); const idx=flow.indexOf(activeSection); if(idx>0)setActiveSection(flow[idx-1]); }}
+          onClose={()=>{ if(window.confirm("¿Cancelar la solicitud de flete?")) onBack(); }}
           onPrev={(()=>{ const flow=buildFlow(); const idx=flow.indexOf(activeSection); return idx>0 ? ()=>setActiveSection(flow[idx-1]) : null; })()}
           stepIndex={(()=>{ const flow=buildFlow(); return flow.indexOf(activeSection)+1; })()}
           totalSteps={buildFlow().length}
