@@ -1,10 +1,16 @@
-import { useState, useMemo, useEffect, lazy, Suspense } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useMemo, useEffect, lazy, Suspense } from "react";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { C, R, FONT, Ic } from "../theme";
 import { useAuthContext } from "../providers/AuthProvider";
 import { SL } from "../routing/Router";
 
 const ACCENT = "#475569"; // slate-600
+
+// Lazy-loaded mechanic screens
+const MachinesListScreen = lazy(() => import("../screens/mechanic/MachinesListScreen"));
+const MachineWizard = lazy(() => import("../screens/mechanic/MachineWizard"));
+const MachineDetailScreen = lazy(() => import("../screens/mechanic/MachineDetailScreen"));
+const MachineQrRedirect = lazy(() => import("../screens/mechanic/MachineQrRedirect"));
 
 // Wrench icon
 const WrenchIcon = (c = ACCENT, s = 20) => (
@@ -51,6 +57,9 @@ export default function MechanicLayout() {
 
   const currentKey = useMemo(() => {
     const p = location.pathname;
+    if (p === "/mechanic/machines/new") return "machineNew";
+    if (p.startsWith("/mechanic/machines/qr/")) return "machineQr";
+    if (p.startsWith("/mechanic/machines/")) return "machineDetail";
     if (p.startsWith("/mechanic/machines")) return "machines";
     return "dashboard";
   }, [location.pathname]);
@@ -171,7 +180,10 @@ export default function MechanicLayout() {
         <main style={{ flex: 1, overflow: "auto" }}>
           <Suspense fallback={<SL />}>
             {currentKey === "dashboard" && <Placeholder title="Dashboard" />}
-            {currentKey === "machines" && <Placeholder title="Mis Máquinas" />}
+            {currentKey === "machines" && <MachinesListScreen />}
+            {currentKey === "machineNew" && <MachineWizard />}
+            {currentKey === "machineDetail" && <MachineDetailScreen />}
+            {currentKey === "machineQr" && <MachineQrRedirect />}
           </Suspense>
         </main>
 

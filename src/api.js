@@ -639,3 +639,25 @@ export async function apiWebChatAudio(blob) {
   if (!res.ok) throw new ApiError(res.status, await res.json().catch(() => ({})));
   return res.json();
 }
+
+// ── Machine Templates (public) ──
+export async function apiListTemplates(q={}) { const p = new URLSearchParams(); if(q.brand) p.set('brand',q.brand); if(q.machineType) p.set('machineType',q.machineType); if(q.search) p.set('search',q.search); return api(`/machine-templates?${p}`); }
+export async function apiGetTemplate(id) { return api(`/machine-templates/${id}`); }
+export async function apiGetTemplateBrands() { return api('/machine-templates/brands'); }
+export async function apiGetTemplateSeries(brand) { return api(`/machine-templates/brands/${encodeURIComponent(brand)}/series`); }
+
+// ── Machines ──
+export async function apiListMachines(q={}) { const p = new URLSearchParams(); if(q.machineType) p.set('machineType',q.machineType); if(q.status) p.set('status',q.status); if(q.search) p.set('search',q.search); return api(`/machines?${p}`); }
+export async function apiGetMachine(id) { return api(`/machines/${id}`); }
+export async function apiCreateMachine(b) { return api('/machines', { body: b }); }
+export async function apiUpdateMachine(id, b) { return api(`/machines/${id}`, { body: b, method: 'PATCH' }); }
+export async function apiDeleteMachine(id) { return api(`/machines/${id}`, { method: 'DELETE' }); }
+export async function apiLookupMachineQr(qrCode) { return api(`/machines/qr/${qrCode}`); }
+
+// ── Machine Modifications ──
+export async function apiAddModification(machineId, b) { return api(`/machines/${machineId}/modifications`, { body: b }); }
+export async function apiListModifications(machineId) { return api(`/machines/${machineId}/modifications`); }
+
+// ── Machine Repair History ──
+export async function apiAddRepair(machineId, b) { return api(`/machines/${machineId}/repair-history`, { body: b }); }
+export async function apiListRepairs(machineId) { return api(`/machines/${machineId}/repair-history`); }
