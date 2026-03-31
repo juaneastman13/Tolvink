@@ -501,13 +501,13 @@ export function FreightFileUpload({ freightId, step, onUploaded }) {
               ) : (
                 <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: C.bg, padding: 4 }}>
                   {Ic.doc(C.pri, 20)}
-                  <span style={{ fontSize: 8.8, color: C.t3, textAlign: "center", marginTop: 2, wordBreak: "break-all", lineHeight: 1.1 }}>{f.name?.slice(-12)}</span>
+                  <span style={{ fontSize: 10, color: C.t3, textAlign: "center", marginTop: 2, wordBreak: "break-all", lineHeight: 1.1 }}>{f.name?.slice(-12)}</span>
                 </div>
               )}
               {f.done && <div style={{ position: "absolute", top: 3, right: 3, width: 18, height: 18, borderRadius: R.md, background: C.ok, display: "flex", alignItems: "center", justifyContent: "center" }}>{Ic.chk("#fff", 12)}</div>}
               {f.uploading && <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center" }}><div style={{ width: 20, height: 20, border: "2px solid rgba(255,255,255,0.3)", borderTopColor: "#fff", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} /></div>}
               {!f.done && !f.uploading && !f.error && <button onClick={() => removeFile(i)} style={{ position: "absolute", top: -2, right: -2, width: 26, height: 26, borderRadius: R.lg, background: C.err, border: "2px solid #fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>{Ic.cross("#fff", 11)}</button>}
-              {f.error && <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: C.err, color: C.w, fontSize: 8.8, textAlign: "center", padding: 2 }}>Error</div>}
+              {f.error && <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: C.err, color: C.w, fontSize: 10, textAlign: "center", padding: 2 }}>Error</div>}
             </div>
           ))}
         </div>

@@ -877,7 +877,7 @@ export default function LocationsScreen({ onBack, user }) {
       {/* ── PANEL ── */}
       <div ref={panelRef} style={{
         ...(isDesktop ? { width: "30%", minWidth: 320, maxWidth: 420, borderRight: `1px solid ${C.b1}`, position: "relative" } : {
-          position: "fixed", left: 0, top: 0, bottom: 0, width: "100vw",
+          position: "fixed", left: 0, top: 0, bottom: 0, width: "100%",
           transform: drawerOpen ? "translateX(0)" : "translateX(-100%)", transition: "transform 250ms ease-out", zIndex: 101, boxShadow: drawerOpen ? C.shLg : "none",
         }),
         background: C.w, display: "flex", flexDirection: "column", overflow: "hidden",

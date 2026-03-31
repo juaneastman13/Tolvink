@@ -1136,12 +1136,12 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
 
     </div>
 
-    {/* Mobile ActionFooter — fixed above BottomNav */}
+    {/* Mobile ActionFooter — sticky at bottom */}
     {hasFooterActions && (
       <div style={{
-        position:"absolute", bottom:0, left:0, right:0, zIndex:20,
+        position:"sticky", bottom:0, left:0, right:0, zIndex:20,
         background:C.w, borderTop:`1px solid ${C.b2}`,
-        padding:"10px 18px max(10px, env(safe-area-inset-bottom))",
+        padding:"10px 18px",
         boxShadow:"0 -2px 12px rgba(0,0,0,0.08)",
       }}>
         {primaryBtns.length > 0 && (

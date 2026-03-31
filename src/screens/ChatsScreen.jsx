@@ -688,6 +688,7 @@ export default function ChatsScreen({ user, openConvId, onConvOpened, isDesktop,
               </button>
               <AttachMenu open={showChatAttach} onClose={() => setShowChatAttach(false)} onCamera={() => chatCamRef.current?.click()} onGallery={() => chatGalRef.current?.click()} onFiles={() => chatFileRef.current?.click()} />
               <input ref={inputRef} value={msgText} onChange={e => { setMsgText(e.target.value); sendTyping(); }} onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
+                onFocus={() => setTimeout(() => inputRef.current?.scrollIntoView({ behavior:"smooth", block:"nearest" }), 300)}
                 placeholder="Escribí un mensaje..." style={{ flex: 1, padding: "10px 14px", borderRadius: R.pill, border: `1.5px solid ${C.b1}`, background: C.bg, color: C.t1, fontSize: 14.3, fontFamily: "inherit", outline: "none" }} />
               <button onClick={handleSend} disabled={sending || !msgText.trim()} style={{ width: 40, height: 40, borderRadius: R.pill, background: msgText.trim() ? C.pri : C.b1, border: "none", cursor: msgText.trim() ? "pointer" : "default", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                 {Ic.send(C.w, 16)}

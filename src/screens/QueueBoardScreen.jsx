@@ -88,7 +88,7 @@ function TruckBlock({ assignment, isOverlay, onUnassign }) {
       {isExt && <span style={{ fontSize: 8, fontWeight: 700, color: C.sec, background: `${C.sec}15`, padding: "1px 4px", borderRadius: R.pill }}>EXT</span>}
       {canDrag && onUnassign && (
         <button onClick={(e) => { e.stopPropagation(); onUnassign(a.id); }}
-          style={{ background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex", lineHeight: 1 }}>
+          style={{ background: "none", border: "none", cursor: "pointer", padding: 6, display: "flex", lineHeight: 1, minWidth: 28, minHeight: 28, alignItems: "center", justifyContent: "center" }}>
           {Ic.cross(C.err, 12)}
         </button>
       )}
