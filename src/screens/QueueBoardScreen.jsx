@@ -371,7 +371,7 @@ export default function QueueBoardScreen({ user, onBack, onNav, catalog }) {
   const [toast, setToast] = useState(null);
   const [view, setView] = useState("queue");
   const [panelSearch, setPanelSearch] = useState("");
-  const [panelOpen, setPanelOpen] = useState(true);
+  const [panelOpen, setPanelOpen] = useState(typeof window !== "undefined" && window.innerWidth > 900);
   const [confirmModal, setConfirmModal] = useState(null);
   const [truckQueueModal, setTruckQueueModal] = useState(null); // { truckId, plate, queue, loading }
   const [assigning, setAssigning] = useState(false);
@@ -680,7 +680,7 @@ export default function QueueBoardScreen({ user, onBack, onNav, catalog }) {
         </div>
       )}
 
-      <div style={{ flex: 1, overflow: "auto", display: "flex", gap: 12, padding: "0 18px 18px" }}>
+      <div style={{ flex: 1, overflow: "auto", display: "flex", flexDirection: isDesktop ? "row" : "column", gap: 12, padding: "0 18px 18px" }}>
         {loading && !data && <div style={{ textAlign: "center", padding: 40, color: C.t3, flex: 1 }}>Cargando tablero...</div>}
         {error && <div style={{ background: C.errPale, color: C.err, padding: 14, borderRadius: R.md, fontSize: 13, flex: 1 }}>{error}</div>}
 
@@ -704,8 +704,20 @@ export default function QueueBoardScreen({ user, onBack, onNav, catalog }) {
               }).map(f => <FreightRow key={f.id} freight={f} onUnassign={handleUnassign} onNav={onNav} />)}
             </div>
 
-            {(isDesktop || panelOpen) && (
+            {isDesktop && (
               <AvailablePanel groups={data.availableTrucks || []} search={panelSearch} onSearchChange={setPanelSearch} isDesktop={isDesktop} panelFilter={panelFilter} onFilter={setPanelFilter} onShowQueue={showTruckQueue} />
+            )}
+            {!isDesktop && panelOpen && (
+              <div style={{ position:"fixed", inset:0, zIndex:200, display:"flex", flexDirection:"column", justifyContent:"flex-end" }}>
+                <div onClick={() => setPanelOpen(false)} style={{ flex:1, background:"rgba(0,0,0,0.3)" }} />
+                <div style={{ background:C.w, borderRadius:"16px 16px 0 0", maxHeight:"60vh", overflow:"auto", boxShadow:"0 -4px 20px rgba(0,0,0,0.15)" }}>
+                  <div style={{ padding:"12px 18px 8px", borderBottom:`1px solid ${C.b2}`, display:"flex", justifyContent:"space-between", alignItems:"center", position:"sticky", top:0, background:C.w, zIndex:1 }}>
+                    <span style={{ fontSize:15, fontWeight:700, color:C.t1 }}>Camiones disponibles</span>
+                    <button onClick={() => setPanelOpen(false)} style={{ background:"none", border:"none", cursor:"pointer", padding:4 }}>{Ic.cross(C.t3, 18)}</button>
+                  </div>
+                  <AvailablePanel groups={data.availableTrucks || []} search={panelSearch} onSearchChange={setPanelSearch} isDesktop={false} panelFilter={panelFilter} onFilter={setPanelFilter} onShowQueue={showTruckQueue} />
+                </div>
+              </div>
             )}
 
             <DragOverlay>
