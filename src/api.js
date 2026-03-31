@@ -685,5 +685,20 @@ export async function apiResolveDiagnosticSession(id, b) { return api(`/diagnost
 export async function apiShareDiagnosticSession(id) { return api(`/diagnostic-sessions/${id}/share`, { body: {} }); }
 export async function apiGetPublicDiagnostic(shareToken) { return api(`/public/diagnostic-sessions/${shareToken}`); }
 
+// ── Diagnostic Media Upload ──
+export async function uploadDiagnosticMedia(file, sessionId) {
+  if (file.size > MAX_UPLOAD_SIZE) throw new Error('El archivo excede el tamaño máximo de 10MB');
+  if (!file.type.startsWith('image/')) throw new Error('Solo se permiten imágenes');
+  const processed = await compressImage(file).catch(() => file);
+  const ext = (processed.name?.split('.').pop() || 'jpg').replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+  const path = `diagnostics/${sessionId}/${Date.now()}_${Math.random().toString(36).slice(2,8)}.${ext}`;
+  const url = `${SUPABASE_URL}/storage/v1/object/${STORAGE_BUCKET}/${path}`;
+  const headers = { 'Content-Type': processed.type || 'image/jpeg' };
+  if (SUPABASE_ANON_KEY) { headers['apikey'] = SUPABASE_ANON_KEY; headers['Authorization'] = `Bearer ${SUPABASE_ANON_KEY}`; }
+  const res = await fetch(url, { method: 'POST', headers, body: processed });
+  if (!res.ok) throw new Error('Error al subir imagen');
+  return `${SUPABASE_URL}/storage/v1/object/public/${STORAGE_BUCKET}/${path}`;
+}
+
 // ── Mechanic Dashboard ──
 export async function apiGetMechanicDashboard() { return api('/mechanic/dashboard'); }
