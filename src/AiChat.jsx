@@ -1047,7 +1047,7 @@ export function AiChatFab({ onClick, open }) {
       onClick={onClick}
       aria-label={open ? "Cerrar asistente" : "Abrir asistente IA"}
       style={{
-        position: "fixed", bottom: 80, right: 16, zIndex: 9999,
+        position: "fixed", bottom: window.innerWidth < 768 ? 90 : 80, right: 16, zIndex: 9999,
         width: window.innerWidth < 768 ? 40 : 56, height: window.innerWidth < 768 ? 40 : 56, borderRadius: "50%",
         background: `linear-gradient(135deg, ${C.pri}, ${C.priLt})`,
         border: "none", cursor: "pointer",
