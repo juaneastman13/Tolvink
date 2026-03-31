@@ -118,6 +118,7 @@ export default function LocationsScreen({ onBack, user }) {
   const [expandedField, setExpandedField] = useState(null);
   const [mapFilters, setMapFilters] = useState({ field: true, lot: true, poi: true });
   const [mapType, setMapType] = useState("roadmap");
+  const [mapOptionsOpen, setMapOptionsOpen] = useState(false);
   const [mapReady, setMapReady] = useState(false);
   const [mapSelectMode, setMapSelectMode] = useState(null); // null | { callback, currentPos }
   const selectMarkerRef = useRef(null);
@@ -1073,21 +1074,26 @@ export default function LocationsScreen({ onBack, user }) {
         )}
 
         {!mapSelectMode && <>
-          {/* Right column: satellite + filter chips (vertical) */}
+          {/* Right column: collapsible options menu */}
           <div style={{ position: "absolute", top: isDesktop ? 12 : 60, right: 8, zIndex: 5, display: "flex", flexDirection: "column", gap: 6, alignItems: "flex-end" }}>
-            <button onClick={toggleMapType} style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "6px 12px", borderRadius: R.pill, background: mapType === "hybrid" ? C.t1 : C.bgCard, color: mapType === "hybrid" ? "#fff" : C.t2, border: `1px solid ${mapType === "hybrid" ? "transparent" : C.b1}`, cursor: "pointer", fontFamily: FONT, fontSize: 12.1, fontWeight: 700, boxShadow: C.sh, transition: "all 0.2s" }}>
-              {mapType === "hybrid" ? "Mapa" : "Satélite"}
+            <button onClick={() => setMapOptionsOpen(p => !p)} style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "6px 12px", borderRadius: R.pill, background: C.bgCard, color: C.t2, border: `1px solid ${C.b1}`, cursor: "pointer", fontFamily: FONT, fontSize: 12.1, fontWeight: 700, boxShadow: C.sh }}>
+              {Ic.eye(C.t2, 14)} {mapOptionsOpen ? "Cerrar" : "Opciones"}
             </button>
-            {FILTER_CHIPS.map(fc => {
-              const active = mapFilters[fc.key];
-              const typeColor = FILTER_COLORS[fc.key];
-              return (
-                <button key={fc.key} onClick={() => toggleMapFilter(fc.key)}
-                  style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "6px 12px", borderRadius: R.pill, background: active ? typeColor : C.bgCard, color: active ? C.tOn : C.t2, border: `1px solid ${active ? "transparent" : C.b1}`, cursor: "pointer", fontFamily: FONT, fontSize: 12.1, fontWeight: 700, boxShadow: C.sh, transition: "all 0.2s" }}>
-                  {fc.icon(active ? C.tOn : typeColor, 14)} {active ? "Ocultar" : "Ver"} {fc.label}
-                </button>
-              );
-            })}
+            {mapOptionsOpen && <>
+              <button onClick={toggleMapType} style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "6px 12px", borderRadius: R.pill, background: mapType === "hybrid" ? C.t1 : C.bgCard, color: mapType === "hybrid" ? "#fff" : C.t2, border: `1px solid ${mapType === "hybrid" ? "transparent" : C.b1}`, cursor: "pointer", fontFamily: FONT, fontSize: 12.1, fontWeight: 700, boxShadow: C.sh, transition: "all 0.2s" }}>
+                {mapType === "hybrid" ? "Mapa" : "Satélite"}
+              </button>
+              {FILTER_CHIPS.map(fc => {
+                const active = mapFilters[fc.key];
+                const typeColor = FILTER_COLORS[fc.key];
+                return (
+                  <button key={fc.key} onClick={() => toggleMapFilter(fc.key)}
+                    style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "6px 12px", borderRadius: R.pill, background: active ? typeColor : C.bgCard, color: active ? C.tOn : C.t2, border: `1px solid ${active ? "transparent" : C.b1}`, cursor: "pointer", fontFamily: FONT, fontSize: 12.1, fontWeight: 700, boxShadow: C.sh, transition: "all 0.2s" }}>
+                    {fc.icon(active ? C.tOn : typeColor, 14)} {active ? "Ocultar" : "Ver"} {fc.label}
+                  </button>
+                );
+              })}
+            </>}
           </div>
         </>}
 
