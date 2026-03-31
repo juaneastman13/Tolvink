@@ -35,6 +35,7 @@ export const ViewMapScreen = lazy(() => import("../screens/ViewMapScreen"));
 export const SharedLinkScreen = lazy(() => import("../screens/SharedLinkScreen"));
 
 // AI Chat
+export const PublicDiagnosticScreen = lazy(() => import("../screens/mechanic/PublicDiagnosticScreen"));
 export const AiChat = lazy(() => import("../AiChat").then(m => ({ default: m.default })));
 export const AiChatFabComp = lazy(() => import("../AiChat").then(m => ({ default: m.AiChatFab })));
 
@@ -125,6 +126,9 @@ export function renderPublicRoute(pathname) {
   if (pathname === "/daily-map") return <Suspense fallback={<SL/>}><DailyMapScreen /></Suspense>;
   if (pathname === "/live-freight") return <Suspense fallback={<SL/>}><LiveFreightScreen /></Suspense>;
 
+  const diagMatch = pathname.match(/^\/public\/diagnostic\/([a-zA-Z0-9-]+)$/);
+  if (diagMatch) return <Suspense fallback={<SL/>}><PublicDiagnosticScreen /></Suspense>;
+
   return null;
 }
 
@@ -147,7 +151,8 @@ export function isPublicPath(pathname) {
     || ["/pick-location","/track","/report","/daily-map","/live-freight","/ver-mapa"].includes(pathname)
     || /^\/(FLT-\d{4,}|F\d{2}-[A-Z]{3}\.\d{4})\/(ubicacion|informe)$/i.test(pathname)
     || /^\/campo\/[a-z0-9-]+\/ubicacion$/i.test(pathname)
-    || /^\/ubicacion\/[a-z0-9-]+$/i.test(pathname);
+    || /^\/ubicacion\/[a-z0-9-]+$/i.test(pathname)
+    || /^\/public\/diagnostic\/[a-zA-Z0-9-]+$/.test(pathname);
 }
 
 export const FREIGHT_SCREENS = new Set(["home","list","calendar","detail","reports","notifs"]);

@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { C, R, FONT, MONO, Ic } from "../../theme";
 import { apiGetMachine } from "../../api";
 import MaintenanceTab from "./MaintenanceTab";
+import DiagnosticsTab from "./DiagnosticsTab";
 
 const TYPE_LABELS = { tractor: "Tractor", harvester: "Cosechadora", seeder: "Sembradora", baler: "Enfardadora", implement: "Implemento", truck: "Camión", car: "Auto", motorcycle: "Moto", other: "Otro" };
 const TABS = ["Datos técnicos", "Historial", "Mantenimiento", "Diagnósticos"];
@@ -137,7 +138,7 @@ export default function MachineDetailScreen() {
       )}
 
       {tab === 2 && <MaintenanceTab machine={m} />}
-      {tab === 3 && <Placeholder title="Diagnósticos" />}
+      {tab === 3 && <DiagnosticsTab machine={m} />}
     </div>
   );
 }

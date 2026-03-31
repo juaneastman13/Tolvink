@@ -675,3 +675,12 @@ export async function apiCreatePlanFromTemplate(machineId) { return api(`/machin
 export async function apiGetMachineAlerts(machineId) { return api(`/machines/${machineId}/alerts`); }
 export async function apiGetAllMechanicAlerts() { return api('/mechanic/alerts'); }
 export async function apiUpdateAlertStatus(alertId, status) { return api(`/maintenance-alerts/${alertId}`, { body: { status }, method: 'PATCH' }); }
+
+// ── Diagnostic Sessions ──
+export async function apiCreateDiagnosticSession(machineId) { return api(`/machines/${machineId}/diagnostic-sessions`, { body: {} }); }
+export async function apiListDiagnosticSessions(machineId) { return api(`/machines/${machineId}/diagnostic-sessions`); }
+export async function apiGetDiagnosticSession(id) { return api(`/diagnostic-sessions/${id}`); }
+export async function apiSendDiagnosticMessage(sessionId, b) { return api(`/diagnostic-sessions/${sessionId}/message`, { body: b, timeout: 90000 }); }
+export async function apiResolveDiagnosticSession(id, b) { return api(`/diagnostic-sessions/${id}/resolve`, { body: b, method: 'PATCH' }); }
+export async function apiShareDiagnosticSession(id) { return api(`/diagnostic-sessions/${id}/share`, { body: {} }); }
+export async function apiGetPublicDiagnostic(shareToken) { return api(`/public/diagnostic-sessions/${shareToken}`); }
