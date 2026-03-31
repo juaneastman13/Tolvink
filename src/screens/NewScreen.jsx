@@ -637,8 +637,12 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
     setErrs(e);
     if(!ok || Object.keys(e).filter(k=>e[k]).length>0) {
       setShowIncomplete(true);
-      const fullFlow=["product","quantity","origin"]; if(showTruckSelect)fullFlow.push("ownfleet"); fullFlow.push("destination","schedule");
-      const first=fullFlow.find(s=>s==="ownfleet"?(showTruckSelect&&!form.fleetChoice):!secComplete[s]);
+      const errorMsgs = Object.values(e).filter(Boolean);
+      if (errorMsgs.length > 0) {
+        alert("Completá los campos obligatorios:\n\n• " + errorMsgs.join("\n• "));
+      }
+      const fullFlow = buildFlow().filter(s => s !== "producer");
+      const first=fullFlow.find(s=>!secComplete[s]);
       if(first){
         setActiveSection(first);
         requestAnimationFrame(() => {
