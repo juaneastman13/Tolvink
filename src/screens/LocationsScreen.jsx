@@ -1073,7 +1073,11 @@ export default function LocationsScreen({ onBack, user }) {
         )}
 
         {!mapSelectMode && <>
-          <div style={{ position: "absolute", top: 12, right: 6, zIndex: 5, display: "flex", gap: 6 }}>
+          {/* Right column: satellite + filter chips (vertical) */}
+          <div style={{ position: "absolute", top: isDesktop ? 12 : 60, right: 8, zIndex: 5, display: "flex", flexDirection: "column", gap: 6, alignItems: "flex-end" }}>
+            <button onClick={toggleMapType} style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "6px 12px", borderRadius: R.pill, background: mapType === "hybrid" ? C.t1 : C.bgCard, color: mapType === "hybrid" ? "#fff" : C.t2, border: `1px solid ${mapType === "hybrid" ? "transparent" : C.b1}`, cursor: "pointer", fontFamily: FONT, fontSize: 12.1, fontWeight: 700, boxShadow: C.sh, transition: "all 0.2s" }}>
+              {mapType === "hybrid" ? "Mapa" : "Satélite"}
+            </button>
             {FILTER_CHIPS.map(fc => {
               const active = mapFilters[fc.key];
               const typeColor = FILTER_COLORS[fc.key];
@@ -1085,10 +1089,6 @@ export default function LocationsScreen({ onBack, user }) {
               );
             })}
           </div>
-
-          <button onClick={toggleMapType} style={{ position: "absolute", top: isDesktop ? 52 : 62, right: 12, zIndex: 5, display: "inline-flex", alignItems: "center", gap: 5, padding: "6px 12px", borderRadius: R.pill, background: mapType === "hybrid" ? C.t1 : C.bgCard, color: mapType === "hybrid" ? "#fff" : C.t2, border: `1px solid ${mapType === "hybrid" ? "transparent" : C.b1}`, cursor: "pointer", fontFamily: FONT, fontSize: 12.1, fontWeight: 700, boxShadow: C.sh, transition: "all 0.2s" }}>
-            {mapType === "hybrid" ? "Mapa" : "Satélite"}
-          </button>
         </>}
 
         {!isDesktop && !drawerOpen && (<>
@@ -1103,14 +1103,14 @@ export default function LocationsScreen({ onBack, user }) {
                 style={{ width: "100%", padding: "10px 12px 10px 32px", borderRadius: R.lg, border: `1px solid ${C.b1}`, background: C.w, fontFamily: "inherit", fontSize: 13.2, color: C.t1, outline: "none", boxSizing: "border-box", boxShadow: C.shMd }} />
             </div>
           </div>
-          {/* Floating buttons — right side under satellite */}
-          <div style={{ position: "absolute", top: 110, right: 12, zIndex: 5, display: "flex", flexDirection: "column", gap: 8 }}>
-            <button onClick={() => setDrawerOpen(true)} style={{ width: 42, height: 42, borderRadius: R.lg, background: C.w, border: `1px solid ${C.b1}`, boxShadow: C.shMd, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              {Ic.menu3(C.pri, 18)}
-            </button>
+          {/* Floating buttons — bottom left */}
+          <div style={{ position: "absolute", bottom: 80, left: 12, zIndex: 5, display: "flex", flexDirection: "column", gap: 8 }}>
             {canWrite && <button onClick={() => { setDrawerOpen(true); setAddMenuOpen(true); }} style={{ width: 42, height: 42, borderRadius: R.lg, background: C.pri, border: "none", boxShadow: C.shMd, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
               {Ic.plus(C.w, 20)}
             </button>}
+            <button onClick={() => setDrawerOpen(true)} style={{ width: 42, height: 42, borderRadius: R.lg, background: C.w, border: `1px solid ${C.b1}`, boxShadow: C.shMd, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              {Ic.menu3(C.pri, 18)}
+            </button>
           </div>
         </>)}
 
