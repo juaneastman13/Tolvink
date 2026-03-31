@@ -88,7 +88,7 @@ export default function DiagnosticSessionScreen() {
   const messages = (session.messages || []);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100%", fontFamily: FONT }}>
+    <div style={{ display: "flex", flexDirection: "column", height: "100%", minHeight: 0, fontFamily: FONT }}>
       {/* Header */}
       <div style={{ padding: "12px 16px", borderBottom: `1px solid ${C.b1}`, background: C.bgCard, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
         <button onClick={() => navigate(`/mechanic/machines/${machineId}`)} style={{ border: "none", background: "none", cursor: "pointer", padding: 0 }}>{Ic.chev(C.t3, 18)}</button>
