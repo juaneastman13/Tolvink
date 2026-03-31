@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { C, R, FONT, MONO, Ic } from "../../theme";
 import { apiGetMachine } from "../../api";
 import MaintenanceTab from "./MaintenanceTab";
@@ -13,7 +13,9 @@ function Badge({ label, color = C.t3, bg = C.bgCardAlt }) {
 }
 
 export default function MachineDetailScreen() {
-  const { id } = useParams();
+  const location = useLocation();
+  // Extract ID from path: /mechanic/machines/:id
+  const id = location.pathname.split("/mechanic/machines/")[1]?.split("/")[0];
   const navigate = useNavigate();
   const [machine, setMachine] = useState(null);
   const [loading, setLoading] = useState(true);

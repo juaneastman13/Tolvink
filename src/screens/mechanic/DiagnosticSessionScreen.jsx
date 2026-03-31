@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { C, R, FONT, MONO, Ic } from "../../theme";
 import {
   apiGetDiagnosticSession, apiSendDiagnosticMessage,
@@ -7,7 +7,11 @@ import {
 } from "../../api";
 
 export default function DiagnosticSessionScreen() {
-  const { machineId, sessionId } = useParams();
+  const location = useLocation();
+  // Extract from: /mechanic/machines/:machineId/diagnostics/:sessionId
+  const parts = location.pathname.match(/\/mechanic\/machines\/([^/]+)\/diagnostics\/([^/]+)/);
+  const machineId = parts?.[1];
+  const sessionId = parts?.[2];
   const navigate = useNavigate();
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);

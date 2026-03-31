@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import { C, R, FONT } from "../../theme";
 import { apiGetPublicDiagnostic } from "../../api";
 
 export default function PublicDiagnosticScreen() {
-  const { shareToken } = useParams();
+  const location = useLocation();
+  const shareToken = location.pathname.split("/public/diagnostic/")[1];
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);

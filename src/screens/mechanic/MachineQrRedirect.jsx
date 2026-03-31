@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { C, FONT } from "../../theme";
 import { apiLookupMachineQr } from "../../api";
 
 export default function MachineQrRedirect() {
-  const { qrCode } = useParams();
+  const location = useLocation();
+  const qrCode = location.pathname.split("/mechanic/machines/qr/")[1];
   const navigate = useNavigate();
   const [error, setError] = useState(null);
 
