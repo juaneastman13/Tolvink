@@ -169,7 +169,7 @@ export default function MechanicLayout() {
         )}
 
         {/* Page content */}
-        <main style={{ flex: 1, overflow: "auto", display: "flex", flexDirection: "column", minHeight: 0 }}>
+        <main style={{ flex: 1, overflow: "auto", position: "relative", minHeight: 0 }}>
           <Suspense fallback={<SL />}>
             {currentKey === "dashboard" && <MechanicDashboardScreen />}
             {currentKey === "machines" && <MachinesListScreen />}
