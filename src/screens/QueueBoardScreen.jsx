@@ -223,6 +223,59 @@ function FreightRow({ freight, onUnassign, onNav }) {
   );
 }
 
+// ─── Mobile truck list (no drag-drop) ───
+function MobileTruckList({ groups, search, onSearchChange, onShowQueue }) {
+  const [collapsed, setCollapsed] = useState({});
+  const totalAll = groups.reduce((s, g) => s + g.trucks.length, 0);
+  const totalAvail = groups.reduce((s, g) => s + g.trucks.filter(t => !t.busy).length, 0);
+  const filtered = search
+    ? groups.map(g => ({ ...g, trucks: g.trucks.filter(t => t.plate.toLowerCase().includes(search.toLowerCase()) || g.companyName.toLowerCase().includes(search.toLowerCase())) })).filter(g => g.trucks.length > 0)
+    : groups;
+  return (
+    <div style={{ background: C.bgCard, border: `1px solid ${C.b1}`, borderRadius: R.lg, overflow: "hidden" }}>
+      <div style={{ padding: "10px 14px", borderBottom: `1px solid ${C.b1}` }}>
+        <div style={{ fontSize: 14, fontWeight: 700, color: C.t1, marginBottom: 8 }}>Camiones</div>
+        <div style={{ position: "relative" }}>
+          <div style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", display: "flex" }}>{Ic.srch(C.t3, 14)}</div>
+          <input value={search} onChange={e => onSearchChange(e.target.value)} placeholder="Buscar patente o empresa..."
+            style={{ width: "100%", padding: "9px 10px 9px 30px", borderRadius: R.md, border: `1px solid ${C.b1}`, background: C.bgInput, color: C.t1, fontSize: 13, fontFamily: FONT, outline: "none", boxSizing: "border-box" }} />
+        </div>
+      </div>
+      <div style={{ padding: "8px 12px" }}>
+        {filtered.length === 0 && <div style={{ textAlign: "center", padding: 20, color: C.t3, fontSize: 13 }}>Sin resultados</div>}
+        {filtered.map(g => {
+          const isOpen = !collapsed[g.companyId];
+          const availCount = g.trucks.filter(t => !t.busy).length;
+          return (
+            <div key={g.companyId} style={{ marginBottom: 10 }}>
+              <button onClick={() => setCollapsed(p => ({ ...p, [g.companyId]: !p[g.companyId] }))} style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "8px 4px", background: "none", border: "none", cursor: "pointer", fontFamily: FONT }}>
+                <div style={{ width: 4, height: 16, borderRadius: 2, background: g.isOwnFleet ? C.pri : C.sec, flexShrink: 0 }} />
+                <span style={{ fontSize: 14, fontWeight: 700, color: C.t1, flex: 1, textAlign: "left" }}>
+                  {g.isOwnFleet ? "Flota propia" : g.companyName}
+                  {!g.isOwnFleet && g.accessLevel === "READONLY" && <span style={{ fontSize: 9, fontWeight: 700, color: C.t3, background: C.bgCardAlt, padding: "2px 5px", borderRadius: R.xs, marginLeft: 6, verticalAlign: "middle" }}>CONSULTA</span>}
+                </span>
+                <span style={{ fontSize: 11, color: C.t3 }}>{availCount}/{g.trucks.length}</span>
+                <span style={{ fontSize: 11, color: C.t3, transform: isOpen ? "rotate(90deg)" : "rotate(0)", transition: "transform 0.15s" }}>▶</span>
+              </button>
+              {isOpen && g.trucks.map(t => (
+                <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 8px 8px 16px", borderBottom: `1px solid ${C.b2}` }}>
+                  <LicensePlate plate={t.plate} size="sm" />
+                  {t.assignCount > 0 && <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 20, height: 20, borderRadius: "50%", background: C.acc, color: C.w, fontSize: 10, fontWeight: 700 }}>{t.assignCount}</span>}
+                  {t.assignCount > 0 && onShowQueue && (
+                    <button onClick={() => onShowQueue(t.id, t.plate, g.isOwnFleet)} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: FONT, fontSize: 12, fontWeight: 600, color: C.acc, padding: 0 }}>ver cola</button>
+                  )}
+                  {t.assignCount === 0 && <span style={{ fontSize: 11, color: C.t3 }}>disponible</span>}
+                </div>
+              ))}
+            </div>
+          );
+        })}
+      </div>
+      <div style={{ padding: "8px 14px", borderTop: `1px solid ${C.b1}`, fontSize: 12, color: C.t3, textAlign: "center" }}>{totalAvail} disponibles / {totalAll} total</div>
+    </div>
+  );
+}
+
 // ─── Summary view ───
 function SummaryView({ data }) {
   const stats = useMemo(() => {
@@ -688,7 +741,8 @@ export default function QueueBoardScreen({ user, onBack, onNav, catalog }) {
 
         {data && view === "panel" && (
           <div style={{ flex: 1 }}>
-            <AvailablePanel groups={data.availableTrucks || []} search={panelSearch} onSearchChange={setPanelSearch} isDesktop={false} panelFilter={panelFilter} onFilter={setPanelFilter} onShowQueue={showTruckQueue} />
+            {/* Mobile-only: static truck list without drag-drop */}
+            <MobileTruckList groups={data.availableTrucks || []} search={panelSearch} onSearchChange={setPanelSearch} onShowQueue={showTruckQueue} />
           </div>
         )}
 
