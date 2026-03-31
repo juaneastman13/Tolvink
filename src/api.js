@@ -661,3 +661,17 @@ export async function apiListModifications(machineId) { return api(`/machines/${
 // ── Machine Repair History ──
 export async function apiAddRepair(machineId, b) { return api(`/machines/${machineId}/repair-history`, { body: b }); }
 export async function apiListRepairs(machineId) { return api(`/machines/${machineId}/repair-history`); }
+
+// ── Maintenance Records ──
+export async function apiCreateMaintenanceRecord(machineId, b) { return api(`/machines/${machineId}/maintenance-records`, { body: b }); }
+export async function apiListMaintenanceRecords(machineId, q={}) { const p = new URLSearchParams(); if(q.type) p.set('type',q.type); if(q.from) p.set('from',q.from); if(q.to) p.set('to',q.to); return api(`/machines/${machineId}/maintenance-records?${p}`); }
+
+// ── Maintenance Plans ──
+export async function apiGetMaintenancePlan(machineId) { return api(`/machines/${machineId}/maintenance-plan`); }
+export async function apiCreateMaintenancePlan(machineId, b) { return api(`/machines/${machineId}/maintenance-plan`, { body: b }); }
+export async function apiCreatePlanFromTemplate(machineId) { return api(`/machines/${machineId}/maintenance-plan/from-template`, { body: {} }); }
+
+// ── Maintenance Alerts ──
+export async function apiGetMachineAlerts(machineId) { return api(`/machines/${machineId}/alerts`); }
+export async function apiGetAllMechanicAlerts() { return api('/mechanic/alerts'); }
+export async function apiUpdateAlertStatus(alertId, status) { return api(`/maintenance-alerts/${alertId}`, { body: { status }, method: 'PATCH' }); }
