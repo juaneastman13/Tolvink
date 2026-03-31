@@ -369,7 +369,7 @@ export default function QueueBoardScreen({ user, onBack, onNav, catalog }) {
   const [error, setError] = useState(null);
   const [activeId, setActiveId] = useState(null);
   const [toast, setToast] = useState(null);
-  const [view, setView] = useState("queue");
+  const [view, setView] = useState(typeof window !== "undefined" && window.innerWidth > 900 ? "queue" : "summary");
   const [panelSearch, setPanelSearch] = useState("");
   const [panelOpen, setPanelOpen] = useState(typeof window !== "undefined" && window.innerWidth > 900);
   const [confirmModal, setConfirmModal] = useState(null);
@@ -558,14 +558,14 @@ export default function QueueBoardScreen({ user, onBack, onNav, catalog }) {
             <span style={{ fontSize: 18, fontWeight: 700, color: C.t1 }}>Colas de Camiones</span>
           </div>
           <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-            <div style={{ display: "flex", borderRadius: R.md, border: `1px solid ${C.b1}`, overflow: "hidden" }}>
+            {isDesktop && <div style={{ display: "flex", borderRadius: R.md, border: `1px solid ${C.b1}`, overflow: "hidden" }}>
               {[{ k: "queue", l: "Colas" }, { k: "summary", l: "Resumen" }].map(v => (
                 <button key={v.k} onClick={() => setView(v.k)}
                   style={{ padding: "5px 14px", border: "none", background: view === v.k ? C.pri : C.w, color: view === v.k ? C.w : C.t2, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: FONT }}>
                   {v.l}
                 </button>
               ))}
-            </div>
+            </div>}
             {view === "queue" && !isDesktop && (
               <button onClick={() => setPanelOpen(p => !p)}
                 style={{ padding: "5px 10px", borderRadius: R.md, border: `1px solid ${C.b1}`, background: panelOpen ? C.priPale : C.w, color: C.pri, fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: FONT }}>
@@ -578,7 +578,7 @@ export default function QueueBoardScreen({ user, onBack, onNav, catalog }) {
             </button>
           </div>
         </div>
-        {view === "queue" && <Legend />}
+        {view === "queue" && isDesktop && <Legend />}
       </div>
 
       {toast && <div style={{ position: "fixed", top: 16, left: "50%", transform: "translateX(-50%)", zIndex: 9999, padding: "10px 20px", borderRadius: R.md, background: toast.type === "err" ? C.err : C.ok, color: C.w, fontSize: 13, fontWeight: 600, fontFamily: FONT, boxShadow: C.shLg }}>{toast.msg}</div>}
