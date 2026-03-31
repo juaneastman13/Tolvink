@@ -4,6 +4,7 @@ import { useAuth } from "../hooks";
 import { setUser as setSentryUser } from "../sentry";
 import { C , R} from "../theme";
 import { SL, LandingScreen, isPublicPath, renderPublicRoute } from "../routing/Router";
+import api from "../api";
 
 // ======================== AUTH CONTEXT =================================
 const AuthContext = createContext(null);
@@ -53,8 +54,26 @@ function AuthRouteGuard({ children }) {
       return;
     }
     if (auth.user && !prevUser.current) {
-      // User just logged in — redirect to home
-      navigate("/", { replace: true });
+      // User just logged in — check module routing
+      const companyId = auth.user.activeCompanyId || auth.user.companyId;
+      if (companyId) {
+        api(`/companies/${companyId}/modules`).then(data => {
+          const { enabledModules = ["logistics"], preferredModule } = data || {};
+          if (enabledModules.length > 1 && !preferredModule) {
+            navigate("/module-selector", { replace: true });
+          } else if (enabledModules.length > 1 && preferredModule === "mechanic") {
+            navigate("/mechanic", { replace: true });
+          } else if (enabledModules.length === 1 && enabledModules[0] === "mechanic") {
+            navigate("/mechanic", { replace: true });
+          } else {
+            navigate("/", { replace: true });
+          }
+        }).catch(() => {
+          navigate("/", { replace: true });
+        });
+      } else {
+        navigate("/", { replace: true });
+      }
     }
     prevUser.current = auth.user;
     setSentryUser(auth.user);
