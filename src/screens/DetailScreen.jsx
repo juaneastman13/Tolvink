@@ -334,6 +334,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
 
   // Filter assignments visible to this user (works for both single and multi-truck)
   const [localAssignmentOrder, setLocalAssignmentOrder] = useState(null);
+  const [tripSelectorAction, setTripSelectorAction] = useState(null); // { key, label, assignments }
   // Reset local order when freight changes (new data from server)
   useEffect(() => { setLocalAssignmentOrder(null); }, [freight?.id, freight?.activeAssignments?.length]);
 
@@ -348,7 +349,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
   // Multi-truck: aggregate top-level actions from all visible trips
   const multiTruckTopActions = useMemo(() => {
     if (!isMultiTruck || isChoferQueued || isConsulta) return [];
-    const seen = new Map(); // key -> { label, color, icon, assignmentId, count }
+    const seen = new Map(); // key -> { label, color, icon, assignmentId, count, assignments: [] }
     for (const a of visibleAssignments) {
       const ts = a.tripStatus;
       const isOwn = a.transportCompanyId === freight?.originCompanyId;
@@ -389,8 +390,8 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
           entries.push({ key:"confirm_trip_loaded", label:"Confirmar carga", color:C.acc, icon:Ic.chk(C.w,16) });
       }
       for (const e of entries) {
-        if (!seen.has(e.key)) seen.set(e.key, { ...e, assignmentId: a.id, tripNumber: a.tripNumber, count: 1 });
-        else seen.get(e.key).count++;
+        if (!seen.has(e.key)) seen.set(e.key, { ...e, assignmentId: a.id, tripNumber: a.tripNumber, count: 1, assignments: [{ id: a.id, tripNumber: a.tripNumber, plate: a.plate, driverName: a.driverName, isExternal: a.isExternal, externalCompanyName: a.externalCompanyName }] });
+        else { const s = seen.get(e.key); s.count++; s.assignments.push({ id: a.id, tripNumber: a.tripNumber, plate: a.plate, driverName: a.driverName, isExternal: a.isExternal, externalCompanyName: a.externalCompanyName }); }
       }
     }
     return [...seen.values()];
@@ -635,12 +636,38 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
       {/* Multi-truck: top-level action buttons */}
       {multiTruckTopActions.length > 0 && <div style={{ display:"flex", flexDirection:"column", gap:8, marginBottom:12 }}>
         {multiTruckTopActions.map(a => (
-          <button key={a.key} disabled={actionLoading} onClick={()=>onTripAction && onTripAction(freight.id, a.assignmentId, a.key)}
+          <button key={a.key} disabled={actionLoading} onClick={() => {
+            if (a.count === 1) { onTripAction && onTripAction(freight.id, a.assignmentId, a.key); }
+            else { setTripSelectorAction({ key: a.key, label: a.label, color: a.color, assignments: a.assignments }); }
+          }}
             style={{ width:"100%", padding:"14px 20px", borderRadius: R.lg, border:"none", background:a.color, color:C.w, fontSize:17.3, fontWeight:700, cursor:actionLoading?"not-allowed":"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:8, opacity:actionLoading?0.6:1 }}>
             {a.icon} {actionLoading?"Procesando...":a.label}{a.count>1?` (${a.count})`:a.count===1?` #${a.tripNumber}`:""}
           </button>
         ))}
       </div>}
+      {/* Trip selector modal — choose which truck for the action */}
+      {tripSelectorAction && (
+        <div onClick={() => setTripSelectorAction(null)} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.45)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:300, padding:16 }}>
+          <div onClick={e => e.stopPropagation()} style={{ background:C.w, borderRadius: R.lg, padding:20, maxWidth:380, width:"100%", boxShadow:C.shLg }}>
+            <div style={{ fontSize:15, fontWeight:700, color:C.t1, marginBottom:14, fontFamily:"inherit" }}>
+              {tripSelectorAction.label} — ¿Cuál camión?
+            </div>
+            <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+              {tripSelectorAction.assignments.map(t => (
+                <button key={t.id} disabled={actionLoading} onClick={() => { setTripSelectorAction(null); onTripAction && onTripAction(freight.id, t.id, tripSelectorAction.key); }}
+                  style={{ display:"flex", alignItems:"center", gap:10, padding:"12px 14px", borderRadius: R.md, border:`1.5px solid ${C.b1}`, background:C.w, cursor:actionLoading?"not-allowed":"pointer", fontFamily:"inherit", width:"100%", textAlign:"left" }}>
+                  <span style={{ fontSize:13, fontWeight:700, color:C.t1 }}>#{t.tripNumber}</span>
+                  <span style={{ fontSize:13.5, fontWeight:600, color:C.t1, flex:1 }}>
+                    {t.plate || "Sin patente"}{t.isExternal ? " (externo)" : ""}
+                  </span>
+                  {t.driverName && <span style={{ fontSize:12, color:C.t3 }}>{t.driverName}</span>}
+                </button>
+              ))}
+            </div>
+            <button onClick={() => setTripSelectorAction(null)} style={{ marginTop:14, width:"100%", padding:"10px", borderRadius: R.md, border:`1px solid ${C.b1}`, background:C.w, color:C.t2, fontSize:13.5, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>Cancelar</button>
+          </div>
+        </div>
+      )}
 
       {/* Progress — circular stepper with integrated confirmations */}
       {(()=>{
