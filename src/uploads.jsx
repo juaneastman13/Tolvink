@@ -314,15 +314,22 @@ export function OcrResultModal({ result, onClose, freightId, docId, onSaved, sta
           <div style={{ display:"flex", flexDirection:"column", gap:editing?10:8 }}>
             {editing ? (
               sortedEditKeys.map(key => (
-                <div key={key} style={{ display:"flex", flexDirection:"column", gap:3 }}>
-                  <label style={{ fontWeight:700, color:C.t2, fontSize:11.6 }}>{ocrLabel(key)}</label>
-                  <input
-                    value={editValues[key] || ""}
-                    onChange={e => setEditValues(prev => ({ ...prev, [key]: e.target.value }))}
-                    style={{ padding:"8px 10px", borderRadius: R.md, border:`1.5px solid ${C.b1}`, fontSize:13.2, fontFamily:"inherit", color:C.t1, background:C.bg, outline:"none", transition:"border-color 0.15s" }}
-                    onFocus={e => e.target.style.borderColor = C.pri}
-                    onBlur={e => e.target.style.borderColor = C.b1}
-                  />
+                <div key={key} style={{ display:"flex", alignItems:"flex-end", gap:6 }}>
+                  <div style={{ flex:1, display:"flex", flexDirection:"column", gap:3 }}>
+                    <label style={{ fontWeight:700, color:C.t2, fontSize:11.6 }}>{ocrLabel(key)}</label>
+                    <input
+                      value={editValues[key] || ""}
+                      onChange={e => setEditValues(prev => ({ ...prev, [key]: e.target.value }))}
+                      style={{ padding:"8px 10px", borderRadius: R.md, border:`1.5px solid ${C.b1}`, fontSize:13.2, fontFamily:"inherit", color:C.t1, background:C.bg, outline:"none", transition:"border-color 0.15s", width:"100%" }}
+                      onFocus={e => e.target.style.borderColor = C.pri}
+                      onBlur={e => e.target.style.borderColor = C.b1}
+                    />
+                  </div>
+                  <button onClick={() => setEditValues(prev => { const n = { ...prev }; delete n[key]; return n; })}
+                    title="Eliminar campo"
+                    style={{ display:"flex", alignItems:"center", justifyContent:"center", width:34, height:34, borderRadius: R.md, border:`1px solid ${C.err}30`, background:`${C.err}08`, cursor:"pointer", flexShrink:0, marginBottom:1 }}>
+                    {Ic.cross(C.err, 14)}
+                  </button>
                 </div>
               ))
             ) : (
