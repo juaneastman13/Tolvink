@@ -90,6 +90,7 @@ export default function AppLayout({ fh, catalog, online, notif, isDesktop }) {
 
   // Extract freight ID from URL params
   const [selFreight, setSelFreight] = useState(null);
+  const [truckBusyModal, setTruckBusyModal] = useState(null); // { fId, aId, actionKey, error, busyFreightCode, isTrip }
   useEffect(() => {
     const p = location.pathname;
     if (p.startsWith("/freight/")) {
@@ -394,16 +395,10 @@ export default function AppLayout({ fh, catalog, online, notif, isDesktop }) {
       else if(actionKey==="confirm_trip_loaded") r = await fh.confirmTripLoaded(fId, aId, loadedTons);
       else if(actionKey==="confirm_trip_finished") r = await fh.confirmTripFinished(fId, aId);
       if(r?.ok){ clearActionAfterClose(); return msgs[actionKey]||"Hecho"; }
-      // Truck busy warning — ask for confirmation to force
+      // Truck busy warning — show modal with option to force or navigate to busy freight
       if(r?.truckBusy && actionKey==="start_trip") {
         setActionLoading(false);
-        const forceConfirm = window.confirm(`${r.error}\n\n¿Desea iniciar de todos modos?`);
-        if(forceConfirm) {
-          setActionLoading(true);
-          const r2 = await fh.startTrip(fId, aId, true);
-          if(r2?.ok){ clearActionAfterClose(); return msgs[actionKey]||"Hecho"; }
-          show(r2?.error||"Error","err"); setActionLoading(false); return "";
-        }
+        setTruckBusyModal({ fId, aId, actionKey, error: r.error, busyFreightCode: r.busyFreightCode, isTrip: true });
         return "";
       }
       show(r?.error||"Error","err"); setActionLoading(false); return "";
@@ -432,16 +427,10 @@ export default function AppLayout({ fh, catalog, online, notif, isDesktop }) {
       if(!fn){ setActionLoading(false); return ""; }
       const r = action==="confirm_loaded" ? await fn(fId, loadedTons) : await fn(fId);
       if(r.ok){ clearActionAfterClose(); return msgs[action]||"Hecho"; }
-      // Truck busy warning — ask for confirmation to force
+      // Truck busy warning — show modal with option to force or navigate to busy freight
       if(r.truckBusy && action==="start") {
         setActionLoading(false);
-        const forceConfirm = window.confirm(`${r.error}\n\n¿Desea iniciar de todos modos?`);
-        if(forceConfirm) {
-          setActionLoading(true);
-          const r2 = await fh.start(fId, true);
-          if(r2.ok){ clearActionAfterClose(); return msgs[action]||"Hecho"; }
-          show(r2.error,"err"); setActionLoading(false); return "";
-        }
+        setTruckBusyModal({ fId, aId: null, actionKey: action, error: r.error, busyFreightCode: r.busyFreightCode, isTrip: false });
         return "";
       }
       show(r.error,"err"); setActionLoading(false); return "";
@@ -709,6 +698,47 @@ export default function AppLayout({ fh, catalog, online, notif, isDesktop }) {
       {modal?.type==="edit_trip" && <EditTripModal freight={modal.freight} assignment={modal.assignment} transporters={catalog.transporters} onClose={()=>setModal(null)} onSave={handleSaveTrip} user={auth.user}/>}
       {modal?.type==="driver_queue" && <DriverQueueModal driverId={modal.driverId} driverName={modal.driverName} onClose={()=>setModal(null)}/>}
       </Suspense>
+      {/* Truck busy modal — force start or navigate to active freight */}
+      {truckBusyModal && (
+        <div onClick={() => setTruckBusyModal(null)} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.45)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:300, padding:16 }}>
+          <div onClick={e => e.stopPropagation()} style={{ background:"#fff", borderRadius:12, padding:24, maxWidth:400, width:"100%", boxShadow:"0 12px 32px rgba(0,0,0,0.15)", fontFamily:"inherit" }}>
+            <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:12 }}>
+              {Ic.warn(C.acc, 22)}
+              <span style={{ fontSize:16, fontWeight:700, color:C.t1 }}>Camión en otro viaje</span>
+            </div>
+            <p style={{ fontSize:13.5, color:C.t2, lineHeight:1.5, marginBottom:18 }}>{truckBusyModal.error}</p>
+            <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+              <button onClick={async () => {
+                const { fId, aId, isTrip } = truckBusyModal;
+                setTruckBusyModal(null);
+                setActionLoading(true);
+                try {
+                  const r2 = isTrip ? await fh.startTrip(fId, aId, true) : await fh.start(fId, true);
+                  if (r2?.ok) show("Viaje iniciado", "ok");
+                  else show(r2?.error || "Error", "err");
+                } catch (e) { show(e?.message || "Error", "err"); }
+                setActionLoading(false);
+              }} style={{ width:"100%", padding:"12px", borderRadius:10, border:"none", background:C.pri, color:"#fff", fontSize:14, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
+                Iniciar de todos modos
+              </button>
+              {truckBusyModal.busyFreightCode && (
+                <button onClick={() => {
+                  const code = truckBusyModal.busyFreightCode;
+                  setTruckBusyModal(null);
+                  const busyFreight = fh.freights?.find(f => f.code === code);
+                  if (busyFreight) { setSelFreight(busyFreight.id); fh.refresh(busyFreight.id); navigate(`/freight/${busyFreight.id}`); }
+                  else { show(`Flete ${code} no encontrado en tu lista`, "err"); }
+                }} style={{ width:"100%", padding:"12px", borderRadius:10, border:`1.5px solid ${C.b1}`, background:"#fff", color:C.t1, fontSize:14, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>
+                  Ver flete activo ({truckBusyModal.busyFreightCode})
+                </button>
+              )}
+              <button onClick={() => setTruckBusyModal(null)} style={{ width:"100%", padding:"10px", borderRadius:10, border:"none", background:"transparent", color:C.t3, fontSize:13, cursor:"pointer", fontFamily:"inherit" }}>
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {toast && <Toast key={toast._ts||toast.msg} msg={toast.msg} type={toast.type} onClose={()=>setToast(null)}/>}
 
       {/* AI Chat */}
