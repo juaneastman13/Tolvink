@@ -656,10 +656,10 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
               {tripSelectorAction.assignments.map(t => (
                 <button key={t.id} disabled={actionLoading} onClick={() => { setTripSelectorAction(null); onTripAction && onTripAction(freight.id, t.id, tripSelectorAction.key); }}
                   style={{ display:"flex", alignItems:"center", gap:10, padding:"12px 14px", borderRadius: R.md, border:`1.5px solid ${C.b1}`, background:C.w, cursor:actionLoading?"not-allowed":"pointer", fontFamily:"inherit", width:"100%", textAlign:"left" }}>
-                  <span style={{ fontSize:13, fontWeight:700, color:C.t1 }}>#{t.tripNumber}</span>
-                  <span style={{ fontSize:13.5, fontWeight:600, color:C.t1, flex:1 }}>
-                    {t.plate || "Sin patente"}{t.isExternal ? " (externo)" : ""}
-                  </span>
+                  <span style={{ fontSize:13, fontWeight:700, color:C.t2 }}>#{t.tripNumber}</span>
+                  {t.plate ? <LicensePlate plate={t.plate} size="sm" /> : <span style={{ fontSize:13.5, color:C.t3 }}>Sin patente</span>}
+                  {t.isExternal && <span style={{ fontSize:10.5, fontWeight:600, color:C.acc, background:C.accPale, padding:"2px 7px", borderRadius: R.sm }}>EXTERNO</span>}
+                  <span style={{ flex:1 }} />
                   {t.driverName && <span style={{ fontSize:12, color:C.t3 }}>{t.driverName}</span>}
                 </button>
               ))}
