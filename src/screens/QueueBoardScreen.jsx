@@ -602,7 +602,7 @@ export default function QueueBoardScreen({ user, onBack, onNav, catalog }) {
   );
 
   return (
-    <div style={{ flex: 1, display: "flex", flexDirection: "column", fontFamily: FONT, overflow: "hidden" }}>
+    <div style={{ flex: 1, display: "flex", flexDirection: "column", fontFamily: FONT, overflow: "hidden", maxHeight: "100dvh", boxSizing: "border-box" }}>
       {/* Header */}
       <div style={{ padding: "14px 18px 0", flexShrink: 0 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10, flexWrap: "wrap", gap: 8 }}>
@@ -733,7 +733,7 @@ export default function QueueBoardScreen({ user, onBack, onNav, catalog }) {
         </div>
       )}
 
-      <div style={{ flex: 1, overflow: "auto", display: "flex", flexDirection: isDesktop ? "row" : "column", gap: 12, padding: "0 18px 18px" }}>
+      <div style={{ flex: 1, overflow: "auto", WebkitOverflowScrolling: "touch", display: "flex", flexDirection: isDesktop ? "row" : "column", gap: 12, padding: "0 18px 18px", minHeight: 0 }}>
         {loading && !data && <div style={{ textAlign: "center", padding: 40, color: C.t3, flex: 1 }}>Cargando tablero...</div>}
         {error && <div style={{ background: C.errPale, color: C.err, padding: 14, borderRadius: R.md, fontSize: 13, flex: 1 }}>{error}</div>}
 

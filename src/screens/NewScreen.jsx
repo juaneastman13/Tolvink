@@ -170,6 +170,10 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
   const [customDest, setCustomDest] = useState({ name:"", lat:null, lng:null });
   const [confirmMode, setConfirmMode] = useState("none"); // "plant" | "none"
   const [confirmPlantId, setConfirmPlantId] = useState("");
+  // Popup states for mobile location pickers + external truck extras
+  const [showOriginMapPopup, setShowOriginMapPopup] = useState(false);
+  const [showDestMapPopup, setShowDestMapPopup] = useState(false);
+  const [showExternalExtras, setShowExternalExtras] = useState(false);
   const [form, setForm] = useState({
     grain: dup?.grain || "",
     tons: dup?.tons?.toString() || "",
@@ -962,11 +966,25 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
               </div>
             </>) : (<>
               <Field label="Nombre del origen (opcional)" value={customOrigin.name} onChange={v=>setCustomOrigin(p=>({...p,name:v}))} placeholder="Ej: Chacra Los Álamos (opcional)"/>
-              <div style={{ marginTop:10 }}>
-                <Suspense fallback={<div style={{padding:20,textAlign:"center",color:C.t3}}>Cargando mapa...</div>}>
-                  <LocationPicker label="Ubicación en mapa" value={customOrigin.lat?{lat:customOrigin.lat,lng:customOrigin.lng}:null} onChange={loc=>setCustomOrigin(p=>({...p,lat:loc?.lat||null,lng:loc?.lng||null}))} confirmLabel="Confirmar origen" onConfirm={()=>{if(isEditing)confirmEdit();else advanceToNext();}}/>
-                </Suspense>
-              </div>
+              <button type="button" onClick={()=>setShowOriginMapPopup(true)} style={{ marginTop:10, width:"100%", padding:"12px 0", borderRadius:R.md, border:`1.5px solid ${customOrigin.lat?C.ok:C.pri}`, background:customOrigin.lat?C.okPale:C.w, color:customOrigin.lat?C.ok:C.pri, fontSize:13.2, fontWeight:700, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
+                {Ic.pin(customOrigin.lat?C.ok:C.pri,15)} {customOrigin.lat ? "Ubicación marcada ✓ — Cambiar" : "Indicar ubicación en mapa"}
+              </button>
+              {showOriginMapPopup && (
+                <div role="dialog" aria-modal="true" style={{ position:"fixed", inset:0, zIndex:1100, display:"flex", alignItems:"center", justifyContent:"center", padding:12 }}>
+                  <div onClick={()=>setShowOriginMapPopup(false)} style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.5)" }}/>
+                  <div style={{ position:"relative", background:C.bg, borderRadius:R.xl, width:"100%", maxWidth:500, maxHeight:"calc(100dvh - 24px)", overflow:"auto", animation:"slideUp 0.25s ease" }}>
+                    <div style={{ position:"sticky", top:0, zIndex:2, background:C.bg, padding:"16px 20px 10px", borderBottom:`1px solid ${C.b2}`, display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+                      <span style={{ fontSize:16, fontWeight:800, color:C.t1 }}>📍 Ubicación de origen</span>
+                      <button onClick={()=>setShowOriginMapPopup(false)} style={{ background:"none", border:"none", cursor:"pointer", padding:4 }}>{Ic.cross(C.t3,20)}</button>
+                    </div>
+                    <div style={{ padding:"16px 20px 20px" }}>
+                      <Suspense fallback={<div style={{padding:20,textAlign:"center",color:C.t3}}>Cargando mapa...</div>}>
+                        <LocationPicker label="Marcá la ubicación" value={customOrigin.lat?{lat:customOrigin.lat,lng:customOrigin.lng}:null} onChange={loc=>setCustomOrigin(p=>({...p,lat:loc?.lat||null,lng:loc?.lng||null}))} confirmLabel="Confirmar origen" onConfirm={()=>setShowOriginMapPopup(false)}/>
+                      </Suspense>
+                    </div>
+                  </div>
+                </div>
+              )}
               {touched&&errs.customOrigin&&<div style={{padding:"6px 10px",borderRadius: R.md,marginTop:6,fontSize:12.1,fontWeight:600,color:C.err,background:C.errPale}}>{errs.customOrigin}</div>}
             </>)}
             <NextStepBtn complete={secComplete.origin} onClick={isEditing?confirmEdit:advanceToNext} label={isEditing?"Confirmar edición":undefined} onPrev={prevAvailable()?goToPrev:null}/>
@@ -974,9 +992,9 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
           {activeSection === "ownfleet" && showTruckSelect && <>
             {/* Multi-truck header */}
             {isMultiTruckWizard && (
-              <div style={{ background:`${C.info}10`, border:`1px solid ${C.info}30`, borderRadius:R.md, padding:"10px 14px", marginBottom:14 }}>
+              <div style={{ background:`${C.info}10`, border:`1px solid ${C.info}30`, borderRadius:R.md, padding:"10px 14px", marginBottom:14, display:"flex", alignItems:"center", justifyContent:"space-between" }}>
                 <div style={{ fontSize:14, fontWeight:700, color:C.info }}>Se necesitan {effectiveTruckCount} camiones</div>
-                <div style={{ fontSize:12, color:C.t2, marginTop:2 }}>{totalEntryCount}/{effectiveTruckCount} camiones agregados</div>
+                <div style={{ fontSize:12, fontWeight:600, color:C.t2 }}>{totalEntryCount}/{effectiveTruckCount}</div>
               </div>
             )}
             {/* Entries list */}
@@ -1023,11 +1041,28 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
                 <button type="button" onClick={() => { const trk=(trucks||[]).find(t=>t.id===form.truckId); const drv=(ownFleetDrivers||[]).find(d=>d.id===form.driverId); addTransportEntry({type:"own",truckId:form.truckId,driverId:form.driverId,plate:trk?.plate,driverLabel:drv?.name||""}); u({truckId:"",driverId:""}); }} style={{ marginTop:10, width:"100%", padding:"10px 0", borderRadius:R.md, border:"none", background:C.acc, color:C.w, fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>Agregar camión</button>
               )}
             </>}
-            {/* Terceros form */}
+            {/* Terceros form — mobile: empresa/chofer behind popup */}
             {form.fleetChoice==="external" && <div style={{ marginBottom:10 }}>
               <Field label="Matrícula (opcional)" value={externalPlate} onChange={v=>setExternalPlate(v.toUpperCase())} placeholder="Ej: ABC 1234"/>
-              <div style={{marginTop:8}}><Field label="Empresa (opcional)" value={externalCompanyName} onChange={setExternalCompanyName} placeholder="Nombre de la empresa"/></div>
-              <div style={{marginTop:8}}><Field label="Chofer (opcional)" value={externalDriverName} onChange={setExternalDriverName} placeholder="Nombre del chofer"/></div>
+              <button type="button" onClick={()=>setShowExternalExtras(true)} style={{ marginTop:8, width:"100%", padding:"10px 0", borderRadius:R.md, border:`1.5px solid ${(externalCompanyName||externalDriverName)?C.ok:C.b1}`, background:(externalCompanyName||externalDriverName)?C.okPale:C.w, color:(externalCompanyName||externalDriverName)?C.ok:C.t2, fontSize:12.7, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>
+                {(externalCompanyName||externalDriverName) ? `✓ ${[externalCompanyName,externalDriverName].filter(Boolean).join(" · ")}` : "Datos adicionales (empresa, chofer)"}
+              </button>
+              {showExternalExtras && (
+                <div role="dialog" aria-modal="true" style={{ position:"fixed", inset:0, zIndex:1100, display:"flex", alignItems:"center", justifyContent:"center", padding:12 }}>
+                  <div onClick={()=>setShowExternalExtras(false)} style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.5)" }}/>
+                  <div style={{ position:"relative", background:C.bg, borderRadius:R.xl, width:"100%", maxWidth:400, overflow:"auto", animation:"slideUp 0.25s ease" }}>
+                    <div style={{ padding:"16px 20px 10px", borderBottom:`1px solid ${C.b2}`, display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+                      <span style={{ fontSize:16, fontWeight:800, color:C.t1 }}>🚛 Datos del externo</span>
+                      <button onClick={()=>setShowExternalExtras(false)} style={{ background:"none", border:"none", cursor:"pointer", padding:4 }}>{Ic.cross(C.t3,20)}</button>
+                    </div>
+                    <div style={{ padding:"16px 20px 20px" }}>
+                      <Field label="Empresa (opcional)" value={externalCompanyName} onChange={setExternalCompanyName} placeholder="Nombre de la empresa"/>
+                      <div style={{marginTop:10}}><Field label="Chofer (opcional)" value={externalDriverName} onChange={setExternalDriverName} placeholder="Nombre del chofer"/></div>
+                      <button type="button" onClick={()=>setShowExternalExtras(false)} style={{ marginTop:14, width:"100%", padding:"12px 0", borderRadius:R.md, border:"none", background:C.pri, color:C.w, fontSize:13.5, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>Listo</button>
+                    </div>
+                  </div>
+                </div>
+              )}
               {isMultiTruckWizard && (
                 <button type="button" onClick={() => { addTransportEntry({type:"external",plate:externalPlate.trim().toUpperCase()||null,externalCompanyName:externalCompanyName.trim()||null,externalDriverName:externalDriverName.trim()||null}); setExternalPlate(""); setExternalCompanyName(""); setExternalDriverName(""); }} style={{ marginTop:10, width:"100%", padding:"10px 0", borderRadius:R.md, border:"none", background:C.sec, color:C.w, fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>Agregar camión externo</button>
               )}
@@ -1045,17 +1080,14 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
                 const plantName = (plants||[]).find(p=>p.id===delegatePlant)?.name || "";
                 const remaining = Math.max(1, effectiveTruckCount - totalEntryCount);
                 const dc = delegateCount || remaining;
-                return <>
-                  <div style={{ display:"flex", alignItems:"center", gap:10, marginTop:10, marginBottom:8 }}>
-                    <span style={{ fontSize:13, color:C.t2 }}>Cantidad de camiones:</span>
-                    <div style={{ display:"flex", alignItems:"center", gap:4 }}>
-                      <button type="button" onClick={()=>setDelegateCount(Math.max(1,dc-1))} disabled={dc<=1} style={{ width:28, height:28, borderRadius:R.sm, border:`1px solid ${C.b1}`, background:C.w, cursor:dc<=1?"default":"pointer", display:"flex", alignItems:"center", justifyContent:"center", fontSize:16, fontWeight:700, color:C.t2, opacity:dc<=1?0.3:1 }}>−</button>
-                      <span style={{ fontSize:15, fontWeight:700, color:C.t1, minWidth:24, textAlign:"center" }}>{dc}</span>
-                      <button type="button" onClick={()=>setDelegateCount(Math.min(remaining,dc+1))} disabled={dc>=remaining} style={{ width:28, height:28, borderRadius:R.sm, border:`1px solid ${C.b1}`, background:C.w, cursor:dc>=remaining?"default":"pointer", display:"flex", alignItems:"center", justifyContent:"center", fontSize:16, fontWeight:700, color:C.t2, opacity:dc>=remaining?0.3:1 }}>+</button>
-                    </div>
+                return <div style={{ display:"flex", alignItems:"center", gap:8, marginTop:10 }}>
+                  <div style={{ flex:"0 0 auto", display:"flex", alignItems:"center", gap:4 }}>
+                    <button type="button" onClick={()=>setDelegateCount(Math.max(1,dc-1))} disabled={dc<=1} style={{ width:32, height:32, borderRadius:R.sm, border:`1px solid ${C.b1}`, background:C.w, cursor:dc<=1?"default":"pointer", display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, fontWeight:700, color:C.t2, opacity:dc<=1?0.3:1 }}>−</button>
+                    <span style={{ fontSize:16, fontWeight:700, color:C.t1, minWidth:28, textAlign:"center" }}>{dc}</span>
+                    <button type="button" onClick={()=>setDelegateCount(Math.min(remaining,dc+1))} disabled={dc>=remaining} style={{ width:32, height:32, borderRadius:R.sm, border:`1px solid ${C.b1}`, background:C.w, cursor:dc>=remaining?"default":"pointer", display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, fontWeight:700, color:C.t2, opacity:dc>=remaining?0.3:1 }}>+</button>
                   </div>
-                  <button type="button" disabled={!delegatePlant||dc<1} onClick={() => { addTransportEntry({type:"delegate",count:dc,delegatePlantId:delegatePlant,plantName}); u({fleetChoice:""}); setDelegatePlantId(""); setDelegateCount(0); }} style={{ width:"100%", padding:"10px 0", borderRadius:R.md, border:"none", background:(delegatePlant&&dc>0)?C.pri:`${C.pri}50`, color:C.w, fontSize:13, fontWeight:700, cursor:(delegatePlant&&dc>0)?"pointer":"not-allowed", fontFamily:"inherit" }}>Delegar {dc} camión{dc!==1?"es":""}{plantName ? ` a ${plantName}` : " a planta"}</button>
-                </>;
+                  <button type="button" disabled={!delegatePlant||dc<1} onClick={() => { addTransportEntry({type:"delegate",count:dc,delegatePlantId:delegatePlant,plantName}); u({fleetChoice:""}); setDelegatePlantId(""); setDelegateCount(0); }} style={{ flex:1, padding:"10px 0", borderRadius:R.md, border:"none", background:(delegatePlant&&dc>0)?C.pri:`${C.pri}50`, color:C.w, fontSize:12.5, fontWeight:700, cursor:(delegatePlant&&dc>0)?"pointer":"not-allowed", fontFamily:"inherit" }}>Delegar {dc}{plantName ? ` a ${plantName}` : ""}</button>
+                </div>;
               })()}
             </>}
             <NextStepBtn complete={isMultiTruckWizard ? true : (!!form.fleetChoice && (form.fleetChoice==="delegate" || form.fleetChoice==="external" ? true : (!!form.truckId && !!form.driverId)))} onClick={isEditing?confirmEdit:advanceToNext} label={isEditing?"Confirmar edición":undefined} onPrev={prevAvailable()?goToPrev:null}/>
@@ -1090,11 +1122,25 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
                 {confirmMode==="none" && <div style={{fontSize:11,color:C.t3,marginTop:6}}>El flete no requiere confirmación externa</div>}
               </div>
               <Field label="Nombre del destino (opcional)" value={customDest.name} onChange={v=>setCustomDest(p=>({...p,name:v}))} placeholder="Ej: Acopio Central, Puerto Rosario... (opcional)"/>
-              <div style={{ marginTop:8 }}>
-                <Suspense fallback={<div style={{padding:20,textAlign:"center",color:C.t3}}>Cargando mapa...</div>}>
-                  <LocationPicker label="Ubicación del destino" value={customDest.lat?{lat:customDest.lat,lng:customDest.lng}:null} onChange={loc=>setCustomDest(p=>({...p,lat:loc.lat,lng:loc.lng}))} confirmLabel="Confirmar destino" onConfirm={()=>{if(isEditing)confirmEdit();else advanceToNext();}}/>
-                </Suspense>
-              </div>
+              <button type="button" onClick={()=>setShowDestMapPopup(true)} style={{ marginTop:8, width:"100%", padding:"12px 0", borderRadius:R.md, border:`1.5px solid ${customDest.lat?C.ok:C.acc}`, background:customDest.lat?C.okPale:C.w, color:customDest.lat?C.ok:C.acc, fontSize:13.2, fontWeight:700, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
+                {Ic.pin(customDest.lat?C.ok:C.acc,15)} {customDest.lat ? "Ubicación marcada ✓ — Cambiar" : "Indicar ubicación en mapa"}
+              </button>
+              {showDestMapPopup && (
+                <div role="dialog" aria-modal="true" style={{ position:"fixed", inset:0, zIndex:1100, display:"flex", alignItems:"center", justifyContent:"center", padding:12 }}>
+                  <div onClick={()=>setShowDestMapPopup(false)} style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.5)" }}/>
+                  <div style={{ position:"relative", background:C.bg, borderRadius:R.xl, width:"100%", maxWidth:500, maxHeight:"calc(100dvh - 24px)", overflow:"auto", animation:"slideUp 0.25s ease" }}>
+                    <div style={{ position:"sticky", top:0, zIndex:2, background:C.bg, padding:"16px 20px 10px", borderBottom:`1px solid ${C.b2}`, display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+                      <span style={{ fontSize:16, fontWeight:800, color:C.t1 }}>🏭 Ubicación de destino</span>
+                      <button onClick={()=>setShowDestMapPopup(false)} style={{ background:"none", border:"none", cursor:"pointer", padding:4 }}>{Ic.cross(C.t3,20)}</button>
+                    </div>
+                    <div style={{ padding:"16px 20px 20px" }}>
+                      <Suspense fallback={<div style={{padding:20,textAlign:"center",color:C.t3}}>Cargando mapa...</div>}>
+                        <LocationPicker label="Marcá la ubicación" value={customDest.lat?{lat:customDest.lat,lng:customDest.lng}:null} onChange={loc=>setCustomDest(p=>({...p,lat:loc.lat,lng:loc.lng}))} confirmLabel="Confirmar destino" onConfirm={()=>setShowDestMapPopup(false)}/>
+                      </Suspense>
+                    </div>
+                  </div>
+                </div>
+              )}
               {touched&&errs.customDestLoc&&<div style={{padding:"6px 10px",borderRadius: R.md,marginTop:6,fontSize:12.1,fontWeight:600,color:C.err,background:C.errPale}}>{errs.customDestLoc}</div>}
             </>)}
             <NextStepBtn complete={secComplete.destination} onClick={isEditing?confirmEdit:advanceToNext} label={isEditing?"Confirmar edición":undefined} onPrev={prevAvailable()?goToPrev:null}/>
@@ -1117,9 +1163,9 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
           {activeSection === "transport" && showTransportStep && <>
             {/* Multi-truck header */}
             {isMultiTruckWizard && (
-              <div style={{ background:`${C.info}10`, border:`1px solid ${C.info}30`, borderRadius:R.md, padding:"10px 14px", marginBottom:14 }}>
+              <div style={{ background:`${C.info}10`, border:`1px solid ${C.info}30`, borderRadius:R.md, padding:"10px 14px", marginBottom:14, display:"flex", alignItems:"center", justifyContent:"space-between" }}>
                 <div style={{ fontSize:14, fontWeight:700, color:C.info }}>Se necesitan {effectiveTruckCount} camiones</div>
-                <div style={{ fontSize:12, color:C.t2, marginTop:2 }}>{totalEntryCount}/{effectiveTruckCount} camiones agregados</div>
+                <div style={{ fontSize:12, fontWeight:600, color:C.t2 }}>{totalEntryCount}/{effectiveTruckCount}</div>
               </div>
             )}
             {/* Multi-truck: entries list */}
@@ -1344,9 +1390,9 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
         {activeSection === "ownfleet" && showTruckSelect && (
           <Sec label={isMultiTruckWizard ? `Transporte (${totalEntryCount}/${effectiveTruckCount})` : (form.fleetChoice==="own"?"Flota propia":form.fleetChoice==="delegate"?"Delegar a planta":"Transporte")} complete={isMultiTruckWizard ? true : !!form.fleetChoice} isExpanded={true} onFocus={()=>{}} secRef={secRefs.ownfleet}>
             {isMultiTruckWizard && (
-              <div style={{ background:`${C.info}10`, border:`1px solid ${C.info}30`, borderRadius:R.md, padding:"10px 14px", marginBottom:14 }}>
+              <div style={{ background:`${C.info}10`, border:`1px solid ${C.info}30`, borderRadius:R.md, padding:"10px 14px", marginBottom:14, display:"flex", alignItems:"center", justifyContent:"space-between" }}>
                 <div style={{ fontSize:14, fontWeight:700, color:C.info }}>Se necesitan {effectiveTruckCount} camiones</div>
-                <div style={{ fontSize:12, color:C.t2, marginTop:2 }}>{totalEntryCount}/{effectiveTruckCount} camiones agregados</div>
+                <div style={{ fontSize:12, fontWeight:600, color:C.t2 }}>{totalEntryCount}/{effectiveTruckCount}</div>
               </div>
             )}
             {isMultiTruckWizard && transportEntries.length > 0 && (
@@ -1406,17 +1452,14 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
                 const plantName = (plants||[]).find(p=>p.id===delegatePlant)?.name || "";
                 const remaining = Math.max(1, effectiveTruckCount - totalEntryCount);
                 const dc = delegateCount || remaining;
-                return <>
-                  <div style={{ display:"flex", alignItems:"center", gap:10, marginTop:10, marginBottom:8 }}>
-                    <span style={{ fontSize:13, color:C.t2 }}>Cantidad de camiones:</span>
-                    <div style={{ display:"flex", alignItems:"center", gap:4 }}>
-                      <button type="button" onClick={()=>setDelegateCount(Math.max(1,dc-1))} disabled={dc<=1} style={{ width:28, height:28, borderRadius:R.sm, border:`1px solid ${C.b1}`, background:C.w, cursor:dc<=1?"default":"pointer", display:"flex", alignItems:"center", justifyContent:"center", fontSize:16, fontWeight:700, color:C.t2, opacity:dc<=1?0.3:1 }}>−</button>
-                      <span style={{ fontSize:15, fontWeight:700, color:C.t1, minWidth:24, textAlign:"center" }}>{dc}</span>
-                      <button type="button" onClick={()=>setDelegateCount(Math.min(remaining,dc+1))} disabled={dc>=remaining} style={{ width:28, height:28, borderRadius:R.sm, border:`1px solid ${C.b1}`, background:C.w, cursor:dc>=remaining?"default":"pointer", display:"flex", alignItems:"center", justifyContent:"center", fontSize:16, fontWeight:700, color:C.t2, opacity:dc>=remaining?0.3:1 }}>+</button>
-                    </div>
+                return <div style={{ display:"flex", alignItems:"center", gap:8, marginTop:10 }}>
+                  <div style={{ flex:"0 0 auto", display:"flex", alignItems:"center", gap:4 }}>
+                    <button type="button" onClick={()=>setDelegateCount(Math.max(1,dc-1))} disabled={dc<=1} style={{ width:32, height:32, borderRadius:R.sm, border:`1px solid ${C.b1}`, background:C.w, cursor:dc<=1?"default":"pointer", display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, fontWeight:700, color:C.t2, opacity:dc<=1?0.3:1 }}>−</button>
+                    <span style={{ fontSize:16, fontWeight:700, color:C.t1, minWidth:28, textAlign:"center" }}>{dc}</span>
+                    <button type="button" onClick={()=>setDelegateCount(Math.min(remaining,dc+1))} disabled={dc>=remaining} style={{ width:32, height:32, borderRadius:R.sm, border:`1px solid ${C.b1}`, background:C.w, cursor:dc>=remaining?"default":"pointer", display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, fontWeight:700, color:C.t2, opacity:dc>=remaining?0.3:1 }}>+</button>
                   </div>
-                  <button type="button" disabled={!delegatePlant||dc<1} onClick={() => { addTransportEntry({type:"delegate",count:dc,delegatePlantId:delegatePlant,plantName}); u({fleetChoice:""}); setDelegatePlantId(""); setDelegateCount(0); }} style={{ width:"100%", padding:"10px 0", borderRadius:R.md, border:"none", background:(delegatePlant&&dc>0)?C.pri:`${C.pri}50`, color:C.w, fontSize:13, fontWeight:700, cursor:(delegatePlant&&dc>0)?"pointer":"not-allowed", fontFamily:"inherit" }}>Delegar {dc} camión{dc!==1?"es":""}{plantName ? ` a ${plantName}` : " a planta"}</button>
-                </>;
+                  <button type="button" disabled={!delegatePlant||dc<1} onClick={() => { addTransportEntry({type:"delegate",count:dc,delegatePlantId:delegatePlant,plantName}); u({fleetChoice:""}); setDelegatePlantId(""); setDelegateCount(0); }} style={{ flex:1, padding:"10px 0", borderRadius:R.md, border:"none", background:(delegatePlant&&dc>0)?C.pri:`${C.pri}50`, color:C.w, fontSize:12.5, fontWeight:700, cursor:(delegatePlant&&dc>0)?"pointer":"not-allowed", fontFamily:"inherit" }}>Delegar {dc}{plantName ? ` a ${plantName}` : ""}</button>
+                </div>;
               })()}
             </>}
             <NextStepBtn complete={isMultiTruckWizard ? true : (!!form.fleetChoice && (form.fleetChoice==="delegate" || form.fleetChoice==="external" ? true : (!!form.truckId && !!form.driverId)))} onClick={isEditing?confirmEdit:advanceToNext} label={isEditing?"Confirmar edición":undefined} onPrev={prevAvailable()?goToPrev:null}/>
@@ -1496,9 +1539,9 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
         {activeSection === "transport" && showTransportStep && (
           <Sec label={isMultiTruckWizard ? `Transporte (${totalEntryCount}/${effectiveTruckCount})` : "Asignar transporte"} complete={transportStepComplete} isExpanded={true} onFocus={()=>{}} secRef={null}>
             {isMultiTruckWizard && (
-              <div style={{ background:`${C.info}10`, border:`1px solid ${C.info}30`, borderRadius:R.md, padding:"10px 14px", marginBottom:14 }}>
+              <div style={{ background:`${C.info}10`, border:`1px solid ${C.info}30`, borderRadius:R.md, padding:"10px 14px", marginBottom:14, display:"flex", alignItems:"center", justifyContent:"space-between" }}>
                 <div style={{ fontSize:14, fontWeight:700, color:C.info }}>Se necesitan {effectiveTruckCount} camiones</div>
-                <div style={{ fontSize:12, color:C.t2, marginTop:2 }}>{totalEntryCount}/{effectiveTruckCount} camiones agregados</div>
+                <div style={{ fontSize:12, fontWeight:600, color:C.t2 }}>{totalEntryCount}/{effectiveTruckCount}</div>
               </div>
             )}
             {isMultiTruckWizard && transportEntries.length > 0 && (

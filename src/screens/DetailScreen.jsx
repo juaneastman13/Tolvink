@@ -831,21 +831,11 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
               <div key={a.id} style={{ display:"flex", borderRadius: R.sm, border:`0.5px solid ${C.b1}`, overflow:"hidden", background:C.w, marginBottom:8 }}>
                 <div style={{ width:20, background:tst.color, flexShrink:0 }} />
                 <div style={{ padding:"8px 10px", flex:1, minWidth:0 }}>
-                  {/* Single line: #N plate - empresa - chofer | pill | edit */}
+                  {/* Line 1: #N plate | pill | edit */}
                   <div style={{ display:"flex", alignItems:"center", gap:6 }}>
                     {isMultiTruck && <span style={{ fontSize:12, fontWeight:500, color:C.t2, marginRight:2 }}>#{a.tripNumber}</span>}
                     {hasTruck ? <LicensePlate plate={a.plate} size="sm" /> : <span style={{ fontSize:14, fontWeight:500, color:a.transporterName ? C.acc : C.t3 }}>{a.transporterName ? "Esperando camión" : "Sin camión"}</span>}
-                    {a.isExternal
-                      ? <>
-                          <span style={{ fontSize:12, color:C.t2 }}>- {a.externalCompanyName || "Tercero"}</span>
-                          <span style={{ fontSize:12, color:C.t2 }}>- {a.externalDriverName || "Sin chofer"}</span>
-                          <span style={{ fontSize:9.5, fontWeight:600, color:C.sec, background:`${C.sec}15`, padding:"1px 5px", borderRadius:R.pill, flexShrink:0 }}>EXTERNO</span>
-                        </>
-                      : <>
-                          <span style={{ fontSize:12, color:C.t2 }}>- {a.transporterName || "Sin empresa"}</span>
-                          <span style={{ fontSize:12, color:C.t2 }}>- {a.driverName || "Sin chofer"}</span>
-                        </>
-                    }
+                    {a.isExternal && <span style={{ fontSize:9.5, fontWeight:600, color:C.sec, background:`${C.sec}15`, padding:"1px 5px", borderRadius:R.pill, flexShrink:0 }}>EXTERNO</span>}
                     <span style={{ flex:1 }} />
                     {(() => {
                       const needsAuth = a.tripStatus === "pending" && freight.useOwnFleet && freight.needsPlantApproval && !freight.plantApprovedAt;
@@ -887,6 +877,22 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
                       </button>
                     )}
                   </div>
+                  {/* Line 2: empresa + chofer */}
+                  {hasTruck && (
+                    <div style={{ display:"flex", alignItems:"center", gap:4, marginTop:3, paddingLeft: isMultiTruck ? 24 : 0 }}>
+                      {a.isExternal
+                        ? <>
+                            <span style={{ fontSize:11.5, color:C.t3 }}>{a.externalCompanyName || "Tercero"}</span>
+                            {a.externalDriverName && <><span style={{ fontSize:11.5, color:C.b1 }}>·</span><span style={{ fontSize:11.5, color:C.t3 }}>{a.externalDriverName}</span></>}
+                          </>
+                        : <>
+                            <span style={{ fontSize:11.5, color:C.t3 }}>{a.transporterName || "Sin empresa"}</span>
+                            <span style={{ fontSize:11.5, color:C.b1 }}>·</span>
+                            <span style={{ fontSize:11.5, color:C.t3 }}>{a.driverName || "Sin chofer"}</span>
+                          </>
+                      }
+                    </div>
+                  )}
                   {/* Confirmation status (in_progress/loaded) */}
                   {(a.tripStatus === "in_progress" || a.tripStatus === "loaded") && (
                     <div style={{ display:"flex", gap:12, marginTop:6 }}>

@@ -888,6 +888,8 @@ export default function LocationsScreen({ onBack, user }) {
               <button onClick={onBack} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex", alignItems: "center" }}>{Ic.chev(C.pri, 18)}</button>
               <span style={{ fontSize: 18, fontWeight: 600, color: C.t1 }}>Ubicaciones</span>
             </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            {!isDesktop && <button onClick={() => setDrawerOpen(false)} aria-label="Cerrar lista" style={{ width: 32, height: 32, borderRadius: R.md, background: "transparent", border: `1px solid ${C.b1}`, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>{Ic.cross(C.t3, 16)}</button>}
             {creationMode ? null : importStep ? (
               <button onClick={() => { setImportStep(0); closeImport(); }} style={{ width: 32, height: 32, borderRadius: R.md, background: "transparent", border: `1px solid ${C.b1}`, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 {Ic.cross(C.t3, 16)}
@@ -930,6 +932,7 @@ export default function LocationsScreen({ onBack, user }) {
                 </>}
               </div>
             )}
+            </div>
           </div>
           {importStep === 0 && !creationMode && (<>
             {isManager && ownersSummary.length > 0 && (
