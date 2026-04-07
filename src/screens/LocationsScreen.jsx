@@ -877,7 +877,7 @@ export default function LocationsScreen({ onBack, user }) {
       {/* ── PANEL ── */}
       <div ref={panelRef} style={{
         ...(isDesktop ? { width: "30%", minWidth: 320, maxWidth: 420, borderRight: `1px solid ${C.b1}`, position: "relative" } : {
-          position: "fixed", left: 0, top: 0, bottom: 0, width: "100%",
+          position: "fixed", left: 0, top: "max(56px, calc(44px + env(safe-area-inset-top, 0px)))", bottom: "calc(100px + env(safe-area-inset-bottom, 0px))", width: "100%",
           transform: drawerOpen ? "translateX(0)" : "translateX(-100%)", transition: "transform 250ms ease-out", zIndex: 101, boxShadow: drawerOpen ? C.shLg : "none",
         }),
         background: C.w, display: "flex", flexDirection: "column", overflow: "hidden",
@@ -950,7 +950,7 @@ export default function LocationsScreen({ onBack, user }) {
           </>)}
         </div>
 
-        <div style={{ flex: 1, overflowY: "auto", paddingBottom: "calc(100px + env(safe-area-inset-bottom, 0px))" }}>
+        <div style={{ flex: 1, overflowY: "auto" }}>
           {msg && <div onClick={() => setMsg(null)} style={{ padding: "8px 16px", fontSize: 12.1, fontWeight: 600, background: msg.k === "ok" ? C.okPale : C.errPale, color: msg.k === "ok" ? C.ok : C.err, cursor: "pointer", borderBottom: `1px solid ${C.b2}` }}>{msg.t}</div>}
 
           {/* ── CREATION MODE: full-panel form ── */}
