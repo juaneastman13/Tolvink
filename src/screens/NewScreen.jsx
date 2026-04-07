@@ -104,10 +104,10 @@ function MobileStepModal({ open, title, summary, children, onClose, onPrev, step
   };
   if (!open) return null;
   return (
-    <div role="dialog" aria-modal="true" aria-label={title} style={{ position:"fixed", top:0, left:0, right:0, bottom:"calc(100px + env(safe-area-inset-bottom, 0px))", zIndex:1000, display:"flex", alignItems:"flex-end", justifyContent:"center" }} onKeyDown={trapFocus}>
+    <div role="dialog" aria-modal="true" aria-label={title} style={{ position:"fixed", top:"max(56px, calc(44px + env(safe-area-inset-top, 0px)))", left:0, right:0, bottom:"calc(100px + env(safe-area-inset-bottom, 0px))", zIndex:1000, display:"flex", flexDirection:"column" }} onKeyDown={trapFocus}>
       <div onClick={onClose} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.4)", zIndex:-1 }}/>
-      <div ref={modalRef} style={{ position:"relative", background:C.bg, borderRadius:"16px 16px 0 0", width:"100%", maxWidth:500, maxHeight:"100%", overflow:"auto", animation:"slideUp 0.25s ease" }}>
-        <div style={{ position:"sticky", top:0, zIndex:2, background:C.bg, padding:"16px 20px 8px", borderBottom:`1px solid ${C.b2}`, borderRadius:"16px 16px 0 0" }}>
+      <div ref={modalRef} style={{ position:"relative", background:C.bg, display:"flex", flexDirection:"column", width:"100%", maxWidth:500, flex:1, overflow:"hidden", animation:"slideUp 0.25s ease", margin:"0 auto" }}>
+        <div style={{ flexShrink:0, zIndex:2, background:C.bg, padding:"12px 20px 8px", borderBottom:`1px solid ${C.b2}` }}>
           <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
             <div style={{ display:"flex", alignItems:"center", gap:8 }}>
               {onPrev && <button aria-label="Anterior" onClick={onPrev} style={{ background:"none", border:"none", cursor:"pointer", padding:4, minWidth:36, minHeight:36, display:"flex", alignItems:"center", justifyContent:"center" }}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={C.t2} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>}
@@ -124,8 +124,8 @@ function MobileStepModal({ open, title, summary, children, onClose, onPrev, step
             </div>
           )}
         </div>
-        {summary && <div style={{ padding:"10px 20px", background:C.priPale, fontSize:12.1, color:C.pri, fontWeight:600 }}>{summary}</div>}
-        <div style={{ padding:"16px 20px 8px" }}>
+        {summary && <div style={{ padding:"10px 20px", background:C.priPale, fontSize:12.1, color:C.pri, fontWeight:600, flexShrink:0 }}>{summary}</div>}
+        <div style={{ flex:1, overflow:"auto", padding:"16px 20px 8px", WebkitOverflowScrolling:"touch" }}>
           {children}
         </div>
       </div>
@@ -136,7 +136,7 @@ function MobileStepModal({ open, title, summary, children, onClose, onPrev, step
 function NextStepBtn({ complete, onClick, label, onPrev }) {
   const isConfirm = !!label;
   return (
-    <div style={{ position:"sticky", bottom:0, zIndex:2, background:C.bg, padding:"12px 0 max(8px, env(safe-area-inset-bottom))", marginTop:16, borderTop:`1px solid ${C.b2}`, display:"flex", justifyContent:onPrev?"space-between":"flex-end", gap:8 }}>
+    <div style={{ position:"sticky", bottom:0, zIndex:2, background:C.bg, padding:"12px 0 8px", marginTop:16, borderTop:`1px solid ${C.b2}`, display:"flex", justifyContent:onPrev?"space-between":"flex-end", gap:8 }}>
       {onPrev && <button type="button" onClick={onPrev} style={{ padding:"11px 20px", borderRadius: R.md, border:`1.5px solid ${C.b1}`, background:C.w, color:C.t2, cursor:"pointer", fontSize:14.3, fontWeight:700, fontFamily:"inherit", display:"flex", alignItems:"center", gap:8, transition:"all 0.2s ease" }}>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg> Anterior
       </button>}
