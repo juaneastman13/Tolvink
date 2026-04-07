@@ -950,7 +950,7 @@ export default function LocationsScreen({ onBack, user }) {
           </>)}
         </div>
 
-        <div style={{ flex: 1, overflowY: "auto" }}>
+        <div style={{ flex: 1, overflowY: "auto", paddingBottom: "calc(100px + env(safe-area-inset-bottom, 0px))" }}>
           {msg && <div onClick={() => setMsg(null)} style={{ padding: "8px 16px", fontSize: 12.1, fontWeight: 600, background: msg.k === "ok" ? C.okPale : C.errPale, color: msg.k === "ok" ? C.ok : C.err, cursor: "pointer", borderBottom: `1px solid ${C.b2}` }}>{msg.t}</div>}
 
           {/* ── CREATION MODE: full-panel form ── */}

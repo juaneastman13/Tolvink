@@ -48,7 +48,7 @@ export function ModalOverlay({ children, onClose, maxWidth=400, loading=false, c
   const showLoading = loading && !closing;
 
   return (
-    <div ref={dialogRef} role="dialog" aria-modal="true" onClick={showCard ? onClose : undefined} style={{position:"fixed",inset:0,background:C.bgOverlay,display:"flex",alignItems:"center",justifyContent:"center",zIndex:200,padding:"max(24px, env(safe-area-inset-top)) 24px max(24px, env(safe-area-inset-bottom))",animation:fading ? "moOutroFade 0.4s ease forwards" : "moFadeIn 0.25s ease"}}>
+    <div ref={dialogRef} role="dialog" aria-modal="true" onClick={showCard ? onClose : undefined} style={{position:"fixed",inset:0,background:C.bgOverlay,display:"flex",alignItems:"center",justifyContent:"center",zIndex:200,padding:24,animation:fading ? "moOutroFade 0.4s ease forwards" : "moFadeIn 0.25s ease"}}>
       <style>{`
 @keyframes moFadeIn{from{opacity:0}to{opacity:1}}
 @keyframes moLogoIn{from{opacity:0;transform:scale(0.7)}to{opacity:1;transform:scale(1)}}
