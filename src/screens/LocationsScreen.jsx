@@ -871,7 +871,7 @@ export default function LocationsScreen({ onBack, user }) {
 
       {/* Mobile backdrop */}
       {!isDesktop && drawerOpen && (
-        <div onClick={() => { if (!isFormActive) setDrawerOpen(false); }} style={{ position: "fixed", inset: 0, background: C.bgOverlay, zIndex: 100, transition: "opacity 250ms" }} />
+        <div onClick={() => { if (!isFormActive) setDrawerOpen(false); }} style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: "calc(100px + env(safe-area-inset-bottom, 0px))", background: C.bgOverlay, zIndex: 100, transition: "opacity 250ms" }} />
       )}
 
       {/* ── PANEL ── */}
