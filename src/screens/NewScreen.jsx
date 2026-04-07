@@ -125,7 +125,7 @@ function MobileStepModal({ open, title, summary, children, onClose, onPrev, step
           )}
         </div>
         {summary && <div style={{ padding:"10px 20px", background:C.priPale, fontSize:12.1, color:C.pri, fontWeight:600, flexShrink:0 }}>{summary}</div>}
-        <div style={{ flex:1, overflow:"auto", padding:"16px 20px 8px", WebkitOverflowScrolling:"touch" }}>
+        <div style={{ flex:1, overflow:"auto", padding:"16px 20px 8px", WebkitOverflowScrolling:"touch", display:"flex", flexDirection:"column" }}>
           {children}
         </div>
       </div>
@@ -136,7 +136,7 @@ function MobileStepModal({ open, title, summary, children, onClose, onPrev, step
 function NextStepBtn({ complete, onClick, label, onPrev }) {
   const isConfirm = !!label;
   return (
-    <div style={{ position:"sticky", bottom:0, zIndex:2, background:C.bg, padding:"12px 0 8px", marginTop:16, borderTop:`1px solid ${C.b2}`, display:"flex", justifyContent:onPrev?"space-between":"flex-end", gap:8 }}>
+    <div style={{ position:"sticky", bottom:0, zIndex:2, background:C.bg, padding:"12px 0 8px", marginTop:"auto", paddingTop:16, borderTop:`1px solid ${C.b2}`, display:"flex", justifyContent:onPrev?"space-between":"flex-end", gap:8 }}>
       {onPrev && <button type="button" onClick={onPrev} style={{ padding:"11px 20px", borderRadius: R.md, border:`1.5px solid ${C.b1}`, background:C.w, color:C.t2, cursor:"pointer", fontSize:14.3, fontWeight:700, fontFamily:"inherit", display:"flex", alignItems:"center", gap:8, transition:"all 0.2s ease" }}>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg> Anterior
       </button>}
@@ -1632,7 +1632,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
 
       {/* ======================== CONFIRM MODAL ======================== */}
       {showConfirmModal && (
-        <div role="dialog" aria-modal="true" aria-label="Confirmar flete" style={{ position:"fixed", inset:0, zIndex:9999, display:"flex", alignItems:_isDesktop?"center":"stretch", justifyContent:"center" }}>
+        <div role="dialog" aria-modal="true" aria-label="Confirmar flete" style={{ position:"fixed", ...(_isDesktop ? { inset:0 } : { top:"max(56px, calc(44px + env(safe-area-inset-top, 0px)))", left:0, right:0, bottom:"calc(100px + env(safe-area-inset-bottom, 0px))" }), zIndex:9999, display:"flex", alignItems:_isDesktop?"center":"stretch", justifyContent:"center" }}>
           <div onClick={()=>setShowConfirmModal(false)} style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.45)" }}/>
           <div style={{ position:"relative", background:C.bg, borderRadius:_isDesktop?16:0, width:"100%", maxWidth:_isDesktop?720:"none", maxHeight:_isDesktop?"calc(100vh - 48px)":"none", height:_isDesktop?"auto":"100%", overflow:"auto", animation:"slideUp 0.25s ease", boxShadow:_isDesktop?"0 -4px 32px rgba(0,0,0,0.18)":"none" }}>
             {/* Header */}
