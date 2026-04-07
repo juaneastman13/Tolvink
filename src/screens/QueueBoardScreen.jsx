@@ -637,7 +637,7 @@ export default function QueueBoardScreen({ user, onBack, onNav, catalog }) {
       {toast && <div style={{ position: "fixed", top: 16, left: "50%", transform: "translateX(-50%)", zIndex: 9999, padding: "10px 20px", borderRadius: R.md, background: toast.type === "err" ? C.err : C.ok, color: C.w, fontSize: 13, fontWeight: 600, fontFamily: FONT, boxShadow: C.shLg }}>{toast.msg}</div>}
 
       {confirmModal && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 9998, display: "flex", alignItems: "center", justifyContent: "center" }} onClick={() => !assigning && setConfirmModal(null)}>
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 9998, display: "flex", alignItems: "center", justifyContent: "center", padding: "env(safe-area-inset-top, 0px) 12px env(safe-area-inset-bottom, 0px)" }} onClick={() => !assigning && setConfirmModal(null)}>
           <div onClick={e => e.stopPropagation()} style={{ background: C.w, borderRadius: R.lg, padding: 24, maxWidth: 360, width: "90%", boxShadow: C.shLg }}>
             <div style={{ fontSize: 16, fontWeight: 700, color: C.t1, marginBottom: 12 }}>Confirmar asignación</div>
             <div style={{ fontSize: 13, color: C.t2, marginBottom: 16 }}>
@@ -656,9 +656,9 @@ export default function QueueBoardScreen({ user, onBack, onNav, catalog }) {
 
       {/* Truck queue modal with reorder */}
       {truckQueueModal && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 9998, display: "flex", alignItems: "center", justifyContent: "center" }}
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 9998, display: "flex", alignItems: "center", justifyContent: "center", padding: "env(safe-area-inset-top, 0px) 12px env(safe-area-inset-bottom, 0px)" }}
           onClick={() => setTruckQueueModal(null)}>
-          <div onClick={e => e.stopPropagation()} style={{ background: C.w, borderRadius: R.lg, padding: 20, maxWidth: 420, width: "90%", boxShadow: C.shLg, maxHeight: "80vh", overflow: "auto" }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: C.w, borderRadius: R.lg, padding: 20, maxWidth: 420, width: "90%", boxShadow: C.shLg, maxHeight: "calc(100dvh - 120px)", overflow: "auto" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
               <div>
                 <div style={{ fontSize: 16, fontWeight: 700, color: C.t1 }}>Cola de fletes</div>

@@ -109,8 +109,14 @@ export const useFreightDetailStore = create((set, get) => ({
   })),
 
   invalidate: (id) => set((state) => {
-    const { [id]: _, ...rest } = state.details;
-    return { details: rest };
+    const entry = state.details[id];
+    if (!entry?.data) {
+      // No cached data — just remove
+      const { [id]: _, ...rest } = state.details;
+      return { details: rest };
+    }
+    // Keep existing data visible but mark as stale so DetailScreen re-fetches
+    return { details: { ...state.details, [id]: { ...entry, ts: 0, data: { ...entry.data, _isFullDetail: false } } } };
   }),
 
   clearAll: () => set({ details: {} }),

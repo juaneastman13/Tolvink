@@ -125,18 +125,18 @@ export default function ViewMapScreen() {
   }
 
   return (
-    <div style={{ height: "100vh", width: "100vw", position: "relative", fontFamily: "system-ui" }}>
+    <div style={{ height: "100vh", width: "100vw", display: "flex", flexDirection: "column", fontFamily: "system-ui" }}>
       {/* Header */}
-      <div style={{ position: "absolute", top: 0, left: 0, right: 0, zIndex: 10, background: "rgba(255,255,255,0.95)", backdropFilter: "blur(8px)", padding: "12px 16px", display: "flex", alignItems: "center", gap: 10, boxShadow: "0 1px 4px rgba(0,0,0,0.1)" }}>
+      <div style={{ flexShrink: 0, zIndex: 10, background: "rgba(255,255,255,0.95)", backdropFilter: "blur(8px)", padding: "max(12px, env(safe-area-inset-top)) 16px 12px", display: "flex", alignItems: "center", gap: 10, boxShadow: "0 1px 4px rgba(0,0,0,0.1)" }}>
         <span style={{ fontSize: 24.2, fontWeight: 800, color: C.pri, letterSpacing: -1 }}>tolvink</span>
         <span style={{ width: 6, height: 6, borderRadius: R.xs, background: C.acc, marginTop: -8 }}></span>
         <span style={{ marginLeft: "auto", fontSize: 15.4, color: C.t2, fontWeight: 500, maxWidth: "60%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-          📍 {name}{hasDest ? ` → ${dname}` : ""}
+          {name}{hasDest ? ` → ${dname}` : ""}
         </span>
       </div>
 
       {/* Map */}
-      <div ref={mapRef} style={{ height: "100%", width: "100%" }} />
+      <div ref={mapRef} style={{ flex: 1, minHeight: 0, position: "relative" }} />
       {mapLoading && (
         <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: C.bg, zIndex: 5 }}>
           <div style={{ textAlign: "center", color: C.t3 }}>
@@ -146,7 +146,7 @@ export default function ViewMapScreen() {
       )}
 
       {/* Bottom nav button */}
-      <div style={{ position: "absolute", bottom: 24, left: 16, right: 16, zIndex: 10 }}>
+      <div style={{ position: "absolute", bottom: "max(24px, env(safe-area-inset-bottom))", left: 16, right: 16, zIndex: 10 }}>
         <a
           href={hasDest ? `https://www.google.com/maps/dir/?api=1&origin=${lat},${lng}&destination=${dlat},${dlng}` : `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`}
           target="_blank"

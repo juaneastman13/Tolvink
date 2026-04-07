@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Tolvink</string>
+    <string name="title_activity_main">Tolvink</string>
+    <string name="package_name">com.tolvink.app</string>
+    <string name="custom_url_scheme">com.tolvink.app</string>
+</resources>

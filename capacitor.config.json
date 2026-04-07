@@ -1,0 +1,17 @@
+{
+  "appId": "com.tolvink.app",
+  "appName": "Tolvink",
+  "webDir": "dist",
+  "plugins": {
+    "SplashScreen": {
+      "launchAutoHide": true,
+      "backgroundColor": "#1A6B37",
+      "androidScaleType": "CENTER_CROP",
+      "showSpinner": false
+    },
+    "StatusBar": {
+      "backgroundColor": "#1A6B37",
+      "style": "LIGHT"
+    }
+  }
+}

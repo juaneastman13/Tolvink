@@ -48,7 +48,7 @@ export function ModalOverlay({ children, onClose, maxWidth=400, loading=false, c
   const showLoading = loading && !closing;
 
   return (
-    <div ref={dialogRef} role="dialog" aria-modal="true" onClick={showCard ? onClose : undefined} style={{position:"fixed",inset:0,background:C.bgOverlay,display:"flex",alignItems:"center",justifyContent:"center",zIndex:200,padding:24,animation:fading ? "moOutroFade 0.4s ease forwards" : "moFadeIn 0.25s ease"}}>
+    <div ref={dialogRef} role="dialog" aria-modal="true" onClick={showCard ? onClose : undefined} style={{position:"fixed",inset:0,background:C.bgOverlay,display:"flex",alignItems:"center",justifyContent:"center",zIndex:200,padding:"max(24px, env(safe-area-inset-top)) 24px max(24px, env(safe-area-inset-bottom))",animation:fading ? "moOutroFade 0.4s ease forwards" : "moFadeIn 0.25s ease"}}>
       <style>{`
 @keyframes moFadeIn{from{opacity:0}to{opacity:1}}
 @keyframes moLogoIn{from{opacity:0;transform:scale(0.7)}to{opacity:1;transform:scale(1)}}
@@ -85,7 +85,7 @@ export function ModalOverlay({ children, onClose, maxWidth=400, loading=false, c
       )}
       {/* Card */}
       {showCard && (
-        <div onClick={e=>e.stopPropagation()} style={{background:C.w,borderRadius: R.xl,padding:"22px 22px max(22px, env(safe-area-inset-bottom))",width:"100%",maxWidth,maxHeight:"calc(100vh - 48px)",overflowY:"auto",boxShadow:C.shLg,animation:"moCardIn 0.3s cubic-bezier(0.34,1.56,0.64,1)",WebkitOverflowScrolling:"touch"}}>
+        <div onClick={e=>e.stopPropagation()} style={{background:C.w,borderRadius: R.xl,padding:"22px 22px max(22px, env(safe-area-inset-bottom))",width:"100%",maxWidth,maxHeight:"calc(100dvh - 120px)",overflowY:"auto",boxShadow:C.shLg,animation:"moCardIn 0.3s cubic-bezier(0.34,1.56,0.64,1)",WebkitOverflowScrolling:"touch"}}>
           {children}
         </div>
       )}
