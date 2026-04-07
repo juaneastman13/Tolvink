@@ -64,19 +64,6 @@
 </head>
 <body>
   <div id="root"></div>
-  <script>
-    // Emergency: unregister ALL service workers and purge ALL caches
-    // This ensures stale SW cannot serve broken cached bundles
-    // TODO: remove this block once all users have clean SWs (after 2026-03-18)
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.getRegistrations().then(function(regs) {
-        regs.forEach(function(r) { r.unregister(); });
-      });
-      caches.keys().then(function(ks) {
-        ks.forEach(function(k) { caches.delete(k); });
-      });
-    }
-  </script>
-  <script type="module" src="/src/main.jsx"></script>
+<script type="module" src="/src/main.jsx"></script>
 </body>
 </html>

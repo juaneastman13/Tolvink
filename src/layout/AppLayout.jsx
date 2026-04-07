@@ -88,6 +88,13 @@ export default function AppLayout({ fh, catalog, online, notif, isDesktop }) {
   // AI Chat state
   const [aiChatOpen, setAiChatOpen] = useState(false);
 
+  // SW update notification — listen for new version available
+  useEffect(() => {
+    const handler = () => { show("Nueva versión disponible. Recargando..."); setTimeout(() => window.location.reload(), 2000); };
+    window.addEventListener("sw-update-available", handler);
+    return () => window.removeEventListener("sw-update-available", handler);
+  }, [show]);
+
   // Extract freight ID from URL params
   const [selFreight, setSelFreight] = useState(null);
   const [truckBusyModal, setTruckBusyModal] = useState(null); // { fId, aId, actionKey, error, busyFreightCode, isTrip }
