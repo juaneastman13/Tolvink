@@ -34,7 +34,7 @@ export default function AdminScreen({ user, onBack, onUserUpdate }) {
 
   // Views: list | companyForm | companyDetail | userForm | userEdit | linkUser
   const [view, setView] = useState("list");
-  const [companyForm, setCompanyForm] = useState({ name:"",type:"producer",phone:"",email:"",rut:"",hasInternalFleet:false,lat:null,lng:null,address:"" });
+  const [companyForm, setCompanyForm] = useState({ name:"",type:"producer",phone:"",email:"",rut:"",hasInternalFleet:false,autonomousDriverEnabled:false,lat:null,lng:null,address:"" });
   const [editCompanyId, setEditCompanyId] = useState(null);
   const [userForm, setUserForm] = useState({ name:"",email:"",phone:"",password:"",userTypes:[],companyByType:{},roleByType:{} });
   const [editUserData, setEditUserData] = useState(null);
@@ -137,7 +137,7 @@ export default function AdminScreen({ user, onBack, onUserUpdate }) {
 
   // --- Company ---
   const openNewCompany = () => { setCompanyForm({name:"",type:"producer",phone:"",email:"",rut:"",hasInternalFleet:false,lat:null,lng:null,address:""}); setEditCompanyId(null); setView("companyForm"); };
-  const openEditCompany = (c) => { setCompanyForm({name:c.name,type:c.type,phone:c.phone||"",email:c.email||"",rut:c.rut||"",hasInternalFleet:!!c.hasInternalFleet,lat:c.lat?Number(c.lat):null,lng:c.lng?Number(c.lng):null,address:c.address||""}); setEditCompanyId(c.id); setView("companyForm"); };
+  const openEditCompany = (c) => { setCompanyForm({name:c.name,type:c.type,phone:c.phone||"",email:c.email||"",rut:c.rut||"",hasInternalFleet:!!c.hasInternalFleet,autonomousDriverEnabled:!!c.autonomousDriverEnabled,lat:c.lat?Number(c.lat):null,lng:c.lng?Number(c.lng):null,address:c.address||""}); setEditCompanyId(c.id); setView("companyForm"); };
   const handleSaveCompany = async () => {
     if(!companyForm.name.trim()) return show("Nombre requerido","err");
     if(!/^09\d{7}$/.test(companyForm.phone)) return show("Celular obligatorio (09XXXXXXX)","err");
@@ -148,7 +148,7 @@ export default function AdminScreen({ user, onBack, onUserUpdate }) {
         setDoneMsg("Empresa actualizada");
         // If edited company is user's active company, update session
         if (editCompanyId === user.activeCompanyId && onUserUpdate) {
-          onUserUpdate({ hasInternalFleet: !!companyForm.hasInternalFleet });
+          onUserUpdate({ hasInternalFleet: !!companyForm.hasInternalFleet, autonomousDriverEnabled: !!companyForm.autonomousDriverEnabled });
         }
       }
       else { await apiAdminCreateCompany(companyForm); setDoneMsg("Empresa creada"); }
@@ -352,6 +352,10 @@ export default function AdminScreen({ user, onBack, onUserUpdate }) {
           <label style={{display:"flex",alignItems:"center",gap:8,fontSize:13.2,color:C.t2,marginBottom:10,cursor:"pointer"}}>
             <input type="checkbox" checked={companyForm.hasInternalFleet} onChange={e=>setCompanyForm(p=>({...p,hasInternalFleet:e.target.checked}))} style={{width:16,height:16}} /> Flota propia
           </label>
+          <label style={{display:"flex",alignItems:"center",gap:8,fontSize:13.2,color:C.t2,marginBottom:4,cursor:"pointer"}}>
+            <input type="checkbox" checked={companyForm.autonomousDriverEnabled} onChange={e=>setCompanyForm(p=>({...p,autonomousDriverEnabled:e.target.checked}))} style={{width:16,height:16}} /> Chofer autónomo
+          </label>
+          <div style={{fontSize:11.5,color:C.t3,marginBottom:10,paddingLeft:24}}>Permite a todos los choferes crear y gestionar fletes desde WhatsApp</div>
           <LocationPicker label="Ubicación" value={companyForm.lat?{lat:companyForm.lat,lng:companyForm.lng,address:companyForm.address||""}:null} onChange={(loc)=>setCompanyForm(p=>({...p,lat:loc?.lat||null,lng:loc?.lng||null,address:loc?.address||""}))} />
           <div style={{display:"flex",gap:8,marginTop:6}}>
             <button onClick={()=>setView("list")} style={{flex:1,padding:"10px 0",borderRadius: R.md,border:`1px solid ${C.b1}`,background:C.w,color:C.t2,fontSize:14.3,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>Cancelar</button>
@@ -727,6 +731,7 @@ export default function AdminScreen({ user, onBack, onUserUpdate }) {
                 <Bd color={typeColors[cType]}>{typeLabels[cType]}</Bd>
                 {selectedCompany.rut&&<Bd color={C.t2}>RUT: {selectedCompany.rut}</Bd>}
                 {selectedCompany.hasInternalFleet&&<Bd color={C.info||"#3B82F6"}>Flota propia</Bd>}
+                {selectedCompany.autonomousDriverEnabled&&<Bd color={C.sec||"#F59E0B"}>Chofer autónomo</Bd>}
               </div>
               {selectedCompany.email&&<div style={{fontSize:13.2,color:C.t2,marginTop:4}}>{selectedCompany.email}</div>}
               {selectedCompany.phone&&<div style={{fontSize:13.2,color:C.t3}}>{selectedCompany.phone}</div>}
@@ -1045,7 +1050,8 @@ export default function AdminScreen({ user, onBack, onUserUpdate }) {
                     const mem = memberships.find(m=>m.companyId===cbt[t]);
                     const memberRole = mem?.role;
                     const displayRole = memberRole === "gerente" ? "admin" : memberRole === "chofer" ? "chofer" : memberRole === "operario" ? "operator" : u.role || "operator";
-                    return <Bd key={t} color={typeColors[t]}>{typeLabels[t]} · {roleLabels[displayRole]||displayRole}</Bd>;
+                    const isAutoChofer = displayRole === "chofer" && allCompanies.find(c=>c.id===cbt[t])?.autonomousDriverEnabled;
+                    return <span key={t} style={{display:"inline-flex",gap:4,alignItems:"center"}}><Bd color={typeColors[t]}>{typeLabels[t]} · {roleLabels[displayRole]||displayRole}</Bd>{isAutoChofer&&<Bd color={C.sec||"#F59E0B"}>Autónomo</Bd>}</span>;
                   })}
                   {(u.userTypes||[]).length===0&&<span style={{fontSize:11,color:C.t3}}>Sin tipo</span>}
                 </div>
