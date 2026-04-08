@@ -710,7 +710,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
         // Get date for each step from audit log
         const getStepDate = (backendSteps) => { if(!auditLog) return null; const logs = backendSteps.flatMap(s => getStepLogs(s)); if(logs.length === 0) return null; return logs[logs.length-1].createdAt; };
         const visualAuditMap = [["pending_assignment"],["assigned","accepted","in_progress","loaded"],["finished"]];
-        const showConfs = !isMultiTruck && (freight.status==="loaded" || freight.status==="in_progress");
+        const showConfs = !isMultiTruck && !freight.isAutonomous && (freight.status==="loaded" || freight.status==="in_progress");
         return <div ref={auditRef} style={{ background:C.w, border:`1px solid ${C.b1}`, borderRadius: R.lg, padding:16, marginBottom:12, boxShadow:C.sh, position:"relative" }}>
           <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14 }}>
             <span style={{ fontSize:12.2, fontWeight:700, color:C.t2, textTransform:"uppercase", letterSpacing:0.5 }}>Progreso</span>
@@ -1010,7 +1010,9 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
               [Ic.plant(C.t2,15),"Destino",destDisplay(freight)],
               [Ic.cal(C.t2,15),"Fecha carga",formatFreightDate(freight.loadDate)],
               [Ic.clk(C.t2,15),"Hora carga",freight.loadTime],
+              freight.arrivedAtPlantAt && [Ic.clk(C.ok,15),"Llegada planta",new Date(freight.arrivedAtPlantAt).toLocaleString("es-UY",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"})],
               [Ic.user(C.t2,15),"Solicitado por",freight.requestedByName],
+              freight.isAutonomous && [Ic.truck(C.sec,15),"Tipo","Flete autónomo"],
             ].filter(Boolean);
             const allRows = [...carga.map((r,i)=>["c"+i,...r]), ...ruta.map((r,i)=>["r"+i,...r])];
             return <>
@@ -1204,7 +1206,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
           { label:"En curso", backendSteps:["assigned","accepted","in_progress","loaded"], color:C.pri, icon:(c,s)=>Ic.truck(c,s) },
           { label: isCanceled ? "Cancelado" : "Finalizado", backendSteps:["finished"], color: isCanceled ? C.err : C.ok, icon:(c,s)=> isCanceled ? Ic.cross(c,s) : Ic.chk(c,s) },
         ];
-        const showConfs = !isMultiTruck && (freight.status==="loaded" || freight.status==="in_progress");
+        const showConfs = !isMultiTruck && !freight.isAutonomous && (freight.status==="loaded" || freight.status==="in_progress");
         return <div onClick={()=>setShowProgressModal(false)} style={{ position:"absolute", inset:0, zIndex:200, background:"rgba(0,0,0,0.5)", display:"flex", alignItems:"center", justifyContent:"center", padding:16 }}>
           <div onClick={e=>e.stopPropagation()} style={{ background:C.w, borderRadius: R.lg, padding:20, maxWidth:560, width:"100%", maxHeight:"80%", overflow:"auto", boxShadow:C.shLg }}>
             <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14 }}>

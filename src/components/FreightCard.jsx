@@ -136,6 +136,12 @@ export const FreightCard = memo(function FreightCard({ freight: f, onClick, styl
             <span style={{ fontSize: 11, color: C.acc, fontWeight: 600 }}>{f.producerCompanyName}</span>
           </div>
         )}
+        {/* Autonomous badge */}
+        {f.isAutonomous && (
+          <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 4 }}>
+            <span style={{ fontSize: 9.5, fontWeight: 600, color: C.sec, background: `${C.sec}15`, padding: "1px 6px", borderRadius: 99, flexShrink: 0 }}>AUTÓNOMO</span>
+          </div>
+        )}
         {/* Row 3: transport + date */}
         <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
           {Ic.truck(C.t2, 13)}

@@ -68,6 +68,8 @@ export default memo(function ListScreen({ freights, loading, onNav, onRefresh, c
   const [tableStatusFilter, setTableStatusFilter] = useState("all");
   // "Requiere mi acción" filter
   const [filterRequiresAction, setFilterRequiresAction] = useState(false);
+  // "Solo autónomos" filter
+  const [filterAutonomous, setFilterAutonomous] = useState(false);
   const { isConsulta } = useAccessLevel(user);
 
   // Server-side filtering state
@@ -113,8 +115,8 @@ export default memo(function ListScreen({ freights, loading, onNav, onRefresh, c
     else { setDateFrom(""); setDateTo(""); }
   };
 
-  const clearAll = () => { setSearchQ(""); setFPlant(""); setFProducer(""); setFTransporter(""); setDateFrom(""); setDateTo(""); setDatePreset(""); setFilterRequiresAction(false); setServerData(null); };
-  const hasFilters = searchQ || fPlant || fProducer || fTransporter || fProducerCompany || dateFrom || dateTo || filterRequiresAction;
+  const clearAll = () => { setSearchQ(""); setFPlant(""); setFProducer(""); setFTransporter(""); setDateFrom(""); setDateTo(""); setDatePreset(""); setFilterRequiresAction(false); setFilterAutonomous(false); setServerData(null); };
+  const hasFilters = searchQ || fPlant || fProducer || fTransporter || fProducerCompany || dateFrom || dateTo || filterRequiresAction || filterAutonomous;
 
   // Build query params for server-side filtering
   const buildFilterParams = useCallback(() => {
@@ -198,11 +200,13 @@ export default memo(function ListScreen({ freights, loading, onNav, onRefresh, c
     return m;
   }, [filtered, user?.role, user?.id, userType, effectiveTypeKanban]);
 
-  // Apply "Requiere mi acción" filter
+  // Apply "Requiere mi acción" and "Autónomos" filters
   const filteredFinal = useMemo(() => {
-    if (!filterRequiresAction) return filtered;
-    return filtered.filter(f => pendingMap.get(f.id) != null);
-  }, [filtered, filterRequiresAction, pendingMap]);
+    let data = filtered;
+    if (filterRequiresAction) data = data.filter(f => pendingMap.get(f.id) != null);
+    if (filterAutonomous) data = data.filter(f => f.isAutonomous);
+    return data;
+  }, [filtered, filterRequiresAction, filterAutonomous, pendingMap]);
 
   // Status grouping (default kanban)
   const grouped = useMemo(()=>{
@@ -637,10 +641,13 @@ export default memo(function ListScreen({ freights, loading, onNav, onRefresh, c
         </button>
         {hasFilters && <button onClick={clearAll} style={{padding:"8px 12px",borderRadius: R.sm,border:`1px solid ${C.err}40`,background:C.errPale,color:C.err,fontSize:13.2,fontWeight:600,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap",flexShrink:0,minHeight:44}}>Limpiar</button>}
       </div>
-      {/* "Requiere mi acción" chip (mobile) */}
-      <div style={{ display:"flex", gap:6, marginBottom:8 }}>
+      {/* Quick filter chips */}
+      <div style={{ display:"flex", gap:6, marginBottom:8, flexWrap:"wrap" }}>
         <button onClick={()=>setFilterRequiresAction(p=>!p)} style={{padding:"7px 12px",borderRadius: R.md,border:`1.5px solid ${filterRequiresAction?C.acc:C.b1}`,background:filterRequiresAction?`${C.acc}15`:C.w,color:filterRequiresAction?C.acc:C.t2,fontSize:13.2,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:5,whiteSpace:"nowrap",minHeight:36}}>
           {filterRequiresAction ? Ic.chk(C.acc,12) : Ic.warn(C.t3,12)} Mi acción
+        </button>
+        <button onClick={()=>setFilterAutonomous(p=>!p)} style={{padding:"7px 12px",borderRadius: R.md,border:`1.5px solid ${filterAutonomous?C.sec:C.b1}`,background:filterAutonomous?`${C.sec}15`:C.w,color:filterAutonomous?C.sec:C.t2,fontSize:13.2,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:5,whiteSpace:"nowrap",minHeight:36}}>
+          {filterAutonomous ? Ic.chk(C.sec,12) : Ic.truck(C.t3,12)} Autónomos
         </button>
       </div>
       {/* View mode buttons */}

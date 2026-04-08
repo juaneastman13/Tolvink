@@ -102,6 +102,11 @@ export function mapFreight(f) {
       externalDriverName: x.externalDriverName || null,
     })),
     producerCompanyId:f.producerCompanyId||null, producerCompanyName:f.producerCompany?.name||null, producerCompanyPhone:f.producerCompany?.phone||null,
+    // Autonomous driver freight
+    isAutonomous: !!f.isAutonomous,
+    originFreeText: f.originFreeText||null,
+    destinationFreeText: f.destinationFreeText||null,
+    arrivedAtPlantAt: f.arrivedAtPlantAt||null,
     notes:f.notes||"", cancelReason:f.cancelReason||"", createdAt:f.createdAt,
     transporterLoadedConfirmedAt: f.transporterLoadedConfirmedAt||null,
     producerLoadedConfirmedAt: f.producerLoadedConfirmedAt||null,
@@ -132,11 +137,13 @@ export function mapFreight(f) {
 /** Resolve origin display text — always use the name saved at freight creation */
 export function originDisplay(f) {
   if (!f) return '';
+  if (f.originFreeText) return f.originFreeText;
   return [f.fieldName, f.originName].filter(Boolean).join(" / ") || f.originCompanyName || "";
 }
 /** Resolve dest display text — always use the name saved at freight creation */
 export function destDisplay(f) {
   if (!f) return '';
+  if (f.destinationFreeText) return f.destinationFreeText;
   return f.destName || "";
 }
 
