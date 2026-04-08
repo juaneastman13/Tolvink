@@ -5,7 +5,7 @@ import { C, track, FONT, Ic , R} from "../theme";
 import { POLL_INTERVALS, stCfg } from "../constants";
 import { FEATURES } from "../features";
 import { Toast, LoadingOverlay, Sidebar, Nav, NotifBell, NotificationsPanel, ErrorBoundary } from "../components";
-import { permsFor, mapFreight, originDisplay, destDisplay } from "../hooks";
+import { permsFor, mapFreight, originDisplay, destDisplay, usePullToRefresh } from "../hooks";
 import { useAccessLevel } from "../hooks/useAccessLevel";
 import { RoutesBackground } from "../routes-bg";
 import { useUIStore, useFreightDetailStore, offlineQueue } from "../store";
@@ -87,6 +87,19 @@ export default function AppLayout({ fh, catalog, online, notif, isDesktop }) {
 
   // AI Chat state
   const [aiChatOpen, setAiChatOpen] = useState(false);
+
+  // Haptic feedback helper — light tap for success, double for important
+  const haptic = useCallback((type = "light") => {
+    try {
+      if (!navigator.vibrate) return;
+      if (type === "success") navigator.vibrate([10, 30, 10]);
+      else if (type === "heavy") navigator.vibrate([20, 40, 20]);
+      else navigator.vibrate(10);
+    } catch {}
+  }, []);
+
+  // Pull-to-refresh on main scrollable area (mobile)
+  const { containerRef: pullRef, indicator: pullIndicator } = usePullToRefresh(useCallback(() => fh.fetchAll(), [fh.fetchAll]));
 
   // SW update notification — listen for new version available
   useEffect(() => {
@@ -332,7 +345,7 @@ export default function AppLayout({ fh, catalog, online, notif, isDesktop }) {
     setActionLoading(true);
     try {
       const r = await fh.respond(fId, "accepted", undefined, truckId, driverId);
-      if(r.ok){ track("freight_accept"); clearActionAfterClose(); return "Flete aceptado"; }
+      if(r.ok){ haptic("success"); track("freight_accept"); clearActionAfterClose(); return "Flete aceptado"; }
       show(r.error,"err"); setActionLoading(false); return "";
     } catch(e) { show(e?.message||"Error de conexión","err"); setActionLoading(false); return ""; }
   };
@@ -341,7 +354,7 @@ export default function AppLayout({ fh, catalog, online, notif, isDesktop }) {
     setActionLoading(true);
     try {
       const r = await fh.assign(fId, transportCompanyId, truckId, driverId);
-      if(r.ok){ track("freight_assign"); clearActionAfterClose(); return "Transportista asignado"; }
+      if(r.ok){ haptic("success"); track("freight_assign"); clearActionAfterClose(); return "Transportista asignado"; }
       show(r.error,"err"); setActionLoading(false); return "";
     } catch(e) { show(e?.message||"Error de conexión","err"); setActionLoading(false); return ""; }
   };
@@ -351,7 +364,7 @@ export default function AppLayout({ fh, catalog, online, notif, isDesktop }) {
     setActionLoading(true);
     try {
       const r = await fh.assignMulti(modal.freight.id, trucks);
-      if(r.ok){ track("freight_assign_multi"); clearActionAfterClose(); return `${trucks.length} camiones asignados`; }
+      if(r.ok){ haptic("success"); track("freight_assign_multi"); clearActionAfterClose(); return `${trucks.length} camiones asignados`; }
       show(r.error,"err"); setActionLoading(false); return "";
     } catch(e) { show(e?.message||"Error de conexión","err"); setActionLoading(false); return ""; }
   };
@@ -387,7 +400,7 @@ export default function AppLayout({ fh, catalog, online, notif, isDesktop }) {
     setActionLoading(true);
     try {
       const r = await fh.respondTrip(fId, aId, {action:"accepted", truckId, driverId});
-      if(r.ok){ track("trip_accept"); clearActionAfterClose(); return "Viaje aceptado"; }
+      if(r.ok){ haptic("success"); track("trip_accept"); clearActionAfterClose(); return "Viaje aceptado"; }
       show(r.error,"err"); setActionLoading(false); return "";
     } catch(e) { show(e?.message||"Error de conexión","err"); setActionLoading(false); return ""; }
   };
@@ -401,7 +414,7 @@ export default function AppLayout({ fh, catalog, online, notif, isDesktop }) {
       else if(actionKey==="start_trip") r = await fh.startTrip(fId, aId);
       else if(actionKey==="confirm_trip_loaded") r = await fh.confirmTripLoaded(fId, aId, loadedTons);
       else if(actionKey==="confirm_trip_finished") r = await fh.confirmTripFinished(fId, aId);
-      if(r?.ok){ clearActionAfterClose(); return msgs[actionKey]||"Hecho"; }
+      if(r?.ok){ haptic("heavy"); clearActionAfterClose(); return msgs[actionKey]||"Hecho"; }
       // Truck busy warning — show modal with option to force or navigate to busy freight
       if(r?.truckBusy && actionKey==="start_trip") {
         setActionLoading(false);
@@ -433,7 +446,7 @@ export default function AppLayout({ fh, catalog, online, notif, isDesktop }) {
       const fn = { start:fh.start, authorize:fh.authorize, approve_producer:fh.approveProducer, confirm_loaded:fh.confirmLoaded, confirm_finished:fh.confirmFinished }[action];
       if(!fn){ setActionLoading(false); return ""; }
       const r = action==="confirm_loaded" ? await fn(fId, loadedTons) : await fn(fId);
-      if(r.ok){ clearActionAfterClose(); return msgs[action]||"Hecho"; }
+      if(r.ok){ haptic("heavy"); clearActionAfterClose(); return msgs[action]||"Hecho"; }
       // Truck busy warning — show modal with option to force or navigate to busy freight
       if(r.truckBusy && action==="start") {
         setActionLoading(false);
@@ -452,7 +465,7 @@ export default function AppLayout({ fh, catalog, online, notif, isDesktop }) {
       else if(action==="reject") r = await fh.respond(fId,"rejected",reason);
       else if(action==="reject_trip" && extra?.assignmentId) { r = await fh.respondTrip(fId, extra.assignmentId, {action:"rejected",reason}); }
       const msg = action==="cancel"?"Flete cancelado":action==="reject_trip"?"Viaje rechazado":"Asignación rechazada";
-      if(r?.ok){ clearActionAfterClose(); return msg; }
+      if(r?.ok){ haptic("light"); clearActionAfterClose(); return msg; }
       show(r?.error||"Error","err"); setActionLoading(false); return "";
     } catch(e) { show(e?.message||"Error de conexión","err"); setActionLoading(false); return ""; }
   };
@@ -504,6 +517,7 @@ export default function AppLayout({ fh, catalog, online, notif, isDesktop }) {
     }
     setSubmitting(false);
     if(r.ok){
+      haptic("heavy");
       track("freight_create");
       if (assignError) show(`Flete creado, pero no se pudo asignar transporte: ${assignError}`, "warn");
       else if(photoFailCount > 0) show(`Flete solicitado, pero ${photoFailCount} foto(s) no se pudieron adjuntar`,"warn");
@@ -626,7 +640,8 @@ export default function AppLayout({ fh, catalog, online, notif, isDesktop }) {
         {auth.companySwitching && <div style={{position:"absolute",inset:0,background:"rgba(255,255,255,0.7)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:50,backdropFilter:"blur(2px)"}}><div style={{display:"flex",alignItems:"center",gap:10,padding:"12px 24px",borderRadius: R.lg,background:C.w,boxShadow:C.shMd}}><div style={{width:18,height:18,border:`3px solid ${C.b2}`,borderTopColor:C.pri,borderRadius:"50%",animation:"spin 0.6s linear infinite"}}/><span style={{fontSize:14.3,fontWeight:600,color:C.t2}}>Cambiando empresa...</span></div></div>}
 
         {/* Scrollable content area */}
-        <div style={{flex:1,overflow:(screen==="chats"||screen==="calendar")&&isDesktop?"hidden":"auto",display:(mapFocus||locPicker)?"none":"flex",flexDirection:"column",WebkitOverflowScrolling:"touch",overscrollBehavior:"contain",paddingBottom:!isDesktop&&screen!=="chats"&&screen!=="locations"?"env(safe-area-inset-bottom, 0px)":0}}>
+        <div ref={pullRef} style={{flex:1,overflow:(screen==="chats"||screen==="calendar")&&isDesktop?"hidden":"auto",display:(mapFocus||locPicker)?"none":"flex",flexDirection:"column",WebkitOverflowScrolling:"touch",overscrollBehavior:"contain",paddingBottom:!isDesktop&&screen!=="chats"&&screen!=="locations"?"env(safe-area-inset-bottom, 0px)":0}}>
+        {pullIndicator}
         <div key={screen} className="tv-page" style={{flex:1,display:"flex",flexDirection:"column",minHeight:0}}>
         <ErrorBoundary><Suspense fallback={<SL/>}>
         {screen==="home" && <HomeScreen user={auth.user} freights={viewFreights} loading={fh.loading} error={fh.error} perms={perms} onNav={nav} catalog={catalog} isDesktop={isDesktop} onAction={handleAction} onTripAction={handleTripAction} onEditTrip={handleEditTrip} actionLoading={actionLoading} onChat={(convId)=>{if(convId){setChatConvId(convId);navigate("/chats");}}} onRefresh={(id)=>fh.refresh(id)} onRetry={fh.fetchAll} onDuplicate={(f)=>{setDuplicateData(f);navigate("/new");}} onEdit={(f)=>{setEditData(f);navigate("/edit/"+f.id);}} goToMap={goToMap} simpleMode={auth.simpleMode} statusCounts={fh.statusCounts}/>}
