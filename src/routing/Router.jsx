@@ -21,8 +21,6 @@ export const AnalyticsScreen = lazy(() => import("../screens/AnalyticsScreen"));
 export const LocationsScreen = lazy(() => import("../screens/LocationsScreen"));
 export const AdminScreen = lazy(() => import("../screens/AdminScreen"));
 export const MyDataScreen = lazy(() => import("../screens/MyDataScreen"));
-export const ReportsScreen = lazy(() => import("../screens/ReportsScreen"));
-export const ChatsScreen = lazy(() => import("../screens/ChatsScreen"));
 export const NotificationsScreen = lazy(() => import("../screens/NotificationsScreen"));
 export const LinkedCompaniesScreen = lazy(() => import("../screens/LinkedCompaniesScreen"));
 export const QueueBoardScreen = lazy(() => import("../screens/QueueBoardScreen"));
@@ -35,7 +33,6 @@ export const ViewMapScreen = lazy(() => import("../screens/ViewMapScreen"));
 export const SharedLinkScreen = lazy(() => import("../screens/SharedLinkScreen"));
 
 // AI Chat
-export const PublicDiagnosticScreen = lazy(() => import("../screens/mechanic/PublicDiagnosticScreen"));
 export const AiChat = lazy(() => import("../AiChat").then(m => ({ default: m.default })));
 export const AiChatFabComp = lazy(() => import("../AiChat").then(m => ({ default: m.AiChatFab })));
 
@@ -126,9 +123,6 @@ export function renderPublicRoute(pathname) {
   if (pathname === "/daily-map") return <Suspense fallback={<SL/>}><DailyMapScreen /></Suspense>;
   if (pathname === "/live-freight") return <Suspense fallback={<SL/>}><LiveFreightScreen /></Suspense>;
 
-  const diagMatch = pathname.match(/^\/public\/diagnostic\/([a-zA-Z0-9-]+)$/);
-  if (diagMatch) return <Suspense fallback={<SL/>}><PublicDiagnosticScreen /></Suspense>;
-
   return null;
 }
 
@@ -140,7 +134,6 @@ export function useScreen() {
     if (p.startsWith("/freight/")) return "detail";
     if (p.startsWith("/trucks/")) return "truckDetail";
     if (p.startsWith("/edit/")) return "edit";
-    if (p.startsWith("/chats/")) return "chats";
     return PATH_TO_SCREEN[p] || "home";
   }, [location.pathname]);
 }
@@ -152,7 +145,7 @@ export function isPublicPath(pathname) {
     || /^\/(FLT-\d{4,}|F\d{2}-[A-Z]{3}\.\d{4})\/(ubicacion|informe)$/i.test(pathname)
     || /^\/campo\/[a-z0-9-]+\/ubicacion$/i.test(pathname)
     || /^\/ubicacion\/[a-z0-9-]+$/i.test(pathname)
-    || /^\/public\/diagnostic\/[a-zA-Z0-9-]+$/.test(pathname);
+;
 }
 
-export const FREIGHT_SCREENS = new Set(["home","list","calendar","detail","reports","notifs"]);
+export const FREIGHT_SCREENS = new Set(["home","list","calendar","detail","notifs"]);

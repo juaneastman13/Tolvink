@@ -3,10 +3,8 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { C, R, FONT, MONO, Ic } from "../../theme";
 import { apiGetMachine } from "../../api";
 import MaintenanceTab from "./MaintenanceTab";
-import DiagnosticsTab from "./DiagnosticsTab";
-
 const TYPE_LABELS = { tractor: "Tractor", harvester: "Cosechadora", seeder: "Sembradora", baler: "Enfardadora", implement: "Implemento", truck: "Camión", car: "Auto", motorcycle: "Moto", other: "Otro" };
-const TABS = ["Datos técnicos", "Historial", "Mantenimiento", "Diagnósticos"];
+const TABS = ["Datos técnicos", "Historial", "Mantenimiento"];
 
 function Badge({ label, color = C.t3, bg = C.bgCardAlt }) {
   return <span style={{ fontSize: 11.5, fontWeight: 600, color, background: bg, padding: "3px 10px", borderRadius: R.sm }}>{label}</span>;
@@ -140,7 +138,6 @@ export default function MachineDetailScreen() {
       )}
 
       {tab === 2 && <MaintenanceTab machine={m} />}
-      {tab === 3 && <DiagnosticsTab machine={m} />}
     </div>
   );
 }

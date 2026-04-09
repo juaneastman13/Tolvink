@@ -676,29 +676,6 @@ export async function apiGetMachineAlerts(machineId) { return api(`/machines/${m
 export async function apiGetAllMechanicAlerts() { return api('/mechanic/alerts'); }
 export async function apiUpdateAlertStatus(alertId, status) { return api(`/maintenance-alerts/${alertId}`, { body: { status }, method: 'PATCH' }); }
 
-// ── Diagnostic Sessions ──
-export async function apiCreateDiagnosticSession(machineId) { return api(`/machines/${machineId}/diagnostic-sessions`, { body: {} }); }
-export async function apiListDiagnosticSessions(machineId) { return api(`/machines/${machineId}/diagnostic-sessions`); }
-export async function apiGetDiagnosticSession(id) { return api(`/diagnostic-sessions/${id}`); }
-export async function apiSendDiagnosticMessage(sessionId, b) { return api(`/diagnostic-sessions/${sessionId}/message`, { body: b, timeout: 90000 }); }
-export async function apiResolveDiagnosticSession(id, b) { return api(`/diagnostic-sessions/${id}/resolve`, { body: b, method: 'PATCH' }); }
-export async function apiShareDiagnosticSession(id) { return api(`/diagnostic-sessions/${id}/share`, { body: {} }); }
-export async function apiGetPublicDiagnostic(shareToken) { return api(`/public/diagnostic-sessions/${shareToken}`); }
-
-// ── Diagnostic Media Upload ──
-export async function uploadDiagnosticMedia(file, sessionId) {
-  if (file.size > MAX_UPLOAD_SIZE) throw new Error('El archivo excede el tamaño máximo de 10MB');
-  if (!file.type.startsWith('image/')) throw new Error('Solo se permiten imágenes');
-  const processed = await compressImage(file).catch(() => file);
-  const ext = (processed.name?.split('.').pop() || 'jpg').replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
-  const path = `diagnostics/${sessionId}/${Date.now()}_${Math.random().toString(36).slice(2,8)}.${ext}`;
-  const url = `${SUPABASE_URL}/storage/v1/object/${STORAGE_BUCKET}/${path}`;
-  const headers = { 'Content-Type': processed.type || 'image/jpeg' };
-  if (SUPABASE_ANON_KEY) { headers['apikey'] = SUPABASE_ANON_KEY; headers['Authorization'] = `Bearer ${SUPABASE_ANON_KEY}`; }
-  const res = await fetch(url, { method: 'POST', headers, body: processed });
-  if (!res.ok) throw new Error('Error al subir imagen');
-  return `${SUPABASE_URL}/storage/v1/object/public/${STORAGE_BUCKET}/${path}`;
-}
 
 // ── Mechanic Dashboard ──
 export async function apiGetMechanicDashboard() { return api('/mechanic/dashboard'); }

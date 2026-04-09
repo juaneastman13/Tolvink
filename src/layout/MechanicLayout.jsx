@@ -12,7 +12,6 @@ const MachinesListScreen = lazy(() => import("../screens/mechanic/MachinesListSc
 const MachineWizard = lazy(() => import("../screens/mechanic/MachineWizard"));
 const MachineDetailScreen = lazy(() => import("../screens/mechanic/MachineDetailScreen"));
 const MachineQrRedirect = lazy(() => import("../screens/mechanic/MachineQrRedirect"));
-const DiagnosticSessionScreen = lazy(() => import("../screens/mechanic/DiagnosticSessionScreen"));
 
 // Wrench icon
 const WrenchIcon = (c = ACCENT, s = 20) => (
@@ -50,7 +49,6 @@ export default function MechanicLayout() {
     const p = location.pathname;
     if (p === "/mechanic/machines/new") return "machineNew";
     if (p.startsWith("/mechanic/machines/qr/")) return "machineQr";
-    if (/^\/mechanic\/machines\/[^/]+\/diagnostics\/[^/]+$/.test(p)) return "diagnosticSession";
     if (p.startsWith("/mechanic/machines/")) return "machineDetail";
     if (p.startsWith("/mechanic/machines")) return "machines";
     return "dashboard";
@@ -176,7 +174,6 @@ export default function MechanicLayout() {
             {currentKey === "machineNew" && <MachineWizard />}
             {currentKey === "machineDetail" && <MachineDetailScreen />}
             {currentKey === "machineQr" && <MachineQrRedirect />}
-            {currentKey === "diagnosticSession" && <DiagnosticSessionScreen />}
           </Suspense>
         </main>
 

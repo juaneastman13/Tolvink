@@ -3,7 +3,6 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { uploadPhoto, apiAddDocument, apiListConversations, apiSearchFreights, apiAssignFreight } from "../api";
 import { C, track, FONT, Ic , R} from "../theme";
 import { POLL_INTERVALS, stCfg } from "../constants";
-import { FEATURES } from "../features";
 import { Toast, LoadingOverlay, Sidebar, Nav, NotifBell, NotificationsPanel, ErrorBoundary } from "../components";
 import { permsFor, mapFreight, originDisplay, destDisplay, usePullToRefresh } from "../hooks";
 import { useAccessLevel } from "../hooks/useAccessLevel";
@@ -16,8 +15,8 @@ import {
   SCREEN_TO_PATH, SL, FREIGHT_SCREENS, useScreen,
   HomeScreen, ListScreen, DetailScreen, NewScreen, EditScreen,
   CalendarScreen, MenuScreen, TrucksScreen, TruckDetailScreen, TicketsScreen, DocumentsScreen, AnalyticsScreen,
-  LocationsScreen, AdminScreen, MyDataScreen, ReportsScreen,
-  ChatsScreen, NotificationsScreen, LinkedCompaniesScreen, QueueBoardScreen,
+  LocationsScreen, AdminScreen, MyDataScreen,
+  NotificationsScreen, LinkedCompaniesScreen, QueueBoardScreen,
   MapOverlay, LocPickerFullscreen,
   ConfirmActionModal, AssignModal, TruckSelectModal, ReasonModal, DriverQueueModal, EditTripModal, WeighTicketConfirmModal,
   AiChat, AiChatFabComp,
@@ -558,7 +557,6 @@ export default function AppLayout({ fh, catalog, online, notif, isDesktop }) {
           {auth.user && <div style={{position:"relative"}}>
             <button aria-label="Configuración" onClick={()=>setCompDropOpen(v=>!v)} style={{display:"flex",alignItems:"center",gap:6,padding:"5px 10px",borderRadius: R.md,border:`1px solid ${C.b1}`,background:C.w,cursor:"pointer",fontFamily:"inherit",maxWidth:180,WebkitTapHighlightColor:"transparent",touchAction:"manipulation"}}>
               <span style={{fontSize:12.1,fontWeight:600,color:C.t1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{auth.user.entity}</span>
-              {FEATURES.SIMPLE_MODE_TOGGLE && <span style={{fontSize:10,fontWeight:600,color:C.t3,background:C.bg,padding:"1px 6px",borderRadius: R.xs,flexShrink:0,whiteSpace:"nowrap"}}>{auth.simpleMode?"Simple":"Completo"}</span>}
               {Ic.down(C.t3,10)}
             </button>
             {compDropOpen && <>
@@ -581,14 +579,6 @@ export default function AppLayout({ fh, catalog, online, notif, isDesktop }) {
                   })}
                   <div style={{borderTop:`1px solid ${C.b2}`,margin:"4px 0"}}/>
                 </>}
-                {FEATURES.SIMPLE_MODE_TOGGLE && <><div style={{padding:"8px 14px 4px",fontSize:10,fontWeight:700,color:C.t3,textTransform:"uppercase",letterSpacing:0.5}}>Vista</div>
-                {[{k:false,l:"Completo"},{k:true,l:"Simple"}].map(o=>{
-                  const isActive = auth.simpleMode === o.k;
-                  return <button key={String(o.k)} onClick={()=>{if(!isActive) auth.toggleSimpleMode(); setCompDropOpen(false);}} style={{width:"100%",padding:"8px 14px",border:"none",background:isActive?C.priPale:"transparent",cursor:"pointer",fontFamily:"inherit",textAlign:"left",display:"flex",alignItems:"center",gap:8}}>
-                    <div style={{width:7,height:7,borderRadius: R.xs,background:isActive?C.pri:C.b2,flexShrink:0}}/>
-                    <span style={{fontSize:13.2,fontWeight:isActive?700:500,color:isActive?C.pri:C.t1}}>{o.l}</span>
-                  </button>;
-                })}</>}
               </div>
             </>}
           </div>}
@@ -661,8 +651,6 @@ export default function AppLayout({ fh, catalog, online, notif, isDesktop }) {
         {screen==="linked" && <LinkedCompaniesScreen user={auth.user} onBack={()=>navigate(-1)} onNav={nav}/>}
         {screen==="queue" && <QueueBoardScreen user={auth.user} onBack={()=>navigate(-1)} onNav={nav} catalog={catalog}/>}
         {screen==="mydata" && <MyDataScreen user={auth.user} onBack={()=>navigate(-1)} onUserUpdate={auth.patchUser}/>}
-        {screen==="reports" && <ReportsScreen onBack={()=>navigate(-1)} freights={viewFreights} isDesktop={isDesktop}/>}
-        {screen==="chats" && <ChatsScreen user={auth.user} openConvId={chatConvId} onConvOpened={()=>setChatConvId(null)} isDesktop={isDesktop} sseMsg={sseMsg} onSseMsgHandled={()=>setSseMsg(null)} sseTyping={sseTyping} sseRead={sseRead} sseConnected={sse.connected}/>}
         {screen==="notifs" && <NotificationsScreen notifications={notif.notifications} freights={viewFreights} loading={notif.loading} onMarkRead={notif.markRead} onMarkAllRead={notif.markAllRead} onTap={handleNotifTap} />}
         </Suspense></ErrorBoundary>
         </div>

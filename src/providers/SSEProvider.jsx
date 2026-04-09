@@ -10,7 +10,7 @@ export const useSSEContext = () => useContext(SSEContext);
 // Manages SSE connection + all real-time event state (chat, AI, notifications).
 // fh/notif/catalog are passed as props since they come from hooks above this provider.
 export function SSEProvider({ children, auth, fh, notif, catalog }) {
-  // SSE chat events — forwarded to ChatsScreen
+  // SSE chat events
   const [sseMsg, setSseMsg] = useState(null);
   const [sseTyping, setSseTyping] = useState(null);
   const [sseRead, setSseRead] = useState(null);

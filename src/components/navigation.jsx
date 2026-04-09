@@ -3,7 +3,6 @@ import { createPortal } from "react-dom";
 import { C, Ic, FONT, MONO , R} from "../theme";
 import { LicensePlate } from "./ui/LicensePlate";
 import { stCfg, formatFreightDate } from "../constants";
-import { FEATURES } from "../features";
 import { originDisplay, destDisplay } from "../hooks";
 import { Bd } from "./data-display";
 
@@ -203,11 +202,6 @@ export function Sidebar({ active, onChange, unread=0, pendingCount=0, notifCount
 
       {/* Mode toggle + Theme toggle */}
       <div style={{ borderTop:`1px solid ${C.b2}`, padding:"8px 12px", display:"flex", flexDirection:"column", gap:6, flexShrink:0 }}>
-        {FEATURES.SIMPLE_MODE_TOGGLE && onToggleSimple && <div style={{ position:"relative", display:"flex", borderRadius: R.sm, background:C.b2, padding:2, cursor:"pointer" }} onClick={onToggleSimple}>
-          <div style={{ position:"absolute", top:2, left:simpleMode?"50%":2, width:"calc(50% - 2px)", height:"calc(100% - 4px)", borderRadius: R.sm, background:C.t3, transition:"left 0.25s ease", boxShadow:"0 1px 3px rgba(0,0,0,0.1)" }} />
-          <span style={{ flex:1, textAlign:"center", fontSize:9.9, fontWeight:700, padding:"4px 0", position:"relative", zIndex:1, color:simpleMode?C.t3:C.w, transition:"color 0.2s", userSelect:"none" }}>Completo</span>
-          <span style={{ flex:1, textAlign:"center", fontSize:9.9, fontWeight:700, padding:"4px 0", position:"relative", zIndex:1, color:simpleMode?C.w:C.t3, transition:"color 0.2s", userSelect:"none" }}>Simple</span>
-        </div>}
       </div>
       {SearchHoverPreview && createPortal(SearchHoverPreview, document.body)}
     </div>

@@ -40,7 +40,7 @@ export default function MechanicDashboardScreen() {
     );
   }
 
-  const { summary, machines, recentAlerts, recentDiagnostics } = data;
+  const { summary, machines, recentAlerts } = data;
   const filteredMachines = statusFilter ? machines.filter(m => m.status === statusFilter) : machines;
 
   return (
@@ -57,37 +57,19 @@ export default function MechanicDashboardScreen() {
           icon={Ic.ban(C.err, 22)} active={statusFilter === "open_issue"} onClick={() => setStatusFilter(statusFilter === "open_issue" ? null : "open_issue")} />
       </div>
 
-      {/* ── Recent alerts + diagnostics ── */}
-      {(recentAlerts.length > 0 || recentDiagnostics.length > 0) && (
-        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 16, marginBottom: 24 }}>
-          {recentAlerts.length > 0 && (
-            <div>
-              <h3 style={{ fontSize: 14, fontWeight: 600, color: C.t2, margin: "0 0 10px" }}>Alertas recientes</h3>
-              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                {recentAlerts.map(a => (
-                  <button key={a.id} onClick={() => navigate(`/mechanic/machines/${a.machineId}`)}
-                    style={{ ...listItem, borderLeft: `3px solid ${a.severity === "overdue" ? C.err : C.warn}` }}>
-                    <div style={{ fontSize: 12.5, fontWeight: 600, color: C.t1 }}>{a.machineBrand} {a.machineModel}</div>
-                    <div style={{ fontSize: 12, color: C.t3 }}>{a.label} — {a.message}</div>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-          {recentDiagnostics.length > 0 && (
-            <div>
-              <h3 style={{ fontSize: 14, fontWeight: 600, color: C.t2, margin: "0 0 10px" }}>Diagnósticos abiertos</h3>
-              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                {recentDiagnostics.map(d => (
-                  <button key={d.id} onClick={() => navigate(`/mechanic/machines/${d.machineId}/diagnostics/${d.id}`)}
-                    style={{ ...listItem, borderLeft: `3px solid #E65100` }}>
-                    <div style={{ fontSize: 12.5, fontWeight: 600, color: C.t1 }}>{d.machineBrand} {d.machineModel}</div>
-                    <div style={{ fontSize: 12, color: C.t3 }}>{d.title || "Sin título"} · {d.messagesCount} msgs</div>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
+      {/* ── Recent alerts ── */}
+      {recentAlerts.length > 0 && (
+        <div style={{ marginBottom: 24 }}>
+          <h3 style={{ fontSize: 14, fontWeight: 600, color: C.t2, margin: "0 0 10px" }}>Alertas recientes</h3>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {recentAlerts.map(a => (
+              <button key={a.id} onClick={() => navigate(`/mechanic/machines/${a.machineId}`)}
+                style={{ ...listItem, borderLeft: `3px solid ${a.severity === "overdue" ? C.err : C.warn}` }}>
+                <div style={{ fontSize: 12.5, fontWeight: 600, color: C.t1 }}>{a.machineBrand} {a.machineModel}</div>
+                <div style={{ fontSize: 12, color: C.t3 }}>{a.label} — {a.message}</div>
+              </button>
+            ))}
+          </div>
         </div>
       )}
 
@@ -119,7 +101,6 @@ export default function MechanicDashboardScreen() {
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 3, alignItems: "flex-end", flexShrink: 0 }}>
               {m.alertsCount > 0 && <span style={{ fontSize: 10.5, fontWeight: 600, color: C.warn, background: C.warnPale, padding: "1px 7px", borderRadius: R.sm }}>{m.alertsCount} alerta{m.alertsCount > 1 ? "s" : ""}</span>}
-              {m.openDiagnosticsCount > 0 && <span style={{ fontSize: 10.5, fontWeight: 600, color: "#E65100", background: "#FFF3E0", padding: "1px 7px", borderRadius: R.sm }}>{m.openDiagnosticsCount} diag</span>}
             </div>
           </button>
         ))}
