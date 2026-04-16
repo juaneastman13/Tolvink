@@ -529,7 +529,22 @@ export default function AppLayout({ fh, catalog, online, notif, isDesktop }) {
 
   // O(1) freight lookup
   const freightMap = useMemo(() => { const m = new Map(); fh.freights.forEach(f => m.set(f.id, f)); return m; }, [fh.freights]);
-  const curFreight = freightMap.get(selFreight) || null;
+  const detailEntry = useFreightDetailStore(s => (selFreight ? s.details[selFreight] : null));
+  const curFreight = useMemo(() => {
+    if (!selFreight) return null;
+    const listFreight = freightMap.get(selFreight) || null;
+    const detailFreight = detailEntry?.data || null;
+    if (!listFreight) return detailFreight;
+    if (!detailFreight) return listFreight;
+    return {
+      ...detailFreight,
+      ...listFreight,
+      documents: detailFreight.documents ?? listFreight.documents ?? [],
+      conversationId: detailFreight.conversationId ?? listFreight.conversationId ?? null,
+      pendingChanges: detailFreight.pendingChanges ?? listFreight.pendingChanges ?? [],
+      _isFullDetail: !!(detailFreight._isFullDetail || listFreight._isFullDetail),
+    };
+  }, [detailEntry?.data, freightMap, selFreight]);
   const navActive = ["detail"].includes(screen)?"list":["trucks","truckDetail"].includes(screen)?"trucks":["tickets","documents","analytics","admin","mydata","calendar","reports","chats"].includes(screen)?"menu":["linked","notifs","queue"].includes(screen)&&!isDesktop?"menu":screen;
 
   // ======================== RENDER =====================================
