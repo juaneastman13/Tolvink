@@ -2,27 +2,7 @@ import { useState, useEffect, useMemo, useRef, useCallback, lazy, Suspense, memo
 import { useSearchParams } from "react-router-dom";
 import { C, Ic, FONT, MONO, R, STATUS_COLORS } from "../theme";
 import { stCfg, formatFreightDate } from "../constants";
-import {
-  Bd,
-  Btn,
-  Select,
-  SortTh,
-  Tabs,
-  exportExcel,
-  exportCSV,
-  SkeletonList,
-  EmptyState,
-  ErrorBoundary,
-  FreightCard,
-  FreightCardCompact,
-  LicensePlate,
-  VerMatriculas,
-  PageHeader,
-  PageShell,
-  SectionCard,
-  StatePanel,
-  StatCard,
-} from "../components";
+import { Bd, Btn, Select, SortTh, Tabs, exportExcel, exportCSV, SkeletonList, EmptyState, ErrorBoundary, FreightCard, FreightCardCompact, LicensePlate, VerMatriculas } from "../components";
 import { useTableSort, usePullToRefresh, mapFreight, originDisplay, destDisplay } from "../hooks";
 import { useAccessLevel } from "../hooks/useAccessLevel";
 import { getPendingActions, getWaitingOnText, resolveUserTypeForFreight } from "../utils/freight-helpers";
@@ -588,64 +568,10 @@ export default memo(function ListScreen({ freights, loading, onNav, onRefresh, c
   }
 
   const fromLocations = sp.get("fieldId") || sp.get("lotId") || sp.get("originName") || sp.get("fromLocations");
-  const actionableCount = filteredFinal.filter(f => pendingMap.get(f.id) != null).length;
-  const activeCount = filteredFinal.filter(f => ["assigned", "accepted", "in_progress", "loaded"].includes(f.status)).length;
-  const finishedCount = filteredFinal.filter(f => f.status === "finished").length;
-  const currentViewLabel = view === "kanban" ? "Estados" : view === "seguimiento" ? "Seguimiento" : view === "tabla" ? "Tabla" : "Mapa";
-  const listHeaderActionStyle = {
-    padding: "10px 16px",
-    borderRadius: R.md,
-    border: `1px solid ${C.acc}2A`,
-    background: C.w,
-    color: C.acc,
-    fontSize: 13.2,
-    fontWeight: 700,
-    cursor: "pointer",
-    fontFamily: "inherit",
-  };
 
   return (
-    <div ref={containerRef} style={{ flex:1, overflow:"auto", WebkitOverflowScrolling:"touch" }}>
+    <div ref={containerRef} style={{ flex:1, overflow:"auto", padding:18, WebkitOverflowScrolling:"touch" }}>
       {indicator}
-      <PageShell accent="acc" style={{ minHeight: "100%" }}>
-      <PageHeader
-        title="Centro de fletes"
-        subtitle={
-          hasFilters
-            ? "Vista filtrada para revisar operacion, seguimiento y cierres sin cambiar la tarjeta principal."
-            : "Panorama general de la operacion con filtros, vistas y acceso rapido a seguimiento."
-        }
-        badge={hasFilters ? "Filtros activos" : `Vista ${currentViewLabel}`}
-        actions={onRefresh ? <button onClick={onRefresh} style={listHeaderActionStyle}>Actualizar</button> : null}
-      />
-      <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 16 }}>
-        <StatCard
-          title="Visibles"
-          value={filteredFinal.length}
-          sub={hasFilters ? "Resultados bajo filtros actuales" : "Fletes cargados en esta vista"}
-          icon={Ic.truck(C.pri, 18)}
-          color={C.pri}
-        />
-        <StatCard
-          title="Requieren accion"
-          value={actionableCount}
-          sub="Pendientes detectados para tu perfil"
-          icon={Ic.warn(C.acc, 18)}
-          color={C.acc}
-        />
-        <StatCard
-          title="En curso"
-          value={activeCount}
-          sub={`${finishedCount} finalizados dentro del conjunto visible`}
-          icon={Ic.nav(C.info, 18)}
-          color={C.info}
-        />
-      </div>
-      <SectionCard
-        title="Filtros y vistas"
-        subtitle="La misma pantalla concentra busqueda, filtros y cambio de perspectiva sin alterar la card de flete."
-        tone={hasFilters ? "info" : "default"}
-      >
       {fromLocations && <button onClick={() => onNav("locations")} style={{ background:C.priPale, border:`1px solid ${C.pri}40`, borderRadius: R.md, cursor:"pointer", fontFamily:FONT, fontSize:14, fontWeight:600, color:C.pri, padding:"10px 14px", marginBottom:12, display:"flex", alignItems:"center", gap:6, width:"100%" }}>{Ic.chev(C.pri, 16)} Volver al mapa de ubicaciones</button>}
       {/* Desktop: original filters layout */}
       {!fromLocations && (isDesktop ? (<>
@@ -772,23 +698,17 @@ export default memo(function ListScreen({ freights, loading, onNav, onRefresh, c
       </div>
       </>}
       </>))}
-      </SectionCard>
-
-      <SectionCard
-        title="Resultados"
-        subtitle={hasFilters ? "Lectura operativa de los fletes que coinciden con los filtros actuales." : "Cambialos de vista sin romper la estructura visual que ya conoces."}
-      >
 
       {/* Search result count */}
       {hasFilters && filteredFinal.length > 0 && !serverLoading && <div style={{ fontSize:12.1, fontWeight:600, color:C.t3, marginBottom:8 }}>{serverData !== null ? `${serverTotal} flete${serverTotal!==1?"s":""} encontrado${serverTotal!==1?"s":""}` : `${filteredFinal.length} flete${filteredFinal.length!==1?"s":""}`}</div>}
-      {hasFilters && filteredFinal.length === 0 && !loading && !serverLoading && <StatePanel tone="info" title="Sin resultados" description={`No hay fletes para "${searchQ || "los filtros seleccionados"}"`} icon={Ic.srch(C.info, 18)} />}
-      {serverLoading && <StatePanel tone="info" compact title="Buscando" description="Consultando fletes que coinciden con los filtros aplicados." icon={Ic.srch(C.info, 16)} />}
+      {hasFilters && filteredFinal.length === 0 && !loading && !serverLoading && <EmptyState icon={Ic.srch(C.t3, 28)} title="Sin resultados" subtitle={`No hay fletes para "${searchQ || "los filtros seleccionados"}"`} />}
+      {serverLoading && <div style={{ textAlign:"center", padding:16, fontSize:12.1, color:C.t3 }}>Buscando...</div>}
 
       {/* Skeleton while loading */}
       {loading && freights.length === 0 && <SkeletonList count={5} />}
 
       {/* Empty state */}
-      {!loading && freights.length === 0 && <StatePanel tone="info" title="Sin fletes todavia" description="Los fletes que solicites o te asignen apareceran aca." icon={Ic.truck(C.info, 18)} />}
+      {!loading && freights.length === 0 && <EmptyState icon={Ic.truck(C.t3, 28)} title="Sin fletes todavia" subtitle="Los fletes que solicites o te asignen apareceran aca" />}
 
       {/* View: Kanban */}
       {view==="kanban" && freights.length > 0 && (<>
@@ -1120,7 +1040,7 @@ export default memo(function ListScreen({ freights, loading, onNav, onRefresh, c
       </>)}
 
       {/* Load more / pagination indicator */}
-      {(()=>{ 
+      {(()=>{
         const visibleCount = hasFilters ? filteredFinal.length : Object.values(grouped).reduce((s,a)=>s+a.length,0);
         return <>
           {serverData !== null && serverHasMore && (
@@ -1143,8 +1063,6 @@ export default memo(function ListScreen({ freights, loading, onNav, onRefresh, c
         </>;
       })()}
       {FreightHoverPreview}
-      </SectionCard>
-      </PageShell>
     </div>
   );
 });
