@@ -152,7 +152,7 @@ export function StatePanel({
     ? Ic.warn(palette.badgeText, compact ? 16 : 18)
     : tone === "success"
       ? Ic.chk(palette.badgeText, compact ? 16 : 18)
-      : Ic.info(palette.badgeText, compact ? 16 : 18);
+      : Ic.bell(palette.badgeText, compact ? 16 : 18);
 
   return (
     <div
