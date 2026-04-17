@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { C, Ic, R } from "../theme";
-import { Btn, Field, Loader, ModalOverlay, Select, Tabs } from "../components";
+import { Btn, Field, Loader, ModalOverlay, PageHeader, PageShell, SectionCard, Select, StatePanel, StatCard, Tabs } from "../components";
 import {
   apiCreateStockItem,
   apiCreateStockLocation,
@@ -107,33 +107,6 @@ function getCompatibleUnits(baseUnit) {
     return UNIT_OPTIONS.filter((option) => option.value === "kg" || option.value === "tn");
   }
   return UNIT_OPTIONS.filter((option) => option.value === baseUnit);
-}
-
-function SummaryCard({ title, value, sub, icon, color }) {
-  return (
-    <div style={{ flex: 1, minWidth: 170, background: C.w, border: `1px solid ${C.b1}`, borderRadius: R.lg, padding: 16, boxShadow: C.sh }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-        <div style={{ width: 34, height: 34, borderRadius: R.md, background: `${color}14`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-          {icon}
-        </div>
-        <span style={{ fontSize: 12.1, fontWeight: 700, color: C.t3 }}>{title}</span>
-      </div>
-      <div style={{ fontSize: 27, fontWeight: 800, color: C.t1, letterSpacing: -0.4 }}>{value}</div>
-      {sub ? <div style={{ fontSize: 11.5, color: C.t3, marginTop: 4 }}>{sub}</div> : null}
-    </div>
-  );
-}
-
-function Section({ title, action, children }) {
-  return (
-    <div style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: R.lg, padding: 16, marginBottom: 16, boxShadow: C.sh }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 12, flexWrap: "wrap" }}>
-        <div style={{ fontSize: 15.4, fontWeight: 700, color: C.t1 }}>{title}</div>
-        {action || null}
-      </div>
-      {children}
-    </div>
-  );
 }
 
 export default function StockScreen({ user, onBack }) {
@@ -405,45 +378,58 @@ export default function StockScreen({ user, onBack }) {
   };
 
   return (
-    <div style={{ flex: 1, overflow: "auto", padding: 18, fontFamily: "inherit" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14, flexWrap: "wrap" }}>
-        <button onClick={onBack} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex", alignItems: "center" }}>
-          {Ic.chev(C.pri, 18)}
-        </button>
-        <span style={{ fontSize: 22, fontWeight: 800, letterSpacing: -0.3, flex: 1 }}>Stock y Acopio</span>
-        <Btn sm onClick={() => openManager("movement")} icon={Ic.plus(C.w, 14)}>Gestionar</Btn>
-        <button onClick={load} style={pageButtonStyle}>Actualizar</button>
-      </div>
-
-      <div style={{ fontSize: 13.2, color: C.t3, marginBottom: 16 }}>
-        Empresa activa: <strong style={{ color: C.t1 }}>{user?.entity || "-"}</strong>
-      </div>
+    <PageShell accent="pri" style={{ flex: 1, overflow: "auto", fontFamily: "inherit" }}>
+      <PageHeader
+        title="Stock y Acopio"
+        subtitle={`Empresa activa: ${user?.entity || "-"}`}
+        onBack={onBack}
+        badge="Operacion"
+        actions={
+          <>
+            <Btn sm onClick={() => openManager("movement")} icon={Ic.plus(C.w, 14)}>Gestionar</Btn>
+            <button onClick={load} style={pageButtonStyle}>Actualizar</button>
+          </>
+        }
+      />
 
       {feedback ? (
-        <div style={{ background: feedback.kind === "ok" ? C.okPale : C.errPale, color: feedback.kind === "ok" ? C.ok : C.err, border: `1px solid ${feedback.kind === "ok" ? `${C.ok}22` : `${C.err}22`}`, borderRadius: R.lg, padding: 14, fontSize: 13.2, fontWeight: 600, marginBottom: 16, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-          <span>{feedback.text}</span>
-          <button onClick={() => setFeedback(null)} style={{ background: "none", border: "none", color: "inherit", cursor: "pointer", padding: 0, display: "flex" }}>
-            {Ic.cross(feedback.kind === "ok" ? C.ok : C.err, 16)}
-          </button>
+        <div style={{ marginBottom: 16 }}>
+          <StatePanel
+            tone={feedback.kind === "ok" ? "success" : "error"}
+            title={feedback.kind === "ok" ? "Accion completada" : "Revisá este punto"}
+            description={feedback.text}
+            compact
+            action={
+              <button onClick={() => setFeedback(null)} style={{ background: "none", border: "none", color: "inherit", cursor: "pointer", padding: 0, display: "flex", fontFamily: "inherit", fontSize: 12.1, fontWeight: 700 }}>
+                Cerrar
+              </button>
+            }
+          />
         </div>
       ) : null}
 
       {loading ? (
-        <div style={{ padding: 40, textAlign: "center" }}><Loader /></div>
+        <SectionCard title="Cargando stock" subtitle="Preparando resumen operativo de la empresa activa">
+          <Loader />
+        </SectionCard>
       ) : error ? (
-        <div style={{ background: C.errPale, color: C.err, border: `1px solid ${C.err}22`, borderRadius: R.lg, padding: 16, fontSize: 13.2, fontWeight: 600 }}>
-          {error}
-        </div>
+        <StatePanel
+          tone="error"
+          title="No se pudo cargar el resumen"
+          description={error}
+          action={<button onClick={load} style={smallActionStyle}>Reintentar</button>}
+        />
       ) : (
         <>
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 16 }}>
-            <SummaryCard title="Stock propio" value={totals.own.toLocaleString("es-UY", { maximumFractionDigits: 3 })} sub="Acopio interno" icon={Ic.grain(C.pri, 18)} color={C.pri} />
-            <SummaryCard title="Stock en terceros" value={totals.thirdParty.toLocaleString("es-UY", { maximumFractionDigits: 3 })} sub="Depositado fuera del establecimiento" icon={Ic.plant(C.acc, 18)} color={C.acc} />
-            <SummaryCard title="Stock total" value={totals.total.toLocaleString("es-UY", { maximumFractionDigits: 3 })} sub={`${summary?.items?.length || 0} item(s) con saldo`} icon={Ic.chk(C.info, 18)} color={C.info} />
+            <StatCard title="Stock propio" value={totals.own.toLocaleString("es-UY", { maximumFractionDigits: 3 })} sub="Acopio interno" icon={Ic.grain(C.pri, 18)} color={C.pri} />
+            <StatCard title="Stock en terceros" value={totals.thirdParty.toLocaleString("es-UY", { maximumFractionDigits: 3 })} sub="Depositado fuera del establecimiento" icon={Ic.plant(C.acc, 18)} color={C.acc} />
+            <StatCard title="Stock total" value={totals.total.toLocaleString("es-UY", { maximumFractionDigits: 3 })} sub={`${summary?.items?.length || 0} item(s) con saldo`} icon={Ic.chk(C.info, 18)} color={C.info} />
           </div>
 
-          <Section
+          <SectionCard
             title="Por categoria"
+            subtitle="Lectura rápida del stock consolidado por familia de producto."
             action={<button onClick={() => openManager("movement")} style={smallActionStyle}>Registrar movimiento</button>}
           >
             {summary?.categories?.length ? (
@@ -462,12 +448,18 @@ export default function StockScreen({ user, onBack }) {
                 ))}
               </div>
             ) : (
-              <div style={{ fontSize: 12.7, color: C.t3, textAlign: "center", padding: 12 }}>Todavia no hay stock cargado para esta empresa.</div>
+              <StatePanel
+                tone="info"
+                title="Sin stock cargado"
+                description="Todavia no hay stock cargado para esta empresa."
+                compact
+              />
             )}
-          </Section>
+          </SectionCard>
 
-          <Section
+          <SectionCard
             title="Items con saldo"
+            subtitle="Saldo disponible por ítem, con acceso directo a ajustes manuales."
             action={<button onClick={() => openManager("item")} style={smallActionStyle}>Nuevo ítem</button>}
           >
             {summary?.items?.length ? (
@@ -509,12 +501,18 @@ export default function StockScreen({ user, onBack }) {
                 </table>
               </div>
             ) : (
-              <div style={{ fontSize: 12.7, color: C.t3, textAlign: "center", padding: 12 }}>No hay items con movimientos registrados.</div>
+              <StatePanel
+                tone="info"
+                title="Sin items con saldo"
+                description="No hay items con movimientos registrados."
+                compact
+              />
             )}
-          </Section>
+          </SectionCard>
 
-          <Section
+          <SectionCard
             title="Movimientos recientes"
+            subtitle="Últimos movimientos registrados y reversión rápida para operaciones manuales."
             action={<button onClick={() => openManager("location")} style={smallActionStyle}>Nueva ubicación</button>}
           >
             {summary?.recentMovements?.length ? (
@@ -558,9 +556,14 @@ export default function StockScreen({ user, onBack }) {
                 })}
               </div>
             ) : (
-              <div style={{ fontSize: 12.7, color: C.t3, textAlign: "center", padding: 12 }}>Todavia no hay movimientos de stock.</div>
+              <StatePanel
+                tone="info"
+                title="Sin movimientos"
+                description="Todavia no hay movimientos de stock."
+                compact
+              />
             )}
-          </Section>
+          </SectionCard>
         </>
       )}
 
@@ -579,21 +582,29 @@ export default function StockScreen({ user, onBack }) {
           <Tabs items={MODAL_TABS} active={actionTab} onChange={setActionTab} />
 
           {catalogLoading ? (
-            <div style={{ padding: 40, textAlign: "center" }}><Loader /></div>
+            <SectionCard title="Cargando catálogos" subtitle="Preparando items y ubicaciones disponibles para operar.">
+              <Loader />
+            </SectionCard>
           ) : (
             <div style={{ marginTop: 16 }}>
               {feedback ? (
-                <div style={{ background: feedback.kind === "ok" ? C.okPale : C.errPale, color: feedback.kind === "ok" ? C.ok : C.err, border: `1px solid ${feedback.kind === "ok" ? `${C.ok}22` : `${C.err}22`}`, borderRadius: R.lg, padding: 12, fontSize: 12.7, fontWeight: 600, marginBottom: 14 }}>
-                  {feedback.text}
-                </div>
+                <StatePanel
+                  tone={feedback.kind === "ok" ? "success" : "error"}
+                  title={feedback.kind === "ok" ? "Operacion completada" : "Revisá este punto"}
+                  description={feedback.text}
+                  compact
+                />
               ) : null}
 
               {actionTab === "movement" ? (
                 <>
                   {!canCreateMovement ? (
-                    <div style={{ background: C.warnPale, color: C.warn, border: `1px solid ${C.warn}22`, borderRadius: R.lg, padding: 14, marginBottom: 14, fontSize: 12.7, fontWeight: 600 }}>
-                      Para registrar movimientos primero necesitás al menos un ítem y una ubicación.
-                    </div>
+                    <StatePanel
+                      tone="warning"
+                      title="Faltan datos base"
+                      description="Para registrar movimientos primero necesitás al menos un ítem y una ubicación."
+                      compact
+                    />
                   ) : null}
 
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12 }}>
@@ -754,6 +765,6 @@ export default function StockScreen({ user, onBack }) {
           )}
         </ModalOverlay>
       ) : null}
-    </div>
+    </PageShell>
   );
 }
