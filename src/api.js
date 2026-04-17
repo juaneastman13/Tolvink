@@ -219,9 +219,31 @@ export async function apiGetMyCompanies() { return api('/auth/me/companies'); }
 
 // Stock / Acopio
 export async function apiGetStockSummary() { return api('/stock/summary'); }
-export async function apiGetStockItems() { return api('/stock/items'); }
-export async function apiGetStockLocations() { return api('/stock/locations'); }
-export async function apiGetStockMovements() { return api('/stock/movements'); }
+export async function apiGetStockItems(q = {}) {
+  const p = new URLSearchParams();
+  if (q.category) p.set('category', q.category);
+  const qs = p.toString();
+  return api(`/stock/items${qs ? `?${qs}` : ''}`);
+}
+export async function apiGetStockLocations(q = {}) {
+  const p = new URLSearchParams();
+  if (q.locationType) p.set('locationType', q.locationType);
+  if (q.ownershipType) p.set('ownershipType', q.ownershipType);
+  const qs = p.toString();
+  return api(`/stock/locations${qs ? `?${qs}` : ''}`);
+}
+export async function apiGetStockMovements(q = {}) {
+  const p = new URLSearchParams();
+  if (q.category) p.set('category', q.category);
+  if (q.movementType) p.set('movementType', q.movementType);
+  if (q.itemId) p.set('itemId', q.itemId);
+  if (q.locationId) p.set('locationId', q.locationId);
+  if (q.dateFrom) p.set('dateFrom', q.dateFrom);
+  if (q.dateTo) p.set('dateTo', q.dateTo);
+  if (q.limit) p.set('limit', String(q.limit));
+  const qs = p.toString();
+  return api(`/stock/movements${qs ? `?${qs}` : ''}`);
+}
 export async function apiCreateStockItem(body) { return api('/stock/items', { body }); }
 export async function apiCreateStockLocation(body) { return api('/stock/locations', { body }); }
 export async function apiCreateStockMovement(body) { return api('/stock/movements', { body }); }

@@ -7,6 +7,7 @@ import {
   apiCreateStockMovement,
   apiGetStockItems,
   apiGetStockLocations,
+  apiGetStockMovements,
   apiGetStockSummary,
   apiRevertStockMovement,
 } from "../api";
@@ -63,6 +64,12 @@ const MODAL_TABS = [
   { k: "location", l: "Ubicación" },
 ];
 
+const SCREEN_TABS = [
+  { k: "summary", l: "Resumen" },
+  { k: "locations", l: "Ubicaciones" },
+  { k: "kardex", l: "Kardex" },
+];
+
 const DEFAULT_MOVEMENT_FORM = {
   movementType: "manual_in",
   itemId: "",
@@ -88,6 +95,21 @@ const DEFAULT_LOCATION_FORM = {
   notes: "",
 };
 
+const DEFAULT_LOCATION_FILTERS = {
+  search: "",
+  locationType: "",
+  ownershipType: "",
+};
+
+const DEFAULT_KARDEX_FILTERS = {
+  itemId: "",
+  locationId: "",
+  movementType: "",
+  dateFrom: "",
+  dateTo: "",
+  limit: "100",
+};
+
 function formatQty(value, unit) {
   const num = Number(value || 0);
   return `${num.toLocaleString("es-UY", { maximumFractionDigits: 3 })} ${unit || ""}`.trim();
@@ -107,6 +129,42 @@ function getCompatibleUnits(baseUnit) {
     return UNIT_OPTIONS.filter((option) => option.value === "kg" || option.value === "tn");
   }
   return UNIT_OPTIONS.filter((option) => option.value === baseUnit);
+}
+
+function movementDirection(movementType) {
+  return MOVEMENT_OPTIONS.find((option) => option.value === movementType)?.kind || "transfer";
+}
+
+function formatDateTime(value) {
+  if (!value) return "-";
+  return new Date(value).toLocaleString("es-UY");
+}
+
+function movementSignedQuantity(movement, scopedLocationId = "") {
+  const qty = Number(movement.baseQuantity ?? movement.quantity ?? 0);
+  if (scopedLocationId) {
+    if (movement.toLocation?.id === scopedLocationId && movement.fromLocation?.id === scopedLocationId) return 0;
+    if (movement.toLocation?.id === scopedLocationId) return qty;
+    if (movement.fromLocation?.id === scopedLocationId) return -qty;
+    return 0;
+  }
+
+  const kind = movementDirection(movement.movementType);
+  if (kind === "in") return qty;
+  if (kind === "out") return -qty;
+  return 0;
+}
+
+function normalizeStockMovement(movement, scopedLocationId = "") {
+  const signedQty = movementSignedQuantity(movement, scopedLocationId);
+  return {
+    ...movement,
+    quantity: Number(movement.quantity ?? 0),
+    baseQuantity: Number(movement.baseQuantity ?? movement.quantity ?? 0),
+    signedQty,
+    inQty: signedQty > 0 ? signedQty : 0,
+    outQty: signedQty < 0 ? Math.abs(signedQty) : 0,
+  };
 }
 
 function SummaryCard({ title, value, sub, icon, color }) {
@@ -152,6 +210,15 @@ export default function StockScreen({ user, onBack }) {
   const [movementForm, setMovementForm] = useState(DEFAULT_MOVEMENT_FORM);
   const [itemForm, setItemForm] = useState(DEFAULT_ITEM_FORM);
   const [locationForm, setLocationForm] = useState(DEFAULT_LOCATION_FORM);
+  const [screenTab, setScreenTab] = useState("summary");
+  const [locationsLoading, setLocationsLoading] = useState(false);
+  const [locationsError, setLocationsError] = useState("");
+  const [stockLocations, setStockLocations] = useState([]);
+  const [locationFilters, setLocationFilters] = useState(DEFAULT_LOCATION_FILTERS);
+  const [kardexLoading, setKardexLoading] = useState(false);
+  const [kardexError, setKardexError] = useState("");
+  const [kardexFilters, setKardexFilters] = useState(DEFAULT_KARDEX_FILTERS);
+  const [kardexRows, setKardexRows] = useState([]);
 
   const load = async () => {
     setLoading(true);
@@ -182,8 +249,45 @@ export default function StockScreen({ user, onBack }) {
     }
   };
 
+  const loadLocationsData = async () => {
+    setLocationsLoading(true);
+    setLocationsError("");
+    try {
+      const nextLocations = await apiGetStockLocations();
+      setStockLocations(Array.isArray(nextLocations) ? nextLocations : []);
+    } catch (e) {
+      setLocationsError(e.message || "No se pudieron cargar las ubicaciones de stock");
+    } finally {
+      setLocationsLoading(false);
+    }
+  };
+
+  const loadKardex = async (nextFilters = kardexFilters) => {
+    setKardexLoading(true);
+    setKardexError("");
+    try {
+      const rows = await apiGetStockMovements({
+        itemId: nextFilters.itemId || undefined,
+        locationId: nextFilters.locationId || undefined,
+        movementType: nextFilters.movementType || undefined,
+        dateFrom: nextFilters.dateFrom || undefined,
+        dateTo: nextFilters.dateTo || undefined,
+        limit: Number(nextFilters.limit || 100),
+      });
+      setKardexRows(Array.isArray(rows) ? rows.map((row) => normalizeStockMovement(row, nextFilters.locationId)) : []);
+    } catch (e) {
+      setKardexError(e.message || "No se pudo cargar el kardex de stock");
+    } finally {
+      setKardexLoading(false);
+    }
+  };
+
   useEffect(() => {
     load();
+  }, [user?.activeCompanyId]);
+
+  useEffect(() => {
+    loadCatalog();
   }, [user?.activeCompanyId]);
 
   useEffect(() => {
@@ -191,6 +295,15 @@ export default function StockScreen({ user, onBack }) {
       loadCatalog();
     }
   }, [actionOpen, user?.activeCompanyId]);
+
+  useEffect(() => {
+    if (screenTab === "locations") {
+      loadLocationsData();
+    }
+    if (screenTab === "kardex") {
+      loadKardex();
+    }
+  }, [screenTab, user?.activeCompanyId]);
 
   const selectedItem = useMemo(
     () => items.find((item) => item.id === movementForm.itemId) || null,
@@ -237,6 +350,74 @@ export default function StockScreen({ user, onBack }) {
     [locations],
   );
 
+  const filteredStockLocations = useMemo(() => {
+    const term = locationFilters.search.trim().toLowerCase();
+    return stockLocations.filter((location) => {
+      if (locationFilters.locationType && location.locationType !== locationFilters.locationType) return false;
+      if (locationFilters.ownershipType && location.ownershipType !== locationFilters.ownershipType) return false;
+      if (!term) return true;
+      const haystack = [
+        location.name,
+        location.address,
+        location.field?.name,
+        location.lot?.name,
+        location.plant?.name,
+        location.plant?.company?.name,
+        ...(location.balances || []).map((balance) => balance.item?.name),
+      ].filter(Boolean).join(" ").toLowerCase();
+      return haystack.includes(term);
+    });
+  }, [stockLocations, locationFilters]);
+
+  const locationStats = useMemo(() => {
+    return filteredStockLocations.reduce((acc, location) => {
+      acc.locations += 1;
+      if ((location.balances || []).length > 0) acc.withStock += 1;
+      if (location.ownershipType === "own") acc.own += 1;
+      else acc.thirdParty += 1;
+      acc.positions += (location.balances || []).length;
+      return acc;
+    }, { locations: 0, withStock: 0, own: 0, thirdParty: 0, positions: 0 });
+  }, [filteredStockLocations]);
+
+  const selectedKardexItem = useMemo(
+    () => summary?.items?.find((item) => item.itemId === kardexFilters.itemId) || null,
+    [summary, kardexFilters.itemId],
+  );
+
+  const selectedKardexLocation = useMemo(
+    () => stockLocations.find((location) => location.id === kardexFilters.locationId) || locations.find((location) => location.id === kardexFilters.locationId) || null,
+    [stockLocations, locations, kardexFilters.locationId],
+  );
+
+  const currentKardexBalance = useMemo(() => {
+    if (!selectedKardexItem) return null;
+    if (kardexFilters.locationId) {
+      const locationBalance = selectedKardexLocation?.balances?.find((balance) => balance.itemId === kardexFilters.itemId || balance.item?.id === kardexFilters.itemId);
+      return Number(locationBalance?.currentQuantity || 0);
+    }
+    return Number(selectedKardexItem.totalQuantity || 0);
+  }, [selectedKardexItem, selectedKardexLocation, kardexFilters.locationId, kardexFilters.itemId]);
+
+  const kardexRowsWithBalance = useMemo(() => {
+    if (!kardexFilters.itemId || currentKardexBalance === null) {
+      return kardexRows.map((row) => ({
+        ...row,
+        runningBalance: null,
+      }));
+    }
+
+    let cursor = currentKardexBalance;
+    return kardexRows.map((row) => {
+      const runningBalance = cursor;
+      cursor -= row.signedQty;
+      return {
+        ...row,
+        runningBalance,
+      };
+    });
+  }, [kardexRows, kardexFilters.itemId, currentKardexBalance]);
+
   const movementDef = MOVEMENT_OPTIONS.find((option) => option.value === movementForm.movementType);
   const requiresFrom = movementDef?.kind === "out" || movementDef?.kind === "transfer";
   const requiresTo = movementDef?.kind === "in" || movementDef?.kind === "transfer";
@@ -272,6 +453,9 @@ export default function StockScreen({ user, onBack }) {
         baseUnit: itemForm.baseUnit,
       });
       await loadCatalog();
+      if (screenTab === "kardex") {
+        await loadKardex();
+      }
       setItemForm(DEFAULT_ITEM_FORM);
       setActionTab("movement");
       setMovementForm((prev) => ({
@@ -302,6 +486,9 @@ export default function StockScreen({ user, onBack }) {
         notes: locationForm.notes.trim() || undefined,
       });
       await loadCatalog();
+      if (screenTab === "locations" || screenTab === "kardex") {
+        await loadLocationsData();
+      }
       setLocationForm(DEFAULT_LOCATION_FORM);
       setActionTab("movement");
       setFeedback({ kind: "ok", text: "Ubicación creada. Ya podés mover stock contra ese destino." });
@@ -352,6 +539,12 @@ export default function StockScreen({ user, onBack }) {
       });
       await load();
       await loadCatalog();
+      if (screenTab === "locations") {
+        await loadLocationsData();
+      }
+      if (screenTab === "kardex") {
+        await loadKardex();
+      }
       setMovementForm((prev) => ({
         ...DEFAULT_MOVEMENT_FORM,
         movementType: prev.movementType,
@@ -366,11 +559,18 @@ export default function StockScreen({ user, onBack }) {
   };
 
   const handleRevertMovement = async (movement) => {
-    if (!window.confirm(`¿Querés revertir el movimiento de ${movement.itemName}?`)) return;
+    const movementItemName = movement.item?.name || movement.itemName || "este item";
+    if (!window.confirm(`¿Querés revertir el movimiento de ${movementItemName}?`)) return;
     setRevertingId(movement.id);
     try {
       await apiRevertStockMovement(movement.id, { reason: "Reversión solicitada desde Stock y Acopio" });
       await load();
+      if (screenTab === "locations") {
+        await loadLocationsData();
+      }
+      if (screenTab === "kardex") {
+        await loadKardex();
+      }
       setFeedback({ kind: "ok", text: "Movimiento revertido correctamente" });
     } catch (e) {
       setFeedback({ kind: "err", text: e.message || "No se pudo revertir el movimiento" });
@@ -404,6 +604,244 @@ export default function StockScreen({ user, onBack }) {
     whiteSpace: "nowrap",
   };
 
+  const renderLocationsView = () => (
+    <>
+      <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 16 }}>
+        <SummaryCard title="Ubicaciones" value={locationStats.locations} sub="Espacios registrados" icon={Ic.plant(C.pri, 18)} color={C.pri} />
+        <SummaryCard title="Con saldo" value={locationStats.withStock} sub={`${locationStats.positions} posiciones con producto`} icon={Ic.chk(C.ok, 18)} color={C.ok} />
+        <SummaryCard title="Propias / terceros" value={`${locationStats.own} / ${locationStats.thirdParty}`} sub="Segun titularidad de la ubicacion" icon={Ic.grain(C.acc, 18)} color={C.acc} />
+      </div>
+
+      <Section
+        title="Stock por ubicacion"
+        action={<button onClick={loadLocationsData} style={smallActionStyle}>Actualizar ubicaciones</button>}
+      >
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12, marginBottom: 16 }}>
+          <Field
+            label="Buscar"
+            value={locationFilters.search}
+            onChange={(value) => setLocationFilters((prev) => ({ ...prev, search: value }))}
+            placeholder="Silo, planta, item..."
+          />
+          <Select
+            label="Tipo"
+            value={locationFilters.locationType}
+            onChange={(value) => setLocationFilters((prev) => ({ ...prev, locationType: value }))}
+            options={[{ value: "", label: "Todos" }, ...LOCATION_TYPE_OPTIONS]}
+          />
+          <Select
+            label="Titularidad"
+            value={locationFilters.ownershipType}
+            onChange={(value) => setLocationFilters((prev) => ({ ...prev, ownershipType: value }))}
+            options={[{ value: "", label: "Todas" }, ...OWNERSHIP_OPTIONS]}
+          />
+        </div>
+
+        {locationsLoading ? (
+          <div style={{ padding: 40, textAlign: "center" }}><Loader /></div>
+        ) : locationsError ? (
+          <div style={{ background: C.errPale, color: C.err, border: `1px solid ${C.err}22`, borderRadius: R.lg, padding: 14, fontSize: 12.7, fontWeight: 600 }}>
+            {locationsError}
+          </div>
+        ) : filteredStockLocations.length ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            {filteredStockLocations.map((location) => (
+              <div key={location.id} style={{ border: `1px solid ${C.b2}`, borderRadius: R.lg, padding: 14, background: C.bg }}>
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", marginBottom: 10 }}>
+                  <div style={{ minWidth: 220 }}>
+                    <div style={{ fontSize: 15.4, fontWeight: 800, color: C.t1 }}>{location.name}</div>
+                    <div style={{ fontSize: 12.1, color: C.t3, marginTop: 4 }}>
+                      {(LOCATION_TYPE_OPTIONS.find((option) => option.value === location.locationType)?.label || location.locationType)}
+                      {" · "}
+                      {location.ownershipType === "own" ? "Propio" : "Terceros"}
+                      {location.address ? ` · ${location.address}` : ""}
+                    </div>
+                    {location.field?.name || location.lot?.name || location.plant?.name ? (
+                      <div style={{ fontSize: 11.5, color: C.t3, marginTop: 4 }}>
+                        {[location.field?.name, location.lot?.name, location.plant?.name].filter(Boolean).join(" · ")}
+                      </div>
+                    ) : null}
+                  </div>
+                  <div style={{ textAlign: "right" }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: C.t3, textTransform: "uppercase" }}>Items con saldo</div>
+                    <div style={{ fontSize: 24, fontWeight: 800, color: C.pri }}>{location.balances?.length || 0}</div>
+                  </div>
+                </div>
+
+                {location.balances?.length ? (
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 10 }}>
+                    {location.balances
+                      .filter((balance) => Number(balance.currentQuantity || 0) !== 0)
+                      .sort((a, b) => (b.currentQuantity || 0) - (a.currentQuantity || 0))
+                      .map((balance) => (
+                        <div key={balance.id || `${location.id}-${balance.item?.id}`} style={{ border: `1px solid ${C.b1}`, borderRadius: R.md, padding: 12, background: C.w }}>
+                          <div style={{ fontSize: 13.2, fontWeight: 700, color: C.t1 }}>{balance.item?.name || "-"}</div>
+                          <div style={{ fontSize: 11.5, color: C.t3, marginTop: 4 }}>
+                            {ITEM_CATEGORY_OPTIONS.find((option) => option.value === balance.item?.category)?.label || balance.item?.category || "-"}
+                          </div>
+                          <div style={{ fontSize: 20, fontWeight: 800, color: C.pri, marginTop: 8 }}>
+                            {formatQty(balance.currentQuantity, balance.baseUnit)}
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                ) : (
+                  <div style={{ fontSize: 12.1, color: C.t3, textAlign: "center", padding: 12 }}>No hay saldo cargado en esta ubicacion.</div>
+                )}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div style={{ fontSize: 12.7, color: C.t3, textAlign: "center", padding: 16 }}>
+            No encontramos ubicaciones que coincidan con los filtros aplicados.
+          </div>
+        )}
+      </Section>
+    </>
+  );
+
+  const renderKardexView = () => (
+    <Section
+      title="Kardex de stock"
+      action={<button onClick={() => loadKardex()} style={smallActionStyle}>Actualizar kardex</button>}
+    >
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12, marginBottom: 16 }}>
+        <Select
+          label="Item"
+          value={kardexFilters.itemId}
+          onChange={(value) => setKardexFilters((prev) => ({ ...prev, itemId: value }))}
+          options={[{ value: "", label: "Todos los items" }, ...itemOptions]}
+          placeholder="Todos los items"
+          searchable
+        />
+        <Select
+          label="Ubicacion"
+          value={kardexFilters.locationId}
+          onChange={(value) => setKardexFilters((prev) => ({ ...prev, locationId: value }))}
+          options={[{ value: "", label: "Toda la empresa" }, ...locationOptions]}
+          placeholder="Toda la empresa"
+          searchable
+        />
+        <Select
+          label="Movimiento"
+          value={kardexFilters.movementType}
+          onChange={(value) => setKardexFilters((prev) => ({ ...prev, movementType: value }))}
+          options={[{ value: "", label: "Todos los tipos" }, ...MOVEMENT_OPTIONS.map((option) => ({ value: option.value, label: option.label }))]}
+        />
+        <Select
+          label="Limite"
+          value={kardexFilters.limit}
+          onChange={(value) => setKardexFilters((prev) => ({ ...prev, limit: value }))}
+          options={[
+            { value: "50", label: "50 movimientos" },
+            { value: "100", label: "100 movimientos" },
+            { value: "200", label: "200 movimientos" },
+          ]}
+        />
+        <Field
+          label="Desde"
+          value={kardexFilters.dateFrom}
+          onChange={(value) => setKardexFilters((prev) => ({ ...prev, dateFrom: value }))}
+          type="date"
+        />
+        <Field
+          label="Hasta"
+          value={kardexFilters.dateTo}
+          onChange={(value) => setKardexFilters((prev) => ({ ...prev, dateTo: value }))}
+          type="date"
+        />
+      </div>
+
+      <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap", marginBottom: 14 }}>
+        <div style={{ fontSize: 12.1, color: C.t3 }}>
+          {kardexFilters.itemId
+            ? `Saldo actual${kardexFilters.locationId ? " en ubicacion" : ""}: ${formatQty(currentKardexBalance || 0, selectedKardexItem?.baseUnit)}`
+            : "Selecciona un item para ver saldo corrido sobre el kardex."}
+        </div>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <button onClick={() => setKardexFilters(DEFAULT_KARDEX_FILTERS)} style={smallActionStyle}>Limpiar filtros</button>
+          <Btn sm onClick={() => loadKardex()}>{kardexLoading ? "Consultando..." : "Aplicar filtros"}</Btn>
+        </div>
+      </div>
+
+      {kardexLoading ? (
+        <div style={{ padding: 40, textAlign: "center" }}><Loader /></div>
+      ) : kardexError ? (
+        <div style={{ background: C.errPale, color: C.err, border: `1px solid ${C.err}22`, borderRadius: R.lg, padding: 14, fontSize: 12.7, fontWeight: 600 }}>
+          {kardexError}
+        </div>
+      ) : kardexRowsWithBalance.length ? (
+        <div style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13.2, fontFamily: "inherit" }}>
+            <thead>
+              <tr style={{ borderBottom: `1.5px solid ${C.b1}` }}>
+                <th style={{ padding: "8px 10px", textAlign: "left", fontSize: 11, fontWeight: 700, color: C.t3, textTransform: "uppercase" }}>Fecha</th>
+                <th style={{ padding: "8px 10px", textAlign: "left", fontSize: 11, fontWeight: 700, color: C.t3, textTransform: "uppercase" }}>Item</th>
+                <th style={{ padding: "8px 10px", textAlign: "left", fontSize: 11, fontWeight: 700, color: C.t3, textTransform: "uppercase" }}>Movimiento</th>
+                <th style={{ padding: "8px 10px", textAlign: "left", fontSize: 11, fontWeight: 700, color: C.t3, textTransform: "uppercase" }}>Origen / destino</th>
+                <th style={{ padding: "8px 10px", textAlign: "right", fontSize: 11, fontWeight: 700, color: C.t3, textTransform: "uppercase" }}>Ingreso</th>
+                <th style={{ padding: "8px 10px", textAlign: "right", fontSize: 11, fontWeight: 700, color: C.t3, textTransform: "uppercase" }}>Egreso</th>
+                <th style={{ padding: "8px 10px", textAlign: "right", fontSize: 11, fontWeight: 700, color: C.t3, textTransform: "uppercase" }}>Saldo</th>
+                <th style={{ padding: "8px 10px", textAlign: "right", fontSize: 11, fontWeight: 700, color: C.t3, textTransform: "uppercase" }}>Accion</th>
+              </tr>
+            </thead>
+            <tbody>
+              {kardexRowsWithBalance.map((movement) => {
+                const canRevert = movement.sourceType === "manual" || movement.sourceType === "adjustment";
+                const reverting = revertingId === movement.id;
+                return (
+                  <tr key={movement.id} style={{ borderBottom: `1px solid ${C.b2}` }}>
+                    <td style={{ padding: "10px", color: C.t2, whiteSpace: "nowrap" }}>{formatDateTime(movement.effectiveAt)}</td>
+                    <td style={{ padding: "10px" }}>
+                      <div style={{ fontWeight: 700, color: C.t1 }}>{movement.item?.name || movement.itemName || "-"}</div>
+                      <div style={{ fontSize: 11.5, color: C.t3 }}>{movement.baseUnit || movement.item?.baseUnit || "-"}</div>
+                    </td>
+                    <td style={{ padding: "10px" }}>
+                      <div style={{ fontWeight: 700, color: C.t1 }}>{humanizeMovementType(movement.movementType)}</div>
+                      <div style={{ fontSize: 11.5, color: movement.sourceType === "freight" ? C.info : C.t3 }}>
+                        {movement.sourceType === "freight" ? "Automatico" : "Manual"}
+                      </div>
+                    </td>
+                    <td style={{ padding: "10px", color: C.t2 }}>
+                      <div>{movement.fromLocation?.name || movement.fromLocation || "-"}</div>
+                      <div style={{ fontSize: 11.5, color: C.t3, marginTop: 2 }}>{movement.toLocation?.name || movement.toLocation || "-"}</div>
+                    </td>
+                    <td style={{ padding: "10px", textAlign: "right", color: C.ok, fontWeight: 700 }}>
+                      {movement.inQty > 0 ? formatQty(movement.inQty, movement.baseUnit) : "-"}
+                    </td>
+                    <td style={{ padding: "10px", textAlign: "right", color: C.err, fontWeight: 700 }}>
+                      {movement.outQty > 0 ? formatQty(movement.outQty, movement.baseUnit) : "-"}
+                    </td>
+                    <td style={{ padding: "10px", textAlign: "right", color: movement.runningBalance === null ? C.t3 : C.pri, fontWeight: 800 }}>
+                      {movement.runningBalance === null ? "-" : formatQty(movement.runningBalance, movement.baseUnit)}
+                    </td>
+                    <td style={{ padding: "10px", textAlign: "right" }}>
+                      {canRevert ? (
+                        <button
+                          onClick={() => handleRevertMovement(movement)}
+                          disabled={reverting}
+                          style={{ ...smallActionStyle, color: C.err, border: `1px solid ${C.err}33`, opacity: reverting ? 0.7 : 1 }}
+                        >
+                          {reverting ? "Revirtiendo..." : "Revertir"}
+                        </button>
+                      ) : (
+                        <span style={{ fontSize: 11.5, color: C.t3 }}>-</span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <div style={{ fontSize: 12.7, color: C.t3, textAlign: "center", padding: 16 }}>
+          No encontramos movimientos para el filtro seleccionado.
+        </div>
+      )}
+    </Section>
+  );
+
   return (
     <div style={{ flex: 1, overflow: "auto", padding: 18, fontFamily: "inherit" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14, flexWrap: "wrap" }}>
@@ -417,6 +855,10 @@ export default function StockScreen({ user, onBack }) {
 
       <div style={{ fontSize: 13.2, color: C.t3, marginBottom: 16 }}>
         Empresa activa: <strong style={{ color: C.t1 }}>{user?.entity || "-"}</strong>
+      </div>
+
+      <div style={{ marginBottom: 16 }}>
+        <Tabs items={SCREEN_TABS} active={screenTab} onChange={setScreenTab} />
       </div>
 
       {feedback ? (
@@ -561,6 +1003,9 @@ export default function StockScreen({ user, onBack }) {
               <div style={{ fontSize: 12.7, color: C.t3, textAlign: "center", padding: 12 }}>Todavia no hay movimientos de stock.</div>
             )}
           </Section>
+
+          {screenTab === "locations" ? renderLocationsView() : null}
+          {screenTab === "kardex" ? renderKardexView() : null}
         </>
       )}
 
