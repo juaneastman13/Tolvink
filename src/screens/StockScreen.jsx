@@ -65,8 +65,9 @@ const MODAL_TABS = [
 ];
 
 const SCREEN_TABS = [
-  { k: "summary", l: "Resumen" },
-  { k: "locations", l: "Ubicaciones" },
+  { k: "movement", l: "Actualizar stock" },
+  { k: "products", l: "Productos" },
+  { k: "sites", l: "Sitios" },
   { k: "kardex", l: "Kardex" },
 ];
 
@@ -210,7 +211,7 @@ export default function StockScreen({ user, onBack }) {
   const [movementForm, setMovementForm] = useState(DEFAULT_MOVEMENT_FORM);
   const [itemForm, setItemForm] = useState(DEFAULT_ITEM_FORM);
   const [locationForm, setLocationForm] = useState(DEFAULT_LOCATION_FORM);
-  const [screenTab, setScreenTab] = useState("summary");
+  const [screenTab, setScreenTab] = useState("movement");
   const [locationsLoading, setLocationsLoading] = useState(false);
   const [locationsError, setLocationsError] = useState("");
   const [stockLocations, setStockLocations] = useState([]);
@@ -297,7 +298,7 @@ export default function StockScreen({ user, onBack }) {
   }, [actionOpen, user?.activeCompanyId]);
 
   useEffect(() => {
-    if (screenTab === "locations") {
+    if (screenTab === "sites") {
       loadLocationsData();
     }
     if (screenTab === "kardex") {
@@ -486,7 +487,7 @@ export default function StockScreen({ user, onBack }) {
         notes: locationForm.notes.trim() || undefined,
       });
       await loadCatalog();
-      if (screenTab === "locations" || screenTab === "kardex") {
+      if (screenTab === "sites" || screenTab === "kardex") {
         await loadLocationsData();
       }
       setLocationForm(DEFAULT_LOCATION_FORM);
@@ -539,7 +540,7 @@ export default function StockScreen({ user, onBack }) {
       });
       await load();
       await loadCatalog();
-      if (screenTab === "locations") {
+      if (screenTab === "sites") {
         await loadLocationsData();
       }
       if (screenTab === "kardex") {
@@ -565,7 +566,7 @@ export default function StockScreen({ user, onBack }) {
     try {
       await apiRevertStockMovement(movement.id, { reason: "Reversión solicitada desde Stock y Acopio" });
       await load();
-      if (screenTab === "locations") {
+      if (screenTab === "sites") {
         await loadLocationsData();
       }
       if (screenTab === "kardex") {
@@ -604,17 +605,282 @@ export default function StockScreen({ user, onBack }) {
     whiteSpace: "nowrap",
   };
 
-  const renderLocationsView = () => (
+  const renderMovementView = () => (
     <>
       <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 16 }}>
-        <SummaryCard title="Ubicaciones" value={locationStats.locations} sub="Espacios registrados" icon={Ic.plant(C.pri, 18)} color={C.pri} />
-        <SummaryCard title="Con saldo" value={locationStats.withStock} sub={`${locationStats.positions} posiciones con producto`} icon={Ic.chk(C.ok, 18)} color={C.ok} />
-        <SummaryCard title="Propias / terceros" value={`${locationStats.own} / ${locationStats.thirdParty}`} sub="Segun titularidad de la ubicacion" icon={Ic.grain(C.acc, 18)} color={C.acc} />
+        <SummaryCard title="Stock propio" value={totals.own.toLocaleString("es-UY", { maximumFractionDigits: 3 })} sub="Disponible en sitios propios" icon={Ic.grain(C.pri, 18)} color={C.pri} />
+        <SummaryCard title="Stock terceros" value={totals.thirdParty.toLocaleString("es-UY", { maximumFractionDigits: 3 })} sub="Depositado fuera del establecimiento" icon={Ic.plant(C.acc, 18)} color={C.acc} />
+        <SummaryCard title="Stock total" value={totals.total.toLocaleString("es-UY", { maximumFractionDigits: 3 })} sub={`${summary?.items?.length || 0} producto(s) con saldo`} icon={Ic.chk(C.info, 18)} color={C.info} />
       </div>
 
       <Section
-        title="Stock por ubicacion"
-        action={<button onClick={loadLocationsData} style={smallActionStyle}>Actualizar ubicaciones</button>}
+        title="Registrar actualizacion de stock"
+        action={<button onClick={load} style={smallActionStyle}>Actualizar saldos</button>}
+      >
+        {!canCreateMovement ? (
+          <div style={{ background: C.warnPale, color: C.warn, border: `1px solid ${C.warn}22`, borderRadius: R.lg, padding: 14, marginBottom: 14, fontSize: 12.7, fontWeight: 600 }}>
+            Para actualizar stock primero necesitás al menos un producto y un sitio.
+          </div>
+        ) : null}
+
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12 }}>
+          <Select
+            label="Tipo de actualizacion"
+            value={movementForm.movementType}
+            onChange={(value) => setMovementForm((prev) => ({ ...prev, movementType: value, fromLocationId: "", toLocationId: "" }))}
+            options={MOVEMENT_OPTIONS.map((option) => ({ value: option.value, label: option.label }))}
+          />
+          <Select
+            label="Producto"
+            value={movementForm.itemId}
+            onChange={(value) => setMovementForm((prev) => ({ ...prev, itemId: value }))}
+            options={itemOptions}
+            placeholder="Elegí un producto"
+            searchable
+          />
+          <Field
+            label="Cantidad"
+            value={movementForm.quantity}
+            onChange={(value) => setMovementForm((prev) => ({ ...prev, quantity: value }))}
+            placeholder="Ej: 30000"
+            inputMode="decimal"
+          />
+          <Select
+            label="Unidad"
+            value={movementForm.unit}
+            onChange={(value) => setMovementForm((prev) => ({ ...prev, unit: value }))}
+            options={unitChoices}
+            placeholder={selectedItem ? "Elegí la unidad" : "Seleccioná un producto"}
+          />
+          {requiresFrom ? (
+            <Select
+              label="Sitio origen"
+              value={movementForm.fromLocationId}
+              onChange={(value) => setMovementForm((prev) => ({ ...prev, fromLocationId: value }))}
+              options={locationOptions}
+              placeholder="Elegí origen"
+              searchable
+            />
+          ) : null}
+          {requiresTo ? (
+            <Select
+              label="Sitio destino"
+              value={movementForm.toLocationId}
+              onChange={(value) => setMovementForm((prev) => ({ ...prev, toLocationId: value }))}
+              options={locationOptions}
+              placeholder="Elegí destino"
+              searchable
+            />
+          ) : null}
+          <div style={{ gridColumn: "1 / -1" }}>
+            <label style={{ fontSize: 11.6, fontWeight: 600, color: C.t2, marginBottom: 6, display: "block", textTransform: "uppercase", letterSpacing: 0.6 }}>Notas operativas</label>
+            <textarea
+              value={movementForm.notes}
+              onChange={(e) => setMovementForm((prev) => ({ ...prev, notes: e.target.value }))}
+              placeholder="Referencia, motivo del ajuste, observaciones..."
+              rows={4}
+              style={{ width: "100%", padding: "12px 14px", borderRadius: R.md, border: `1.5px solid ${C.b1}`, background: C.w, color: C.t1, fontSize: 14.3, fontFamily: "inherit", outline: "none", boxSizing: "border-box", resize: "vertical" }}
+            />
+          </div>
+        </div>
+
+        <div style={{ display: "flex", justifyContent: "space-between", gap: 10, marginTop: 16, flexWrap: "wrap" }}>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <button onClick={() => setScreenTab("products")} style={smallActionStyle}>Ir a productos</button>
+            <button onClick={() => setScreenTab("sites")} style={smallActionStyle}>Ir a sitios</button>
+          </div>
+          <Btn onClick={handleCreateMovement} disabled={saving || !canCreateMovement}>
+            {saving ? "Guardando..." : "Registrar actualizacion"}
+          </Btn>
+        </div>
+      </Section>
+
+      <Section title="Movimientos recientes" action={<button onClick={() => setScreenTab("kardex")} style={smallActionStyle}>Ver kardex completo</button>}>
+        {summary?.recentMovements?.length ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {summary.recentMovements.map((movement) => {
+              const canRevert = movement.sourceType === "manual" || movement.sourceType === "adjustment";
+              const reverting = revertingId === movement.id;
+              return (
+                <div key={movement.id} style={{ border: `1px solid ${C.b2}`, borderRadius: R.md, padding: 12, background: C.bg }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "flex-start", flexWrap: "wrap" }}>
+                    <div style={{ flex: 1, minWidth: 220 }}>
+                      <div style={{ fontSize: 13.2, fontWeight: 700, color: C.t1 }}>
+                        {movement.itemName} <span style={{ color: C.t3, fontWeight: 600 }}>· {humanizeMovementType(movement.movementType)}</span>
+                      </div>
+                      <div style={{ fontSize: 12, color: C.t3, marginTop: 4 }}>
+                        {movement.fromLocation ? `${movement.fromLocation} -> ` : ""}
+                        {movement.toLocation || "Sin destino"}
+                      </div>
+                      <div style={{ display: "flex", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
+                        <span style={{ fontSize: 10.5, fontWeight: 700, color: movement.sourceType === "freight" ? C.info : C.acc, background: movement.sourceType === "freight" ? C.infoPale : C.accPale, borderRadius: R.pill, padding: "3px 8px" }}>
+                          {movement.sourceType === "freight" ? "Automático" : "Manual"}
+                        </span>
+                        {canRevert ? (
+                          <button
+                            onClick={() => handleRevertMovement(movement)}
+                            disabled={reverting}
+                            style={{ ...smallActionStyle, color: C.err, border: `1px solid ${C.err}33`, opacity: reverting ? 0.7 : 1 }}
+                          >
+                            {reverting ? "Revirtiendo..." : "Revertir"}
+                          </button>
+                        ) : null}
+                      </div>
+                    </div>
+                    <div style={{ textAlign: "right" }}>
+                      <div style={{ fontSize: 13.2, fontWeight: 800, color: C.pri }}>{formatQty(movement.quantity, movement.baseUnit)}</div>
+                      <div style={{ fontSize: 11.5, color: C.t3, marginTop: 4 }}>{new Date(movement.effectiveAt).toLocaleString("es-UY")}</div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div style={{ fontSize: 12.7, color: C.t3, textAlign: "center", padding: 12 }}>Todavía no hay movimientos de stock.</div>
+        )}
+      </Section>
+    </>
+  );
+
+  const renderProductsView = () => (
+    <>
+      <Section
+        title="Crear producto"
+        action={<button onClick={loadCatalog} style={smallActionStyle}>Actualizar catalogo</button>}
+      >
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12 }}>
+          <Select
+            label="Categoria"
+            value={itemForm.category}
+            onChange={(value) => setItemForm((prev) => ({ ...prev, category: value }))}
+            options={ITEM_CATEGORY_OPTIONS}
+          />
+          <Select
+            label="Unidad base"
+            value={itemForm.baseUnit}
+            onChange={(value) => setItemForm((prev) => ({ ...prev, baseUnit: value }))}
+            options={UNIT_OPTIONS}
+          />
+          <Field
+            label="Nombre"
+            value={itemForm.name}
+            onChange={(value) => setItemForm((prev) => ({ ...prev, name: value }))}
+            placeholder="Ej: Soja zafra 2026"
+          />
+          <Field
+            label="Codigo"
+            value={itemForm.code}
+            onChange={(value) => setItemForm((prev) => ({ ...prev, code: value }))}
+            placeholder="Opcional"
+          />
+        </div>
+        <div style={{ display: "flex", justifyContent: "space-between", gap: 10, marginTop: 16, flexWrap: "wrap" }}>
+          <button onClick={() => setScreenTab("movement")} style={smallActionStyle}>Volver a actualizar stock</button>
+          <Btn onClick={handleCreateItem} disabled={saving}>
+            {saving ? "Guardando..." : "Crear producto"}
+          </Btn>
+        </div>
+      </Section>
+
+      <Section title="Productos cargados">
+        {items.length ? (
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13.2, fontFamily: "inherit" }}>
+              <thead>
+                <tr style={{ borderBottom: `1.5px solid ${C.b1}` }}>
+                  <th style={{ padding: "8px 10px", textAlign: "left", fontSize: 11, fontWeight: 700, color: C.t3, textTransform: "uppercase" }}>Producto</th>
+                  <th style={{ padding: "8px 10px", textAlign: "left", fontSize: 11, fontWeight: 700, color: C.t3, textTransform: "uppercase" }}>Categoria</th>
+                  <th style={{ padding: "8px 10px", textAlign: "left", fontSize: 11, fontWeight: 700, color: C.t3, textTransform: "uppercase" }}>Unidad base</th>
+                  <th style={{ padding: "8px 10px", textAlign: "right", fontSize: 11, fontWeight: 700, color: C.t3, textTransform: "uppercase" }}>Saldo total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {items.map((item) => {
+                  const summaryItem = summary?.items?.find((entry) => entry.itemId === item.id);
+                  return (
+                    <tr key={item.id} style={{ borderBottom: `1px solid ${C.b2}` }}>
+                      <td style={{ padding: "10px", fontWeight: 700, color: C.t1 }}>
+                        {item.name}
+                        {item.code ? <div style={{ fontSize: 11.5, fontWeight: 600, color: C.t3, marginTop: 2 }}>{item.code}</div> : null}
+                      </td>
+                      <td style={{ padding: "10px", color: C.t2 }}>{ITEM_CATEGORY_OPTIONS.find((option) => option.value === item.category)?.label || item.category}</td>
+                      <td style={{ padding: "10px", color: C.t2 }}>{unitLabel(item.baseUnit)}</td>
+                      <td style={{ padding: "10px", textAlign: "right", fontWeight: 800, color: C.pri }}>
+                        {summaryItem ? formatQty(summaryItem.totalQuantity, summaryItem.baseUnit) : formatQty(0, item.baseUnit)}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div style={{ fontSize: 12.7, color: C.t3, textAlign: "center", padding: 12 }}>Todavía no hay productos cargados.</div>
+        )}
+      </Section>
+    </>
+  );
+
+  const renderLocationsView = () => (
+    <>
+      <Section
+        title="Crear sitio"
+        action={<button onClick={loadLocationsData} style={smallActionStyle}>Actualizar sitios</button>}
+      >
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12 }}>
+          <Select
+            label="Tipo de sitio"
+            value={locationForm.locationType}
+            onChange={(value) => setLocationForm((prev) => ({ ...prev, locationType: value }))}
+            options={LOCATION_TYPE_OPTIONS}
+          />
+          <Select
+            label="Titularidad"
+            value={locationForm.ownershipType}
+            onChange={(value) => setLocationForm((prev) => ({ ...prev, ownershipType: value }))}
+            options={OWNERSHIP_OPTIONS}
+          />
+          <Field
+            label="Nombre"
+            value={locationForm.name}
+            onChange={(value) => setLocationForm((prev) => ({ ...prev, name: value }))}
+            placeholder="Ej: Silo norte"
+          />
+          <Field
+            label="Direccion"
+            value={locationForm.address}
+            onChange={(value) => setLocationForm((prev) => ({ ...prev, address: value }))}
+            placeholder="Opcional"
+          />
+          <div style={{ gridColumn: "1 / -1" }}>
+            <label style={{ fontSize: 11.6, fontWeight: 600, color: C.t2, marginBottom: 6, display: "block", textTransform: "uppercase", letterSpacing: 0.6 }}>Notas del sitio</label>
+            <textarea
+              value={locationForm.notes}
+              onChange={(e) => setLocationForm((prev) => ({ ...prev, notes: e.target.value }))}
+              placeholder="Opcional: aclaraciones operativas del sitio"
+              rows={4}
+              style={{ width: "100%", padding: "12px 14px", borderRadius: R.md, border: `1.5px solid ${C.b1}`, background: C.w, color: C.t1, fontSize: 14.3, fontFamily: "inherit", outline: "none", boxSizing: "border-box", resize: "vertical" }}
+            />
+          </div>
+        </div>
+        <div style={{ display: "flex", justifyContent: "space-between", gap: 10, marginTop: 16, flexWrap: "wrap" }}>
+          <button onClick={() => setScreenTab("movement")} style={smallActionStyle}>Volver a actualizar stock</button>
+          <Btn onClick={handleCreateLocation} disabled={saving}>
+            {saving ? "Guardando..." : "Crear sitio"}
+          </Btn>
+        </div>
+      </Section>
+
+      <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 16 }}>
+        <SummaryCard title="Sitios" value={locationStats.locations} sub="Espacios registrados" icon={Ic.plant(C.pri, 18)} color={C.pri} />
+        <SummaryCard title="Con saldo" value={locationStats.withStock} sub={`${locationStats.positions} posiciones con producto`} icon={Ic.chk(C.ok, 18)} color={C.ok} />
+        <SummaryCard title="Propios / terceros" value={`${locationStats.own} / ${locationStats.thirdParty}`} sub="Segun titularidad del sitio" icon={Ic.grain(C.acc, 18)} color={C.acc} />
+      </div>
+
+      <Section
+        title="Stock por sitio"
+        action={<button onClick={loadLocationsData} style={smallActionStyle}>Actualizar sitios</button>}
       >
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12, marginBottom: 16 }}>
           <Field
@@ -693,7 +959,7 @@ export default function StockScreen({ user, onBack }) {
           </div>
         ) : (
           <div style={{ fontSize: 12.7, color: C.t3, textAlign: "center", padding: 16 }}>
-            No encontramos ubicaciones que coincidan con los filtros aplicados.
+            No encontramos sitios que coincidan con los filtros aplicados.
           </div>
         )}
       </Section>
@@ -849,7 +1115,6 @@ export default function StockScreen({ user, onBack }) {
           {Ic.chev(C.pri, 18)}
         </button>
         <span style={{ fontSize: 22, fontWeight: 800, letterSpacing: -0.3, flex: 1 }}>Stock y Acopio</span>
-        <Btn sm onClick={() => openManager("movement")} icon={Ic.plus(C.w, 14)}>Gestionar</Btn>
         <button onClick={load} style={pageButtonStyle}>Actualizar</button>
       </div>
 
@@ -878,35 +1143,10 @@ export default function StockScreen({ user, onBack }) {
         </div>
       ) : (
         <>
-          <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 16 }}>
-            <SummaryCard title="Stock propio" value={totals.own.toLocaleString("es-UY", { maximumFractionDigits: 3 })} sub="Acopio interno" icon={Ic.grain(C.pri, 18)} color={C.pri} />
-            <SummaryCard title="Stock en terceros" value={totals.thirdParty.toLocaleString("es-UY", { maximumFractionDigits: 3 })} sub="Depositado fuera del establecimiento" icon={Ic.plant(C.acc, 18)} color={C.acc} />
-            <SummaryCard title="Stock total" value={totals.total.toLocaleString("es-UY", { maximumFractionDigits: 3 })} sub={`${summary?.items?.length || 0} item(s) con saldo`} icon={Ic.chk(C.info, 18)} color={C.info} />
-          </div>
-
-          <Section
-            title="Por categoria"
-            action={<button onClick={() => openManager("movement")} style={smallActionStyle}>Registrar movimiento</button>}
-          >
-            {summary?.categories?.length ? (
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 10 }}>
-                {summary.categories.map((category) => (
-                  <div key={category.category} style={{ border: `1px solid ${C.b2}`, borderRadius: R.md, padding: 12, background: C.bg }}>
-                    <div style={{ fontSize: 12, fontWeight: 800, color: C.t2, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>
-                      {category.category}
-                    </div>
-                    <div style={{ fontSize: 20, fontWeight: 800, color: C.t1 }}>{formatQty(category.totalQuantity, category.baseUnit)}</div>
-                    <div style={{ display: "flex", gap: 12, marginTop: 8, fontSize: 12.1, color: C.t3, flexWrap: "wrap" }}>
-                      <span>Propio: <strong style={{ color: C.t1 }}>{formatQty(category.ownQuantity, category.baseUnit)}</strong></span>
-                      <span>Terceros: <strong style={{ color: C.t1 }}>{formatQty(category.thirdPartyQuantity, category.baseUnit)}</strong></span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div style={{ fontSize: 12.7, color: C.t3, textAlign: "center", padding: 12 }}>Todavia no hay stock cargado para esta empresa.</div>
-            )}
-          </Section>
+          {screenTab === "movement" ? renderMovementView() : null}
+          {screenTab === "products" ? renderProductsView() : null}
+          {screenTab === "sites" ? renderLocationsView() : null}
+          {false ? (<>
 
           <Section
             title="Items con saldo"
@@ -1005,6 +1245,7 @@ export default function StockScreen({ user, onBack }) {
           </Section>
 
           {screenTab === "locations" ? renderLocationsView() : null}
+          </>) : null}
           {screenTab === "kardex" ? renderKardexView() : null}
         </>
       )}
