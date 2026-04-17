@@ -58,6 +58,13 @@ const MOVEMENT_OPTIONS = [
   { value: "transfer", label: "Transferencia", kind: "transfer" },
 ];
 
+const MOVEMENT_MODE_OPTIONS = [
+  { value: "in", label: "Ingreso", description: "Suma stock en un sitio de destino.", icon: "plus", color: C.ok },
+  { value: "out", label: "Egreso", description: "Descuenta stock desde un sitio de origen.", icon: "out", color: C.err },
+  { value: "transfer", label: "Transferencia", description: "Mueve stock entre dos sitios.", icon: "share", color: C.info },
+  { value: "adjustment", label: "Ajuste", description: "Corrige diferencias de inventario.", icon: "gear", color: C.acc },
+];
+
 const MODAL_TABS = [
   { k: "movement", l: "Movimiento" },
   { k: "item", l: "Ítem" },
@@ -136,6 +143,20 @@ function movementDirection(movementType) {
   return MOVEMENT_OPTIONS.find((option) => option.value === movementType)?.kind || "transfer";
 }
 
+function movementModeFromType(movementType) {
+  if (movementType === "transfer") return "transfer";
+  if (movementType === "adjustment_in" || movementType === "adjustment_out") return "adjustment";
+  const kind = movementDirection(movementType);
+  return kind === "out" ? "out" : "in";
+}
+
+function defaultMovementTypeForMode(mode) {
+  if (mode === "transfer") return "transfer";
+  if (mode === "adjustment") return "adjustment_in";
+  if (mode === "out") return "manual_out";
+  return "manual_in";
+}
+
 function formatDateTime(value) {
   if (!value) return "-";
   return new Date(value).toLocaleString("es-UY");
@@ -166,6 +187,43 @@ function normalizeStockMovement(movement, scopedLocationId = "") {
     inQty: signedQty > 0 ? signedQty : 0,
     outQty: signedQty < 0 ? Math.abs(signedQty) : 0,
   };
+}
+
+function OperationCard({ active, title, description, color, icon, onClick }) {
+  const iconByKey = {
+    plus: Ic.plus,
+    out: Ic.out,
+    share: Ic.share,
+    gear: Ic.gear,
+  };
+  const Icon = iconByKey[icon] || Ic.gear;
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        flex: 1,
+        minWidth: 180,
+        textAlign: "left",
+        padding: 14,
+        borderRadius: R.lg,
+        border: `1px solid ${active ? `${color}44` : C.b1}`,
+        background: active ? `${color}10` : C.w,
+        boxShadow: active ? `0 0 0 1px ${color}18 inset` : "none",
+        cursor: "pointer",
+        fontFamily: "inherit",
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+        <div style={{ width: 34, height: 34, borderRadius: R.md, background: `${color}18`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          {Icon(color, 18)}
+        </div>
+        <span style={{ fontSize: 13.2, fontWeight: 800, color: active ? color : C.t1 }}>{title}</span>
+      </div>
+      <div style={{ fontSize: 12.1, color: C.t3, lineHeight: 1.45 }}>{description}</div>
+    </button>
+  );
 }
 
 function SummaryCard({ title, value, sub, icon, color }) {
@@ -419,10 +477,67 @@ export default function StockScreen({ user, onBack }) {
     });
   }, [kardexRows, kardexFilters.itemId, currentKardexBalance]);
 
+  const movementMode = movementModeFromType(movementForm.movementType);
   const movementDef = MOVEMENT_OPTIONS.find((option) => option.value === movementForm.movementType);
+  const movementModeDef = MOVEMENT_MODE_OPTIONS.find((option) => option.value === movementMode) || MOVEMENT_MODE_OPTIONS[0];
+  const movementTypeChoices = MOVEMENT_OPTIONS.filter((option) => movementModeFromType(option.value) === movementMode);
+  const movementCopyByMode = {
+    in: {
+      title: "Ingreso de stock",
+      subtitle: "Carga mercaderia o recepciones en un sitio concreto.",
+      typeLabel: "Motivo del ingreso",
+      quantityLabel: "Cantidad a ingresar",
+      fromLabel: "",
+      toLabel: "Sitio que recibe",
+      submitLabel: "Registrar ingreso",
+      notesPlaceholder: "Proveedor, lote, referencia o comentario del ingreso...",
+    },
+    out: {
+      title: "Egreso de stock",
+      subtitle: "Descuenta mercaderia desde un sitio de origen.",
+      typeLabel: "Motivo del egreso",
+      quantityLabel: "Cantidad a egresar",
+      fromLabel: "Sitio desde donde sale",
+      toLabel: "",
+      submitLabel: "Registrar egreso",
+      notesPlaceholder: "Destino, cliente, consumo o comentario del egreso...",
+    },
+    transfer: {
+      title: "Transferencia entre sitios",
+      subtitle: "Mueve stock de un sitio origen hacia otro sitio destino.",
+      typeLabel: "Operacion",
+      quantityLabel: "Cantidad a transferir",
+      fromLabel: "Sitio origen",
+      toLabel: "Sitio destino",
+      submitLabel: "Registrar transferencia",
+      notesPlaceholder: "Motivo del traslado, referencia interna u observaciones...",
+    },
+    adjustment: {
+      title: "Ajuste de inventario",
+      subtitle: "Corrige diferencias entre el saldo real y el saldo del sistema.",
+      typeLabel: "Tipo de ajuste",
+      quantityLabel: "Cantidad a ajustar",
+      fromLabel: "Sitio afectado",
+      toLabel: "Sitio afectado",
+      submitLabel: "Registrar ajuste",
+      notesPlaceholder: "Explica el motivo del ajuste para dejar trazabilidad clara...",
+    },
+  };
+  const movementCopy = movementCopyByMode[movementMode];
   const requiresFrom = movementDef?.kind === "out" || movementDef?.kind === "transfer";
   const requiresTo = movementDef?.kind === "in" || movementDef?.kind === "transfer";
   const canCreateMovement = items.length > 0 && locations.length > 0;
+
+  const setMovementMode = (mode) => {
+    const nextMovementType = defaultMovementTypeForMode(mode);
+    setMovementForm((prev) => ({
+      ...prev,
+      movementType: nextMovementType,
+      fromLocationId: "",
+      toLocationId: "",
+      notes: mode === movementMode ? prev.notes : "",
+    }));
+  };
 
   const openManager = (tab = "movement", seed = {}) => {
     setActionTab(tab);
@@ -617,18 +732,37 @@ export default function StockScreen({ user, onBack }) {
         title="Registrar actualizacion de stock"
         action={<button onClick={load} style={smallActionStyle}>Actualizar saldos</button>}
       >
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12, marginBottom: 16 }}>
+          {MOVEMENT_MODE_OPTIONS.map((mode) => (
+            <OperationCard
+              key={mode.value}
+              active={movementMode === mode.value}
+              title={mode.label}
+              description={mode.description}
+              color={mode.color}
+              icon={mode.icon}
+              onClick={() => setMovementMode(mode.value)}
+            />
+          ))}
+        </div>
+
         {!canCreateMovement ? (
           <div style={{ background: C.warnPale, color: C.warn, border: `1px solid ${C.warn}22`, borderRadius: R.lg, padding: 14, marginBottom: 14, fontSize: 12.7, fontWeight: 600 }}>
             Para actualizar stock primero necesitás al menos un producto y un sitio.
           </div>
         ) : null}
 
+        <div style={{ border: `1px solid ${movementModeDef.color}22`, background: `${movementModeDef.color}0D`, borderRadius: R.lg, padding: 14, marginBottom: 16 }}>
+          <div style={{ fontSize: 15.2, fontWeight: 800, color: C.t1 }}>{movementCopy.title}</div>
+          <div style={{ fontSize: 12.3, color: C.t3, marginTop: 4 }}>{movementCopy.subtitle}</div>
+        </div>
+
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12 }}>
           <Select
-            label="Tipo de actualizacion"
+            label={movementCopy.typeLabel}
             value={movementForm.movementType}
             onChange={(value) => setMovementForm((prev) => ({ ...prev, movementType: value, fromLocationId: "", toLocationId: "" }))}
-            options={MOVEMENT_OPTIONS.map((option) => ({ value: option.value, label: option.label }))}
+            options={movementTypeChoices.map((option) => ({ value: option.value, label: option.label }))}
           />
           <Select
             label="Producto"
@@ -639,7 +773,7 @@ export default function StockScreen({ user, onBack }) {
             searchable
           />
           <Field
-            label="Cantidad"
+            label={movementCopy.quantityLabel}
             value={movementForm.quantity}
             onChange={(value) => setMovementForm((prev) => ({ ...prev, quantity: value }))}
             placeholder="Ej: 30000"
@@ -654,7 +788,7 @@ export default function StockScreen({ user, onBack }) {
           />
           {requiresFrom ? (
             <Select
-              label="Sitio origen"
+              label={movementCopy.fromLabel || "Sitio origen"}
               value={movementForm.fromLocationId}
               onChange={(value) => setMovementForm((prev) => ({ ...prev, fromLocationId: value }))}
               options={locationOptions}
@@ -664,7 +798,7 @@ export default function StockScreen({ user, onBack }) {
           ) : null}
           {requiresTo ? (
             <Select
-              label="Sitio destino"
+              label={movementCopy.toLabel || "Sitio destino"}
               value={movementForm.toLocationId}
               onChange={(value) => setMovementForm((prev) => ({ ...prev, toLocationId: value }))}
               options={locationOptions}
@@ -677,7 +811,7 @@ export default function StockScreen({ user, onBack }) {
             <textarea
               value={movementForm.notes}
               onChange={(e) => setMovementForm((prev) => ({ ...prev, notes: e.target.value }))}
-              placeholder="Referencia, motivo del ajuste, observaciones..."
+              placeholder={movementCopy.notesPlaceholder}
               rows={4}
               style={{ width: "100%", padding: "12px 14px", borderRadius: R.md, border: `1.5px solid ${C.b1}`, background: C.w, color: C.t1, fontSize: 14.3, fontFamily: "inherit", outline: "none", boxSizing: "border-box", resize: "vertical" }}
             />
@@ -690,7 +824,7 @@ export default function StockScreen({ user, onBack }) {
             <button onClick={() => setScreenTab("sites")} style={smallActionStyle}>Ir a sitios</button>
           </div>
           <Btn onClick={handleCreateMovement} disabled={saving || !canCreateMovement}>
-            {saving ? "Guardando..." : "Registrar actualizacion"}
+            {saving ? "Guardando..." : movementCopy.submitLabel}
           </Btn>
         </div>
       </Section>
