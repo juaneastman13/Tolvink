@@ -34,6 +34,8 @@ const ACTION_GROUPS = [
   { key: "confirm_finished", label: "Confirmar entrega", color: C.pri, priority: 6 },
 ];
 
+const URGENT_GROUP_KEYS = new Set(["approve_producer", "assign", "start"]);
+
 // Progress groups — for summary view (items without pending actions), matching the 3-step progress bar in DetailScreen
 const PROGRESS_GROUPS = [
   { key:"pendiente",   label:"Pendiente",  color:C.acc, statuses:["pending_assignment"] },
@@ -69,6 +71,7 @@ export default memo(function HomeScreen({ user, freights, loading, error, perms,
   const [mobileTab, setMobileTab] = useState("pending");
   const { isConsulta, isConsultaFor } = useAccessLevel(user);
   const [fleetAlerts, setFleetAlerts] = useState(null);
+  const [urgentOnly, setUrgentOnly] = useState(false);
 
   useEffect(() => {
     apiGetFleetAlerts().then(setFleetAlerts).catch(() => setFleetAlerts([]));
@@ -190,11 +193,28 @@ export default memo(function HomeScreen({ user, freights, loading, error, perms,
         })
         .map(f => ({ ...f, pendingAction: pendingMap.get(f.id) }))
         .sort((a, b) => (a.destName||'').localeCompare(b.destName||'') || (a.originName||'').localeCompare(b.originName||'') || a.id.localeCompare(b.id));
-      return { ...g, icon: g.key==="assign"?Ic.truck:g.key==="respond"?Ic.info:g.key==="authorize"?Ic.chk:g.key==="start"?Ic.nav:g.key==="confirm_loaded"?Ic.warn:Ic.ok, items };
+      return { ...g, icon: g.key==="assign"?Ic.truck:g.key==="respond"?Ic.msg:g.key==="authorize"?Ic.chk:g.key==="start"?Ic.nav:g.key==="confirm_loaded"?Ic.warn:Ic.chk, items };
     }).filter(g => g.items.length > 0);
   }, [filteredFreights, pendingMap, dateFrom, dateTo]);
   const pendingCount = new Set(pendingByProgress.flatMap(g => g.items.map(f => f.id))).size;
   const hasPending = pendingCount > 0;
+
+  const visiblePendingGroups = useMemo(() => (
+    urgentOnly ? pendingByProgress.filter(g => URGENT_GROUP_KEYS.has(g.key)) : pendingByProgress
+  ), [pendingByProgress, urgentOnly]);
+
+  const visiblePendingCount = useMemo(() => (
+    new Set(visiblePendingGroups.flatMap(g => g.items.map(f => f.id))).size
+  ), [visiblePendingGroups]);
+
+  const pendingBreakdown = useMemo(() => (
+    pendingByProgress.map(g => ({
+      key: g.key,
+      label: g.label,
+      color: g.color,
+      count: g.items.length,
+    }))
+  ), [pendingByProgress]);
 
   // Total pending (unfiltered) to know if section should show
   const totalPendingAll = useMemo(() => {
@@ -321,6 +341,17 @@ export default memo(function HomeScreen({ user, freights, loading, error, perms,
       .sort((a, b) => (a.loadTime || "").localeCompare(b.loadTime || "") || (a.code || "").localeCompare(b.code || ""));
   }, [filteredFreights, todayStr]);
 
+  const upcomingFreights = useMemo(() => (
+    filteredFreights
+      .filter(f => (f.loadDate || "") > todayStr && f.status !== "finished" && f.status !== "canceled")
+      .sort((a, b) => (a.loadDate || "").localeCompare(b.loadDate || "") || (a.loadTime || "").localeCompare(b.loadTime || ""))
+      .slice(0, 4)
+  ), [filteredFreights, todayStr]);
+
+  const overdueFreights = useMemo(() => (
+    filteredFreights.filter(f => (f.loadDate || "") < todayStr && f.status !== "finished" && f.status !== "canceled")
+  ), [filteredFreights, todayStr]);
+
   const todayTons = useMemo(() => todayFreights.reduce((s, f) => s + (parseFloat(f.tons) || 0), 0), [todayFreights]);
 
   const dailyGroups = useMemo(() => {
@@ -364,15 +395,24 @@ export default memo(function HomeScreen({ user, freights, loading, error, perms,
     }
 
     return (
-      <div key={gKey}>
-        <button onClick={() => toggleGroup(gKey)} style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, padding: "8px 0", background: isOpen ? C.bg : "none", border: "none", borderBottom: `1px solid ${C.b2}`, cursor: "pointer", fontFamily: "inherit", textAlign: "left", ...(isOpen ? { position: "sticky", top: 32, zIndex: 10 } : {}) }}>
-          {typeof group.icon === "function" ? group.icon(group.color, 14) : group.icon}
-          <span style={{ fontSize: 15.4, fontWeight: 800, color: group.color }}>{group.realCount ?? group.items.length}</span>
-          <div style={{ flex: 1, fontSize: 14.3, fontWeight: 600, color: C.t1 }}>{group.label}</div>
+      <div key={gKey} style={{ marginBottom: 10 }}>
+        <button onClick={() => toggleGroup(gKey)} style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", background: isOpen ? `${group.color}10` : C.w, border: `1px solid ${isOpen ? `${group.color}35` : C.b1}`, borderRadius: R.lg, cursor: "pointer", fontFamily: "inherit", textAlign: "left", boxShadow: isOpen ? "0 4px 14px rgba(0,0,0,0.04)" : "none", ...(isOpen ? { position: "sticky", top: 32, zIndex: 10 } : {}) }}>
+          <div style={{ width: 34, height: 34, borderRadius: R.md, background: `${group.color}16`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            {typeof group.icon === "function" ? group.icon(group.color, 16) : group.icon}
+          </div>
+          <div style={{ minWidth: 34, textAlign: "center" }}>
+            <div style={{ fontSize: 18, fontWeight: 800, color: group.color, lineHeight: 1 }}>{group.realCount ?? group.items.length}</div>
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 14.3, fontWeight: 700, color: C.t1 }}>{group.label}</div>
+            <div style={{ fontSize: 11.6, color: C.t3, marginTop: 2 }}>
+              {group.items.length === 1 ? "1 flete para resolver" : `${group.items.length} fletes para resolver`}
+            </div>
+          </div>
           <span style={{ display: "flex", transform: isOpen ? "rotate(270deg)" : "rotate(90deg)", transition: "transform 0.15s ease" }}>{Ic.chev(C.t3, 14)}</span>
         </button>
         {isOpen && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: "8px 0 4px 16px", borderLeft: `2px solid ${group.color}30` }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: "10px 0 4px 16px", borderLeft: `2px solid ${group.color}30`, marginLeft: 16 }}>
             {isLoadingFirst && <SkeletonList count={3} />}
             {!isLoadingFirst && displayItems.map(f => renderCard(f, pendingMap.get(f.id) || getPendingActions(f, effectiveType(f), user.role, user), source))}
             {!isLoadingFirst && exp?.loadingMore && <SkeletonList count={2} />}
@@ -441,8 +481,64 @@ export default memo(function HomeScreen({ user, freights, loading, error, perms,
           </div>}
         </div>
 
+        {!openGroup && !isInitialLoad && (
+          <div style={{ padding: compact ? "10px 12px" : "14px 16px", borderRadius: R.lg, background: "linear-gradient(135deg, rgba(255,122,0,0.10), rgba(16,124,16,0.06))", border: `1px solid ${C.b1}`, marginBottom: 10 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start", flexWrap: "wrap" }}>
+              <div>
+                <div style={{ fontSize: compact ? 12.1 : 13.2, fontWeight: 700, color: C.t2 }}>Tablero operativo</div>
+                <div style={{ fontSize: compact ? 22 : 28, fontWeight: 800, color: C.t1, lineHeight: 1.1, marginTop: 4 }}>{urgentOnly ? visiblePendingCount : pendingCount}</div>
+                <div style={{ fontSize: 11.6, color: C.t3, marginTop: 4 }}>
+                  {urgentOnly ? "pendientes urgentes visibles" : "acciones que requieren atención"}
+                </div>
+              </div>
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                <button onClick={() => setUrgentOnly((prev) => !prev)} style={{ padding: "7px 10px", borderRadius: R.md, border: `1px solid ${urgentOnly ? C.err : C.b1}`, background: urgentOnly ? C.errPale : C.w, color: urgentOnly ? C.err : C.t2, fontSize: 11.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+                  {urgentOnly ? "Ver todas" : "Solo urgentes"}
+                </button>
+                <button onClick={() => onNav?.("list")} style={{ padding: "7px 10px", borderRadius: R.md, border: `1px solid ${C.b1}`, background: C.w, color: C.t2, fontSize: 11.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+                  Ver lista
+                </button>
+                <button onClick={() => onNav?.("map")} style={{ padding: "7px 10px", borderRadius: R.md, border: `1px solid ${C.b1}`, background: C.w, color: C.t2, fontSize: 11.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+                  Ver mapa
+                </button>
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}>
+              {pendingBreakdown.slice(0, 4).map((item) => (
+                <div key={item.key} style={{ padding: "7px 10px", borderRadius: R.md, background: C.w, border: `1px solid ${C.b1}`, minWidth: compact ? 112 : 128 }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: item.color }}>{item.count}</div>
+                  <div style={{ fontSize: 11.5, color: C.t2, marginTop: 2 }}>{item.label}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {!openGroup && (fleetAlerts?.trucksWithExpired > 0 || fleetAlerts?.trucksWithExpiring > 0 || overdueFreights.length > 0) && (
+          <div style={{ display: "grid", gridTemplateColumns: compact ? "1fr" : "repeat(auto-fit, minmax(180px, 1fr))", gap: 8, marginBottom: 10 }}>
+            {fleetAlerts?.trucksWithExpired > 0 ? (
+              <button onClick={() => onNav?.("trucks")} style={{ padding: "12px 14px", textAlign: "left", borderRadius: R.lg, border: `1px solid ${C.err}22`, background: C.errPale, cursor: "pointer", fontFamily: "inherit" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>{Ic.doc(C.err, 15)}<span style={{ fontSize: 12.1, fontWeight: 800, color: C.err }}>Documentación vencida</span></div>
+                <div style={{ fontSize: 12.1, color: C.t2 }}>{fleetAlerts.trucksWithExpired} camión{fleetAlerts.trucksWithExpired > 1 ? "es" : ""} necesita revisión inmediata.</div>
+              </button>
+            ) : null}
+            {fleetAlerts?.trucksWithExpiring > 0 ? (
+              <button onClick={() => onNav?.("trucks")} style={{ padding: "12px 14px", textAlign: "left", borderRadius: R.lg, border: `1px solid ${C.warn}22`, background: C.warnPale, cursor: "pointer", fontFamily: "inherit" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>{Ic.warn(C.warn, 15)}<span style={{ fontSize: 12.1, fontWeight: 800, color: C.warn }}>Documentos por vencer</span></div>
+                <div style={{ fontSize: 12.1, color: C.t2 }}>{fleetAlerts.trucksWithExpiring} camión{fleetAlerts.trucksWithExpiring > 1 ? "es" : ""} para revisar esta semana.</div>
+              </button>
+            ) : null}
+            {overdueFreights.length > 0 ? (
+              <button onClick={() => onNav?.("list")} style={{ padding: "12px 14px", textAlign: "left", borderRadius: R.lg, border: `1px solid ${C.acc}22`, background: `${C.acc}10`, cursor: "pointer", fontFamily: "inherit" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>{Ic.clk(C.acc, 15)}<span style={{ fontSize: 12.1, fontWeight: 800, color: C.acc }}>Fletes atrasados</span></div>
+                <div style={{ fontSize: 12.1, color: C.t2 }}>{overdueFreights.length} flete{overdueFreights.length > 1 ? "s" : ""} quedó pendiente de una fecha anterior.</div>
+              </button>
+            ) : null}
+          </div>
+        )}
+
         {/* Fleet document alerts */}
-        {fleetAlerts?.trucksWithExpired > 0 && !openGroup && (
+        {fleetAlerts?.trucksWithExpired > 0 && !openGroup && false && (
           <div onClick={() => onNav?.("trucks")} style={{ padding: compact ? "8px 10px" : "10px 14px", borderRadius: R.lg, background: C.errPale, marginBottom: 8, cursor: "pointer", border: `1px solid ${C.err}20` }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               {Ic.doc(C.err, compact ? 14 : 16)}
@@ -453,7 +549,7 @@ export default memo(function HomeScreen({ user, freights, loading, error, perms,
             </div>
           </div>
         )}
-        {fleetAlerts?.trucksWithExpiring > 0 && !fleetAlerts?.trucksWithExpired && !openGroup && (
+        {fleetAlerts?.trucksWithExpiring > 0 && !fleetAlerts?.trucksWithExpired && !openGroup && false && (
           <div onClick={() => onNav?.("trucks")} style={{ padding: compact ? "8px 10px" : "10px 14px", borderRadius: R.lg, background: C.warnPale, marginBottom: 8, cursor: "pointer", border: `1px solid ${C.warn}20` }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               {Ic.doc(C.warn, compact ? 14 : 16)}
@@ -485,10 +581,10 @@ export default memo(function HomeScreen({ user, freights, loading, error, perms,
         {!isInitialLoad && !smOpen && totalPendingAll > 0 && (<>
           <div style={{ padding: compact ? "8px 10px" : "12px 14px", borderRadius: R.lg, background: `${C.acc}0D`, marginBottom: 8 }}>
             <div style={{ display: "flex", alignItems: "center", gap: compact ? 8 : 10 }}>
-              {!compact && <span style={{ fontSize: 24.2, fontWeight: 800, color: C.acc, lineHeight: 1, minWidth: 28, textAlign: "center" }}>{pendingCount}</span>}
+              {!compact && <span style={{ fontSize: 24.2, fontWeight: 800, color: C.acc, lineHeight: 1, minWidth: 28, textAlign: "center" }}>{urgentOnly ? visiblePendingCount : pendingCount}</span>}
               {compact && <div style={{ width: 26, height: 26, borderRadius: "50%", background: C.acc, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, position: "relative" }}>
                 {Ic.bell(C.w, 13)}
-                <div style={{ position: "absolute", top: -3, right: -3, minWidth: 15, height: 15, borderRadius: R.md, background: C.err, color: C.w, fontSize: 8.8, fontWeight: 700, padding: "0 3px", display: "flex", alignItems: "center", justifyContent: "center", border: `2px solid ${C.w}` }}>{pendingCount}</div>
+                <div style={{ position: "absolute", top: -3, right: -3, minWidth: 15, height: 15, borderRadius: R.md, background: C.err, color: C.w, fontSize: 8.8, fontWeight: 700, padding: "0 3px", display: "flex", alignItems: "center", justifyContent: "center", border: `2px solid ${C.w}` }}>{urgentOnly ? visiblePendingCount : pendingCount}</div>
               </div>}
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: compact ? 12.1 : 14.3, fontWeight: 700, color: C.acc }}>{compact ? "Con pendientes de mi parte" : `Acción${pendingCount !== 1 ? "es" : ""} pendiente${pendingCount !== 1 ? "s" : ""}`}</div>
@@ -496,12 +592,12 @@ export default memo(function HomeScreen({ user, freights, loading, error, perms,
               </div>
             </div>
           </div>
-          {pendingByProgress.length > 0 && (
+          {visiblePendingGroups.length > 0 && (
             <div style={{ marginBottom: 16 }}>
-              {pendingByProgress.map(g => renderGroup(g, "pa", "pending"))}
+              {visiblePendingGroups.map(g => renderGroup(g, "pa", "pending"))}
             </div>
           )}
-          {!compact && pendingByProgress.length === 0 && <div style={{ padding:"12px 16px", fontSize:13.2, color:C.t3, display:"flex", alignItems:"center", gap:8 }}>{Ic.chk(C.ok,14)} Sin pendientes en este periodo</div>}
+          {!compact && visiblePendingGroups.length === 0 && <div style={{ padding:"12px 16px", fontSize:13.2, color:C.t3, display:"flex", alignItems:"center", gap:8 }}>{Ic.chk(C.ok,14)} No encontramos pendientes para el filtro seleccionado</div>}
         </>)}
 
         {/* Sin pendientes de mi parte — sub-grouped by third-party action */}
@@ -556,6 +652,26 @@ export default memo(function HomeScreen({ user, freights, loading, error, perms,
           </div>
         </div>
 
+        {!compact && (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 8, marginBottom: 12 }}>
+            <div style={{ padding: "10px 12px", borderRadius: R.lg, background: C.w, border: `1px solid ${C.b1}` }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: C.t3, textTransform: "uppercase" }}>Hoy</div>
+              <div style={{ fontSize: 22, fontWeight: 800, color: C.t1, marginTop: 4 }}>{todayFreights.length}</div>
+              <div style={{ fontSize: 11.5, color: C.t3, marginTop: 2 }}>fletes programados</div>
+            </div>
+            <div style={{ padding: "10px 12px", borderRadius: R.lg, background: C.w, border: `1px solid ${C.b1}` }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: C.t3, textTransform: "uppercase" }}>En curso</div>
+              <div style={{ fontSize: 22, fontWeight: 800, color: C.pri, marginTop: 4 }}>{activeTrips.length}</div>
+              <div style={{ fontSize: 11.5, color: C.t3, marginTop: 2 }}>viajes activos</div>
+            </div>
+            <div style={{ padding: "10px 12px", borderRadius: R.lg, background: C.w, border: `1px solid ${C.b1}` }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: C.t3, textTransform: "uppercase" }}>Próximos</div>
+              <div style={{ fontSize: 22, fontWeight: 800, color: C.acc, marginTop: 4 }}>{upcomingFreights.length}</div>
+              <div style={{ fontSize: 11.5, color: C.t3, marginTop: 2 }}>en agenda</div>
+            </div>
+          </div>
+        )}
+
         {/* Skeleton while loading */}
         {loading && freights.length === 0 && <SkeletonList count={3} />}
 
@@ -569,7 +685,20 @@ export default memo(function HomeScreen({ user, freights, loading, error, perms,
 
         {/* Empty state */}
         {todayFreights.length === 0 && !loading && !error && (
-          <EmptyState icon={Ic.cal(C.t3, 28)} title="Sin fletes para hoy" subtitle="No hay fletes programados para la fecha de hoy" />
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <EmptyState icon={Ic.cal(C.t3, 28)} title="Sin fletes para hoy" subtitle="No hay fletes programados para la fecha de hoy" />
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: compact ? "center" : "flex-start" }}>
+              <button onClick={() => onNav?.("calendar")} style={{ padding: "8px 12px", borderRadius: R.md, border: `1px solid ${C.b1}`, background: C.w, color: C.t2, fontSize: 12.1, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+                Ver calendario
+              </button>
+              <button onClick={() => onNav?.("list")} style={{ padding: "8px 12px", borderRadius: R.md, border: `1px solid ${C.b1}`, background: C.w, color: C.t2, fontSize: 12.1, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+                Ver todos los fletes
+              </button>
+              <button onClick={() => onNav?.("map")} style={{ padding: "8px 12px", borderRadius: R.md, border: `1px solid ${C.b1}`, background: C.w, color: C.t2, fontSize: 12.1, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+                Ver mapa
+              </button>
+            </div>
+          </div>
         )}
 
         {/* Active trips section */}
@@ -599,6 +728,43 @@ export default memo(function HomeScreen({ user, freights, loading, error, perms,
             </div>
           </div>
         ))}
+
+        {upcomingFreights.length > 0 && (
+          <div style={{ marginTop: 16 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 0", borderBottom: `1px solid ${C.b2}`, marginBottom: 8 }}>
+              {Ic.clk(C.acc, 14)}
+              <span style={{ fontSize: 12.1, fontWeight: 700, color: C.acc, textTransform: "uppercase", letterSpacing: 0.5 }}>Próximos fletes</span>
+              <span style={{ fontSize: 12.1, fontWeight: 600, color: C.t3 }}>({upcomingFreights.length})</span>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {upcomingFreights.map(f => (
+                <FreightCardCompact key={f.id} freight={f} onClick={() => selectFreight(f.id, "daily")} showTime />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {!compact && (
+          <div style={{ marginTop: 16, padding: "12px 14px", borderRadius: R.lg, background: C.w, border: `1px solid ${C.b1}` }}>
+            <div style={{ fontSize: 12.1, fontWeight: 700, color: C.t2, marginBottom: 10, textTransform: "uppercase", letterSpacing: 0.5 }}>Atajos operativos</div>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <button onClick={() => onNav?.("calendar")} style={{ padding: "8px 12px", borderRadius: R.md, border: `1px solid ${C.b1}`, background: C.bg, color: C.t2, fontSize: 12.1, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+                Calendario
+              </button>
+              <button onClick={() => onNav?.("list")} style={{ padding: "8px 12px", borderRadius: R.md, border: `1px solid ${C.b1}`, background: C.bg, color: C.t2, fontSize: 12.1, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+                Lista completa
+              </button>
+              <button onClick={() => onNav?.("map")} style={{ padding: "8px 12px", borderRadius: R.md, border: `1px solid ${C.b1}`, background: C.bg, color: C.t2, fontSize: 12.1, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+                Mapa
+              </button>
+              {perms.canRequest ? (
+                <button onClick={() => onNav?.("new")} style={{ padding: "8px 12px", borderRadius: R.md, border: `1px solid ${C.acc}35`, background: `${C.acc}10`, color: C.acc, fontSize: 12.1, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+                  Solicitar flete
+                </button>
+              ) : null}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
