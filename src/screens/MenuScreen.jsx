@@ -1,15 +1,35 @@
 import { useState, useEffect, Fragment } from "react";
 import { C, Ic , R} from "../theme";
 import { Av, Bd, Btn } from "../components";
+import api from "../api";
 
 export default function MenuScreen({ user, perms, onLogout, onNav, isDesktop, onSwitchCompany, onRefresh, simpleMode, onToggleSimple }) {
   const [switching, setSwitching] = useState(null);
   const [canInstall, setCanInstall] = useState(false);
+  const [enabledModules, setEnabledModules] = useState([]);
   useEffect(() => {
     const h = () => setCanInstall(true);
     window.addEventListener('pwa-install-available', h);
     return () => window.removeEventListener('pwa-install-available', h);
   }, []);
+  useEffect(() => {
+    let cancelled = false;
+    const activeCompanyId = user?.activeCompanyId || user?.companyId;
+    if (!activeCompanyId) {
+      setEnabledModules([]);
+      return;
+    }
+    api(`/companies/${activeCompanyId}/modules`)
+      .then((data) => {
+        if (cancelled) return;
+        setEnabledModules(Array.isArray(data?.enabledModules) ? data.enabledModules : []);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setEnabledModules([]);
+      });
+    return () => { cancelled = true; };
+  }, [user?.activeCompanyId, user?.companyId]);
   const [showProfile, setShowProfile] = useState(false);
 
   if (!user) return <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",padding:40,color:"#8A9C90",fontSize:15.4,fontWeight:600}}>Cargando...</div>;
@@ -40,12 +60,15 @@ export default function MenuScreen({ user, perms, onLogout, onNav, isDesktop, on
   const isChofer = user.role === "chofer";
   const isGerente = user.role==="admin"||user.role==="platform_admin";
   const isPlantUser = user.userType === "plant";
+  const activeCompany = companies.find(c => c.companyId === user.activeCompanyId) || companies[0];
+  const stockEnabled = enabledModules.includes("stock") && activeCompany?.companyType === "producer";
   const mgmtItems = [];
   if (!isChofer) {
     const ut = user.userType; const uts = user.userTypes||[];
     // Mi Flota: solo en mobile (en desktop está en la barra lateral)
     if(!isDesktop && (ut==="transporter"||ut==="producer"||ut==="plant"||uts.includes("transporter")||uts.includes("producer")||uts.includes("plant")||isGerente)) mgmtItems.push({k:"trucks",l:"Mi Flota",ic:Ic.truck(C.t3,18),c:C.t3});
     if(!isDesktop && (ut==="plant"||uts.includes("plant")||isGerente)) mgmtItems.push({k:"queue",l:"Colas",ic:Ic.filter(C.t3,18),c:C.t3});
+    if (stockEnabled) mgmtItems.push({k:"stock",l:"Stock y Acopio",ic:Ic.grain(C.t3,18),c:C.t3});
     mgmtItems.push({k:"documents",l:"Documentos",ic:Ic.doc(C.t3,18),c:C.t3});
     mgmtItems.push({k:"calendar",l:"Calendario",ic:Ic.cal(C.t3,18),c:C.t3});
     mgmtItems.push({k:"analytics",l:"Estadísticas",ic:Ic.chk(C.t3,18),c:C.t3});

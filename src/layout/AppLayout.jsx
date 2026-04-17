@@ -14,7 +14,7 @@ import { useSSEContext } from "../providers/SSEProvider";
 import {
   SCREEN_TO_PATH, SL, FREIGHT_SCREENS, useScreen,
   HomeScreen, ListScreen, DetailScreen, NewScreen, EditScreen,
-  CalendarScreen, MenuScreen, TrucksScreen, TruckDetailScreen, TicketsScreen, DocumentsScreen, AnalyticsScreen,
+  CalendarScreen, MenuScreen, TrucksScreen, TruckDetailScreen, TicketsScreen, DocumentsScreen, AnalyticsScreen, StockScreen,
   LocationsScreen, AdminScreen, MyDataScreen,
   NotificationsScreen, LinkedCompaniesScreen, QueueBoardScreen,
   MapOverlay, LocPickerFullscreen,
@@ -661,6 +661,7 @@ export default function AppLayout({ fh, catalog, online, notif, isDesktop }) {
         {screen==="tickets" && <TicketsScreen user={auth.user} onBack={()=>navigate(-1)}/>}
         {screen==="documents" && <DocumentsScreen user={auth.user} onBack={()=>navigate(-1)} onNavigate={(fId)=>{setSelFreight(fId);fh.refresh(fId);navigate(`/freight/${fId}`);}}/>}
         {screen==="analytics" && <AnalyticsScreen user={auth.user} onBack={()=>navigate(-1)}/>}
+        {screen==="stock" && <StockScreen user={auth.user} onBack={()=>navigate(-1)}/>}
         {screen==="locations" && <LocationsScreen user={auth.user} onBack={()=>{catalog.refresh();navigate(-1);}}/>}
         {screen==="admin" && (auth.user?.role==="admin"||auth.user?.role==="platform_admin") && <AdminScreen user={auth.user} onBack={()=>navigate(-1)} onUserUpdate={auth.patchUser}/>}
         {screen==="linked" && <LinkedCompaniesScreen user={auth.user} onBack={()=>navigate(-1)} onNav={nav}/>}

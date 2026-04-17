@@ -217,6 +217,16 @@ export async function apiSwitchCompany(companyId) {
 // Get my companies
 export async function apiGetMyCompanies() { return api('/auth/me/companies'); }
 
+// Stock / Acopio
+export async function apiGetStockSummary() { return api('/stock/summary'); }
+export async function apiGetStockItems() { return api('/stock/items'); }
+export async function apiGetStockLocations() { return api('/stock/locations'); }
+export async function apiGetStockMovements() { return api('/stock/movements'); }
+export async function apiCreateStockItem(body) { return api('/stock/items', { body }); }
+export async function apiCreateStockLocation(body) { return api('/stock/locations', { body }); }
+export async function apiCreateStockMovement(body) { return api('/stock/movements', { body }); }
+export async function apiRevertStockMovement(id, body = {}) { return api(`/stock/movements/${id}/revert`, { body }); }
+
 // Freights
 export async function apiListFreights(q={}) {
   const p = new URLSearchParams();

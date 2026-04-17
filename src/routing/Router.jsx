@@ -18,6 +18,7 @@ export const TruckDetailScreen = lazy(() => import("../screens/TruckDetailScreen
 export const TicketsScreen = lazy(() => import("../screens/TicketsScreen"));
 export const DocumentsScreen = lazy(() => import("../screens/DocumentsScreen"));
 export const AnalyticsScreen = lazy(() => import("../screens/AnalyticsScreen"));
+export const StockScreen = lazy(() => import("../screens/StockScreen"));
 export const LocationsScreen = lazy(() => import("../screens/LocationsScreen"));
 export const AdminScreen = lazy(() => import("../screens/AdminScreen"));
 export const MyDataScreen = lazy(() => import("../screens/MyDataScreen"));
@@ -53,7 +54,7 @@ export const LocPickerFullscreen = lazy(() => import("../maps").then(m => ({ def
 export const SCREEN_TO_PATH = {
   home: "/", list: "/list", detail: "/freight", new: "/new", edit: "/edit",
   calendar: "/calendar", menu: "/menu", trucks: "/trucks", tickets: "/tickets",
-  documents: "/documents", analytics: "/analytics", locations: "/locations", admin: "/admin", mydata: "/mydata",
+  documents: "/documents", analytics: "/analytics", stock: "/stock", locations: "/locations", admin: "/admin", mydata: "/mydata",
   reports: "/reports", chats: "/chats", notifs: "/notifications", linked: "/linked", queue: "/queue",
 };
 export const PATH_TO_SCREEN = {};
