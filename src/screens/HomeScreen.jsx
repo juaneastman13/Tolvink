@@ -1,7 +1,22 @@
 import { useState, useMemo, useCallback, useRef, useEffect, memo } from "react";
 import { C, Ic, MONO, R, STATUS_COLORS } from "../theme";
 import { stCfg, getActions, formatFreightDate } from "../constants";
-import { Bd, Btn, SkeletonList, SkeletonCard, EmptyState, Tabs, FreightCard, FreightCardCompact, ActiveTripCard } from "../components";
+import {
+  Bd,
+  Btn,
+  SkeletonList,
+  SkeletonCard,
+  EmptyState,
+  Tabs,
+  FreightCard,
+  FreightCardCompact,
+  ActiveTripCard,
+  PageHeader,
+  PageShell,
+  SectionCard,
+  StatePanel,
+  StatCard,
+} from "../components";
 import { useIsDesktop, mapFreight, originDisplay, destDisplay } from "../hooks";
 import { useAccessLevel } from "../hooks/useAccessLevel";
 import { getPendingActions, resolveUserTypeForFreight, getThirdPartyLabel } from "../utils/freight-helpers";
@@ -561,15 +576,24 @@ export default memo(function HomeScreen({ user, freights, loading, error, perms,
 
         {/* Error state */}
         {error && !loading && freights.length === 0 && (
-          <div style={{padding:16,textAlign:"center"}}>
-            <div style={{color:C.err,fontSize:14,marginBottom:8}}>Error al cargar fletes: {error}</div>
-            {onRetry && <Btn variant="outline" onClick={onRetry}>Reintentar</Btn>}
-          </div>
+          <StatePanel
+            tone="error"
+            compact={compact}
+            title="No se pudo cargar la agenda"
+            description={error}
+            action={onRetry ? <Btn variant="outline" onClick={onRetry}>Reintentar</Btn> : null}
+          />
         )}
 
         {/* Empty state */}
         {todayFreights.length === 0 && !loading && !error && (
-          <EmptyState icon={Ic.cal(C.t3, 28)} title="Sin fletes para hoy" subtitle="No hay fletes programados para la fecha de hoy" />
+          <StatePanel
+            tone="info"
+            compact={compact}
+            title="Sin fletes para hoy"
+            description="No hay fletes programados para la fecha de hoy."
+            icon={Ic.cal(C.info, compact ? 16 : 20)}
+          />
         )}
 
         {/* Active trips section */}
@@ -608,6 +632,59 @@ export default memo(function HomeScreen({ user, freights, loading, error, perms,
   // Resolve effective userType for selected freight so DetailScreen shows correct actions
   const detailUser = selFreight ? { ...user, userType: effectiveType(selFreight) } : user;
   const detailScreen = <DetailScreen user={detailUser} freight={selFreight} perms={perms} onBack={deselectFreight} onAction={onAction} onTripAction={onTripAction} onEditTrip={onEditTrip} actionLoading={actionLoading} onChat={onChat} onRefresh={onRefresh} onDuplicate={onDuplicate} onEdit={onEdit} goToMap={goToMap} />;
+  const homeHeaderActionStyle = {
+    padding: "10px 16px",
+    borderRadius: R.md,
+    border: `1px solid ${C.pri}2A`,
+    background: C.w,
+    color: C.pri,
+    fontSize: 13.2,
+    fontWeight: 700,
+    cursor: "pointer",
+    fontFamily: "inherit",
+  };
+  const homeOverviewCards = (
+    <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 16 }}>
+      <StatCard
+        title="Pendientes"
+        value={pendingCount}
+        sub={hasPending ? "Acciones esperando respuesta" : "Sin bloqueos inmediatos"}
+        icon={Ic.warn(C.acc, 18)}
+        color={C.acc}
+      />
+      <StatCard
+        title="Agenda de hoy"
+        value={todayFreights.length}
+        sub={`${Math.round(todayTons)} tn planificadas`}
+        icon={Ic.cal(C.pri, 18)}
+        color={C.pri}
+      />
+      <StatCard
+        title="Viajes activos"
+        value={activeTrips.length}
+        sub="Fletes en movimiento o camino a planta"
+        icon={Ic.nav(C.info, 18)}
+        color={C.info}
+      />
+    </div>
+  );
+  const wrapHomeScreen = (content, mobileTabs = null) => (
+    <PageShell accent="pri" style={{ flex: 1, minHeight: "100%" }}>
+      <PageHeader
+        title="Centro operativo"
+        subtitle={
+          hasPending
+            ? `${pendingCount} acciones pendientes y ${todayFreights.length} fletes programados para hoy.`
+            : `${todayFreights.length} fletes programados para hoy${activeTrips.length ? ` y ${activeTrips.length} viajes en curso` : ""}.`
+        }
+        badge={hasPending ? "Prioridad operativa" : "Operacion al dia"}
+        actions={onRefresh ? <button onClick={onRefresh} style={homeHeaderActionStyle}>Actualizar</button> : null}
+      />
+      {homeOverviewCards}
+      {mobileTabs ? <div style={{ marginBottom: 12 }}>{mobileTabs}</div> : null}
+      {content}
+    </PageShell>
+  );
 
   // ======================== SIMPLE MODE ========================
   if (simpleMode) {
@@ -644,7 +721,13 @@ export default memo(function HomeScreen({ user, freights, loading, error, perms,
         </div>
         {loading && freights.length === 0 && <SkeletonList count={2} />}
         {todayFreights.length === 0 && !loading && (
-          <div style={{ fontSize: 12.1, color: C.t3, textAlign: "center", padding: "8px 0" }}>Sin fletes programados para hoy</div>
+          <StatePanel
+            tone="info"
+            compact
+            title="Sin fletes para hoy"
+            description="No hay viajes cargados en la agenda del dia."
+            icon={Ic.cal(C.info, 16)}
+          />
         )}
         {dailyGroups.map(g => (
           <div key={g.key} style={{ marginBottom: 8 }}>
@@ -712,27 +795,47 @@ export default memo(function HomeScreen({ user, freights, loading, error, perms,
 
     // Desktop: fletes left, resumen diario right (50/50)
     if (isDesktop) {
-      return (
-        <div style={{ flex: 1, position: "relative" }}>
-          <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, display: "flex", flexDirection: "row" }}>
-            <div style={{ flex: 1, overflow: "auto", padding: 18, borderRight: `1px solid ${C.b1}` }}>
+      return wrapHomeScreen(
+        <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1.1fr) minmax(0, 0.9fr)", gap: 16, alignItems: "start" }}>
+          <SectionCard
+            title="Fletes activos"
+            subtitle="Vista operativa de los viajes abiertos, priorizando lo que requiere accion."
+            tone={pendingSimple.length ? "warning" : "default"}
+          >
+            <div style={{ padding: 18 }}>
               {simpleFreightList(false)}
             </div>
-            <div style={{ flex: 1, overflow: "auto", padding: 18 }}>
+          </SectionCard>
+          <SectionCard
+            title="Agenda de hoy"
+            subtitle="Resumen rapido del dia sin alterar la tarjeta actual de flete."
+            tone="info"
+          >
+            <div style={{ padding: 18 }}>
               {simpleDailyPanel}
             </div>
-          </div>
+          </SectionCard>
         </div>
       );
     }
 
     // Mobile: resumen diario first, then fletes below
-    return (
-      <div style={{ flex: 1, overflow: "auto", padding: 18 }}>
-        {simpleDailyPanel}
-        <div style={{ marginTop: 24 }}>
-          {simpleFreightList(false)}
-        </div>
+    return wrapHomeScreen(
+      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        <SectionCard title="Agenda de hoy" subtitle="Lectura rapida del movimiento diario." tone="info">
+          <div style={{ paddingTop: 4 }}>
+            {simpleDailyPanel}
+          </div>
+        </SectionCard>
+        <SectionCard
+          title="Fletes activos"
+          subtitle="Seguimiento operativo con prioridad sobre pendientes."
+          tone={pendingSimple.length ? "warning" : "default"}
+        >
+          <div style={{ paddingTop: 4 }}>
+            {simpleFreightList(false)}
+          </div>
+        </SectionCard>
       </div>
     );
   }
@@ -756,27 +859,39 @@ export default memo(function HomeScreen({ user, freights, loading, error, perms,
 
   // Desktop: two panels side by side (50/50)
   if (isDesktop) {
-    return (
-      <div style={{ flex: 1, position: "relative" }}>
-        <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, display: "flex", flexDirection: "row" }}>
-          <div style={{ flex: 1, overflow: "auto", borderRight: `1px solid ${C.b1}` }}>
-            {renderPendingPanel(false)}
-          </div>
-          <div style={{ flex: 1, overflow: "auto" }}>
-            {renderDailyPanel(false)}
-          </div>
-        </div>
+    return wrapHomeScreen(
+      <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1.08fr) minmax(0, 0.92fr)", gap: 16, alignItems: "start" }}>
+        <SectionCard
+          title="Accion inmediata"
+          subtitle="Separado por prioridades para reducir ruido y destacar lo que desbloquea operacion."
+          tone={hasPending ? "warning" : "success"}
+        >
+          {renderPendingPanel(false)}
+        </SectionCard>
+        <SectionCard
+          title="Agenda del dia"
+          subtitle="Viajes en curso y programados para hoy, con lectura mas clara por estado."
+          tone="info"
+        >
+          {renderDailyPanel(false)}
+        </SectionCard>
       </div>
     );
   }
 
   // Mobile: tabs between Pendientes and Hoy
-  return (
-    <div style={{ display: "flex", flexDirection: "column", flex: 1 }}>
-      <div style={{ padding: "8px 12px 0" }}>
-        <Tabs items={[{ k: "pending", l: "Pendientes" }, { k: "daily", l: `Hoy (${todayFreights.length})` }]} active={mobileTab} onChange={setMobileTab} />
-      </div>
+  return wrapHomeScreen(
+    <SectionCard
+      title={mobileTab === "pending" ? "Accion inmediata" : "Agenda del dia"}
+      subtitle={
+        mobileTab === "pending"
+          ? "Vista priorizada para decidir rapido."
+          : "Resumen de hoy con viajes activos y estados principales."
+      }
+      tone={mobileTab === "pending" && hasPending ? "warning" : "info"}
+    >
       {mobileTab === "pending" ? renderPendingPanel(false) : renderDailyPanel(false)}
-    </div>
+    </SectionCard>,
+    <Tabs items={[{ k: "pending", l: "Pendientes" }, { k: "daily", l: `Hoy (${todayFreights.length})` }]} active={mobileTab} onChange={setMobileTab} />
   );
 });
