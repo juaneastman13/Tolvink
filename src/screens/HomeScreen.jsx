@@ -205,7 +205,7 @@ export default memo(function HomeScreen({ user, freights, loading, error, perms,
         })
         .map(f => ({ ...f, pendingAction: pendingMap.get(f.id) }))
         .sort((a, b) => (a.destName||'').localeCompare(b.destName||'') || (a.originName||'').localeCompare(b.originName||'') || a.id.localeCompare(b.id));
-      return { ...g, icon: g.key==="assign"?Ic.truck:g.key==="respond"?Ic.msg:g.key==="authorize"?Ic.chk:g.key==="start"?Ic.nav:g.key==="confirm_loaded"?Ic.warn:Ic.chk, items };
+      return { ...g, icon: g.key==="assign"?Ic.truck:g.key==="respond"?Ic.info:g.key==="authorize"?Ic.chk:g.key==="start"?Ic.nav:g.key==="confirm_loaded"?Ic.warn:Ic.ok, items };
     }).filter(g => g.items.length > 0);
   }, [filteredFreights, pendingMap, dateFrom, dateTo]);
   const pendingCount = new Set(pendingByProgress.flatMap(g => g.items.map(f => f.id))).size;
