@@ -6,7 +6,7 @@ import { Bd, Btn, Field, Loader, Sec, FileViewer, SkeletonDetail, LicensePlate }
 import { SafeZone } from "../maps";
 const FreightMap = lazy(() => import("../maps").then(m => ({ default: m.FreightMap })));
 import log from "../logger";
-import { DocsGallery, FreightFileUpload, OcrResultModal, UploadOverlay } from "../uploads";
+import { DocsGallery, FreightFileUpload, OcrResultModal, UploadOverlay, getOcrErrorMessage, isOcrCompatibleUrl } from "../uploads";
 import { apiGetAuditLog, apiGetFreight, apiGetFreightDetailExtra, apiSendTracking, apiApprovePendingChange, apiRejectPendingChange, apiOcrAnalyze, apiSaveOcrData, apiUpdateFreight, apiGetWeighTickets, apiAssignFreight, apiGetCompanyAccess, apiCreateSharedLink, apiReorderAssignments, apiUpdateTripData } from "../api";
 import { WeighTicketSummary } from "../components/WeighTicketForm";
 import { useIsDesktop, mapFreight, originDisplay, destDisplay } from "../hooks";
@@ -127,6 +127,14 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
   const show = useUIStore(s => s.show);
 
   const handleOcr = async (file) => {
+    if (!file?.url) {
+      show("El documento no tiene una URL válida para OCR", "err");
+      return;
+    }
+    if (!isOcrCompatibleUrl(file.url)) {
+      show("El OCR solo está disponible para imágenes JPG, PNG, WebP o GIF", "err");
+      return;
+    }
     setOcrLoading(true);
     try {
       const res = await apiOcrAnalyze(file.url);
@@ -139,7 +147,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
       }
     } catch (e) {
       log.error("OCR", "failed:", e);
-      show("Error al extraer datos del documento", "err");
+      show(getOcrErrorMessage(e), "err");
     } finally {
       setOcrLoading(false);
     }

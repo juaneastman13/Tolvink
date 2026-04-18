@@ -5,6 +5,24 @@ import { AttachMenu, Btn } from "./components";
 import { useUIStore } from "./store";
 import log from "./logger";
 
+const OCR_COMPATIBLE_EXT_RE = /\.(jpe?g|png|webp|gif)$/i;
+
+export function isOcrCompatibleUrl(url) {
+  if (!url || typeof url !== "string") return false;
+  try {
+    const pathname = new URL(url, window.location.origin).pathname || "";
+    return OCR_COMPATIBLE_EXT_RE.test(pathname);
+  } catch {
+    const clean = url.split("?")[0].split("#")[0];
+    return OCR_COMPATIBLE_EXT_RE.test(clean);
+  }
+}
+
+export function getOcrErrorMessage(err) {
+  const message = err?.data?.message || err?.message || "";
+  return message || "Error al extraer datos del documento";
+}
+
 // ======================== PHOTO UPLOAD ================================
 
 export function PhotoUpload({ freightId, step, label, onUploaded }) {
@@ -97,7 +115,9 @@ export function DocsGallery({ documents, onViewFile, freightId, canDelete, onDel
       </button>
       {open && <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
         {documents.map(d => {
-          const isImg = d.type === "photo" || d.url?.match(/\.(jpg|jpeg|png|webp|gif)$/i);
+          const hasUrl = !!d.url;
+          const isImg = d.type === "photo" || isOcrCompatibleUrl(d.url);
+          const canRunOcr = hasUrl && isOcrCompatibleUrl(d.url);
           return (
             <div key={d.id} style={{ position:"relative" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 8, background: C.bg, border: `1px solid ${C.b2}`, borderRadius: R.md, width:"100%" }}>
@@ -116,7 +136,7 @@ export function DocsGallery({ documents, onViewFile, freightId, canDelete, onDel
                   </div>
                 </button>
                 {d.ocrData && onViewOcr && <button onClick={()=>onViewOcr(d.ocrData, d.id)} title="Ver datos extraídos" aria-label="Ver datos extraídos" style={{ padding:6, minWidth:36, minHeight:36, borderRadius: R.sm, border:`1px solid ${C.pri}`, background:C.okPale, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{Ic.eye(C.pri,14)}</button>}
-                {isImg && onOcr && !d.ocrData && <button onClick={()=>onOcr({url:d.url,name:d.name||"Archivo",type:d.type,id:d.id})} disabled={ocrLoading} title="Extraer datos (OCR)" aria-label="Extraer datos (OCR)" style={{ padding:6, minWidth:36, minHeight:36, borderRadius: R.sm, border:`1px solid ${C.pri}40`, background:C.priPale, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, opacity:ocrLoading?0.5:1 }}>{Ic.doc(C.pri,14)}</button>}
+                {canRunOcr && onOcr && !d.ocrData && <button onClick={()=>onOcr({url:d.url,name:d.name||"Archivo",type:d.type,id:d.id})} disabled={ocrLoading} title="Extraer datos (OCR)" aria-label="Extraer datos (OCR)" style={{ padding:6, minWidth:36, minHeight:36, borderRadius: R.sm, border:`1px solid ${C.pri}40`, background:C.priPale, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, opacity:ocrLoading?0.5:1 }}>{Ic.doc(C.pri,14)}</button>}
                 {canDelete && <button onClick={()=>setConfirm(d.id)} disabled={!!deleting} aria-label="Eliminar archivo" style={{ padding:6, minWidth:36, minHeight:36, borderRadius: R.sm, border:`1px solid ${C.err}40`, background:C.errPale||"#fef2f2", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{Ic.cross(C.err,14)}</button>}
               </div>
               {confirm===d.id && (

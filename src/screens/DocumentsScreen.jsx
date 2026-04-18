@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { C, Ic, R, STATUS_COLORS } from "../theme";
 import { Loader, EmptyState } from "../components";
 import { apiGetCompanyAccess, apiListFreights, apiGetWeighTickets, apiGetFreight, apiOcrAnalyze, apiSaveOcrData, apiClearOcrData, apiEditOcrData, apiDeleteDocument, apiRenameDocument } from "../api";
-import { OcrResultModal, ocrLabel, FreightFileUpload } from "../uploads";
+import { OcrResultModal, ocrLabel, FreightFileUpload, getOcrErrorMessage, isOcrCompatibleUrl } from "../uploads";
+import { useUIStore } from "../store";
 
 const API_URL = import.meta.env.VITE_API_URL || "";
 const DOC_TYPE_ICONS = {
@@ -61,6 +62,7 @@ export default function DocumentsScreen({ user, onBack, onNavigate }) {
   const [deletingDoc, setDeletingDoc] = useState(null); // doc id being deleted
   const [renamingDoc, setRenamingDoc] = useState(null); // doc id being renamed
   const [renameValue, setRenameValue] = useState("");
+  const show = useUIStore(s => s.show);
 
   const companyId = user?.activeCompanyId || user?.companyId;
   const isManager = ["admin", "gerente", "platform_admin"].includes(user?.role);
@@ -227,10 +229,21 @@ export default function DocumentsScreen({ user, onBack, onNavigate }) {
   // OCR processing — single document
   const handleProcessOcr = useCallback(async (doc) => {
     const url = doc._thumb || doc.photoUrl || doc.url;
-    if (!url || !doc._freight?.id) return;
+    if (!url || !doc._freight?.id) {
+      show("El documento no tiene una URL válida para OCR", "err");
+      return;
+    }
+    if (!isOcrCompatibleUrl(url)) {
+      show("El OCR solo está disponible para imágenes JPG, PNG, WebP o GIF", "err");
+      return;
+    }
     setProcessingOcr(doc.id);
     try {
-      const result = await apiOcrAnalyze(url);
+      const result = await apiOcrAnalyze(url).catch((e) => {
+        show(getOcrErrorMessage(e), "err");
+        return null;
+      });
+      if (!result) return;
       if (result && result.datos) {
         // Save OCR data to the document
         if (doc._source === "document") {
@@ -246,7 +259,10 @@ export default function DocumentsScreen({ user, onBack, onNavigate }) {
   }, [tab]);
 
   // OCR processing — all docs without OCR
-  const docsWithoutOcr = useMemo(() => visibleDocs.filter(d => !d._hasOcr && (d._thumb || d.photoUrl || d.url)), [visibleDocs]);
+  const docsWithoutOcr = useMemo(
+    () => visibleDocs.filter(d => !d._hasOcr && isOcrCompatibleUrl(d._thumb || d.photoUrl || d.url)),
+    [visibleDocs]
+  );
 
   const handleProcessAll = useCallback(async () => {
     if (docsWithoutOcr.length === 0) return;
@@ -328,6 +344,8 @@ export default function DocumentsScreen({ user, onBack, onNavigate }) {
   const DocCard = ({ doc }) => {
     const isExp = expanded === doc.id;
     const icFn = DOC_TYPE_ICONS[doc._source] || DOC_TYPE_ICONS.photo;
+    const docUrl = doc._thumb || doc.photoUrl || doc.url;
+    const canRunOcr = !doc._hasOcr && isOcrCompatibleUrl(docUrl);
     return (
       <div onClick={() => setExpanded(isExp ? null : doc.id)} style={{
         background: C.w, border: `1px solid ${C.b1}`, borderLeft: `3px solid ${doc._hasOcr ? C.pri : C.t3}`,
@@ -387,7 +405,7 @@ export default function DocumentsScreen({ user, onBack, onNavigate }) {
                 {Ic.download(C.t2, 14)}
               </button>
             )}
-            {!doc._hasOcr && (doc._thumb || doc.photoUrl || doc.url) && (
+            {canRunOcr && (
               <button onClick={e => { e.stopPropagation(); handleProcessOcr(doc); }} disabled={processingOcr === doc.id} style={{
                 padding: "4px 8px", borderRadius: R.sm, border: `1px solid ${C.acc}`, background: `${C.acc}10`,
                 cursor: processingOcr === doc.id ? "wait" : "pointer", fontFamily: "inherit", fontSize: 10.5, fontWeight: 700, color: C.acc,
