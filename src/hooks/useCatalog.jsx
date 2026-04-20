@@ -20,6 +20,7 @@ export function useCatalog(user) {
   const cached = cacheKey ? getCache(cacheKey) : null;
 
   const [plants, setPlants] = useState(cached?.data?.plants || []);
+  const [tolvinkPlants, setTolvinkPlants] = useState(cached?.data?.tolvinkPlants || []);
   const [branches, setBranches] = useState(cached?.data?.branches || []);
   const [lots, setLots] = useState(cached?.data?.lots || []);
   const [fields, setFields] = useState(cached?.data?.fields || []);
@@ -37,7 +38,7 @@ export function useCatalog(user) {
 
     // Return cached data if fresh
     if(!force && cache?.data && (now - cache.ts) < CATALOG_TTL) {
-      setPlants(cache.data.plants); setBranches(cache.data.branches);
+      setPlants(cache.data.plants); setTolvinkPlants(cache.data.tolvinkPlants || []); setBranches(cache.data.branches);
       setLots(cache.data.lots); setTransporters(cache.data.transporters);
       setTrucks(cache.data.trucks); setFields(cache.data.fields);
       return;
@@ -47,7 +48,7 @@ export function useCatalog(user) {
     if(_loadingPromises[cacheKey]) {
       _loadingPromises[cacheKey].then((d) => {
         if (!d || !mountedRef.current) return;
-        setPlants(d.plants); setBranches(d.branches); setLots(d.lots);
+        setPlants(d.plants); setTolvinkPlants(d.tolvinkPlants || []); setBranches(d.branches); setLots(d.lots);
         setTransporters(d.transporters); setTrucks(d.trucks); setFields(d.fields);
       });
       return;
@@ -66,10 +67,10 @@ export function useCatalog(user) {
     ]).then(([catalog,tr,f])=>{
       const activeCoId = user.activeCompanyId || user.companyId;
       const filteredFields = activeCoId ? (f||[]).filter(fd => fd.companyId === activeCoId || fd.company?.id === activeCoId) : (f||[]);
-      const d = { plants:catalog.plants||[], branches:catalog.branches||[], lots:catalog.lots||[], transporters:catalog.transportCompanies||[], trucks:tr||[], fields:filteredFields };
+      const d = { plants:catalog.plants||[], tolvinkPlants:catalog.tolvinkPlants||[], branches:catalog.branches||[], lots:catalog.lots||[], transporters:catalog.transportCompanies||[], trucks:tr||[], fields:filteredFields };
       setCache(cacheKey, d);
       if (mountedRef.current) {
-        setPlants(d.plants); setBranches(d.branches); setLots(d.lots);
+        setPlants(d.plants); setTolvinkPlants(d.tolvinkPlants); setBranches(d.branches); setLots(d.lots);
         setTransporters(d.transporters); setTrucks(d.trucks); setFields(d.fields);
       }
       return d;
@@ -84,5 +85,5 @@ export function useCatalog(user) {
 
   const refresh = useCallback((force = true)=>{ load(force); },[load]);
 
-  return { plants, branches, lots, fields, transporters, trucks, loading, refresh };
+  return { plants, tolvinkPlants, branches, lots, fields, transporters, trucks, loading, refresh };
 }

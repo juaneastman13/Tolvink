@@ -149,7 +149,7 @@ function NextStepBtn({ complete, onClick, label, onPrev }) {
 
 // ======================== NEW FREIGHT ================================
 
-export default function NewScreen({ user, lots, plants, branches, fields, trucks, freights, onBack, onCreate, duplicateFrom }) {
+export default function NewScreen({ user, lots, plants, tolvinkPlants = [], branches, fields, trucks, freights, onBack, onCreate, duplicateFrom }) {
   const dup = duplicateFrom;
   const _isDesktop = useIsDesktop(768);
   const { isConsulta: _isConsultaGlobal, isConsultaFor } = useAccessLevel(user);
@@ -166,7 +166,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
     lat: preOriginLat ? parseFloat(preOriginLat) : null,
     lng: preOriginLng ? parseFloat(preOriginLng) : null,
   });
-  const [destMode, setDestMode] = useState("plant");
+  const [destMode, setDestMode] = useState(dup?.tolvinkPlantId ? "tolvink" : "plant");
   const [customDest, setCustomDest] = useState({ name:"", lat:null, lng:null });
   const [confirmMode, setConfirmMode] = useState("none"); // "plant" | "none"
   const [confirmPlantId, setConfirmPlantId] = useState("");
@@ -179,6 +179,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
     tons: dup?.tons?.toString() || "",
     lotId: dup?.originLotId || preLotId,
     plantId: dup?.destPlantId || "",
+    tolvinkPlantId: dup?.tolvinkPlantId || "",
     branchId: dup?.destBranchId || "",
     fieldId: dup?.fieldId || preFieldId,
     loadDate: dup?.loadDate?.split("T")[0] || dup?.preDate || "", loadTime: dup?.loadTime || "",
@@ -462,7 +463,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
   const SEC_ORDER = isPlantUser ? (showTransportStep ? ["producer","product","quantity","origin","destination","schedule","transport"] : ["producer","product","quantity","origin","destination","schedule"]) : ["product","quantity","origin","destination","schedule"];
   const [activeSection, setActiveSection] = useState(()=>{
     if (isPlantUser) return "producer";
-    const g=!!form.grain&&(form.grain!=="Otros"||!!form.productTypeOther.trim()), o=originMode==="field"?(!!form.fieldId):(!!customOrigin.lat), d=destMode==="plant"?!!form.plantId:!!customDest.lat, s=!!form.loadDate&&/^\d{2}:\d{2}$/.test(form.loadTime);
+    const g=!!form.grain&&(form.grain!=="Otros"||!!form.productTypeOther.trim()), o=originMode==="field"?(!!form.fieldId):(!!customOrigin.lat), d=destMode==="plant"?!!form.plantId:destMode==="tolvink"?!!form.tolvinkPlantId:!!customDest.lat, s=!!form.loadDate&&/^\d{2}:\d{2}$/.test(form.loadTime);
     if(!g)return"product";if(!o&&!form.tons)return"quantity";if(!o)return"origin";if(!d)return"destination";return"schedule";
   });
   const [showIncomplete, setShowIncomplete] = useState(false);
@@ -476,10 +477,12 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
   const hasLots = fieldLots.length > 0;
   const lotOpts = hasLots ? [{ value:"__field__", label:"Usar ubicación del campo", bold:true }, ...fieldLots.map(l=>({ value:l.id, label:l.name, sub:l.hectares?`${l.hectares} ha`:'' }))] : [];
   const plantOpts = (plants||[]).map(p=>({ value:p.id, label:p.name }));
+  const tolvinkPlantOpts = (tolvinkPlants||[]).map(p=>({ value:p.id, label:p.name, sub:[p.department, p.altName].filter(Boolean).join(" - ") }));
   const selectedPlantCompanyId = (plants||[]).find(p=>p.id===form.plantId)?.companyId;
   const branchOpts = (branches||[]).filter(b=>b.companyId===selectedPlantCompanyId).map(b=>({ value:b.id, label:b.name }));
   const selectedLot = form.lotId === "__field__" ? null : fieldLots.find(l=>l.id===form.lotId);
   const selectedPlant = (plants||[]).find(p=>p.id===form.plantId);
+  const selectedTolvinkPlant = (tolvinkPlants||[]).find(p=>p.id===form.tolvinkPlantId);
   // CONSULTA check: block freight creation if user is READONLY for the selected destination
   const isConsulta = selectedPlantCompanyId ? isConsultaFor(selectedPlantCompanyId) : _isConsultaGlobal;
   const selectedBranch = (branches||[]).find(b=>b.id===form.branchId);
@@ -492,7 +495,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
     product: !!form.grain && (form.grain!=="Otros" || !!form.productTypeOther.trim()),
     quantity: !form.tons || parseFloat(form.tons) > 0,
     origin: originMode==="field" ? (!!form.fieldId && (!hasLots || !!form.lotId)) : (!!customOrigin.lat),
-    destination: destMode==="plant" ? (!!form.plantId && (!_hasBranches || !!form.branchId)) : ((!!customDest.lat || !!customDest.name?.trim()) && (confirmMode==="none" || !!confirmPlantId)),
+    destination: destMode==="plant" ? (!!form.plantId && (!_hasBranches || !!form.branchId)) : destMode==="tolvink" ? !!form.tolvinkPlantId : ((!!customDest.lat || !!customDest.name?.trim()) && (confirmMode==="none" || !!confirmPlantId)),
     schedule: !!form.loadDate && /^\d{2}:\d{2}$/.test(form.loadTime),
     ...(showTransportStep ? { transport: transportStepComplete } : {}),
   }),[form, originMode, customOrigin, destMode, customDest, confirmMode, confirmPlantId, _hasBranches, isPlantUser, producerCompanyId, showTransportStep, transportStepComplete]);
@@ -616,7 +619,9 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
     : (customOrigin.lat ? { lat: customOrigin.lat, lng: customOrigin.lng } : null);
   const destCoords = destMode==="plant"
     ? (selectedBranch?.lat ? { lat: parseFloat(selectedBranch.lat), lng: parseFloat(selectedBranch.lng) } : selectedPlant?.lat ? { lat: parseFloat(selectedPlant.lat), lng: parseFloat(selectedPlant.lng) } : null)
-    : (customDest.lat ? { lat: customDest.lat, lng: customDest.lng } : null);
+    : destMode==="tolvink"
+      ? (selectedTolvinkPlant?.lat != null && selectedTolvinkPlant?.lng != null ? { lat: parseFloat(selectedTolvinkPlant.lat), lng: parseFloat(selectedTolvinkPlant.lng) } : null)
+      : (customDest.lat ? { lat: customDest.lat, lng: customDest.lng } : null);
   const [editingOrigin, setEditingOrigin] = useState(false);
   const [editingDest, setEditingDest] = useState(false);
   const [overrideOrigin, setOverrideOrigin] = useState(null);
@@ -624,7 +629,11 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
   const finalOrigin = overrideOrigin || originCoords;
   const finalDest = overrideDest || destCoords;
 
-  const destDisplayName = destMode==="plant" ? ((selectedPlant?.name||"")+(selectedBranch?` → ${selectedBranch.name}`:"")) : (customDest.name||"");
+  const destDisplayName = destMode==="plant"
+    ? ((selectedPlant?.name||"")+(selectedBranch?` → ${selectedBranch.name}`:""))
+    : destMode==="tolvink"
+      ? (selectedTolvinkPlant?.name || "")
+      : (customDest.name||"");
 
   const openConfirmModal = () => {
     setTouched(true);
@@ -635,6 +644,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
     if(originMode==="map" && !customOrigin.lat) { e.customOrigin="Indicá una ubicación en el mapa"; }
     if(destMode==="plant" && !form.plantId) { e.plantId="Seleccioná una planta"; }
     if(destMode==="plant" && form.plantId && branchOpts.length > 0 && !form.branchId) { e.branchId="Seleccioná una sucursal"; }
+    if(destMode==="tolvink" && !form.tolvinkPlantId) { e.tolvinkPlantId="Seleccioná una planta de Uruguay"; }
     if(destMode==="custom" && !customDest.lat && !customDest.name?.trim()) { e.customDestLoc="Indicá un nombre o ubicación en el mapa"; }
     if(showTruckSelect && form.fleetChoice==="own" && !form.truckId) { e.truckId="Seleccioná un camión de tu flota"; }
     if(showTruckSelect && form.fleetChoice==="own" && !form.driverId) { e.driverId="Seleccioná un chofer"; }
@@ -657,7 +667,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
     }
     // Check for similar existing freights
     const oName = originMode==="field" ? (selectedField?.name||"") : (customOrigin.name||"");
-    const dName = destMode==="plant" ? (selectedPlant?.name||"") : (customDest.name||"");
+    const dName = destMode==="plant" ? (selectedPlant?.name||"") : destMode==="tolvink" ? (selectedTolvinkPlant?.name||"") : (customDest.name||"");
     const similar = (freights||[]).filter(f =>
       f.status !== "canceled" && f.status !== "finished" &&
       f.loadDate?.split("T")[0] === form.loadDate &&
@@ -691,6 +701,7 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
     };
     if(destMode==="custom") {
       payload.plantId = undefined;
+      payload.tolvinkPlantId = undefined;
       payload.branchId = undefined;
       payload.customDestName = customDest.name?.trim() || "Ubicación personalizada";
       payload.customDestLat = customDest.lat || undefined;
@@ -699,6 +710,16 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
         const cp = (plants||[]).find(p=>p.id===confirmPlantId);
         if(cp) payload.destCompanyId = cp.companyId;
       }
+    } else if (destMode==="tolvink") {
+      payload.plantId = undefined;
+      payload.branchId = undefined;
+      payload.destCompanyId = undefined;
+      payload.tolvinkPlantId = form.tolvinkPlantId || undefined;
+      payload.customDestName = selectedTolvinkPlant?.name || undefined;
+      payload.customDestLat = selectedTolvinkPlant?.lat != null ? parseFloat(selectedTolvinkPlant.lat) : undefined;
+      payload.customDestLng = selectedTolvinkPlant?.lng != null ? parseFloat(selectedTolvinkPlant.lng) : undefined;
+    } else {
+      payload.tolvinkPlantId = undefined;
     }
     if(selectedBranch) {
       payload.customDestName = (selectedPlant?.name||"") + " — " + selectedBranch.name;
@@ -800,7 +821,11 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
     product: form.grain ? (form.grain==="Otros" ? `Otros: ${form.productTypeOther}` : form.grain) : "",
     quantity: form.tons && parseFloat(form.tons) > 0 ? `${form.tons} ${form.unit}` : (form.grain ? "A definir" : ""),
     origin: originMode==="field" ? ((fieldOpts.find(f=>f.value===form.fieldId)?.label||"")+(form.lotId==="__field__"?" — Ubicación del campo":selectedLot?` — ${selectedLot.name}`:"")) : (customOrigin.lat ? (customOrigin.name?.trim()||"Ubicación personalizada") : ""),
-    destination: destMode==="plant" ? (destDisplayName||"") : (customDest.lat ? ((customDest.name?.trim()||"Ubicación personalizada")+(confirmMode==="plant"&&confirmPlantId?` · Confirma: ${(plants||[]).find(p=>p.id===confirmPlantId)?.name||""}`:"")) : ""),
+    destination: destMode==="plant"
+      ? (destDisplayName||"")
+      : destMode==="tolvink"
+        ? (selectedTolvinkPlant ? `${selectedTolvinkPlant.name}${selectedTolvinkPlant.department ? ` · ${selectedTolvinkPlant.department}` : ""}` : "")
+        : (customDest.lat ? ((customDest.name?.trim()||"Ubicación personalizada")+(confirmMode==="plant"&&confirmPlantId?` · Confirma: ${(plants||[]).find(p=>p.id===confirmPlantId)?.name||""}`:"")) : ""),
     schedule: form.loadDate&&form.loadTime ? `${form.loadDate} a las ${form.loadTime}` : "",
     truckCount: (() => { const tEq = form.unit==="kg"?parseFloat(form.tons)/1000:parseFloat(form.tons); const tc = form.truckCount || (tEq>0 ? String(Math.ceil(tEq/30)) : (form.grain ? "1" : "")); return tc ? `${tc} camión${tc!=="1"?"es":""}` : ""; })(),
     ...(showTransportStep ? { transport: (() => {
@@ -1095,8 +1120,9 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
           {activeSection === "destination" && <>
             <label style={{ fontSize:11.6, fontWeight:600, color:C.t2, marginBottom:6, display:"flex", alignItems:"center", gap:4, textTransform:"uppercase", letterSpacing:0.6 }}>{Ic.plant(C.t2,14)} Destino</label>
             <div style={{ display:"flex", gap:6, marginBottom:10 }}>
-              <button onClick={()=>{setDestMode("plant"); setCustomDest({name:"",lat:null,lng:null}); setConfirmMode("none"); setConfirmPlantId("");}} style={{ flex:1, padding:"10px 8px", borderRadius: R.md, border:`1.5px solid ${destMode==="plant"?C.pri:C.b1}`, background:destMode==="plant"?C.priPale:C.w, color:destMode==="plant"?C.pri:C.t2, cursor:"pointer", fontSize:13.2, fontWeight:600, fontFamily:"inherit" }}>Planta</button>
-              <button onClick={()=>{setDestMode("custom"); u({plantId:""}); setConfirmMode("none"); setConfirmPlantId("");}} style={{ flex:1, padding:"10px 8px", borderRadius: R.md, border:`1.5px solid ${destMode==="custom"?C.acc:C.b1}`, background:destMode==="custom"?C.accPale:C.w, color:destMode==="custom"?C.acc:C.t2, cursor:"pointer", fontSize:13.2, fontWeight:600, fontFamily:"inherit" }}>Personalizado</button>
+              <button onClick={()=>{setDestMode("plant"); u({tolvinkPlantId:""}); setCustomDest({name:"",lat:null,lng:null}); setConfirmMode("none"); setConfirmPlantId("");}} style={{ flex:1, padding:"10px 8px", borderRadius: R.md, border:`1.5px solid ${destMode==="plant"?C.pri:C.b1}`, background:destMode==="plant"?C.priPale:C.w, color:destMode==="plant"?C.pri:C.t2, cursor:"pointer", fontSize:13.2, fontWeight:600, fontFamily:"inherit" }}>Plantas registradas</button>
+              <button onClick={()=>{setDestMode("tolvink"); u({plantId:"",branchId:""}); setCustomDest({name:"",lat:null,lng:null}); setConfirmMode("none"); setConfirmPlantId("");}} style={{ flex:1, padding:"10px 8px", borderRadius: R.md, border:`1.5px solid ${destMode==="tolvink"?C.sec:C.b1}`, background:destMode==="tolvink"?C.secPale:C.w, color:destMode==="tolvink"?C.sec:C.t2, cursor:"pointer", fontSize:13.2, fontWeight:600, fontFamily:"inherit" }}>Plantas Uruguay</button>
+              <button onClick={()=>{setDestMode("custom"); u({plantId:"",branchId:"",tolvinkPlantId:""}); setConfirmMode("none"); setConfirmPlantId("");}} style={{ flex:1, padding:"10px 8px", borderRadius: R.md, border:`1.5px solid ${destMode==="custom"?C.acc:C.b1}`, background:destMode==="custom"?C.accPale:C.w, color:destMode==="custom"?C.acc:C.t2, cursor:"pointer", fontSize:13.2, fontWeight:600, fontFamily:"inherit" }}>Personalizado</button>
             </div>
             {destMode==="plant" && (<>
               <Select value={form.plantId} onChange={v=>u({plantId:v,branchId:""})} options={plantOpts} placeholder="Seleccionar planta..."/>
@@ -1105,6 +1131,15 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
                 <div style={{ marginTop:10 }}>
                   <Select label="Sucursal" icon={Ic.pin(C.sec,14)} value={form.branchId} onChange={v=>u({branchId:v})} options={branchOpts} placeholder="Seleccionar sucursal..."/>
                   {touched&&<FieldError error={errs.branchId}/>}
+                </div>
+              )}
+            </>)}
+            {destMode==="tolvink" && (<>
+              <Select value={form.tolvinkPlantId} onChange={v=>u({ tolvinkPlantId:v })} options={tolvinkPlantOpts} placeholder="Seleccionar planta de Uruguay..." searchable />
+              {touched&&<FieldError error={errs.tolvinkPlantId}/>}
+              {selectedTolvinkPlant && (
+                <div style={{ marginTop:8, padding:"10px 12px", borderRadius:R.md, background:C.secPale, color:C.sec, fontSize:12.2, fontWeight:600 }}>
+                  {selectedTolvinkPlant.department ? `${selectedTolvinkPlant.department} · ` : ""}{selectedTolvinkPlant.altName || "Directorio Tolvink"}
                 </div>
               )}
             </>)}
@@ -1470,8 +1505,9 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
         {activeSection === "destination" && <Sec label="Destino" complete={secComplete.destination} isExpanded={true} onFocus={()=>{}} secRef={secRefs.destination}>
           <label style={{ fontSize:11.6, fontWeight:600, color:C.t2, marginBottom:6, display:"flex", alignItems:"center", gap:4, textTransform:"uppercase", letterSpacing:0.6 }}>{Ic.plant(C.t2,14)} Destino</label>
           <div style={{ display:"flex", gap:6, marginBottom:10 }}>
-            <button onClick={()=>{setDestMode("plant"); setCustomDest({name:"",lat:null,lng:null}); setConfirmMode("none"); setConfirmPlantId("");}} style={{ flex:1, padding:"10px 8px", borderRadius: R.md, border:`1.5px solid ${destMode==="plant"?C.pri:C.b1}`, background:destMode==="plant"?C.priPale:C.w, color:destMode==="plant"?C.pri:C.t2, cursor:"pointer", fontSize:13.2, fontWeight:600, fontFamily:"inherit" }}>Planta</button>
-            <button onClick={()=>{setDestMode("custom"); u({plantId:""}); setConfirmMode("none"); setConfirmPlantId("");}} style={{ flex:1, padding:"10px 8px", borderRadius: R.md, border:`1.5px solid ${destMode==="custom"?C.acc:C.b1}`, background:destMode==="custom"?C.accPale:C.w, color:destMode==="custom"?C.acc:C.t2, cursor:"pointer", fontSize:13.2, fontWeight:600, fontFamily:"inherit" }}>Personalizado</button>
+            <button onClick={()=>{setDestMode("plant"); u({tolvinkPlantId:""}); setCustomDest({name:"",lat:null,lng:null}); setConfirmMode("none"); setConfirmPlantId("");}} style={{ flex:1, padding:"10px 8px", borderRadius: R.md, border:`1.5px solid ${destMode==="plant"?C.pri:C.b1}`, background:destMode==="plant"?C.priPale:C.w, color:destMode==="plant"?C.pri:C.t2, cursor:"pointer", fontSize:13.2, fontWeight:600, fontFamily:"inherit" }}>Plantas registradas</button>
+            <button onClick={()=>{setDestMode("tolvink"); u({plantId:"",branchId:""}); setCustomDest({name:"",lat:null,lng:null}); setConfirmMode("none"); setConfirmPlantId("");}} style={{ flex:1, padding:"10px 8px", borderRadius: R.md, border:`1.5px solid ${destMode==="tolvink"?C.sec:C.b1}`, background:destMode==="tolvink"?C.secPale:C.w, color:destMode==="tolvink"?C.sec:C.t2, cursor:"pointer", fontSize:13.2, fontWeight:600, fontFamily:"inherit" }}>Plantas Uruguay</button>
+            <button onClick={()=>{setDestMode("custom"); u({plantId:"",branchId:"",tolvinkPlantId:""}); setConfirmMode("none"); setConfirmPlantId("");}} style={{ flex:1, padding:"10px 8px", borderRadius: R.md, border:`1.5px solid ${destMode==="custom"?C.acc:C.b1}`, background:destMode==="custom"?C.accPale:C.w, color:destMode==="custom"?C.acc:C.t2, cursor:"pointer", fontSize:13.2, fontWeight:600, fontFamily:"inherit" }}>Personalizado</button>
           </div>
           {destMode==="plant" && (
             <>
@@ -1481,6 +1517,17 @@ export default function NewScreen({ user, lots, plants, branches, fields, trucks
                 <div style={{ marginTop:10 }}>
                   <Select label="Sucursal" icon={Ic.pin(C.sec,14)} value={form.branchId} onChange={v=>u({branchId:v})} options={branchOpts} placeholder="Seleccionar sucursal..."/>
                   {touched&&<FieldError error={errs.branchId}/>}
+                </div>
+              )}
+            </>
+          )}
+          {destMode==="tolvink" && (
+            <>
+              <Select value={form.tolvinkPlantId} onChange={v=>u({ tolvinkPlantId:v })} options={tolvinkPlantOpts} placeholder="Seleccionar planta de Uruguay..." searchable />
+              {touched&&<FieldError error={errs.tolvinkPlantId}/>}
+              {selectedTolvinkPlant && (
+                <div style={{ marginTop:8, padding:"10px 12px", borderRadius:R.md, background:C.secPale, color:C.sec, fontSize:12.2, fontWeight:600 }}>
+                  {selectedTolvinkPlant.department ? `${selectedTolvinkPlant.department} · ` : ""}{selectedTolvinkPlant.altName || "Directorio Tolvink"}
                 </div>
               )}
             </>
