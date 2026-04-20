@@ -477,7 +477,7 @@ export default function NewScreen({ user, lots, plants, tolvinkPlants = [], bran
   const hasLots = fieldLots.length > 0;
   const lotOpts = hasLots ? [{ value:"__field__", label:"Usar ubicación del campo", bold:true }, ...fieldLots.map(l=>({ value:l.id, label:l.name, sub:l.hectares?`${l.hectares} ha`:'' }))] : [];
   const plantOpts = (plants||[]).map(p=>({ value:p.id, label:p.name }));
-  const tolvinkPlantOpts = (tolvinkPlants||[]).map(p=>({ value:p.id, label:p.name, sub:[p.locality, p.department, p.altName].filter(Boolean).join(" - ") }));
+  const tolvinkPlantOpts = (tolvinkPlants||[]).map(p=>({ value:p.id, label:p.name, sub:[p.department, p.locality, p.altName].filter(Boolean).join(" - ") }));
   const selectedPlantCompanyId = (plants||[]).find(p=>p.id===form.plantId)?.companyId;
   const branchOpts = (branches||[]).filter(b=>b.companyId===selectedPlantCompanyId).map(b=>({ value:b.id, label:b.name }));
   const selectedLot = form.lotId === "__field__" ? null : fieldLots.find(l=>l.id===form.lotId);
@@ -834,7 +834,7 @@ export default function NewScreen({ user, lots, plants, tolvinkPlants = [], bran
     destination: destMode==="plant"
       ? (destDisplayName||"")
       : destMode==="tolvink"
-        ? (selectedTolvinkPlant ? `${selectedTolvinkPlant.name}${selectedTolvinkPlant.locality ? ` · ${selectedTolvinkPlant.locality}` : selectedTolvinkPlant.department ? ` · ${selectedTolvinkPlant.department}` : ""}${confirmMode==="plant"&&confirmPlantId ? ` · Confirma: ${(plants||[]).find(p=>p.id===confirmPlantId)?.name||""}` : ""}` : "")
+        ? (selectedTolvinkPlant ? `${selectedTolvinkPlant.name}${selectedTolvinkPlant.department ? ` · ${selectedTolvinkPlant.department}` : selectedTolvinkPlant.locality ? ` · ${selectedTolvinkPlant.locality}` : ""}${selectedTolvinkPlant.department && selectedTolvinkPlant.locality ? ` · ${selectedTolvinkPlant.locality}` : ""}${confirmMode==="plant"&&confirmPlantId ? ` · Confirma: ${(plants||[]).find(p=>p.id===confirmPlantId)?.name||""}` : ""}` : "")
         : (customDest.lat ? ((customDest.name?.trim()||"Ubicación personalizada")+(confirmMode==="plant"&&confirmPlantId?` · Confirma: ${(plants||[]).find(p=>p.id===confirmPlantId)?.name||""}`:"")) : ""),
     schedule: form.loadDate&&form.loadTime ? `${form.loadDate} a las ${form.loadTime}` : "",
     truckCount: (() => { const tEq = form.unit==="kg"?parseFloat(form.tons)/1000:parseFloat(form.tons); const tc = form.truckCount || (tEq>0 ? String(Math.ceil(tEq/30)) : (form.grain ? "1" : "")); return tc ? `${tc} camión${tc!=="1"?"es":""}` : ""; })(),
@@ -1149,7 +1149,7 @@ export default function NewScreen({ user, lots, plants, tolvinkPlants = [], bran
               {touched&&<FieldError error={errs.tolvinkPlantId}/>}
               {selectedTolvinkPlant && (
                 <div style={{ marginTop:8, padding:"10px 12px", borderRadius:R.md, background:C.secPale, color:C.sec, fontSize:12.2, fontWeight:600 }}>
-                  {[selectedTolvinkPlant.locality, selectedTolvinkPlant.department, selectedTolvinkPlant.altName || "Directorio Tolvink"].filter(Boolean).join(" · ")}
+                  {[selectedTolvinkPlant.department, selectedTolvinkPlant.locality, selectedTolvinkPlant.altName || "Directorio Tolvink"].filter(Boolean).join(" · ")}
                 </div>
               )}
             </>)}
@@ -1539,7 +1539,7 @@ export default function NewScreen({ user, lots, plants, tolvinkPlants = [], bran
               {touched&&<FieldError error={errs.tolvinkPlantId}/>}
               {selectedTolvinkPlant && (
                 <div style={{ marginTop:8, padding:"10px 12px", borderRadius:R.md, background:C.secPale, color:C.sec, fontSize:12.2, fontWeight:600 }}>
-                  {[selectedTolvinkPlant.locality, selectedTolvinkPlant.department, selectedTolvinkPlant.altName || "Directorio Tolvink"].filter(Boolean).join(" · ")}
+                  {[selectedTolvinkPlant.department, selectedTolvinkPlant.locality, selectedTolvinkPlant.altName || "Directorio Tolvink"].filter(Boolean).join(" · ")}
                 </div>
               )}
             </>
