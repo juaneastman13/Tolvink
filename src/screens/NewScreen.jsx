@@ -483,6 +483,7 @@ export default function NewScreen({ user, lots, plants, tolvinkPlants = [], bran
   const selectedLot = form.lotId === "__field__" ? null : fieldLots.find(l=>l.id===form.lotId);
   const selectedPlant = (plants||[]).find(p=>p.id===form.plantId);
   const selectedTolvinkPlant = (tolvinkPlants||[]).find(p=>p.id===form.tolvinkPlantId);
+  const destinationRequiresConfirmSelection = destMode==="custom" || destMode==="tolvink";
   // CONSULTA check: block freight creation if user is READONLY for the selected destination
   const isConsulta = selectedPlantCompanyId ? isConsultaFor(selectedPlantCompanyId) : _isConsultaGlobal;
   const selectedBranch = (branches||[]).find(b=>b.id===form.branchId);
@@ -495,7 +496,11 @@ export default function NewScreen({ user, lots, plants, tolvinkPlants = [], bran
     product: !!form.grain && (form.grain!=="Otros" || !!form.productTypeOther.trim()),
     quantity: !form.tons || parseFloat(form.tons) > 0,
     origin: originMode==="field" ? (!!form.fieldId && (!hasLots || !!form.lotId)) : (!!customOrigin.lat),
-    destination: destMode==="plant" ? (!!form.plantId && (!_hasBranches || !!form.branchId)) : destMode==="tolvink" ? !!form.tolvinkPlantId : ((!!customDest.lat || !!customDest.name?.trim()) && (confirmMode==="none" || !!confirmPlantId)),
+    destination: destMode==="plant"
+      ? (!!form.plantId && (!_hasBranches || !!form.branchId))
+      : destMode==="tolvink"
+        ? (!!form.tolvinkPlantId && (confirmMode==="none" || !!confirmPlantId))
+        : ((!!customDest.lat || !!customDest.name?.trim()) && (confirmMode==="none" || !!confirmPlantId)),
     schedule: !!form.loadDate && /^\d{2}:\d{2}$/.test(form.loadTime),
     ...(showTransportStep ? { transport: transportStepComplete } : {}),
   }),[form, originMode, customOrigin, destMode, customDest, confirmMode, confirmPlantId, _hasBranches, isPlantUser, producerCompanyId, showTransportStep, transportStepComplete]);
@@ -648,6 +653,7 @@ export default function NewScreen({ user, lots, plants, tolvinkPlants = [], bran
     if(destMode==="custom" && !customDest.lat && !customDest.name?.trim()) { e.customDestLoc="Indicá un nombre o ubicación en el mapa"; }
     if(showTruckSelect && form.fleetChoice==="own" && !form.truckId) { e.truckId="Seleccioná un camión de tu flota"; }
     if(showTruckSelect && form.fleetChoice==="own" && !form.driverId) { e.driverId="Seleccioná un chofer"; }
+    if(destinationRequiresConfirmSelection && confirmMode==="plant" && !confirmPlantId) { e.confirmPlantId="Selecciona una planta que confirme el viaje"; }
     setErrs(e);
     if(!ok || Object.keys(e).filter(k=>e[k]).length>0) {
       setShowIncomplete(true);
@@ -713,11 +719,15 @@ export default function NewScreen({ user, lots, plants, tolvinkPlants = [], bran
     } else if (destMode==="tolvink") {
       payload.plantId = undefined;
       payload.branchId = undefined;
-      payload.destCompanyId = undefined;
       payload.tolvinkPlantId = form.tolvinkPlantId || undefined;
       payload.customDestName = selectedTolvinkPlant?.name || undefined;
       payload.customDestLat = selectedTolvinkPlant?.lat != null ? parseFloat(selectedTolvinkPlant.lat) : undefined;
       payload.customDestLng = selectedTolvinkPlant?.lng != null ? parseFloat(selectedTolvinkPlant.lng) : undefined;
+      payload.destCompanyId = undefined;
+      if(confirmMode==="plant" && confirmPlantId) {
+        const cp = (plants||[]).find(p=>p.id===confirmPlantId);
+        if(cp) payload.destCompanyId = cp.companyId;
+      }
     } else {
       payload.tolvinkPlantId = undefined;
     }
@@ -824,7 +834,7 @@ export default function NewScreen({ user, lots, plants, tolvinkPlants = [], bran
     destination: destMode==="plant"
       ? (destDisplayName||"")
       : destMode==="tolvink"
-        ? (selectedTolvinkPlant ? `${selectedTolvinkPlant.name}${selectedTolvinkPlant.department ? ` · ${selectedTolvinkPlant.department}` : ""}` : "")
+        ? (selectedTolvinkPlant ? `${selectedTolvinkPlant.name}${selectedTolvinkPlant.department ? ` · ${selectedTolvinkPlant.department}` : ""}${confirmMode==="plant"&&confirmPlantId ? ` · Confirma: ${(plants||[]).find(p=>p.id===confirmPlantId)?.name||""}` : ""}` : "")
         : (customDest.lat ? ((customDest.name?.trim()||"Ubicación personalizada")+(confirmMode==="plant"&&confirmPlantId?` · Confirma: ${(plants||[]).find(p=>p.id===confirmPlantId)?.name||""}`:"")) : ""),
     schedule: form.loadDate&&form.loadTime ? `${form.loadDate} a las ${form.loadTime}` : "",
     truckCount: (() => { const tEq = form.unit==="kg"?parseFloat(form.tons)/1000:parseFloat(form.tons); const tc = form.truckCount || (tEq>0 ? String(Math.ceil(tEq/30)) : (form.grain ? "1" : "")); return tc ? `${tc} camión${tc!=="1"?"es":""}` : ""; })(),
@@ -1143,7 +1153,7 @@ export default function NewScreen({ user, lots, plants, tolvinkPlants = [], bran
                 </div>
               )}
             </>)}
-            {destMode==="custom" && (<>
+            {destinationRequiresConfirmSelection && (<>
               <div style={{marginBottom:14}}>
                 <label style={{fontSize:11.6,fontWeight:600,color:C.t2,marginBottom:6,display:"flex",alignItems:"center",gap:4,textTransform:"uppercase",letterSpacing:0.6}}>{Ic.chk(C.t2,14)} ¿Quién debe confirmar el viaje?</label>
                 <div style={{display:"flex",gap:6,marginBottom:confirmMode==="plant"?10:0}}>
@@ -1156,6 +1166,7 @@ export default function NewScreen({ user, lots, plants, tolvinkPlants = [], bran
                 </>)}
                 {confirmMode==="none" && <div style={{fontSize:11,color:C.t3,marginTop:6}}>El flete no requiere confirmación externa</div>}
               </div>
+              {destMode==="custom" && (<>
               <Field label="Nombre del destino (opcional)" value={customDest.name} onChange={v=>setCustomDest(p=>({...p,name:v}))} placeholder="Ej: Acopio Central, Puerto Rosario... (opcional)"/>
               <button type="button" onClick={()=>setShowDestMapPopup(true)} style={{ marginTop:8, width:"100%", padding:"12px 0", borderRadius:R.md, border:`1.5px solid ${customDest.lat?C.ok:C.acc}`, background:customDest.lat?C.okPale:C.w, color:customDest.lat?C.ok:C.acc, fontSize:13.2, fontWeight:700, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
                 {Ic.pin(customDest.lat?C.ok:C.acc,15)} {customDest.lat ? "Ubicación marcada ✓ — Cambiar" : "Indicar ubicación en mapa"}
@@ -1177,6 +1188,7 @@ export default function NewScreen({ user, lots, plants, tolvinkPlants = [], bran
                 </div>
               )}
               {touched&&errs.customDestLoc&&<div style={{padding:"6px 10px",borderRadius: R.md,marginTop:6,fontSize:12.1,fontWeight:600,color:C.err,background:C.errPale}}>{errs.customDestLoc}</div>}
+              </>)}
             </>)}
             <NextStepBtn complete={secComplete.destination} onClick={isEditing?confirmEdit:advanceToNext} label={isEditing?"Confirmar edición":undefined} onPrev={prevAvailable()?goToPrev:null}/>
           </>}
@@ -1532,7 +1544,7 @@ export default function NewScreen({ user, lots, plants, tolvinkPlants = [], bran
               )}
             </>
           )}
-          {destMode==="custom" && (
+          {destinationRequiresConfirmSelection && (
             <>
               <div style={{marginBottom:14}}>
                 <label style={{fontSize:11.6,fontWeight:600,color:C.t2,marginBottom:6,display:"flex",alignItems:"center",gap:4,textTransform:"uppercase",letterSpacing:0.6}}>{Ic.chk(C.t2,14)} ¿Quién debe confirmar el viaje?</label>
@@ -1549,11 +1561,15 @@ export default function NewScreen({ user, lots, plants, tolvinkPlants = [], bran
                 )}
                 {confirmMode==="none" && <div style={{fontSize:11,color:C.t3,marginTop:6}}>El flete no requiere confirmación externa</div>}
               </div>
+              {destMode==="custom" && (
+                <>
               <Field label="Nombre del destino (opcional)" value={customDest.name} onChange={v=>setCustomDest(p=>({...p,name:v}))} placeholder="Ej: Acopio Central, Puerto Rosario... (opcional)"/>
               <div style={{ marginTop:8 }}>
                 <LocationPicker label="Ubicación del destino" value={customDest.lat?{lat:customDest.lat,lng:customDest.lng}:null} onChange={loc=>setCustomDest(p=>({...p,lat:loc.lat,lng:loc.lng}))} confirmLabel="Confirmar destino" onConfirm={()=>{if(isEditing)confirmEdit();else advanceToNext();}}/>
               </div>
               {touched&&errs.customDestLoc&&<div style={{padding:"6px 10px",borderRadius: R.md,marginTop:6,fontSize:12.1,fontWeight:600,color:C.err,background:C.errPale}}>{errs.customDestLoc}</div>}
+                </>
+              )}
             </>
           )}
           <NextStepBtn complete={secComplete.destination} onClick={isEditing?confirmEdit:advanceToNext} label={isEditing?"Confirmar edición":undefined} onPrev={prevAvailable()?goToPrev:null}/>
