@@ -16,7 +16,7 @@ export function useCatalog(user) {
   const setCache = useCatalogStore(s => s.setCache);
   const setLoading = useCatalogStore(s => s.setLoading);
   // Cache key includes activeCompanyId so switching company invalidates cache
-  const cacheKey = user ? `${user.id}:${user.activeCompanyId || user.companyId || ''}` : null;
+  const cacheKey = user ? `${user.id}:${user.activeCompanyId || user.companyId || ''}:tolvink-locality-v2` : null;
   const cached = cacheKey ? getCache(cacheKey) : null;
 
   const [plants, setPlants] = useState(cached?.data?.plants || []);
