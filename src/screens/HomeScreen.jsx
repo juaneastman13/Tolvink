@@ -345,39 +345,54 @@ export default memo(function HomeScreen({ user, freights, loading, error, perms,
   };
 
   // Render a collapsible group (accordion — opening one hides others)
-  const renderGroup = (group, keyPrefix, source, allGroups) => {
+  // btnOnly=true: compact column card with gradient, no inline expanded content
+  const renderGroup = (group, keyPrefix, source, allGroups, btnOnly = false) => {
     const gKey = keyPrefix + "_" + group.key;
     const isOpen = openGroup === gKey;
-    const anotherOpen = openGroup && openGroup.startsWith(keyPrefix + "_") && openGroup !== gKey;
-    if (anotherOpen) return null;
+    if (!btnOnly) {
+      const anotherOpen = openGroup && openGroup.startsWith(keyPrefix + "_") && openGroup !== gKey;
+      if (anotherOpen) return null;
+    }
 
-    // When open, use fetched paginated data
     const exp = expandedData[gKey];
     let displayItems = group.items;
     let isLoadingFirst = false;
     if (isOpen && exp) {
-      if (exp.loading) {
-        isLoadingFirst = true;
-      } else {
-        displayItems = exp.items || [];
-      }
+      if (exp.loading) { isLoadingFirst = true; } else { displayItems = exp.items || []; }
     }
 
+    const colBg = isOpen
+      ? `linear-gradient(90deg, ${group.color}35 0%, ${group.color}10 100%)`
+      : `linear-gradient(90deg, ${group.color}28 0%, transparent 15%), ${C.w}`;
+
     return (
-      <div key={gKey} style={{ marginBottom: 10 }}>
-        <button onClick={() => toggleGroup(gKey)} style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", background: isOpen ? `${group.color}10` : C.w, border: `1px solid ${isOpen ? `${group.color}35` : C.b1}`, borderRadius: R.lg, cursor: "pointer", fontFamily: "inherit", textAlign: "left", boxShadow: isOpen ? "0 4px 14px rgba(0,0,0,0.04)" : "none", ...(isOpen ? { position: "sticky", top: 32, zIndex: 10 } : {}) }}>
-          <div style={{ width: 34, height: 34, borderRadius: R.md, background: `${group.color}16`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-            {typeof group.icon === "function" ? group.icon(group.color, 16) : group.icon}
-          </div>
-          <div style={{ minWidth: 34, textAlign: "center" }}>
-            <div style={{ fontSize: 18, fontWeight: 800, color: group.color, lineHeight: 1 }}>{group.realCount ?? group.items.length}</div>
-          </div>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 14.3, fontWeight: 700, color: C.t1 }}>{group.label}</div>
-          </div>
-          <span style={{ display: "flex", transform: isOpen ? "rotate(270deg)" : "rotate(90deg)", transition: "transform 0.15s ease" }}>{Ic.chev(C.t3, 14)}</span>
-        </button>
-        {isOpen && (
+      <div key={gKey} style={{ marginBottom: 8 }}>
+        {btnOnly ? (
+          <button onClick={() => toggleGroup(gKey)} style={{ width: "100%", display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 4, padding: "10px 12px", background: colBg, border: `1px solid ${isOpen ? `${group.color}40` : C.b1}`, borderLeft: `3px solid ${group.color}`, borderRadius: R.lg, cursor: "pointer", fontFamily: "inherit", textAlign: "left", boxShadow: isOpen ? "0 2px 8px rgba(0,0,0,0.06)" : "none" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 7, width: "100%" }}>
+              <div style={{ width: 26, height: 26, borderRadius: R.sm, background: `${group.color}20`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                {typeof group.icon === "function" ? group.icon(group.color, 13) : group.icon}
+              </div>
+              <span style={{ fontSize: 22, fontWeight: 800, color: group.color, lineHeight: 1 }}>{group.realCount ?? group.items.length}</span>
+              <span style={{ display: "flex", marginLeft: "auto", transform: isOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.15s ease" }}>{Ic.chev(C.t3, 12)}</span>
+            </div>
+            <div style={{ fontSize: 12.5, fontWeight: 700, color: C.t1, lineHeight: 1.3, paddingLeft: 1 }}>{group.label}</div>
+          </button>
+        ) : (
+          <button onClick={() => toggleGroup(gKey)} style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", background: isOpen ? `${group.color}10` : C.w, border: `1px solid ${isOpen ? `${group.color}35` : C.b1}`, borderRadius: R.lg, cursor: "pointer", fontFamily: "inherit", textAlign: "left", boxShadow: isOpen ? "0 4px 14px rgba(0,0,0,0.04)" : "none", ...(isOpen ? { position: "sticky", top: 32, zIndex: 10 } : {}) }}>
+            <div style={{ width: 34, height: 34, borderRadius: R.md, background: `${group.color}16`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              {typeof group.icon === "function" ? group.icon(group.color, 16) : group.icon}
+            </div>
+            <div style={{ minWidth: 34, textAlign: "center" }}>
+              <div style={{ fontSize: 18, fontWeight: 800, color: group.color, lineHeight: 1 }}>{group.realCount ?? group.items.length}</div>
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 14.3, fontWeight: 700, color: C.t1 }}>{group.label}</div>
+            </div>
+            <span style={{ display: "flex", transform: isOpen ? "rotate(270deg)" : "rotate(90deg)", transition: "transform 0.15s ease" }}>{Ic.chev(C.t3, 14)}</span>
+          </button>
+        )}
+        {!btnOnly && isOpen && (
           <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: "10px 0 4px 16px", borderLeft: `2px solid ${group.color}30`, marginLeft: 16 }}>
             {isLoadingFirst && <SkeletonList count={3} />}
             {!isLoadingFirst && displayItems.map(f => renderCard(f, pendingMap.get(f.id) || getPendingActions(f, effectiveType(f), user.role, user), source))}
@@ -390,25 +405,46 @@ export default memo(function HomeScreen({ user, freights, loading, error, perms,
   };
 
   // Render a third-party sub-group (simple collapsible, no pagination)
-  const renderTpGroup = (group) => {
+  // btnOnly=true: compact column card with gradient, no inline expanded content
+  const renderTpGroup = (group, btnOnly = false) => {
     const isOpen = openTp === group.key;
-    const anotherOpen = openTp && openTp !== group.key;
-    if (anotherOpen) return null;
+    if (!btnOnly) {
+      const anotherOpen = openTp && openTp !== group.key;
+      if (anotherOpen) return null;
+    }
+
+    const colBg = isOpen
+      ? `linear-gradient(90deg, ${group.color}35 0%, ${group.color}10 100%)`
+      : `linear-gradient(90deg, ${group.color}28 0%, transparent 15%), ${C.w}`;
+
     return (
-      <div key={group.key} style={{ marginBottom: 10 }}>
-        <button onClick={() => setOpenTp(prev => prev === group.key ? null : group.key)} style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", background: isOpen ? `${group.color}10` : C.w, border: `1px solid ${isOpen ? `${group.color}35` : C.b1}`, borderRadius: R.lg, cursor: "pointer", fontFamily: "inherit", textAlign: "left", boxShadow: isOpen ? "0 4px 14px rgba(0,0,0,0.04)" : "none", ...(isOpen ? { position: "sticky", top: 32, zIndex: 10 } : {}) }}>
-          <div style={{ width: 34, height: 34, borderRadius: R.md, background: `${group.color}16`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-            {Ic.clk(group.color, 16)}
-          </div>
-          <div style={{ minWidth: 34, textAlign: "center" }}>
-            <div style={{ fontSize: 18, fontWeight: 800, color: group.color, lineHeight: 1 }}>{group.items.length}</div>
-          </div>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 14.3, fontWeight: 700, color: C.t1 }}>{group.label}</div>
-          </div>
-          <span style={{ display: "flex", transform: isOpen ? "rotate(270deg)" : "rotate(90deg)", transition: "transform 0.15s ease" }}>{Ic.chev(C.t3, 14)}</span>
-        </button>
-        {isOpen && (
+      <div key={group.key} style={{ marginBottom: 8 }}>
+        {btnOnly ? (
+          <button onClick={() => setOpenTp(prev => prev === group.key ? null : group.key)} style={{ width: "100%", display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 4, padding: "10px 12px", background: colBg, border: `1px solid ${isOpen ? `${group.color}40` : C.b1}`, borderLeft: `3px solid ${group.color}`, borderRadius: R.lg, cursor: "pointer", fontFamily: "inherit", textAlign: "left", boxShadow: isOpen ? "0 2px 8px rgba(0,0,0,0.06)" : "none" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 7, width: "100%" }}>
+              <div style={{ width: 26, height: 26, borderRadius: R.sm, background: `${group.color}20`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                {Ic.clk(group.color, 13)}
+              </div>
+              <span style={{ fontSize: 22, fontWeight: 800, color: group.color, lineHeight: 1 }}>{group.items.length}</span>
+              <span style={{ display: "flex", marginLeft: "auto", transform: isOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.15s ease" }}>{Ic.chev(C.t3, 12)}</span>
+            </div>
+            <div style={{ fontSize: 12.5, fontWeight: 700, color: C.t1, lineHeight: 1.3, paddingLeft: 1 }}>{group.label}</div>
+          </button>
+        ) : (
+          <button onClick={() => setOpenTp(prev => prev === group.key ? null : group.key)} style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", background: isOpen ? `${group.color}10` : C.w, border: `1px solid ${isOpen ? `${group.color}35` : C.b1}`, borderRadius: R.lg, cursor: "pointer", fontFamily: "inherit", textAlign: "left", boxShadow: isOpen ? "0 4px 14px rgba(0,0,0,0.04)" : "none", ...(isOpen ? { position: "sticky", top: 32, zIndex: 10 } : {}) }}>
+            <div style={{ width: 34, height: 34, borderRadius: R.md, background: `${group.color}16`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              {Ic.clk(group.color, 16)}
+            </div>
+            <div style={{ minWidth: 34, textAlign: "center" }}>
+              <div style={{ fontSize: 18, fontWeight: 800, color: group.color, lineHeight: 1 }}>{group.items.length}</div>
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 14.3, fontWeight: 700, color: C.t1 }}>{group.label}</div>
+            </div>
+            <span style={{ display: "flex", transform: isOpen ? "rotate(270deg)" : "rotate(90deg)", transition: "transform 0.15s ease" }}>{Ic.chev(C.t3, 14)}</span>
+          </button>
+        )}
+        {!btnOnly && isOpen && (
           <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: "10px 0 4px 16px", borderLeft: `2px solid ${group.color}30`, marginLeft: 16 }}>
             {group.items.map(f => renderCard(f, pendingMap.get(f.id) || getPendingActions(f, effectiveType(f), user.role, user), "pending"))}
           </div>
@@ -493,55 +529,110 @@ export default memo(function HomeScreen({ user, freights, loading, error, perms,
           <SkeletonList count={3} />
         </>}
 
-        {/* Pendientes — hidden when a "sin pendientes" group is open */}
-        {!isInitialLoad && !smOpen && totalPendingAll > 0 && (<>
-          <div style={{ padding: compact ? "8px 10px" : "12px 14px", borderRadius: R.lg, background: `${C.acc}0D`, marginBottom: 8 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: compact ? 8 : 10 }}>
-              {!compact && <span style={{ fontSize: 24.2, fontWeight: 800, color: C.acc, lineHeight: 1, minWidth: 28, textAlign: "center" }}>{pendingCount}</span>}
-              {compact && <div style={{ width: 26, height: 26, borderRadius: "50%", background: C.acc, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, position: "relative" }}>
-                {Ic.bell(C.w, 13)}
-                <div style={{ position: "absolute", top: -3, right: -3, minWidth: 15, height: 15, borderRadius: R.md, background: C.err, color: C.w, fontSize: 8.8, fontWeight: 700, padding: "0 3px", display: "flex", alignItems: "center", justifyContent: "center", border: `2px solid ${C.w}` }}>{pendingCount}</div>
-              </div>}
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: compact ? 12.1 : 14.3, fontWeight: 700, color: C.acc }}>{compact ? "Con pendientes de mi parte" : `Acción${pendingCount !== 1 ? "es" : ""} pendiente${pendingCount !== 1 ? "s" : ""}`}</div>
-                {!compact && <div style={{ fontSize: 11.6, color: C.t3 }}>Requieren tu atención</div>}
+        {/* Non-compact: two-column layout con headers en la misma línea */}
+        {!isInitialLoad && !compact && (totalPendingAll > 0 || thirdPartyGroups.length > 0) && (<>
+          {/* Headers lado a lado */}
+          <div style={{ display: "flex", gap: 10, alignItems: "stretch", marginBottom: 10 }}>
+            {totalPendingAll > 0 && (
+              <div style={{ flex: 1, padding: "12px 14px", borderRadius: R.lg, background: `${C.acc}0D`, border: `1px solid ${C.acc}20` }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ fontSize: 22, fontWeight: 800, color: C.acc, lineHeight: 1 }}>{pendingCount}</span>
+                  <div>
+                    <div style={{ fontSize: 13.5, fontWeight: 700, color: C.acc }}>{`Acción${pendingCount !== 1 ? "es" : ""} pendiente${pendingCount !== 1 ? "s" : ""}`}</div>
+                    <div style={{ fontSize: 11, color: C.t3 }}>Requieren tu atención</div>
+                  </div>
+                </div>
               </div>
-            </div>
+            )}
+            {thirdPartyGroups.length > 0 && (
+              <div style={{ flex: 1, padding: "12px 14px", borderRadius: R.lg, background: C.okPale, border: `1px solid ${C.ok}25` }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <div style={{ width: 24, height: 24, borderRadius: "50%", background: C.ok, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    {Ic.chk(C.w, 12)}
+                  </div>
+                  <div style={{ fontSize: 13.5, fontWeight: 700, color: C.ok }}>Sin pendientes de mi parte</div>
+                </div>
+              </div>
+            )}
           </div>
-          {pendingByProgress.length > 0 && (
-            <div style={{ marginBottom: 16 }}>
-              {pendingByProgress.map(g => renderGroup(g, "pa", "pending"))}
-            </div>
-          )}
-          {!compact && pendingByProgress.length === 0 && <div style={{ padding:"12px 16px", fontSize:13.2, color:C.t3, display:"flex", alignItems:"center", gap:8 }}>{Ic.chk(C.ok,14)} Sin pendientes en este periodo</div>}
+          {/* Tarjetas en columnas */}
+          <div style={{ display: "flex", gap: 10, alignItems: "flex-start", marginBottom: 8 }}>
+            {totalPendingAll > 0 && (
+              <div style={{ flex: 1, minWidth: 0 }}>
+                {pendingByProgress.length > 0
+                  ? pendingByProgress.map(g => renderGroup(g, "pa", "pending", undefined, true))
+                  : <div style={{ padding: "12px 16px", fontSize: 13.2, color: C.t3, display: "flex", alignItems: "center", gap: 8 }}>{Ic.chk(C.ok, 14)} Sin pendientes en este periodo</div>
+                }
+              </div>
+            )}
+            {thirdPartyGroups.length > 0 && (
+              <div style={{ flex: 1, minWidth: 0 }}>
+                {thirdPartyGroups.map(g => renderTpGroup(g, true))}
+              </div>
+            )}
+          </div>
+          {/* Lista expandida full-width */}
+          {openGroup?.startsWith("pa_") && (()=>{
+            const activeGroup = pendingByProgress.find(g => "pa_" + g.key === openGroup);
+            if (!activeGroup) return null;
+            const exp = expandedData[openGroup];
+            const isLoadingFirst = !!exp?.loading;
+            const displayItems = isLoadingFirst ? [] : (exp?.items || activeGroup.items);
+            return (
+              <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: "10px 0 4px 16px", borderLeft: `2px solid ${activeGroup.color}30`, marginLeft: 16, marginBottom: 8 }}>
+                {isLoadingFirst && <SkeletonList count={3} />}
+                {!isLoadingFirst && displayItems.map(f => renderCard(f, pendingMap.get(f.id) || getPendingActions(f, effectiveType(f), user.role, user), "pending"))}
+                {!isLoadingFirst && exp?.loadingMore && <SkeletonList count={2} />}
+                {!isLoadingFirst && exp?.hasMore && !exp?.loadingMore && <GroupSentinel gKey={openGroup} onVisible={loadMoreGroup} />}
+              </div>
+            );
+          })()}
+          {openTp && (()=>{
+            const activeTpGroup = thirdPartyGroups.find(g => g.key === openTp);
+            if (!activeTpGroup) return null;
+            return (
+              <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: "10px 0 4px 16px", borderLeft: `2px solid ${activeTpGroup.color}30`, marginLeft: 16, marginBottom: 8 }}>
+                {activeTpGroup.items.map(f => renderCard(f, pendingMap.get(f.id) || getPendingActions(f, effectiveType(f), user.role, user), "pending"))}
+              </div>
+            );
+          })()}
         </>)}
+        {!isInitialLoad && !compact && totalPendingAll === 0 && thirdPartyGroups.length === 0 && (
+          <div style={{ padding: "12px 16px", fontSize: 13.2, color: C.t3, display: "flex", alignItems: "center", gap: 8 }}>{Ic.chk(C.ok, 14)} Sin pendientes en este periodo</div>
+        )}
 
-        {/* Sin pendientes de mi parte — sub-grouped by third-party action */}
-        {!isInitialLoad && !paOpen && thirdPartyGroups.length > 0 && <>
-        {thirdPartyGroups.length === 1 ? (<>
-          <div style={{ padding: compact ? "8px 10px" : "10px 12px", borderRadius: R.lg, background: C.okPale, marginBottom: 8 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: compact ? 8 : 10 }}>
-              <div style={{ width: compact ? 22 : 28, height: compact ? 22 : 28, borderRadius: "50%", background: C.ok, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                {Ic.chk(C.w, compact ? 11 : 14)}
+        {/* Compact (desktop sidebar): lista vertical */}
+        {!isInitialLoad && compact && (<>
+          {!smOpen && totalPendingAll > 0 && (<>
+            <div style={{ padding: "8px 10px", borderRadius: R.lg, background: `${C.acc}0D`, marginBottom: 8 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <div style={{ width: 26, height: 26, borderRadius: "50%", background: C.acc, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, position: "relative" }}>
+                  {Ic.bell(C.w, 13)}
+                  <div style={{ position: "absolute", top: -3, right: -3, minWidth: 15, height: 15, borderRadius: R.md, background: C.err, color: C.w, fontSize: 8.8, fontWeight: 700, padding: "0 3px", display: "flex", alignItems: "center", justifyContent: "center", border: `2px solid ${C.w}` }}>{pendingCount}</div>
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 12.1, fontWeight: 700, color: C.acc }}>Con pendientes de mi parte</div>
+                </div>
               </div>
-              <div style={{ flex: 1, fontSize: compact ? 12.1 : 13.2, fontWeight: 700, color: C.ok }}>Sin pendientes de mi parte</div>
             </div>
-          </div>
-          <div>{renderTpGroup(thirdPartyGroups[0])}</div>
-        </>) : (<>
-          <div style={{ padding: compact ? "6px 10px" : "8px 12px", borderRadius: R.lg, background: C.okPale, marginBottom: 4 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: compact ? 8 : 10 }}>
-              <div style={{ width: compact ? 22 : 28, height: compact ? 22 : 28, borderRadius: "50%", background: C.ok, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                {Ic.chk(C.w, compact ? 11 : 14)}
+            {pendingByProgress.length > 0 && (
+              <div style={{ marginBottom: 16 }}>
+                {pendingByProgress.map(g => renderGroup(g, "pa", "pending"))}
               </div>
-              <div style={{ flex: 1, fontSize: compact ? 12.1 : 13.2, fontWeight: 700, color: C.ok }}>Sin pendientes de mi parte</div>
+            )}
+          </>)}
+          {!paOpen && thirdPartyGroups.length > 0 && <>
+            <div style={{ padding: thirdPartyGroups.length === 1 ? "8px 10px" : "6px 10px", borderRadius: R.lg, background: C.okPale, marginBottom: thirdPartyGroups.length === 1 ? 8 : 4 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <div style={{ width: 22, height: 22, borderRadius: "50%", background: C.ok, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  {Ic.chk(C.w, 11)}
+                </div>
+                <div style={{ flex: 1, fontSize: 12.1, fontWeight: 700, color: C.ok }}>Sin pendientes de mi parte</div>
+              </div>
             </div>
-          </div>
-          <div>
-            {thirdPartyGroups.map(g => renderTpGroup(g))}
-          </div>
+            <div>{thirdPartyGroups.map(g => renderTpGroup(g))}</div>
+          </>}
         </>)}
-        </>}
         </>;
       })()}
       </div>
