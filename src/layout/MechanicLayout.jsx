@@ -1,7 +1,8 @@
-import { useMemo, useEffect, lazy, Suspense } from "react";
+import { useMemo, useEffect, useRef, useState, lazy, Suspense } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { C, R, FONT, Ic } from "../theme";
 import { useAuthContext } from "../providers/AuthProvider";
+import { useSSE } from "../hooks";
 import { SL } from "../routing/Router";
 
 const ACCENT = "#475569"; // slate-600
@@ -12,6 +13,8 @@ const MachinesListScreen = lazy(() => import("../screens/mechanic/MachinesListSc
 const MachineWizard = lazy(() => import("../screens/mechanic/MachineWizard"));
 const MachineDetailScreen = lazy(() => import("../screens/mechanic/MachineDetailScreen"));
 const MachineQrRedirect = lazy(() => import("../screens/mechanic/MachineQrRedirect"));
+const AiChat = lazy(() => import("../AiChat"));
+const AiChatFabComp = lazy(() => import("../AiChat").then(m => ({ default: m.AiChatFab })));
 
 // Wrench icon
 const WrenchIcon = (c = ACCENT, s = 20) => (
@@ -37,6 +40,21 @@ export default function MechanicLayout() {
   const auth = useAuthContext();
   const location = useLocation();
   const navigate = useNavigate();
+  const [aiChatOpen, setAiChatOpen] = useState(false);
+  const [sseAiResponse, setSseAiResponse] = useState(null);
+  const [sseAiTranscription, setSseAiTranscription] = useState(null);
+  const [sseAiChunk, setSseAiChunk] = useState(null);
+  const [sseAiThinking, setSseAiThinking] = useState(null);
+  const sseAiSeq = useRef(0);
+  const sseChunkSeq = useRef(0);
+  const sseThinkingSeq = useRef(0);
+
+  useSSE(auth.user, {
+    onAiResponse: (data) => { sseAiSeq.current++; setSseAiResponse({ ...data, _seq: sseAiSeq.current }); },
+    onAiTranscription: (data) => { setSseAiTranscription({ ...data, _seq: Date.now() }); },
+    onAiChunk: (data) => { sseChunkSeq.current++; setSseAiChunk({ ...data, _seq: sseChunkSeq.current }); },
+    onAiThinking: () => { sseThinkingSeq.current++; setSseAiThinking({ _seq: sseThinkingSeq.current }); },
+  });
 
   // Redirect /mechanic to /mechanic/dashboard
   useEffect(() => {
@@ -215,6 +233,26 @@ export default function MechanicLayout() {
           </nav>
         )}
       </div>
+
+      <Suspense fallback={null}>
+        <AiChatFabComp open={aiChatOpen} variant="mechanic" onClick={() => setAiChatOpen(p => !p)} />
+        <AiChat
+          open={aiChatOpen}
+          onClose={() => setAiChatOpen(false)}
+          module="mechanic"
+          title="Asistente Mecánico"
+          subtitle="Maquinaria y mantenimiento"
+          emptyTitle="Asistente mecánico de Tolvink"
+          emptyDescription="Consultá alertas, planes, horómetro, repuestos y mantenimiento de tus máquinas."
+          onNavigate={(nav) => {
+            if (nav?.machineId) navigate(`/mechanic/machines/${nav.machineId}`);
+          }}
+          sseAiResponse={sseAiResponse}
+          sseAiTranscription={sseAiTranscription}
+          sseAiChunk={sseAiChunk}
+          sseAiThinking={sseAiThinking}
+        />
+      </Suspense>
     </div>
   );
 }

@@ -647,12 +647,13 @@ export async function uploadChatFile(file, conversationId) {
 }
 
 // Web Chat (AI Agent)
-export async function apiWebChatSend(text) { return api('/web-chat/message', { body: { text } }); }
-export async function apiWebChatFile(url, name, type) { return api('/web-chat/file', { body: { url, name, type } }); }
-export async function apiWebChatHistory() { return api('/web-chat/history'); }
-export async function apiWebChatAudio(blob) {
+export async function apiWebChatSend(text, module = 'logistics') { return api('/web-chat/message', { body: { text, module } }); }
+export async function apiWebChatFile(url, name, type, module = 'logistics') { return api('/web-chat/file', { body: { url, name, type, module } }); }
+export async function apiWebChatHistory(module = 'logistics') { return api(`/web-chat/history?module=${encodeURIComponent(module)}`); }
+export async function apiWebChatAudio(blob, module = 'logistics') {
   const mkForm = () => { const f = new FormData(); f.append('audio', blob, 'audio.webm'); return f; };
-  const res = await fetch(`${API_URL}/web-chat/audio`, {
+  const url = `${API_URL}/web-chat/audio?module=${encodeURIComponent(module)}`;
+  const res = await fetch(url, {
     method: 'POST',
     credentials: 'include',
     body: mkForm(),
@@ -660,7 +661,7 @@ export async function apiWebChatAudio(blob) {
   if (res.status === 401) {
     const refreshed = await tryRefresh();
     if (refreshed) {
-      const retry = await fetch(`${API_URL}/web-chat/audio`, {
+      const retry = await fetch(url, {
         method: 'POST', credentials: 'include', body: mkForm(),
       });
       if (!retry.ok) throw new ApiError(retry.status, await retry.json().catch(() => ({})));

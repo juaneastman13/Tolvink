@@ -107,6 +107,11 @@ const SparkIcon = (c = C.w, s = 22) => (
     <path d="M12 2L9.19 8.63 2 9.24l5.46 4.73L5.82 21 12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61z" />
   </svg>
 );
+const WrenchIcon = (c = C.w, s = 22) => (
+  <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
+  </svg>
+);
 const MapPinIcon = (c = C.pri, s = 16) => (
   <svg width={s} height={s} viewBox="0 0 24 24" fill={c} stroke="none">
     <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z"/>
@@ -555,7 +560,20 @@ function SuggestionChips({ onSend, disabled }) {
 
 // ======================== MAIN COMPONENT =====================
 
-export default function AiChat({ open, onClose, onNavigate, sseAiResponse, sseAiTranscription, sseAiChunk, sseAiThinking }) {
+export default function AiChat({
+  open,
+  onClose,
+  onNavigate,
+  sseAiResponse,
+  sseAiTranscription,
+  sseAiChunk,
+  sseAiThinking,
+  module = 'logistics',
+  title = 'Asistente Tolvink',
+  subtitle = 'Agente IA',
+  emptyTitle = 'Hola, soy el asistente de Tolvink',
+  emptyDescription = 'Podés consultar fletes, crear nuevos, ver reportes, ubicaciones y mucho más.',
+}) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [thinking, setThinking] = useState(false);
@@ -580,7 +598,7 @@ export default function AiChat({ open, onClose, onNavigate, sseAiResponse, sseAi
       thinkingTimer.current = setInterval(async () => {
         if (ac.signal.aborted) return;
         try {
-          const data = await apiWebChatHistory();
+          const data = await apiWebChatHistory(module);
           // Bail if thinking already resolved via SSE while fetch was in-flight
           if (ac.signal.aborted) return;
           if (data?.messages?.length) {
@@ -603,18 +621,18 @@ export default function AiChat({ open, onClose, onNavigate, sseAiResponse, sseAi
       pollAbort.current = null;
     }
     return () => { clearInterval(thinkingTimer.current); pollAbort.current?.abort(); };
-  }, [thinking]);
+  }, [thinking, module]);
 
   // Load history on first open
   useEffect(() => {
     if (!open || historyLoaded) return;
-    apiWebChatHistory().then(data => {
+    apiWebChatHistory(module).then(data => {
       if (data?.messages?.length) {
         setMessages(data.messages.map(m => ({ ...m, ts: Date.now() })));
       }
       setHistoryLoaded(true);
     }).catch(() => setHistoryLoaded(true));
-  }, [open, historyLoaded]);
+  }, [open, historyLoaded, module]);
 
   // Handle SSE ai:thinking — server confirmed it's processing
   useEffect(() => {
@@ -720,14 +738,14 @@ export default function AiChat({ open, onClose, onNavigate, sseAiResponse, sseAi
     setMessages(prev => [...prev, { id: `u-${Date.now()}`, role: "user", text: t, ts: Date.now() }]);
     setInput("");
     setThinking(true);
-    apiWebChatSend(t).catch(() => {
+    apiWebChatSend(t, module).catch(() => {
       setThinking(false);
       setMessages(prev => [...prev, {
         id: `err-${Date.now()}`, role: "assistant",
         text: "Error de conexión. Intentá de nuevo.", ts: Date.now(),
       }]);
     });
-  }, [input, thinking]);
+  }, [input, thinking, module]);
 
   const sendAudio = useCallback(() => {
     if (!rec.audioBlob || thinking) return;
@@ -739,14 +757,14 @@ export default function AiChat({ open, onClose, onNavigate, sseAiResponse, sseAi
     setThinking(true);
     const blob = rec.audioBlob;
     rec.discard();
-    apiWebChatAudio(blob).catch(() => {
+    apiWebChatAudio(blob, module).catch(() => {
       setThinking(false);
       setMessages(prev => [...prev, {
         id: `err-${Date.now()}`, role: "assistant",
         text: "Error procesando audio. Intentá de nuevo.", ts: Date.now(),
       }]);
     });
-  }, [rec, thinking]);
+  }, [rec, thinking, module]);
 
   const fileInputRef = useRef(null);
   const [uploading, setUploading] = useState(false);
@@ -769,7 +787,7 @@ export default function AiChat({ open, onClose, onNavigate, sseAiResponse, sseAi
       // Upload to Supabase
       const url = await uploadChatFile(file, "ai-chat");
       // Notify backend
-      await apiWebChatFile(url, file.name, docType);
+      await apiWebChatFile(url, file.name, docType, module);
     } catch (err) {
       setThinking(false);
       setMessages(prev => [...prev, {
@@ -779,7 +797,7 @@ export default function AiChat({ open, onClose, onNavigate, sseAiResponse, sseAi
     } finally {
       setUploading(false);
     }
-  }, [uploading, thinking]);
+  }, [uploading, thinking, module]);
 
   const onKey = useCallback((e) => {
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendText(); }
@@ -821,11 +839,11 @@ export default function AiChat({ open, onClose, onNavigate, sseAiResponse, sseAi
             background: "rgba(255,255,255,0.18)", display: "flex",
             alignItems: "center", justifyContent: "center",
           }}>
-            {Ic.grain(C.tOn, 18)}
+            {module === 'mechanic' ? WrenchIcon(C.tOn, 18) : Ic.grain(C.tOn, 18)}
           </div>
           <div style={{ flex: 1 }}>
-            <div style={{ fontWeight: 700, fontSize: 15 }}>Asistente Tolvink</div>
-            <div style={{ fontSize: 11, opacity: 0.8 }}>Agente IA</div>
+            <div style={{ fontWeight: 700, fontSize: 15 }}>{title}</div>
+            <div style={{ fontSize: 11, opacity: 0.8 }}>{subtitle}</div>
           </div>
           <button onClick={onClose} style={{
             background: "rgba(255,255,255,0.15)", border: "none", cursor: "pointer",
@@ -847,10 +865,10 @@ export default function AiChat({ open, onClose, onNavigate, sseAiResponse, sseAi
             }}>
               <div style={{ marginBottom: 10 }}>{Ic.grain(C.priLt, 40)}</div>
               <div style={{ fontWeight: 600, color: C.t2, marginBottom: 4, fontSize: 16 }}>
-                Hola, soy el asistente de Tolvink
+                {emptyTitle}
               </div>
-              <div style={{ marginBottom: 12 }}>Podés consultar fletes, crear nuevos, ver reportes, ubicaciones y mucho más.</div>
-              <SuggestionChips onSend={sendText} disabled={thinking} />
+              <div style={{ marginBottom: 12 }}>{emptyDescription}</div>
+              {module !== 'mechanic' && <SuggestionChips onSend={sendText} disabled={thinking} />}
             </div>
           )}
 
@@ -1026,7 +1044,7 @@ const FAB_ICONS = [
 ];
 const FAB_CYCLE_MS = 2500;
 
-export function AiChatFab({ onClick, open }) {
+export function AiChatFab({ onClick, open, variant = 'logistics' }) {
   const [idx, setIdx] = useState(0);
   const [fading, setFading] = useState(false);
 
@@ -1065,7 +1083,7 @@ export function AiChatFab({ onClick, open }) {
           transform: fading ? "scale(0.7)" : "scale(1)",
           transition: "opacity 0.2s ease, transform 0.2s ease",
         }}>
-          {FAB_ICONS[idx](window.innerWidth < 768 ? 18 : 24)}
+          {variant === 'mechanic' ? WrenchIcon(C.tOn, window.innerWidth < 768 ? 18 : 24) : FAB_ICONS[idx](window.innerWidth < 768 ? 18 : 24)}
         </div>
       )}
     </button>
