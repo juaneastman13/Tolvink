@@ -349,7 +349,10 @@ export default memo(function HomeScreen({ user, freights, loading, error, perms,
   const renderGroup = (group, keyPrefix, source, allGroups, btnOnly = false) => {
     const gKey = keyPrefix + "_" + group.key;
     const isOpen = openGroup === gKey;
-    if (!btnOnly) {
+    if (btnOnly) {
+      // In column mode: hide if another group (from either column) is open and it's not this one
+      if ((openGroup && openGroup !== gKey) || openTp) return null;
+    } else {
       const anotherOpen = openGroup && openGroup.startsWith(keyPrefix + "_") && openGroup !== gKey;
       if (anotherOpen) return null;
     }
@@ -408,7 +411,10 @@ export default memo(function HomeScreen({ user, freights, loading, error, perms,
   // btnOnly=true: compact column card with gradient, no inline expanded content
   const renderTpGroup = (group, btnOnly = false) => {
     const isOpen = openTp === group.key;
-    if (!btnOnly) {
+    if (btnOnly) {
+      // In column mode: hide if another group (from either column) is open and it's not this one
+      if ((openTp && openTp !== group.key) || openGroup) return null;
+    } else {
       const anotherOpen = openTp && openTp !== group.key;
       if (anotherOpen) return null;
     }
@@ -531,8 +537,8 @@ export default memo(function HomeScreen({ user, freights, loading, error, perms,
 
         {/* Non-compact: two-column layout con headers en la misma línea */}
         {!isInitialLoad && !compact && (totalPendingAll > 0 || thirdPartyGroups.length > 0) && (<>
-          {/* Headers lado a lado */}
-          <div style={{ display: "flex", gap: 10, alignItems: "stretch", marginBottom: 10 }}>
+          {/* Headers lado a lado — se ocultan cuando hay un grupo expandido */}
+          {!openGroup && !openTp && <div style={{ display: "flex", gap: 10, alignItems: "stretch", marginBottom: 10 }}>
             {totalPendingAll > 0 && (
               <div style={{ flex: 1, padding: "12px 14px", borderRadius: R.lg, background: `${C.acc}0D`, border: `1px solid ${C.acc}20` }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -554,7 +560,7 @@ export default memo(function HomeScreen({ user, freights, loading, error, perms,
                 </div>
               </div>
             )}
-          </div>
+          </div>}
           {/* Tarjetas en columnas */}
           <div style={{ display: "flex", gap: 10, alignItems: "flex-start", marginBottom: 8 }}>
             {totalPendingAll > 0 && (
