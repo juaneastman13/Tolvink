@@ -362,8 +362,8 @@ export default memo(function HomeScreen({ user, freights, loading, error, perms,
     }
 
     const colBg = isOpen
-      ? `linear-gradient(to left, ${C.acc}40 0%, ${C.acc}10 100%)`
-      : `linear-gradient(to left, ${C.acc}28 0%, transparent 15%), ${C.w}`;
+      ? `linear-gradient(to left, ${C.acc}50 0%, ${C.acc}15 100%)`
+      : `linear-gradient(to left, ${C.acc}55 0%, transparent 60%), ${C.w}`;
 
     return (
       <div key={gKey} style={{ marginBottom: 8 }}>
@@ -414,8 +414,8 @@ export default memo(function HomeScreen({ user, freights, loading, error, perms,
     }
 
     const colBg = isOpen
-      ? `linear-gradient(to left, ${C.ok}40 0%, ${C.ok}10 100%)`
-      : `linear-gradient(to left, ${C.ok}28 0%, transparent 15%), ${C.w}`;
+      ? `linear-gradient(to left, ${C.ok}50 0%, ${C.ok}15 100%)`
+      : `linear-gradient(to left, ${C.ok}55 0%, transparent 60%), ${C.w}`;
 
     return (
       <div key={group.key} style={{ marginBottom: 8 }}>
