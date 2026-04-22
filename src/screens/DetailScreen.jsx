@@ -329,8 +329,9 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
       const extra = tripLifecycle[freight.status];
       if (extra && !acts.includes(extra)) acts = [...acts, extra];
     }
-    // Plant: inject approve_producer action only for producer own-fleet freights pending approval
-    if (user.userType === "plant" && freight.useOwnFleet && freight.needsPlantApproval && !freight.plantApprovedAt) {
+    // Plant: inject approve_producer only when no truck assigned yet (authorize handles it once truck exists)
+    const hasOwnFleetTruck = (freight.activeAssignments||[]).some(a => a.truckId);
+    if (user.userType === "plant" && freight.useOwnFleet && freight.needsPlantApproval && !freight.plantApprovedAt && !hasOwnFleetTruck) {
       acts = ["approve_producer", ...acts];
     }
     // Never show confirm_finished if confirm_loaded is still pending — carga must come first
@@ -607,8 +608,8 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
         </div>
       )}
 
-      {/* Flow C: Plant sees producer's own fleet pending approval */}
-      {freight.status === "pending_assignment" && user.userType === "plant" && freight.useOwnFleet && (()=>{
+      {/* Flow C: Plant sees producer's own fleet pending approval (single-truck only — multiTruck uses trip-level respond_trip) */}
+      {freight.status === "pending_assignment" && user.userType === "plant" && freight.useOwnFleet && !isMultiTruck && (()=>{
         const ownFleetAssign = (freight.activeAssignments||[]).find(a => a.truckId);
         if (!ownFleetAssign) return null;
         return (
