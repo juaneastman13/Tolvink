@@ -363,7 +363,7 @@ export default memo(function HomeScreen({ user, freights, loading, error, perms,
 
     const colBg = isOpen
       ? `linear-gradient(to left, ${C.acc}50 0%, ${C.acc}15 100%)`
-      : `radial-gradient(ellipse at right center, ${C.acc}55 0%, transparent 15%), ${C.w}`;
+      : `radial-gradient(ellipse 30% 100% at right center, ${C.acc}55 0%, transparent 100%), ${C.w}`;
 
     return (
       <div key={gKey} style={{ marginBottom: 8 }}>
@@ -415,7 +415,7 @@ export default memo(function HomeScreen({ user, freights, loading, error, perms,
 
     const colBg = isOpen
       ? `linear-gradient(to left, ${C.ok}50 0%, ${C.ok}15 100%)`
-      : `radial-gradient(ellipse at right center, ${C.ok}55 0%, transparent 15%), ${C.w}`;
+      : `radial-gradient(ellipse 30% 100% at right center, ${C.ok}55 0%, transparent 100%), ${C.w}`;
 
     return (
       <div key={group.key} style={{ marginBottom: 8 }}>
