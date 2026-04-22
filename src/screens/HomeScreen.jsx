@@ -190,7 +190,7 @@ export default memo(function HomeScreen({ user, freights, loading, error, perms,
         })
         .map(f => ({ ...f, pendingAction: pendingMap.get(f.id) }))
         .sort((a, b) => (a.destName||'').localeCompare(b.destName||'') || (a.originName||'').localeCompare(b.originName||'') || a.id.localeCompare(b.id));
-      return { ...g, icon: g.key==="assign"?Ic.truck:g.key==="respond"?Ic.info:g.key==="authorize"?Ic.chk:g.key==="start"?Ic.nav:g.key==="confirm_loaded"?Ic.warn:Ic.ok, items };
+      return { ...g, icon: g.key==="assign"?Ic.truck:g.key==="respond"?Ic.msg:g.key==="authorize"?Ic.chk:g.key==="start"?Ic.nav:g.key==="confirm_loaded"?Ic.warn:Ic.chk, items };
     }).filter(g => g.items.length > 0);
   }, [filteredFreights, pendingMap, dateFrom, dateTo]);
   const pendingCount = new Set(pendingByProgress.flatMap(g => g.items.map(f => f.id))).size;
@@ -364,15 +364,24 @@ export default memo(function HomeScreen({ user, freights, loading, error, perms,
     }
 
     return (
-      <div key={gKey}>
-        <button onClick={() => toggleGroup(gKey)} style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, padding: "8px 0", background: isOpen ? C.bg : "none", border: "none", borderBottom: `1px solid ${C.b2}`, cursor: "pointer", fontFamily: "inherit", textAlign: "left", ...(isOpen ? { position: "sticky", top: 32, zIndex: 10 } : {}) }}>
-          {typeof group.icon === "function" ? group.icon(group.color, 14) : group.icon}
-          <span style={{ fontSize: 15.4, fontWeight: 800, color: group.color }}>{group.realCount ?? group.items.length}</span>
-          <div style={{ flex: 1, fontSize: 14.3, fontWeight: 600, color: C.t1 }}>{group.label}</div>
+      <div key={gKey} style={{ marginBottom: 10 }}>
+        <button onClick={() => toggleGroup(gKey)} style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", background: isOpen ? `${group.color}10` : C.w, border: `1px solid ${isOpen ? `${group.color}35` : C.b1}`, borderRadius: R.lg, cursor: "pointer", fontFamily: "inherit", textAlign: "left", boxShadow: isOpen ? "0 4px 14px rgba(0,0,0,0.04)" : "none", ...(isOpen ? { position: "sticky", top: 32, zIndex: 10 } : {}) }}>
+          <div style={{ width: 34, height: 34, borderRadius: R.md, background: `${group.color}16`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            {typeof group.icon === "function" ? group.icon(group.color, 16) : group.icon}
+          </div>
+          <div style={{ minWidth: 34, textAlign: "center" }}>
+            <div style={{ fontSize: 18, fontWeight: 800, color: group.color, lineHeight: 1 }}>{group.realCount ?? group.items.length}</div>
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 14.3, fontWeight: 700, color: C.t1 }}>{group.label}</div>
+            <div style={{ fontSize: 11.6, color: C.t3, marginTop: 2 }}>
+              {group.items.length === 1 ? "1 flete para resolver" : `${group.items.length} fletes para resolver`}
+            </div>
+          </div>
           <span style={{ display: "flex", transform: isOpen ? "rotate(270deg)" : "rotate(90deg)", transition: "transform 0.15s ease" }}>{Ic.chev(C.t3, 14)}</span>
         </button>
         {isOpen && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: "8px 0 4px 16px", borderLeft: `2px solid ${group.color}30` }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: "10px 0 4px 16px", borderLeft: `2px solid ${group.color}30`, marginLeft: 16 }}>
             {isLoadingFirst && <SkeletonList count={3} />}
             {!isLoadingFirst && displayItems.map(f => renderCard(f, pendingMap.get(f.id) || getPendingActions(f, effectiveType(f), user.role, user), source))}
             {!isLoadingFirst && exp?.loadingMore && <SkeletonList count={2} />}
