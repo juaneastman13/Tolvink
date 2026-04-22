@@ -362,13 +362,13 @@ export default memo(function HomeScreen({ user, freights, loading, error, perms,
     }
 
     const colBg = isOpen
-      ? `linear-gradient(90deg, ${group.color}35 0%, ${group.color}10 100%)`
-      : `linear-gradient(90deg, ${group.color}28 0%, transparent 15%), ${C.w}`;
+      ? `linear-gradient(to left, ${C.acc}40 0%, ${C.acc}10 100%)`
+      : `linear-gradient(to left, ${C.acc}28 0%, transparent 15%), ${C.w}`;
 
     return (
       <div key={gKey} style={{ marginBottom: 8 }}>
         {btnOnly ? (
-          <button onClick={() => toggleGroup(gKey)} style={{ width: "100%", display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 4, padding: "10px 12px", background: colBg, border: `1px solid ${isOpen ? `${group.color}40` : C.b1}`, borderLeft: `3px solid ${group.color}`, borderRadius: R.lg, cursor: "pointer", fontFamily: "inherit", textAlign: "left", boxShadow: isOpen ? "0 2px 8px rgba(0,0,0,0.06)" : "none" }}>
+          <button onClick={() => toggleGroup(gKey)} style={{ width: "100%", display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 4, padding: "10px 12px", background: colBg, border: `1px solid ${isOpen ? `${C.acc}40` : C.b1}`, borderRadius: R.lg, cursor: "pointer", fontFamily: "inherit", textAlign: "left", boxShadow: isOpen ? "0 2px 8px rgba(0,0,0,0.06)" : "none" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 7, width: "100%" }}>
               <div style={{ width: 26, height: 26, borderRadius: R.sm, background: `${group.color}20`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                 {typeof group.icon === "function" ? group.icon(group.color, 13) : group.icon}
@@ -414,13 +414,13 @@ export default memo(function HomeScreen({ user, freights, loading, error, perms,
     }
 
     const colBg = isOpen
-      ? `linear-gradient(90deg, ${group.color}35 0%, ${group.color}10 100%)`
-      : `linear-gradient(90deg, ${group.color}28 0%, transparent 15%), ${C.w}`;
+      ? `linear-gradient(to left, ${C.ok}40 0%, ${C.ok}10 100%)`
+      : `linear-gradient(to left, ${C.ok}28 0%, transparent 15%), ${C.w}`;
 
     return (
       <div key={group.key} style={{ marginBottom: 8 }}>
         {btnOnly ? (
-          <button onClick={() => setOpenTp(prev => prev === group.key ? null : group.key)} style={{ width: "100%", display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 4, padding: "10px 12px", background: colBg, border: `1px solid ${isOpen ? `${group.color}40` : C.b1}`, borderLeft: `3px solid ${group.color}`, borderRadius: R.lg, cursor: "pointer", fontFamily: "inherit", textAlign: "left", boxShadow: isOpen ? "0 2px 8px rgba(0,0,0,0.06)" : "none" }}>
+          <button onClick={() => setOpenTp(prev => prev === group.key ? null : group.key)} style={{ width: "100%", display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 4, padding: "10px 12px", background: colBg, border: `1px solid ${isOpen ? `${C.ok}40` : C.b1}`, borderRadius: R.lg, cursor: "pointer", fontFamily: "inherit", textAlign: "left", boxShadow: isOpen ? "0 2px 8px rgba(0,0,0,0.06)" : "none" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 7, width: "100%" }}>
               <div style={{ width: 26, height: 26, borderRadius: R.sm, background: `${group.color}20`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                 {Ic.clk(group.color, 13)}
