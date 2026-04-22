@@ -582,6 +582,7 @@ export default function AiChat({
   const scrollRef = useRef(null);
   const inputRef = useRef(null);
   const thinkingTimer = useRef(null);
+  const thinkingTimeoutRef = useRef(null);
   const sseCounter = useRef(0);
   const rec = useAudioRecorder(setMicError);
 
@@ -592,6 +593,17 @@ export default function AiChat({
   useEffect(() => {
     if (thinking) {
       clearInterval(thinkingTimer.current);
+      clearTimeout(thinkingTimeoutRef.current);
+      thinkingTimeoutRef.current = setTimeout(() => {
+        setThinking(false);
+        streamMsgId.current = null;
+        setMessages(prev => [...prev, {
+          id: `timeout-${Date.now()}`,
+          role: "assistant",
+          text: "El asistente tardó demasiado en responder. Intentá de nuevo en unos segundos.",
+          ts: Date.now(),
+        }]);
+      }, THINKING_TIMEOUT_MS);
       // AbortController cancels in-flight fetches when thinking stops
       const ac = new AbortController();
       pollAbort.current = ac;
@@ -616,11 +628,12 @@ export default function AiChat({
       }, 5000);
     } else {
       clearInterval(thinkingTimer.current);
+      clearTimeout(thinkingTimeoutRef.current);
       // Abort any in-flight poll so it doesn't overwrite state
       pollAbort.current?.abort();
       pollAbort.current = null;
     }
-    return () => { clearInterval(thinkingTimer.current); pollAbort.current?.abort(); };
+    return () => { clearInterval(thinkingTimer.current); clearTimeout(thinkingTimeoutRef.current); pollAbort.current?.abort(); };
   }, [thinking, module]);
 
   // Load history on first open
