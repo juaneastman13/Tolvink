@@ -367,19 +367,32 @@ export default memo(function HomeScreen({ user, freights, loading, error, perms,
     }
 
     return (
-      <div key={gKey} style={{ marginBottom: 10 }}>
-        <button onClick={() => toggleGroup(gKey)} style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", background: isOpen ? `${group.color}10` : C.w, border: `1px solid ${isOpen ? `${group.color}35` : C.b1}`, borderRadius: R.lg, cursor: "pointer", fontFamily: "inherit", textAlign: "left", boxShadow: isOpen ? "0 4px 14px rgba(0,0,0,0.04)" : "none" }}>
-          <div style={{ width: 34, height: 34, borderRadius: R.md, background: `${group.color}16`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-            {typeof group.icon === "function" ? group.icon(group.color, 16) : group.icon}
-          </div>
-          <div style={{ minWidth: 34, textAlign: "center" }}>
-            <div style={{ fontSize: 18, fontWeight: 800, color: group.color, lineHeight: 1 }}>{group.realCount ?? group.items.length}</div>
-          </div>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 14.3, fontWeight: 700, color: C.t1 }}>{group.label}</div>
-          </div>
-          <span style={{ display: "flex", transform: isOpen ? "rotate(270deg)" : "rotate(90deg)", transition: "transform 0.15s ease" }}>{Ic.chev(C.t3, 14)}</span>
-        </button>
+      <div key={gKey} style={{ marginBottom: 8 }}>
+        {btnOnly ? (
+          <button onClick={() => toggleGroup(gKey)} style={{ width: "100%", display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 4, padding: "10px 12px", background: isOpen ? `${group.color}12` : C.w, border: `1px solid ${isOpen ? `${group.color}40` : C.b1}`, borderLeft: `3px solid ${group.color}`, borderRadius: R.lg, cursor: "pointer", fontFamily: "inherit", textAlign: "left", boxShadow: isOpen ? "0 2px 8px rgba(0,0,0,0.06)" : "none" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 7, width: "100%" }}>
+              <div style={{ width: 26, height: 26, borderRadius: R.sm, background: `${group.color}18`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                {typeof group.icon === "function" ? group.icon(group.color, 13) : group.icon}
+              </div>
+              <span style={{ fontSize: 22, fontWeight: 800, color: group.color, lineHeight: 1 }}>{group.realCount ?? group.items.length}</span>
+              <span style={{ display: "flex", marginLeft: "auto", transform: isOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.15s ease" }}>{Ic.chev(C.t3, 12)}</span>
+            </div>
+            <div style={{ fontSize: 12.5, fontWeight: 700, color: C.t1, lineHeight: 1.3, paddingLeft: 1 }}>{group.label}</div>
+          </button>
+        ) : (
+          <button onClick={() => toggleGroup(gKey)} style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", background: isOpen ? `${group.color}10` : C.w, border: `1px solid ${isOpen ? `${group.color}35` : C.b1}`, borderRadius: R.lg, cursor: "pointer", fontFamily: "inherit", textAlign: "left", boxShadow: isOpen ? "0 4px 14px rgba(0,0,0,0.04)" : "none" }}>
+            <div style={{ width: 34, height: 34, borderRadius: R.md, background: `${group.color}16`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              {typeof group.icon === "function" ? group.icon(group.color, 16) : group.icon}
+            </div>
+            <div style={{ minWidth: 34, textAlign: "center" }}>
+              <div style={{ fontSize: 18, fontWeight: 800, color: group.color, lineHeight: 1 }}>{group.realCount ?? group.items.length}</div>
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 14.3, fontWeight: 700, color: C.t1 }}>{group.label}</div>
+            </div>
+            <span style={{ display: "flex", transform: isOpen ? "rotate(270deg)" : "rotate(90deg)", transition: "transform 0.15s ease" }}>{Ic.chev(C.t3, 14)}</span>
+          </button>
+        )}
         {!btnOnly && isOpen && (
           <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: "10px 0 4px 16px", borderLeft: `2px solid ${group.color}30`, marginLeft: 16 }}>
             {isLoadingFirst && <SkeletonList count={3} />}
@@ -401,19 +414,32 @@ export default memo(function HomeScreen({ user, freights, loading, error, perms,
       if (anotherOpen) return null;
     }
     return (
-      <div key={group.key} style={{ marginBottom: 10 }}>
-        <button onClick={() => setOpenTp(prev => prev === group.key ? null : group.key)} style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", background: isOpen ? `${group.color}10` : C.w, border: `1px solid ${isOpen ? `${group.color}35` : C.b1}`, borderRadius: R.lg, cursor: "pointer", fontFamily: "inherit", textAlign: "left", boxShadow: isOpen ? "0 4px 14px rgba(0,0,0,0.04)" : "none" }}>
-          <div style={{ width: 34, height: 34, borderRadius: R.md, background: `${group.color}16`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-            {Ic.clk(group.color, 16)}
-          </div>
-          <div style={{ minWidth: 34, textAlign: "center" }}>
-            <div style={{ fontSize: 18, fontWeight: 800, color: group.color, lineHeight: 1 }}>{group.items.length}</div>
-          </div>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 14.3, fontWeight: 700, color: C.t1 }}>{group.label}</div>
-          </div>
-          <span style={{ display: "flex", transform: isOpen ? "rotate(270deg)" : "rotate(90deg)", transition: "transform 0.15s ease" }}>{Ic.chev(C.t3, 14)}</span>
-        </button>
+      <div key={group.key} style={{ marginBottom: 8 }}>
+        {btnOnly ? (
+          <button onClick={() => setOpenTp(prev => prev === group.key ? null : group.key)} style={{ width: "100%", display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 4, padding: "10px 12px", background: isOpen ? `${group.color}12` : C.w, border: `1px solid ${isOpen ? `${group.color}40` : C.b1}`, borderLeft: `3px solid ${group.color}`, borderRadius: R.lg, cursor: "pointer", fontFamily: "inherit", textAlign: "left", boxShadow: isOpen ? "0 2px 8px rgba(0,0,0,0.06)" : "none" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 7, width: "100%" }}>
+              <div style={{ width: 26, height: 26, borderRadius: R.sm, background: `${group.color}18`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                {Ic.clk(group.color, 13)}
+              </div>
+              <span style={{ fontSize: 22, fontWeight: 800, color: group.color, lineHeight: 1 }}>{group.items.length}</span>
+              <span style={{ display: "flex", marginLeft: "auto", transform: isOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.15s ease" }}>{Ic.chev(C.t3, 12)}</span>
+            </div>
+            <div style={{ fontSize: 12.5, fontWeight: 700, color: C.t1, lineHeight: 1.3, paddingLeft: 1 }}>{group.label}</div>
+          </button>
+        ) : (
+          <button onClick={() => setOpenTp(prev => prev === group.key ? null : group.key)} style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", background: isOpen ? `${group.color}10` : C.w, border: `1px solid ${isOpen ? `${group.color}35` : C.b1}`, borderRadius: R.lg, cursor: "pointer", fontFamily: "inherit", textAlign: "left", boxShadow: isOpen ? "0 4px 14px rgba(0,0,0,0.04)" : "none" }}>
+            <div style={{ width: 34, height: 34, borderRadius: R.md, background: `${group.color}16`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              {Ic.clk(group.color, 16)}
+            </div>
+            <div style={{ minWidth: 34, textAlign: "center" }}>
+              <div style={{ fontSize: 18, fontWeight: 800, color: group.color, lineHeight: 1 }}>{group.items.length}</div>
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 14.3, fontWeight: 700, color: C.t1 }}>{group.label}</div>
+            </div>
+            <span style={{ display: "flex", transform: isOpen ? "rotate(270deg)" : "rotate(90deg)", transition: "transform 0.15s ease" }}>{Ic.chev(C.t3, 14)}</span>
+          </button>
+        )}
         {!btnOnly && isOpen && (
           <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: "10px 0 4px 16px", borderLeft: `2px solid ${group.color}30`, marginLeft: 16 }}>
             {group.items.map(f => renderCard(f, pendingMap.get(f.id) || getPendingActions(f, effectiveType(f), user.role, user), "pending"))}
