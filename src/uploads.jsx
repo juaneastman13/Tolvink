@@ -514,7 +514,8 @@ export function FreightFileUpload({ freightId, step, onUploaded }) {
     <div style={{ position: "relative", background: C.w, border: `1px solid ${C.b1}`, borderRadius: R.lg, padding: 14, boxShadow: C.sh, overflow: "hidden", width:"100%", boxSizing:"border-box" }}>
       <UploadOverlay uploading={uploadingAll} done={uploadDone} total={pendingCount || 1} current={currentIdx} />
 
-      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
+      <div style={{ position: "relative", display: "flex", alignItems: "center", gap: 6, marginBottom: 10, paddingLeft: 18 }}>
+        <div aria-hidden="true" style={{ position: "absolute", left: -8, top: "25%", height: "50%", width: 10, background: C.acc, borderRadius: 999, pointerEvents: "none" }} />
         {Ic.clip(C.acc, 16)}
         <span style={{ fontSize: 11.6, fontWeight: 700, color: C.t2, textTransform: "uppercase", letterSpacing: 0.5 }}>Adjuntar archivos</span>
       </div>

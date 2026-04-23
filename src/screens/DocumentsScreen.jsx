@@ -346,12 +346,14 @@ export default function DocumentsScreen({ user, onBack, onNavigate }) {
     const icFn = DOC_TYPE_ICONS[doc._source] || DOC_TYPE_ICONS.photo;
     const docUrl = doc._thumb || doc.photoUrl || doc.url;
     const canRunOcr = !doc._hasOcr && isOcrCompatibleUrl(docUrl);
+    const accentColor = doc._hasOcr ? C.pri : C.t3;
     return (
       <div onClick={() => setExpanded(isExp ? null : doc.id)} style={{
-        background: C.w, border: `1px solid ${C.b1}`, borderLeft: `3px solid ${doc._hasOcr ? C.pri : C.t3}`,
-        borderRadius: R.lg, padding: 14, boxShadow: C.sh, cursor: "pointer", transition: "all 0.15s",
+        background: C.w, border: `1px solid ${C.b1}`,
+        borderRadius: R.lg, boxShadow: C.sh, cursor: "pointer", transition: "all 0.15s", overflow: "hidden",
       }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <div style={{ position: "relative", display: "flex", alignItems: "center", gap: 10, padding: "14px 14px 14px 24px" }}>
+          <div aria-hidden="true" style={{ position: "absolute", left: 6, top: "25%", height: "50%", width: 10, background: accentColor, borderRadius: 999, pointerEvents: "none" }} />
           {doc._thumb ? (
             <img src={doc._thumb} alt="" style={{ width: 40, height: 40, borderRadius: R.md, objectFit: "cover", flexShrink: 0, border: `1px solid ${C.b2}` }} />
           ) : (
@@ -562,10 +564,11 @@ export default function DocumentsScreen({ user, onBack, onNavigate }) {
             const counts = companyDocCounts2[comp.id] || { total: 0, ocr: 0 };
             return (
               <button key={c.id} onClick={() => { setSelCompany(c); loadCompanyDocs(comp.id); }} style={{
-                display: "flex", alignItems: "center", gap: 12, padding: 16, background: C.w,
+                position: "relative", display: "flex", alignItems: "center", gap: 12, padding: "16px 16px 16px 28px", background: C.w,
                 border: `1px solid ${C.b1}`, borderRadius: R.lg, boxShadow: C.sh, cursor: "pointer",
-                fontFamily: "inherit", textAlign: "left", width: "100%",
+                fontFamily: "inherit", textAlign: "left", width: "100%", overflow: "hidden",
               }}>
+                <div aria-hidden="true" style={{ position: "absolute", left: 6, top: "25%", height: "50%", width: 10, background: typeColor, borderRadius: 999, pointerEvents: "none" }} />
                 <div style={{ width: 40, height: 40, borderRadius: R.md, background: `${typeColor}14`, display: "flex", alignItems: "center", justifyContent: "center" }}>
                   {comp.type === "producer" ? Ic.grain(typeColor, 18) : Ic.truck(typeColor, 18)}
                 </div>
@@ -610,10 +613,11 @@ export default function DocumentsScreen({ user, onBack, onNavigate }) {
             const fDate = f.loadDate || f.createdAt;
             return (
               <button key={f.id} onClick={() => { setSelFreight(f); loadFreightDocs(f.id); }} style={{
-                display: "flex", alignItems: "center", gap: 12, padding: 14, background: C.w,
-                border: `1px solid ${C.b1}`, borderLeft: `3px solid ${sc.pillBg || C.t3}`,
-                borderRadius: R.lg, boxShadow: C.sh, cursor: "pointer", fontFamily: "inherit", textAlign: "left", width: "100%",
+                position: "relative", display: "flex", alignItems: "center", gap: 12, padding: "14px 14px 14px 26px", background: C.w,
+                border: `1px solid ${C.b1}`,
+                borderRadius: R.lg, boxShadow: C.sh, cursor: "pointer", fontFamily: "inherit", textAlign: "left", width: "100%", overflow: "hidden",
               }}>
+                <div aria-hidden="true" style={{ position: "absolute", left: 6, top: "25%", height: "50%", width: 10, background: sc.ribbon || sc.pillText || C.t3, borderRadius: 999, pointerEvents: "none" }} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                     <span style={{ fontSize: 14.3, fontWeight: 700, color: C.t1 }}>{f.code}</span>

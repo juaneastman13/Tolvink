@@ -278,8 +278,10 @@ export default function TrucksScreen({ onBack, embedded, user, onTruckClick }) {
           drivers.length === 0 ? <EmptyState icon={Ic.user(C.t3,28)} title="Sin choferes registrados" subtitle="Agregá choferes para asignarles viajes" action={canEdit && <Btn sm onClick={()=>{switchTab("drivers");setShowForm(true);}}>Registrar chofer</Btn>}/> :
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {drivers.map(d => (
-                <div key={d.id} style={{ background: C.w, border: `1px solid ${C.b1}`, borderLeft: `3px solid ${C.info||C.sec}`, borderRadius: R.lg, padding: 14, boxShadow: C.sh, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <div key={d.id} style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: R.lg, boxShadow: C.sh, overflow: "hidden" }}>
+                  <div style={{ position: "relative", padding: "14px 14px 14px 26px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
+                    <div aria-hidden="true" style={{ position: "absolute", left: 6, top: "25%", height: "50%", width: 10, background: C.info || C.sec, borderRadius: 999, pointerEvents: "none" }} />
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                     {Ic.user(C.info||C.sec, 20)}
                     <div>
                       <div style={{ fontSize: 15.4, fontWeight: 700 }}>{d.name}</div>
@@ -287,6 +289,7 @@ export default function TrucksScreen({ onBack, embedded, user, onTruckClick }) {
                     </div>
                   </div>
                   {canEdit && <button aria-label="Desactivar chofer" disabled={saving} onClick={() => handleDeactivateDriver(d.id)} style={{ background: "none", border: "none", cursor: saving?"not-allowed":"pointer", padding: 6, opacity:saving?0.4:1 }}>{Ic.ban(C.err, 18)}</button>}
+                  </div>
                 </div>
               ))}
             </div>
