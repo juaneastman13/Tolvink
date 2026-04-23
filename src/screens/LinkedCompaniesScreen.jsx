@@ -165,8 +165,9 @@ export default function LinkedCompaniesScreen({ user, embedded, onBack, onNav })
     const levelColor = r.accessLevel === "OPERATOR" ? C.ok : C.info;
 
     return (
-      <div style={{ background: C.w, border: `1px solid ${C.b1}`, borderLeft: `3px solid ${typeColor}`, borderRadius: R.lg, boxShadow: C.sh, overflow: "hidden" }}>
-        <div style={{ padding: "12px 14px", display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }} onClick={() => toggleExpand(r)}>
+      <div style={{ position: "relative", background: C.w, border: `1px solid ${C.b1}`, borderRadius: R.lg, boxShadow: C.sh, overflow: "hidden" }}>
+        <div aria-hidden="true" style={{ position: "absolute", left: 6, top: "25%", height: "50%", width: 15, background: typeColor, borderRadius: 999, pointerEvents: "none" }}/>
+        <div style={{ padding: "12px 14px 12px 30px", display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }} onClick={() => toggleExpand(r)}>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginBottom: 2 }}>
               <span style={{ fontSize: 15.4, fontWeight: 700, color: C.t1 }}>{co.name || "Empresa"}</span>
