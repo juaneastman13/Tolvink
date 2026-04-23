@@ -331,7 +331,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
     }
     // Plant: inject approve_producer only when no truck assigned yet (authorize handles it once truck exists)
     const hasOwnFleetTruck = (freight.activeAssignments||[]).some(a => a.truckId);
-    if (user.userType === "plant" && freight.useOwnFleet && freight.needsPlantApproval && !freight.plantApprovedAt && !hasOwnFleetTruck) {
+    if (user.userType === "plant" && freight.destCompanyId && freight.destCompanyId === user.companyId && freight.useOwnFleet && freight.needsPlantApproval && !freight.plantApprovedAt && !hasOwnFleetTruck) {
       acts = ["approve_producer", ...acts];
     }
     // Never show confirm_finished if confirm_loaded is still pending — carga must come first
