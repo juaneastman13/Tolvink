@@ -8,7 +8,7 @@ import log from "../logger";
 const LocationPicker = lazy(() => import("../maps").then(m => ({ default: m.LocationPicker })));
 const SafeZone = lazy(() => import("../maps").then(m => ({ default: m.SafeZone })));
 const FreightMap = lazy(() => import("../maps").then(m => ({ default: m.FreightMap })));
-import { uploadPhoto, apiAddDocument, apiGetFieldLots, apiCreateLot, apiGetDrivers, apiGetCompanyAccess, apiGetFields, apiGetTrucks, apiListDrivers, apiCreateField, apiCreateTruck, apiCreateLinkedCompany, apiCreateLinkedUser } from "../api";
+import { uploadPhoto, apiAddDocument, apiGetFieldLots, apiCreateLot, apiGetDrivers, apiGetCompanyAccess, apiGetFields, apiGetTrucks, apiListDrivers, apiCreateField, apiCreateTruck, apiCreateLinkedCompany, apiCreateLinkedUser, apiListCompanyProducts } from "../api";
 import { useIsDesktop } from "../hooks";
 import { useAccessLevel } from "../hooks/useAccessLevel";
 import { useUIStore } from "../store";
@@ -186,6 +186,7 @@ export default function NewScreen({ user, lots, plants, tolvinkPlants = [], bran
     notes: dup?.notes || "",
     unit: dup?.unit || "toneladas",
     productTypeOther: dup?.productTypeOther || "",
+    companyProductId: dup?.companyProductId || "",
     truckId: "",
     driverId: "",
     truckCount: "",
@@ -193,6 +194,7 @@ export default function NewScreen({ user, lots, plants, tolvinkPlants = [], bran
   });
   const [errs, setErrs] = useState({});
   const [touched, setTouched] = useState(false);
+  const [companyProducts, setCompanyProducts] = useState(null); // null = not loaded yet
   const [submitting, setSubmitting] = useState(false);
   const submitGuard = useRef(false);
   const [fieldLots, setFieldLots] = useState([]);
@@ -226,6 +228,11 @@ export default function NewScreen({ user, lots, plants, tolvinkPlants = [], bran
       .then(data => setLinkedProducers((data || []).filter(r => r.isActive)))
       .catch(() => {});
   }, [isPlantUser, user?.activeCompanyId]);
+
+  // Load company product catalog (falls back to static GRANOS if empty)
+  useEffect(() => {
+    apiListCompanyProducts().then(r => setCompanyProducts(r && r.length > 0 ? r : null)).catch(() => setCompanyProducts(null));
+  }, []);
 
   // Load fields for selected producer (or plant's own fields for internal use)
   useEffect(() => {
@@ -489,6 +496,15 @@ export default function NewScreen({ user, lots, plants, tolvinkPlants = [], bran
   const selectedBranch = (branches||[]).find(b=>b.id===form.branchId);
   const truckOpts = (trucks||[]).map(t=>({ value:t.id, label:`${t.plate}${t.model?` · ${t.model}`:""}` }));
   const showTruckSelect = !isPlantUser && (user.userType==="producer"||(user.userTypes||[]).includes("producer")) && !!user.hasInternalFleet;
+
+  // Dynamic grain options: use catalog if loaded and non-empty, else fall back to static GRANOS
+  // Each option: { label, value, id } — id is companyProductId (null for static/Otros)
+  const grainOptions = useMemo(() => {
+    if (companyProducts && companyProducts.length > 0) {
+      return [...companyProducts.map(p => ({ label: p.name, value: p.name, id: p.id })), { label: "Otros", value: "Otros", id: null }];
+    }
+    return GRANOS.map(g => ({ label: g, value: g, id: null }));
+  }, [companyProducts]);
 
   // Section completeness
   const secComplete = useMemo(()=>({
@@ -928,7 +944,7 @@ export default function NewScreen({ user, lots, plants, tolvinkPlants = [], bran
             <div>
               <Field label="Tipo de producto" icon={Ic.grain(C.pri,14)}>
                 <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:6 }}>
-                  {GRANOS.map(g=><button key={g} onClick={()=>{u({grain:g}); if(g!=="Otros")u({productTypeOther:""});}} style={{ padding:"10px 8px", borderRadius: R.md, border:`1.5px solid ${form.grain===g?C.pri:C.b1}`, background:form.grain===g?C.priPale:C.w, color:form.grain===g?C.pri:C.t2, cursor:"pointer", fontSize:13.2, fontWeight:600, fontFamily:"inherit" }}>{g}</button>)}
+                  {grainOptions.map(g=><button key={g.value} onClick={()=>{u({grain:g.value,companyProductId:g.id||""}); if(g.value!=="Otros")u({productTypeOther:""});}} style={{ padding:"10px 8px", borderRadius: R.md, border:`1.5px solid ${form.grain===g.value?C.pri:C.b1}`, background:form.grain===g.value?C.priPale:C.w, color:form.grain===g.value?C.pri:C.t2, cursor:"pointer", fontSize:13.2, fontWeight:600, fontFamily:"inherit" }}>{g.label}</button>)}
                 </div>
               </Field>
               {touched&&<FieldError error={errs.grain}/>}
@@ -1330,7 +1346,7 @@ export default function NewScreen({ user, lots, plants, tolvinkPlants = [], bran
           <div>
             <Field label="Tipo de producto" icon={Ic.grain(C.pri,14)}>
               <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:6 }}>
-                {GRANOS.map(g=><button key={g} onClick={()=>{u({grain:g}); if(g!=="Otros")u({productTypeOther:""});}} style={{ padding:"10px 8px", borderRadius: R.md, border:`1.5px solid ${form.grain===g?C.pri:C.b1}`, background:form.grain===g?C.priPale:C.w, color:form.grain===g?C.pri:C.t2, cursor:"pointer", fontSize:13.2, fontWeight:600, fontFamily:"inherit" }}>{g}</button>)}
+                {grainOptions.map(g=><button key={g.value} onClick={()=>{u({grain:g.value,companyProductId:g.id||""}); if(g.value!=="Otros")u({productTypeOther:""});}} style={{ padding:"10px 8px", borderRadius: R.md, border:`1.5px solid ${form.grain===g.value?C.pri:C.b1}`, background:form.grain===g.value?C.priPale:C.w, color:form.grain===g.value?C.pri:C.t2, cursor:"pointer", fontSize:13.2, fontWeight:600, fontFamily:"inherit" }}>{g.label}</button>)}
               </div>
             </Field>
             {touched&&<FieldError error={errs.grain}/>}

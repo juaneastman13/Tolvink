@@ -713,3 +713,14 @@ export async function apiUpdateAlertStatus(alertId, status) { return api(`/maint
 
 // ── Mechanic Dashboard ──
 export async function apiGetMechanicDashboard() { return api('/mechanic/dashboard'); }
+
+// ── Company Product Catalog ──
+export async function apiListCompanyProducts(opts = {}) {
+  const p = new URLSearchParams();
+  if (opts.all) p.set('all', '1');
+  if (opts.forCompanyId) p.set('forCompanyId', opts.forCompanyId);
+  return api(`/company-products${p.toString() ? '?' + p : ''}`);
+}
+export async function apiCreateCompanyProduct(b) { return api('/company-products', { body: b }); }
+export async function apiUpdateCompanyProduct(id, b) { return api(`/company-products/${id}`, { body: b, method: 'PATCH' }); }
+export async function apiToggleCompanyProduct(id) { return api(`/company-products/${id}/toggle`, { body: {}, method: 'PATCH' }); }

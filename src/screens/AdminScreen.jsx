@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { C, Ic, FONT, MONO , R} from "../theme";
 import { Btn, Field, Tabs, Select, Loader, Av, Bd, LoadingOverlay, NumericStepper, LicensePlate } from "../components";
-import { apiAdminStats, apiAdminActivity, apiAdminListCompanies, apiAdminGetCompany, apiAdminCreateCompany, apiAdminUpdateCompany, apiAdminListBranches, apiAdminCreateBranch, apiAdminUpdateBranch, apiAdminDeleteBranch, apiAdminListUsers, apiAdminCreateUser, apiAdminUpdateUser, apiAdminAddUserCompany, apiAdminUpdateUserCompany, apiAdminRemoveUserCompany, apiAdminListFields, apiAdminCreateField, apiAdminUpdateField, apiAdminDeleteField, apiAdminListLots, apiAdminCreateLot, apiAdminUpdateLot, apiAdminDeleteLot, apiAdminListTrucks, apiAdminCreateTruck, apiAdminUpdateTruck, apiAdminDeleteTruck, apiAdminImportCompanies, apiAdminImportUsers, apiAdminSearchLinkable } from "../api";
+import { apiAdminStats, apiAdminActivity, apiAdminListCompanies, apiAdminGetCompany, apiAdminCreateCompany, apiAdminUpdateCompany, apiAdminListBranches, apiAdminCreateBranch, apiAdminUpdateBranch, apiAdminDeleteBranch, apiAdminListUsers, apiAdminCreateUser, apiAdminUpdateUser, apiAdminAddUserCompany, apiAdminUpdateUserCompany, apiAdminRemoveUserCompany, apiAdminListFields, apiAdminCreateField, apiAdminUpdateField, apiAdminDeleteField, apiAdminListLots, apiAdminCreateLot, apiAdminUpdateLot, apiAdminDeleteLot, apiAdminListTrucks, apiAdminCreateTruck, apiAdminUpdateTruck, apiAdminDeleteTruck, apiAdminImportCompanies, apiAdminImportUsers, apiAdminSearchLinkable, apiListCompanyProducts, apiCreateCompanyProduct, apiUpdateCompanyProduct, apiToggleCompanyProduct } from "../api";
 import { adminStyles, typeColors, typeLabels, roleLabels, adminBackBtn } from "../utils/freight-helpers";
 import { LocationPicker } from "../maps";
 import AccessScreen from "./AccessScreen";
@@ -31,6 +31,21 @@ export default function AdminScreen({ user, onBack, onUserUpdate }) {
   const [activityTotal, setActivityTotal] = useState(0);
   const [activityPage, setActivityPage] = useState(1);
   const [activityLoading, setActivityLoading] = useState(false);
+
+  // Company Products catalog
+  const [products, setProducts] = useState([]);
+  const [productsLoading, setProductsLoading] = useState(false);
+  const [showProductForm, setShowProductForm] = useState(false);
+  const [productForm, setProductForm] = useState({ name: "", code: "", defaultUnit: "", sortOrder: "" });
+  const [editProductId, setEditProductId] = useState(null);
+  const [productSaving, setProductSaving] = useState(false);
+  // For company-detail productos sub-tab (platform_admin viewing another company's products)
+  const [detailProducts, setDetailProducts] = useState([]);
+  const [detailProductsLoading, setDetailProductsLoading] = useState(false);
+  const [showDetailProductForm, setShowDetailProductForm] = useState(false);
+  const [detailProductForm, setDetailProductForm] = useState({ name: "", code: "", defaultUnit: "", sortOrder: "" });
+  const [editDetailProductId, setEditDetailProductId] = useState(null);
+  const [detailProductSaving, setDetailProductSaving] = useState(false);
 
   // Views: list | companyForm | companyDetail | userForm | userEdit | linkUser
   const [view, setView] = useState("list");
@@ -117,6 +132,13 @@ export default function AdminScreen({ user, onBack, onUserUpdate }) {
     return ()=>clearTimeout(t);
   }, [search, tab, allCompanies, allUsers]);
 
+  // Load products when tab switches to "productos"
+  useEffect(() => {
+    if (tab !== "productos") return;
+    setProductsLoading(true);
+    apiListCompanyProducts({ all: true }).then(r => setProducts(r || [])).catch(() => {}).finally(() => setProductsLoading(false));
+  }, [tab]);
+
   // Load activity when tab switches
   useEffect(() => {
     if (tab !== "activity") return;
@@ -126,6 +148,63 @@ export default function AdminScreen({ user, onBack, onUserUpdate }) {
       setActivityTotal(r.total || 0);
     }).catch((e) => { show(e?.message || "Error al cargar actividad", "err"); }).finally(() => setActivityLoading(false));
   }, [tab, activityPage]);
+
+  // --- Products (own company) ---
+  const reloadProducts = (forCompanyId) => {
+    setProductsLoading(true);
+    apiListCompanyProducts({ all: true, ...(forCompanyId ? { forCompanyId } : {}) })
+      .then(r => setProducts(r || [])).catch(() => {}).finally(() => setProductsLoading(false));
+  };
+  const handleSaveProduct = async () => {
+    if (!productForm.name.trim()) return show("Nombre requerido", "err");
+    setProductSaving(true);
+    try {
+      const dto = { name: productForm.name.trim(), code: productForm.code.trim() || undefined, defaultUnit: productForm.defaultUnit || undefined, sortOrder: productForm.sortOrder !== "" ? Number(productForm.sortOrder) : undefined };
+      if (editProductId) { await apiUpdateCompanyProduct(editProductId, dto); }
+      else { await apiCreateCompanyProduct(dto); }
+      setShowProductForm(false); setEditProductId(null); setProductForm({ name: "", code: "", defaultUnit: "", sortOrder: "" });
+      reloadProducts();
+      show(editProductId ? "Producto actualizado" : "Producto creado");
+    } catch (e) { show(e.message, "err"); }
+    finally { setProductSaving(false); }
+  };
+  const handleToggleProduct = async (id) => {
+    try { await apiToggleCompanyProduct(id); reloadProducts(); }
+    catch (e) { show(e.message, "err"); }
+  };
+
+  // --- Products (company detail — platform_admin) ---
+  const reloadDetailProducts = (companyId) => {
+    setDetailProductsLoading(true);
+    apiListCompanyProducts({ all: true, forCompanyId: companyId })
+      .then(r => setDetailProducts(r || [])).catch(() => {}).finally(() => setDetailProductsLoading(false));
+  };
+  const handleSaveDetailProduct = async (companyId) => {
+    if (!detailProductForm.name.trim()) return show("Nombre requerido", "err");
+    setDetailProductSaving(true);
+    try {
+      // platform_admin uses own company context from JWT — we need a workaround:
+      // POST /company-products uses user.companyId. For platform_admin viewing another company,
+      // we can't directly create for them from this UI easily without a dedicated endpoint.
+      // For now, editing existing products works via PATCH which is ownership-scoped.
+      // Creation falls back to showing a message.
+      if (editDetailProductId) {
+        const dto = { name: detailProductForm.name.trim(), code: detailProductForm.code.trim() || undefined, defaultUnit: detailProductForm.defaultUnit || undefined, sortOrder: detailProductForm.sortOrder !== "" ? Number(detailProductForm.sortOrder) : undefined };
+        await apiUpdateCompanyProduct(editDetailProductId, dto);
+        show("Producto actualizado");
+      } else {
+        show("La creación desde el detalle de empresa no está disponible — accede a esa empresa para crearlos", "err");
+        setDetailProductSaving(false); return;
+      }
+      setShowDetailProductForm(false); setEditDetailProductId(null); setDetailProductForm({ name: "", code: "", defaultUnit: "", sortOrder: "" });
+      reloadDetailProducts(companyId);
+    } catch (e) { show(e.message, "err"); }
+    finally { setDetailProductSaving(false); }
+  };
+  const handleToggleDetailProduct = async (id, companyId) => {
+    try { await apiToggleCompanyProduct(id); reloadDetailProducts(companyId); }
+    catch (e) { show(e.message, "err"); }
+  };
 
   const handleStatsClick = (filter) => {
     if(statsFilter===filter) { setStatsFilter(null); return; }
@@ -160,12 +239,13 @@ export default function AdminScreen({ user, onBack, onUserUpdate }) {
 
   // --- Branches ---
   const openCompanyDetail = async (c) => {
-    setSelectedCompany(c); setBranches([]); setFields([]); setTrucks([]);
+    setSelectedCompany(c); setBranches([]); setFields([]); setTrucks([]); setDetailProducts([]);
     setShowBranchForm(false); setShowFieldForm(false); setShowTruckForm(false); setShowLotForm(false); setExpandedFieldId(null);
     setDetailTab("branches"); setView("companyDetail");
     try { const b=await apiAdminListBranches(c.id); setBranches(b||[]); } catch(e) { /* silent */ }
     if(c.type==="producer") { try { const f=await apiAdminListFields(c.id); setFields(f||[]); } catch(e) { /* silent */ } }
     if(c.type==="transporter" || c.type==="producer") { try { const t=await apiAdminListTrucks(c.id); setTrucks(t||[]); } catch(e) { /* silent */ } }
+    if(isPlatform) { try { const pr=await apiListCompanyProducts({all:true,forCompanyId:c.id}); setDetailProducts(pr||[]); } catch(e) { /* silent */ } }
   };
   const openNewBranch = () => { setBranchForm({name:"",address:"",reference:"",lat:null,lng:null,locationAddress:""}); setEditBranchId(null); setShowBranchForm(true); };
   const openEditBranch = (b) => { setBranchForm({name:b.name,address:b.address||"",reference:b.reference||"",lat:b.lat?Number(b.lat):null,lng:b.lng?Number(b.lng):null,locationAddress:""}); setEditBranchId(b.id); setShowBranchForm(true); };
@@ -716,6 +796,7 @@ export default function AdminScreen({ user, onBack, onUserUpdate }) {
     if(isProducer) tabs.push({k:"fields",l:"Campos",n:fields.length});
     if(isTransporter || isProducer) tabs.push({k:"trucks",l:"Flota",n:trucks.length});
     tabs.push({k:"access",l:"Accesos"});
+    if(isPlatform) tabs.push({k:"productos",l:"Productos",n:detailProducts.length});
     const curTab = tabs.find(t=>t.k===detailTab) ? detailTab : "branches";
 
     return (
@@ -744,7 +825,7 @@ export default function AdminScreen({ user, onBack, onUserUpdate }) {
         {/* Tabs */}
         <div style={{display:"flex",gap:4,marginBottom:10}}>
           {tabs.map(t=>(
-            <button key={t.k} onClick={()=>setDetailTab(t.k)} style={{flex:1,padding:"8px 0",borderRadius: R.md,border:`1.5px solid ${curTab===t.k?C.pri:C.b1}`,background:curTab===t.k?`${C.pri}12`:C.w,color:curTab===t.k?C.pri:C.t2,fontSize:13.2,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>{t.l} ({t.n})</button>
+            <button key={t.k} onClick={()=>setDetailTab(t.k)} style={{flex:1,padding:"8px 0",borderRadius: R.md,border:`1.5px solid ${curTab===t.k?C.pri:C.b1}`,background:curTab===t.k?`${C.pri}12`:C.w,color:curTab===t.k?C.pri:C.t2,fontSize:13.2,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>{t.l}{t.n!=null?` (${t.n})`:""}</button>
           ))}
         </div>
 
@@ -925,6 +1006,67 @@ export default function AdminScreen({ user, onBack, onUserUpdate }) {
         {/* ====== TAB: ACCESS ====== */}
         {curTab==="access"&&<AccessScreen user={user} embedded defaultCompanyId={selectedCompany.id} defaultCompanyType={selectedCompany.type}/>}
 
+        {/* ====== TAB: PRODUCTOS (platform_admin) ====== */}
+        {curTab==="productos"&&isPlatform&&(<>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+            <div style={{fontSize:13.2,color:C.t3}}>Catálogo de productos de {selectedCompany.name}</div>
+            {editDetailProductId&&<button onClick={()=>{setShowDetailProductForm(p=>!p);setEditDetailProductId(null);setDetailProductForm({name:"",code:"",defaultUnit:"",sortOrder:""}); }} style={{padding:"6px 12px",borderRadius: R.sm,border:`1px solid ${C.b1}`,background:C.w,color:C.t2,fontSize:12.1,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>Cancelar edición</button>}
+          </div>
+          {showDetailProductForm&&editDetailProductId&&(
+            <div style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius: R.md,padding:14,marginBottom:10,boxShadow:C.sh}}>
+              <div style={{fontSize:13.2,fontWeight:600,color:C.t1,marginBottom:8}}>Editar producto</div>
+              <div style={s.lbl}>Nombre *</div>
+              <input value={detailProductForm.name} onChange={e=>setDetailProductForm(p=>({...p,name:e.target.value}))} placeholder="Nombre" style={{...s.inp,marginBottom:8}} />
+              <div style={{display:"flex",gap:8,marginBottom:8}}>
+                <div style={{flex:1}}>
+                  <div style={s.lbl}>Código</div>
+                  <input value={detailProductForm.code} onChange={e=>setDetailProductForm(p=>({...p,code:e.target.value}))} placeholder="Ej: SOJ" style={s.inp} />
+                </div>
+                <div style={{flex:1}}>
+                  <div style={s.lbl}>Unidad</div>
+                  <select value={detailProductForm.defaultUnit} onChange={e=>setDetailProductForm(p=>({...p,defaultUnit:e.target.value}))} style={{...s.inp,height:38}}>
+                    <option value="">Sin definir</option>
+                    <option value="toneladas">Toneladas</option>
+                    <option value="t">t</option>
+                    <option value="kg">kg</option>
+                  </select>
+                </div>
+                <div style={{width:80}}>
+                  <div style={s.lbl}>Orden</div>
+                  <input type="number" value={detailProductForm.sortOrder} onChange={e=>setDetailProductForm(p=>({...p,sortOrder:e.target.value}))} placeholder="0" min={0} style={s.inp} />
+                </div>
+              </div>
+              <div style={{display:"flex",gap:8}}>
+                <button onClick={()=>{setShowDetailProductForm(false);setEditDetailProductId(null);}} style={{flex:1,padding:"10px 0",borderRadius: R.md,border:`1px solid ${C.b1}`,background:C.w,color:C.t2,fontSize:14.3,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>Cancelar</button>
+                <button onClick={()=>handleSaveDetailProduct(selectedCompany.id)} disabled={detailProductSaving} style={{...s.btnP(C.pri,detailProductSaving),flex:2}}>{detailProductSaving?"Guardando...":"Guardar"}</button>
+              </div>
+            </div>
+          )}
+          {detailProductsLoading?<Loader/>:(
+            <div style={{display:"flex",flexDirection:"column",gap:6}}>
+              {detailProducts.map(p=>(
+                <div key={p.id} style={{background:C.w,border:`1px solid ${p.isActive?C.b1:C.b2}`,borderRadius: R.md,padding:"10px 14px",boxShadow:C.sh,opacity:p.isActive?1:0.55}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                    <div style={{flex:1}}>
+                      <div style={{display:"flex",alignItems:"center",gap:8}}>
+                        <span style={{fontSize:14.3,fontWeight:600,color:p.isActive?C.t1:C.t3}}>{p.name}</span>
+                        {p.code&&<span style={{fontSize:11,color:C.t3,background:C.bgInput,padding:"1px 6px",borderRadius: R.xs}}>{p.code}</span>}
+                        {p.defaultUnit&&<span style={{fontSize:11,color:C.t3}}>{p.defaultUnit}</span>}
+                        {!p.isActive&&<Bd color={C.err}>Inactivo</Bd>}
+                      </div>
+                    </div>
+                    <div style={{display:"flex",gap:4}}>
+                      <button onClick={()=>{setEditDetailProductId(p.id);setDetailProductForm({name:p.name,code:p.code||"",defaultUnit:p.defaultUnit||"",sortOrder:p.sortOrder??""});setShowDetailProductForm(true);}} style={{padding:"4px 8px",borderRadius: R.sm,border:`1px solid ${C.pri}40`,background:"none",fontSize:11,color:C.pri,cursor:"pointer",fontFamily:"inherit"}}>Editar</button>
+                      <button onClick={()=>handleToggleDetailProduct(p.id,selectedCompany.id)} style={{padding:"4px 8px",borderRadius: R.sm,border:`1px solid ${p.isActive?C.err:C.ok}30`,background:"none",fontSize:11,color:p.isActive?C.err:C.ok,cursor:"pointer",fontFamily:"inherit"}}>{p.isActive?"Desactivar":"Activar"}</button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {detailProducts.length===0&&<div style={{textAlign:"center",padding:32,color:C.t3,fontSize:14.3}}>Esta empresa no tiene productos configurados.</div>}
+            </div>
+          )}
+        </>)}
+
         <MsgBar/>
       </div>
     );
@@ -951,14 +1093,14 @@ export default function AdminScreen({ user, onBack, onUserUpdate }) {
       )}
 
       <div style={{display:"flex",gap:6,marginBottom:10,flexWrap:"wrap"}}>
-        {[...(isHub ? ["vinculadas"] : []), "companies","users","activity"].map(t=>(
-          <button key={t} onClick={()=>{setTab(t);setSearch("");setStatsFilter(null);}} style={{flex:1,padding:"9px 0",borderRadius: R.md,border:`1px solid ${tab===t?C.pri:C.b1}`,background:tab===t?`${C.pri}12`:C.w,color:tab===t?C.pri:C.t2,fontWeight:600,fontSize:13,cursor:"pointer",fontFamily:"inherit",minWidth:t==="vinculadas"?90:undefined}}>
-            {t==="vinculadas"?"Vinculadas":t==="companies"?"Empresas":t==="users"?"Usuarios":"Actividad"}
+        {[...(isHub ? ["vinculadas"] : []), "companies","users","activity",...(isHub ? ["productos"] : [])].map(t=>(
+          <button key={t} onClick={()=>{setTab(t);setSearch("");setStatsFilter(null);}} style={{flex:1,padding:"9px 0",borderRadius: R.md,border:`1px solid ${tab===t?C.pri:C.b1}`,background:tab===t?`${C.pri}12`:C.w,color:tab===t?C.pri:C.t2,fontWeight:600,fontSize:13,cursor:"pointer",fontFamily:"inherit",minWidth:t==="vinculadas"||t==="productos"?90:undefined}}>
+            {t==="vinculadas"?"Vinculadas":t==="companies"?"Empresas":t==="users"?"Usuarios":t==="productos"?"Productos":"Actividad"}
           </button>
         ))}
       </div>
 
-      <input value={search} onChange={e=>setSearch(e.target.value)} placeholder={tab==="companies"?"Buscar empresa o RUT...":"Buscar usuario..."} style={{...s.inp,marginBottom:10,paddingLeft:12}} />
+      {tab!=="productos"&&<input value={search} onChange={e=>setSearch(e.target.value)} placeholder={tab==="companies"?"Buscar empresa o RUT...":"Buscar usuario..."} style={{...s.inp,marginBottom:10,paddingLeft:12}} />}
       <MsgBar/>
 
       {loading?<Loader/>:(<>
@@ -1020,6 +1162,67 @@ export default function AdminScreen({ user, onBack, onUserUpdate }) {
             )}
           </div>
         )}
+
+        {tab==="productos"&&(<>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+            <div style={{fontSize:13.2,color:C.t3}}>Catálogo de productos de tu empresa</div>
+            <button onClick={()=>{setShowProductForm(p=>!p);setEditProductId(null);setProductForm({name:"",code:"",defaultUnit:"",sortOrder:""}); }} style={{padding:"6px 12px",borderRadius: R.sm,border:`1px solid ${C.pri}`,background:`${C.pri}12`,color:C.pri,fontSize:12.1,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>{showProductForm&&!editProductId?"Cancelar":"+ Nuevo producto"}</button>
+          </div>
+          {showProductForm&&(
+            <div style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius: R.md,padding:14,marginBottom:10,boxShadow:C.sh}}>
+              <div style={{fontSize:13.2,fontWeight:600,color:C.t1,marginBottom:8}}>{editProductId?"Editar producto":"Nuevo producto"}</div>
+              <div style={s.lbl}>Nombre *</div>
+              <input value={productForm.name} onChange={e=>setProductForm(p=>({...p,name:e.target.value}))} placeholder="Ej: Soja, Maíz, Trigo..." style={{...s.inp,marginBottom:8}} />
+              <div style={{display:"flex",gap:8,marginBottom:8}}>
+                <div style={{flex:1}}>
+                  <div style={s.lbl}>Código (opcional)</div>
+                  <input value={productForm.code} onChange={e=>setProductForm(p=>({...p,code:e.target.value}))} placeholder="Ej: SOJ" style={s.inp} />
+                </div>
+                <div style={{flex:1}}>
+                  <div style={s.lbl}>Unidad por defecto</div>
+                  <select value={productForm.defaultUnit} onChange={e=>setProductForm(p=>({...p,defaultUnit:e.target.value}))} style={{...s.inp,height:38}}>
+                    <option value="">Sin definir</option>
+                    <option value="toneladas">Toneladas</option>
+                    <option value="t">t</option>
+                    <option value="kg">kg</option>
+                  </select>
+                </div>
+                <div style={{width:80}}>
+                  <div style={s.lbl}>Orden</div>
+                  <input type="number" value={productForm.sortOrder} onChange={e=>setProductForm(p=>({...p,sortOrder:e.target.value}))} placeholder="0" min={0} style={s.inp} />
+                </div>
+              </div>
+              <div style={{display:"flex",gap:8}}>
+                <button onClick={()=>{setShowProductForm(false);setEditProductId(null);}} style={{flex:1,padding:"10px 0",borderRadius: R.md,border:`1px solid ${C.b1}`,background:C.w,color:C.t2,fontSize:14.3,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>Cancelar</button>
+                <button onClick={handleSaveProduct} disabled={productSaving} style={{...s.btnP(C.pri,productSaving),flex:2}}>{productSaving?"Guardando...":(editProductId?"Guardar":"Crear")}</button>
+              </div>
+            </div>
+          )}
+          {productsLoading?<Loader/>:(
+            <div style={{display:"flex",flexDirection:"column",gap:6}}>
+              {products.map(p=>(
+                <div key={p.id} style={{background:C.w,border:`1px solid ${p.isActive?C.b1:C.b2}`,borderRadius: R.md,padding:"10px 14px",boxShadow:C.sh,opacity:p.isActive?1:0.55}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                    <div style={{flex:1}}>
+                      <div style={{display:"flex",alignItems:"center",gap:8}}>
+                        <span style={{fontSize:14.3,fontWeight:600,color:p.isActive?C.t1:C.t3}}>{p.name}</span>
+                        {p.code&&<span style={{fontSize:11,color:C.t3,background:C.bgInput,padding:"1px 6px",borderRadius: R.xs}}>{p.code}</span>}
+                        {p.defaultUnit&&<span style={{fontSize:11,color:C.t3}}>{p.defaultUnit}</span>}
+                        {!p.isActive&&<Bd color={C.err}>Inactivo</Bd>}
+                      </div>
+                      <div style={{fontSize:11,color:C.t3,marginTop:2}}>Orden: {p.sortOrder}</div>
+                    </div>
+                    <div style={{display:"flex",gap:4}}>
+                      <button onClick={()=>{setEditProductId(p.id);setProductForm({name:p.name,code:p.code||"",defaultUnit:p.defaultUnit||"",sortOrder:p.sortOrder??""});setShowProductForm(true);}} style={{padding:"4px 8px",borderRadius: R.sm,border:`1px solid ${C.pri}40`,background:"none",fontSize:11,color:C.pri,cursor:"pointer",fontFamily:"inherit"}}>Editar</button>
+                      <button onClick={()=>handleToggleProduct(p.id)} style={{padding:"4px 8px",borderRadius: R.sm,border:`1px solid ${p.isActive?C.err:C.ok}30`,background:"none",fontSize:11,color:p.isActive?C.err:C.ok,cursor:"pointer",fontFamily:"inherit"}}>{p.isActive?"Desactivar":"Activar"}</button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {products.length===0&&<div style={{textAlign:"center",padding:32,color:C.t3,fontSize:14.3}}>Sin productos. Añadí los productos/granos de tu empresa.</div>}
+            </div>
+          )}
+        </>)}
 
         {tab==="users"&&(<>
           <div style={{display:"flex",gap:8,marginBottom:8,flexWrap:"wrap"}}>
