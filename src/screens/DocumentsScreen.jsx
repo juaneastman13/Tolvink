@@ -610,12 +610,12 @@ export default function DocumentsScreen({ user, onBack, onNavigate }) {
             const fDate = f.loadDate || f.createdAt;
             return (
               <button key={f.id} onClick={() => { setSelFreight(f); loadFreightDocs(f.id); }} style={{
-                position: "relative", display: "flex", alignItems: "center", gap: 12, padding: "14px 14px 14px 26px", background: C.w,
+                display: "flex", alignItems: "stretch", background: C.w,
                 border: `1px solid ${C.b1}`,
                 borderRadius: R.lg, boxShadow: C.sh, cursor: "pointer", fontFamily: "inherit", textAlign: "left", width: "100%", overflow: "hidden",
               }}>
-                <div aria-hidden="true" style={{ position: "absolute", left: 6, top: "25%", height: "50%", width: 10, background: sc.ribbon || sc.pillText || C.t3, borderRadius: 999, pointerEvents: "none" }} />
-                <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ width: 20, background: sc.ribbon || sc.pillText || C.t3, flexShrink: 0 }} />
+                <div style={{ flex: 1, minWidth: 0, padding: "14px 14px 14px 12px" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                     <span style={{ fontSize: 14.3, fontWeight: 700, color: C.t1 }}>{f.code}</span>
                     <StatusPill status={f.status} />
@@ -630,7 +630,9 @@ export default function DocumentsScreen({ user, onBack, onNavigate }) {
                     {docCount === 0 && <span style={{ fontSize: 11, color: C.t3 }}>Sin documentos</span>}
                   </div>
                 </div>
-                {Ic.chev(C.t3, 16)}
+                <div style={{ display: "flex", alignItems: "center", paddingRight: 14, flexShrink: 0 }}>
+                  {Ic.chev(C.t3, 16)}
+                </div>
               </button>
             );
           })}
