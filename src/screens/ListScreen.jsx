@@ -338,7 +338,9 @@ export default memo(function ListScreen({ freights, loading, onNav, onRefresh, c
     const origin = originDisplay(f);
     const dest = destDisplay(f) || "Sin destino";
     return (
-      <div ref={adjustPreviewPos} style={{ position:"fixed", left:hoverPos.x, top:hoverPos.y, zIndex:9999, width:340, background:C.w, border:`1px solid ${C.b1}`, borderLeft:`5px solid ${st.color}`, borderRadius: R.lg, boxShadow:C.shLg, padding:18, pointerEvents:"none", fontFamily:FONT, animation:"tvPreviewIn 0.15s ease-out" }}>
+      <div ref={adjustPreviewPos} style={{ position:"fixed", left:hoverPos.x, top:hoverPos.y, zIndex:9999, width:360, background:C.w, border:`1px solid ${C.b1}`, borderRadius: R.lg, boxShadow:C.shLg, pointerEvents:"none", fontFamily:FONT, animation:"tvPreviewIn 0.15s ease-out", overflow:"hidden", display:"flex" }}>
+        <div style={{ width:20, background:st.color, flexShrink:0 }} />
+        <div style={{ padding:18, flex:1, minWidth:0 }}>
         {/* Header: code + status */}
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:10 }}>
           <span style={{ fontFamily:MONO, fontWeight:700, fontSize:13.2, color:C.t2 }}>{f.code}</span>
@@ -390,6 +392,7 @@ export default memo(function ListScreen({ freights, loading, onNav, onRefresh, c
             {Ic.warn(C.err, 12)} Retrasado
           </div>
         )}
+        </div>
       </div>
     );
   })() : null;
@@ -719,7 +722,8 @@ export default memo(function ListScreen({ freights, loading, onNav, onRefresh, c
           {GROUPS.map(group => {
             const items = grouped[group.key];
             return (
-              <div key={group.key} style={{ minWidth:200, flex:"1 1 0", background:C.bg, borderRadius: R.lg, border:`1px solid ${C.b1}`, overflow:"hidden", borderTop:`4px solid ${group.color}` }}>
+              <div key={group.key} style={{ minWidth:200, flex:"1 1 0", background:C.bg, borderRadius: R.lg, border:`1px solid ${C.b1}`, overflow:"hidden" }}>
+                <div style={{ height:12, background:group.color }} />
                 <div style={{ padding:"10px 12px", display:"flex", alignItems:"center", gap:6 }}>
                   <span style={{ display:"flex", flexShrink:0 }}>{group.icon(group.color, 14)}</span>
                   <span style={{ fontSize:12.1, fontWeight:700, color:group.color }}>{group.label}</span>
@@ -761,7 +765,8 @@ export default memo(function ListScreen({ freights, loading, onNav, onRefresh, c
         <div style={{ display:"flex", gap:12, overflowX:"auto", alignItems:"flex-start", paddingBottom:8 }}>
           {entityGrouped.map(col => (
             <div key={col.name} style={{ minWidth:220, flex:"1 1 0", background:C.bg, borderRadius: R.lg, border:`1px solid ${C.b1}`, overflow:"hidden" }}>
-              <div style={{ padding:"10px 12px", borderBottom:`2px solid ${col.isFallback ? C.t3 : C.pri}`, display:"flex", alignItems:"center", gap:6 }}>
+              <div style={{ height:12, background:col.isFallback ? C.t3 : C.pri }} />
+              <div style={{ padding:"10px 12px", display:"flex", alignItems:"center", gap:6 }}>
                 <span style={{ fontSize:12.1, fontWeight:700, color: col.isFallback ? C.t3 : C.t1 }}>{col.name}</span>
                 <span style={{ fontSize:11, fontWeight:600, color:C.t3, marginLeft:"auto" }}>{col.items.length}</span>
               </div>
