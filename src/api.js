@@ -329,6 +329,7 @@ export async function apiGetPlants() { return api('/catalog/plants'); }
 export async function apiGetLots() { return api('/catalog/lots'); }
 export async function apiGetTransportCompanies() { return api('/catalog/transport-companies'); }
 export async function apiGetCatalogAll() { return api('/catalog/all'); }
+export async function apiGetTolvinkPlants(take = 500, skip = 0) { return api(`/catalog/tolvink-plants?take=${take}&skip=${skip}`); }
 
 // Trucks
 export async function apiGetTrucks(companyId) { return api(companyId ? `/trucks?companyId=${encodeURIComponent(companyId)}` : '/trucks'); }

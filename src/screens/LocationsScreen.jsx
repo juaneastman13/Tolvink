@@ -5,11 +5,11 @@ import { Btn, Bd, Loader, LoadingOverlay } from "../components";
 import {
   apiGetFields, apiGetFieldOwnersSummary, apiCreateField, apiCreateLot, apiUpdateField, apiUpdateLot,
   apiImportGoogleList, apiGetPois, apiCreatePoi, apiUpdatePoi, apiDeletePoi,
-  apiDeleteField, apiDeleteLot, apiGetCompanyAccess,
+  apiDeleteField, apiDeleteLot, apiGetCompanyAccess, apiGetTolvinkPlants,
 } from "../api";
 import MapPreviewModal from "../modals/MapPreviewModal";
 import { useCatalogStore } from "../store";
-import { loadGMaps, mkFieldIcon, mkLotIcon, mkPoiIcon } from "../maps";
+import { loadGMaps, mkFieldIcon, mkLotIcon, mkPoiIcon, mkTolvinkPlantIcon } from "../maps";
 import { useIsDesktop } from "../hooks/useResponsive";
 import { useAccessLevel } from "../hooks/useAccessLevel";
 import {
@@ -18,20 +18,22 @@ import {
 } from "../components/locations";
 
 // ── Constants ──
-const LOC_COLORS = { field: "#1A6B37", lot: "#66BB6A", poi: "#29B6F6" };
+const LOC_COLORS = { field: "#1A6B37", lot: "#66BB6A", poi: "#29B6F6", tolvinkPlant: "#F59E0B" };
 const TYPE_CFG = {
-  field: { label: "Campo", color: LOC_COLORS.field, icon: (c, s) => Ic.field(c, s) },
-  lot:   { label: "Lote",  color: LOC_COLORS.lot, icon: (c, s) => Ic.lot(c, s) },
-  poi:   { label: "Interés", color: LOC_COLORS.poi, icon: (c, s) => Ic.poi(c, s) },
+  field:        { label: "Campo",   color: LOC_COLORS.field,        icon: (c, s) => Ic.field(c, s) },
+  lot:          { label: "Lote",    color: LOC_COLORS.lot,          icon: (c, s) => Ic.lot(c, s) },
+  poi:          { label: "Interés", color: LOC_COLORS.poi,          icon: (c, s) => Ic.poi(c, s) },
+  tolvinkPlant: { label: "Planta",  color: LOC_COLORS.tolvinkPlant, icon: (c, s) => Ic.plant(c, s) },
 };
 const MAP_COLORS = LOC_COLORS;
 const URUGUAY_CENTER = { lat: -33.0, lng: -56.0 };
 const FILTER_CHIPS = [
-  { key: "field", label: "campos", icon: (c, s) => Ic.field(c, s) },
-  { key: "lot", label: "lotes", icon: (c, s) => Ic.lot(c, s) },
-  { key: "poi", label: "ubicaciones", icon: (c, s) => Ic.poi(c, s) },
+  { key: "field",        label: "campos",     icon: (c, s) => Ic.field(c, s) },
+  { key: "lot",          label: "lotes",      icon: (c, s) => Ic.lot(c, s) },
+  { key: "poi",          label: "ubicaciones",icon: (c, s) => Ic.poi(c, s) },
+  { key: "tolvinkPlant", label: "plantas",    icon: (c, s) => Ic.plant(c, s) },
 ];
-const FILTER_COLORS = { field: LOC_COLORS.field, lot: LOC_COLORS.lot, poi: LOC_COLORS.poi };
+const FILTER_COLORS = { field: LOC_COLORS.field, lot: LOC_COLORS.lot, poi: LOC_COLORS.poi, tolvinkPlant: LOC_COLORS.tolvinkPlant };
 const _esc = (s) => String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 
 // ── Slide-in wrapper for inline forms ──
@@ -71,6 +73,7 @@ export default function LocationsScreen({ onBack, user }) {
   // ── Core data ──
   const [fields, setFields] = useState([]);
   const [pois, setPois] = useState([]);
+  const [tolvinkPlants, setTolvinkPlants] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState(null);
@@ -116,7 +119,7 @@ export default function LocationsScreen({ onBack, user }) {
   const [sectionOpen, setSectionOpen] = useState({ pois: true, fields: true });
   const [collapsedCompanies, setCollapsedCompanies] = useState({});
   const [expandedField, setExpandedField] = useState(null);
-  const [mapFilters, setMapFilters] = useState({ field: true, lot: true, poi: true });
+  const [mapFilters, setMapFilters] = useState({ field: true, lot: true, poi: true, tolvinkPlant: false });
   const [mapType, setMapType] = useState("roadmap");
   const [mapOptionsOpen, setMapOptionsOpen] = useState(false);
   const [mapReady, setMapReady] = useState(false);
@@ -141,6 +144,8 @@ export default function LocationsScreen({ onBack, user }) {
       const [f, p] = await Promise.all([apiGetFields(), apiGetPois().catch(() => [])]);
       setFields(f || []);
       setPois(p || []);
+      // Load tolvink plants once (they rarely change)
+      apiGetTolvinkPlants(500, 0).then(r => setTolvinkPlants(r || [])).catch(() => {});
       // Load owners summary for plant dropdown
       if (isManager) apiGetFieldOwnersSummary().then(s => setOwnersSummary(s || [])).catch(() => {});
     } catch (e) {
@@ -389,6 +394,11 @@ export default function LocationsScreen({ onBack, user }) {
   pois.forEach(p => {
     if (p.lat && p.lng) allLocations.push({ id: `poi-${p.id}`, type: "poi", name: p.name, lat: Number(p.lat), lng: Number(p.lng), address: p.address, isShared: p._isSharedWithMe });
   });
+  tolvinkPlants.forEach(p => {
+    const lat = p.lat ? Number(p.lat) : null;
+    const lng = p.lng ? Number(p.lng) : null;
+    if (lat && lng) allLocations.push({ id: `tolvinkPlant-${p.id}`, type: "tolvinkPlant", name: p.name, lat, lng, department: p.department, locality: p.locality });
+  });
 
   const filteredPois = allPois.filter(p => matchesSearch(p.name));
   // Apply owner filter for plant users
@@ -485,6 +495,16 @@ export default function LocationsScreen({ onBack, user }) {
     const rawId = loc.id.replace(/^(field|lot|poi)-/, "");
     const accBtn = `flex:1;display:flex;align-items:center;justify-content:center;gap:4px;padding:6px 8px;border-radius:8px;border:none;cursor:pointer;background:${C.acc};color:#fff;font-size:12px;font-weight:600;font-family:${FONT}`;
     const secBtn = `flex:1;display:flex;align-items:center;justify-content:center;gap:4px;padding:6px 8px;border-radius:8px;cursor:pointer;background:${C.w};color:${C.t1};font-size:12px;font-weight:500;font-family:${FONT};border:1px solid ${C.b1}`;
+    if (loc.type === "tolvinkPlant") {
+      return `<div style="font-family:${FONT};font-size:12px;line-height:1.5;min-width:180px;max-width:240px">` +
+        `<div style="display:flex;gap:6px;margin-bottom:8px">` +
+          `<button data-iw-action="ver-fletes" data-iw-type="${loc.type}" data-iw-id="${rawId}" data-iw-name="${_esc(loc.name)}" style="${accBtn}">Ver fletes</button>` +
+        `</div>` +
+        `<strong>${_esc(loc.name)}</strong><br/>` +
+        `<span style="display:inline-block;padding:1px 6px;border-radius:8px;background:${color};color:#fff;font-size:10px;font-weight:600;margin-top:2px">${_esc(typeLabel)}</span>` +
+        (loc.department ? `<br/><span style="color:#666">${_esc(loc.department)}${loc.locality ? ` · ${_esc(loc.locality)}` : ""}</span>` : "") +
+        `</div>`;
+    }
     return `<div style="font-family:${FONT};font-size:12px;line-height:1.5;min-width:210px;max-width:260px">` +
       `<div style="display:flex;gap:6px;margin-bottom:8px">` +
         `<button data-iw-action="ver-fletes" data-iw-type="${loc.type}" data-iw-id="${rawId}" data-iw-name="${_esc(loc.name)}" style="${secBtn}">Ver fletes</button>` +
@@ -516,6 +536,7 @@ export default function LocationsScreen({ onBack, user }) {
       let icon;
       if (loc.type === "field") icon = mkFieldIcon(maps, 1.0);
       else if (loc.type === "lot") icon = mkLotIcon(maps, 0.85);
+      else if (loc.type === "tolvinkPlant") icon = mkTolvinkPlantIcon(maps, 0.85);
       else icon = mkPoiIcon(maps, 1.0);
       const marker = new maps.Marker({ position: pos, map, icon, title: loc.name, zIndex: activeId === loc.id ? 999 : 1 });
       marker.addListener("click", () => {
@@ -529,7 +550,7 @@ export default function LocationsScreen({ onBack, user }) {
       hasPoints = true;
     });
     if (hasPoints) map.fitBounds(bounds, { top: 60, bottom: 20, left: 20, right: 20 });
-  }, [fields, pois, mapFilters, mapReady]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [fields, pois, tolvinkPlants, mapFilters, mapReady]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!activeId) return;

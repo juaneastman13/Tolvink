@@ -26,7 +26,7 @@ function GroupSentinel({ gKey, onVisible }) {
 // Action groups — grouping pending items by pending action type
 const ACTION_GROUPS = [
   { key: "approve_producer", label: "Aceptar flete de productor", color: C.sec, priority: 0 },
-  { key: "assign", label: "Asignar transporte", color: C.acc, priority: 1 },
+  { key: "assign", label: "Asignar transporte", color: STATUS_COLORS.pending_assignment.ribbon, priority: 1 },
   { key: "respond", label: "Aceptar o rechazar", color: C.sec, priority: 2 },
   { key: "authorize", label: "Autorizar viaje", color: C.sec, priority: 3 },
   { key: "start", label: "Iniciar viaje", color: C.pri, priority: 4 },
@@ -69,6 +69,7 @@ export default memo(function HomeScreen({ user, freights, loading, error, perms,
   const [mobileTab, setMobileTab] = useState("pending");
   const { isConsulta, isConsultaFor } = useAccessLevel(user);
   const [fleetAlerts, setFleetAlerts] = useState(null);
+  const pendingTwoCols = useIsDesktop(600);
 
   useEffect(() => {
     apiGetFleetAlerts().then(setFleetAlerts).catch(() => setFleetAlerts([]));
@@ -152,6 +153,7 @@ export default memo(function HomeScreen({ user, freights, loading, error, perms,
   };
   const clearDateFilter = () => { setDateFrom(""); setDateTo(""); setDatePreset(""); };
   const hasDateFilter = dateFrom || dateTo;
+  const dateFilterLabel = datePreset === "today" ? "Hoy" : datePreset === "week" ? "\u00daltimos 7 d\u00edas" : "\u00daltimos 30 d\u00edas";
 
   const matchDate = (loadDate) => {
     if (!dateFrom && !dateTo) return true;
@@ -218,7 +220,7 @@ export default memo(function HomeScreen({ user, freights, loading, error, perms,
     return [...grouped.entries()].map(([label, items]) => ({
       key: "tp_" + label.toLowerCase().replace(/\s+/g, '_'),
       label,
-      color: C.ok,
+      color: C.neutralBlue,
       icon: Ic.clk,
       items,
     }));
@@ -345,7 +347,7 @@ export default memo(function HomeScreen({ user, freights, loading, error, perms,
   };
 
   // Render a collapsible group (accordion — opening one hides others)
-  // btnOnly=true: compact column card with gradient, no inline expanded content
+  // btnOnly=true: compact action card, no inline expanded content
   const renderGroup = (group, keyPrefix, source, allGroups, btnOnly = false) => {
     const gKey = keyPrefix + "_" + group.key;
     const isOpen = openGroup === gKey;
@@ -367,15 +369,15 @@ export default memo(function HomeScreen({ user, freights, loading, error, perms,
     return (
       <div key={gKey} style={{ marginBottom: 8 }}>
         {btnOnly ? (
-          <button onClick={() => toggleGroup(gKey)} style={{ width: "100%", display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 4, padding: "10px 12px", background: isOpen ? C.bg : C.w, border: `1px solid ${isOpen ? C.b2 : C.b1}`, borderRadius: R.lg, cursor: "pointer", fontFamily: "inherit", textAlign: "left", boxShadow: isOpen ? "0 2px 8px rgba(0,0,0,0.06)" : "none" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 7, width: "100%" }}>
-              <div style={{ width: 26, height: 26, borderRadius: R.sm, background: `${group.color}20`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                {typeof group.icon === "function" ? group.icon(group.color, 13) : group.icon}
-              </div>
-              <span style={{ fontSize: 22, fontWeight: 800, color: group.color, lineHeight: 1 }}>{group.realCount ?? group.items.length}</span>
-              <span style={{ display: "flex", marginLeft: "auto", transform: isOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.15s ease" }}>{Ic.chev(C.t3, 12)}</span>
+          <button onClick={() => toggleGroup(gKey)} style={{ width: "100%", minHeight: 78, display: "grid", gridTemplateColumns: "32px 1fr 18px", alignItems: "center", gap: 10, padding: "10px 12px", background: C.w, border: `1px solid ${isOpen ? `${group.color}35` : C.b1}`, borderLeft: `4px solid ${group.color}`, borderRadius: R.lg, cursor: "pointer", fontFamily: "inherit", textAlign: "left", boxShadow: isOpen ? C.shMd : C.sh }}>
+            <div style={{ width: 32, height: 32, borderRadius: R.md, background: `${group.color}1F`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              {typeof group.icon === "function" ? group.icon(group.color, 15) : group.icon}
             </div>
-            <div style={{ fontSize: 12.5, fontWeight: 700, color: C.t1, lineHeight: 1.3, paddingLeft: 1 }}>{group.label}</div>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: 24, fontWeight: 700, color: group.color, lineHeight: 1 }}>{group.realCount ?? group.items.length}</div>
+              <div style={{ fontSize: 12.5, fontWeight: 600, color: C.t1, lineHeight: 1.25, marginTop: 3 }}>{group.label}</div>
+            </div>
+            <span style={{ display: "flex", justifyContent: "flex-end", transform: "rotate(180deg)" }}>{Ic.chev(C.t3, 13)}</span>
           </button>
         ) : (
           <button onClick={() => toggleGroup(gKey)} style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", background: isOpen ? `${group.color}10` : C.w, border: `1px solid ${isOpen ? `${group.color}35` : C.b1}`, borderRadius: R.lg, cursor: "pointer", fontFamily: "inherit", textAlign: "left", boxShadow: isOpen ? "0 4px 14px rgba(0,0,0,0.04)" : "none", ...(isOpen ? { position: "sticky", top: 32, zIndex: 10 } : {}) }}>
@@ -404,7 +406,7 @@ export default memo(function HomeScreen({ user, freights, loading, error, perms,
   };
 
   // Render a third-party sub-group (simple collapsible, no pagination)
-  // btnOnly=true: compact column card with gradient, no inline expanded content
+  // btnOnly=true: compact action card, no inline expanded content
   const renderTpGroup = (group, btnOnly = false) => {
     const isOpen = openTp === group.key;
     if (btnOnly) {
@@ -418,15 +420,15 @@ export default memo(function HomeScreen({ user, freights, loading, error, perms,
     return (
       <div key={group.key} style={{ marginBottom: 8 }}>
         {btnOnly ? (
-          <button onClick={() => setOpenTp(prev => prev === group.key ? null : group.key)} style={{ width: "100%", display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 4, padding: "10px 12px", background: isOpen ? C.bg : C.w, border: `1px solid ${isOpen ? C.b2 : C.b1}`, borderRadius: R.lg, cursor: "pointer", fontFamily: "inherit", textAlign: "left", boxShadow: isOpen ? "0 2px 8px rgba(0,0,0,0.06)" : "none" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 7, width: "100%" }}>
-              <div style={{ width: 26, height: 26, borderRadius: R.sm, background: `${group.color}20`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                {Ic.clk(group.color, 13)}
-              </div>
-              <span style={{ fontSize: 22, fontWeight: 800, color: group.color, lineHeight: 1 }}>{group.items.length}</span>
-              <span style={{ display: "flex", marginLeft: "auto", transform: isOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.15s ease" }}>{Ic.chev(C.t3, 12)}</span>
+          <button onClick={() => setOpenTp(prev => prev === group.key ? null : group.key)} style={{ width: "100%", minHeight: 78, display: "grid", gridTemplateColumns: "32px 1fr 18px", alignItems: "center", gap: 10, padding: "10px 12px", background: C.w, border: `1px solid ${isOpen ? `${group.color}35` : C.b1}`, borderLeft: `4px solid ${group.color}`, borderRadius: R.lg, cursor: "pointer", fontFamily: "inherit", textAlign: "left", boxShadow: isOpen ? C.shMd : C.sh }}>
+            <div style={{ width: 32, height: 32, borderRadius: R.md, background: `${group.color}1F`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              {Ic.clk(group.color, 15)}
             </div>
-            <div style={{ fontSize: 12.5, fontWeight: 700, color: C.t1, lineHeight: 1.3, paddingLeft: 1 }}>{group.label}</div>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: 24, fontWeight: 700, color: group.color, lineHeight: 1 }}>{group.items.length}</div>
+              <div style={{ fontSize: 12.5, fontWeight: 600, color: C.t1, lineHeight: 1.25, marginTop: 3 }}>{group.label}</div>
+            </div>
+            <span style={{ display: "flex", justifyContent: "flex-end", transform: "rotate(180deg)" }}>{Ic.chev(C.t3, 13)}</span>
           </button>
         ) : (
           <button onClick={() => setOpenTp(prev => prev === group.key ? null : group.key)} style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", background: isOpen ? `${group.color}10` : C.w, border: `1px solid ${isOpen ? `${group.color}35` : C.b1}`, borderRadius: R.lg, cursor: "pointer", fontFamily: "inherit", textAlign: "left", boxShadow: isOpen ? "0 4px 14px rgba(0,0,0,0.04)" : "none", ...(isOpen ? { position: "sticky", top: 32, zIndex: 10 } : {}) }}>
@@ -469,14 +471,17 @@ export default memo(function HomeScreen({ user, freights, loading, error, perms,
           <span style={{ fontSize:12.1, fontWeight:600, color:C.t2 }}>Ver todo</span>
         </button></div></div>}
         {/* Date filter — standalone, before pendientes */}
-        <div style={{ padding: compact ? "6px 8px" : "8px 12px", borderRadius: R.md, border: `1px solid ${hasDateFilter ? C.acc + "40" : C.b1}`, background: hasDateFilter ? `${C.acc}08` : C.w, marginBottom: 8 }}>
-          <div style={{ display: "flex", gap: 4, flexWrap: "wrap", alignItems: "center" }}>
-            <button onClick={() => setDateFilterOpen(p => !p)} style={{ padding: compact ? "3px 6px" : "4px 8px", borderRadius: R.sm, border: `1px solid ${hasDateFilter ? C.acc : C.b1}`, background: hasDateFilter ? `${C.acc}15` : "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: compact ? 9.9 : 11, fontWeight: 600, color: hasDateFilter ? C.acc : C.t3, display: "flex", alignItems: "center", gap: 3 }}>
-              {Ic.cal(hasDateFilter ? C.acc : C.t3, compact ? 10 : 11)} {dateFilterOpen ? "Ocultar fechas" : "Filtrar por fecha"}{hasDateFilter ? " (activo)" : ""}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 8 }}>
+          <h2 style={{ margin: 0, fontSize: compact ? 14 : 18, fontWeight: 600, color: C.t1, lineHeight: 1.2 }}>Acciones pendientes</h2>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+            {hasDateFilter && <button onClick={clearDateFilter} style={{ padding: compact ? "5px 8px" : "6px 10px", borderRadius: R.md, border: `1px solid ${C.err}30`, background: C.w, cursor: "pointer", fontFamily: "inherit", fontSize: compact ? 10.5 : 11.5, fontWeight: 600, color: C.err }}>Limpiar</button>}
+            <button onClick={() => setDateFilterOpen(p => !p)} style={{ padding: compact ? "5px 8px" : "7px 10px", borderRadius: R.md, border: `1px solid ${hasDateFilter ? C.acc + "55" : C.b1}`, background: C.w, cursor: "pointer", fontFamily: "inherit", fontSize: compact ? 10.5 : 12, fontWeight: 600, color: hasDateFilter ? C.acc : C.t2, display: "inline-flex", alignItems: "center", gap: 6, boxShadow: C.sh, whiteSpace: "nowrap" }}>
+              {Ic.cal(hasDateFilter ? C.acc : C.t2, compact ? 12 : 14)} {dateFilterLabel}
             </button>
-            {hasDateFilter && <button onClick={clearDateFilter} style={{ padding: compact ? "3px 6px" : "4px 8px", borderRadius: R.sm, border: `1px solid ${C.err}40`, background: C.errPale, cursor: "pointer", fontFamily: "inherit", fontSize: compact ? 9.9 : 11, fontWeight: 600, color: C.err }}>Limpiar</button>}
           </div>
-          {dateFilterOpen && <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 6, flexWrap: "wrap" }}>
+        </div>
+        {dateFilterOpen && <div style={{ padding: compact ? "6px 8px" : "8px 10px", borderRadius: R.lg, border: `1px solid ${hasDateFilter ? C.acc + "40" : C.b1}`, background: C.w, marginBottom: 8, boxShadow: C.sh }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 4, flexWrap: "wrap" }}>
             <span style={{ fontSize: compact ? 9.9 : 11, color: C.t2, fontWeight: 600 }}>Desde</span>
             <input type="date" value={dateFrom} onChange={e => { setDateFrom(e.target.value); setDatePreset("custom"); }} onClick={e => e.target.showPicker?.()} style={{ padding: "3px 6px", borderRadius: R.sm, border: `1px solid ${C.b1}`, background: C.w, color: dateFrom ? C.t1 : C.t3, fontSize: compact ? 9.9 : 11, fontFamily: "inherit", outline: "none", cursor: "pointer" }} />
             <span style={{ fontSize: compact ? 9.9 : 11, color: C.t2, fontWeight: 600 }}>Hasta</span>
@@ -484,8 +489,8 @@ export default memo(function HomeScreen({ user, freights, loading, error, perms,
             {[{ k: "today", l: "Hoy" }, { k: "week", l: "Semana" }, { k: "month", l: "Mes" }].map(p => (
               <button key={p.k} onClick={() => applyDatePreset(p.k)} style={{ padding: compact ? "3px 6px" : "4px 8px", borderRadius: R.sm, border: `1px solid ${datePreset === p.k ? C.acc : C.b1}`, background: datePreset === p.k ? `${C.acc}15` : "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: compact ? 9.9 : 11, fontWeight: 600, color: datePreset === p.k ? C.acc : C.t3 }}>{p.l}</button>
             ))}
-          </div>}
-        </div>
+          </div>
+        </div>}
 
         {/* Fleet document alerts */}
         {fleetAlerts?.trucksWithExpired > 0 && !openGroup && (
@@ -530,20 +535,20 @@ export default memo(function HomeScreen({ user, freights, loading, error, perms,
         {/* Non-compact: two-column layout con headers en la misma línea */}
         {!isInitialLoad && !compact && (totalPendingAll > 0 || thirdPartyGroups.length > 0) && (<>
           {/* Headers lado a lado — se ocultan cuando hay un grupo expandido */}
-          {!openGroup && !openTp && <div style={{ display: "flex", gap: 10, alignItems: "stretch", marginBottom: 10 }}>
+          {!openGroup && !openTp && <div style={{ display: "grid", gridTemplateColumns: pendingTwoCols ? "repeat(2, minmax(0, 1fr))" : "1fr", gap: 10, alignItems: "stretch", marginBottom: 10 }}>
             {totalPendingAll > 0 && (
-              <div style={{ flex: 1, padding: "12px 14px", borderRadius: R.lg, background: `${C.acc}0D`, border: `1px solid ${C.acc}20` }}>
+              <div style={{ padding: "13px 14px", borderRadius: R.lg, background: C.w, border: `1px solid ${C.b1}`, borderLeft: `3px solid ${STATUS_COLORS.pending_assignment.ribbon}`, boxShadow: C.sh }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <span style={{ fontSize: 22, fontWeight: 800, color: C.acc, lineHeight: 1 }}>{pendingCount}</span>
+                  <span style={{ fontSize: 24, fontWeight: 700, color: STATUS_COLORS.pending_assignment.ribbon, lineHeight: 1 }}>{pendingCount}</span>
                   <div>
-                    <div style={{ fontSize: 13.5, fontWeight: 700, color: C.acc }}>{`Acción${pendingCount !== 1 ? "es" : ""} pendiente${pendingCount !== 1 ? "s" : ""}`}</div>
-                    <div style={{ fontSize: 11, color: C.t3 }}>Requieren tu atención</div>
+                    <div style={{ fontSize: 13.5, fontWeight: 600, color: C.t1 }}>Acciones pendientes</div>
+                    <div style={{ fontSize: 11.5, color: C.t3, marginTop: 2 }}>Requieren tu atenci\u00f3n</div>
                   </div>
                 </div>
               </div>
             )}
             {thirdPartyGroups.length > 0 && (
-              <div style={{ flex: 1, padding: "12px 14px", borderRadius: R.lg, background: C.okPale, border: `1px solid ${C.ok}25` }}>
+              <div style={{ padding: "13px 14px", borderRadius: R.lg, background: C.w, border: `1px solid ${C.b1}`, borderLeft: `3px solid ${C.ok}`, boxShadow: C.sh }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                   <div style={{ width: 24, height: 24, borderRadius: "50%", background: C.ok, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                     {Ic.chk(C.w, 12)}
@@ -554,19 +559,19 @@ export default memo(function HomeScreen({ user, freights, loading, error, perms,
             )}
           </div>}
           {/* Tarjetas en columnas */}
-          <div style={{ display: "flex", gap: 10, alignItems: "flex-start", marginBottom: 8 }}>
+          <div style={{ display: "grid", gridTemplateColumns: pendingTwoCols ? "repeat(2, minmax(0, 1fr))" : "1fr", gap: 10, alignItems: "stretch", marginBottom: 8 }}>
             {totalPendingAll > 0 && !openTp && (
-              <div style={{ flex: 1, minWidth: 0, background: `${C.acc}07`, border: `1px solid ${C.acc}18`, borderRadius: R.lg, padding: "8px 8px 4px" }}>
+              <>
                 {pendingByProgress.length > 0
                   ? pendingByProgress.map(g => renderGroup(g, "pa", "pending", undefined, true))
-                  : <div style={{ padding: "12px 16px", fontSize: 13.2, color: C.t3, display: "flex", alignItems: "center", gap: 8 }}>{Ic.chk(C.ok, 14)} Sin pendientes en este periodo</div>
+                  : <div style={{ padding: "12px 16px", fontSize: 13.2, color: C.t3, display: "flex", alignItems: "center", gap: 8, background: C.w, border: `1px solid ${C.b1}`, borderRadius: R.lg }}>{Ic.chk(C.ok, 14)} Sin pendientes en este periodo</div>
                 }
-              </div>
+              </>
             )}
             {thirdPartyGroups.length > 0 && !openGroup && (
-              <div style={{ flex: 1, minWidth: 0, background: `${C.ok}07`, border: `1px solid ${C.ok}18`, borderRadius: R.lg, padding: "8px 8px 4px" }}>
+              <>
                 {thirdPartyGroups.map(g => renderTpGroup(g, true))}
-              </div>
+              </>
             )}
           </div>
           {/* Lista expandida full-width */}

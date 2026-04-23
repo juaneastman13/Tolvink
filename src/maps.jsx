@@ -741,6 +741,16 @@ const _entitySymbol = (maps, type, scale = 1.0) => {
   if (type === "plant") return _plantSymbol(maps, scale);
   return _pinSymbol(maps, C.err, scale);
 };
+// Tolvink Plant directory: amber/yellow pin with factory icon
+const _tolvinkPlantSvg = (w = 28, h = 40) => {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 24 34"><path d="M12 0C5.37 0 0 5.37 0 12c0 9 12 22 12 22s12-13 12-22C24 5.37 18.63 0 12 0z" fill="%23F59E0B" stroke="%23fff" stroke-width="1.5"/><path d="M6 16h12M8 16V10l3 2V10l3 2V7h2v9" fill="none" stroke="%23fff" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  return `data:image/svg+xml,${svg}`;
+};
+const _tolvinkPlantSymbol = (maps, scale = 1.0) => {
+  const w = Math.round(28 * scale), h = Math.round(40 * scale);
+  return { url: _tolvinkPlantSvg(w, h), scaledSize: new maps.Size(w, h), anchor: new maps.Point(w / 2, h) };
+};
+
 // Exported helpers for screens that create their own markers
 export const mkPinIcon = (maps, color, scale = 1.0) => _pinSymbol(maps, color, scale);
 export const mkFieldIcon = (maps, scale = 1.0) => _fieldSymbol(maps, scale);
@@ -748,6 +758,7 @@ export const mkPlantIcon = (maps, scale = 1.0) => _plantSymbol(maps, scale);
 export const mkTruckIcon = (maps) => _truckSymbol(maps);
 export const mkLotIcon = (maps, scale = 1.0) => _lotSymbol(maps, scale);
 export const mkPoiIcon = (maps, scale = 1.0) => _poiSymbol(maps, scale);
+export const mkTolvinkPlantIcon = (maps, scale = 1.0) => _tolvinkPlantSymbol(maps, scale);
 
 export function FreightsOverviewMap({ freights, onSelect, fields, plants, lots, selectedId }) {
   const mapRef = useRef(null);

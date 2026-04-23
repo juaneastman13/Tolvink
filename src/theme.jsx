@@ -9,6 +9,7 @@ export const LIGHT = {
   pri:"#1A6B37", priLt:"#228B46", priPale:"#E4F3EA", priGhost:"rgba(26,107,55,0.06)",
   acc:"#FF6A00", accLt:"#FF8124", accPale:"#FFF3E8",
   sec:"#0891B2", secLt:"#06B6D4", secPale:"#ECFEFF",
+  neutralBlue:"#6366F1", neutralBluePale:"#EEF2FF",
   ok:"#1A6B37", okPale:"#E4F3EA",
   info:"#0891B2", infoPale:"#ECFEFF",
   warn:"#CA8A04", warnPale:"#FEF9C3",
