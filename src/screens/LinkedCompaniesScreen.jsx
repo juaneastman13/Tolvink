@@ -54,6 +54,7 @@ export default function LinkedCompaniesScreen({ user, embedded, onBack, onNav })
   const [linkSearching, setLinkSearching] = useState(false);
   const [linkLevel, setLinkLevel] = useState("OPERATOR");
   const linkTimer = useRef(null);
+  const [copiedLinkFor, setCopiedLinkFor] = useState(null); // companyId for which "Link copiado" feedback is showing
 
   // Expanded company detail
   const [expandedId, setExpandedId] = useState(null);
@@ -162,7 +163,8 @@ export default function LinkedCompaniesScreen({ user, embedded, onBack, onNav })
     const st = stats[companyId] || {};
     const lastAgo = timeAgo(st.lastFreightAt);
     const isLegacy = r.accessSource === "plant_producer_access";
-    const levelColor = r.accessLevel === "OPERATOR" ? C.ok : C.info;
+    const levelColor = C.t3; // gris neutro — ambos estados visualmente iguales
+    const isCopied = copiedLinkFor === companyId;
 
     return (
       <div style={{ background: C.w, border: `1px solid ${C.b1}`, borderRadius: R.lg, boxShadow: C.sh, overflow: "hidden" }}>
@@ -173,9 +175,6 @@ export default function LinkedCompaniesScreen({ user, embedded, onBack, onNav })
               <span style={{ fontSize: 15.4, fontWeight: 700, color: C.t1 }}>{co.name || "Empresa"}</span>
               <span style={{ fontSize: 9.9, fontWeight: 700, color: typeColor, background: `${typeColor}15`, padding: "1px 6px", borderRadius: R.xs }}>
                 {TYPE_LABELS[r.granteeType] || r.granteeType}
-              </span>
-              <span style={{ fontSize: 9.9, fontWeight: 700, color: levelColor, background: `${levelColor}18`, padding: "1px 6px", borderRadius: R.xs }}>
-                {LEVEL_LABELS[r.accessLevel] || r.accessLevel}
               </span>
               {isLegacy && <span style={{ fontSize: 8.8, fontWeight: 600, color: C.t3, background: `${C.t3}12`, padding: "1px 5px", borderRadius: R.xs }}>Legacy</span>}
             </div>
@@ -216,17 +215,20 @@ export default function LinkedCompaniesScreen({ user, embedded, onBack, onNav })
             {!isLegacy && (
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12, padding: "8px 12px", background: C.bg, borderRadius: R.md }}>
                 <span style={{ fontSize: 12.1, fontWeight: 600, color: C.t2, flex: 1 }}>Nivel de acceso:</span>
-                {["OPERATOR", "READONLY"].map(l => (
-                  <button key={l} onClick={() => { if (r.accessLevel !== l) handleToggleLevel(r); }} disabled={saving}
-                    style={{
-                      padding: "5px 12px", borderRadius: R.sm, fontFamily: "inherit", fontSize: 11.6, fontWeight: 700, cursor: saving ? "not-allowed" : "pointer",
-                      border: `1.5px solid ${r.accessLevel === l ? (l === "OPERATOR" ? C.ok : C.info) : C.b1}`,
-                      background: r.accessLevel === l ? (l === "OPERATOR" ? `${C.ok}12` : `${C.info}12`) : C.w,
-                      color: r.accessLevel === l ? (l === "OPERATOR" ? C.ok : C.info) : C.t3,
-                    }}>
-                    {l === "OPERATOR" ? "USO" : "CONSULTA"}
-                  </button>
-                ))}
+                {["OPERATOR", "READONLY"].map(l => {
+                  const active = r.accessLevel === l;
+                  return (
+                    <button key={l} onClick={() => { if (!active) handleToggleLevel(r); }} disabled={saving}
+                      style={{
+                        padding: "5px 12px", borderRadius: R.sm, fontFamily: "inherit", fontSize: 11.6, fontWeight: 700, cursor: saving ? "not-allowed" : "pointer",
+                        border: `1.5px solid ${active ? C.t2 : C.b1}`,
+                        background: active ? `${C.t3}18` : C.w,
+                        color: active ? C.t1 : C.t3,
+                      }}>
+                      {l === "OPERATOR" ? "USO" : "CONSULTA"}
+                    </button>
+                  );
+                })}
               </div>
             )}
 
@@ -244,10 +246,11 @@ export default function LinkedCompaniesScreen({ user, embedded, onBack, onNav })
                     ta.value = url; ta.style.cssText = "position:fixed;opacity:0";
                     document.body.appendChild(ta); ta.select(); document.execCommand("copy"); document.body.removeChild(ta);
                   }
-                  show("Link de portal copiado");
+                  setCopiedLinkFor(companyId);
+                  setTimeout(() => setCopiedLinkFor(prev => prev === companyId ? null : prev), 1600);
                 } catch (e) { show(e.message || "Error", "err"); }
-              }} style={{ display: "flex", alignItems: "center", gap: 4, padding: "5px 10px", borderRadius: R.sm, border: `1px solid ${C.info}30`, background: `${C.info}08`, cursor: "pointer", fontFamily: FONT, fontSize: 11.6, fontWeight: 600, color: C.info }}>
-                {Ic.doc(C.info, 13)} Link de portal
+              }} style={{ display: "flex", alignItems: "center", gap: 4, padding: "5px 10px", borderRadius: R.sm, border: `1px solid ${isCopied ? C.ok : C.info}30`, background: isCopied ? `${C.ok}12` : `${C.info}08`, cursor: "pointer", fontFamily: FONT, fontSize: 11.6, fontWeight: 600, color: isCopied ? C.ok : C.info, transition: "all 0.2s ease" }}>
+                {isCopied ? Ic.chk(C.ok, 13) : Ic.doc(C.info, 13)} {isCopied ? "Link copiado" : "Link de portal"}
               </button>
               <button onClick={async () => {
                 try {
@@ -261,10 +264,16 @@ export default function LinkedCompaniesScreen({ user, embedded, onBack, onNav })
               }} style={{ display: "flex", alignItems: "center", gap: 4, padding: "5px 10px", borderRadius: R.sm, border: "none", background: "#25D366", cursor: "pointer", fontFamily: FONT, fontSize: 11.6, fontWeight: 700, color: "#fff" }}>
                 Enviar por WhatsApp
               </button>
-              {!isLegacy && <button onClick={() => handleToggleActive(r)} disabled={saving} style={{ background: "none", border: "none", fontSize: 11.6, color: C.err, fontWeight: 600, cursor: "pointer", padding: 0 }}>
-                Desactivar vinculación
-              </button>}
             </div>
+
+            {/* Deactivate link — bottom-right corner */}
+            {!isLegacy && (
+              <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                <button onClick={() => handleToggleActive(r)} disabled={saving} style={{ background: "none", border: "none", fontSize: 11.6, color: C.err, fontWeight: 600, cursor: "pointer", padding: 0 }}>
+                  Desactivar vinculación
+                </button>
+              </div>
+            )}
 
           </div>
         )}
