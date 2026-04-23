@@ -555,16 +555,16 @@ export default memo(function HomeScreen({ user, freights, loading, error, perms,
           </div>}
           {/* Tarjetas en columnas */}
           <div style={{ display: "flex", gap: 10, alignItems: "flex-start", marginBottom: 8 }}>
-            {totalPendingAll > 0 && (
-              <div style={{ flex: 1, minWidth: 0 }}>
+            {totalPendingAll > 0 && !openTp && (
+              <div style={{ flex: 1, minWidth: 0, background: `${C.acc}07`, border: `1px solid ${C.acc}18`, borderRadius: R.lg, padding: "8px 8px 4px" }}>
                 {pendingByProgress.length > 0
                   ? pendingByProgress.map(g => renderGroup(g, "pa", "pending", undefined, true))
                   : <div style={{ padding: "12px 16px", fontSize: 13.2, color: C.t3, display: "flex", alignItems: "center", gap: 8 }}>{Ic.chk(C.ok, 14)} Sin pendientes en este periodo</div>
                 }
               </div>
             )}
-            {thirdPartyGroups.length > 0 && (
-              <div style={{ flex: 1, minWidth: 0 }}>
+            {thirdPartyGroups.length > 0 && !openGroup && (
+              <div style={{ flex: 1, minWidth: 0, background: `${C.ok}07`, border: `1px solid ${C.ok}18`, borderRadius: R.lg, padding: "8px 8px 4px" }}>
                 {thirdPartyGroups.map(g => renderTpGroup(g, true))}
               </div>
             )}
