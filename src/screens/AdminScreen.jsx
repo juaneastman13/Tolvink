@@ -60,6 +60,9 @@ export default function AdminScreen({ user, onBack, onUserUpdate }) {
   const [selectedCompany, setSelectedCompany] = useState(null);
   const [branches, setBranches] = useState([]);
   const [showBranchForm, setShowBranchForm] = useState(false);
+  const [detailUsers, setDetailUsers] = useState([]);
+  const [showDetailUserForm, setShowDetailUserForm] = useState(false);
+  const [detailUserForm, setDetailUserForm] = useState({ name:"", email:"", phone:"", role:"operario" });
 
   // Producer: fields + lots
   const [fields, setFields] = useState([]);
@@ -238,13 +241,23 @@ export default function AdminScreen({ user, onBack, onUserUpdate }) {
   };
 
   // --- Branches ---
+  const reloadDetailUsers = useCallback(async (companyId) => {
+    if (!companyId) return;
+    try {
+      const data = await apiAdminListUsers(undefined, companyId);
+      setDetailUsers((data || []).filter(u => u.active !== false));
+    } catch {
+      setDetailUsers([]);
+    }
+  }, []);
+
   const openCompanyDetail = async (c) => {
-    setSelectedCompany(c); setBranches([]); setFields([]); setTrucks([]); setDetailProducts([]);
-    setShowBranchForm(false); setShowFieldForm(false); setShowTruckForm(false); setShowLotForm(false); setExpandedFieldId(null);
+    setSelectedCompany(c); setBranches([]); setFields([]); setTrucks([]); setDetailProducts([]); setDetailUsers([]);
+    setShowBranchForm(false); setShowFieldForm(false); setShowTruckForm(false); setShowLotForm(false); setExpandedFieldId(null); setShowDetailUserForm(false);
+    setDetailUserForm({ name:"", email:"", phone:"", role:"operario" });
     setDetailTab("branches"); setView("companyDetail");
     try { const b=await apiAdminListBranches(c.id); setBranches(b||[]); } catch(e) { /* silent */ }
-    if(c.type==="producer") { try { const f=await apiAdminListFields(c.id); setFields(f||[]); } catch(e) { /* silent */ } }
-    if(c.type==="transporter" || c.type==="producer") { try { const t=await apiAdminListTrucks(c.id); setTrucks(t||[]); } catch(e) { /* silent */ } }
+    await reloadDetailUsers(c.id);
     if(isPlatform) { try { const pr=await apiListCompanyProducts({all:true,forCompanyId:c.id}); setDetailProducts(pr||[]); } catch(e) { /* silent */ } }
   };
   const openNewBranch = () => { setBranchForm({name:"",address:"",reference:"",lat:null,lng:null,locationAddress:""}); setEditBranchId(null); setShowBranchForm(true); };
@@ -324,6 +337,34 @@ export default function AdminScreen({ user, onBack, onUserUpdate }) {
     finally { setSaving(false); }
   };
   const handleDeleteTruck = async (id) => { if(saving) return; setSaving(true); try { await apiAdminDeleteTruck(id); setDoneMsg("Vehículo eliminado"); useCatalogStore.getState().clearCache(); const t=await apiAdminListTrucks(selectedCompany.id); setTrucks(t||[]); await load(); } catch(e) { show(e.message,"err"); } finally { setSaving(false); } };
+
+  const handleCreateDetailUser = async () => {
+    const name = detailUserForm.name.trim();
+    const email = detailUserForm.email.trim();
+    const phone = detailUserForm.phone.trim().replace(/[\s\-()]/g, "");
+    if (!selectedCompany?.id) return show("Empresa no seleccionada", "err");
+    if (!name || !email) return show("Nombre y email obligatorios", "err");
+    if (phone && !/^09\d{7}$/.test(phone)) return show("Celular: 09XXXXXXX", "err");
+    setSaving(true);
+    try {
+      await apiCreateLinkedUser({
+        targetCompanyId: selectedCompany.id,
+        name,
+        email,
+        ...(phone ? { phone } : {}),
+        role: detailUserForm.role,
+      });
+      setShowDetailUserForm(false);
+      setDetailUserForm({ name:"", email:"", phone:"", role:"operario" });
+      setDoneMsg("Usuario creado");
+      await reloadDetailUsers(selectedCompany.id);
+      await load();
+    } catch(e) {
+      show(e.message, "err");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   // --- Users with companyByType + roleByType ---
   const toggleFormUserType = (t) => setUserForm(p=>({...p,userTypes:p.userTypes.includes(t)?p.userTypes.filter(x=>x!==t):[...p.userTypes,t]}));
@@ -790,11 +831,8 @@ export default function AdminScreen({ user, onBack, onUserUpdate }) {
   // ===================== COMPANY DETAIL =====================
   if (view==="companyDetail" && selectedCompany) {
     const cType = selectedCompany.type;
-    const isProducer = cType==="producer";
-    const isTransporter = cType==="transporter";
     const tabs = [{k:"branches",l:"Sucursales",n:branches.length}];
-    if(isProducer) tabs.push({k:"fields",l:"Campos",n:fields.length});
-    if(isTransporter || isProducer) tabs.push({k:"trucks",l:"Flota",n:trucks.length});
+    tabs.push({k:"users",l:"Usuarios",n:detailUsers.length});
     tabs.push({k:"access",l:"Accesos"});
     if(isPlatform) tabs.push({k:"productos",l:"Productos",n:detailProducts.length});
     const curTab = tabs.find(t=>t.k===detailTab) ? detailTab : "branches";
@@ -859,148 +897,61 @@ export default function AdminScreen({ user, onBack, onUserUpdate }) {
           {branches.length===0&&!showBranchForm&&<div style={{textAlign:"center",padding:20,color:C.t3,fontSize:13.2}}>Sin sucursales</div>}
         </>)}
 
-        {/* ====== TAB: FIELDS (Producer) ====== */}
-        {curTab==="fields"&&isProducer&&(<>
+        {/* ====== TAB: USERS ====== */}
+        {curTab==="users"&&(<>
           <div style={{display:"flex",justifyContent:"flex-end",marginBottom:8}}>
-            <button onClick={()=>{showFieldForm?setShowFieldForm(false):openNewField();}} style={{padding:"6px 12px",borderRadius: R.sm,border:`1px solid ${typeColors.producer}`,background:`${typeColors.producer}12`,color:typeColors.producer,fontSize:12.1,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>{showFieldForm&&!editFieldId?"Cancelar":"+ Nuevo campo"}</button>
+            <button onClick={()=>setShowDetailUserForm(v=>!v)} style={{padding:"6px 12px",borderRadius: R.sm,border:`1px solid ${C.acc}`,background:`${C.acc}12`,color:C.acc,fontSize:12.1,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>{showDetailUserForm?"Cancelar":"+ Nuevo usuario"}</button>
           </div>
-          {showFieldForm && (
+          {showDetailUserForm && (
             <div style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius: R.md,padding:14,marginBottom:10,boxShadow:C.sh}}>
-              <div style={{fontSize:13.2,fontWeight:600,color:C.t1,marginBottom:8}}>{editFieldId?"Editar campo":"Nuevo campo"}</div>
+              <div style={{fontSize:13.2,fontWeight:600,color:C.t1,marginBottom:8}}>Nuevo usuario</div>
               <div style={s.lbl}>Nombre *</div>
-              <input value={fieldForm.name} onChange={e=>setFieldForm(p=>({...p,name:e.target.value}))} placeholder="Nombre del campo" style={{...s.inp,marginBottom:10}} />
-              <LocationPicker label="Ubicación *" value={fieldForm.lat?{lat:fieldForm.lat,lng:fieldForm.lng,address:fieldForm.address}:null} onChange={(loc)=>setFieldForm(p=>({...p,lat:loc?.lat||null,lng:loc?.lng||null,address:loc?.address||""}))} />
-              <div style={{display:"flex",gap:8,marginBottom:10}}>
-                <div style={{flex:1}}><NumericStepper label="Hectáreas" value={fieldForm.hectares} onChange={v=>setFieldForm(p=>({...p,hectares:v}))} min={0} step={1} placeholder="Ej: 150" /></div>
+              <input value={detailUserForm.name} onChange={e=>setDetailUserForm(p=>({...p,name:e.target.value}))} placeholder="Nombre y apellido" style={{...s.inp,marginBottom:8}} />
+              <div style={s.lbl}>Email *</div>
+              <input value={detailUserForm.email} onChange={e=>setDetailUserForm(p=>({...p,email:e.target.value}))} placeholder="usuario@empresa.com" style={{...s.inp,marginBottom:8}} />
+              <div style={{display:"flex",gap:8,marginBottom:8}}>
+                <div style={{flex:1}}>
+                  <div style={s.lbl}>Celular</div>
+                  <input value={detailUserForm.phone} onChange={e=>setDetailUserForm(p=>({...p,phone:e.target.value}))} placeholder="09XXXXXXX" style={s.inp} />
+                </div>
+                <div style={{width:180}}>
+                  <div style={s.lbl}>Rol</div>
+                  <select value={detailUserForm.role} onChange={e=>setDetailUserForm(p=>({...p,role:e.target.value}))} style={{...s.inp,height:38}}>
+                    <option value="operario">Operario</option>
+                    <option value="gerente">Gerente</option>
+                    <option value="chofer">Chofer</option>
+                  </select>
+                </div>
               </div>
-              <div style={s.lbl}>Comentarios</div>
-              <textarea value={fieldForm.comments} onChange={e=>setFieldForm(p=>({...p,comments:e.target.value}))} placeholder="Notas opcionales..." rows={2} style={{...s.inp,resize:"vertical",marginBottom:10}} />
               <div style={{display:"flex",gap:8}}>
-                <button onClick={()=>setShowFieldForm(false)} style={{flex:1,padding:"10px 0",borderRadius: R.md,border:`1px solid ${C.b1}`,background:C.w,color:C.t2,fontSize:14.3,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>Cancelar</button>
-                <button onClick={handleSaveField} disabled={saving} style={{...s.btnP(typeColors.producer,saving),flex:2}}>{saving?"Guardando...":(editFieldId?"Guardar":"Crear campo")}</button>
+                <button onClick={()=>setShowDetailUserForm(false)} style={{flex:1,padding:"10px 0",borderRadius: R.md,border:`1px solid ${C.b1}`,background:C.w,color:C.t2,fontSize:14.3,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>Cancelar</button>
+                <button onClick={handleCreateDetailUser} disabled={saving} style={{...s.btnP(C.acc,saving),flex:2}}>{saving?"Guardando...":"Crear usuario"}</button>
               </div>
             </div>
           )}
-          {fields.map(f=>(<div key={f.id} style={{background:C.w,border:`1px solid ${expandedFieldId===f.id?typeColors.producer:C.b1}`,borderRadius: R.md,marginBottom:8,boxShadow:C.sh,overflow:"hidden"}}>
-            <div style={{padding:"12px 14px",cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center"}} onClick={()=>expandField(f.id)}>
-              <div style={{flex:1}}>
-                <div style={{fontSize:14.3,fontWeight:600,color:C.t1}}>{f.name}</div>
-                <div style={{display:"flex",gap:8,fontSize:11,color:C.t3,marginTop:2}}>
-                  {f.hectares&&<span>{Number(f.hectares)} ha</span>}
-                  {f.lat&&<span>📍 {Number(f.lat).toFixed(3)}, {Number(f.lng).toFixed(3)}</span>}
-                  <span>{f._count?.lots||f.lots?.length||0} lotes</span>
-                </div>
-                {f.comments&&<div style={{fontSize:11,color:C.t3,fontStyle:"italic",marginTop:1}}>{f.comments}</div>}
-              </div>
-              <div style={{display:"flex",gap:4,alignItems:"center"}}>
-                <button onClick={(e)=>{e.stopPropagation();openEditField(f);}} style={{padding:"4px 8px",borderRadius: R.sm,border:`1px solid ${C.pri}40`,background:"none",fontSize:11,color:C.pri,cursor:"pointer",fontFamily:"inherit"}}>Editar</button>
-                <button disabled={saving} onClick={(e)=>{e.stopPropagation();handleDeleteField(f.id);}} style={{padding:"4px 8px",borderRadius: R.sm,border:`1px solid ${C.err}30`,background:"none",fontSize:11,color:saving?C.t3:C.err,cursor:saving?"not-allowed":"pointer",fontFamily:"inherit",opacity:saving?0.5:1}}>Eliminar</button>
-                <span style={{fontSize:13.2,color:C.t3,marginLeft:4}}>{expandedFieldId===f.id?"▾":"▸"}</span>
-              </div>
-            </div>
-            {/* Lots inside field */}
-            {expandedFieldId===f.id&&(
-              <div style={{padding:"0 14px 12px",borderTop:`1px solid ${C.b1}`}}>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,marginBottom:6}}>
-                  <div style={{fontSize:12.1,fontWeight:600,color:C.t2}}>Lotes</div>
-                  <button onClick={()=>{showLotForm?setShowLotForm(false):openNewLot();}} style={{padding:"4px 10px",borderRadius: R.sm,border:`1px solid ${typeColors.producer}`,background:`${typeColors.producer}10`,color:typeColors.producer,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>{showLotForm&&!editLotId?"Cancelar":"+ Lote"}</button>
-                </div>
-                {showLotForm&&(
-                  <div style={{background:C.bgInput,border:`1px solid ${C.b1}`,borderRadius: R.md,padding:12,marginBottom:8}}>
-                    <div style={s.lbl}>Nombre *</div>
-                    <input value={lotForm.name} onChange={e=>setLotForm(p=>({...p,name:e.target.value}))} placeholder="Nombre del lote" style={{...s.inp,marginBottom:8}} />
-                    <LocationPicker label="Ubicación *" value={lotForm.lat?{lat:lotForm.lat,lng:lotForm.lng,address:lotForm.address}:null} onChange={(loc)=>setLotForm(p=>({...p,lat:loc?.lat||null,lng:loc?.lng||null,address:loc?.address||""}))} defaultCenter={f.lat&&f.lng?{lat:f.lat,lng:f.lng}:null} />
-                    <div style={{display:"flex",gap:8,marginBottom:8}}>
-                      <div style={{flex:1}}><NumericStepper label="Hectáreas" value={lotForm.hectares} onChange={v=>setLotForm(p=>({...p,hectares:v}))} min={0} step={1} placeholder="Ej: 50" /></div>
+          <div style={{display:"flex",flexDirection:"column",gap:8}}>
+            {detailUsers.map(u=>{
+              const membership = (u.memberships || []).find(m => m.companyId === selectedCompany.id);
+              const role = membership?.role || u.role || "operario";
+              const roleLabel = role === "gerente" ? "Gerente" : role === "chofer" ? "Chofer" : "Operario";
+              return (
+                <div key={u.id} onClick={()=>openEditUser(u)} style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius: R.md,padding:"12px 14px",boxShadow:C.sh,cursor:"pointer"}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8}}>
+                    <div style={{minWidth:0}}>
+                      <div style={{fontSize:14.3,fontWeight:700,color:C.t1}}>{u.name}</div>
+                      {u.email&&<div style={{fontSize:12.1,color:C.t2,marginTop:2}}>{u.email}</div>}
+                      {u.phone&&<div style={{fontSize:12.1,color:C.t3}}>{u.phone}</div>}
                     </div>
-                    <div style={s.lbl}>Comentarios</div>
-                    <textarea value={lotForm.comments} onChange={e=>setLotForm(p=>({...p,comments:e.target.value}))} placeholder="Notas..." rows={2} style={{...s.inp,resize:"vertical",marginBottom:8}} />
-                    <div style={{display:"flex",gap:8}}>
-                      <button onClick={()=>setShowLotForm(false)} style={{flex:1,padding:"8px 0",borderRadius: R.md,border:`1px solid ${C.b1}`,background:C.w,color:C.t2,fontSize:13.2,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>Cancelar</button>
-                      <button onClick={handleSaveLot} disabled={saving} style={{...s.btnP(typeColors.producer,saving),flex:2,padding:"8px 0"}}>{saving?"Guardando...":(editLotId?"Guardar":"Crear lote")}</button>
+                    <div style={{display:"flex",alignItems:"center",gap:6,flexShrink:0}}>
+                      <Bd color={role === "gerente" ? C.pri : role === "chofer" ? (C.sec||"#F59E0B") : C.t2}>{roleLabel}</Bd>
+                      <span style={{display:"flex"}}>{Ic.chev(C.t3,14)}</span>
                     </div>
                   </div>
-                )}
-                {lots.map(l=>(<div key={l.id} style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius: R.md,padding:"8px 12px",marginBottom:4}}>
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                    <div><div style={{fontSize:13.2,fontWeight:600,color:C.t1}}>{l.name}</div>
-                      <div style={{display:"flex",gap:6,fontSize:9.9,color:C.t3}}>{l.hectares&&<span>{Number(l.hectares)} ha</span>}{l.lat&&<span>📍 {Number(l.lat).toFixed(3)},{Number(l.lng).toFixed(3)}</span>}</div>
-                      {l.comments&&<div style={{fontSize:9.9,color:C.t3,fontStyle:"italic"}}>{l.comments}</div>}
-                    </div>
-                    <div style={{display:"flex",gap:4}}>
-                      <button onClick={()=>openEditLot(l)} style={{padding:"3px 6px",borderRadius: R.xs,border:`1px solid ${C.pri}40`,background:"none",fontSize:9.9,color:C.pri,cursor:"pointer",fontFamily:"inherit"}}>Editar</button>
-                      <button disabled={saving} onClick={()=>handleDeleteLot(l.id)} style={{padding:"3px 6px",borderRadius: R.xs,border:`1px solid ${C.err}30`,background:"none",fontSize:9.9,color:saving?C.t3:C.err,cursor:saving?"not-allowed":"pointer",fontFamily:"inherit",opacity:saving?0.5:1}}>Eliminar</button>
-                    </div>
-                  </div>
-                </div>))}
-                {lots.length===0&&!showLotForm&&<div style={{textAlign:"center",padding:10,color:C.t3,fontSize:12.1}}>Sin lotes</div>}
-              </div>
-            )}
-          </div>))}
-          {fields.length===0&&!showFieldForm&&<div style={{textAlign:"center",padding:20,color:C.t3,fontSize:13.2}}>Sin campos</div>}
-        </>)}
-
-        {/* ====== TAB: TRUCKS (Transporter / Producer) ====== */}
-        {curTab==="trucks"&&(isTransporter||isProducer)&&(<>
-          {/* Producer without fleet: prompt to activate */}
-          {isProducer && !selectedCompany.hasInternalFleet ? (
-            <div style={{textAlign:"center",padding:32}}>
-              <div style={{fontSize:32,marginBottom:12,opacity:0.3}}>🚛</div>
-              <div style={{fontSize:15.4,fontWeight:700,color:C.t1,marginBottom:6}}>Esta empresa no tiene flota propia</div>
-              <div style={{fontSize:13.2,color:C.t3,marginBottom:16,lineHeight:1.5}}>Activá la flota propia para registrar camiones y choferes propios del productor.</div>
-              <button onClick={async()=>{
-                setSaving(true);
-                try {
-                  await apiAdminUpdateCompany(selectedCompany.id, {hasInternalFleet:true});
-                  setSelectedCompany(p=>({...p,hasInternalFleet:true}));
-                  setAllCompanies(prev=>prev.map(c=>c.id===selectedCompany.id?{...c,hasInternalFleet:true}:c));
-                  setCompanies(prev=>prev.map(c=>c.id===selectedCompany.id?{...c,hasInternalFleet:true}:c));
-                  if (selectedCompany.id === user.activeCompanyId && onUserUpdate) onUserUpdate({ hasInternalFleet: true });
-                  show("Flota propia activada");
-                } catch(e) { show(e.message,"err"); }
-                finally { setSaving(false); }
-              }} disabled={saving} style={{padding:"10px 24px",borderRadius: R.md,border:"none",background:C.pri,color:"#fff",fontSize:14.3,fontWeight:700,cursor:"pointer",fontFamily:"inherit",opacity:saving?0.5:1}}>
-                {saving?"Activando...":"Activar flota propia"}
-              </button>
-            </div>
-          ) : (<>
-          <div style={{display:"flex",justifyContent:"flex-end",marginBottom:8}}>
-            <button onClick={()=>{showTruckForm?setShowTruckForm(false):openNewTruck();}} style={{padding:"6px 12px",borderRadius: R.sm,border:`1px solid ${typeColors.transporter}`,background:`${typeColors.transporter}12`,color:typeColors.transporter,fontSize:12.1,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>{showTruckForm&&!editTruckId?"Cancelar":"+ Nuevo vehículo"}</button>
+                </div>
+              );
+            })}
+            {detailUsers.length===0&&!showDetailUserForm&&<div style={{textAlign:"center",padding:20,color:C.t3,fontSize:13.2}}>Sin usuarios activos en esta empresa</div>}
           </div>
-          {showTruckForm && (
-            <div style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius: R.md,padding:14,marginBottom:10,boxShadow:C.sh}}>
-              <div style={{fontSize:13.2,fontWeight:600,color:C.t1,marginBottom:8}}>{editTruckId?"Editar vehículo":"Nuevo vehículo"}</div>
-              <div style={s.lbl}>Patente *</div>
-              <input value={truckForm.plate} onChange={e=>setTruckForm(p=>({...p,plate:e.target.value}))} placeholder="ABC-1234" style={{...s.inp,marginBottom:10,textTransform:"uppercase"}} />
-              <div style={{display:"flex",gap:8,marginBottom:10}}>
-                <div style={{flex:1}}><div style={s.lbl}>Marca</div><input value={truckForm.brand} onChange={e=>setTruckForm(p=>({...p,brand:e.target.value}))} placeholder="Ej: Scania" style={s.inp} /></div>
-                <div style={{flex:1}}><div style={s.lbl}>Modelo</div><input value={truckForm.model} onChange={e=>setTruckForm(p=>({...p,model:e.target.value}))} placeholder="Ej: R500" style={s.inp} /></div>
-              </div>
-              <div style={s.lbl}>Capacidad</div>
-              <input value={truckForm.capacity} onChange={e=>setTruckForm(p=>({...p,capacity:e.target.value}))} placeholder="Ej: 30 ton" style={{...s.inp,marginBottom:10}} />
-              <div style={{display:"flex",gap:8}}>
-                <button onClick={()=>setShowTruckForm(false)} style={{flex:1,padding:"10px 0",borderRadius: R.md,border:`1px solid ${C.b1}`,background:C.w,color:C.t2,fontSize:14.3,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>Cancelar</button>
-                <button onClick={handleSaveTruck} disabled={saving} style={{...s.btnP(typeColors.transporter,saving),flex:2}}>{saving?"Guardando...":(editTruckId?"Guardar":"Crear vehículo")}</button>
-              </div>
-            </div>
-          )}
-          {trucks.map(t=>(<div key={t.id} style={{background:C.w,border:`1px solid ${C.b1}`,borderRadius: R.md,padding:"12px 14px",marginBottom:8,boxShadow:C.sh}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-              <div style={{flex:1}}>
-                <LicensePlate plate={t.plate} size="md" />
-                <div style={{display:"flex",gap:8,fontSize:12.1,color:C.t3,marginTop:2}}>
-                  {t.brand&&<span>{t.brand}</span>}{t.model&&<span>{t.model}</span>}{t.capacity&&<span>· {t.capacity}</span>}
-                </div>
-                {t.assignedUser&&<div style={{fontSize:11,color:C.t2,marginTop:1}}>Chofer: {t.assignedUser.name}</div>}
-              </div>
-              <div style={{display:"flex",gap:4}}>
-                <button onClick={()=>openEditTruck(t)} style={{padding:"4px 8px",borderRadius: R.sm,border:`1px solid ${C.pri}40`,background:"none",fontSize:11,color:C.pri,cursor:"pointer",fontFamily:"inherit"}}>Editar</button>
-                <button disabled={saving} onClick={()=>handleDeleteTruck(t.id)} style={{padding:"4px 8px",borderRadius: R.sm,border:`1px solid ${C.err}30`,background:"none",fontSize:11,color:saving?C.t3:C.err,cursor:saving?"not-allowed":"pointer",fontFamily:"inherit",opacity:saving?0.5:1}}>Eliminar</button>
-              </div>
-            </div>
-          </div>))}
-          {trucks.length===0&&!showTruckForm&&<div style={{textAlign:"center",padding:20,color:C.t3,fontSize:13.2}}>Sin vehículos</div>}
-          </>)}
         </>)}
 
         {/* ====== TAB: ACCESS ====== */}

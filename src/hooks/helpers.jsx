@@ -2,31 +2,41 @@ import { C } from "../theme";
 
 // ======================== MAP USER ====================================
 export function mapUser(u) {
-  if(!u) return null;
+  if (!u) return null;
   const co = u.company;
   const userTypes = u.userTypes || (co?.type ? [co.type] : ["producer"]);
-  const userType = u.activeType || co?.type || userTypes[0] || "producer";
-  // Map gerente → admin for backward compat in frontend logic
-  const rawRole = u.role || "operario";
-  const role = rawRole === "gerente" ? "admin" : rawRole;
   const name = u.name || "Usuario";
-  const av = name.split(" ").filter(w=>w).map(w=>w[0]).join("").slice(0,2).toUpperCase() || "U";
-  // New: companies array from backend (memberships)
+  const av = name.split(" ").filter(w => w).map(w => w[0]).join("").slice(0, 2).toUpperCase() || "U";
   const companies = (u.companies || []).map(c => ({
     ...c,
-    // Map gerente → admin for frontend compat
     effectiveRole: c.role === "gerente" ? "admin" : c.role,
   }));
+  const activeCompanyId = u.activeCompanyId || co?.id || "";
+  const activeMembership = companies.find(c => c.companyId === activeCompanyId) || null;
+  const rawRole = activeMembership?.role || u.role || "operario";
+  const role = rawRole === "gerente" ? "admin" : rawRole;
+  const userType = u.activeType || activeMembership?.companyType || co?.type || userTypes[0] || "producer";
+  const entity = activeMembership?.companyName || co?.name || "";
+  const entityId = activeMembership?.companyId || co?.id || "";
+
   return {
-    id:u.id, email:u.email, phone:u.phone||"", name, role, userType, userTypes,
-    companyByType: u.companyByType||{},
-    entity:co?.name||"", entityId:co?.id||"", companyId:co?.id||"",
-    activeCompanyId: u.activeCompanyId || co?.id || "",
+    id: u.id,
+    email: u.email,
+    phone: u.phone || "",
+    name,
+    role,
+    userType,
+    userTypes,
+    companyByType: u.companyByType || {},
+    entity,
+    entityId,
+    companyId: entityId,
+    activeCompanyId,
     companies,
-    hasInternalFleet: co?.hasInternalFleet||false,
-    isSuperAdmin: u.isSuperAdmin||false,
+    hasInternalFleet: activeMembership?.hasInternalFleet ?? co?.hasInternalFleet ?? false,
+    isSuperAdmin: u.isSuperAdmin || false,
     isNew: !!u.isNew,
-    av
+    av,
   };
 }
 
@@ -104,24 +114,24 @@ export function mapFreight(f) {
     producerCompanyId:f.producerCompanyId||null, producerCompanyName:f.producerCompany?.name||null, producerCompanyPhone:f.producerCompany?.phone||null,
     // Autonomous driver freight
     isAutonomous: !!f.isAutonomous,
-    originFreeText: f.originFreeText||null,
-    destinationFreeText: f.destinationFreeText||null,
-    arrivedAtPlantAt: f.arrivedAtPlantAt||null,
+    originFreeText:f.originFreeText||null,
+    destinationFreeText:f.destinationFreeText||null,
+    arrivedAtPlantAt:f.arrivedAtPlantAt||null,
     notes:f.notes||"", cancelReason:f.cancelReason||"", createdAt:f.createdAt,
-    transporterLoadedConfirmedAt: f.transporterLoadedConfirmedAt||null,
-    producerLoadedConfirmedAt: f.producerLoadedConfirmedAt||null,
-    transporterFinishedConfirmedAt: f.transporterFinishedConfirmedAt||null,
-    plantFinishedConfirmedAt: f.plantFinishedConfirmedAt||null,
-    startedAt: f.startedAt||null,
-    loadedAt: f.loadedAt||null,
-    finishedAt: f.finishedAt||null,
+    transporterLoadedConfirmedAt:f.transporterLoadedConfirmedAt||null,
+    producerLoadedConfirmedAt:f.producerLoadedConfirmedAt||null,
+    transporterFinishedConfirmedAt:f.transporterFinishedConfirmedAt||null,
+    plantFinishedConfirmedAt:f.plantFinishedConfirmedAt||null,
+    startedAt:f.startedAt||null,
+    loadedAt:f.loadedAt||null,
+    finishedAt:f.finishedAt||null,
     needsPlantApproval: !!f.needsPlantApproval,
-    plantApprovedAt: f.plantApprovedAt||null,
-    documents: f.documents||[],
-    conversationId: f.conversation?.id||null,
-    pendingChanges: f.pendingChanges||[],
+    plantApprovedAt:f.plantApprovedAt||null,
+    documents:f.documents||[],
+    conversationId:f.conversation?.id||null,
+    pendingChanges:f.pendingChanges||[],
     // Flag: true when loaded via findOne (full detail), false when from list/summary
-    _isFullDetail: 'documents' in f || 'conversation' in f || 'pendingChanges' in f,
+    _isFullDetail: "documents" in f || "conversation" in f || "pendingChanges" in f,
     isOverdue: (() => {
       const overdueStatuses = ["pending_assignment","assigned","accepted"];
       if (!overdueStatuses.includes(f.status)) return false;
@@ -134,15 +144,15 @@ export function mapFreight(f) {
   };
 }
 
-/** Resolve origin display text — always use the name saved at freight creation */
+/** Resolve origin display text â€” always use the name saved at freight creation */
 export function originDisplay(f) {
-  if (!f) return '';
+  if (!f) return "";
   if (f.originFreeText) return f.originFreeText;
   return [f.fieldName, f.originName].filter(Boolean).join(" / ") || f.originCompanyName || "";
 }
-/** Resolve dest display text — always use the name saved at freight creation */
+/** Resolve dest display text â€” always use the name saved at freight creation */
 export function destDisplay(f) {
-  if (!f) return '';
+  if (!f) return "";
   if (f.destinationFreeText) return f.destinationFreeText;
   return f.destName || "";
 }
@@ -153,7 +163,7 @@ export function permsFor(user) {
   const { role, userType } = user;
   const isChofer = role === "chofer";
   if (isChofer) return { canRequest:false, canApprove:false, canAssignDriver:false, canCancel:false, canReject:false, isChofer:true };
-  // role is already mapped: gerente→admin in mapUser, platform_admin stays
+  // role is already mapped: gerente->admin in mapUser, platform_admin stays
   const isManager = role === "admin" || role === "platform_admin";
   return {
     canRequest:      ["plant","producer"].includes(userType),

@@ -132,7 +132,14 @@ export function useAuth() {
         if (!prev) return prev;
         const target = prev.companies?.find(c => c.companyId === companyId);
         if (!target) return prev;
-        return { ...prev, activeCompanyId: companyId, companyId, entity: target.companyName, userType: target.companyType };
+        return {
+          ...prev,
+          activeCompanyId: companyId,
+          companyId,
+          entity: target.companyName,
+          userType: target.companyType,
+          role: target.effectiveRole || (target.role === "gerente" ? "admin" : target.role) || prev.role,
+        };
       });
 
       const d = await apiSwitchCompany(companyId);
