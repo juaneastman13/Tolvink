@@ -37,6 +37,14 @@ function normalizeKey(k) {
 
 export default function DocumentsScreen({ user, onBack, onNavigate }) {
   const [tab, setTab] = useState("freight"); // "company" | "freight"
+  const [searchQ, setSearchQ] = useState("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [datePreset, setDatePreset] = useState("");
+  const [dateFilterOpen, setDateFilterOpen] = useState(false);
+  const [fPlant, setFPlant] = useState("");
+  const [fProducer, setFProducer] = useState("");
+  const [fTransporter, setFTransporter] = useState("");
   const [companies, setCompanies] = useState([]);
   const [loadingCompanies, setLoadingCompanies] = useState(false);
   const [selCompany, setSelCompany] = useState(null);
@@ -66,6 +74,31 @@ export default function DocumentsScreen({ user, onBack, onNavigate }) {
 
   const companyId = user?.activeCompanyId || user?.companyId;
   const isManager = ["admin", "gerente", "platform_admin"].includes(user?.role);
+
+  const getFreightPlantName = useCallback((f) => f?.destName || f?.destinationName || "", []);
+  const getFreightProducerName = useCallback((f) => f?.producerCompany?.name || f?.producerCompanyName || f?.originCompany?.name || f?.originCompanyName || "", []);
+  const getFreightTransporterName = useCallback((f) => f?.transporterName || "", []);
+
+  const applyDatePreset = useCallback((preset) => {
+    setDatePreset(preset);
+    const today = new Date();
+    const fmt = d => d.toISOString().slice(0, 10);
+    if (preset === "today") { setDateFrom(fmt(today)); setDateTo(fmt(today)); }
+    else if (preset === "week") { const w = new Date(today); w.setDate(w.getDate() - 7); setDateFrom(fmt(w)); setDateTo(fmt(today)); }
+    else if (preset === "month") { const m = new Date(today); m.setMonth(m.getMonth() - 1); setDateFrom(fmt(m)); setDateTo(fmt(today)); }
+    else { setDateFrom(""); setDateTo(""); }
+  }, []);
+
+  const clearFreightFilters = useCallback(() => {
+    setSearchQ("");
+    setDateFrom("");
+    setDateTo("");
+    setDatePreset("");
+    setFPlant("");
+    setFProducer("");
+    setFTransporter("");
+    setDateFilterOpen(false);
+  }, []);
 
   // Load freights (shared between both tabs for counts)
   useEffect(() => {
@@ -103,6 +136,37 @@ export default function DocumentsScreen({ user, onBack, onNavigate }) {
     });
     return map;
   }, [freights]);
+
+  const plantOptions = useMemo(() => [...new Set(freights.map(getFreightPlantName).filter(Boolean))].sort((a, b) => a.localeCompare(b)), [freights, getFreightPlantName]);
+  const producerOptions = useMemo(() => [...new Set(freights.map(getFreightProducerName).filter(Boolean))].sort((a, b) => a.localeCompare(b)), [freights, getFreightProducerName]);
+  const transporterOptions = useMemo(() => [...new Set(freights.map(getFreightTransporterName).filter(Boolean))].sort((a, b) => a.localeCompare(b)), [freights, getFreightTransporterName]);
+
+  const filteredFreights = useMemo(() => {
+    const q = searchQ.trim().toLowerCase();
+    return freights.filter(f => {
+      const plantName = getFreightPlantName(f);
+      const producerName = getFreightProducerName(f);
+      const transporterName = getFreightTransporterName(f);
+      const loadDate = String(f.loadDate || f.createdAt || "").slice(0, 10);
+      if (fPlant && plantName !== fPlant) return false;
+      if (fProducer && producerName !== fProducer) return false;
+      if (fTransporter && transporterName !== fTransporter) return false;
+      if (dateFrom && (!loadDate || loadDate < dateFrom)) return false;
+      if (dateTo && (!loadDate || loadDate > dateTo)) return false;
+      if (!q) return true;
+      const haystack = [
+        f.code,
+        plantName,
+        producerName,
+        transporterName,
+        f.originName,
+        f.destName,
+      ].filter(Boolean).join(" ").toLowerCase();
+      return haystack.includes(q);
+    });
+  }, [freights, searchQ, fPlant, fProducer, fTransporter, dateFrom, dateTo, getFreightPlantName, getFreightProducerName, getFreightTransporterName]);
+
+  const hasFreightFilters = !!(searchQ || dateFrom || dateTo || fPlant || fProducer || fTransporter);
 
   // Load docs for selected company
   const loadCompanyDocs = useCallback(async (granteeCompanyId) => {
@@ -602,8 +666,46 @@ export default function DocumentsScreen({ user, onBack, onNavigate }) {
       {tab === "freight" && !selFreight && (
         loadingFreights ? <div style={{ padding: 40, textAlign: "center" }}><Loader /></div> :
         freights.length === 0 ? <EmptyState icon={Ic.doc(C.t3, 28)} title="Sin fletes" subtitle="Los fletes aparecerán aquí" /> :
+        <>
+        <div style={{ marginBottom: 12 }}>
+          <div style={{ position: "relative", marginBottom: 8 }}>
+            <div style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", display: "flex" }}>{Ic.srch(C.t3, 14)}</div>
+            <input value={searchQ} onChange={e => setSearchQ(e.target.value)} placeholder="Buscar flete..." style={{ width: "100%", padding: "8px 12px 8px 32px", borderRadius: R.md, border: `1.5px solid ${C.b1}`, background: C.w, color: C.t1, fontSize: 13.2, fontFamily: "inherit", outline: "none", boxSizing: "border-box" }} />
+            {searchQ && <button onClick={() => setSearchQ("")} aria-label="Limpiar busqueda" style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", display: "flex" }}>{Ic.cross(C.t3, 14)}</button>}
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginBottom: dateFilterOpen ? 8 : 0 }}>
+            <button onClick={() => setDateFilterOpen(p => !p)} style={{ padding: "6px 10px", borderRadius: R.md, border: `1.5px solid ${(dateFrom || dateTo) ? C.pri : C.b1}`, background: (dateFrom || dateTo) ? C.priPale : C.w, color: (dateFrom || dateTo) ? C.pri : C.t2, fontSize: 12.1, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 5, whiteSpace: "nowrap" }}>
+              {Ic.cal((dateFrom || dateTo) ? C.pri : C.t3, 13)} {dateFilterOpen ? "Ocultar fechas" : "Filtrar por fecha"}{(dateFrom || dateTo) ? " (activo)" : ""}
+            </button>
+            <select value={fPlant} onChange={e => setFPlant(e.target.value)} style={{ padding: "6px 8px", borderRadius: R.md, border: `1.5px solid ${fPlant ? C.pri : C.b1}`, background: fPlant ? C.priPale : C.w, color: fPlant ? C.pri : C.t3, fontSize: 12.1, fontFamily: "inherit", outline: "none", cursor: "pointer" }}>
+              <option value="">Planta</option>
+              {plantOptions.map(p => <option key={p} value={p}>{p}</option>)}
+            </select>
+            <select value={fProducer} onChange={e => setFProducer(e.target.value)} style={{ padding: "6px 8px", borderRadius: R.md, border: `1.5px solid ${fProducer ? C.pri : C.b1}`, background: fProducer ? C.priPale : C.w, color: fProducer ? C.pri : C.t3, fontSize: 12.1, fontFamily: "inherit", outline: "none", cursor: "pointer" }}>
+              <option value="">Productor</option>
+              {producerOptions.map(p => <option key={p} value={p}>{p}</option>)}
+            </select>
+            <select value={fTransporter} onChange={e => setFTransporter(e.target.value)} style={{ padding: "6px 8px", borderRadius: R.md, border: `1.5px solid ${fTransporter ? C.pri : C.b1}`, background: fTransporter ? C.priPale : C.w, color: fTransporter ? C.pri : C.t3, fontSize: 12.1, fontFamily: "inherit", outline: "none", cursor: "pointer" }}>
+              <option value="">Transportista</option>
+              {transporterOptions.map(p => <option key={p} value={p}>{p}</option>)}
+            </select>
+            {hasFreightFilters && <button onClick={clearFreightFilters} style={{ padding: "6px 10px", borderRadius: R.sm, border: `1px solid ${C.err}40`, background: C.errPale, color: C.err, fontSize: 12.1, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap", flexShrink: 0 }}>Limpiar</button>}
+          </div>
+          {dateFilterOpen && <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginTop: 8, padding: "8px 12px", background: C.bg, borderRadius: R.md, border: `1px solid ${C.b1}` }}>
+            <span style={{ fontSize: 11, color: C.t2, fontWeight: 600 }}>Desde</span>
+            <input type="date" value={dateFrom} onChange={e => { setDateFrom(e.target.value); setDatePreset("custom"); }} onClick={e => e.target.showPicker?.()} style={{ padding: "5px 8px", borderRadius: R.sm, border: `1px solid ${C.b1}`, background: C.w, color: dateFrom ? C.t1 : C.t3, fontSize: 12.1, fontFamily: "inherit", outline: "none", boxSizing: "border-box", cursor: "pointer" }} />
+            <span style={{ fontSize: 11, color: C.t2, fontWeight: 600 }}>Hasta</span>
+            <input type="date" value={dateTo} onChange={e => { setDateTo(e.target.value); setDatePreset("custom"); }} onClick={e => e.target.showPicker?.()} style={{ padding: "5px 8px", borderRadius: R.sm, border: `1px solid ${C.b1}`, background: C.w, color: dateTo ? C.t1 : C.t3, fontSize: 12.1, fontFamily: "inherit", outline: "none", boxSizing: "border-box", cursor: "pointer" }} />
+            {(dateFrom || dateTo) && <button onClick={() => { setDateFrom(""); setDateTo(""); setDatePreset(""); }} aria-label="Limpiar fechas" style={{ background: "none", border: "none", cursor: "pointer", display: "flex", padding: 2 }}>{Ic.cross(C.t3, 14)}</button>}
+            {[{ k: "today", l: "Hoy" }, { k: "week", l: "Semana" }, { k: "month", l: "Mes" }].map(p => (
+              <button key={p.k} onClick={() => applyDatePreset(p.k)} style={{ padding: "5px 10px", borderRadius: R.sm, border: `1px solid ${datePreset === p.k ? C.pri : C.b1}`, background: datePreset === p.k ? C.priPale : C.w, color: datePreset === p.k ? C.pri : C.t2, fontSize: 12.1, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap" }}>{p.l}</button>
+            ))}
+          </div>}
+        </div>
+        {hasFreightFilters && <div style={{ fontSize: 12.1, fontWeight: 600, color: C.t3, marginBottom: 8 }}>{filteredFreights.length} flete{filteredFreights.length !== 1 ? "s" : ""}</div>}
+        {filteredFreights.length === 0 ? <EmptyState icon={Ic.srch(C.t3, 28)} title="Sin resultados" subtitle="Proba cambiando los filtros" /> :
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {freights.map(f => {
+          {filteredFreights.map(f => {
             const sc = STATUS_COLORS[f.status] || {};
             const docCount = (f.documentCount || 0) + (f.weighTicketCount || 0);
             const ocrCount = (f.ocrDocCount || 0) + (f.ocrTicketCount || 0);
@@ -636,7 +738,8 @@ export default function DocumentsScreen({ user, onBack, onNavigate }) {
               </button>
             );
           })}
-        </div>
+        </div>}
+        </>
       )}
 
       {tab === "freight" && selFreight && (
