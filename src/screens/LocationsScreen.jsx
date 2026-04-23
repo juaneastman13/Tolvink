@@ -37,14 +37,14 @@ const FILTER_CHIPS = [
 const FILTER_COLORS = { field: LOC_COLORS.field, lot: LOC_COLORS.lot, poi: LOC_COLORS.poi, tolvinkPlant: LOC_COLORS.tolvinkPlant };
 const _esc = (s) => String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 
-// ── Cluster marker SVG — green circle with count, three size tiers ──
-const _clusterSvg = (count, size) => {
+// ── Cluster marker SVG — colored circle with count, three size tiers ──
+const _clusterSvg = (count, size, color) => {
   const label = count > 999 ? "999+" : String(count);
   const fs = size <= 38 ? 11 : size <= 46 ? 13 : 15;
   const r = size / 2;
   return `data:image/svg+xml,${encodeURIComponent(
     `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">` +
-    `<circle cx="${r}" cy="${r}" r="${r - 2}" fill="${C.pri}" stroke="#ffffff" stroke-width="2.5"/>` +
+    `<circle cx="${r}" cy="${r}" r="${r - 2}" fill="${color}" stroke="#ffffff" stroke-width="2.5"/>` +
     `<text x="${r}" y="${r + fs * 0.38}" text-anchor="middle" font-family="DM Sans,system-ui,-apple-system,sans-serif" font-size="${fs}" font-weight="700" fill="#ffffff">${label}</text>` +
     `</svg>`
   )}`;
@@ -145,7 +145,7 @@ export default function LocationsScreen({ onBack, user }) {
   const mapContainerRef = useRef(null);
   const mapObjRef = useRef(null);
   const markersRef = useRef({});
-  const clustererRef = useRef(null);
+  const clusterersRef = useRef({}); // keyed by type: { field, lot, poi, tolvinkPlant }
   const infoRef = useRef(null);
   const panelRef = useRef(null);
   const itemRefsMap = useRef({});
@@ -541,16 +541,14 @@ export default function LocationsScreen({ onBack, user }) {
     if (!map || !window.google?.maps) return;
     const maps = window.google.maps;
 
-    // Destroy previous clusterer before clearing markers
-    if (clustererRef.current) {
-      clustererRef.current.clearMarkers(true);
-      clustererRef.current.setMap(null);
-      clustererRef.current = null;
-    }
+    // Destroy all previous per-type clusterers
+    Object.values(clusterersRef.current).forEach(c => { c.clearMarkers(true); c.setMap(null); });
+    clusterersRef.current = {};
     Object.values(markersRef.current).forEach(m => m.setMap(null));
     markersRef.current = {};
 
-    const newMarkers = [];
+    // Collect markers grouped by type
+    const byType = { field: [], lot: [], poi: [], tolvinkPlant: [] };
     const bounds = new maps.LatLngBounds();
     let hasPoints = false;
 
@@ -562,7 +560,6 @@ export default function LocationsScreen({ onBack, user }) {
       else if (loc.type === "lot") icon = mkLotIcon(maps, 0.85);
       else if (loc.type === "tolvinkPlant") icon = mkTolvinkPlantIcon(maps, 0.85);
       else icon = mkPoiIcon(maps, 1.0);
-      // marker: no map — clusterer manages visibility
       const marker = new maps.Marker({ position: pos, icon, title: loc.name, zIndex: activeId === loc.id ? 999 : 1 });
       marker.addListener("click", () => {
         const curLoc = allLocsRef.current.find(l => l.id === loc.id) || loc;
@@ -571,30 +568,34 @@ export default function LocationsScreen({ onBack, user }) {
         if (isDesktop) highlightPanelItem(loc.id);
       });
       markersRef.current[loc.id] = marker;
-      newMarkers.push(marker);
+      if (byType[loc.type]) byType[loc.type].push(marker);
       bounds.extend(pos);
       hasPoints = true;
     });
 
-    // Cluster renderer: green circle with count, three size tiers
-    clustererRef.current = new MarkerClusterer({
-      map,
-      markers: newMarkers,
-      renderer: {
-        render: ({ count, position }) => {
-          const size = count < 10 ? 36 : count < 100 ? 44 : 52;
-          return new maps.Marker({
-            position,
-            icon: {
-              url: _clusterSvg(count, size),
-              scaledSize: new maps.Size(size, size),
-              anchor: new maps.Point(size / 2, size / 2),
-            },
-            zIndex: 1000 + Math.min(count, 999),
-            title: `${count} ubicaciones`,
-          });
+    // One clusterer per type — clusters never cross type boundaries
+    Object.entries(byType).forEach(([type, markers]) => {
+      if (!markers.length) return;
+      const color = LOC_COLORS[type];
+      clusterersRef.current[type] = new MarkerClusterer({
+        map,
+        markers,
+        renderer: {
+          render: ({ count, position }) => {
+            const size = count < 10 ? 36 : count < 100 ? 44 : 52;
+            return new maps.Marker({
+              position,
+              icon: {
+                url: _clusterSvg(count, size, color),
+                scaledSize: new maps.Size(size, size),
+                anchor: new maps.Point(size / 2, size / 2),
+              },
+              zIndex: 1000 + Math.min(count, 999),
+              title: `${count} ${TYPE_CFG[type]?.label ?? type}s`,
+            });
+          },
         },
-      },
+      });
     });
 
     if (hasPoints) map.fitBounds(bounds, { top: 60, bottom: 20, left: 20, right: 20 });
