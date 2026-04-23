@@ -8,7 +8,7 @@ import log from "../logger";
 const LocationPicker = lazy(() => import("../maps").then(m => ({ default: m.LocationPicker })));
 const SafeZone = lazy(() => import("../maps").then(m => ({ default: m.SafeZone })));
 const FreightMap = lazy(() => import("../maps").then(m => ({ default: m.FreightMap })));
-import { uploadPhoto, apiAddDocument, apiGetFieldLots, apiCreateLot, apiGetDrivers, apiGetCompanyAccess, apiGetFields, apiGetTrucks, apiListDrivers, apiCreateField, apiCreateTruck, apiCreateLinkedCompany, apiCreateLinkedUser, apiListCompanyProducts } from "../api";
+import { uploadPhoto, apiAddDocument, apiGetFieldLots, apiCreateLot, apiGetDrivers, apiGetCompanyAccess, apiGetFields, apiGetTrucks, apiListDrivers, apiCreateField, apiCreateTruck, apiCreateLinkedCompany, apiCreateLinkedUser, apiListCompanyProducts, apiCreateCompanyProduct } from "../api";
 import { useIsDesktop } from "../hooks";
 import { useAccessLevel } from "../hooks/useAccessLevel";
 import { useUIStore } from "../store";
@@ -195,6 +195,10 @@ export default function NewScreen({ user, lots, plants, tolvinkPlants = [], bran
   const [errs, setErrs] = useState({});
   const [touched, setTouched] = useState(false);
   const [companyProducts, setCompanyProducts] = useState(null); // null = not loaded yet
+  const [showNewProductModal, setShowNewProductModal] = useState(false);
+  const [newProductForm, setNewProductForm] = useState({ name: "", code: "", defaultUnit: "", sortOrder: "" });
+  const [newProductSaving, setNewProductSaving] = useState(false);
+  const [newProductError, setNewProductError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const submitGuard = useRef(false);
   const [fieldLots, setFieldLots] = useState([]);
@@ -505,6 +509,34 @@ export default function NewScreen({ user, lots, plants, tolvinkPlants = [], bran
     }
     return GRANOS.map(g => ({ label: g, value: g, id: null }));
   }, [companyProducts]);
+
+  // Can the current user create company products? Mirrors backend CATALOG_MANAGER_ROLES
+  const canManageProducts = ["gerente", "admin", "platform_admin"].includes(user?.role);
+
+  const handleCreateProductInline = async () => {
+    const name = newProductForm.name.trim();
+    if (!name) { setNewProductError("Nombre requerido"); return; }
+    setNewProductSaving(true); setNewProductError("");
+    try {
+      const created = await apiCreateCompanyProduct({
+        name,
+        code: newProductForm.code.trim() || undefined,
+        defaultUnit: newProductForm.defaultUnit || undefined,
+        sortOrder: newProductForm.sortOrder !== "" ? Number(newProductForm.sortOrder) : undefined,
+      });
+      // Refresh catalog
+      const r = await apiListCompanyProducts();
+      setCompanyProducts(r && r.length > 0 ? r : null);
+      // Auto-select the new product
+      u({ grain: created.name, companyProductId: created.id, productTypeOther: "" });
+      setShowNewProductModal(false);
+      setNewProductForm({ name: "", code: "", defaultUnit: "", sortOrder: "" });
+    } catch (e) {
+      setNewProductError(e.message || "Error al crear producto");
+    } finally {
+      setNewProductSaving(false);
+    }
+  };
 
   // Section completeness
   const secComplete = useMemo(()=>({
@@ -945,6 +977,7 @@ export default function NewScreen({ user, lots, plants, tolvinkPlants = [], bran
               <Field label="Tipo de producto" icon={Ic.grain(C.pri,14)}>
                 <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:6 }}>
                   {grainOptions.map(g=><button key={g.value} onClick={()=>{u({grain:g.value,companyProductId:g.id||""}); if(g.value!=="Otros")u({productTypeOther:""});}} style={{ padding:"10px 8px", borderRadius: R.md, border:`1.5px solid ${form.grain===g.value?C.pri:C.b1}`, background:form.grain===g.value?C.priPale:C.w, color:form.grain===g.value?C.pri:C.t2, cursor:"pointer", fontSize:13.2, fontWeight:600, fontFamily:"inherit" }}>{g.label}</button>)}
+                  {canManageProducts && <button onClick={()=>{setNewProductError("");setNewProductForm({name:"",code:"",defaultUnit:"",sortOrder:""});setShowNewProductModal(true);}} style={{ padding:"10px 8px", borderRadius: R.md, border:`1.5px dashed ${C.pri}`, background:C.w, color:C.pri, cursor:"pointer", fontSize:13.2, fontWeight:600, fontFamily:"inherit" }}>+ Nuevo</button>}
                 </div>
               </Field>
               {touched&&<FieldError error={errs.grain}/>}
@@ -1347,6 +1380,7 @@ export default function NewScreen({ user, lots, plants, tolvinkPlants = [], bran
             <Field label="Tipo de producto" icon={Ic.grain(C.pri,14)}>
               <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:6 }}>
                 {grainOptions.map(g=><button key={g.value} onClick={()=>{u({grain:g.value,companyProductId:g.id||""}); if(g.value!=="Otros")u({productTypeOther:""});}} style={{ padding:"10px 8px", borderRadius: R.md, border:`1.5px solid ${form.grain===g.value?C.pri:C.b1}`, background:form.grain===g.value?C.priPale:C.w, color:form.grain===g.value?C.pri:C.t2, cursor:"pointer", fontSize:13.2, fontWeight:600, fontFamily:"inherit" }}>{g.label}</button>)}
+                {canManageProducts && <button onClick={()=>{setNewProductError("");setNewProductForm({name:"",code:"",defaultUnit:"",sortOrder:""});setShowNewProductModal(true);}} style={{ padding:"10px 8px", borderRadius: R.md, border:`1.5px dashed ${C.pri}`, background:C.w, color:C.pri, cursor:"pointer", fontSize:13.2, fontWeight:600, fontFamily:"inherit" }}>+ Nuevo</button>}
               </div>
             </Field>
             {touched&&<FieldError error={errs.grain}/>}
@@ -1841,6 +1875,45 @@ export default function NewScreen({ user, lots, plants, tolvinkPlants = [], bran
           </div>
         </div>
       )}
+
+    {showNewProductModal && (
+      <div role="dialog" aria-modal="true" aria-label="Nuevo producto" style={{ position:"fixed", inset:0, zIndex:10000, display:"flex", alignItems:"center", justifyContent:"center", padding:16 }}>
+        <div onClick={()=>!newProductSaving&&setShowNewProductModal(false)} style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.5)" }}/>
+        <div style={{ position:"relative", background:C.w, borderRadius: R.lg, width:"100%", maxWidth:460, padding:20, boxShadow:"0 20px 50px rgba(0,0,0,0.25)", animation:"slideUp 0.2s ease" }}>
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
+            <div style={{ fontSize:17, fontWeight:700, color:C.t1 }}>Nuevo producto</div>
+            <button aria-label="Cerrar" onClick={()=>!newProductSaving&&setShowNewProductModal(false)} style={{ background:"none", border:"none", cursor:"pointer", padding:4, display:"flex" }}>{Ic.cross(C.t3,18)}</button>
+          </div>
+          <div style={{ fontSize:12, color:C.t3, marginBottom:12 }}>Se guardará en el catálogo de productos de tu empresa.</div>
+
+          <div style={{ fontSize:12, fontWeight:600, color:C.t2, marginBottom:4 }}>Nombre *</div>
+          <input autoFocus value={newProductForm.name} onChange={e=>setNewProductForm(p=>({...p,name:e.target.value}))} placeholder="Ej: Soja, Maíz, Trigo..." style={{ width:"100%", padding:"10px 12px", borderRadius: R.md, border:`1px solid ${C.b1}`, fontSize:14, fontFamily:"inherit", marginBottom:10, boxSizing:"border-box" }}/>
+
+          <div style={{ display:"flex", gap:8, marginBottom:10 }}>
+            <div style={{ flex:1 }}>
+              <div style={{ fontSize:12, fontWeight:600, color:C.t2, marginBottom:4 }}>Código</div>
+              <input value={newProductForm.code} onChange={e=>setNewProductForm(p=>({...p,code:e.target.value}))} placeholder="Ej: SOJ" style={{ width:"100%", padding:"10px 12px", borderRadius: R.md, border:`1px solid ${C.b1}`, fontSize:14, fontFamily:"inherit", boxSizing:"border-box" }}/>
+            </div>
+            <div style={{ flex:1 }}>
+              <div style={{ fontSize:12, fontWeight:600, color:C.t2, marginBottom:4 }}>Unidad por defecto</div>
+              <select value={newProductForm.defaultUnit} onChange={e=>setNewProductForm(p=>({...p,defaultUnit:e.target.value}))} style={{ width:"100%", padding:"10px 12px", borderRadius: R.md, border:`1px solid ${C.b1}`, fontSize:14, fontFamily:"inherit", background:C.w, boxSizing:"border-box" }}>
+                <option value="">Sin definir</option>
+                <option value="toneladas">Toneladas</option>
+                <option value="t">t</option>
+                <option value="kg">kg</option>
+              </select>
+            </div>
+          </div>
+
+          {newProductError && <div style={{ background:`${C.err}12`, border:`1px solid ${C.err}40`, color:C.err, borderRadius: R.md, padding:"8px 12px", fontSize:13, marginBottom:10 }}>{newProductError}</div>}
+
+          <div style={{ display:"flex", gap:8, marginTop:4 }}>
+            <button onClick={()=>setShowNewProductModal(false)} disabled={newProductSaving} style={{ flex:1, padding:"10px 0", borderRadius: R.md, border:`1px solid ${C.b1}`, background:C.w, color:C.t2, fontSize:14, fontWeight:600, cursor:newProductSaving?"default":"pointer", fontFamily:"inherit", opacity:newProductSaving?0.5:1 }}>Cancelar</button>
+            <button onClick={handleCreateProductInline} disabled={newProductSaving||!newProductForm.name.trim()} style={{ flex:2, padding:"10px 0", borderRadius: R.md, border:"none", background:C.pri, color:C.w, fontSize:14, fontWeight:700, cursor:(newProductSaving||!newProductForm.name.trim())?"default":"pointer", fontFamily:"inherit", opacity:(newProductSaving||!newProductForm.name.trim())?0.5:1 }}>{newProductSaving?"Guardando...":"Crear y seleccionar"}</button>
+          </div>
+        </div>
+      </div>
+    )}
 
     </div>
     </Suspense>
