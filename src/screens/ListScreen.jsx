@@ -898,8 +898,9 @@ export default memo(function ListScreen({ freights, loading, onNav, onRefresh, c
                   {g.items.map(f => {
                     const st = stCfg(f.status);
                     return (
-                      <div key={f.id} onClick={() => onNav("detail",f.id)} onMouseEnter={(e)=>handleCardMouseEnter(f,e)} onMouseLeave={handleCardMouseLeave} style={{ position:"relative", display:"flex", alignItems:"center", gap:10, padding:"8px 12px 8px 22px", borderRadius: R.md, border:`1px solid ${C.b1}`, background:C.bg, cursor:"pointer", transition:"background 0.15s" }}>
-                        <div aria-hidden="true" style={{ position:"absolute", left:6, top:"25%", height:"50%", width:10, background:st.color, borderRadius:999, pointerEvents:"none" }}/>
+                      <div key={f.id} onClick={() => onNav("detail",f.id)} onMouseEnter={(e)=>handleCardMouseEnter(f,e)} onMouseLeave={handleCardMouseLeave} style={{ display:"flex", alignItems:"stretch", borderRadius: R.md, border:`1px solid ${C.b1}`, background:C.bg, cursor:"pointer", transition:"background 0.15s", overflow:"hidden" }}>
+                        <div style={{ width:15, background:st.color, flexShrink:0 }}/>
+                        <div style={{ flex:1, display:"flex", alignItems:"center", gap:10, padding:"8px 12px", minWidth:0 }}>
                         <div style={{ flex:1, minWidth:0 }}>
                           <div style={{ display:"flex", alignItems:"center", gap:6 }}>
                             <span style={{ fontSize:12.1, fontWeight:700, fontFamily:MONO, color:C.t2 }}>{f.code}</span>
@@ -912,6 +913,7 @@ export default memo(function ListScreen({ freights, loading, onNav, onRefresh, c
                         </div>
                         <div style={{ fontSize:12.1, color:C.t3, textAlign:"right", flexShrink:0 }}>
                           {destDisplay(f) && <div style={{ display:"flex", alignItems:"center", gap:3, justifyContent:"flex-end" }}>{Ic.plant(C.t3,10)} <span style={{ maxWidth:100, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{destDisplay(f)}</span></div>}
+                        </div>
                         </div>
                       </div>
                     );
@@ -953,8 +955,9 @@ export default memo(function ListScreen({ freights, loading, onNav, onRefresh, c
                         {d.freights.map((f,i)=>{
                           const st = stCfg(f.status);
                           return (
-                            <div key={f.id} onClick={()=>onNav("detail",f.id)} onMouseEnter={(e)=>handleCardMouseEnter(f,e)} onMouseLeave={handleCardMouseLeave} style={{ position:"relative", display:"flex", alignItems:"center", gap:10, padding:"8px 12px 8px 22px", borderRadius: R.md, border:`1px solid ${C.b1}`, background:i===0?`${C.pri}06`:C.bg, cursor:"pointer", transition:"background 0.15s" }}>
-                              <div aria-hidden="true" style={{ position:"absolute", left:6, top:"25%", height:"50%", width:10, background:st.color, borderRadius:999, pointerEvents:"none" }}/>
+                            <div key={f.id} onClick={()=>onNav("detail",f.id)} onMouseEnter={(e)=>handleCardMouseEnter(f,e)} onMouseLeave={handleCardMouseLeave} style={{ display:"flex", alignItems:"stretch", borderRadius: R.md, border:`1px solid ${C.b1}`, background:i===0?`${C.pri}06`:C.bg, cursor:"pointer", transition:"background 0.15s", overflow:"hidden" }}>
+                              <div style={{ width:15, background:st.color, flexShrink:0 }}/>
+                              <div style={{ flex:1, display:"flex", alignItems:"center", gap:10, padding:"8px 12px", minWidth:0 }}>
                               <div style={{ width:22, height:22, borderRadius: R.lg, background:i===0?C.pri:C.b1, color:i===0?C.w:C.t3, display:"flex", alignItems:"center", justifyContent:"center", fontSize:11, fontWeight:800, flexShrink:0 }}>{i+1}</div>
                               <div style={{ flex:1, minWidth:0 }}>
                                 <div style={{ display:"flex", alignItems:"center", gap:6 }}>
@@ -967,6 +970,7 @@ export default memo(function ListScreen({ freights, loading, onNav, onRefresh, c
                               </div>
                               <div style={{ fontSize:12.1, color:C.t3, textAlign:"right", flexShrink:0 }}>
                                 {destDisplay(f) && <div style={{ display:"flex", alignItems:"center", gap:3, justifyContent:"flex-end" }}>{Ic.plant(C.t3,10)} <span style={{ maxWidth:100, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{destDisplay(f)}</span></div>}
+                              </div>
                               </div>
                             </div>
                           );
@@ -1020,8 +1024,9 @@ export default memo(function ListScreen({ freights, loading, onNav, onRefresh, c
                 {trackingGroups.unassigned.map(f=>{
                   const st = stCfg(f.status);
                   return (
-                    <div key={f.id} onClick={()=>onNav("detail",f.id)} onMouseEnter={(e)=>handleCardMouseEnter(f,e)} onMouseLeave={handleCardMouseLeave} style={{ position:"relative", display:"flex", alignItems:"center", gap:10, padding:"8px 12px 8px 22px", borderRadius: R.md, border:`1px dashed ${C.b1}`, background:C.bg, cursor:"pointer" }}>
-                      <div aria-hidden="true" style={{ position:"absolute", left:6, top:"25%", height:"50%", width:10, background:st.color, borderRadius:999, pointerEvents:"none" }}/>
+                    <div key={f.id} onClick={()=>onNav("detail",f.id)} onMouseEnter={(e)=>handleCardMouseEnter(f,e)} onMouseLeave={handleCardMouseLeave} style={{ display:"flex", alignItems:"stretch", borderRadius: R.md, border:`1px dashed ${C.b1}`, background:C.bg, cursor:"pointer", overflow:"hidden" }}>
+                      <div style={{ width:15, background:st.color, flexShrink:0 }}/>
+                      <div style={{ flex:1, display:"flex", alignItems:"center", gap:10, padding:"8px 12px", minWidth:0 }}>
                       <div style={{ flex:1, minWidth:0 }}>
                         <div style={{ display:"flex", alignItems:"center", gap:6 }}>
                           <span style={{ fontSize:11, fontWeight:700, fontFamily:MONO, color:C.t2 }}>{f.code}</span>
@@ -1033,6 +1038,7 @@ export default memo(function ListScreen({ freights, loading, onNav, onRefresh, c
                       <div style={{ fontSize:12.1, color:C.t3, textAlign:"right", flexShrink:0 }}>
                         {f.originCompanyName && <div style={{ display:"flex", alignItems:"center", gap:3, justifyContent:"flex-end" }}>{Ic.user(C.t3,10)} {f.originCompanyName}</div>}
                         {destDisplay(f) && <div style={{ display:"flex", alignItems:"center", gap:3, justifyContent:"flex-end" }}>{Ic.plant(C.t3,10)} {destDisplay(f)}</div>}
+                      </div>
                       </div>
                     </div>
                   );
