@@ -313,6 +313,9 @@ export async function apiGetTracking(id) { return api(`/freights/${id}/tracking`
 export async function apiGetLastPosition(id) { return api(`/freights/${id}/tracking/last`); }
 export async function apiGetParticipantPositions(id) { return api(`/freights/${id}/tracking/participants`); }
 
+// Freight map (operational locations: origin, destination, POIs, etc.)
+export async function apiGetFreightMap(id) { return api(`/freights/${id}/map`); }
+
 // Audit
 export async function apiGetAuditLog(id) { return api(`/freights/${id}/audit`); }
 

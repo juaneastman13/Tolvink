@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, Component } from "react";
-import { apiGetLastPosition, apiSendTracking, apiGetParticipantPositions } from "./api";
+import { apiGetLastPosition, apiSendTracking, apiGetParticipantPositions, apiGetFreightMap } from "./api";
 import { C, Ic, R } from "./theme";
 import { originDisplay, destDisplay } from "./hooks";
 import { useUIStore } from "./store";
@@ -433,10 +433,12 @@ export function FreightMap({ freightId, originLat, originLng, destLat, destLng, 
   const participantMarkers = useRef({});
   const participantInfoWindow = useRef(null);
   const directionsRef = useRef(null);
+  const operationalMarkers = useRef([]);
   const isLiveRef = useRef(false);
   const [routeInfo, setRouteInfo] = useState(null);
   const [truckPos, setTruckPos] = useState(null);
   const [participants, setParticipants] = useState([]);
+  const [operationalLocations, setOperationalLocations] = useState([]);
   const [mapReady, setMapReady] = useState(false);
   const [tracking, setTracking] = useState(false);
   const [error, setError] = useState(null);
@@ -535,6 +537,8 @@ export function FreightMap({ freightId, originLat, originLng, destLat, destLng, 
       cancelled = true;
       Object.values(participantMarkers.current).forEach(m => m.setMap(null));
       participantMarkers.current = {};
+      operationalMarkers.current.forEach(m => m.setMap(null));
+      operationalMarkers.current = [];
       directionsRef.current = null;
       setMapReady(false);
     };
@@ -547,6 +551,47 @@ export function FreightMap({ freightId, originLat, originLng, destLat, destLng, 
       polylineOptions: { strokeColor: isLive ? C.acc : C.pri, strokeWeight: 4, strokeOpacity: 0.8 },
     });
   }, [isLive]);
+
+  // Fetch operational locations (POIs and any FreightLocation rows beyond
+  // the base origin/destination columns). Refetched on freight change so
+  // pins added via the public picker show up after a route revisit.
+  useEffect(() => {
+    if (!freightId) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const payload = await apiGetFreightMap(freightId);
+        if (cancelled || !payload?.locations) return;
+        // Filter out ORIGIN/DESTINATION rows here — those are already drawn
+        // from the base columns; rendering both creates duplicate pins.
+        const ops = payload.locations.filter(
+          (loc) => loc.status === "ACTIVE" && loc.type !== "ORIGIN" && loc.type !== "DESTINATION"
+        );
+        setOperationalLocations(ops);
+      } catch {
+        // Non-fatal: the map still renders origin/dest from base columns.
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [freightId]);
+
+  // Render/refresh operational markers when both map and data are ready.
+  useEffect(() => {
+    if (!mapReady || !mapInstance.current || !window.google?.maps) return;
+    const maps = window.google.maps;
+    operationalMarkers.current.forEach((m) => m.setMap(null));
+    operationalMarkers.current = [];
+    operationalLocations.forEach((loc) => {
+      const m = new maps.Marker({
+        position: { lat: Number(loc.lat), lng: Number(loc.lng) },
+        map: mapInstance.current,
+        title: `${_opTypeLabel(loc.type)}${loc.label ? " · " + loc.label : ""}`,
+        icon: _opSymbol(maps, loc.type),
+        zIndex: 4,
+      });
+      operationalMarkers.current.push(m);
+    });
+  }, [operationalLocations, mapReady]);
 
   // Fetch participant positions — starts immediately (parallel with map init)
   useEffect(() => {
@@ -733,6 +778,27 @@ const _truckSvg = (() => {
 const _truckSymbol = (maps) => ({
   url: _truckSvg, scaledSize: new maps.Size(32, 32), anchor: new maps.Point(16, 16),
 });
+// Operational FreightLocation symbols (POIs, load/unload, references) — uses
+// a colored circle so they read as annotations rather than primary endpoints.
+const _OP_TYPE = {
+  POINT_OF_INTEREST:  { label: "Punto de interés", color: "#7257A8" },
+  LOAD_LOCATION:      { label: "Carga",            color: "#B86E12" },
+  UNLOAD_LOCATION:    { label: "Descarga",         color: "#2563A9" },
+  OPERATIONAL_REFERENCE: { label: "Referencia",    color: "#45524A" },
+  OTHER:              { label: "Otro",             color: "#6B7280" },
+};
+const _opTypeLabel = (type) => (_OP_TYPE[type]?.label) || type;
+const _opSymbol = (maps, type) => {
+  const color = _OP_TYPE[type]?.color || "#6B7280";
+  return {
+    path: maps.SymbolPath?.CIRCLE ?? 0,
+    scale: 8,
+    fillColor: color,
+    fillOpacity: 1,
+    strokeColor: "#fff",
+    strokeWeight: 2.5,
+  };
+};
 // Entity-type symbol lookup for maps
 const _entitySymbol = (maps, type, scale = 1.0) => {
   if (type === "field") return _fieldSymbol(maps, scale);
