@@ -48,6 +48,16 @@ const COLORS = {
   okPale: "#E8F3EC",
 };
 
+function useIsNarrow(threshold = 760) {
+  const [narrow, setNarrow] = useState(() => typeof window !== "undefined" && window.innerWidth < threshold);
+  useEffect(() => {
+    const handler = () => setNarrow(window.innerWidth < threshold);
+    window.addEventListener("resize", handler);
+    return () => window.removeEventListener("resize", handler);
+  }, [threshold]);
+  return narrow;
+}
+
 export default function PublicFreightMapScreen({ token: tokenProp } = {}) {
   const mapRef = useRef(null);
   const mapInstance = useRef(null);
@@ -55,6 +65,7 @@ export default function PublicFreightMapScreen({ token: tokenProp } = {}) {
   const savedMarkers = useRef([]);
   const geocoder = useRef(null);
   const searchRef = useRef(null);
+  const isNarrow = useIsNarrow();
 
   const [token] = useState(tokenProp || extractTokenFromUrl());
   const [data, setData] = useState(null);
@@ -326,129 +337,140 @@ export default function PublicFreightMapScreen({ token: tokenProp } = {}) {
   }
 
   return (
-    <div style={{ height: "100dvh", display: "flex", flexDirection: "column", background: COLORS.bg, fontFamily: "'DM Sans', system-ui, -apple-system, sans-serif" }}>
+    <div style={styles.layout}>
       <header style={styles.header}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <span style={{ fontSize: 24, fontWeight: 800, color: COLORS.pri, letterSpacing: -1 }}>tolvink</span>
           <span style={{ width: 8, height: 8, borderRadius: R.xs, background: COLORS.acc, display: "inline-block" }}></span>
         </div>
-        <div style={{ fontSize: 13, color: COLORS.t3, fontWeight: 600 }}>
+        <div style={{ fontSize: 13, color: COLORS.t3, fontWeight: 600, textAlign: "right" }}>
           {data?.freight?.code ? `Flete ${data.freight.code}` : "Indicar ubicación"}
+          {data?.freight && (
+            <div style={{ fontSize: 12, color: COLORS.t3, fontWeight: 500, marginTop: 2 }}>
+              {(data.freight.originName || "—")} → {(data.freight.destName || "—")}
+              {data.freight.item?.grain ? ` · ${data.freight.item.grain}` : ""}
+            </div>
+          )}
         </div>
       </header>
 
-      {data?.freight && (
-        <div style={styles.subhead}>
-          <span>{data.freight.originName || "—"}</span>
-          <span style={{ color: COLORS.t3 }}>→</span>
-          <span>{data.freight.destName || "—"}</span>
-          {data.freight.item?.grain && <span style={styles.tag}>{data.freight.item.grain}</span>}
-        </div>
-      )}
-
-      <div style={styles.searchBar}>
-        <input
-          ref={searchRef}
-          value={draftAddress}
-          onChange={(e) => setDraftAddress(e.target.value)}
-          placeholder="Buscar dirección o lugar..."
-          style={styles.input}
-        />
-      </div>
-
-      <div style={{ flex: 1, minHeight: 0, position: "relative" }}>
-        <div ref={mapRef} style={{ position: "absolute", inset: 0 }} />
-        {mapLoading && (
-          <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", background: COLORS.bg }}>
-            <div style={{ color: COLORS.t3 }}>Cargando mapa...</div>
-          </div>
-        )}
-      </div>
-
-      <section style={styles.panel}>
-        <div style={styles.typeRow}>
-          {allowedTypes.map((t) => {
-            const exists = !!existingByType[t] && (t === "ORIGIN" || t === "DESTINATION");
-            return (
-              <button
-                key={t}
-                type="button"
-                onClick={() => setSelectedType(t)}
-                style={{
-                  ...styles.typeBtn,
-                  background: selectedType === t ? TYPE_COLORS[t] : COLORS.w,
-                  color: selectedType === t ? "#fff" : COLORS.t1,
-                  borderColor: selectedType === t ? TYPE_COLORS[t] : COLORS.b1,
-                }}
-              >
-                <span style={{ ...styles.typeDot, background: TYPE_COLORS[t] }} />
-                {TYPE_LABELS[t]}
-                {exists && (
-                  <span style={{ ...styles.typeFlag, background: selectedType === t ? "rgba(255,255,255,0.22)" : COLORS.bg, color: selectedType === t ? "#fff" : COLORS.t2 }}>
-                    cargado
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </div>
-
-        {willReplace && (
-          <div style={{ ...styles.banner, background: "#FFF4E0", color: "#7A4B0F", border: "1px solid #F2D8A8" }}>
-            Ya hay un {TYPE_LABELS[selectedType].toLowerCase()} cargado para este flete. Si guardás, vas a reemplazarlo.
-          </div>
-        )}
-
-        <input
-          value={draftLabel}
-          onChange={(e) => setDraftLabel(e.target.value)}
-          maxLength={120}
-          placeholder="Nombre visible (opcional)"
-          style={styles.input}
-        />
-
-        <div style={styles.actionsRow}>
-          <button type="button" onClick={useCurrentLocation} style={styles.secondaryBtn}>
-            Usar mi ubicación
-          </button>
-          <button
-            type="button"
-            onClick={submit}
-            disabled={!draft || saving}
-            style={{ ...styles.primaryBtn, opacity: !draft || saving ? 0.5 : 1, cursor: !draft || saving ? "default" : "pointer" }}
-          >
-            {saving
-              ? "Guardando..."
-              : willReplace
-                ? `Modificar ${TYPE_LABELS[selectedType]?.toLowerCase()}`
-                : `Cargar ${TYPE_LABELS[selectedType]?.toLowerCase()}`}
-          </button>
-        </div>
-
-        {error && <div style={{ ...styles.banner, background: COLORS.errPale, color: COLORS.err }}>{error}</div>}
-        {info && <div style={{ ...styles.banner, background: COLORS.okPale, color: COLORS.pri }}>{info}</div>}
-
-        {data?.locations?.length > 0 && (
-          <div style={styles.list}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: COLORS.t3, textTransform: "uppercase", letterSpacing: 0.5 }}>
-              Ya cargadas en este flete
+      <main style={{ ...styles.main, gridTemplateColumns: isNarrow ? "1fr" : "1fr 1fr", gridTemplateRows: isNarrow ? "minmax(280px, 45vh) 1fr" : "1fr" }}>
+        <div style={{ ...styles.mapPane, borderRight: isNarrow ? "none" : `1px solid ${COLORS.b2}`, borderBottom: isNarrow ? `1px solid ${COLORS.b2}` : "none" }}>
+          <div ref={mapRef} style={{ position: "absolute", inset: 0 }} />
+          {mapLoading && (
+            <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", background: COLORS.bg }}>
+              <div style={{ color: COLORS.t3 }}>Cargando mapa...</div>
             </div>
-            {data.locations.map((loc) => (
-              <div key={loc.id} style={styles.listItem}>
-                <span style={{ ...styles.typeDot, background: TYPE_COLORS[loc.type] || COLORS.pri }} />
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: COLORS.t1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {TYPE_LABELS[loc.type]} · {loc.label || loc.address || "sin nombre"}
-                  </div>
-                  <div style={{ fontSize: 11, color: COLORS.t3 }}>
-                    {Number(loc.lat).toFixed(5)}, {Number(loc.lng).toFixed(5)}
+          )}
+        </div>
+
+        <aside style={styles.sidePane}>
+          <div style={styles.typeRow}>
+            {allowedTypes.map((t) => {
+              const exists = !!existingByType[t] && (t === "ORIGIN" || t === "DESTINATION");
+              const isSelected = selectedType === t;
+              return (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => setSelectedType(t)}
+                  style={{
+                    ...styles.typeBtn,
+                    background: isSelected ? TYPE_COLORS[t] : COLORS.w,
+                    color: isSelected ? "#fff" : COLORS.t1,
+                    borderColor: isSelected ? TYPE_COLORS[t] : COLORS.b1,
+                  }}
+                  title={exists ? `${TYPE_LABELS[t]} ya cargado — al guardar se reemplaza` : `Cargar ${TYPE_LABELS[t].toLowerCase()}`}
+                >
+                  <span style={{ ...styles.typeDot, background: TYPE_COLORS[t] }} />
+                  {TYPE_LABELS[t]}
+                  {exists && (
+                    <span style={{ ...styles.typeFlag, background: isSelected ? "rgba(255,255,255,0.22)" : COLORS.bg, color: isSelected ? "#fff" : COLORS.t2 }}>
+                      cargado
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          {willReplace && (
+            <div style={{ ...styles.banner, background: "#FFF4E0", color: "#7A4B0F", border: "1px solid #F2D8A8" }}>
+              Ya hay un {TYPE_LABELS[selectedType].toLowerCase()} cargado para este flete. Si guardás, vas a reemplazarlo.
+            </div>
+          )}
+
+          <div>
+            <label style={styles.fieldLabel}>Buscar dirección o lugar</label>
+            <input
+              ref={searchRef}
+              value={draftAddress}
+              onChange={(e) => setDraftAddress(e.target.value)}
+              placeholder="Ej: Planta Nueva Palmira"
+              style={styles.input}
+            />
+          </div>
+
+          <div>
+            <label style={styles.fieldLabel}>Nombre visible (opcional)</label>
+            <input
+              value={draftLabel}
+              onChange={(e) => setDraftLabel(e.target.value)}
+              maxLength={120}
+              placeholder="Ej: Portera norte"
+              style={styles.input}
+            />
+          </div>
+
+          {draft && (
+            <div style={styles.coords}>
+              {Number(draft.lat).toFixed(6)}, {Number(draft.lng).toFixed(6)}
+            </div>
+          )}
+
+          <div style={styles.actionsRow}>
+            <button type="button" onClick={useCurrentLocation} style={styles.secondaryBtn}>
+              Usar mi ubicación
+            </button>
+            <button
+              type="button"
+              onClick={submit}
+              disabled={!draft || saving}
+              style={{ ...styles.primaryBtn, opacity: !draft || saving ? 0.5 : 1, cursor: !draft || saving ? "default" : "pointer" }}
+            >
+              {saving
+                ? "Guardando..."
+                : willReplace
+                  ? `Modificar ${TYPE_LABELS[selectedType]?.toLowerCase()}`
+                  : `Cargar ${TYPE_LABELS[selectedType]?.toLowerCase()}`}
+            </button>
+          </div>
+
+          {error && <div style={{ ...styles.banner, background: COLORS.errPale, color: COLORS.err }}>{error}</div>}
+          {info && <div style={{ ...styles.banner, background: COLORS.okPale, color: COLORS.pri }}>{info}</div>}
+
+          {data?.locations?.length > 0 && (
+            <div style={styles.list}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: COLORS.t3, textTransform: "uppercase", letterSpacing: 0.5 }}>
+                Ya cargadas en este flete
+              </div>
+              {data.locations.map((loc) => (
+                <div key={loc.id} style={styles.listItem}>
+                  <span style={{ ...styles.typeDot, background: TYPE_COLORS[loc.type] || COLORS.pri }} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: COLORS.t1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {TYPE_LABELS[loc.type]} · {loc.label || loc.address || "sin nombre"}
+                    </div>
+                    <div style={{ fontSize: 11, color: COLORS.t3 }}>
+                      {Number(loc.lat).toFixed(5)}, {Number(loc.lng).toFixed(5)}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
+              ))}
+            </div>
+          )}
+        </aside>
+      </main>
     </div>
   );
 }
@@ -504,33 +526,54 @@ const styles = {
     borderBottom: `1px solid ${COLORS.b2}`,
     flexShrink: 0,
   },
-  subhead: {
+  layout: {
+    height: "100dvh",
     display: "flex",
-    alignItems: "center",
-    gap: 8,
-    padding: "8px 16px",
-    background: COLORS.w,
-    borderBottom: `1px solid ${COLORS.b2}`,
-    fontSize: 13,
-    color: COLORS.t1,
-    flexWrap: "wrap",
-  },
-  tag: {
-    marginLeft: "auto",
-    padding: "3px 9px",
-    borderRadius: 999,
+    flexDirection: "column",
     background: COLORS.bg,
-    color: COLORS.t2,
-    fontSize: 11,
-    fontWeight: 700,
-    textTransform: "uppercase",
-    letterSpacing: 0.4,
+    fontFamily: "'DM Sans', system-ui, -apple-system, sans-serif",
   },
-  searchBar: {
-    padding: "10px 12px",
+  main: {
+    flex: 1,
+    minHeight: 0,
+    display: "grid",
+    gridTemplateColumns: "1fr 1fr",
+    gridTemplateRows: "1fr",
+  },
+  mapPane: {
+    position: "relative",
+    minHeight: 0,
+    background: COLORS.bg,
+    borderRight: `1px solid ${COLORS.b2}`,
+  },
+  sidePane: {
+    position: "relative",
+    minHeight: 0,
+    overflowY: "auto",
+    padding: "16px 18px",
+    paddingBottom: "max(18px, env(safe-area-inset-bottom))",
+    display: "grid",
+    gap: 12,
+    alignContent: "start",
     background: COLORS.w,
-    borderBottom: `1px solid ${COLORS.b2}`,
-    flexShrink: 0,
+  },
+  fieldLabel: {
+    display: "block",
+    fontSize: 11.5,
+    fontWeight: 700,
+    color: COLORS.t3,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    marginBottom: 5,
+  },
+  coords: {
+    fontSize: 12,
+    color: COLORS.t3,
+    fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
+    padding: "6px 10px",
+    background: COLORS.bg,
+    borderRadius: R.md,
+    border: `1px solid ${COLORS.b2}`,
   },
   input: {
     width: "100%",
@@ -544,21 +587,10 @@ const styles = {
     background: COLORS.bg,
     boxSizing: "border-box",
   },
-  panel: {
-    padding: "12px 14px",
-    paddingBottom: "max(14px, env(safe-area-inset-bottom))",
-    background: COLORS.w,
-    borderTop: `1px solid ${COLORS.b2}`,
-    display: "grid",
-    gap: 10,
-    flexShrink: 0,
-    maxHeight: "44vh",
-    overflow: "auto",
-  },
   typeRow: {
     display: "flex",
     gap: 8,
-    overflowX: "auto",
+    flexWrap: "wrap",
     paddingBottom: 2,
   },
   typeBtn: {
