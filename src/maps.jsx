@@ -1063,10 +1063,12 @@ export function MapOverlay({ lat, lng, label, destLat, destLng, destLabel, freig
   const mapRef = useRef(null);
   const mapInst = useRef(null);
   const pMarkers = useRef({});
+  const opMarkers = useRef({});
   const pIw = useRef(null);
   const originMk = useRef(null);
   const destMk = useRef(null);
   const [participants, setParticipants] = useState([]);
+  const [opLocations, setOpLocations] = useState([]);
   const [listOpen, setListOpen] = useState(false);
   const userPos = _useUserPos();
   const mkInfoContent = (name, lt, ln) => {
@@ -1094,6 +1096,22 @@ export function MapOverlay({ lat, lng, label, destLat, destLng, destLabel, freig
     apiGetParticipantPositions(freightId).then(parts => {
       if (!cancelled && Array.isArray(parts)) setParticipants(parts);
     }).catch(() => { if (!cancelled) setParticipants([]); });
+    return () => { cancelled = true; };
+  }, [freightId]);
+
+  // Fetch operational FreightLocation rows (POIs, load/unload, references) so
+  // they appear on the expanded map and in the shared-locations sheet, with
+  // the same InfoWindow / focus behavior as origin and destination.
+  useEffect(() => {
+    if (!freightId) return;
+    let cancelled = false;
+    apiGetFreightMap(freightId).then(payload => {
+      if (cancelled || !payload?.locations) return;
+      const ops = payload.locations.filter(
+        (loc) => loc.status === "ACTIVE" && loc.type !== "ORIGIN" && loc.type !== "DESTINATION"
+      );
+      setOpLocations(ops);
+    }).catch(() => { if (!cancelled) setOpLocations([]); });
     return () => { cancelled = true; };
   }, [freightId]);
 
@@ -1141,16 +1159,65 @@ export function MapOverlay({ lat, lng, label, destLat, destLng, destLabel, freig
     _renderParticipantMarkers(participants, mapInst.current, pMarkers, pIw, userPos);
   }, [participants, userPos]);
 
-  // Cleanup participant markers on unmount
+  // Render operational pins (POI / load / unload / reference) and (re)bind
+  // their InfoWindow content when the data set changes.
+  useEffect(() => {
+    if (!mapInst.current || !window.google?.maps) return;
+    const maps = window.google.maps;
+    Object.values(opMarkers.current).forEach((m) => m.setMap(null));
+    opMarkers.current = {};
+    if (!pIw.current) pIw.current = new maps.InfoWindow();
+    opLocations.forEach((loc) => {
+      const lt = Number(loc.lat);
+      const ln = Number(loc.lng);
+      if (!Number.isFinite(lt) || !Number.isFinite(ln)) return;
+      const title = `${_opTypeLabel(loc.type)}${loc.label ? " · " + loc.label : ""}`;
+      const m = new maps.Marker({
+        position: { lat: lt, lng: ln },
+        map: mapInst.current,
+        icon: _opSymbol(maps, loc.type),
+        title,
+        zIndex: 4,
+      });
+      // Stash content factory so the list "focusPoint" handler reuses it.
+      m._iwContent = () => mkInfoContent(title, lt, ln);
+      m.addListener("click", () => {
+        pIw.current.setContent(m._iwContent());
+        pIw.current.open(mapInst.current, m);
+      });
+      opMarkers.current[loc.id] = m;
+    });
+  }, [opLocations]);
+
+  // Cleanup all custom markers on unmount
   useEffect(() => () => {
     Object.values(pMarkers.current).forEach(m => m.setMap(null));
     pMarkers.current = {};
+    Object.values(opMarkers.current).forEach(m => m.setMap(null));
+    opMarkers.current = {};
   }, []);
 
   // Build list items
   const items = [];
   if (lat && lng) items.push({ key: "origin", label: label || "Origen", color: C.pri, type: "Origen", lat: Number(lat), lng: Number(lng), mk: originMk });
   if (destLat && destLng) items.push({ key: "dest", label: destLabel || "Destino", color: C.sec, type: "Destino", lat: Number(destLat), lng: Number(destLng), mk: destMk });
+  opLocations.forEach((loc) => {
+    const lt = Number(loc.lat); const ln = Number(loc.lng);
+    if (!Number.isFinite(lt) || !Number.isFinite(ln)) return;
+    const dist = userPos ? _haversine(userPos.lat, userPos.lng, lt, ln) : null;
+    const op = _OP_TYPE[loc.type] || _OP_TYPE.OTHER;
+    items.push({
+      key: `op-${loc.id}`,
+      label: loc.label || loc.address || op.label,
+      color: op.color,
+      type: op.label,
+      lat: lt,
+      lng: ln,
+      mk: opMarkers.current[loc.id] ? { current: opMarkers.current[loc.id] } : null,
+      dist,
+      time: loc.createdAt ? new Date(loc.createdAt).toLocaleDateString("es-UY", { day: "2-digit", month: "2-digit" }) : null,
+    });
+  });
   participants.forEach(p => {
     const pLat = parseFloat(p.lat); const pLng = parseFloat(p.lng);
     if (isNaN(pLat) || isNaN(pLng)) return;
