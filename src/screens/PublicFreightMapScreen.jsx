@@ -69,6 +69,20 @@ export default function PublicFreightMapScreen({ token: tokenProp } = {}) {
   const [mapLoading, setMapLoading] = useState(true);
 
   const allowedTypes = data?.permissions?.allowedTypes || ["ORIGIN", "DESTINATION", "POINT_OF_INTEREST"];
+  // Detect existing origin/destination so we can warn the user that saving will replace them.
+  // Sources: freight base columns (originLat/destLat) + most recent ACTIVE FreightLocation row.
+  const existingByType = (() => {
+    const byType = {};
+    if (data?.freight?.origin) byType.ORIGIN = data.freight.origin;
+    if (data?.freight?.destination) byType.DESTINATION = data.freight.destination;
+    (data?.locations || []).forEach((loc) => {
+      if (loc.status === "ACTIVE" && (loc.type === "ORIGIN" || loc.type === "DESTINATION")) {
+        byType[loc.type] = loc;
+      }
+    });
+    return byType;
+  })();
+  const willReplace = !!existingByType[selectedType] && (selectedType === "ORIGIN" || selectedType === "DESTINATION");
 
   const loadData = useCallback(async () => {
     if (!token) return;
@@ -253,6 +267,10 @@ export default function PublicFreightMapScreen({ token: tokenProp } = {}) {
 
   const submit = async () => {
     if (!draft || saving) return;
+    if (willReplace) {
+      const ok = window.confirm(`Vas a reemplazar el ${TYPE_LABELS[selectedType].toLowerCase()} cargado en este flete. ¿Confirmás?`);
+      if (!ok) return;
+    }
     setError(null);
     setInfo(null);
     setSaving(true);
@@ -349,23 +367,37 @@ export default function PublicFreightMapScreen({ token: tokenProp } = {}) {
 
       <section style={styles.panel}>
         <div style={styles.typeRow}>
-          {allowedTypes.map((t) => (
-            <button
-              key={t}
-              type="button"
-              onClick={() => setSelectedType(t)}
-              style={{
-                ...styles.typeBtn,
-                background: selectedType === t ? TYPE_COLORS[t] : COLORS.w,
-                color: selectedType === t ? "#fff" : COLORS.t1,
-                borderColor: selectedType === t ? TYPE_COLORS[t] : COLORS.b1,
-              }}
-            >
-              <span style={{ ...styles.typeDot, background: TYPE_COLORS[t] }} />
-              {TYPE_LABELS[t]}
-            </button>
-          ))}
+          {allowedTypes.map((t) => {
+            const exists = !!existingByType[t] && (t === "ORIGIN" || t === "DESTINATION");
+            return (
+              <button
+                key={t}
+                type="button"
+                onClick={() => setSelectedType(t)}
+                style={{
+                  ...styles.typeBtn,
+                  background: selectedType === t ? TYPE_COLORS[t] : COLORS.w,
+                  color: selectedType === t ? "#fff" : COLORS.t1,
+                  borderColor: selectedType === t ? TYPE_COLORS[t] : COLORS.b1,
+                }}
+              >
+                <span style={{ ...styles.typeDot, background: TYPE_COLORS[t] }} />
+                {TYPE_LABELS[t]}
+                {exists && (
+                  <span style={{ ...styles.typeFlag, background: selectedType === t ? "rgba(255,255,255,0.22)" : COLORS.bg, color: selectedType === t ? "#fff" : COLORS.t2 }}>
+                    cargado
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
+
+        {willReplace && (
+          <div style={{ ...styles.banner, background: "#FFF4E0", color: "#7A4B0F", border: "1px solid #F2D8A8" }}>
+            Ya hay un {TYPE_LABELS[selectedType].toLowerCase()} cargado para este flete. Si guardás, vas a reemplazarlo.
+          </div>
+        )}
 
         <input
           value={draftLabel}
@@ -385,7 +417,11 @@ export default function PublicFreightMapScreen({ token: tokenProp } = {}) {
             disabled={!draft || saving}
             style={{ ...styles.primaryBtn, opacity: !draft || saving ? 0.5 : 1, cursor: !draft || saving ? "default" : "pointer" }}
           >
-            {saving ? "Guardando..." : `Guardar ${TYPE_LABELS[selectedType]?.toLowerCase()}`}
+            {saving
+              ? "Guardando..."
+              : willReplace
+                ? `Modificar ${TYPE_LABELS[selectedType]?.toLowerCase()}`
+                : `Cargar ${TYPE_LABELS[selectedType]?.toLowerCase()}`}
           </button>
         </div>
 
@@ -543,6 +579,15 @@ const styles = {
     height: 10,
     borderRadius: 999,
     display: "inline-block",
+  },
+  typeFlag: {
+    fontSize: 10.5,
+    fontWeight: 700,
+    padding: "2px 7px",
+    borderRadius: 999,
+    textTransform: "uppercase",
+    letterSpacing: 0.4,
+    marginLeft: 2,
   },
   actionsRow: {
     display: "grid",
