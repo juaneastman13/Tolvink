@@ -13,6 +13,7 @@ import { useIsDesktop, mapFreight, originDisplay, destDisplay } from "../hooks";
 import { useAccessLevel } from "../hooks/useAccessLevel";
 import { useUIStore, useFreightDetailStore } from "../store";
 import AssignmentSuggestions from "../components/AssignmentSuggestions";
+import MtopGuideAssistant from "../components/MtopGuideAssistant";
 // PDF report loaded lazily to avoid bundle bloat
 const loadPdfReport = () => import("../utils/pdf-report");
 
@@ -123,6 +124,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
   const [pcLoading, setPcLoading] = useState(null);
   const [tripDataOpen, setTripDataOpen] = useState(null); // assignment object or null
   const [tripSaving, setTripSaving] = useState(false);
+  const [showMtopModal, setShowMtopModal] = useState(false);
   const auditRef = useRef(null);
   const show = useUIStore(s => s.show);
 
@@ -1173,6 +1175,15 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
           <Btn sm v="ghost" icon={Ic.edit(C.t2,14)} onClick={()=>onEdit(freight)} style={{width:"100%"}}>Editar flete</Btn>
         </div>
       )}
+      {/* MTOP Guía de Carga assistant */}
+      {!["draft","canceled"].includes(freight.status) && (perms.canRequest || perms.canApprove) && (
+        <div style={{ marginBottom:8 }}>
+          <button onClick={()=>setShowMtopModal(true)} style={{ width:"100%", padding:"8px 12px", borderRadius:R.md, border:`1px solid ${freight.mtopGuideId ? C.ok : C.b1}`, background: freight.mtopGuideId ? C.okPale : C.w, color: freight.mtopGuideId ? C.ok : C.t2, fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:FONT, display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
+            {Ic.doc(freight.mtopGuideId ? C.ok : C.t3, 14)}
+            {freight.mtopGuideId ? `Guía MTOP: ${freight.mtopGuideId}` : "Guía de Carga MTOP"}
+          </button>
+        </div>
+      )}
       {/* Danger zone — cancel/reject (inline for both desktop and mobile) */}
       {dangerBtns.length > 0 && (
         <div style={{ background:`${C.err}06`, border:`1px solid ${C.err}15`, borderRadius: R.md, padding:10, marginBottom:8 }}>
@@ -1183,6 +1194,7 @@ export default function DetailScreen({ user, freight, perms, onBack, onAction, o
       <FileViewer file={viewFile} onClose={()=>setViewFile(null)} onOcr={handleOcr} ocrLoading={ocrLoading} onViewOcr={handleViewOcr}/>
       {ocrLoading && <div style={{ position:"fixed", inset:0, zIndex:250 }}><UploadOverlay uploading={ocrLoading} done={false} total={1} current={1} label="Extrayendo datos"/></div>}
       <OcrResultModal result={ocrResult} onClose={()=>{setOcrResult(null);setOcrDocId(null);}} freightId={freight?.id} docId={ocrDocId} onSaved={()=>{ if(onRefresh) onRefresh(freight?.id); }}/>
+      {showMtopModal && <MtopGuideAssistant freight={freight} onClose={()=>setShowMtopModal(false)} onSaved={()=>{ setShowMtopModal(false); if(onRefresh) onRefresh(freight?.id); }} show={show} />}
 
     </div>
 

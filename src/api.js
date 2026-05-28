@@ -324,6 +324,7 @@ export async function apiGetSseTicket() { return api('/sse/ticket', { method: 'P
 
 // Update freight
 export async function apiUpdateFreight(id, data) { return api(`/freights/${id}`,{method:"PATCH",body:data}); }
+export async function apiUpdateFreightMtop(id, data) { return api(`/freights/${id}/mtop`,{method:"PATCH",body:data}); }
 export async function apiApprovePendingChange(freightId, changeId) { return api(`/freights/${freightId}/pending-changes/${changeId}/approve`,{body:{}}); }
 export async function apiRejectPendingChange(freightId, changeId) { return api(`/freights/${freightId}/pending-changes/${changeId}/reject`,{body:{}}); }
 
