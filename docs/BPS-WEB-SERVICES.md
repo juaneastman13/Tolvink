@@ -63,6 +63,27 @@ Roles: cualquier tipo de empresa + `platform_admin`.
 - `POST /bps/cuenta/sincronizar` — ejecuta ya las 3 consultas autenticadas.
 - `GET /bps/cuenta/datos` → `{conectada, ..., datos: [{tipo, estado, resumen, detalle?, obtenidoEn}]}` con `tipo ∈ OBSERVACIONES | OBLIGACIONES | NOMINA` y `estado ∈ OK | ATENCION | DESCONOCIDO`.
 
+### Conexión desde Excel (token de integración, sin usuario Tolvink)
+
+Para planillas usadas por gente sin cuenta en Tolvink. El token se genera y
+revoca desde el asistente (*Mi Flota → BPS → Monitoreo → Conexión con
+Excel*); solo se guarda su hash SHA-256 y el valor en claro se muestra una
+única vez. Alcance: **solo lectura de estados de certificados**.
+
+- `GET /bps/excel/empresas?token=bps_...&format=csv|json` — tabla de empresas
+  monitoreadas con estado, para *Datos → Obtener datos → Desde web* (Power
+  Query). El CSV lleva BOM para que Excel respete los acentos.
+- `GET /bps/excel/vigencia?rut=<12 dígitos>&token=bps_...` — estado como
+  texto plano (`VIGENTE`, `NO_VIGENTE`, `EN_TRAMITE`, `DESCONOCIDO`,
+  `RUT_INVALIDO`), pensado para `=SERVICIOWEB(...)` por celda (Excel de
+  escritorio Windows). Sirve el snapshot del servidor si tiene menos de 6 h
+  y solo re-consulta BPS en vivo si está vencido — arrastrar la fórmula
+  sobre muchas filas no fusila el rate limit. Nunca devuelve error HTTP por
+  fallas de BPS: degrada a texto.
+
+Gestión (autenticada): `GET /bps/token` (estado, nunca el valor),
+`POST /bps/token` (genera/regenera), `PATCH /bps/token/revoke`.
+
 ## 4. Diseño interno del backend
 
 - **Modelos Prisma** (`prisma/schema.prisma`, migración `20260818000000_add_bps_module`):

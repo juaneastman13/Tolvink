@@ -733,6 +733,10 @@ export async function apiBpsConectarCuenta(b) { return api('/bps/cuenta/conectar
 export async function apiBpsDesconectarCuenta() { return api('/bps/cuenta/desconectar', { method: 'PATCH', body: {} }); }
 export async function apiBpsSincronizarCuenta() { return api('/bps/cuenta/sincronizar', { body: {}, timeout: 120000 }); }
 export async function apiBpsGetDatosCuenta() { return api('/bps/cuenta/datos'); }
+// Token de integración BPS (solo lectura, para Excel/Power Query)
+export async function apiBpsGetToken() { return api('/bps/token'); }
+export async function apiBpsCrearToken() { return api('/bps/token', { body: {} }); }
+export async function apiBpsRevocarToken() { return api('/bps/token/revoke', { method: 'PATCH', body: {} }); }
 
 // ── Company Product Catalog ──
 export async function apiListCompanyProducts(opts = {}) {

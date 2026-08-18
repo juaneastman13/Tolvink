@@ -5,6 +5,7 @@ import {
   apiBpsConsultarRut, apiBpsGetEmpresas, apiBpsMonitorearEmpresa,
   apiBpsQuitarEmpresa, apiBpsGetConfig, apiBpsUpdateConfig,
   apiBpsConectarCuenta, apiBpsDesconectarCuenta, apiBpsSincronizarCuenta, apiBpsGetDatosCuenta,
+  apiBpsGetToken, apiBpsCrearToken, apiBpsRevocarToken, API_URL,
 } from "../api";
 
 // Consultas públicas gratuitas (sin usuario BPS) — fallback manual
@@ -103,6 +104,11 @@ export default function BpsCertificadosAssistant({ onClose }) {
   const [msgCuenta, setMsgCuenta] = useState(null); // { t, k }
   const [confirmDesconectar, setConfirmDesconectar] = useState(false);
 
+  // ── Token de integración Excel ──
+  const [tokenInfo, setTokenInfo] = useState(null); // { existe, createdAt }
+  const [tokenNuevo, setTokenNuevo] = useState(""); // valor en claro, visible solo tras generar
+  const [generandoToken, setGenerandoToken] = useState(false);
+
   // Módulo backend no desplegado todavía (404/501)
   const [backendPendiente, setBackendPendiente] = useState(false);
 
@@ -125,6 +131,35 @@ export default function BpsCertificadosAssistant({ onClose }) {
     }
   }, []);
 
+  const cargarToken = useCallback(async () => {
+    try { setTokenInfo(await apiBpsGetToken()); } catch { /* opcional: sin token info */ }
+  }, []);
+
+  async function handleGenerarToken() {
+    setGenerandoToken(true); setMsgMonitoreo(null);
+    try {
+      const { token } = await apiBpsCrearToken();
+      setTokenNuevo(token);
+      setTokenInfo({ existe: true, createdAt: new Date().toISOString() });
+    } catch (e) {
+      if (esBackendFaltante(e)) setBackendPendiente(true);
+      else setMsgMonitoreo({ t: e.message || "Error al generar el token", k: "err" });
+    } finally {
+      setGenerandoToken(false);
+    }
+  }
+
+  async function handleRevocarToken() {
+    setMsgMonitoreo(null);
+    try {
+      await apiBpsRevocarToken();
+      setTokenInfo({ existe: false }); setTokenNuevo("");
+      setMsgMonitoreo({ t: "Token revocado — las planillas que lo usaban dejan de funcionar", k: "ok" });
+    } catch (e) {
+      setMsgMonitoreo({ t: e.message || "Error al revocar el token", k: "err" });
+    }
+  }
+
   const cargarCuenta = useCallback(async () => {
     setCargandoCuenta(true);
     try {
@@ -136,7 +171,7 @@ export default function BpsCertificadosAssistant({ onClose }) {
     }
   }, []);
 
-  useEffect(() => { cargarMonitoreo(); cargarCuenta(); }, [cargarMonitoreo, cargarCuenta]);
+  useEffect(() => { cargarMonitoreo(); cargarCuenta(); cargarToken(); }, [cargarMonitoreo, cargarCuenta, cargarToken]);
 
   async function handleConectarCuenta() {
     if (!cUsuario.trim() || !cPassword) return;
@@ -365,6 +400,40 @@ export default function BpsCertificadosAssistant({ onClose }) {
               </div>
               <div style={{ fontSize: 12, color: C.t3 }}>
                 Las consultas se ejecutan en el servidor de Tolvink. Si un certificado pasa a no vigente, se genera una alerta de flota y una notificación.
+              </div>
+
+              <SectionTitle>Conexión con Excel</SectionTitle>
+              <div style={{ fontSize: 12.5, color: C.t2, lineHeight: 1.5, marginBottom: 8 }}>
+                Generá un <b>token de solo lectura</b> para que cualquier persona — incluso sin usuario Tolvink — consulte estos estados desde una planilla Excel.
+              </div>
+
+              {tokenNuevo ? (
+                <div style={{ padding: "10px 12px", borderRadius: R.md, background: C.warnPale, border: `1px solid ${C.warn}30`, marginBottom: 8 }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: C.warn, marginBottom: 4 }}>Copiá el token ahora — no se vuelve a mostrar</div>
+                  <input readOnly value={tokenNuevo} onFocus={e => e.target.select()} style={{ ...inp, fontSize: 12.5, fontFamily: "monospace", marginBottom: 8 }} />
+                  <div style={{ fontSize: 11.5, fontWeight: 700, color: C.t2, marginBottom: 2 }}>Tabla completa (Power Query / Datos → Desde web):</div>
+                  <input readOnly value={`${API_URL}/bps/excel/empresas?format=csv&token=${tokenNuevo}`} onFocus={e => e.target.select()} style={{ ...inp, fontSize: 11.5, fontFamily: "monospace", marginBottom: 6 }} />
+                  <div style={{ fontSize: 11.5, fontWeight: 700, color: C.t2, marginBottom: 2 }}>Estado de un RUT (fórmula =SERVICIOWEB):</div>
+                  <input readOnly value={`${API_URL}/bps/excel/vigencia?rut=RUT_AQUI&token=${tokenNuevo}`} onFocus={e => e.target.select()} style={{ ...inp, fontSize: 11.5, fontFamily: "monospace" }} />
+                </div>
+              ) : tokenInfo?.existe ? (
+                <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 12px", borderRadius: R.md, background: C.bg, marginBottom: 8 }}>
+                  <div style={{ flex: 1, fontSize: 12.5, color: C.t2 }}>Token activo desde {fmtFecha(tokenInfo.createdAt)} · el valor solo se muestra al generarlo</div>
+                </div>
+              ) : null}
+
+              <div style={{ display: "flex", gap: 8 }}>
+                <button disabled={generandoToken} onClick={handleGenerarToken} style={{ flex: 1, padding: "9px 0", borderRadius: R.md, background: C.pri, color: C.w, border: "none", fontSize: 12.5, fontWeight: 700, cursor: generandoToken ? "wait" : "pointer", fontFamily: FONT }}>
+                  {generandoToken ? "Generando..." : tokenInfo?.existe ? "Regenerar token" : "Generar token"}
+                </button>
+                {tokenInfo?.existe && (
+                  <button onClick={handleRevocarToken} style={{ padding: "9px 14px", borderRadius: R.md, background: "none", border: `1px solid ${C.err}`, color: C.err, fontSize: 12.5, fontWeight: 600, cursor: "pointer", fontFamily: FONT }}>
+                    Revocar
+                  </button>
+                )}
+              </div>
+              <div style={{ fontSize: 11.5, color: C.t3, marginTop: 6, lineHeight: 1.5 }}>
+                El token solo permite leer estados de certificados (nunca credenciales ni otros datos). Regenerarlo o revocarlo invalida las planillas anteriores.
               </div>
             </>}
           </>}
