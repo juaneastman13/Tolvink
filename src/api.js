@@ -718,6 +718,26 @@ export async function apiUpdateAlertStatus(alertId, status) { return api(`/maint
 // ── Mechanic Dashboard ──
 export async function apiGetMechanicDashboard() { return api('/mechanic/dashboard'); }
 
+// ── BPS (Banco de Previsión Social) — consultas de certificados ──
+// Backend contract: see docs/BPS-WEB-SERVICES.md
+export async function apiBpsConsultarRut(rut) { return api('/bps/certificados/consultar', { body: { rut } }); }
+export async function apiBpsGetEmpresas() { return api('/bps/empresas'); }
+export async function apiBpsMonitorearEmpresa(b) { return api('/bps/empresas', { body: b }); }
+export async function apiBpsQuitarEmpresa(id) { return api(`/bps/empresas/${id}/delete`, { method: 'PATCH', body: {} }); }
+export async function apiBpsGetHistorial(id) { return api(`/bps/empresas/${id}/historial`); }
+export async function apiBpsGetConfig() { return api('/bps/config'); }
+export async function apiBpsUpdateConfig(b) { return api('/bps/config', { method: 'PATCH', body: b }); }
+// Cuenta BPS autenticada (usuario BPS de la empresa)
+export async function apiBpsGetCuenta() { return api('/bps/cuenta'); }
+export async function apiBpsConectarCuenta(b) { return api('/bps/cuenta/conectar', { body: b }); }
+export async function apiBpsDesconectarCuenta() { return api('/bps/cuenta/desconectar', { method: 'PATCH', body: {} }); }
+export async function apiBpsSincronizarCuenta() { return api('/bps/cuenta/sincronizar', { body: {}, timeout: 120000 }); }
+export async function apiBpsGetDatosCuenta() { return api('/bps/cuenta/datos'); }
+// Token de integración BPS (solo lectura, para Excel/Power Query)
+export async function apiBpsGetToken() { return api('/bps/token'); }
+export async function apiBpsCrearToken() { return api('/bps/token', { body: {} }); }
+export async function apiBpsRevocarToken() { return api('/bps/token/revoke', { method: 'PATCH', body: {} }); }
+
 // ── Company Product Catalog ──
 export async function apiListCompanyProducts(opts = {}) {
   const p = new URLSearchParams();
