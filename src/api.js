@@ -727,6 +727,12 @@ export async function apiBpsQuitarEmpresa(id) { return api(`/bps/empresas/${id}/
 export async function apiBpsGetHistorial(id) { return api(`/bps/empresas/${id}/historial`); }
 export async function apiBpsGetConfig() { return api('/bps/config'); }
 export async function apiBpsUpdateConfig(b) { return api('/bps/config', { method: 'PATCH', body: b }); }
+// Cuenta BPS autenticada (usuario BPS de la empresa)
+export async function apiBpsGetCuenta() { return api('/bps/cuenta'); }
+export async function apiBpsConectarCuenta(b) { return api('/bps/cuenta/conectar', { body: b }); }
+export async function apiBpsDesconectarCuenta() { return api('/bps/cuenta/desconectar', { method: 'PATCH', body: {} }); }
+export async function apiBpsSincronizarCuenta() { return api('/bps/cuenta/sincronizar', { body: {}, timeout: 120000 }); }
+export async function apiBpsGetDatosCuenta() { return api('/bps/cuenta/datos'); }
 
 // ── Company Product Catalog ──
 export async function apiListCompanyProducts(opts = {}) {

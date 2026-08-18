@@ -4,6 +4,7 @@ import { C, Ic, FONT, R } from "../theme";
 import {
   apiBpsConsultarRut, apiBpsGetEmpresas, apiBpsMonitorearEmpresa,
   apiBpsQuitarEmpresa, apiBpsGetConfig, apiBpsUpdateConfig,
+  apiBpsConectarCuenta, apiBpsDesconectarCuenta, apiBpsSincronizarCuenta, apiBpsGetDatosCuenta,
 } from "../api";
 
 // Consultas públicas gratuitas (sin usuario BPS) — fallback manual
@@ -21,6 +22,15 @@ const ESTADO_CFG = {
   NO_VIGENTE: { label: "No vigente", color: C.err, bg: C.errPale },
   EN_TRAMITE: { label: "En trámite", color: C.warn, bg: C.warnPale },
   DESCONOCIDO: { label: "Sin datos", color: C.t3, bg: C.b2 },
+  // Estados de datos de cuenta autenticada
+  OK: { label: "Al día", color: C.ok, bg: C.okPale },
+  ATENCION: { label: "Atención", color: C.warn, bg: C.warnPale },
+};
+
+const TIPO_DATO_LABELS = {
+  OBSERVACIONES: { label: "Observaciones", desc: "Trabas para la emisión del certificado" },
+  OBLIGACIONES: { label: "Aportes y obligaciones", desc: "Facturas y vencimientos ante BPS" },
+  NOMINA: { label: "Nómina / GAFI", desc: "Estado de las declaraciones de nómina" },
 };
 
 // RUT uruguayo: 12 dígitos, dígito verificador módulo 11
@@ -68,7 +78,7 @@ function BackendPendiente() {
 }
 
 export default function BpsCertificadosAssistant({ onClose }) {
-  const [tab, setTab] = useState(0); // 0=consulta, 1=monitoreo, 2=ayuda
+  const [tab, setTab] = useState(0); // 0=consulta, 1=monitoreo, 2=cuenta, 3=ayuda
 
   // ── Consulta puntual ──
   const [rut, setRut] = useState("");
@@ -82,6 +92,16 @@ export default function BpsCertificadosAssistant({ onClose }) {
   const [config, setConfig] = useState(null);
   const [guardandoConfig, setGuardandoConfig] = useState(false);
   const [msgMonitoreo, setMsgMonitoreo] = useState(null); // { t, k }
+
+  // ── Cuenta BPS autenticada ──
+  const [cuenta, setCuenta] = useState(null); // { conectada, usuario, ultimaSync, ultimoError, datos }
+  const [cargandoCuenta, setCargandoCuenta] = useState(true);
+  const [cUsuario, setCUsuario] = useState("");
+  const [cPassword, setCPassword] = useState("");
+  const [conectando, setConectando] = useState(false);
+  const [sincronizando, setSincronizando] = useState(false);
+  const [msgCuenta, setMsgCuenta] = useState(null); // { t, k }
+  const [confirmDesconectar, setConfirmDesconectar] = useState(false);
 
   // Módulo backend no desplegado todavía (404/501)
   const [backendPendiente, setBackendPendiente] = useState(false);
@@ -105,7 +125,58 @@ export default function BpsCertificadosAssistant({ onClose }) {
     }
   }, []);
 
-  useEffect(() => { cargarMonitoreo(); }, [cargarMonitoreo]);
+  const cargarCuenta = useCallback(async () => {
+    setCargandoCuenta(true);
+    try {
+      setCuenta(await apiBpsGetDatosCuenta());
+    } catch (e) {
+      if (esBackendFaltante(e)) setBackendPendiente(true);
+    } finally {
+      setCargandoCuenta(false);
+    }
+  }, []);
+
+  useEffect(() => { cargarMonitoreo(); cargarCuenta(); }, [cargarMonitoreo, cargarCuenta]);
+
+  async function handleConectarCuenta() {
+    if (!cUsuario.trim() || !cPassword) return;
+    setConectando(true); setMsgCuenta(null);
+    try {
+      await apiBpsConectarCuenta({ usuario: cUsuario.trim(), password: cPassword });
+      setCPassword(""); setCUsuario("");
+      setMsgCuenta({ t: "Cuenta BPS conectada — credenciales verificadas y guardadas cifradas", k: "ok" });
+      await cargarCuenta();
+    } catch (e) {
+      if (esBackendFaltante(e)) setBackendPendiente(true);
+      else setMsgCuenta({ t: e.message || "No se pudo conectar la cuenta BPS", k: "err" });
+    } finally {
+      setConectando(false);
+    }
+  }
+
+  async function handleSincronizar() {
+    setSincronizando(true); setMsgCuenta(null);
+    try {
+      setCuenta(await apiBpsSincronizarCuenta());
+      setMsgCuenta({ t: "Sincronización completada", k: "ok" });
+    } catch (e) {
+      if (esBackendFaltante(e)) setBackendPendiente(true);
+      else setMsgCuenta({ t: e.message || "Error al sincronizar con BPS", k: "err" });
+    } finally {
+      setSincronizando(false);
+    }
+  }
+
+  async function handleDesconectar() {
+    setConfirmDesconectar(false); setMsgCuenta(null);
+    try {
+      await apiBpsDesconectarCuenta();
+      setCuenta({ conectada: false, datos: [] });
+      setMsgCuenta({ t: "Cuenta desconectada — credenciales eliminadas del servidor", k: "ok" });
+    } catch (e) {
+      setMsgCuenta({ t: e.message || "Error al desconectar", k: "err" });
+    }
+  }
 
   async function handleConsultar() {
     if (!rutValido) return;
@@ -185,9 +256,10 @@ export default function BpsCertificadosAssistant({ onClose }) {
           </div>
           {/* Tabs */}
           <div style={{ display: "flex", gap: 0 }}>
-            <button style={tabStyle(tab === 0)} onClick={() => setTab(0)}>Consultar RUT</button>
+            <button style={tabStyle(tab === 0)} onClick={() => setTab(0)}>Consulta</button>
             <button style={tabStyle(tab === 1)} onClick={() => setTab(1)}>Monitoreo{empresas.length ? ` (${empresas.length})` : ""}</button>
-            <button style={tabStyle(tab === 2)} onClick={() => setTab(2)}>Ayuda</button>
+            <button style={tabStyle(tab === 2)} onClick={() => setTab(2)}>{cuenta?.conectada ? "✓ Cuenta BPS" : "Cuenta BPS"}</button>
+            <button style={tabStyle(tab === 3)} onClick={() => setTab(3)}>Ayuda</button>
           </div>
         </div>
 
@@ -297,8 +369,103 @@ export default function BpsCertificadosAssistant({ onClose }) {
             </>}
           </>}
 
-          {/* ---- Tab 2: Ayuda ---- */}
+          {/* ---- Tab 2: Cuenta BPS autenticada ---- */}
           {tab === 2 && <>
+            <div style={{ marginTop: 10, padding: "9px 12px", borderRadius: R.md, background: C.priGhost, border: `1px solid ${C.pri}30`, fontSize: 13, color: C.t2, lineHeight: 1.5 }}>
+              Conectá el usuario BPS de tu empresa para que Tolvink consulte automáticamente observaciones, aportes y nómina, además del certificado.
+            </div>
+
+            {msgCuenta && (
+              <div style={{ marginTop: 10, padding: "9px 12px", borderRadius: R.md, fontSize: 12.5, fontWeight: 600, background: msgCuenta.k === "ok" ? C.okPale : C.errPale, color: msgCuenta.k === "ok" ? C.ok : C.err }}>{msgCuenta.t}</div>
+            )}
+
+            {backendPendiente && <BackendPendiente />}
+
+            {!backendPendiente && cargandoCuenta && <div style={{ fontSize: 13, color: C.t3, padding: "12px 0" }}>Cargando...</div>}
+
+            {/* Sin cuenta conectada: formulario */}
+            {!backendPendiente && !cargandoCuenta && !cuenta?.conectada && <>
+              <SectionTitle>Conectar usuario BPS</SectionTitle>
+              <div style={{ marginBottom: 10 }}>
+                <div style={lbl}>Usuario BPS (usuario directo, no ID Uruguay)</div>
+                <input style={inp} value={cUsuario} onChange={e => setCUsuario(e.target.value)} placeholder="Usuario de Servicios en Línea BPS" autoComplete="off" />
+              </div>
+              <div style={{ marginBottom: 10 }}>
+                <div style={lbl}>Contraseña</div>
+                <input style={inp} type="password" value={cPassword} onChange={e => setCPassword(e.target.value)} placeholder="••••••••" autoComplete="new-password"
+                  onKeyDown={e => { if (e.key === "Enter" && cUsuario.trim() && cPassword && !conectando) handleConectarCuenta(); }} />
+              </div>
+              <div style={{ padding: "9px 12px", borderRadius: R.md, background: C.b2, fontSize: 12, color: C.t3, lineHeight: 1.5, marginBottom: 10 }}>
+                Las credenciales se verifican contra BPS antes de guardarse, viajan solo por HTTPS y se almacenan <b>cifradas</b> en el servidor de Tolvink. Se usan únicamente para estas consultas y podés eliminarlas cuando quieras con "Desconectar".
+              </div>
+              <button disabled={!cUsuario.trim() || !cPassword || conectando} onClick={handleConectarCuenta}
+                style={{ width: "100%", padding: "11px 0", borderRadius: R.md, background: C.pri, color: C.w, border: "none", fontSize: 14, fontWeight: 700, cursor: (!cUsuario.trim() || !cPassword || conectando) ? "not-allowed" : "pointer", fontFamily: FONT, opacity: (!cUsuario.trim() || !cPassword || conectando) ? 0.6 : 1 }}>
+                {conectando ? "Verificando con BPS..." : "Conectar y probar"}
+              </button>
+            </>}
+
+            {/* Cuenta conectada: estado + datos */}
+            {!backendPendiente && !cargandoCuenta && cuenta?.conectada && <>
+              <div style={{ marginTop: 12, padding: "10px 12px", borderRadius: R.md, background: C.okPale, border: `1px solid ${C.ok}30`, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: C.ok }}>Cuenta conectada · {cuenta.usuario}</div>
+                  <div style={{ fontSize: 11.5, color: C.t3 }}>Última sincronización: {fmtFecha(cuenta.ultimaSync)}</div>
+                </div>
+                <button onClick={handleSincronizar} disabled={sincronizando} style={{ padding: "8px 12px", borderRadius: R.md, background: C.pri, color: C.w, border: "none", fontSize: 12.5, fontWeight: 700, cursor: sincronizando ? "wait" : "pointer", fontFamily: FONT, whiteSpace: "nowrap" }}>
+                  {sincronizando ? "Sincronizando..." : "Sincronizar ahora"}
+                </button>
+              </div>
+              {cuenta.ultimoError && (
+                <div style={{ marginTop: 8, padding: "9px 12px", borderRadius: R.md, background: C.warnPale, color: C.warn, fontSize: 12.5, fontWeight: 600 }}>
+                  Último error de sincronización: {cuenta.ultimoError}
+                </div>
+              )}
+
+              <SectionTitle>Consultas automáticas</SectionTitle>
+              {Object.entries(TIPO_DATO_LABELS).map(([tipo, cfg]) => {
+                const dato = (cuenta.datos || []).find(d => d.tipo === tipo);
+                return (
+                  <div key={tipo} style={{ padding: "10px 0", borderBottom: `1px solid ${C.b2}` }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 2 }}>
+                      <div style={{ fontSize: 13.5, fontWeight: 700, color: C.t1 }}>{cfg.label}</div>
+                      <EstadoChip estado={dato?.estado || "DESCONOCIDO"} />
+                    </div>
+                    <div style={{ fontSize: 12, color: C.t3 }}>{cfg.desc}</div>
+                    {dato && <div style={{ fontSize: 12.5, color: C.t2, marginTop: 4 }}>{dato.resumen || "—"} · {fmtFecha(dato.obtenidoEn)}</div>}
+                    {!dato && <div style={{ fontSize: 12.5, color: C.t3, marginTop: 4 }}>Todavía sin datos — sincronizá para obtenerlos.</div>}
+                    {dato?.detalle?.items?.length > 0 && (
+                      <div style={{ marginTop: 6, padding: "8px 10px", borderRadius: R.sm, background: C.bg, fontSize: 12, color: C.t2, lineHeight: 1.5 }}>
+                        {dato.detalle.items.slice(0, 5).map((it, i) => <div key={i}>• {it}</div>)}
+                        {dato.detalle.items.length > 5 && <div style={{ color: C.t3 }}>… y {dato.detalle.items.length - 5} más en el portal BPS</div>}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+              <div style={{ fontSize: 12, color: C.t3, marginTop: 8 }}>
+                Estas consultas se repiten automáticamente cada día en el servidor. Si algo pasa a "Atención" recibís una notificación.
+              </div>
+
+              <SectionTitle>Desconectar</SectionTitle>
+              {!confirmDesconectar ? (
+                <button onClick={() => setConfirmDesconectar(true)} style={{ width: "100%", padding: "10px 0", background: "none", border: `1px solid ${C.err}`, borderRadius: R.md, color: C.err, fontWeight: 600, fontSize: 13, cursor: "pointer", fontFamily: FONT }}>
+                  Desconectar cuenta BPS
+                </button>
+              ) : (
+                <div style={{ padding: 14, background: C.errPale, borderRadius: R.md, border: `1px solid ${C.err}20` }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: C.err, marginBottom: 6 }}>¿Desconectar la cuenta?</div>
+                  <div style={{ fontSize: 12, color: C.t3, marginBottom: 10 }}>Se eliminan las credenciales cifradas y el historial de consultas autenticadas del servidor.</div>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <button onClick={() => setConfirmDesconectar(false)} style={{ flex: 1, padding: "8px 0", background: C.w, border: `1px solid ${C.b1}`, borderRadius: R.md, cursor: "pointer", fontFamily: FONT, fontSize: 12, fontWeight: 600, color: C.t2 }}>Cancelar</button>
+                    <button onClick={handleDesconectar} style={{ flex: 1, padding: "8px 0", background: C.err, border: "none", borderRadius: R.md, cursor: "pointer", fontFamily: FONT, fontSize: 12, fontWeight: 600, color: C.w }}>Confirmar</button>
+                  </div>
+                </div>
+              )}
+            </>}
+          </>}
+
+          {/* ---- Tab 3: Ayuda ---- */}
+          {tab === 3 && <>
             <SectionTitle>¿Qué consulta Tolvink en BPS?</SectionTitle>
             <div style={{ fontSize: 13, color: C.t2, lineHeight: 1.6 }}>
               BPS ofrece una consulta pública y gratuita para verificar si un contribuyente tiene el <b>certificado común vigente</b>, ingresando solamente el RUT.
@@ -318,8 +485,8 @@ export default function BpsCertificadosAssistant({ onClose }) {
 
             <SectionTitle>Servicios con usuario BPS</SectionTitle>
             <div style={{ fontSize: 13, color: C.t2, lineHeight: 1.6 }}>
-              Para operaciones más avanzadas (solicitar o descargar el certificado propio, nóminas, aportes), BPS exige un <b>usuario personal o de empresa</b> registrado en sus servicios en línea.
-              Esas gestiones se hacen en el portal de BPS; Tolvink automatiza únicamente las consultas de vigencia, que son públicas.
+              Con el <b>usuario BPS de tu empresa</b> conectado (pestaña "Cuenta BPS"), Tolvink también consulta automáticamente observaciones, aportes/obligaciones y estado de nómina.
+              Las credenciales se guardan cifradas en el servidor y solo se usan para estas consultas. Si tu empresa aún no tiene usuario BPS, se tramita en el portal de BPS (Servicios en línea → Registrarse).
             </div>
 
             <SectionTitle>Documentación técnica</SectionTitle>

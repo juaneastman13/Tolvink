@@ -1,222 +1,130 @@
-# Conexión a Servicios Web de BPS — Consultas automáticas de certificados
+# Conexión a Servicios Web de BPS — Consultas automáticas
 
-> Estado: **Frontend implementado** (este repo) · **Backend pendiente** (repo `tolvink-api`)
+> Estado: **Frontend implementado** (este repo, rama `claude/bps-web-services-connection-3is0cq`) ·
+> **Backend implementado** (repo `tolvink-api`, rama `claude/bps-web-services-connection`, módulo `src/bps/`) —
+> pendiente de merge, migración y calibración de selectores (ver §6).
 > Última actualización: 2026-08-18
 
-## 1. Qué ofrece BPS y qué es posible automatizar
+## 1. Qué ofrece BPS y qué automatiza este módulo
 
-El Banco de Previsión Social (Uruguay) **no publica una API REST abierta** para
-terceros. Sus canales son:
+El Banco de Previsión Social (Uruguay) **no publica una API REST abierta**.
+Sus canales y lo que Tolvink automatiza sobre ellos:
 
-| Canal | Acceso | Automatizable |
+| Canal | Acceso | Automatización Tolvink |
 |---|---|---|
-| **Consulta pública de vigencia del certificado común** (por RUT) | Libre, sin usuario | ✅ Sí — es la base de este módulo |
-| Consulta de autenticidad de certificados emitidos | Libre, sin usuario | ✅ Sí (por número de certificado) |
-| Servicios en línea de empresas (solicitar/descargar certificado propio, nóminas, aportes, GAFI) | Usuario BPS personal o de empresa (contrato de adhesión) | ⚠️ Parcial — sesión autenticada, sin API formal |
-| Servicios web SOAP vía Plataforma de Interoperabilidad (AGESIC/PDI) | Solo organismos públicos con convenio | ❌ No para empresas privadas |
+| **Consulta pública de vigencia del certificado común** (por RUT) | Libre, sin usuario | ✅ Consulta puntual + monitoreo periódico de transportistas/productores |
+| **Servicios en línea con usuario BPS de empresa** | Usuario BPS directo (no ID Uruguay) | ✅ Observaciones, aportes/obligaciones y estado de nómina/GAFI, sincronizados a diario |
+| Servicios web SOAP vía Plataforma de Interoperabilidad (AGESIC/PDI) | Solo organismos públicos con convenio | ❌ No disponible para empresas privadas |
+
+Como los servicios de BPS son páginas web (no JSON), el backend scriptea la
+sesión HTTP y parsea HTML. Regla de oro del diseño: ante cualquier
+ambigüedad, captcha o cambio de markup el resultado es `DESCONOCIDO` + log —
+**nunca se inventa un estado**.
 
 Referencias oficiales:
 
 - Certificados comunes y especiales (empresas): https://www.bps.gub.uy/8750/certificados-comunes-y-especiales-empresas.html
-- Solicitar certificados de empresas: https://www.bps.gub.uy/857/solicitar-certificados-de-empresas.html
 - Acceso a los servicios en línea: https://www.bps.gub.uy/9170/acceso-a-los-servicios-en-linea.html
 - Certificado único DGI (complementario): https://servicios.dgi.gub.uy/serviciosenlinea/dgi--servicios-en-linea--consulta-de-certifcado-unico
 
-**Estrategia del módulo:** el backend de Tolvink consulta la verificación
-pública de vigencia por RUT (no requiere credenciales), guarda el resultado y
-lo re-consulta periódicamente (cron). El frontend ya está listo y degrada con
-un aviso si el backend aún no expone los endpoints.
+## 2. Frontend (este repo)
 
-### Caso de uso en Tolvink
-
-Las plantas y productores necesitan verificar que sus **transportistas** estén
-al día con BPS (certificado común vigente) antes de asignarles fletes. Hoy eso
-se hace a mano. Con este módulo:
-
-1. Consulta puntual por RUT desde la pantalla **Mi Flota → botón BPS**.
-2. Monitoreo automático: lista de empresas cuyo estado se re-consulta con la
-   frecuencia configurada (diaria/semanal/quincenal).
-3. Alertas cuando un certificado pasa a **no vigente** o está por vencer.
-
-## 2. Qué hay implementado en este repo (frontend)
-
-- `src/components/BpsCertificadosAssistant.jsx` — modal con 3 pestañas
-  (Consultar RUT / Monitoreo / Ayuda). Valida el dígito verificador del RUT
-  (módulo 11). Si el backend responde `404/501`, muestra "pendiente de
-  activación" y ofrece los enlaces de consulta manual.
+- `src/components/BpsCertificadosAssistant.jsx` — modal con 4 pestañas:
+  **Consulta** (vigencia por RUT, validación de dígito verificador módulo 11),
+  **Monitoreo** (empresas re-consultadas automáticamente, frecuencia
+  configurable), **Cuenta BPS** (conectar usuario BPS de la empresa, ver
+  observaciones/obligaciones/nómina, sincronizar, desconectar) y **Ayuda**.
+  Si el backend responde `404/501` muestra "pendiente de activación"; `503`
+  significa `BPS_ENABLED` apagado en el servidor.
 - `src/screens/TrucksScreen.jsx` — botón **BPS** en el header de Mi Flota.
-- `src/api.js` — cliente de los endpoints (sección BPS).
+- `src/api.js` — sección BPS con todas las funciones `apiBps*`.
+- La contraseña BPS solo viaja en el `POST /bps/cuenta/conectar`; nunca se
+  guarda en el cliente.
 
-## 3. Contrato de API que debe implementar `tolvink-api`
+## 3. API del backend (`tolvink-api`, módulo `src/bps/`)
 
-Todos los endpoints bajo el prefijo existente `/api`, autenticados con la
-cookie de sesión, scoped a la empresa activa del usuario (`activeCompanyId`).
+Prefijo `/api`, cookie de sesión, scoped a la empresa activa del usuario.
+Roles: cualquier tipo de empresa + `platform_admin`.
 
-### 3.1 `POST /bps/certificados/consultar`
+### Consulta pública y monitoreo
 
-Consulta en vivo la vigencia del certificado común para un RUT.
+- `POST /bps/certificados/consultar` `{rut}` → `{rut, razonSocial?, estado, vigenteHasta?, consultadoEn, fuente}` con `estado ∈ VIGENTE | NO_VIGENTE | EN_TRAMITE | DESCONOCIDO`. Errores: `400` RUT inválido · `503` BPS caído/captcha/módulo apagado.
+- `GET /bps/empresas` → lista `{id, rut, nombre, estado, vigenteHasta, ultimaConsulta}`.
+- `POST /bps/empresas` `{rut, nombre?, linkedCompanyId?}` — idempotente por `(companyId, rut)`.
+- `PATCH /bps/empresas/:id/delete` — baja lógica.
+- `GET /bps/empresas/:id/historial` — últimas 100 consultas.
+- `GET|PATCH /bps/config` → `{frecuencia: diaria|semanal|quincenal, alertasActivas, notificarDiasAntes}`.
 
-```jsonc
-// Request
-{ "rut": "211234567890" }
+### Cuenta autenticada
 
-// Response 200
-{
-  "rut": "211234567890",
-  "razonSocial": "TRANSPORTES DEL ESTE S.A.",   // si BPS la devuelve; opcional
-  "estado": "VIGENTE",                          // VIGENTE | NO_VIGENTE | EN_TRAMITE | DESCONOCIDO
-  "vigenteHasta": "2026-11-30",                 // opcional (ISO date)
-  "consultadoEn": "2026-08-18T14:30:00Z",
-  "fuente": "BPS consulta pública"
-}
-```
+- `GET /bps/cuenta` → `{conectada, usuario (enmascarado), ultimaSync, ultimoError}`. La credencial jamás sale del servidor.
+- `POST /bps/cuenta/conectar` `{usuario, password}` — **prueba el login contra BPS en vivo**; solo si funciona guarda la contraseña cifrada (AES-256-GCM). `400` si BPS rechaza las credenciales.
+- `PATCH /bps/cuenta/desconectar` — borrado físico de la credencial y sus datos.
+- `POST /bps/cuenta/sincronizar` — ejecuta ya las 3 consultas autenticadas.
+- `GET /bps/cuenta/datos` → `{conectada, ..., datos: [{tipo, estado, resumen, detalle?, obtenidoEn}]}` con `tipo ∈ OBSERVACIONES | OBLIGACIONES | NOMINA` y `estado ∈ OK | ATENCION | DESCONOCIDO`.
 
-Errores: `400` RUT inválido · `502` BPS no disponible (`{ message }`) ·
-`429` si se excede el rate-limit interno hacia BPS.
+## 4. Diseño interno del backend
 
-### 3.2 `GET /bps/empresas`
+- **Modelos Prisma** (`prisma/schema.prisma`, migración `20260818000000_add_bps_module`):
+  `BpsCuenta` (credencial cifrada, 1 por empresa), `BpsDatoCuenta`,
+  `BpsEmpresaMonitoreada`, `BpsConsulta`, `BpsConfig`; enum
+  `NotificationType` + `bps_certificado`, `bps_cuenta`.
+- **Cifrado** (`src/bps/bps-crypto.ts`): AES-256-GCM, clave de
+  `BPS_ENCRYPTION_KEY` (base64, 32 bytes: `openssl rand -base64 32`). Si la
+  clave rota, las cuentas quedan marcadas con error y hay que reconectarlas.
+- **Cliente** (`src/bps/bps-client.ts`): fetch nativo con retry/backoff (sin
+  reintentar 4xx, honra `Retry-After`), rate limit saliente
+  (`BPS_RATE_LIMIT_MS`, mín. 1,2 s + jitter), tope de 1,5 MB por respuesta,
+  redirects manuales dentro del dominio BPS, detección de captcha, y parseo
+  con cheerio. Los parsers son funciones puras testeadas con fixtures.
+- **Sincronización** (`src/bps/bps-sync.service.ts`): `setInterval` horario
+  (patrón de la casa; no hay Redis/BullMQ en el deploy) + advisory lock de
+  Postgres para no duplicar trabajo entre instancias. Re-consulta vigencias
+  según la frecuencia de cada empresa y corre las consultas autenticadas una
+  vez al día. Cambios a peor (`NO_VIGENTE`, `ATENCION`, login fallido) →
+  notificación a la empresa (push linkea a `/trucks`).
 
-Empresas monitoreadas por la empresa activa, con su último estado.
-
-```jsonc
-[
-  {
-    "id": "cku…",
-    "rut": "211234567890",
-    "nombre": "TRANSPORTES DEL ESTE S.A.",
-    "estado": "VIGENTE",
-    "vigenteHasta": "2026-11-30",
-    "ultimaConsulta": "2026-08-18T06:00:00Z",
-    "proximaConsulta": "2026-08-19T06:00:00Z"
-  }
-]
-```
-
-### 3.3 `POST /bps/empresas`
-
-Alta en el monitoreo: `{ "rut": "…", "nombre": "…", "companyId": "…" }`
-(`nombre` y `companyId` opcionales; `companyId` permite vincular a una empresa
-ya cargada en Tolvink). Responde el registro creado (mismo shape que 3.2).
-Idempotente por `(ownerCompanyId, rut)`.
-
-### 3.4 `PATCH /bps/empresas/:id/delete`
-
-Baja lógica del monitoreo (patrón soft-delete usado en el resto de la API).
-
-### 3.5 `GET /bps/empresas/:id/historial`
-
-Historial de consultas: `[{ "estado", "vigenteHasta", "consultadoEn" }]`
-ordenado descendente, máx. 100.
-
-### 3.6 `GET /bps/config` · `PATCH /bps/config`
-
-```jsonc
-{ "frecuencia": "diaria", "alertasActivas": true, "notificarDiasAntes": 7 }
-```
-
-`frecuencia`: `diaria | semanal | quincenal`.
-
-## 4. Diseño de referencia para el backend
-
-### 4.1 Modelo de datos (Prisma)
-
-```prisma
-model BpsEmpresaMonitoreada {
-  id             String    @id @default(cuid())
-  ownerCompanyId String    // empresa Tolvink que monitorea
-  companyId      String?   // empresa Tolvink vinculada (opcional)
-  rut            String
-  nombre         String?
-  estado         String    @default("DESCONOCIDO")
-  vigenteHasta   DateTime?
-  ultimaConsulta DateTime?
-  active         Boolean   @default(true)
-  createdAt      DateTime  @default(now())
-  consultas      BpsConsulta[]
-
-  @@unique([ownerCompanyId, rut])
-}
-
-model BpsConsulta {
-  id           String   @id @default(cuid())
-  empresaId    String
-  empresa      BpsEmpresaMonitoreada @relation(fields: [empresaId], references: [id])
-  estado       String
-  vigenteHasta DateTime?
-  raw          Json?     // respuesta cruda para debugging
-  consultadoEn DateTime  @default(now())
-}
-
-model BpsConfig {
-  ownerCompanyId     String  @id
-  frecuencia         String  @default("diaria")
-  alertasActivas     Boolean @default(true)
-  notificarDiasAntes Int     @default(7)
-}
-```
-
-### 4.2 Cliente BPS (servicio)
-
-La consulta pública de vigencia es una página web (JSF), no un JSON API, por
-lo que el cliente debe:
-
-1. `GET` a la página de consulta para obtener cookies de sesión y el
-   `ViewState`.
-2. `POST` del formulario con el RUT.
-3. Parsear el HTML de respuesta ("posee certificado común vigente" /
-   "no posee…"). Mantener los selectores/regex en configuración para poder
-   ajustarlos sin redeploy si BPS cambia el markup.
-
-Recomendaciones obligatorias:
-
-- **Rate limit** propio: máx. 1 request/segundo hacia BPS, con jitter.
-- **Backoff** exponencial ante 5xx/timeouts; marcar `DESCONOCIDO` tras 3
-  fallos, nunca `NO_VIGENTE` por error técnico.
-- **Cache**: no repetir la misma consulta de RUT dentro de 6 h (salvo
-  consulta manual explícita).
-- **User-Agent** identificable (`Tolvink/4.x (+https://tolvink.com)`).
-- Registrar `raw` truncado (≤ 8 KB) para diagnóstico.
-
-Variables de entorno sugeridas (Railway):
+## 5. Variables de entorno (Railway)
 
 ```
-BPS_CONSULTA_ENABLED=true
-BPS_CONSULTA_URL=<URL de la consulta pública de vigencia>
-BPS_CRON="0 6 * * *"          # corrida diaria 06:00 UY
-BPS_RATE_LIMIT_MS=1200
+BPS_ENABLED=true
+BPS_ENCRYPTION_KEY=<openssl rand -base64 32>
+BPS_BASE_URL=https://serviciosenlinea.bps.gub.uy   # default
+BPS_RATE_LIMIT_MS=1200                             # default
+BPS_SYNC_TICK_MS=3600000                           # default (1 h)
+# Calibración del portal (ver §6): paths, nombres de campos y marcadores
+BPS_VIGENCIA_PATH= BPS_LOGIN_PATH= BPS_OBSERVACIONES_PATH= BPS_OBLIGACIONES_PATH= BPS_NOMINA_PATH=
+BPS_LOGIN_USER_FIELD= BPS_LOGIN_PASS_FIELD= BPS_VIGENCIA_RUT_FIELD=
+BPS_LOGIN_OK_MARKER= BPS_LOGIN_FAIL_MARKER=
 ```
 
-### 4.3 Job de consultas automáticas
+Con `BPS_ENABLED` apagado el módulo responde `503` en las operaciones que
+salen a BPS y la sincronización automática queda inactiva; las lecturas de
+datos ya guardados siguen funcionando.
 
-Cron (node-cron o el scheduler de Railway) que:
+## 6. Checklist de activación
 
-1. Selecciona empresas `active` cuya `ultimaConsulta` sea más vieja que la
-   `frecuencia` configurada por su `ownerCompanyId`.
-2. Consulta BPS respetando el rate-limit.
-3. Guarda `BpsConsulta` y actualiza el snapshot en `BpsEmpresaMonitoreada`.
-4. Si el estado cambió a `NO_VIGENTE`, o `vigenteHasta` está a menos de
-   `notificarDiasAntes` días: crea una notificación (sistema de
-   `/notifications` existente) y opcionalmente push.
+- [ ] Merge de la rama `claude/bps-web-services-connection` en `tolvink-api`
+- [ ] Migración en producción: `npm run db:migrate` (Railway la aplica manualmente)
+- [ ] Setear `BPS_ENABLED=true` y `BPS_ENCRYPTION_KEY` en Railway
+- [ ] **Calibración de selectores** (imprescindible): los paths del portal y
+      los marcadores de texto por defecto son estimaciones — este entorno no
+      puede acceder a bps.gub.uy. Con credenciales reales en staging: navegar
+      el portal, anotar URLs/campos del login y de cada consulta, y volcarlos
+      en las env vars de §5. El parser loguea `DESCONOCIDO` cuando el markup
+      no coincide, lo que indica exactamente qué recalibrar.
+- [ ] Probar `POST /bps/cuenta/conectar` con el usuario BPS real
+- [ ] Merge de la rama frontend y deploy en Vercel
 
-### 4.4 Si BPS cambia la página o bloquea la consulta
+## 7. Riesgos y límites conocidos
 
-- El parser debe fallar a `DESCONOCIDO` + alerta interna (Sentry), nunca
-  inventar estado.
-- Alternativa de mediano plazo: gestionar usuario de empresa en servicios en
-  línea BPS y automatizar la descarga del certificado propio; requiere
-  credenciales del cliente y debe evaluarse legalmente (términos de uso BPS).
-- Para volúmenes altos conviene consultar a BPS (vía "Consúltenos", tema
-  Empresarios → Certificados comunes) si ofrecen un convenio de consulta
-  masiva.
-
-## 5. Checklist de activación
-
-- [ ] Backend: modelos Prisma + migración
-- [ ] Backend: cliente BPS + endpoints 3.1–3.6
-- [ ] Backend: cron de consultas automáticas + notificaciones
-- [ ] Backend: variables de entorno en Railway
-- [ ] Probar con RUTs reales de transportistas conocidos
-- [ ] (Opcional) Mostrar el estado BPS en la ficha de empresa vinculada
-
-El frontend no requiere cambios adicionales: detecta automáticamente cuando
-los endpoints están disponibles.
+- **Captcha**: si BPS lo exige en login o consulta, la automatización se
+  detiene con error explícito (`503`); no se intenta evadirlo.
+- **Cambios de markup**: degradan a `DESCONOCIDO` + warning en logs; se
+  corrigen recalibrando las env vars sin redeploy.
+- **ID Uruguay**: no soportado — solo usuario BPS directo. Si BPS migra el
+  login a ID Uruguay con 2FA, habrá que reevaluar el flujo.
+- **Términos de uso**: la cuenta es de la propia empresa y las consultas son
+  sobre sus propios datos, con rate limit conservador y User-Agent
+  identificable. Para volúmenes altos, consultar a BPS ("Consúltenos" →
+  Empresarios → Certificados comunes) por un convenio de consulta masiva.
