@@ -718,6 +718,16 @@ export async function apiUpdateAlertStatus(alertId, status) { return api(`/maint
 // ── Mechanic Dashboard ──
 export async function apiGetMechanicDashboard() { return api('/mechanic/dashboard'); }
 
+// ── BPS (Banco de Previsión Social) — consultas de certificados ──
+// Backend contract: see docs/BPS-WEB-SERVICES.md
+export async function apiBpsConsultarRut(rut) { return api('/bps/certificados/consultar', { body: { rut } }); }
+export async function apiBpsGetEmpresas() { return api('/bps/empresas'); }
+export async function apiBpsMonitorearEmpresa(b) { return api('/bps/empresas', { body: b }); }
+export async function apiBpsQuitarEmpresa(id) { return api(`/bps/empresas/${id}/delete`, { method: 'PATCH', body: {} }); }
+export async function apiBpsGetHistorial(id) { return api(`/bps/empresas/${id}/historial`); }
+export async function apiBpsGetConfig() { return api('/bps/config'); }
+export async function apiBpsUpdateConfig(b) { return api('/bps/config', { method: 'PATCH', body: b }); }
+
 // ── Company Product Catalog ──
 export async function apiListCompanyProducts(opts = {}) {
   const p = new URLSearchParams();

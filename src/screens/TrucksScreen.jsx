@@ -1,5 +1,6 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, lazy, Suspense } from "react";
 import { C, Ic, R } from "../theme";
+const BpsCertificadosAssistant = lazy(() => import("../components/BpsCertificadosAssistant"));
 import { Btn, Field, Loader, LoadingOverlay, EmptyState, LicensePlate } from "../components";
 import { apiGetTrucks, apiCreateTruck, apiDeactivateTruck, apiListDrivers, apiCreateDriver, apiDeactivateDriver, apiGetCompanyAccess, apiGetExpiringDocs, apiGetFleetSummary, apiExportFleetReport } from "../api";
 import { useCatalogStore } from "../store";
@@ -116,6 +117,7 @@ export default function TrucksScreen({ onBack, embedded, user, onTruckClick }) {
     finally { setSaving(false); }
   };
 
+  const [showBps, setShowBps] = useState(false); // BPS certificate assistant modal
   const [editTruck, setEditTruck] = useState(null); // truck being edited
   const [confirmDeactivate, setConfirmDeactivate] = useState(false);
 
@@ -155,6 +157,7 @@ export default function TrucksScreen({ onBack, embedded, user, onTruckClick }) {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
         <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: -0.3 }}>{selectedCompanyId ? "Flota" : "Mi Flota"}</div>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <button onClick={() => setShowBps(true)} style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 12px", borderRadius: R.lg, border: `1.5px solid ${C.b1}`, background: C.w, color: C.t1, fontFamily: "inherit", fontSize: 12.5, fontWeight: 600, cursor: "pointer" }}>{Ic.shield(C.pri, 14)} BPS</button>
           {trucks.length > 0 && <button onClick={handleExportFleet} disabled={exporting} style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 12px", borderRadius: R.lg, border: `1.5px solid ${C.b1}`, background: C.w, color: C.t1, fontFamily: "inherit", fontSize: 12.5, fontWeight: 600, cursor: exporting ? "wait" : "pointer", opacity: exporting ? 0.6 : 1 }}>{exporting ? Ic.loader?.(C.t2, 14) || "..." : Ic.download(C.pri, 14)} {exporting ? "Exportando..." : "Excel"}</button>}
           {canEdit && <Btn sm onClick={() => { setShowForm(!showForm); setMsg(null); }} icon={showForm ? Ic.cross(C.w, 14) : Ic.plus(C.w, 14)}>{showForm ? "Cerrar" : "Agregar"}</Btn>}
         </div>
@@ -340,6 +343,8 @@ export default function TrucksScreen({ onBack, embedded, user, onTruckClick }) {
           </div>
         </div>
       )}
+
+      {showBps && <Suspense fallback={null}><BpsCertificadosAssistant onClose={() => setShowBps(false)} /></Suspense>}
     </div>
   );
 }
